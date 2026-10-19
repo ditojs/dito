@@ -1,4 +1,5 @@
 import pico from 'picocolors'
+import { MulterError } from 'multer'
 import { EventEmitter } from '../lib/index.js'
 import ControllerAction from './ControllerAction.js'
 import MemberAction from './MemberAction.js'
@@ -270,13 +271,9 @@ export class Controller {
     const { method, transacted, authorize } = action
     this.setupRoute(method, url, transacted, authorize, action, [
       async ctx => {
-        try {
-          const res = await action.callAction(ctx)
-          if (res !== undefined) {
-            ctx.body = res
-          }
-        } catch (err) {
-          throw err instanceof ResponseError ? err : new ResponseError(err)
+        const res = await action.callAction(ctx)
+        if (res !== undefined) {
+          ctx.body = res
         }
       }
     ])
@@ -351,7 +348,18 @@ export class Controller {
         return next()
       },
 
-      upload,
+      async (ctx, next) => {
+        try {
+          await upload(ctx, next)
+        } catch (err) {
+          // Multer's errors describe the request, but carry no status:
+          throw err instanceof MulterError
+            ? new ResponseError(err, {
+                status: err.code === 'LIMIT_FILE_SIZE' ? 413 : 400
+              })
+            : err
+        }
+      },
 
       async (ctx, next) => {
         const files = storage.convertStorageFiles(ctx.request.files)

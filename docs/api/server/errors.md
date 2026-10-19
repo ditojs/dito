@@ -70,8 +70,8 @@ The base class of all errors sent as responses.
 - A string becomes `message`.
 - A wrapped `Error` contributes its `message`, its `toJSON()` data, and its
   `status` and `code` when set; it becomes the `cause`.
-- `message`, `status`, `stack` and `cause` are taken out; all other properties
-  become `data`.
+- `message`, `status`, `expose`, `stack` and `cause` are taken out; all other
+  properties become `data`.
 
 #### Properties
 
@@ -79,6 +79,7 @@ The base class of all errors sent as responses.
 | ---------- | --------------------- | ---------------------------------------------------------------- |
 | `message`  | `string`              | The message.                                                     |
 | `status`   | `number`              | The HTTP status.                                                 |
+| `expose`   | `boolean \| undefined` | `false` keeps the message and data out of the response, see [Plain errors](../../guide/server/errors.md#plain-errors). |
 | `data`     | `object \| undefined` | Additional data sent with the response, e.g. `code` or `errors`. |
 | `cause`    | `unknown`             | The wrapped error.                                               |
 
@@ -172,7 +173,8 @@ new DatabaseError(error, overrides?)
 ```
 
 Wraps Objection database errors, with their message. `data.type` is the
-class name of the wrapped error, `cause` its native driver error.
+class name of the wrapped error, `cause` its native driver error. Errors with
+status 500 or higher set `expose: false`: their message is only logged.
 
 | Wrapped error                                                                          | Status |
 | -------------------------------------------------------------------------------------- | ------ |

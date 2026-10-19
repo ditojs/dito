@@ -19,6 +19,11 @@ export class DatabaseError extends ResponseError {
       },
       overrides
     )
+    // Only violations describe the request's data, other database errors are
+    // internal:
+    if (this.status >= 500) {
+      this.expose ??= false
+    }
   }
 }
 

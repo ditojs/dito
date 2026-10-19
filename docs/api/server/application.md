@@ -65,7 +65,7 @@ augmentation of `ApplicationConfig` for project-specific settings.
 
 | Key                       | Type                                             | Default         | Description                                                                                                                              |
 | ------------------------- | ------------------------------------------------ | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `env`                     | `'production' \| 'development' \| string`        |                 | The environment. The admin's `mode` defaults to `'development'` when this is `'development'`, else to `'production'`.                     |
+| `env`                     | `'production' \| 'development' \| string`        |                 | The environment. The admin's `mode` defaults to `'development'` when this is `'development'`, else to `'production'`. In `'development'`, responses carry the messages of all errors, see [Plain errors](../../guide/server/errors.md#plain-errors). |
 | `server`                  | `object`                                         |                 | Options for Node's `server.listen()`, e.g. `{ host, port }`.                                                                             |
 | `log`                     | `object \| false`                                | `{}`            | Logging options, see [`config.log`](#configlog). `false`, `log.silent` or the env variable `DITO_SILENT` clear all of them, which also hides the start message. Errors emitted on the app are still logged then. |
 | `logger`                  | `object`                                         | see below       | [Pino](https://getpino.io/) options, plus `prettyPrint` with [pino-pretty](https://github.com/pinojs/pino-pretty) options. Default level `'info'`, pretty printing on. |
@@ -695,10 +695,10 @@ query out of the message (kept with `log.errors.sql`). *Hook.* Returns
 app.logError(error, ctx?)
 ```
 
-Logs an error, unless its `expose` flag or Koa's `app.silent` is set:
-`ResponseError`s with a status below 500 at level `info`, others at `error`,
-through the request's logger if `ctx` is given. The app calls it for its
-`'error'` events, unless `log.errors` is `false`. *Hook.*
+Logs an error, unless Koa's `app.silent` is set: errors with a status below
+500 at level `info`, others at `error`, through the request's logger if `ctx`
+is given. The app calls it for its `'error'` events, unless `log.errors` is
+`false`. *Hook.*
 
 ### formatError()
 

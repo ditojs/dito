@@ -43,6 +43,13 @@ describe('ResponseError', () => {
     })
   })
 
+  it('takes `expose` out of the data', () => {
+    const error = new ResponseError({ message: 'Down', expose: false })
+    expect(error.expose).toBe(false)
+    expect(error.data).toBeUndefined()
+    expect(new ResponseError('Down').expose).toBeUndefined()
+  })
+
   it('serializes to the message and data with JSON.stringify()', () => {
     const error = new ResponseError({ message: 'Nope', reason: 'closed' })
     expect(JSON.parse(JSON.stringify(error))).toEqual({

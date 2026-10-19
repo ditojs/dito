@@ -1,10 +1,5 @@
 import type { ModelProperties } from '@ditojs/server'
-import {
-  Model,
-  DatabaseError,
-  NotFoundError,
-  ResponseError
-} from '@ditojs/server'
+import { Model, DatabaseError, NotFoundError } from '@ditojs/server'
 import {
   createTestApp,
   createTestDatabase,
@@ -419,13 +414,12 @@ describe('Model persistence', () => {
       expect(error.message).toBe(`'Member' model with id 42 not found`)
     })
 
-    it('wraps other errors in ResponseError', async () => {
+    it('passes other errors through', async () => {
+      const error = new Error('broken')
       const promise = Member.query().runBefore(() => {
-        throw new Error('broken')
+        throw error
       })
-      const error = await promise.catch(error => error)
-      expect(error).toBeInstanceOf(ResponseError)
-      expect(error.message).toBe('broken')
+      expect(await promise.catch(error => error)).toBe(error)
     })
   })
 

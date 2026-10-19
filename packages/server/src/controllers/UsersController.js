@@ -624,13 +624,19 @@ async function handleLogin(controller, ctx, authenticate) {
       }
     }
   } catch (err) {
-    controller.app.emit('error', err, ctx)
-    ctx.status = err.status || 401
-    return {
-      success: false,
-      authenticated: false,
-      user: null,
-      error: err.data?.message || err.message
+    // Answer rejected logins, and leave other errors to `handleError()`, which
+    // hides their internal messages:
+    if (err instanceof ResponseError && err.status < 500) {
+      controller.app.emit('error', err, ctx)
+      ctx.status = err.status
+      return {
+        success: false,
+        authenticated: false,
+        user: null,
+        error: err.data?.message || err.message
+      }
+    } else {
+      throw err
     }
   }
 }

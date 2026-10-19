@@ -560,7 +560,8 @@ describe('TOTP', () => {
         method: 'POST',
         body: { code: getNextCode(totp) }
       })
-      expect(code.data.success).toBe(false)
+      // The secret fails to decrypt, an internal error:
+      expect(code.status).toBe(500)
       expect((await request('/members/session')).data.authenticated).toBe(
         false
       )

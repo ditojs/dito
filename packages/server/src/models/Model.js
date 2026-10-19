@@ -273,13 +273,11 @@ export class Model extends objection.Model {
   static query(trx) {
     return super.query(trx).onError(err => {
       // TODO: Shouldn't this wrapping happen on the Controller level?
-      err =
-        err instanceof ResponseError
-          ? err
-          : err instanceof objection.DBError
-            ? this.app.createDatabaseError(err)
-            : new ResponseError(err)
-      return Promise.reject(err)
+      return Promise.reject(
+        err instanceof objection.DBError
+          ? this.app.createDatabaseError(err)
+          : err
+      )
     })
   }
 

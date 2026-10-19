@@ -441,7 +441,7 @@ actions objects. Uploads run no hooks. See
 | `storage`        | `string`  | The storage name. Required. |
 | `readDimensions` | `boolean` | Reads `width` and `height` of images and videos. |
 | `transacted`     | `boolean` | Runs the upload in a transaction. |
-| *other*          |           | Passed on to multer, e.g. `limits`. |
+| *other*          |           | Passed on to multer, e.g. `limits`. Exceeding `limits.fileSize` responds with 413, other limits with 400. |
 
 In model controllers, `assets: true` uses the model's
 [`assets`](./model.md#static-assets) definitions, and an object is merged over
@@ -815,7 +815,7 @@ else their setup throws.
 
 | Action               | Response |
 | -------------------- | ------------------------------------------------------- |
-| `'post login'`       | Logs in the user of [`modelClass.authenticate(ctx)`](./model.md#static-authenticate) and sets `lastLogin`: `{ success, authenticated, user, error }`. A failed login responds with the error's status, by default 401, and emits it as `'error'` on the app. |
+| `'post login'`       | Logs in the user of [`modelClass.authenticate(ctx)`](./model.md#static-authenticate) and sets `lastLogin`: `{ success, authenticated, user, error }`. A login rejected with a `ResponseError` below 500, e.g. an `AuthenticationError` with 401, responds with its status and emits it as `'error'` on the app. Other errors respond like those of other actions. |
 | `'post logout'`      | `{ success, authenticated }` |
 | `'get session'`      | `{ authenticated, user }` |
 | `'get self'`         | The authenticated user through `member.get`, or `null`. |

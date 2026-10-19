@@ -1,6 +1,6 @@
 import { ResponseError } from '../errors/index.js'
 
-export function handleError() {
+export function handleError({ exposeMessages = false } = {}) {
   return async (ctx, next) => {
     try {
       await next()
@@ -10,12 +10,18 @@ export function handleError() {
       // If the browser accepts json, return a JSON representation of the
       // error. But don't do so if the request actually went to js file.
       if (ctx.accepts('json') && !ctx.request.path.endsWith('.js')) {
-        // Format error as JSON
+        // Format error as JSON. Only response errors, client errors and errors
+        // marked as exposed, e.g. by Koa's `ctx.throw()`, are meant for the
+        // client:
+        const isExposed = (
+          exposeMessages ||
+          (err.expose ?? (err instanceof ResponseError || err.status < 500))
+        )
         ctx.body =
-          err instanceof ResponseError
+          isExposed && err instanceof ResponseError
             ? err.toJSON()
             : {
-                message: err.message || 'An error has occurred.'
+                message: (isExposed && err.message) || 'An error has occurred.'
               }
       } else {
         // TODO: Consider handling html and xml responses also, see:

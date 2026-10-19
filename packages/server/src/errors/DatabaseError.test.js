@@ -31,6 +31,15 @@ describe('DatabaseError', () => {
     expect(error.data).toEqual({ type: ErrorClass.name })
   })
 
+  it.each([
+    [UniqueViolationError, undefined],
+    [DataError, undefined],
+    [DBError, false]
+  ])('marks %o with `expose: %o`', (ErrorClass, expose) => {
+    const error = new DatabaseError(createDBError(ErrorClass))
+    expect(error.expose).toBe(expose)
+  })
+
   it('uses status 400 for errors that are not database errors', () => {
     const error = new DatabaseError(new Error('Not from the database'))
     expect(error.status).toBe(400)
