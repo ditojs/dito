@@ -1,4 +1,5 @@
 import path from 'path'
+import { createRequire } from 'module'
 import Koa from 'koa'
 import serve from 'koa-static'
 import { assignDeeply, isString } from '@ditojs/utils'
@@ -187,6 +188,7 @@ export class AdminController extends Controller {
     const root = this.resolveConfigPath('root')
     const base = `${this.url}/`
     const views = path.join(root, 'views')
+    const linkedSources = isDevelopment ? getLinkedSources(root) : {}
 
     return defineConfig(
       assignDeeply(
@@ -212,6 +214,14 @@ export class AdminController extends Controller {
                   )
                 }
               }
+            },
+            {
+              // Private plugin to resolve linked Dito.js packages to their
+              // sources, see `getLinkedSources()`:
+              name: 'resolve-linked-sources',
+              enforce: 'pre',
+              resolveId: id => linkedSources[id],
+              load: id => (id === emptyModule ? '' : null)
             }
           ],
           build: isDevelopment
@@ -291,6 +301,8 @@ export class AdminController extends Controller {
   }
 }
 
+const emptyModule = '\0dito-empty-module'
+
 const ditoPackages = [
   '@ditojs/admin',
   '@ditojs/ui',
@@ -329,3 +341,21 @@ const coreDependencies = [
   'orderedmap',
   'w3c-keyname'
 ]
+
+// When the app links Dito.js from a checkout, resolve its admin and UI to their
+// sources, also for the app's own imports: their builds would be stale, and
+// second copies next to the sources. The source components bring their styles.
+function getLinkedSources(root) {
+  const admin = createRequire(path.join(root, 'index.js')).resolve(
+    '@ditojs/admin/src'
+  )
+  // Installed packages resolve inside `node_modules`, also in pnpm's store:
+  return admin.split(path.sep).includes('node_modules')
+    ? {}
+    : {
+        '@ditojs/admin': admin,
+        '@ditojs/ui': createRequire(admin).resolve('@ditojs/ui/src'),
+        '@ditojs/admin/style.css': emptyModule,
+        '@ditojs/ui/style.css': emptyModule
+      }
+}

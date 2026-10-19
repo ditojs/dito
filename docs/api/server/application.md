@@ -137,7 +137,7 @@ app: {
 | ---------- | ------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `root`     | `string`                        |                                               | Path to the admin's source directory, relative to the working directory. Required in development mode and by `defineAdminViteConfig()`. |
 | `dist`     | `string`                        |                                               | Path to the built admin, relative to the working directory. Required in production mode. |
-| `mode`     | `'production' \| 'development'` | `'development'` if `env` is, else `'production'` | Development serves the sources through Vite with hot reloading.                 |
+| `mode`     | `'production' \| 'development'` | `'development'` if `env` is, else `'production'` | Development serves the sources through Vite with hot reloading. In it, apps that link Dito.js from a checkout load its admin and UI from their sources, also for their own imports. |
 | `api`      | `ApiConfig`                     |                                               | The admin's API settings (`url`, `locale`, `formats`, `notifications`, `timeout`, `cors`, `normalizePaths`, `users`, `headers`), passed to the browser. `normalizePaths` defaults to `app.normalizePaths`. |
 | `settings` | `object`                        |                                               | The admin's global settings, sent to the browser with `window.dito` and read there as `admin.context.settings`, e.g. `rootClass` and `forceDragFallback`. |
 

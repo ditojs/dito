@@ -65,16 +65,7 @@ export function createTestApp(
 
   const { admin } = options
   if (admin) {
-    // Resolve @ditojs/admin and @ditojs/ui from source so no prior build step
-    // is needed. Their package exports point to dist/, but in dev we want to
-    // use source directly. @ditojs/utils already exports from src/ so no alias
-    // needed.
-    const pkgs = path.resolve(
-      import.meta.dirname,
-      '../../packages'
-    )
-
-    // Build the vite config with our source aliases when the started app sets
+    // Build the vite config with the scenario's views when the started app sets
     // up its vite dev server.
     app.loadAdminViteConfig = async () =>
       app.defineAdminViteConfig({
@@ -87,38 +78,6 @@ export function createTestApp(
             {
               find: '#views',
               replacement: admin.views
-            },
-            {
-              find: '@ditojs/admin/style.css',
-              replacement: path.join(import.meta.dirname, 'admin-style.css')
-            },
-            {
-              find: /^@ditojs\/admin$/,
-              replacement: path.join(
-                pkgs,
-                'admin/src/index.js'
-              )
-            },
-            {
-              find: '@ditojs/ui/imports.scss',
-              replacement: path.join(
-                pkgs,
-                'ui/src/styles/_imports.scss'
-              )
-            },
-            {
-              find: '@ditojs/ui/src',
-              replacement: path.join(
-                pkgs,
-                'ui/src/index.js'
-              )
-            },
-            {
-              find: /^@ditojs\/ui$/,
-              replacement: path.join(
-                pkgs,
-                'ui/src/index.js'
-              )
             }
           ]
         },

@@ -169,7 +169,8 @@ describe('AdminController configuration', () => {
   })
 
   it('injects the `dito` object script into the index html', async () => {
-    const root = path.join(os.tmpdir(), 'library-admin')
+    // Development mode resolves `@ditojs/admin` from the root, like an app's:
+    const root = import.meta.dirname
     const app = createAdminApp({ mode: 'development', root })
     const config: any = await app.defineAdminViteConfig({})
     const plugin = config.plugins.find(
