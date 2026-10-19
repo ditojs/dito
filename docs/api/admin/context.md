@@ -695,7 +695,8 @@ view, dialog or panel with its own data, as if it was loaded: deserialized, with
 defaults and computed values. Unlike `resetItem()`, only the values in `data`
 change: the user's edits of other values stay, and the data stays as clean or
 dirty as it is. Lists are merged by the ids of their items and objects in
-place, so they keep their identity. The values in `data` replace the user's edits of them, see
+place, so they keep their identity. The values in `data` replace the user's
+edits of them and clear their errors, see
 [Forms](../../guide/admin/forms.md#values-that-change-on-the-server).
 
 #### Parameters
