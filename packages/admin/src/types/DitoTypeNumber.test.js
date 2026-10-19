@@ -186,7 +186,19 @@ describe('DitoTypeProgress', () => {
     expect(progress.element.value).toBe(10)
     data.progress = null
     await settle()
-    expect(progress.attributes('value')).toBe('')
+    // An empty value shows an empty bar, not an indeterminate one:
+    expect(progress.attributes('value')).toBe('0')
+  })
+
+  it('takes the start from `min` without `max`', async () => {
+    const { findField } = await mountSchema({
+      schema: { components: { progress: { type: 'progress', min: 0.2 } } },
+      data: { progress: 0.5 }
+    })
+    const progress = findField('progress')
+    // 0.5 - 0.2 of the 0.8 from `min` to the default end of 1:
+    expect(progress.element.value).toBeCloseTo(0.3)
+    expect(progress.attributes('max')).toBe('0.8')
   })
 
   it('displays the value as is without `range` and `step`', async () => {
@@ -196,6 +208,6 @@ describe('DitoTypeProgress', () => {
     })
     const progress = findField('progress')
     expect(progress.element.value).toBe(0.37)
-    expect(progress.attributes('max')).toBeUndefined()
+    expect(progress.attributes('max')).toBe('1')
   })
 })

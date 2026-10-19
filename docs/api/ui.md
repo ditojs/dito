@@ -29,7 +29,7 @@ Inside custom admin components, the admin's styles already include those of
 
 | Section | Exports |
 | ------- | ------- |
-| [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoTrigger`, `DitoCalendar`, `DitoDatePicker`, `DitoTimePicker`, `DitoDateTimePicker`, `TransitionHeight` |
+| [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoProgress`, `DitoTrigger`, `DitoCalendar`, `DitoDatePicker`, `DitoTimePicker`, `DitoDateTimePicker`, `TransitionHeight` |
 | [Helpers](#helpers) | `getVerbButtonAttributes()`, `describeDate()`, `alterDate()`, `stepDate()`, `parseDate()`, `getDatePartAtPosition()`, `addEvents()`, `combineEvents()`, `getKey()`, `getKeyNavigation()`, `getSelection()`, `setSelection()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()` |
 | [Styles](#styles) | CSS classes, SCSS variables, mixins, functions and icons |
 
@@ -261,6 +261,22 @@ The page buttons are only shown with more than one page.
 
 ```vue
 <DitoPagination v-model:page="page" :total="orderCount" :pageSize="20" />
+```
+
+### DitoProgress
+
+A progress bar, rendered as a native `<progress>` element. The admin's
+[`progress`](./admin/schemas.md#progress) type shows it too.
+
+| Prop | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `value` | `number` | `null` | The progress. Without a value, the bar is indeterminate. |
+| `min`, `max` | `number` | `0`, `1` | The values of empty and full. |
+
+All attributes go to the `<progress>` element, e.g. `aria-label`.
+
+```vue
+<DitoProgress :value="job.processed" :max="job.total" aria-label="Import" />
 ```
 
 ### DitoTrigger

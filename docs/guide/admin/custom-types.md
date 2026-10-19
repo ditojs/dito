@@ -6,7 +6,8 @@ schemas then use like the built-in types.
 
 The admin's own components are internal and not meant to be imported. Build
 custom components with plain Vue and the public components of
-[`@ditojs/ui`](../../api/ui.md).
+[`@ditojs/ui`](../../api/ui.md), e.g. `DitoProgress` for the progress of a
+background job.
 
 ## The component
 

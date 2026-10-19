@@ -1,9 +1,10 @@
 <template lang="pug">
-progress.dito-progress(
+DitoProgress(
   :id="componentPath"
   ref="element"
   :value="progressValue"
-  :max="progressMax"
+  :min="settings.min"
+  :max="settings.max"
   v-bind="attributes"
 )
 </template>
@@ -14,9 +15,11 @@ import { defineType } from '../utils/schema/types.ts'
 import { numberTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useNumber } from '../composables/useNumber.ts'
+import { DitoProgress } from '@ditojs/ui/src'
 
 // @vue/component
 const DitoTypeProgress = {
+  components: { DitoProgress },
   props: fieldProps,
 
   setup(props) {
@@ -24,26 +27,14 @@ const DitoTypeProgress = {
     const { settings } = useNumber(props, field)
     return {
       ...field,
+      settings,
 
       progressValue: computed(() => {
-        let value = field.value.value
-        const { range, step } = settings.value
-        if (value !== null) {
-          if (range) {
-            value -= range[0]
-          }
-          if (step) {
-            value = Math.round(value / step) * step
-          }
-        } else {
-          value = ''
-        }
-        return value
-      }),
-
-      progressMax: computed(() => {
-        const { range } = settings.value
-        return range ? range[1] - range[0] : null
+        const { min = 0, step } = settings.value
+        // Show empty values as an empty bar, not as an indeterminate one:
+        const value = field.value.value ?? min
+        // Round to the steps from the start of the range:
+        return step ? min + Math.round((value - min) / step) * step : value
       })
     }
   }
