@@ -18,6 +18,13 @@ export interface LabelToggle {
   toggle(): void
 }
 
+// The panes of layout sections provide their components to `DitoField`:
+export interface Layout {
+  readonly props: Record<string, any>
+  readonly componentPath: Ref<string>
+  getEntry(name: string): Record<string, any> | null
+}
+
 export interface PanelTab {
   readonly tabName: string
   isTabSelected(): boolean
@@ -47,6 +54,7 @@ export const labelToggleKey: Key<Ref<LabelToggle | null>> =
   Symbol(
     'labelToggle'
   )
+export const layoutKey: Key<Layout | null> = Symbol('layout')
 export const panelTabKey: Key<PanelTab | null> = Symbol('panelTab')
 export const accumulatedBasisKey: Key<MaybeRef<number | null>> =
   Symbol(
