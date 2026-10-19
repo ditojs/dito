@@ -262,6 +262,29 @@ describe('DitoComponentType', () => {
       )
       warn.mockRestore()
     })
+
+    it.each([
+      ['extends', { extends: RatingStars }],
+      ['mixins', { mixins: [RatingStars] }]
+    ])(
+      'are no components that declare the value in `%s`',
+      async (_, component) => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const { findField, wrapper, data } = await mountSchema({
+          schema: {
+            components: {
+              rating: { type: 'component', component }
+            }
+          },
+          data: { rating: 1 }
+        })
+        expect(wrapper.findComponent(component).props('modelValue')).toBe(1)
+        await findField('rating').trigger('click')
+        expect(data.rating).toBe(2)
+        expect(warn).not.toHaveBeenCalled()
+        warn.mockRestore()
+      }
+    )
   })
 })
 
