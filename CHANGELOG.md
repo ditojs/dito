@@ -3,6 +3,44 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 5.1.0 (2026-10-19)
+
+### Behaviour changes
+
+- **server:** Errors that aren't `ResponseError`s, e.g. a plain `Error` thrown in an action, respond with "An error has occurred." instead of their message, unless they have `expose: true` or a status below 500, or `config.env` is `'development'`. Their message still goes to the log and the `'error'` events. Apps throw `ResponseError`s for messages meant for clients, see [Plain errors](docs/guide/server/errors.md#plain-errors).
+- **server:** Actions and model queries no longer wrap other errors in `ResponseError`s, and pass them on as they are: plain errors with a status below 500 respond with only their `message`, without `code` or other data, and `'error'` listeners receive the raw error, which often has no `status`.
+- **server:** `DatabaseError`s with status 500 or higher respond with "An error has occurred." instead of the database's message, through `expose: false`, which `ResponseError`s take as an option.
+- **server:** Logins that fail with other errors than `ResponseError`s below 500, e.g. a plain `Error` in a `before:login` hook, respond with their own status or 500 like other actions, instead of 401 and the login response with their message.
+- **server:** Uploads beyond multer's `limits` respond with status 413 for `fileSize` and 400 for the others, with multer's message and `code`, instead of status 500.
+- **server:** Errors are logged by their status alone, at level `info` below 500, also when they aren't `ResponseError`s, e.g. of invalid JSON bodies, and errors with `expose: true` are logged too.
+- **admin:** Escape also cancels dialogs with only one button, resolving them to `undefined`.
+
+### New
+
+- **server:** Setting an inherited action to `false` drops it, without repeating the actions to keep in `allow`.
+- **server:** In the admin's development mode, apps that link Dito.js from a checkout load its admin and UI from their sources, also for their own imports.
+- **server:** `UsersController.actionNames` lists the actions of its features, `passkeys`, `totp` and `passwordReset`, e.g. for `allow: ['get', ...UsersController.actionNames.totp]`.
+- **admin:** The `align` option places a component vertically in its line: `'top'`, `'center'` or `'bottom'`.
+- **admin:** `context.confirm()`, `prompt()` and `alert()` show dito dialogs instead of the browser's native ones.
+- **admin:** The `labelledBy` option labels fields by another element, e.g. a text above them.
+- **admin:** `context.getValueAt(dataPath)` reads values at data paths relative to the item, like the `dataPath` of schemas, e.g. `'../../font'`.
+- **admin:** Display-only `component` fields, without a `default`, need no `modelValue` or value events.
+- **admin:** The `component` option of sections lays out their components with a Vue component instead of in rows.
+- **admin:** `DitoField` places the components of sections with `component`, with their labels, errors and validation, and passes its slot on to custom components.
+- **admin:** `DitoPane` places groups of the components of sections with `component` in rows, with their widths, wrapping and aligned labels.
+- **admin:** `context.mergeItem(data)` merges values from the server into the form as if loaded, keeping the user's edits of other values and the dirty state, and clears the errors of the merged values.
+- **admin:** `primary: true` gives buttons the look of submit buttons, and the focus in dialogs, without submitting.
+- **admin:** `context.request()` takes `abortOnUnmount: true` to end requests when the component unmounts, e.g. of polling components.
+- **ui:** The `placement` of `DitoTrigger` and `DitoMenuButton` can center popups on their trigger, e.g. `'bottom-center'`, and `keepInView` shifts them back into the window.
+- **ui:** `DitoProgress` shows a progress bar, which the admin's `progress` type uses too.
+
+### Fixes
+
+- **admin:** The account and the Sign In button stay at the right of the header, next to the sidebar's toggle, in every layout: while the sidebar slides, on wide pages and in views without panels. Notifications show at the window's right edge.
+- **admin:** The account's menu opens centered below it.
+- **admin:** The dialogs for authentication codes and backup codes are wide enough for their labels, like the Security and Change Password dialogs.
+- **admin:** The `progress` type honours `min` and `max` also when only one of them is set.
+
 ## 5.0.1 (2026-10-19)
 
 ### New
