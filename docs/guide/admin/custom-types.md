@@ -6,7 +6,8 @@ schemas then use like the built-in types.
 
 The admin's own components are internal and not meant to be imported, except
 `DitoSchemaField` and `DitoPane`, which place fields in custom layouts, see
-[Laying out fields](#laying-out-fields). Build custom components with plain
+[Laying out fields](#laying-out-fields), and the field components of
+[template forms](./template-forms.md). Build custom components with plain
 Vue and the public components of [`@ditojs/ui`](../../api/ui.md), e.g.
 `DitoProgress` for the progress of a background job.
 

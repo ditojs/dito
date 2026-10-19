@@ -135,6 +135,8 @@ See [Schemas](./schemas.md).
 | `CustomComponentProps<$Item, $Value>` | The props of custom components: `schema`, `context`, `modelValue`, `errorsElementId`. |
 | `CustomComponentEmits<$Value>` | The events of custom components: `update:modelValue`, `change`, `focus`, `blur`. |
 | `TypeDescriptor` | The descriptor of a component type, see [TypeDescriptor](#typedescriptor). |
+| `FieldProps<$Schema>` | The props of field components: the options of `$Schema` without `type` and `name`, and `path`. |
+| `FieldComponent<$Schema>` | The type of field components, e.g. of `defineFieldComponent<NumberSchema>('rating')`. |
 
 ## Utility types
 

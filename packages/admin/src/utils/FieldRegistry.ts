@@ -1,6 +1,6 @@
 import { computed, nextTick, shallowRef, type ComputedRef } from 'vue'
 import { equals, normalizeDataPath, parseDataPath } from '@ditojs/utils'
-import { getRelativeDataPath } from './data.js'
+import { appendDataPath, getRelativeDataPath } from './data.js'
 import {
   applySchemaDefaults,
   setupSchemaComponentAfterDefaults
@@ -10,18 +10,29 @@ import type { Services } from './services.ts'
 import type { Schema } from './types.ts'
 
 export interface RegisteredField {
-  // Relative to the data of the container, e.g. 'address/city':
+  // Relative to the data that the field is placed in, e.g. 'address/city':
   readonly dataPath: string
   readonly schema: Schema
+  readonly getParentDataPath: () => string
+  readonly items: FieldRegistry | null
   unregister(): void
+}
+
+export interface FieldOptions {
+  // The data path of the data that the field is placed in, e.g. of an item:
+  getParentDataPath?: () => string
+  // The registry of the fields of the items in the field's value:
+  items?: FieldRegistry | null
 }
 
 // The fields that components register in a container, as the components of its
 // schema. Fields that unmount stay in it until the data is replaced, to keep
-// serializing their values, but only mounted fields validate.
+// serializing their values, but only mounted fields validate. The fields of
+// list items register in the item form of their list, once for all items.
 export class FieldRegistry {
   readonly #model: DataModel
   readonly #services: Services
+  readonly #parentRegistry: FieldRegistry | null
   readonly #knownFields = new Map<string, RegisteredField>()
   readonly #mountedFields = new Set<RegisteredField>()
   readonly #components = shallowRef<Record<string, Schema>>({})
@@ -32,14 +43,20 @@ export class FieldRegistry {
     model: DataModel,
     {
       schema,
-      services
-    }: { schema: () => Schema | null; services: Services | null }
+      services,
+      parentRegistry = null
+    }: {
+      schema: () => Schema | null
+      services: Services | null
+      parentRegistry?: FieldRegistry | null
+    }
   ) {
     if (!services) {
       throw new Error('Unable to register fields without services.')
     }
     this.#model = model
     this.#services = services
+    this.#parentRegistry = parentRegistry
     this.#schema = computed(() => ({
       ...schema(),
       components: this.#components.value
@@ -50,11 +67,30 @@ export class FieldRegistry {
     return this.#schema.value
   }
 
+  // The registry of the item form of a list or object field, which is part of
+  // this registry's schema:
+  createItemRegistry(): FieldRegistry {
+    return new FieldRegistry(this.#model, {
+      schema: () => ({ type: 'form' }),
+      services: this.#services,
+      parentRegistry: this
+    })
+  }
+
   // Register the schema that `getSource()` returns, e.g. from the props of a
   // field component, at `dataPath`. Its options are read live, only its `type`
   // is fixed at registration. Fields with async setup, e.g. lazy components,
-  // join the schema once it's done, which `waitUntilSettled()` waits for.
-  register(dataPath: string, getSource: () => Schema): RegisteredField {
+  // join the schema once it's done, which `waitUntilSettled()` waits for. Of
+  // several mounted fields at the same path, e.g. in list items, the first one
+  // registers its schema.
+  register(
+    dataPath: string,
+    getSource: () => Schema,
+    {
+      getParentDataPath = () => this.#model.dataPath,
+      items = null
+    }: FieldOptions = {}
+  ): RegisteredField {
     const { api } = this.#services.adminContext
     const path = parseDataPath(dataPath)
     const name = path.at(-1)!
@@ -82,6 +118,8 @@ export class FieldRegistry {
     const field: RegisteredField = {
       dataPath,
       schema: createFieldSchema(getSource, api, name),
+      getParentDataPath,
+      items,
       unregister: () => this.#mountedFields.delete(field)
     }
     this.#mountedFields.add(field)
@@ -91,7 +129,11 @@ export class FieldRegistry {
       name
     ).then(() => {
       // Fields that unmount before their setup is done stay unknown:
-      if (this.#mountedFields.has(field)) {
+      const known = this.#knownFields.get(field.dataPath)
+      if (
+        this.#mountedFields.has(field) &&
+        !(known && this.#mountedFields.has(known))
+      ) {
         this.#knownFields.set(field.dataPath, field)
         this.#scheduleUpdate()
       }
@@ -100,31 +142,51 @@ export class FieldRegistry {
     return field
   }
 
-  // Groups are mounted with their fields, and the values in fields with them.
   isMounted(dataPath: string): boolean {
-    const path = getRelativeDataPath(dataPath, this.#model.dataPath)
-    return [...this.#mountedFields].some(field =>
-      isOverlapping(field.dataPath, path)
-    )
+    return [...this.#mountedFields].some(field => {
+      const fieldDataPath = appendDataPath(
+        field.getParentDataPath(),
+        field.dataPath
+      )
+      const path = getRelativeDataPath(dataPath, fieldDataPath)
+      if (path !== null) {
+        return (
+          // The field itself, or a value inside it...
+          !path ||
+          !field.items ||
+          // ...unless it's in an item, whose fields mount per item:
+          field.items.isMounted(dataPath)
+        )
+      } else {
+        // A group that contains the field:
+        return getRelativeDataPath(fieldDataPath, dataPath) !== null
+      }
+    })
   }
 
   // Replaced data starts with the fields that are mounted:
   forgetUnmountedFields() {
     for (const [dataPath, field] of this.#knownFields) {
-      if (!this.#mountedFields.has(field)) {
+      if (this.#mountedFields.has(field)) {
+        field.items?.forgetUnmountedFields()
+      } else {
         this.#knownFields.delete(dataPath)
         this.#scheduleUpdate()
       }
     }
   }
 
-  // Build the components once per tick, as each new schema is walked again:
+  // Build the components once per tick, as each new schema is walked again.
+  // Item forms are part of the schema of their parent, which changes with them:
   #scheduleUpdate() {
     if (!this.#isUpdateScheduled) {
       this.#isUpdateScheduled = true
       nextTick(() => {
         this.#isUpdateScheduled = false
         this.#components.value = this.#getComponents()
+        if (this.#parentRegistry) {
+          this.#parentRegistry.#scheduleUpdate()
+        }
       })
     }
   }
@@ -147,7 +209,8 @@ export class FieldRegistry {
 }
 
 // The schema of a field reads its source live, with the defaults applied. Its
-// own values are the ones that setup writes, e.g. resolved components:
+// own values are the ones that setup writes, e.g. resolved components, unless
+// they're the source's values, e.g. set up forms:
 function createFieldSchema(
   getSource: () => Schema,
   api: Services['adminContext']['api'],
@@ -170,6 +233,13 @@ function createFieldSchema(
       Object.hasOwn(schema, key)
         ? schema[key as string]
         : source.value[key as string],
+
+    set: (schema, key, value) => {
+      if (value !== source.value[key as string]) {
+        schema[key as string] = value
+      }
+      return true
+    },
 
     has: (schema, key) => key in schema || key in source.value,
 

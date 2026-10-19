@@ -13,6 +13,9 @@ export {
   DitoField
 } from './components/DitoSchemaField.vue'
 export { default as DitoPane } from './components/DitoPane.vue'
+// Template forms declare their components with the fields of their types:
+export * from './fields.js'
+export { useDitoContext } from './composables/useDitoContext.ts'
 export default DitoAdmin
 
 // The members of the public `TypeDescriptor`:

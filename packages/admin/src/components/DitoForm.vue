@@ -31,6 +31,17 @@
       :scrollable="!isEmbeddedRoute"
       generateLabels
     )
+      //- The component of forms that lay out their components, or declare
+      //- them as the fields in its template:
+      template(
+        v-if="schema.component"
+        #default
+      )
+        component(
+          :is="schema.component"
+          :schema="schema"
+          :context="context"
+        )
       template(#buttons)
         DitoButtons.dito-buttons--round.dito-buttons--large.dito-buttons--main(
           :class="{ 'dito-buttons--sticky': !isEmbeddedRoute }"
@@ -64,7 +75,11 @@ import { useComponentPath } from '../composables/useComponentPath.ts'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 import { adminContextKey } from '../utils/keys.ts'
 import { getResource } from '../utils/resource.js'
-import { isListSource, isObjectSource } from '../utils/schema/structure.js'
+import {
+  isListSource,
+  isObjectSource,
+  isTemplateForm
+} from '../utils/schema/structure.js'
 import {
   getButtonSchemas,
   getItemFormSchema,
@@ -194,7 +209,7 @@ export default {
       navigateWithin
     } = useRouteContainer({
       route,
-      schema: () => schema.value,
+      schema: () => formSchema.value,
       sourceSchema: () => sourceSchema.value,
       dataPath: () => dataPath.value,
       // Forms of items in the data of their parent read the parent's root
@@ -230,13 +245,14 @@ export default {
       // The components of the form don't see the source of its parent, e.g.
       // of a tree that renders the forms of its items:
       sourceContext: null,
-      submit: (button, options) => submit(button, options)
+      submit: (button, options) => submit(button, options),
+      hasFieldRegistry: isTemplateForm(sourceSchema.value.form)
     })
 
-    // The data, and the schema that the type of the item or of the item to
-    // create determines:
+    // The data, and the form that the type of the item or of the item to
+    // create determines, with the components of its fields, if registered:
     const data = computed(() => dataContext.data)
-    const schema = computed(() =>
+    const formSchema = computed(() =>
       getItemFormSchema(
         sourceSchema.value,
         data.value ||
@@ -244,6 +260,7 @@ export default {
         context
       )
     )
+    const schema = computed(() => dataContext.schema)
     const { context, createContext } = useSchemaContext(
       reactive({ schema, data, dataPath }),
       { services }
@@ -757,7 +774,8 @@ export default {
       isActiveRoute: computed(
         () => routeContext.isLastRoute || isLastUnnestedRoute.value
       ),
-      itemLabelText
+      itemLabelText,
+      context
     }
   }
 }

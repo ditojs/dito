@@ -185,7 +185,7 @@ export default {
     generateLabels: { type: Boolean, default: false }
   },
 
-  setup(props, { emit }) {
+  setup(props, { emit, slots }) {
     const router = useRouter()
     const sourceSchema = inject(sourceSchemaKey, null)
     const panelTab = inject(panelTabKey, null)
@@ -458,9 +458,13 @@ export default {
         () => hasLabel.value || hasTabs.value || !!props.schema?.clipboard
       ),
 
+      // Layouts place their components, also before template forms have any:
       hasMainPane: computed(() => {
         const { components } = props.schema
-        return !!components && Object.keys(components).length > 0
+        return (
+          !!slots.default ||
+          !!components && Object.keys(components).length > 0
+        )
       }),
 
       shouldRenderTab(tab) {

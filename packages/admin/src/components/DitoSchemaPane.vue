@@ -1,6 +1,6 @@
 <template lang="pug">
 DitoPaneRows(
-  v-if="dataContext.hasData && entries.length > 0"
+  v-if="dataContext.hasData && (entries.length > 0 || $slots.default)"
   :id="tabPanelId"
   :role="tab ? 'tabpanel' : null"
   :aria-labelledby="tabId"
@@ -31,11 +31,13 @@ import { appendDataPath } from '../utils/data.js'
 import {
   isLabelled,
   isCompact,
-  hasNestedData,
   isInlined
 } from '../utils/schema/structure.js'
 import { shouldRenderSchema } from '../utils/schema/data.js'
-import { getItemFormSchema } from '../utils/schema/lookup.js'
+import {
+  getComponentEntry,
+  getItemFormSchema
+} from '../utils/schema/lookup.js'
 import { getItemAdapter } from '../utils/schema/types.ts'
 import { layoutKey, panelTabKey, sourceSchemaKey } from '../utils/keys.ts'
 
@@ -71,33 +73,19 @@ export default {
       })
     }
 
-    // NOTE: The schema can be null while multi-form lists load their data. The
-    // value of an item adapter keeps the item's data path in inlined items, as
-    // their list holds its errors. Routed forms edit a draft of the item:
+    // NOTE: The schema can be null while multi-form lists load their data.
+    // Routed forms edit a draft of the item:
     const componentSchemas = computed(() => {
       const source = unref(sourceSchema)
       const itemAdapter =
         source && isInlined(source) ? getItemAdapter(source) : null
       return Object.entries(props.schema?.components || {}).map(
-        ([name, schema]) => {
-          // The schema may be used elsewhere too:
-          schema = { ...schema, name }
-          const nested = hasNestedData(schema)
-          const nestedDataPath = appendDataPath(props.dataPath, name)
-          const dataPath =
-            nested && name !== itemAdapter?.name
-              ? nestedDataPath
-              : props.dataPath
-          return {
-            schema,
-            dataPath,
-            nestedDataPath,
-            // The data path of `data`, also of wrapped values:
-            itemDataPath: props.dataPath,
-            nested,
+        ([name, schema]) =>
+          getComponentEntry(schema, name, {
+            dataPath: props.dataPath,
+            itemAdapter,
             store: getChildStore(name)
-          }
-        }
+          })
       )
     })
 

@@ -3211,6 +3211,14 @@ export interface FormSchema<$Item = any>
   /** The form's field components. */
   components?: Components<$Item>
   /**
+   * A Vue component that lays out the form's components instead of its pane,
+   * placing them with {@link DitoSchemaField} and {@link DitoPane}. It
+   * receives the `schema` and `context` of the form. Without `components`, the
+   * form takes its components from the field components in its template, e.g.
+   * {@link DitoTextField}. Not supported in `forms`.
+   */
+  component?: Resolvable<VueComponent>
+  /**
    * Grouped event handlers, used only for the events without an `on…`
    * handler in the same schema.
    *
@@ -3459,6 +3467,75 @@ export const DitoPane: DefineComponent<{
   /** The keys of the components in the section's `components`. */
   names?: string[]
 }>
+
+/**
+ * The props of a field component: the options of the schema of its type, as
+ * attributes, with bare attributes as `true`, and the `path` of its value.
+ */
+export type FieldProps<$Schema> = Omit<$Schema, 'type' | 'name'> & {
+  /**
+   * The path of the value in the data of the form, or of the item in the
+   * default slot of a list or object field. Dotted paths, e.g.
+   * `'address.city'`, place the value in an object.
+   */
+  path: string
+}
+
+/**
+ * The component of a field in the template of a form with `component` and no
+ * `components`, see {@link FormSchema.component}: It registers the schema of
+ * its type with its props as options in the form, and renders it as the form's
+ * pane would. The default slot of list and object fields with `inlined` is the
+ * form of their items, whose fields register in it, and is passed on to the
+ * custom components of other types.
+ */
+export type FieldComponent<$Schema> = DefineComponent<FieldProps<$Schema>>
+
+/**
+ * Creates the field component of `type`, e.g. of a type defined with
+ * {@link defineType}, as the ones of the built-in types are created.
+ */
+export function defineFieldComponent<$Schema = ComponentSchemaBase<any>>(
+  type: string
+): FieldComponent<$Schema>
+
+export const DitoButtonField: FieldComponent<ButtonSchema>
+export const DitoCheckboxField: FieldComponent<CheckboxSchema>
+export const DitoCheckboxesField: FieldComponent<CheckboxesSchema>
+export const DitoCodeField: FieldComponent<CodeSchema>
+export const DitoColorField: FieldComponent<ColorSchema>
+export const DitoComponentField: FieldComponent<ComponentSchema>
+export const DitoCreditcardField: FieldComponent<InputSchema>
+export const DitoDateField: FieldComponent<DateSchema>
+export const DitoDatetimeField: FieldComponent<DateSchema>
+export const DitoDomainField: FieldComponent<InputSchema>
+export const DitoEmailField: FieldComponent<InputSchema>
+export const DitoHostnameField: FieldComponent<InputSchema>
+export const DitoIntegerField: FieldComponent<NumberSchema>
+export const DitoListField: FieldComponent<ListSchema>
+export const DitoMarkupField: FieldComponent<MarkupSchema>
+export const DitoMultiselectField: FieldComponent<MultiselectSchema>
+export const DitoNumberField: FieldComponent<NumberSchema>
+export const DitoObjectField: FieldComponent<ObjectSchema>
+export const DitoPasswordField: FieldComponent<InputSchema>
+export const DitoRadioField: FieldComponent<RadioSchema>
+export const DitoSelectField: FieldComponent<SelectSchema>
+export const DitoSliderField: FieldComponent<SliderSchema>
+export const DitoSubmitField: FieldComponent<ButtonSchema>
+export const DitoSwitchField: FieldComponent<SwitchSchema>
+export const DitoTelField: FieldComponent<InputSchema>
+export const DitoTextField: FieldComponent<InputSchema>
+export const DitoTextareaField: FieldComponent<TextareaSchema>
+export const DitoTimeField: FieldComponent<DateSchema>
+export const DitoUploadField: FieldComponent<UploadSchema>
+export const DitoUrlField: FieldComponent<InputSchema>
+export const DitoValueField: FieldComponent<ValueSchema>
+
+/**
+ * Returns the context of the form that the calling component is in, or of the
+ * list item in the default slot of a list field.
+ */
+export function useDitoContext<$Item = any>(): DitoContext<$Item>
 
 export type HttpMethod =
   | 'get'

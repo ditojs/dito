@@ -20,6 +20,11 @@ DitoSchemaInlined(
   @delete="$emit('delete')"
   @move="delta => $emit('move', delta)"
 )
+  template(
+    v-if="$slots.default"
+    #default
+  )
+    slot
 component(
   v-else-if="schema.component"
   :is="schema.component"
