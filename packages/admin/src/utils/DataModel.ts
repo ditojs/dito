@@ -35,7 +35,7 @@ import {
   getParentDataPath,
   getRelativeDataPath
 } from './data.js'
-import { mergeData } from './mergeData.ts'
+import { mergeData, mergeValues } from './mergeData.ts'
 import { getOriginal } from './uid.js'
 import {
   isEmptySchema,
@@ -333,25 +333,37 @@ export class DataModel {
 
   // Merge data from the server into the data, to keep the identity of its
   // objects. Save responses leave sources with their own resource their data
-  // and their edits, while resets result in the same data as a replace:
+  // and their edits, while resets result in the same data as a replace.
+  // Partial merges only change the values in `data`, which isn't an edit:
   mergeFromServer(
     data: Data | null,
-    { isReset = false }: { isReset?: boolean } = {}
+    {
+      isReset = false,
+      isPartial = false
+    }: { isReset?: boolean; isPartial?: boolean } = {}
   ): Data | null {
     if (this.data && data) {
-      this.#deserializeData(this.schema, data)
-      mergeData(this.schema!, this.data, data, {
-        services: this.#options.services,
-        shouldKeepSourcesWithResource: !isReset
-      })
+      if (isPartial) {
+        mergeValues(this.schema!, this.data, data, {
+          ...this.#walkOptions,
+          dataPath: this.dataPath
+        })
+      } else {
+        this.#deserializeData(this.schema, data)
+        mergeData(this.schema!, this.data, data, {
+          services: this.#options.services,
+          shouldKeepSourcesWithResource: !isReset
+        })
+      }
       this.#initializeData(this.schema, this.data)
       this.#writeComputedValues()
       if (isReset) {
         this.#resetState()
-      } else {
+      } else if (!isPartial) {
         this.markClean({ dataPath: '' })
       }
-    } else {
+    } else if (!isPartial) {
+      // Without data on either side, partial merges have nothing to do:
       this.replaceFromServer(data)
     }
     return this.data

@@ -82,7 +82,7 @@ import {
   getChildSourceSchemas,
   getItemAdapter
 } from '../utils/schema/types.ts'
-import { mergeData } from '../utils/mergeData.ts'
+import { mergeData, mergeValues } from '../utils/mergeData.ts'
 import { createDraftRoot } from '../utils/draftRoot.ts'
 import { transientNote } from '../utils/dialogs.js'
 import { getTextFromHtml } from '../utils/html.js'
@@ -217,6 +217,7 @@ export default {
       itemLabel: () => itemLabelText.value,
       canSave: () => hasSubmitButton(buttonSchemas.value),
       resetItem: data => resetItem(data),
+      mergeItem: data => mergeItem(data),
       copyErrors: () => copyErrors(),
       breadcrumb: () => (
         schema.value.breadcrumb ||
@@ -354,6 +355,28 @@ export default {
         parentModel.clearErrors(dataPath.value)
       } else {
         model.mergeFromServer(value, { isReset: true })
+      }
+      return data.value
+    }
+
+    // Merge values from the server into the item like `resetItem()`, but only
+    // the values in the data, which isn't an edit:
+    const mergeItem = value => {
+      if (isEditingParentItem.value) {
+        const parentModel = parentDataContext.model
+        const options = {
+          services,
+          dataPath: dataPath.value,
+          rootData: parentModel.rootData
+        }
+        mergeValues(schema.value, data.value, value, options)
+        initializeData(schema.value, data.value, services, {
+          ...options,
+          shouldSkipSourcesWithResource: true,
+          shouldSetDefaultsOfComponentsWithCompute: false
+        })
+      } else {
+        model.mergeFromServer(value, { isPartial: true })
       }
       return data.value
     }

@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountAdmin } from '../test/mount.js'
+import { mountAdmin, enterValue } from '../test/mount.js'
 
 // Shows a dialog through `DitoRoot.showDialog()`, and returns its promise, the
 // dialog element, whether it's still shown, and whether the promise settled.
@@ -217,6 +217,31 @@ describe('DitoDialog', () => {
     )
     await dialog.find('form').trigger('submit')
     expect(await promise).toEqual({ title: 'Emma', rating: 3 })
+  })
+
+  it('merges values into its data through contexts', async () => {
+    const click = vi.fn()
+    const { dialog, promise } = await showDialog({
+      components: {
+        title: { type: 'text' },
+        rating: { type: 'number', default: 3 }
+      },
+      buttons: {
+        check: { type: 'button', text: 'Check', onClick: click },
+        apply: { type: 'submit' }
+      }
+    })
+    await enterValue(dialog.find('input[name="title"]'), 'Emma')
+    await dialog.find('button[id="$buttons/check"]').trigger('click')
+    const [context] = click.mock.calls[0]
+    expect(context.isDirty).toBe(true)
+    expect(context.mergeItem({ rating: 5 })).toEqual({
+      title: 'Emma',
+      rating: 5
+    })
+    expect(context.isDirty).toBe(true)
+    await dialog.find('form').trigger('submit')
+    expect(await promise).toEqual({ title: 'Emma', rating: 5 })
   })
 
   it('resolves as `undefined` with its cancel button', async () => {

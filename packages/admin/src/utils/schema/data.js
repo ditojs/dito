@@ -498,7 +498,8 @@ export function isDataPathExcluded(schema, data, dataPath, {
 export function deserializeData(schema, data, {
   services = null,
   dataPath = null,
-  rootData = data
+  rootData = data,
+  shouldWalk
 } = {}) {
   const before = ({ schema, data, name, dataPath, itemDataPath }) => {
     if (name in data) {
@@ -527,6 +528,7 @@ export function deserializeData(schema, data, {
   walkSchemaData(schema, data, {
     dataPath,
     before,
+    shouldWalk,
     options: { services, rootData }
   })
   return data

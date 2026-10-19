@@ -147,8 +147,9 @@ the item's id, type and position. Without `data`, it resets to the defaults.
 
 Values that the server changes while the form is open, e.g. the progress of
 an export job, can be polled by a [display-only
-component](./custom-types.md#one-field-type-component). It writes only the
-server's values into the item, so the user's edits stay:
+component](./custom-types.md#one-field-type-component). It merges only the
+server's values into the item with `mergeItem()`, as if they were loaded, so
+the user's edits stay:
 
 ```vue
 <!-- src/admin/components/ExportProgress.vue -->
@@ -173,7 +174,7 @@ async function poll() {
   const { exportStatus, exportProgress } = await context.request({
     url: context.getResourceUrl()
   })
-  Object.assign(context.item, { exportStatus, exportProgress })
+  context.mergeItem({ exportStatus, exportProgress })
   timeout = setTimeout(poll, 2000)
 }
 
@@ -190,9 +191,9 @@ exportJob: {
 }
 ```
 
-- Keep the polled values out of the form's fields, or give their fields
-  `exclude: true`: then these writes don't make the form dirty and the values
-  aren't sent back, see [Dirty State](./dirty-state.md#what-counts-as-an-edit).
+- Pass only values that the server owns, as they replace the user's edits of
+  them. Give their fields `exclude: true`, so that saves don't send them back
+  over newer ones, see [Dirty State](./dirty-state.md#what-counts-as-an-edit).
 - Save responses replace the form's data, so the server needs to return these
   values in them too, not only on `get`, e.g. through `after:member:patch`
   [hooks](../server/controllers.md#hooks) when they aren't columns of the

@@ -655,9 +655,9 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
   /**
    * Specifies a function which converts the stored value to the
    * edited value, when data is loaded, merged from the response
-   * of a save, reset with `resetItem(data)`, pasted or read
-   * from the filters in the query, after the type's own
-   * conversion.
+   * of a save, reset with `resetItem(data)`, merged with
+   * `mergeItem(data)`, pasted or read from the filters in the
+   * query, after the type's own conversion.
    */
   deserializeValue?: SchemaValueCallback<$Item, {}>
 
@@ -2525,6 +2525,16 @@ export type SchemaContext<$Item = any> = {
    * identity of its objects.
    */
   resetItem(data?: Record<string, any>): $Item
+  /**
+   * Merges `data`, e.g. values that the server changed, into
+   * the data of the form, view, dialog or panel with its own
+   * data, like loaded data: deserialized, with defaults and
+   * computed values. Unlike `resetItem()`, only the values in
+   * `data` change, the user's edits of other values stay, and
+   * the data stays as clean or dirty as it is. Returns the
+   * data.
+   */
+  mergeItem(data: Record<string, any>): $Item
   /**
    * Shows a modal dialog and resolves with the value that
    * it's closed with: its data when submitted, `undefined`

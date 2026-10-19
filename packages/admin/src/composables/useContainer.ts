@@ -40,6 +40,7 @@ export interface ContainerOptions {
   getParentItem?: () => Data | null
   isEditingParentItem?: () => boolean
   resetItem?: (data: any) => any
+  mergeItem?: (data: any) => any
   copyErrors?: () => void
   closeDialog?: (value?: unknown) => void
   // Views and forms, which also provide the resource of the route:
@@ -63,6 +64,7 @@ export function useContainer({
   getParentItem = () => null,
   isEditingParentItem = () => false,
   resetItem,
+  mergeItem,
   copyErrors,
   closeDialog,
   routeContext,
@@ -129,6 +131,10 @@ export function useContainer({
         model.replaceFromServer(data)
         return model.data
       })
+    ),
+    mergeItem: (
+      mergeItem ??
+      (data => model.mergeFromServer(data, { isPartial: true }))
     ),
     copyErrors
   })

@@ -105,7 +105,7 @@ that can be cleared.
 | `computeValue` | `SchemaValueCallback` | | Computes the value reactively into the data, also when the component isn't shown, unless `if` is `false`. Returning `undefined` keeps the current value. |
 | `formatValue` | `SchemaValueCallback` | | Converts the value for display. |
 | `parseValue` | `SchemaValueCallback` | | Converts the edited value before it's written into the data. |
-| `deserializeValue` | `SchemaValueCallback` | | Converts the stored value when data is loaded, merged from a save response, reset with `resetItem()`, pasted or read from the query, after the type's own conversion. |
+| `deserializeValue` | `SchemaValueCallback` | | Converts the stored value when data is loaded, merged from a save response, reset with `resetItem()`, merged with `mergeItem()`, pasted or read from the query, after the type's own conversion. Its `item` holds the new data, while `rootItem` still holds the data from before. |
 | `serializeValue` | `SchemaValueCallback` | | Converts the value for the server and the clipboard, after the type's own conversion. Returning `undefined` leaves out the key. |
 | `exclude` | `SchemaValue<boolean>` | `false`; `true` for buttons, labels, spacers and sources with their own `resource` | Leaves the value out of the data sent to the server. Changes of excluded values don't make the data dirty. |
 | `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value: not `null`, `''` or an empty array, so lists and fields with multiple values need at least one entry. Unlike the server's `required`, which accepts empty arrays. |

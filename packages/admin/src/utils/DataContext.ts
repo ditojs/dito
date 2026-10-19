@@ -52,6 +52,7 @@ export interface DataContext {
   revealErrors(): Promise<void>
   markEdited(): void
   resetItem(data: any): any
+  mergeItem(data: any): any
 }
 
 export interface DataContextOptions {
@@ -65,6 +66,7 @@ export interface DataContextOptions {
   closeDialog: ((value?: unknown) => void) | null
   loadCache: Record<string, Promise<unknown>> | null
   resetItem(data: any): any
+  mergeItem(data: any): any
   // Forms take over the errors of their item in the parent's data:
   copyErrors?: () => void
 }
@@ -80,6 +82,7 @@ export function createDataContext({
   closeDialog,
   loadCache,
   resetItem,
+  mergeItem,
   copyErrors
 }: DataContextOptions): DataContext {
   // Validate the data, not the mounted components, to include collapsed
@@ -275,7 +278,8 @@ export function createDataContext({
       getModel().markEdited()
     },
 
-    resetItem
+    resetItem,
+    mergeItem
   })
   return context
 }

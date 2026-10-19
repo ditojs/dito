@@ -99,5 +99,6 @@ leaves it clean, see [Forms](./forms.md#acting-on-the-form-from-code).
 ## Reference
 
 - [`isDirty`](../../api/admin/context.md#isdirty),
-  [`markDirty()`](../../api/admin/context.md#markdirty) and
-  [`resetItem()`](../../api/admin/context.md#resetitem).
+  [`markDirty()`](../../api/admin/context.md#markdirty),
+  [`resetItem()`](../../api/admin/context.md#resetitem) and
+  [`mergeItem()`](../../api/admin/context.md#mergeitem).

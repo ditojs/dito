@@ -685,6 +685,39 @@ async onClick({ request, resetItem }) {
 }
 ```
 
+### mergeItem()
+
+```ts
+context.mergeItem(data): $Item
+```
+
+Merges `data`, e.g. values that the server changed, into the data of the form,
+view, dialog or panel with its own data, as if it was loaded: deserialized, with
+defaults and computed values. Unlike `resetItem()`, only the values in `data`
+change: the user's edits of other values stay, and the data stays as clean or
+dirty as it is. Lists are merged by the ids of their items and objects in
+place, so they keep their identity. The values in `data` replace the user's edits of them, see
+[Forms](../../guide/admin/forms.md#values-that-change-on-the-server).
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `data` | `object` | The values to merge. |
+
+#### Return value
+
+The data, with the merged values.
+
+#### Example
+
+```js
+async onClick({ request, getResourceUrl, mergeItem }) {
+  const { exportStatus } = await request({ url: getResourceUrl() })
+  mergeItem({ exportStatus })
+}
+```
+
 ### submit()
 
 ```ts
