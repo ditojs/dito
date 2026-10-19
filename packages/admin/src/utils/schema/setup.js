@@ -17,6 +17,7 @@ import {
   iterateNestedSchemaComponents,
   isForm,
   isView,
+  isPage,
   isTab,
   isPanel,
   isPanelWithOwnData,
@@ -207,6 +208,8 @@ export async function setupView(api, schema, name) {
   if (isView(schema)) {
     await setupNestedSchemas(api, schema)
     await setupSchemaComponents(api, schema)
+  } else if (isPage(schema)) {
+    await resolveSchemaComponent(schema)
   } else if (isMenu(schema)) {
     await mapConcurrently(Object.entries(schema.items), ([name, item]) =>
       setupView(api, item, name)

@@ -394,7 +394,7 @@ export interface ApiConfig {
     string,
     | Record<string, any>
     | ((
-        schema: Component | FormSchema | ViewSchema
+        schema: Component | FormSchema | ViewSchema | PageSchema
       ) => Record<string, any> | void)
   >
 }
@@ -2288,7 +2288,7 @@ export type SchemaContext<$Item = any> = {
   /** All registered top-level views. */
   readonly views: Record<string, View>
   /** All views flattened into a single record. */
-  readonly flattenedViews: Record<string, ViewSchema>
+  readonly flattenedViews: Record<string, ViewSchema | PageSchema>
   /**
    * The text of the label of the current item: of the form's
    * item in all callbacks inside a form, e.g. its events and
@@ -2734,7 +2734,7 @@ export interface AdminContext {
   /** All registered top-level views. */
   readonly views: Record<string, View>
   /** All views flattened into a single record. */
-  readonly flattenedViews: Record<string, ViewSchema>
+  readonly flattenedViews: Record<string, ViewSchema | PageSchema>
   showDialog: SchemaContext['showDialog']
   confirm: SchemaContext['confirm']
   prompt: SchemaContext['prompt']
@@ -2785,6 +2785,7 @@ export type ClipboardConfig =
 
 export type View<$Item = any> =
   | ViewSchema<$Item>
+  | PageSchema
   | MenuSchema<$Item>
 
 export interface ViewSchema<$Item = any> extends RouteSchemaBase<$Item> {
@@ -2826,6 +2827,45 @@ export interface ViewSchema<$Item = any> extends RouteSchemaBase<$Item> {
   events?: SchemaEvents<$Item>
   component?: Component<$Item>
   components?: Components<$Item>
+}
+
+/**
+ * A view whose content is a Vue component, without data or a form of its own.
+ * The component reads the params of the page's `path` with vue-router's
+ * `useRoute()`, and its context with `useDitoContext()`.
+ */
+export interface PageSchema {
+  type: 'page'
+  /**
+   * The label shown in the navigation menu and the trail.
+   *
+   * @defaultValue The title-cased page name.
+   */
+  label?: SchemaValue<{}, {}, TextOrHtml>
+  /**
+   * The URL path of the page, with route params, e.g. `'products/:id'`.
+   * Pages with required params have no menu item.
+   */
+  path?: string
+  /**
+   * The name of the page.
+   */
+  name?: string
+  /**
+   * The Vue component that the page displays. It receives the `schema` and
+   * `context` of the page.
+   */
+  component: Resolvable<VueComponent>
+  /**
+   * Custom breadcrumb text shown in page navigation.
+   *
+   * @defaultValue The label.
+   */
+  breadcrumb?: string
+  /**
+   * Conditionally display this page.
+   */
+  if?: SchemaValue<{}, {}, boolean>
 }
 
 export interface ObjectSchema<$Item = { [key: string]: any }>
@@ -3472,8 +3512,8 @@ export const DitoPane: DefineComponent<{
 }>
 
 /**
- * Returns the context of the form, or of the list item, that the calling
- * component is in.
+ * Returns the context of the form or page, or of the list item, that the
+ * calling component is in.
  */
 export function useDitoContext<$Item = any>(): DitoContext<$Item>
 

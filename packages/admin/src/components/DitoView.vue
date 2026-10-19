@@ -20,6 +20,16 @@ template(
       scrollable
       single
     )
+      //- The component of pages, in the place of the view's components:
+      template(
+        v-if="isPage"
+        #default
+      )
+        component(
+          :is="sourceSchema.component"
+          :schema="sourceSchema"
+          :context="context"
+        )
 </template>
 
 <script>
@@ -35,7 +45,10 @@ import { useComponentPath } from '../composables/useComponentPath.ts'
 import { useStore } from '../composables/useStore.ts'
 import defaultVerbs from '../verbs.js'
 import { adminContextKey } from '../utils/keys.ts'
-import { isSingleComponentView } from '../utils/schema/structure.js'
+import {
+  isPage,
+  isSingleComponentView
+} from '../utils/schema/structure.js'
 
 export default {
   setup() {
@@ -102,9 +115,12 @@ export default {
       routeContext,
       dataContext,
       schemaPath,
+      sourceSchema,
       schema,
       name,
       data,
+      context,
+      isPage: computed(() => isPage(sourceSchema.value)),
       shouldRenderSchema
     }
   }

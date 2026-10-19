@@ -52,12 +52,12 @@ export default {
       getPath,
 
       shouldShowNode(node) {
-        return (
-          shouldRenderSchema(node.schema) && (
-            !node.items ||
-            node.items.some(item => shouldRenderSchema(item.schema))
-          )
+        // Views with required parameters have no menu item:
+        const isShown = ({ schema, hasMenuItem }) => (
+          hasMenuItem &&
+          shouldRenderSchema(schema)
         )
+        return isShown(node) && (!node.items || node.items.some(isShown))
       },
 
       isActiveNode(node) {

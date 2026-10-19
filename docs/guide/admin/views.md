@@ -71,6 +71,31 @@ itself: lists with a `resource` load and save their items, and
 `submit` are never dirty, see
 [Dirty state](./dirty-state.md#only-data-that-can-be-saved-is-dirty).
 
+## Pages
+
+A `page` is a view whose content is a Vue component, e.g. for tools that don't
+edit data through components:
+
+```js
+// src/admin/views/cachePurge.js
+export const cachePurge = {
+  type: 'page',
+  label: 'Cache Purge',
+  path: 'tools/cache-purge',
+  component: () => import('./CachePurgePage.vue')
+}
+```
+
+The component receives the `schema` and `context` props, and
+[`useDitoContext()`](../../api/admin/index.md) returns the same context, e.g.
+for `context.request()` or `context.notify()`. Pages have no data or form of
+their own.
+
+The `path` of a page can hold route params, which the component reads with
+vue-router's `useRoute()`. Pages with required params, like
+`path: 'products/:id'`, have no menu item, as there is nothing to link to
+without them. Optional ones, like `:id?`, keep it.
+
 ## Menus
 
 A `menu` groups views under one entry of the navigation menu. Its `items`
@@ -213,5 +238,5 @@ Views take `panels`, shown in the sidebar, and `tabs`, like forms. See
 
 ## Reference
 
-- [`view` and `menu`](../../api/admin/schemas.md#view) options.
+- [`view`, `page` and `menu`](../../api/admin/schemas.md#view) options.
 - [`DitoAdmin` options](../../api/admin/admin.md), including `views`.

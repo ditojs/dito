@@ -59,6 +59,10 @@ export function isView(schema) {
   return isSchema(schema) && schema.type === 'view'
 }
 
+export function isPage(schema) {
+  return isSchema(schema) && schema.type === 'page'
+}
+
 export function isTab(schema) {
   return isSchema(schema) && schema.type === 'tab'
 }
