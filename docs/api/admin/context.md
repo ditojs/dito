@@ -735,6 +735,7 @@ Also available outside of schemas as `admin.context.showDialog()`, see
 | `options.data` | `Record<string, any>` | The initial data. |
 | `options.settings.label` | `string` | The accessible label of the dialog. Defaults to `'Dialog'`. |
 | `options.settings.width` | `number \| string` | The maximum width of the dialog's content, without its padding: a number in pixels, or a CSS length. Defaults to `'35em'`. |
+| `options.settings.minWidth` | `number \| string` | The minimum width of the dialog's content, without its padding: a number in pixels, or a CSS length. Narrow windows can make it smaller. |
 | `options.settings.clickToClose` | `boolean` | Whether clicking outside of the dialog cancels it. Defaults to `false`. |
 | `options.settings.minDuration` | `number` | The time in milliseconds that the dialog stays visible at least, when it's submitted right after it opened, e.g. by a password manager. Defaults to `0`. |
 

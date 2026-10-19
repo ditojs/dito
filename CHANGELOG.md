@@ -3,6 +3,16 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## Unreleased
+
+### New
+
+- **admin:** The `minWidth` setting of dialogs sets the minimum width of their content.
+
+### Fixes
+
+- **admin:** The dialog of the backup codes fits their label and two codes per line again.
+
 ## 5.0.0 (2026-10-19)
 
 ### Behaviour changes

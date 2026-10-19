@@ -64,6 +64,17 @@ describe('DitoDialog', () => {
     expect(await getWidth(undefined)).toBe('')
   })
 
+  it('sizes its content at least with `settings.minWidth`', async () => {
+    const { dialog } = await showDialog({
+      components,
+      buttons: { cancel: {} },
+      settings: { minWidth: '30em', width: 600 }
+    })
+    const { style } = dialog.element
+    expect(style.getPropertyValue('--min-width')).toBe('30em')
+    expect(style.getPropertyValue('--width')).toBe('600px')
+  })
+
   it('closes with `clickToClose` only when the overlay is clicked', async () => {
     const result = await showDialog({
       components,

@@ -9,6 +9,9 @@ import {
   isPasskeyPromptCancelled
 } from './authentication.js'
 
+// The Security dialog is at least as wide as its Change Password dialog:
+const passwordWidth = '30em'
+
 // The Security dialog of the account menu, which changes the password and
 // manages the passkeys and the TOTP of the logged-in user:
 export function showSecurityDialog(adminContext) {
@@ -69,7 +72,7 @@ export function showSecurityDialog(adminContext) {
                   change: { type: 'submit', text: 'Change Password' }
                 },
                 data: { username: adminContext.user.username },
-                settings: { label: 'Change Password' }
+                settings: { label: 'Change Password', minWidth: passwordWidth }
               })
               if (data) {
                 try {
@@ -207,7 +210,10 @@ export function showSecurityDialog(adminContext) {
                           'shown now.'
                         ),
                         readonly: true,
-                        lines: 5
+                        lines: 5,
+                        // Textareas have no width of their own to size the
+                        // dialog by:
+                        width: codeWidth
                       }
                     },
                     buttons: {
@@ -251,7 +257,7 @@ export function showSecurityDialog(adminContext) {
     buttons: {
       cancel: { text: 'Close' }
     },
-    settings: { label: 'Security', width: '46em' }
+    settings: { label: 'Security', width: '46em', minWidth: passwordWidth }
   })
 }
 
