@@ -13,6 +13,9 @@ vi.mock('vite', async importOriginal => ({
 
 class Admin extends AdminController {}
 
+// Development mode resolves `@ditojs/admin` from the root, like an app's:
+const root = import.meta.dirname
+
 function createApp({ admin, env } = {}) {
   return new Application({
     config: {
@@ -56,7 +59,7 @@ describe('AdminController', () => {
   it('serves the vite dev server in development mode', async () => {
     const server = mockViteServer()
     const app = createApp({
-      admin: { mode: 'development', root: os.tmpdir() }
+      admin: { mode: 'development', root }
     })
     await app.start()
     try {
@@ -67,7 +70,7 @@ describe('AdminController', () => {
       expect(await response.text()).toBe('export default "catalog"')
       const [[config]] = createServer.mock.calls
       expect(config).toMatchObject({
-        root: os.tmpdir(),
+        root,
         base: '/admin/',
         server: {
           middlewareMode: true,
@@ -84,7 +87,7 @@ describe('AdminController', () => {
   it(`doesn't close the vite dev server again once closed`, async () => {
     const server = mockViteServer()
     const app = createApp({
-      admin: { mode: 'development', root: os.tmpdir() }
+      admin: { mode: 'development', root }
     })
     await app.start()
     app.getAdminController().isClosed = true
@@ -140,7 +143,7 @@ describe('AdminController', () => {
   it(`serves HMR through the app's server`, async () => {
     mockViteServer()
     const app = createApp({
-      admin: { mode: 'development', root: os.tmpdir() }
+      admin: { mode: 'development', root }
     })
     await app.start()
     try {
@@ -149,5 +152,130 @@ describe('AdminController', () => {
     } finally {
       await app.stop()
     }
+  })
+
+  describe('with Dito.js packages', () => {
+    let dir
+
+    beforeEach(async () => {
+      // Vite resolves to real paths, also of the temporary directory:
+      dir = await fs.realpath(
+        await fs.mkdtemp(path.join(os.tmpdir(), 'dito-packages-'))
+      )
+    })
+
+    afterEach(async () => {
+      await fs.rm(dir, { recursive: true })
+    })
+
+    // Write a package with the exports of Dito.js' admin and UI packages:
+    async function createPackage(packagePath) {
+      await fs.mkdir(path.join(packagePath, 'src'), { recursive: true })
+      await fs.mkdir(path.join(packagePath, 'dist'))
+      await fs.writeFile(
+        path.join(packagePath, 'package.json'),
+        JSON.stringify({
+          type: 'module',
+          exports: {
+            '.': { import: './dist/index.js' },
+            './style.css': './dist/style.css',
+            './src': './src/index.js'
+          }
+        })
+      )
+      for (const file of ['src/index.js', 'dist/index.js', 'dist/style.css']) {
+        await fs.writeFile(path.join(packagePath, file), '')
+      }
+      return packagePath
+    }
+
+    // Link `node_modules/@ditojs/${name}` inside `from` to the package `to`:
+    async function linkPackage(from, name, to) {
+      const modulePath = path.join(from, 'node_modules', '@ditojs', name)
+      await fs.mkdir(path.dirname(modulePath), { recursive: true })
+      await fs.symlink(to, modulePath)
+    }
+
+    async function createCheckout() {
+      const admin = await createPackage(path.join(dir, 'dito/packages/admin'))
+      const ui = await createPackage(path.join(dir, 'dito/packages/ui'))
+      await linkPackage(admin, 'ui', ui)
+      await linkPackage(path.join(dir, 'app'), 'admin', admin)
+      await linkPackage(path.join(dir, 'app'), 'ui', ui)
+    }
+
+    // Resolve the imports of the app's admin through its vite config, to the
+    // files relative to `dir`, or to 'empty' for empty modules:
+    async function resolveImports(mode, ids) {
+      const root = path.join(dir, 'app')
+      const app = createApp({ admin: { mode, root, dist: root } })
+      const { createServer: createViteServer } = await vi.importActual('vite')
+      const server = await createViteServer({
+        ...(await app.defineAdminViteConfig()),
+        logLevel: 'silent',
+        server: { middlewareMode: true, ws: false },
+        // Resolve the packages themselves, not their optimized dependencies:
+        optimizeDeps: { noDiscovery: true }
+      })
+      const { pluginContainer } = server
+      const resolve = async id => {
+        const resolved = await pluginContainer.resolveId(
+          id,
+          path.join(root, 'index.js')
+        )
+        return (await pluginContainer.load(resolved.id)) === ''
+          ? 'empty'
+          : path.relative(dir, resolved.id)
+      }
+      try {
+        return Object.fromEntries(
+          await Promise.all(ids.map(async id => [id, await resolve(id)]))
+        )
+      } finally {
+        await server.close()
+      }
+    }
+
+    const ids = [
+      '@ditojs/admin',
+      '@ditojs/admin/style.css',
+      '@ditojs/ui',
+      '@ditojs/ui/style.css'
+    ]
+
+    it('loads linked packages from their sources in development mode', async () => {
+      await createCheckout()
+      expect(await resolveImports('development', ids)).toEqual({
+        '@ditojs/admin': 'dito/packages/admin/src/index.js',
+        '@ditojs/admin/style.css': 'empty',
+        '@ditojs/ui': 'dito/packages/ui/src/index.js',
+        '@ditojs/ui/style.css': 'empty'
+      })
+    })
+
+    it('loads linked packages from their builds in production mode', async () => {
+      await createCheckout()
+      expect(await resolveImports('production', ids)).toEqual({
+        '@ditojs/admin': 'dito/packages/admin/dist/index.js',
+        '@ditojs/admin/style.css': 'dito/packages/admin/dist/style.css',
+        '@ditojs/ui': 'dito/packages/ui/dist/index.js',
+        '@ditojs/ui/style.css': 'dito/packages/ui/dist/style.css'
+      })
+    })
+
+    it('loads installed packages from their builds in development mode', async () => {
+      // Installed like pnpm does, linked to its store inside `node_modules`:
+      const store = 'app/node_modules/.pnpm/node_modules/@ditojs'
+      const admin = await createPackage(path.join(dir, store, 'admin'))
+      const ui = await createPackage(path.join(dir, store, 'ui'))
+      await linkPackage(path.join(dir, 'app'), 'admin', admin)
+      await linkPackage(path.join(dir, 'app'), 'ui', ui)
+      expect(await resolveImports('development', ids)).toEqual({
+        '@ditojs/admin': `${store}/admin/dist/index.js`,
+        '@ditojs/admin/style.css': `${store}/admin/dist/style.css`,
+        '@ditojs/ui': `${store}/ui/dist/index.js`,
+        '@ditojs/ui/style.css': `${store}/ui/dist/style.css`
+      })
+    })
   })
 })
