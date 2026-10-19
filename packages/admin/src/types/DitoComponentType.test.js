@@ -205,6 +205,26 @@ describe('DitoComponentType', () => {
       warn.mockRestore()
     })
 
+    it('get no value, even if the item holds one at their name', async () => {
+      const { findField, wrapper, data } = await mountSchema({
+        schema: {
+          components: {
+            readingTime: { type: 'component', component: ReadingTime },
+            rating: { type: 'component', component: RatingStars }
+          }
+        },
+        data: { words: 500, readingTime: 2, rating: 1 }
+      })
+      expect(findField('readingTime').attributes('modelvalue')).toBeUndefined()
+      const { $attrs } = wrapper.findComponent(ReadingTime).vm
+      expect($attrs).not.toHaveProperty('modelValue')
+      expect($attrs).not.toHaveProperty('onUpdate:modelValue')
+      // Components with a value still get it, and its updates:
+      expect(wrapper.findComponent(RatingStars).props('modelValue')).toBe(1)
+      await findField('rating').trigger('click')
+      expect(data.rating).toBe(2)
+    })
+
     it('may declare `change` for inputs of their own', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       await mountSchema({
