@@ -1,10 +1,6 @@
 import type { DataContext } from './DataContext.ts'
 import type { LoadingTracker } from './LoadingTracker.ts'
-import type {
-  ResourceContext,
-  SubmitButton,
-  SubmitOptions
-} from './ResourceContext.ts'
+import type { ResourceContext } from './ResourceContext.ts'
 import type {
   FormNode,
   MenuNode,
@@ -41,6 +37,4 @@ export interface RouteContext {
   getFormPath(dataPath: string): string | null
   getCreatePath(dataPath: string): string | null
   close(): Promise<boolean>
-  // Forms apply their data to their parent, or save it through their resource:
-  submit(button: SubmitButton, options?: SubmitOptions): Promise<boolean>
 }

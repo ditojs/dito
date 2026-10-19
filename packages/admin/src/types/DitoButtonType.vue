@@ -64,9 +64,11 @@ const DitoButtonType = {
         // Buttons of sources submit through them, the others to their form,
         // which applies or saves its data:
         get submit() {
-          const { sourceContext, routeContext } = services
-          const target = sourceContext ?? (routeContext?.isForm && routeContext)
-          return target ? options => target.submit(button, options) : null
+          const { sourceContext, dataContext } = services
+          const target = sourceContext ?? dataContext
+          return target?.submit
+            ? options => target.submit(button, options)
+            : null
         }
       },
       getEvents: ({ onFocus, onBlur }) => ({ onFocus, onBlur, onClick })

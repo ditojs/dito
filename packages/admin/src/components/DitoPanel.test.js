@@ -324,4 +324,35 @@ describe('DitoPanel', () => {
     // The panel's data is its own, not the view's:
     expect(getComponent('title').context.isDirty).toBe(false)
   })
+
+  it('submits its own data through the form that it is in', async () => {
+    const request = vi.fn(({ data }) => ({ data }))
+    const { wrapper } = await mountForm({
+      schema: {
+        fields: { title: { type: 'text' } },
+        panels: {
+          search: {
+            type: 'panel',
+            data: { query: 'Emma' },
+            fields: { query: { type: 'text' } },
+            buttons: {
+              search: {
+                type: 'button',
+                resource: { path: 'search', method: 'post' }
+              }
+            }
+          }
+        }
+      },
+      data: { title: 'Dune' },
+      request
+    })
+    await wrapper.find('.dito-panel button[id$="search"]').trigger('click')
+    await vi.waitFor(() => expect(request).toHaveBeenCalled())
+    expect(request.mock.calls[0][0]).toMatchObject({
+      method: 'post',
+      url: '/items/1/search',
+      data: { query: 'Emma' }
+    })
+  })
 })

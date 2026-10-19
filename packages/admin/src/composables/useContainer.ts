@@ -43,6 +43,8 @@ export interface ContainerOptions {
   mergeItem?: (data: any) => any
   copyErrors?: () => void
   closeDialog?: (value?: unknown) => void
+  // Forms apply their data to their parent, or save it through their resource:
+  submit?: DataContext['submit']
   // Views and forms, which also provide the resource of the route:
   routeContext?: RouteContext
   // Views provide the source of their main component, forms none:
@@ -67,6 +69,7 @@ export function useContainer({
   mergeItem,
   copyErrors,
   closeDialog,
+  submit,
   routeContext,
   sourceContext
 }: ContainerOptions) {
@@ -119,6 +122,8 @@ export function useContainer({
     isCreating,
     // Panels with their own data close the dialog that they're in:
     closeDialog: closeDialog ?? parentDataContext?.closeDialog ?? null,
+    // Panels with their own data submit the form that they're in:
+    submit: submit ?? parentDataContext?.submit ?? null,
     // Views, forms and dialogs cache while they're shown, panels share theirs:
     loadCache:
       routeContext || closeDialog
