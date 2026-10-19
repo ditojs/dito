@@ -164,30 +164,21 @@ const props = defineProps({
   context: { type: Object, required: true }
 })
 
-let isPolling = false
 let timeout = null
 
 async function poll() {
   const { context } = props
+  // The request ends when the component unmounts, and the code after it
+  // doesn't run then:
   const { exportStatus, exportProgress } = await context.request({
     url: context.getResourceUrl()
   })
-  // Requests aren't aborted when the component unmounts:
-  if (isPolling) {
-    Object.assign(context.item, { exportStatus, exportProgress })
-    timeout = setTimeout(poll, 2000)
-  }
+  Object.assign(context.item, { exportStatus, exportProgress })
+  timeout = setTimeout(poll, 2000)
 }
 
-onMounted(() => {
-  isPolling = true
-  poll()
-})
-
-onUnmounted(() => {
-  isPolling = false
-  clearTimeout(timeout)
-})
+onMounted(poll)
+onUnmounted(() => clearTimeout(timeout))
 </script>
 ```
 

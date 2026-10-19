@@ -465,7 +465,9 @@ context.request<T>(options): Promise<T>
 ```
 
 Sends an API request and resolves with the data of the response. Requests to
-the API check the session first.
+the API check the session first. Uncached `get` requests end when the
+component unmounts: their promise doesn't settle then, so the code that awaits
+it doesn't run on.
 
 #### Parameters
 

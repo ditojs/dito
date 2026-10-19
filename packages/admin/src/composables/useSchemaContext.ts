@@ -1,4 +1,4 @@
-import { inject, markRaw, unref } from 'vue'
+import { inject, markRaw, onUnmounted, unref } from 'vue'
 import SchemaContext from '../SchemaContext.js'
 import { getLastDataPathName } from '../utils/data.js'
 import {
@@ -30,10 +30,13 @@ type ContextProps = Pick<SchemaContextProps, 'dataPath' | 'itemDataPath'> & {
 }
 
 // The services that the component sees: the ones provided above, unless it owns
-// them, e.g. sources their own source. Raw, so that containers can hand them on
-// through reactive objects:
+// them, e.g. sources their own source, and the signal that aborts its requests
+// when it unmounts. Raw, so that containers can hand them on through reactive
+// objects:
 export function useServices(ownServices: Partial<Services> = {}): Services {
   const sourceContext = inject(sourceContextKey, null)
+  const controller = new AbortController()
+  onUnmounted(() => controller.abort())
   return markRaw(
     Object.defineProperties(
       {
@@ -41,6 +44,7 @@ export function useServices(ownServices: Partial<Services> = {}): Services {
         dataContext: inject(dataContextKey, null),
         routeContext: inject(routeContextKey, null),
         resourceContext: inject(resourceContextKey, null),
+        signal: controller.signal,
 
         get sourceContext() {
           return unref(sourceContext)

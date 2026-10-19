@@ -17,6 +17,8 @@ export interface Services {
   readonly routeContext: RouteContext | null
   readonly sourceContext: SourceContext | null
   readonly resourceContext: ResourceContext | null
+  // Aborts the requests of the component when it unmounts:
+  readonly signal: AbortSignal
 }
 
 // Requests only need the admin, and the resource that relative ones continue:
@@ -140,12 +142,13 @@ export function request(
       : cache === 'local'
         ? (services.dataContext?.loadCache ?? null)
         : null
-  // Requests to resources are told apart by the URLs that they resolve to:
   const { resource } = options
+  const method = options.method || resource?.method
+  // Requests to resources are told apart by the URLs that they resolve to:
   const cacheKey = loadCache
     ? getRequestCacheKey({
         ...options,
-        method: options.method || resource?.method,
+        method,
         url: (
           options.url || (resource ? getResourceUrl(services, resource) : null)
         )
@@ -154,10 +157,22 @@ export function request(
   if (loadCache && cacheKey in loadCache) {
     return loadCache[cacheKey]
   }
+  // Reads end with their component, like the loads of forms, unless others
+  // share their cached response. Writes complete, as they change the server:
+  const shouldEndWithComponent = !loadCache && (method || 'get') === 'get'
+  const signals = [options.signal, shouldEndWithComponent && services.signal]
   // NOTE: Cache the promise, not its result:
-  const res = sendRequest(services, options)
+  const res = sendRequest(services, {
+    ...options,
+    signal: AbortSignal.any(signals.filter(Boolean) as AbortSignal[])
+  })
     .then(response => response.data)
     .catch(error => {
+      // Nothing waits for the requests of unmounted components, so their
+      // promises don't settle, and their callers' code doesn't run on:
+      if (shouldEndWithComponent && services.signal.aborted) {
+        return new Promise(() => {})
+      }
       // Failed requests aren't cached, so they can be retried:
       if (loadCache?.[cacheKey] === res) {
         delete loadCache[cacheKey]
