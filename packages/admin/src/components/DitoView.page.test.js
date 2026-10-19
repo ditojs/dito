@@ -5,13 +5,13 @@ import { mountAdmin } from '../test/mount.js'
 import { useDitoContext } from '../index.js'
 
 describe('page views', () => {
-  // Renders the route params and the props it receives:
+  // Renders the label of its schema and the route params:
   const ProductPage = {
-    props: ['schema', 'context'],
-    setup(props) {
+    setup() {
       const route = useRoute()
+      const { schema } = useDitoContext()
       return () =>
-        h('p', { class: 'product' }, `${props.schema.label} ${route.params.id}`)
+        h('p', { class: 'product' }, `${schema.label} ${route.params.id}`)
     }
   }
 
@@ -45,12 +45,20 @@ describe('page views', () => {
     expect(admin.wrapper.find('.dito-view p').text()).toBe('Purge')
   })
 
-  it('pass the route params and their schema to their component', async () => {
+  it('pass the route params and their context to their component', async () => {
     const admin = await mountAdmin({ views })
     await admin.navigate('/products/7')
     expect(admin.wrapper.find('.product').text()).toBe('Product 7')
     await admin.navigate('/products/8')
     expect(admin.wrapper.find('.product').text()).toBe('Product 8')
+  })
+
+  it('pass no attributes to their component', async () => {
+    const admin = await mountAdmin({ views })
+    await admin.navigate('/products/7')
+    expect(admin.wrapper.find('.product').attributes()).toEqual({
+      class: 'product'
+    })
   })
 
   it('provide the context of the page to their component', async () => {
