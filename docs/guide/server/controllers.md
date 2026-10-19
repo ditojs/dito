@@ -268,7 +268,16 @@ allowed scopes and filters applied.
 
 An `allow` array replaces what base classes allow: a subclass that sets
 `allow` lists every action it inherits, including custom actions of base
-classes. `'*'` allows all of them.
+classes. `'*'` allows all of them. To drop single inherited actions instead,
+set them to `false`, see [`allow`](../../api/server/controllers.md#allow):
+
+```js
+export class ArchivedBooks extends Books {
+  member = {
+    'post publish': false
+  }
+}
+```
 
 ### Overriding default actions
 

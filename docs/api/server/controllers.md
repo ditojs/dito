@@ -145,6 +145,10 @@ accepts an `allow` array:
   ones of base classes, so then they need to be listed too.
 - `'*'` allows all actions of the object, inherited ones included, and on
   `collection` and `member` also all default actions.
+- An inherited action set to `false` is dropped from this class on, without
+  listing the actions to keep in `allow`. Subclasses can define it again.
+  Setting an action to `false` that no base class defines, or that the same
+  object lists in `allow`, throws.
 
 ```js
 collection = {

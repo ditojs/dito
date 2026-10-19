@@ -1163,6 +1163,50 @@ describe('UsersController setup', () => {
     }
   )
 
+  it(`doesn't route 'post password' when it is dropped`, async () => {
+    class User extends UserModel {}
+    class Users extends UsersController {
+      override modelClass = User
+      override collection: any = { 'post password': false }
+    }
+    const app = createTestApp({
+      config: { app: { keys: ['test-secret'], session: true } },
+      models: { User },
+      controllers: { Users }
+    })
+    try {
+      await app.setup()
+      const users = app.findController(
+        controller => controller instanceof Users
+      ) as Users
+      expect(users.getAuthenticationFeatures().hasPasswordChange).toBe(false)
+    } finally {
+      await app.knex.destroy()
+    }
+  })
+
+  it(`requires 'post confirm-access' also when it is dropped`, async () => {
+    class User extends UserModel {}
+    class Users extends UsersController {
+      override modelClass = User
+      override collection: any = { 'post confirm-access': false }
+      override member: any = { allow: ['patch'] }
+    }
+    const app = createTestApp({
+      config: { app: { keys: ['test-secret'], session: true } },
+      models: { User },
+      controllers: { Users }
+    })
+    try {
+      await expect(app.setup()).rejects.toThrow(
+        `Unable to route 'patch' without 'post confirm-access', which ` +
+        `confirms the access it needs.`
+      )
+    } finally {
+      await app.knex.destroy()
+    }
+  })
+
   it('requires sessions', async () => {
     class User extends UserModel {}
     class Users extends UsersController {

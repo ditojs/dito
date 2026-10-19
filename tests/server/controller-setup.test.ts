@@ -576,3 +576,114 @@ describe('Controller setup details', () => {
     expect(await response.json()).toEqual({ pages: 12 })
   })
 })
+
+class Larder extends PantryController {
+  override actions: any = {
+    'get hidden': false
+  }
+}
+
+class Storeroom extends Larder {
+  override actions: any = {
+    'get hidden'() {
+      return 'found'
+    }
+  }
+}
+
+class Spices extends ModelController<any> {
+  override modelClass = Ingredient
+
+  override collection: any = {
+    allow: ['get', 'delete']
+  }
+
+  override member: any = {
+    'allow': ['get'],
+
+    'get origin'() {
+      return 'far away'
+    }
+  }
+}
+
+class LocalSpices extends Spices {
+  override collection: any = {
+    // Entries for dropped actions are ignored like for unrouted actions:
+    authorize: { delete: 'nobody' },
+    delete: false
+  }
+
+  override member: any = {
+    'get origin': false
+  }
+}
+
+describe('Dropped actions', () => {
+  let app: ReturnType<typeof createTestApp>
+  let url: string
+
+  beforeAll(async () => {
+    app = createTestApp({
+      models: { Ingredient },
+      controllers: { Larder, Storeroom, Spices, LocalSpices }
+    })
+    await createTestDatabase(app)
+    await app.start()
+    url = getAppUrl(app)
+    await Ingredient.query().insert({ name: 'Salt' })
+  })
+
+  afterAll(async () => {
+    await app.stop()
+    await app.knex.destroy()
+  })
+
+  const getStatus = async (path: string, method = 'GET') =>
+    (await fetch(`${url}${path}`, { method })).status
+
+  it('drops inherited actions set to `false`', async () => {
+    expect(await getStatus('/larder/stock')).toBe(200)
+    expect(await getStatus('/larder/hidden')).toBe(404)
+  })
+
+  it('routes dropped actions again when sub-classes define them', async () => {
+    expect(await (await fetch(`${url}/storeroom/hidden`)).text()).toBe('found')
+  })
+
+  it('drops inherited collection and member actions', async () => {
+    expect(await getStatus('/spices/1/origin')).toBe(200)
+    expect(await getStatus('/local-spices/1/origin')).toBe(404)
+    expect(await getStatus('/local-spices')).toBe(200)
+    expect(await getStatus('/spices', 'DELETE')).toBe(200)
+    expect(await getStatus('/local-spices', 'DELETE')).toBe(405)
+  })
+
+  it('rejects dropping actions that are not inherited', async () => {
+    class Attic extends Controller {
+      override actions: any = {
+        'get hidden': false
+      }
+    }
+    const app = createTestApp({ controllers: { Attic } })
+    await expect(app.setupControllers()).rejects.toThrow(
+      `Controller Attic: Unable to drop 'get hidden': no inherited action.`
+    )
+    await app.knex.destroy()
+  })
+
+  it('rejects dropping actions that are allowed too', async () => {
+    class Attic extends PantryController {
+      override actions: any = {
+        'allow': ['get hidden'],
+        'get hidden': false
+      }
+    }
+    const app = createTestApp({ controllers: { Attic } })
+    await expect(app.setupControllers()).rejects.toThrow(
+      `Controller Attic: Unable to drop 'get hidden' and allow it at the same ` +
+      `time.`
+    )
+    await app.knex.destroy()
+  })
+})
