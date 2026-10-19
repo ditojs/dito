@@ -165,6 +165,9 @@ seeds/              # Database seeds
   declare every package their code imports at runtime as a peer, the server
   only `knex`, `objection` and optional ones like the AWS SDK; required peers
   are mirrored in `devDependencies`, types-only packages are `dependencies`
+- Changelog entries go into a file of their own per branch in
+  `changelog/unreleased/`, not into `CHANGELOG.md`, see its README; the release
+  collects them
 - Husky for pre-commit hooks with lint-staged
 - TypeScript definitions available for all packages
 - Supports linking to local Objection.js/Knex.js for development
