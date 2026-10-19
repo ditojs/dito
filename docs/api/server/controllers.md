@@ -811,11 +811,13 @@ see [`allow`](#allow): a subclass that sets `collection.allow` has to list them
 too, else they aren't routed, e.g.
 `allow: ['get', 'post login', 'post logout', 'get session', 'get self']`, and
 `'post password'` and `'post confirm-access'` to let users change their
-password. Users controllers need `session` in
-[`config.app`](./application.md#configapp), and `'post confirm-access'` when
-they route an action that needs confirmed access: `patch`, `put`, `post` with
-`relate`, `'post password'` and the passkey and TOTP actions that change them,
-else their setup throws.
+password. The static `actionNames` lists the actions of the features by
+`passkeys`, `totp` and `passwordReset`, e.g.
+`allow: ['get', ...UsersController.actionNames.totp]`. Users controllers need
+`session` in [`config.app`](./application.md#configapp), and
+`'post confirm-access'` when they route an action that needs confirmed access:
+`patch`, `put`, `post` with `relate`, `'post password'` and the passkey and TOTP
+actions that change them, else their setup throws.
 
 | Action               | Response |
 | -------------------- | ------------------------------------------------------- |
