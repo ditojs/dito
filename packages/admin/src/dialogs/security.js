@@ -42,7 +42,7 @@ export function showSecurityDialog(adminContext) {
   }
 
   return adminContext.showDialog({
-    components: {
+    fields: {
       ...(authentication.hasPasswordChange && {
         // The password itself is never shown, only that there is one:
         password: {
@@ -61,7 +61,7 @@ export function showSecurityDialog(adminContext) {
             // Ask again for invalid passwords, like password resets:
             const changePassword = async () => {
               const data = await showDialog({
-                components: {
+                fields: {
                   username: usernameComponent,
                   ...createNewPasswordComponents({ autofocus: true })
                 },
@@ -162,7 +162,7 @@ export function showSecurityDialog(adminContext) {
                 const result = await submitCode(
                   context,
                   {
-                    components: {
+                    fields: {
                       uri: {
                         type: 'component',
                         component: DitoQrCode,
@@ -198,7 +198,7 @@ export function showSecurityDialog(adminContext) {
                 if (result) {
                   // The codes are stored hashed, so they're only shown now:
                   await showDialog({
-                    components: {
+                    fields: {
                       backupCodes: {
                         type: 'textarea',
                         label: 'Store these backup codes in a safe place',

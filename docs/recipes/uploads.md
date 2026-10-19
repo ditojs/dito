@@ -62,7 +62,7 @@ In the admin, upload fields edit the properties:
 ```js
 export const bookForm = {
   type: 'form',
-  components: {
+  fields: {
     title: { type: 'text', required: true },
     cover: {
       type: 'upload',

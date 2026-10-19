@@ -124,13 +124,13 @@ describe('getPanelEntries()', () => {
 })
 
 describe('hasFormSchema() and hasMultipleFormSchemas()', () => {
-  const form = { type: 'form', components: {} }
+  const form = { type: 'form', fields: {} }
 
   it('tell schemas with forms, inlined or created components apart', () => {
     expect(hasFormSchema({ type: 'list', form })).toBe(true)
     expect(hasFormSchema({ type: 'list', forms: { book: form } })).toBe(true)
-    expect(hasFormSchema({ type: 'object', components: {} })).toBe(true)
-    expect(hasFormSchema({ type: 'section', components: () => ({}) })).toBe(
+    expect(hasFormSchema({ type: 'object', fields: {} })).toBe(true)
+    expect(hasFormSchema({ type: 'section', fields: () => ({}) })).toBe(
       true
     )
     expect(hasFormSchema({ type: 'text' })).toBe(false)
@@ -157,11 +157,11 @@ describe('hasFormSchema() and hasMultipleFormSchemas()', () => {
 describe('view lookups', () => {
   // Lists that edit their items in the forms of other views, e.g. the books of
   // an author that are edited in the view of all books:
-  const bookForm = { type: 'form', components: { title: { type: 'text' } } }
+  const bookForm = { type: 'form', fields: { title: { type: 'text' } } }
   const books = {
     type: 'view',
     path: 'books',
-    component: { type: 'list', form: bookForm }
+    field: { type: 'list', form: bookForm }
   }
   const dashboard = {
     type: 'view',
@@ -169,20 +169,20 @@ describe('view lookups', () => {
     tabs: {
       stats: {
         type: 'tab',
-        components: {
+        fields: {
           summary: { type: 'text' },
           authors: { type: 'list', form: bookForm }
         }
       }
     }
   }
-  const empty = { type: 'view', components: {} }
+  const empty = { type: 'view', fields: {} }
   const context = { flattenedViews: { books, dashboard, empty } }
 
   it('find the component with a form of views, also in their tabs', () => {
-    expect(getViewFormSchema({ view: 'books' }, context)).toBe(books.component)
+    expect(getViewFormSchema({ view: 'books' }, context)).toBe(books.field)
     expect(getViewFormSchema({ view: 'dashboard' }, context)).toBe(
-      dashboard.tabs.stats.components.authors
+      dashboard.tabs.stats.fields.authors
     )
     expect(getViewFormSchema({ view: 'empty' }, context)).toBe(null)
     expect(getViewFormSchema({ view: 'unknown' }, context)).toBe(null)
@@ -206,8 +206,8 @@ describe('view lookups', () => {
 })
 
 describe('getFormSchemas()', () => {
-  const novel = { type: 'form', components: { title: { type: 'text' } } }
-  const comic = { type: 'form', components: { artist: { type: 'text' } } }
+  const novel = { type: 'form', fields: { title: { type: 'text' } } }
+  const comic = { type: 'form', fields: { artist: { type: 'text' } } }
 
   it('returns `forms`, or `form` as the default form', () => {
     expect(getFormSchemas({ type: 'list', forms: { novel, comic } })).toEqual({
@@ -220,14 +220,14 @@ describe('getFormSchemas()', () => {
   })
 
   it('converts inlined components and tabs to forms', () => {
-    const components = { street: { type: 'text' } }
+    const fields = { street: { type: 'text' } }
     const tabs = { notes: { type: 'tab' } }
     expect(
       getFormSchemas({
         type: 'object',
         name: 'address',
         compact: true,
-        components,
+        fields,
         tabs
       })
     ).toEqual({
@@ -236,25 +236,25 @@ describe('getFormSchemas()', () => {
         name: 'address',
         compact: true,
         tabs,
-        components
+        fields
       }
     })
   })
 
   it('passes the clipboard of objects to their form, not of lists', () => {
-    const components = { title: { type: 'text' } }
+    const fields = { title: { type: 'text' } }
     expect(
       getFormSchemas({ type: 'object', clipboard: true, form: novel })
     ).toEqual({ default: { ...novel, clipboard: true } })
     expect(
-      getFormSchemas({ type: 'object', clipboard: true, components })
-    ).toEqual({ default: { type: 'form', clipboard: true, components } })
+      getFormSchemas({ type: 'object', clipboard: true, fields })
+    ).toEqual({ default: { type: 'form', clipboard: true, fields } })
     expect(
       getFormSchemas({ type: 'list', clipboard: true, forms: { novel } })
     ).toEqual({ novel })
     expect(
-      getFormSchemas({ type: 'list', clipboard: true, components })
-    ).toEqual({ default: { type: 'form', components } })
+      getFormSchemas({ type: 'list', clipboard: true, fields })
+    ).toEqual({ default: { type: 'form', fields } })
   })
 
   it('returns no forms for schemas without forms', () => {
@@ -271,14 +271,14 @@ describe('getFormSchemas()', () => {
     expect(forms.comic).toBe(comic)
   })
 
-  describe('with `components()` callbacks', () => {
+  describe('with `fields()` callbacks', () => {
     // E.g. the fields of an item that depend on its selected template:
     const createComponents = vi.fn(({ item }) =>
       Object.fromEntries(
         (item?.fields ?? []).map(name => [name, { type: 'text' }])
       )
     )
-    const schema = { type: 'section', components: createComponents }
+    const schema = { type: 'section', fields: createComponents }
     const api = { defaults: {}, normalizePath: hyphenate }
     const createContext = data => new SchemaContext(null, { api, data })
 
@@ -289,7 +289,7 @@ describe('getFormSchemas()', () => {
     it('creates the components for the data of the context', () => {
       const item = { fields: ['title', 'author'] }
       const { default: form } = getFormSchemas(schema, createContext(item))
-      expect(Object.keys(form.components)).toEqual(['title', 'author'])
+      expect(Object.keys(form.fields)).toEqual(['title', 'author'])
       expect(createComponents).toHaveBeenCalledTimes(1)
     })
 
@@ -311,7 +311,7 @@ describe('getFormSchemas()', () => {
       expect(createComponents.mock.lastCall[0]).toBe(firstContext)
       item.fields.push('author')
       const { default: form } = getFormSchemas(schema, latestContext)
-      expect(Object.keys(form.components)).toEqual(['title', 'author'])
+      expect(Object.keys(form.fields)).toEqual(['title', 'author'])
       expect(createComponents).toHaveBeenCalledTimes(2)
       expect(createComponents.mock.lastCall[0]).toBe(latestContext)
     })
@@ -319,22 +319,22 @@ describe('getFormSchemas()', () => {
     it(`creates the components each time for data that isn't an object`, () => {
       const forms1 = getFormSchemas(schema, createContext(null))
       const forms2 = getFormSchemas(schema, createContext(null))
-      expect(forms1.default.components).toEqual({})
+      expect(forms1.default.fields).toEqual({})
       expect(forms1.default).not.toBe(forms2.default)
       expect(createComponents).toHaveBeenCalledTimes(2)
     })
 
     it('leaves the callbacks alone without a context', () => {
       const { default: form } = getFormSchemas(schema)
-      expect(form.components).toBe(createComponents)
+      expect(form.fields).toBe(createComponents)
       expect(createComponents).not.toHaveBeenCalled()
     })
   })
 })
 
 describe('getItemFormSchema()', () => {
-  const novel = { type: 'form', components: {} }
-  const fallback = { type: 'form', components: {} }
+  const novel = { type: 'form', fields: {} }
+  const fallback = { type: 'form', fields: {} }
 
   it('picks the form by the type of the item, or the default form', () => {
     const forms = { novel, default: fallback }

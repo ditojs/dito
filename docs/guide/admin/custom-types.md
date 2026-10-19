@@ -169,10 +169,10 @@ reports as removed, e.g. `format`, `compute` or `data`.
 
 ## Laying out fields
 
-A section or a form with `component` renders its `components` with that Vue
+A section or a form with `component` renders its `fields` with that Vue
 component instead of in rows. The component receives the `schema` and
 `context` of the section or form, and places each field with `DitoSchemaField`,
-whose `name` is a key of its `components`. The fields render as in rows, with
+whose `name` is a key of its `fields`. The fields render as in rows, with
 their labels, errors, info, `width` and disabled state, and they validate,
 change and save the same way. The section's label shows above the component.
 
@@ -183,7 +183,7 @@ playback: {
   type: 'section',
   label: 'Playback',
   component: () => import('../components/PlaybackLayout.vue'),
-  components: {
+  fields: {
     volume: {
       type: 'component',
       component: () => import('../components/VolumeSlider.vue'),
@@ -215,7 +215,7 @@ a `type: 'component'` field, so `VolumeSlider` renders the switch with
 
 `DitoPane` places a group of fields in rows, as the section would without
 `component`: with their widths, wrapping and alignment, and with the labels of
-a row aligned. Its `names` are keys of the section's `components`, all of them
+a row aligned. Its `names` are keys of the section's `fields`, all of them
 by default. The pane fills the rest of the row it's placed in, here next to a
 summary:
 
@@ -223,7 +223,7 @@ summary:
 book: {
   type: 'section',
   component: () => import('../components/BookLayout.vue'),
-  components: {
+  fields: {
     summary: { type: 'textarea', label: 'Summary', width: '1/3' },
     title: { type: 'text', label: 'Title' },
     author: { type: 'text', label: 'Author', width: '1/2' },
@@ -263,13 +263,13 @@ const context = useDitoContext()
 </template>
 ```
 
-- Forms with `component` need `components`, all fields come from the schema.
+- Forms with `component` need `fields`, all fields come from the schema.
 - Fields that the layout doesn't place still validate, and then block saving
   without showing their errors.
 - `width` applies where the parent element of a field is a flex row, like the
   row that holds the layout.
 - `DitoSchemaField` and `DitoPane` throw outside the component of a section or
-  form, and for names that aren't in its `components`.
+  form, and for names that aren't in its `fields`.
 - Sections with `component` don't support `tabs`, `collapsible` and
   `clipboard`.
 

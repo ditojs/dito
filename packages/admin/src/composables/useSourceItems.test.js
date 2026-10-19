@@ -5,7 +5,7 @@ import { mountSchema, mountForm } from '../test/mount.js'
 const bookForm = {
   type: 'form',
   label: 'Book',
-  components: { title: { type: 'text' } }
+  fields: { title: { type: 'text' } }
 }
 
 const maliciousTitle = '<img src="x" onerror="alert(1)">'
@@ -15,7 +15,7 @@ describe('useSourceItems()', () => {
     it('escapes the values of items in list labels', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: { type: 'list', itemLabel: 'title', form: bookForm }
           }
         },
@@ -29,7 +29,7 @@ describe('useSourceItems()', () => {
     it('escapes the values of items in inlined labels', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               itemLabel: 'title',
@@ -50,7 +50,7 @@ describe('useSourceItems()', () => {
     it('escapes the values of objects in their labels', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             book: { type: 'object', itemLabel: 'title', form: bookForm }
           }
         },
@@ -64,7 +64,7 @@ describe('useSourceItems()', () => {
     it('escapes the values of tree items in their labels', async () => {
       const { findField } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'tree-list',
               path: 'chapters',
@@ -95,7 +95,7 @@ describe('useSourceItems()', () => {
     it('escapes the text that `itemLabel()` returns', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               itemLabel: ({ item }) => `<b>${item.title}</b>`,
@@ -113,7 +113,7 @@ describe('useSourceItems()', () => {
     it('keeps the HTML that `itemLabel()` returns as `{ html }`', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               itemLabel: ({ item }) => ({ html: `<b>${item.title}</b>` }),
@@ -129,7 +129,7 @@ describe('useSourceItems()', () => {
     it('escapes the form label in extended labels', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               inlined: true,
@@ -151,7 +151,7 @@ describe('useSourceItems()', () => {
       const formLabels = []
       await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               itemLabel: ({ item, formLabel }) => {
@@ -171,7 +171,7 @@ describe('useSourceItems()', () => {
       const contexts = []
       const { admin } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               editable: true,
@@ -182,7 +182,7 @@ describe('useSourceItems()', () => {
               form: {
                 type: 'form',
                 label: 'Chapter',
-                components: { title: { type: 'text' } }
+                fields: { title: { type: 'text' } }
               }
             }
           }
@@ -215,11 +215,11 @@ describe('useSourceItems()', () => {
       }
       const chapter = {
         type: 'form',
-        components: { title: { type: 'text' } }
+        fields: { title: { type: 'text' } }
       }
       const { data } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             chapters: { type: 'list', itemLabel: getLabel, form: chapter },
             notes: { type: 'list', render: getLabel, form: chapter }
@@ -248,12 +248,12 @@ describe('useSourceItems()', () => {
       }
       const chapter = {
         type: 'form',
-        components: { title: { type: 'text' } }
+        fields: { title: { type: 'text' } }
       }
       const chapters = { type: 'list', itemLabel: getLabel, form: chapter }
       const notes = { type: 'list', render: getLabel, form: chapter }
       await mountSchema({
-        schema: { components: { chapters, notes } },
+        schema: { fields: { chapters, notes } },
         data: { chapters: [{ title: 'One' }], notes: [{ title: 'Two' }] }
       })
       expect(contexts).toContainEqual({ schema: chapters, name: 'chapters' })
@@ -265,7 +265,7 @@ describe('useSourceItems()', () => {
     it('appends the index, and the name of other source schemas', async () => {
       const { getComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: { type: 'list', itemLabel: 'title', form: bookForm }
           }
         },

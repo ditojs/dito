@@ -50,7 +50,7 @@ async function mountJobProgress(request) {
   contexts.length = 0
   const { data } = await mountSchema({
     schema: {
-      components: {
+      fields: {
         done: { type: 'checkbox' },
         progress: {
           type: 'component',
@@ -74,7 +74,7 @@ describe('services', () => {
     it('caches responses globally', async () => {
       const request = vi.fn(() => ({ data: { title: 'Orlando' } }))
       const { schemaComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } },
+        schema: { fields: { title: { type: 'text' } } },
         request
       })
       const url = 'books'
@@ -94,7 +94,7 @@ describe('services', () => {
     it('caches responses locally within the route component', async () => {
       const request = vi.fn(() => ({ data: { title: 'Orlando' } }))
       const { admin, schemaComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } },
+        schema: { fields: { title: { type: 'text' } } },
         request
       })
       const url = 'books'
@@ -124,7 +124,7 @@ describe('services', () => {
         .mockRejectedValueOnce(new Error('Network down'))
         .mockResolvedValueOnce({ data: { title: 'Orlando' } })
       const { schemaComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } },
+        schema: { fields: { title: { type: 'text' } } },
         request
       })
       const url = 'books'
@@ -140,7 +140,7 @@ describe('services', () => {
     it('caches the requests of different resources separately', async () => {
       const request = vi.fn(({ url }) => ({ data: { url } }))
       const { schemaComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } },
+        schema: { fields: { title: { type: 'text' } } },
         request
       })
       const books = 'books'
@@ -167,7 +167,7 @@ describe('services', () => {
         data: { message: 'Not found', type: 'NotFound' }
       }
       const { schemaComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } },
+        schema: { fields: { title: { type: 'text' } } },
         request: () => Promise.reject(error)
       })
       await expect(
@@ -238,7 +238,7 @@ describe('services', () => {
   describe('format()', () => {
     it('formats with the locale and formats of the API by default', async () => {
       const { schemaComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } },
+        schema: { fields: { title: { type: 'text' } } },
         api: {
           locale: 'de-DE',
           formats: { number: { minimumFractionDigits: 2 } }
@@ -260,7 +260,7 @@ describe('services', () => {
   describe('download()', () => {
     const mountAndCaptureClicks = async () => {
       const { schemaComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } }
+        schema: { fields: { title: { type: 'text' } } }
       })
       const anchors = []
       vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
@@ -318,7 +318,7 @@ describe('services', () => {
       let resolveLoad = null
       const { admin, routeComponent, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             isbn: { type: 'text' },
             cover: {
               type: 'computed',
@@ -364,12 +364,12 @@ describe('services', () => {
   it('reads the root data of the route in sources with resources', async () => {
     const { admin } = await mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             form: {
               type: 'form',
-              components: {
+              fields: {
                 comments: {
                   type: 'list',
                   resource: { path: 'comments' },
@@ -396,7 +396,7 @@ describe('services', () => {
   describe('getResourceUrl()', () => {
     it('returns null without a resource', async () => {
       const { admin } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } }
+        schema: { fields: { title: { type: 'text' } } }
       })
       const services = { adminContext: admin.context, resourceContext: null }
       expect(getResourceUrl(services, null)).toBe(null)
@@ -407,7 +407,7 @@ describe('services', () => {
     it('resolves resources in views with resources', async () => {
       const { getComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             authors: {
               type: 'list',
               resource: { path: 'authors' },
@@ -437,7 +437,7 @@ describe('services', () => {
         return { data }
       })
       const result = await mountSchema({
-        schema: { components: { title: { type: 'text' } } },
+        schema: { fields: { title: { type: 'text' } } },
         api: { users: { path: 'users' } },
         request
       })

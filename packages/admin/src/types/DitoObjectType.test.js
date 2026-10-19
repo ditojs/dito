@@ -5,7 +5,7 @@ import { mountSchema, mountForm, stubConfirm } from '../test/mount.js'
 const addressForm = {
   type: 'form',
   label: 'Address',
-  components: {
+  fields: {
     street: { type: 'text' },
     city: { type: 'text', default: 'Basel' }
   }
@@ -15,7 +15,7 @@ describe('DitoObjectType', () => {
   it('renders the inlined form of the object and edits it', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           address: { type: 'object', inlined: true, form: addressForm }
         }
       },
@@ -31,7 +31,7 @@ describe('DitoObjectType', () => {
   it('creates the object with the defaults of its form', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           address: {
             type: 'object',
             inlined: true,
@@ -57,7 +57,7 @@ describe('DitoObjectType', () => {
     stubConfirm(true)
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           address: {
             type: 'object',
             inlined: true,
@@ -76,7 +76,7 @@ describe('DitoObjectType', () => {
   it("renders objects that aren't inlined with `render()`", async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           address: {
             type: 'object',
             form: addressForm,
@@ -92,7 +92,7 @@ describe('DitoObjectType', () => {
   it("renders objects that aren't inlined with their `component`", async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           address: {
             type: 'object',
             form: addressForm,
@@ -114,7 +114,7 @@ describe('DitoObjectType', () => {
   it(`renders objects that aren't inlined with their label`, async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           address: { type: 'object', form: addressForm, itemLabel: 'city' }
         }
       },
@@ -128,7 +128,7 @@ describe('DitoObjectType', () => {
   it('labels inlined objects only when they are collapsible', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           home: {
             type: 'object',
             inlined: true,
@@ -158,7 +158,7 @@ describe('DitoObjectType', () => {
   it("doesn't pass a `path` attribute to its buttons", async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           address: { type: 'object', editable: true, form: addressForm }
         }
       },
@@ -172,7 +172,7 @@ describe('DitoObjectType', () => {
   it('sends the values of the object', async () => {
     const { findField, submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           address: { type: 'object', inlined: true, form: addressForm }
         }
       },

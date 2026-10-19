@@ -8,7 +8,7 @@ function findNotifications() {
 
 async function mountNotifications(api) {
   const admin = await mountAdmin({
-    views: { books: { type: 'view', label: 'Books', components: {} } },
+    views: { books: { type: 'view', label: 'Books', fields: {} } },
     api
   })
   return admin.root.$refs.notifications

@@ -20,7 +20,7 @@ describe('DitoRadioType', () => {
   it('renders a radio button per option and selects the value', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           genre: { type: 'radio', options: genres, layout: 'horizontal' }
         }
       },
@@ -45,7 +45,7 @@ describe('DitoRadioType', () => {
 
   it('focuses the first radio button', async () => {
     const { focusField, findField } = await mountSchema({
-      schema: { components: { genre: { type: 'radio', options: genres } } }
+      schema: { fields: { genre: { type: 'radio', options: genres } } }
     })
     await focusField('genre')
     expect(document.activeElement).toBe(
@@ -56,7 +56,7 @@ describe('DitoRadioType', () => {
   it('lists the options of each group in a fieldset with `options.group`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           book: {
             type: 'radio',
             options: { data: books, group: 'shelf' }
@@ -81,7 +81,7 @@ describe('DitoRadioType', () => {
 
   it('links each option to its form in `view` when `editable`', async () => {
     const { admin } = await mountAdminWithGenresView({
-      components: {
+      fields: {
         genre: {
           type: 'radio',
           editable: true,

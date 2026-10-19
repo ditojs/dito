@@ -18,7 +18,7 @@ function createEntries(
     form: {
       type: 'form',
       label: 'Entry',
-      components: {
+      fields: {
         title: { type: 'text', label: 'Entry Title' }
       }
     },
@@ -36,19 +36,19 @@ const bookComponents: Components<Book> = {
     type: 'section',
     label: 'Contents',
     nested: true,
-    components: { notes: createEntries('Notes') }
+    fields: { notes: createEntries('Notes') }
   },
   // Sections that aren't nested share the data of the form.
   more: {
     type: 'section',
     label: 'More',
-    components: { quotes: createEntries('Quotes') }
+    fields: { quotes: createEntries('Quotes') }
   },
   // Inlined objects hold the data of their components under their name.
   meta: {
     type: 'object',
     label: 'Meta',
-    components: { sources: createEntries('Sources') }
+    fields: { sources: createEntries('Sources') }
   },
   // A name that doesn't survive normalizing and denormalizing its path,
   // `source-urls`, unchanged.
@@ -59,14 +59,14 @@ const bookComponents: Components<Book> = {
 const bookForm: FormSchema<Book> = {
   type: 'form',
   label: 'Book',
-  components: bookComponents
+  fields: bookComponents
 }
 
 function createBooksView(label: string): ViewSchema<Book> {
   return {
     type: 'view',
     label,
-    component: {
+    field: {
       type: 'list',
       label,
       itemLabel: 'title',
@@ -88,7 +88,7 @@ export const drafts = createBooksView('Drafts')
 export const tabbedBooks: ViewSchema<Book> = {
   type: 'view',
   label: 'Tabbed Books',
-  component: {
+  field: {
     type: 'list',
     label: 'Tabbed Books',
     itemLabel: 'title',
@@ -102,12 +102,12 @@ export const tabbedBooks: ViewSchema<Book> = {
         main: {
           type: 'tab',
           label: 'Main',
-          components: { title: { type: 'text', label: 'Title' } }
+          fields: { title: { type: 'text', label: 'Title' } }
         },
         content: {
           type: 'tab',
           label: 'Content',
-          components: { chapters: createEntries('Chapters') }
+          fields: { chapters: createEntries('Chapters') }
         }
       }
     }
@@ -118,7 +118,7 @@ export const tabbedBooks: ViewSchema<Book> = {
 export const shelf: ViewSchema<Shelf> = {
   type: 'view',
   label: 'Shelf',
-  components: {
+  fields: {
     intro: { type: 'label', label: 'All books' },
     shelfBooks: {
       type: 'list',
@@ -131,7 +131,7 @@ export const shelf: ViewSchema<Shelf> = {
       form: {
         type: 'form',
         label: 'Book',
-        components: { title: { type: 'text', label: 'Title' } }
+        fields: { title: { type: 'text', label: 'Title' } }
       }
     }
   }
@@ -141,7 +141,7 @@ export const shelf: ViewSchema<Shelf> = {
 export const featured: ViewSchema<Book> = {
   type: 'view',
   label: 'Featured',
-  component: {
+  field: {
     type: 'list',
     label: 'Featured',
     itemLabel: 'title',

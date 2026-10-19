@@ -31,7 +31,7 @@ const playlists = createWidgetView<PlaylistItem>(
       deletable: true,
       form: {
         type: 'form',
-        components: {
+        fields: {
           title: { type: 'text', label: 'Title' },
           // Relates to a track of the playlist's tracks in the edited data,
           // including new ones that aren't saved yet.

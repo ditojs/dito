@@ -14,7 +14,7 @@
     DitoDialog(
       v-for="(dialog, key) in dialogs"
       :key="key"
-      :components="dialog.components"
+      :fields="dialog.fields"
       :buttons="dialog.buttons"
       :promise="dialog.promise"
       :data="dialog.data"
@@ -140,9 +140,15 @@ export default {
     // header's width, so measure the room whenever the root's columns change:
     let sidebarObserver = null
 
-    const showDialog = async ({ components, buttons, data, settings }) => {
+    const showDialog = async ({
+      fields,
+      components,
+      buttons,
+      data,
+      settings
+    }) => {
       // Resolve async schemas first, so that their errors reject:
-      const schema = { type: 'dialog', components, buttons }
+      const schema = { type: 'dialog', fields, components, buttons }
       const { api } = adminContext
       applySchemaDefaults(api, schema)
       await setupSchemaComponents(api, schema)
@@ -152,7 +158,7 @@ export default {
       return new Promise(resolve => {
         const key = `dialog-${++dialogId}`
         dialogs[key] = {
-          components,
+          fields: schema.fields,
           buttons,
           data,
           settings,

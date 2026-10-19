@@ -113,7 +113,7 @@ async function mountBook({
       name: 'book',
       label: 'Book',
       clipboard: clipboardConfig,
-      components: {
+      fields: {
         title: { type: 'text' },
         cover: { type: 'upload', extensions: ['png'], maxSize: '1 kB' },
         chapters: {
@@ -121,7 +121,7 @@ async function mountBook({
           inlined: true,
           form: {
             type: 'form',
-            components: {
+            fields: {
               heading: { type: 'text' },
               scans: { type: 'upload', multiple: true }
             }
@@ -313,7 +313,7 @@ describe('DitoClipboard interchange', () => {
       schema: {
         label: 'Page',
         clipboard: { interchange: true },
-        components: { name: { type: 'text' } }
+        fields: { name: { type: 'text' } }
       },
       data: { name: 'Home' }
     })
@@ -335,7 +335,7 @@ describe('DitoClipboard interchange', () => {
             filename: ({ clipboardItem }) => `page-${clipboardItem.name}.zip`
           }
         },
-        components: { name: { type: 'text' } }
+        fields: { name: { type: 'text' } }
       },
       data: { name: 'Home' }
     })
@@ -353,7 +353,7 @@ describe('DitoClipboard interchange', () => {
       schema: {
         label: 'Page',
         clipboard: { interchange: true },
-        components: { name: { type: 'text' } }
+        fields: { name: { type: 'text' } }
       },
       data: { name: `Home: 'Vol. 1' / <Draft>?` }
     })
@@ -370,7 +370,7 @@ describe('DitoClipboard interchange', () => {
     const { wrapper } = await mountForm({
       schema: {
         clipboard: { interchange: true },
-        components: { title: { type: 'text' } }
+        fields: { title: { type: 'text' } }
       },
       data: { title: 'Emma' }
     })
@@ -386,13 +386,13 @@ describe('DitoClipboard interchange', () => {
     const { filenames } = stubDownloads()
     const { findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           links: {
             type: 'list',
             label: 'Links',
             inlined: true,
             clipboard: { interchange: true },
-            form: { type: 'form', components: { url: { type: 'text' } } }
+            form: { type: 'form', fields: { url: { type: 'text' } } }
           }
         }
       },
@@ -538,7 +538,7 @@ describe('DitoClipboard interchange', () => {
       const uploads = []
       const result = await mountForm({
         schema: {
-          components: {
+          fields: {
             gallery: {
               type: 'upload',
               multiple: true,

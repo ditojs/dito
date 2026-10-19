@@ -13,7 +13,7 @@ export const widgets = createWidgetView<Widget>(
     columns: { name: { label: 'Name' } },
     form: {
       type: 'form',
-      components: {
+      fields: {
         name: { type: 'text', label: 'Name' },
         email: { type: 'email', label: 'Email' }
       },

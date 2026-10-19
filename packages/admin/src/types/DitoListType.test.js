@@ -18,7 +18,7 @@ import DitoSchemaInlined from '../components/DitoSchemaInlined.vue'
 const ingredientForm = {
   type: 'form',
   label: 'Ingredient',
-  components: {
+  fields: {
     name: { type: 'text', required: true },
     amount: { type: 'number', default: 1 }
   }
@@ -26,7 +26,7 @@ const ingredientForm = {
 
 function createRecipeSchema(ingredients = {}) {
   return {
-    components: {
+    fields: {
       ingredients: {
         type: 'list',
         inlined: true,
@@ -92,10 +92,10 @@ describe('DitoListType', () => {
           form: {
             type: 'form',
             label: 'Ingredient',
-            components: {
+            fields: {
               details: {
                 type: 'section',
-                components: ({ parentItem }) => ({
+                fields: ({ parentItem }) => ({
                   name: { type: 'text', default: parentItem.title }
                 })
               }
@@ -118,11 +118,11 @@ describe('DitoListType', () => {
           form: {
             type: 'form',
             label: 'Ingredient',
-            components: {
+            fields: {
               kind: { type: 'text', computeValue: () => 'liquid' },
               details: {
                 type: 'section',
-                components: ({ item }) => ({
+                fields: ({ item }) => ({
                   ...(item.kind === 'liquid' && {
                     volume: { type: 'number', default: 1 }
                   })
@@ -348,8 +348,8 @@ describe('DitoListType', () => {
       it('shows no toggle without items, or with `collapsible: true`', async () => {
         const { findField } = await mountSchema({
           schema: {
-            components: {
-              ...createRecipeSchema({ collapsible: 'all' }).components,
+            fields: {
+              ...createRecipeSchema({ collapsible: 'all' }).fields,
               steps: {
                 type: 'list',
                 inlined: true,
@@ -406,8 +406,8 @@ describe('DitoListType', () => {
       it('shows the toggle and clipboard in the header without a label', async () => {
         const { findField, findContainer } = await mountSchema({
           schema: {
-            components: {
-              ingredients: { ...schema.components.ingredients, label: false }
+            fields: {
+              ingredients: { ...schema.fields.ingredients, label: false }
             }
           },
           data
@@ -523,7 +523,7 @@ describe('DitoListType', () => {
 
   describe('multiple forms', () => {
     const blocksSchema = {
-      components: {
+      fields: {
         blocks: {
           type: 'list',
           inlined: true,
@@ -532,12 +532,12 @@ describe('DitoListType', () => {
             heading: {
               type: 'form',
               label: 'Heading',
-              components: { text: { type: 'text' } }
+              fields: { text: { type: 'text' } }
             },
             image: {
               type: 'form',
               label: 'Image',
-              components: { url: { type: 'url' } }
+              fields: { url: { type: 'url' } }
             }
           }
         }
@@ -578,8 +578,8 @@ describe('DitoListType', () => {
     it('inserts items of all forms through the buttons of an item', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
-            blocks: { ...blocksSchema.components.blocks, draggable: true }
+          fields: {
+            blocks: { ...blocksSchema.fields.blocks, draggable: true }
           }
         },
         data: {
@@ -607,14 +607,14 @@ describe('DitoListType', () => {
     it('disables the buttons of items whose form disables them', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             blocks: {
-              ...blocksSchema.components.blocks,
+              ...blocksSchema.fields.blocks,
               deletable: true,
               forms: {
-                ...blocksSchema.components.blocks.forms,
+                ...blocksSchema.fields.blocks.forms,
                 image: {
-                  ...blocksSchema.components.blocks.forms.image,
+                  ...blocksSchema.fields.blocks.forms.image,
                   deletable: false
                 }
               }
@@ -640,7 +640,7 @@ describe('DitoListType', () => {
     async function getItemTexts(ingredients) {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             ingredients: { type: 'list', form: ingredientForm, ...ingredients }
           }
         },
@@ -684,13 +684,13 @@ describe('DitoListType', () => {
     it('shows loaded dates in their label as their type formats them', async () => {
       const { findField } = await mountForm({
         schema: {
-          components: {
+          fields: {
             milestones: {
               type: 'list',
               itemLabel: 'due',
               form: {
                 type: 'form',
-                components: { due: { type: 'date' } }
+                fields: { due: { type: 'date' } }
               }
             }
           }
@@ -734,7 +734,7 @@ describe('DitoListType', () => {
         views: {
           ingredients: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'ingredients' },
               buttons: { import: button }
@@ -754,7 +754,7 @@ describe('DitoListType', () => {
     it('notify the server errors of the items', async () => {
       const { admin, findField, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               resource: { path: 'chapters' },
@@ -805,13 +805,13 @@ describe('DitoListType', () => {
       let isValid = false
       const { findField, getErrors, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               inlined: true,
               form: {
                 type: 'form',
-                components: { title: { type: 'text' } }
+                fields: { title: { type: 'text' } }
               },
               buttons: {
                 saveTitles: {
@@ -857,7 +857,7 @@ describe('DitoListType', () => {
     it('edits primitive values through `wrapPrimitives`', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             tags: {
               type: 'list',
               inlined: true,
@@ -865,7 +865,7 @@ describe('DitoListType', () => {
               wrapPrimitives: 'tag',
               form: {
                 type: 'form',
-                components: { tag: { type: 'text' } }
+                fields: { tag: { type: 'text' } }
               }
             }
           }
@@ -884,7 +884,7 @@ describe('DitoListType', () => {
     it('moves primitive values of `wrapPrimitives`', async () => {
       const { findField, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             tags: {
               type: 'list',
               inlined: true,
@@ -892,7 +892,7 @@ describe('DitoListType', () => {
               wrapPrimitives: 'tag',
               form: {
                 type: 'form',
-                components: { tag: { type: 'text' } }
+                fields: { tag: { type: 'text' } }
               }
             }
           }
@@ -914,14 +914,14 @@ describe('DitoListType', () => {
     it('gives only the component of the value the data path of the item', async () => {
       const { getComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             tags: {
               type: 'list',
               inlined: true,
               wrapPrimitives: 'tag',
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   tag: { type: 'text' },
                   note: { type: 'text' }
                 }
@@ -938,14 +938,14 @@ describe('DitoListType', () => {
     it('keeps the errors of the other values when one is edited', async () => {
       const { findField, data, dataModel } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             tags: {
               type: 'list',
               inlined: true,
               wrapPrimitives: 'tag',
               form: {
                 type: 'form',
-                components: { tag: { type: 'text' } }
+                fields: { tag: { type: 'text' } }
               }
             }
           }
@@ -962,7 +962,7 @@ describe('DitoListType', () => {
     it('creates the first primitive value of lists that are `null`', async () => {
       const { findField, data, dataModel } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             tags: {
               type: 'list',
               inlined: true,
@@ -970,7 +970,7 @@ describe('DitoListType', () => {
               wrapPrimitives: 'tag',
               form: {
                 type: 'form',
-                components: { tag: { type: 'text' } }
+                fields: { tag: { type: 'text' } }
               }
             }
           }
@@ -992,14 +992,14 @@ describe('DitoListType', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const { findField } = await mountForm({
         schema: {
-          components: {
+          fields: {
             tags: {
               type: 'list',
               inlined: true,
               wrapPrimitives: 'tag',
               form: {
                 type: 'form',
-                components: { tag: { type: 'text' } }
+                fields: { tag: { type: 'text' } }
               }
             }
           }
@@ -1020,7 +1020,7 @@ describe('DitoListType', () => {
 
   describe('primitive values in routed forms', () => {
     const tagsSchema = {
-      components: {
+      fields: {
         tags: {
           type: 'list',
           editable: true,
@@ -1029,7 +1029,7 @@ describe('DitoListType', () => {
           columns: { tag: {} },
           form: {
             type: 'form',
-            components: { tag: { type: 'text', required: true } }
+            fields: { tag: { type: 'text', required: true } }
           }
         }
       }
@@ -1094,7 +1094,7 @@ describe('DitoListType', () => {
 
   describe('nested forms', () => {
     const chaptersSchema = {
-      components: {
+      fields: {
         chapters: {
           type: 'list',
           editable: true,
@@ -1103,7 +1103,7 @@ describe('DitoListType', () => {
           form: {
             type: 'form',
             label: 'Chapter',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       }
@@ -1112,9 +1112,9 @@ describe('DitoListType', () => {
     it('adds the query of `creatable()` to the create route', async () => {
       const { admin, findField, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
-              ...chaptersSchema.components.chapters,
+              ...chaptersSchema.fields.chapters,
               creatable: () => ({ query: () => ({ part: '2' }) })
             }
           }
@@ -1161,12 +1161,12 @@ describe('DitoListType', () => {
     it('keep the form of an item open when removing an earlier one', async () => {
       const { admin, findField, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
-              ...chaptersSchema.components.chapters,
+              ...chaptersSchema.fields.chapters,
               deletable: true,
               form: {
-                ...chaptersSchema.components.chapters.form,
+                ...chaptersSchema.fields.chapters.form,
                 nested: true
               }
             }
@@ -1199,12 +1199,12 @@ describe('DitoListType', () => {
     it('close the form of an item when removing it', async () => {
       const { admin, findField, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
-              ...chaptersSchema.components.chapters,
+              ...chaptersSchema.fields.chapters,
               deletable: true,
               form: {
-                ...chaptersSchema.components.chapters.form,
+                ...chaptersSchema.fields.chapters.form,
                 nested: true
               }
             }
@@ -1225,14 +1225,14 @@ describe('DitoListType', () => {
     it('keeps the uids of items that nested forms apply', async () => {
       const { admin, findField, data, getComponent, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               editable: true,
               itemLabel: 'title',
               form: {
                 type: 'form',
-                components: { title: { type: 'text' } }
+                fields: { title: { type: 'text' } }
               }
             }
           }
@@ -1256,14 +1256,14 @@ describe('DitoListType', () => {
     it('keeps the uids of nested items that nested forms remove', async () => {
       const { admin, findField, data, getComponent, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               editable: true,
               itemLabel: 'title',
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   sections: {
                     type: 'list',
                     deletable: true,
@@ -1326,7 +1326,7 @@ describe('DitoListType', () => {
     it('renders the cells of the columns with `render()`', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               columns: {
@@ -1363,7 +1363,7 @@ describe('DitoListType', () => {
     it('passes the data path of the value to `render()`', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               columns: { title: { render: ({ dataPath }) => dataPath } }
@@ -1380,18 +1380,18 @@ describe('DitoListType', () => {
     it('shows loaded dates as their types format them', async () => {
       const { findField } = await mountForm({
         schema: {
-          components: {
+          fields: {
             events: {
               type: 'list',
               columns: { day: {}, start: {}, doors: {} },
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   day: { type: 'date' },
                   // Columns find components in sections too:
                   times: {
                     type: 'section',
-                    components: {
+                    fields: {
                       start: { type: 'datetime' },
                       doors: { type: 'time' }
                     }
@@ -1422,19 +1422,19 @@ describe('DitoListType', () => {
   it('spans the list buttons across the columns and edit buttons', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           books: {
             type: 'list',
             creatable: true,
             columns: { title: {}, pages: {} },
-            form: { type: 'form', components: { title: { type: 'text' } } }
+            form: { type: 'form', fields: { title: { type: 'text' } } }
           },
           authors: {
             type: 'list',
             creatable: true,
             deletable: true,
             columns: { name: {}, born: {} },
-            form: { type: 'form', components: { name: { type: 'text' } } }
+            form: { type: 'form', fields: { name: { type: 'text' } } }
           }
         }
       },
@@ -1455,7 +1455,7 @@ describe('DitoListType', () => {
     it('moves items with their drag handles within the list', async () => {
       const { findField, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               draggable: true,
@@ -1493,12 +1493,12 @@ describe('DitoListType', () => {
     it('moves inlined items with their drag handles', async () => {
       const { findField, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               inlined: true,
               draggable: true,
-              form: { type: 'form', components: { title: { type: 'text' } } }
+              form: { type: 'form', fields: { title: { type: 'text' } } }
             }
           }
         },
@@ -1563,14 +1563,14 @@ describe('DitoListType', () => {
     it('marks the rows of items with errors in their forms', async () => {
       const { routeComponent, findField, data } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               editable: true,
               itemLabel: 'title',
               form: {
                 type: 'form',
-                components: { title: { type: 'text', required: true } }
+                fields: { title: { type: 'text', required: true } }
               }
             }
           }
@@ -1609,7 +1609,7 @@ describe('DitoListType', () => {
         views: {
           books: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'books' },
               paginate: 2,
@@ -1677,13 +1677,13 @@ describe('DitoListType', () => {
     async function mountFilteredRecipes(request) {
       return mountSchema({
         schema: {
-          components: {
+          fields: {
             recipes: {
               type: 'list',
               resource: { path: 'recipes' },
               paginate: 2,
               filters: { title: { filter: 'text' } },
-              form: { type: 'form', components: { title: { type: 'text' } } }
+              form: { type: 'form', fields: { title: { type: 'text' } } }
             }
           }
         },
@@ -1719,7 +1719,7 @@ describe('DitoListType', () => {
         views: {
           recipes: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'recipes' },
               filters: { title: { filter: 'text' } }
@@ -1750,16 +1750,16 @@ describe('DitoListType', () => {
       })
       const { wrapper, getComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             recipes: {
               type: 'list',
               resource: { path: 'recipes' },
               filters: {
                 course: {
-                  components: { course: { type: 'text', default: 'Main' } }
+                  fields: { course: { type: 'text', default: 'Main' } }
                 }
               },
-              form: { type: 'form', components: { title: { type: 'text' } } }
+              form: { type: 'form', fields: { title: { type: 'text' } } }
             }
           }
         },
@@ -1790,11 +1790,11 @@ describe('DitoListType', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       await mountSchema({
         schema: {
-          components: {
+          fields: {
             recipes: {
               type: 'list',
               resource: { path: 'recipes' },
-              form: { type: 'form', components: { title: { type: 'text' } } }
+              form: { type: 'form', fields: { title: { type: 'text' } } }
             }
           }
         },
@@ -1819,12 +1819,12 @@ describe('DitoListType', () => {
     it('shows filter errors on the filters panel', async () => {
       const { wrapper } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             recipes: {
               type: 'list',
               resource: { path: 'recipes' },
               filters: { title: { filter: 'text' } },
-              form: { type: 'form', components: { title: { type: 'text' } } }
+              form: { type: 'form', fields: { title: { type: 'text' } } }
             }
           }
         },

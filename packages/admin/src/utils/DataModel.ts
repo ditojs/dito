@@ -398,7 +398,7 @@ export class DataModel {
     value: any
   ) {
     data[name] = deserializeData(
-      { components: { [name]: schema } },
+      { fields: { [name]: schema } },
       { [name]: value },
       { ...this.#walkOptions, dataPath: getParentDataPath(dataPath) }
     )[name]
@@ -515,7 +515,7 @@ export class DataModel {
       const value = data[name]
       const isListItem = isListSource(sourceSchema)
       const merged = mergeData(
-        { components: { [name]: sourceSchema } },
+        { fields: { [name]: sourceSchema } },
         { [name]: isListItem ? [value] : value },
         { [name]: isListItem ? [item] : item },
         { services: this.#options.services, shouldMatchUids: true }
@@ -1262,7 +1262,7 @@ export class DataModel {
   ) {
     const { schema, data, name, dataPath } = entry
     const valueData = { ...data, [name]: value }
-    walkSchemaData({ components: { [name]: schema } }, valueData, {
+    walkSchemaData({ fields: { [name]: schema } }, valueData, {
       dataPath: getParentDataPath(dataPath),
       shouldWalk: nestedEntry => this.#shouldRenderEntry(nestedEntry),
       shouldSkipSourcesWithResource: true,

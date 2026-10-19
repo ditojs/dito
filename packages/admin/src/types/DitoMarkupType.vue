@@ -180,7 +180,7 @@ const DitoMarkupType = {
       // not the button. `editor.commands.focus()` would wait for a frame:
       editor.view.focus()
       const attributes = await services.adminContext.showDialog({
-        components: {
+        fields: {
           href: {
             type: 'url',
             label: 'Link',

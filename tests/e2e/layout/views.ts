@@ -16,21 +16,21 @@ export const widgets = createWidgetView<Widget>(
           type: 'tab',
           label: 'Main',
           defaultTab: true,
-          components: {
+          fields: {
             name: { type: 'text', label: 'Name' }
           }
         },
         details: {
           type: 'tab',
           label: 'Details',
-          components: {
+          fields: {
             notes: { type: 'textarea', label: 'Notes' },
             settings: {
               type: 'section',
               label: 'Settings',
               nested: true,
               collapsible: true,
-              components: {
+              fields: {
                 color: { type: 'text', label: 'Color' }
               }
             },
@@ -46,7 +46,7 @@ export const widgets = createWidgetView<Widget>(
               }),
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   url: { type: 'url', label: 'URL' },
                   image: {
                     type: 'upload',
@@ -64,7 +64,7 @@ export const widgets = createWidgetView<Widget>(
                     inlined: true,
                     form: {
                       type: 'form',
-                      components: { name: { type: 'text', label: 'Part Name' } }
+                      fields: { name: { type: 'text', label: 'Part Name' } }
                     }
                   }
                 }
@@ -77,7 +77,7 @@ export const widgets = createWidgetView<Widget>(
         info: {
           type: 'panel',
           label: 'Info',
-          components: {
+          fields: {
             size: {
               type: 'select',
               label: 'Size',
@@ -93,12 +93,12 @@ export const widgets = createWidgetView<Widget>(
 export const names = {
   type: 'view',
   label: 'Names',
-  components: {
+  fields: {
     name: {
       type: 'section',
       label: 'Name',
       component: nameLayout,
-      components: {
+      fields: {
         title: { type: 'text', label: 'Title', width: '1/3' },
         first: { type: 'text', label: 'First', width: '1/2' },
         last: { type: 'text', label: 'Last', width: '1/2' }

@@ -41,7 +41,7 @@ async function mountBookForm({
   const result = await mountForm({
     schema: {
       label: 'Book',
-      components: {
+      fields: {
         name: { type: 'text', required: true },
         note: { type: 'text' }
       },
@@ -313,14 +313,14 @@ describe('DitoForm resources', () => {
     async function openChapterForm() {
       const result = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             chapters: {
               type: 'list',
               editable: true,
               form: {
                 type: 'form',
-                components: { title: { type: 'text' } }
+                fields: { title: { type: 'text' } }
               }
             }
           }

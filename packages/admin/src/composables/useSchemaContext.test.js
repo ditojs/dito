@@ -15,21 +15,21 @@ describe('useSchemaContext()', () => {
     // Forms provide the root data, as they load it through their resource:
     mountForm({
       schema: {
-        components: {
+        fields: {
           name: { type: 'text' },
           authors: {
             type: 'list',
             inlined: true,
             form: {
               type: 'form',
-              components: {
+              fields: {
                 name: { type: 'text' },
                 books: {
                   type: 'list',
                   inlined: true,
                   form: {
                     type: 'form',
-                    components: { title: { type: 'text', ...titleSchema } }
+                    fields: { title: { type: 'text', ...titleSchema } }
                   }
                 }
               }
@@ -170,17 +170,17 @@ describe('useSchemaContext()', () => {
 
   describe('members of forms and views', () => {
     const titleSchema = {
-      components: { title: { type: 'text', required: true } }
+      fields: { title: { type: 'text', required: true } }
     }
 
     const chaptersSchema = {
-      components: {
+      fields: {
         chapters: {
           type: 'list',
           creatable: true,
           form: {
             type: 'form',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       }
@@ -202,8 +202,8 @@ describe('useSchemaContext()', () => {
       const { getComponent, schemaComponent } = await mountForm({
         schema: {
           tabs: {
-            details: { type: 'tab', components: { title: { type: 'text' } } },
-            reviews: { type: 'tab', components: { rating: { type: 'number' } } }
+            details: { type: 'tab', fields: { title: { type: 'text' } } },
+            reviews: { type: 'tab', fields: { rating: { type: 'number' } } }
           }
         },
         data: { title: 'Emma', rating: 5 }
@@ -283,7 +283,7 @@ describe('useSchemaContext()', () => {
     it('validate or check only the values that match', async () => {
       const { getComponent, getErrors } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text', required: true },
             author: { type: 'text', required: true }
           }
@@ -304,15 +304,15 @@ describe('useSchemaContext()', () => {
     it('match data paths relative to their item', async () => {
       const itemSchema = {
         type: 'form',
-        components: {
+        fields: {
           title: { type: 'text', required: true },
           check: { type: 'button' }
         }
       }
       const { admin, getComponent, dataModel } = await mountForm({
         schema: {
-          components: {
-            ...itemSchema.components,
+          fields: {
+            ...itemSchema.fields,
             chapters: { type: 'list', inlined: true, form: itemSchema },
             notes: { type: 'list', form: itemSchema }
           }
@@ -362,7 +362,7 @@ describe('useSchemaContext()', () => {
     it('reset the item to the defaults without data', async () => {
       const { getComponent, data } = await mountForm({
         schema: {
-          components: { title: { type: 'text', default: 'Untitled' } }
+          fields: { title: { type: 'text', default: 'Untitled' } }
         },
         data: { id: 1, title: 'Emma' }
       })
@@ -440,7 +440,7 @@ describe('useSchemaContext()', () => {
               menuContext ??= context
               return true
             },
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       })
@@ -475,7 +475,7 @@ describe('useSchemaContext()', () => {
     it('return the URL of the nearest resource', async () => {
       const { getComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             chapters: {
               type: 'list',
@@ -504,11 +504,11 @@ describe('useSchemaContext()', () => {
     it('return the URL of the form in lists without a resource', async () => {
       const { getComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             notes: {
               type: 'list',
               inlined: true,
-              form: { type: 'form', components: { text: { type: 'text' } } }
+              form: { type: 'form', fields: { text: { type: 'text' } } }
             }
           }
         },
@@ -544,7 +544,7 @@ describe('useSchemaContext()', () => {
         data: { title: 'Emma' }
       })
       const result = getComponent('title').context.showDialog({
-        components: { note: { type: 'text' } },
+        fields: { note: { type: 'text' } },
         buttons: { cancel: {}, apply: { type: 'submit' } },
         data: { note: 'Read again' }
       })
@@ -557,7 +557,7 @@ describe('useSchemaContext()', () => {
       let confirmation
       const { admin, findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             reset: {
               type: 'button',
               onClick({ confirm }) {
@@ -581,7 +581,7 @@ describe('useSchemaContext()', () => {
       let alerted
       const { admin, findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             rename: {
               type: 'button',
               async onClick({ prompt, alert }) {

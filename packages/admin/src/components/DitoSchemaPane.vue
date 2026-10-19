@@ -78,7 +78,7 @@ export default {
       const source = unref(sourceSchema)
       const itemAdapter =
         source && isInlined(source) ? getItemAdapter(source) : null
-      return Object.entries(props.schema?.components || {}).map(
+      return Object.entries(props.schema?.fields || {}).map(
         ([name, schema]) => {
           // The schema may be used elsewhere too:
           schema = { ...schema, name }
@@ -135,7 +135,7 @@ export default {
         const isFormLabelled = () => {
           const item = nested ? props.data?.[schema.name] : props.data
           const form = getItemFormSchema(schema, item, contexts.value[index])
-          return Object.values(form.components || {}).some(component =>
+          return Object.values(form.fields || {}).some(component =>
             isLabelled(component, !isCompact(form))
           )
         }

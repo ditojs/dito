@@ -22,7 +22,7 @@ describe('DitoSelectType', () => {
     it('labelizes options that are plain values', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             format: { type: 'select', options: ['hardcover', 'e-book'] }
           }
         },
@@ -41,7 +41,7 @@ describe('DitoSelectType', () => {
     it('uses the `value` and `label` keys of option objects', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: { genre: { type: 'select', options: genres } }
+          fields: { genre: { type: 'select', options: genres } }
         }
       })
       const field = findField('genre')
@@ -57,7 +57,7 @@ describe('DitoSelectType', () => {
     it('uses the keys and label functions of `options`', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             authorId: {
               type: 'select',
               options: {
@@ -85,7 +85,7 @@ describe('DitoSelectType', () => {
     it('groups the options with `options.group`', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             book: {
               type: 'select',
               options: {
@@ -120,7 +120,7 @@ describe('DitoSelectType', () => {
     it('groups the options by the result of an `options.group` callback', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             book: {
               type: 'select',
               options: {
@@ -154,7 +154,7 @@ describe('DitoSelectType', () => {
       )
       const { findField, data } = await mountForm({
         schema: {
-          components: {
+          fields: {
             genre: {
               type: 'select',
               options: {
@@ -189,7 +189,7 @@ describe('DitoSelectType', () => {
       )
       const { findField, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             country: { type: 'select', options: ['ch', 'fr'] },
             city: {
               type: 'select',
@@ -214,7 +214,7 @@ describe('DitoSelectType', () => {
     it('keeps plain values whose option disappeared and shows them as unavailable', async () => {
       const { findField, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             country: { type: 'select', options: ['ch', 'fr'] },
             city: {
               type: 'select',
@@ -252,7 +252,7 @@ describe('DitoSelectType', () => {
       const { findField, data, routeComponent, settle, submit } =
         await mountForm({
           schema: {
-            components: {
+            fields: {
               title: { type: 'text' },
               author: {
                 type: 'select',
@@ -281,7 +281,7 @@ describe('DitoSelectType', () => {
     it('selects object values that equal options without a value key', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             city: {
               type: 'select',
               options: {
@@ -306,7 +306,7 @@ describe('DitoSelectType', () => {
     it('matches values through `options.equals` before showing them as unavailable', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             country: {
               type: 'select',
               options: {
@@ -334,7 +334,7 @@ describe('DitoSelectType', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       const { getErrors } = await mountForm({
         schema: {
-          components: {
+          fields: {
             genre: {
               type: 'select',
               options: {
@@ -357,7 +357,7 @@ describe('DitoSelectType', () => {
         vi.spyOn(console, 'error').mockImplementation(() => {})
         const { getErrors, routeComponent, settle } = await mountSchema({
           schema: {
-            components: {
+            fields: {
               genre: {
                 type: 'select',
                 options: {
@@ -378,7 +378,7 @@ describe('DitoSelectType', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: { type: 'select', options: genres, search: () => genres }
           }
         }
@@ -398,7 +398,7 @@ describe('DitoSelectType', () => {
       async () => {
         const { data, routeComponent } = await mountForm({
           schema: {
-            components: {
+            fields: {
               genre: {
                 type: 'select',
                 options: { data: async () => genres }
@@ -419,7 +419,7 @@ describe('DitoSelectType', () => {
       ]
       const { data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             author: {
               type: 'select',
               relate: true,
@@ -437,7 +437,7 @@ describe('DitoSelectType', () => {
     it('computes a default option from the loaded options', async () => {
       const { data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: {
               type: 'select',
               options: { data: async () => genres },
@@ -452,7 +452,7 @@ describe('DitoSelectType', () => {
     it('shows the `placeholder` while no option is selected', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: {
               type: 'select',
               options: genres,
@@ -480,7 +480,7 @@ describe('DitoSelectType', () => {
     it('clears the value with the clear button', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: { type: 'select', options: genres, clearable: true }
           }
         },
@@ -493,13 +493,13 @@ describe('DitoSelectType', () => {
 
   describe('relate', () => {
     const teamSchema = {
-      components: {
+      fields: {
         members: {
           type: 'list',
           inlined: true,
           form: {
             type: 'form',
-            components: { name: { type: 'text' } }
+            fields: { name: { type: 'text' } }
           }
         },
         captain: {
@@ -601,9 +601,9 @@ describe('DitoSelectType', () => {
     it('relates by the key given in `relate`', async () => {
       const { findField, data, submit } = await mountForm({
         schema: {
-          components: {
-            ...teamSchema.components,
-            captain: { ...teamSchema.components.captain, relate: 'code' }
+          fields: {
+            ...teamSchema.fields,
+            captain: { ...teamSchema.fields.captain, relate: 'code' }
           }
         },
         data: {
@@ -640,7 +640,7 @@ describe('DitoSelectType', () => {
 
     it('links the selected option to its form in `view`', async () => {
       const { admin } = await mountAdminWithGenresView({
-        components: { genre: genreSchema },
+        fields: { genre: genreSchema },
         data: { genre: 2 }
       })
       const field = admin.wrapper.find('.dito-select')
@@ -652,7 +652,7 @@ describe('DitoSelectType', () => {
 
     it('disables the link without a selected option', async () => {
       const { admin } = await mountAdminWithGenresView({
-        components: { genre: genreSchema },
+        fields: { genre: genreSchema },
         data: { genre: null }
       })
       const field = admin.wrapper.find('.dito-select')

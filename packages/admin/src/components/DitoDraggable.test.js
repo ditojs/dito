@@ -20,7 +20,7 @@ describe('DitoDraggable', () => {
     // Uploads are only draggable with more than one file:
     const { findField, data, settle } = await mountForm({
       schema: {
-        components: {
+        fields: {
           attachments: { type: 'upload', multiple: true, draggable: true }
         }
       },
@@ -43,7 +43,7 @@ describe('DitoDraggable', () => {
   it('clears `isDragging` on the first mouse event after the drag', async () => {
     const { wrapper } = await mountForm({
       schema: {
-        components: {
+        fields: {
           attachments: { type: 'upload', multiple: true, draggable: true }
         }
       },

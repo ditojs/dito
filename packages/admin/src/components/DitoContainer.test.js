@@ -7,7 +7,7 @@ import { mountSchema, mountForm } from '../test/mount.js'
 async function mountWidths(widths, schema = {}) {
   const { findContainer } = await mountSchema({
     schema: {
-      components: Object.fromEntries(
+      fields: Object.fromEntries(
         widths.map((width, index) => [
           `field${index}`,
           { type: 'text', width, ...schema }
@@ -31,7 +31,7 @@ describe('DitoContainer', () => {
   it('evaluates its schema values with the value that the type displays', async () => {
     const { findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: {
             type: 'text',
             formatValue: ({ value }) => value.toUpperCase(),
@@ -73,7 +73,7 @@ describe('DitoContainer', () => {
     const aligns = ['top', 'center', 'bottom', 'middle']
     const { findContainer } = await mountSchema({
       schema: {
-        components: Object.fromEntries(
+        fields: Object.fromEntries(
           aligns.map(align => [align, { type: 'text', width: '1/4', align }])
         )
       }
@@ -92,7 +92,7 @@ describe('DitoContainer', () => {
   it('replaces labels with the label of their container', async () => {
     const { wrapper } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           heading: { type: 'label', label: 'Contents' },
           note: { type: 'label' }
         }
@@ -120,7 +120,7 @@ describe('DitoContainer', () => {
       const info = vi.fn(({ value }) => `About ${value}`)
       const { findContainer, dataModel, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text', label: 'Title', formatValue, info }
           }
         },
@@ -141,7 +141,7 @@ describe('DitoContainer', () => {
       let finish
       const { findContainer, findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             send: {
               type: 'button',
               disabled: ({ isRunning }) => isRunning,
@@ -164,7 +164,7 @@ describe('DitoContainer', () => {
     it('shows the options of the type in its label and info', async () => {
       const { findContainer } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: {
               type: 'select',
               options: ['novel', 'poem'],
@@ -184,20 +184,20 @@ describe('DitoContainer', () => {
       const label = ({ options }) => (options ? 'Choose' : 'Enter')
       const { findContainer, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             blocks: {
               type: 'list',
               inlined: true,
               forms: {
                 choice: {
                   type: 'form',
-                  components: {
+                  fields: {
                     value: { type: 'select', options: ['a', 'b'], label }
                   }
                 },
                 entry: {
                   type: 'form',
-                  components: { value: { type: 'text', label } }
+                  fields: { value: { type: 'text', label } }
                 }
               }
             }
@@ -217,7 +217,7 @@ describe('DitoContainer', () => {
     it('shows the query of lists in their own label', async () => {
       const { getComponent, findContainer } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               resource: { path: 'chapters' },

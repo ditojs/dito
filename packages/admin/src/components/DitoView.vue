@@ -59,16 +59,16 @@ export default {
     // The view displays its data as if it were an item of its source:
     const sourceSchema = computed(() => route.node.value.schema)
     const schema = computed(() => {
-      const { component, ...schema } = sourceSchema.value
-      // Render single-component views as views with that component:
+      const { field, ...schema } = sourceSchema.value
+      // Render single-field views as views with that field:
       return isSingleComponentView(sourceSchema.value)
         ? {
             ...schema,
-            components: {
+            fields: {
               [schema.name]: {
                 name: schema.name,
                 label: false,
-                ...component
+                ...field
               }
             }
           }

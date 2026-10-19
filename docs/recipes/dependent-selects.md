@@ -51,14 +51,14 @@ subgenre's options depend on the selected genre:
 ```js
 export const books = {
   type: 'view',
-  component: {
+  field: {
     type: 'list',
     resource: 'books',
     form: bookForm,
     columns: ['title', 'publishedAt'],
     filters: {
       genre: {
-        components: {
+        fields: {
           genre: {
             type: 'select',
             clearable: true,
@@ -109,7 +109,7 @@ itself doesn't add dependencies, so the options load again only when the genre
 changes. Selects keep values that their options lack and show them as
 unavailable, which is why `onChange()` of the genre clears the subgenre.
 
-A filter with `components` sends their values in their order as arguments to
+A filter with `fields` sends their values in their order as arguments to
 the model filter of its name, `null` for empty ones, e.g.
 `filter=genre:3,null`.
 

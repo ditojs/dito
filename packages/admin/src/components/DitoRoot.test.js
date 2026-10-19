@@ -26,7 +26,7 @@ function isUnloadPrevented() {
 
 describe('DitoRoot', () => {
   describe('beforeunload', () => {
-    const schema = { components: { title: { type: 'text' } } }
+    const schema = { fields: { title: { type: 'text' } } }
 
     it(`doesn't prevent unloading without unsaved changes`, async () => {
       await mountForm({ schema, data: { title: 'Dune' } })
@@ -48,7 +48,7 @@ describe('DitoRoot', () => {
         views: {
           books: {
             type: 'view',
-            components: { title: { type: 'text' } },
+            fields: { title: { type: 'text' } },
             buttons
           }
         }
@@ -102,12 +102,12 @@ describe('DitoRoot', () => {
     it(`doesn't keep clicked labels in the app state`, async () => {
       const { wrapper } = await mountForm({
         schema: {
-          components: {
+          fields: {
             details: {
               type: 'section',
               label: 'Details',
               collapsible: true,
-              components: { title: { type: 'text' } }
+              fields: { title: { type: 'text' } }
             }
           }
         },
@@ -136,7 +136,7 @@ describe('DitoRoot', () => {
           books: {
             type: 'view',
             label: 'Books',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         },
         request: ({ method, url, data }) =>
@@ -347,10 +347,10 @@ describe('DitoRoot', () => {
       const admin = await mountAdmin({ views: {} })
       await expect(
         admin.context.showDialog({
-          components: {
+          fields: {
             books: {
               type: 'list',
-              form: { type: 'form', components: {} }
+              form: { type: 'form', fields: {} }
             }
           }
         })
@@ -362,7 +362,7 @@ describe('DitoRoot', () => {
       const admin = await mountAdmin({ views: {} })
       await expect(
         admin.context.showDialog({
-          components: {},
+          fields: {},
           buttons: { confirm: { type: 'submit', data: {} } }
         })
       ).rejects.toThrow(`Unsupported schema key 'data' in 'confirm'`)
@@ -373,7 +373,7 @@ describe('DitoRoot', () => {
       const admin = await mountAdmin({ views: {} })
       const showDialog = () =>
         admin.context.showDialog({
-          components: {},
+          fields: {},
           buttons: { done: { type: 'submit', text: 'Done' } }
         })
       // Skip closed dialogs that are still leaving:
@@ -409,7 +409,7 @@ describe('DitoRoot', () => {
     it('resolves only with valid data', async () => {
       const admin = await mountAdmin({ views: {} })
       const promise = admin.context.showDialog({
-        components: { title: { type: 'text', required: true } },
+        fields: { title: { type: 'text', required: true } },
         buttons: { save: { type: 'submit' } }
       })
       await flushPromises()
@@ -438,7 +438,7 @@ describe('DitoRoot', () => {
           request: async () => ({ data: { user: { id: 1, username: 'ada' } } })
         },
         // Views need to be of type 'view':
-        views: { books: { type: 'form', components: {} } }
+        views: { books: { type: 'form', fields: {} } }
       })
       try {
         await vi.waitFor(() => {
@@ -464,7 +464,7 @@ describe('DitoRoot', () => {
         views: {
           books: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'books' },
               columns: { title: {} }
@@ -500,7 +500,7 @@ describe('DitoRoot', () => {
         views: {
           books: {
             type: 'view',
-            components: { title: { type: 'text', info } }
+            fields: { title: { type: 'text', info } }
           }
         }
       })

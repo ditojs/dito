@@ -2,7 +2,7 @@ import { mountSchema } from '../test/mount.js'
 
 async function mountLabel(label, data = {}) {
   const { findContainer } = await mountSchema({
-    schema: { components: { title: { type: 'text', label } } },
+    schema: { fields: { title: { type: 'text', label } } },
     data
   })
   return findContainer('title').find('.dito-label')
@@ -29,7 +29,7 @@ describe('DitoLabel', () => {
 
   it('shows the values of label components as text', async () => {
     const { findContainer } = await mountSchema({
-      schema: { components: { note: { type: 'label' } } },
+      schema: { fields: { note: { type: 'label' } } },
       data: { note: 'Draft & <b>proof</b>' }
     })
     const label = findContainer('note').find('.dito-label')

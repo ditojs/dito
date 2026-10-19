@@ -82,7 +82,7 @@ The options of all schemas: views, forms and components.
 | `onChange` | `ItemEventHandler` | | Called after a change of a value is done. Bubbles. |
 | `onInput` | `ItemEventHandler` | | Called for each edit that changes a value. Bubbles. |
 
-The schemas that hold components, views, forms, sections and panels, also
+The schemas that hold fields, views, forms, sections and panels, also
 have `onInitialize()`, `onDestroy()` and `onLoad()`, see
 [RouteSchemaBase](#routeschemabase). See [Events](./events.md) for when each
 event fires and what return values mean.
@@ -97,7 +97,7 @@ that can be cleared.
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
 | `type` | `string` | | The component type. Required. |
-| `name` | `string` | the key | The key of the value in the item. Set from the key in `components`. |
+| `name` | `string` | the key | The key of the value in the item. Set from the key in `fields`. |
 | `label` | `SchemaValue<TextOrHtml \| boolean \| { text? \| html?, prefix?, suffix? }>` | the labelized name | The label, see [Text and HTML](#text-and-html). `false` hides it. The object form adds [affixes](#affixes). Buttons, labels, panels, sections and spacers don't generate one. |
 | `if` | `SchemaValue<boolean>` | `true` | Renders the component only if `true`. Values of components that aren't rendered aren't computed. |
 | `visible` | `SchemaValue<boolean>` | `true`, `false` for `value` | Shows or hides the component. Hidden components keep their value. |
@@ -188,6 +188,13 @@ Keys that 4.0 removed, e.g. `format` (except on dates and colors), `compute`,
 `methods`, `watch` or `relateBy`, throw when a schema still uses them, naming
 the replacement. The [upgrade guide](../../upgrading-to-4.x.md#admin-schemas)
 lists them all.
+
+### Renamed keys
+
+`fields`, also of custom filters, and the `field` of views were named
+`components` and `component` before 5.2. The old names still work, but are
+deprecated and log a warning. Setup renames them, so code that reads them from
+schemas after setup needs to read `fields` and `field`.
 
 ## RouteSchemaBase
 
@@ -747,36 +754,36 @@ Components that group, label or act rather than edit a value: `section`,
 
 ### section
 
-`SectionSchema`. Groups components, with an optional header. By default the
-section's components read and write the item that contains the section, and
+`SectionSchema`. Groups fields, with an optional header. By default the
+section's fields read and write the item that contains the section, and
 the section has no value of its own. With `nested: true` they edit an object
 stored under the section's name, e.g. `item.address`.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
 | `type` | `'section'` | | Required. |
-| `components` | `Components \| SchemaValueCallback<Components>` | | The components. A callback creates them from the context, e.g. fields that depend on a selected template; it runs again when the data that it reads changes, and its `item` is the item that contains the section. |
-| `form` | `ResolvableForm` | | A form for the content, instead of `components`, for form options like `tabs`. |
+| `fields` | `Components \| SchemaValueCallback<Components>` | | The fields. A callback creates them from the context, e.g. fields that depend on a selected template; it runs again when the data that it reads changes, and its `item` is the item that contains the section. |
+| `form` | `ResolvableForm` | | A form for the content, instead of `fields`, for form options like `tabs`. |
 | `forms` | `Record<string, ResolvableForm>` | | Forms by item type, picked by `type` of the data, else `forms.default`. |
-| `tabs` | `Record<string, object>` | | Shows the components in [tabs](#tabs). |
+| `tabs` | `Record<string, object>` | | Shows the fields in [tabs](#tabs). |
 | `nested` | `boolean` | `false` | Stores the section's values in an object under its name. Its default value is then `{}`. |
 | `label` | `SchemaValue<string \| boolean>` | | The header of the section. Sections don't generate labels from their name. |
 | `collapsible` | `SchemaValue<boolean>` | `false` | Adds a toggle to the header that collapses the section. |
 | `collapsed` | `SchemaValue<boolean>` | `false` | Whether the section is collapsed initially. Only with `collapsible`. |
 | `compact` | `boolean` | `false` | Renders with reduced spacing; the label then shows outside the section. |
 | `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons for the section's data. |
-| `component` | `Resolvable<VueComponent>` | | Lays out the components with this Vue component instead of in rows, see below. Not supported together with `tabs`, `collapsible` and `clipboard`. |
+| `component` | `Resolvable<VueComponent>` | | Lays out the fields with this Vue component instead of in rows, see below. Not supported together with `tabs`, `collapsible` and `clipboard`. |
 
 Events: `onToggle()`, `onInitialize()`, `onDestroy()` and `onLoad()`, and
 `onInput()`, `onChange()` and `onClick()` bubbling up from the section's
-components, see [Events](./events.md).
+fields, see [Events](./events.md).
 
 ```js
 details: {
   type: 'section',
   label: 'Details',
   collapsible: true,
-  components: {
+  fields: {
     isbn: { type: 'text', width: '1/2' },
     stock: { type: 'integer', width: '1/2' }
   }
@@ -785,7 +792,7 @@ details: {
 shippingAddress: {
   type: 'section',
   nested: true, // Stored in `item.shippingAddress`
-  components: {
+  fields: {
     street: { type: 'text' },
     city: { type: 'text' },
     country: { type: 'text' }
@@ -795,8 +802,8 @@ shippingAddress: {
 
 With `component`, the section's label shows above the component, which
 receives the props `schema` and `context` of the section. It places the
-components with `DitoSchemaField` of `@ditojs/admin`, whose prop `name` is a
-key of `components`, and whose default slot is passed on to the custom
+fields with `DitoSchemaField` of `@ditojs/admin`, whose prop `name` is a
+key of `fields`, and whose default slot is passed on to the custom
 component of `type: 'component'` fields, and groups of them in rows with
 `DitoPane`, whose prop `names` holds such keys, all of them by default. See
 [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields).
@@ -808,7 +815,7 @@ item type, and those of nested sections as their object type, see
 ### panel
 
 `PanelSchema`. A box in the sidebar. Panels are given in `panels` of any
-schema, or as a component of `type: 'panel'`. Like sections, their components
+schema, or as a component of `type: 'panel'`. Like sections, their fields
 read and write the item around them by default; with `nested: true` they edit
 an object stored under the panel's name, e.g. `item.details.title`. A panel
 with its own `data` edits that data instead, and can't be nested.
@@ -817,17 +824,17 @@ with its own `data` edits that data instead, and can't be nested.
 | ------ | ---- | ------- | ----------- |
 | `type` | `'panel'` | | Required. |
 | `label` | `SchemaValue<string \| boolean>` | the labelized name | The header of the panel. |
-| `components` | `Components` | | The components of the panel. |
+| `fields` | `Components` | | The fields of the panel. |
 | `nested` | `boolean` | `false` | Stores the panel's values in an object under its name, like nested sections. Throws together with `data`. |
 | `data` | `SchemaValue<Record<string, any>>` | | The panel's own data, e.g. of filters. Its edits don't make the form or view dirty, but writes through `rootItem` or `parentItem` change the data around the panel and count as edits. It is the `item` of the contexts inside the panel; `data()`, `if`, `visible`, `label` and `sticky` receive the context of the data around the panel. |
 | `buttons` | `Buttons` | | Buttons at the bottom of the panel. |
 | `panelButtons` | `Buttons` | | Small buttons in the header. |
 | `sticky` | `SchemaValue<boolean>` | `false` | Keeps the header at the top while scrolling. |
 | `if`, `visible` | `SchemaValue<boolean>` | `true` | Renders or shows the panel. Panels of components in tabs only show while their tab is selected. |
-| `disabled` | `boolean` | the disabled state around the panel | Disables the panel's components and buttons. |
+| `disabled` | `boolean` | the disabled state around the panel | Disables the panel's fields and buttons. |
 
 Events: `onInitialize`, `onDestroy`, `onLoad`, and `onInput` and `onChange`
-bubbling up from the panel's components, see [Events](./events.md). Panels
+bubbling up from the panel's fields, see [Events](./events.md). Panels
 with their own data don't pass events on.
 
 ```js
@@ -836,7 +843,7 @@ panels: {
     type: 'panel',
     label: 'Statistics',
     sticky: true,
-    components: {
+    fields: {
       wordCount: {
         type: 'value',
         visible: true,
@@ -880,7 +887,7 @@ width is `'auto'`, and they don't generate labels.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
-| `type` | `'button' \| 'submit'` | `'button'` in `buttons` | Required in `components`. |
+| `type` | `'button' \| 'submit'` | `'button'` in `buttons` | Required in `fields`. |
 | `text` | `SchemaValue<string>` | | The text of the button. Buttons named after a verb, e.g. `cancel` or `delete`, are styled for it and, without `text`, labelled with it for assistive technology. |
 | `resource` | [`Resource`](#resource) | | A resource that the button submits the data to, relative to the resource of its form or source. Clicking submits unless `onClick()` returns a value other than `undefined`. |
 | `closeForm` | `SchemaValue<boolean>` | `false` | Closes the form after a successful submit. |
@@ -929,9 +936,9 @@ sources share the [source options](#source-options), in addition to the
 | ------ | ---- | ------- | ----------- |
 | `form` | `ResolvableForm` | | The [form](#form) that edits the items. Also a promise, a function or a module namespace of `import()`. |
 | `forms` | `Record<string, ResolvableForm>` | | Forms by item type, for items of several types: the form is picked by `item.type`, else `forms.default`. The create menu offers each form by its `creatable`, and greys out the `disabled` ones; their `if` and `visible` don't affect it. |
-| `components` | `Components` | | The components of an inlined form, instead of `form`. Implies `inlined`. |
-| `tabs` | `Record<string, object>` | | The [tabs](#tabs) of the inlined form of `components`. |
-| `compact` | `boolean` | `false` | Renders the inlined form of `components` with reduced spacing, with labels outside of it. |
+| `fields` | `Components` | | The fields of an inlined form, instead of `form`. Implies `inlined`. |
+| `tabs` | `Record<string, object>` | | The [tabs](#tabs) of the inlined form of `fields`. |
+| `compact` | `boolean` | `false` | Renders the inlined form of `fields` with reduced spacing, with labels outside of it. |
 | `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons for all loaded items to the row of the label of lists, or to the row of their scopes and pagination without a label, and to the form of objects, unless the form sets its own `clipboard`. Lists with their own `resource` and tree lists don't support it. |
 | `view` | `string` | | The name of a view whose form edits the items. Editing navigates to that view. Unknown names throw. |
 | `resource` | [`Resource`](#resource) | | The API resource of the items. Sources with a resource save their items themselves and are excluded from the data around them, unless `exclude: false`, e.g. to save their order through `serializeValue()`. Inlined sources can't have one. |
@@ -1009,7 +1016,7 @@ chapters: {
   deletable: true,
   collapsible: true,
   itemLabel: ({ item }) => item.title || 'Untitled',
-  components: {
+  fields: {
     title: { type: 'text' }
   }
 }
@@ -1046,7 +1053,7 @@ and changing filters resets the page.
 | ------ | ------- | ----------- |
 | `{ filter: 'text' }` | `label`, `width`, `operators` | A text input, matching with `'contains'`. `operators` adds a select of the given operators of `'contains'`, `'equals'`, `'starts-with'` and `'ends-with'`, or of all of them for `true`; while no operator is chosen, the text matches like `'contains'`. |
 | `{ filter: 'date-range' }` | `label`, `width` | Two date-time inputs, `from` and `to`. |
-| `{ components }` | `label`, `width` | A custom filter: its components' values are passed to the server's filter as arguments, in their order. |
+| `{ fields }` | `label`, `width` | A custom filter: its fields' values are passed to the server's filter as arguments, in their order. |
 
 `label` defaults to the labelized name; the labels of the filter's inputs
 become their placeholders. `sticky: true` next to the filters keeps the
@@ -1059,7 +1066,7 @@ filters: {
   publishedAt: { filter: 'date-range', label: 'Published' },
   price: {
     label: 'Price',
-    components: {
+    fields: {
       min: { type: 'number' },
       max: { type: 'number' }
     }
@@ -1080,7 +1087,7 @@ default value is `null`.
 ```js
 shippingAddress: {
   type: 'object',
-  components: {
+  fields: {
     street: { type: 'text' },
     city: { type: 'text', width: '1/2' },
     country: { type: 'text', width: '1/2' }
@@ -1094,7 +1101,7 @@ shippingAddress: {
 `tree-list` holds an array of root items, `tree-object` one root item. The
 forms of the items are embedded next to the tree. Trees have the
 [source options](#source-options) except the ones of inlined forms
-(`inlined`, `components`, `collapsible`, `collapsed`) and of tables
+(`inlined`, `fields`, `collapsible`, `collapsed`) and of tables
 (`columns`, `paginate`, `render`, `component`), and they have no create button
 or `buttons`. They add:
 
@@ -1130,7 +1137,7 @@ genres: {
 
 ## Views, Forms and Dialogs
 
-The schemas that hold components: views are the pages of the admin, forms edit
+The schemas that hold fields: views are the pages of the admin, forms edit
 the items of lists and objects, dialogs ask for input. All of them share the
 options of [`SchemaBase` and `RouteSchemaBase`](#routeschemabase).
 
@@ -1145,9 +1152,9 @@ of [`DitoAdmin`](./admin.md) map names to views or menus.
 | `name` | `string` | the key in `views` | The name of the view. |
 | `label` | `SchemaValue<TextOrHtml>` | the labelized name | The label in the menu and the trail. |
 | `path` | `string` | the normalized name | The URL path of the view. |
-| `component` | `Component` | | A single component that the view displays, usually a list. It is named after the view and has no label. |
-| `components` | `Components` | | The components of the view, instead of `component`. |
-| `tabs` | `Record<string, object>` | | Shows groups of components in tabs, see [Tabs](#tabs). |
+| `field` | `Component` | | A single field that the view displays, usually a list. It is named after the view and has no label. |
+| `fields` | `Components` | | The fields of the view, instead of `field`. |
+| `tabs` | `Record<string, object>` | | Shows groups of fields in tabs, see [Tabs](#tabs). |
 | `buttons`, `if`, `wide`, `breadcrumb`, `clipboard` | | | See [RouteSchemaBase](#routeschemabase). `if` also blocks direct URL access. |
 
 Events: `onInitialize`, `onDestroy`, `onLoad`, `onChange`, `onInput`,
@@ -1158,7 +1165,7 @@ const views = {
   books: {
     type: 'view',
     label: 'Books',
-    component: {
+    field: {
       type: 'list',
       resource: 'books',
       form: bookForm,
@@ -1171,7 +1178,7 @@ const views = {
 }
 ```
 
-A view with a single `component` acts on that component's list: the list's
+A view with a single `field` acts on that field's list: the list's
 forms are routed under the view's path, e.g. `/admin/books/1`.
 
 ### page
@@ -1224,9 +1231,9 @@ schemas, also as promises, functions returning them, or module namespaces of
 | `type` | `'form'` | | Required. |
 | `name` | `SchemaValue<string>` | | The name of the item model, used in labels. |
 | `label` | `SchemaValue<TextOrHtml \| boolean>` | the labelized name | The label of the form, e.g. in `'Edit Book'`. |
-| `components` | `Components` | | The components of the form. Can also be a callback that creates them from the context, which runs again when the data it reads changes. |
-| `component` | `Resolvable<VueComponent>` | | A Vue component that lays out the form's `components`, which it needs, as in [`section`](#section), and receives the props `schema` and `context` of the form, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields). |
-| `tabs` | `Record<string, object>` | | Shows groups of components in tabs, see [Tabs](#tabs). |
+| `fields` | `Components` | | The fields of the form. Can also be a callback that creates them from the context, which runs again when the data it reads changes. |
+| `component` | `Resolvable<VueComponent>` | | A Vue component that lays out the form's `fields`, which it needs, as in [`section`](#section), and receives the props `schema` and `context` of the form, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields). |
+| `tabs` | `Record<string, object>` | | Shows groups of fields in tabs, see [Tabs](#tabs). |
 | `idKey` | `string` | `'id'` | The key of the item's id. |
 | `buttons` | `Buttons` | | Merged into the default buttons, see below. |
 | `creatable` | `SchemaValue<boolean>` | `true` | `false` leaves the form out of the source's create button and menu. Callbacks receive the context of the source: `item` is the item that holds the list or object, `value` the list or object. |
@@ -1243,7 +1250,7 @@ Events: `onSuccess`, `onError`, `onApply`, `onCancel`, `onToggle`, and
 export const bookForm = {
   type: 'form',
   label: 'Book',
-  components: {
+  fields: {
     title: { type: 'text', required: true },
     author: {
       type: 'select',
@@ -1288,7 +1295,7 @@ buttons: {
 | Kind | How | Behaviour |
 | ---- | --- | --------- |
 | Routed | `form` on a list or object | Opens on its own page under the source's path, e.g. `/admin/books/1`. |
-| Inlined | `inlined: true` or `components` on a list or object | Rendered inside the list or object, one per item. `collapsible` and `collapsed` apply. |
+| Inlined | `inlined: true` or `fields` on a list or object | Rendered inside the list or object, one per item. `collapsible` and `collapsed` apply. |
 | Nested | `form` on a list or object without its own `resource`, whose items are part of the data around it | Routed. Edits a draft of the item that is applied to the parent's data on submit (`onApply`); the parent saves it. With `mutate: true` it edits the parent's data directly. |
 | Embedded | the forms of `tree-list` and `tree-object` items | Routed, and shown next to the tree in the page of the form or view around it. |
 
@@ -1308,11 +1315,11 @@ tabs: {
   content: {
     type: 'tab',
     defaultTab: true,
-    components: { title: { type: 'text' }, summary: { type: 'textarea' } }
+    fields: { title: { type: 'text' }, summary: { type: 'textarea' } }
   },
   metadata: {
     type: 'tab',
-    components: { isbn: { type: 'text' } }
+    fields: { isbn: { type: 'text' } }
   }
 }
 ```

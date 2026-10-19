@@ -175,7 +175,7 @@ describe('getDataValidationErrors()', () => {
 
   it('returns `null` for valid data', () => {
     const schema = {
-      components: {
+      fields: {
         title: { type: 'text', required: true }
       }
     }
@@ -186,12 +186,12 @@ describe('getDataValidationErrors()', () => {
     // The values are validated at the data paths of the items, where the
     // admin edits them, wrapped in objects under the `wrapPrimitives` key.
     const schema = {
-      components: {
+      fields: {
         emails: {
           type: 'list',
           wrapPrimitives: 'email',
           form: {
-            components: { email: { type: 'text', required: true } }
+            fields: { email: { type: 'text', required: true } }
           }
         }
       }
@@ -205,14 +205,14 @@ describe('getDataValidationErrors()', () => {
     // The panels of components share the data of the schema that contains
     // the components, see `DitoContainer.panelEntries`.
     const schema = {
-      components: {
+      fields: {
         chapters: {
           type: 'list',
-          form: { components: { title: { type: 'text' } } },
+          form: { fields: { title: { type: 'text' } } },
           panels: {
             meta: {
               type: 'panel',
-              components: { code: { type: 'text', required: true } }
+              fields: { code: { type: 'text', required: true } }
             }
           }
         }
@@ -226,10 +226,10 @@ describe('getDataValidationErrors()', () => {
   it('validates the components of panel components', () => {
     // Panels share the data of their schema, like unnested sections.
     const schema = {
-      components: {
+      fields: {
         links: {
           type: 'panel',
-          components: { website: { type: 'text', required: true } }
+          fields: { website: { type: 'text', required: true } }
         }
       }
     }
@@ -240,7 +240,7 @@ describe('getDataValidationErrors()', () => {
 
   it('returns errors by data path, in the format of server errors', () => {
     const schema = {
-      components: {
+      fields: {
         title: { type: 'text', required: true },
         count: { type: 'integer', min: 1 },
         note: { type: 'text' }
@@ -257,7 +257,7 @@ describe('getDataValidationErrors()', () => {
 
   it('prefixes errors with `dataPath`', () => {
     const schema = {
-      components: { title: { type: 'text', required: true } }
+      fields: { title: { type: 'text', required: true } }
     }
     expect(
       getDataValidationErrors(schema, {}, { dataPath: 'items/0' })
@@ -268,22 +268,22 @@ describe('getDataValidationErrors()', () => {
 
   it('validates tabs, panels and unnested components', () => {
     const schema = {
-      components: {
+      fields: {
         section: {
           type: 'section',
-          components: { a: { type: 'text', required: true } }
+          fields: { a: { type: 'text', required: true } }
         }
       },
       tabs: {
         tab: {
           type: 'tab',
-          components: { b: { type: 'text', required: true } }
+          fields: { b: { type: 'text', required: true } }
         }
       },
       panels: {
         panel: {
           type: 'panel',
-          components: { c: { type: 'text', required: true } }
+          fields: { c: { type: 'text', required: true } }
         }
       }
     }
@@ -296,12 +296,12 @@ describe('getDataValidationErrors()', () => {
 
   it('validates the items of nested forms', () => {
     const schema = {
-      components: {
+      fields: {
         items: {
           type: 'list',
           form: {
             type: 'form',
-            components: { title: { type: 'text', required: true } }
+            fields: { title: { type: 'text', required: true } }
           }
         },
         object: {
@@ -309,11 +309,11 @@ describe('getDataValidationErrors()', () => {
           forms: {
             a: {
               type: 'form',
-              components: { a: { type: 'text', required: true } }
+              fields: { a: { type: 'text', required: true } }
             },
             b: {
               type: 'form',
-              components: { b: { type: 'text', required: true } }
+              fields: { b: { type: 'text', required: true } }
             }
           }
         }
@@ -331,7 +331,7 @@ describe('getDataValidationErrors()', () => {
 
   it('skips components whose `if` is false', () => {
     const schema = {
-      components: {
+      fields: {
         show: { type: 'text' },
         a: {
           type: 'text',
@@ -341,14 +341,14 @@ describe('getDataValidationErrors()', () => {
         section: {
           type: 'section',
           if: ({ item }) => item.show,
-          components: { b: { type: 'text', required: true } }
+          fields: { b: { type: 'text', required: true } }
         },
         items: {
           type: 'list',
           if: ({ item }) => item.show,
           form: {
             type: 'form',
-            components: { c: { type: 'text', required: true } }
+            fields: { c: { type: 'text', required: true } }
           }
         }
       },
@@ -356,7 +356,7 @@ describe('getDataValidationErrors()', () => {
         tab: {
           type: 'tab',
           if: ({ item }) => item.show,
-          components: { d: { type: 'text', required: true } }
+          fields: { d: { type: 'text', required: true } }
         }
       }
     }
@@ -372,13 +372,13 @@ describe('getDataValidationErrors()', () => {
 
   it('skips sources with their own resource', () => {
     const schema = {
-      components: {
+      fields: {
         items: {
           type: 'list',
           resource: { path: 'items' },
           form: {
             type: 'form',
-            components: { title: { type: 'text', required: true } }
+            fields: { title: { type: 'text', required: true } }
           }
         }
       }
@@ -389,18 +389,18 @@ describe('getDataValidationErrors()', () => {
   it('validates the panels of sources with their own resource', () => {
     // The panels display the data that contains the sources.
     const schema = {
-      components: {
+      fields: {
         items: {
           type: 'list',
           resource: { path: 'items' },
           form: {
             type: 'form',
-            components: { title: { type: 'text', required: true } }
+            fields: { title: { type: 'text', required: true } }
           },
           panels: {
             info: {
               type: 'panel',
-              components: { note: { type: 'text', required: true } }
+              fields: { note: { type: 'text', required: true } }
             }
           }
         }
@@ -411,19 +411,19 @@ describe('getDataValidationErrors()', () => {
     })
   })
 
-  it('validates components created by `components()` callbacks', () => {
+  it('validates components created by `fields()` callbacks', () => {
     const createComponents = ({ item }) =>
       Object.fromEntries(
         item.fields.map(name => [name, { type: 'text', required: true }])
       )
     const schema = {
-      components: {
+      fields: {
         values: {
           type: 'section',
           nested: true,
-          components: createComponents
+          fields: createComponents
         },
-        address: { type: 'section', components: createComponents }
+        address: { type: 'section', fields: createComponents }
       }
     }
     expect(
@@ -436,7 +436,7 @@ describe('getDataValidationErrors()', () => {
 
   it('validates formatted values', () => {
     const schema = {
-      components: {
+      fields: {
         name: {
           type: 'text',
           required: true,
@@ -452,7 +452,7 @@ describe('getDataValidationErrors()', () => {
   it('passes `rootData` and `dataPath` to callbacks', () => {
     const rootData = { strict: true }
     const schema = {
-      components: {
+      fields: {
         name: {
           type: 'text',
           required: ({ rootItem, dataPath }) => (

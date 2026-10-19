@@ -34,7 +34,7 @@ describe('Variance: typed schemas assignable to any', () => {
   it('PanelSchema<Entry> is assignable to PanelSchema<any>', () => {
     const panel: PanelSchema<Entry> = {
       type: 'panel',
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     }
@@ -44,7 +44,7 @@ describe('Variance: typed schemas assignable to any', () => {
   it('View<Entry> is assignable to View<any>', () => {
     const view: View<Entry> = {
       type: 'view',
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     }
@@ -54,13 +54,13 @@ describe('Variance: typed schemas assignable to any', () => {
   it('View<Entry> with panels is assignable to View<any>', () => {
     const view: View<Entry> = {
       type: 'view',
-      components: {
+      fields: {
         title: { type: 'text' }
       },
       panels: {
         sidebar: {
           type: 'panel',
-          components: {
+          fields: {
             title: { type: 'text' }
           }
         }
@@ -73,7 +73,7 @@ describe('Variance: typed schemas assignable to any', () => {
     const views = {
       entries: {
         type: 'view',
-        components: {
+        fields: {
           title: { type: 'text' }
         }
       } satisfies View<Entry>
@@ -84,7 +84,7 @@ describe('Variance: typed schemas assignable to any', () => {
   it('FormSchema<Entry> is assignable to ResolvableForm<any>', () => {
     const form: FormSchema<Entry> = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     }
@@ -94,7 +94,7 @@ describe('Variance: typed schemas assignable to any', () => {
   it('FormSchema<Parent> (array props) is assignable to ResolvableForm<any>', () => {
     const form: FormSchema<Parent> = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     }
@@ -104,7 +104,7 @@ describe('Variance: typed schemas assignable to any', () => {
   it('FormSchema with primitive + nested arrays is assignable to ResolvableForm<any>', () => {
     const form: FormSchema<DeepItem> = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     }
@@ -115,7 +115,7 @@ describe('Variance: typed schemas assignable to any', () => {
     const forms = {
       entry: {
         type: 'form',
-        components: {
+        fields: {
           title: { type: 'text' }
         }
       } satisfies FormSchema<Entry>

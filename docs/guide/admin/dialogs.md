@@ -11,7 +11,7 @@ refund: {
     // The button doesn't need to stay busy while the dialog is open:
     context.isRunning = false
     const data = await context.showDialog({
-      components: {
+      fields: {
         amount: { type: 'number', decimals: 2, min: 0 },
         reason: { type: 'textarea', lines: 3 }
       },
@@ -33,7 +33,7 @@ refund: {
 }
 ```
 
-`showDialog()` takes the dialog's `components`, like those of a form, its
+`showDialog()` takes the dialog's `fields`, like those of a form, its
 `buttons`, its initial `data`, and `settings` such as its accessible `label`
 and the minimum and maximum widths of its content, `minWidth` and `width`, see
 [`showDialog()`](../../api/admin/context.md#showdialog). A `submit`
@@ -99,13 +99,13 @@ if (isConfirmed) {
 
 ## Inside the dialog
 
-The dialog's components have contexts of their own, whose `item` and
+The dialog's fields have contexts of their own, whose `item` and
 `rootItem` are the dialog's data. Their handlers can use the dialog's data and
 actions, e.g. `validate()` and `closeDialog()`. Dialogs have their own cache
 for `request({ cache: 'local' })` while they're open.
 
 Dialogs can't contain lists with routed forms, as these need routes: such
-components throw.
+fields throw.
 
 ## Outside of callbacks
 

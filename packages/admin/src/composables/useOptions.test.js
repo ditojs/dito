@@ -13,7 +13,7 @@ describe('useOptions()', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       const { getErrors } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: {
               type: 'select',
               options: { data: () => Promise.reject('Genres are offline') }
@@ -30,7 +30,7 @@ describe('useOptions()', () => {
         views: {
           test: {
             type: 'view',
-            components: { genre: { type: 'select', options: 'Fiction' } }
+            fields: { genre: { type: 'select', options: 'Fiction' } }
           }
         }
       })
@@ -48,7 +48,7 @@ describe('useOptions()', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       const { getErrors, dataModel, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             category: { type: 'text' },
             genre: {
               type: 'select',
@@ -76,7 +76,7 @@ describe('useOptions()', () => {
     it('supports functions that return the values of options', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: {
               type: 'select',
               options: {
@@ -107,7 +107,7 @@ describe('useOptions()', () => {
         }
         await mountSchema({
           schema: {
-            components: {
+            fields: {
               genre: {
                 type,
                 options: ['Fiction', 'Biography'],
@@ -129,7 +129,7 @@ describe('useOptions()', () => {
     const mountWithSearch = search =>
       mountSchema({
         schema: {
-          components: {
+          fields: {
             genres: {
               type: 'multiselect',
               options: ['Fiction', 'Biography'],
@@ -185,7 +185,7 @@ describe('useOptions()', () => {
     it('keeps values that no option has, without editing', async () => {
       const { data, routeComponent } = await mountForm({
         schema: {
-          components: { genre: { type: 'select', options: genres } }
+          fields: { genre: { type: 'select', options: genres } }
         },
         data: { genre: 'drama' }
       })
@@ -196,7 +196,7 @@ describe('useOptions()', () => {
     it('keeps the values of taggable multiselects without options', async () => {
       const { data } = await mountForm({
         schema: {
-          components: {
+          fields: {
             genre: { type: 'multiselect', taggable: true, options: genres }
           }
         },
@@ -215,7 +215,7 @@ describe('useOptions()', () => {
     it('reduces related options to their ids', async () => {
       const { schemaComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             mainAuthor: {
               type: 'select',
               relate: true,
@@ -242,13 +242,13 @@ describe('useOptions()', () => {
     it('relates new options from the data at `options.dataPath`', async () => {
       const { schemaComponent, getComponent, data, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             authors: {
               type: 'list',
               inlined: true,
               form: {
                 type: 'form',
-                components: { name: { type: 'text' } }
+                fields: { name: { type: 'text' } }
               }
             },
             mainAuthor: {

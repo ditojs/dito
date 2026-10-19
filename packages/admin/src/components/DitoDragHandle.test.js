@@ -6,7 +6,7 @@ import DitoDragHandle from './DitoDragHandle.vue'
 async function mountBooks(books = {}) {
   return mountSchema({
     schema: {
-      components: {
+      fields: {
         books: {
           type: 'list',
           draggable: true,

@@ -35,7 +35,7 @@ describe('ViewRegistry', () => {
         type: 'menu',
         label: 'Catalog',
         items: {
-          authors: { type: 'view', label: 'Authors', components: {} }
+          authors: { type: 'view', label: 'Authors', fields: {} }
         }
       }
     })
@@ -58,7 +58,7 @@ describe('ViewRegistry', () => {
 
   it('replaces the routes of the previous views', async () => {
     const { admin, viewRegistry } = await createViewRegistry({
-      books: { type: 'view', label: 'Books', components: {} }
+      books: { type: 'view', label: 'Books', fields: {} }
     })
     expect(await viewRegistry.resolve()).toBe(true)
     expect(await viewRegistry.resolve()).toBe(true)
@@ -71,7 +71,7 @@ describe('ViewRegistry', () => {
     let shouldFail = false
     const { viewRegistry } = await createViewRegistry(async () => {
       if (shouldFail) throw new Error('Forbidden')
-      return { books: { type: 'view', label: 'Books', components: {} } }
+      return { books: { type: 'view', label: 'Books', fields: {} } }
     })
     expect(await viewRegistry.resolve()).toBe(true)
     shouldFail = true
@@ -82,7 +82,7 @@ describe('ViewRegistry', () => {
 
   it('clears the views and navigates home', async () => {
     const { admin, viewRegistry } = await createViewRegistry({
-      books: { type: 'view', label: 'Books', components: {} }
+      books: { type: 'view', label: 'Books', fields: {} }
     })
     await viewRegistry.resolve()
     await admin.navigate('/books')
@@ -105,10 +105,10 @@ describe('ViewRegistry across sessions', () => {
         books: {
           type: 'view',
           label: 'Books',
-          component: {
+          field: {
             type: 'list',
             resource: { path: 'books' },
-            form: { type: 'form', components: { title: { type: 'text' } } }
+            form: { type: 'form', fields: { title: { type: 'text' } } }
           }
         }
       },

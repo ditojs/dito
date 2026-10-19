@@ -7,9 +7,9 @@ import { serializeData } from './schema/data.js'
 
 const text = { type: 'text' }
 
-const createForm = (components: Record<string, any>) => ({
+const createForm = (fields: Record<string, any>) => ({
   type: 'form',
-  components
+  fields
 })
 
 const relateAuthors = (options: Record<string, any> = {}) => ({
@@ -241,7 +241,7 @@ describe('fromClipboard()', () => {
     const schema = createForm({
       details: {
         type: 'section',
-        components: ({ rootItem, dataPath }: Record<string, any>) =>
+        fields: ({ rootItem, dataPath }: Record<string, any>) =>
           rootItem.hasColumns && dataPath === 'books/1'
             ? { authors: { type: 'list', columns: { name: {} } } }
             : {}

@@ -8,7 +8,7 @@ of the event, extended with the values of the event, e.g. `error` in
 ```js
 const form = {
   type: 'form',
-  components: {
+  fields: {
     stock: {
       type: 'integer',
       onChange({ value, item }) {
@@ -54,7 +54,7 @@ events, including `toggle`, only fire on the schema that defines them.
 ```js
 const form = {
   type: 'form',
-  components: {
+  fields: {
     price: { type: 'number' },
     stock: { type: 'integer' }
   },
@@ -103,7 +103,7 @@ written, including the ones that depend on options to load:
 
 - Forms: after loading their item, not when creating one.
 - Lists and trees with a resource fire `load` on the schema that renders them,
-  e.g. the view of a single-component view, or the form or section that contains
+  e.g. the view of a single-field view, or the form or section that contains
   the list.
 
 ```js
@@ -167,7 +167,7 @@ state.
 const section = {
   type: 'section',
   collapsible: true,
-  components: { … },
+  fields: { … },
   onToggle({ collapsed }) {
     console.log(collapsed ? 'collapsed' : 'expanded')
   }

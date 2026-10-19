@@ -55,7 +55,7 @@ describe('DitoMultiselectType', () => {
     it('displays the label of the selected option', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: { genre: { type: 'multiselect', options: genres } }
+          fields: { genre: { type: 'multiselect', options: genres } }
         },
         data: { genre: 'poetry' }
       })
@@ -67,7 +67,7 @@ describe('DitoMultiselectType', () => {
     it('tells option labels whether their option is selected', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: {
               type: 'multiselect',
               options: {
@@ -110,7 +110,7 @@ describe('DitoMultiselectType', () => {
     it('only renders the options once opened', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: { genre: { type: 'multiselect', options: genres } }
+          fields: { genre: { type: 'multiselect', options: genres } }
         }
       })
       const field = findField('genre')
@@ -123,7 +123,7 @@ describe('DitoMultiselectType', () => {
       const onChange = vi.fn()
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: { type: 'multiselect', options: genres, onChange }
           }
         }
@@ -137,7 +137,7 @@ describe('DitoMultiselectType', () => {
     it('matches values with `options.equals()`', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: {
               type: 'multiselect',
               options: {
@@ -159,7 +159,7 @@ describe('DitoMultiselectType', () => {
     it('clears the value with the clear button', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: { type: 'multiselect', options: genres, clearable: true }
           }
         },
@@ -172,7 +172,7 @@ describe('DitoMultiselectType', () => {
     it('keeps `null` values instead of their `default`', async () => {
       const { data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: { type: 'multiselect', options: genres, default: 'drama' }
           }
         },
@@ -182,7 +182,7 @@ describe('DitoMultiselectType', () => {
     })
     it('links the selected option to its form in `view` when `editable`', async () => {
       const { admin } = await mountAdminWithGenresView({
-        components: {
+        fields: {
           genre: {
             type: 'multiselect',
             editable: true,
@@ -199,7 +199,7 @@ describe('DitoMultiselectType', () => {
     it(`doesn't render edit buttons unless \`editable\``, async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genre: { type: 'multiselect', options: genres, view: 'genres' }
           }
         },
@@ -215,7 +215,7 @@ describe('DitoMultiselectType', () => {
     it('adds and removes the values of the selected options', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genres: {
               type: 'multiselect',
               multiple: true,
@@ -238,7 +238,7 @@ describe('DitoMultiselectType', () => {
     it('clears the values to an empty array with the clear button', async () => {
       const { findField, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genres: {
               type: 'multiselect',
               multiple: true,
@@ -259,7 +259,7 @@ describe('DitoMultiselectType', () => {
     it('holds an empty array by default', async () => {
       const { data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genres: { type: 'multiselect', multiple: true, options: genres }
           }
         }
@@ -270,7 +270,7 @@ describe('DitoMultiselectType', () => {
     it('loads `null` values as the `default`', async () => {
       const { data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genres: {
               type: 'multiselect',
               multiple: true,
@@ -287,7 +287,7 @@ describe('DitoMultiselectType', () => {
     it('marks values without option as unavailable and keeps them', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genres: {
               type: 'multiselect',
               multiple: true,
@@ -311,7 +311,7 @@ describe('DitoMultiselectType', () => {
     it('adds new values as options with `taggable`', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             keywords: {
               type: 'multiselect',
               label: 'Keyword',
@@ -340,7 +340,7 @@ describe('DitoMultiselectType', () => {
       const keywords = ['classic']
       const { findField, data, getComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             keywords: {
               type: 'multiselect',
               multiple: true,
@@ -373,7 +373,7 @@ describe('DitoMultiselectType', () => {
     it('displays and keeps the tags of taggable multiselects without options', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             keywords: {
               type: 'multiselect',
               multiple: true,
@@ -396,7 +396,7 @@ describe('DitoMultiselectType', () => {
       const onChange = vi.fn()
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             language: {
               type: 'multiselect',
               searchable: true,
@@ -421,7 +421,7 @@ describe('DitoMultiselectType', () => {
     it('makes the tag remove icons focusable in document order', async () => {
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genres: { type: 'multiselect', multiple: true, options: genres }
           }
         },
@@ -437,7 +437,7 @@ describe('DitoMultiselectType', () => {
     it('sends the values serialized by `serializeValue()`', async () => {
       const { findField, submit } = await mountForm({
         schema: {
-          components: {
+          fields: {
             genres: {
               type: 'multiselect',
               multiple: true,
@@ -463,7 +463,7 @@ describe('DitoMultiselectType', () => {
     async () => {
       const { findField } = await mountForm({
         schema: {
-          components: {
+          fields: {
             genre: {
               type: 'multiselect',
               label: false,
@@ -484,7 +484,7 @@ describe('DitoMultiselectType', () => {
   it('shows the default placeholder or none with boolean `placeholder`', async () => {
     const { findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           genre: {
             type: 'multiselect',
             searchable: true,
@@ -510,7 +510,7 @@ describe('DitoMultiselectType', () => {
   it('resolves `placeholder` callbacks', async () => {
     const { findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           genre: {
             type: 'multiselect',
             searchable: true,
@@ -529,7 +529,7 @@ describe('DitoMultiselectType', () => {
   it('resolves `searchable` and `taggable` for the default placeholder', async () => {
     const { findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           genre: {
             type: 'multiselect',
             searchable: () => true,
@@ -554,7 +554,7 @@ describe('DitoMultiselectType', () => {
 
     function createAuthorSchema(filter) {
       return {
-        components: {
+        fields: {
           author: {
             type: 'multiselect',
             label: 'Author',
@@ -676,7 +676,7 @@ describe('DitoMultiselectType', () => {
   it('opens and focuses multiselects with `autofocus`', async () => {
     const { getComponent } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           genre: { type: 'multiselect', autofocus: true, options: genres }
         }
       }
@@ -689,7 +689,7 @@ describe('DitoMultiselectType', () => {
   it('validates only once the open multiselect is closed', async () => {
     const { findField, getComponent, getErrors } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           genre: {
             type: 'multiselect',
             searchable: true,
@@ -715,7 +715,7 @@ describe('DitoMultiselectType', () => {
   it('marks plain values without option as unavailable', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           languages: {
             type: 'multiselect',
             multiple: true,
@@ -736,7 +736,7 @@ describe('DitoMultiselectType', () => {
   it('adds tags as options with label and value with `taggable`', async () => {
     const { findField, getComponent, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           genres: {
             type: 'multiselect',
             multiple: true,
@@ -764,7 +764,7 @@ describe('DitoMultiselectType', () => {
     const mountGenres = taggable =>
       mountSchema({
         schema: {
-          components: {
+          fields: {
             genres: {
               type: 'multiselect',
               multiple: true,
@@ -831,7 +831,7 @@ describe('DitoMultiselectType', () => {
     it('stores converted values under the value key of the options', async () => {
       const { findField, getComponent, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genres: {
               type: 'multiselect',
               multiple: true,
@@ -863,7 +863,7 @@ describe('DitoMultiselectType', () => {
       ]
       const { findField, getComponent, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             genres: {
               type: 'multiselect',
               multiple: true,
@@ -889,7 +889,7 @@ describe('DitoMultiselectType', () => {
   it('groups the options with `options.group`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           book: {
             type: 'multiselect',
             options: {
@@ -920,7 +920,7 @@ describe('DitoMultiselectType', () => {
   it('groups the options by the result of an `options.group` callback', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           book: {
             type: 'multiselect',
             options: {
@@ -949,7 +949,7 @@ describe('DitoMultiselectType', () => {
   it(`doesn't add tags to grouped options with \`taggable\``, async () => {
     const { findField, getComponent, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           books: {
             type: 'multiselect',
             multiple: true,
@@ -983,7 +983,7 @@ describe('DitoMultiselectType', () => {
     ]
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           authors: {
             type: 'multiselect',
             multiple: true,

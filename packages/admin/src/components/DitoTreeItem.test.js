@@ -7,13 +7,13 @@ import { mountForm, stubConfirm, enterValue } from '../test/mount.js'
 const chapterForm = {
   type: 'form',
   label: 'Chapter',
-  components: { title: { type: 'text' } }
+  fields: { title: { type: 'text' } }
 }
 
 async function mountBookForm() {
   const result = await mountForm({
     schema: {
-      components: {
+      fields: {
         chapters: {
           type: 'tree-list',
           path: 'chapters',
@@ -102,7 +102,7 @@ describe('DitoTreeItem', () => {
     it('keeps the filters of the route query', async () => {
       const { admin, findField, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             notes: {
               type: 'list',
               resource: { path: 'notes' },
@@ -142,7 +142,7 @@ describe('DitoTreeItem', () => {
     async function mountChaptersForm(chapters) {
       return mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'tree-list',
               path: 'chapters',

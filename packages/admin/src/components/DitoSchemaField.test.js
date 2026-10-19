@@ -48,12 +48,12 @@ describe('DitoSchemaField', () => {
   it('places the components of layout sections with labels', async () => {
     const { findContainer, wrapper } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             label: 'Details',
             component: createLayout('subtitle', 'title'),
-            components: {
+            fields: {
               title: { type: 'text', label: 'Title' },
               subtitle: { type: 'text', label: 'Subtitle' }
             }
@@ -80,11 +80,11 @@ describe('DitoSchemaField', () => {
   it('shows the errors of the components after validation', async () => {
     const { wrapper, submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             component: createLayout('title'),
-            components: { title: { type: 'text', required: true } }
+            fields: { title: { type: 'text', required: true } }
           }
         }
       },
@@ -101,12 +101,12 @@ describe('DitoSchemaField', () => {
   it('edits and submits the data like the pane', async () => {
     const { wrapper, routeComponent, data, submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           dimensions: {
             type: 'section',
             nested: true,
             component: createLayout('width'),
-            components: { width: { type: 'number' } }
+            fields: { width: { type: 'number' } }
           }
         }
       },
@@ -123,11 +123,11 @@ describe('DitoSchemaField', () => {
   it('validates the components that the layout leaves out', async () => {
     const { submit, findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             component: createLayout('title'),
-            components: {
+            fields: {
               title: { type: 'text' },
               subtitle: { type: 'text', required: true }
             }
@@ -144,13 +144,13 @@ describe('DitoSchemaField', () => {
   it('disables the components with the section and their schema', async () => {
     const { wrapper, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           isLocked: { type: 'checkbox' },
           details: {
             type: 'section',
             disabled: ({ item }) => item.isLocked,
             component: createLayout('title', 'subtitle'),
-            components: {
+            fields: {
               title: { type: 'text' },
               subtitle: { type: 'text', disabled: true }
             }
@@ -178,11 +178,11 @@ describe('DitoSchemaField', () => {
   it('renders the components conditionally with `if`', async () => {
     const { wrapper, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             component: createLayout('hasSubtitle', 'subtitle'),
-            components: {
+            fields: {
               hasSubtitle: { type: 'checkbox' },
               subtitle: { type: 'text', if: ({ item }) => item.hasSubtitle }
             }
@@ -203,12 +203,12 @@ describe('DitoSchemaField', () => {
     const onChange = vi.fn()
     const { wrapper } = await mountForm({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             onChange,
             component: createLayout('title'),
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       },
@@ -229,11 +229,11 @@ describe('DitoSchemaField', () => {
     }
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           axis: {
             type: 'section',
             component: Row,
-            components: {
+            fields: {
               values: { type: 'component', component: Slider, default: 0 },
               isStatic: { type: 'switch', label: 'Static' }
             }
@@ -260,11 +260,11 @@ describe('DitoSchemaField', () => {
     }
     const { findField, submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           axis: {
             type: 'section',
             component: Row,
-            components: {
+            fields: {
               values: { type: 'component', component: Slider, default: 0 },
               note: { type: 'text', required: true }
             }
@@ -286,11 +286,11 @@ describe('DitoSchemaField', () => {
     }
     const { wrapper } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             component: Layout,
-            components: { title: { type: 'text', label: 'Title' } }
+            fields: { title: { type: 'text', label: 'Title' } }
           }
         }
       },
@@ -310,7 +310,7 @@ describe('DitoSchemaField', () => {
       {
         type: 'section',
         component: createLayout('subtitle'),
-        components: { heading: { type: 'text' } }
+        fields: { heading: { type: 'text' } }
       },
       `Unknown component: 'subtitle'.`
     ],
@@ -324,7 +324,7 @@ describe('DitoSchemaField', () => {
       views: {
         test: {
           type: 'view',
-          components: { title: { type: 'text' }, details }
+          fields: { title: { type: 'text' }, details }
         }
       }
     })

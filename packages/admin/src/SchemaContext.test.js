@@ -289,7 +289,7 @@ describe('SchemaContext', () => {
       let context = null
       await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: {
               type: 'text',
               computeValue: computeContext => {
@@ -457,20 +457,20 @@ describe('SchemaContext', () => {
     it('reads the edited data in nested lists, reactively', async () => {
       const { data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             styles: {
               type: 'list',
               inlined: true,
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   font: { type: 'text' },
                   slices: {
                     type: 'list',
                     inlined: true,
                     form: {
                       type: 'form',
-                      components: {
+                      fields: {
                         font: {
                           type: 'text',
                           computeValue: ({ getValueAt }) =>

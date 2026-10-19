@@ -15,7 +15,7 @@ describe('SchemaBase: no component members', () => {
   it('rejects `methods`, `computed`, `watch` and `data`', () => {
     assertType<FormSchema<Entry>>({
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       },
       // @ts-expect-error — handlers receive their context instead
@@ -41,7 +41,7 @@ describe('SchemaBase: no component members', () => {
   it('passes the context members to handlers', () => {
     assertType<FormSchema<Entry>>({
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       },
       onChange(context) {
@@ -62,14 +62,14 @@ describe('SchemaBase: panels', () => {
   it('form with panels containing components and buttons', () => {
     assertType<FormSchema<Entry>>({
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       },
       panels: {
         sidebar: {
           type: 'panel',
           label: 'Sidebar',
-          components: {
+          fields: {
             id: { type: 'number' }
           },
           buttons: {
@@ -88,7 +88,7 @@ describe('SchemaBase: lifecycle callbacks', () => {
   it('onInitialize and onChange receive typed context', () => {
     assertType<FormSchema<Entry>>({
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       },
       onInitialize({ item }) {
@@ -248,7 +248,7 @@ describe('PanelSchema', () => {
   it('constrains component keys to item properties', () => {
     assertType<PanelSchema<Entry>>({
       type: 'panel',
-      components: {
+      fields: {
         id: { type: 'number' },
         title: { type: 'text' }
       }
@@ -258,7 +258,7 @@ describe('PanelSchema', () => {
   it('rejects unknown component keys', () => {
     assertType<PanelSchema<Entry>>({
       type: 'panel',
-      components: {
+      fields: {
         // @ts-expect-error — 'extra' is not a key of Entry
         extra: { type: 'text' }
       }
@@ -297,7 +297,7 @@ describe('PanelSchema', () => {
   it('component callbacks in panels receive typed item', () => {
     assertType<PanelSchema<Parent>>({
       type: 'panel',
-      components: {
+      fields: {
         title: {
           type: 'text',
           formatValue({ item }) {
@@ -315,13 +315,13 @@ describe('PanelSchema', () => {
   it('panels on FormSchema inherit item type', () => {
     assertType<FormSchema<Parent>>({
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       },
       panels: {
         info: {
           type: 'panel',
-          components: {
+          fields: {
             title: {
               type: 'text',
               formatValue({ item }) {

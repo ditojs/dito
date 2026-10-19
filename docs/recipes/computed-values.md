@@ -9,12 +9,12 @@ order doesn't store a total, so the admin shouldn't send it.
 ```js
 export const orderForm = {
   type: 'form',
-  components: {
+  fields: {
     lines: {
       type: 'list',
       creatable: true,
       deletable: true,
-      components: {
+      fields: {
         book: {
           type: 'select',
           relate: true,

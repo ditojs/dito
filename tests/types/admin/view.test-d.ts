@@ -6,12 +6,12 @@ describe('View with list component', () => {
   it('accepts view with single list component and inline form', () => {
     const view: View<Entry> = {
       type: 'view',
-      component: {
+      field: {
         type: 'list',
         itemLabel: 'title',
         form: {
           type: 'form',
-          components: {
+          fields: {
             title: { type: 'text' }
           }
         }
@@ -22,14 +22,14 @@ describe('View with list component', () => {
   it('accepts view with single list component and FormSchema variable', () => {
     const entryForm: FormSchema<Entry> = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     }
 
     const view: View<Entry> = {
       type: 'view',
-      component: {
+      field: {
         type: 'list',
         itemLabel: 'title',
         form: entryForm
@@ -40,12 +40,12 @@ describe('View with list component', () => {
   it('accepts view with single list component and promised form', () => {
     const promisedForm: Promise<Record<string, FormSchema<Entry>>> =
       Promise.resolve({
-        entryForm: { type: 'form', components: {} }
+        entryForm: { type: 'form', fields: {} }
       })
 
     const view: View<Entry> = {
       type: 'view',
-      component: {
+      field: {
         type: 'list',
         itemLabel: 'title',
         form: promisedForm
@@ -56,7 +56,7 @@ describe('View with list component', () => {
   it('accepts view with components map', () => {
     const view: View<Entry> = {
       type: 'view',
-      components: {
+      fields: {
         title: {
           type: 'text',
           formatValue({ item }) {
@@ -112,7 +112,7 @@ describe('View tabs and events', () => {
   it('accepts onToggle() on inlined forms, not on views and lists', () => {
     const view: View<Entry> = {
       type: 'view',
-      component: {
+      field: {
         type: 'list',
         inlined: true,
         form: {
@@ -132,7 +132,7 @@ describe('View tabs and events', () => {
     }
     const invalidList: View<Entry> = {
       type: 'view',
-      component: {
+      field: {
         type: 'list',
         // @ts-expect-error: Lists don't fire `toggle`.
         onToggle() {}
@@ -145,7 +145,7 @@ describe('List filters', () => {
   it('accepts filter with custom components using arbitrary keys', () => {
     const view: View<Entry> = {
       type: 'view',
-      component: {
+      field: {
         type: 'list',
         filters: {
           title: {
@@ -160,7 +160,7 @@ describe('List filters', () => {
             filter: 'date-range'
           },
           status: {
-            components: {
+            fields: {
               pattern: {
                 type: 'select',
                 options: ['active', 'inactive']
@@ -175,7 +175,7 @@ describe('List filters', () => {
   it('accepts boolean and sticky filters', () => {
     const view: View<Entry> = {
       type: 'view',
-      component: {
+      field: {
         type: 'list',
         filters: {
           sticky: true,

@@ -6,8 +6,8 @@ describe('DitoView', () => {
   it('gives each view its own data', async () => {
     const admin = await mountAdmin({
       views: {
-        books: { type: 'view', components: { title: { type: 'text' } } },
-        authors: { type: 'view', components: { name: { type: 'text' } } }
+        books: { type: 'view', fields: { title: { type: 'text' } } },
+        authors: { type: 'view', fields: { name: { type: 'text' } } }
       }
     })
     await admin.navigate('/books')
@@ -30,7 +30,7 @@ describe('DitoView', () => {
       views: {
         library: {
           type: 'view',
-          components: {
+          fields: {
             search: { type: 'text' },
             refresh: { type: 'button', text: 'Refresh' },
             books: {
@@ -77,7 +77,7 @@ describe('DitoView', () => {
         drafts: {
           type: 'view',
           if: ({ user }) => user.username === 'editor',
-          components: { title: { type: 'text' } }
+          fields: { title: { type: 'text' } }
         }
       }
     })
@@ -92,7 +92,7 @@ describe('DitoView', () => {
         views: {
           books: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'books' },
               columns: { title: {} }
@@ -120,7 +120,7 @@ describe('DitoView', () => {
         views: {
           library: {
             type: 'view',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       })
@@ -137,7 +137,7 @@ describe('DitoView', () => {
   // The components of views hold their data paths relative to the view's data,
   // which is their root item also when the view has no resource.
   describe('root items of components', () => {
-    const components = {
+    const fields = {
       venue: { type: 'text' },
       headline: {
         type: 'text',
@@ -146,7 +146,7 @@ describe('DitoView', () => {
       address: {
         type: 'section',
         nested: true,
-        components: { city: { type: 'text' } }
+        fields: { city: { type: 'text' } }
       }
     }
     const data = {
@@ -169,7 +169,7 @@ describe('DitoView', () => {
 
     it('are the data of multi-component views without resources', async () => {
       const { routeComponent: view, getComponent } = await mountSchema({
-        schema: { components },
+        schema: { fields },
         data
       })
       expectRootItems(view, getComponent)
@@ -178,7 +178,7 @@ describe('DitoView', () => {
     it('are the data of single-component views without resources', async () => {
       const { routeComponent: view, getComponent } = await mountSchema({
         schema: {
-          component: { type: 'section', components }
+          field: { type: 'section', fields }
         },
         data
       })
@@ -188,8 +188,8 @@ describe('DitoView', () => {
     it('are the data of views with resources', async () => {
       const { routeComponent: view, getComponent } = await mountSchema({
         schema: {
-          components: {
-            ...components,
+          fields: {
+            ...fields,
             books: {
               type: 'list',
               resource: { path: 'books' },
@@ -205,7 +205,7 @@ describe('DitoView', () => {
 
     it('are the data of forms with resources', async () => {
       const { routeComponent: form, getComponent } = await mountForm({
-        schema: { components },
+        schema: { fields },
         data
       })
       expect(toRaw(getComponent('venue').context.rootItem)).toBe(
@@ -219,11 +219,11 @@ describe('DitoView', () => {
     it('resolve data paths of options in views without resources', async () => {
       const { getComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             address: {
               type: 'section',
               nested: true,
-              components: {
+              fields: {
                 venue: {
                   type: 'select',
                   options: { dataPath: '../venues' }
@@ -243,12 +243,12 @@ describe('DitoView', () => {
     it('are passed to callbacks in views without resources', async () => {
       const { data, routeComponent, dataModel } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             strict: { type: 'checkbox' },
             address: {
               type: 'section',
               nested: true,
-              components: {
+              fields: {
                 city: {
                   type: 'text',
                   required: ({ rootItem }) => rootItem.strict

@@ -5,17 +5,17 @@ const schema = {
     details: {
       type: 'tab',
       label: 'Details',
-      components: { title: { type: 'text' } }
+      fields: { title: { type: 'text' } }
     },
     notes: {
       type: 'tab',
       label: 'Notes',
-      components: { notes: { type: 'text' } }
+      fields: { notes: { type: 'text' } }
     },
     history: {
       type: 'tab',
       label: 'History',
-      components: { year: { type: 'number' } }
+      fields: { year: { type: 'number' } }
     }
   }
 }
@@ -108,12 +108,12 @@ describe('DitoTabs', () => {
           details: {
             type: 'tab',
             label: 'Q & A <i>',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           },
           notes: {
             type: 'tab',
             label: { html: '<b>Notes</b>' },
-            components: { notes: { type: 'text' } }
+            fields: { notes: { type: 'text' } }
           }
         }
       },

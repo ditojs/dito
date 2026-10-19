@@ -42,9 +42,9 @@ describe('iterateSchemaComponents()', () => {
     const callback = vi.fn()
     iterateSchemaComponents(
       [
-        { type: 'form', components: { title } },
+        { type: 'form', fields: { title } },
         // Single component views pass their component one level up:
-        { type: 'view', name: 'books', component: books },
+        { type: 'view', name: 'books', field: books },
         // Values that aren't schemas are skipped:
         null
       ],
@@ -64,7 +64,7 @@ describe('iterateSchemaComponents()', () => {
       [
         {
           type: 'form',
-          components: {
+          fields: {
             title: { type: 'text' },
             isbn: { type: 'text' },
             pages: { type: 'text' }
@@ -79,7 +79,7 @@ describe('iterateSchemaComponents()', () => {
 
   it('stops at the components of single component views', () => {
     const result = iterateSchemaComponents(
-      [{ type: 'view', name: 'books', component: { type: 'list' } }],
+      [{ type: 'view', name: 'books', field: { type: 'list' } }],
       (component, name) => name
     )
     expect(result).toBe('books')
@@ -92,8 +92,8 @@ describe('nested schema component lookups', () => {
   const chapters = { type: 'list' }
   const schema = {
     type: 'form',
-    components: { title, chapters },
-    tabs: { notes: { type: 'tab', components: { summary } } }
+    fields: { title, chapters },
+    tabs: { notes: { type: 'tab', fields: { summary } } }
   }
 
   it('iterate the components of the schema and of its tabs', () => {
@@ -123,7 +123,7 @@ describe('nested schema component lookups', () => {
 
   it('tell whether there are any components', () => {
     expect(hasNestedSchemaComponents(schema)).toBe(true)
-    expect(hasNestedSchemaComponents({ type: 'form', components: {} })).toBe(
+    expect(hasNestedSchemaComponents({ type: 'form', fields: {} })).toBe(
       false
     )
     expect(hasNestedSchemaComponents({ type: 'form' })).toBe(false)
@@ -133,7 +133,7 @@ describe('nested schema component lookups', () => {
 describe('schema type predicates', () => {
   it('only consider objects with a string `type` schemas', () => {
     expect(isSchema({ type: 'form' })).toBe(true)
-    expect(isSchema({ components: {} })).toBe(false)
+    expect(isSchema({ fields: {} })).toBe(false)
     expect(isSchema('form')).toBe(false)
     expect(isSchema(null)).toBe(false)
   })
@@ -156,8 +156,8 @@ describe('schema type predicates', () => {
 
   it('tell single component views apart', () => {
     const list = { type: 'list' }
-    expect(isSingleComponentView({ type: 'view', component: list })).toBe(true)
-    expect(isSingleComponentView({ type: 'view', components: {} })).toBe(false)
+    expect(isSingleComponentView({ type: 'view', field: list })).toBe(true)
+    expect(isSingleComponentView({ type: 'view', fields: {} })).toBe(false)
     expect(isSingleComponentView({ type: 'form', component: list })).toBe(
       false
     )
@@ -186,7 +186,7 @@ describe('schema setting predicates', () => {
     expect(isCompact({ compact: true })).toBe(true)
     expect(isCompact({})).toBe(false)
     expect(isInlined({ inlined: true })).toBe(true)
-    expect(isInlined({ components: {} })).toBe(true)
+    expect(isInlined({ fields: {} })).toBe(true)
     expect(isInlined({ form: {} })).toBe(false)
   })
 

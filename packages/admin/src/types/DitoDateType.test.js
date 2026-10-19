@@ -4,7 +4,7 @@ import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 describe('DitoDateType', () => {
   it('displays plain dates in the format of the locale', async () => {
     const { findField } = await mountSchema({
-      schema: { components: { publishedOn: { type: 'date' } } },
+      schema: { fields: { publishedOn: { type: 'date' } } },
       data: { publishedOn: '2024-03-05' }
     })
     expect(findField('publishedOn').find('input').element.value).toBe(
@@ -15,7 +15,7 @@ describe('DitoDateType', () => {
   it('displays date-times and times in the format of the locale', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           createdAt: { type: 'datetime' },
           opensAt: { type: 'time' }
         }
@@ -33,7 +33,7 @@ describe('DitoDateType', () => {
   it('uses the date and time formats of `format`', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           publishedOn: {
             type: 'date',
             format: { date: { month: 'short' } }
@@ -49,7 +49,7 @@ describe('DitoDateType', () => {
 
   it('parses entered dates into the data', async () => {
     const { findField, data } = await mountSchema({
-      schema: { components: { publishedOn: { type: 'date' } } }
+      schema: { fields: { publishedOn: { type: 'date' } } }
     })
     await enterValue(findField('publishedOn').find('input'), 'May 14, 2026')
     expect(data.publishedOn).toBeInstanceOf(Date)
@@ -62,7 +62,7 @@ describe('DitoDateType', () => {
     const createdAt = new Date(2026, 4, 14, 8, 0)
     const { findField, dataModel, data, submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           publishedOn: { type: 'date' },
           createdAt: { type: 'datetime' }
         }
@@ -84,7 +84,7 @@ describe('DitoDateType', () => {
 
   it(`keeps strings that aren't dates, e.g. times`, async () => {
     const { findField, data, submit } = await mountForm({
-      schema: { components: { opensAt: { type: 'time' } } },
+      schema: { fields: { opensAt: { type: 'time' } } },
       data: { opensAt: '14:30' },
       request: ({ data }) => ({ data: clone(data) })
     })
@@ -99,7 +99,7 @@ describe('DitoDateType', () => {
     const mountWithWrite = () =>
       mountForm({
         schema: {
-          components: {
+          fields: {
             expiryDate: { type: 'date' },
             expiresAt: { type: 'datetime' },
             renew: {
@@ -152,13 +152,13 @@ describe('DitoDateType', () => {
     it('displays them in item labels as their type formats them', async () => {
       const { findField, data, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             milestones: {
               type: 'list',
               itemLabel: 'due',
               form: {
                 type: 'form',
-                components: { due: { type: 'date' } }
+                fields: { due: { type: 'date' } }
               }
             }
           }
@@ -176,7 +176,7 @@ describe('DitoDateType', () => {
   it('positions `prefix` and `suffix` over the picker', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           published: { type: 'date', prefix: 'On', clearable: true }
         }
       },

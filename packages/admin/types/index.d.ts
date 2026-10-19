@@ -800,17 +800,19 @@ export interface SourceSettings<$Item> {
    */
   idKey?: string
   /**
-   * Inline form components. When defined, items are
+   * The fields of the inlined form. When defined, items are
    * edited inline rather than navigating to a separate
    * page.
    */
+  fields?: Components<$Item>
+  /** @deprecated Use `fields`. */
   components?: Components<$Item>
   /**
-   * The tabs of the inlined form of `components`.
+   * The tabs of the inlined form of `fields`.
    */
   tabs?: FormSchema<$Item>['tabs']
   /**
-   * Renders the inlined form of `components` with reduced spacing.
+   * Renders the inlined form of `fields` with reduced spacing.
    *
    * @defaultValue `false`
    */
@@ -833,7 +835,7 @@ export interface SourceSettings<$Item> {
   /**
    * Whether to display items inline in an expandable form rather
    * than navigating to a separate page. Also implicitly `true`
-   * when `components` is defined on the schema.
+   * when `fields` is defined on the schema.
    *
    * @defaultValue `false`
    */
@@ -1785,19 +1787,23 @@ export interface RadioSchema<$Item = any>
 
 type SectionContent<$Data, $Item = $Data> = {
   /**
-   * The section's field components, or a callback that
-   * creates them from the data, e.g. fields that depend on
-   * a selected template. The callback runs again when the
-   * data that it reads changes, and receives the context of
-   * the section, so that `item` is the item that contains
-   * it, also for nested sections.
+   * The section's fields, or a callback that creates them
+   * from the data, e.g. fields that depend on a selected
+   * template. The callback runs again when the data that it
+   * reads changes, and receives the context of the section,
+   * so that `item` is the item that contains it, also for
+   * nested sections.
    */
+  fields?:
+    | Components<$Data>
+    | SchemaValueCallback<$Item, {}, Components<$Data>>
+  /** @deprecated Use `fields`. */
   components?:
     | Components<$Data>
     | SchemaValueCallback<$Item, {}, Components<$Data>>
   /**
    * A form schema for the section's content. Use this
-   * instead of `components` to get form-level options
+   * instead of `fields` to get form-level options
    * like `label` and `tabs`.
    */
   form?: ResolvableForm<$Data>
@@ -1840,10 +1846,10 @@ type SectionContent<$Data, $Item = $Data> = {
  *   details: never // UI-only key
  * }
  *
- * const components: Components<Item> = {
+ * const fields: Components<Item> = {
  *   details: {
  *     type: 'section',
- *     components: {
+ *     fields: {
  *       title: { type: 'text' }
  *     }
  *   }
@@ -1859,11 +1865,11 @@ type SectionContent<$Data, $Item = $Data> = {
  *   address: Address // data key for nested section
  * }
  *
- * const components: Components<Item> = {
+ * const fields: Components<Item> = {
  *   address: {
  *     type: 'section',
  *     nested: true,
- *     components: {
+ *     fields: {
  *       street: { type: 'text' },
  *       city: { type: 'text' }
  *     }
@@ -1914,7 +1920,7 @@ export type SectionSchema<
      */
     compact?: boolean
     /**
-     * A Vue component that lays out the section's components instead of its
+     * A Vue component that lays out the section's fields instead of its
      * pane, placing them with {@link DitoSchemaField} and {@link DitoPane}. It
      * receives the `schema` and `context` of the section, and the section's
      * label shows above it. Not supported together with `tabs`, `collapsible`
@@ -2118,7 +2124,7 @@ export interface ListSchema<$Item = { [key: string]: any }>
    * Filter definitions that render a filter panel above the
    * list, allowing users to filter displayed items. Each
    * filter can be a text filter with operators, a date-range
-   * filter, or a custom filter with components.
+   * filter, or a custom filter with fields.
    */
   filters?: {
     /**
@@ -2145,6 +2151,11 @@ export interface ListSchema<$Item = { [key: string]: any }>
             }
           | {
               label?: string
+              fields: Components
+            }
+          | {
+              label?: string
+              /** @deprecated Use `fields`. */
               components: Components
             }
         ) & {
@@ -2567,6 +2578,8 @@ export type SchemaContext<$Item = any> = {
    * when cancelled, or the value of `closeDialog()`.
    */
   showDialog<$Result = unknown>(options: {
+    fields?: Components
+    /** @deprecated Use `fields`. */
     components?: Components
     buttons: Buttons<any>
     data?: Record<string, any>
@@ -2825,7 +2838,15 @@ export interface ViewSchema<$Item = any> extends RouteSchemaBase<$Item> {
    * @deprecated Use the `on…` handlers, e.g. `onChange()`.
    */
   events?: SchemaEvents<$Item>
+  /**
+   * The single field that the view displays instead of `fields`, e.g. a list.
+   */
+  field?: Component<$Item>
+  /** @deprecated Use `field`. */
   component?: Component<$Item>
+  /** The view's fields. */
+  fields?: Components<$Item>
+  /** @deprecated Use `fields`. */
   components?: Components<$Item>
 }
 
@@ -2973,8 +2994,10 @@ export type PanelSchema<$Item = any> = Omit<
    */
   data?: SchemaValue<$Item, {}, Record<string, any>>
   /**
-   * The components within the panel.
+   * The fields within the panel.
    */
+  fields?: Components<$Item>
+  /** @deprecated Use `fields`. */
   components?: Components<$Item>
   /** Buttons rendered at the bottom of the panel. */
   buttons?: Buttons<$Item>
@@ -3113,7 +3136,7 @@ type OmitNever<T> = {
  *   details: never      // UI-only key for a section
  * }
  *
- * const components: Components<Item> = {
+ * const fields: Components<Item> = {
  *   // regular data field — callbacks receive Item
  *   title: { type: 'text' },
  *
@@ -3122,7 +3145,7 @@ type OmitNever<T> = {
  *     type: 'list',
  *     form: {
  *       type: 'form',
- *       components: {
+ *       fields: {
  *         title: {
  *           type: 'text',
  *           // item is typed as Entry, not Item
@@ -3141,7 +3164,7 @@ type OmitNever<T> = {
  *   // UI-only key — sections group fields from the parent item
  *   details: {
  *     type: 'section',
- *     components: {
+ *     fields: {
  *       title: { type: 'text' }
  *     }
  *   }
@@ -3248,12 +3271,14 @@ export interface FormSchema<$Item = any>
       defaultTab?: SchemaValue<$Item, {}, boolean>
     }
   >
-  /** The form's field components. */
+  /** The form's fields. */
+  fields?: Components<$Item>
+  /** @deprecated Use `fields`. */
   components?: Components<$Item>
   /**
-   * A Vue component that lays out the form's components instead of its pane,
+   * A Vue component that lays out the form's fields instead of its pane,
    * placing them with {@link DitoSchemaField} and {@link DitoPane}. It
-   * receives the `schema` and `context` of the form, and needs `components`.
+   * receives the `schema` and `context` of the form, and needs `fields`.
    */
   component?: Resolvable<VueComponent>
   /**
@@ -3489,12 +3514,12 @@ export interface TypeDescriptor {
 export function defineType(descriptor: TypeDescriptor): TypeDescriptor
 
 /**
- * Places the component `name` of the `components` of a layout section, see
+ * Places the field `name` of the `fields` of a layout section, see
  * {@link SectionSchema.component}, as the section's pane would render it. The
  * default slot is passed on to the custom component of `type: 'component'`.
  */
 export const DitoSchemaField: DefineComponent<{
-  /** The key of the component in the section's `components`. */
+  /** The key of the field in the section's `fields`. */
   name: string
 }>
 
@@ -3502,12 +3527,12 @@ export const DitoSchemaField: DefineComponent<{
 export const DitoField: typeof DitoSchemaField
 
 /**
- * Places the components `names` of the `components` of a layout section, see
+ * Places the fields `names` of the `fields` of a layout section, see
  * {@link SectionSchema.component}, in rows as the section's pane would render
  * them, all of them without `names`.
  */
 export const DitoPane: DefineComponent<{
-  /** The keys of the components in the section's `components`. */
+  /** The keys of the fields in the section's `fields`. */
   names?: string[]
 }>
 

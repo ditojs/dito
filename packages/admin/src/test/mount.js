@@ -32,7 +32,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-// Mounts a view with the properties of `schema`, e.g. its `components`, and
+// Mounts a view with the properties of `schema`, e.g. its `fields`, and
 // sets `data` as the view's data. Views don't submit, use `mountForm()` for
 // forms with a resource that load and submit an item.
 // Returns the `wrapper` of the root, the reactive `data`, the view's
@@ -56,7 +56,7 @@ export async function mountSchema({
   return createMountResult(admin, view)
 }
 
-// Mounts a form with the properties of `schema`, e.g. its `components`, for
+// Mounts a form with the properties of `schema`, e.g. its `fields`, for
 // an item of a list with a resource, at `/items/1` when there's `data`, which
 // the form loads as the item, or else at `/items/create`. Requests that the
 // form makes for the item, e.g. to submit, are passed to `request()`, so the
@@ -72,7 +72,7 @@ export async function mountForm({
     views: {
       items: {
         type: 'view',
-        component: {
+        field: {
           type: 'list',
           resource: { path: 'items' },
           form: { type: 'form', ...schema }
@@ -249,20 +249,20 @@ export async function mountAdmin({
 
 // Mounts an admin with a `genres` view, which lists the options that editable
 // components edit in their forms, see `DitoOptionsEditButtons`, and navigates
-// to a `test` view with `components` and `data`.
+// to a `test` view with `fields` and `data`.
 // Returns the `admin` and the `view`.
-export async function mountAdminWithGenresView({ components, data = {} }) {
+export async function mountAdminWithGenresView({ fields, data = {} }) {
   const admin = await mountAdmin({
     views: {
       genres: {
         type: 'view',
-        component: {
+        field: {
           type: 'list',
           resource: { path: 'genres' },
-          form: { type: 'form', components: { name: { type: 'text' } } }
+          form: { type: 'form', fields: { name: { type: 'text' } } }
         }
       },
-      test: { type: 'view', label: 'Test', components }
+      test: { type: 'view', label: 'Test', fields }
     }
   })
   await admin.navigate('/test')

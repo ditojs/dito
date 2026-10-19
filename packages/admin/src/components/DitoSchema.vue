@@ -466,12 +466,12 @@ export default {
         () => hasLabel.value || hasTabs.value || !!props.schema?.clipboard
       ),
 
-      // Pages place their component without any components:
+      // Pages place their component without any fields:
       hasMainPane: computed(() => {
-        const { components } = props.schema
+        const { fields } = props.schema
         return (
           !!slots.default ||
-          !!components && Object.keys(components).length > 0
+          !!fields && Object.keys(fields).length > 0
         )
       }),
 

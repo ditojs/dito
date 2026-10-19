@@ -80,7 +80,7 @@ async function resolveAccountViews(api, { settings } = {}) {
           type: 'view',
           label: form.label ?? 'Settings',
           path: 'account/settings',
-          component: { type: 'object', resource: api.users.self, form }
+          field: { type: 'object', resource: api.users.self, form }
         }
       }
     : {}

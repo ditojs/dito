@@ -17,7 +17,7 @@ chapters: {
   creatable: true,
   deletable: true,
   itemLabel: 'title',
-  components: {
+  fields: {
     title: { type: 'text' }
   }
 }
@@ -55,7 +55,7 @@ the new order to a custom action:
 ```js
 export const genres = {
   type: 'view',
-  component: {
+  field: {
     type: 'list',
     resource: 'genres',
     form: genreForm,

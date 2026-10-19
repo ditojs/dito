@@ -23,12 +23,12 @@ async function showDialog(options) {
   }
 }
 
-const components = { title: { type: 'text' } }
+const fields = { title: { type: 'text' } }
 
 describe('DitoDialog', () => {
   it('renders tree lists with children', async () => {
     const { dialog } = await showDialog({
-      components: {
+      fields: {
         pages: {
           type: 'tree-list',
           children: { name: 'subpages' }
@@ -44,7 +44,7 @@ describe('DitoDialog', () => {
   it('marks the container of its cancel button, with the class of the app', async () => {
     const getClasses = async cancel => {
       const { dialog } = await showDialog({
-        components,
+        fields,
         buttons: { apply: { type: 'submit' }, cancel }
       })
       return dialog
@@ -69,7 +69,7 @@ describe('DitoDialog', () => {
 
   it('labels the dialog with `settings.label`', async () => {
     const { dialog } = await showDialog({
-      components,
+      fields,
       buttons: { cancel: {} },
       settings: { label: 'Rename Book' }
     })
@@ -79,7 +79,7 @@ describe('DitoDialog', () => {
   it('sizes its content with `settings.width` in pixels or CSS lengths', async () => {
     const getWidth = async width => {
       const { dialog } = await showDialog({
-        components,
+        fields,
         buttons: { cancel: {} },
         settings: { width }
       })
@@ -92,7 +92,7 @@ describe('DitoDialog', () => {
 
   it('sizes its content at least with `settings.minWidth`', async () => {
     const { dialog } = await showDialog({
-      components,
+      fields,
       buttons: { cancel: {} },
       settings: { minWidth: '30em', width: 600 }
     })
@@ -103,7 +103,7 @@ describe('DitoDialog', () => {
 
   it('closes with `clickToClose` only when the overlay is clicked', async () => {
     const result = await showDialog({
-      components,
+      fields,
       buttons: { cancel: {} },
       settings: { clickToClose: true }
     })
@@ -116,7 +116,7 @@ describe('DitoDialog', () => {
 
   it('cancels with Escape only with a cancel button', async () => {
     const withoutCancel = await showDialog({
-      components,
+      fields,
       buttons: { apply: { type: 'submit' }, remove: {} }
     })
     await withoutCancel.dialog.find('input').trigger('keydown', {
@@ -126,7 +126,7 @@ describe('DitoDialog', () => {
     expect(withoutCancel.isSettled).toBe(false)
 
     const withCancel = await showDialog({
-      components,
+      fields,
       buttons: { cancel: {}, apply: { type: 'submit' } }
     })
     await withCancel.dialog.find('input').trigger('keydown', { key: 'Escape' })
@@ -135,7 +135,7 @@ describe('DitoDialog', () => {
 
   it('cancels with Escape with only one button', async () => {
     const { dialog, promise } = await showDialog({
-      components,
+      fields,
       buttons: { apply: { type: 'submit' } }
     })
     await dialog.find('input').trigger('keydown', { key: 'Escape' })
@@ -144,7 +144,7 @@ describe('DitoDialog', () => {
 
   it('cancels with Escape without buttons', async () => {
     for (const buttons of [undefined, {}]) {
-      const { dialog, promise } = await showDialog({ components, buttons })
+      const { dialog, promise } = await showDialog({ fields, buttons })
       await dialog.find('input').trigger('keydown', { key: 'Escape' })
       expect(await promise).toBe(undefined)
     }
@@ -158,7 +158,7 @@ describe('DitoDialog', () => {
 
   it('resolves with the data on submit and removes itself', async () => {
     const { dialog, promise, isShown } = await showDialog({
-      components,
+      fields,
       buttons: { cancel: {}, apply: { type: 'submit' } },
       data: { title: 'Emma' }
     })
@@ -168,11 +168,27 @@ describe('DitoDialog', () => {
     expect(isShown()).toBe(false)
   })
 
+  it('renders the deprecated `components`, warning once', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { dialog, promise } = await showDialog({
+      components: { title: { type: 'text' } },
+      buttons: { cancel: {}, apply: { type: 'submit' } },
+      data: { title: 'Emma' }
+    })
+    expect(dialog.find('input[name="title"]').element.value).toBe('Emma')
+    await dialog.find('form').trigger('submit')
+    expect(await promise).toEqual({ title: 'Emma' })
+    expect(warn.mock.calls).toEqual([
+      ['Schema `components` are deprecated, use `fields` instead.']
+    ])
+    warn.mockRestore()
+  })
+
   it('stays visible for `minDuration` when submitted right away', async () => {
     vi.useFakeTimers({ toFake: ['Date', 'setTimeout'] })
     try {
       const result = await showDialog({
-        components,
+        fields,
         buttons: { apply: { type: 'submit' } },
         data: { title: 'Emma' },
         settings: { minDuration: 1000 }
@@ -190,7 +206,7 @@ describe('DitoDialog', () => {
 
   it(`doesn't cancel with Escape keys that its components handled`, async () => {
     const result = await showDialog({
-      components,
+      fields,
       buttons: { cancel: {} }
     })
     const input = result.dialog.find('input')
@@ -203,7 +219,7 @@ describe('DitoDialog', () => {
 
   it('resolves with the value of `closeDialog()` of its buttons', async () => {
     const { dialog, promise, isShown } = await showDialog({
-      components,
+      fields,
       buttons: {
         keep: {
           type: 'button',
@@ -232,7 +248,7 @@ describe('DitoDialog', () => {
   it('validates, edits and replaces its data through contexts', async () => {
     const click = vi.fn()
     const { dialog, promise } = await showDialog({
-      components: {
+      fields: {
         title: { type: 'text', required: true },
         rating: { type: 'number', default: 3 }
       },
@@ -269,7 +285,7 @@ describe('DitoDialog', () => {
   it('merges values into its data through contexts', async () => {
     const click = vi.fn()
     const { dialog, promise } = await showDialog({
-      components: {
+      fields: {
         title: { type: 'text' },
         rating: { type: 'number', default: 3 }
       },
@@ -293,7 +309,7 @@ describe('DitoDialog', () => {
 
   it('resolves as `undefined` with its cancel button', async () => {
     const { dialog, promise, isShown } = await showDialog({
-      components,
+      fields,
       buttons: { cancel: {} },
       data: { title: 'Emma' }
     })
@@ -306,7 +322,7 @@ describe('DitoDialog', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const click = vi.fn()
     const { dialog, promise, isShown } = await showDialog({
-      components,
+      fields,
       buttons: { cancel: { events: { click } } }
     })
     await dialog.find('button.dito-button--cancel').trigger('click')
@@ -327,7 +343,7 @@ describe('DitoDialog', () => {
     }
     const showGenres = async () => {
       const promise = admin.context.showDialog({
-        components: { genre, subgenre: genre },
+        fields: { genre, subgenre: genre },
         buttons: { cancel: {} }
       })
       await flushPromises()
@@ -344,7 +360,7 @@ describe('DitoDialog', () => {
 
   it('submits with Enter in its inputs only', async () => {
     const result = await showDialog({
-      components,
+      fields,
       buttons: { cancel: {}, apply: { type: 'submit' } },
       data: { title: 'Emma' }
     })
@@ -358,7 +374,7 @@ describe('DitoDialog', () => {
   })
 
   it(`doesn't close on overlay clicks without \`clickToClose\``, async () => {
-    const result = await showDialog({ components, buttons: { cancel: {} } })
+    const result = await showDialog({ fields, buttons: { cancel: {} } })
     await result.dialog.trigger('mouseup')
     await flushPromises()
     expect(result.isSettled).toBe(false)

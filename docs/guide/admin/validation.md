@@ -9,7 +9,7 @@ shown on the fields they belong to.
 `required` and the rules of the field types validate in the browser:
 
 ```js
-components: {
+fields: {
   title: { type: 'text', required: true },
   email: { type: 'email' },            // Validates the format
   pages: { type: 'integer', min: 1 },  // Validates whole numbers of 1 or more

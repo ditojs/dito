@@ -10,13 +10,13 @@ describe('RouteContext', () => {
   const mountChapters = () =>
     mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             creatable: true,
             form: {
               type: 'form',
-              components: { title: { type: 'text' } }
+              fields: { title: { type: 'text' } }
             }
           }
         }
@@ -107,7 +107,7 @@ describe('RouteContext', () => {
 
   it('fails to close views', async () => {
     const { routeComponent: view } = await mountSchema({
-      schema: { components: { title: { type: 'text' } } }
+      schema: { fields: { title: { type: 'text' } } }
     })
     expect(() => view.routeContext.close()).toThrow(
       'Unable to close the route: Views cannot be closed.'

@@ -15,7 +15,7 @@ interface Book {
 
 export const bookForm: FormSchema<Book> = {
   type: 'form',
-  components: {
+  fields: {
     title: { type: 'text', required: true },
     price: {
       type: 'number',

@@ -16,7 +16,7 @@ describe('page views', () => {
   }
 
   const views = {
-    books: { type: 'view', label: 'Books', components: {} },
+    books: { type: 'view', label: 'Books', fields: {} },
     cachePurge: {
       type: 'page',
       label: 'Cache Purge',

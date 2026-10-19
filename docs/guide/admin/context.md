@@ -6,7 +6,7 @@ handlers like `onClick()`. It holds the data around the component, the actions
 of its form and the services of the admin:
 
 ```js
-components: {
+fields: {
   title: { type: 'text' },
   subtitle: {
     type: 'text',
@@ -47,7 +47,7 @@ In a chapter of a book, edited in an inlined list `chapters`:
 chapters: {
   type: 'list',
   inlined: true,
-  components: {
+  fields: {
     title: {
       type: 'text',
       // `item` is the chapter, `parentItem` the book:
@@ -124,7 +124,7 @@ In a book with an inlined list `chapters` and a section `metadata` with
   bubble up from a field keep the field's context, see
   [Events](./events.md#bubbling).
 - The buttons of a list describe the item that holds the list, or the list's
-  array itself in single-component views, so relative paths in their
+  array itself in single-field views, so relative paths in their
   `validate()` resolve against it.
 - In a [nested form](./nested-forms.md), `item` is the draft, and `rootItem`
   the parent's data with the draft in place of the item.
@@ -184,11 +184,11 @@ e.g. to run another callback of a schema for another value:
 // The `info` of each order line's price, and the order's total:
 const getLineTotal = ({ item }) => item.quantity * item.price
 
-components: {
+fields: {
   lines: {
     type: 'list',
     inlined: true,
-    components: {
+    fields: {
       quantity: { type: 'integer', width: '1/2' },
       price: {
         type: 'number',

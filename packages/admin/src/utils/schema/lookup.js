@@ -17,14 +17,14 @@ import { setupForm } from './setup.js'
 
 const emptySchema = {}
 
-// The forms that `components()` callbacks create, by callback and by data:
-const formsByComponentsCallback = new WeakMap()
+// The forms that `fields()` callbacks create, by callback and by data:
+const formsByFieldsCallback = new WeakMap()
 
 export function hasFormSchema(schema) {
   return (
     isSchema(schema) && (
-      isObject(schema.form || schema.forms || schema.components) ||
-      isFunction(schema.components)
+      isObject(schema.form || schema.forms || schema.fields) ||
+      isFunction(schema.fields)
     )
   )
 }
@@ -67,8 +67,8 @@ export function getFormSchemas(schema, context, modifyForm) {
   // The clipboard of lists copies the whole list, objects are their form:
   const clipboard = !isListSource(schema) && schema.clipboard
   if (!form && !forms) {
-    const { type, name, compact, tabs, components } = schema
-    if (components || tabs) {
+    const { type, name, compact, tabs, fields } = schema
+    if (fields || tabs) {
       // Convert inlined forms to stand-alone forms. Sections are their form,
       // so it handles their events:
       form = {
@@ -76,7 +76,7 @@ export function getFormSchemas(schema, context, modifyForm) {
         name,
         compact,
         tabs,
-        components,
+        fields,
         ...(type === 'section' && getSectionHandlers(schema))
       }
     } else {
@@ -91,7 +91,7 @@ export function getFormSchemas(schema, context, modifyForm) {
       if (clipboard && form.clipboard === undefined) {
         form = { ...form, clipboard }
       }
-      if (context && isFunction(form.components)) {
+      if (context && isFunction(form.fields)) {
         form = getFormWithCreatedComponents(form, context)
       }
       return [type, modifyForm?.(form) ?? form]
@@ -107,10 +107,10 @@ function getFormWithCreatedComponents(form, context) {
   if (!isObject(item)) {
     return createFormWithComponents(form, context)
   }
-  let formsByItem = formsByComponentsCallback.get(form.components)
+  let formsByItem = formsByFieldsCallback.get(form.fields)
   if (!formsByItem) {
     formsByItem = new WeakMap()
-    formsByComponentsCallback.set(form.components, formsByItem)
+    formsByFieldsCallback.set(form.fields, formsByItem)
   }
   // Key by the raw item, which contexts may hand out editable:
   let entry = formsByItem.get(toRaw(item))
@@ -131,7 +131,7 @@ function createFormWithComponents(form, context) {
   // Make the form reactive, as `setupForm()` sets the defaults asynchronously:
   const formWithComponents = reactive({
     ...form,
-    components: form.components(context)
+    fields: form.fields(context)
   })
   setupForm(context.api, formWithComponents).catch(console.error)
   return formWithComponents

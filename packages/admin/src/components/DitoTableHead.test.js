@@ -5,7 +5,7 @@ describe('DitoTableHead', () => {
   it('sets `aria-sort` on the header cells of sortable columns', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           books: {
             type: 'list',
             columns: {
@@ -26,7 +26,7 @@ describe('DitoTableHead', () => {
   it('sorts by the clicked column and toggles its order', async () => {
     const { admin, findField, request } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           books: {
             type: 'list',
             resource: { path: 'books' },

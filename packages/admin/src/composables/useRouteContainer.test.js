@@ -3,7 +3,7 @@ import { mountAdmin, mountForm, isView, isForm } from '../test/mount.js'
 describe('useRouteContainer()', () => {
   it('keeps the routes of the new route by level', async () => {
     const { admin } = await mountForm({
-      schema: { components: { title: { type: 'text' } } },
+      schema: { fields: { title: { type: 'text' } } },
       data: { title: 'Dune' }
     })
     const { routes } = admin.context.ui
@@ -22,8 +22,8 @@ describe('useRouteContainer()', () => {
   it('replaces the routes of other views at their level', async () => {
     const admin = await mountAdmin({
       views: {
-        books: { type: 'view', components: { title: { type: 'text' } } },
-        authors: { type: 'view', components: { name: { type: 'text' } } }
+        books: { type: 'view', fields: { title: { type: 'text' } } },
+        authors: { type: 'view', fields: { name: { type: 'text' } } }
       }
     })
     await admin.navigate('/books')
@@ -40,7 +40,7 @@ describe('useRouteContainer()', () => {
       schema: {
         label: 'Book',
         breadcrumb: 'Edit Book',
-        components: { title: { type: 'text' } }
+        fields: { title: { type: 'text' } }
       },
       data: { title: 'Emma' }
     })

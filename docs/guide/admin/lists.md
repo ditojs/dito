@@ -105,14 +105,14 @@ chapters: {
   deletable: true,
   collapsible: true,
   itemLabel: ({ item }) => item.title || 'Untitled',
-  components: {
+  fields: {
     title: { type: 'text' },
     text: { type: 'markup', marks: { bold: true, italic: true } }
   }
 }
 ```
 
-- `inlined: true`, or `components` instead of `form`, edits each item right
+- `inlined: true`, or `fields` instead of `form`, edits each item right
   in the list. `collapsible` and `collapsed` let users fold the items.
 - Without `inlined`, the list opens a form for each item on a page of its own.
   These are [nested forms](./nested-forms.md): they edit a draft of the item,
@@ -128,7 +128,7 @@ An `object` holds a single item, edited inline or in a form of its own:
 shippingAddress: {
   type: 'object',
   label: 'Shipping Address',
-  components: {
+  fields: {
     street: { type: 'text' },
     city: { type: 'text', width: '1/2' },
     country: { type: 'text', width: '1/2' }
@@ -156,12 +156,12 @@ blocks: {
     text: {
       type: 'form',
       label: 'Text',
-      components: { text: { type: 'markup' } }
+      fields: { text: { type: 'markup' } }
     },
     quote: {
       type: 'form',
       label: 'Quote',
-      components: {
+      fields: {
         quote: { type: 'textarea' },
         source: { type: 'text' }
       }
@@ -182,7 +182,7 @@ quote: {
   type: 'form',
   label: 'Quote',
   creatable: ({ value }) => !value.some(block => block.type === 'quote'),
-  components: { … }
+  fields: { … }
 }
 ```
 

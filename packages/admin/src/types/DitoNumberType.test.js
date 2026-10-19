@@ -3,7 +3,7 @@ import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 describe('DitoNumberType', () => {
   it('parses the input to numbers and empty input to `null`', async () => {
     const { findField, data } = await mountSchema({
-      schema: { components: { price: { type: 'number' } } },
+      schema: { fields: { price: { type: 'number' } } },
       data: { price: 12.5 }
     })
     const input = findField('price').find('input')
@@ -17,7 +17,7 @@ describe('DitoNumberType', () => {
 
   it('parses the input of the integer type with `Number()`', async () => {
     const { findField, data } = await mountSchema({
-      schema: { components: { pages: { type: 'integer' } } }
+      schema: { fields: { pages: { type: 'integer' } } }
     })
     await findField('pages').find('input').setValue('320')
     expect(data.pages).toBe(320)
@@ -26,7 +26,7 @@ describe('DitoNumberType', () => {
   it('passes `min`, `max` and `step` to the input', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           rating: { type: 'number', min: 0, max: 5, step: 0.5 },
           price: { type: 'number' }
         }
@@ -44,7 +44,7 @@ describe('DitoNumberType', () => {
   it('takes `min` and `max` from `range`', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: { year: { type: 'number', range: [1900, 2100] } }
+        fields: { year: { type: 'number', range: [1900, 2100] } }
       }
     })
     expect(findField('year').find('input').attributes()).toMatchObject({
@@ -56,7 +56,7 @@ describe('DitoNumberType', () => {
   it('shows the affixes and clears the value of clearable fields', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           price: { type: 'number', prefix: 'EUR', clearable: true }
         }
       },
@@ -72,7 +72,7 @@ describe('DitoNumberType', () => {
   it('rounds `min`, `max` and `step` of integers to integers', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           copies: { type: 'integer', min: 0.5, max: 9.5, step: 1.5 }
         }
       }
@@ -88,7 +88,7 @@ describe('DitoNumberType', () => {
     it('validates the value against `range` on blur', async () => {
       const { findField, getErrors } = await mountSchema({
         schema: {
-          components: { rating: { type: 'number', range: [1, 5] } }
+          fields: { rating: { type: 'number', range: [1, 5] } }
         }
       })
       const input = findField('rating').find('input')
@@ -105,7 +105,7 @@ describe('DitoNumberType', () => {
     it('validates the decimals against the decimals of `step`', async () => {
       const { findField, getErrors } = await mountSchema({
         schema: {
-          components: { price: { type: 'number', step: 0.05 } }
+          fields: { price: { type: 'number', step: 0.05 } }
         }
       })
       const input = findField('price').find('input')
@@ -121,7 +121,7 @@ describe('DitoNumberType', () => {
 
     it(`doesn't submit integers with decimals`, async () => {
       const { findField, submit, getErrors } = await mountForm({
-        schema: { components: { copies: { type: 'integer' } } },
+        schema: { fields: { copies: { type: 'integer' } } },
         data: { copies: 1 },
         request: ({ data }) => ({ data })
       })
@@ -136,7 +136,7 @@ describe('DitoSliderType', () => {
   it('syncs the range input and the number input', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: { volume: { type: 'slider', range: [0, 10] } }
+        fields: { volume: { type: 'slider', range: [0, 10] } }
       },
       data: { volume: 3 }
     })
@@ -151,7 +151,7 @@ describe('DitoSliderType', () => {
   it('hides the number input with `input: false`', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: { volume: { type: 'slider', input: false } }
+        fields: { volume: { type: 'slider', input: false } }
       }
     })
     expect(findField('volume').findAll('input')).toHaveLength(1)
@@ -160,7 +160,7 @@ describe('DitoSliderType', () => {
   it('labels the number input and only names the range input', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: { volume: { type: 'slider', label: false } }
+        fields: { volume: { type: 'slider', label: false } }
       }
     })
     const [range, number] = findField('volume').findAll('input')
@@ -174,7 +174,7 @@ describe('DitoProgressType', () => {
   it('displays the value relative to the start of the `range`', async () => {
     const { findField, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           progress: { type: 'progress', range: [20, 70], step: 10 }
         }
       },
@@ -192,7 +192,7 @@ describe('DitoProgressType', () => {
 
   it('takes the start from `min` without `max`', async () => {
     const { findField } = await mountSchema({
-      schema: { components: { progress: { type: 'progress', min: 0.2 } } },
+      schema: { fields: { progress: { type: 'progress', min: 0.2 } } },
       data: { progress: 0.5 }
     })
     const progress = findField('progress')
@@ -203,7 +203,7 @@ describe('DitoProgressType', () => {
 
   it('displays the value as is without `range` and `step`', async () => {
     const { findField } = await mountSchema({
-      schema: { components: { progress: { type: 'progress' } } },
+      schema: { fields: { progress: { type: 'progress' } } },
       data: { progress: 0.37 }
     })
     const progress = findField('progress')

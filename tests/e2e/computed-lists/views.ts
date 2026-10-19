@@ -17,7 +17,7 @@ export const teams = createWidgetView<Team>('name', 'teams', {
     collapsed: true,
     form: {
       type: 'form',
-      components: { name: { type: 'text', label: 'Member Name' } }
+      fields: { name: { type: 'text', label: 'Member Name' } }
     }
   },
   rotas: {
@@ -29,7 +29,7 @@ export const teams = createWidgetView<Team>('name', 'teams', {
     collapsed: true,
     form: {
       type: 'form',
-      components: {
+      fields: {
         numDays: { type: 'number', label: 'Number of Days', default: 5 },
         assignments: {
           type: 'list',
@@ -37,7 +37,7 @@ export const teams = createWidgetView<Team>('name', 'teams', {
           inlined: true,
           form: {
             type: 'form',
-            components: {
+            fields: {
               notify: { type: 'button', text: 'Notify' },
               member: { type: 'text', label: 'Member', readonly: true },
               hours: { type: 'number', label: 'Hours', default: 0 },
@@ -89,13 +89,13 @@ export const dashboards = createWidgetView<Dashboard>('name', 'dashboards', {
     collapsed: true,
     form: {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text', label: 'Widget Title' },
         sizes: {
           type: 'object',
           label: 'Sizes',
           default: {},
-          components: {
+          fields: {
             entries: {
               type: 'list',
               label: false,
@@ -112,7 +112,7 @@ export const dashboards = createWidgetView<Dashboard>('name', 'dashboards', {
                     label: screen,
                     visible: ({ value }: { value: SizeEntry[] }) =>
                       value.every(entry => entry.screen !== screen),
-                    components: {
+                    fields: {
                       columns: { type: 'number', label: 'Columns' }
                     }
                   }

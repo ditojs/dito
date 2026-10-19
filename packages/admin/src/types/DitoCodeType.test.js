@@ -13,7 +13,7 @@ describe('DitoCodeType', () => {
   it('displays the value in the editor with the number of `lines`', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: { snippet: { type: 'code', lines: 8 } }
+        fields: { snippet: { type: 'code', lines: 8 } }
       },
       data: { snippet: 'const a = 1' }
     })
@@ -26,7 +26,7 @@ describe('DitoCodeType', () => {
     const onInput = vi.fn()
     const onChange = vi.fn()
     const { findField, data } = await mountSchema({
-      schema: { components: { snippet: { type: 'code', onInput, onChange } } },
+      schema: { fields: { snippet: { type: 'code', onInput, onChange } } },
       data: { snippet: 'const a = 1' }
     })
     const textarea = findField('snippet').find('textarea')
@@ -42,7 +42,7 @@ describe('DitoCodeType', () => {
 
   it('updates the editor when the value changes', async () => {
     const { findField, data, settle } = await mountSchema({
-      schema: { components: { snippet: { type: 'code' } } },
+      schema: { fields: { snippet: { type: 'code' } } },
       data: { snippet: 'a' }
     })
     data.snippet = null
@@ -52,7 +52,7 @@ describe('DitoCodeType', () => {
 
   it('keeps null values clean when the editor mounts', async () => {
     const { data, dataModel, settle } = await mountSchema({
-      schema: { components: { snippet: { type: 'code' } } },
+      schema: { fields: { snippet: { type: 'code' } } },
       data: { snippet: null }
     })
     // The editor reports its initial updates after a timeout:
@@ -65,7 +65,7 @@ describe('DitoCodeType', () => {
   it('makes the editor readonly for disabled fields', async () => {
     const { findField, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           isLocked: { type: 'checkbox' },
           snippet: { type: 'code', disabled: ({ item }) => item.isLocked }
         }
@@ -82,7 +82,7 @@ describe('DitoCodeType', () => {
   it('resizes the editor by dragging and with the arrow keys', async () => {
     const { findField, settle } = await mountSchema({
       schema: {
-        components: { snippet: { type: 'code', resizable: true } }
+        fields: { snippet: { type: 'code', resizable: true } }
       }
     })
     const field = findField('snippet')
@@ -101,7 +101,7 @@ describe('DitoCodeType', () => {
   it('highlights the code in the language of `language`', async () => {
     const { findField, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           lang: { type: 'text' },
           snippet: { type: 'code', language: ({ item }) => item.lang }
         }
@@ -121,7 +121,7 @@ describe('DitoCodeType', () => {
     const blur = vi.fn()
     const { findField, focusField } = await mountSchema({
       schema: {
-        components: { snippet: { type: 'code', onFocus: focus, onBlur: blur } }
+        fields: { snippet: { type: 'code', onFocus: focus, onBlur: blur } }
       }
     })
     const textarea = findField('snippet').find('textarea').element

@@ -17,7 +17,7 @@ export const usernameComponent = {
 // passkey, or to `'passwordReset'` to reset the password:
 export function createLoginDialog(authentication, additionalComponents = {}) {
   return {
-    components: {
+    fields: {
       username: {
         type: 'text',
         autocomplete: 'username',
@@ -59,7 +59,7 @@ export function createLoginDialog(authentication, additionalComponents = {}) {
 // The code of users with TOTP, when logging in and when confirming the access:
 export function createCodeDialog() {
   return {
-    components: {
+    fields: {
       code: {
         type: 'text',
         label: 'Authentication Code',
@@ -88,7 +88,7 @@ export function createCodeDialog() {
 // The username to reset the password of:
 export function createPasswordResetDialog() {
   return {
-    components: {
+    fields: {
       username: {
         type: 'text',
         autocomplete: 'username',
@@ -114,7 +114,7 @@ export function createPasswordResetDialog() {
 // The new password of a password reset:
 export function createNewPasswordDialog() {
   return {
-    components: createNewPasswordComponents({ autofocus: true }),
+    fields: createNewPasswordComponents({ autofocus: true }),
     buttons: {
       change: {
         type: 'submit',
@@ -134,7 +134,7 @@ export function createNewPasswordDialog() {
 // confirm the access with a passkey:
 export function createConfirmAccessDialog(authentication, user) {
   return {
-    components: {
+    fields: {
       username: usernameComponent,
       password: {
         type: 'password',

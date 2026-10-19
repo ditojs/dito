@@ -19,11 +19,11 @@ describe('DitoAdmin', () => {
         views: {
           entries: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   title: { type: 'text' }
                 }
               }
@@ -46,7 +46,7 @@ describe('DitoAdmin', () => {
       {
         views: [
           () => books,
-          { type: 'view', name: 'authors', component: { type: 'list' } }
+          { type: 'view', name: 'authors', field: { type: 'list' } }
         ]
       }
     ])
@@ -97,7 +97,7 @@ describe('DitoAdmin', () => {
       {
         api: { users: { path: 'users', self: { path: 'me' } } },
         account: {
-          settings: { type: 'form', components: { title: { type: 'text' } } }
+          settings: { type: 'form', fields: { title: { type: 'text' } } }
         }
       }
     ])

@@ -4,7 +4,7 @@ describe('DitoTextareaType', () => {
   it('displays the value in a textarea with the number of `lines`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           summary: { type: 'textarea', lines: 6, resizable: true }
         }
       },
@@ -22,7 +22,7 @@ describe('DitoTextareaType', () => {
   it('resolves `lines` callbacks', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           summary: { type: 'textarea', lines: ({ item }) => item.size }
         }
       },
@@ -33,7 +33,7 @@ describe('DitoTextareaType', () => {
 
   it('defaults to four lines', async () => {
     const { findField } = await mountSchema({
-      schema: { components: { summary: { type: 'textarea' } } }
+      schema: { fields: { summary: { type: 'textarea' } } }
     })
     expect(findField('summary').attributes('rows')).toBe('4')
   })
@@ -41,7 +41,7 @@ describe('DitoTextareaType', () => {
   it('sends trimmed values with `trim`, and empty values as `null`', async () => {
     const { findField, submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           summary: { type: 'textarea', trim: true },
           notes: { type: 'textarea' }
         }

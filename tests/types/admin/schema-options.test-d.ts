@@ -106,10 +106,10 @@ describe('lists and forms', () => {
   it('accepts the options of the inlined form of `components`', () => {
     assertType<ListSchema<Parent>>({
       type: 'list',
-      components: { title: { type: 'text' } },
+      fields: { title: { type: 'text' } },
       compact: true,
       clipboard: true,
-      tabs: { main: { type: 'tab', components: {} } }
+      tabs: { main: { type: 'tab', fields: {} } }
     })
   })
 

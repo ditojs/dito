@@ -21,7 +21,7 @@ describe('Components', () => {
         type: 'list',
         form: {
           type: 'form',
-          components: {
+          fields: {
             title: { type: 'text' }
           }
         } satisfies FormSchema<Entry>
@@ -99,7 +99,7 @@ describe('Components with object-valued keys', () => {
         type: 'object',
         form: {
           type: 'form',
-          components: {
+          fields: {
             street: { type: 'text' },
             city: { type: 'text' }
           }

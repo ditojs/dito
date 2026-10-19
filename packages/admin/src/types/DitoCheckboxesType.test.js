@@ -22,7 +22,7 @@ describe('DitoCheckboxesType', () => {
   it('stores the values of the checked options as array', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: { genres: { type: 'checkboxes', options: genres } }
+        fields: { genres: { type: 'checkboxes', options: genres } }
       }
     })
     expect(data.genres).toEqual([])
@@ -37,7 +37,7 @@ describe('DitoCheckboxesType', () => {
   it('loads `null` values as empty arrays', async () => {
     const { findField, data, dataModel } = await mountSchema({
       schema: {
-        components: { genres: { type: 'checkboxes', options: genres } }
+        fields: { genres: { type: 'checkboxes', options: genres } }
       },
       data: { genres: null }
     })
@@ -52,7 +52,7 @@ describe('DitoCheckboxesType', () => {
   it('loads `null` values as the `default`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           genres: { type: 'checkboxes', options: genres, default: ['drama'] }
         }
       },
@@ -65,7 +65,7 @@ describe('DitoCheckboxesType', () => {
   it(`doesn't check values without option once the options are loaded`, async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           genres: {
             type: 'checkboxes',
             options: { data: async () => genres }
@@ -83,7 +83,7 @@ describe('DitoCheckboxesType', () => {
   it('checks the checkboxes of the selected values', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: { ratings: { type: 'checkboxes', options: ratings } }
+        fields: { ratings: { type: 'checkboxes', options: ratings } }
       },
       data: { ratings: [1, 2] }
     })
@@ -93,7 +93,7 @@ describe('DitoCheckboxesType', () => {
   it('keeps falsy option values like `0` selected', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: { ratings: { type: 'checkboxes', options: ratings } }
+        fields: { ratings: { type: 'checkboxes', options: ratings } }
       },
       data: { ratings: [0] }
     })
@@ -106,7 +106,7 @@ describe('DitoCheckboxesType', () => {
   it('focuses the first checkbox', async () => {
     const { focusField, findField } = await mountSchema({
       schema: {
-        components: { genres: { type: 'checkboxes', options: genres } }
+        fields: { genres: { type: 'checkboxes', options: genres } }
       }
     })
     await focusField('genres')
@@ -118,7 +118,7 @@ describe('DitoCheckboxesType', () => {
   it('lists the options of each group in a fieldset with `options.group`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           books: {
             type: 'checkboxes',
             options: {
@@ -152,7 +152,7 @@ describe('DitoCheckboxesType', () => {
   it('groups the options by the result of an `options.group` callback', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           books: {
             type: 'checkboxes',
             options: {
@@ -182,7 +182,7 @@ describe('DitoCheckboxesType', () => {
   it('selects a single value with `multiple: false`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           rating: { type: 'checkboxes', multiple: false, options: ratings }
         }
       },
@@ -201,7 +201,7 @@ describe('DitoCheckboxesType', () => {
 
   it('links each option to its form in `view` when `editable`', async () => {
     const { admin } = await mountAdminWithGenresView({
-      components: {
+      fields: {
         genres: {
           type: 'checkboxes',
           editable: true,
@@ -230,7 +230,7 @@ describe('DitoCheckboxesType', () => {
   it('labels the group with the text of its label', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           genres: {
             type: 'checkboxes',
             label: { html: '<b>Genres</b> &amp; forms' },

@@ -50,14 +50,14 @@ export const drafts = createWidgetView<Draft>(
       creatable: true,
       form: {
         type: 'form',
-        components: { label: { type: 'text', label: 'Row Label' } }
+        fields: { label: { type: 'text', label: 'Row Label' } }
       }
     },
     settings: {
       type: 'section',
       label: 'Settings',
       nested: true,
-      components: {
+      fields: {
         mode: { type: 'text', label: 'Mode', default: 'auto' }
       }
     }

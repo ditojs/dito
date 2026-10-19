@@ -4,7 +4,7 @@ import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 describe('DitoTextType', () => {
   it('displays the value and writes input back into the data', async () => {
     const { findField, data } = await mountSchema({
-      schema: { components: { title: { type: 'text' } } },
+      schema: { fields: { title: { type: 'text' } } },
       data: { title: 'Dune' }
     })
     const input = findField('title').find('input')
@@ -16,7 +16,7 @@ describe('DitoTextType', () => {
   it('sets the default value for missing values', async () => {
     const { data, findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text', default: 'Untitled' },
           subtitle: { type: 'text' }
         }
@@ -29,7 +29,7 @@ describe('DitoTextType', () => {
   it('displays the value through `formatValue()` and stores it through `parseValue()`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           tags: {
             type: 'text',
             formatValue: ({ value }) => value?.join(', '),
@@ -53,7 +53,7 @@ describe('DitoTextType', () => {
     const onChange = vi.fn()
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text', clearable: true, onChange }
         }
       },
@@ -71,7 +71,7 @@ describe('DitoTextType', () => {
   it(`doesn't show the clear button for readonly fields`, async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text', clearable: true, readonly: true }
         }
       },
@@ -88,7 +88,7 @@ describe('DitoTextType', () => {
   it('renders `prefix` and `suffix`, and `info` inline without label', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           price: {
             type: 'text',
             label: 'Price',
@@ -116,7 +116,7 @@ describe('DitoTextType', () => {
   it('disables the input through a `disabled()` callback on the data', async () => {
     const { findField, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           locked: { type: 'checkbox' },
           title: { type: 'text', disabled: ({ item }) => item.locked }
         }
@@ -133,7 +133,7 @@ describe('DitoTextType', () => {
   it('passes `maxLength`, `placeholder` and `autocomplete` to the input', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: {
             type: 'text',
             maxLength: 20,
@@ -155,7 +155,7 @@ describe('DitoTextType', () => {
   it('keeps password managers out of fields that are not about logins', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           username: { type: 'text' },
           email: { type: 'email', autocomplete: 'off' },
           login: { type: 'text', autocomplete: 'username' },
@@ -183,7 +183,7 @@ describe('DitoTextType', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text', label: { text: 'Title', suffix: 'Book' } },
           author: { type: 'text', label: { html: '<b>Author</b> &amp; Co' } }
         }
@@ -199,7 +199,7 @@ describe('DitoTextType', () => {
   it('labels the input by the element of `labelledBy`', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text', label: false, labelledBy: 'title-text' }
         }
       }
@@ -211,7 +211,7 @@ describe('DitoTextType', () => {
   it('uses the matching input types for the text based types', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           email: { type: 'email' },
           website: { type: 'url' },
           host: { type: 'hostname' },
@@ -231,7 +231,7 @@ describe('DitoTextType', () => {
 
   it('masks passwords without value until they are focused', async () => {
     const { findField, data } = await mountForm({
-      schema: { components: { password: { type: 'password' } } },
+      schema: { fields: { password: { type: 'password' } } },
       data: { name: 'Ada' }
     })
     // Passwords are never sent by the server, and missing values aren't set:
@@ -246,7 +246,7 @@ describe('DitoTextType', () => {
     it('shows the errors of required fields on blur after edits', async () => {
       const { findField, getErrors } = await mountSchema({
         schema: {
-          components: { title: { type: 'text', required: true } }
+          fields: { title: { type: 'text', required: true } }
         },
         data: { title: 'Dune' }
       })
@@ -261,7 +261,7 @@ describe('DitoTextType', () => {
 
     it('validates the format of the email type', async () => {
       const { findField, getErrors } = await mountSchema({
-        schema: { components: { email: { type: 'email' } } }
+        schema: { fields: { email: { type: 'email' } } }
       })
       const input = findField('email').find('input')
       await input.trigger('focus')
@@ -278,7 +278,7 @@ describe('DitoTextType', () => {
       const request = vi.fn(({ data }) => ({ data }))
       const { submit, getErrors } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text', required: true },
             email: { type: 'email' }
           }
@@ -296,7 +296,7 @@ describe('DitoTextType', () => {
     it('trims values with `trim` and sends empty values as defaults', async () => {
       const { findField, submit } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text', trim: true },
             subtitle: { type: 'text' },
             note: { type: 'text', default: 'none' }
@@ -323,7 +323,7 @@ describe('DitoTextType', () => {
       const onChange = vi.fn()
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: {
               type: 'text',
               onFocus: record('focus'),
@@ -350,7 +350,7 @@ describe('DitoTextType', () => {
     it('lets change handlers update other values of the item', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: {
               type: 'text',
               onChange: ({ item, value }) => {

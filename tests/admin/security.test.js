@@ -23,7 +23,7 @@ const { getUrl, getAuthentication, post, logIn, setUpTotp } = startPasskeysApp()
 
 vi.setConfig({ testTimeout: 30_000 })
 
-const views = { books: { type: 'view', label: 'Books', components: {} } }
+const views = { books: { type: 'view', label: 'Books', fields: {} } }
 
 // Logs in `ada`, runs `setUp()`, and opens the Security dialog from the account
 // menu, with the features that the server enables, and `features` that turn

@@ -46,7 +46,7 @@ schemas around it: sections, inlined forms, forms and views. A form's
 ```js
 export const bookForm = {
   type: 'form',
-  components: {
+  fields: {
     stock: { type: 'integer' },
     isAvailable: { type: 'switch' }
   },

@@ -3,10 +3,10 @@ import { mountAdmin } from '../test/mount.js'
 import { DitoView, DitoForm, DitoFormEmbedded } from '../components/index.js'
 
 const createForm = (
-  components: Record<string, any> = {}
-): { type: 'form'; components: Record<string, any> } => ({
+  fields: Record<string, any> = {}
+): { type: 'form'; fields: Record<string, any> } => ({
   type: 'form',
-  components: { title: { type: 'text' }, ...components }
+  fields: { title: { type: 'text' }, ...fields }
 })
 
 const createList = (options: Record<string, any> = {}) => ({
@@ -18,7 +18,7 @@ const createList = (options: Record<string, any> = {}) => ({
 
 const createListView = (path: string, options: Record<string, any> = {}) => ({
   type: 'view',
-  component: createList({ resource: { path }, ...options })
+  field: createList({ resource: { path }, ...options })
 })
 
 // Returns the route components that render `path`, or `redirect` for records
@@ -44,7 +44,7 @@ describe('RouteTree', () => {
     const views = {
       shelf: {
         type: 'view',
-        components: { books: createList({ resource: { path: 'books' } }) }
+        fields: { books: createList({ resource: { path: 'books' } }) }
       }
     }
     expect(await getRouteComponents(views, '/shelf/books/1')).toEqual([
@@ -109,10 +109,10 @@ describe('RouteTree', () => {
           contents: {
             type: 'section',
             nested: true,
-            components: { notes: createList() }
+            fields: { notes: createList() }
           },
-          more: { type: 'section', components: { quotes: createList() } },
-          meta: { type: 'object', components: { sources: createList() } }
+          more: { type: 'section', fields: { quotes: createList() } },
+          meta: { type: 'object', fields: { sources: createList() } }
         })
       })
     }
@@ -160,7 +160,7 @@ describe('RouteTree', () => {
 
   it('routes forms that contain themselves up to `maxDepth` times', async () => {
     const categoryForm = createForm()
-    categoryForm.components.subcategories = createList({
+    categoryForm.fields.subcategories = createList({
       form: categoryForm,
       maxDepth: 2
     })
@@ -199,12 +199,12 @@ describe('RouteTree', () => {
       })
       const createStyle = () => ({
         type: 'object',
-        components: { top: { type: 'number' }, bottom: { type: 'number' } }
+        fields: { top: { type: 'number' }, bottom: { type: 'number' } }
       })
       for (const type of ['text', 'image', 'quote', 'grid', 'row', 'column']) {
         contentForms[type] = {
           type: 'form',
-          components: {
+          fields: {
             padding: createStyle(),
             border: createStyle(),
             [`${type}Content`]: createContent(),
@@ -254,7 +254,7 @@ describe('RouteTree', () => {
     const views = {
       pages: {
         type: 'view',
-        component: {
+        field: {
           type: 'tree-list',
           resource: { path: 'pages' },
           editable: true,
@@ -277,7 +277,7 @@ describe('RouteTree', () => {
     const views = {
       pages: {
         type: 'view',
-        component: {
+        field: {
           type: 'tree-list',
           resource: { path: 'pages' },
           editable: true,

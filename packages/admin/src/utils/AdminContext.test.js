@@ -17,7 +17,7 @@ describe('AdminContext', () => {
         books: {
           type: 'view',
           label: 'Books',
-          components: { title: { type: 'text' } }
+          fields: { title: { type: 'text' } }
         }
       }
     }
@@ -44,7 +44,7 @@ describe('AdminContext', () => {
 
   it('is provided once to all components', async () => {
     const { admin, routeComponent, getComponent } = await mountSchema({
-      schema: { components: { title: { type: 'text' } } }
+      schema: { fields: { title: { type: 'text' } } }
     })
     expect(admin.root.adminContext).toBe(admin.context)
     expect(routeComponent.adminContext).toBe(admin.context)
@@ -99,7 +99,7 @@ describe('AdminContext', () => {
   describe('in contexts', () => {
     it('provides its members to the contexts of components', async () => {
       const { admin, getComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } }
+        schema: { fields: { title: { type: 'text' } } }
       })
       const { context } = getComponent('title')
       expect(context.user).toBe(admin.context.user)
@@ -124,7 +124,7 @@ describe('AdminContext', () => {
     it('notifies and remembers it only in the context', async () => {
       vi.spyOn(console, 'log').mockImplementation(() => {})
       const { admin, getComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } }
+        schema: { fields: { title: { type: 'text' } } }
       })
       const notify = vi.spyOn(admin.context, 'notify')
       const component = getComponent('title')

@@ -3,11 +3,11 @@ import { mountAdmin, isForm } from '../test/mount.js'
 
 describe('DitoMenu', () => {
   const views = {
-    'books': { type: 'view', label: 'Books', components: {} },
+    'books': { type: 'view', label: 'Books', fields: {} },
     'books-archive': {
       type: 'view',
       label: 'Archive',
-      components: {}
+      fields: {}
     }
   }
 
@@ -31,13 +31,13 @@ describe('DitoMenu', () => {
 
 describe('DitoMenu links', () => {
   const views = {
-    books: { type: 'view', label: 'Books', components: {} },
+    books: { type: 'view', label: 'Books', fields: {} },
     catalog: {
       type: 'menu',
       label: 'Catalog',
       items: {
-        authors: { type: 'view', label: 'Authors', components: {} },
-        series: { type: 'view', label: 'Series', components: {} }
+        authors: { type: 'view', label: 'Authors', fields: {} },
+        series: { type: 'view', label: 'Series', fields: {} }
       }
     }
   }
@@ -65,10 +65,10 @@ describe('DitoMenu links', () => {
         generator: {
           type: 'view',
           label: 'Generator',
-          component: {
+          field: {
             type: 'object',
             resource: { path: 'generator' },
-            form: { type: 'form', components: { name: { type: 'text' } } }
+            form: { type: 'form', fields: { name: { type: 'text' } } }
           }
         }
       },

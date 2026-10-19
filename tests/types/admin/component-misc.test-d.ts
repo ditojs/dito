@@ -35,11 +35,11 @@ describe('MenuSchema', () => {
       items: {
         entries: {
           type: 'view',
-          component: {
+          field: {
             type: 'list',
             form: {
               type: 'form',
-              components: {
+              fields: {
                 title: { type: 'text' }
               }
             }
@@ -52,7 +52,7 @@ describe('MenuSchema', () => {
   it('View union accepts both ViewSchema and MenuSchema', () => {
     const viewSchema: View<Entry> = {
       type: 'view',
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     }
@@ -63,7 +63,7 @@ describe('MenuSchema', () => {
       items: {
         sub: {
           type: 'view',
-          components: {
+          fields: {
             title: { type: 'text' }
           }
         }
@@ -187,7 +187,7 @@ describe('ClipboardConfig', () => {
           return context.item
         }
       },
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     })
@@ -197,18 +197,18 @@ describe('ClipboardConfig', () => {
     assertType<FormSchema<Entry>>({
       type: 'form',
       clipboard: { interchange: true },
-      components: {}
+      fields: {}
     })
     assertType<FormSchema<Entry>>({
       type: 'form',
       clipboard: { interchange: true, copy: ({ item }) => item },
-      components: {}
+      fields: {}
     })
     assertType<FormSchema<Entry>>({
       type: 'form',
       // @ts-expect-error - interchange is a boolean
       clipboard: { interchange: 'zip' },
-      components: {}
+      fields: {}
     })
   })
 })

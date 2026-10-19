@@ -4,12 +4,12 @@ import { getTypeDescriptor, getSourceType } from './types.ts'
 export function iterateSchemaComponents(schemas, callback) {
   for (const schema of schemas) {
     if (isSingleComponentView(schema)) {
-      const res = callback(schema.component, schema.name, 0)
+      const res = callback(schema.field, schema.name, 0)
       if (res !== undefined) {
         return res
       }
     } else if (isSchema(schema)) {
-      for (const [name, component] of Object.entries(schema.components || {})) {
+      for (const [name, component] of Object.entries(schema.fields || {})) {
         const res = callback(component, name, 1)
         if (res !== undefined) {
           return res
@@ -90,7 +90,7 @@ export function getSchemaPath(schema, name, api) {
 }
 
 export function isSingleComponentView(schema) {
-  return isView(schema) && isObject(schema.component)
+  return isView(schema) && isObject(schema.field)
 }
 
 export function isCompact(schema) {
@@ -98,7 +98,7 @@ export function isCompact(schema) {
 }
 
 export function isInlined(schema) {
-  return !!(schema.inlined || schema.components)
+  return !!(schema.inlined || schema.fields)
 }
 
 // Nested components store their data under their own key in their parent's:

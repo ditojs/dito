@@ -59,25 +59,25 @@ const chapters = {
   type: 'list',
   form: {
     type: 'form',
-    components: { title: { type: 'text' } }
+    fields: { title: { type: 'text' } }
   }
 }
 
 const schema = {
   type: 'form',
-  components: {
+  fields: {
     title: { type: 'text' },
     publishing: {
       type: 'section',
-      components: { publisher: { type: 'text' } }
+      fields: { publisher: { type: 'text' } }
     }
   },
   tabs: {
-    structure: { type: 'tab', components: { chapters } },
-    layout: { type: 'tab', components: { chapters } }
+    structure: { type: 'tab', fields: { chapters } },
+    layout: { type: 'tab', fields: { chapters } }
   },
   panels: {
-    info: { type: 'panel', components: { note: { type: 'text' } } }
+    info: { type: 'panel', fields: { note: { type: 'text' } } }
   }
 }
 
@@ -130,16 +130,16 @@ describe('walkSchemaData() with child sources', () => {
     const children = {
       type: 'list',
       name: 'sections',
-      form: { type: 'form', components: { heading: { type: 'text' } } }
+      form: { type: 'form', fields: { heading: { type: 'text' } } }
     }
     const componentPaths = {}
     walkSchemaData(
       {
         type: 'form',
-        components: {
+        fields: {
           outline: {
             type: 'outline',
-            form: { type: 'form', components: { title: { type: 'text' } } },
+            form: { type: 'form', fields: { title: { type: 'text' } } },
             children
           }
         }
@@ -167,16 +167,16 @@ describe('walkSchemaData() with child sources', () => {
     const children = {
       type: 'list',
       name: 'sections',
-      form: { type: 'form', components: { heading: { type: 'text' } } }
+      form: { type: 'form', fields: { heading: { type: 'text' } } }
     }
     const before = vi.fn()
     walkSchemaData(
       {
         type: 'form',
-        components: {
+        fields: {
           outline: {
             type: 'outline',
-            form: { type: 'form', components: { sections: children } },
+            form: { type: 'form', fields: { sections: children } },
             children
           }
         }
@@ -195,10 +195,10 @@ describe('walkSchemaData() with panel components', () => {
     walkSchemaData(
       {
         type: 'form',
-        components: {
+        fields: {
           links: {
             type: 'panel',
-            components: { website: { type: 'text' } }
+            fields: { website: { type: 'text' } }
           }
         }
       },
@@ -226,13 +226,13 @@ describe('walkSchemaData() with panels of nested components', () => {
     walkSchemaData(
       {
         type: 'form',
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             panels: {
               meta: {
                 type: 'panel',
-                components: { code: { type: 'text' } }
+                fields: { code: { type: 'text' } }
               }
             }
           }
@@ -263,18 +263,18 @@ describe('walkSchemaData() with panels that have their own data', () => {
     walkSchemaData(
       {
         type: 'form',
-        components: {
+        fields: {
           search: {
             type: 'panel',
             data: () => ({ term: null }),
-            components: { term: { type: 'text' } }
+            fields: { term: { type: 'text' } }
           }
         },
         panels: {
           filters: {
             type: 'panel',
             data: () => ({ query: null }),
-            components: { query: { type: 'text' } }
+            fields: { query: { type: 'text' } }
           }
         }
       },
@@ -356,7 +356,7 @@ describe('getComputedValue()', () => {
   })
 
   it('returns the defaults of nested sections that are `null`', () => {
-    const chooser = { type: 'section', nested: true, components: {} }
+    const chooser = { type: 'section', nested: true, fields: {} }
     expect(
       getComputedValue(chooser, { chooser: null }, 'chooser', 'chooser')
     ).toEqual(
@@ -414,7 +414,7 @@ describe('serializeData()', () => {
     const computeValue = vi.fn(({ item }) => item.title.toUpperCase())
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         upper: { type: 'text', computeValue },
         subtitle: { type: 'text', default: 'None' }
@@ -433,12 +433,12 @@ describe('serializeData()', () => {
     // them to the objects that their forms edit.
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         sizes: {
           type: 'list',
           form: {
             type: 'form',
-            components: {
+            fields: {
               value: { type: 'text' },
               units: { type: 'text' }
             }
@@ -461,12 +461,12 @@ describe('serializeData()', () => {
     // data path from the root data, which doesn't hold missing values.
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         items: {
           type: 'list',
           form: {
             type: 'form',
-            components: {
+            fields: {
               status: { type: 'text', default: ({ value }) => value ?? 'New' }
             }
           }
@@ -490,7 +490,7 @@ describe('serializeData()', () => {
       wrapPrimitives: 'price',
       form: {
         type: 'form',
-        components: {
+        fields: {
           price: {
             type: 'text',
             serializeValue: ({ value, dataPath }) => {
@@ -503,7 +503,7 @@ describe('serializeData()', () => {
     }
     expect(
       serializeData(
-        { type: 'form', components: { prices } },
+        { type: 'form', fields: { prices } },
         { type: 'list' },
         { prices: [100, 200] },
         '',
@@ -517,7 +517,7 @@ describe('serializeData()', () => {
   it('converts values with the hook of their type, then of the schema', () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         price: { type: 'amount', serializeValue: ({ value }) => `${value}` }
       }
     }
@@ -533,7 +533,7 @@ describe('serializeData()', () => {
     // E.g. virtual fields, which write the actual values:
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         name: {
           type: 'text',
           serializeValue({ value, serializedItem }) {
@@ -558,13 +558,13 @@ describe('serializeData()', () => {
     const essay = { type: 'essay', title: 'On Reading', notes: 'Draft' }
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         works: {
           type: 'list',
           forms: {
             novel: {
               type: 'form',
-              components: { title: { type: 'text' } }
+              fields: { title: { type: 'text' } }
             }
           }
         }
@@ -584,7 +584,7 @@ describe('serializeData()', () => {
     const options = { services: {}, target: 'server' }
     const schema = {
       type: 'form',
-      components: { title: { type: 'text' } }
+      fields: { title: { type: 'text' } }
     }
     const data = { id: 1, type: 'novel', title: 'Emma', notes: 'Draft' }
 
@@ -612,11 +612,11 @@ describe('serializeData()', () => {
 describe('deserializeData()', () => {
   const createPricesSchema = price => ({
     type: 'form',
-    components: {
+    fields: {
       prices: {
         type: 'list',
         wrapPrimitives: 'price',
-        form: { type: 'form', components: { price } }
+        form: { type: 'form', fields: { price } }
       }
     }
   })
@@ -624,7 +624,7 @@ describe('deserializeData()', () => {
   it('converts values with the hook of their type, then of the schema', () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         price: { type: 'amount', deserializeValue: ({ value }) => `${value}` }
       }
     }
@@ -636,12 +636,12 @@ describe('deserializeData()', () => {
   it('converts the values of sources before the values of their items', () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         items: {
           type: 'list',
           // Stored as an object keyed by id:
           deserializeValue: ({ value }) => Object.values(value),
-          form: { type: 'form', components: { price: { type: 'amount' } } }
+          form: { type: 'form', fields: { price: { type: 'amount' } } }
         }
       }
     }
@@ -662,7 +662,7 @@ describe('deserializeData()', () => {
     deserializeData(
       {
         type: 'form',
-        components: { title: { type: 'text', deserializeValue } }
+        fields: { title: { type: 'text', deserializeValue } }
       },
       data
     )
@@ -681,7 +681,7 @@ describe('shouldRenderSchema()', () => {
     const condition = vi.fn(({ item }) => !!item.url)
     const links = {
       type: 'list',
-      components: { url: { type: 'text', if: condition } }
+      fields: { url: { type: 'text', if: condition } }
     }
     expect(shouldRenderSchema(links, context)).toBe(true)
     expect(condition).not.toHaveBeenCalled()
@@ -691,7 +691,7 @@ describe('shouldRenderSchema()', () => {
     const context = new SchemaContext({}, { data: {}, dataPath: '' })
     const section = {
       type: 'section',
-      components: { url: { type: 'text', if: () => false } }
+      fields: { url: { type: 'text', if: () => false } }
     }
     expect(shouldRenderSchema(section, context)).toBe(false)
   })
@@ -700,7 +700,7 @@ describe('shouldRenderSchema()', () => {
     const context = new SchemaContext({}, { data: {}, dataPath: '' })
     const form = {
       type: 'form',
-      components: { title: { type: 'text', if: () => false } }
+      fields: { title: { type: 'text', if: () => false } }
     }
     expect(shouldRenderSchema(form, context)).toBe(false)
   })
@@ -729,12 +729,12 @@ describe('initializeData()', () => {
       wrapPrimitives: 'price',
       form: {
         type: 'form',
-        components: { price: { type: 'text', default: 0 } }
+        fields: { price: { type: 'text', default: 0 } }
       }
     }
     const data = { prices: [100, 200] }
     // `SchemaContext` needs a component to inherit from:
-    initializeData({ type: 'form', components: { prices } }, data, {})
+    initializeData({ type: 'form', fields: { prices } }, data, {})
     expect(data).toEqual({ prices: [100, 200] })
   })
 
@@ -742,10 +742,10 @@ describe('initializeData()', () => {
     const chooser = {
       type: 'section',
       nested: true,
-      components: { topic: { type: 'text', default: 'news' } }
+      fields: { topic: { type: 'text', default: 'news' } }
     }
     const data = { chooser: null }
-    initializeData({ type: 'form', components: { chooser } }, data, {})
+    initializeData({ type: 'form', fields: { chooser } }, data, {})
     // The section's components are initialized in its object too:
     expect(data.chooser).toEqual({ topic: 'news' })
   })
@@ -753,7 +753,7 @@ describe('initializeData()', () => {
   it('reads the flags of types that are booleans', () => {
     const schema = {
       type: 'form',
-      components: { secret: { type: 'secret' }, choice: { type: 'choice' } }
+      fields: { secret: { type: 'secret' }, choice: { type: 'choice' } }
     }
     expect(initializeData(schema, { choice: null })).toEqual({
       choice: 'none'
@@ -768,7 +768,7 @@ describe('initializeData()', () => {
         value ?? (item.customFactor != null ? 'factor' : undefined)
       )
     }
-    const schema = { type: 'form', components: { pricing } }
+    const schema = { type: 'form', fields: { pricing } }
     const data = { customFactor: 10 }
     initializeData(schema, data, null, {
       shouldSetDefaultsOfComponentsWithCompute: false
@@ -784,14 +784,14 @@ describe('initializeData()', () => {
     const parts = {
       type: 'list',
       orderKey: 'order',
-      form: { type: 'form', components: { name: { type: 'text' } } }
+      form: { type: 'form', fields: { name: { type: 'text' } } }
     }
     const items = {
       type: 'list',
       orderKey: 'order',
       // Lists with `computeValue()` are numbered too.
       computeValue: ({ value }) => value,
-      form: { type: 'form', components: { parts } }
+      form: { type: 'form', fields: { parts } }
     }
     const data = {
       items: [
@@ -800,7 +800,7 @@ describe('initializeData()', () => {
       ]
     }
     initializeData(
-      { type: 'form', tabs: { main: { type: 'tab', components: { items } } } },
+      { type: 'form', tabs: { main: { type: 'tab', fields: { items } } } },
       data,
       // `SchemaContext` needs a component to inherit from:
       {}
@@ -810,16 +810,16 @@ describe('initializeData()', () => {
   })
 
   it('leaves lists without `orderKey` and of primitives untouched', () => {
-    const form = { type: 'form', components: { name: { type: 'text' } } }
+    const form = { type: 'form', fields: { name: { type: 'text' } } }
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         items: { type: 'list', form },
         prices: {
           type: 'list',
           orderKey: 'order',
           wrapPrimitives: 'price',
-          form: { type: 'form', components: { price: { type: 'text' } } }
+          form: { type: 'form', fields: { price: { type: 'text' } } }
         }
       }
     }
@@ -837,7 +837,7 @@ describe('getCreatableForms()', () => {
   const createContext = data => new SchemaContext({}, { data, dataPath: '' })
   const createForm = settings => ({
     type: 'form',
-    components: { title: { type: 'text' } },
+    fields: { title: { type: 'text' } },
     ...settings
   })
 
@@ -871,7 +871,7 @@ describe('getCreatableForms()', () => {
       hidden: createForm({ if: false }),
       invisible: createForm({ visible: false }),
       empty: createForm({
-        components: { title: { type: 'text', if: () => false } }
+        fields: { title: { type: 'text', if: () => false } }
       })
     }
     expect(getCreatableForms({ forms }, createContext({}))).toEqual(forms)

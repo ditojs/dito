@@ -19,7 +19,7 @@ export const books = createWidgetView<BookItem>(
           type: 'tab',
           label: 'Main',
           defaultTab: true,
-          components: {
+          fields: {
             title,
             meta: {
               type: 'section',
@@ -27,7 +27,7 @@ export const books = createWidgetView<BookItem>(
               nested: true,
               collapsible: true,
               collapsed: true,
-              components: {
+              fields: {
                 note: { type: 'text', label: 'Note' }
               }
             },
@@ -39,7 +39,7 @@ export const books = createWidgetView<BookItem>(
               nested: true,
               collapsible: true,
               collapsed: true,
-              components: ({ item }) =>
+              fields: ({ item }) =>
                 item.edition
                   ? {
                       // Only required in the admin, not on the server.
@@ -57,7 +57,7 @@ export const books = createWidgetView<BookItem>(
               form: {
                 type: 'form',
                 label: 'Tag',
-                components: { name: { type: 'text', label: 'Name' } }
+                fields: { name: { type: 'text', label: 'Name' } }
               }
             },
             chapters: {
@@ -70,7 +70,7 @@ export const books = createWidgetView<BookItem>(
               form: {
                 type: 'form',
                 label: 'Chapter',
-                components: {
+                fields: {
                   title,
                   // Only required in the admin, not on the server.
                   summary: { type: 'text', label: 'Summary', required: true },
@@ -83,7 +83,7 @@ export const books = createWidgetView<BookItem>(
                     form: {
                       type: 'form',
                       label: 'Section',
-                      components: { title }
+                      fields: { title }
                     }
                   }
                 }
@@ -98,7 +98,7 @@ export const books = createWidgetView<BookItem>(
               form: {
                 type: 'form',
                 label: 'Volume',
-                components: {
+                fields: {
                   title: { type: 'text', label: 'Volume Title', required: true }
                 }
               },
@@ -109,7 +109,7 @@ export const books = createWidgetView<BookItem>(
                 form: {
                   type: 'form',
                   label: 'Part',
-                  components: {
+                  fields: {
                     title: { type: 'text', label: 'Part Title' }
                   }
                 }
@@ -120,7 +120,7 @@ export const books = createWidgetView<BookItem>(
         details: {
           type: 'tab',
           label: 'Details',
-          components: {
+          fields: {
             subtitle: { type: 'text', label: 'Subtitle' },
             // Placed before `edition`, so that its error tooltip doesn't
             // cover the button.
@@ -140,7 +140,7 @@ export const books = createWidgetView<BookItem>(
               label: 'Publishing',
               collapsible: true,
               collapsed: true,
-              components: {
+              fields: {
                 // Only required in the admin, not on the server.
                 publisher: { type: 'text', label: 'Publisher', required: true }
               }
@@ -177,13 +177,13 @@ export const bookOutlines = createWidgetView<BookItem>(
         outline: {
           type: 'tab',
           label: 'Outline',
-          components: {
+          fields: {
             chapters: {
               ...chapters,
               form: {
                 type: 'form',
                 label: 'Chapter',
-                components: { summary }
+                fields: { summary }
               }
             }
           }
@@ -193,13 +193,13 @@ export const bookOutlines = createWidgetView<BookItem>(
         content: {
           type: 'tab',
           label: 'Content',
-          components: {
+          fields: {
             chapters: {
               ...chapters,
               form: {
                 type: 'form',
                 label: 'Chapter',
-                components: { title, summary }
+                fields: { title, summary }
               }
             }
           }

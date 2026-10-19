@@ -47,7 +47,7 @@ In the admin, `context.user` is the logged-in user, with its roles:
 export const books = {
   type: 'view',
   if: ({ user }) => user.hasRole('editor', 'admin'),
-  component: {
+  field: {
     type: 'list',
     resource: 'books',
     form: bookForm,
@@ -60,7 +60,7 @@ export const books = {
 export const orders = {
   type: 'view',
   if: ({ user }) => user.hasRole('sales', 'admin'),
-  component: { type: 'list', resource: 'orders', form: orderForm }
+  field: { type: 'list', resource: 'orders', form: orderForm }
 }
 ```
 

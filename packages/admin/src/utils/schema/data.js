@@ -708,14 +708,14 @@ export function walkSchemaData(schema, data, {
           serializedData
         }
         if (shouldWalk(entry) && !isPanelWithOwnData(tabOrPanelSchema)) {
-          walkComponents(tabOrPanelSchema.components, entry.componentPath)
+          walkComponents(tabOrPanelSchema.fields, entry.componentPath)
         }
       }
     }
   }
 
-  const components = isFunction(schema.components)
-    ? // Unnested components with `components()` callbacks, e.g. sections:
+  const components = isFunction(schema.fields)
+    ? // Unnested components with `fields()` callbacks, e.g. sections:
       getItemFormSchema(
         schema,
         data,
@@ -726,8 +726,8 @@ export function walkSchemaData(schema, data, {
           dataPath,
           rootData: options.rootData
         })
-      ).components
-    : schema.components
+      ).fields
+    : schema.fields
   walkComponents(components, componentPath)
   // Walk the child sources like components of the form, unless they are:
   walkComponents(

@@ -15,7 +15,7 @@ describe('ListSchema', () => {
       type: 'list',
       form: {
         type: 'form',
-        components: {
+        fields: {
           title: { type: 'text' }
         }
       }
@@ -88,7 +88,7 @@ describe('ListSchema', () => {
         type: 'list',
         form: {
           type: 'form',
-          components: {
+          fields: {
             title: { type: 'text' }
           }
         } satisfies FormSchema<Entry>
@@ -99,7 +99,7 @@ describe('ListSchema', () => {
   it('rejects wrong form type via typed variable', () => {
     const parentForm: FormSchema<Parent> = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         entries: { type: 'list' }
       }
@@ -192,7 +192,7 @@ describe('ListSchema', () => {
         wrapPrimitives: 'price',
         form: {
           type: 'form',
-          components: { price: { type: 'number' } }
+          fields: { price: { type: 'number' } }
         }
       }
     })

@@ -4,7 +4,7 @@ import SchemaContext from '../SchemaContext.js'
 import { mountSchema, isForm } from '../test/mount.js'
 
 const blocksSchema = {
-  components: {
+  fields: {
     blocks: {
       type: 'list',
       inlined: true,
@@ -13,17 +13,17 @@ const blocksSchema = {
         heading: {
           type: 'form',
           label: 'Heading',
-          components: { text: { type: 'text' } }
+          fields: { text: { type: 'text' } }
         },
         quote: {
           type: 'form',
           label: 'Quote',
-          components: { text: { type: 'text' } }
+          fields: { text: { type: 'text' } }
         },
         image: {
           type: 'form',
           label: 'Image',
-          components: { url: { type: 'url' } }
+          fields: { url: { type: 'url' } }
         }
       }
     }
@@ -106,22 +106,22 @@ describe('DitoCreateButton', () => {
     const creatable = vi.fn(({ item, value }) => item.blocks === value)
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           // Not a single-component view, which would give the list as item:
           title: { type: 'text' },
           blocks: {
-            ...blocksSchema.components.blocks,
+            ...blocksSchema.fields.blocks,
             forms: {
               heading: {
-                ...blocksSchema.components.blocks.forms.heading,
+                ...blocksSchema.fields.blocks.forms.heading,
                 if: false
               },
               quote: {
-                ...blocksSchema.components.blocks.forms.quote,
+                ...blocksSchema.fields.blocks.forms.quote,
                 creatable: false
               },
               image: {
-                ...blocksSchema.components.blocks.forms.image,
+                ...blocksSchema.fields.blocks.forms.image,
                 visible: false,
                 creatable
               }
@@ -145,13 +145,13 @@ describe('DitoCreateButton', () => {
   it('greys out the forms that are `disabled`', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           blocks: {
-            ...blocksSchema.components.blocks,
+            ...blocksSchema.fields.blocks,
             forms: {
-              ...blocksSchema.components.blocks.forms,
+              ...blocksSchema.fields.blocks.forms,
               quote: {
-                ...blocksSchema.components.blocks.forms.quote,
+                ...blocksSchema.fields.blocks.forms.quote,
                 disabled: true
               }
             }
@@ -176,14 +176,14 @@ describe('DitoCreateButton', () => {
   it('renders a plain button for a single default form', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           blocks: {
             type: 'list',
             inlined: true,
             creatable: true,
             form: {
               type: 'form',
-              components: { text: { type: 'text' } }
+              fields: { text: { type: 'text' } }
             }
           }
         }
@@ -201,7 +201,7 @@ describe('DitoCreateButton', () => {
     const query = vi.fn(({ user }) => ({ editor: user.username }))
     const { admin, findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           recipes: {
             type: 'list',
             resource: { path: 'recipes' },
@@ -210,12 +210,12 @@ describe('DitoCreateButton', () => {
               soup: {
                 type: 'form',
                 label: 'Soup',
-                components: { name: { type: 'text' } }
+                fields: { name: { type: 'text' } }
               },
               cake: {
                 type: 'form',
                 label: 'Cake',
-                components: { name: { type: 'text' } }
+                fields: { name: { type: 'text' } }
               }
             }
           }

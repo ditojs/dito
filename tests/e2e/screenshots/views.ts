@@ -26,7 +26,7 @@ export const projects = createWidgetView<Project>(
     },
     filters: {
       search: {
-        components: {
+        fields: {
           search: { label: 'Search', type: 'text' }
         }
       }
@@ -39,7 +39,7 @@ export const projects = createWidgetView<Project>(
           type: 'tab',
           label: 'Main',
           defaultTab: true,
-          components: {
+          fields: {
             name: { type: 'text', label: 'Name', required: true },
             budget: { type: 'number', label: 'Budget', width: '1/4' },
             status: {
@@ -85,7 +85,7 @@ export const projects = createWidgetView<Project>(
               text: 'Open Dialog',
               onClick: ({ showDialog }) => {
                 showDialog({
-                  components: {
+                  fields: {
                     message: {
                       type: 'text',
                       label: 'Message',
@@ -105,7 +105,7 @@ export const projects = createWidgetView<Project>(
         details: {
           type: 'tab',
           label: 'Details',
-          components: {
+          fields: {
             notes: {
               type: 'markup',
               label: 'Notes',
@@ -129,7 +129,7 @@ export const projects = createWidgetView<Project>(
               label: 'Settings',
               nested: true,
               collapsible: true,
-              components: {
+              fields: {
                 visibility: {
                   type: 'select',
                   label: 'Visibility',
@@ -145,7 +145,7 @@ export const projects = createWidgetView<Project>(
               nested: true,
               collapsible: true,
               collapsed: true,
-              components: {
+              fields: {
                 slug: { type: 'text', label: 'Slug' }
               }
             },
@@ -164,7 +164,7 @@ export const projects = createWidgetView<Project>(
               nested: true,
               width: '3/4',
               if: ({ item }) => item.status === 'Planned',
-              components: {
+              fields: {
                 approver: { type: 'text', label: 'Approver', width: '1/2' },
                 approvedOn: { type: 'date', label: 'Approved On', width: '1/2' }
               }
@@ -174,7 +174,7 @@ export const projects = createWidgetView<Project>(
         planning: {
           type: 'tab',
           label: 'Planning',
-          components: {
+          fields: {
             contacts: {
               type: 'list',
               label: 'Contacts',
@@ -184,7 +184,7 @@ export const projects = createWidgetView<Project>(
               draggable: true,
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   name: { type: 'text', label: 'Contact Name', width: '1/2' },
                   email: { type: 'email', label: 'Email', width: '1/2' }
                 }
@@ -204,7 +204,7 @@ export const projects = createWidgetView<Project>(
               form: {
                 type: 'form',
                 label: 'Milestone',
-                components: {
+                fields: {
                   title: { type: 'text', label: 'Title', required: true },
                   due: { type: 'date', label: 'Due' }
                 }
@@ -220,7 +220,7 @@ export const projects = createWidgetView<Project>(
               draggable: true,
               form: {
                 type: 'form',
-                components: { name: { type: 'text', label: 'Phase Name' } }
+                fields: { name: { type: 'text', label: 'Phase Name' } }
               },
               children: {
                 name: 'tasks',
@@ -228,7 +228,7 @@ export const projects = createWidgetView<Project>(
                 editable: true,
                 form: {
                   type: 'form',
-                  components: {
+                  fields: {
                     name: { type: 'text', label: 'Task Name', required: true }
                   }
                 }
@@ -239,7 +239,7 @@ export const projects = createWidgetView<Project>(
         extras: {
           type: 'tab',
           label: 'Extras',
-          components: {
+          fields: {
             website: {
               type: 'url',
               label: 'Website',
@@ -251,7 +251,7 @@ export const projects = createWidgetView<Project>(
               type: 'section',
               label: 'Contact Info',
               nested: true,
-              components: {
+              fields: {
                 phone: { type: 'text', label: 'Phone', width: '1/2' },
                 email: { type: 'email', label: 'Contact Email', width: '1/2' }
               }
@@ -289,14 +289,14 @@ export const projects = createWidgetView<Project>(
                 link: {
                   type: 'form',
                   label: 'Link',
-                  components: {
+                  fields: {
                     url: { type: 'url', label: 'Link URL' }
                   }
                 },
                 note: {
                   type: 'form',
                   label: 'Note',
-                  components: {
+                  fields: {
                     text: { type: 'text', label: 'Note Text' }
                   }
                 }
@@ -305,7 +305,7 @@ export const projects = createWidgetView<Project>(
                 linksInfo: {
                   type: 'panel',
                   label: 'Links Info',
-                  components: {
+                  fields: {
                     linksHint: { type: 'label', label: 'Links open in tabs' }
                   }
                 }
@@ -327,7 +327,7 @@ export const projects = createWidgetView<Project>(
                 type: 'form',
                 label: 'Reference',
                 clipboard: { interchange: true },
-                components: {
+                fields: {
                   url: { type: 'url', label: 'Reference URL' }
                 }
               }
@@ -339,7 +339,7 @@ export const projects = createWidgetView<Project>(
         summary: {
           type: 'panel',
           label: 'Summary',
-          components: {
+          fields: {
             owner: { type: 'label', label: 'Owner: Ada' }
           }
         }
@@ -401,7 +401,7 @@ export const account = {
   settings: {
     type: 'form',
     label: 'Account',
-    components: {
+    fields: {
       name: { type: 'text', label: 'Name' },
       email: { type: 'email', label: 'Email' },
       password: { type: 'password', label: 'New Password' }

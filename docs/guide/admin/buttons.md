@@ -1,12 +1,12 @@
 # Buttons
 
 Buttons run actions: open a page, send a request, show a dialog. They go into
-`buttons` of forms, views, lists and panels, or into `components` like fields.
+`buttons` of forms, views, lists and panels, or among their `fields`.
 
 ```js
 export const order = {
   type: 'form',
-  components: {
+  fields: {
     number: { type: 'text', readonly: true },
     customer: { type: 'object', … },
     // A button among the fields:

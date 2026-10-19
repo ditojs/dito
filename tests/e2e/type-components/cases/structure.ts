@@ -2,7 +2,7 @@ import { defineCases } from './define.js'
 
 const form = {
   type: 'form',
-  components: { name: { type: 'text', label: 'Name' } }
+  fields: { name: { type: 'text', label: 'Name' } }
 }
 
 const inlinedList = {
@@ -139,12 +139,12 @@ export default [
           text: {
             type: 'form',
             label: 'Text',
-            components: { text: { type: 'text', label: 'Text' } }
+            fields: { text: { type: 'text', label: 'Text' } }
           },
           link: {
             type: 'form',
             label: 'Link',
-            components: { url: { type: 'url', label: 'Url' } }
+            fields: { url: { type: 'url', label: 'Url' } }
           }
         }
       },

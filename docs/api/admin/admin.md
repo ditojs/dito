@@ -9,12 +9,12 @@ const admin = new DitoAdmin('#dito-admin', {
     books: {
       type: 'view',
       label: 'Books',
-      component: {
+      field: {
         type: 'list',
         resource: 'books',
         form: {
           type: 'form',
-          components: {
+          fields: {
             title: { type: 'text', required: true },
             publishedAt: { type: 'date' }
           }

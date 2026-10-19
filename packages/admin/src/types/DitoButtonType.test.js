@@ -15,7 +15,7 @@ describe('DitoButtonType', () => {
     const onClick = vi.fn()
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           shuffle: { type: 'button', text: 'Shuffle', onClick }
         }
@@ -33,7 +33,7 @@ describe('DitoButtonType', () => {
   it('lets click handlers change the data', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           uppercase: {
             type: 'button',
@@ -53,7 +53,7 @@ describe('DitoButtonType', () => {
 
   it('styles and names buttons without text by their verb', async () => {
     const { findField } = await mountSchema({
-      schema: { components: { cancel: { type: 'button' } } }
+      schema: { fields: { cancel: { type: 'button' } } }
     })
     const button = findField('cancel')
     expect(button.classes()).toContain('dito-button--cancel')
@@ -64,7 +64,7 @@ describe('DitoButtonType', () => {
 
   it('names buttons with text by it, not by their verb', async () => {
     const { findField } = await mountSchema({
-      schema: { components: { cancel: { type: 'button', text: 'Discard' } } }
+      schema: { fields: { cancel: { type: 'button', text: 'Discard' } } }
     })
     const button = findField('cancel')
     expect(button.classes()).toContain('dito-button--cancel')
@@ -75,7 +75,7 @@ describe('DitoButtonType', () => {
   it('styles buttons as primary through `primary`', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           remove: { type: 'button', primary: ({ item }) => item.isSaved },
           cancel: { type: 'button' }
         }
@@ -88,7 +88,7 @@ describe('DitoButtonType', () => {
 
   it('is excluded from the data', async () => {
     const { data } = await mountSchema({
-      schema: { components: { shuffle: { type: 'button' } } }
+      schema: { fields: { shuffle: { type: 'button' } } }
     })
     expect('shuffle' in data).toBe(false)
   })
@@ -96,7 +96,7 @@ describe('DitoButtonType', () => {
   it('disables the button through `disabled()`', async () => {
     const { findField, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           clear: {
             type: 'button',
@@ -117,7 +117,7 @@ describe('DitoButtonType', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           publish: {
             type: 'button',
             onClick() {
@@ -136,7 +136,7 @@ describe('DitoButtonType', () => {
     const onError = vi.fn(() => false)
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           publish: {
             type: 'button',
             onClick() {
@@ -157,7 +157,7 @@ describe('DitoButtonType', () => {
   it('is disabled when readonly', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           publish: { type: 'button', readonly: true }
         }
       }
@@ -175,7 +175,7 @@ describe('DitoButtonType', () => {
     )
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           publish: { type: 'button', onClick }
         }
       }
@@ -207,7 +207,7 @@ describe('DitoButtonType', () => {
     )
     const { findField } = await mountForm({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         buttons: { submit: { closeForm: false } }
       },
       data: { title: 'Dune' },
@@ -230,7 +230,7 @@ describe('DitoButtonType', () => {
     let finishClick
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           publish: {
             type: 'button',
             onClick(context) {
@@ -254,7 +254,7 @@ describe('DitoButtonType', () => {
     let finishClick
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           publish: {
             type: 'button',
             suffix: {
@@ -285,7 +285,7 @@ describe('DitoButtonType', () => {
     const onError = vi.fn(() => false)
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           publish: {
             type: 'button',
             onClick() {
@@ -307,7 +307,7 @@ describe('DitoButtonType', () => {
   it('only shows the notifications of error handlers that notify', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           publish: {
             type: 'button',
             onClick() {
@@ -331,7 +331,7 @@ describe('DitoButtonType', () => {
     const request = vi.fn(({ data }) => ({ data }))
     const { findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           publish: {
             type: 'button',
@@ -356,7 +356,7 @@ describe('DitoButtonType', () => {
     let isSubmitted = null
     const { findField } = await mountForm({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         buttons: {
           submit: {
             closeForm: false,
@@ -389,7 +389,7 @@ describe('DitoButtonType', () => {
     let isSubmitted = null
     const { findField } = await mountForm({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         buttons: {
           save: {
             type: 'save-button',
@@ -411,7 +411,7 @@ describe('DitoButtonType', () => {
     const onError = vi.fn(() => false)
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           publish: {
             type: 'button',
             onClick: ({ submit }) => submit(),
@@ -432,7 +432,7 @@ describe('DitoButtonType', () => {
     const request = vi.fn(({ data }) => ({ data }))
     const { findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           title: {
             type: 'text',
             serializeValue() {
@@ -463,7 +463,7 @@ describe('DitoButtonType', () => {
     let notifyCount = 0
     const { findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           publish: {
             type: 'button',
             resource: { path: 'publish', method: 'post' },

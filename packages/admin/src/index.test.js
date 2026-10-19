@@ -36,7 +36,7 @@ describe('@ditojs/admin exports', () => {
     exports.defineType({ type: 'counter', component: Counter })
     const { wrapper, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           count: { type: 'counter' }
         }
@@ -96,7 +96,7 @@ describe('@ditojs/admin exports', () => {
       try {
         exports.defineType({ type: 'number', component, override: true })
         const { wrapper } = await mountSchema({
-          schema: { components: { isbn: { type: 'number' } } },
+          schema: { fields: { isbn: { type: 'number' } } },
           data: { isbn: '978-0141439518' }
         })
         expect(wrapper.find('.isbn').text()).toBe('978-0141439518')
