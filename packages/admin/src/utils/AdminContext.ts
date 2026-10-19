@@ -15,6 +15,7 @@ export interface DialogOptions {
   settings?: {
     label?: string
     width?: number | string
+    minWidth?: number | string
     clickToClose?: boolean
     minDuration?: number
   }

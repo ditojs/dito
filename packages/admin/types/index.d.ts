@@ -2530,6 +2530,12 @@ export type SchemaContext<$Item = any> = {
        * @defaultValue `'35em'`
        */
       width?: number | string
+      /**
+       * The minimum width of the dialog's content, without its padding: a
+       * number in pixels, or a CSS length. Narrow windows can make it
+       * smaller.
+       */
+      minWidth?: number | string
       /** Whether clicking outside of the dialog closes it. */
       clickToClose?: boolean
       /**

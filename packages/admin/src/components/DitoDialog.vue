@@ -4,7 +4,7 @@
   role="dialog"
   :aria-label="settings.label || 'Dialog'"
   aria-modal="true"
-  :style="{ '--width': width }"
+  :style="{ '--width': width, '--min-width': minWidth }"
   @mouseup.self="onMouseUp"
   @keydown="onKeyDown"
 )
@@ -126,11 +126,8 @@ export default {
       buttonSchemas,
       submit,
 
-      // Numbers are pixels, strings any CSS length:
-      width: computed(() => {
-        const { width } = props.settings
-        return isNumber(width) ? `${width}px` : width
-      }),
+      width: computed(() => toCssLength(props.settings.width)),
+      minWidth: computed(() => toCssLength(props.settings.minWidth)),
 
       focusTrapOptions: {
         immediate: true,
@@ -179,6 +176,11 @@ export default {
     }
   }
 }
+
+// Numbers are pixels, strings any CSS length:
+function toCssLength(length) {
+  return isNumber(length) ? `${length}px` : length
+}
 </script>
 
 <style lang="scss">
@@ -222,6 +224,12 @@ export default {
     border-radius: $border-radius;
     // The width is that of the content, without the padding around it:
     max-width: calc(var(--width, 35em) + 2 * #{$content-padding});
+    // Within the window's padding. Percentages don't resolve in the focus
+    // trap, which is as wide as the form:
+    min-width: min(
+      calc(var(--min-width, 0px) + 2 * #{$content-padding}),
+      calc(100vw - 2 * #{$content-padding})
+    );
     max-height: 100%;
     box-shadow: 0 20px 60px -2px rgb(27, 33, 58, 0.4);
   }
