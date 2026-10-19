@@ -334,7 +334,8 @@ export class DataModel {
   // Merge data from the server into the data, to keep the identity of its
   // objects. Save responses leave sources with their own resource their data
   // and their edits, while resets result in the same data as a replace.
-  // Partial merges only change the values in `data`, which isn't an edit:
+  // Partial merges only replace the values in `data` and clear their errors,
+  // which isn't an edit:
   mergeFromServer(
     data: Data | null,
     {
@@ -359,7 +360,11 @@ export class DataModel {
       this.#writeComputedValues()
       if (isReset) {
         this.#resetState()
-      } else if (!isPartial) {
+      } else if (isPartial) {
+        for (const key of Object.keys(data)) {
+          this.clearErrors(appendDataPath(this.dataPath, key))
+        }
+      } else {
         this.markClean({ dataPath: '' })
       }
     } else if (!isPartial) {

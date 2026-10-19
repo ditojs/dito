@@ -360,7 +360,7 @@ export default {
     }
 
     // Merge values from the server into the item like `resetItem()`, but only
-    // the values in the data, which isn't an edit:
+    // the values in the data and their errors, which isn't an edit:
     const mergeItem = value => {
       if (isEditingParentItem.value) {
         const parentModel = parentDataContext.model
@@ -375,6 +375,9 @@ export default {
           shouldSkipSourcesWithResource: true,
           shouldSetDefaultsOfComponentsWithCompute: false
         })
+        for (const key of Object.keys(value)) {
+          parentModel.clearErrors(appendDataPath(dataPath.value, key))
+        }
       } else {
         model.mergeFromServer(value, { isPartial: true })
       }

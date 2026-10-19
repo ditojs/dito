@@ -1120,6 +1120,46 @@ describe('DitoForm', () => {
       expect(dataModel.getErrors('title')).toHaveLength(1)
     })
 
+    it('clears the errors of the merged values also when they stay the same', async () => {
+      const { dataModel, context, settle } = await mountBookForm()
+      const errors = [{ message: 'is invalid' }]
+      dataModel.replaceErrors(
+        {
+          'title': errors,
+          'exportStatus': errors,
+          'chapters/0/title': errors
+        },
+        { server: true }
+      )
+      context.mergeItem({
+        exportStatus: 'queued',
+        chapters: [
+          { id: 1, title: 'One', pages: 3 },
+          { id: 2, title: 'Two', pages: 4 }
+        ]
+      })
+      await settle()
+      expect(dataModel.getErrors('exportStatus')).toBe(null)
+      expect(dataModel.getErrors('chapters/0/title')).toBe(null)
+      expect(dataModel.getErrors('title')).toEqual(errors)
+    })
+
+    it('clears the errors of the merged values in the item of nested forms with `mutate`', async () => {
+      const { admin, dataModel } = await mountBookForm({ mutate: true })
+      await admin.navigate('/items/1/chapters/0')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      const errors = [{ message: 'is invalid' }]
+      dataModel.replaceErrors(
+        { 'chapters/0/title': errors, 'chapters/0/pages': errors },
+        { server: true }
+      )
+      form.dataContext.mergeItem({ pages: 3 })
+      await settle(form)
+      expect(dataModel.getErrors('chapters/0/pages')).toBe(null)
+      expect(dataModel.getErrors('chapters/0/title')).toEqual(errors)
+    })
+
     it('merges the values that components poll until they unmount', async () => {
       // Answer the polls in turn, and leave them pending until then, or until
       // their signal aborts, like `fetch()` does:
