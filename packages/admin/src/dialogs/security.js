@@ -3,14 +3,12 @@ import DitoQrCode from '../components/DitoQrCode.vue'
 import { confirm } from '../utils/dialogs.js'
 import {
   codeWidth,
+  minDialogWidth,
   usernameComponent,
   createNewPasswordComponents,
   createInvalidPasswordNotification,
   isPasskeyPromptCancelled
 } from './authentication.js'
-
-// The Security dialog is at least as wide as its Change Password dialog:
-const passwordWidth = '30em'
 
 // The Security dialog of the account menu, which changes the password and
 // manages the passkeys and the TOTP of the logged-in user:
@@ -72,7 +70,7 @@ export function showSecurityDialog(adminContext) {
                   change: { type: 'submit', text: 'Change Password' }
                 },
                 data: { username: adminContext.user.username },
-                settings: { label: 'Change Password', minWidth: passwordWidth }
+                settings: { label: 'Change Password', minWidth: minDialogWidth }
               })
               if (data) {
                 try {
@@ -213,7 +211,7 @@ export function showSecurityDialog(adminContext) {
                         lines: 5,
                         // Textareas have no width of their own to size the
                         // dialog by:
-                        width: codeWidth
+                        width: minDialogWidth
                       }
                     },
                     buttons: {
@@ -222,7 +220,7 @@ export function showSecurityDialog(adminContext) {
                     data: {
                       backupCodes: formatBackupCodes(result.backupCodes)
                     },
-                    settings: { label: 'Backup Codes', width: codeWidth }
+                    settings: { label: 'Backup Codes' }
                   })
                   await reload()
                 }
@@ -257,7 +255,7 @@ export function showSecurityDialog(adminContext) {
     buttons: {
       cancel: { text: 'Close' }
     },
-    settings: { label: 'Security', width: '46em', minWidth: passwordWidth }
+    settings: { label: 'Security', width: '46em', minWidth: minDialogWidth }
   })
 }
 
