@@ -21,11 +21,12 @@ DitoContainer(
 
 <script>
 import { computed, inject } from 'vue'
+import { deprecate } from '@ditojs/utils'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { layoutKey } from '../utils/keys.ts'
 
 // Places a component of a layout section, as its pane would render it:
-export default {
+const DitoSchemaField = {
   props: {
     name: { type: String, required: true }
   },
@@ -48,4 +49,17 @@ export default {
     }
   }
 }
+
+// `DitoField` is the deprecated name of `DitoSchemaField` until 6.0. It extends
+// the component, as its render function is only added after this script:
+export const DitoField = {
+  extends: DitoSchemaField,
+
+  setup(props, context) {
+    deprecate('`DitoField` is deprecated, use `DitoSchemaField` instead.')
+    return DitoSchemaField.setup(props, context)
+  }
+}
+
+export default DitoSchemaField
 </script>

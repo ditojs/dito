@@ -1,14 +1,14 @@
 import { vi } from 'vitest'
-import { h } from 'vue'
+import { h, resolveComponent } from 'vue'
 import {
   mountAdmin,
   mountSchema,
   mountForm,
   enterValue
 } from '../test/mount.js'
-import DitoField from './DitoField.vue'
+import DitoSchemaField from './DitoSchemaField.vue'
 
-// A layout component that places the fields of `names` with `DitoField`:
+// A layout component that places the fields of `names` with `DitoSchemaField`:
 function createLayout(...names) {
   return {
     props: {
@@ -20,7 +20,7 @@ function createLayout(...names) {
       return h(
         'div',
         { class: 'layout' },
-        names.map(name => h(DitoField, { name }))
+        names.map(name => h(DitoSchemaField, { name }))
       )
     }
   }
@@ -44,7 +44,7 @@ const Slider = {
   }
 }
 
-describe('DitoField', () => {
+describe('DitoSchemaField', () => {
   it('places the components of layout sections with labels', async () => {
     const { findContainer, wrapper } = await mountSchema({
       schema: {
@@ -223,8 +223,8 @@ describe('DitoField', () => {
     const Row = {
       props: { schema: Object, context: Object },
       render: () =>
-        h(DitoField, { name: 'values' }, () =>
-          h(DitoField, { name: 'isStatic' })
+        h(DitoSchemaField, { name: 'values' }, () =>
+          h(DitoSchemaField, { name: 'isStatic' })
         )
     }
     const { findField, data } = await mountSchema({
@@ -254,7 +254,9 @@ describe('DitoField', () => {
     const Row = {
       props: { schema: Object, context: Object },
       render: () =>
-        h(DitoField, { name: 'values' }, () => h(DitoField, { name: 'note' }))
+        h(DitoSchemaField, { name: 'values' }, () =>
+          h(DitoSchemaField, { name: 'note' })
+        )
     }
     const { findField, submit } = await mountForm({
       schema: {
@@ -274,6 +276,32 @@ describe('DitoField', () => {
     })
     expect(await submit()).toBe(null)
     expect(document.activeElement).toBe(findField('note').find('input').element)
+  })
+
+  it('keeps the deprecated name `DitoField` as global component', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const Layout = {
+      props: { schema: Object, context: Object },
+      render: () => h(resolveComponent('DitoField'), { name: 'title' })
+    }
+    const { wrapper } = await mountSchema({
+      schema: {
+        components: {
+          details: {
+            type: 'section',
+            component: Layout,
+            components: { title: { type: 'text', label: 'Title' } }
+          }
+        }
+      },
+      data: { title: 'Emma' }
+    })
+    expect(wrapper.find('.dito-section .dito-label').text()).toBe('Title')
+    expect(wrapper.find('.dito-section input').element.value).toBe('Emma')
+    expect(warn).toHaveBeenCalledWith(
+      '`DitoField` is deprecated, use `DitoSchemaField` instead.'
+    )
+    warn.mockRestore()
   })
 
   it.each([

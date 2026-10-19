@@ -1,5 +1,5 @@
 import { defineComponent, h } from 'vue'
-import { DitoField, DitoPane } from '@ditojs/admin'
+import { DitoSchemaField, DitoPane } from '@ditojs/admin'
 
 // A layout that places a field next to a group of fields in a row:
 export default defineComponent({
@@ -10,7 +10,7 @@ export default defineComponent({
 
   render() {
     return [
-      h(DitoField, { name: 'title' }),
+      h(DitoSchemaField, { name: 'title' }),
       h(DitoPane, { names: ['first', 'last'] })
     ]
   }

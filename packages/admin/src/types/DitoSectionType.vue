@@ -58,7 +58,7 @@ const DitoSectionType = {
       labelize,
       item,
       collapsible,
-      // Layouts place the section's components, see `DitoField`:
+      // Layouts place the section's components, see `DitoSchemaField`:
       hasLayout: computed(() => !!props.schema.component),
       collapsed: computed(
         () => (

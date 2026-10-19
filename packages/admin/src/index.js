@@ -7,8 +7,11 @@ import {
 import { wrapCustomComponent } from './types/DitoComponentType.vue'
 
 export { DitoAdmin }
-// Layout sections place their components with `DitoField` and `DitoPane`:
-export { default as DitoField } from './components/DitoField.vue'
+// Layout sections place components with `DitoSchemaField` and `DitoPane`:
+export {
+  default as DitoSchemaField,
+  DitoField
+} from './components/DitoSchemaField.vue'
 export { default as DitoPane } from './components/DitoPane.vue'
 export default DitoAdmin
 

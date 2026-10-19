@@ -5,7 +5,7 @@ with `type: 'component'`, or as a type of its own with `defineType()`, which
 schemas then use like the built-in types.
 
 The admin's own components are internal and not meant to be imported, except
-`DitoField` and `DitoPane`, which place fields in custom layouts, see
+`DitoSchemaField` and `DitoPane`, which place fields in custom layouts, see
 [Laying out fields](#laying-out-fields). Build custom components with plain
 Vue and the public components of [`@ditojs/ui`](../../api/ui.md), e.g.
 `DitoProgress` for the progress of a background job.
@@ -171,8 +171,8 @@ reports as removed, e.g. `format`, `compute` or `data`.
 
 A section with `component` renders its `components` with that Vue component
 instead of in rows. The component receives the section's `schema` and
-`context`, and places each field with `DitoField`, whose `name` is a key of
-the section's `components`. The fields render as in rows, with their labels,
+`context`, and places each field with `DitoSchemaField`, whose `name` is a key
+of the section's `components`. The fields render as in rows, with their labels,
 errors, info, `width` and disabled state, and they validate, change and save
 the same way. The section's label shows above the component.
 
@@ -197,20 +197,20 @@ playback: {
 ```vue
 <!-- src/admin/components/PlaybackLayout.vue -->
 <template>
-  <DitoField name="volume">
-    <DitoField name="isMuted" />
-  </DitoField>
+  <DitoSchemaField name="volume">
+    <DitoSchemaField name="isMuted" />
+  </DitoSchemaField>
 </template>
 
 <script setup>
-import { DitoField } from '@ditojs/admin'
+import { DitoSchemaField } from '@ditojs/admin'
 
 defineProps({ schema: Object, context: Object })
 </script>
 ```
 
-The default slot of `DitoField` is passed on to the custom component of a
-`type: 'component'` field, so `VolumeSlider` renders the switch with
+The default slot of `DitoSchemaField` is passed on to the custom component of
+a `type: 'component'` field, so `VolumeSlider` renders the switch with
 `<slot />` next to its track.
 
 `DitoPane` places a group of fields in rows, as the section would without
@@ -235,12 +235,12 @@ book: {
 ```vue
 <!-- src/admin/components/BookLayout.vue -->
 <template>
-  <DitoField name="summary" />
+  <DitoSchemaField name="summary" />
   <DitoPane :names="['title', 'author', 'year']" />
 </template>
 
 <script setup>
-import { DitoField, DitoPane } from '@ditojs/admin'
+import { DitoSchemaField, DitoPane } from '@ditojs/admin'
 
 defineProps({ schema: Object, context: Object })
 </script>
@@ -250,8 +250,8 @@ defineProps({ schema: Object, context: Object })
   without showing their errors.
 - `width` applies where the parent element of a field is a flex row, like the
   row that holds the layout.
-- `DitoField` and `DitoPane` throw outside the component of a section, and
-  for names that aren't in its `components`.
+- `DitoSchemaField` and `DitoPane` throw outside the component of a section,
+  and for names that aren't in its `components`.
 - Sections with `component` don't support `tabs`, `collapsible` and
   `clipboard`.
 

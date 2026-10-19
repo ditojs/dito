@@ -155,8 +155,8 @@ export default {
       }))
     )
 
-    // Layout sections place the entries with `DitoField` and `DitoPane`, and
-    // nested panes end the layout above them:
+    // Layout sections place the entries with `DitoSchemaField` and `DitoPane`,
+    // and nested panes end the layout above them:
     provide(
       layoutKey,
       slots.default
