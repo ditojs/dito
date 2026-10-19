@@ -53,45 +53,29 @@
 </template>
 
 <script>
-import { computed, inject, reactive, ref, toRaw, watch } from 'vue'
+import { computed, inject, ref, toRaw, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  capitalize,
-  assignDeeply,
-  equals,
-  escapeHtml,
-  pickBy
-} from '@ditojs/utils'
+import { capitalize, pickBy } from '@ditojs/utils'
 import {
   useRouteContainer,
   useRouteRecord
 } from '../composables/useRouteContainer.ts'
 import { useResource } from '../composables/useResource.ts'
-import { useSourceItems } from '../composables/useSourceItems.ts'
-import { useSchemaContext } from '../composables/useSchemaContext.ts'
-import { useSchemaValue } from '../composables/useSchemaValue.ts'
-import { useSchemaEvents } from '../composables/useSchemaEvents.ts'
+import { useForm } from '../composables/useForm.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
-import { waitUntilDataModelSettled } from '../utils/services.ts'
 import { adminContextKey } from '../utils/keys.ts'
-import { getResource } from '../utils/resource.js'
 import {
   isListSource,
   isObjectSource,
   isTemplateForm
 } from '../utils/schema/structure.js'
-import {
-  getButtonSchemas,
-  getItemFormSchema,
-  hasSubmitButton
-} from '../utils/schema/lookup.js'
+import { getItemFormSchema, hasSubmitButton } from '../utils/schema/lookup.js'
 import {
   getComponentPathByDataPath,
   initializeData,
   deserializeData
 } from '../utils/schema/data.js'
 import { appendDataPath, getParentDataPath } from '../utils/data.js'
-import { getErrorMessage } from '../utils/request.js'
 import { cloneWithUids } from '../utils/uid.js'
 import {
   getChildSourceSchemas,
@@ -99,8 +83,6 @@ import {
 } from '../utils/schema/types.ts'
 import { mergeData, mergeValues } from '../utils/mergeData.ts'
 import { createDraftRoot } from '../utils/draftRoot.ts'
-import { transientNote } from '../utils/dialogs.js'
-import { getTextFromHtml } from '../utils/html.js'
 
 export default {
   setup() {
@@ -141,17 +123,6 @@ export default {
     const hasDraft = computed(
       () => isTransient.value && !isMutating.value && !isCreating.value
     )
-
-    const verbs = computed(() => {
-      const verbs = requests.verbs.value
-      return {
-        ...verbs,
-        submit: isCreating.value ? verbs.create : verbs.save,
-        submitted: isCreating.value ? verbs.created : verbs.saved,
-        cancel: providesData.value ? verbs.cancel : verbs.close,
-        cancelled: providesData.value ? verbs.cancelled : verbs.closed
-      }
-    })
 
     // The item of the form in the data of its parent route:
     const sourceLocation = computed(() => {
@@ -229,18 +200,20 @@ export default {
       parentModel: () => parentDataContext.model,
       isEditingParentItem: () => isEditingParentItem.value,
       getParentItem: () => sourceItem.value,
-      itemLabel: () => itemLabelText.value,
-      canSave: () => hasSubmitButton(buttonSchemas.value),
+      itemLabel: () => form.itemLabelText.value,
+      canSave: () => hasSubmitButton(form.buttonSchemas.value),
       resetItem: data => resetItem(data),
       mergeItem: data => mergeItem(data),
       copyErrors: () => copyErrors(),
       breadcrumb: () => (
         schema.value.breadcrumb ||
         `${
-          capitalize(isCreating.value ? verbs.value.create : verbs.value.edit)
-        } ${getLabelText(schema.value)}`
+          capitalize(
+            isCreating.value ? form.verbs.value.create : form.verbs.value.edit
+          )
+        } ${form.getLabelText(schema.value)}`
       ),
-      verbs: () => verbs.value,
+      verbs: () => form.verbs.value,
       resourceContext: requests.resourceContext,
       // The components of the form don't see the source of its parent, e.g.
       // of a tree that renders the forms of its items:
@@ -261,86 +234,25 @@ export default {
       )
     )
     const schema = computed(() => dataContext.schema)
-    const { context, createContext } = useSchemaContext(
-      reactive({ schema, data, dataPath }),
-      { services }
-    )
-    const { getLabelText } = useSchemaValue(context)
-    // The events of the data, e.g. `load`, like the form's schema emits them:
-    const createEventContext = values =>
-      createContext({
-        get formLabel() {
-          return getLabelText(schema.value)
-        },
-        ...values
-      })
-    const { emitEvent: emitSchemaEvent } = useSchemaEvents(() => schema.value, {
-      services,
-      createContext: createEventContext
-    })
-    const { getItemId, getItemLabel } = useSourceItems({
-      services,
-      getContext: () => context,
-      getSchema: () => sourceSchema.value,
-      getDataPath: () => dataPath.value,
-      isTransient: () => isTransient.value
-    })
-    // HTML for notifications, text for the contexts and the form's label:
-    const itemLabel = computed(() =>
-      getItemLabel(sourceSchema.value, data.value, { extended: true })
-    )
-    const itemLabelText = computed(() => getTextFromHtml(itemLabel.value))
-
     const close = () => routeContext.close()
-
-    // Fire `cancel` only once the form closed:
-    const cancel = async () => {
-      if (await close()) {
-        emitSchemaEvent('cancel')
-      }
-    }
-
-    const buttonSchemas = computed(() =>
-      getButtonSchemas(
-        assignDeeply(
-          {
-            cancel: {
-              type: 'button',
-              onClick: () => cancel()
-            },
-
-            submit: !isMutating.value && {
-              type: 'submit',
-              // Submit buttons close the form by default:
-              closeForm: true,
-              onClick: ({ submit }) => submit()
-            }
-          },
-          schema.value.buttons
-        )
-      )
-    )
-
-    // Merge save responses into the item, to keep the identity of its objects.
-    // In the data of their parent, the responses are edits still to apply:
-    const mergeResponse = value => {
-      if (isTransient.value) {
-        deserializeData(schema.value, value, {
-          services,
-          dataPath: dataPath.value,
-          rootData: dataContext.model.rootData
-        })
-        if (!equals(data.value, value)) {
-          mergeData(schema.value, data.value, value, {
-            services,
-            shouldKeepSourcesWithResource: true
-          })
-          dataContext.markEdited()
-        }
-      } else {
-        model.mergeFromServer(value)
-      }
-    }
+    const form = useForm({
+      requests,
+      dataContext,
+      model,
+      sourceSchema: () => sourceSchema.value,
+      creationType: () => creationType.value,
+      close,
+      submitTransient: (button, options) => submitTransient(button, options)
+    })
+    const {
+      context,
+      emitSchemaEvent,
+      getItemId,
+      buttonSchemas,
+      itemLabelText,
+      loadData,
+      createData
+    } = form
 
     // Reset the item like loaded data, merged to keep the identity of its
     // objects. The item keeps its id, type and position, which determine its
@@ -415,24 +327,6 @@ export default {
           model.copyErrors(parentDataContext.model, draft)
         }
       }
-    }
-
-    // Forms load their item without data, e.g. when they open another one:
-    const loadData = () => {
-      model.replace(null)
-      return requests.loadData({
-        onLoad: async data => {
-          model.replaceFromServer(data)
-          await emitSchemaEvent('load')
-        }
-      })
-    }
-
-    // Drop the item that the form loaded before, and its pending load:
-    const createData = () => {
-      requests.abortLoad()
-      const type = creationType.value
-      model.replaceWithNewData(type ? { type } : {})
     }
 
     // Hold the item by its identity, in a draft unless the form edits it in
@@ -551,163 +445,50 @@ export default {
       return success
     }
 
-    const getSubmitVerb = (present = true) =>
-      isCreating.value
-        ? present
-          ? 'create'
-          : 'created'
-        : present
-          ? 'submit'
-          : 'submitted'
-
-    const submitData = async (button, {
-      validate = true,
-      closeForm = false
-    } = {}) => {
+    // Leaving the route waits for pending submits:
+    const submit = (button, options = {}) => {
       // The form may open another item or be left while the submit is pending:
       const submittedPath = routeContext.path
       const submittedData = data.value
-      // Wait for computed values that depend on pending loads:
-      await waitUntilDataModelSettled(services)
-      if (validate && !dataContext.validate()) {
-        return false
-      }
-      // Allow buttons to override both method and resource path to submit to:
-      let method = isCreating.value ? 'post' : 'patch'
-      let resource = requests.getResource({ method })
-      const buttonResource = getResource(button.schema.resource, {
-        parent: resource
-      })
-      resource = buttonResource || resource
-      method = resource?.method || method
-
-      const getVerb = present => verbs.value[getSubmitVerb(present)]
-      // NOTE: `itemLabel` is HTML, the other values need to be escaped:
-      const notifySubmitError = (error, message = null) => {
-        const verb = getVerb(true)
-        adminContext.notify({
-          type: 'error',
-          error,
-          title: 'Request Error',
-          html: message
-            ? [`Unable to ${verb} ${itemLabel.value}:`, escapeHtml(message)]
-            : `Unable to ${verb} ${itemLabel.value}.`
-        })
-      }
-      // Resolve to whether the handlers of the event returned a value or
-      // notified themselves, which suppresses dito's notification:
-      const emitResultEvent = async (event, values) => {
-        const context = createEventContext(values)
-        const result = await emitSchemaEvent(event, { context })
-        return result !== undefined || context.wasNotified
-      }
-      // Clean up only the data that was submitted, as the form may show other
-      // data once the submit succeeds:
-      const isSubmittedData = () => data.value === submittedData
-      const isTransientSubmit = !buttonResource && isTransient.value
-      const callbacks = {
-        onSuccess: async () => {
-          if (isSubmittedData()) {
-            dataContext.model.clearErrors(dataPath.value)
-            // The responses of buttons with resources in drafts stay dirty:
-            if (!isTransient.value || !buttonResource) {
-              model.markClean({ dataPath: '' })
-            }
-            // Nested forms apply their draft to the parent instead of saving:
-            return emitResultEvent(isTransientSubmit ? 'apply' : 'success')
-          }
-          return false
-        },
-        onError: error => emitResultEvent('error', { error })
-      }
-
-      let success
-      if (isTransientSubmit) {
-        success = await submitTransient(button, {
-          ...callbacks,
-          notifySuccess: () => {
-            const verb = getVerb(false)
-            adminContext.notify({
-              type: 'info',
-              title: isCreating.value
-                ? `Item ${capitalize(verb)}`
-                : `Change ${capitalize(verb)}`,
-              html: [
-                isCreating.value
-                  ? `${itemLabel.value} was ${verb}.`
-                  : `Changes to ${itemLabel.value} were ${verb}.`,
-                transientNote
-              ]
-            })
-          },
-          notifyError: error => notifySubmitError(error)
-        })
-      } else {
-        const payload = requests.getPayloadData(button, method)
-        success = await requests.submitResource(
-          button,
-          resource,
-          method,
-          payload,
-          {
-            onSuccess: response => {
-              if (response && isSubmittedData()) {
-                mergeResponse(response)
-              }
-              return callbacks.onSuccess()
-            },
-            onError: callbacks.onError,
-            notifySuccess: () => {
-              const verb = getVerb(false)
-              adminContext.notify({
-                type: 'success',
-                title: `Successfully ${capitalize(verb)}`,
-                html: `${itemLabel.value} was ${verb}.`
-              })
-            },
-            // Errors without a message are notified without details:
-            notifyError: error =>
-              notifySubmitError(error, getErrorMessage(error)),
-            showValidationErrors: errors =>
-              dataContext.showValidationErrors(errors)
-          }
-        )
-        if (success) {
-          // The source that lists the item loads it again:
-          const source = [...parentDataContext.sources].find(
-            source => source.node === node.value.source
+      return dataContext.model.trackPendingSubmit(
+        (async () => {
+          const { success, isTransientSubmit } = await form.submitData(
+            button,
+            options
           )
-          source?.reload()
-        }
-      }
-      if (success) {
-        if (closeForm || button.closeForm) {
-          navigateWithin(submittedPath, close)
-        } else if (isCreating.value) {
-          // Redirect to the form editing the newly created item. Items in the
-          // data of the parent are addressed by their index, objects by the
-          // form without parameter:
-          const id = !isTransientSubmit
-            ? getItemId(sourceSchema.value, submittedData)
-            : isObjectSource(sourceSchema.value)
-              ? null
-              : sourceData.value.length - 1
-          navigateWithin(submittedPath, () => {
-            const { params, hash } = router.currentRoute.value
-            router.replace({
-              name: route.record.value.name,
-              params: { ...params, [node.value.param]: id },
-              hash // Keep the tab.
-            })
-          })
-        }
-      }
-      return success
+          if (success) {
+            if (!isTransientSubmit) {
+              // The source that lists the item loads it again:
+              const source = [...parentDataContext.sources].find(
+                source => source.node === node.value.source
+              )
+              source?.reload()
+            }
+            if (options.closeForm || button.closeForm) {
+              navigateWithin(submittedPath, close)
+            } else if (isCreating.value) {
+              // Redirect to the form editing the newly created item. Items in
+              // the data of the parent are addressed by their index, objects by
+              // the form without parameter:
+              const id = !isTransientSubmit
+                ? getItemId(sourceSchema.value, submittedData)
+                : isObjectSource(sourceSchema.value)
+                  ? null
+                  : sourceData.value.length - 1
+              navigateWithin(submittedPath, () => {
+                const { params, hash } = router.currentRoute.value
+                router.replace({
+                  name: route.record.value.name,
+                  params: { ...params, [node.value.param]: id },
+                  hash // Keep the tab.
+                })
+              })
+            }
+          }
+          return success
+        })()
+      )
     }
-
-    // Leaving the route waits for pending submits:
-    const submit = (button, options) =>
-      dataContext.model.trackPendingSubmit(submitData(button, options))
 
     if (isCreating.value) {
       createData()
