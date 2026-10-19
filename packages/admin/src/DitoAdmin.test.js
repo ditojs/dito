@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import DitoAdmin from './DitoAdmin.js'
 import { mountAdmin } from './test/mount.js'
 
@@ -80,6 +81,23 @@ describe('DitoAdmin', () => {
     admin.context.pageClass = 'dito-page--wide'
     await admin.navigate('/')
     expect(admin.wrapper.find('.dito-page--wide').exists()).toBe(true)
+  })
+
+  it('shows confirmations, prompts and alerts through its context', async () => {
+    const { context, wrapper } = await mountAdmin({ views: {} })
+    // Removed dialogs stay until their transitions end, so use the last one:
+    const clickButton = async (promise, selector) => {
+      await flushPromises()
+      const dialog = wrapper.findAll('.dito-dialog').at(-1)
+      await dialog.find(`.dito-dialog__buttons ${selector}`).trigger('click')
+      return promise
+    }
+    const submit = '[type="submit"]'
+    expect(await clickButton(context.confirm('Sell Dune?'), submit)).toBe(true)
+    expect(
+      await clickButton(context.prompt('Title:', { value: 'Dune' }), submit)
+    ).toBe('Dune')
+    expect(await clickButton(context.alert('Sold.'), 'button')).toBe(undefined)
   })
 
   it('requests the API with `fetch()` by default', async () => {

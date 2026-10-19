@@ -169,11 +169,11 @@ tabs. They're described in
 
 The context also holds the admin's services: `user`, `api` and `views`,
 `request()` for API requests, `format()` for numbers and dates in the admin's
-locale, `notify()`, `showDialog()`, `navigate()`, `getRouteUrl()`,
-`download()`, `getResourceUrl()`, and `routeQuery` and `sourceQuery`, the
-query of the URL and of the nearest list. Code outside of callbacks reaches
-the same services through `admin.context`, the
-[AdminContext](../../api/admin/admin.md#admincontext).
+locale, `notify()`, `showDialog()`, `confirm()`, `prompt()`, `alert()`,
+`navigate()`, `getRouteUrl()`, `download()`, `getResourceUrl()`, and
+`routeQuery` and `sourceQuery`, the query of the URL and of the nearest list.
+Code outside of callbacks reaches the same services through `admin.context`,
+the [AdminContext](../../api/admin/admin.md#admincontext).
 
 ## Calling callbacks with other values
 

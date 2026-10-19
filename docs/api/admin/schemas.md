@@ -114,6 +114,7 @@ that can be cleared.
 | `readonly` | `SchemaValue<boolean>` | `false` | Text inputs become read-only, all other components disabled. |
 | `disabled` | `SchemaValue<boolean>` | `false` | Disables the component. Disabled sections and panels disable all components inside them, also nested ones. Loading forms and views don't disable their components. |
 | `autofocus` | `SchemaValue<boolean>` | `false` | Focuses the input when rendered. |
+| `labelledBy` | `SchemaValue<string>` | | The id of the element that labels the field, for fields without their own label, set as `aria-labelledby` of the input. |
 | `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value to `null`, or to `[]` with `multiple`. Ignored while `readonly`. |
 | `placeholder` | `SchemaValue<string>` | | The hint shown in empty inputs, and in selects while no option is selected. Multiselects also take `false`, see [`multiselect`](#multiselect). |
 | `info` | `SchemaValue<TextOrHtml>` | | Info shown in a tooltip next to the label, see [Text and HTML](#text-and-html). Line breaks in text show. |

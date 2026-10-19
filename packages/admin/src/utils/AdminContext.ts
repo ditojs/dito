@@ -3,6 +3,7 @@ import type { Router } from 'vue-router'
 import { LoadingTracker } from './LoadingTracker.ts'
 import { UiRegistry } from './UiRegistry.ts'
 import { flattenViews } from './schema/setup.js'
+import { confirm, prompt, alert } from './dialogs.js'
 import type { RouteTree } from './RouteTree.ts'
 import { Session, type User, type LoginOptions } from './Session.ts'
 import type { ViewRegistry } from './ViewRegistry.js'
@@ -126,6 +127,21 @@ export class AdminContext {
 
   showDialog<$Result = unknown>(options: DialogOptions) {
     return this.#dialogsAndNotifications!.showDialog<$Result>(options)
+  }
+
+  confirm(message: string, options?: { action?: string }): Promise<boolean> {
+    return confirm({ adminContext: this }, message, options)
+  }
+
+  prompt(
+    message: string,
+    options?: { action?: string; value?: any; type?: string }
+  ): Promise<unknown> {
+    return prompt({ adminContext: this }, message, options)
+  }
+
+  alert(message: string, options?: { action?: string }): Promise<void> {
+    return alert({ adminContext: this }, message, options)
   }
 
   notify(options: NotifyOptions) {

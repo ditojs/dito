@@ -418,6 +418,18 @@ export default class SchemaContext {
     return options => getAdminContext(this).showDialog(options)
   }
 
+  get confirm() {
+    return (message, options) => getAdminContext(this).confirm(message, options)
+  }
+
+  get prompt() {
+    return (message, options) => getAdminContext(this).prompt(message, options)
+  }
+
+  get alert() {
+    return (message, options) => getAdminContext(this).alert(message, options)
+  }
+
   get closeDialog() {
     return value => {
       const closeDialog = getDataContext(this)?.closeDialog

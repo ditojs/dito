@@ -148,6 +148,49 @@ describe('SchemaContext', () => {
     )
   })
 
+  it('asks for confirmations with the text of the action', () => {
+    const context = {} as SchemaContext<Entry>
+    expectTypeOf(
+      context.confirm('Delete Dune?', { action: 'Delete' })
+    ).toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf(context.confirm('Proceed?')).toEqualTypeOf<Promise<boolean>>()
+    assertType(
+      // @ts-expect-error The message is the first argument.
+      context.confirm({ message: 'Delete Dune?' })
+    )
+    assertType(
+      // @ts-expect-error Confirmations have no other options.
+      context.confirm('Delete Dune?', { verb: 'delete' })
+    )
+  })
+
+  it('asks for values of the field type', () => {
+    const context = {} as SchemaContext<Entry>
+    expectTypeOf(context.prompt('Title:')).toEqualTypeOf<Promise<unknown>>()
+    expectTypeOf(
+      context.prompt('Copies:', { action: 'Order', value: 1, type: 'integer' })
+    ).toEqualTypeOf<Promise<number | undefined>>()
+    expectTypeOf(
+      context.prompt<string>('Email:', { type: 'email' })
+    ).toEqualTypeOf<Promise<string | undefined>>()
+    assertType(
+      // @ts-expect-error Prompts have no other options.
+      context.prompt('Title:', { required: true })
+    )
+  })
+
+  it('shows alerts with the text of the action', () => {
+    const context = {} as SchemaContext<Entry>
+    expectTypeOf(
+      context.alert('Dune was sold.', { action: 'Close' })
+    ).toEqualTypeOf<Promise<void>>()
+    expectTypeOf(context.alert('Dune was sold.')).toEqualTypeOf<Promise<void>>()
+    assertType(
+      // @ts-expect-error Alerts have no other options.
+      context.alert('Dune was sold.', { value: true })
+    )
+  })
+
   it('SchemaValue accepts value or callback', () => {
     assertType<SchemaValue<Entry, {}, string>>('hello')
     assertType<SchemaValue<Entry, {}, string>>(

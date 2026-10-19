@@ -91,7 +91,7 @@ describe('DitoDialog', () => {
   it('cancels with Escape only with a cancel button', async () => {
     const withoutCancel = await showDialog({
       components,
-      buttons: { apply: { type: 'submit' } }
+      buttons: { apply: { type: 'submit' }, remove: {} }
     })
     await withoutCancel.dialog.find('input').trigger('keydown', {
       key: 'Escape'
@@ -105,6 +105,15 @@ describe('DitoDialog', () => {
     })
     await withCancel.dialog.find('input').trigger('keydown', { key: 'Escape' })
     expect(await withCancel.promise).toBe(undefined)
+  })
+
+  it('cancels with Escape with only one button', async () => {
+    const { dialog, promise } = await showDialog({
+      components,
+      buttons: { apply: { type: 'submit' } }
+    })
+    await dialog.find('input').trigger('keydown', { key: 'Escape' })
+    expect(await promise).toBe(undefined)
   })
 
   it('cancels with Escape without buttons', async () => {

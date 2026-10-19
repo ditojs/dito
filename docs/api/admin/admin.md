@@ -95,7 +95,8 @@ admin.context: AdminContext
 ```
 
 The [context of the admin](#admincontext): the logged-in user, the
-session, the views, `showDialog()` and `notify()`.
+session, the views, `showDialog()`, `confirm()`, `prompt()`, `alert()` and
+`notify()`.
 
 ### app
 
@@ -261,7 +262,7 @@ with each login and are reactive, so components and computed values that read
 them update.
 
 Inside schemas, [`SchemaContext`](./context.md) offers the user, views,
-`showDialog()` and `notify()` too.
+`showDialog()`, `confirm()`, `prompt()`, `alert()` and `notify()` too.
 
 ### Properties
 
@@ -326,6 +327,20 @@ admin.context.showDialog(options): Promise<unknown>
 Shows a modal dialog outside of schemas, e.g. from your own code around the
 admin. Takes the same options and resolves the same way as
 [`context.showDialog()`](./context.md#showdialog).
+
+#### confirm(), prompt() and alert()
+
+```ts
+admin.context.confirm(message, { action }?): Promise<boolean>
+admin.context.prompt(message, { action, value, type }?): Promise<unknown>
+admin.context.alert(message, { action }?): Promise<void>
+```
+
+Show confirmations, prompts and alerts outside of schemas. They take the same
+arguments and resolve the same way as
+[`context.confirm()`](./context.md#confirm),
+[`context.prompt()`](./context.md#prompt) and
+[`context.alert()`](./context.md#alert).
 
 #### notify()
 
