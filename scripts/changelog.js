@@ -14,8 +14,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const folder = 'changelog/unreleased'
-// The kinds of changes in the order of the sections, the others follow:
-const order = ['Behaviour changes', 'Deprecations', 'New', 'Fixes', 'Internal']
+// The kinds of changes in the order of the sections, and the packages in the
+// order of their entries in each section, the others follow:
+const kinds = ['Behaviour changes', 'Deprecations', 'New', 'Fixes', 'Internal']
+const packages = ['server', 'admin', 'ui', 'router', 'utils', 'build']
 
 const { version } = JSON.parse(fs.readFileSync('lerna.json', 'utf8'))
 const files = fs
@@ -28,9 +30,14 @@ const entries = new Map()
 for (const file of files) {
   for (const section of fs.readFileSync(file, 'utf8').split(/^### /m)) {
     const [heading, ...lines] = section.split('\n')
-    const text = lines.join('\n').trim()
-    if (heading && text) {
-      entries.set(heading, [...(entries.get(heading) ?? []), text])
+    // Each entry is a list item, with its indented lines:
+    const items = lines
+      .join('\n')
+      .trim()
+      .split(/\n(?=- )/)
+      .filter(Boolean)
+    if (heading && items.length > 0) {
+      entries.set(heading, [...(entries.get(heading) ?? []), ...items])
     }
   }
 }
@@ -40,11 +47,17 @@ if (entries.size === 0) {
   process.exit(1)
 }
 
-const rank = heading =>
-  order.includes(heading) ? order.indexOf(heading) : order.length
+const rank = (list, value) =>
+  list.includes(value) ? list.indexOf(value) : list.length
+const getPackage = item => item.match(/^- \*\*([^:*]+):\*\*/)?.[1]
 const sections = [...entries]
-  .sort(([a], [b]) => rank(a) - rank(b))
-  .map(([heading, texts]) => `### ${heading}\n\n${texts.join('\n')}\n`)
+  .sort(([a], [b]) => rank(kinds, a) - rank(kinds, b))
+  .map(([heading, items]) => {
+    const sorted = items.toSorted(
+      (a, b) => rank(packages, getPackage(a)) - rank(packages, getPackage(b))
+    )
+    return `### ${heading}\n\n${sorted.join('\n')}\n`
+  })
 const date = new Date().toLocaleDateString('sv') // YYYY-MM-DD
 const changelog = fs.readFileSync('CHANGELOG.md', 'utf8')
 // Insert the new version above the latest one:
