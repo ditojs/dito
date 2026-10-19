@@ -19,6 +19,35 @@ import {
 } from '../errors/index.js'
 
 export class UsersController extends ModelController {
+  // The names of the actions of each feature, e.g. to list them in `allow`:
+  static actionNames = {
+    // Only routed with `PasskeyService`:
+    passkeys: [
+      'post passkey-login-options',
+      'post passkey-login',
+      'get passkeys',
+      'post passkey-options',
+      'post passkeys',
+      'delete passkeys/:id'
+    ],
+
+    // Only routed with `TotpService`:
+    totp: [
+      'post login-code',
+      'get totp',
+      'post totp',
+      'post totp-confirm',
+      'delete totp'
+    ],
+
+    // Only routed with `app.authentication.passwordReset`, as apps send the
+    // emails:
+    passwordReset: [
+      'post password-reset',
+      'post password-reset-confirm'
+    ]
+  }
+
   collection = {
     // These actions authenticate users, so the controller's `authorize`
     // setting doesn't apply to them:
@@ -423,7 +452,7 @@ export class UsersController extends ModelController {
     // action that confirms it, after `allow` and `processValues()`:
     if (!this.collection['post confirm-access']) {
       const name = [
-        ...confirmedAccessActions,
+        ...confirmedAccessActionNames,
         // Relating users with ids updates them:
         ...(this.relate ? ['post'] : [])
       ].find(action => this.collection[action] || this.member[action])
@@ -455,10 +484,11 @@ export class UsersController extends ModelController {
     // Without the services of passkeys and TOTP or without password reset, we
     // don't route their actions, which are all in `collection`:
     if (values === this.collection) {
+      const { actionNames } = UsersController
       for (const name of [
-        ...(this.passkeys ? [] : passkeyActions),
-        ...(this.totp ? [] : totpActions),
-        ...(this.passwordReset ? [] : passwordResetActions)
+        ...(this.passkeys ? [] : actionNames.passkeys),
+        ...(this.totp ? [] : actionNames.totp),
+        ...(this.passwordReset ? [] : actionNames.passwordReset)
       ]) {
         delete processed.values[name]
       }
@@ -543,11 +573,12 @@ export class UsersController extends ModelController {
   // The admin offers the features whose actions we route, all of them:
   getAuthenticationFeatures() {
     const isRouted = names => names.every(name => this.collection[name])
+    const { actionNames } = UsersController
     return {
-      hasPasskeys: isRouted(passkeyActions),
-      hasTotp: isRouted(totpActions),
+      hasPasskeys: isRouted(actionNames.passkeys),
+      hasTotp: isRouted(actionNames.totp),
       hasPasswordChange: isRouted(['post password']),
-      hasPasswordReset: isRouted(passwordResetActions)
+      hasPasswordReset: isRouted(actionNames.passwordReset)
     }
   }
 
@@ -570,7 +601,7 @@ export class UsersController extends ModelController {
 
 // Only routed with 'post confirm-access', for password and username changes
 // and the security actions:
-const confirmedAccessActions = [
+const confirmedAccessActionNames = [
   'patch',
   'put',
   'post password',
@@ -580,31 +611,6 @@ const confirmedAccessActions = [
   'post totp',
   'post totp-confirm',
   'delete totp'
-]
-
-// Only routed with `PasskeyService`:
-const passkeyActions = [
-  'post passkey-login-options',
-  'post passkey-login',
-  'get passkeys',
-  'post passkey-options',
-  'post passkeys',
-  'delete passkeys/:id'
-]
-
-// Only routed with `TotpService`:
-const totpActions = [
-  'post login-code',
-  'get totp',
-  'post totp',
-  'post totp-confirm',
-  'delete totp'
-]
-
-// Only routed with `app.authentication.passwordReset`, as apps send the emails:
-const passwordResetActions = [
-  'post password-reset',
-  'post password-reset-confirm'
 ]
 
 // Log in the user of `authenticate()`, unless it requires a code first:

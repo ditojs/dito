@@ -2894,6 +2894,16 @@ export class UsersController<
   M extends Model = Model
 > extends ModelController<M> {
   /**
+   * The names of the actions of each feature, e.g. to list them in `allow`:
+   * `allow: ['get', ...UsersController.actionNames.totp]`.
+   */
+  static actionNames: {
+    passkeys: string[]
+    totp: string[]
+    passwordReset: string[]
+  }
+
+  /**
    * Returns whether the current request is authenticated
    * and the user is an instance of the controller's model.
    */

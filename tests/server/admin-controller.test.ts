@@ -99,14 +99,10 @@ describe('AdminController', () => {
       override collection: any = {
         allow: [
           'post login',
-          'post login-code',
           'post logout',
           'get session',
           'post confirm-access',
-          'get totp',
-          'post totp',
-          'post totp-confirm',
-          'delete totp'
+          ...UsersController.actionNames.totp
         ]
       }
     }

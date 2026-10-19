@@ -657,6 +657,14 @@ describe('Controller settings', () => {
 })
 
 describe('UsersController', () => {
+  it('declares the action names of its features', () => {
+    expectTypeOf<(typeof UsersController)['actionNames']>().toEqualTypeOf<{
+      passkeys: string[]
+      totp: string[]
+      passwordReset: string[]
+    }>()
+  })
+
   it('declares its public methods', () => {
     type User = InstanceType<typeof UserModel>
     const controller = {} as UsersController<User>
