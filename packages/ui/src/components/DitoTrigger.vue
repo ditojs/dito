@@ -410,6 +410,7 @@ export default {
         }
       }
 
+      const isAboveOrBelow = part1 === 'top' || part1 === 'bottom'
       let left = 0
       let top = 0
       switch (part1) {
@@ -433,7 +434,30 @@ export default {
         case 'bottom':
           top -= popupHeight - triggerHeight
           break
+        case 'center':
+          if (isAboveOrBelow) {
+            left += (triggerWidth - popupWidth) / 2
+          } else {
+            top += (triggerHeight - popupHeight) / 2
+          }
+          break
       }
+      // Centered popups can't flip their alignment, so shift them back into
+      // the window instead, and expose the shift, e.g. for tips that keep
+      // pointing at the middle of the trigger:
+      let shift = 0
+      if (part2 === 'center' && this.keepInView) {
+        const start = isAboveOrBelow ? bounds.left + left : bounds.top + top
+        const size = isAboveOrBelow ? popupWidth : popupHeight
+        const room = isAboveOrBelow ? window.innerWidth : window.innerHeight
+        shift = Math.max(Math.min(room - start - size, 0), -start)
+        if (isAboveOrBelow) {
+          left += shift
+        } else {
+          top += shift
+        }
+      }
+      popup.style.setProperty('--dito-popup-shift', `${shift}px`)
       if (this.cover) {
         if (part1 === 'top') {
           top += triggerHeight

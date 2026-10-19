@@ -230,6 +230,46 @@ describe('DitoTrigger', () => {
       wrapper.unmount()
     })
 
+    describe('centered', () => {
+      // Lays out the trigger at the given left edge, 40px wide, as happy-dom
+      // doesn't.
+      function layOutTrigger(wrapper, left) {
+        const trigger = wrapper.find('.dito-trigger').element
+        vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(
+          { left, top: 0, width: 40, height: 20 }
+        )
+      }
+
+      it('centers the popup below the trigger', async () => {
+        const wrapper = mountTrigger({ show: true, placement: 'bottom-center' })
+        await nextTick()
+        layOutTrigger(wrapper, 500)
+        const popup = layOutPopup(wrapper, 100)
+        observers[0].notify()
+        expect(popup.style.left).toBe('-30px')
+        expect(popup.style.getPropertyValue('--dito-popup-shift')).toBe('0px')
+        wrapper.unmount()
+      })
+
+      it('shifts the popup back into the window', async () => {
+        const wrapper = mountTrigger({ show: true, placement: 'bottom-center' })
+        await nextTick()
+        layOutTrigger(wrapper, window.innerWidth - 50)
+        const popup = layOutPopup(wrapper, 100)
+        observers[0].notify()
+        // Centered, it would reach 20px past the window's right edge:
+        expect(popup.style.left).toBe('-50px')
+        expect(popup.style.getPropertyValue('--dito-popup-shift')).toBe(
+          '-20px'
+        )
+        layOutTrigger(wrapper, 10)
+        observers[0].notify()
+        expect(popup.style.left).toBe('-10px')
+        expect(popup.style.getPropertyValue('--dito-popup-shift')).toBe('20px')
+        wrapper.unmount()
+      })
+    })
+
     it('stops observing the target once unmounted', async () => {
       const wrapper = mountTrigger({ show: true })
       await nextTick()

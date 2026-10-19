@@ -2,7 +2,7 @@
 .dito-account
   DitoMenuButton.dito-account__button(
     :items="items"
-    placement="bottom-right"
+    placement="bottom-center"
     floating
     @select="onSelectMenuItem"
   )
