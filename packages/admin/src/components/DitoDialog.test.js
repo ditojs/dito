@@ -191,6 +191,18 @@ describe('DitoDialog', () => {
     expect(isShown()).toBe(false)
   })
 
+  it('focuses its primary button without a submit button', async () => {
+    const { dialog } = await showDialog({
+      buttons: {
+        cancel: {},
+        remove: { type: 'button', text: 'Delete Revision', primary: true }
+      }
+    })
+    const button = dialog.find('button[id="$buttons/remove"]').element
+    // The focus trap focuses initially after a delay:
+    await vi.waitFor(() => expect(document.activeElement).toBe(button))
+  })
+
   it('validates, edits and replaces its data through contexts', async () => {
     const click = vi.fn()
     const { dialog, promise } = await showDialog({

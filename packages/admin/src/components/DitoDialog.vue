@@ -128,16 +128,21 @@ export default {
 
       focusTrapOptions: {
         immediate: true,
-        // Focus the submit button, unless a component has `autofocus` or
-        // focused itself, e.g. multiselects. `undefined` falls back to the
-        // focused or first tabbable element:
-        initialFocus: () => (
-          dialog.value.querySelector('[autofocus]') || (
-            !dialog.value.contains(document.activeElement) &&
-            dialogButtons.value?.$el.querySelector('[type="submit"]')
-          ) ||
-          undefined
-        ),
+        // Focus the submit button, else a primary one, unless a component has
+        // `autofocus` or focused itself, e.g. multiselects. `undefined` falls
+        // back to the focused or first tabbable element:
+        initialFocus: () => {
+          const buttons = dialogButtons.value?.$el
+          return (
+            dialog.value.querySelector('[autofocus]') || (
+              !dialog.value.contains(document.activeElement) && (
+                buttons?.querySelector('[type="submit"]') ||
+                buttons?.querySelector('.dito-button--primary')
+              )
+            ) ||
+            undefined
+          )
+        },
         fallbackFocus: () => dialog.value,
         // Only dialogs with a cancel button or at most one button can be
         // cancelled, see `onKeyDown()`. The trap is also deactivated on

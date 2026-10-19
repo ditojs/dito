@@ -61,6 +61,7 @@
   }
 
   &--active,
+  &--primary,
   &[type='submit'] {
     color: $color-text-inverted;
     background: $color-active;

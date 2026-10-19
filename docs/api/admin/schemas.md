@@ -884,6 +884,7 @@ width is `'auto'`, and they don't generate labels.
 | `text` | `SchemaValue<string>` | | The text of the button. Buttons named after a verb, e.g. `cancel` or `delete`, are styled for it and, without `text`, labelled with it for assistive technology. |
 | `resource` | [`Resource`](#resource) | | A resource that the button submits the data to, relative to the resource of its form or source. Clicking submits unless `onClick()` returns a value other than `undefined`. |
 | `closeForm` | `SchemaValue<boolean>` | `false` | Closes the form after a successful submit. |
+| `primary` | `SchemaValue<boolean>` | `false` | Gives the button the look of `submit` buttons, and the initial focus in dialogs without a `submit` button, without submitting. |
 | `prefix`, `suffix` | `OrArrayOf<SchemaAffix>` | | See [Affixes](#affixes). |
 
 Events: `onClick`, `onSuccess`, `onError`, `onFocus`, `onBlur`, see

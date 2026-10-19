@@ -7,6 +7,7 @@ DitoButton(
   :text="text"
   :title="text"
   :aria-busy="isRunning"
+  :class="{ 'dito-button--primary': isPrimary }"
   v-bind="attributes"
 )
   template(#prefix)
@@ -124,6 +125,9 @@ const DitoTypeButton = {
       verbs: computed(() => getVerbs(services)),
       isRunning,
       text: computed(() => getSchemaValue('text', { type: String })),
+      isPrimary: computed(() =>
+        getSchemaValue('primary', { type: Boolean, default: false })
+      ),
       prefixes: computed(() => asArray(props.schema.prefix)),
       suffixes: computed(() => asArray(props.schema.suffix))
     }
