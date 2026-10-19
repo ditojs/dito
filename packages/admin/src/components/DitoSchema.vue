@@ -72,7 +72,7 @@ slot(name="prepend")
           v-for="(tabSchema, tab) in tabs"
           :key="tab"
         )
-          DitoPane.dito-pane__tab(
+          DitoSchemaPane.dito-pane__tab(
             v-if="shouldRenderTab(tab)"
             v-show="isTabSelected(tab)"
             :tab="tab"
@@ -87,7 +87,7 @@ slot(name="prepend")
             :compact="compact"
             :generateLabels="generateLabels"
           )
-      DitoPane.dito-pane__main(
+      DitoSchemaPane.dito-pane__main(
         v-if="hasMainPane"
         :schema="schema"
         :dataPath="dataPath"

@@ -1,6 +1,6 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import { defineComponent, h, type Component } from 'vue'
-import { DitoField } from '@ditojs/admin'
+import { DitoField, DitoPane } from '@ditojs/admin'
 import type { Components, FormSchema } from '@ditojs/admin'
 import type { Address, Entry, Parent, ParentWithAddress } from './fixtures.ts'
 
@@ -48,13 +48,17 @@ describe('Section components', () => {
     })
   })
 
-  it('accepts section with a layout component that places fields', () => {
+  it('accepts section with a layout component that places fields and panes', () => {
     const Layout = defineComponent({
       props: {
         schema: { type: Object, required: true },
         context: { type: Object, required: true }
       },
-      setup: () => () => h(DitoField, { name: 'title' })
+      setup: () => () => [
+        h(DitoField, { name: 'title' }),
+        h(DitoPane, { names: ['title'] }),
+        h(DitoPane)
+      ]
     })
     assertType<Components<ParentWithSection>>({
       details: {
@@ -66,6 +70,7 @@ describe('Section components', () => {
       }
     })
     expectTypeOf(DitoField).toExtend<Component>()
+    expectTypeOf(DitoPane).toExtend<Component>()
   })
 
   it('accepts section with form prop', () => {

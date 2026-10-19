@@ -1,300 +1,243 @@
 import { vi } from 'vitest'
+import { h, resolveComponent } from 'vue'
 import { flushPromises } from '@vue/test-utils'
-import { mountSchema, mountAdmin } from '../test/mount.js'
+import {
+  mountAdmin,
+  mountSchema,
+  mountForm,
+  enterValue
+} from '../test/mount.js'
+import DitoField from './DitoField.vue'
 import DitoPane from './DitoPane.vue'
+import DitoPaneRows from './DitoPaneRows.vue'
+
+// A layout component that renders the nodes that `render()` returns:
+function createLayout(render) {
+  return {
+    props: {
+      schema: { type: Object, required: true },
+      context: { type: Object, required: true }
+    },
+    render
+  }
+}
+
+const getLabels = wrapper =>
+  wrapper
+    .findAll(':scope > .dito-container > .dito-label')
+    .map(label => label.text())
 
 describe('DitoPane', () => {
-  // happy-dom doesn't lay out elements, so place all containers next to each
-  // other in one row, each three lines high without padding, at a font size of
-  // 16px, and move the ones of `offsets` down by their offset:
-  function stubLayout(offsets = {}) {
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
-      function () {
-        const index = +(this.dataset.index ?? 0)
-        return {
-          x: index * 100,
-          y: offsets[index] ?? 0,
-          width: 100,
-          height: 64
-        }
-      }
-    )
-    const { getComputedStyle } = window
-    vi.spyOn(window, 'getComputedStyle').mockImplementation(element => {
-      const style = getComputedStyle(element)
-      return { ...style, padding: '8px', fontSize: '16px' }
-    })
-  }
-
-  async function measureRows(wrapper) {
-    wrapper.findComponent(DitoPane).vm.onResizePane()
-    await flushPromises()
-  }
-
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('aligns the components in rows with labels to the labels', async () => {
-    stubLayout()
-    const { wrapper, findContainer, data, settle } = await mountSchema({
+  it('places the components of `names` in rows', async () => {
+    const { wrapper, findContainer } = await mountSchema({
       schema: {
         components: {
-          hasSubtitle: { type: 'checkbox', label: false, width: '1/3' },
-          subtitle: {
-            type: 'text',
-            label: 'Subtitle',
-            width: '1/3',
-            if: ({ item }) => item.hasSubtitle
-          },
-          title: { type: 'text', label: false, width: '1/3' }
+          name: {
+            type: 'section',
+            component: createLayout(() =>
+              h(DitoPane, { names: ['last', 'first'] })
+            ),
+            components: {
+              title: { type: 'text', label: 'Title' },
+              first: { type: 'text', label: 'First', width: '1/3' },
+              last: { type: 'text', label: 'Last', width: '2/3' }
+            }
+          }
         }
       },
-      data: { hasSubtitle: true, subtitle: 'Book', title: 'Emma' }
+      data: { first: 'Ada', last: 'Lovelace' }
     })
-    const isLabelVertical = name =>
-      findContainer(name).classes('dito-container--label-vertical')
-    await measureRows(wrapper)
-    expect(isLabelVertical('hasSubtitle')).toBe(true)
-    expect(isLabelVertical('title')).toBe(true)
+    const pane = wrapper.find('.dito-section .dito-pane--layout')
+    expect(getLabels(pane)).toEqual(['Last', 'First'])
+    expect(
+      pane.findAll('input').map(({ element }) => element.value)
+    ).toEqual(['Lovelace', 'Ada'])
+    expect(findContainer('first').attributes('style')).toContain(
+      '--basis: 33.3'
+    )
+    expect(findContainer('last').attributes('style')).toContain('--basis: 66.6')
+  })
 
-    // Once the labeled component is gone, the row isn't aligned anymore:
-    data.hasSubtitle = false
-    await settle()
-    await measureRows(wrapper)
-    expect(isLabelVertical('hasSubtitle')).toBe(false)
-    expect(isLabelVertical('title')).toBe(false)
+  it('places all components without `names`', async () => {
+    const { wrapper } = await mountSchema({
+      schema: {
+        components: {
+          name: {
+            type: 'section',
+            component: createLayout(() => h(DitoPane)),
+            components: {
+              first: { type: 'text', label: 'First' },
+              last: { type: 'text', label: 'Last' }
+            }
+          }
+        }
+      }
+    })
+    expect(getLabels(wrapper.find('.dito-pane--layout'))).toEqual([
+      'First',
+      'Last'
+    ])
+  })
+
+  it('is registered globally, for layouts with templates', async () => {
+    const { wrapper } = await mountSchema({
+      schema: {
+        components: {
+          name: {
+            type: 'section',
+            component: createLayout(() =>
+              h(resolveComponent('DitoPane'), { names: ['last'] })
+            ),
+            components: {
+              first: { type: 'text', label: 'First' },
+              last: { type: 'text', label: 'Last' }
+            }
+          }
+        }
+      }
+    })
+    expect(getLabels(wrapper.find('.dito-pane--layout'))).toEqual(['Last'])
+  })
+
+  it('places panes next to fields in the same layout', async () => {
+    const { wrapper } = await mountSchema({
+      schema: {
+        components: {
+          name: {
+            type: 'section',
+            component: createLayout(() => [
+              h(DitoField, { name: 'title' }),
+              h(DitoPane, { names: ['first', 'last'] })
+            ]),
+            components: {
+              title: { type: 'text', label: 'Title' },
+              first: { type: 'text', label: 'First', width: '1/2' },
+              last: { type: 'text', label: 'Last', width: '1/2' }
+            }
+          }
+        }
+      }
+    })
+    // Both sit in the row of the section's pane, which the pane's modifier
+    // aligns with the fields:
+    const host = wrapper.find(
+      '.dito-section .dito-pane:not(.dito-pane--layout)'
+    )
+    expect(
+      host.findAll(':scope > *').map(({ element }) => element.className)
+    ).toEqual([
+      expect.stringContaining('dito-container'),
+      'dito-pane dito-pane--layout'
+    ])
+    expect(getLabels(host)).toEqual(['Title'])
+    expect(getLabels(host.find('.dito-pane--layout'))).toEqual([
+      'First',
+      'Last'
+    ])
+  })
+
+  it('aligns the components in rows with labels to the labels', async () => {
+    // happy-dom doesn't lay out elements, so place the containers next to
+    // each other in one row, each three lines high:
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function () {
+        const index = +(this.dataset.index ?? 0)
+        return { x: index * 100, y: 0, width: 100, height: 64 }
+      }
+    )
+    const { getComputedStyle } = window
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(element => ({
+      ...getComputedStyle(element),
+      padding: '8px',
+      fontSize: '16px'
+    }))
+    const { wrapper, findContainer } = await mountSchema({
+      schema: {
+        components: {
+          name: {
+            type: 'section',
+            component: createLayout(() =>
+              h(DitoPane, { names: ['isVisible', 'title'] })
+            ),
+            components: {
+              title: { type: 'text', label: 'Title', width: '1/2' },
+              isVisible: { type: 'checkbox', label: false, width: '1/2' }
+            }
+          }
+        }
+      }
+    })
+    wrapper
+      .findComponent(DitoPane)
+      .findComponent(DitoPaneRows)
+      .vm.onResizePane()
+    await flushPromises()
+    expect(
+      findContainer('isVisible').classes('dito-container--label-vertical')
+    ).toBe(true)
+  })
+
+  it('edits, validates and submits the components like the pane', async () => {
+    const { wrapper, routeComponent, data, submit } = await mountForm({
+      schema: {
+        components: {
+          name: {
+            type: 'section',
+            nested: true,
+            component: createLayout(() => h(DitoPane)),
+            components: { first: { type: 'text', required: true } }
+          }
+        }
+      },
+      data: { name: { first: '' } },
+      request: ({ data }) => ({ data })
+    })
+    const getErrors = () =>
+      wrapper
+        .findAll('.dito-pane--layout .dito-errors li')
+        .map(item => item.text())
+    expect(await submit()).toBe(null)
+    expect(getErrors()).toEqual(['The First field is required.'])
+    expect(routeComponent.routeContext.isDirty).toBe(false)
+    await enterValue(wrapper.find('.dito-pane--layout input'), 'Ada')
+    expect(data.name).toEqual({ first: 'Ada' })
+    expect(routeComponent.routeContext.isDirty).toBe(true)
+    expect(getErrors()).toEqual([])
+    expect(await submit()).toMatchObject({ name: { first: 'Ada' } })
   })
 
   it.each([
     [
-      'sections',
+      'unknown components',
       {
         type: 'section',
-        components: { title: { type: 'text', label: 'Title' } }
-      }
+        component: createLayout(() =>
+          h(DitoPane, { names: ['first', 'middle'] })
+        ),
+        components: { first: { type: 'text' } }
+      },
+      `Unknown component: 'middle'.`
     ],
     [
-      'inlined objects',
-      {
-        type: 'object',
-        label: false,
-        inlined: true,
-        form: {
-          type: 'form',
-          components: { title: { type: 'text', label: 'Title' } }
-        }
-      }
+      'panes outside of layout sections',
+      { type: 'component', component: createLayout(() => h(DitoPane)) },
+      `Unable to place panes outside of sections with 'component'.`
     ]
-  ])('aligns the components in rows with labels of %s', async (_, schema) => {
-    stubLayout()
-    const { wrapper, findContainer } = await mountSchema({
-      schema: {
-        components: {
-          inStock: { type: 'checkbox', label: false, width: '1/2' },
-          details: { ...schema, width: '1/2' }
-        }
-      },
-      data: { inStock: true, title: 'Emma', details: { title: 'Emma' } }
+  ])('throws for %s', async (_, name, message) => {
+    const admin = await mountAdmin({
+      views: { test: { type: 'view', components: { name } } }
     })
-    await measureRows(wrapper)
-    expect(
-      findContainer('inStock').classes('dito-container--label-vertical')
-    ).toBe(true)
-  })
-
-  it('aligns the components in rows with components aligned vertically', async () => {
-    stubLayout({ 1: 20 })
-    const { wrapper, findContainer } = await mountSchema({
-      schema: {
-        components: {
-          weight: { type: 'slider', label: 'Weight', width: '1/3' },
-          isVariable: {
-            type: 'switch',
-            label: false,
-            width: '1/3',
-            align: 'bottom'
-          },
-          axis: { type: 'text', label: false, width: '1/3' }
-        }
-      },
-      data: { weight: 400, isVariable: true, axis: 'wght' }
-    })
-    await measureRows(wrapper)
-    expect(
-      findContainer('axis').classes('dito-container--label-vertical')
-    ).toBe(true)
-  })
-
-  it('keeps aligning a row once its last component is gone', async () => {
-    stubLayout()
-    const { wrapper, findContainer, data, settle } = await mountSchema({
-      schema: {
-        components: {
-          name: { type: 'text', label: 'Name', width: '1/3' },
-          captain: { type: 'checkbox', label: false, width: '1/3' },
-          coach: {
-            type: 'text',
-            label: false,
-            width: '1/3',
-            if: ({ item }) => item.hasCoach
-          }
-        }
-      },
-      data: { name: 'Rovers', captain: true, hasCoach: true }
-    })
-    const isLabelVertical = name =>
-      findContainer(name).classes('dito-container--label-vertical')
-    await measureRows(wrapper)
-    expect(isLabelVertical('captain')).toBe(true)
-    expect(isLabelVertical('coach')).toBe(true)
-
-    data.hasCoach = false
-    await settle()
-    await measureRows(wrapper)
-    expect(findContainer('coach').exists()).toBe(false)
-    expect(isLabelVertical('name')).toBe(true)
-    expect(isLabelVertical('captain')).toBe(true)
-  })
-
-  it(`doesn't align components that aren't laid out`, async () => {
-    stubLayout()
-    // Hidden components have no height, e.g. the ones in hidden tabs:
-    HTMLElement.prototype.getBoundingClientRect.mockReturnValue({
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0
-    })
-    const { wrapper, findContainer } = await mountSchema({
-      schema: {
-        components: {
-          name: { type: 'text', label: 'Name', width: '1/2' },
-          captain: { type: 'checkbox', label: false, width: '1/2' }
-        }
-      },
-      data: { name: 'Rovers', captain: true }
-    })
-    await measureRows(wrapper)
-    const pane = wrapper.findComponent(DitoPane).vm
-    expect(pane.positions).toEqual([null, null])
-    expect(
-      findContainer('captain').classes('dito-container--label-vertical')
-    ).toBe(false)
-  })
-
-  it(`measures nothing when none of its components are rendered`, async () => {
-    stubLayout()
-    const { wrapper } = await mountSchema({
-      schema: {
-        components: {
-          coach: {
-            type: 'object',
-            inlined: true,
-            form: {
-              type: 'form',
-              components: { name: { type: 'text', if: false } }
-            }
-          }
-        }
-      },
-      data: { coach: { name: 'Alex' } }
-    })
-    const pane = wrapper
-      .findAllComponents(DitoPane)
-      .find(({ vm }) => vm.dataPath === 'coach').vm
-    pane.onResizePane()
-    await flushPromises()
-    expect(pane.positions).toEqual([])
-  })
-
-  it('updates its positions when its components change', async () => {
-    const { wrapper, data, settle } = await mountSchema({
-      schema: {
-        components: {
-          blocks: {
-            type: 'list',
-            inlined: true,
-            forms: {
-              heading: {
-                type: 'form',
-                components: { text: { type: 'text' } }
-              },
-              image: {
-                type: 'form',
-                components: { url: { type: 'url' }, caption: { type: 'text' } }
-              }
-            }
-          }
-        }
-      },
-      data: { blocks: [{ type: 'image', url: null, caption: null }] }
-    })
-    const getBlockPane = () =>
-      wrapper
-        .findAllComponents(DitoPane)
-        .find(({ vm }) => vm.dataPath === 'blocks/0').vm
-    const pane = getBlockPane()
-    pane.positions.push({ left: 0, height: 3 }, { left: 100, height: 3 })
-    data.blocks[0].type = 'heading'
-    await settle()
-    expect(getBlockPane().$).toBe(pane.$)
-    expect(pane.componentSchemas.map(({ schema }) => schema.name)).toEqual([
-      'text'
-    ])
-    expect(pane.positions).toHaveLength(1)
-  })
-
-  describe('tab panes', () => {
-    async function mountTabs() {
-      const admin = await mountAdmin({
-        views: {
-          books: {
-            type: 'view',
-            tabs: {
-              details: {
-                type: 'tab',
-                components: { title: { type: 'text' } }
-              },
-              // Tabs may only have panels, without components:
-              notes: { type: 'tab' }
-            }
-          }
-        }
-      })
-      await admin.navigate('/books')
-      return admin
-    }
-
-    it('are selected when their components are focused', async () => {
-      const admin = await mountTabs()
-      await admin.navigate('/books#notes')
-      const title = admin.getComponent(admin.getRouteComponent(), 'title')
-      await admin.context.ui.reveal(title.container, title.componentPath, {
-        focus: true
-      })
-      await flushPromises()
-      expect(admin.router.currentRoute.value.hash).toBe('#details')
-    })
-
-    it('render nothing without components', async () => {
-      const admin = await mountTabs()
-      await admin.navigate('/books#notes')
-      const notes = admin.wrapper
-        .findAllComponents(DitoPane)
-        .find(({ vm }) => vm.tab === 'notes')
-      expect(notes.vm.componentSchemas).toEqual([])
-      expect(notes.find('.dito-pane').exists()).toBe(false)
-    })
-  })
-
-  it(`doesn't navigate when focusing components outside of tabs`, async () => {
-    const { admin, focusField } = await mountSchema({
-      schema: { components: { title: { type: 'text' } } },
-      data: { title: 'Emma' }
-    })
-    await focusField('title')
-    await flushPromises()
-    expect(admin.router.currentRoute.value.fullPath).toBe('/test')
+    const errorHandler = vi.fn()
+    admin.app.config.errorHandler = errorHandler
+    await admin.navigate('/test')
+    expect(errorHandler).toHaveBeenCalledWith(
+      new Error(message),
+      expect.anything(),
+      expect.anything()
+    )
   })
 })

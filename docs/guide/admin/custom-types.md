@@ -5,7 +5,7 @@ with `type: 'component'`, or as a type of its own with `defineType()`, which
 schemas then use like the built-in types.
 
 The admin's own components are internal and not meant to be imported, except
-`DitoField`, which places fields in custom layouts, see
+`DitoField` and `DitoPane`, which place fields in custom layouts, see
 [Laying out fields](#laying-out-fields). Build custom components with plain
 Vue and the public components of [`@ditojs/ui`](../../api/ui.md), e.g.
 `DitoProgress` for the progress of a background job.
@@ -213,12 +213,45 @@ The default slot of `DitoField` is passed on to the custom component of a
 `type: 'component'` field, so `VolumeSlider` renders the switch with
 `<slot />` next to its track.
 
+`DitoPane` places a group of fields in rows, as the section would without
+`component`: with their widths, wrapping and alignment, and with the labels of
+a row aligned. Its `names` are keys of the section's `components`, all of them
+by default. The pane fills the rest of the row it's placed in, here next to a
+summary:
+
+```js
+book: {
+  type: 'section',
+  component: () => import('../components/BookLayout.vue'),
+  components: {
+    summary: { type: 'textarea', label: 'Summary', width: '1/3' },
+    title: { type: 'text', label: 'Title' },
+    author: { type: 'text', label: 'Author', width: '1/2' },
+    year: { type: 'number', label: 'Year', width: '1/2' }
+  }
+}
+```
+
+```vue
+<!-- src/admin/components/BookLayout.vue -->
+<template>
+  <DitoField name="summary" />
+  <DitoPane :names="['title', 'author', 'year']" />
+</template>
+
+<script setup>
+import { DitoField, DitoPane } from '@ditojs/admin'
+
+defineProps({ schema: Object, context: Object })
+</script>
+```
+
 - Fields that the layout doesn't place still validate, and then block saving
   without showing their errors.
 - `width` applies where the parent element of a field is a flex row, like the
   row that holds the layout.
-- `DitoField` throws outside the component of a section, and for names that
-  aren't in its `components`.
+- `DitoField` and `DitoPane` throw outside the component of a section, and
+  for names that aren't in its `components`.
 - Sections with `component` don't support `tabs`, `collapsible` and
   `clipboard`.
 
