@@ -175,6 +175,57 @@ describe('DitoTypeComponent', () => {
     )
     warn.mockRestore()
   })
+
+  describe('display-only components', () => {
+    // A component that only displays, without a value of its own:
+    const ReadingTime = {
+      props: {
+        schema: { type: Object, required: true },
+        context: { type: Object, required: true }
+      },
+
+      render() {
+        return h('p', `${this.context.item.words / 250} min`)
+      }
+    }
+
+    it('needs no value props or emits without a `default`', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            readingTime: { type: 'component', component: ReadingTime }
+          }
+        },
+        data: { words: 500 }
+      })
+      expect(findField('readingTime').text()).toBe('2 min')
+      expect(findField('readingTime').attributes('modelvalue')).toBeUndefined()
+      expect(warn).not.toHaveBeenCalled()
+      warn.mockRestore()
+    })
+
+    it('still need them with a `default`', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      await mountSchema({
+        schema: {
+          components: {
+            readingTime: {
+              type: 'component',
+              component: { ...ReadingTime, name: 'ReadingTime' },
+              default: 0
+            }
+          }
+        },
+        data: { words: 500 }
+      })
+      expect(warn).toHaveBeenCalledWith(
+        `Custom component 'ReadingTime' doesn't declare the props and ` +
+        `emits of its contract: modelValue, update:modelValue, change.`
+      )
+      warn.mockRestore()
+    })
+  })
 })
 
 describe('defineType()', () => {

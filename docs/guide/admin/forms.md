@@ -143,6 +143,70 @@ It deserializes `data`, gives it its defaults and computed values and leaves
 the form clean, like a load. Values that `data` lacks are reset too, except
 the item's id, type and position. Without `data`, it resets to the defaults.
 
+## Values that change on the server
+
+Values that the server changes while the form is open, e.g. the progress of
+an export job, can be polled by a [display-only
+component](./custom-types.md#one-field-type-component). It writes only the
+server's values into the item, so the user's edits stay:
+
+```vue
+<!-- src/admin/components/ExportProgress.vue -->
+<template>
+  <p>{{ context.item.exportStatus }}: {{ context.item.exportProgress }}%</p>
+</template>
+
+<script setup>
+import { onMounted, onUnmounted } from 'vue'
+
+const props = defineProps({
+  schema: { type: Object, required: true },
+  context: { type: Object, required: true }
+})
+
+let isPolling = false
+let timeout = null
+
+async function poll() {
+  const { context } = props
+  const { exportStatus, exportProgress } = await context.request({
+    url: context.getResourceUrl()
+  })
+  // Requests aren't aborted when the component unmounts:
+  if (isPolling) {
+    Object.assign(context.item, { exportStatus, exportProgress })
+    timeout = setTimeout(poll, 2000)
+  }
+}
+
+onMounted(() => {
+  isPolling = true
+  poll()
+})
+
+onUnmounted(() => {
+  isPolling = false
+  clearTimeout(timeout)
+})
+</script>
+```
+
+```js
+exportJob: {
+  type: 'component',
+  component: () => import('../components/ExportProgress.vue'),
+  if: ({ isCreating }) => !isCreating
+}
+```
+
+- Keep the polled values out of the form's fields, or give their fields
+  `exclude: true`: then these writes don't make the form dirty and the values
+  aren't sent back, see [Dirty State](./dirty-state.md#what-counts-as-an-edit).
+- Save responses replace the form's data, so the server needs to return these
+  values in them too, not only on `get`, e.g. through `after:member:patch`
+  [hooks](../server/controllers.md#hooks) when they aren't columns of the
+  model.
+
 ## Components that depend on the data
 
 `components` can be a callback that creates them from the context. It runs

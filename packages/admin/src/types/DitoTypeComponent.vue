@@ -66,7 +66,7 @@ defineType({
 
   async setupSchema({ schema }) {
     await resolveSchemaComponent(schema)
-    checkContract(schema.component)
+    checkContract(schema.component, schema)
   }
 })
 
@@ -87,15 +87,28 @@ export function wrapCustomComponent(component) {
 
 // Undeclared events fall through as native listeners, so a native `change`
 // would emit the schema's `change` event a second time:
-function checkContract(component) {
+function checkContract(component, schema) {
   if (process.env.NODE_ENV !== 'production' && component) {
     const getMissing = (declared, names) => {
       const keys = isArray(declared) ? declared : Object.keys(declared ?? {})
       return names.filter(name => !keys.includes(name))
     }
+    const valueProps = ['modelValue']
+    const valueEmits = ['update:modelValue', 'change']
+    const missingValueMembers = [
+      ...getMissing(component.props, valueProps),
+      ...getMissing(component.emits, valueEmits)
+    ]
+    // Fields without a `default` may only display, with components that
+    // declare none of the value's props and emits:
+    const isDisplayOnly = (
+      schema &&
+      !('default' in schema) &&
+      missingValueMembers.length === valueProps.length + valueEmits.length
+    )
     const missing = [
-      ...getMissing(component.props, ['schema', 'context', 'modelValue']),
-      ...getMissing(component.emits, ['update:modelValue', 'change'])
+      ...getMissing(component.props, ['schema', 'context']),
+      ...(isDisplayOnly ? [] : missingValueMembers)
     ]
     if (missing.length > 0) {
       console.warn(

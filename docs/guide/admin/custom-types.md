@@ -82,7 +82,16 @@ rating: {
 }
 ```
 
-A `component` field has no value unless its schema has a `default`.
+A `component` field has no value unless its schema has a `default`. Without
+one, its component can also only display, declaring just the props `schema`
+and `context`, without `modelValue` and its events:
+
+```js
+readingTime: {
+  type: 'component',
+  component: () => import('../components/ReadingTime.vue')
+}
+```
 
 ## A type of its own: `defineType()`
 
