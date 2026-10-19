@@ -1,4 +1,4 @@
-// The code dialogs fit the TOTP key:
+// The TOTP setup dialog fits the key:
 export const codeWidth = '25em'
 
 // Dialogs with short fields are at least this wide, so their labels fit:
