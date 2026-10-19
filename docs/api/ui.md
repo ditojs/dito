@@ -288,11 +288,11 @@ window if possible. The base of `DitoMenuButton` and the pickers.
 | ---- | ---- | ------- | ----------- |
 | `trigger` | `string` | `'click'` | What shows the popup: `'click'` toggles it, `'hover'` shows it while the mouse is over the trigger or the popup, `'focus'` while an input or textarea in the trigger or the popup has the focus. `'always'` adds no handlers; the popup follows `show`. |
 | `show` | `boolean` | `false` | Whether the popup is shown (`v-model:show`). |
-| `placement` | `string` | `'bottom'` | The side of the trigger the popup appears on, `'top'`, `'bottom'`, `'left'` or `'right'`, optionally followed by the edge it aligns with, e.g. `'bottom-left'` or `'right-top'`. Adds `.dito-popup--{placement}`. |
+| `placement` | `string` | `'bottom'` | The side of the trigger the popup appears on, `'top'`, `'bottom'`, `'left'` or `'right'`, optionally followed by the edge it aligns with, e.g. `'bottom-left'` or `'right-top'`, or by `center`, e.g. `'bottom-center'`. Adds `.dito-popup--{placement}`. |
 | `transition` | `string` | `'slide'` | The popup's transition: `'slide'`, `'fade'` or `'zoom'`, or `null` to show it at once. |
 | `target` | `string \| HTMLElement` | `null` | The element the popup is positioned at, instead of the trigger: an element, or `'trigger'` or `'popup'` for these parts of the trigger itself. |
 | `disabled` | `boolean` | `false` | Prevents showing the popup. Adds `.dito-trigger--disabled`. |
-| `keepInView` | `boolean` | `true` | Flips the popup to the other side or edge if it doesn't fit in the window and there's more room there. |
+| `keepInView` | `boolean` | `true` | Flips the popup to the other side or edge if it doesn't fit in the window and there's more room there, and shifts centered popups back into the window. |
 | `matchTargetWidth` | `boolean` | `true` | Gives the popup's first child the width of the target. |
 | `cover` | `boolean` | `false` | Places the popup over the trigger instead of next to it. |
 | `hideWhenClickOutside` | `boolean` | `true` | Hides the popup on clicks outside trigger, target and popup, and when the window loses focus. |
