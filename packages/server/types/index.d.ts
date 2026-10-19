@@ -2799,7 +2799,7 @@ export type ModelControllerAction<$ModelController = ModelController> =
  * `'post'`, `'post login'`).
  */
 export type ModelControllerActions<$ModelController = ModelController> = {
-  [name: ControllerActionName]: ModelControllerAction<$ModelController>
+  [name: ControllerActionName]: ModelControllerAction<$ModelController> | false
   allow?: OrReadOnly<ControllerActionName[]>
   authorize?: ControllerAuthorize<$ModelController>
 }
@@ -2825,7 +2825,9 @@ type ModelControllerMemberAction<
 export type ModelControllerMemberActions<
   $ModelController extends ModelControllerLike = ModelController
 > = {
-  [name: ControllerActionName]: ModelControllerMemberAction<$ModelController>
+  [name: ControllerActionName]:
+    | ModelControllerMemberAction<$ModelController>
+    | false
   allow?: OrReadOnly<ControllerActionName[]>
   authorize?: ControllerAuthorize<$ModelController>
 }
@@ -2847,7 +2849,8 @@ export type ControllerActionName = `${HttpMethod}${string}`
  * `'{method}'` for default CRUD actions (e.g. `'get'`).
  *
  * Use `allow` to whitelist specific actions and
- * `authorize` for group-level authorization.
+ * `authorize` for group-level authorization. Set an
+ * inherited action to `false` to drop it.
  *
  * Pass a `$ParamsMap` as the second type argument to
  * strongly type handler parameters per action:
@@ -2878,12 +2881,11 @@ export type ControllerActions<
   $Controller extends Controller = Controller,
   $ParamsMap extends Record<string, any> = {}
 > = {
-  [K in keyof $ParamsMap & ControllerActionName]?: ControllerAction<
-    $Controller,
-    $ParamsMap[K]
-  >
+  [K in keyof $ParamsMap & ControllerActionName]?:
+    | ControllerAction<$Controller, $ParamsMap[K]>
+    | false
 } & {
-  [name: ControllerActionName]: ControllerAction<$Controller, any>
+  [name: ControllerActionName]: ControllerAction<$Controller, any> | false
   allow?: OrReadOnly<ControllerActionName[]>
   authorize?: ControllerAuthorize<$Controller>
 }

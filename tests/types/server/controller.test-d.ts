@@ -412,6 +412,15 @@ describe('ModelController', () => {
       }
     }
   })
+
+  it('accepts `false` to drop inherited actions', () => {
+    type MC = ModelController<Model>
+    assertType<ControllerActions>({ 'get hidden': false })
+    assertType<ModelControllerActions<MC>>({ delete: false })
+    assertType<ModelControllerMemberActions<MC>>({ patch: false })
+    // @ts-expect-error `true` doesn't define actions
+    assertType<ControllerActions>({ 'get hidden': true })
+  })
 })
 
 describe('ApplicationControllers', () => {

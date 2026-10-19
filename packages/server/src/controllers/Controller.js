@@ -441,6 +441,8 @@ export class Controller {
     // - If no `allow` arrays are defined in the prototypal hierarchy, each
     //   level allows its own values, and these are merged, except for those
     //   marked as `$core`, which need to be explicitly listed in `allow`.
+    // - Values set to `false` drop the inherited values of the same name, until
+    //   a sub-class defines them again.
 
     // NOTE: `handleAllow()` and `handleAuthorize()` are applied in sequence of
     // the `values` inheritance, from sub-class to base-class.
@@ -452,7 +454,11 @@ export class Controller {
 
     const handleAllow = (allow, current) => {
       const getFilteredMap = keys =>
-        Object.fromEntries(keys.filter(includeKey).map(key => [key, true]))
+        Object.fromEntries(
+          keys
+            .filter(key => includeKey(key) && current[key] !== false)
+            .map(key => [key, true])
+        )
 
       if (allow) {
         // The controller action object provides its own allow setting:
@@ -475,6 +481,23 @@ export class Controller {
         // The controller action object does not provide its own allow setting,
         // so add its own keys to the already allowed inherited keys so far.
         Object.assign(allowMap, getFilteredMap(getOwnKeys(current)))
+      }
+      for (const key of getOwnKeys(current)) {
+        if (current[key] === false) {
+          if (!Object.getPrototypeOf(current)[key]) {
+            throw new ControllerError(
+              this,
+              `Unable to drop '${key}': no inherited action.`
+            )
+          }
+          if (asArray(allow).includes(key)) {
+            throw new ControllerError(
+              this,
+              `Unable to drop '${key}' and allow it at the same time.`
+            )
+          }
+          delete allowMap[key]
+        }
       }
     }
 
