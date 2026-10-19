@@ -112,9 +112,6 @@ export default {
 .dito-notifications {
   $notification-width: 300px;
 
-  flex: 1;
-  box-sizing: border-box;
-
   .dito-header {
     span {
       padding-left: 0;
@@ -126,23 +123,14 @@ export default {
   &__inner {
     position: relative;
     z-index: $z-index-notifications;
-    // For the `@container` rule to work:
-    container-type: inline-size;
   }
 
   .vue-notification-group {
     position: absolute;
-    // Inside the column, which takes no room when the window is full:
-    left: $form-spacing;
+    // The column takes no room, as the sidebar reaches the window edge:
+    right: $content-padding;
     top: 0;
     width: $notification-width;
-
-    @container (
-      width < #{$form-spacing + $notification-width + $content-padding}
-    ) {
-      left: unset;
-      right: $content-padding;
-    }
   }
 
   .vue-notification-wrapper {
