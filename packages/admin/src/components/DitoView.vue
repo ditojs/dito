@@ -25,11 +25,7 @@ template(
         v-if="isPage"
         #default
       )
-        component(
-          :is="sourceSchema.component"
-          :schema="sourceSchema"
-          :context="context"
-        )
+        component(:is="sourceSchema.component")
 </template>
 
 <script>
@@ -119,7 +115,6 @@ export default {
       schema,
       name,
       data,
-      context,
       isPage: computed(() => isPage(sourceSchema.value)),
       shouldRenderSchema
     }

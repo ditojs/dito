@@ -86,10 +86,9 @@ export const cachePurge = {
 }
 ```
 
-The component receives the `schema` and `context` props, and
-[`useDitoContext()`](../../api/admin/index.md) returns the same context, e.g.
-for `context.request()` or `context.notify()`. Pages have no data or form of
-their own.
+The component reads the page's context with
+[`useDitoContext()`](../../api/admin/index.md), e.g. for `context.request()` or
+`context.notify()`. Pages have no data or form of their own.
 
 The `path` of a page can hold route params, which the component reads with
 vue-router's `useRoute()`. Pages with required params, like

@@ -2873,8 +2873,7 @@ export interface PageSchema {
    */
   name?: string
   /**
-   * The Vue component that the page displays. It receives the `schema` and
-   * `context` of the page.
+   * The Vue component that the page displays.
    */
   component: Resolvable<VueComponent>
   /**
