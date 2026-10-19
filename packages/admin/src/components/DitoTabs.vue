@@ -115,9 +115,12 @@ export default {
 @import '../styles/_imports';
 
 .dito-tabs {
+  $self: &;
+
   display: flex;
 
-  .dito-header & {
+  // Keep `.dito-tabs` last for the modifiers that `scroll-mask` adds:
+  &--header#{&} {
     min-width: 0;
     @include scroll-mask;
   }
@@ -133,7 +136,7 @@ export default {
     }
 
     // When in main header:
-    .dito-header & {
+    #{$self}--header & {
       background: $color-light;
       padding: $tab-padding-ver $tab-padding-hor;
       margin-left: $tab-margin;
@@ -150,8 +153,7 @@ export default {
     }
 
     // When inside a inline schema:
-    .dito-schema-inlined &,
-    .dito-label & {
+    #{$self}--inlined & {
       background: $color-lighter;
       border: $border-style;
       padding: $input-padding;
@@ -178,16 +180,6 @@ export default {
         color: $color-white;
         z-index: 1;
       }
-    }
-  }
-
-  .dito-schema & {
-    // Push clipboard to the right in the flex layout, see:
-    // https://codepen.io/tholex/pen/hveBx/
-    margin-left: auto;
-
-    &:last-child {
-      margin-right: auto;
     }
   }
 }

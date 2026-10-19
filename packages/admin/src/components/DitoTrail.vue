@@ -109,6 +109,10 @@ export default {
     white-space: nowrap;
   }
 
+  &--flush-start li:first-child #{$self}__text {
+    padding-left: 0;
+  }
+
   &__link {
     position: relative;
     display: block;

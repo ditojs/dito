@@ -1,5 +1,7 @@
 <template lang="pug">
-.dito-multiselect
+.dito-multiselect(
+  :class="{ 'dito-multiselect--has-errors': !!errorsElementId }"
+)
   .dito-multiselect__inner
     DitoInputAffixes(
       position="prefix"
@@ -410,10 +412,6 @@ $tag-line-height: 1em;
       padding: 0 $spinner-width 0 0;
       // So tags can float on multiple lines and have proper margins:
       padding-bottom: $tag-margin;
-
-      .dito-container--has-errors & {
-        border-color: $color-error;
-      }
     }
 
     &__tag {
@@ -634,6 +632,11 @@ $tag-line-height: 1em;
         display: none;
       }
     }
+  }
+
+  // After the borders of the tags, which it overrides:
+  &--has-errors .multiselect__tags {
+    border-color: $color-error;
   }
 }
 </style>

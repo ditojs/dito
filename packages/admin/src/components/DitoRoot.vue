@@ -34,7 +34,7 @@
       @click="menu.toggle()"
     )
   main.dito-page.dito-scroll-parent(
-    :class="adminContext.pageClass"
+    :class="[adminContext.pageClass, pageClasses]"
     :inert="!!topDialogKey"
   )
     DitoHeader(
@@ -66,7 +66,7 @@
       @click="adminContext.session.login()"
     )
       span Sign In
-    button.dito-header__toggle(
+    button.dito-header__toggle.dito-sidebar__toggle(
       ref="sidebarButton"
       type="button"
       aria-label="Sidebar"
@@ -227,6 +227,10 @@ export default {
         'dito-root--overlay-sidebar': sidebar.isOverlay,
         'dito-root--sliding-sidebar': sidebar.isSliding
       })),
+      pageClasses: computed(() => ({
+        'dito-page--overlay-sidebar': sidebar.isOverlay,
+        'dito-page--sliding-sidebar': sidebar.isSliding
+      })),
 
       removeDialog(key) {
         delete dialogs[key]
@@ -252,17 +256,6 @@ let dialogId = 0
   // Only the admin's containers scroll. Clip what reaches beyond the window,
   // e.g. the header backgrounds, so that phones can't pan it:
   overflow: hidden;
-
-  // The page's content reaches under the header of the overlay sidebar, while
-  // the page's header stays next to it:
-  &--overlay-sidebar .dito-page__content {
-    margin-right: calc(-1 * var(--dito-sidebar-room));
-  }
-
-  // Grow and shrink with the sliding sidebar, and with resizes right away:
-  &--sliding-sidebar .dito-page__content {
-    transition: margin-right $sidebar-duration;
-  }
 }
 
 .dito-page {
@@ -284,6 +277,17 @@ let dialogId = 0
 
   &__content {
     max-width: var(--max-page-width);
+  }
+
+  // The page's content reaches under the header of the overlay sidebar, while
+  // the page's header stays next to it:
+  &--overlay-sidebar &__content {
+    margin-right: calc(-1 * var(--dito-sidebar-room));
+  }
+
+  // Grow and shrink with the sliding sidebar, and with resizes right away:
+  &--sliding-sidebar &__content {
+    transition: margin-right $sidebar-duration;
   }
 }
 

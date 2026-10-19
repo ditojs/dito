@@ -173,6 +173,12 @@ export default {
     margin-left: auto;
   }
 
+  // Keep the round buttons at the end of the label apart from the component,
+  // like the buttons in the headers of forms:
+  &:has(> #{$self}__buttons > .dito-label-buttons:not(:empty)) {
+    margin-bottom: $form-spacing-half;
+  }
+
   @at-root button#{&},
     button#{&}__content {
     border: 0;

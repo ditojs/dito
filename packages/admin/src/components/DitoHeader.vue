@@ -1,7 +1,8 @@
 <template lang="pug">
 nav.dito-header(:aria-busy="isLoading")
   slot(name="prepend")
-  DitoTrail
+  //- The toggle's own spacing separates it from the first breadcrumb:
+  DitoTrail(:class="{ 'dito-trail--flush-start': !!$slots.prepend }")
     DitoSpinner(
       v-if="isLoading && spinner !== null"
       :size="spinner?.size"
@@ -76,11 +77,6 @@ export default {
 
     &:focus-visible {
       @include focus-ring;
-    }
-
-    // The button's own spacing separates it from the first breadcrumb:
-    + .dito-trail li:first-child span {
-      padding-left: 0;
     }
   }
 

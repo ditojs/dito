@@ -1,6 +1,11 @@
 <template lang="pug">
 //- Nesting is needed to make an arrow appear over the select item:
-.dito-select(:class="{ 'dito-select--placeholder': isShowingPlaceholder }")
+.dito-select(
+  :class=`{
+    'dito-select--placeholder': isShowingPlaceholder,
+    'dito-select--disabled': disabled
+  }`
+)
   .dito-select__inner
     DitoInputAffixes(
       position="prefix"
@@ -150,11 +155,11 @@ export default DitoTypeSelect
       position: absolute;
       bottom: $select-arrow-bottom;
       right: $select-arrow-right;
-
-      .dito-container--disabled & {
-        border-color: $color-disabled;
-      }
     }
+  }
+
+  &--disabled &__inner::before {
+    border-color: $color-disabled;
   }
 
   // Handle width fill separately due to required nesting of select:
