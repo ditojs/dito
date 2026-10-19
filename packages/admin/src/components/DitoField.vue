@@ -44,13 +44,7 @@ export default {
     )
     return {
       pane: layout.props,
-      entry: computed(() => {
-        const entry = layout.getEntry(props.name)
-        if (!entry) {
-          throw new Error(`Unknown component: '${props.name}'.`)
-        }
-        return entry
-      })
+      entry: computed(() => layout.getEntry(props.name))
     }
   }
 }

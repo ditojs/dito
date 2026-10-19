@@ -1902,9 +1902,10 @@ export type SectionSchema<
     compact?: boolean
     /**
      * A Vue component that lays out the section's components instead of its
-     * pane, placing them with {@link DitoField}. It receives the `schema` and
-     * `context` of the section, and the section's label shows above it. Not
-     * supported together with `tabs`, `collapsible` and `clipboard`.
+     * pane, placing them with {@link DitoField} and {@link DitoPane}. It
+     * receives the `schema` and `context` of the section, and the section's
+     * label shows above it. Not supported together with `tabs`, `collapsible`
+     * and `clipboard`.
      */
     component?: Resolvable<VueComponent>
     /**
@@ -3383,6 +3384,16 @@ export function defineType(descriptor: TypeDescriptor): TypeDescriptor
 export const DitoField: DefineComponent<{
   /** The key of the component in the section's `components`. */
   name: string
+}>
+
+/**
+ * Places the components `names` of the `components` of a layout section, see
+ * {@link SectionSchema.component}, in rows as the section's pane would render
+ * them, all of them without `names`.
+ */
+export const DitoPane: DefineComponent<{
+  /** The keys of the components in the section's `components`. */
+  names?: string[]
 }>
 
 export type HttpMethod =

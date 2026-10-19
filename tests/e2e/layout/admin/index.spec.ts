@@ -1,3 +1,4 @@
+import type { Locator } from '@playwright/test'
 import { test, expect } from '../fixtures.js'
 import { Widget } from '../models/Widget.js'
 import { DitoForm, DitoListView } from '../../../utils/pages.js'
@@ -206,5 +207,31 @@ test.describe('layout', () => {
     const listBox = (await links.boundingBox())!
     const tableBox = (await links.locator('.dito-table').first().boundingBox())!
     expect(tableBox.width).toBe(listBox.width)
+  })
+
+  test('aligns panes in layouts with the fields next to them', async ({
+    page,
+    url
+  }) => {
+    await page.goto(`${url}/admin/names`)
+    const getBox = async (locator: Locator) => (await locator.boundingBox())!
+    const getContainer = (label: string) =>
+      page
+        .locator('.dito-container')
+        .filter({ has: page.getByLabel(label, { exact: true }) })
+        .last()
+    const title = await getBox(getContainer('Title'))
+    const first = await getBox(getContainer('First'))
+    const last = await getBox(getContainer('Last'))
+    const row = await getBox(
+      page.locator('.dito-section .dito-pane:not(.dito-pane--layout)')
+    )
+    // The pane fills the rest of the row, with its components spaced like the
+    // fields next to it. Allow for subpixel rounding of widths in percent:
+    expect(first.x).toBeCloseTo(title.x + title.width, 1)
+    expect(first.y).toBeCloseTo(title.y, 1)
+    expect(last.x).toBeCloseTo(first.x + first.width, 1)
+    expect(last.y).toBeCloseTo(first.y, 1)
+    expect(last.x + last.width).toBeCloseTo(row.x + row.width, 1)
   })
 })

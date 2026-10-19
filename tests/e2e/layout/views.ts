@@ -1,5 +1,6 @@
 import type { Widget } from './models/Widget.js'
 import { createWidgetView } from '../../utils/views.js'
+import nameLayout from './components/name-layout.js'
 
 export const widgets = createWidgetView<Widget>(
   'Widget',
@@ -88,3 +89,20 @@ export const widgets = createWidgetView<Widget>(
     }
   }
 )
+
+export const names = {
+  type: 'view',
+  label: 'Names',
+  components: {
+    name: {
+      type: 'section',
+      label: 'Name',
+      component: nameLayout,
+      components: {
+        title: { type: 'text', label: 'Title', width: '1/3' },
+        first: { type: 'text', label: 'First', width: '1/2' },
+        last: { type: 'text', label: 'Last', width: '1/2' }
+      }
+    }
+  }
+} as const

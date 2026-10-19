@@ -796,7 +796,8 @@ With `component`, the section's label shows above the component, which
 receives the props `schema` and `context` of the section. It places the
 components with `DitoField` of `@ditojs/admin`, whose prop `name` is a key of
 `components`, and whose default slot is passed on to the custom component of
-`type: 'component'` fields. See
+`type: 'component'` fields, and groups of them in rows with `DitoPane`, whose
+prop `names` holds such keys, all of them by default. See
 [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields).
 
 In TypeScript, declare the keys of sections without `nested` as `never` in the
