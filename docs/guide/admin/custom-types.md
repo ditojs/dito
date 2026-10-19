@@ -94,6 +94,10 @@ readingTime: {
 }
 ```
 
+Such components still receive the field's event handlers. If they contain
+inputs of their own, they declare `emits: ['change']`, so the inputs' native
+`change` events don't fire the schema's `onInput()` and `onChange()`.
+
 ## A type of its own: `defineType()`
 
 `defineType()` registers a type under a name, with defaults and hooks that the
