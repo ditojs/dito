@@ -1,3 +1,3 @@
-### Behaviour changes
+### New
 
-- **admin:** Uncached `get` requests through a component's context end when the component unmounts, without settling, so the code that awaits them doesn't run on.
+- **admin:** `context.request()` takes `abortOnUnmount: true` to end requests when the component unmounts, e.g. of polling components.

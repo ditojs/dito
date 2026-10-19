@@ -465,9 +465,7 @@ context.request<T>(options): Promise<T>
 ```
 
 Sends an API request and resolves with the data of the response. Requests to
-the API check the session first. Uncached `get` requests end when the
-component unmounts: their promise doesn't settle then, so the code that awaits
-it doesn't run on.
+the API check the session first.
 
 #### Parameters
 
@@ -479,6 +477,7 @@ it doesn't run on.
 | `options.query` | `Record<string, any> \| [string, any][]` | The query parameters. |
 | `options.data` | `unknown` | The request body. |
 | `options.signal` | `AbortSignal` | Aborts the request. |
+| `options.abortOnUnmount` | `boolean` | Ends the request when the component unmounts: its promise doesn't settle then, so the code that awaits it doesn't run on. Not with `cache`, as other components share cached requests. |
 | `options.cache` | `'local' \| 'global'` | Caches the response: `'global'` for the session, until the user changes; `'local'` while the route of the form or view, or the dialog, is shown. |
 
 #### Return value

@@ -179,11 +179,24 @@ describe('services', () => {
       })
     })
 
-    it('ends the reads of components when they unmount', async () => {
+    it('keeps the requests of components running when they unmount', async () => {
+      const { request, resolve } = createPendingRequests()
+      const { context, data } = await mountJobProgress(request)
+      const read = context.request({ url: 'jobs/1' })
+      await flushPromises()
+      data.done = true
+      await flushPromises()
+      resolve({ progress: 50 })
+      expect(await read).toEqual({ progress: 50 })
+    })
+
+    it('ends requests with abortOnUnmount when components unmount', async () => {
       const { request } = createPendingRequests()
       const { context, data } = await mountJobProgress(request)
       const onSettle = vi.fn()
-      context.request({ url: 'jobs/1' }).then(onSettle, onSettle)
+      context
+        .request({ method: 'post', url: 'jobs', abortOnUnmount: true })
+        .then(onSettle, onSettle)
       await flushPromises()
       data.done = true
       await flushPromises()
@@ -193,37 +206,32 @@ describe('services', () => {
       expect(document.querySelector('.dito-notification')).toBeNull()
     })
 
-    it(`doesn't end writes or cached reads when components unmount`, async () => {
-      const { request, resolve } = createPendingRequests()
-      const { context, data } = await mountJobProgress(request)
-      const write = context.request({ method: 'post', url: 'jobs' })
-      const read = context.request({ url: 'jobs/1', cache: 'global' })
-      await flushPromises()
-      data.done = true
-      await flushPromises()
-      resolve({ id: 1 })
-      resolve({ progress: 50 })
-      expect(await write).toEqual({ id: 1 })
-      expect(await read).toEqual({ progress: 50 })
+    it('refuses to abort cached requests on unmount', async () => {
+      const { request } = createPendingRequests()
+      const { context } = await mountJobProgress(request)
+      expect(() =>
+        context.request({ url: 'jobs/1', cache: 'local', abortOnUnmount: true })
+      ).toThrow(
+        'Unable to abort cached requests on unmount, as other components ' +
+        'share them.'
+      )
+      expect(request).not.toHaveBeenCalled()
     })
 
-    it('aborts the reads of mounted components through their signal', async () => {
-      const { request, resolve } = createPendingRequests()
+    it('rejects requests aborted through their own signal', async () => {
+      const { request } = createPendingRequests()
       const { context } = await mountJobProgress(request)
       const controller = new AbortController()
       const aborted = context.request({
         url: 'jobs/1',
-        signal: controller.signal
+        signal: controller.signal,
+        abortOnUnmount: true
       })
-      const read = context.request({ url: 'jobs/2' })
       await flushPromises()
       controller.abort()
       await expect(aborted).rejects.toThrow(
         expect.objectContaining({ name: 'AbortError' })
       )
-      resolve()
-      resolve({ progress: 50 })
-      expect(await read).toEqual({ progress: 50 })
     })
   })
 

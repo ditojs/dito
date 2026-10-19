@@ -172,7 +172,8 @@ async function poll() {
   // The request ends when the component unmounts, and the code after it
   // doesn't run then:
   const { exportStatus, exportProgress } = await context.request({
-    url: context.getResourceUrl()
+    url: context.getResourceUrl(),
+    abortOnUnmount: true
   })
   context.mergeItem({ exportStatus, exportProgress })
   timeout = setTimeout(poll, 2000)

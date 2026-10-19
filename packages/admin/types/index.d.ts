@@ -2405,6 +2405,11 @@ export type SchemaContext<$Item = any> = {
       data?: unknown
       /** Abort signal to cancel the request. */
       signal?: AbortSignal
+      /**
+       * Ends the request when the component unmounts, without settling its
+       * promise. Not with `cache`, as other components share cached requests.
+       */
+      abortOnUnmount?: boolean
     } & (
       | { url: string; resource?: Resource }
       | { url?: string; resource: Resource }
