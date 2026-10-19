@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { h, toRaw } from 'vue'
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import {
@@ -13,6 +13,57 @@ import {
   isView,
   isForm
 } from '../test/mount.js'
+
+// A custom component that displays the progress of a job on the server, and
+// hands out its context to send the requests that poll it:
+const contexts = []
+const JobProgress = {
+  props: {
+    schema: { type: Object, required: true },
+    context: { type: Object, required: true }
+  },
+
+  mounted() {
+    contexts.push(this.context)
+  },
+
+  render: () => h('p')
+}
+
+// Returns a stub of `api.request()` whose requests are pending until
+// `resolve()` is called, or until their signal aborts, like `fetch()` does.
+function createPendingRequests() {
+  const resolves = []
+  const request = vi.fn(
+    ({ signal }) =>
+      new Promise((resolve, reject) => {
+        resolves.push(resolve)
+        signal?.addEventListener('abort', () => reject(signal.reason))
+      })
+  )
+  return { request, resolve: data => resolves.shift()({ data }) }
+}
+
+// Mounts `JobProgress`, which unmounts once the job is `done`, and returns the
+// context of the component and the reactive data:
+async function mountJobProgress(request) {
+  contexts.length = 0
+  const { data } = await mountSchema({
+    schema: {
+      components: {
+        done: { type: 'checkbox' },
+        progress: {
+          type: 'component',
+          component: JobProgress,
+          if: ({ item }) => !item.done
+        }
+      }
+    },
+    data: { done: false },
+    request
+  })
+  return { context: contexts.at(-1), data }
+}
 
 describe('services', () => {
   afterEach(() => {
@@ -126,6 +177,53 @@ describe('services', () => {
         type: 'NotFound',
         status: 404
       })
+    })
+
+    it('ends the reads of components when they unmount', async () => {
+      const { request } = createPendingRequests()
+      const { context, data } = await mountJobProgress(request)
+      const onSettle = vi.fn()
+      context.request({ url: 'jobs/1' }).then(onSettle, onSettle)
+      await flushPromises()
+      data.done = true
+      await flushPromises()
+      expect(request.mock.calls[0][0].signal.aborted).toBe(true)
+      // The promise doesn't settle, so there's no unhandled rejection either:
+      expect(onSettle).not.toHaveBeenCalled()
+      expect(document.querySelector('.dito-notification')).toBeNull()
+    })
+
+    it(`doesn't end writes or cached reads when components unmount`, async () => {
+      const { request, resolve } = createPendingRequests()
+      const { context, data } = await mountJobProgress(request)
+      const write = context.request({ method: 'post', url: 'jobs' })
+      const read = context.request({ url: 'jobs/1', cache: 'global' })
+      await flushPromises()
+      data.done = true
+      await flushPromises()
+      resolve({ id: 1 })
+      resolve({ progress: 50 })
+      expect(await write).toEqual({ id: 1 })
+      expect(await read).toEqual({ progress: 50 })
+    })
+
+    it('aborts the reads of mounted components through their signal', async () => {
+      const { request, resolve } = createPendingRequests()
+      const { context } = await mountJobProgress(request)
+      const controller = new AbortController()
+      const aborted = context.request({
+        url: 'jobs/1',
+        signal: controller.signal
+      })
+      const read = context.request({ url: 'jobs/2' })
+      await flushPromises()
+      controller.abort()
+      await expect(aborted).rejects.toThrow(
+        expect.objectContaining({ name: 'AbortError' })
+      )
+      resolve()
+      resolve({ progress: 50 })
+      expect(await read).toEqual({ progress: 50 })
     })
   })
 
