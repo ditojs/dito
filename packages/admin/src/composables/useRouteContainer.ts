@@ -23,11 +23,7 @@ import {
 import { useContainer, type ContainerOptions } from './useContainer.ts'
 import { useLeaveGuard } from './useLeaveGuard.ts'
 import type { RouteContext } from '../utils/RouteContext.ts'
-import type {
-  ResourceContext,
-  SubmitButton,
-  SubmitOptions
-} from '../utils/ResourceContext.ts'
+import type { ResourceContext } from '../utils/ResourceContext.ts'
 
 export interface RouteContainerOptions
   extends Omit<ContainerOptions, 'routeContext'> {
@@ -41,7 +37,6 @@ export interface RouteContainerOptions
   itemLabel?: () => string | null
   // Forms with a resource of their own:
   resourceContext?: ResourceContext | null
-  submit?: (button: SubmitButton, options?: SubmitOptions) => Promise<boolean>
 }
 
 export type RouteRecord = ReturnType<typeof useRouteRecord>
@@ -91,7 +86,6 @@ export function useRouteContainer({
   verbs,
   itemLabel = () => null,
   resourceContext = null,
-  submit,
   ...options
 }: RouteContainerOptions) {
   const adminContext = inject(adminContextKey)!
@@ -227,15 +221,6 @@ export function useRouteContainer({
         router,
         source.isViewComponent && !source.isList ? '/' : parent.path
       )
-    },
-
-    submit(button: SubmitButton, options?: SubmitOptions) {
-      if (!submit) {
-        throw new Error(
-          'Unable to submit the route: Views cannot be submitted.'
-        )
-      }
-      return submit(button, options)
     }
   })
   const container = useContainer({ ...options, routeContext })

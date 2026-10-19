@@ -18,6 +18,7 @@ import {
   getMatchingValidationErrors
 } from './schema/validation.js'
 import type { DataModel } from './DataModel.ts'
+import type { SubmitButton, SubmitOptions } from './ResourceContext.ts'
 import type { Services } from './services.ts'
 import type { SourceContext } from './SourceContext.ts'
 import type { Data, Schema } from './types.ts'
@@ -25,6 +26,11 @@ import type { Data, Schema } from './types.ts'
 type Match = string | string[] | RegExp | ((dataPath: string) => boolean)
 
 type Errors = Record<string, { message: string }[]>
+
+type Submit = (
+  button: SubmitButton,
+  options?: SubmitOptions
+) => Promise<boolean>
 
 // The data of a view, form, dialog or panel with its own data, and its state.
 export interface DataContext {
@@ -45,6 +51,8 @@ export interface DataContext {
   readonly closeDialog: ((value?: unknown) => void) | null
   // The responses of `request({ cache: 'local' })`:
   readonly loadCache: Record<string, Promise<unknown>> | null
+  // Forms and the containers in them, e.g. panels with their own data:
+  readonly submit: Submit | null
   validate(match?: Match): boolean
   verify(match?: Match): boolean
   clearErrors(match?: Match): void
@@ -65,6 +73,7 @@ export interface DataContextOptions {
   isCreating(): boolean
   closeDialog: ((value?: unknown) => void) | null
   loadCache: Record<string, Promise<unknown>> | null
+  submit: Submit | null
   resetItem(data: any): any
   mergeItem(data: any): any
   // Forms take over the errors of their item in the parent's data:
@@ -81,6 +90,7 @@ export function createDataContext({
   isCreating,
   closeDialog,
   loadCache,
+  submit,
   resetItem,
   mergeItem,
   copyErrors
@@ -221,6 +231,7 @@ export function createDataContext({
     sources: shallowReactive(new Set<SourceContext>()),
     closeDialog,
     loadCache,
+    submit,
 
     validate(match?: Match) {
       const errors = getValidationErrors(match)
