@@ -72,6 +72,8 @@ import {
   panelTabKey
 } from '../utils/keys.ts'
 
+const alignments = ['top', 'center', 'bottom']
+
 export default {
   props: {
     schema: { type: Object, required: true },
@@ -234,6 +236,7 @@ export default {
 
       containerClasses: computed(() => {
         const { class: classes } = props.schema
+        const align = getSchemaValue('align', { type: String })
         const prefix = 'dito-container'
         return {
           [`${prefix}--disabled`]: disabled.value,
@@ -242,6 +245,7 @@ export default {
           [`${prefix}--compact`]: props.compact,
           [`${prefix}--label-vertical`]: props.verticalLabels,
           [`${prefix}--omit-spacing`]: omitsSpacing(props.schema),
+          [`${prefix}--align-${align}`]: alignments.includes(align),
           ...(isString(classes) ? { [classes]: true } : classes)
         }
       }),
@@ -348,6 +352,18 @@ export default {
     @container dito-sidebar (width <= #{0.6 * $sidebar-max-width}) {
       flex-basis: calc(2 * var(--basis));
     }
+  }
+
+  &--align-top {
+    align-self: flex-start;
+  }
+
+  &--align-center {
+    align-self: center;
+  }
+
+  &--align-bottom {
+    align-self: flex-end;
   }
 
   &--single {

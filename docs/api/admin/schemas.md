@@ -120,6 +120,7 @@ that can be cleared.
 | `maxLength` | `SchemaValue<number>` | | The maximum length of text input. |
 | `autocomplete` | `SchemaValue<'on' \| 'off'>` | | The `autocomplete` attribute of text inputs. Fields without a credential token like `username`, `current-password`, `new-password` or `one-time-code` also tell password managers to ignore them. |
 | `width` | `SchemaValue<…>` | `1` (full); `'auto'` for buttons, `checkboxes`, `radio`, `switch` | See [Layout options](#layout-options). |
+| `align` | `SchemaValue<'top' \| 'center' \| 'bottom'>` | `'top'` | See [Layout options](#layout-options). |
 | `break` | `'before' \| 'after' \| 'both'` | | Forces a line break before or after the component. |
 | `class` | `string \| Record<string, boolean>` | | CSS classes added to the component's container. |
 | `onFocus` | `ItemEventHandler` | | Called when the input receives focus. |
@@ -160,6 +161,10 @@ exceed 100%.
 | `'fill'` | Fills the space left in the line. |
 | `'>50%'`, `'<50%'` | The width, growing (`>`) or shrinking (`<`) to fit the line. |
 | `'200px'` | A width in CSS units. |
+
+`align` places a component vertically in its line, when other components in
+it are taller: `'top'` (the default), `'center'` or `'bottom'`. The label moves
+with the component.
 
 ### Text and HTML
 
