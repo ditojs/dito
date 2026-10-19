@@ -181,6 +181,20 @@ class OpenIngredients extends ModelController<any> {
   override assets: any = true
 }
 
+class LimitedIngredients extends ModelController<any> {
+  override modelClass = Ingredient
+  override assets: any = {
+    'photo': {
+      storage: 'photos',
+      limits: { fileSize: 3 }
+    },
+    'gallery.*': {
+      storage: 'photos',
+      limits: { files: 0 }
+    }
+  }
+}
+
 describe('Controller setup', () => {
   let storagePath: string
   let app: ReturnType<typeof createTestApp>
@@ -190,6 +204,8 @@ describe('Controller setup', () => {
     storagePath = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-uploads-'))
     app = createTestApp({
       config: {
+        // Hide the messages of unexpected errors, unlike in development:
+        env: 'production',
         storages: {
           photos: {
             type: 'disk',
@@ -208,7 +224,8 @@ describe('Controller setup', () => {
         },
         Ingredients,
         AllIngredients,
-        OpenIngredients
+        OpenIngredients,
+        LimitedIngredients
       }
     })
     await createTestDatabase(app)
@@ -374,6 +391,24 @@ describe('Controller setup', () => {
     it('authorizes uploads before receiving the files', async () => {
       const response = await upload('/ingredients/upload/photo', 'photo')
       expect(response.status).toBe(401)
+    })
+
+    it('responds with the errors of upload limits', async () => {
+      const large = await upload('/limited-ingredients/upload/photo', 'photo')
+      expect(large.status).toBe(413)
+      expect(await large.json()).toEqual({
+        message: 'File too large',
+        code: 'LIMIT_FILE_SIZE'
+      })
+      const many = await upload(
+        '/limited-ingredients/upload/gallery/*',
+        'gallery/2'
+      )
+      expect(many.status).toBe(400)
+      expect(await many.json()).toEqual({
+        message: 'Too many files',
+        code: 'LIMIT_FILE_COUNT'
+      })
     })
   })
 })

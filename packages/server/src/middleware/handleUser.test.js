@@ -115,7 +115,9 @@ describe('handleUser()', { timeout: 30_000 }, () => {
       knex: createTestKnex(),
       log: { silent: true },
       logger: { level: 'silent' },
-      server: { host: '127.0.0.1', port: 0 }
+      server: { host: '127.0.0.1', port: 0 },
+      // Respond with the messages of configuration errors:
+      env: 'development'
     },
     models: { Reader, KeyedReader, Shelf },
     controllers: { Readers }

@@ -3,6 +3,7 @@ import type { ModelProperties } from '@ditojs/server'
 import bcrypt from 'bcryptjs'
 import {
   Controller,
+  ResponseError,
   SessionModel,
   UserModel,
   UsersController
@@ -46,7 +47,9 @@ class Member extends UserModel {
   static override hooks: any = {
     'before:login'(member: Member) {
       if (member.username === 'locked') {
-        throw new Error('Account is locked')
+        throw new ResponseError({ message: 'Account is locked', status: 403 })
+      } else if (member.username === 'unreachable') {
+        throw new Error('Lock service at locks.internal timed out')
       }
       loginEvents.push(`before login ${member.username}`)
     },
@@ -257,6 +260,8 @@ class Passwords extends Controller {
 describe('UsersController', () => {
   const app = createTestApp({
     config: {
+      // Hide the messages of unexpected errors, unlike in development:
+      env: 'production',
       app: {
         normalizePaths: true,
         helmet: false,
@@ -454,7 +459,7 @@ describe('UsersController', () => {
     })
   })
 
-  it('rejects logins that fail without a status with 401', async () => {
+  it('rejects logins that hooks reject with response errors', async () => {
     const locked = await Member.query().insert({
       username: 'locked',
       password: 'secret'
@@ -465,7 +470,7 @@ describe('UsersController', () => {
         method: 'POST',
         body: { username: 'locked', password: 'secret' }
       })
-      expect(login.status).toBe(401)
+      expect(login.status).toBe(403)
       expect(login.data).toMatchObject({
         success: false,
         user: null,
@@ -473,6 +478,31 @@ describe('UsersController', () => {
       })
     } finally {
       await Member.query().deleteById(locked.id)
+    }
+  })
+
+  it('hides the messages of other errors in logins and emits them', async () => {
+    const unreachable = await Member.query().insert({
+      username: 'unreachable',
+      password: 'secret'
+    } as any)
+    const errors: Error[] = []
+    const onError = (error: Error) => errors.push(error)
+    app.on('error', onError)
+    try {
+      const request = createClient(url)
+      const login = await request('/members/login', {
+        method: 'POST',
+        body: { username: 'unreachable', password: 'secret' }
+      })
+      expect(login.status).toBe(500)
+      expect(login.data).toEqual({ message: 'An error has occurred.' })
+      expect(errors.map(error => error.message)).toEqual([
+        'Lock service at locks.internal timed out'
+      ])
+    } finally {
+      app.off('error', onError)
+      await Member.query().deleteById(unreachable.id)
     }
   })
 

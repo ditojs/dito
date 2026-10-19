@@ -4242,6 +4242,8 @@ export class ResponseError extends Error {
           status?: number
           /** The error message. */
           message?: string
+          /** Whether the message is meant for the client. */
+          expose?: boolean
           /**
            * An optional code to be used to distinguish different error
            * instances, stored in `data.code` like any other additional data.
@@ -4256,6 +4258,11 @@ export class ResponseError extends Error {
   )
 
   status: number
+  /**
+   * Whether the message and data are meant for the client. With `false`, the
+   * client receives a generic message, unless `config.env` is `'development'`.
+   */
+  expose?: boolean
   /** Additional error data, e.g. its `code`, sent along with the message. */
   data?: Record<string, unknown>
   toJSON(): Record<string, unknown>

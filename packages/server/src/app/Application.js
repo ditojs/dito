@@ -46,12 +46,7 @@ import {
   subtractDuration
 } from '../utils/duration.js'
 import { resolveFileUrl } from '../utils/asset.js'
-import {
-  ResponseError,
-  ValidationError,
-  DatabaseError,
-  AssetError
-} from '../errors/index.js'
+import { ValidationError, DatabaseError, AssetError } from '../errors/index.js'
 import {
   attachLogger,
   createTransaction,
@@ -670,7 +665,9 @@ export class Application extends Koa {
     }
     // This needs to be positioned after the request logger to log the correct
     // response status.
-    this.use(handleError())
+    this.use(
+      handleError({ exposeMessages: this.config.env === 'development' })
+    )
     this.use(extendContext())
     if (app.helmet !== false) {
       this.use(helmet(getOptions(app.helmet)))
@@ -834,13 +831,10 @@ export class Application extends Koa {
   }
 
   logError(error, ctx) {
-    if (!error.expose && !this.silent) {
+    if (!this.silent) {
       try {
         const logger = ctx?.logger || this.logger
-        const level =
-          error instanceof ResponseError && error.status < 500
-            ? 'info'
-            : 'error'
+        const level = error.status < 500 ? 'info' : 'error'
         logger[level](this.formatError(error))
       } catch (e) {
         console.error('Could not log error', e)

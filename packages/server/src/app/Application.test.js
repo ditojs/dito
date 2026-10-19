@@ -690,11 +690,17 @@ describe('Application', () => {
       const app = createApp()
       const logger = { info: vi.fn(), error: vi.fn() }
       app.logError(new ResponseError('Not here', { status: 404 }), { logger })
+      app.logError(Object.assign(new Error('Bad'), { status: 400 }), { logger })
       app.logError(new ResponseError('Broken', { status: 500 }), { logger })
       app.logError(new Error('Burnt'), { logger })
-      expect(logger.info).toHaveBeenCalledTimes(1)
-      expect(logger.error).toHaveBeenCalledTimes(2)
-      expect(logger.info.mock.calls[0][0].message).toBe('Not here')
+      expect(logger.info.mock.calls.map(([error]) => error.message)).toEqual([
+        'Not here',
+        'Bad'
+      ])
+      expect(logger.error.mock.calls.map(([error]) => error.message)).toEqual([
+        'Broken',
+        'Burnt'
+      ])
     })
 
     it('logs errors with the app logger without a context', () => {
@@ -706,13 +712,19 @@ describe('Application', () => {
       )
     })
 
-    it('does not log exposed errors', () => {
+    it('logs exposed errors at levels that depend on their status', () => {
       const app = createApp()
       const logger = { info: vi.fn(), error: vi.fn() }
-      app.logError(Object.assign(new Error('Exposed'), { expose: true }), {
-        logger
-      })
-      expect(logger.error).not.toHaveBeenCalled()
+      app.logError(
+        Object.assign(new Error('Not here'), { status: 404, expose: true }),
+        { logger }
+      )
+      app.logError(
+        new ResponseError({ message: 'Broken', status: 500, expose: true }),
+        { logger }
+      )
+      expect(logger.info.mock.calls[0][0].message).toBe('Not here')
+      expect(logger.error.mock.calls[0][0].message).toBe('Broken')
     })
 
     it('reports errors that cannot be logged to the console', () => {
@@ -1079,12 +1091,39 @@ describe('Application', () => {
         })
         const crashed = await fetch(`${url}/kitchen/crash`)
         expect(crashed.status).toBe(500)
-        expect(await crashed.json()).toEqual({ message: 'Burnt' })
+        expect(await crashed.json()).toEqual({
+          message: 'An error has occurred.'
+        })
       })
       expect(errors).toEqual([
         ['Out of salt', '/kitchen/fail'],
         ['Burnt', '/kitchen/crash']
       ])
+    })
+
+    it('responds with the message of invalid JSON bodies', async () => {
+      const app = createKitchenApp()
+      await withServer(app, async url => {
+        const response = await fetch(`${url}/kitchen/meal`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: '{bad'
+        })
+        expect(response.status).toBe(400)
+        expect((await response.json()).message).toMatch(/JSON/)
+      })
+    })
+
+    it('responds with the messages of all errors in development', async () => {
+      const app = createApp({
+        config: { app: { normalizePaths: true }, env: 'development' },
+        controllers: { Kitchen }
+      })
+      await withServer(app, async url => {
+        const crashed = await fetch(`${url}/kitchen/crash`)
+        expect(crashed.status).toBe(500)
+        expect(await crashed.json()).toEqual({ message: 'Burnt' })
+      })
     })
 
     it('responds without a JSON body when JSON is not accepted', async () => {

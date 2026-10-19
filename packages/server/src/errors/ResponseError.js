@@ -16,6 +16,7 @@ export class ResponseError extends Error {
     const {
       message,
       status,
+      expose,
       stack,
       // Wrapped errors become the cause, unless one is provided explicitly,
       // e.g. the native error in `DatabaseError`.
@@ -28,6 +29,10 @@ export class ResponseError extends Error {
     }
     super(message, cause ? { cause } : {})
     this.status = status
+    // Koa's flag for errors whose message is meant for the client, or not:
+    if (expose != null) {
+      this.expose = expose
+    }
     if (Object.keys(data).length > 0) {
       this.data = data
     }

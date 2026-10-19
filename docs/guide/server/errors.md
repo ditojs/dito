@@ -63,17 +63,23 @@ export class SoldOutError extends ResponseError {
 
 ### Plain errors
 
-Other errors thrown in actions, e.g. a plain `Error` or an error of a library,
-are wrapped in a `ResponseError` with status 500, unless they have a `status`
-of their own. Their message is sent to the client as well:
+Other errors, e.g. a plain `Error` or an error of a library, respond with
+status 500, unless they have a `status` of their own. Their message may contain
+internals such as hosts, paths or SQL, so it only goes to the log and the app's
+`'error'` events, and the client receives a generic message:
 
 ```js
 throw new Error('Stock service timed out')
-// Responds 500 with { "message": "Stock service timed out" }
+// Responds 500 with { "message": "An error has occurred." }
 ```
 
-So throw a `ResponseError` for messages meant for clients, and keep internals
-such as hosts, credentials or SQL out of the messages of plain errors.
+So throw a `ResponseError` for messages meant for clients. Errors with a
+status below 500 describe the request and send their message too, e.g. those
+of invalid JSON bodies. The `expose` flag decides otherwise: errors with
+`expose: true`, e.g. from Koa's `ctx.throw()`, send their message, and errors
+with `expose: false` send the generic message, as `DatabaseError`s with status
+500 do. With `config.env` set to `'development'`, all errors send their
+message.
 
 ## Error classes
 
@@ -149,9 +155,8 @@ The SQL query isn't sent, unless `log.errors.sql` is set in the
 ## Logging
 
 The application emits every error of a request as an `'error'` event, and logs
-it: `ResponseError`s with a status below 500 at level `info`, others at
-`error`. `log.errors` in the [configuration](configuration.md#keys) controls
-this.
+it: errors with a status below 500 at level `info`, others at `error`.
+`log.errors` in the [configuration](configuration.md#keys) controls this.
 
 To report errors elsewhere, listen to the event, or override
 `logError()` in a subclass of the application, see
