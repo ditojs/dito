@@ -1,6 +1,9 @@
 // The code dialogs fit the TOTP key:
 export const codeWidth = '25em'
 
+// Dialogs with short fields are at least this wide, so their labels fit:
+export const minDialogWidth = '30em'
+
 // Password managers need the username of password dialogs to know whose
 // password it is, so dialogs about the logged-in user pass it on hidden:
 export const usernameComponent = {
@@ -78,7 +81,7 @@ export function createCodeDialog() {
       }
     },
     // Show password managers filling in the code:
-    settings: { minDuration: 1000, width: codeWidth }
+    settings: { minDuration: 1000, minWidth: minDialogWidth }
   }
 }
 
