@@ -67,9 +67,16 @@ abstract class RouteNode {
 
   getParams(routeParams: Record<string, any>): Params {
     const params: Params = {}
+    const addParam = (name: string) => {
+      if (routeParams[name] != null) {
+        params[name] = routeParams[name]
+      }
+    }
     for (let node: RouteNode | null = this; node; node = node.parent) {
-      if (node instanceof FormNode && routeParams[node.param] != null) {
-        params[node.param] = routeParams[node.param]
+      if (node instanceof FormNode) {
+        addParam(node.param)
+      } else if (node instanceof ViewNode) {
+        node.params.forEach(addParam)
       }
     }
     return params
@@ -94,9 +101,16 @@ export class MenuNode extends RouteNode {
     return this.items
   }
 
-  // Menus link to their first item:
+  get hasMenuItem(): boolean {
+    return this.items.some(item => item.hasMenuItem)
+  }
+
+  // Menus link to their first item in the menu:
   get linkRouteName(): symbol {
-    return this.items[0].linkRouteName
+    return (
+      this.items.find(item => item.hasMenuItem)?.linkRouteName ??
+      this.routeName
+    )
   }
 }
 
@@ -250,6 +264,10 @@ abstract class ContainerNode extends RouteNode {
 
 export class ViewNode extends ContainerNode {
   readonly routeName: symbol
+  // The parameters in the path of the view, e.g. `id` in `products/:id`:
+  readonly params: string[] = []
+  // Views with required parameters can't be linked to from the menu:
+  readonly hasMenuItem: boolean = true
 
   constructor(
     readonly schema: Schema,
@@ -259,6 +277,16 @@ export class ViewNode extends ContainerNode {
     super(parent)
     parent?.items.push(this)
     this.routeName = Symbol(name)
+    // Parameters are optional with the `?` and `*` modifiers of vue-router:
+    const matches = (schema.path ?? '').matchAll(
+      /:(\w+)(?:\([^)]*\))?([?*+]?)/g
+    )
+    for (const [, name, modifier] of matches) {
+      this.params.push(name)
+      if (!['?', '*'].includes(modifier)) {
+        this.hasMenuItem = false
+      }
+    }
   }
 
   get linkRouteName(): symbol {

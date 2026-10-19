@@ -1,6 +1,6 @@
 <template lang="pug">
 DitoPaneRows(
-  v-if="dataContext.hasData && entries.length > 0"
+  v-if="dataContext.hasData && (entries.length > 0 || $slots.default)"
   :id="tabPanelId"
   :role="tab ? 'tabpanel' : null"
   :aria-labelledby="tabId"

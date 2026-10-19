@@ -1174,6 +1174,20 @@ const views = {
 A view with a single `component` acts on that component's list: the list's
 forms are routed under the view's path, e.g. `/admin/books/1`.
 
+### page
+
+`PageSchema`. A view whose content is a Vue component, see
+[Pages](../../guide/admin/views.md#pages).
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `type` | `'page'` | | Required. |
+| `name` | `string` | the key in `views` | The name of the page. |
+| `label` | `SchemaValue<TextOrHtml>` | the labelized name | The label in the menu and the trail. |
+| `path` | `string` | the normalized name | The URL path of the page, with route params, e.g. `'products/:id'`. Pages with required params have no menu item. |
+| `component` | `Resolvable<Component>` | | Required. The Vue component, e.g. `() => import('./Page.vue')`. It receives the `schema` and `context` props. |
+| `if`, `breadcrumb` | | | See [RouteSchemaBase](#routeschemabase). `if` also blocks direct URL access. |
+
 ### menu
 
 `MenuSchema`. Groups views under one entry of the navigation menu.
