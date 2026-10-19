@@ -128,10 +128,10 @@
       tr
         td(:colspan="4")
           .dito-upload__footer
-            progress.dito-progress(
+            DitoProgress.dito-upload__progress(
               v-if="isUploadActive"
               :value="uploadProgress"
-              max="100"
+              :max="100"
             )
             .dito-buttons.dito-buttons--round
               DitoButton(
@@ -168,7 +168,7 @@ import { fieldProps, useField } from '../composables/useField.ts'
 import { useSortable } from '../composables/useSortable.ts'
 import DitoDragHandle from '../components/DitoDragHandle.vue'
 import DitoClipboard from '../components/DitoClipboard.vue'
-import { DitoButton } from '@ditojs/ui/src'
+import { DitoButton, DitoProgress } from '@ditojs/ui/src'
 import { formatFileSize } from '../utils/units.js'
 import { getUploadLimits, isAcceptedFile } from '../utils/upload.ts'
 import { appendDataPath } from '../utils/data.js'
@@ -186,7 +186,13 @@ import { fileDropTargetsKey } from '../utils/keys.ts'
 
 // @vue/component
 const DitoTypeUpload = {
-  components: { VueUpload, DitoButton, DitoDragHandle, DitoClipboard },
+  components: {
+    VueUpload,
+    DitoButton,
+    DitoProgress,
+    DitoDragHandle,
+    DitoClipboard
+  },
   props: fieldProps,
 
   setup(props) {
@@ -684,11 +690,11 @@ function getStoredFiles(value) {
     display: flex;
     justify-content: flex-end;
     align-items: center;
+  }
 
-    .dito-progress {
-      flex: auto;
-      margin-right: $form-spacing;
-    }
+  &__progress {
+    flex: auto;
+    margin-right: $form-spacing;
   }
 }
 </style>
