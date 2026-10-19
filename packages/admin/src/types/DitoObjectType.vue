@@ -20,12 +20,6 @@
       :deletable="deletable"
       @delete="deleteItem(objectData)"
     )
-      //- The layout of the forms of the items, e.g. their fields:
-      template(
-        v-if="$slots.default"
-        #default
-      )
-        slot
   //- NOTE: Inlined objects only get the create button here, the other edit
   //- buttons are in `DitoSchemaInlined`.
   DitoEditButtons(

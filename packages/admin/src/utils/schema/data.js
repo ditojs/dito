@@ -494,43 +494,35 @@ export function isDataPathExcluded(schema, data, dataPath, {
 }
 
 // Convert the stored values of `data` in place to the values that the
-// components edit. Values are converted before the items in them are walked.
-// Entries that `isDeserialized()` reports are skipped, the others are passed to
-// `markDeserialized()`, also the ones without a value yet:
+// components edit. Values are converted before the items in them are walked:
 export function deserializeData(schema, data, {
   services = null,
   dataPath = null,
   rootData = data,
-  shouldWalk,
-  isDeserialized = () => false,
-  markDeserialized = () => {}
+  shouldWalk
 } = {}) {
-  const before = entry => {
-    const { schema, data, name, dataPath, itemDataPath } = entry
-    if (!isDeserialized(entry)) {
-      if (name in data) {
-        const createContext = value =>
-          new SchemaContext(services, {
-            schema,
-            value,
-            name,
-            nested: true,
-            data,
-            dataPath,
-            itemDataPath,
-            rootData
-          })
-        const value = convertValue(
+  const before = ({ schema, data, name, dataPath, itemDataPath }) => {
+    if (name in data) {
+      const createContext = value =>
+        new SchemaContext(services, {
           schema,
-          'deserializeValue',
-          data[name],
-          createContext
-        )
-        if (value !== data[name]) {
-          data[name] = value
-        }
+          value,
+          name,
+          nested: true,
+          data,
+          dataPath,
+          itemDataPath,
+          rootData
+        })
+      const value = convertValue(
+        schema,
+        'deserializeValue',
+        data[name],
+        createContext
+      )
+      if (value !== data[name]) {
+        data[name] = value
       }
-      markDeserialized(entry)
     }
   }
   walkSchemaData(schema, data, {

@@ -122,12 +122,6 @@
                 @delete="deleteItem(item, index)"
                 @move="delta => moveItem(index, delta)"
               )
-                //- The layout of the forms of the items, e.g. their fields:
-                template(
-                  v-if="$slots.default"
-                  #default
-                )
-                  slot
           td.dito-table__buttons(
             v-if="hasCellEditButtons"
           )

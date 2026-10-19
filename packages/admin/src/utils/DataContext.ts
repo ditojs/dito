@@ -20,7 +20,7 @@ import {
 import type { DataModel } from './DataModel.ts'
 import type { Services } from './services.ts'
 import type { SourceContext } from './SourceContext.ts'
-import type { Data, Schema, WalkedEntry } from './types.ts'
+import type { Data, Schema } from './types.ts'
 
 type Match = string | string[] | RegExp | ((dataPath: string) => boolean)
 
@@ -86,20 +86,14 @@ export function createDataContext({
   copyErrors
 }: DataContextOptions): DataContext {
   // Validate the data, not the mounted components, to include collapsed
-  // schemas and closed nested forms. Of registered fields, only the mounted
-  // ones validate:
+  // schemas and closed nested forms:
   const getValidationErrors = (match?: Match): Errors | null => {
     const { schema, data, dataPath, model } = context
-    const { fieldRegistry } = model
     const errors = data
       ? getDataValidationErrors(schema, data, {
           dataPath,
           services,
-          rootData: model.rootData,
-          ...(fieldRegistry && {
-            shouldValidate: (entry: WalkedEntry) =>
-              fieldRegistry.isMounted(entry.dataPath!)
-          })
+          rootData: model.rootData
         })
       : null
     return match ? getMatchingValidationErrors(errors, match) : errors

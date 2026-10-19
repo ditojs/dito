@@ -7,14 +7,12 @@ import {
 import { wrapCustomComponent } from './types/DitoComponentType.vue'
 
 export { DitoAdmin }
-// Layout sections place components with `DitoSchemaField` and `DitoPane`:
+// Layouts place their components with `DitoSchemaField` and `DitoPane`:
 export {
   default as DitoSchemaField,
   DitoField
 } from './components/DitoSchemaField.vue'
 export { default as DitoPane } from './components/DitoPane.vue'
-// Template forms declare their components with the fields of their types:
-export * from './fields.js'
 export { useDitoContext } from './composables/useDitoContext.ts'
 export default DitoAdmin
 

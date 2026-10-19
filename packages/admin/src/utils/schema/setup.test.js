@@ -684,24 +684,24 @@ describe('setupForms()', () => {
     const schema = {
       type: 'list',
       name: 'books',
-      form: { type: 'form', component: async () => ({ name: 'BookEditor' }) }
+      form: {
+        type: 'form',
+        component: async () => ({ name: 'BookLayout' }),
+        components: {}
+      }
     }
     await setupForms(createApi(), schema)
-    expect(schema.form.component).toEqual({ name: 'BookEditor' })
+    expect(schema.form.component).toEqual({ name: 'BookLayout' })
   })
 
-  it('rejects template forms in `forms`', async () => {
+  it('rejects forms with a component and no components', async () => {
     const schema = {
       type: 'list',
       name: 'books',
-      forms: {
-        novel: { type: 'form', component: { name: 'NovelEditor' } },
-        comic: createBookForm()
-      }
+      form: { type: 'form', component: { name: 'BookEditor' } }
     }
     await expect(setupForms(createApi(), schema)).rejects.toThrow(
-      `Unsupported 'component' without 'components' in the 'forms' of ` +
-      `'books': Use 'form'.`
+      `Invalid form schema: 'component' needs 'components'.`
     )
   })
 

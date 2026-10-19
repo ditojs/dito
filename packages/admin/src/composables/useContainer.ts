@@ -11,7 +11,6 @@ import { createDataContext, type DataContext } from '../utils/DataContext.ts'
 import { DataModel } from '../utils/DataModel.ts'
 import {
   dataContextKey,
-  fieldRegistryKey,
   resourceContextKey,
   routeContextKey,
   sourceContextKey,
@@ -48,8 +47,6 @@ export interface ContainerOptions {
   routeContext?: RouteContext
   // Views provide the source of their main component, forms none:
   sourceContext?: MaybeRef<SourceContext | null>
-  // Containers whose components are the fields that register in them:
-  hasFieldRegistry?: boolean
 }
 
 // Set up the data of a view, form, dialog or panel with its own data: its model
@@ -71,8 +68,7 @@ export function useContainer({
   copyErrors,
   closeDialog,
   routeContext,
-  sourceContext,
-  hasFieldRegistry = false
+  sourceContext
 }: ContainerOptions) {
   const parentDataContext = inject(dataContextKey, null)
   const hasSourceContext = sourceContext !== undefined
@@ -107,18 +103,16 @@ export function useContainer({
       sourceSchema,
       parent: parentModel,
       ...(canSave && { canSave }),
-      services,
-      hasFieldRegistry
+      services
     })
   )
-  const { fieldRegistry } = model
   // The model's watchers aren't the component's, see `DataModel`:
   onBeforeUnmount(() => model.stop())
 
   dataContext = createDataContext({
     getModel: () => (isEditingParentItem() ? parentModel()! : model),
     services,
-    getSchema: fieldRegistry ? () => fieldRegistry.schema : schema,
+    getSchema: schema,
     getData: () => (isEditingParentItem() ? getParentItem() : model.data),
     getDataPath: dataPath,
     getComponentPath: componentPath,
@@ -153,9 +147,6 @@ export function useContainer({
   }
   if (hasSourceContext) {
     provide(sourceContextKey, sourceContext)
-  }
-  if (fieldRegistry) {
-    provide(fieldRegistryKey, fieldRegistry)
   }
   return { dataContext, model, services }
 }

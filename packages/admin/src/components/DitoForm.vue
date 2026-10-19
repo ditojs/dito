@@ -31,8 +31,7 @@
       :scrollable="!isEmbeddedRoute"
       generateLabels
     )
-      //- The component of forms that lay out their components, or declare
-      //- them as the fields in its template:
+      //- The component of forms that lay out their components:
       template(
         v-if="schema.component"
         #default
@@ -64,11 +63,7 @@ import { useResource } from '../composables/useResource.ts'
 import { useForm } from '../composables/useForm.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { adminContextKey } from '../utils/keys.ts'
-import {
-  isListSource,
-  isObjectSource,
-  isTemplateForm
-} from '../utils/schema/structure.js'
+import { isListSource, isObjectSource } from '../utils/schema/structure.js'
 import { getItemFormSchema, hasSubmitButton } from '../utils/schema/lookup.js'
 import {
   getComponentPathByDataPath,
@@ -180,7 +175,7 @@ export default {
       navigateWithin
     } = useRouteContainer({
       route,
-      schema: () => formSchema.value,
+      schema: () => schema.value,
       sourceSchema: () => sourceSchema.value,
       dataPath: () => dataPath.value,
       // Forms of items in the data of their parent read the parent's root
@@ -218,14 +213,13 @@ export default {
       // The components of the form don't see the source of its parent, e.g.
       // of a tree that renders the forms of its items:
       sourceContext: null,
-      submit: (button, options) => submit(button, options),
-      hasFieldRegistry: isTemplateForm(sourceSchema.value.form)
+      submit: (button, options) => submit(button, options)
     })
 
-    // The data, and the form that the type of the item or of the item to
-    // create determines, with the components of its fields, if registered:
+    // The data, and the schema that the type of the item or of the item to
+    // create determines:
     const data = computed(() => dataContext.data)
-    const formSchema = computed(() =>
+    const schema = computed(() =>
       getItemFormSchema(
         sourceSchema.value,
         data.value ||
@@ -233,7 +227,6 @@ export default {
         context
       )
     )
-    const schema = computed(() => dataContext.schema)
     const close = () => routeContext.close()
     const form = useForm({
       requests,

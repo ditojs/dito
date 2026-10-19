@@ -1,4 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
+import { useDitoContext } from '@ditojs/admin'
 import type {
   SchemaContext,
   SchemaValue,
@@ -242,5 +243,13 @@ describe('SchemaByType', () => {
     expectTypeOf<SchemaByType<Entry>['panel']>().toEqualTypeOf<
       PanelSchema<Entry>
     >()
+  })
+})
+
+describe('useDitoContext()', () => {
+  it('types the context with the item', () => {
+    const context = useDitoContext<Entry>()
+    expectTypeOf(context).toEqualTypeOf<DitoContext<Entry>>()
+    expectTypeOf(context.item.title).toBeString()
   })
 })

@@ -11,6 +11,7 @@ import {
   isView,
   isForm
 } from '../test/mount.js'
+import { DitoSchemaField, useDitoContext } from '../index.js'
 import DitoButtonType from '../types/DitoButtonType.vue'
 
 const maliciousName = '<img src="x" onerror="alert(1)">'
@@ -270,6 +271,47 @@ describe('DitoForm', () => {
       expect(form.dataContext.data.title).toBe('Opening')
       expect(itemLabels.length).toBeGreaterThan(0)
       expect(itemLabels.every(itemLabel => itemLabel === null)).toBe(true)
+    })
+  })
+
+  describe('layout component', () => {
+    const mountLayoutForm = component =>
+      mountForm({
+        schema: {
+          label: 'Book',
+          component,
+          components: { title: { type: 'text' } }
+        },
+        data: { title: 'Emma', notes: 'Not shown' },
+        request: ({ data }) => ({ data: { id: 1, ...data } })
+      })
+
+    it('lays out the components of the form', async () => {
+      const { wrapper, submit } = await mountLayoutForm({
+        props: ['schema', 'context'],
+        render: () =>
+          h('div', { class: 'layout' }, h(DitoSchemaField, { name: 'title' }))
+      })
+      const input = wrapper.find('.layout input[name="title"]')
+      expect(input.element.value).toBe('Emma')
+      await enterValue(input, 'Persuasion')
+      expect(await submit()).toEqual({ id: 1, title: 'Persuasion' })
+    })
+
+    it('reads the context of the form with useDitoContext()', async () => {
+      let context = null
+      const { wrapper } = await mountLayoutForm({
+        props: ['schema', 'context'],
+        setup() {
+          context = useDitoContext()
+          return () => h(DitoSchemaField, { name: 'title' })
+        }
+      })
+      expect(context.item.title).toBe('Emma')
+      expect(context.isDirty).toBe(false)
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      expect(context.item.title).toBe('Persuasion')
+      expect(context.isDirty).toBe(true)
     })
   })
 

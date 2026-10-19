@@ -16,7 +16,6 @@ import {
   iterateSchemaComponents,
   iterateNestedSchemaComponents,
   isForm,
-  isTemplateForm,
   isView,
   isTab,
   isPanel,
@@ -192,11 +191,6 @@ export function setupSchemaComponents(api, schema) {
 
 export async function setupSchemaComponent(api, schema, name) {
   applySchemaDefaults(api, schema, name)
-  await setupSchemaComponentAfterDefaults(api, schema, name)
-}
-
-// For schemas that apply their defaults themselves, e.g. registered fields:
-export async function setupSchemaComponentAfterDefaults(api, schema, name) {
   await setupNestedSchemas(api, schema)
   await Promise.all([
     mapConcurrently(
@@ -276,14 +270,6 @@ export async function setupForms(api, schema) {
   const { form, forms, components } = schema
   if (forms) {
     schema.forms = await resolveSchemas(forms, form => setupForm(api, form))
-    // Forms by type share the data model, whose schema is declared:
-    if (Object.values(schema.forms).some(isTemplateForm)) {
-      throw new Error(
-        `Unsupported 'component' without 'components' in the 'forms' of '${
-          schema.name
-        }': Use 'form'.`
-      )
-    }
   } else if (form) {
     schema.form = await setupForm(api, form)
   } else if (isObject(components)) {
@@ -296,6 +282,9 @@ export async function setupForm(api, schema) {
   schema = await resolveSchema(schema, true)
   if (!isForm(schema)) {
     throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
+  }
+  if (schema.component && !schema.components) {
+    throw new Error(`Invalid form schema: 'component' needs 'components'.`)
   }
   applySchemaDefaults(api, schema)
   await Promise.all([
