@@ -1,7 +1,6 @@
 import type { InjectionKey, MaybeRef, Ref } from 'vue'
 import type { AdminContext } from './AdminContext.ts'
 import type { DataContext } from './DataContext.ts'
-import type { FieldRegistry } from './FieldRegistry.ts'
 import type { ResourceContext } from './ResourceContext.ts'
 import type { RouteContext } from './RouteContext.ts'
 import type { SourceContext } from './SourceContext.ts'
@@ -38,8 +37,6 @@ type Key<T> = InjectionKey<T>
 export const adminContextKey: Key<AdminContext> = Symbol('adminContext')
 export const dataContextKey: Key<DataContext> = Symbol('dataContext')
 export const routeContextKey: Key<RouteContext> = Symbol('routeContext')
-// Containers whose components are the fields that register in them:
-export const fieldRegistryKey: Key<FieldRegistry> = Symbol('fieldRegistry')
 // Views provide the source of their main component, which changes:
 export const sourceContextKey: Key<MaybeRef<SourceContext | null>> =
   Symbol(

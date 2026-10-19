@@ -197,7 +197,5 @@ receive the context too, see [Events](./events.md).
   [Dirty state](./dirty-state.md), [Nested forms](./nested-forms.md) and
   [Dialogs](./dialogs.md).
 - [Custom types](./custom-types.md): your own components and type defaults.
-- [Template forms](./template-forms.md): forms whose fields are declared in
-  the template of a Vue component.
 
 Upgrading from Dito.js 3.x: see [Upgrading to 4.x](../../upgrading-to-4.x.md).

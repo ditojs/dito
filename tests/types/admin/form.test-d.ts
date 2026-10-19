@@ -1,4 +1,6 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
+import { defineComponent, h } from 'vue'
+import { DitoSchemaField } from '@ditojs/admin'
 import type { FormSchema, ResolvableForm } from '@ditojs/admin'
 import type { Entry, Parent } from './fixtures.ts'
 
@@ -135,5 +137,25 @@ describe('FormSchema assignability', () => {
         }
       }
     }
+  })
+
+  it('accepts forms with a layout component and components', () => {
+    const Layout = defineComponent({
+      setup: () => () => h(DitoSchemaField, { name: 'title' })
+    })
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      component: Layout,
+      components: {
+        title: { type: 'text' }
+      }
+    })
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      component: () => Promise.resolve(Layout),
+      components: {
+        title: { type: 'text' }
+      }
+    })
   })
 })

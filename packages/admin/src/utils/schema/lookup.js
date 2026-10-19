@@ -10,7 +10,6 @@ import { reactive, computed, toRaw } from 'vue'
 import { getTypeDescriptor } from './types.ts'
 import {
   findNestedSchemaComponent,
-  hasNestedData,
   isListSource,
   isSchema
 } from './structure.js'
@@ -205,29 +204,6 @@ function getPanelEntry(schema, dataPath, componentPath, tab) {
         isTabSelected: tab?.isTabSelected ?? null
       }
     : null
-}
-
-// The component `name` of a schema in the data at `dataPath`, as panes place
-// it. The value of an item adapter keeps the item's data path in inlined items,
-// as their list holds its errors:
-export function getComponentEntry(schema, name, {
-  dataPath,
-  itemAdapter,
-  store
-}) {
-  // The schema may be used elsewhere too:
-  schema = { ...schema, name }
-  const nested = hasNestedData(schema)
-  const nestedDataPath = appendDataPath(dataPath, name)
-  return {
-    schema,
-    dataPath: nested && name !== itemAdapter?.name ? nestedDataPath : dataPath,
-    nestedDataPath,
-    // The data path of the data, also of wrapped values:
-    itemDataPath: dataPath,
-    nested,
-    store
-  }
 }
 
 export function getPanelEntries(

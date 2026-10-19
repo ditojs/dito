@@ -79,8 +79,7 @@ function getValidator(name) {
   return validator
 }
 
-// Return errors like the server, `{ [dataPath]: [{ message }] }`. Components
-// that `shouldValidate()` rejects aren't walked, nor the ones they hold:
+// Return errors like the server, `{ [dataPath]: [{ message }] }`:
 /**
  * @param {Record<string, any>} schema
  * @param {Record<string, any>} data
@@ -89,8 +88,7 @@ function getValidator(name) {
 export function getDataValidationErrors(schema, data, {
   dataPath = '',
   services = null,
-  rootData = data,
-  shouldValidate = () => true
+  rootData = data
 } = {}) {
   let errors = null
 
@@ -98,10 +96,8 @@ export function getDataValidationErrors(schema, data, {
   const createContext = entry =>
     SchemaContext.createForSchema(services, { ...entry, rootData })
 
-  const shouldWalk = entry => (
-    shouldValidate(entry) &&
+  const shouldWalk = entry =>
     shouldRenderSchema(entry.schema, createContext(entry))
-  )
 
   const before = entry => {
     const { schema, data, name, dataPath } = entry
