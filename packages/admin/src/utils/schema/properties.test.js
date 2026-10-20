@@ -4,10 +4,10 @@ import SchemaContext from '../../SchemaContext.js'
 import { setupForm } from './setup.js'
 import { getFormProperties } from './properties.js'
 
-async function getProperties(fields, schema = {}) {
+async function getProperties(fields, schema = {}, services = null) {
   const api = { defaults: {}, normalizePath: hyphenate }
   const form = await setupForm(api, { type: 'form', fields, ...schema })
-  const context = SchemaContext.createForSchema(null, {
+  const context = SchemaContext.createForSchema(services, {
     schema: form,
     data: {},
     dataPath: ''
@@ -344,6 +344,257 @@ describe('getFormProperties()', () => {
     })
   })
 
+  describe('sections and panels', () => {
+    const fields = { street: { type: 'text' } }
+    const properties = { street: { type: 'string', default: '' } }
+
+    it('describes the fields of unnested sections in the form', async () => {
+      expect(
+        await getProperties({
+          address: {
+            type: 'section',
+            fields,
+            tabs: {
+              city: { type: 'tab', fields: { city: { type: 'text' } } }
+            }
+          }
+        })
+      ).toEqual({ ...properties, city: { type: 'string', default: '' } })
+    })
+
+    it('describes nested sections as objects', async () => {
+      expect(
+        await getProperties({
+          address: { type: 'section', nested: true, fields },
+          billing: { type: 'section', nested: true, required: true, fields }
+        })
+      ).toEqual({
+        address: { type: 'object', properties, default: {} },
+        billing: { type: 'object', properties, required: true, default: {} }
+      })
+    })
+
+    it('describes the panels of fields, except with their own data', async () => {
+      expect(
+        await getProperties({
+          name: {
+            type: 'text',
+            panels: {
+              info: { type: 'panel', fields },
+              address: { type: 'panel', nested: true, fields },
+              filters: { type: 'panel', data: () => ({}), fields }
+            }
+          }
+        })
+      ).toEqual({
+        name: { type: 'string', default: '' },
+        ...properties,
+        address: { type: 'object', properties, default: {} }
+      })
+    })
+
+    it('leaves out the fields of `fields()` callbacks', async () => {
+      expect(
+        await getProperties({
+          address: { type: 'section', fields: () => fields },
+          billing: { type: 'section', nested: true, fields: () => fields }
+        })
+      ).toEqual({
+        billing: { type: 'object', default: {} }
+      })
+    })
+  })
+
+  describe('source types', () => {
+    const form = {
+      type: 'form',
+      fields: { title: { type: 'text', required: true } }
+    }
+    const item = {
+      type: 'object',
+      properties: {
+        title: { type: 'string', required: true, default: '' }
+      }
+    }
+
+    it('describes objects by the properties of their form', async () => {
+      expect(
+        await getProperties({
+          publisher: { type: 'object', form },
+          author: { type: 'object', fields: form.fields, required: true }
+        })
+      ).toEqual({
+        publisher: { ...item, nullable: true },
+        author: { ...item, required: true }
+      })
+    })
+
+    it('describes lists as arrays of their items', async () => {
+      expect(
+        await getProperties({
+          chapters: { type: 'list', form },
+          notes: { type: 'list', form, required: true, maxItems: 5 },
+          tags: { type: 'list', form, minItems: 2 }
+        })
+      ).toEqual({
+        chapters: { type: 'array', items: item, default: [] },
+        notes: {
+          type: 'array',
+          items: item,
+          required: true,
+          minItems: 1,
+          maxItems: 5,
+          default: []
+        },
+        tags: { type: 'array', items: item, minItems: 2, default: [] }
+      })
+    })
+
+    it('describes the items of the forms of views', async () => {
+      const books = { type: 'view', field: { type: 'list', form } }
+      expect(
+        await getProperties(
+          { favorites: { type: 'list', view: 'books' } },
+          {},
+          { flattenedViews: { books } }
+        )
+      ).toEqual({
+        favorites: { type: 'array', items: item, default: [] }
+      })
+    })
+
+    it('describes wrapped primitives as the values of their field', async () => {
+      expect(
+        await getProperties({
+          prices: {
+            type: 'list',
+            wrapPrimitives: 'price',
+            form: {
+              type: 'form',
+              fields: { price: { type: 'number', minimum: 0 } }
+            }
+          }
+        })
+      ).toEqual({
+        prices: {
+          type: 'array',
+          items: { type: 'number', minimum: 0, nullable: true },
+          default: []
+        }
+      })
+    })
+
+    it('describes the items of several forms by their `type`', async () => {
+      expect(
+        await getProperties({
+          blocks: {
+            type: 'list',
+            forms: {
+              text: form,
+              spacer: {
+                type: 'form',
+                fields: { height: { type: 'integer' } }
+              }
+            }
+          }
+        })
+      ).toEqual({
+        blocks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            discriminator: { propertyName: 'type' },
+            oneOf: [
+              {
+                properties: { ...item.properties, type: { const: 'text' } }
+              },
+              {
+                properties: {
+                  height: { type: 'integer', nullable: true },
+                  type: { const: 'spacer' }
+                }
+              }
+            ]
+          },
+          default: []
+        }
+      })
+    })
+
+    it('describes the children of trees in their items', async () => {
+      const childForm = {
+        type: 'form',
+        fields: { name: { type: 'text' } }
+      }
+      expect(
+        await getProperties({
+          parts: {
+            type: 'tree-list',
+            form,
+            children: {
+              name: 'sections',
+              form: childForm,
+              children: { name: 'paragraphs', form: childForm }
+            }
+          }
+        })
+      ).toEqual({
+        parts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              ...item.properties,
+              sections: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', default: '' },
+                    paragraphs: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: { name: { type: 'string', default: '' } }
+                      },
+                      default: []
+                    }
+                  }
+                },
+                default: []
+              }
+            }
+          },
+          default: []
+        }
+      })
+    })
+
+    it('leaves out the items of `fields()` callbacks', async () => {
+      expect(
+        await getProperties({
+          chapters: {
+            type: 'list',
+            form: { type: 'form', fields: () => ({}) }
+          },
+          publisher: { type: 'object', fields: () => ({}) }
+        })
+      ).toEqual({
+        chapters: { type: 'array', default: [] },
+        publisher: { type: 'object', nullable: true }
+      })
+    })
+
+    it('skips sources with a resource', async () => {
+      expect(
+        await getProperties({
+          reviews: { type: 'list', resource: 'reviews', form },
+          publisher: { type: 'object', resource: 'publishers', form }
+        })
+      ).toEqual({})
+    })
+  })
+
   it('leaves out the data keywords with callbacks', async () => {
     expect(
       await getProperties({
@@ -377,13 +628,12 @@ describe('getFormProperties()', () => {
     })
   })
 
-  it('skips fields without a description of their data yet', async () => {
+  it('skips fields without data', async () => {
     expect(
       await getProperties({
         title: { type: 'text' },
         heading: { type: 'label' },
-        save: { type: 'button' },
-        tags: { type: 'list', form: { type: 'form', fields: {} } }
+        save: { type: 'button' }
       })
     ).toEqual({
       title: { type: 'string', default: '' }

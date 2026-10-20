@@ -14,6 +14,7 @@ import {
   getMultipleValue,
   getSchemaValue
 } from '../utils/schema/data.js'
+import { getItemProperty } from '../utils/schema/properties.js'
 import {
   findOptionForValue,
   getOptionKey,
@@ -31,7 +32,11 @@ export const nestableTraits = {
   ),
   // Unlike for `object` types, `null` doesn't mean there's no object:
   treatsNullAsMissing: ({ schema }: Context) => !!schema.nested,
-  defaultNested: false
+  defaultNested: false,
+  // Only nested ones have a property, the others share the data of their form:
+  getProperty: (schema: Schema, context: Context, field: Schema) => (
+    getItemProperty(field, context) ?? { type: 'object' }
+  )
 }
 
 export const sourceTraits = {
@@ -40,6 +45,18 @@ export const sourceTraits = {
   treatsNullAsMissing: ({ schema }: Context) => isListSource(schema),
   // Exclude all sources that have their own resource handling the data.
   defaultExclude: ({ schema }: Context) => !!schema.resource,
+
+  // The items of sources with their own resource aren't part of the data:
+  getProperty(schema: Schema, context: Context, field: Schema) {
+    if (schema.resource) {
+      return null
+    } else {
+      const item = getItemProperty(field, context)
+      return isListSource(schema)
+        ? { type: 'array', ...(item && { items: item }) }
+        : (item ?? { type: 'object' })
+    }
+  },
 
   // Wrap primitive values in objects under the key `wrapPrimitives`:
   getItemAdapter({ wrapPrimitives: name }) {
