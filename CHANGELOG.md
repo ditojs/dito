@@ -3,6 +3,40 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 5.2.0 (2026-10-20)
+
+### Behaviour changes
+
+- **admin:** The elements of tree items, tree lists and objects are renamed after their blocks, so styles and tests that select them need to follow: `dito-tree-header`, `dito-tree-branch`, `dito-tree-branch__content`, `dito-tree-leaf`, `dito-tree-label` and `dito-tree-info` become `dito-tree-item__header`, `__branch`, `__branch-content`, `__leaf`, `__label` and `__info`, `dito-tree-panel` and `dito-tree-form-container` become `dito-tree-list__panel` and `__form-container`, and `dito-object-content` becomes `dito-object__content`.
+- **admin:** A form with `component` but no `fields` throws an error at setup. Before, `component` on forms was ignored.
+- **admin:** Setup renames `components` to `fields` and `component` with a schema on views to `field`, so code that reads `components` or `component` from schemas after setup needs to read `fields` or `field`.
+- **admin:** The components of the types register globally as `Dito<Name>Type` instead of `DitoType<Name>`, e.g. `DitoTextType`, without aliases for the old names. Apps that place them by their global name need the new names.
+- **ui:** `dito-pagination-total` becomes `dito-pagination__total`.
+
+### Deprecations
+
+- **admin:** `DitoField` is renamed to `DitoSchemaField`, which places the fields of the schema in layouts. `DitoField` stays as an alias until 6.0.
+- **admin:** `components` is deprecated in favour of `fields`, and `component` with a schema on views in favour of `field`. Both keep working and log a deprecation warning. `component` on other schemas stays the Vue component of forms, sections, `type: 'component'` fields and pages.
+
+### New
+
+- **admin:** Type descriptors can set `alignsBelowLabels: false` for types whose components start at the top of rows with labels, like sections, lists and objects.
+- **admin:** Forms with `component` and `fields` lay out their fields with `DitoSchemaField` and `DitoPane`, as sections do.
+- **admin:** `useDitoContext()` returns the context of the form, or of the list item, that a component is in.
+- **admin:** Pages: a view of `type: 'page'` displays a Vue `component`, e.g. `component: () => import('./CachePurgePage.vue')`, under its `path`, whose route params the component reads with vue-router's `useRoute()`. Pages with required params have no menu item. The component reads the page's context with `useDitoContext()`.
+- **admin:** `fields` is the new name of the schema option `components` of views, forms, tabs, sections, panels, inlined lists and objects and custom filters, and of the options of `showDialog()`, e.g. `{ type: 'form', fields: { title: { type: 'text' } } }`. A view's single field is given in `field`, e.g. `{ type: 'view', field: { type: 'list', … } }`. `api.defaults` may use `fields` as well.
+- **admin:** `context.submit()` outside of buttons, e.g. in form events, layout components, `useDitoContext()` and field callbacks, submits the form like a click on its submit button, with its `resource`, `onSuccess()` and `onError()`, instead of throwing. The form stays open unless `submit({ closeForm: true })` closes it. Forms without a submit button throw `Unable to submit: The form has no submit button.`
+- **admin:** `useDitoForm()` sets up a form in any Vue component, e.g. of a page, with the options of forms and `resource` and `id`: it loads the item of `id`, reloads when `id` changes, creates an item when `id` is `null` and saves it after, and returns the form's context. `DitoSchemaForm` renders it with its buttons, and its default slot lays out the fields with `DitoSchemaField` and `DitoPane`. In pages, leaving the route asks to discard unsaved changes, which the trail and the browser's unload warning show. In dialogs, the form's submit button closes the dialog with the saved item.
+
+### Fixes
+
+- **admin:** Display-only `component` fields no longer pass their item's value to their component, which rendered it as an attribute.
+- **admin:** Views of any type with required params in their `path` no longer get a menu item, whose link couldn't resolve, and menus whose items all have required params are hidden.
+
+### Internal
+
+- **admin:** `DitoSchemaInlined` and `DitoSchema` take `bordered`, which displays the header above the content in a border, as in labelled sections.
+
 ## 5.1.0 (2026-10-19)
 
 ### Behaviour changes
