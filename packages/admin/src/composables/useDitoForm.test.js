@@ -72,7 +72,11 @@ async function settleForm() {
   await flushPromises()
 }
 
-async function mountProductPage({ path = '/products/7', views = {} } = {}) {
+async function mountProductPage({
+  path = '/products/7',
+  views = {},
+  api = {}
+} = {}) {
   const products = {
     7: { id: 7, name: 'Chair', price: 120, notes: null },
     9: { id: 9, name: 'Lamp', price: 40, notes: null }
@@ -105,7 +109,8 @@ async function mountProductPage({ path = '/products/7', views = {} } = {}) {
       },
       ...views
     },
-    request
+    request,
+    api
   })
   const notify = vi.spyOn(admin.context, 'notify')
   await admin.navigate(path)
@@ -214,6 +219,15 @@ describe('useDitoForm()', () => {
       { method: 'post', url: '/products', data: { name: 'Table' } },
       { method: 'patch', url: '/products/8', data: { price: 300 } }
     ])
+  })
+
+  it('creates items with the defaults of `api.defaults`', async () => {
+    const { page } = await mountProductPage({
+      path: '/products',
+      api: { defaults: { number: { default: 1 } } }
+    })
+    expect(form.item).toMatchObject({ name: null, price: 1 })
+    expect(page.find('input[name="price"]').element.value).toBe('1')
   })
 
   it('asks before leaving unsaved changes, also for other ids', async () => {
