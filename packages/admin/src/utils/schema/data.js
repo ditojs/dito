@@ -315,6 +315,19 @@ export function getValueOrDefault(schema, data, name, context) {
   return shouldUseDefault ? getDefaultValue(schema, context) : data[name]
 }
 
+// The value as the component edits it, after `formatValue()`. The components
+// compare values by identity, e.g. with options:
+export function getEditedValue(schema, value, context) {
+  const { formatValue } = schema
+  return formatValue ? toModelData(formatValue(getContext(context))) : value
+}
+
+// The value to store for the edited value, after `parseValue()`:
+export function parseEditedValue(schema, value, context) {
+  const { parseValue } = schema
+  return parseValue ? parseValue(getContext(context)) : value
+}
+
 // Copy what identifies the item, for its serialized values to be added to:
 function cloneItem(sourceSchema, item) {
   const copy = {}
