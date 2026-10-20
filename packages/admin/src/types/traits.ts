@@ -1,4 +1,5 @@
 import { isArray, isObject, isString } from '@ditojs/utils'
+import { tinycolor } from 'vue-color'
 import type { Context, TypeDescriptor } from '../utils/schema/types.ts'
 import type { Schema } from '../utils/types.ts'
 import {
@@ -181,6 +182,24 @@ export function getNumberSettings(
   }
 }
 
+// Colors are stored in the color format of `format`:
+export const colorTraits = {
+  parseValue(context: Context) {
+    const { schema, value } = context
+    return value
+      ? toTinyColorFormat(
+          tinycolor(value),
+          getSchemaValue('format', {
+            type: String,
+            schema,
+            context,
+            default: 'hex'
+          })
+        )
+      : value
+  }
+} satisfies Partial<TypeDescriptor>
+
 export const textTraits = {
   serializeValue(context: Context) {
     let { schema, value } = context
@@ -202,4 +221,30 @@ function copyItems(value: any) {
     : isObject(value)
       ? { ...value }
       : value
+}
+
+// tinycolor only has the string equivalent of this:
+function toTinyColorFormat(color: any, format: string) {
+  switch (format) {
+    case 'rgb':
+      return color.toRgb()
+    case 'prgb':
+      return color.toPercentageRgb()
+    case 'hsl':
+      return color.toHsl()
+    case 'hsv':
+      return color.toHsv()
+    case 'hex3':
+      return `#${color.toHex(true)}`
+    case 'hex4':
+      return `#${color.toHex8(true)}`
+    case 'hex8':
+      return `#${color.toHex8()}`
+    case 'hex':
+    case 'hex6':
+    default:
+      return color.getAlpha() < 1
+        ? `#${color.toHex8()}`
+        : `#${color.toHex()}`
+  }
 }
