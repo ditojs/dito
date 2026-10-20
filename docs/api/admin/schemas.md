@@ -638,7 +638,10 @@ Events: `onFocus`, `onBlur`, `onInput` and `onChange`, see
 | `view` | `string` | | The name of the view whose form edits the options. |
 
 Values whose option is missing, e.g. after the options changed, are kept:
-selects show them as unavailable, multiselects mark their tags.
+selects show them as unavailable, multiselects mark their tags. Options given
+as an array, in `options` or `options.data`, also reject such values when
+validating, with "must be one of the options", unless `taggable` or `search`
+add values. `rules: { enum: false }` turns this off.
 
 #### The options object
 

@@ -1,4 +1,8 @@
-import { mountSchema, mountAdminWithGenresView } from '../test/mount.js'
+import {
+  mountSchema,
+  mountForm,
+  mountAdminWithGenresView
+} from '../test/mount.js'
 
 const genres = [
   { value: 'fiction', label: 'Fiction' },
@@ -240,5 +244,16 @@ describe('DitoCheckboxesType', () => {
       }
     })
     expect(findField('genres').attributes('aria-label')).toBe('Genres & forms')
+  })
+
+  it('rejects values missing from static options on submit', async () => {
+    const { getErrors, submit } = await mountForm({
+      schema: { fields: { genres: { type: 'checkboxes', options: genres } } },
+      data: { genres: ['poetry', 'opera'] }
+    })
+    expect(await submit()).toBe(null)
+    expect(getErrors('genres')).toEqual([
+      'The Genres field must be one of the options.'
+    ])
   })
 })

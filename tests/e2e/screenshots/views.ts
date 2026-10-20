@@ -54,7 +54,10 @@ export const projects = createWidgetView<Project>(
               label: 'Tags',
               multiple: true,
               searchable: true,
-              options: ['Design', 'Backend', 'Frontend', 'Research']
+              // Loaded options, which keep the tags that aren't among them:
+              options: {
+                data: () => ['Design', 'Backend', 'Frontend', 'Research']
+              }
             },
             priority: {
               type: 'radio',

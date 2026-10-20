@@ -20,6 +20,7 @@ describe('validators', () => {
       'decimals',
       'domain',
       'email',
+      'enum',
       'hostname',
       'integer',
       'maxItems',

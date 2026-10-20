@@ -1,6 +1,7 @@
 export * from './_creditcard.js'
 export * from './_decimals.js'
 export * from './_email.js'
+export * from './_enum.js'
 export * from './_hostname.js'
 export * from './_domain.js'
 export * from './_integer.js'
