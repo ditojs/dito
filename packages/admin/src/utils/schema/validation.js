@@ -9,12 +9,9 @@ import {
   parseDataPath
 } from '@ditojs/utils'
 import { getTypeDescriptor } from './types.ts'
-import {
-  getEditedValue,
-  shouldRenderSchema,
-  walkSchemaData
-} from './data.js'
+import { getEditedValue, shouldRenderSchema } from './data.js'
 import { getDataKeywords } from './properties.js'
+import { walkData } from './walk.js'
 
 export function getValidations(context) {
   const { schema } = context
@@ -98,28 +95,37 @@ export function getDataValidationErrors(schema, data, {
   const createContext = entry =>
     SchemaContext.createForSchema(services, { ...entry, rootData })
 
+  // NOTE: Like rendering, this skips nested sections and panels whose fields
+  // are all hidden, together with their own validations:
   const shouldWalk = entry =>
     shouldRenderSchema(entry.schema, createContext(entry))
 
-  const before = entry => {
-    const { schema, data, name, dataPath } = entry
-    const context = createContext(entry)
-    // Validate the value as displayed, like the components do:
-    const value = getEditedValue(schema, data[name], context)
-    const validations = getValidations(context)
-    const valueErrors = getValueValidationErrors(value, validations)
-    if (valueErrors.length > 0) {
-      errors ||= {}
-      errors[dataPath] = valueErrors
+  // Several fields of the same value collect their errors, each message once:
+  const visit = entries => {
+    for (const entry of entries) {
+      const { schema, data, name, dataPath } = entry
+      const context = createContext(entry)
+      // Validate the value as displayed, like the components do:
+      const value = getEditedValue(schema, data[name], context)
+      const validations = getValidations(context)
+      const valueErrors = getValueValidationErrors(value, validations)
+      if (valueErrors.length > 0) {
+        errors ||= {}
+        const currentErrors = errors[dataPath] ?? []
+        const isNewError = ({ message }) =>
+          !currentErrors.some(error => error.message === message)
+        errors[dataPath] = [...currentErrors, ...valueErrors.filter(isNewError)]
+      }
     }
   }
 
-  walkSchemaData(schema, data, {
+  walkData(schema, data, {
     dataPath,
+    services,
+    rootData,
     shouldWalk,
     shouldSkipSourcesWithResource: true,
-    before,
-    options: { services, rootData }
+    visit
   })
   return errors
 }
