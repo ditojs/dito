@@ -27,7 +27,7 @@ export function useValue(
 
     set(value) {
       const { schema, data, dataPath } = props
-      value = parseEditedValue(schema, value, () => createContext({ value }))
+      value = parseEditedValue(schema, value, value => createContext({ value }))
       parsedValue.value = value
       services.dataContext!.model.set(
         { data, name: schema.name, dataPath },

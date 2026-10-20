@@ -323,9 +323,8 @@ export function getEditedValue(schema, value, context) {
 }
 
 // The value to store for the edited value, after `parseValue()`:
-export function parseEditedValue(schema, value, context) {
-  const { parseValue } = schema
-  return parseValue ? parseValue(getContext(context)) : value
+export function parseEditedValue(schema, value, createContext) {
+  return convertValue(schema, 'parseValue', value, createContext)
 }
 
 // Copy what identifies the item, for its serialized values to be added to:

@@ -23,12 +23,7 @@ export function useNumber(
       },
 
       set(inputValue) {
-        value.value =
-          inputValue !== ''
-            ? isInteger.value
-              ? Number(inputValue)
-              : parseFloat(`${inputValue}`)
-            : null
+        value.value = inputValue
       }
     })
   }

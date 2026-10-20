@@ -62,7 +62,7 @@ export function getEditedValue(
 export function parseEditedValue(
   schema: Schema,
   value: any,
-  context: Context | (() => Context)
+  createContext: (value: any) => Context
 ): any
 export function serializeData(
   schema: Schema | null,
