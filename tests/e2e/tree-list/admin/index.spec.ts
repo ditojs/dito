@@ -22,12 +22,12 @@ async function openLibrary(
 
 function getTreeHeader(page: Page, label: string) {
   return page
-    .locator('.dito-tree-header')
-    .filter({ has: page.locator('.dito-tree-label', { hasText: label }) })
+    .locator('.dito-tree-item__header')
+    .filter({ has: page.locator('.dito-tree-item__label', { hasText: label }) })
 }
 
 function getTreeLabels(page: Page) {
-  return page.locator('.dito-tree-header:visible .dito-tree-label')
+  return page.locator('.dito-tree-item__header:visible .dito-tree-item__label')
 }
 
 // The buttons of tree items only show while hovering them.
@@ -57,7 +57,7 @@ test.describe('tree list', () => {
     ])
     const branch = page.getByRole('button', { name: 'Fiction' })
     const box = (await branch.boundingBox())!
-    const text = (await branch.locator('.dito-tree-label').boundingBox())!
+    const text = (await branch.locator('.dito-tree-item__label').boundingBox())!
     // Click the empty space of the row, well after the label:
     const x = box.width - 2
     expect(box.x + x).toBeGreaterThan(text.x + text.width + 100)
@@ -184,7 +184,7 @@ test.describe('tree list', () => {
       sections: [{ name: 'History' }]
     })
     const catalog = page.locator('.dito-tree-list').filter({
-      has: page.locator('.dito-tree-label', { hasText: 'History' })
+      has: page.locator('.dito-tree-item__label', { hasText: 'History' })
     })
     await expect(catalog.locator('.dito-properties')).toContainText('Main')
     await expect(getTreeHeader(page, 'History')).toBeVisible()

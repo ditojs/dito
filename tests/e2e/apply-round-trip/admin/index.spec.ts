@@ -122,8 +122,10 @@ test.describe('applying nested forms', () => {
       volumes: [{ title: 'Early', parts: [{ title: 'Childhood' }] }]
     })
     const header = page
-      .locator('.dito-tree-header')
-      .filter({ has: page.locator('.dito-tree-label', { hasText: 'Early' }) })
+      .locator('.dito-tree-item__header')
+      .filter({
+        has: page.locator('.dito-tree-item__label', { hasText: 'Early' })
+      })
     await header.hover()
     await header.getByRole('link', { name: 'Edit' }).click()
     await getForm(page)

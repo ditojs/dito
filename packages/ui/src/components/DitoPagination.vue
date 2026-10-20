@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-template-shadow -->
 <template lang="pug">
 nav.dito-pagination(aria-label="Pagination")
-  .dito-pagination-total(
+  .dito-pagination__total(
     v-if="showTotal"
   )
     template(
@@ -177,7 +177,7 @@ export default {
 .dito-pagination {
   display: flex;
 
-  .dito-pagination-total {
+  &__total {
     @include ellipsis;
 
     margin: 0 0.5em;

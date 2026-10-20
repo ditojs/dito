@@ -6,7 +6,7 @@
     :scopes="scopes"
     :context="context"
   )
-  .dito-tree-panel
+  .dito-tree-list__panel
     //- Objects that are `null` have no tree, as tree items can't create them.
     DitoTreeItem(
       v-if="treeData"
@@ -19,7 +19,7 @@
       :aria-label="labelText || labelize(schema.name)"
       @change-children="changeChildren"
     )
-    .dito-tree-form-container(
+    .dito-tree-list__form-container(
       v-if="isEditingItem"
     )
       DitoRouterView(:routeLevel="routeContext.level + 1")
@@ -131,9 +131,11 @@ export default DitoTreeListType
 @import '../styles/_imports';
 
 .dito-tree-list {
+  $self: &;
+
   @extend %field;
 
-  .dito-tree-panel {
+  &__panel {
     display: flex;
     justify-content: space-between;
 
@@ -141,7 +143,7 @@ export default DitoTreeListType
       flex: 1 1 25%;
     }
 
-    > .dito-tree-form-container {
+    > #{$self}__form-container {
       flex: 0 1 75%;
       align-self: stretch;
       background: $content-color-background;

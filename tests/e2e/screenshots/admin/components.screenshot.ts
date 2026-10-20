@@ -326,7 +326,7 @@ test.describe('component screenshots', () => {
   test('active tree item focus', async ({ page, url }) => {
     await openProject(page, url, 'Planning')
     await page
-      .locator('.dito-tree-header')
+      .locator('.dito-tree-item__header')
       .filter({ hasText: 'Research' })
       .getByRole('link', { name: 'Edit' })
       .click()

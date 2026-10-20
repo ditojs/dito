@@ -52,23 +52,23 @@ function findPageButton(wrapper, page) {
 describe('DitoPagination totals', () => {
   it('shows the range of the current page and the total', () => {
     const wrapper = mountPagination({ total: 25, page: 3, pageSize: 10 })
-    expect(wrapper.find('.dito-pagination-total').text()).toBe('21 – 25 / 25')
+    expect(wrapper.find('.dito-pagination__total').text()).toBe('21 – 25 / 25')
   })
 
   it('shows the full range of pages before the last one', () => {
     const wrapper = mountPagination({ total: 95, page: 2, pageSize: 20 })
-    expect(wrapper.find('.dito-pagination-total').text()).toBe('21 – 40 / 95')
+    expect(wrapper.find('.dito-pagination__total').text()).toBe('21 – 40 / 95')
   })
 
   it('shows an empty total without items', () => {
     const wrapper = mountPagination({ total: 0 })
-    expect(wrapper.find('.dito-pagination-total').text()).toBe('')
+    expect(wrapper.find('.dito-pagination__total').text()).toBe('')
     expect(wrapper.findAll('button')).toHaveLength(0)
   })
 
   it('hides the total with `showTotal: false`', () => {
     const wrapper = mountPagination({ total: 25, showTotal: false })
-    expect(wrapper.find('.dito-pagination-total').exists()).toBe(false)
+    expect(wrapper.find('.dito-pagination__total').exists()).toBe(false)
   })
 
   it('renders no buttons for a single page', () => {
@@ -154,7 +154,7 @@ describe('DitoPagination navigation', () => {
     const wrapper = mountPagination({ total: 30, page: 1 })
     await findPageButton(wrapper, 3).trigger('click')
     expect(wrapper.emitted('update:page')).toEqual([[3]])
-    expect(wrapper.find('.dito-pagination-total').text()).toBe('21 – 30 / 30')
+    expect(wrapper.find('.dito-pagination__total').text()).toBe('21 – 30 / 30')
   })
 
   it('steps with the previous and next buttons', async () => {
@@ -197,14 +197,16 @@ describe('DitoPagination navigation', () => {
     const wrapper = mountPagination({ total: 100, page: 1 })
     await wrapper.setProps({ page: 5 })
     expect(wrapper.find('.dito-button--active').text()).toBe('5')
-    expect(wrapper.find('.dito-pagination-total').text()).toBe('41 – 50 / 100')
+    expect(wrapper.find('.dito-pagination__total').text()).toBe('41 – 50 / 100')
   })
 
   it('moves to the last page when a larger page size removes the current', async () => {
     const wrapper = mountPagination({ total: 100, page: 8, pageSize: 10 })
     await wrapper.setProps({ pageSize: 25 })
     expect(wrapper.emitted('update:page')).toEqual([[4]])
-    expect(wrapper.find('.dito-pagination-total').text()).toBe('76 – 100 / 100')
+    expect(wrapper.find('.dito-pagination__total').text()).toBe(
+      '76 – 100 / 100'
+    )
   })
 
   it('keeps the current page when it still exists after resizing', async () => {

@@ -10,10 +10,10 @@
   }`
   :style="level > 0 && { '--level': level }"
 )
-  .dito-tree-header(
+  .dito-tree-item__header(
     v-if="label"
   )
-    .dito-tree-branch(
+    .dito-tree-item__branch(
       v-if="numEntries"
       role="button"
       tabindex="0"
@@ -23,19 +23,19 @@
       @keydown.enter.space.prevent="toggle"
     )
       //- The chevron and the text, which the focus ring encloses:
-      .dito-tree-branch__content
+      .dito-tree-item__branch-content
         .dito-chevron(:class="{ 'dito-chevron--open': opened }")
-        DitoLabel.dito-tree-label(
+        DitoLabel.dito-tree-item__label(
           :label="label"
           :context="context"
         )
-        .dito-tree-info(
+        .dito-tree-item__info(
           v-if="details"
         ) {{ details }}
-    .dito-tree-leaf(
+    .dito-tree-item__leaf(
       v-else
     )
-      DitoLabel.dito-tree-label(
+      DitoLabel.dito-tree-item__label(
         :label="label"
         :context="context"
       )
@@ -333,13 +333,13 @@ export default {
   padding: 0 $input-padding-hor;
   margin: 0 (-$input-padding-hor);
 
-  > .dito-tree-header {
+  > #{$self}__header {
     // Extend header into item padding so active background reaches the edge:
     margin: 0 (-$input-padding-hor);
     padding: 0 $input-padding-hor;
 
-    > .dito-tree-branch,
-    > .dito-tree-leaf {
+    > #{$self}__branch,
+    > #{$self}__leaf {
       // Use `--level` CSS variable to calculated the accumulated indent
       // padding directly instead of having it accumulate in nested CSS.
       // This way, we can keep the &--active area cover the full width:
@@ -347,7 +347,7 @@ export default {
     }
   }
 
-  .dito-tree-branch {
+  #{$self}__branch {
     // Make room for the focus ring of the content, without moving it:
     margin-left: -$focus-ring-padding;
     cursor: pointer;
@@ -355,7 +355,7 @@ export default {
     &:focus-visible {
       outline: none;
 
-      > .dito-tree-branch__content {
+      > #{$self}__branch-content {
         @include focus-ring-line;
       }
     }
@@ -363,20 +363,20 @@ export default {
 
   // The whole branch toggles, but the focus ring only encloses its content,
   // padded for it:
-  .dito-tree-branch__content {
+  #{$self}__branch-content {
     display: flex;
     position: relative;
     min-width: 0;
     padding: 0 $focus-ring-padding;
   }
 
-  .dito-tree-header {
+  #{$self}__header {
     display: flex;
     justify-content: space-between;
   }
 
-  .dito-tree-branch,
-  .dito-tree-leaf {
+  #{$self}__branch,
+  #{$self}__leaf {
     display: flex;
     flex: auto;
     overflow: hidden;
@@ -389,7 +389,7 @@ export default {
     @include user-select(none);
   }
 
-  .dito-tree-label {
+  #{$self}__label {
     // Size the label like a line of text, not like a field label:
     flex: 0 1 auto;
     align-items: baseline;
@@ -402,11 +402,8 @@ export default {
     }
   }
 
-  .dito-tree-info {
+  #{$self}__info {
     white-space: nowrap;
-  }
-
-  .dito-tree-info {
     padding-left: 0.35em;
     color: rgba($color-black, 0.2);
   }
@@ -422,8 +419,8 @@ export default {
     margin-right: 0;
   }
 
-  .dito-tree-header:hover,
-  .dito-tree-header:focus-within {
+  #{$self}__header:hover,
+  #{$self}__header:focus-within {
     > #{$self}__buttons {
       opacity: 1;
     }
@@ -431,7 +428,7 @@ export default {
 
   // Hide buttons during dragging
   &--dragging {
-    .dito-tree-header {
+    #{$self}__header {
       > #{$self}__buttons {
         visibility: hidden;
       }
@@ -439,30 +436,30 @@ export default {
   }
 
   &--error {
-    > .dito-tree-header {
+    > #{$self}__header {
       box-shadow: inset $error-bar-width 0 $color-error;
     }
   }
 
   &--active {
-    > .dito-tree-header {
+    > #{$self}__header {
       background: $color-active;
 
-      > .dito-tree-branch {
+      > #{$self}__branch {
         .dito-chevron::before {
           color: $color-white;
         }
 
-        &:focus-visible > .dito-tree-branch__content {
+        &:focus-visible > #{$self}__branch-content {
           @include focus-ring-line($color-white);
         }
       }
 
-      .dito-tree-label {
+      #{$self}__label {
         color: $color-white;
       }
 
-      .dito-tree-info {
+      #{$self}__info {
         color: rgba($color-white, 0.6);
       }
     }
