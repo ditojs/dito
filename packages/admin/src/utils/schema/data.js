@@ -171,7 +171,7 @@ export function shouldExcludeValue(schema, context) {
   return isFunction(exclude) ? exclude(getContext(context)) : !!exclude
 }
 
-function shouldIgnoreMissingValue(schema, context) {
+export function shouldIgnoreMissingValue(schema, context) {
   return getDescriptorFlag(schema, 'ignoresMissingValue', context)
 }
 

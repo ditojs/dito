@@ -109,6 +109,9 @@ export const optionsTraits = {
 
 export const numberTraits = {
   renamedSchemaKeys: ['minimum', 'maximum'],
+  getProperty: ({ type }: Schema) => ({
+    type: type === 'integer' ? 'integer' : 'number'
+  }),
 
   // Number inputs edit strings, and an empty one means no value:
   parseValue({ schema, value }: Context) {
@@ -189,6 +192,11 @@ export function getNumberSettings(
 
 // Colors are stored in the color format of `format`:
 export const colorTraits = {
+  // The server's colors are hex strings, the other formats are objects:
+  getProperty: ({ format = 'hex' }: Schema) => ({
+    type: format.startsWith('hex') ? 'color' : 'object'
+  }),
+
   parseValue(context: Context) {
     const { schema, value } = context
     return value
@@ -208,6 +216,7 @@ export const colorTraits = {
 // Strings are empty as `''`, which `nullable` fields store as `null`:
 export const textTraits = {
   defaultValue: '',
+  getProperty: () => ({ type: 'string' }),
 
   serializeValue(context: Context) {
     let { schema, value } = context

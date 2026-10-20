@@ -86,6 +86,9 @@ defineType({
   component: DitoDateType,
   hasFormat: true,
 
+  // Times are sent as full date-times:
+  getProperty: ({ type }) => ({ type: type === 'date' ? 'date' : 'datetime' }),
+
   // Edit dates as `Date` objects:
   deserializeValue({ value }) {
     return convertToDate(value)
