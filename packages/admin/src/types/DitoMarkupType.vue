@@ -33,6 +33,7 @@
 <script>
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
+import { textTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 import DitoResizeHandle from '../components/DitoResizeHandle.vue'
@@ -163,9 +164,10 @@ const DitoMarkupType = {
 
     const updateValue = () => {
       const content = editor.getHTML()
-      // Empty documents have no value, whatever empty nodes they're left with:
+      // Empty documents are empty strings, whatever empty nodes they're left
+      // with:
       const html = editor.isEmpty
-        ? null
+        ? ''
         : hardBreak.value
           ? content.replace(/^<p>(.*?)<\/p>$/s, '$1')
           : content
@@ -440,7 +442,8 @@ const DitoMarkupType = {
 
 defineType({
   type: 'markup',
-  component: DitoMarkupType
+  component: DitoMarkupType,
+  ...textTraits
 })
 
 export default DitoMarkupType

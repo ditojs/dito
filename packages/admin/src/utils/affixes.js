@@ -22,7 +22,8 @@ export function getInputAffixesProps({
       items: schema.suffix ?? null,
       disabled,
       clearable: !!clearable,
-      hasValue: value != null,
+      // Empty strings are no value to clear either:
+      hasValue: value != null && value !== '',
       inlineInfo: (!label && info) || null,
       parentContext: context
     }

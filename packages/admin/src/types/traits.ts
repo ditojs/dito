@@ -200,7 +200,10 @@ export const colorTraits = {
   }
 } satisfies Partial<TypeDescriptor>
 
+// Strings are empty as `''`, which `nullable` fields store as `null`:
 export const textTraits = {
+  defaultValue: '',
+
   serializeValue(context: Context) {
     let { schema, value } = context
     if (schema.trim && value != null && isString(value)) {

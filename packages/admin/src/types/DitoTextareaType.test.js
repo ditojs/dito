@@ -38,22 +38,38 @@ describe('DitoTextareaType', () => {
     expect(findField('summary').attributes('rows')).toBe('4')
   })
 
-  it('sends trimmed values with `trim`, and empty values as `null`', async () => {
+  it('sends trimmed values with `trim`, and empty values as empty strings', async () => {
     const { findField, submit } = await mountForm({
       schema: {
         fields: {
           summary: { type: 'textarea', trim: true },
-          notes: { type: 'textarea' }
+          notes: { type: 'textarea' },
+          comment: { type: 'textarea', trim: true, nullable: true }
         }
       },
-      data: { summary: '', notes: 'Some' },
+      data: { summary: '', notes: 'Some', comment: 'Fine' },
       request: ({ data }) => ({ data })
     })
     await findField('summary').setValue('\n A story. \n')
     await findField('notes').setValue('')
+    await findField('comment').setValue('  ')
     expect(await submit()).toMatchObject({
       summary: 'A story.',
-      notes: null
+      notes: '',
+      comment: null
     })
+  })
+
+  it('stores no value as `null` with `nullable`', async () => {
+    const { submit } = await mountForm({
+      schema: {
+        fields: {
+          summary: { type: 'textarea' },
+          notes: { type: 'textarea', nullable: true }
+        }
+      },
+      request: ({ data }) => ({ data })
+    })
+    expect(await submit()).toEqual({ summary: '', notes: null })
   })
 })

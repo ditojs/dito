@@ -23,7 +23,7 @@ describe('DitoSpacerType', () => {
         }
       }
     })
-    expect(data).toEqual({ title: null })
+    expect(data).toEqual({ title: '' })
   })
 
   it(`doesn't send a value`, async () => {

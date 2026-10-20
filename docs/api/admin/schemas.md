@@ -108,14 +108,14 @@ that can be cleared.
 | `deserializeValue` | `SchemaValueCallback` | | Converts the stored value when data is loaded, merged from a save response, reset with `resetItem()`, merged with `mergeItem()`, pasted or read from the query, after the type's own conversion. Its `item` holds the new data, while `rootItem` still holds the data from before. |
 | `serializeValue` | `SchemaValueCallback` | | Converts the value for the server and the clipboard, after the type's own conversion. Returning `undefined` leaves out the key. |
 | `exclude` | `SchemaValue<boolean>` | `false`; `true` for buttons, labels, spacers and sources with their own `resource` | Leaves the value out of the data sent to the server. Changes of excluded values don't make the data dirty. |
-| `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value: not `null`, `''` or an empty array, so lists and fields with multiple values need at least one entry. Unlike the server's `required`, which accepts empty arrays. |
+| `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value: not `null`, `''` or an empty array, so lists and fields with multiple values need at least one entry. Unlike the server's `required`, which accepts empty arrays. String fields fail with both `''` and `null`, checkboxes and switches only with the `null` of [`nullable`](#empty-values) ones, as `false` is an answer: without `nullable`, `required` never fails on them. |
 | `rules` | `SchemaRules` | | Validation rules to add or change, keyed by validator name, or to turn off by setting them to `false` or `undefined`, e.g. `{ email: false }`. Types add their own rules, e.g. `min` for numbers. |
 | `validate` | `(context) => boolean \| string \| void` | | Validates values that aren't empty, with the value after `formatValue()`. Returning `false` fails with "is invalid", a string fails with it as the message, e.g. `'must have 13 digits'`. See [Validation](../../guide/admin/validation.md#custom-validation). |
 | `readonly` | `SchemaValue<boolean>` | `false` | Text inputs become read-only, all other fields disabled. |
 | `disabled` | `SchemaValue<boolean>` | `false` | Disables the field. Disabled sections and panels disable all fields inside them, also nested ones. Loading forms and views don't disable their fields. |
 | `autofocus` | `SchemaValue<boolean>` | `false` | Focuses the input when rendered. |
 | `labelledBy` | `SchemaValue<string>` | | The id of the element that labels the field, for fields without their own label, set as `aria-labelledby` of the input. |
-| `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value to `null`, or to `[]` with `multiple`. Ignored while `readonly`. |
+| `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value to the [empty value](#empty-values) of the type, e.g. `null`, `''` for strings or `[]` with `multiple`. Ignored while `readonly`. |
 | `placeholder` | `SchemaValue<string>` | | The hint shown in empty inputs, and in selects while no option is selected. Multiselects also take `false`, see [`multiselect`](#multiselect). |
 | `info` | `SchemaValue<TextOrHtml>` | | Info shown in a tooltip next to the label, see [Text and HTML](#text-and-html). Line breaks in text show. |
 | `maxLength` | `SchemaValue<number>` | | The maximum length of text input. |
@@ -245,11 +245,27 @@ resource: { path: '/books/import', method: 'post' }
 
 Fields that edit a single value. All of them have the
 [field options](#fieldschemabase). Unless noted, their
-default value is `null`.
+default value is `null`, see [Empty values](#empty-values).
 
 Events of all fields: `onFocus`, `onBlur`, `onInput` and `onChange`, see
 [Events](./events.md). Other `on…` handlers, e.g. `onKeydown`, are added to
 the input element as native event listeners.
+
+### Empty values
+
+Fields store no value as the empty value of their type: `''` for the string
+fields `text` (and its variants), `textarea`, `code` and `markup`, `false` for
+`checkbox` and `switch`, and `null` for all others. With `nullable: true`,
+string fields and boolean fields store `null` instead, for properties that are
+`nullable` on the server. For strings, `''` and `null` both mean that nothing
+was entered, and `nullable` only picks which one is stored. For booleans,
+`false` is an answer, and `nullable` adds `null` as the state of not being
+answered yet.
+
+```js
+subtitle: { type: 'text', nullable: true },
+hasAccepted: { type: 'checkbox', required: true, nullable: true }
+```
 
 ### Affixes
 
@@ -288,6 +304,7 @@ validate their format with the rule of their name, e.g. `rules.email`.
 | ------ | ---- | ------- | ----------- |
 | `type` | `'text' \| 'email' \| 'url' \| 'hostname' \| 'domain' \| 'tel' \| 'password' \| 'creditcard'` | | Required. |
 | `trim` | `boolean` | `false` | Trims whitespace from the value when it's serialized. |
+| `nullable` | `boolean` | `false` | Stores no value as `null` instead of `''`, see [Empty values](#empty-values). |
 | `prefix`, `suffix` | `OrArrayOf<SchemaAffix>` | | See [Affixes](#affixes). |
 | `rules` | `SchemaRules & { email?, url?, hostname?, domain?, password?, creditcard? }` | | Changes the validation rules. `false` or `undefined` turns the type's format rule off, e.g. `{ email: false }`. |
 
@@ -310,6 +327,7 @@ website: { type: 'url', placeholder: 'https://' }
 | `lines` | `SchemaValue<number>` | `4` | The number of visible lines. |
 | `resizable` | `SchemaValue<boolean>` | `false` | Whether the input can be resized. |
 | `trim` | `boolean` | `false` | Trims whitespace from the value when it's serialized. |
+| `nullable` | `boolean` | `false` | Stores no value as `null` instead of `''`, see [Empty values](#empty-values). |
 
 ```js
 summary: { type: 'textarea', lines: 6, maxLength: 1000 }
@@ -363,10 +381,16 @@ completion: { type: 'progress', range: [0, 100], readonly: true }
 
 ### checkbox
 
-`CheckboxSchema`. A checkbox for a boolean value.
+`CheckboxSchema`. A checkbox for a boolean value. Its default value is
+`false`.
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `type` | `'checkbox'` | | Required. |
+| `nullable` | `boolean` | `false` | Stores no value as `null` instead of `false`, see [Empty values](#empty-values). |
 
 ```js
-isArchived: { type: 'checkbox', label: 'Archived', default: false }
+isArchived: { type: 'checkbox', label: 'Archived' }
 ```
 
 ### switch
@@ -378,6 +402,7 @@ isArchived: { type: 'checkbox', label: 'Archived', default: false }
 | ------ | ---- | ------- | ----------- |
 | `type` | `'switch'` | | Required. |
 | `labels` | `{ checked?: string, unchecked?: string }` | | Shows text in the switch, `'on'` and `'off'` for missing keys. Without `labels`, no text is shown. |
+| `nullable` | `boolean` | `false` | Stores no value as `null` instead of `false`, see [Empty values](#empty-values). |
 
 ```js
 isAvailable: { type: 'switch', labels: { checked: 'yes', unchecked: 'no' } }
@@ -446,6 +471,7 @@ background: { type: 'color', alpha: true, presets: ['#ffffff', '#000000'] }
 | `indentSize` | `SchemaValue<number>` | `2` | The indentation size. |
 | `lines` | `SchemaValue<number>` | `3` | The number of visible lines. |
 | `resizable` | `SchemaValue<boolean>` | `false` | Whether the editor can be resized. |
+| `nullable` | `boolean` | `false` | Stores no value as `null` instead of `''`, see [Empty values](#empty-values). |
 
 ```js
 customCss: { type: 'code', language: 'css', lines: 10, resizable: true }
@@ -454,8 +480,8 @@ customCss: { type: 'code', language: 'css', lines: 10, resizable: true }
 ### markup
 
 `MarkupSchema`. A rich text editor, based on TipTap, whose value is HTML, and
-`null` when the editor is empty. Every mark, node and tool is off unless
-enabled.
+`''` when the editor is empty, whatever empty nodes it holds. Every mark, node
+and tool is off unless enabled.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
@@ -468,6 +494,7 @@ enabled.
 | `enableRules` | `SchemaValue<boolean \| { input: boolean, paste: boolean }>` | `false` | Enables TipTap's input and paste rules, e.g. `**bold**`. |
 | `lines` | `SchemaValue<number>` | `10` | The number of visible lines. |
 | `resizable` | `SchemaValue<boolean>` | `false` | Whether the editor can be resized. |
+| `nullable` | `boolean` | `false` | Stores no value as `null` instead of `''`, see [Empty values](#empty-values). |
 
 ```js
 summary: {
@@ -1054,7 +1081,7 @@ and changing filters resets the page.
 | ------ | ------- | ----------- |
 | `{ filter: 'text' }` | `label`, `width`, `operators` | A text input, matching with `'contains'`. `operators` adds a select of the given operators of `'contains'`, `'equals'`, `'starts-with'` and `'ends-with'`, or of all of them for `true`; while no operator is chosen, the text matches like `'contains'`. |
 | `{ filter: 'date-range' }` | `label`, `width` | Two date-time inputs, `from` and `to`. |
-| `{ fields }` | `label`, `width` | A custom filter: its fields' values are passed to the server's filter as arguments, in their order. |
+| `{ fields }` | `label`, `width` | A custom filter: its fields' values are passed to the server's filter as arguments, in their order. Its fields are [`nullable`](#empty-values) unless set otherwise, and a filter whose fields are all `null` doesn't apply. |
 
 `label` defaults to the labelized name; the labels of the filter's inputs
 become their placeholders. `sticky: true` next to the filters keeps the

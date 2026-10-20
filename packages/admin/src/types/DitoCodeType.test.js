@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { mountSchema } from '../test/mount.js'
+import { mountSchema, mountForm } from '../test/mount.js'
 
 // Drags the resize `handle` with the pointer from `startY` to `endY`.
 async function dragResizeHandle(handle, startY, endY) {
@@ -60,6 +60,31 @@ describe('DitoCodeType', () => {
     await settle()
     expect(data.snippet).toBe(null)
     expect(dataModel.isDirty).toBe(false)
+  })
+
+  it('stores empty code as empty strings, and as `null` with `nullable`', async () => {
+    const { findField, data, submit } = await mountForm({
+      schema: {
+        fields: {
+          snippet: { type: 'code' },
+          script: { type: 'code', nullable: true },
+          style: { type: 'code', nullable: true }
+        }
+      },
+      data: { snippet: 'a', script: 'b' },
+      request: ({ data }) => ({ data })
+    })
+    await findField('snippet').find('textarea').setValue('')
+    await findField('script').find('textarea').setValue('')
+    // The editor reports its updates asynchronously:
+    await vi.waitFor(() =>
+      expect(data).toMatchObject({ snippet: '', script: '' })
+    )
+    expect(await submit()).toMatchObject({
+      snippet: '',
+      script: null,
+      style: null
+    })
   })
 
   it('makes the editor readonly for disabled fields', async () => {

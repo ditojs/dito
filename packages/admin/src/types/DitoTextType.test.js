@@ -22,8 +22,30 @@ describe('DitoTextType', () => {
         }
       }
     })
-    expect(data).toEqual({ title: 'Untitled', subtitle: null })
+    expect(data).toEqual({ title: 'Untitled', subtitle: '' })
     expect(findField('title').find('input').element.value).toBe('Untitled')
+  })
+
+  it('stores no value as `null` with `nullable`', async () => {
+    const { findField, data, submit } = await mountForm({
+      schema: {
+        fields: {
+          title: { type: 'text', nullable: true },
+          subtitle: { type: 'text', nullable: true, clearable: true },
+          email: { type: 'email', nullable: true }
+        }
+      },
+      data: { subtitle: 'Book', email: 'reader@example.com' },
+      request: ({ data }) => ({ data })
+    })
+    expect(data.title).toBe(null)
+    await findField('subtitle').find('.dito-affixes__clear').trigger('click')
+    await findField('email').find('input').setValue('')
+    expect(await submit()).toMatchObject({
+      title: null,
+      subtitle: null,
+      email: null
+    })
   })
 
   it('displays the value through `formatValue()` and stores it through `parseValue()`', async () => {
@@ -60,15 +82,15 @@ describe('DitoTextType', () => {
       data: { title: 'Dune' }
     })
     await findField('title').find('.dito-affixes__clear').trigger('click')
-    expect(data.title).toBe(null)
+    expect(data.title).toBe('')
     expect(findField('title').find('.dito-affixes__clear').exists()).toBe(
       false
     )
     await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
-    expect(onChange.mock.calls[0][0].value).toBe(null)
+    expect(onChange.mock.calls[0][0].value).toBe('')
   })
 
-  it('clears the value to `null`, not to its default value', async () => {
+  it('clears the value to the empty string, not to its default value', async () => {
     const { findField, data } = await mountSchema({
       schema: {
         fields: {
@@ -77,7 +99,7 @@ describe('DitoTextType', () => {
       }
     })
     await findField('title').find('.dito-affixes__clear').trigger('click')
-    expect(data.title).toBe(null)
+    expect(data.title).toBe('')
   })
 
   it(`doesn't show the clear button for readonly fields`, async () => {
@@ -286,6 +308,23 @@ describe('DitoTextType', () => {
       expect(getErrors('email')).toEqual([])
     })
 
+    it('requires a value with `required`, also with `nullable`', async () => {
+      const request = vi.fn(({ data }) => ({ data }))
+      const { submit, getErrors } = await mountForm({
+        schema: {
+          fields: {
+            title: { type: 'text', required: true },
+            subtitle: { type: 'text', required: true, nullable: true }
+          }
+        },
+        request
+      })
+      expect(await submit()).toBe(null)
+      expect(request).not.toHaveBeenCalled()
+      expect(getErrors('title')).toEqual(['The Title field is required.'])
+      expect(getErrors('subtitle')).toEqual(['The Subtitle field is required.'])
+    })
+
     it(`doesn't submit forms with invalid values`, async () => {
       const request = vi.fn(({ data }) => ({ data }))
       const { submit, getErrors } = await mountForm({
@@ -322,7 +361,7 @@ describe('DitoTextType', () => {
       await findField('note').find('input').setValue('')
       expect(await submit()).toMatchObject({
         title: 'Emma',
-        subtitle: null,
+        subtitle: '',
         note: 'none'
       })
     })

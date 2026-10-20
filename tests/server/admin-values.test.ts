@@ -65,9 +65,13 @@ describe('Values that the admin sends', () => {
       })
     })
 
-    // Current behaviour, a mismatch with the admin: new checkboxes send `null`,
-    // which booleans only accept when they're nullable:
-    it('rejects `null` for booleans', async () => {
+    // New checkboxes send `false`, and `null` only with `nullable`, which
+    // booleans only accept when they're nullable too:
+    it('saves `false` and rejects `null` for booleans', async () => {
+      expect(await create({ isPublic: false })).toMatchObject({
+        status: 201,
+        data: { isPublic: false }
+      })
       expect(await create({ isPublic: null })).toMatchObject({
         status: 400,
         data: { errors: { isPublic: [{ message: 'must be boolean' }] } }
@@ -202,13 +206,21 @@ describe('Values that the admin sends', () => {
   })
 
   describe('empty values', () => {
+    // Emptied string fields send `''`, and `null` only with `nullable`:
+    it('saves empty strings for strings', async () => {
+      expect(await edit({ note: '' })).toMatchObject({
+        status: 200,
+        data: { note: '' }
+      })
+    })
+
     it('accepts `null` for nullable properties', async () => {
       expect((await create({ subtitle: null })).status).toBe(201)
       expect((await edit({ subtitle: null })).status).toBe(200)
     })
 
-    // Current behaviour, a mismatch with the admin: emptied text and number
-    // fields send `null`, which only nullable properties accept:
+    // Emptied fields of other types send `null`, as do string fields with
+    // `nullable`, which only nullable properties accept:
     it('rejects `null` for properties that are not nullable', async () => {
       expect(await edit({ note: null, tags: null })).toMatchObject({
         status: 400,

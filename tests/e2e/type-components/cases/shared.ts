@@ -13,6 +13,8 @@ interface Sample {
   required?: boolean
   /** Whether the type has a clear button with `clearable`. */
   clearable?: boolean
+  /** The value that clearing stores, unless `nullable`, `null` by default. */
+  empty?: unknown
 }
 
 const sizes = [
@@ -31,15 +33,21 @@ const text = (seed: string, value: string): Sample => ({
   clearable: true
 })
 
+// Text inputs store strings, so clearing them stores `''`:
+const textInput = (seed: string, value: string): Sample => ({
+  ...text(seed, value),
+  empty: ''
+})
+
 const samples: Record<string, Sample> = {
-  text: text('Hello', 'Changed'),
-  email: text('a@example.com', 'b@example.com'),
-  url: text('https://a.com', 'https://b.com'),
-  hostname: text('a.example.com', 'b.example.com'),
-  domain: text('a.com', 'b.com'),
-  tel: text('+41 1', '+41 2'),
-  password: text('secret', 'changed'),
-  creditcard: text('4111111111111111', '5555555555554444'),
+  text: textInput('Hello', 'Changed'),
+  email: textInput('a@example.com', 'b@example.com'),
+  url: textInput('https://a.com', 'https://b.com'),
+  hostname: textInput('a.example.com', 'b.example.com'),
+  domain: textInput('a.com', 'b.com'),
+  tel: textInput('+41 1', '+41 2'),
+  password: textInput('secret', 'changed'),
+  creditcard: textInput('4111111111111111', '5555555555554444'),
   textarea: { ...text('A', 'B'), property: { type: 'text' }, clearable: false },
   number: {
     ...text('', ''),
@@ -98,7 +106,7 @@ const samples: Record<string, Sample> = {
 }
 
 function getSharedCases(sample: Sample): TypeCase[] {
-  const { schema = {}, seed, value } = sample
+  const { schema = {}, seed, value, empty = null } = sample
   const unchangeable = (title: string, extra: Record<string, unknown>) => ({
     title,
     schema: { ...schema, ...extra },
@@ -126,8 +134,21 @@ function getSharedCases(sample: Sample): TypeCase[] {
               schema: { ...schema, clearable: true },
               seed,
               value: { clear: true },
-              stored: null
-            }
+              stored: empty
+            },
+            ...(
+              empty !== null
+                ? [
+                    {
+                      title: 'clears the value to null with nullable',
+                      schema: { ...schema, clearable: true, nullable: true },
+                      seed,
+                      value: { clear: true },
+                      stored: null
+                    }
+                  ]
+                : []
+            )
           ]
         : []
     ),
