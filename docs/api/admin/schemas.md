@@ -519,7 +519,7 @@ for running uploads, and files that failed to upload are left out.
 | `type` | `'upload'` | | Required. |
 | `multiple` | `SchemaValue<boolean>` | `false` | Holds an array of files instead of one. |
 | `extensions` | `SchemaValue<OrArrayOf<string \| RegExp>>` | | The allowed file extensions, e.g. `['jpg', 'png']`. |
-| `accept` | `SchemaValue<OrArrayOf<string>>` | | The allowed file types, e.g. `'image/*'`. |
+| `accept` | `SchemaValue<OrArrayOf<string>>` | | The file types that the file picker offers, e.g. `'image/*'`. Only the picker filters by it: pasted, dropped and imported files are checked by `extensions` and `maxSize`. |
 | `maxSize` | `SchemaValue<string \| number>` | | The maximum file size, in bytes or as a string like `'200kB'` or `'1MiB'`. |
 | `draggable` | `SchemaValue<boolean>` | `false` | Lets multiple files be reordered. |
 | `deletable` | `SchemaValue<boolean>` | `false` | Adds delete buttons. |
