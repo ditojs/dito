@@ -3,6 +3,7 @@ import { h } from 'vue'
 import { useRoute } from 'vue-router'
 import { flushPromises } from '@vue/test-utils'
 import { mountAdmin, enterValue, stubConfirm } from '../test/mount.js'
+import { RequestError } from '../utils/request.js'
 import {
   useDitoForm,
   DitoSchemaForm,
@@ -204,6 +205,37 @@ describe('useDitoForm()', () => {
     await settleForm()
     expect(getSentRequests(request)).toEqual([])
     expect(page.find('.dito-errors').text()).toContain('required')
+  })
+
+  it('tells the errors of failed submits', async () => {
+    const { page } = await mountProductPage()
+    expect(form.getErrors()).toBe(null)
+    await enterValue(page.find('input[name="name"]'), '')
+    expect(await form.submit()).toBe(false)
+    expect(form.getErrors()).toEqual({ name: [{ message: 'is required' }] })
+  })
+
+  it('tells the validation errors of the server', async () => {
+    const { page, request } = await mountProductPage()
+    const error = {
+      message: 'must be unique',
+      keyword: 'unique',
+      params: { property: 'name' }
+    }
+    request.mockImplementationOnce(() => {
+      throw new RequestError({
+        status: 400,
+        statusText: 'Bad Request',
+        data: {
+          type: 'ModelValidation',
+          message: 'The provided data is not valid',
+          errors: { name: [error] }
+        }
+      })
+    })
+    await enterValue(page.find('input[name="name"]'), 'Stool')
+    expect(await form.submit()).toBe(false)
+    expect(form.getErrors('name')).toEqual({ name: [error] })
   })
 
   it('creates without id, and saves the created item after', async () => {

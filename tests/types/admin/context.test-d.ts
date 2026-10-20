@@ -84,6 +84,13 @@ describe('SchemaContext', () => {
     expectTypeOf<Ctx['clearErrors']>()
       .parameter(0)
       .toEqualTypeOf<Parameters<Ctx['validate']>[0]>()
+    expectTypeOf<Ctx['getErrors']>()
+      .parameter(0)
+      .toEqualTypeOf<Parameters<Ctx['validate']>[0]>()
+    expectTypeOf<Ctx['getErrors']>().returns.toEqualTypeOf<Record<
+      string,
+      { message: string; keyword?: string; params?: Record<string, any> }[]
+    > | null>()
     expectTypeOf<Ctx['resetItem']>().returns.toEqualTypeOf<Entry>()
     expectTypeOf<Ctx['resetItem']>().toBeCallableWith()
     expectTypeOf<Ctx['closeForm']>().returns.toEqualTypeOf<Promise<boolean>>()

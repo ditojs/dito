@@ -46,7 +46,8 @@ slash.
 
 Paths that are passed *in* to the context, e.g. to
 [`getValueAt()`](#getvalueat), [`validate()`](#validate),
-[`isValid()`](#isvalid) and [`clearErrors()`](#clearerrors), are relative to
+[`isValid()`](#isvalid), [`getErrors()`](#geterrors) and
+[`clearErrors()`](#clearerrors), are relative to
 [`itemDataPath`](#itemdatapath), the item that the field sits in. A
 leading `/` makes them absolute, `..` goes up one level, and leading above the
 root throws.
@@ -625,6 +626,32 @@ context.isValid(match?): boolean
 ```
 
 Like [`validate()`](#validate), without showing the errors.
+
+### getErrors()
+
+```ts
+context.getErrors(match?): { [dataPath]: [{ message, keyword?, params? }] } | null
+```
+
+Returns the errors that the data holds, by the data paths of their values: the
+errors that [`validate()`](#validate) showed, the validation errors of the
+server, and the errors of fields, e.g. of options that failed to load. With
+`match`, only those at the data paths that match, as in
+[`validate()`](#validate). It is reactive, and doesn't show or change the
+errors.
+
+#### Return value
+
+The errors by absolute data paths, or `null` without errors. Only the errors
+of the server have a `keyword` and its `params`.
+
+#### Example
+
+```js
+onChange({ getErrors }) {
+  const hasChapterErrors = !!getErrors('chapters/**')
+}
+```
 
 ### clearErrors()
 

@@ -360,6 +360,13 @@ export default class SchemaContext {
       getDataContextFor(this, 'verify').verify(resolveMatch(this, match))
   }
 
+  get getErrors() {
+    return match =>
+      getDataContextFor(this, 'get the errors').getErrors(
+        resolveMatch(this, match)
+      )
+  }
+
   get clearErrors() {
     return match =>
       getDataContextFor(this, 'clear the errors').clearErrors(

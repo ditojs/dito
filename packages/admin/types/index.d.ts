@@ -2546,6 +2546,21 @@ export type SchemaContext<$Item = any> = {
     match?: string | string[] | RegExp | ((dataPath: string) => boolean)
   ): boolean
   /**
+   * Returns the errors that the data of the form, view, dialog
+   * or panel with its own data holds, from validation, from the
+   * server and of fields, by the absolute data paths of their
+   * values, or
+   * only those at the data paths that match `match`, see
+   * {@link SchemaContext.validate}. Returns `null` without
+   * errors. Reactive, and it doesn't show or change them.
+   */
+  getErrors(
+    match?: string | string[] | RegExp | ((dataPath: string) => boolean)
+  ): Record<
+    string,
+    { message: string; keyword?: string; params?: Record<string, any> }[]
+  > | null
+  /**
    * Clears the errors of the data of the form, view, dialog
    * or panel with its own data that the context belongs to,
    * or only the errors at the data paths that match `match`
