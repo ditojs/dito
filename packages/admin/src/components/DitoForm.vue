@@ -5,7 +5,7 @@
 )
   //- Embedded form routes render in the view of their parent instead:
   DitoRouterView(
-    v-if="!isLastUnnestedRoute && !isEmbeddedRoute"
+    v-if="!routeContext.isLastUnnestedRoute && !isEmbeddedRoute"
     v-show="!isActiveRoute"
     :routeLevel="routeContext.level + 1"
   )
@@ -527,14 +527,6 @@ export default {
       { flush: 'post' }
     )
 
-    // Whether the route is the last one that needs its own router-view:
-    const isLastUnnestedRoute = computed(() => {
-      const record = router.currentRoute.value.matched.findLast(
-        record => !record.meta.node?.isEmbeddedForm
-      )
-      return route.record.value === record
-    })
-
     return {
       routeContext,
       dataContext,
@@ -545,9 +537,8 @@ export default {
       schemaPath,
       buttonSchemas,
       isEmbeddedRoute,
-      isLastUnnestedRoute,
       isActiveRoute: computed(
-        () => routeContext.isLastRoute || isLastUnnestedRoute.value
+        () => routeContext.isLastRoute || routeContext.isLastUnnestedRoute
       ),
       itemLabelText,
       context

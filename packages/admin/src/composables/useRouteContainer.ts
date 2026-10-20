@@ -11,7 +11,7 @@ import {
 import { useRouter, type RouteRecordNormalized } from 'vue-router'
 import { getRelativeDataPath } from '../utils/data.js'
 import { navigate } from '../utils/route.js'
-import { getSchemaPath } from '../utils/schema/structure.js'
+import { getSchemaPath, isPage } from '../utils/schema/structure.js'
 import { adminContextKey, routeContextKey } from '../utils/keys.ts'
 import { LoadingTracker } from '../utils/LoadingTracker.ts'
 import {
@@ -135,8 +135,13 @@ export function useRouteContainer({
     componentForm: null,
     resourceContext: resourceContext ?? parent?.resourceContext ?? null,
 
+    // Pages have no data of their own, their routes edit the data of the form
+    // of their component:
     get dataContext() {
-      return container.dataContext
+      const { componentForm } = routeContext
+      return componentForm && isPage(options.sourceSchema())
+        ? componentForm.dataContext
+        : container.dataContext
     },
 
     get node() {
@@ -153,9 +158,9 @@ export function useRouteContainer({
 
     get state() {
       return {
-        data: container.dataContext.data,
+        data: routeContext.dataContext.data,
         routeParams: routeParams.value,
-        isTransient: isTransient() || container.dataContext.isCreating
+        isTransient: isTransient() || routeContext.dataContext.isCreating
       }
     },
 
@@ -165,6 +170,15 @@ export function useRouteContainer({
 
     get isLastRoute() {
       return routeRecord.value === getMatched().at(-1)
+    },
+
+    get isLastUnnestedRoute() {
+      const record = getMatched().findLast(
+        ({ meta: { node } }) => (
+          node && !(node instanceof FormNode && node.isEmbeddedForm)
+        )
+      )
+      return routeRecord.value === record
     },
 
     get isLeaving() {

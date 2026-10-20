@@ -145,15 +145,18 @@ The default slot of `DitoSchemaForm` lays out the fields, as in
 [Laying out fields](./custom-types.md#laying-out-fields); without it, the
 fields render in rows. The submit button saves or creates the item, and there
 is no cancel button. Without a `resource`, submitting validates the data and
-fires `onSuccess()`, without a request. Each component sets up one form;
-lists with forms of their own route, e.g. without `inlined: true`, aren't
-supported in it.
+fires `onSuccess()`, without a request. Each component sets up one form.
 
 The page's route takes the form's changes: leaving it, or switching to another
 `id`, asks to discard them, and the trail and the browser warn about them. The
 same component also works in a [dialog](./dialogs.md), as the `component` of a
 `type: 'component'` field, without the route: there, the form has a cancel
 button, and its submit button closes the dialog with the saved item.
+
+Lists and trees in the form edit their items in forms with routes of their
+own below the page's path, which apply their changes to the page's form, as
+in the forms of views. Links into these forms open them with the page. Outside
+of pages, e.g. in dialogs, the lists need `inlined: true`.
 
 ## Menus
 

@@ -8,6 +8,7 @@ import {
   isInlined,
   isListSource,
   isMenu,
+  isPage,
   hasNestedData,
   isObjectSource,
   isSingleFieldView,
@@ -368,7 +369,6 @@ export class RouteTree {
   readonly #hiddenNodes: (MenuNode | ViewNode)[]
   readonly #api: Pick<Api, 'normalizePath'>
   readonly #viewsByName = new Map<string, ViewNode>()
-  readonly #sourcesWithRoutes: Set<Schema>
 
   constructor(
     views: Record<string, Schema>,
@@ -376,13 +376,13 @@ export class RouteTree {
     hiddenViews: Record<string, Schema> = {}
   ) {
     this.#api = api
-    this.#sourcesWithRoutes = findSourcesWithRoutes([
+    const sourcesWithRoutes = findSourcesWithRoutes([
       ...Object.values(views),
       ...Object.values(hiddenViews)
     ])
     const createViewNodes = (views: Record<string, Schema>) =>
       Object.entries(views).map(([name, schema]) =>
-        this.#createViewNode(schema, name, null)
+        this.#createViewNode(schema, name, null, sourcesWithRoutes)
       )
     this.nodes = createViewNodes(views)
     this.#hiddenNodes = createViewNodes(hiddenViews)
@@ -411,28 +411,46 @@ export class RouteTree {
     )
   }
 
+  // The forms of `useDitoForm()` in pages route their sources under the page
+  // while they're mounted. Pages have no sources of their own, and only one
+  // such form:
+  addPageForm(view: ViewNode, schema: Schema, components: RouteComponents) {
+    this.#addSources(view, schema, findSourcesWithRoutes([schema]))
+    return {
+      records: this.#createSourceRecords(view.sources, '', components),
+      remove: () => {
+        view.sources.length = 0
+      }
+    }
+  }
+
   #createViewNode(
     schema: Schema,
     name: string,
-    parent: MenuNode | null
+    parent: MenuNode | null,
+    sourcesWithRoutes: Set<Schema>
   ): MenuNode | ViewNode {
     if (isMenu(schema)) {
       const menu = new MenuNode(schema, parent, name)
       for (const [itemName, item] of Object.entries(schema.items as Schema)) {
-        this.#createViewNode(item, itemName, menu)
+        this.#createViewNode(item, itemName, menu, sourcesWithRoutes)
       }
       return menu
     } else {
       const view = new ViewNode(schema, parent, name)
       this.#viewsByName.set(name, view)
-      this.#addSources(view, schema)
+      this.#addSources(view, schema, sourcesWithRoutes)
       return view
     }
   }
 
-  #addSources(container: ContainerNode, schema: Schema) {
+  #addSources(
+    container: ContainerNode,
+    schema: Schema,
+    sourcesWithRoutes: Set<Schema>
+  ) {
     forEachSource(schema, (source, dataPath) =>
-      this.#addSource(container, source, dataPath)
+      this.#addSource(container, source, dataPath, sourcesWithRoutes)
     )
   }
 
@@ -440,11 +458,12 @@ export class RouteTree {
     parent: ContainerNode | SourceNode,
     schema: Schema,
     dataPath: string,
+    sourcesWithRoutes: Set<Schema>,
     isFlattened = false
   ) {
     // Inlined sources render their forms without routes, and only need nodes
     // if forms with routes can be reached through them:
-    if (isInlined(schema) && !this.#sourcesWithRoutes.has(schema)) return
+    if (isInlined(schema) && !sourcesWithRoutes.has(schema)) return
     const source = new SourceNode(
       schema,
       parent,
@@ -461,20 +480,30 @@ export class RouteTree {
           isInlined(schema)
         )
         for (const formSchema of form.schemas) {
-          this.#addSources(form, formSchema)
+          this.#addSources(form, formSchema, sourcesWithRoutes)
         }
-        this.#addChildSources(form, schema)
+        this.#addChildSources(form, schema, sourcesWithRoutes)
       } else if (isObjectSource(schema)) {
         // Object sources without forms, like tree objects, route the forms of
         // their children. Lists can't, as their items need a form parameter:
-        this.#addChildSources(source, schema)
+        this.#addChildSources(source, schema, sourcesWithRoutes)
       }
     }
   }
 
-  #addChildSources(parent: ContainerNode | SourceNode, schema: Schema) {
+  #addChildSources(
+    parent: ContainerNode | SourceNode,
+    schema: Schema,
+    sourcesWithRoutes: Set<Schema>
+  ) {
     for (const childSchema of getChildSourceSchemas(schema)) {
-      this.#addSource(parent, childSchema, childSchema.name, true)
+      this.#addSource(
+        parent,
+        childSchema,
+        childSchema.name,
+        sourcesWithRoutes,
+        true
+      )
     }
   }
 
@@ -495,7 +524,12 @@ export class RouteTree {
           ? node.items.map(item =>
               this.#createViewRecord(item, components, path)
             )
-          : this.#createSourceRecords(node.sources, '', components)
+          : isPage(schema)
+            ? // The paths below pages render the page, until the form of its
+              // component adds its routes. Records without components need a
+              // name to match:
+              [{ path: ':_(.*)*', name: Symbol(`${name}/*`), components: {} }]
+            : this.#createSourceRecords(node.sources, '', components)
     }
   }
 
