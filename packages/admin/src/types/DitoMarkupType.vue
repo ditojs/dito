@@ -163,9 +163,12 @@ const DitoMarkupType = {
 
     const updateValue = () => {
       const content = editor.getHTML()
-      const html = hardBreak.value
-        ? content.replace(/^<p>(.*?)<\/p>$/s, '$1')
-        : content
+      // Empty documents have no value, whatever empty nodes they're left with:
+      const html = editor.isEmpty
+        ? null
+        : hardBreak.value
+          ? content.replace(/^<p>(.*?)<\/p>$/s, '$1')
+          : content
       if (html !== value.value) {
         changeOnceEdited.markEdited()
         // Don't set it back as content, re-parsing collapses whitespace:
