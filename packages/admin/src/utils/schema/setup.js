@@ -237,12 +237,16 @@ export async function setupView(api, schema, name) {
 }
 
 export function applySchemaDefaults(api, schema, name = schema.name) {
-  // Rename the deprecated keys before the defaults, which see the new ones:
-  renameSchemaKey(schema, 'fields')
-  // Only views take schemas in `component`, all other schemas Vue components:
-  if (isView(schema) && isSchema(schema.component)) {
-    renameSchemaKey(schema, 'field')
+  const renameSchemaKeys = object => {
+    renameSchemaKey(object, 'fields')
+    // Only views take schemas in `component`, all other schemas Vue components:
+    if (isView(schema) && isSchema(object.component)) {
+      renameSchemaKey(object, 'field')
+    }
   }
+  // Rename the deprecated keys of the schema before the defaults, which see
+  // the new ones, and those of the defaults before merging them:
+  renameSchemaKeys(schema)
   let defaults = (
     api.defaults[schema.type] ||
     api.defaults[camelize(schema.type)]
@@ -255,6 +259,7 @@ export function applySchemaDefaults(api, schema, name = schema.name) {
       defaults = defaults(schema)
     }
     if (isObject(defaults)) {
+      renameSchemaKeys(defaults)
       for (const [key, value] of Object.entries(defaults)) {
         const current = schema[key]
         schema[key] =
