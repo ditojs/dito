@@ -17,6 +17,7 @@ describe('validators', () => {
   it('exports all validators with `validate()`', () => {
     expect(Object.keys(validators).sort()).toEqual([
       'creditcard',
+      'date',
       'decimals',
       'domain',
       'email',

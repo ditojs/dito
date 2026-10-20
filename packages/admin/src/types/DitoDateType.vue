@@ -35,12 +35,12 @@ import {
   DitoTimePicker,
   DitoDateTimePicker
 } from '@ditojs/ui/src'
+import { convertToDate } from '../utils/date.js'
 import {
   isDate,
   isString,
   assignDeeply,
-  formatPlainDate,
-  parsePlainDate
+  formatPlainDate
 } from '@ditojs/utils'
 
 const pickerComponents = {
@@ -94,6 +94,8 @@ defineType({
     return convertToDate(value)
   },
 
+  getValidations: () => ({ date: true }),
+
   getDisplayValue(context) {
     const { schema, value, format } = context
     const { date, time } = getFormat(schema, context)
@@ -114,16 +116,6 @@ defineType({
 })
 
 export default DitoDateType
-
-// Convert date strings to `Date` objects, plain dates in the local time zone.
-// Other strings stay, e.g. times like '14:30':
-function convertToDate(value) {
-  const date =
-    isString(value) && value
-      ? (parsePlainDate(value) ?? new Date(value))
-      : null
-  return date && !isNaN(date) ? date : value
-}
 
 // The date and time formats of the type, `null` for the parts it doesn't show:
 function getFormat(schema, context) {
