@@ -133,16 +133,22 @@ function getContext(context) {
   return isFunction(context) ? context() : context
 }
 
+function resolveValue(value, context) {
+  return isFunction(value)
+    ? toModelData(value(getContext(context)))
+    : clone(value)
+}
+
 export function getDefaultValue(schema, context) {
+  return schema.default !== undefined
+    ? resolveValue(schema.default, context)
+    : getEmptyValue(schema, context)
+}
+
+export function getEmptyValue(schema, context) {
   // NOTE: Components may not be instantiated when items are created, e.g. in
   // nested forms, so the type descriptors define `defaultValue`:
-  const defaultValue =
-    schema.default !== undefined
-      ? schema.default
-      : getTypeDescriptor(schema)?.defaultValue
-  return isFunction(defaultValue)
-    ? toModelData(defaultValue(getContext(context)))
-    : clone(defaultValue)
+  return resolveValue(getTypeDescriptor(schema)?.defaultValue, context)
 }
 
 // Types without values, e.g. buttons, get no key, like in the data of items

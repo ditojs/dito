@@ -16,7 +16,7 @@ import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { isLabelled } from '../utils/schema/structure.js'
 import { appendDataPath } from '../utils/data.js'
 import { getText } from '../utils/html.js'
-import { getMultipleValue } from '../utils/schema/data.js'
+import { getEmptyValue } from '../utils/schema/data.js'
 import {
   useSchemaContext,
   useServices,
@@ -333,8 +333,7 @@ export function useField(
     validate,
 
     clear() {
-      // Multiple values are never `null`:
-      value.value = getMultipleValue(props.schema, context) ? [] : null
+      value.value = getEmptyValue(props.schema, context)
       focus.blur()
       handlers.onChange()
     }
