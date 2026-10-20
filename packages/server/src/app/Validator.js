@@ -420,7 +420,10 @@ function getSchemaMessage({ keyword, params, schemaPath }) {
     const setting =
       keyword === 'enum'
         ? params.allowedValues
-        : params.limit ?? params[keyword]
+        : keyword === 'pattern'
+          ? // Report the pattern before `convertSchema()` let it accept `''`:
+            params.pattern.replace(/^\^\$\|\(\?:(.*)\)$/s, '$1')
+          : params.limit ?? params[keyword]
     return isFunction(message) ? message(setting) : message
   }
 }

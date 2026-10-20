@@ -364,6 +364,7 @@ Dito.js schemas are JSON schemas with additions that
 | Addition                                       | Translation                                                                                                     |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `required: true` on a property                 | The `required` format plus an entry in the parent's `required` array, added to the entries the parent lists itself. A JSON Schema `required` array doesn't make the property itself required. |
+| `pattern`                                      | `'^$\|(?:<pattern>)'`: like formats, patterns accept `''`. Error messages show the original pattern, the error's `params.pattern` the translated one. |
 | `type: 'text'`                                 | `type: 'string'`.                                                                                               |
 | `type: 'date' \| 'datetime' \| 'timestamp'`    | `type: ['string', 'object']` with the `date-time` format; accepts `Date` objects.                               |
 | `type: '<Model>'` or a type name               | `$ref` to the model or [type](#types).                                                                          |

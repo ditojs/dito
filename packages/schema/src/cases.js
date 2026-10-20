@@ -168,8 +168,8 @@ export const keywords = {
   pattern: [
     {
       setting: '^[A-Z]+-\\d+$',
-      valid: ['AB-12', 12],
-      invalid: ['ab-12', ''],
+      valid: ['AB-12', 12, ''],
+      invalid: ['ab-12'],
       message: 'must match pattern "^[A-Z]+-\\d+$"'
     },
     {

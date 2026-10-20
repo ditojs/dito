@@ -1,12 +1,10 @@
-import { isArray } from '@ditojs/utils'
+import { keywords } from '@ditojs/schema'
 
 export const minItems = {
-  validate: (value, minItems) => !isArray(value) || value.length >= minItems,
+  ...keywords.minItems,
   // Required fields that hold arrays need one item, see `getValidations()`:
-  message: (value, minItems, { required }) =>
-    minItems === 1
-      ? required
-        ? 'is required'
-        : 'must contain at least one item'
-      : `must contain at least ${minItems} items`
+  message: (minItems, { required }) =>
+    minItems === 1 && required
+      ? 'is required'
+      : keywords.minItems.message(minItems)
 }

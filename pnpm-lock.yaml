@@ -322,6 +322,9 @@ importers:
 
   packages/admin:
     dependencies:
+      '@ditojs/schema':
+        specifier: workspace:^
+        version: link:../schema
       '@ditojs/ui':
         specifier: workspace:^
         version: link:../ui

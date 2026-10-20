@@ -183,7 +183,7 @@ describe('getValueValidationErrors()', () => {
       getValueValidationErrors(1.5, { minimum: 2, integer: true })
     ).toEqual([
       { message: 'must be 2 or more' },
-      { message: 'must be whole number' }
+      { message: 'must be a whole number' }
     ])
     expect(getValueValidationErrors(5, { range: [1, 2] })).toEqual([
       { message: 'must be between 1 and 2' }
@@ -292,7 +292,7 @@ describe('getDataValidationErrors()', () => {
       title: [required],
       count: [
         { message: 'must be 1 or more' },
-        { message: 'must be whole number' }
+        { message: 'must be a whole number' }
       ]
     })
   })
