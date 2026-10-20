@@ -1,6 +1,7 @@
 import SchemaContext from '../../SchemaContext.js'
 import * as validators from '../../validators/index.js'
 import {
+  isArray,
   isFunction,
   isString,
   isRegExp,
@@ -12,14 +13,24 @@ import { getTypeDescriptor } from './types.ts'
 import {
   getSchemaValue,
   getEditedValue,
+  getEmptyValue,
   shouldRenderSchema,
   walkSchemaData
 } from './data.js'
+
+// The limits of strings and arrays, named and applied as on the server:
+const limitKeys = ['minLength', 'maxLength', 'pattern', 'minItems', 'maxItems']
 
 export function getValidations(context) {
   const { schema } = context
   const validations = {
     ...getTypeDescriptor(schema)?.getValidations?.(context)
+  }
+  for (const key of limitKeys) {
+    const setting = getSchemaValue(key, { schema, context })
+    if (setting != null) {
+      validations[key] = setting
+    }
   }
   if (getSchemaValue('required', { type: Boolean, schema, context })) {
     validations.required = true
@@ -37,6 +48,10 @@ export function getValidations(context) {
       validations[name] = setting
     }
   }
+  // Empty arrays are values, required fields that hold them need one item:
+  if (validations.required && isArray(getEmptyValue(schema, context))) {
+    validations.minItems ??= 1
+  }
   return validations
 }
 
@@ -47,8 +62,8 @@ export function getValueValidationErrors(value, validations) {
     const validator = getValidator(name)
     if (
       validator &&
-      // Apply all validators except 'required' only to non-empty values:
-      (name === 'required' || value != null && value !== '')
+      // Apply most validators only to values that aren't empty:
+      (validator.validatesEmptyValues || value != null && value !== '')
     ) {
       const { validate, message } = validator
       const result = validate(value, setting, validations)

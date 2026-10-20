@@ -633,9 +633,33 @@ export interface FieldSchemaBase<$Item> extends SchemaBase<$Item> {
   info?: SchemaValue<$Item, {}, TextOrHtml>
 
   /**
-   * The maximum allowed length of the input value.
+   * The minimum length of text values, in characters. `1` rejects `''`, but
+   * not the `null` of `nullable` fields.
+   */
+  minLength?: SchemaValue<$Item, {}, number>
+
+  /**
+   * The maximum length of text values, in characters, validated and set as
+   * the `maxlength` of text inputs.
    */
   maxLength?: SchemaValue<$Item, {}, number>
+
+  /**
+   * A regular expression that text values need to match, as a string like
+   * the `pattern` of the server's model properties, e.g. `'^[A-Z]{2}$'`.
+   */
+  pattern?: SchemaValue<$Item, {}, string>
+
+  /**
+   * The minimum number of items of lists and fields with multiple values.
+   * `required` on these implies `minItems: 1`.
+   */
+  minItems?: SchemaValue<$Item, {}, number>
+
+  /**
+   * The maximum number of items of lists and fields with multiple values.
+   */
+  maxItems?: SchemaValue<$Item, {}, number>
 
   /**
    * Whether the input field should have autocomplete enabled.

@@ -28,6 +28,20 @@ needn't be entered again. `rules` adds or changes rules, e.g.
 `undefined`. Rules other than `required` only apply to values that
 aren't empty.
 
+Text and arrays take the limits of the server's model properties, by the same
+names:
+
+```js
+code: { type: 'text', minLength: 2, maxLength: 8, pattern: '^[A-Z0-9]+$' },
+tags: { type: 'multiselect', multiple: true, options, maxItems: 5 },
+authors: { type: 'list', form, required: true } // Needs one item at least
+```
+
+`minLength` applies to empty text too, `minLength: 1` rejects `''`, but not
+the `null` of `nullable` fields. Lists and fields with multiple values hold
+arrays, which `required` accepts when they have one item at least, as if
+`minItems: 1` was given.
+
 `required` takes a callback:
 
 ```js

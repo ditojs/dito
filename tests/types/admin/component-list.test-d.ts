@@ -22,6 +22,14 @@ describe('ListSchema', () => {
     })
   })
 
+  it('accepts the limits of its items', () => {
+    assertType<ListSchema<Entry>>({
+      type: 'list',
+      minItems: 1,
+      maxItems: ({ item }) => (item.title ? 10 : 5)
+    })
+  })
+
   it('accepts columns as a record of ColumnSchema', () => {
     assertType<ListSchema<Entry>>({
       type: 'list',
