@@ -3,8 +3,8 @@ DitoProgress(
   :id="componentPath"
   ref="element"
   :value="progressValue"
-  :min="settings.min"
-  :max="settings.max"
+  :min="settings.minimum"
+  :max="settings.maximum"
   v-bind="attributes"
 )
 </template>
@@ -30,11 +30,13 @@ const DitoProgressType = {
       settings,
 
       progressValue: computed(() => {
-        const { min = 0, step } = settings.value
+        const { minimum = 0, step } = settings.value
         // Show empty values as an empty bar, not as an indeterminate one:
-        const value = field.value.value ?? min
+        const value = field.value.value ?? minimum
         // Round to the steps from the start of the range:
-        return step ? min + Math.round((value - min) / step) * step : value
+        return step
+          ? minimum + Math.round((value - minimum) / step) * step
+          : value
       })
     }
   }

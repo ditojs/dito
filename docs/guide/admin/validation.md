@@ -11,21 +11,21 @@ shown on the fields they belong to.
 ```js
 fields: {
   title: { type: 'text', required: true },
-  email: { type: 'email' },            // Validates the format
-  pages: { type: 'integer', min: 1 },  // Validates whole numbers of 1 or more
+  email: { type: 'email' },               // Validates the format
+  pages: { type: 'integer', minimum: 1 }, // Validates whole numbers from 1
   price: { type: 'number', range: [0, 1000], decimals: 2 },
   website: { type: 'url', rules: { url: false } } // Turns the rule off
 }
 ```
 
 The rules are `required`, `email`, `url`, `hostname`, `domain`, `creditcard`,
-`min`, `max`, `range`, `decimals` and `integer`. The text types `email`,
-`url`, `hostname`, `domain` and `creditcard` validate their format by their
-name, and number types the limits they're given. `password` fields don't
+`minimum`, `maximum`, `range`, `decimals` and `integer`. The text types
+`email`, `url`, `hostname`, `domain` and `creditcard` validate their format by
+their name, and number types the limits they're given. `password` fields don't
 validate a format, and `required` accepts them unchanged, so a saved password
-needn't be entered again. `rules` adds
-or changes rules, e.g. `rules: { max: 100 }`, and turns them off when set to
-`false` or `undefined`. Rules other than `required` only apply to values that
+needn't be entered again. `rules` adds or changes rules, e.g.
+`rules: { maximum: 100 }`, and turns them off when set to `false` or
+`undefined`. Rules other than `required` only apply to values that
 aren't empty.
 
 `required` takes a callback:

@@ -76,11 +76,11 @@ describe('MenuSchema', () => {
 })
 
 describe('NumberSchema', () => {
-  it('accepts min, max, step, decimals', () => {
+  it('accepts minimum, maximum, step, decimals', () => {
     assertType<NumberSchema<Entry>>({
       type: 'number',
-      min: 0,
-      max: 100,
+      minimum: 0,
+      maximum: 100,
       step: 0.5,
       decimals: 2
     })
@@ -97,8 +97,8 @@ describe('NumberSchema', () => {
     assertType<NumberSchema<Entry>>({
       type: 'number',
       rules: {
-        min: 0,
-        max: 999,
+        minimum: 0,
+        maximum: 999,
         integer: true
       }
     })

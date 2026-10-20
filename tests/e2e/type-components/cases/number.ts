@@ -30,8 +30,8 @@ export default [
       invalid: true
     },
     {
-      title: 'rejects a value below min',
-      schema: { min: 5 },
+      title: 'rejects a value below minimum',
+      schema: { minimum: 5 },
       value: '3',
       invalid: true
     },

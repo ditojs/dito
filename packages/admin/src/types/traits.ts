@@ -108,6 +108,8 @@ export const optionsTraits = {
 } satisfies Partial<TypeDescriptor>
 
 export const numberTraits = {
+  renamedSchemaKeys: ['minimum', 'maximum'],
+
   // Number inputs edit strings, and an empty one means no value:
   parseValue({ schema, value }: Context) {
     return value === ''
@@ -121,16 +123,19 @@ export const numberTraits = {
 
   getValidations(context: Context) {
     const { schema } = context
-    const { min, max, step, decimals } = getNumberSettings(schema, context)
+    const { minimum, maximum, step, decimals } = getNumberSettings(
+      schema,
+      context
+    )
     const validations: Record<string, any> = {}
-    if (min != null && max != null) {
-      validations.range = [min, max]
+    if (minimum != null && maximum != null) {
+      validations.range = [minimum, maximum]
     } else {
-      if (min != null) {
-        validations.min = min
+      if (minimum != null) {
+        validations.minimum = minimum
       }
-      if (max != null) {
-        validations.max = max
+      if (maximum != null) {
+        validations.maximum = maximum
       }
     }
     if (decimals != null) {
@@ -151,14 +156,14 @@ export const numberTraits = {
 } satisfies Partial<TypeDescriptor>
 
 export interface NumberSettings {
-  min: number | undefined
-  max: number | undefined
+  minimum: number | undefined
+  maximum: number | undefined
   step: number | undefined
   decimals: number | undefined
   range: [number, number] | undefined
 }
 
-// `min` and `max` default to `range`, integers round them and `step` outwards.
+// The limits default to `range`, integers round them and `step` outwards.
 export function getNumberSettings(
   schema: Schema,
   context: Context
@@ -171,14 +176,14 @@ export function getNumberSettings(
     roundFunction: (value: number) => number
   ) => (isInteger && value != null ? roundFunction(value) : value)
   const range = getSchemaValue('range', { type: Array, schema, context })
-  const min = round(getNumber('min') ?? range?.[0], Math.floor)
-  const max = round(getNumber('max') ?? range?.[1], Math.ceil)
+  const minimum = round(getNumber('minimum') ?? range?.[0], Math.floor)
+  const maximum = round(getNumber('maximum') ?? range?.[1], Math.ceil)
   return {
-    min,
-    max,
+    minimum,
+    maximum,
     step: round(getNumber('step'), Math.ceil),
     decimals: getNumber('decimals'),
-    range: min != null && max != null ? [min, max] : undefined
+    range: minimum != null && maximum != null ? [minimum, maximum] : undefined
   }
 }
 

@@ -84,11 +84,11 @@ describe('getValidations()', () => {
   describe('number types', () => {
     it.each([
       [{ type: 'number' }, {}],
-      [{ type: 'number', min: 1 }, { min: 1 }],
-      [{ type: 'number', max: 2 }, { max: 2 }],
-      [{ type: 'number', min: 1, max: 2 }, { range: [1, 2] }],
+      [{ type: 'number', minimum: 1 }, { minimum: 1 }],
+      [{ type: 'number', maximum: 2 }, { maximum: 2 }],
+      [{ type: 'number', minimum: 1, maximum: 2 }, { range: [1, 2] }],
       [{ type: 'number', range: [1, 2] }, { range: [1, 2] }],
-      [{ type: 'number', range: [1, 2], min: 0 }, { range: [0, 2] }],
+      [{ type: 'number', range: [1, 2], minimum: 0 }, { range: [0, 2] }],
       [{ type: 'number', decimals: 2 }, { decimals: 2 }],
       [{ type: 'number', step: 0.25 }, { decimals: 2 }],
       [{ type: 'number', step: 5 }, { integer: true }],
@@ -103,9 +103,9 @@ describe('getValidations()', () => {
     })
 
     it('evaluates callbacks with the context', () => {
-      const schema = { type: 'number', max: ({ item }) => item.limit }
+      const schema = { type: 'number', maximum: ({ item }) => item.limit }
       expect(getValidations({ schema, item: { limit: 3 } })).toEqual({
-        max: 3
+        maximum: 3
       })
     })
   })
@@ -131,15 +131,21 @@ describe('getValueValidationErrors()', () => {
   })
 
   it('applies other validations only to non-empty values', () => {
-    expect(getValueValidationErrors(null, { min: 1, email: true })).toEqual([])
-    expect(getValueValidationErrors('', { min: 1, email: true })).toEqual([])
-    expect(getValueValidationErrors(0, { min: 1 })).toEqual([
+    expect(getValueValidationErrors(null, { minimum: 1, email: true })).toEqual(
+      []
+    )
+    expect(getValueValidationErrors('', { minimum: 1, email: true })).toEqual(
+      []
+    )
+    expect(getValueValidationErrors(0, { minimum: 1 })).toEqual([
       { message: 'must be 1 or more' }
     ])
   })
 
   it('returns all errors, with messages without label prefix', () => {
-    expect(getValueValidationErrors(1.5, { min: 2, integer: true })).toEqual([
+    expect(
+      getValueValidationErrors(1.5, { minimum: 2, integer: true })
+    ).toEqual([
       { message: 'must be 2 or more' },
       { message: 'must be whole number' }
     ])
@@ -242,7 +248,7 @@ describe('getDataValidationErrors()', () => {
     const schema = {
       fields: {
         title: { type: 'text', required: true },
-        count: { type: 'integer', min: 1 },
+        count: { type: 'integer', minimum: 1 },
         note: { type: 'text' }
       }
     }

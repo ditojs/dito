@@ -12,7 +12,7 @@ refund: {
     context.isRunning = false
     const data = await context.showDialog({
       fields: {
-        amount: { type: 'number', decimals: 2, min: 0 },
+        amount: { type: 'number', decimals: 2, minimum: 0 },
         reason: { type: 'textarea', lines: 3 }
       },
       buttons: {

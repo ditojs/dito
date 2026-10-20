@@ -65,6 +65,14 @@ const renamedSchemaKeys = {
       'The `component` of views with a schema is deprecated, ' +
       'use `field` instead.'
     )
+  },
+  minimum: {
+    oldKey: 'min',
+    deprecation: 'Schema `min` is deprecated, use `minimum` instead.'
+  },
+  maximum: {
+    oldKey: 'max',
+    deprecation: 'Schema `max` is deprecated, use `maximum` instead.'
   }
 }
 
@@ -242,6 +250,13 @@ export function applySchemaDefaults(api, schema, name = schema.name) {
     // Only views take schemas in `component`, all other schemas Vue components:
     if (isView(schema) && isSchema(object.component)) {
       renameSchemaKey(object, 'field')
+    }
+    for (const key of getTypeDescriptor(schema)?.renamedSchemaKeys ?? []) {
+      renameSchemaKey(object, key)
+      // `rules` are keyed by the validators, which carry the new names too:
+      if (object.rules) {
+        renameSchemaKey(object.rules, key)
+      }
     }
   }
   // Rename the deprecated keys of the schema before the defaults, which see

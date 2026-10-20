@@ -15,6 +15,8 @@ export type TypeDescriptor = PublicTypeDescriptor & {
   readonly hasFormat?: boolean
   // Only multiselects read `search` from their schema:
   readonly hasSearch?: boolean
+  // The keys of the type whose deprecated names setup renames:
+  readonly renamedSchemaKeys?: readonly string[]
   // Lists show their buttons in the row of their label:
   readonly hasLabelButtons?: boolean
   // Sources hold their items in a list or an object:
