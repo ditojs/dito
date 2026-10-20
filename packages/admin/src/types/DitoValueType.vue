@@ -28,6 +28,7 @@ defineType({
   defaultValue: undefined,
   defaultVisible: false,
   resolvesValue: true,
+  getProperty: () => ({}),
 
   setupSchema({ schema }) {
     if (schema.type !== 'value') {
