@@ -688,6 +688,61 @@ describe('the deprecated keys components and component', () => {
   })
 })
 
+describe('the deprecated rules', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('moves the limits to the field, warning once', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const api = createApi({ number: { rules: { decimals: 2 } } })
+    const price = {
+      type: 'number',
+      maximum: 10,
+      rules: { required: true, minimum: 1, maximum: 100 }
+    }
+    const code = {
+      type: 'text',
+      rules: { minLength: 2, pattern: '^[A-Z]+$', email: true }
+    }
+    applySchemaDefaults(api, price)
+    applySchemaDefaults(api, code)
+    expect(price).toEqual({
+      type: 'number',
+      required: true,
+      minimum: 1,
+      maximum: 100,
+      decimals: 2
+    })
+    expect(code).toEqual({
+      type: 'text',
+      minLength: 2,
+      pattern: '^[A-Z]+$',
+      rules: { email: true }
+    })
+    expect(warn.mock.calls).toEqual([
+      [
+        'Schema `rules` are deprecated, use the limits of fields, ' +
+        'their types and `validate()` instead.'
+      ]
+    ])
+  })
+
+  it('keeps the rules that turn validations off', () => {
+    const schema = {
+      type: 'number',
+      maximum: 10,
+      rules: { required: false, maximum: undefined, integer: true }
+    }
+    applySchemaDefaults(createApi(), schema)
+    expect(schema).toEqual({
+      type: 'number',
+      maximum: 10,
+      rules: { required: false, maximum: undefined, integer: true }
+    })
+  })
+})
+
 describe('the deprecated keys min and max', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -703,8 +758,9 @@ describe('the deprecated keys min and max', () => {
     expect(price).toEqual({ type: 'number', minimum: 0, maximum: 100 })
     expect(discount).toEqual({
       type: 'number',
+      minimum: 1,
       maximum: 100,
-      rules: { minimum: 1, maximum: false }
+      rules: { maximum: false }
     })
     expect(warn.mock.calls).toEqual([
       ['Schema `min` is deprecated, use `minimum` instead.'],

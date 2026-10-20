@@ -1,6 +1,6 @@
 ### New
 
-- **admin:** Number types (`number`, `integer`, `slider`, `progress`) take `minimum` and `maximum`, the names of the server's model properties, and so do their validation rules, e.g. `rules: { maximum: 100 }`.
+- **admin:** Number types (`number`, `integer`, `slider`, `progress`) take `minimum` and `maximum`, the names of the server's model properties.
 
 ### Deprecations
 

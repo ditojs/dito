@@ -188,11 +188,10 @@ const DitoMarkupType = {
       const attributes = await services.adminContext.showDialog({
         fields: {
           href: {
-            type: 'url',
+            // Accept links without scheme, they get `https://` when applied:
+            type: 'text',
             label: 'Link',
             autofocus: true,
-            // Accept links without scheme, they get `https://` when applied:
-            rules: { url: false },
             validate: ({ value }) => isUrl(value) || 'is not a valid URL'
           },
           title: {

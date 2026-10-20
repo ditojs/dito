@@ -104,7 +104,7 @@ describe('NumberSchema', () => {
     })
   })
 
-  it('accepts rules including integer', () => {
+  it('accepts the deprecated rules', () => {
     assertType<NumberSchema<Entry>>({
       type: 'number',
       rules: {

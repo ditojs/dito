@@ -49,25 +49,13 @@ describe('getValidations()', () => {
     })
   })
 
-  it('applies `schema.rules` overrides', () => {
+  it('removes validations that the deprecated rules turn off', () => {
     expect(
       getValidations({
         schema: {
           type: 'password',
           required: true,
-          rules: { password: undefined, required: undefined, email: true }
-        }
-      })
-    ).toEqual({ email: true })
-  })
-
-  it('removes rules that `schema.rules` sets to `false`', () => {
-    expect(
-      getValidations({
-        schema: {
-          type: 'password',
-          required: true,
-          rules: { password: false, required: false }
+          rules: { password: false, required: undefined }
         }
       })
     ).toEqual({})

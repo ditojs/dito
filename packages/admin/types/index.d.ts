@@ -405,6 +405,9 @@ export interface ApiConfig {
 
 /**
  * Validation rules shared by all schemas, extended by the individual types.
+ *
+ * @deprecated Until 6.0: use the limits of fields, their types and
+ * `validate()`.
  */
 export interface SchemaRules {
   /** Override whether the field is required. */
@@ -497,6 +500,9 @@ export interface FieldSchemaBase<$Item> extends SchemaBase<$Item> {
    * Specifies validations rules to add, remove (by setting to `false` or
    * `undefined`) or change before value validation occurs. Rule changes do
    * not influence how the field is rendered.
+   *
+   * @deprecated Until 6.0: use the limits of fields, their types and
+   * `validate()`.
    */
   rules?: SchemaRules
 
@@ -1094,7 +1100,7 @@ export interface NumberSettings<$Item> {
    * The maximum amount of decimals allowed, validated on input.
    */
   decimals?: SchemaValue<$Item, {}, number>
-  /** Validation rules for numeric constraints. */
+  /** @deprecated Until 6.0: use the limits of fields and `validate()`. */
   rules?: SchemaRules &
     Omit<NumberSettings<$Item>, 'rules'> & {
       /** Restrict the value to whole numbers. */
@@ -1382,6 +1388,7 @@ export interface InputSchema<$Item = any>
     | 'tel'
     | 'password'
     | 'creditcard'
+  /** @deprecated Until 6.0: use `type: 'text'` and `validate()`. */
   rules?: SchemaRules & {
     text?: boolean
     email?: boolean

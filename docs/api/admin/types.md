@@ -59,7 +59,7 @@ export const bookForm: FormSchema<Book> = {
 | `SchemaEvents<$Item>` | The deprecated `events: {}` object of views and forms. Use the `on…` options. |
 | `BaseSchemaEvents<$Item>` | The deprecated `events: {}` object of fields, adding `focus` and `blur`. |
 | `SchemaToggle<$Item>` | The `onToggle` option of collapsible schemas. |
-| `SchemaRules` | The `rules` option, overriding and adding validations. |
+| `SchemaRules` | The deprecated `rules` option. Use the limits of fields, their types and `validate()`. |
 
 See [Events](./events.md).
 
@@ -116,7 +116,7 @@ See [Schemas](./schemas.md).
 | Type | Description |
 | ---- | ----------- |
 | `SchemaBase<$Item>` | The options of all schemas: `panels` and the `on…` lifecycle handlers. |
-| `FieldSchemaBase<$Item>` | The options of all fields: `label`, `visible`, `default`, `rules`, … |
+| `FieldSchemaBase<$Item>` | The options of all fields: `label`, `visible`, `default`, `validate`, … |
 | `RouteSchemaBase<$Item>` | The options of views and forms, also of inlined forms and dialogs. |
 | `SourceSettings<$Item>` | The options of lists, objects and trees: `form`, `columns`, `creatable`, … |
 | `SelectionSettings<$Item, $Option>` | The options of fields with options: `options`, `relate`, `search`. |
@@ -431,8 +431,8 @@ getValidations?(context: SchemaContext): Record<string, any>
 ```
 
 *Hook.* Returns the validations of the value, keyed by validator name, e.g.
-`{ email: true }` or `{ range: [0, 10] }`. `required` and the schema's `rules`
-are added to them; a rule set to `undefined` removes a validation.
+`{ email: true }` or `{ range: [0, 10] }`. `required`, the limits of strings
+and arrays and `validate()` are added to them.
 
 #### setupSchema()
 

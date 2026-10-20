@@ -1,12 +1,13 @@
 # Validation
 
-The admin validates in two places: in the browser, with the rules of the
-fields, and on the server, with the schemas of the models. Errors of both are
-shown on the fields they belong to.
+The admin validates in two places: in the browser, with the types and limits
+of the fields, and on the server, with the schemas of the models. Errors of
+both are shown on the fields they belong to.
 
-## Rules of fields
+## Types and limits of fields
 
-`required` and the rules of the field types validate in the browser:
+The types of fields check their values, and `required` and the limits of
+fields validate them further, in the browser:
 
 ```js
 fields: {
@@ -14,20 +15,19 @@ fields: {
   email: { type: 'email' },               // Validates the format
   pages: { type: 'integer', minimum: 1 }, // Validates whole numbers from 1
   price: { type: 'number', range: [0, 1000], decimals: 2 },
-  website: { type: 'url', rules: { url: false } } // Turns the rule off
+  website: { type: 'text' }               // Any text, not only URLs
 }
 ```
 
-The rules are `required`, `email`, `url`, `hostname`, `domain`, `creditcard`,
-`minimum`, `maximum`, `range`, `decimals`, `integer` and `enum`. The text
-types `email`, `url`, `hostname`, `domain` and `creditcard` validate their
-format by their name, number types the limits they're given, and options
-types the values of [static options](../../api/admin/schemas.md#selection-options).
+The text types `email`, `url`, `hostname`, `domain` and `creditcard` validate
+their format by their name, `integer` whole numbers, and options types the
+values of [static options](../../api/admin/schemas.md#selection-options).
+Number types take the limits `minimum`, `maximum`, `range` and `decimals`.
 `password` fields don't validate a format, and `required` accepts them
-unchanged, so a saved password needn't be entered again. `rules` adds or changes rules, e.g.
-`rules: { maximum: 100 }`, and turns them off when set to `false` or
-`undefined`. Rules other than `required` only apply to values that
-aren't empty.
+unchanged, so a saved password needn't be entered again. Validations other
+than `required` only apply to values that aren't empty. Where a type checks
+too much, use a type without the check, e.g. `type: 'text'` instead of
+`'url'`, and [`validate()`](#custom-validation) for the rest.
 
 Text and arrays take the limits of the server's model properties, by the same
 names:
@@ -54,8 +54,8 @@ isbn: {
 
 ## Custom validation
 
-`validate()` validates the value with a callback, together with the other
-rules. It receives the context, with the value after `formatValue()`, and
+`validate()` validates the value with a callback, together with the type and
+the limits. It receives the context, with the value after `formatValue()`, and
 returns `false` to fail with "is invalid", or a message to fail with:
 
 ```js
@@ -69,7 +69,7 @@ isbn: {
 ```
 
 The error reads "The ISBN field must be an ISBN with 13 digits." `true` and
-`undefined` pass. Like the rules, `validate()` only applies to values that
+`undefined` pass. Like the limits, `validate()` only applies to values that
 aren't empty, and runs synchronously: validate values that need requests on
 the server.
 
@@ -138,4 +138,5 @@ data.
 - [`validate()`](../../api/admin/context.md#validate),
   [`isValid()`](../../api/admin/context.md#isvalid) and
   [`clearErrors()`](../../api/admin/context.md#clearerrors).
-- The rules of each type in [Fields](../../api/admin/schemas.md#fields).
+- The checks and limits of each type in
+  [Fields](../../api/admin/schemas.md#fields).

@@ -30,7 +30,8 @@ price: {
 - `if` renders the field only when it returns `true`. `visible: false` only
   hides it: its value is still computed and validated.
 - `readonly` and `disabled` prevent edits.
-- `required` and `rules` validate the value, see [Validation](./validation.md).
+- `required` and limits like `minimum` or `maxLength` validate the value, see
+  [Validation](./validation.md).
 - `exclude: true` leaves the value out of the data sent to the server, and its
   changes don't make the form dirty.
 - `width` and `break` place the field, see [Layout](./layout.md).
