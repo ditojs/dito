@@ -515,7 +515,9 @@ summary: {
 
 `UploadSchema`. Uploads files to the server's upload resource for the field's
 data path, and holds the file objects that the server returns. Saving waits
-for running uploads, and files that failed to upload are left out.
+for running uploads, and files that failed to upload are left out. Picking
+files and validating reject the files that `extensions` and `maxSize` don't
+accept, also files already in the data. `accept` only filters the file picker.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |

@@ -621,6 +621,10 @@ defineType({
   defaultValue: context =>
     getMultipleValue(context.schema, context) ? [] : null,
 
+  // Validate the files in the data with the limits of picking files, which
+  // pass without settings:
+  getValidations: context => getUploadLimits(context.schema, context),
+
   serializeValue(context) {
     const files = getStoredFiles(context.value)
     return getMultipleValue(context.schema, context) ? files : files[0] || null

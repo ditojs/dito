@@ -464,6 +464,43 @@ describe('DitoUploadType', () => {
     expect(wrapper.findComponent(VueUpload).props('size')).toBe(2_000_000)
   })
 
+  it('rejects stored files that `extensions` and `maxSize` exclude on submit', async () => {
+    const { getErrors, submit } = await mountForm({
+      schema: {
+        fields: {
+          images: {
+            type: 'upload',
+            multiple: true,
+            extensions: ['png', 'jpg']
+          },
+          scan: { type: 'upload', maxSize: '10 kB' }
+        }
+      },
+      data: { images: [cover, scan], scan }
+    })
+    expect(await submit()).toBe(null)
+    expect(getErrors('images')).toEqual([
+      'The Images field must not contain files of unsupported types: scan.pdf.'
+    ])
+    expect(getErrors('scan')).toEqual([
+      'The Scan field must not contain files larger than 10 kB: scan.pdf.'
+    ])
+  })
+
+  it('sends stored files that the limits accept', async () => {
+    const { submit } = await mountForm({
+      schema: {
+        fields: {
+          images: { type: 'upload', multiple: true, extensions: /\.png$/ },
+          scan: { type: 'upload', maxSize: '1 MB' }
+        }
+      },
+      data: { images: [cover], scan },
+      request: ({ data }) => ({ data })
+    })
+    expect(await submit()).toEqual({ id: 1, images: [cover], scan })
+  })
+
   it('links files with `url` to their own URL', async () => {
     const { findField } = await mountForm({
       schema: {
