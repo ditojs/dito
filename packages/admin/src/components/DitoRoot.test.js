@@ -427,6 +427,22 @@ describe('DitoRoot', () => {
   })
 
   describe('session start', () => {
+    it('opens the view of a deep link', async () => {
+      const admin = await mountAdmin({
+        path: '/catalog/authors',
+        views: {
+          catalog: {
+            type: 'menu',
+            label: 'Catalog',
+            items: {
+              authors: { type: 'view', label: 'Authors', fields: {} }
+            }
+          }
+        }
+      })
+      expect(admin.router.currentRoute.value.path).toBe('/catalog/authors')
+    })
+
     it('logs the errors of setting up the views', async () => {
       const logError = vi.spyOn(console, 'error').mockImplementation(() => {})
       const element = document.createElement('div')

@@ -55,6 +55,9 @@ export class Session {
   }
 
   async start() {
+    const { router } = this.#adminContext
+    // The current route is the opened URL only after the first navigation:
+    await router.isReady()
     // The link of password reset emails opens the admin with the token in the
     // fragment, which browsers don't send to servers:
     const params = new URLSearchParams(location.hash.slice(1))
@@ -63,7 +66,6 @@ export class Session {
       await this.#confirmPasswordReset(token)
       // Remove the token through the router, which would otherwise restore it
       // with its next navigation:
-      const { router } = this.#adminContext
       const { path, query } = router.currentRoute.value
       await router.replace({ path, query })
     }
