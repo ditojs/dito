@@ -48,7 +48,7 @@ export function useDitoForm({
     ...formSchema,
     buttons: isInDialog ? buttons : { cancel: false, ...buttons }
   }) as Schema
-  setupForm(adminContext.api, schema)
+  const formSetup = setupForm(adminContext.api, schema)
     .then(() => {
       if (new RouteTree({ form: schema }, adminContext.api).hasRoutedForms()) {
         throw new Error(
@@ -117,10 +117,12 @@ export function useDitoForm({
       })()
     )
 
-  // Load the item of each id, but not the one that was just created:
+  // Load the item of each id, but not the one that was just created. Wait for
+  // the setup, which applies the defaults that new items are created with:
   watch(
     () => toValue(id),
-    id => {
+    async id => {
+      await formSetup
       if (id == null) {
         form.createData()
       } else if (String(id) !== getDataId()) {
