@@ -2,7 +2,7 @@ import { assertType, describe, it } from 'vitest'
 import type {
   View,
   FormSchema,
-  Component,
+  Field,
   PanelSchema,
   ButtonSchema,
   ResolvableForm
@@ -16,19 +16,19 @@ type DeepItem = {
 }
 
 describe('Variance: typed schemas assignable to any', () => {
-  it('Component<Entry> is assignable to Component<any>', () => {
-    const component: Component<Entry> = {
+  it('Field<Entry> is assignable to Field<any>', () => {
+    const field: Field<Entry> = {
       type: 'text'
     }
-    assertType<Component<any>>(component)
+    assertType<Field<any>>(field)
   })
 
-  it('ButtonSchema<Entry> is assignable to Component<any>', () => {
+  it('ButtonSchema<Entry> is assignable to Field<any>', () => {
     const button: ButtonSchema<Entry> = {
       type: 'button',
       text: 'Click me'
     }
-    assertType<Component<any>>(button)
+    assertType<Field<any>>(button)
   })
 
   it('PanelSchema<Entry> is assignable to PanelSchema<any>', () => {

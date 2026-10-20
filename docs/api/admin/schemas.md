@@ -1,7 +1,7 @@
 # Schemas
 
 The admin is described by plain objects, the schemas: views at the top, forms
-inside them, and component schemas for every field, list, section or button.
+inside them, and field schemas for every input, list, section or button.
 Each schema names its `type`. This page lists the options that all schemas
 share, followed by the options of each type.
 
@@ -74,7 +74,7 @@ title: {
 
 ## SchemaBase
 
-The options of all schemas: views, forms and components.
+The options of all schemas: views, forms and fields.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
@@ -87,22 +87,22 @@ have `onInitialize()`, `onDestroy()` and `onLoad()`, see
 [RouteSchemaBase](#routeschemabase). See [Events](./events.md) for when each
 event fires and what return values mean.
 
-## ComponentSchemaBase
+## FieldSchemaBase
 
-The options of all component types, in addition to `SchemaBase`. Whether a
+The options of all field types, in addition to `SchemaBase`. Whether a
 type uses an option depends on the type: `maxLength` and `autocomplete` apply
 to text inputs, `placeholder` to text inputs and selects, `clearable` to inputs
 that can be cleared.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
-| `type` | `string` | | The component type. Required. |
+| `type` | `string` | | The field type. Required. |
 | `name` | `string` | the key | The key of the value in the item. Set from the key in `fields`. |
 | `label` | `SchemaValue<TextOrHtml \| boolean \| { text? \| html?, prefix?, suffix? }>` | the labelized name | The label, see [Text and HTML](#text-and-html). `false` hides it. The object form adds [affixes](#affixes). Buttons, labels, panels, sections and spacers don't generate one. |
-| `if` | `SchemaValue<boolean>` | `true` | Renders the component only if `true`. Values of components that aren't rendered aren't computed. |
-| `visible` | `SchemaValue<boolean>` | `true`, `false` for `value` | Shows or hides the component. Hidden components keep their value. |
+| `if` | `SchemaValue<boolean>` | `true` | Renders the field only if `true`. Values of fields that aren't rendered aren't computed. |
+| `visible` | `SchemaValue<boolean>` | `true`, `false` for `value` | Shows or hides the field. Hidden fields keep their value. |
 | `default` | `SchemaValue` | the type's default | The value used when the item lacks the key, e.g. in new items. Lists, `checkboxes` and multiselects with `multiple` also use it for `null`. |
-| `computeValue` | `SchemaValueCallback` | | Computes the value reactively into the data, also when the component isn't shown, unless `if` is `false`. Returning `undefined` keeps the current value. |
+| `computeValue` | `SchemaValueCallback` | | Computes the value reactively into the data, also when the field isn't shown, unless `if` is `false`. Returning `undefined` keeps the current value. |
 | `formatValue` | `SchemaValueCallback` | | Converts the value for display. |
 | `parseValue` | `SchemaValueCallback` | | Converts the edited value before it's written into the data. |
 | `deserializeValue` | `SchemaValueCallback` | | Converts the stored value when data is loaded, merged from a save response, reset with `resetItem()`, merged with `mergeItem()`, pasted or read from the query, after the type's own conversion. Its `item` holds the new data, while `rootItem` still holds the data from before. |
@@ -111,8 +111,8 @@ that can be cleared.
 | `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value: not `null`, `''` or an empty array, so lists and fields with multiple values need at least one entry. Unlike the server's `required`, which accepts empty arrays. |
 | `rules` | `SchemaRules` | | Validation rules to add or change, keyed by validator name, or to turn off by setting them to `false` or `undefined`, e.g. `{ email: false }`. Types add their own rules, e.g. `min` for numbers. |
 | `validate` | `(context) => boolean \| string \| void` | | Validates values that aren't empty, with the value after `formatValue()`. Returning `false` fails with "is invalid", a string fails with it as the message, e.g. `'must have 13 digits'`. See [Validation](../../guide/admin/validation.md#custom-validation). |
-| `readonly` | `SchemaValue<boolean>` | `false` | Text inputs become read-only, all other components disabled. |
-| `disabled` | `SchemaValue<boolean>` | `false` | Disables the component. Disabled sections and panels disable all components inside them, also nested ones. Loading forms and views don't disable their components. |
+| `readonly` | `SchemaValue<boolean>` | `false` | Text inputs become read-only, all other fields disabled. |
+| `disabled` | `SchemaValue<boolean>` | `false` | Disables the field. Disabled sections and panels disable all fields inside them, also nested ones. Loading forms and views don't disable their fields. |
 | `autofocus` | `SchemaValue<boolean>` | `false` | Focuses the input when rendered. |
 | `labelledBy` | `SchemaValue<string>` | | The id of the element that labels the field, for fields without their own label, set as `aria-labelledby` of the input. |
 | `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value to `null`, or to `[]` with `multiple`. Ignored while `readonly`. |
@@ -122,8 +122,8 @@ that can be cleared.
 | `autocomplete` | `SchemaValue<'on' \| 'off'>` | | The `autocomplete` attribute of text inputs. Fields without a credential token like `username`, `current-password`, `new-password` or `one-time-code` also tell password managers to ignore them. |
 | `width` | `SchemaValue<…>` | `1` (full); `'auto'` for buttons, `checkboxes`, `radio`, `switch` | See [Layout options](#layout-options). |
 | `align` | `SchemaValue<'top' \| 'center' \| 'bottom'>` | `'top'` | See [Layout options](#layout-options). |
-| `break` | `'before' \| 'after' \| 'both'` | | Forces a line break before or after the component. |
-| `class` | `string \| Record<string, boolean>` | | CSS classes added to the component's container. |
+| `break` | `'before' \| 'after' \| 'both'` | | Forces a line break before or after the field. |
+| `class` | `string \| Record<string, boolean>` | | CSS classes added to the field's container. |
 | `onFocus` | `ItemEventHandler` | | Called when the input receives focus. |
 | `onBlur` | `ItemEventHandler` | | Called when the input loses focus. The value is validated first. |
 | `events` | `object` | | Deprecated, see [Events](./events.md#deprecated-events). |
@@ -151,7 +151,7 @@ when it is set, and so do panels with their own `data`.
 
 ### Layout options
 
-Components are laid out in lines, which hold components until their widths
+Fields are laid out in lines, which hold fields until their widths
 exceed 100%.
 
 | `width` value | Meaning |
@@ -163,9 +163,9 @@ exceed 100%.
 | `'>50%'`, `'<50%'` | The width, growing (`>`) or shrinking (`<`) to fit the line. |
 | `'200px'` | A width in CSS units. |
 
-`align` places a component vertically in its line, when other components in
-it are taller: `'top'` (the default), `'center'` or `'bottom'`. The label moves
-with the component.
+`align` places a field vertically in its line, when other fields in it are
+taller: `'top'` (the default), `'center'` or `'bottom'`. The label moves with
+the field.
 
 ### Text and HTML
 
@@ -243,8 +243,8 @@ resource: { path: '/books/import', method: 'post' }
 
 ## Fields
 
-Components that edit a single value. All of them have the
-[component options](#componentschemabase). Unless noted, their
+Fields that edit a single value. All of them have the
+[field options](#fieldschemabase). Unless noted, their
 default value is `null`.
 
 Events of all fields: `onFocus`, `onBlur`, `onInput` and `onChange`, see
@@ -584,9 +584,9 @@ rating: { type: 'component', component: import('./Rating.vue'), default: 0 }
 
 ## Options
 
-Components that select from options: `select`, `multiselect`, `radio` and
+Fields that select from options: `select`, `multiselect`, `radio` and
 `checkboxes`. They have the
-[component options](#componentschemabase) and the
+[field options](#fieldschemabase) and the
 [selection options](#selection-options).
 
 Events: `onFocus`, `onBlur`, `onInput` and `onChange`, see
@@ -614,7 +614,7 @@ An array of options: plain values, which are their own labels, or
 | Key | Type | Default | Description |
 | --- | ---- | ------- | ----------- |
 | `data` | `SchemaValue<OrPromiseOf<any[]>>` | | The options, or a callback that loads them. A callback can return another callback, which loads the data while the outer one only tracks the reactive values it reads. |
-| `dataPath` | `string` | | Takes the options from the edited data, relative to the item the component sits in, or absolute with a leading `/`. `..` goes up a level. |
+| `dataPath` | `string` | | Takes the options from the edited data, relative to the item the field sits in, or absolute with a leading `/`. `..` goes up a level. |
 | `label` | `string \| SchemaValueCallback<string>` | `'label'` for objects | The key of the option's label, or a callback receiving `option` in the context. |
 | `value` | `string \| SchemaValueCallback` | the `relate` key, else `'value'` for objects | The key of the option's value, or a callback receiving `option`. |
 | `group` | `string \| SchemaValueCallback<string>` | | The key of the option's group, or a callback receiving `option`. Selects show groups in the dropdown, radio buttons and checkboxes in fieldsets. |
@@ -748,9 +748,9 @@ roles: {
 
 ## Layout
 
-Components that group, label or act rather than edit a value: `section`,
+Fields that group, label or act rather than edit a value: `section`,
 `panel`, `label`, `spacer`, `button` and `submit`. They have the
-[component options](#componentschemabase).
+[field options](#fieldschemabase).
 
 ### section
 
@@ -762,7 +762,7 @@ stored under the section's name, e.g. `item.address`.
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
 | `type` | `'section'` | | Required. |
-| `fields` | `Components \| SchemaValueCallback<Components>` | | The fields. A callback creates them from the context, e.g. fields that depend on a selected template; it runs again when the data that it reads changes, and its `item` is the item that contains the section. |
+| `fields` | `Fields \| SchemaValueCallback<Fields>` | | The fields. A callback creates them from the context, e.g. fields that depend on a selected template; it runs again when the data that it reads changes, and its `item` is the item that contains the section. |
 | `form` | `ResolvableForm` | | A form for the content, instead of `fields`, for form options like `tabs`. |
 | `forms` | `Record<string, ResolvableForm>` | | Forms by item type, picked by `type` of the data, else `forms.default`. |
 | `tabs` | `Record<string, object>` | | Shows the fields in [tabs](#tabs). |
@@ -810,12 +810,12 @@ component of `type: 'component'` fields, and groups of them in rows with
 
 In TypeScript, declare the keys of sections without `nested` as `never` in the
 item type, and those of nested sections as their object type, see
-`Components` in [Types](./types.md).
+`Fields` in [Types](./types.md).
 
 ### panel
 
 `PanelSchema`. A box in the sidebar. Panels are given in `panels` of any
-schema, or as a component of `type: 'panel'`. Like sections, their fields
+schema, or as a field of `type: 'panel'`. Like sections, their fields
 read and write the item around them by default; with `nested: true` they edit
 an object stored under the panel's name, e.g. `item.details.title`. A panel
 with its own `data` edits that data instead, and can't be nested.
@@ -824,13 +824,13 @@ with its own `data` edits that data instead, and can't be nested.
 | ------ | ---- | ------- | ----------- |
 | `type` | `'panel'` | | Required. |
 | `label` | `SchemaValue<string \| boolean>` | the labelized name | The header of the panel. |
-| `fields` | `Components` | | The fields of the panel. |
+| `fields` | `Fields` | | The fields of the panel. |
 | `nested` | `boolean` | `false` | Stores the panel's values in an object under its name, like nested sections. Throws together with `data`. |
 | `data` | `SchemaValue<Record<string, any>>` | | The panel's own data, e.g. of filters. Its edits don't make the form or view dirty, but writes through `rootItem` or `parentItem` change the data around the panel and count as edits. It is the `item` of the contexts inside the panel; `data()`, `if`, `visible`, `label` and `sticky` receive the context of the data around the panel. |
 | `buttons` | `Buttons` | | Buttons at the bottom of the panel. |
 | `panelButtons` | `Buttons` | | Small buttons in the header. |
 | `sticky` | `SchemaValue<boolean>` | `false` | Keeps the header at the top while scrolling. |
-| `if`, `visible` | `SchemaValue<boolean>` | `true` | Renders or shows the panel. Panels of components in tabs only show while their tab is selected. |
+| `if`, `visible` | `SchemaValue<boolean>` | `true` | Renders or shows the panel. Panels of fields in tabs only show while their tab is selected. |
 | `disabled` | `boolean` | the disabled state around the panel | Disables the panel's fields and buttons. |
 
 Events: `onInitialize`, `onDestroy`, `onLoad`, and `onInput` and `onChange`
@@ -857,7 +857,7 @@ panels: {
 
 ### label
 
-`LabelSchema`. Shows text in the place of a component: its `label` if it has
+`LabelSchema`. Shows text in the place of a field: its `label` if it has
 one, or else its value, which is `TextOrHtml` as well, see
 [Text and HTML](#text-and-html). It is excluded from the data sent to the
 server.
@@ -868,7 +868,7 @@ notice: { type: 'label', label: 'Prices include VAT.' }
 
 ### spacer
 
-`SpacerSchema`. Empty space in a line of components, as wide as its `width`.
+`SpacerSchema`. Empty space in a line of fields, as wide as its `width`.
 It has no value.
 
 ```js
@@ -926,7 +926,7 @@ Sources hold items that are edited with forms: `list` and `tree-list` hold an
 array of items, `object` and `tree-object` a single item. Their items are
 loaded from their own `resource`, or are part of the data around them. All
 sources share the [source options](#source-options), in addition to the
-[component options](#componentschemabase).
+[field options](#fieldschemabase).
 
 ### Source options
 
@@ -936,7 +936,7 @@ sources share the [source options](#source-options), in addition to the
 | ------ | ---- | ------- | ----------- |
 | `form` | `ResolvableForm` | | The [form](#form) that edits the items. Also a promise, a function or a module namespace of `import()`. |
 | `forms` | `Record<string, ResolvableForm>` | | Forms by item type, for items of several types: the form is picked by `item.type`, else `forms.default`. The create menu offers each form by its `creatable`, and greys out the `disabled` ones; their `if` and `visible` don't affect it. |
-| `fields` | `Components` | | The fields of an inlined form, instead of `form`. Implies `inlined`. |
+| `fields` | `Fields` | | The fields of an inlined form, instead of `form`. Implies `inlined`. |
 | `tabs` | `Record<string, object>` | | The [tabs](#tabs) of the inlined form of `fields`. |
 | `compact` | `boolean` | `false` | Renders the inlined form of `fields` with reduced spacing, with labels outside of it. |
 | `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons for all loaded items to the row of the label of lists, or to the row of their scopes and pagination without a label, and to the form of objects, unless the form sets its own `clipboard`. Lists with their own `resource` and tree lists don't support it. |
@@ -1152,8 +1152,8 @@ of [`DitoAdmin`](./admin.md) map names to views or menus.
 | `name` | `string` | the key in `views` | The name of the view. |
 | `label` | `SchemaValue<TextOrHtml>` | the labelized name | The label in the menu and the trail. |
 | `path` | `string` | the normalized name | The URL path of the view. |
-| `field` | `Component` | | A single field that the view displays, usually a list. It is named after the view and has no label. |
-| `fields` | `Components` | | The fields of the view, instead of `field`. |
+| `field` | `Field` | | A single field that the view displays, usually a list. It is named after the view and has no label. |
+| `fields` | `Fields` | | The fields of the view, instead of `field`. |
 | `tabs` | `Record<string, object>` | | Shows groups of fields in tabs, see [Tabs](#tabs). |
 | `buttons`, `if`, `wide`, `breadcrumb`, `clipboard` | | | See [RouteSchemaBase](#routeschemabase). `if` also blocks direct URL access. |
 
@@ -1192,7 +1192,7 @@ forms are routed under the view's path, e.g. `/admin/books/1`.
 | `name` | `string` | the key in `views` | The name of the page. |
 | `label` | `SchemaValue<TextOrHtml>` | the labelized name | The label in the menu and the trail. |
 | `path` | `string` | the normalized name | The URL path of the page, with route params, e.g. `'products/:id'`. Pages with required params have no menu item. |
-| `component` | `Resolvable<Component>` | | Required. The Vue component, e.g. `() => import('./Page.vue')`. It reads the page's context with `useDitoContext()`. |
+| `component` | `Resolvable<VueComponent>` | | Required. The Vue component, e.g. `() => import('./Page.vue')`. It reads the page's context with `useDitoContext()`. |
 | `if`, `breadcrumb` | | | See [RouteSchemaBase](#routeschemabase). `if` also blocks direct URL access. |
 
 ### menu
@@ -1231,7 +1231,7 @@ schemas, also as promises, functions returning them, or module namespaces of
 | `type` | `'form'` | | Required. |
 | `name` | `SchemaValue<string>` | | The name of the item model, used in labels. |
 | `label` | `SchemaValue<TextOrHtml \| boolean>` | the labelized name | The label of the form, e.g. in `'Edit Book'`. |
-| `fields` | `Components` | | The fields of the form. Can also be a callback that creates them from the context, which runs again when the data it reads changes. |
+| `fields` | `Fields` | | The fields of the form. Can also be a callback that creates them from the context, which runs again when the data it reads changes. |
 | `component` | `Resolvable<VueComponent>` | | A Vue component that lays out the form's `fields`, which it needs, as in [`section`](#section), and receives the props `schema` and `context` of the form, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields). |
 | `tabs` | `Record<string, object>` | | Shows groups of fields in tabs, see [Tabs](#tabs). |
 | `idKey` | `string` | `'id'` | The key of the item's id. |

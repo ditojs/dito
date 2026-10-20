@@ -1,6 +1,6 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type {
-  Components,
+  Fields,
   FormSchema,
   PanelSchema,
   SchemaContext,
@@ -11,7 +11,7 @@ import type { Entry, Parent } from './fixtures.ts'
 
 describe('fields and field', () => {
   it('accepts the fields of views, forms, sections and panels', () => {
-    const fields: Components<Entry> = { title: { type: 'text' } }
+    const fields: Fields<Entry> = { title: { type: 'text' } }
     assertType<View<Entry>>({ type: 'view', fields })
     assertType<FormSchema<Entry>>({ type: 'form', fields })
     assertType<SectionSchema<Entry>>({ type: 'section', fields })
@@ -78,7 +78,7 @@ describe('fields and field', () => {
   })
 
   it('keeps accepting the deprecated components and component', () => {
-    const components: Components<Entry> = { title: { type: 'text' } }
+    const components: Fields<Entry> = { title: { type: 'text' } }
     assertType<View<Entry>>({ type: 'view', components })
     assertType<View<Entry>>({
       type: 'view',

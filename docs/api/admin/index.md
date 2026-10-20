@@ -18,17 +18,17 @@ For an introduction, see the [admin guide](../../guide/admin/index.md).
 | Page | Contents |
 | ---- | -------- |
 | [DitoAdmin](./admin.md) | The `DitoAdmin` class, its constructor options and the `api` configuration; `admin.context` with the user, the session, views, dialogs and notifications; the global `dito` object |
-| [Schemas](./schemas.md) | The options that all schemas share, and the options of every component type: fields, options, layout, lists and objects, views, forms and dialogs |
+| [Schemas](./schemas.md) | The options that all schemas share, and the options of every field type: fields, options, layout, lists and objects, views, forms and dialogs |
 | [SchemaContext](./context.md) | The context that schema callbacks and event handlers receive |
 | [Events](./events.md) | The `on…` event handlers of schemas, forms, views and buttons |
-| [Types](./types.md) | The exported TypeScript types, `defineType()` and the descriptors of custom component types |
+| [Types](./types.md) | The exported TypeScript types, `defineType()` and the descriptors of custom field types |
 
 ## Exports
 
 | Export | Description |
 | ------ | ----------- |
 | `default`, `DitoAdmin` | The [DitoAdmin](./admin.md) class |
-| `defineType()` | Defines a custom component type, see [`defineType()`](./types.md#definetype) |
+| `defineType()` | Defines a custom field type, see [`defineType()`](./types.md#definetype) |
 | `DitoSchemaField` | Places a field of a section or form with `component`, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields). `DitoField` is its deprecated alias until 6.0 |
 | `DitoPane` | Places fields of a section or form with `component` in rows, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields) |
 | `useDitoContext()` | Returns the [context](./context.md) of the form or page, or of the list item, that the calling component is in |

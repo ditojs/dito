@@ -436,7 +436,7 @@ export interface ApiConfig {
   /**
    * Default format options for numbers, dates, and times. Merged
    * with the built-in `defaultFormats` from `@ditojs/utils`.
-   * Individual schemas can override these on a per-component basis.
+   * Individual schemas can override these on a per-field basis.
    */
   formats?: {
     number?: NumberFormat

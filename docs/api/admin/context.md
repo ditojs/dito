@@ -47,7 +47,7 @@ slash.
 Paths that are passed *in* to the context, e.g. to
 [`getValueAt()`](#getvalueat), [`validate()`](#validate),
 [`isValid()`](#isvalid) and [`clearErrors()`](#clearerrors), are relative to
-[`itemDataPath`](#itemdatapath), the item that the component sits in. A
+[`itemDataPath`](#itemdatapath), the item that the field sits in. A
 leading `/` makes them absolute, `..` goes up one level, and leading above the
 root throws.
 
@@ -71,7 +71,7 @@ inside the data are returned editable: writes to them count as edits, see
 context.item: $Item
 ```
 
-The item that the context describes: the item that holds the component's
+The item that the context describes: the item that holds the field's
 value, or, in the events of forms and sections, the item of the form or
 section itself. That is the data of the form, view, dialog or panel, or of the
 closest list entry or object, e.g. a chapter in an inlined form of
@@ -134,7 +134,7 @@ outside the data hold labels, e.g. `{ $label: 'Jane Austen' }`, not ids.
 context.name: string
 ```
 
-The name of the component, the last key of its data path.
+The name of the field, the last key of its data path.
 
 ### dataPath
 
@@ -200,10 +200,10 @@ entries.
 ### schema
 
 ```ts
-context.schema: Component | null
+context.schema: Field | null
 ```
 
-The schema of the component.
+The schema of the field.
 
 ### itemLabel
 
@@ -212,7 +212,7 @@ context.itemLabel: string | null
 ```
 
 The text of the label of the form's item. Available in every context inside a
-form, e.g. in its events and in the `if` and `label` of its components, and
+form, e.g. in its events and in the `if` and `label` of its fields, and
 computed when it's read. `null` inside the `itemLabel()` callback itself. Use
 `text`, not `html`, when passing it to [`notify()`](#notify).
 
@@ -750,7 +750,7 @@ Whether the submit succeeded.
 context.reload(): Promise<void>
 ```
 
-Reloads the items of the list or object that the component is or is in, e.g.
+Reloads the items of the list or object that the field is or is in, e.g.
 of a list button after it changed the items on the server, and resolves once
 they're loaded. Sources without their own `resource` are part of the data
 around them and have nothing to load. Throws outside of lists and objects.
@@ -797,7 +797,7 @@ Also available outside of schemas as `admin.context.showDialog()`, see
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `options.fields` | `Components` | The fields of the dialog. Fields that produce routes, e.g. lists with routed forms, throw. |
+| `options.fields` | `Fields` | The fields of the dialog. Fields that produce routes, e.g. lists with routed forms, throw. |
 | `options.buttons` | `Buttons` | The buttons. A `submit` button resolves the dialog with its data, a button named `cancel` cancels it unless it has its own `onClick()`. |
 | `options.data` | `Record<string, any>` | The initial data. |
 | `options.settings.label` | `string` | The accessible label of the dialog. Defaults to `'Dialog'`. |
@@ -886,7 +886,7 @@ it isn't required.
 | `message` | `string` | Trusted HTML, rendered as it is, or plain text, whose line breaks are kept. Escape interpolated values with `escapeHtml()` of [@ditojs/utils](../utils.md). Its text is the accessible label of the dialog and the field. |
 | `options.action` | `string` | The text of the button to submit. Defaults to `'OK'`. |
 | `options.value` | `any` | The initial value of the field. |
-| `options.type` | `string` | The type of the field, any type of component that holds a value, e.g. `'email'`, `'number'` or `'textarea'`. Defaults to `'text'`. |
+| `options.type` | `string` | The type of the field, any type of field that holds a value, e.g. `'email'`, `'number'` or `'textarea'`. Defaults to `'text'`. |
 
 #### Return value
 

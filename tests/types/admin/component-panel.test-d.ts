@@ -1,14 +1,14 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { Components } from '@ditojs/admin'
+import type { Fields } from '@ditojs/admin'
 import type { Parent } from './fixtures.ts'
 
 type ParentWithPanel = Parent & {
   links: never
 }
 
-describe('Panel components', () => {
+describe('Panel fields', () => {
   it('accepts panels that share the data of their schema', () => {
-    assertType<Components<ParentWithPanel>>({
+    assertType<Fields<ParentWithPanel>>({
       links: {
         type: 'panel',
         label: 'Links',
@@ -19,8 +19,8 @@ describe('Panel components', () => {
     })
   })
 
-  it('provides the typed item in callbacks of panel components', () => {
-    assertType<Components<ParentWithPanel>>({
+  it('provides the typed item in callbacks of panel fields', () => {
+    assertType<Fields<ParentWithPanel>>({
       links: {
         type: 'panel',
         fields: {
@@ -36,8 +36,8 @@ describe('Panel components', () => {
     })
   })
 
-  it('rejects invalid component keys in panels', () => {
-    assertType<Components<ParentWithPanel>>({
+  it('rejects invalid field keys in panels', () => {
+    assertType<Fields<ParentWithPanel>>({
       links: {
         type: 'panel',
         fields: {

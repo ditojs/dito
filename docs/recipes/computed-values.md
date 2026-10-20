@@ -55,6 +55,6 @@ its result into the data, also with `visible: false`, but not while `if` is
 `false`. `exclude: true` leaves the value out of the data sent to the server,
 and changes of excluded values don't make the form dirty.
 
-See also: [`computeValue`](../api/admin/schemas.md#componentschemabase),
+See also: [`computeValue`](../api/admin/schemas.md#fieldschemabase),
 [Fields](../guide/admin/fields.md),
 [Dirty state](../guide/admin/dirty-state.md).

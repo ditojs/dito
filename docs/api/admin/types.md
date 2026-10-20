@@ -57,7 +57,7 @@ export const bookForm: FormSchema<Book> = {
 | `ErrorEventHandler<$Item>` | An event handler whose context has the `error`. |
 | `ToggleEventHandler<$Item>` | The `onToggle` handler of sections, inlined forms and trees, with `collapsed` in its context. |
 | `SchemaEvents<$Item>` | The deprecated `events: {}` object of views and forms. Use the `on…` options. |
-| `BaseSchemaEvents<$Item>` | The deprecated `events: {}` object of components, adding `focus` and `blur`. |
+| `BaseSchemaEvents<$Item>` | The deprecated `events: {}` object of fields, adding `focus` and `blur`. |
 | `SchemaToggle<$Item>` | The `onToggle` option of collapsible schemas. |
 | `SchemaRules` | The `rules` option, overriding and adding validations. |
 
@@ -72,9 +72,9 @@ See [Events](./events.md).
 | `MenuSchema<$Item>` | `type: 'menu'`, a group of views in the navigation. |
 | `FormSchema<$Item>` | `type: 'form'`. |
 | `ResolvableForm<$Item>` | A form, a record of forms, or a promise or function returning them. |
-| `Component<$Item>` | The union of all component schemas. |
-| `Components<$Item>` | A record of component schemas, keyed by the names of their values. |
-| `SourceComponent<$Item>` | The union of the schemas that hold items: lists, objects and trees. |
+| `Field<$Item>` | The union of all field schemas. |
+| `Fields<$Item>` | A record of field schemas, keyed by the names of their values. |
+| `SourceField<$Item>` | The union of the schemas that hold items: lists, objects and trees. |
 | `SchemaByType<$Item>` | Maps each type name to its schema type. |
 | `ButtonSchema<$Item>` | `type: 'button' \| 'submit'`. |
 | `Buttons<$Item>` | A record of button schemas, whose `type` is optional. |
@@ -116,10 +116,10 @@ See [Schemas](./schemas.md).
 | Type | Description |
 | ---- | ----------- |
 | `SchemaBase<$Item>` | The options of all schemas: `panels` and the `on…` lifecycle handlers. |
-| `ComponentSchemaBase<$Item>` | The options of all components: `label`, `visible`, `default`, `rules`, … |
+| `FieldSchemaBase<$Item>` | The options of all fields: `label`, `visible`, `default`, `rules`, … |
 | `RouteSchemaBase<$Item>` | The options of views and forms, also of inlined forms and dialogs. |
 | `SourceSettings<$Item>` | The options of lists, objects and trees: `form`, `columns`, `creatable`, … |
-| `SelectionSettings<$Item, $Option>` | The options of components with options: `options`, `relate`, `search`. |
+| `SelectionSettings<$Item, $Option>` | The options of fields with options: `options`, `relate`, `search`. |
 | `SchemaOptions<$Item, $Option>` | The `options` option. |
 | `SchemaOptionsOption<$Value>` | One option: a value, or `{ label, value }`. |
 | `NumberSettings<$Item>` | The options of numbers, sliders and progress bars: `min`, `max`, `step`, … |
@@ -134,7 +134,7 @@ See [Schemas](./schemas.md).
 | ---- | ----------- |
 | `CustomComponentProps<$Item, $Value>` | The props of custom components: `schema`, `context`, `modelValue`, `errorsElementId`. |
 | `CustomComponentEmits<$Value>` | The events of custom components: `update:modelValue`, `change`, `focus`, `blur`. |
-| `TypeDescriptor` | The descriptor of a component type, see [TypeDescriptor](#typedescriptor). |
+| `TypeDescriptor` | The descriptor of a field type, see [TypeDescriptor](#typedescriptor). |
 
 ## Utility types
 
@@ -152,12 +152,14 @@ The earlier names of these types, e.g. `DitoContext` or `HTTPMethod`, keep
 working as deprecated aliases until a future major version. The
 [upgrade guide](../../upgrading-to-4.x.md#typescript-types) lists them with
 their new names. `ComputedSchema`, `DataSchema` and `HiddenSchema` are
-deprecated aliases of `ValueSchema`, until 5.0. The `events: {}` options of schemas are deprecated too, see
+deprecated aliases of `ValueSchema`, until 5.0. `Component`, `Components`,
+`SourceComponent` and `ComponentSchemaBase` are deprecated aliases of `Field`,
+`Fields`, `SourceField` and `FieldSchemaBase`. The `events: {}` options of schemas are deprecated too, see
 [Events](./events.md#deprecated-events).
 
 ## TypeDescriptor
 
-A type descriptor defines a type of schema components: the Vue component that
+A type descriptor defines a type of fields: the Vue component that
 renders it, and how the admin handles its schemas and values, also where they
 aren't rendered, e.g. when items are created, serialized or validated. Its
 flags are statements about the type; the defaults of schema options start with
@@ -171,7 +173,7 @@ import { defineType } from '@ditojs/admin'
 defineType(descriptor: TypeDescriptor): TypeDescriptor
 ```
 
-Registers a type of schema components under `descriptor.type`, replacing a
+Registers a type of fields under `descriptor.type`, replacing a
 type of the same name. Call it before the admin resolves its views. It throws
 for unknown members, naming the replacement of the options of 3.x, and for the
 name of a built-in type without `override: true`.
@@ -233,7 +235,7 @@ The type, or the types that share the descriptor, e.g.
 #### component
 
 ```ts
-component: Component
+component: VueComponent
 ```
 
 The Vue component that renders the type.
@@ -254,7 +256,7 @@ defaultValue?: any | ((context: SchemaContext) => any)
 ```
 
 The default of `default`, the value that new items and missing values get.
-Default `null`. A function is called with the context of the component and
+Default `null`. A function is called with the context of the field and
 returns the default. Objects are cloned for each use.
 
 #### defaultNested
@@ -263,7 +265,7 @@ returns the default. Objects are cloned for each use.
 defaultNested?: boolean
 ```
 
-The default of `nested`. Default `true`: components of the type keep their
+The default of `nested`. Default `true`: fields of the type keep their
 value under their own name in the item, and their contexts describe that
 value. Types with `false`, like sections and panels, work on the item itself
 unless a schema sets `nested: true`; only these types accept `nested` in
@@ -329,7 +331,7 @@ resolvesValue?: boolean
 ```
 
 The value resolves from `schema.data` or `schema.dataPath`, like the values of
-`value` components. Only these types (and panels) support the `data`
+`value` fields. Only these types (and panels) support the `data`
 option.
 
 #### generatesLabel
@@ -338,7 +340,7 @@ option.
 generatesLabel?: boolean
 ```
 
-Components without `label` get a label generated from their name. Default
+Fields without `label` get a label generated from their name. Default
 `true`.
 
 #### hasLabel
@@ -347,7 +349,7 @@ Components without `label` get a label generated from their name. Default
 hasLabel?: boolean | ((context: SchemaContext) => boolean)
 ```
 
-The container renders the label of the component. Default `true`. Types that
+The container renders the label of the field. Default `true`. Types that
 display the label themselves return `false`.
 
 #### omitsSpacing
@@ -356,7 +358,7 @@ display the label themselves return `false`.
 omitsSpacing?: boolean
 ```
 
-The container leaves out the spacing around the component.
+The container leaves out the spacing around the field.
 
 #### rendersLabel
 
@@ -373,8 +375,8 @@ The component renders as the label of its container, when it has one, like
 alignsBelowLabels?: boolean
 ```
 
-Components without a label align below the labels of the other components in
-their row. Default `true`. Dito's sections, lists and objects set it to
+Fields without a label align below the labels of the other fields in their
+row. Default `true`. Dito's sections, lists and objects set it to
 `false`: their boxes start at the top of the row.
 
 #### submitsData
@@ -403,7 +405,7 @@ getOptionsDataSchema?(schema: object): any
 ```
 
 *Hook.* Returns the data schema of the options that the admin loads for the
-component, e.g. `schema => schema.options`. Only types with it load options.
+field, e.g. `schema => schema.options`. Only types with it load options.
 
 #### getDisplayValue()
 

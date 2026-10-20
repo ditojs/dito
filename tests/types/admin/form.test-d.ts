@@ -119,7 +119,7 @@ describe('FormSchema assignability', () => {
     })
   })
 
-  it('typed FormSchema variable used as form prop in list component', () => {
+  it('typed FormSchema variable used as form prop in list field', () => {
     const childForm: FormSchema<Entry> = {
       type: 'form',
       fields: {
@@ -139,7 +139,7 @@ describe('FormSchema assignability', () => {
     }
   })
 
-  it('accepts forms with a layout component and components', () => {
+  it('accepts forms with a layout component and fields', () => {
     const Layout = defineComponent({
       setup: () => () => h(DitoSchemaField, { name: 'title' })
     })
