@@ -4,4 +4,4 @@
 
 ### Fixes
 
-- **admin:** Views of any type with required params in their `path` no longer get a menu item, whose link couldn't resolve.
+- **admin:** Views of any type with required params in their `path` no longer get a menu item, whose link couldn't resolve, and menus whose items all have required params are hidden.
