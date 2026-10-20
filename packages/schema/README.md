@@ -11,3 +11,5 @@ formats and keywords of Dito.js schemas as plain definitions,
 Schema keywords, without depending on a validator. The server registers them
 with Ajv, see the
 [validator API docs](https://github.com/ditojs/dito/blob/main/docs/api/server/validator.md#shared-definitions).
+Formats don't apply to empty strings, except those that check emptiness
+themselves and set `validatesEmptyValues: true`, i.e. `required` and `empty`.

@@ -321,6 +321,12 @@ synchronous validation skips them.
 Plus the formats of `ajv-formats` in full mode (`date-time`, `email`, `uri`,
 `uuid`, …).
 
+Unlike in JSON Schema, formats accept `''`: emptiness is checked by `required`
+only. Formats that describe dates and times (`date`, `time`, `date-time`,
+`iso-time`, `iso-date-time`) still reject `''`, and formats that check
+emptiness themselves set `validatesEmptyValues: true`, as `required` and
+`empty` do.
+
 ## Shared definitions
 
 The built-in formats and the messages of standard keywords come from

@@ -50,8 +50,10 @@ shows how to throw such errors yourself.
 
 Schemas are [JSON schemas](https://json-schema.org/understanding-json-schema/)
 with some additions, described in [Models: properties](models.md#properties):
-`required: true` rejects `null` and `''` too, `nullable: true` accepts `null`,
-`type` can name a model or a registered [type](#types-formats-and-keywords),
+`required: true` rejects `null` and `''` too, formats like `email` accept
+`''`, as emptiness is checked by `required` only, while formats that describe
+dates and times still reject `''`, `nullable: true` accepts
+`null`, `type` can name a model or a registered [type](#types-formats-and-keywords),
 and objects with `properties` reject properties that aren't listed. Shared
 pieces of schemas are described in
 [Reusable schemas](models.md#reusable-schemas).

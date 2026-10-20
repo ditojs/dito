@@ -19,13 +19,19 @@ describe('formats', () => {
     '%s',
     (name, { valid, invalid, message }) => {
       const format = formats[name]
+      // Formats don't apply to empty strings, as their engines register them,
+      // unless they validate empty values themselves:
+      const validate = value => (
+        value === '' && !format.validatesEmptyValues ||
+        format.validate(value)
+      )
 
       it.for(valid)('accepts %o', value => {
-        expect(format.validate(value)).toBe(true)
+        expect(validate(value)).toBe(true)
       })
 
       it.for(invalid)('rejects %o', value => {
-        expect(format.validate(value)).toBe(false)
+        expect(validate(value)).toBe(false)
       })
 
       it('has a message', () => {
