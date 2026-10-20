@@ -236,5 +236,12 @@ describe('validators', () => {
       expect(validate(name, invalid)).toBe(false)
       expect(getMessage(name, invalid)).toBe(message)
     })
+
+    it('requires a scheme in URLs, as the server does', () => {
+      expect(validate('url', 'http://example.com')).toBe(true)
+      expect(validate('url', 'example.com')).toBe(false)
+      expect(validate('url', 'www.example.com/books')).toBe(false)
+      expect(validate('url', '//example.com')).toBe(false)
+    })
   })
 })
