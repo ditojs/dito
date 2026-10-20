@@ -11,6 +11,7 @@ import {
 import { getTypeDescriptor } from './types.ts'
 import {
   getSchemaValue,
+  getEditedValue,
   shouldRenderSchema,
   walkSchemaData
 } from './data.js'
@@ -102,12 +103,8 @@ export function getDataValidationErrors(schema, data, {
   const before = entry => {
     const { schema, data, name, dataPath } = entry
     const context = createContext(entry)
-    let value = data[name]
     // Validate the value as displayed, like the components do:
-    const { formatValue } = schema
-    if (formatValue) {
-      value = formatValue(context)
-    }
+    const value = getEditedValue(schema, data[name], context)
     const validations = getValidations(context)
     const valueErrors = getValueValidationErrors(value, validations)
     if (valueErrors.length > 0) {

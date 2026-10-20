@@ -54,6 +54,16 @@ export function getValueOrDefault(
   name: string,
   context: Context | (() => Context)
 ): any
+export function getEditedValue(
+  schema: Schema,
+  value: any,
+  context: Context | (() => Context)
+): any
+export function parseEditedValue(
+  schema: Schema,
+  value: any,
+  context: Context | (() => Context)
+): any
 export function serializeData(
   schema: Schema | null,
   sourceSchema: Schema | null,

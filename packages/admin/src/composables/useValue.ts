@@ -1,6 +1,9 @@
 import { computed, shallowRef } from 'vue'
-import { getValueOrDefault } from '../utils/schema/data.js'
-import { toModelData } from '../utils/data.js'
+import {
+  getValueOrDefault,
+  getEditedValue,
+  parseEditedValue
+} from '../utils/schema/data.js'
 import type {
   SchemaContextSetup,
   SchemaContextProps
@@ -15,22 +18,16 @@ export function useValue(
   const value = computed<any>({
     get() {
       const { schema, data } = props
-      const { name, formatValue } = schema
+      const { name } = schema
       const value = getValueOrDefault(schema, data, name, () =>
         createContext({ value: data[name] })
       )
-      // The components compare values by identity, e.g. with options:
-      return formatValue
-        ? toModelData(formatValue(createContext({ value })))
-        : value
+      return getEditedValue(schema, value, () => createContext({ value }))
     },
 
     set(value) {
       const { schema, data, dataPath } = props
-      const { parseValue } = schema
-      if (parseValue) {
-        value = parseValue(createContext({ value }))
-      }
+      value = parseEditedValue(schema, value, () => createContext({ value }))
       parsedValue.value = value
       services.dataContext!.model.set(
         { data, name: schema.name, dataPath },

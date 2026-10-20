@@ -57,7 +57,9 @@ import {
   deserializeData,
   hasItemsNumberedByOrderKey,
   updateOrder,
-  getMultipleValue
+  getMultipleValue,
+  getEditedValue,
+  parseEditedValue
 } from './schema/data.js'
 import { getOptionsSettings, getReplacedValue } from './schema/options.ts'
 import type { Services } from './services.ts'
@@ -1173,7 +1175,6 @@ export class DataModel {
           const { schema, data, name } = entry
           const context = this.#createEntryContext(entry)
           // Replace the value that the component displays, like it would:
-          const { formatValue, parseValue } = schema
           const settings = getOptionsSettings(schema, options, {
             multiple: getMultipleValue(schema, context),
             isGrouped: false,
@@ -1182,12 +1183,12 @@ export class DataModel {
           const replaced = getReplacedValue(
             settings,
             options,
-            formatValue ? toModelData(formatValue(context)) : data[name]
+            getEditedValue(schema, data[name], context)
           )
           if (replaced) {
             const { value } = replaced
             data[name] = toModelData(
-              parseValue ? parseValue(context.extend({ value })) : value
+              parseEditedValue(schema, value, () => context.extend({ value }))
             )
           }
         }
