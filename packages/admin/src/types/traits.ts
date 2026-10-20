@@ -1,4 +1,10 @@
-import { isArray, isFunction, isObject, isString } from '@ditojs/utils'
+import {
+  isArray,
+  isFunction,
+  isObject,
+  isString,
+  pickBy
+} from '@ditojs/utils'
 import { tinycolor } from 'vue-color'
 import type { Context, TypeDescriptor } from '../utils/schema/types.ts'
 import type { Schema } from '../utils/types.ts'
@@ -202,8 +208,10 @@ export const optionsTraits = {
 
 export const numberTraits = {
   renamedSchemaKeys: ['minimum', 'maximum'],
-  getProperty: ({ type }: Schema) => ({
-    type: type === 'integer' ? 'integer' : 'number'
+  // The limits as written, without rounding them for integers:
+  getProperty: ({ type, minimum, maximum, range }: Schema) => ({
+    type: type === 'integer' ? 'integer' : 'number',
+    ...pickBy({ minimum, maximum, range }, value => value != null)
   }),
 
   // Number inputs edit strings, and an empty one means no value:
