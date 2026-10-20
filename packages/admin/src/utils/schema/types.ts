@@ -25,8 +25,13 @@ export type TypeDescriptor = PublicTypeDescriptor & {
   // `parseValue()`:
   parseValue?(context: Context): any
   // The type of the field's data as a property of the server's models, which
-  // `getFormProperties()` completes with the field's other data keywords:
-  getProperty?(schema: Schema, context: Context): Record<string, any>
+  // `getFormProperties()` completes with the field's other data keywords.
+  // `schema` is the field without callbacks:
+  getProperty?(
+    schema: Schema,
+    context: Context,
+    field: Schema
+  ): Record<string, any> | null
   // The sources routed next to the forms of the items, e.g. of trees:
   getChildSourceSchemas?(schema: Schema): Schema[]
   getItemAdapter?(schema: Schema): ItemAdapter | null

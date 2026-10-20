@@ -39,24 +39,31 @@ function getFieldProperty(field, name, formContext) {
       Object.entries(field).filter(([, value]) => !isFunction(value))
     )
     const context = formContext.createChildContext(schema, name)
-    const property = descriptor.getProperty(schema, context)
-    if (schema.required) {
-      property.required = true
-    } else if (getEmptyValue(schema, context) === null) {
-      property.nullable = true
-    }
-    for (const key of propertyKeys) {
-      if (schema[key] != null) {
-        property[key] = schema[key]
+    const property = descriptor.getProperty(schema, context, field)
+    if (property) {
+      if (schema.required) {
+        property.required = true
+        // Arrays are required to hold items, as in the admin:
+        if (property.type === 'array') {
+          property.minItems = 1
+        }
+      } else if (property.type && getEmptyValue(schema, context) === null) {
+        // Properties without a type accept `null` already:
+        property.nullable = true
       }
-    }
-    // Default callbacks depend on the entry too, and `null` is no value:
-    const value =
-      isFunction(field.default) || shouldIgnoreMissingValue(schema, context)
-        ? null
-        : getDefaultValue(schema, context)
-    if (value != null) {
-      property.default = value
+      for (const key of propertyKeys) {
+        if (schema[key] != null) {
+          property[key] = schema[key]
+        }
+      }
+      // Default callbacks depend on the entry too, and `null` is no value:
+      const value =
+        isFunction(field.default) || shouldIgnoreMissingValue(schema, context)
+          ? null
+          : getDefaultValue(schema, context)
+      if (value != null) {
+        property.default = value
+      }
     }
     return property
   }

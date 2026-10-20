@@ -1,4 +1,4 @@
-import { isArray, isObject, isString } from '@ditojs/utils'
+import { isArray, isFunction, isObject, isString } from '@ditojs/utils'
 import { tinycolor } from 'vue-color'
 import type { Context, TypeDescriptor } from '../utils/schema/types.ts'
 import type { Schema } from '../utils/types.ts'
@@ -16,6 +16,7 @@ import {
 } from '../utils/schema/data.js'
 import {
   findOptionForValue,
+  getOptionKey,
   getOptionsSettings,
   getRelateKey,
   getValueForOption
@@ -127,6 +128,42 @@ export const optionsTraits = {
     } else {
       return {}
     }
+  },
+
+  // Related values are objects. Static options give the type of the values,
+  // and their `enum`:
+  getProperty(schema: Schema, context: Context, field: Schema) {
+    const { options } = schema
+    const { data, value } = isArray(options)
+      ? { data: options }
+      : (options ?? {})
+    // Searches, tags and `equals` let other values in, also as callbacks, which
+    // `schema` lacks:
+    const hasOtherValues = !!(
+      field.search ||
+      field.taggable ||
+      field.options?.equals
+    )
+    let property = {}
+    if (getRelateKey(schema)) {
+      property = { type: 'object' }
+    } else if (isArray(data) && !isFunction(value)) {
+      const key = value ?? getOptionKey(data, false, 'value')
+      const values = (key ? data.map(option => option[key]) : data).filter(
+        value => value != null
+      )
+      const types = new Set(values.map(value => typeof value))
+      if (types.size === 1) {
+        const [type] = types
+        property =
+          type === 'object' || hasOtherValues
+            ? { type }
+            : { type, enum: values }
+      }
+    }
+    return getMultipleValue(schema, context)
+      ? { type: 'array', items: property }
+      : property
   },
 
   serializeValue(context: Context) {

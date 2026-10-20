@@ -186,6 +186,164 @@ describe('getFormProperties()', () => {
     })
   })
 
+  describe('options types', () => {
+    const genres = [
+      { value: 'jazz', label: 'Jazz' },
+      { value: 'rock', label: 'Rock' }
+    ]
+
+    it('describes the values of static options', async () => {
+      expect(
+        await getProperties({
+          format: { type: 'select', options: ['hardcover', 'paperback'] },
+          genre: { type: 'radio', options: { data: genres }, required: true },
+          count: { type: 'select', options: [{ count: 1 }, { count: 2 }] },
+          size: {
+            type: 'select',
+            options: { data: [{ id: 's' }, { id: 'l' }], value: 'id' }
+          }
+        })
+      ).toEqual({
+        format: {
+          type: 'string',
+          enum: ['hardcover', 'paperback'],
+          nullable: true
+        },
+        genre: { type: 'string', enum: ['jazz', 'rock'], required: true },
+        count: { type: 'object', nullable: true },
+        size: { type: 'string', enum: ['s', 'l'], nullable: true }
+      })
+    })
+
+    it('leaves `null` options to `nullable`', async () => {
+      expect(
+        await getProperties({
+          rating: { type: 'select', options: [null, 1, 2, 3] }
+        })
+      ).toEqual({
+        rating: { type: 'number', enum: [1, 2, 3], nullable: true }
+      })
+    })
+
+    it('leaves out `enum` where values may miss options', async () => {
+      expect(
+        await getProperties({
+          country: {
+            type: 'select',
+            options: { data: genres, equals: () => true }
+          },
+          keyword: { type: 'multiselect', options: ['a'], taggable: true },
+          author: { type: 'multiselect', options: ['a'], search: {} },
+          tag: { type: 'multiselect', options: ['a'], taggable: () => true },
+          editor: { type: 'multiselect', options: ['a'], search: () => [] }
+        })
+      ).toEqual({
+        country: { type: 'string', nullable: true },
+        keyword: { type: 'string', nullable: true },
+        author: { type: 'string', nullable: true },
+        tag: { type: 'string', nullable: true },
+        editor: { type: 'string', nullable: true }
+      })
+    })
+
+    it('describes the values of loaded options as any value', async () => {
+      expect(
+        await getProperties({
+          author: { type: 'select', options: { data: async () => [] } },
+          editor: { type: 'select', options: { dataPath: 'editors' } },
+          value: { type: 'select', options: [1, 'one'] }
+        })
+      ).toEqual({ author: {}, editor: {}, value: {} })
+    })
+
+    it('describes `multiple` values as arrays', async () => {
+      expect(
+        await getProperties({
+          genres: { type: 'checkboxes', options: genres, required: true },
+          formats: {
+            type: 'multiselect',
+            multiple: true,
+            options: ['hardcover'],
+            minItems: 2
+          }
+        })
+      ).toEqual({
+        genres: {
+          type: 'array',
+          items: { type: 'string', enum: ['jazz', 'rock'] },
+          required: true,
+          minItems: 1,
+          default: []
+        },
+        formats: {
+          type: 'array',
+          items: { type: 'string', enum: ['hardcover'] },
+          minItems: 2,
+          default: []
+        }
+      })
+    })
+
+    it('describes related values as objects', async () => {
+      const options = { data: async () => [], label: 'name' }
+      expect(
+        await getProperties({
+          author: { type: 'select', relate: true, options },
+          editors: { type: 'checkboxes', relate: 'key', options }
+        })
+      ).toEqual({
+        author: { type: 'object', nullable: true },
+        editors: { type: 'array', items: { type: 'object' }, default: [] }
+      })
+    })
+  })
+
+  describe('upload type', () => {
+    it('describes files as assets', async () => {
+      expect(
+        await getProperties({
+          image: { type: 'upload' },
+          images: { type: 'upload', multiple: true, required: true }
+        })
+      ).toEqual({
+        image: { type: 'asset', nullable: true },
+        images: {
+          type: 'array',
+          items: { type: 'asset' },
+          required: true,
+          minItems: 1,
+          default: []
+        }
+      })
+    })
+  })
+
+  describe('value and component types', () => {
+    const component = {
+      emits: ['update:modelValue', 'change'],
+      props: ['schema', 'context', 'modelValue'],
+      render: () => null
+    }
+
+    it('describes their values as any value', async () => {
+      expect(
+        await getProperties({
+          total: { type: 'value', computeValue: () => 1 },
+          votes: { type: 'component', component, default: 0 }
+        })
+      ).toEqual({
+        total: {},
+        votes: { default: 0 }
+      })
+    })
+
+    it('skips components without a value', async () => {
+      expect(
+        await getProperties({ rating: { type: 'component', component } })
+      ).toEqual({})
+    })
+  })
+
   it('leaves out the data keywords with callbacks', async () => {
     expect(
       await getProperties({
@@ -225,7 +383,6 @@ describe('getFormProperties()', () => {
         title: { type: 'text' },
         heading: { type: 'label' },
         save: { type: 'button' },
-        genre: { type: 'select', options: ['jazz', 'rock'] },
         tags: { type: 'list', form: { type: 'form', fields: {} } }
       })
     ).toEqual({

@@ -7,9 +7,9 @@ import { getFormProperties } from '../../packages/admin/src/utils/schema/propert
 import { getDataValidationErrors } from '../../packages/admin/src/utils/schema/validation.js'
 import { createTestApp } from '../utils/app.ts'
 
-// The properties that the admin derives from the fields of every scalar type,
-// validated by the server's real `Validator`, which compiles schemas in strict
-// mode and rejects keywords and formats that it doesn't know:
+// The properties that the admin derives from the fields of every type with a
+// value, validated by the server's real `Validator`, which compiles schemas in
+// strict mode and rejects keywords and formats that it doesn't know:
 const fields = {
   title: { type: 'text', required: true, maxLength: 20 },
   code: { type: 'text', nullable: true, minLength: 3, pattern: '^[A-Z]+$' },
@@ -34,7 +34,25 @@ const fields = {
   opensAt: { type: 'datetime' },
   opensAtTime: { type: 'time' },
   background: { type: 'color' },
-  tint: { type: 'color', format: 'rgb' }
+  tint: { type: 'color', format: 'rgb' },
+  format: { type: 'select', options: ['hardcover', 'paperback'] },
+  genre: { type: 'radio', options: { data: [{ value: 'jazz' }] } },
+  genres: { type: 'checkboxes', options: ['jazz', 'rock'], required: true },
+  keywords: { type: 'multiselect', multiple: true, taggable: true },
+  translator: {
+    type: 'select',
+    options: { data: async () => [], value: 'id' }
+  },
+  author: { type: 'select', relate: true, options: { data: async () => [] } },
+  editors: {
+    type: 'multiselect',
+    multiple: true,
+    relate: true,
+    options: { data: async () => [] }
+  },
+  image: { type: 'upload' },
+  images: { type: 'upload', multiple: true },
+  total: { type: 'value' }
 }
 
 describe('The properties of fields on the server', async () => {
@@ -58,6 +76,16 @@ describe('The properties of fields on the server', async () => {
 
   afterAll(() => app.knex.destroy())
 
+  const file = {
+    key: 'a1b2.png',
+    name: 'photo.png',
+    type: 'image/png',
+    size: 1024,
+    url: 'https://example.com/a1b2.png',
+    width: 640,
+    height: 480
+  }
+
   const valid = {
     title: 'Opening',
     code: 'ABC',
@@ -76,7 +104,17 @@ describe('The properties of fields on the server', async () => {
     opensAt: '2026-05-14T12:30:00.000Z',
     opensAtTime: '2026-05-14T14:30:00.000Z',
     background: '#ff8000',
-    tint: { r: 255, g: 128, b: 0, a: 1 }
+    tint: { r: 255, g: 128, b: 0, a: 1 },
+    format: 'paperback',
+    genre: 'jazz',
+    genres: ['rock'],
+    keywords: ['classic', 'gothic'],
+    translator: 7,
+    author: { id: 1 },
+    editors: [{ id: 2 }, { id: 3 }],
+    image: file,
+    images: [file],
+    total: 3
   }
 
   // The data paths of the errors of both sides:
@@ -111,7 +149,16 @@ describe('The properties of fields on the server', async () => {
       isPublic: false,
       day: null,
       background: null,
-      tint: null
+      tint: null,
+      format: null,
+      genre: null,
+      keywords: [],
+      translator: null,
+      author: null,
+      editors: [],
+      image: null,
+      images: [],
+      total: null
     }
     expect(getServerErrors(empty)).toEqual([])
     expect(getAdminErrors(empty)).toEqual([])
@@ -132,7 +179,10 @@ describe('The properties of fields on the server', async () => {
       website: 'example.com',
       price: -1,
       pages: 1001,
-      rating: 6
+      rating: 6,
+      format: 'scroll',
+      genre: 'blues',
+      genres: []
     }
     const dataPaths = Object.keys(invalid).sort()
     expect(getServerErrors(invalid)).toEqual(dataPaths)

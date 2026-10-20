@@ -75,6 +75,7 @@ defineType({
   // Custom components get no data unless their schema has a `default`:
   defaultValue: undefined,
   ignoresMissingValue: ({ schema }) => !('default' in schema),
+  getProperty: schema => ('default' in schema ? {} : null),
 
   async setupSchema({ schema }) {
     await resolveSchemaComponent(schema)
