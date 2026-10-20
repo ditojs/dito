@@ -212,6 +212,16 @@ export function shouldSetDefaultValue(schema, data, name, context, {
   )
 }
 
+// Of several fields of the same value, the first with its own default sets it,
+// else the first one:
+export function sortByOwnDefault(entries) {
+  const hasOwnDefault = ({ schema }) => schema.default !== undefined
+  return [
+    ...entries.filter(hasOwnDefault),
+    ...entries.filter(entry => !hasOwnDefault(entry))
+  ]
+}
+
 // Set missing values to their defaults to watch them for changes, and number
 // list items by their order key to store their order even if it never changes.
 export function initializeData(schema, data = {}, services, {
@@ -222,15 +232,8 @@ export function initializeData(schema, data = {}, services, {
   // loaded data, `computeValue()` may derive missing values instead:
   shouldSetDefaultsOfComponentsWithCompute = true
 } = {}) {
-  // Of several fields of the same value, the first with its own default sets
-  // it, else the first one:
-  const hasOwnDefault = ({ schema }) => schema.default !== undefined
   const visit = entries => {
-    const sortedEntries = [
-      ...entries.filter(hasOwnDefault),
-      ...entries.filter(entry => !hasOwnDefault(entry))
-    ]
-    for (const entry of sortedEntries) {
+    for (const entry of sortByOwnDefault(entries)) {
       const { schema, data, name } = entry
       const context = () =>
         SchemaContext.createForSchema(services, { ...entry, rootData })

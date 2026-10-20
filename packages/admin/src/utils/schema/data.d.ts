@@ -40,6 +40,9 @@ export function setDefaultValue(
 ): void
 export function hasValueFromDataSchema(schema: Schema): boolean
 export function getMultipleValue(schema: Schema, context: Context): boolean
+export function sortByOwnDefault<T extends { schema: Schema }>(
+  entries: T[]
+): T[]
 export function initializeData(
   schema: Schema,
   data?: Data,

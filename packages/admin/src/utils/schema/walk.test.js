@@ -1,9 +1,13 @@
+import { vi } from 'vitest'
+import { nextTick, reactive } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 // Importing the types defines them, so the walk sees their descriptors:
 import '../../types/index.js'
 import { setupForm } from './setup.js'
 import { initializeData } from './data.js'
 import { getDataValidationErrors } from './validation.js'
+import { walkData } from './walk.js'
+import { DataModel } from '../DataModel.ts'
 
 // The API settings that setting up forms reads, also the forms of `fields()`
 // callbacks, which the services hand out:
@@ -211,6 +215,23 @@ const catalogueErrors = {
   'collections/1/items/0/tracks': [{ message: 'is required' }]
 }
 
+describe('walkData()', () => {
+  it('asks once whether a field is walked, also for its panels', async () => {
+    const form = await createForm(catalogueForm)
+    const shouldWalk = vi.fn(() => true)
+    walkData(form, createCatalogue(), {
+      dataPath: '',
+      services,
+      shouldWalk,
+      visit: () => {}
+    })
+    const dataPaths = shouldWalk.mock.calls.map(([{ dataPath }]) => dataPath)
+    expect(dataPaths.filter(dataPath => dataPath === 'collections')).toEqual([
+      'collections'
+    ])
+  })
+})
+
 describe('getDataValidationErrors()', () => {
   it('validates the values of all fields that are shown', async () => {
     const form = await createForm(catalogueForm)
@@ -398,5 +419,188 @@ describe('initializeData()', () => {
       }
     })
     expect(initializeData(form, {}, services)).toEqual({ format: 'lp' })
+  })
+})
+
+describe('DataModel', () => {
+  async function createDataModel(form, data) {
+    const schema = await createForm(form)
+    const dataModel = new DataModel({
+      schema: () => schema,
+      data: reactive(data),
+      services
+    })
+    return { dataModel, data: dataModel.data }
+  }
+
+  // The data paths of the records, and the fields that they're for:
+  const getRecords = dataModel =>
+    [...dataModel.componentRecords.values()].map(({ dataPath, entry }) => [
+      dataPath.value,
+      entry.schema
+    ])
+
+  it('records the fields with options', async () => {
+    const { dataModel, data } = await createDataModel(
+      catalogueForm,
+      createCatalogue()
+    )
+    const { collections } = catalogueForm.fields
+    const { currency } = collections.form.fields.pricing.fields
+    const { format } = collections.form.fields.items.forms.record.fields
+    expect(getRecords(dataModel)).toEqual([
+      ['collections/0/currency', currency],
+      ['collections/1/currency', currency],
+      ['collections/1/items/0/format', format]
+    ])
+    // Hidden fields have no records:
+    data.showPrices = false
+    await nextTick()
+    expect(getRecords(dataModel)).toEqual([
+      ['collections/1/items/0/format', format]
+    ])
+    dataModel.stop()
+  })
+
+  it('sets the defaults of values that go missing later', async () => {
+    const { dataModel, data } = await createDataModel(
+      catalogueForm,
+      createCatalogue()
+    )
+    const [books, records] = data.collections
+    delete books.items[0].chapters[1].length
+    delete data.notes
+    records.items.push({ type: 'record', name: 'New' })
+    books.items[0].tags.push('')
+    // Sources with their own resource keep their data:
+    data.vendors.push({})
+    await nextTick()
+    expect(books.items[0].chapters[1]).toEqual({ title: 'Two', length: 1 })
+    expect(data.notes).toBe('')
+    expect(records.items[1]).toEqual({
+      type: 'record',
+      name: 'New',
+      email: '',
+      format: 'lp',
+      tracks: []
+    })
+    expect(books.items[0].tags).toEqual(['a', '', ''])
+    expect(data.vendors).toEqual([{}, {}])
+    dataModel.stop()
+  })
+
+  it('marks the edits inside sources with their own resource', async () => {
+    const { dataModel, data } = await createDataModel(
+      catalogueForm,
+      createCatalogue()
+    )
+    dataModel.set(
+      { data: data.vendors[0], name: 'name', dataPath: 'vendors/0/name' },
+      'Vendor'
+    )
+    expect(dataModel.isEdited).toBe(true)
+    dataModel.markClean({ dataPath: 'vendors' })
+    expect(dataModel.isEdited).toBe(false)
+    dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Catalogue')
+    dataModel.markClean({ dataPath: 'vendors' })
+    expect(dataModel.isEdited).toBe(true)
+    dataModel.stop()
+  })
+
+  it('computes and sets defaults in the children of trees', async () => {
+    const pageForm = {
+      type: 'form',
+      fields: {
+        title: { type: 'text' },
+        slug: {
+          type: 'text',
+          computeValue: ({ item }) => item.title.toLowerCase()
+        },
+        status: { type: 'text', default: 'draft' }
+      }
+    }
+    const { dataModel, data } = await createDataModel(
+      {
+        fields: {
+          pages: {
+            type: 'tree-list',
+            form: pageForm,
+            children: { name: 'subpages', form: pageForm }
+          }
+        }
+      },
+      {
+        pages: [
+          {
+            title: 'About',
+            status: 'live',
+            subpages: [{ title: 'Team', status: 'live' }]
+          }
+        ]
+      }
+    )
+    const [about] = data.pages
+    expect(getRecords(dataModel)).toEqual([
+      ['pages/0/slug', pageForm.fields.slug],
+      ['pages/0/subpages/0/slug', pageForm.fields.slug]
+    ])
+    about.subpages.push({ title: 'History' })
+    await nextTick()
+    expect(about.subpages[1]).toEqual({
+      title: 'History',
+      slug: 'history',
+      status: 'draft'
+    })
+    expect(getRecords(dataModel).map(([dataPath]) => dataPath)).toEqual([
+      'pages/0/slug',
+      'pages/0/subpages/0/slug',
+      'pages/0/subpages/1/slug'
+    ])
+    dataModel.stop()
+  })
+
+  it('takes the compute and default of the first field of the same value', async () => {
+    const status = { type: 'text' }
+    const statusWithDefault = { type: 'text', default: 'draft' }
+    const itemForm = {
+      type: 'form',
+      tabs: {
+        first: { type: 'tab', fields: { status } },
+        second: { type: 'tab', fields: { status: statusWithDefault } }
+      }
+    }
+    const { dataModel, data } = await createDataModel(
+      {
+        tabs: {
+          first: {
+            type: 'tab',
+            fields: {
+              label: { type: 'text', computeValue: () => 'first' },
+              status
+            }
+          },
+          second: {
+            type: 'tab',
+            fields: {
+              label: { type: 'text', computeValue: () => 'second' },
+              status: statusWithDefault,
+              entries: {
+                type: 'list',
+                computeValue: () => [{}],
+                form: itemForm
+              }
+            }
+          }
+        }
+      },
+      { status: 'live' }
+    )
+    expect(data.label).toBe('first')
+    // Computed items get the same defaults as values that go missing:
+    expect(data.entries).toEqual([{ status: 'draft' }])
+    delete data.status
+    await nextTick()
+    expect(data.status).toBe('draft')
+    dataModel.stop()
   })
 })
