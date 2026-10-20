@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { Component, Components, FormSchema } from '@ditojs/admin'
+import type { Field, Fields, FormSchema } from '@ditojs/admin'
 import type {
   Address,
   Entry,
@@ -8,15 +8,15 @@ import type {
   ParentWithMarkers
 } from './fixtures.ts'
 
-describe('Components', () => {
-  it('accepts data-only components', () => {
-    assertType<Components<Parent>>({
+describe('Fields', () => {
+  it('accepts data-only fields', () => {
+    assertType<Fields<Parent>>({
       title: { type: 'text' }
     })
   })
 
-  it('infers array element type for list components', () => {
-    assertType<Components<Parent>>({
+  it('infers array element type for list fields', () => {
+    assertType<Fields<Parent>>({
       entries: {
         type: 'list',
         form: {
@@ -29,8 +29,8 @@ describe('Components', () => {
     })
   })
 
-  it('accepts UI-only keys for non-data components', () => {
-    assertType<Components<ParentWithMarkers>>({
+  it('accepts UI-only keys for non-data fields', () => {
+    assertType<Fields<ParentWithMarkers>>({
       viewButton: {
         type: 'button',
         text: 'View',
@@ -46,7 +46,7 @@ describe('Components', () => {
   })
 
   it('provides typed item in callbacks for data keys', () => {
-    assertType<Components<Parent>>({
+    assertType<Fields<Parent>>({
       title: {
         type: 'text',
         formatValue({ item }) {
@@ -59,9 +59,9 @@ describe('Components', () => {
   })
 })
 
-describe('Components with object-valued keys', () => {
-  it('provides parent item type in field component callbacks, not the value type', () => {
-    assertType<Components<ParentWithAddress>>({
+describe('Fields with object-valued keys', () => {
+  it('provides parent item type in field callbacks, not the value type', () => {
+    assertType<Fields<ParentWithAddress>>({
       address: {
         type: 'component',
         component: {} as any,
@@ -78,7 +78,7 @@ describe('Components with object-valued keys', () => {
   })
 
   it('provides typed option from value type in multiselect', () => {
-    assertType<Components<ParentWithAddress>>({
+    assertType<Fields<ParentWithAddress>>({
       address: {
         type: 'multiselect',
         options: {
@@ -93,8 +93,8 @@ describe('Components with object-valued keys', () => {
     })
   })
 
-  it('provides nested item type in source component forms', () => {
-    assertType<Components<ParentWithAddress>>({
+  it('provides nested item type in source field forms', () => {
+    assertType<Fields<ParentWithAddress>>({
       address: {
         type: 'object',
         form: {
@@ -109,9 +109,9 @@ describe('Components with object-valued keys', () => {
   })
 })
 
-describe('Components negative tests', () => {
+describe('Fields negative tests', () => {
   it('rejects unknown keys', () => {
-    assertType<Components<Parent>>({
+    assertType<Fields<Parent>>({
       title: { type: 'text' },
       // @ts-expect-error 'nonExistent' is not a key of Parent
       nonExistent: { type: 'text' }
@@ -119,17 +119,17 @@ describe('Components negative tests', () => {
   })
 })
 
-describe('Components<any> compatibility', () => {
-  it('Components<Specific> is assignable to Components<any>', () => {
-    const specific: Components<Parent> = {
+describe('Fields<any> compatibility', () => {
+  it('Fields<Specific> is assignable to Fields<any>', () => {
+    const specific: Fields<Parent> = {
       title: { type: 'text' }
     }
-    assertType<Components<any>>(specific)
+    assertType<Fields<any>>(specific)
   })
 
-  it('Component<Specific> is assignable to Component<any>', () => {
-    const specific: Component<Parent> = { type: 'text' }
-    assertType<Component<any>>(specific)
-    assertType<Component>(specific)
+  it('Field<Specific> is assignable to Field<any>', () => {
+    const specific: Field<Parent> = { type: 'text' }
+    assertType<Field<any>>(specific)
+    assertType<Field>(specific)
   })
 })

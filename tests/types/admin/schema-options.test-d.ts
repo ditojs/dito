@@ -1,7 +1,7 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type {
   ApiConfig,
-  Components,
+  Fields,
   FormSchema,
   ListSchema,
   MultiselectSchema,
@@ -26,15 +26,15 @@ describe('SchemaContext', () => {
   })
 })
 
-describe('component options', () => {
+describe('field options', () => {
   it('accepts labels with affixes', () => {
-    assertType<Components<Entry>>({
+    assertType<Fields<Entry>>({
       title: { type: 'text', label: { text: 'Title', suffix: 'required' } }
     })
   })
 
   it('accepts labels and info as text or `{ html }`', () => {
-    assertType<Components<Entry>>({
+    assertType<Fields<Entry>>({
       title: {
         type: 'text',
         label: { html: '<b>Title</b>', prefix: '1.' },
@@ -49,14 +49,14 @@ describe('component options', () => {
   })
 
   it('accepts the width operators and CSS units', () => {
-    assertType<Components<Entry>>({
+    assertType<Fields<Entry>>({
       title: { type: 'text', width: '>50%' },
       id: { type: 'number', width: '120px' }
     })
   })
 
   it('only accepts boolean placeholders in multiselects', () => {
-    assertType<Components<Entry>>({
+    assertType<Fields<Entry>>({
       // @ts-expect-error - text fields only display strings
       title: { type: 'text', placeholder: false }
     })
@@ -67,18 +67,18 @@ describe('component options', () => {
   })
 
   it('only accepts searches in multiselects', () => {
-    assertType<Components<Entry>>({
+    assertType<Fields<Entry>>({
       // @ts-expect-error - only multiselects search their options
       title: { type: 'select', search: () => [] }
     })
   })
 
   it('takes plain values for options that are read raw', () => {
-    assertType<Components<Entry>>({
+    assertType<Fields<Entry>>({
       // @ts-expect-error - `trim` isn't a callback
       title: { type: 'text', trim: () => true }
     })
-    assertType<Components<Parent>>({
+    assertType<Fields<Parent>>({
       // @ts-expect-error - `inlined` isn't a callback
       entries: { type: 'list', inlined: () => true }
     })
@@ -90,7 +90,7 @@ describe('component options', () => {
   })
 
   it('types the data of data schemas as values or loaders', () => {
-    assertType<Components<Entry>>({
+    assertType<Fields<Entry>>({
       title: {
         type: 'value',
         data:
@@ -103,7 +103,7 @@ describe('component options', () => {
 })
 
 describe('lists and forms', () => {
-  it('accepts the options of the inlined form of `components`', () => {
+  it('accepts the options of the inlined form of `fields`', () => {
     assertType<ListSchema<Parent>>({
       type: 'list',
       fields: { title: { type: 'text' } },
@@ -154,7 +154,7 @@ describe('lists and forms', () => {
 
 describe('events', () => {
   it('only types lifecycle events where they fire', () => {
-    assertType<Components<Entry>>({
+    assertType<Fields<Entry>>({
       // @ts-expect-error - fields don't initialize
       title: { type: 'text', onInitialize() {} }
     })

@@ -35,7 +35,7 @@ price: {
   changes don't make the form dirty.
 - `width` and `break` place the field, see [Layout](./layout.md).
 
-See [`ComponentSchemaBase`](../../api/admin/schemas.md#componentschemabase) for
+See [`FieldSchemaBase`](../../api/admin/schemas.md#fieldschemabase) for
 all common options.
 
 ## Choices
@@ -162,7 +162,7 @@ rendered, e.g. in a tab that wasn't opened, but not while its `if` returns
 `false`. Returning `undefined` keeps the current value. It receives the stored
 value as it is, also a stored `null` of a list or of multiple choices, which
 only fields without `computeValue()` load as their default. See
-[`ComponentSchemaBase`](../../api/admin/schemas.md#componentschemabase) for
+[`FieldSchemaBase`](../../api/admin/schemas.md#fieldschemabase) for
 when each hook runs.
 
 ### Values that aren't stored as they are

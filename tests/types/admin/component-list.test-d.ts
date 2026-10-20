@@ -1,6 +1,6 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type {
-  Components,
+  Fields,
   FormSchema,
   ListSchema,
   ObjectSchema,
@@ -10,7 +10,7 @@ import type {
 import type { Entry, Parent } from './fixtures.ts'
 
 describe('ListSchema', () => {
-  it('accepts form components typed against $Item', () => {
+  it('accepts form fields typed against $Item', () => {
     assertType<ListSchema<Entry>>({
       type: 'list',
       form: {
@@ -82,8 +82,8 @@ describe('ListSchema', () => {
     })
   })
 
-  it('types list correctly inside Components', () => {
-    assertType<Components<Parent>>({
+  it('types list correctly inside Fields', () => {
+    assertType<Fields<Parent>>({
       entries: {
         type: 'list',
         form: {
@@ -186,7 +186,7 @@ describe('ListSchema', () => {
   })
 
   it('types forms of primitive lists against the wrapped values', () => {
-    assertType<Components<{ prices: number[] }>>({
+    assertType<Fields<{ prices: number[] }>>({
       prices: {
         type: 'list',
         wrapPrimitives: 'price',

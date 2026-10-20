@@ -1,16 +1,16 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import { defineComponent, h, type Component } from 'vue'
 import { DitoSchemaField, DitoField, DitoPane } from '@ditojs/admin'
-import type { Components, FormSchema } from '@ditojs/admin'
+import type { Fields, FormSchema } from '@ditojs/admin'
 import type { Address, Entry, Parent, ParentWithAddress } from './fixtures.ts'
 
 type ParentWithSection = Parent & {
   details: never
 }
 
-describe('Section components', () => {
-  it('accepts section with nested components', () => {
-    assertType<Components<ParentWithSection>>({
+describe('Section fields', () => {
+  it('accepts section with nested fields', () => {
+    assertType<Fields<ParentWithSection>>({
       details: {
         type: 'section',
         fields: {
@@ -21,7 +21,7 @@ describe('Section components', () => {
   })
 
   it('provides typed item in section callbacks', () => {
-    assertType<Components<ParentWithSection>>({
+    assertType<Fields<ParentWithSection>>({
       details: {
         type: 'section',
         label({ item }) {
@@ -35,8 +35,8 @@ describe('Section components', () => {
     })
   })
 
-  it('rejects invalid component keys in section', () => {
-    assertType<Components<ParentWithSection>>({
+  it('rejects invalid field keys in section', () => {
+    assertType<Fields<ParentWithSection>>({
       details: {
         type: 'section',
         fields: {
@@ -60,7 +60,7 @@ describe('Section components', () => {
         h(DitoPane)
       ]
     })
-    assertType<Components<ParentWithSection>>({
+    assertType<Fields<ParentWithSection>>({
       details: {
         type: 'section',
         component: Layout,
@@ -85,7 +85,7 @@ describe('Section components', () => {
       }
     }
 
-    assertType<Components<ParentWithSection>>({
+    assertType<Fields<ParentWithSection>>({
       details: {
         type: 'section',
         form: sectionForm
@@ -96,7 +96,7 @@ describe('Section components', () => {
 
 describe('Section tabs', () => {
   it('accepts tabs on a non-nested section', () => {
-    assertType<Components<ParentWithSection>>({
+    assertType<Fields<ParentWithSection>>({
       details: {
         type: 'section',
         tabs: {
@@ -112,7 +112,7 @@ describe('Section tabs', () => {
   })
 
   it('accepts tabs on a nested section typed against nested data', () => {
-    assertType<Components<ParentWithAddress>>({
+    assertType<Fields<ParentWithAddress>>({
       address: {
         type: 'section',
         nested: true,
@@ -131,8 +131,8 @@ describe('Section tabs', () => {
 })
 
 describe('Nested sections', () => {
-  it('types nested section components against the value type', () => {
-    assertType<Components<ParentWithAddress>>({
+  it('types nested section fields against the value type', () => {
+    assertType<Fields<ParentWithAddress>>({
       address: {
         type: 'section',
         nested: true,
@@ -144,8 +144,8 @@ describe('Nested sections', () => {
     })
   })
 
-  it('rejects invalid keys in nested section components', () => {
-    assertType<Components<ParentWithAddress>>({
+  it('rejects invalid keys in nested section fields', () => {
+    assertType<Fields<ParentWithAddress>>({
       address: {
         type: 'section',
         nested: true,
@@ -159,7 +159,7 @@ describe('Nested sections', () => {
   })
 
   it('types item as Address in nested section callbacks', () => {
-    assertType<Components<ParentWithAddress>>({
+    assertType<Fields<ParentWithAddress>>({
       address: {
         type: 'section',
         nested: true,
@@ -177,7 +177,7 @@ describe('Nested sections', () => {
   })
 
   it('types nested section form against the value type', () => {
-    assertType<Components<ParentWithAddress>>({
+    assertType<Fields<ParentWithAddress>>({
       address: {
         type: 'section',
         nested: true,
@@ -193,7 +193,7 @@ describe('Nested sections', () => {
   })
 
   it('non-nested section on data key accepts parent item keys', () => {
-    assertType<Components<ParentWithAddress>>({
+    assertType<Fields<ParentWithAddress>>({
       address: {
         type: 'section',
         fields: {

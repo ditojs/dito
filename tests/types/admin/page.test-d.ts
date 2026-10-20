@@ -33,11 +33,11 @@ describe('PageSchema', () => {
     assertType<PageSchema>({ type: 'page' })
   })
 
-  it('rejects the components of views', () => {
+  it('rejects the fields of views', () => {
     assertType<PageSchema>({
       type: 'page',
       component: ProductPage,
-      // @ts-expect-error: Pages hold no schema components.
+      // @ts-expect-error: Pages hold no fields.
       fields: {}
     })
   })

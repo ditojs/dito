@@ -43,7 +43,7 @@ new DitoAdmin(element, options)
 | `options.views` | `Record<string, View> \| Promise \| () => …` | The top-level views and menus, keyed by name. Also a promise or a function returning them, e.g. a module namespace or a dynamic `import()`, or an array of modules that each export one named view. Resolved anew for each login. Default `{}`. See [Views](./schemas.md#view). |
 | `options.api` | [`ApiConfig`](#apiconfig) | The API configuration, deep-merged over `dito.api`. |
 | `options.dito` | [`GlobalConfig`](#globalconfig) | The global configuration. Defaults to `globalThis.dito`, which `AdminController` provides. |
-| `options.login.additionalFields` | `Components` | Fields added to the login dialog after `username` and `password`. Their values are sent with the credentials. `additionalComponents` is the deprecated name of this option. |
+| `options.login.additionalFields` | `Fields` | Fields added to the login dialog after `username` and `password`. Their values are sent with the credentials. `additionalComponents` is the deprecated name of this option. |
 | `options.login.redirectAfterLogin` | `string` | A URL to load after a successful login, instead of resolving the views in place. |
 | `options.spinner` | `{ size?: string, color?: string } \| null` | Size and color of the loading spinner in the header. `null` hides it. |
 | `options.account.settings` | `Form \| Promise \| () => …` | The form of the account settings, which the account menu opens at `/account/settings`, to edit the logged-in user through [`api.users.self`](#users). Also a promise or a function returning it, e.g. a dynamic `import()`. Its `label` is the view's label, default `'Settings'`. See [Account settings](../../guide/admin/views.md#account-settings). |
@@ -124,7 +124,7 @@ the function members are set in `options.api`.
 | -------- | ---- | ------- | ----------- |
 | `url` | `string` | | The base URL of all API requests. Relative request URLs are combined with it. |
 | `locale` | `string` | `'en-US'` | The locale of date, time and number formatting. |
-| `formats` | `{ number?, date?, time? }` | `defaultFormats` of `@ditojs/utils` | Default formats, merged over the defaults. Schemas override them per component. |
+| `formats` | `{ number?, date?, time? }` | `defaultFormats` of `@ditojs/utils` | Default formats, merged over the defaults. Schemas override them per field. |
 | `timeout` | `number \| null` | `null` | Milliseconds after which requests are aborted. Requests can set their own. |
 | `notifications` | `boolean \| { durationFactor: number }` | `true` | `false` disables the notification toasts. `durationFactor` sets the display duration in milliseconds per character of the title and the rendered content, plus 40 characters, default `20`. |
 | `cors.credentials` | `boolean` | | Sends credentials with cross-site requests to the API (`credentials: 'include'`). |
@@ -134,7 +134,7 @@ the function members are set in `options.api`.
 | `denormalizePath` | `(path: string) => string` | identity | Converts a URL path segment back to its camel-cased form. |
 | `users` | `object` | | The authentication resources, see [`users`](#users). |
 | `resources` | `Record<string, (resource) => string>` | | Handlers that resolve resource paths, merged over the built-in `any`, `default`, `collection`, `member` and `upload`. |
-| `defaults` | `Record<string, object \| (schema) => object \| void>` | `{}` | Default schema options per component type, see [`defaults`](#defaults). |
+| `defaults` | `Record<string, object \| (schema) => object \| void>` | `{}` | Default schema options per schema type, see [`defaults`](#defaults). |
 | `request` | `RequestMethod` | `fetch()` wrapper | Performs requests, see [`request()`](#request). |
 | `getApiUrl` | `({ url, query }) => string` | | Returns the full URL of a request: `url` prefixed with `api.url` unless it's absolute or already starts with it, and `query` appended. |
 | `isApiUrl` | `(url: string) => boolean` | | Whether a URL goes to the API: relative URLs, and absolute ones inside `api.url`. Only API requests receive `headers` and `cors.credentials`. |
@@ -182,7 +182,7 @@ api: {
 }
 ```
 
-Default schema options per component type. During schema setup, object
+Default schema options per schema type. During schema setup, object
 defaults of a matching type are the base of each schema: values that the
 schema sets itself win, also inside nested objects, which are merged deeply.
 A function receives the schema and either modifies it directly or returns

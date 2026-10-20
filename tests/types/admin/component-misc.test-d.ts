@@ -8,7 +8,7 @@ import type {
   FormSchema,
   CustomComponentProps,
   CustomComponentEmits,
-  ComponentSchemaBase,
+  FieldSchemaBase,
   SchemaContext
 } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
@@ -223,7 +223,7 @@ describe('CustomComponentProps and CustomComponentEmits', () => {
     expectTypeOf<Props['schema']['type']>().toBeString()
     expectTypeOf<Props['schema']['label']>().not.toBeAny()
     expectTypeOf<Props['schema']['max']>().toBeUnknown()
-    type RatingSchema = ComponentSchemaBase<Entry> & { max?: number }
+    type RatingSchema = FieldSchemaBase<Entry> & { max?: number }
     expectTypeOf<CustomComponentProps<Entry, number, RatingSchema>['schema']>()
       .toEqualTypeOf<RatingSchema>()
     expectTypeOf<CustomComponentEmits<number>['update:modelValue']>()

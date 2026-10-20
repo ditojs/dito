@@ -1,7 +1,7 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type {
   FormSchema,
-  Components,
+  Fields,
   PanelSchema,
   UploadSchema,
   ValueSchema,
@@ -59,7 +59,7 @@ describe('SchemaBase: no component members', () => {
 })
 
 describe('SchemaBase: panels', () => {
-  it('form with panels containing components and buttons', () => {
+  it('form with panels containing fields and buttons', () => {
     assertType<FormSchema<Entry>>({
       type: 'form',
       fields: {
@@ -106,7 +106,7 @@ describe('SchemaBase: lifecycle callbacks', () => {
 
 describe('SchemaTypeMixin: parseValue and serializeValue callbacks', () => {
   it('parseValue callback receives typed item', () => {
-    assertType<Components<Parent>>({
+    assertType<Fields<Parent>>({
       title: {
         type: 'text',
         parseValue({ item }) {
@@ -119,7 +119,7 @@ describe('SchemaTypeMixin: parseValue and serializeValue callbacks', () => {
   })
 
   it('serializeValue callback receives typed item', () => {
-    assertType<Components<Parent>>({
+    assertType<Fields<Parent>>({
       title: {
         type: 'text',
         serializeValue({ item }) {
@@ -151,7 +151,7 @@ describe('ValueSchema', () => {
     assertType<ValueSchema<Entry>>({ type: 'computed' })
     assertType<ValueSchema<Entry>>({ type: 'data', dataPath: 'title' })
     assertType<ValueSchema<Entry>>({ type: 'hidden', data: () => 42 })
-    assertType<Components<Entry>>({ title: { type: 'computed' } })
+    assertType<Fields<Entry>>({ title: { type: 'computed' } })
     expectTypeOf<ComputedSchema<Entry>>().toEqualTypeOf<ValueSchema<Entry>>()
     expectTypeOf<DataSchema<Entry>>().toEqualTypeOf<ValueSchema<Entry>>()
     expectTypeOf<HiddenSchema<Entry>>().toEqualTypeOf<ValueSchema<Entry>>()
@@ -160,7 +160,7 @@ describe('ValueSchema', () => {
 
 describe('UploadSchema', () => {
   it('accepts multiple, extensions, accept, and maxSize', () => {
-    assertType<Components<Parent>>({
+    assertType<Fields<Parent>>({
       entries: {
         type: 'upload',
         multiple: true,
@@ -172,7 +172,7 @@ describe('UploadSchema', () => {
   })
 
   it('accepts extensions as regex', () => {
-    assertType<Components<Parent>>({
+    assertType<Fields<Parent>>({
       entries: {
         type: 'upload',
         extensions: /\.(gif|jpe?g|png)$/i
@@ -245,7 +245,7 @@ describe('UploadSchema', () => {
 })
 
 describe('PanelSchema', () => {
-  it('constrains component keys to item properties', () => {
+  it('constrains field keys to item properties', () => {
     assertType<PanelSchema<Entry>>({
       type: 'panel',
       fields: {
@@ -255,7 +255,7 @@ describe('PanelSchema', () => {
     })
   })
 
-  it('rejects unknown component keys', () => {
+  it('rejects unknown field keys', () => {
     assertType<PanelSchema<Entry>>({
       type: 'panel',
       fields: {
@@ -294,7 +294,7 @@ describe('PanelSchema', () => {
     })
   })
 
-  it('component callbacks in panels receive typed item', () => {
+  it('field callbacks in panels receive typed item', () => {
     assertType<PanelSchema<Parent>>({
       type: 'panel',
       fields: {

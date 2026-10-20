@@ -2,8 +2,8 @@ import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type { FormSchema, View } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
-describe('View with list component', () => {
-  it('accepts view with single list component and inline form', () => {
+describe('View with list field', () => {
+  it('accepts view with single list field and inline form', () => {
     const view: View<Entry> = {
       type: 'view',
       field: {
@@ -19,7 +19,7 @@ describe('View with list component', () => {
     }
   })
 
-  it('accepts view with single list component and FormSchema variable', () => {
+  it('accepts view with single list field and FormSchema variable', () => {
     const entryForm: FormSchema<Entry> = {
       type: 'form',
       fields: {
@@ -37,7 +37,7 @@ describe('View with list component', () => {
     }
   })
 
-  it('accepts view with single list component and promised form', () => {
+  it('accepts view with single list field and promised form', () => {
     const promisedForm: Promise<Record<string, FormSchema<Entry>>> =
       Promise.resolve({
         entryForm: { type: 'form', fields: {} }
@@ -53,7 +53,7 @@ describe('View with list component', () => {
     }
   })
 
-  it('accepts view with components map', () => {
+  it('accepts view with fields', () => {
     const view: View<Entry> = {
       type: 'view',
       fields: {
@@ -142,7 +142,7 @@ describe('View tabs and events', () => {
 })
 
 describe('List filters', () => {
-  it('accepts filter with custom components using arbitrary keys', () => {
+  it('accepts filter with custom fields using arbitrary keys', () => {
     const view: View<Entry> = {
       type: 'view',
       field: {

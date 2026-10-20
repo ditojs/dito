@@ -5,7 +5,14 @@ import type {
   SchemaValue,
   SchemaValueCallback,
   SchemaBase,
+  FieldSchemaBase,
   ComponentSchemaBase,
+  Field,
+  Component,
+  Fields,
+  Components,
+  SourceField,
+  SourceComponent,
   RouteSchemaBase,
   OrItemAccessor,
   ItemAccessor,
@@ -209,8 +216,14 @@ describe('SchemaContext', () => {
     expectTypeOf<SchemaFields<Entry>>().toEqualTypeOf<SchemaBase<Entry>>()
     expectTypeOf<SchemaSetupMixin<Entry>>().toEqualTypeOf<SchemaBase<Entry>>()
     expectTypeOf<BaseSchema<Entry>>().toEqualTypeOf<
-      ComponentSchemaBase<Entry>
+      FieldSchemaBase<Entry>
     >()
+    expectTypeOf<ComponentSchemaBase<Entry>>().toEqualTypeOf<
+      FieldSchemaBase<Entry>
+    >()
+    expectTypeOf<Component<Entry>>().toEqualTypeOf<Field<Entry>>()
+    expectTypeOf<Components<Entry>>().toEqualTypeOf<Fields<Entry>>()
+    expectTypeOf<SourceComponent<Entry>>().toEqualTypeOf<SourceField<Entry>>()
     expectTypeOf<SchemaRoute<Entry>>().toEqualTypeOf<RouteSchemaBase<Entry>>()
     expectTypeOf<SchemaRouteMixin<Entry>>().toEqualTypeOf<
       RouteSchemaBase<Entry>

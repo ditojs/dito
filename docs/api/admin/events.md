@@ -176,7 +176,7 @@ const section = {
 
 ## Button events
 
-`type: 'button'` and `type: 'submit'` components. `onClick()`, `onSuccess()`
+`type: 'button'` and `type: 'submit'` fields. `onClick()`, `onSuccess()`
 and `onError()` of a button receive the same context, extended with `error` in
 `onError()`.
 

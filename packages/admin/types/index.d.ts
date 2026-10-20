@@ -190,7 +190,7 @@ export interface ApiConfig {
   /**
    * Default format options for numbers, dates, and times. Merged
    * with the built-in `defaultFormats` from `@ditojs/utils`.
-   * Individual schemas can override these on a per-component basis.
+   * Individual schemas can override these on a per-field basis.
    */
   formats?: {
     number?: NumberFormat
@@ -371,7 +371,7 @@ export interface ApiConfig {
   isApiUrl?: (url: string) => boolean
 
   /**
-   * Default schema property values per component type. During
+   * Default schema property values per schema type. During
    * schema setup, defaults for a matching type are applied
    * to the schema: top-level properties that are `undefined` are
    * set directly, while existing object properties are
@@ -398,7 +398,7 @@ export interface ApiConfig {
     string,
     | Record<string, any>
     | ((
-        schema: Component | FormSchema | ViewSchema | PageSchema
+        schema: Field | FormSchema | ViewSchema | PageSchema
       ) => Record<string, any> | void)
   >
 }
@@ -446,7 +446,7 @@ export type ErrorEventHandler<$Item = any> = (
 ) => unknown
 
 /**
- * Event handlers shared by component schemas, views,
+ * Event handlers shared by field schemas, views,
  * and forms.
  */
 export interface SchemaEvents<$Item = any> {
@@ -486,17 +486,17 @@ export interface SchemaToggle<$Item = any> {
   onToggle?: ToggleEventHandler<$Item>
 }
 
-/** The schema settings shared by all components. */
-export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
+/** The schema settings shared by all fields. */
+export interface FieldSchemaBase<$Item> extends SchemaBase<$Item> {
   /**
-   * Only displays the component if the schema value is `true`.
+   * Only displays the field if the schema value is `true`.
    */
   if?: SchemaValue<$Item, {}, boolean>
 
   /**
    * Specifies validations rules to add, remove (by setting to `false` or
    * `undefined`) or change before value validation occurs. Rule changes do
-   * not influence how the component is rendered.
+   * not influence how the field is rendered.
    */
   rules?: SchemaRules
 
@@ -533,31 +533,31 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
    */
   computeValue?: SchemaValueCallback<$Item>
   /**
-   * Custom CSS class(es) added to the component's container
+   * Custom CSS class(es) added to the field's container
    * element. Accepts a string or an object of class-boolean
    * pairs.
    */
   class?: string | Record<string, boolean>
   /**
    * Forces a layout line break before, after, or on
-   * both sides of the component.
+   * both sides of the field.
    */
   break?: 'before' | 'after' | 'both'
 
   /**
-   * The label of the component.
+   * The label of the field.
    *
-   * @defaultValue The title-cased component name.
+   * @defaultValue The title-cased field name.
    */
   label?: SchemaValue<$Item, {}, SchemaLabel | boolean>
 
   /**
-   * The width of the component. The value can either be given in percent
+   * The width of the field. The value can either be given in percent
    * (e.g. '20%' or a value between 0 and 1), as a fraction (e.g. '1/3'), in
    * CSS units (e.g. '200px'), or as 'auto' to have the width depend on its
    * contents or as 'fill' to fill left over space. A leading '>' lets the
-   * component grow beyond its width, and '<' shrink below it (e.g. '>50%').
-   * A line will contain multiple components until their widths exceed 100%.
+   * field grow beyond its width, and '<' shrink below it (e.g. '>50%').
+   * A line will contain multiple fields until their widths exceed 100%.
    */
   width?: SchemaValue<
     $Item,
@@ -566,15 +566,15 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
   >
 
   /**
-   * The vertical position of the component in its line, when it shares the
-   * line with taller components.
+   * The vertical position of the field in its line, when it shares the
+   * line with taller fields.
    *
    * @defaultValue `'top'`
    */
   align?: SchemaValue<$Item, {}, 'top' | 'center' | 'bottom'>
 
   /**
-   * Whether the component is visible.
+   * Whether the field is visible.
    *
    * @defaultValue `true`
    */
@@ -628,7 +628,7 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
   placeholder?: SchemaValue<$Item, {}, string>
 
   /**
-   * Info displayed near the component label, as text or `{ html }`.
+   * Info displayed near the field label, as text or `{ html }`.
    */
   info?: SchemaValue<$Item, {}, TextOrHtml>
 
@@ -649,14 +649,14 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
    */
   formatValue?: SchemaValueCallback<$Item, {}, any>
   /**
-   * Whether the component is disabled.
+   * Whether the field is disabled.
    *
    * @defaultValue `false`
    */
   disabled?: SchemaValue<$Item, {}, boolean>
 
   /**
-   * Specifies a function which parses the component
+   * Specifies a function which parses the field
    * value when it changes, transforming the raw
    * input before it is written into the data.
    */
@@ -684,7 +684,7 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
 
   /**
    * The property key used to identify the field in data objects.
-   * Auto-assigned from the component's key if not provided.
+   * Auto-assigned from the field's key if not provided.
    */
   name?: string
 
@@ -705,17 +705,20 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
   events?: BaseSchemaEvents<$Item>
 }
 
-/** @deprecated Use {@link ComponentSchemaBase}. */
-export type BaseSchema<$Item> = ComponentSchemaBase<$Item>
+/** @deprecated Use {@link FieldSchemaBase}. */
+export type ComponentSchemaBase<$Item> = FieldSchemaBase<$Item>
+
+/** @deprecated Use {@link FieldSchemaBase}. */
+export type BaseSchema<$Item> = FieldSchemaBase<$Item>
 
 /**
  * Grouped event handlers shared by all schemas, extended by the individual
  * types.
  */
 export interface BaseSchemaEvents<$Item> extends SchemaEvents<$Item> {
-  /** @see {@link ComponentSchemaBase.onFocus} */
+  /** @see {@link FieldSchemaBase.onFocus} */
   focus?: ItemEventHandler<$Item>
-  /** @see {@link ComponentSchemaBase.onBlur} */
+  /** @see {@link FieldSchemaBase.onBlur} */
   blur?: ItemEventHandler<$Item>
 }
 
@@ -808,9 +811,9 @@ export interface SourceSettings<$Item> {
    * edited inline rather than navigating to a separate
    * page.
    */
-  fields?: Components<$Item>
+  fields?: Fields<$Item>
   /** @deprecated Use `fields`. */
-  components?: Components<$Item>
+  components?: Fields<$Item>
   /**
    * The tabs of the inlined form of `fields`.
    */
@@ -978,7 +981,7 @@ export type SchemaOptions<$Item, $Option = any> =
       ) => boolean
       /**
        * The data path of the options in the edited data, relative to
-       * the item the component sits in, or absolute with a leading
+       * the item the field sits in, or absolute with a leading
        * `/`. `..` navigates up, `/` into nested properties.
        *
        * @example Sibling data
@@ -1005,7 +1008,7 @@ export type SchemaOptions<$Item, $Option = any> =
     }
 
 /**
- * The schema settings shared by components that select from options, e.g.
+ * The schema settings shared by fields that select from options, e.g.
  * selects, radios and checkboxes.
  */
 export interface SelectionSettings<$Item, $Option = any> {
@@ -1141,7 +1144,7 @@ export type SchemaAffix =
         }
     ))
 
-/** The schema settings of components with a prefix and a suffix. */
+/** The schema settings of fields with a prefix and a suffix. */
 export interface AffixSettings<$Item> {
   /**
    * Prefix content displayed before the input.
@@ -1178,7 +1181,7 @@ export interface DataSettings<$Item> {
 export type SchemaDataMixin<$Item> = DataSettings<$Item>
 
 /**
- * Properties shared by component schemas, views and forms: their panels, and
+ * Properties shared by field schemas, views and forms: their panels, and
  * the `change` and `input` events, which bubble through them.
  */
 export interface SchemaBase<$Item> {
@@ -1274,7 +1277,7 @@ export type SchemaRouteMixin<$Item = any> = RouteSchemaBase<$Item>
 
 export interface ComponentSchema<
   $Item = any
-> extends ComponentSchemaBase<$Item> {
+> extends FieldSchemaBase<$Item> {
   type: 'component'
   /**
    * Use a Vue component to render the component. The component is specified
@@ -1294,7 +1297,7 @@ export interface ComponentSchema<
 export interface CustomComponentProps<
   $Item = any,
   $Value = any,
-  $Schema extends {} = ComponentSchemaBase<$Item> & {
+  $Schema extends {} = FieldSchemaBase<$Item> & {
     type: string
     [key: string]: unknown
   }
@@ -1327,11 +1330,11 @@ export interface CustomComponentEmits<$Value = any> {
 }
 
 export interface InputSchema<$Item = any>
-  extends ComponentSchemaBase<$Item>,
+  extends FieldSchemaBase<$Item>,
     TextSettings<$Item>,
     AffixSettings<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type:
     | 'text'
@@ -1354,10 +1357,10 @@ export interface InputSchema<$Item = any>
 }
 
 export interface DateSchema<$Item = any>
-  extends ComponentSchemaBase<$Item>,
+  extends FieldSchemaBase<$Item>,
     AffixSettings<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'date' | 'datetime' | 'time'
   /**
@@ -1374,10 +1377,10 @@ export interface DateSchema<$Item = any>
 }
 
 export interface ButtonSchema<$Item = any>
-  extends ComponentSchemaBase<$Item>,
+  extends FieldSchemaBase<$Item>,
     AffixSettings<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'button' | 'submit'
   closeForm?: SchemaValue<$Item, {}, boolean>
@@ -1406,9 +1409,9 @@ export interface ButtonSchema<$Item = any>
   }
 }
 
-export interface SwitchSchema<$Item = any> extends ComponentSchemaBase<$Item> {
+export interface SwitchSchema<$Item = any> extends FieldSchemaBase<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'switch'
   labels?: {
@@ -1430,10 +1433,10 @@ export interface SwitchSchema<$Item = any> extends ComponentSchemaBase<$Item> {
 export interface NumberSchema<$Item = any>
   // `rules` comes from `NumberSettings`, which extends `SchemaRules`.
   extends NumberSettings<$Item>,
-    Omit<ComponentSchemaBase<$Item>, 'rules'>,
+    Omit<FieldSchemaBase<$Item>, 'rules'>,
     AffixSettings<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'number' | 'integer'
 }
@@ -1441,9 +1444,9 @@ export interface NumberSchema<$Item = any>
 export interface SliderSchema<$Item = any>
   // `rules` comes from `NumberSettings`, which extends `SchemaRules`.
   extends NumberSettings<$Item>,
-    Omit<ComponentSchemaBase<$Item>, 'rules'> {
+    Omit<FieldSchemaBase<$Item>, 'rules'> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'slider'
   /**
@@ -1455,10 +1458,10 @@ export interface SliderSchema<$Item = any>
 }
 
 export interface TextareaSchema<$Item = any>
-  extends ComponentSchemaBase<$Item>,
+  extends FieldSchemaBase<$Item>,
     TextSettings<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'textarea'
   /**
@@ -1473,9 +1476,9 @@ export interface TextareaSchema<$Item = any>
   lines?: SchemaValue<$Item, {}, number>
 }
 
-export interface CodeSchema<$Item = any> extends ComponentSchemaBase<$Item> {
+export interface CodeSchema<$Item = any> extends FieldSchemaBase<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'code'
   /**
@@ -1502,9 +1505,9 @@ export interface CodeSchema<$Item = any> extends ComponentSchemaBase<$Item> {
   resizable?: SchemaValue<$Item, {}, boolean>
 }
 
-export interface MarkupSchema<$Item = any> extends ComponentSchemaBase<$Item> {
+export interface MarkupSchema<$Item = any> extends FieldSchemaBase<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'markup'
   /**
@@ -1575,9 +1578,9 @@ export interface MarkupSchema<$Item = any> extends ComponentSchemaBase<$Item> {
   }
 }
 
-export interface LabelSchema<$Item = any> extends ComponentSchemaBase<$Item> {
+export interface LabelSchema<$Item = any> extends FieldSchemaBase<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'label'
 }
@@ -1587,10 +1590,10 @@ export interface LabelSchema<$Item = any> extends ComponentSchemaBase<$Item> {
  * It's invisible by default, `visible: true` shows it in a read-only input.
  */
 export interface ValueSchema<$Item = any>
-  extends ComponentSchemaBase<$Item>,
+  extends FieldSchemaBase<$Item>,
     DataSettings<$Item> {
   /**
-   * The type of the component. `'computed'`, `'data'` and `'hidden'` are
+   * The type of the field. `'computed'`, `'data'` and `'hidden'` are
    * deprecated names of `'value'`.
    */
   type: 'value' | 'computed' | 'data' | 'hidden'
@@ -1605,9 +1608,9 @@ export type DataSchema<$Item = any> = ValueSchema<$Item>
 /** @deprecated Use {@link ValueSchema}. */
 export type HiddenSchema<$Item = any> = ValueSchema<$Item>
 
-export interface UploadSchema<$Item = any> extends ComponentSchemaBase<$Item> {
+export interface UploadSchema<$Item = any> extends FieldSchemaBase<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'upload'
   /**
@@ -1679,11 +1682,11 @@ export interface UploadSchema<$Item = any> extends ComponentSchemaBase<$Item> {
 }
 
 export interface MultiselectSchema<$Item = any, $Option = any>
-  extends Omit<ComponentSchemaBase<$Item>, 'placeholder'>,
+  extends Omit<FieldSchemaBase<$Item>, 'placeholder'>,
     SelectionSettings<$Item, $Option>,
     AffixSettings<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'multiselect'
   /**
@@ -1767,20 +1770,20 @@ export interface MultiselectSchema<$Item = any, $Option = any>
 }
 
 export interface SelectSchema<$Item = any>
-  extends ComponentSchemaBase<$Item>,
+  extends FieldSchemaBase<$Item>,
     SelectionSettings<$Item>,
     AffixSettings<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'select'
 }
 
 export interface RadioSchema<$Item = any>
-  extends ComponentSchemaBase<$Item>,
+  extends FieldSchemaBase<$Item>,
     SelectionSettings<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'radio'
   /**
@@ -1799,12 +1802,12 @@ type SectionContent<$Data, $Item = $Data> = {
    * nested sections.
    */
   fields?:
-    | Components<$Data>
-    | SchemaValueCallback<$Item, {}, Components<$Data>>
+    | Fields<$Data>
+    | SchemaValueCallback<$Item, {}, Fields<$Data>>
   /** @deprecated Use `fields`. */
   components?:
-    | Components<$Data>
-    | SchemaValueCallback<$Item, {}, Components<$Data>>
+    | Fields<$Data>
+    | SchemaValueCallback<$Item, {}, Fields<$Data>>
   /**
    * A form schema for the section's content. Use this
    * instead of `fields` to get form-level options
@@ -1825,16 +1828,16 @@ type SectionContent<$Data, $Item = $Data> = {
 }
 
 /**
- * A visual grouping of components within a form.
+ * A visual grouping of fields within a form.
  *
- * By default, the section's components read and write fields
- * on the parent item directly. When `nested` is `true`, the
+ * By default, the section's fields read and write the values
+ * of the parent item directly. When `nested` is `true`, the
  * section's fields are stored under their own key on the
  * parent item instead (e.g. `item.address`).
  *
  * For non-nested sections, declare the key as `never` in
  * your item type. For nested sections, declare it as the
- * object type of the nested data (see {@link Components}).
+ * object type of the nested data (see {@link Fields}).
  *
  * @template $Item The parent item type, used for callbacks
  *   like `label` and `collapsible`.
@@ -1850,7 +1853,7 @@ type SectionContent<$Data, $Item = $Data> = {
  *   details: never // UI-only key
  * }
  *
- * const fields: Components<Item> = {
+ * const fields: Fields<Item> = {
  *   details: {
  *     type: 'section',
  *     fields: {
@@ -1869,7 +1872,7 @@ type SectionContent<$Data, $Item = $Data> = {
  *   address: Address // data key for nested section
  * }
  *
- * const fields: Components<Item> = {
+ * const fields: Fields<Item> = {
  *   address: {
  *     type: 'section',
  *     nested: true,
@@ -1884,10 +1887,10 @@ type SectionContent<$Data, $Item = $Data> = {
 export type SectionSchema<
   $Item = any,
   $Nested = $Item
-> = ComponentSchemaBase<$Item> &
+> = FieldSchemaBase<$Item> &
   SchemaToggle<$Item> & {
     /**
-     * The type of the component.
+     * The type of the field.
      */
     type: 'section'
     /**
@@ -1983,18 +1986,18 @@ export type SectionSchema<
 
 export interface CheckboxSchema<
   $Item = any
-> extends ComponentSchemaBase<$Item> {
+> extends FieldSchemaBase<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'checkbox'
 }
 
 export interface CheckboxesSchema<$Item = any>
-  extends ComponentSchemaBase<$Item>,
+  extends FieldSchemaBase<$Item>,
     SelectionSettings<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'checkboxes'
   /**
@@ -2020,10 +2023,10 @@ export type ColorFormat =
   | 'hsl'
   | 'hsv'
 export interface ColorSchema<$Item = any>
-  extends ComponentSchemaBase<$Item>,
+  extends FieldSchemaBase<$Item>,
     AffixSettings<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'color'
   /**
@@ -2105,9 +2108,9 @@ export type ResolvableForm<$Item = any> = Resolvable<FormSchema<$Item>>
 
 export interface ListSchema<$Item = { [key: string]: any }>
   extends Omit<SourceSettings<$Item>, 'collapsible'>,
-    ComponentSchemaBase<$Item> {
+    FieldSchemaBase<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'list'
   /**
@@ -2155,16 +2158,16 @@ export interface ListSchema<$Item = { [key: string]: any }>
             }
           | {
               label?: string
-              fields: Components
+              fields: Fields
             }
           | {
               label?: string
               /** @deprecated Use `fields`. */
-              components: Components
+              components: Fields
             }
         ) & {
           /** The width of the filter in the filters panel. */
-          width?: ComponentSchemaBase<any>['width']
+          width?: FieldSchemaBase<any>['width']
         })
       | boolean
       | undefined
@@ -2227,7 +2230,7 @@ export type SchemaContext<$Item = any> = {
    */
   readonly nested: boolean
   /**
-   * The current value of the component, `undefined` in contexts of items,
+   * The current value of the field, `undefined` in contexts of items,
    * e.g. in the events of forms and sections.
    */
   readonly value: any
@@ -2244,7 +2247,7 @@ export type SchemaContext<$Item = any> = {
    * Elsewhere the same as `dataPath`.
    */
   readonly currentDataPath: string
-  /** The property name of the current component. */
+  /** The property name of the current field. */
   readonly name: string
   /**
    * The index of the value in its list, `null` for values that aren't list
@@ -2298,8 +2301,8 @@ export type SchemaContext<$Item = any> = {
   readonly user: AdminUser | null
   /** The admin API configuration. */
   readonly api: ApiConfig
-  /** The schema definition for the current component. */
-  readonly schema: Component | null
+  /** The schema definition for the current field. */
+  readonly schema: Field | null
   /** All registered top-level views. */
   readonly views: Record<string, View>
   /** All views flattened into a single record. */
@@ -2307,7 +2310,7 @@ export type SchemaContext<$Item = any> = {
   /**
    * The text of the label of the current item: of the form's
    * item in all callbacks inside a form, e.g. its events and
-   * the `if` and `label` of its components, computed when
+   * the `if` and `label` of its fields, computed when
    * it's read. `null` in `itemLabel()` itself.
    */
   readonly itemLabel: string | null
@@ -2341,7 +2344,7 @@ export type SchemaContext<$Item = any> = {
    */
   readonly collapsed: boolean | undefined
   /**
-   * The current search term in select components.
+   * The current search term in select fields.
    */
   readonly searchTerm: string | undefined
   /**
@@ -2486,7 +2489,7 @@ export type SchemaContext<$Item = any> = {
   }): Promise<boolean>
   /**
    * Reloads the items of the list or object that the
-   * component is or is in, from its resource, and resolves
+   * field is or is in, from its resource, and resolves
    * once they're loaded. Sources without their own resource
    * have nothing to load. Throws outside of sources.
    */
@@ -2585,9 +2588,9 @@ export type SchemaContext<$Item = any> = {
    * when cancelled, or the value of `closeDialog()`.
    */
   showDialog<$Result = unknown>(options: {
-    fields?: Components
+    fields?: Fields
     /** @deprecated Use `fields`. */
-    components?: Components
+    components?: Fields
     buttons: Buttons<any>
     data?: Record<string, any>
     settings?: {
@@ -2848,13 +2851,13 @@ export interface ViewSchema<$Item = any> extends RouteSchemaBase<$Item> {
   /**
    * The single field that the view displays instead of `fields`, e.g. a list.
    */
-  field?: Component<$Item>
+  field?: Field<$Item>
   /** @deprecated Use `field`. */
-  component?: Component<$Item>
+  component?: Field<$Item>
   /** The view's fields. */
-  fields?: Components<$Item>
+  fields?: Fields<$Item>
   /** @deprecated Use `fields`. */
-  components?: Components<$Item>
+  components?: Fields<$Item>
 }
 
 /**
@@ -2897,9 +2900,9 @@ export interface PageSchema {
 
 export interface ObjectSchema<$Item = { [key: string]: any }>
   extends SourceSettings<$Item>,
-    ComponentSchemaBase<$Item> {
+    FieldSchemaBase<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'object'
 }
@@ -2907,9 +2910,9 @@ export interface ObjectSchema<$Item = { [key: string]: any }>
 // Tree items are always collapsible, and collapsed by default:
 interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
   extends Omit<SourceSettings<$Item>, 'collapsible' | 'collapsed'>,
-    ComponentSchemaBase<$Item> {
+    FieldSchemaBase<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: $Type
   /**
@@ -2955,11 +2958,11 @@ interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
 export type TreeListSchema<$Item = any> = TreeSchema<$Item, 'tree-list'>
 export type TreeObjectSchema<$Item = any> = TreeSchema<$Item, 'tree-object'>
 export type PanelSchema<$Item = any> = Omit<
-  ComponentSchemaBase<$Item>,
+  FieldSchemaBase<$Item>,
   'disabled'
 > & {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'panel'
   /**
@@ -3002,9 +3005,9 @@ export type PanelSchema<$Item = any> = Omit<
   /**
    * The fields within the panel.
    */
-  fields?: Components<$Item>
+  fields?: Fields<$Item>
   /** @deprecated Use `fields`. */
-  components?: Components<$Item>
+  components?: Fields<$Item>
   /** Buttons rendered at the bottom of the panel. */
   buttons?: Buttons<$Item>
   /**
@@ -3021,9 +3024,9 @@ export type PanelSchema<$Item = any> = Omit<
   sticky?: SchemaValue<$Item, {}, boolean>
 }
 
-export interface SpacerSchema<$Item = any> extends ComponentSchemaBase<$Item> {
+export interface SpacerSchema<$Item = any> extends FieldSchemaBase<$Item> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'spacer'
 }
@@ -3031,14 +3034,14 @@ export interface SpacerSchema<$Item = any> extends ComponentSchemaBase<$Item> {
 export interface ProgressSchema<$Item = any>
   // `rules` comes from `NumberSettings`, which extends `SchemaRules`.
   extends NumberSettings<$Item>,
-    Omit<ComponentSchemaBase<$Item>, 'rules'> {
+    Omit<FieldSchemaBase<$Item>, 'rules'> {
   /**
-   * The type of the component.
+   * The type of the field.
    */
   type: 'progress'
 }
 
-type NonSectionComponent<$Item = any> =
+type NonSectionField<$Item = any> =
   | InputSchema<$Item>
   | RadioSchema<$Item>
   | CheckboxSchema<$Item>
@@ -3065,28 +3068,34 @@ type NonSectionComponent<$Item = any> =
   | SpacerSchema<$Item>
   | ProgressSchema<$Item>
 
-export type Component<$Item = any> =
-  | NonSectionComponent<$Item>
+export type Field<$Item = any> =
+  | NonSectionField<$Item>
   | SectionSchema<$Item>
   | PanelSchema<$Item>
 
+/** @deprecated Use {@link Field}. */
+export type Component<$Item = any> = Field<$Item>
+
 /**
- * Source components (list, object, tree) that contain nested
+ * Source fields (list, object, tree) that contain nested
  * items with their own item type.
  */
-export type SourceComponent<$Item = any> =
+export type SourceField<$Item = any> =
   | ListSchema<$Item>
   | ObjectSchema<$Item>
   | TreeListSchema<$Item>
   | TreeObjectSchema<$Item>
 
+/** @deprecated Use {@link SourceField}. */
+export type SourceComponent<$Item = any> = SourceField<$Item>
+
 /**
- * Field components that don't have an options mixin (excludes
- * select, multiselect, and source components like list/object/tree).
+ * Fields that don't have an options mixin (excludes
+ * select, multiselect, and source fields like list/object/tree).
  */
-type NonOptionFieldComponent<$Item = any> = Exclude<
-  NonSectionComponent<$Item>,
-  SelectSchema<$Item> | MultiselectSchema<$Item> | SourceComponent<$Item>
+type NonOptionField<$Item = any> = Exclude<
+  NonSectionField<$Item>,
+  SelectSchema<$Item> | MultiselectSchema<$Item> | SourceField<$Item>
 >
 
 /**
@@ -3095,9 +3104,9 @@ type NonOptionFieldComponent<$Item = any> = Exclude<
  * Note: This is intentionally an intersection type rather than
  * `SelectSchema<$Item, $Option> | MultiselectSchema<$Item, $Option>`,
  * because using the full interfaces in a union breaks TypeScript's
- * contextual typing for callbacks in the `Components` mapped type.
+ * contextual typing for callbacks in the `Fields` mapped type.
  */
-type OptionComponent<$Item, $Option> = ComponentSchemaBase<$Item> &
+type OptionField<$Item, $Option> = FieldSchemaBase<$Item> &
   SelectionSettings<$Item, $Option> &
   AffixSettings<$Item> &
   Pick<
@@ -3113,17 +3122,17 @@ type OmitNever<T> = {
 } & {}
 
 /**
- * Defines the components for a form or view.
+ * Defines the fields of a form or view.
  *
- * When you provide an `$Item` type, each component key must match
+ * When you provide an `$Item` type, each field key must match
  * a property on that type, and callbacks receive a typed `item`
  * whose type depends on that property:
  *
  * - **Regular data fields** (e.g. `title: string`): callbacks
  *   receive the full parent item type.
  * - **Array fields** (e.g. `entries: Entry[]`): nested list or
- *   tree components use the array element type (`Entry`).
- * - **UI-only keys** (e.g. `viewButton: never`): for components
+ *   tree fields use the array element type (`Entry`).
+ * - **UI-only keys** (e.g. `viewButton: never`): for fields
  *   like buttons, spacers, or sections that exist only in the UI
  *   and are not actual data fields. Declare these keys as `never`.
  *   They are omitted from `item` in callbacks.
@@ -3142,7 +3151,7 @@ type OmitNever<T> = {
  *   details: never      // UI-only key for a section
  * }
  *
- * const fields: Components<Item> = {
+ * const fields: Fields<Item> = {
  *   // regular data field — callbacks receive Item
  *   title: { type: 'text' },
  *
@@ -3177,28 +3186,31 @@ type OmitNever<T> = {
  * }
  * ```
  */
-export type Components<$Item = any> = 0 extends 1 & $Item
-  ? Record<string, Component>
+export type Fields<$Item = any> = 0 extends 1 & $Item
+  ? Record<string, Field>
   : {
       [K in keyof $Item]?: [$Item[K]] extends [never]
         ? // Sections and panels that share the data of their schema.
-          NonSectionComponent<$Item> | SectionSchema<$Item> | PanelSchema<$Item>
+          NonSectionField<$Item> | SectionSchema<$Item> | PanelSchema<$Item>
         : NonNullable<$Item[K]> extends (infer E)[]
           ? E extends Record<string, any>
-            ? NonSectionComponent<E>
+            ? NonSectionField<E>
             : // Lists of primitive values edit them wrapped in objects under
               // the key given by `wrapPrimitives`.
-              NonSectionComponent<Record<string, E>>
+              NonSectionField<Record<string, E>>
           : NonNullable<$Item[K]> extends Record<string, any>
             ?
-                | NonOptionFieldComponent<$Item>
-                | OptionComponent<$Item, NonNullable<$Item[K]>>
-                | SourceComponent<NonNullable<$Item[K]>>
+                | NonOptionField<$Item>
+                | OptionField<$Item, NonNullable<$Item[K]>>
+                | SourceField<NonNullable<$Item[K]>>
                 | SectionSchema<$Item, NonNullable<$Item[K]>>
             :
-                | NonSectionComponent<$Item>
+                | NonSectionField<$Item>
                 | SectionSchema<$Item>
     }
+
+/** @deprecated Use {@link Fields}. */
+export type Components<$Item = any> = Fields<$Item>
 
 export type Columns<$Item = any> = 0 extends 1 & $Item
   ? { [key: string]: ColumnSchema | undefined }
@@ -3278,9 +3290,9 @@ export interface FormSchema<$Item = any>
     }
   >
   /** The form's fields. */
-  fields?: Components<$Item>
+  fields?: Fields<$Item>
   /** @deprecated Use `fields`. */
-  components?: Components<$Item>
+  components?: Fields<$Item>
   /**
    * A Vue component that lays out the form's fields instead of its pane,
    * placing them with {@link DitoSchemaField} and {@link DitoPane}. It
@@ -3403,11 +3415,11 @@ interface AdminOptions {
      * Fields added to the login dialog after `username` and `password`. Their
      * values are sent with the credentials.
      */
-    additionalFields?: Components
+    additionalFields?: Fields
     /**
      * @deprecated Use `additionalFields`.
      */
-    additionalComponents?: Components
+    additionalComponents?: Fields
     redirectAfterLogin?: string
   }
   /**
@@ -3427,13 +3439,13 @@ interface AdminOptions {
   }
 }
 
-// The hooks of type descriptors receive the contexts of their components:
+// The hooks of type descriptors receive the contexts of their fields:
 type TypeDescriptorContext = Omit<SchemaContext, 'schema'> & {
   schema: Record<string, any>
 }
 
 /**
- * Describes a type of schema components: the component that renders it, and
+ * Describes a type of fields: the component that renders it, and
  * how the admin handles its schemas and values, also when they aren't
  * rendered. Its flags are statements about the type, and the defaults of
  * schema settings start with `default`.
@@ -3446,7 +3458,7 @@ export interface TypeDescriptor {
   readonly override?: boolean
   /**
    * The default of `default`, `null` if not set. Functions are called with
-   * the context of the component and return the default.
+   * the context of the field and return the default.
    */
   readonly defaultValue?: any
   /** The default of `nested`, `true` if not set. */
@@ -3468,20 +3480,20 @@ export interface TypeDescriptor {
     boolean | ((context: TypeDescriptorContext) => boolean)
   /** The value resolves from `schema.data` or `schema.dataPath`. */
   readonly resolvesValue?: boolean
-  /** Generate a label from the name for components without `label`. */
+  /** Generate a label from the name for fields without `label`. */
   readonly generatesLabel?: boolean
   /**
    * The container shows the label, `true` if not set. Types that display the
    * label themselves return `false`.
    */
   readonly hasLabel?: boolean | ((context: TypeDescriptorContext) => boolean)
-  /** Omit the spacing around the component. */
+  /** Omit the spacing around the field. */
   readonly omitsSpacing?: boolean
   /** The component renders as the label of its container, if it has one. */
   readonly rendersLabel?: boolean
   /**
-   * Components without a label align below the labels of the other components
-   * in their row, `true` if not set. Boxes like lists show at the top.
+   * Fields without a label align below the labels of the other fields in
+   * their row, `true` if not set. Boxes like lists show at the top.
    */
   readonly alignsBelowLabels?: boolean
   /**
@@ -3520,7 +3532,7 @@ export interface TypeDescriptor {
 }
 
 /**
- * Defines a type of schema components, registered under its `type`. Its
+ * Defines a type of fields, registered under its `type`. Its
  * component receives the props of {@link CustomComponentProps} and emits the
  * events of {@link CustomComponentEmits}, like the components of
  * `type: 'component'`.

@@ -3,7 +3,7 @@ import type {
   ObjectSchema,
   TreeListSchema,
   FormSchema,
-  Components
+  Fields
 } from '@ditojs/admin'
 import type { Address, Entry, ParentWithAddress } from './fixtures.ts'
 
@@ -39,8 +39,8 @@ describe('ObjectSchema', () => {
     })
   })
 
-  it('works inside Components for a data key', () => {
-    assertType<Components<ParentWithAddress>>({
+  it('works inside Fields for a data key', () => {
+    assertType<Fields<ParentWithAddress>>({
       address: {
         type: 'object',
         form: {
