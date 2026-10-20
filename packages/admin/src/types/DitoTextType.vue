@@ -81,6 +81,17 @@ defineType({
   ...textTraits,
   ignoresMissingValue: ({ schema }) => schema.type === 'password',
 
+  getProperty({ type }) {
+    // The formats of the server, which lacks `domain` and `creditcard`:
+    const format = {
+      email: 'email',
+      url: 'uri',
+      hostname: 'hostname',
+      password: 'password'
+    }[type]
+    return format ? { type: 'string', format } : { type: 'string' }
+  },
+
   getValidations({ schema }) {
     const validationName = {
       email: 'email',

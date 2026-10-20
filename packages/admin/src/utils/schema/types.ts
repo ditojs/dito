@@ -24,6 +24,9 @@ export type TypeDescriptor = PublicTypeDescriptor & {
   // Parse the value that the component edits, before the schema's
   // `parseValue()`:
   parseValue?(context: Context): any
+  // The type of the field's data as a property of the server's models, which
+  // `getFormProperties()` completes with the field's other data keywords:
+  getProperty?(schema: Schema, context: Context): Record<string, any>
   // The sources routed next to the forms of the items, e.g. of trees:
   getChildSourceSchemas?(schema: Schema): Schema[]
   getItemAdapter?(schema: Schema): ItemAdapter | null

@@ -21,6 +21,10 @@ export function shouldRenderSchema(
 ): boolean
 export function getDefaultValue(schema: Schema, context: Context): any
 export function getEmptyValue(schema: Schema, context: Context): any
+export function shouldIgnoreMissingValue(
+  schema: Schema,
+  context: Context
+): boolean
 export function shouldSetDefaultValue(
   schema: Schema,
   data: Data,

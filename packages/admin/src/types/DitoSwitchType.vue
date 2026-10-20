@@ -24,7 +24,8 @@ defineType({
   type: 'switch',
   component: DitoSwitchType,
   defaultValue: false,
-  defaultWidth: 'auto'
+  defaultWidth: 'auto',
+  getProperty: () => ({ type: 'boolean' })
 })
 
 export default DitoSwitchType
