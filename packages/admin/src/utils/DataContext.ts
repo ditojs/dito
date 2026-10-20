@@ -17,7 +17,7 @@ import {
   getDataValidationErrors,
   getMatchingValidationErrors
 } from './schema/validation.js'
-import type { DataModel } from './DataModel.ts'
+import type { DataModel, ValueError } from './DataModel.ts'
 import type { SubmitButton, SubmitOptions } from './ResourceContext.ts'
 import type { Services } from './services.ts'
 import type { SourceContext } from './SourceContext.ts'
@@ -25,7 +25,7 @@ import type { Data, Schema } from './types.ts'
 
 type Match = string | string[] | RegExp | ((dataPath: string) => boolean)
 
-type Errors = Record<string, { message: string }[]>
+type Errors = Record<string, ValueError[]>
 
 // Without a button, forms submit with their submit button:
 type Submit = (
@@ -58,6 +58,7 @@ export interface DataContext {
   readonly verbs: Record<string, string> | null
   validate(match?: Match): boolean
   verify(match?: Match): boolean
+  getErrors(match?: Match): Errors | null
   clearErrors(match?: Match): void
   showValidationErrors(errors: Errors, dataPath?: string): Promise<void>
   revealErrors(): Promise<void>
@@ -250,6 +251,28 @@ export function createDataContext({
 
     verify(match?: Match) {
       return !getValidationErrors(match)
+    },
+
+    // The errors that the model holds, by the data paths of their values:
+    getErrors(match?: Match) {
+      const model = getModel()
+      const errors: Errors = {}
+      const addError = (dataPath: string, error: ValueError) => {
+        errors[dataPath] = [...(errors[dataPath] ?? []), error]
+      }
+      for (const dataPath of model.getErrorDataPaths(getDataPath())) {
+        for (const { path, ...error } of model.getErrors(dataPath) ?? []) {
+          addError(path ? appendDataPath(dataPath, path) : dataPath, error)
+        }
+        for (const message of model.getFieldErrors(dataPath) ?? []) {
+          addError(dataPath, { message })
+        }
+      }
+      return match
+        ? getMatchingValidationErrors(errors, match)
+        : isEmpty(errors)
+          ? null
+          : errors
     },
 
     // Clear the errors at the matching data paths and beneath them:

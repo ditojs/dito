@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { computed } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import {
   mountAdmin,
@@ -280,6 +281,115 @@ describe('DataContext', () => {
       context.clearErrors('chapters/*/title')
       context.clearErrors('address/**')
       expect(dataModel.getErrorDataPaths()).toEqual(['title'])
+    })
+  })
+
+  describe('getErrors()', () => {
+    const mountInvalidSchema = async () => {
+      const result = await mountSchema({
+        schema: {
+          fields: {
+            title: { type: 'text', required: true },
+            address: {
+              type: 'section',
+              nested: true,
+              fields: {
+                city: { type: 'text', required: true },
+                zip: { type: 'text' }
+              }
+            }
+          }
+        },
+        data: { title: '', address: { city: '', zip: '' } }
+      })
+      return { ...result, context: result.schemaComponent.context }
+    }
+
+    const required = [{ message: 'is required' }]
+
+    it('is null without errors', async () => {
+      const { context } = await mountInvalidSchema()
+      // Invalid data has no errors until they are shown:
+      expect(context.getErrors()).toBe(null)
+      context.validate()
+      context.clearErrors()
+      expect(context.getErrors()).toBe(null)
+    })
+
+    it('tells the errors that validation shows, by data path', async () => {
+      const { context } = await mountInvalidSchema()
+      context.validate()
+      expect(context.getErrors()).toEqual({
+        'title': required,
+        'address/city': required
+      })
+    })
+
+    it('matches data paths like validate()', async () => {
+      const { context } = await mountInvalidSchema()
+      context.validate()
+      expect(context.getErrors('title')).toEqual({ title: required })
+      expect(context.getErrors(['title', 'address/city'])).toEqual({
+        'title': required,
+        'address/city': required
+      })
+      expect(context.getErrors('address/**')).toEqual({
+        'address/city': required
+      })
+      expect(context.getErrors(/^address\//)).toEqual({
+        'address/city': required
+      })
+      expect(context.getErrors(dataPath => dataPath === 'title')).toEqual({
+        title: required
+      })
+      expect(context.getErrors('address/zip')).toBe(null)
+    })
+
+    it('updates reactively when errors are cleared', async () => {
+      const { context, data } = await mountInvalidSchema()
+      const errors = computed(() => context.getErrors())
+      context.validate()
+      expect(errors.value).toEqual({
+        'title': required,
+        'address/city': required
+      })
+      data.title = 'Emma'
+      expect(errors.value).toEqual({ 'address/city': required })
+      context.clearErrors('address')
+      expect(errors.value).toBe(null)
+    })
+
+    it('tells the keywords and parameters of server errors', async () => {
+      const { routeComponent, context } = await mountInvalidSchema()
+      const error = {
+        message: 'must be at least 3 characters long',
+        keyword: 'minLength',
+        params: { limit: 3 }
+      }
+      await routeComponent.dataContext.showValidationErrors({
+        'address/zip': [error]
+      })
+      expect(context.getErrors()).toEqual({ 'address/zip': [error] })
+    })
+
+    it('tells errors inside values by their data paths', async () => {
+      const { routeComponent } = await mountSchema({
+        schema: {
+          fields: {
+            address: {
+              type: 'code',
+              formatValue: ({ value }) => JSON.stringify(value),
+              parseValue: ({ value }) => JSON.parse(value)
+            }
+          }
+        },
+        data: { address: { city: 'Bath' } }
+      })
+      const { dataContext } = routeComponent
+      await dataContext.showValidationErrors({
+        'address/street': [{ message: 'is required' }]
+      })
+      expect(dataContext.getErrors()).toEqual({ 'address/street': required })
     })
   })
 

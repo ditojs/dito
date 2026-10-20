@@ -141,6 +141,18 @@ const form = useDitoForm({
 </script>
 ```
 
+The form's errors are in
+[`form.getErrors()`](../../api/admin/context.md#geterrors), e.g. for markup of
+the page's own:
+
+```vue
+<ul v-if="form.getErrors()">
+  <li v-for="(errors, dataPath) in form.getErrors()" :key="dataPath">
+    {{ dataPath }}: {{ errors.map(({ message }) => message).join(', ') }}
+  </li>
+</ul>
+```
+
 The default slot of `DitoSchemaForm` lays out the fields, as in
 [Laying out fields](./custom-types.md#laying-out-fields); without it, the
 fields render in rows. The submit button saves or creates the item, and there
