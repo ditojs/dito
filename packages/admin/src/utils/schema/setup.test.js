@@ -599,6 +599,59 @@ describe('the deprecated keys components and component', () => {
     })
   })
 
+  it('renames the components of object defaults', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const api = createApi({
+      section: { components: { title: { type: 'text' } } }
+    })
+    const schema = { type: 'section' }
+    applySchemaDefaults(api, schema)
+    expect(schema).toEqual({
+      type: 'section',
+      fields: { title: { type: 'text' } }
+    })
+  })
+
+  it('merges the components of object defaults below the fields', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const api = createApi({
+      section: { components: { title: { type: 'text', label: 'Title' } } }
+    })
+    const schema = {
+      type: 'section',
+      fields: { title: { type: 'text', label: 'Name' } }
+    }
+    applySchemaDefaults(api, schema)
+    expect(schema).toEqual({
+      type: 'section',
+      fields: { title: { type: 'text', label: 'Name' } }
+    })
+  })
+
+  it('renames the components of callback defaults', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const api = createApi({
+      section: () => ({ components: { title: { type: 'text' } } })
+    })
+    const schema = { type: 'section' }
+    applySchemaDefaults(api, schema)
+    expect(schema).toEqual({
+      type: 'section',
+      fields: { title: { type: 'text' } }
+    })
+  })
+
+  it('sets up the components of form defaults', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const api = createApi({
+      form: { components: { title: { type: 'text' } } },
+      text: { trim: true }
+    })
+    const form = await setupForm(api, { type: 'form' })
+    expect(form.fields.title.trim).toBe(true)
+    expect(form).not.toHaveProperty('components')
+  })
+
   it('keeps the Vue components of forms, sections, fields and pages', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const layout = { name: 'BookLayout' }
