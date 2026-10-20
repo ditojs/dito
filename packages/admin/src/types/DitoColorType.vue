@@ -44,6 +44,7 @@ import { SketchPicker, tinycolor } from 'vue-color'
 import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
 import { computed, ref, watch } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
+import { colorTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
@@ -66,16 +67,12 @@ const DitoColorType = {
     const { value, focused, readonly, getSchemaValue } = field
     const showPopup = ref(false)
     // The value of the input while it can't be written, see `hexValue`:
-    const convertedValue = ref(null)
+    const enteredValue = ref(null)
 
     const changeOnceEdited = createChangeOnceEdited({
       isEditing: () => focused.value || showPopup.value,
       emitChange: () => field.onChange()
     })
-
-    const format = computed(() =>
-      getSchemaValue('format', { type: String, default: 'hex' })
-    )
 
     const canUpdateValue = computed(() => !focused.value || readonly.value)
 
@@ -88,9 +85,9 @@ const DitoColorType = {
 
     function onBlur() {
       // Write the value typed into the input before the blur validates it:
-      if (convertedValue.value !== null) {
-        setEditedValue(convertedValue.value)
-        convertedValue.value = null
+      if (enteredValue.value !== null) {
+        setEditedValue(enteredValue.value)
+        enteredValue.value = null
       }
       field.onBlur()
       changeOnceEdited.emitIfDone()
@@ -108,18 +105,18 @@ const DitoColorType = {
 
       colorValue: computed({
         get() {
-          return tinycolor(convertedValue.value || value.value || '#000000')
+          return tinycolor(enteredValue.value || value.value || '#000000')
         },
 
         set(color) {
-          convertedValue.value = null
+          enteredValue.value = null
           // Skip unchanged colors, as converting formats like `hsl` back and
           // forth isn't lossless and would cause endless updates.
           if (
             !value.value ||
             color.toHex8String() !== tinycolor(value.value).toHex8String()
           ) {
-            setEditedValue(toTinyColorFormat(color, format.value))
+            setEditedValue(color)
           }
         }
       }),
@@ -136,14 +133,12 @@ const DitoColorType = {
         },
 
         set(hex) {
-          const color = tinycolor(hex)
-          if (color.isValid()) {
-            const converted = convertColor(hex, format.value)
+          if (tinycolor(hex).isValid()) {
             if (canUpdateValue.value) {
-              setEditedValue(converted)
+              setEditedValue(hex)
             } else {
               // Store to write on blur, see `onBlur()`:
-              convertedValue.value = converted
+              enteredValue.value = hex
             }
           }
         }
@@ -163,7 +158,7 @@ const DitoColorType = {
 
       clear() {
         // Replace the pending edits, as clearing emits its own change event:
-        convertedValue.value = null
+        enteredValue.value = null
         changeOnceEdited.reset()
         field.clear()
       }
@@ -172,6 +167,7 @@ const DitoColorType = {
 }
 
 defineType({
+  ...colorTraits,
   type: 'color',
   component: DitoColorType,
   hasFormat: true,
@@ -204,36 +200,6 @@ const defaultPresets = [
   '#ffc90e',
   '#00000000'
 ]
-
-function convertColor(color, format) {
-  return toTinyColorFormat(tinycolor(color), format)
-}
-
-// tinycolor only has the string equivalent of this:
-function toTinyColorFormat(color, format) {
-  switch (format) {
-    case 'rgb':
-      return color.toRgb()
-    case 'prgb':
-      return color.toPercentageRgb()
-    case 'hsl':
-      return color.toHsl()
-    case 'hsv':
-      return color.toHsv()
-    case 'hex3':
-      return `#${color.toHex(true)}`
-    case 'hex4':
-      return `#${color.toHex8(true)}`
-    case 'hex8':
-      return `#${color.toHex8()}`
-    case 'hex':
-    case 'hex6':
-    default:
-      return color.getAlpha() < 1
-        ? `#${color.toHex8()}`
-        : `#${color.toHex()}`
-  }
-}
 </script>
 
 <style lang="scss">

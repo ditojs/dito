@@ -1,7 +1,11 @@
 import { vi } from 'vitest'
 import SchemaContext from '../../SchemaContext.js'
 import { defineType } from './types.ts'
-import { sourceTraits, numberTraits } from '../../types/traits.ts'
+import {
+  sourceTraits,
+  numberTraits,
+  colorTraits
+} from '../../types/traits.ts'
 import {
   walkSchemaData,
   getComponentPathByDataPath,
@@ -38,6 +42,7 @@ defineType({
 defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
 defineType({ type: 'tags', defaultMultiple: true })
 defineType({ ...numberTraits, type: ['number', 'integer'] })
+defineType({ ...colorTraits, type: 'color' })
 // Amounts are stored in cents, and edited in units:
 defineType({
   type: 'amount',
@@ -994,6 +999,25 @@ describe('parseEditedValue()', () => {
     expect(parse({ type: 'integer' }, '42')).toBe(42)
     expect(parse({ type: 'number' }, '')).toBe(null)
     expect(parse({ type: 'number' }, null)).toBe(null)
+  })
+
+  it('converts colors to the color format of `format`', () => {
+    expect(parse({ type: 'color' }, 'ff8000')).toBe('#ff8000')
+    expect(parse({ type: 'color' }, 'rgba(0, 0, 255, 0.5)')).toBe('#0000ff80')
+    expect(parse({ type: 'color', format: 'hex3' }, '#ff0000')).toBe('#f00')
+    expect(parse({ type: 'color', format: 'rgb' }, '#ff0000')).toEqual({
+      r: 255,
+      g: 0,
+      b: 0,
+      a: 1
+    })
+    expect(parse({ type: 'color', format: 'hsl' }, '#ff0000')).toEqual({
+      h: 0,
+      s: 1,
+      l: 0.5,
+      a: 1
+    })
+    expect(parse({ type: 'color' }, null)).toBe(null)
   })
 
   it('calls `parseValue()` with the value parsed by the type', () => {
