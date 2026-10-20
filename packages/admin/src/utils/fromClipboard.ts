@@ -2,16 +2,13 @@ import { asArray, clone, isArray, isObject } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { createTemporaryId, isTemporaryId } from './data.js'
 import { getText } from './html.js'
-import {
-  walkSchemaData,
-  deserializeData,
-  getLabel
-} from './schema/data.js'
+import { deserializeData, getLabel } from './schema/data.js'
 import { getSourceType } from './schema/types.ts'
 import { findOptionsForLabel, getRelateKey } from './schema/options.ts'
 import { isSourceWithResource } from './schema/structure.js'
+import { walkData, type DataEntry } from './schema/walk.js'
 import type { Services } from './services.ts'
-import type { Data, Schema, SchemaDataEntry } from './types.ts'
+import type { Data, Schema } from './types.ts'
 
 // Copied items have no ids, except the related ones, which `SchemaGraph`
 // replaced with temporary ones. We replace these with new ones, so pasting
@@ -43,8 +40,8 @@ export async function fromClipboard(
   }
 
   // Use the same id keys as `SchemaGraph.serialize()`:
-  const labeledEntries: SchemaDataEntry[] = []
-  const before = (entry: SchemaDataEntry) => {
+  const labeledEntries: DataEntry[] = []
+  const handleEntry = (entry: DataEntry) => {
     const { schema, data, name } = entry
     if (isSourceWithResource(schema)) {
       delete data[name]
@@ -58,10 +55,14 @@ export async function fromClipboard(
     }
   }
   const walkOptions = { services, rootData: rootData ?? data }
-  walkSchemaData(schema, data, { dataPath, before, options: walkOptions })
+  walkData(schema, data, {
+    dataPath,
+    ...walkOptions,
+    visit: entries => entries.forEach(handleEntry)
+  })
   deserializeData(schema, data, { dataPath, ...walkOptions })
 
-  const resolveLabels = async (entry: SchemaDataEntry) => {
+  const resolveLabels = async (entry: DataEntry) => {
     const { schema, data, name } = entry
     // The options of the pasted values, loaded like the ones of fields:
     const options = (await services!

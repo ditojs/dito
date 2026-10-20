@@ -1,4 +1,5 @@
-import { serializeData, walkSchemaData } from './schema/data.js'
+import { serializeData } from './schema/data.js'
+import { walkData } from './schema/walk.js'
 import { getOptionsDataSchema } from './schema/types.ts'
 import type { Services } from './services.ts'
 import type { Data, Schema } from './types.ts'
@@ -13,16 +14,19 @@ export async function toClipboard(
   { services, rootData }: { services: Services; rootData: Data | null }
 ): Promise<Data> {
   const loads: Promise<any>[] = []
-  walkSchemaData(schema, data, {
+  walkData(schema, data, {
     dataPath,
-    before: entry => {
-      if (entry.schema.relate && getOptionsDataSchema(entry.schema)) {
-        loads.push(
-          services.dataContext!.model.getOptionsResolver(entry).waitForValue()
-        )
+    services,
+    rootData,
+    visit: entries => {
+      for (const entry of entries) {
+        if (entry.schema.relate && getOptionsDataSchema(entry.schema)) {
+          loads.push(
+            services.dataContext!.model.getOptionsResolver(entry).waitForValue()
+          )
+        }
       }
-    },
-    options: { services, rootData }
+    }
   })
   await Promise.all(loads)
   return serializeData(schema, sourceSchema, data, dataPath, {

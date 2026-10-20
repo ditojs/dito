@@ -10,6 +10,9 @@ import { getDataValidationErrors } from './validation.js'
 import { walkData } from './walk.js'
 import { DataModel } from '../DataModel.ts'
 import { mergeData } from '../mergeData.ts'
+import { fromClipboard } from '../fromClipboard.ts'
+import { toClipboard } from '../toClipboard.ts'
+import { getUploadEntries } from '../interchange.ts'
 
 // The API settings that setting up forms reads, also the forms of `fields()`
 // callbacks, which the services hand out:
@@ -241,6 +244,62 @@ function addHook(schema, key, hook) {
     ...(forms && { forms: addHooks(forms) }),
     ...(children && { children: addHook(children, key, hook) })
   }
+}
+
+// The catalogue as it is serialized:
+const serializedCatalogue = {
+  title: '',
+  showPrices: true,
+  summaryNote: 'Too long',
+  notes: 'Too long',
+  collections: [
+    {
+      name: 'Books',
+      code: null,
+      discount: 2,
+      currency: 'GBP',
+      items: [
+        {
+          type: 'book',
+          name: '',
+          pages: 0,
+          onSale: true,
+          price: null,
+          chapters: [
+            { title: 'x'.repeat(30), length: 1 },
+            { title: 'Two', length: 1 }
+          ],
+          tags: ['a', ''],
+          blurb: 'Much too long'
+        },
+        {
+          type: 'book',
+          name: 'Long',
+          pages: 200,
+          onSale: false,
+          price: null,
+          chapters: [],
+          tags: [],
+          summary: ''
+        }
+      ]
+    },
+    {
+      name: '',
+      code: '',
+      discount: null,
+      currency: null,
+      items: [
+        {
+          type: 'record',
+          name: 'Record',
+          email: 'nope',
+          format: 'lp',
+          tracks: []
+        }
+      ]
+    }
+  ]
 }
 
 describe('walkData()', () => {
@@ -717,60 +776,7 @@ describe('serializeData()', () => {
     const form = await createForm(catalogueForm)
     expect(
       serializeData(form, null, createCatalogue(), '', { services })
-    ).toEqual({
-      title: '',
-      showPrices: true,
-      summaryNote: 'Too long',
-      notes: 'Too long',
-      collections: [
-        {
-          name: 'Books',
-          code: null,
-          discount: 2,
-          currency: 'GBP',
-          items: [
-            {
-              type: 'book',
-              name: '',
-              pages: 0,
-              onSale: true,
-              price: null,
-              chapters: [
-                { title: 'x'.repeat(30), length: 1 },
-                { title: 'Two', length: 1 }
-              ],
-              tags: ['a', ''],
-              blurb: 'Much too long'
-            },
-            {
-              type: 'book',
-              name: 'Long',
-              pages: 200,
-              onSale: false,
-              price: null,
-              chapters: [],
-              tags: [],
-              summary: ''
-            }
-          ]
-        },
-        {
-          name: '',
-          code: '',
-          discount: null,
-          currency: null,
-          items: [
-            {
-              type: 'record',
-              name: 'Record',
-              email: 'nope',
-              format: 'lp',
-              tracks: []
-            }
-          ]
-        }
-      ]
-    })
+    ).toEqual(serializedCatalogue)
   })
 
   it('serializes the values after the values of their items', async () => {
@@ -914,6 +920,82 @@ describe('serializeData()', () => {
     expect(serializeData(form, null, data, '', { services })).toEqual({
       entries: [{ id: 1, title: 'One', notes: 'A' }]
     })
+  })
+})
+
+describe('clipboard', () => {
+  const createCopy = async (form, data) =>
+    toClipboard(form, { type: 'list', form }, data, '', {
+      services,
+      rootData: data
+    })
+
+  it('copies and pastes the data', async () => {
+    const form = await createForm(catalogueForm)
+    const copy = await createCopy(form, createCatalogue())
+    const { data, unresolvedLabels } = await fromClipboard(form, copy, {
+      services
+    })
+    expect(unresolvedLabels).toEqual([])
+    expect(data).toEqual(serializedCatalogue)
+  })
+
+  it('copies and pastes the children of trees', async () => {
+    const pageForm = { type: 'form', fields: { title: { type: 'text' } } }
+    const form = await createForm({
+      fields: {
+        pages: {
+          type: 'tree-list',
+          form: pageForm,
+          children: { name: 'subpages', form: pageForm }
+        }
+      }
+    })
+    const copy = await createCopy(form, {
+      pages: [{ id: 1, title: 'About', subpages: [{ id: 2, title: 'Team' }] }]
+    })
+    const { data } = await fromClipboard(form, copy, { services })
+    expect(data).toEqual({
+      pages: [{ title: 'About', subpages: [{ title: 'Team' }] }]
+    })
+  })
+
+  it('finds the upload fields', async () => {
+    const upload = { type: 'upload' }
+    const pageForm = {
+      type: 'form',
+      fields: { image: upload, files: { ...upload, multiple: true } }
+    }
+    const form = await createForm({
+      fields: {
+        pages: {
+          type: 'tree-list',
+          form: pageForm,
+          children: { name: 'subpages', form: pageForm }
+        }
+      },
+      tabs: {
+        first: { type: 'tab', fields: { cover: upload } },
+        second: { type: 'tab', fields: { cover: upload } }
+      }
+    })
+    const data = {
+      cover: null,
+      pages: [{ image: null, subpages: [{ image: null, files: [] }] }]
+    }
+    const entries = getUploadEntries(form, data, {
+      dataPath: '',
+      services,
+      rootData: data
+    })
+    expect(entries.map(({ dataPath }) => dataPath)).toEqual([
+      'pages/0/image',
+      'pages/0/files',
+      'pages/0/subpages/0/image',
+      'pages/0/subpages/0/files',
+      'cover',
+      'cover'
+    ])
   })
 })
 

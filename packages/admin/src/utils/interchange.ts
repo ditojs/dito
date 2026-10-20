@@ -1,15 +1,15 @@
 import { asArray, isArray, isObject, isString } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
-import { walkSchemaData } from './schema/data.js'
+import { walkData, type DataEntry } from './schema/walk.js'
 import { fetchBlob } from './request.js'
 import { getResourceUrl } from './services.ts'
 import { getUploadLimits, isAcceptedFile, type UploadLimits } from './upload.ts'
 import type { Services } from './services.ts'
-import type { Data, Schema, SchemaDataEntry } from './types.ts'
+import type { Data, Schema } from './types.ts'
 
-// The upload fields in clipboard data, as `walkSchemaData()` finds them:
+// The upload fields in clipboard data, as `walkData()` finds them:
 export type UploadEntry = Pick<
-  SchemaDataEntry,
+  DataEntry,
   'schema' | 'data' | 'name' | 'dataPath'
 >
 
@@ -23,14 +23,15 @@ export function getUploadEntries(
   }: { dataPath: string; services: Services; rootData: Data | null }
 ): UploadEntry[] {
   const entries: UploadEntry[] = []
-  walkSchemaData(schema, data, {
+  walkData(schema, data, {
     dataPath,
-    before: (entry: SchemaDataEntry) => {
-      if (entry.schema.type === 'upload') {
-        entries.push(entry)
-      }
-    },
-    options: { services, rootData }
+    services,
+    rootData,
+    visit: fieldEntries => {
+      entries.push(
+        ...fieldEntries.filter(({ schema }) => schema.type === 'upload')
+      )
+    }
   })
   return entries
 }
