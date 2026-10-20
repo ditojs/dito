@@ -17,10 +17,10 @@ test.describe('defaults', () => {
     }))!
     expect(entry).toEqual({
       name: 'New',
-      note: null,
+      note: '',
       title: 'Untitled',
       count: 3,
-      archived: null,
+      archived: false,
       published: false,
       size: 'm',
       features: [],

@@ -22,14 +22,40 @@ describe('DitoCheckboxType', () => {
     expect(checkbox.attributes('disabled')).toBeDefined()
   })
 
-  // Current behaviour, a mismatch with the server: booleans that aren't
-  // nullable reject the `null` of new checkboxes:
-  it('sends `null` for new checkboxes', async () => {
+  it('sends `false` for new checkboxes, and `null` with `nullable`', async () => {
     const { submit } = await mountForm({
-      schema: { fields: { isRead: { type: 'checkbox' } } },
+      schema: {
+        fields: {
+          isRead: { type: 'checkbox' },
+          isAccepted: { type: 'checkbox', nullable: true }
+        }
+      },
       request: ({ data }) => ({ data })
     })
-    expect(await submit()).toEqual({ isRead: null })
+    expect(await submit()).toEqual({ isRead: false, isAccepted: null })
+  })
+
+  // `false` is an answer, `required` only rejects the `null` of `nullable`:
+  it('rejects only unanswered `nullable` checkboxes with `required`', async () => {
+    const { findField, submit, getErrors } = await mountForm({
+      schema: {
+        fields: {
+          isRead: { type: 'checkbox', required: true },
+          isAccepted: { type: 'checkbox', required: true, nullable: true }
+        }
+      },
+      request: ({ data }) => ({ data })
+    })
+    expect(await submit()).toBe(null)
+    expect(getErrors('isRead')).toEqual([])
+    expect(getErrors('isAccepted')).toEqual([
+      'The Is Accepted field is required.'
+    ])
+    // Answer with `false`, by checking and unchecking it:
+    const checkbox = findField('isAccepted').find('input')
+    await checkbox.setValue(true)
+    await checkbox.setValue(false)
+    expect(await submit()).toEqual({ isRead: false, isAccepted: false })
   })
 })
 
@@ -41,6 +67,13 @@ describe('DitoSwitchType', () => {
     expect(data.isPublic).toBe(false)
     await findField('isPublic').find('input').setValue(true)
     expect(data.isPublic).toBe(true)
+  })
+
+  it('defaults to `null` with `nullable`', async () => {
+    const { data } = await mountSchema({
+      schema: { fields: { isPublic: { type: 'switch', nullable: true } } }
+    })
+    expect(data.isPublic).toBe(null)
   })
 
   it('displays the labels of the checked state', async () => {

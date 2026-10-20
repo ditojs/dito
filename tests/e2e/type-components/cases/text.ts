@@ -19,7 +19,14 @@ export default [
       shown: 'Hi'
     },
     {
-      title: 'stores null for an empty value',
+      title: 'stores an empty string for an empty value',
+      seed: 'Seeded',
+      value: '',
+      stored: ''
+    },
+    {
+      title: 'stores null for an empty value with nullable',
+      schema: { nullable: true },
       seed: 'Seeded',
       value: '',
       stored: null

@@ -15,6 +15,7 @@
 <script>
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
+import { textTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 import DitoResizeHandle from '../components/DitoResizeHandle.vue'
@@ -119,7 +120,8 @@ const DitoCodeType = {
 
 defineType({
   type: 'code',
-  component: DitoCodeType
+  component: DitoCodeType,
+  ...textTraits
 })
 
 export default DitoCodeType

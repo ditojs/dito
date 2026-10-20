@@ -147,8 +147,11 @@ export function getDefaultValue(schema, context) {
 
 export function getEmptyValue(schema, context) {
   // NOTE: Components may not be instantiated when items are created, e.g. in
-  // nested forms, so the type descriptors define `defaultValue`:
-  return resolveValue(getTypeDescriptor(schema)?.defaultValue, context)
+  // nested forms, so the type descriptors define `defaultValue`. `nullable`
+  // fields store `null` instead, like `nullable` properties on the server:
+  return schema.nullable
+    ? null
+    : resolveValue(getTypeDescriptor(schema)?.defaultValue, context)
 }
 
 // Types without values, e.g. buttons, get no key, like in the data of items

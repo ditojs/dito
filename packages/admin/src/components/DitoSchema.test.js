@@ -926,6 +926,35 @@ describe('DitoSchema', () => {
       expect(input.element.value).toBe('')
       expect(admin.router.currentRoute.value.query.filter).toEqual([])
     })
+
+    it(`doesn't apply filters with fields that hold no value`, async () => {
+      const { admin, settle } = await mountSchema({
+        schema: {
+          fields: {
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              filters: {
+                isRead: { fields: { isRead: { type: 'checkbox' } } }
+              },
+              columns: { title: {} }
+            }
+          }
+        },
+        request: () => ({ data: [] })
+      })
+      const panel = admin.wrapper.find('.dito-panel[aria-label="Filters"]')
+      const checkbox = panel.find('input[type="checkbox"]')
+      await checkbox.setValue(true)
+      await settle()
+      expect(admin.router.currentRoute.value.query.filter).toEqual([
+        'isRead:true'
+      ])
+      await panel.find('button[aria-label="Clear"]').trigger('click')
+      await settle()
+      expect(checkbox.element.checked).toBe(false)
+      expect(admin.router.currentRoute.value.query.filter).toEqual([])
+    })
   })
 
   describe('validation errors of filters', () => {

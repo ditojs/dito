@@ -844,12 +844,12 @@ describe('DitoForm', () => {
       const getTitles = () => data.chapters.map(chapter => chapter.title)
       // The first create button inserts before the first item:
       await expectDirtyAfter('.dito-create-button button')
-      expect(getTitles()).toEqual([null, 'One', 'Two'])
+      expect(getTitles()).toEqual(['', 'One', 'Two'])
       await expectDirtyAfter('.dito-button--drag', 'keydown', {
         key: 'ArrowDown',
         altKey: true
       })
-      expect(getTitles()).toEqual(['One', null, 'Two'])
+      expect(getTitles()).toEqual(['One', '', 'Two'])
       await expectDirtyAfter('.dito-button--remove')
       expect(data.chapters).toHaveLength(2)
     })
@@ -1059,7 +1059,7 @@ describe('DitoForm', () => {
       })
       // Values without data get their defaults, like in replaced data:
       expect(data).not.toHaveProperty('isSelected')
-      expect(data.title).toBe(null)
+      expect(data.title).toBe('')
       expect(data.reviews).toEqual([{ id: 1, text: 'Dull' }])
       expect(dataContext.isDirty).toBe(false)
     })
@@ -1097,7 +1097,7 @@ describe('DitoForm', () => {
       expect(Object.keys(form.schema.fields)).toEqual(['title'])
       form.dataContext.resetItem({ id: 2, type: 'film' })
       await settle(form)
-      expect(form.data).toEqual({ id: 2, type: 'film', director: null })
+      expect(form.data).toEqual({ id: 2, type: 'film', director: '' })
     })
   })
 
@@ -1717,7 +1717,7 @@ describe('DitoForm', () => {
         '/items/1/author/create'
       )
       expect(form.dataContext.isCreating).toBe(true)
-      expect(form.data).toEqual({ name: null })
+      expect(form.data).toEqual({ name: '' })
       await submitNestedForm(form, 'Jane Austen')
       expect(data.author).toEqual({ name: 'Jane Austen' })
       expect(admin.router.currentRoute.value.path).toBe('/items/1')
@@ -2599,7 +2599,7 @@ describe('DitoForm', () => {
     expect(form).toBe(routeComponent)
     expect(form.dataContext.isCreating).toBe(true)
     expect(form.routeContext.isDirty).toBe(false)
-    expect(form.data).toEqual({ title: null })
+    expect(form.data).toEqual({ title: '' })
   })
 
   it('computes the values of new items from their defaults', async () => {
@@ -2639,7 +2639,7 @@ describe('DitoForm', () => {
     pendingLoad.resolve({ data: { id: 2, title: 'Persuasion' } })
     await settle(routeComponent)
     expect(routeComponent.dataContext.isCreating).toBe(true)
-    expect(routeComponent.data).toEqual({ title: null })
+    expect(routeComponent.data).toEqual({ title: '' })
   })
 
   it('loads the item when navigating to it from the create route', async () => {
@@ -2686,7 +2686,7 @@ describe('DitoForm', () => {
     await admin.navigate('/blocks/create?type=image')
     const form = admin.getRouteComponent(isForm)
     await settle(form)
-    expect(form.data).toEqual({ type: 'image', url: null })
+    expect(form.data).toEqual({ type: 'image', url: '' })
   })
 
   it('submits without validation with `validate: false`', async () => {

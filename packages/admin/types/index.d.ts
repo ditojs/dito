@@ -1081,6 +1081,13 @@ export interface TextSettings<$Item> {
    * Whether to trim whitespace from the value.
    */
   trim?: boolean
+  /**
+   * Whether to store no value as `null` instead of `''`, for properties that
+   * are `nullable` on the server.
+   *
+   * @defaultValue `false`
+   */
+  nullable?: boolean
 }
 
 /** @deprecated Use {@link TextSettings}. */
@@ -1414,6 +1421,13 @@ export interface SwitchSchema<$Item = any> extends FieldSchemaBase<$Item> {
    * The type of the field.
    */
   type: 'switch'
+  /**
+   * Whether to store no value as `null` instead of `false`, the state of not
+   * being answered yet, for properties that are `nullable` on the server.
+   *
+   * @defaultValue `false`
+   */
+  nullable?: boolean
   labels?: {
     /**
      * The displayed label when the switch is checked.
@@ -1482,6 +1496,13 @@ export interface CodeSchema<$Item = any> extends FieldSchemaBase<$Item> {
    */
   type: 'code'
   /**
+   * Whether to store no value as `null` instead of `''`, for properties that
+   * are `nullable` on the server.
+   *
+   * @defaultValue `false`
+   */
+  nullable?: boolean
+  /**
    * The code language.
    *
    * @defaultValue `'javascript'`
@@ -1510,6 +1531,13 @@ export interface MarkupSchema<$Item = any> extends FieldSchemaBase<$Item> {
    * The type of the field.
    */
   type: 'markup'
+  /**
+   * Whether to store no value as `null` instead of `''`, for properties that
+   * are `nullable` on the server.
+   *
+   * @defaultValue `false`
+   */
+  nullable?: boolean
   /**
    * Whether the input element is resizable.
    */
@@ -1991,6 +2019,13 @@ export interface CheckboxSchema<
    * The type of the field.
    */
   type: 'checkbox'
+  /**
+   * Whether to store no value as `null` instead of `false`, the state of not
+   * being answered yet, for properties that are `nullable` on the server.
+   *
+   * @defaultValue `false`
+   */
+  nullable?: boolean
 }
 
 export interface CheckboxesSchema<$Item = any>

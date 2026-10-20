@@ -2,6 +2,9 @@ import type { Book } from './models/Book.js'
 import { createWidgetView } from '../../utils/views.js'
 
 const title = { type: 'text', label: 'Title' } as const
+// Empty titles are `null` for the server, whose titles are nullable but don't
+// match its pattern when empty:
+const nullableTitle = { ...title, nullable: true } as const
 
 // Unnested sections don't hold data of their own, so their keys are `never`.
 type BookItem = Book & { publishing: never }
@@ -28,7 +31,7 @@ export const books = createWidgetView<BookItem>(
               collapsible: true,
               collapsed: true,
               fields: {
-                note: { type: 'text', label: 'Note' }
+                note: { type: 'text', label: 'Note', nullable: true }
               }
             },
             // Its components are created from the data, e.g. like fields that
@@ -57,7 +60,9 @@ export const books = createWidgetView<BookItem>(
               form: {
                 type: 'form',
                 label: 'Tag',
-                fields: { name: { type: 'text', label: 'Name' } }
+                fields: {
+                  name: { type: 'text', label: 'Name', nullable: true }
+                }
               }
             },
             chapters: {
@@ -71,7 +76,7 @@ export const books = createWidgetView<BookItem>(
                 type: 'form',
                 label: 'Chapter',
                 fields: {
-                  title,
+                  title: nullableTitle,
                   // Only required in the admin, not on the server.
                   summary: { type: 'text', label: 'Summary', required: true },
                   sections: {
@@ -83,7 +88,7 @@ export const books = createWidgetView<BookItem>(
                     form: {
                       type: 'form',
                       label: 'Section',
-                      fields: { title }
+                      fields: { title: nullableTitle }
                     }
                   }
                 }
@@ -110,7 +115,11 @@ export const books = createWidgetView<BookItem>(
                   type: 'form',
                   label: 'Part',
                   fields: {
-                    title: { type: 'text', label: 'Part Title' }
+                    title: {
+                      type: 'text',
+                      label: 'Part Title',
+                      nullable: true
+                    }
                   }
                 }
               }
@@ -121,7 +130,7 @@ export const books = createWidgetView<BookItem>(
           type: 'tab',
           label: 'Details',
           fields: {
-            subtitle: { type: 'text', label: 'Subtitle' },
+            subtitle: { type: 'text', label: 'Subtitle', nullable: true },
             // Placed before `edition`, so that its error tooltip doesn't
             // cover the button.
             fillEdition: {
@@ -199,7 +208,7 @@ export const bookOutlines = createWidgetView<BookItem>(
               form: {
                 type: 'form',
                 label: 'Chapter',
-                fields: { title, summary }
+                fields: { title: nullableTitle, summary }
               }
             }
           }
