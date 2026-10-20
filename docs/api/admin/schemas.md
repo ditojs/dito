@@ -363,10 +363,11 @@ completion: { type: 'progress', range: [0, 100], readonly: true }
 
 ### checkbox
 
-`CheckboxSchema`. A checkbox for a boolean value.
+`CheckboxSchema`. A checkbox for a boolean value. Its default value is
+`false`.
 
 ```js
-isArchived: { type: 'checkbox', label: 'Archived', default: false }
+isArchived: { type: 'checkbox', label: 'Archived' }
 ```
 
 ### switch

@@ -65,12 +65,12 @@ describe('Values that the admin sends', () => {
       })
     })
 
-    // Current behaviour, a mismatch with the admin: new checkboxes send `null`,
-    // which booleans only accept when they're nullable:
-    it('rejects `null` for booleans', async () => {
-      expect(await create({ isPublic: null })).toMatchObject({
-        status: 400,
-        data: { errors: { isPublic: [{ message: 'must be boolean' }] } }
+    // New checkboxes send `false`, as booleans only accept `null` when they're
+    // nullable:
+    it('saves `false` for booleans', async () => {
+      expect(await create({ isPublic: false })).toMatchObject({
+        status: 201,
+        data: { isPublic: false }
       })
     })
   })
