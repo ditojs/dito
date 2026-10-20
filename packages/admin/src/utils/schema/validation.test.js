@@ -73,6 +73,41 @@ describe('getValidations()', () => {
     ).toEqual({})
   })
 
+  it('adds the limits of strings and arrays, also as callbacks', () => {
+    expect(
+      getValidations({
+        schema: {
+          type: 'text',
+          minLength: 2,
+          maxLength: ({ limit }) => limit,
+          pattern: '^[a-z]+$'
+        },
+        limit: 10
+      })
+    ).toEqual({ minLength: 2, maxLength: 10, pattern: '^[a-z]+$' })
+    expect(
+      getValidations({ schema: { type: 'list', minItems: 2, maxItems: 5 } })
+    ).toEqual({ minItems: 2, maxItems: 5 })
+  })
+
+  it('requires one item of required fields that hold arrays', () => {
+    expect(
+      getValidations({ schema: { type: 'list', required: true } })
+    ).toEqual({ required: true, minItems: 1 })
+    expect(
+      getValidations({ schema: { type: 'list', required: true, minItems: 3 } })
+    ).toEqual({ required: true, minItems: 3 })
+    expect(
+      getValidations({
+        schema: { type: 'list', required: true, rules: { required: false } }
+      })
+    ).toEqual({})
+    // Objects hold no arrays:
+    expect(
+      getValidations({ schema: { type: 'object', required: true } })
+    ).toEqual({ required: true })
+  })
+
   it('ignores unknown types', () => {
     expect(
       getValidations({ schema: { type: 'unknown', required: true } })
@@ -140,6 +175,19 @@ describe('getValueValidationErrors()', () => {
     expect(getValueValidationErrors(0, { minimum: 1 })).toEqual([
       { message: 'must be 1 or more' }
     ])
+  })
+
+  it('applies `minLength` to empty strings too', () => {
+    expect(getValueValidationErrors('', { minLength: 1 })).toEqual([
+      { message: 'must not be empty' }
+    ])
+    expect(getValueValidationErrors(null, { minLength: 1 })).toEqual([])
+  })
+
+  it('rejects empty arrays of required fields once, as required', () => {
+    expect(
+      getValueValidationErrors([], { required: true, minItems: 1 })
+    ).toEqual([{ message: 'is required' }])
   })
 
   it('returns all errors, with messages without label prefix', () => {
@@ -259,6 +307,39 @@ describe('getDataValidationErrors()', () => {
         { message: 'must be whole number' }
       ]
     })
+  })
+
+  it('validates lengths and item counts, and required lists', () => {
+    const schema = {
+      fields: {
+        title: { type: 'text', maxLength: 5 },
+        tags: { type: 'list', maxItems: 1, fields: {} },
+        authors: { type: 'list', required: true, fields: {} }
+      }
+    }
+    const data = { title: 'Emma, a novel', tags: [{}, {}], authors: [] }
+    expect(getDataValidationErrors(schema, data)).toEqual({
+      title: [{ message: 'must be at most 5 characters long' }],
+      tags: [{ message: 'must contain at most one item' }],
+      authors: [required]
+    })
+  })
+
+  it('applies `minLength` to the empty values of string fields', () => {
+    const schema = {
+      fields: {
+        code: { type: 'text', minLength: 1 },
+        subtitle: { type: 'text', minLength: 1, nullable: true },
+        note: { type: 'text' }
+      }
+    }
+    const empty = { message: 'must not be empty' }
+    expect(
+      getDataValidationErrors(schema, { code: '', subtitle: null, note: '' })
+    ).toEqual({ code: [empty] })
+    expect(
+      getDataValidationErrors(schema, { code: 'a', subtitle: '', note: '' })
+    ).toEqual({ subtitle: [empty] })
   })
 
   it('prefixes errors with `dataPath`', () => {

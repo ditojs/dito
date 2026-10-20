@@ -75,6 +75,17 @@ describe('MenuSchema', () => {
   })
 })
 
+describe('TextareaSchema', () => {
+  it('accepts the limits of its text', () => {
+    assertType<TextareaSchema<Entry>>({
+      type: 'textarea',
+      minLength: 10,
+      maxLength: 1000,
+      pattern: '^\\S'
+    })
+  })
+})
+
 describe('NumberSchema', () => {
   it('accepts minimum, maximum, step, decimals', () => {
     assertType<NumberSchema<Entry>>({

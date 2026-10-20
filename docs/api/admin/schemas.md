@@ -90,9 +90,10 @@ event fires and what return values mean.
 ## FieldSchemaBase
 
 The options of all field types, in addition to `SchemaBase`. Whether a
-type uses an option depends on the type: `maxLength` and `autocomplete` apply
-to text inputs, `placeholder` to text inputs and selects, `clearable` to inputs
-that can be cleared.
+type uses an option depends on the type: `autocomplete` applies to text inputs,
+`minLength`, `maxLength` and `pattern` to text values, `minItems` and
+`maxItems` to lists and fields with multiple values, `placeholder` to text
+inputs and selects, `clearable` to inputs that can be cleared.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
@@ -108,7 +109,7 @@ that can be cleared.
 | `deserializeValue` | `SchemaValueCallback` | | Converts the stored value when data is loaded, merged from a save response, reset with `resetItem()`, merged with `mergeItem()`, pasted or read from the query, after the type's own conversion. Its `item` holds the new data, while `rootItem` still holds the data from before. |
 | `serializeValue` | `SchemaValueCallback` | | Converts the value for the server and the clipboard, after the type's own conversion. Returning `undefined` leaves out the key. |
 | `exclude` | `SchemaValue<boolean>` | `false`; `true` for buttons, labels, spacers and sources with their own `resource` | Leaves the value out of the data sent to the server. Changes of excluded values don't make the data dirty. |
-| `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value: not `null`, `''` or an empty array, so lists and fields with multiple values need at least one entry. Unlike the server's `required`, which accepts empty arrays. String fields fail with both `''` and `null`, checkboxes and switches only with the `null` of [`nullable`](#empty-values) ones, as `false` is an answer: without `nullable`, `required` never fails on them. |
+| `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value: not `null` or `''`. Checkboxes and switches only fail with the `null` of [`nullable`](#empty-values) ones, as `false` is an answer: without `nullable`, `required` never fails on them. Lists and fields with multiple values hold arrays and need at least one item, as `minItems: 1`, failing with "is required" too. |
 | `rules` | `SchemaRules` | | Validation rules to add or change, keyed by validator name, or to turn off by setting them to `false` or `undefined`, e.g. `{ email: false }`. Types add their own rules, e.g. `minimum` for numbers. |
 | `validate` | `(context) => boolean \| string \| void` | | Validates values that aren't empty, with the value after `formatValue()`. Returning `false` fails with "is invalid", a string fails with it as the message, e.g. `'must have 13 digits'`. See [Validation](../../guide/admin/validation.md#custom-validation). |
 | `readonly` | `SchemaValue<boolean>` | `false` | Text inputs become read-only, all other fields disabled. |
@@ -118,7 +119,11 @@ that can be cleared.
 | `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value to the [empty value](#empty-values) of the type, e.g. `null`, `''` for strings or `[]` with `multiple`. Ignored while `readonly`. |
 | `placeholder` | `SchemaValue<string>` | | The hint shown in empty inputs, and in selects while no option is selected. Multiselects also take `false`, see [`multiselect`](#multiselect). |
 | `info` | `SchemaValue<TextOrHtml>` | | Info shown in a tooltip next to the label, see [Text and HTML](#text-and-html). Line breaks in text show. |
-| `maxLength` | `SchemaValue<number>` | | The maximum length of text input. |
+| `minLength` | `SchemaValue<number>` | | The minimum length of text values, in characters. `1` rejects `''`, but not the `null` of [`nullable`](#empty-values) fields. |
+| `maxLength` | `SchemaValue<number>` | | The maximum length of text values, in characters, validated and set as the `maxlength` of text inputs. |
+| `pattern` | `SchemaValue<string>` | | A regular expression that text values need to match, as a string like the server's `pattern`, e.g. `'^[A-Z]{2}$'`. |
+| `minItems` | `SchemaValue<number>` | | The minimum number of items of lists and fields with multiple values. |
+| `maxItems` | `SchemaValue<number>` | | The maximum number of items of lists and fields with multiple values. |
 | `autocomplete` | `SchemaValue<'on' \| 'off'>` | | The `autocomplete` attribute of text inputs. Fields without a credential token like `username`, `current-password`, `new-password` or `one-time-code` also tell password managers to ignore them. |
 | `width` | `SchemaValue<…>` | `1` (full); `'auto'` for buttons, `checkboxes`, `radio`, `switch` | See [Layout options](#layout-options). |
 | `align` | `SchemaValue<'top' \| 'center' \| 'bottom'>` | `'top'` | See [Layout options](#layout-options). |

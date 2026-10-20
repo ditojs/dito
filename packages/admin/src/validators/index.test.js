@@ -22,9 +22,14 @@ describe('validators', () => {
       'email',
       'hostname',
       'integer',
+      'maxItems',
+      'maxLength',
       'maximum',
+      'minItems',
+      'minLength',
       'minimum',
       'password',
+      'pattern',
       'range',
       'required',
       'url',
@@ -36,19 +41,18 @@ describe('validators', () => {
   })
 
   describe('required', () => {
-    it('rejects `null`, `undefined`, empty strings and empty arrays', () => {
+    it('rejects `null`, `undefined` and empty strings', () => {
       // Only truthiness matters, see `getValueValidationErrors()`:
       expect(validate('required', null)).toBeFalsy()
       expect(validate('required', undefined)).toBeFalsy()
       expect(validate('required', '')).toBeFalsy()
-      expect(validate('required', [])).toBeFalsy()
       expect(getMessage('required')).toBe('is required')
     })
 
-    it('accepts other falsy values', () => {
+    it('accepts other falsy values and empty arrays, as the server', () => {
       expect(validate('required', 0)).toBe(true)
       expect(validate('required', false)).toBe(true)
-      expect(validate('required', ['s'])).toBe(true)
+      expect(validate('required', [])).toBe(true)
     })
 
     it('accepts unchanged passwords, which are `undefined`', () => {
@@ -84,6 +88,80 @@ describe('validators', () => {
       expect(getMessage('minimum', 4, 5)).toBe('must be 5 or more')
       expect(getMessage('maximum', 11, 10)).toBe('must be 10 or less')
       expect(getMessage('range', 2, [-1, 1])).toBe('must be between -1 and 1')
+    })
+  })
+
+  describe('minLength, maxLength and pattern', () => {
+    it('validates the length of strings in code points', () => {
+      expect(validate('minLength', 'ab', 2)).toBe(true)
+      expect(validate('minLength', 'a', 2)).toBe(false)
+      expect(validate('minLength', '', 1)).toBe(false)
+      expect(validate('maxLength', 'ab', 2)).toBe(true)
+      expect(validate('maxLength', 'abc', 2)).toBe(false)
+      // Two UTF-16 units, one code point:
+      expect(validate('maxLength', '😀', 1)).toBe(true)
+      expect(validate('minLength', '😀', 2)).toBe(false)
+    })
+
+    it('validates strings against patterns', () => {
+      expect(validate('pattern', 'AB-12', '^[A-Z]+-\\d+$')).toBe(true)
+      expect(validate('pattern', 'ab-12', '^[A-Z]+-\\d+$')).toBe(false)
+    })
+
+    it(`ignores values that aren't strings, as the server`, () => {
+      expect(validate('minLength', 5, 2)).toBe(true)
+      expect(validate('maxLength', ['a', 'b', 'c'], 2)).toBe(true)
+      expect(validate('pattern', 12, '^[A-Z]+$')).toBe(true)
+    })
+
+    it('describes the limits in the messages', () => {
+      expect(getMessage('minLength', '', 1)).toBe('must not be empty')
+      expect(getMessage('minLength', 'a', 3)).toBe(
+        'must be at least 3 characters long'
+      )
+      expect(getMessage('maxLength', 'ab', 1)).toBe(
+        'must be at most one character long'
+      )
+      expect(getMessage('maxLength', 'abcd', 3)).toBe(
+        'must be at most 3 characters long'
+      )
+      expect(getMessage('pattern', 'a', '^\\d+$')).toBe(
+        'must match pattern "^\\d+$"'
+      )
+    })
+  })
+
+  describe('minItems and maxItems', () => {
+    it('validates the number of items of arrays', () => {
+      expect(validate('minItems', ['a'], 1)).toBe(true)
+      expect(validate('minItems', [], 1)).toBe(false)
+      expect(validate('maxItems', ['a', 'b'], 2)).toBe(true)
+      expect(validate('maxItems', ['a', 'b', 'c'], 2)).toBe(false)
+      expect(validate('minItems', 'abc', 5)).toBe(true)
+    })
+
+    it('describes the limits in the messages', () => {
+      expect(getMessage('minItems', [], 1)).toBe(
+        'must contain at least one item'
+      )
+      expect(getMessage('minItems', [], 2)).toBe(
+        'must contain at least 2 items'
+      )
+      expect(getMessage('maxItems', [1, 2], 1)).toBe(
+        'must contain at most one item'
+      )
+      expect(getMessage('maxItems', [1, 2, 3], 2)).toBe(
+        'must contain at most 2 items'
+      )
+    })
+
+    it('says "is required" for one item of required fields', () => {
+      expect(getMessage('minItems', [], 1, { required: true })).toBe(
+        'is required'
+      )
+      expect(getMessage('minItems', [], 2, { required: true })).toBe(
+        'must contain at least 2 items'
+      )
     })
   })
 
