@@ -110,7 +110,6 @@ inputs and selects, `clearable` to inputs that can be cleared.
 | `serializeValue` | `SchemaValueCallback` | | Converts the value for the server and the clipboard, after the type's own conversion. Returning `undefined` leaves out the key. |
 | `exclude` | `SchemaValue<boolean>` | `false`; `true` for buttons, labels, spacers and sources with their own `resource` | Leaves the value out of the data sent to the server. Changes of excluded values don't make the data dirty. |
 | `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value: not `null` or `''`. Checkboxes and switches only fail with the `null` of [`nullable`](#empty-values) ones, as `false` is an answer: without `nullable`, `required` never fails on them. Lists and fields with multiple values hold arrays and need at least one item, as `minItems: 1`, failing with "is required" too. |
-| `rules` | `SchemaRules` | | Validation rules to add or change, keyed by validator name, or to turn off by setting them to `false` or `undefined`, e.g. `{ email: false }`. Types add their own rules, e.g. `minimum` for numbers. |
 | `validate` | `(context) => boolean \| string \| void` | | Validates values that aren't empty, with the value after `formatValue()`. Returning `false` fails with "is invalid", a string fails with it as the message, e.g. `'must have 13 digits'`. See [Validation](../../guide/admin/validation.md#custom-validation). |
 | `readonly` | `SchemaValue<boolean>` | `false` | Text inputs become read-only, all other fields disabled. |
 | `disabled` | `SchemaValue<boolean>` | `false` | Disables the field. Disabled sections and panels disable all fields inside them, also nested ones. Loading forms and views don't disable their fields. |
@@ -303,8 +302,8 @@ price: {
 
 `InputSchema`. The types `text`, `email`, `url`, `hostname`, `domain`, `tel`,
 `password` and `creditcard` render a text input. All but `text` and `tel`
-validate their format with the rule of their name, e.g. `rules.email`.
-`url` requires a scheme, e.g. `https://`, as the server's `uri` format does.
+validate the format of their name. `url` requires a scheme, e.g. `https://`,
+as the server's `uri` format does.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
@@ -312,7 +311,6 @@ validate their format with the rule of their name, e.g. `rules.email`.
 | `trim` | `boolean` | `false` | Trims whitespace from the value when it's serialized. |
 | `nullable` | `boolean` | `false` | Stores no value as `null` instead of `''`, see [Empty values](#empty-values). |
 | `prefix`, `suffix` | `OrArrayOf<SchemaAffix>` | | See [Affixes](#affixes). |
-| `rules` | `SchemaRules & { email?, url?, hostname?, domain?, password?, creditcard? }` | | Changes the validation rules. `false` or `undefined` turns the type's format rule off, e.g. `{ email: false }`. |
 
 Empty strings are serialized as the default value. `password` fields show a
 mask while they have no value, and items that lack the key don't get one, as
@@ -352,7 +350,6 @@ summary: { type: 'textarea', lines: 6, maxLength: 1000 }
 | `step` | `SchemaValue<number>` | | The step of the input. Without `decimals`, a whole step validates whole numbers, a fractional one its decimals. |
 | `decimals` | `SchemaValue<number>` | | The maximum number of decimals. |
 | `prefix`, `suffix` | `OrArrayOf<SchemaAffix>` | | See [Affixes](#affixes). |
-| `rules` | `SchemaRules & { minimum?, maximum?, range?, decimals?, integer? }` | | Changes the validation rules. |
 
 `integer` rounds `minimum` down and `maximum` and `step` up to whole numbers.
 
@@ -641,7 +638,7 @@ Values whose option is missing, e.g. after the options changed, are kept:
 selects show them as unavailable, multiselects mark their tags. Options given
 as an array, in `options` or `options.data`, also reject such values when
 validating, with "must be one of the options", unless `taggable` or `search`
-add values. `rules: { enum: false }` turns this off.
+add values.
 
 #### The options object
 

@@ -9,6 +9,7 @@ import {
   assignDeeply,
   mapConcurrently,
   getValueAtDataPath,
+  isEmpty,
   deprecate
 } from '@ditojs/utils'
 import { markRaw } from 'vue'
@@ -75,6 +76,20 @@ const renamedSchemaKeys = {
     deprecation: 'Schema `max` is deprecated, use `maximum` instead.'
   }
 }
+
+// The deprecated rules that fields take as keys:
+const ruleKeys = [
+  'required',
+  'minimum',
+  'maximum',
+  'range',
+  'decimals',
+  'minLength',
+  'maxLength',
+  'pattern',
+  'minItems',
+  'maxItems'
+]
 
 // The events of forms that `onSuccess()` replaces:
 const onSuccess = `'onSuccess()' with 'context.isCreating'`
@@ -256,6 +271,31 @@ export function applySchemaDefaults(api, schema, name = schema.name) {
       // `rules` are keyed by the validators, which carry the new names too:
       if (object.rules) {
         renameSchemaKey(object.rules, key)
+      }
+    }
+    if (object.rules) {
+      deprecate(
+        'Schema `rules` are deprecated, use the limits of fields, ' +
+        'their types and `validate()` instead.'
+      )
+      // Move the rules that fields take as keys to the field, only those that
+      // turn validations off and other validators remain rules:
+      const rules = {}
+      for (const [key, setting] of Object.entries(object.rules)) {
+        if (
+          ruleKeys.includes(key) &&
+          setting !== false &&
+          setting !== undefined
+        ) {
+          object[key] = setting
+        } else {
+          rules[key] = setting
+        }
+      }
+      if (isEmpty(rules)) {
+        delete object.rules
+      } else {
+        object.rules = rules
       }
     }
   }

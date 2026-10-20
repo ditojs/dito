@@ -40,7 +40,8 @@ export function getValidations(context) {
     // Pass the validated value, after `formatValue()` like the components:
     validations.validate = value => validate(context.extend({ value }))
   }
-  // `schema.rules` override and add rules, `false` and `undefined` remove them:
+  // The deprecated `schema.rules` override and add validations, `false` and
+  // `undefined` remove them:
   for (const [name, setting] of Object.entries(schema.rules || {})) {
     if (setting === undefined || setting === false) {
       delete validations[name]
