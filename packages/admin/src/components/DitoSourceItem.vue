@@ -20,6 +20,16 @@ DitoSchemaInlined(
   @delete="$emit('delete')"
   @move="delta => $emit('move', delta)"
 )
+  //- The components of forms that lay out their fields:
+  template(
+    v-if="formSchema.component"
+    #default
+  )
+    component(
+      :is="formSchema.component"
+      :schema="formSchema"
+      :context="formContext"
+    )
 component(
   v-else-if="schema.component"
   :is="schema.component"
@@ -76,6 +86,12 @@ export default {
       context: createContext({
         get index() {
           return props.index
+        }
+      }),
+      // For the components that lay out the forms of inlined items:
+      formContext: createContext({
+        get schema() {
+          return props.formSchema
         }
       }),
       isInlined: computed(() => isInlined(props.schema)),

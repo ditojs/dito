@@ -169,8 +169,8 @@ reports as removed, e.g. `format`, `compute` or `data`.
 
 ## Laying out fields
 
-A section or a form with `component` renders its `fields` with that Vue
-component instead of in rows. The component receives the `schema` and
+A section or a form with `component`, also the form of inlined list items
+and objects, renders its `fields` with that Vue component instead of in rows. The component receives the `schema` and
 `context` of the section or form, and places each field with `DitoSchemaField`,
 whose `name` is a key of its `fields`. The fields render as in rows, with
 their labels, errors, info, `width` and disabled state, and they validate,
