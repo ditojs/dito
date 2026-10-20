@@ -6,8 +6,8 @@
     v-model="inputValue"
     type="range"
     v-bind="attributes"
-    :min="settings.min"
-    :max="settings.max"
+    :min="settings.minimum"
+    :max="settings.maximum"
     :step="stepValue"
   )
   //- The range input holds the name and label, don't submit the number twice:
@@ -18,8 +18,8 @@
     v-bind="attributes"
     :name="null"
     :aria-label="`${labelText || labelize(schema.name)} Value`"
-    :min="settings.min"
-    :max="settings.max"
+    :min="settings.minimum"
+    :max="settings.maximum"
     :step="stepValue"
   )
 </template>

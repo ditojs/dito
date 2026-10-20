@@ -109,7 +109,7 @@ that can be cleared.
 | `serializeValue` | `SchemaValueCallback` | | Converts the value for the server and the clipboard, after the type's own conversion. Returning `undefined` leaves out the key. |
 | `exclude` | `SchemaValue<boolean>` | `false`; `true` for buttons, labels, spacers and sources with their own `resource` | Leaves the value out of the data sent to the server. Changes of excluded values don't make the data dirty. |
 | `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value: not `null`, `''` or an empty array, so lists and fields with multiple values need at least one entry. Unlike the server's `required`, which accepts empty arrays. String fields fail with both `''` and `null`, checkboxes and switches only with the `null` of [`nullable`](#empty-values) ones, as `false` is an answer: without `nullable`, `required` never fails on them. |
-| `rules` | `SchemaRules` | | Validation rules to add or change, keyed by validator name, or to turn off by setting them to `false` or `undefined`, e.g. `{ email: false }`. Types add their own rules, e.g. `min` for numbers. |
+| `rules` | `SchemaRules` | | Validation rules to add or change, keyed by validator name, or to turn off by setting them to `false` or `undefined`, e.g. `{ email: false }`. Types add their own rules, e.g. `minimum` for numbers. |
 | `validate` | `(context) => boolean \| string \| void` | | Validates values that aren't empty, with the value after `formatValue()`. Returning `false` fails with "is invalid", a string fails with it as the message, e.g. `'must have 13 digits'`. See [Validation](../../guide/admin/validation.md#custom-validation). |
 | `readonly` | `SchemaValue<boolean>` | `false` | Text inputs become read-only, all other fields disabled. |
 | `disabled` | `SchemaValue<boolean>` | `false` | Disables the field. Disabled sections and panels disable all fields inside them, also nested ones. Loading forms and views don't disable their fields. |
@@ -340,18 +340,18 @@ summary: { type: 'textarea', lines: 6, maxLength: 1000 }
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
 | `type` | `'number' \| 'integer'` | | Required. |
-| `min` | `SchemaValue<number>` | `range[0]` | The minimum value. |
-| `max` | `SchemaValue<number>` | `range[1]` | The maximum value. |
+| `minimum` | `SchemaValue<number>` | `range[0]` | The minimum value. `min` is a deprecated alias until 6.0. |
+| `maximum` | `SchemaValue<number>` | `range[1]` | The maximum value. `max` is a deprecated alias until 6.0. |
 | `range` | `SchemaValue<[number, number]>` | | The minimum and maximum value. |
 | `step` | `SchemaValue<number>` | | The step of the input. Without `decimals`, a whole step validates whole numbers, a fractional one its decimals. |
 | `decimals` | `SchemaValue<number>` | | The maximum number of decimals. |
 | `prefix`, `suffix` | `OrArrayOf<SchemaAffix>` | | See [Affixes](#affixes). |
-| `rules` | `SchemaRules & { min?, max?, range?, decimals?, integer? }` | | Changes the validation rules. |
+| `rules` | `SchemaRules & { minimum?, maximum?, range?, decimals?, integer? }` | | Changes the validation rules. |
 
-`integer` rounds `min` down and `max` and `step` up to whole numbers.
+`integer` rounds `minimum` down and `maximum` and `step` up to whole numbers.
 
 ```js
-stock: { type: 'integer', min: 0 },
+stock: { type: 'integer', minimum: 0 },
 price: { type: 'number', step: 0.01, prefix: '€' }
 ```
 

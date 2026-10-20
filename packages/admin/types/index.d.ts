@@ -1044,11 +1044,17 @@ export interface NumberSettings<$Item> {
   /**
    * The minimum value.
    */
-  min?: SchemaValue<$Item, {}, number>
+  minimum?: SchemaValue<$Item, {}, number>
 
   /**
    * The maximum value.
    */
+  maximum?: SchemaValue<$Item, {}, number>
+
+  /** @deprecated Use `minimum`. */
+  min?: SchemaValue<$Item, {}, number>
+
+  /** @deprecated Use `maximum`. */
   max?: SchemaValue<$Item, {}, number>
 
   /**

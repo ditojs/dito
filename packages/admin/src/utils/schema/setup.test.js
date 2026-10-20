@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { reactive, isReactive } from 'vue'
 import { hyphenate } from '@ditojs/utils'
 import { defineType } from './types.ts'
-import { sourceTraits } from '../../types/traits.ts'
+import { sourceTraits, numberTraits } from '../../types/traits.ts'
 import {
   resolveSchema,
   resolveSchemas,
@@ -42,6 +42,7 @@ defineType({
 })
 defineType({ type: 'computed', resolvesValue: true })
 defineType({ type: 'color', hasFormat: true })
+defineType({ ...numberTraits, type: 'number' })
 
 function createApi(defaults = {}) {
   return { defaults, normalizePath: path => hyphenate(path) }
@@ -684,6 +685,37 @@ describe('the deprecated keys components and component', () => {
       components: { ...form.fields, published: { type: 'date' } }
     })
     expect(Object.keys(extended.fields)).toEqual(['title', 'isbn', 'published'])
+  })
+})
+
+describe('the deprecated keys min and max', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('renames them in number types and their rules, warning once', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const api = createApi({ number: { max: 100 } })
+    const price = { type: 'number', min: 0 }
+    const discount = { type: 'number', rules: { min: 1, max: false } }
+    applySchemaDefaults(api, price)
+    applySchemaDefaults(api, discount)
+    expect(price).toEqual({ type: 'number', minimum: 0, maximum: 100 })
+    expect(discount).toEqual({
+      type: 'number',
+      maximum: 100,
+      rules: { minimum: 1, maximum: false }
+    })
+    expect(warn.mock.calls).toEqual([
+      ['Schema `min` is deprecated, use `minimum` instead.'],
+      ['Schema `max` is deprecated, use `maximum` instead.']
+    ])
+  })
+
+  it('keeps them in other types', () => {
+    const schema = { type: 'text', min: 0, rules: { max: 1 } }
+    applySchemaDefaults(createApi(), schema)
+    expect(schema).toEqual({ type: 'text', min: 0, rules: { max: 1 } })
   })
 })
 

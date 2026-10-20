@@ -15,7 +15,7 @@ price: {
   type: 'number',
   label: 'Price (EUR)',
   decimals: 2,
-  min: 0,
+  minimum: 0,
   required: true,
   width: '1/3',
   default: 0,

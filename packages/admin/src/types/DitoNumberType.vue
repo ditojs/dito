@@ -5,8 +5,8 @@ DitoInput.dito-number(
   v-model="inputValue"
   type="number"
   v-bind="attributes"
-  :min="settings.min"
-  :max="settings.max"
+  :min="settings.minimum"
+  :max="settings.maximum"
   :step="stepValue"
 )
   template(#prefix)

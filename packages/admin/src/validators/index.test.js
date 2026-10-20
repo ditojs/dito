@@ -22,8 +22,8 @@ describe('validators', () => {
       'email',
       'hostname',
       'integer',
-      'max',
-      'min',
+      'maximum',
+      'minimum',
       'password',
       'range',
       'required',
@@ -68,12 +68,12 @@ describe('validators', () => {
     })
   })
 
-  describe('min, max and range', () => {
+  describe('minimum, maximum and range', () => {
     it('validates inclusive limits', () => {
-      expect(validate('min', 5, 5)).toBe(true)
-      expect(validate('min', 4.9, 5)).toBe(false)
-      expect(validate('max', 10, 10)).toBe(true)
-      expect(validate('max', 10.1, 10)).toBe(false)
+      expect(validate('minimum', 5, 5)).toBe(true)
+      expect(validate('minimum', 4.9, 5)).toBe(false)
+      expect(validate('maximum', 10, 10)).toBe(true)
+      expect(validate('maximum', 10.1, 10)).toBe(false)
       expect(validate('range', 0, [0, 1])).toBe(true)
       expect(validate('range', 1, [0, 1])).toBe(true)
       expect(validate('range', -0.1, [0, 1])).toBe(false)
@@ -81,8 +81,8 @@ describe('validators', () => {
     })
 
     it('describes the limits in the messages', () => {
-      expect(getMessage('min', 4, 5)).toBe('must be 5 or more')
-      expect(getMessage('max', 11, 10)).toBe('must be 10 or less')
+      expect(getMessage('minimum', 4, 5)).toBe('must be 5 or more')
+      expect(getMessage('maximum', 11, 10)).toBe('must be 10 or less')
       expect(getMessage('range', 2, [-1, 1])).toBe('must be between -1 and 1')
     })
   })

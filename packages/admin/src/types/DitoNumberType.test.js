@@ -23,11 +23,11 @@ describe('DitoNumberType', () => {
     expect(data.pages).toBe(320)
   })
 
-  it('passes `min`, `max` and `step` to the input', async () => {
+  it('passes `minimum`, `maximum` and `step` to the input', async () => {
     const { findField } = await mountSchema({
       schema: {
         fields: {
-          rating: { type: 'number', min: 0, max: 5, step: 0.5 },
+          rating: { type: 'number', minimum: 0, maximum: 5, step: 0.5 },
           price: { type: 'number' }
         }
       }
@@ -41,7 +41,7 @@ describe('DitoNumberType', () => {
     expect(findField('price').find('input').attributes('step')).toBe('any')
   })
 
-  it('takes `min` and `max` from `range`', async () => {
+  it('takes `minimum` and `maximum` from `range`', async () => {
     const { findField } = await mountSchema({
       schema: {
         fields: { year: { type: 'number', range: [1900, 2100] } }
@@ -69,11 +69,11 @@ describe('DitoNumberType', () => {
     expect(price.find('input').element.value).toBe('')
   })
 
-  it('rounds `min`, `max` and `step` of integers to integers', async () => {
+  it('rounds `minimum`, `maximum` and `step` of integers to integers', async () => {
     const { findField } = await mountSchema({
       schema: {
         fields: {
-          copies: { type: 'integer', min: 0.5, max: 9.5, step: 1.5 }
+          copies: { type: 'integer', minimum: 0.5, maximum: 9.5, step: 1.5 }
         }
       }
     })
@@ -190,13 +190,13 @@ describe('DitoProgressType', () => {
     expect(progress.attributes('value')).toBe('0')
   })
 
-  it('takes the start from `min` without `max`', async () => {
+  it('takes the start from `minimum` without `maximum`', async () => {
     const { findField } = await mountSchema({
-      schema: { fields: { progress: { type: 'progress', min: 0.2 } } },
+      schema: { fields: { progress: { type: 'progress', minimum: 0.2 } } },
       data: { progress: 0.5 }
     })
     const progress = findField('progress')
-    // 0.5 - 0.2 of the 0.8 from `min` to the default end of 1:
+    // 0.5 - 0.2 of the 0.8 from `minimum` to the default end of 1:
     expect(progress.element.value).toBeCloseTo(0.3)
     expect(progress.attributes('max')).toBe('0.8')
   })

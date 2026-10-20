@@ -25,7 +25,7 @@ export const orderForm = {
             label: 'title'
           }
         },
-        quantity: { type: 'integer', min: 1, default: 1, width: '1/4' },
+        quantity: { type: 'integer', minimum: 1, default: 1, width: '1/4' },
         price: { type: 'number', decimals: 2, prefix: '€', width: '1/4' }
       }
     },
