@@ -3,6 +3,28 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 5.3.0 (2026-10-20)
+
+### Behaviour changes
+
+- **admin:** The paths below a page render the page, e.g. `/tools/cache-purge/unknown`, where the admin rendered no view before.
+
+### Deprecations
+
+- **admin:** The types `Components`, `Component`, `SourceComponent` and `ComponentSchemaBase` are deprecated aliases of `Fields`, `Field`, `SourceField` and `FieldSchemaBase`.
+- **admin:** `login.additionalComponents` is deprecated in favour of `login.additionalFields`. It keeps working and logs a deprecation warning.
+
+### New
+
+- **admin:** The types `Fields`, `Field`, `SourceField` and `FieldSchemaBase` name the `fields` of schemas, the union of all field schemas such as the `field` of views, the fields that hold items, and the options that all fields share.
+- **admin:** `login.additionalFields` adds fields to the login dialog, named like the `fields` of schemas.
+- **admin:** Forms of `useDitoForm()` in pages support lists and trees whose items edit in forms with routes of their own, below the path of the page, e.g. `/upload/sets/0/cuts/1`, also in deep links. Their forms apply their changes to the page's form. Outside of pages, e.g. in dialogs, the lists still need `inlined: true`.
+
+### Fixes
+
+- **admin:** Open deep links at startup instead of the root, also when the views resolve before the first navigation of the router.
+- **admin:** Lay out the forms of inlined list items and objects with their `component`, as routed forms do, instead of in rows.
+
 ## 5.2.0 (2026-10-20)
 
 ### Behaviour changes
