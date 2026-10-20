@@ -18,7 +18,8 @@ import {
 
 // A value in the data of a form, with all the fields that edit it in form
 // order, e.g. from several tabs. Each field comes with the unnested sections,
-// tabs and panels that contain it, which decide whether it's walked too:
+// tabs, panels and fields that contain it, which decide whether it's walked
+// too:
 class FieldNode {
   constructor(name) {
     this.name = name
@@ -58,26 +59,26 @@ export function walkData(schema, data, {
       // The data path of `data`, which wrapped values keep:
       itemDataPath: dataPath
     })
-    // The fields of a container share its decision:
-    const walkedContainers = new Map()
-    const isWalkedContainer = ({ schema, name }) => {
-      let isWalked = walkedContainers.get(schema)
-      if (isWalked === undefined) {
-        isWalked = shouldWalk(createEntry(schema, name))
-        walkedContainers.set(schema, isWalked)
+    // Ask once per field and container, as fields contain the fields of their
+    // panels:
+    const isWalkedByField = new Map()
+    const isWalked = field => {
+      if (!isWalkedByField.has(field)) {
+        const { schema, name } = field
+        isWalkedByField.set(field, shouldWalk(createEntry(schema, name)))
       }
-      return isWalked
+      return isWalkedByField.get(field)
     }
     for (const { name, fields } of nodes.values()) {
       const entries = []
-      for (const { schema, containers } of fields) {
-        const entry = createEntry(schema, name)
+      for (const field of fields) {
+        const { schema, containers } = field
         if (
-          containers.every(isWalkedContainer) &&
-          shouldWalk(entry) &&
+          containers.every(isWalked) &&
+          isWalked(field) &&
           !(shouldSkipSourcesWithResource && isSourceWithResource(schema))
         ) {
-          entries.push(entry)
+          entries.push(createEntry(schema, name))
         }
       }
       if (entries.length > 0) {
@@ -212,12 +213,10 @@ function createFieldNodes(schema, getFields) {
       // The fields of panels with their own data don't edit the form's data:
       if (!isPanelWithOwnData(field)) {
         if (hasNestedData(field)) {
-          addFieldNode(nodes, field, name, containers)
+          const nodeField = { schema: field, name, containers }
+          addFieldNode(nodes, nodeField)
           // Their panels display the data that contains them:
-          addTabsOrPanels(field.panels, [
-            ...containers,
-            { schema: field, name }
-          ])
+          addTabsOrPanels(field.panels, [...containers, nodeField])
         } else {
           addSchema(field, [...containers, { schema: field, name }])
         }
@@ -246,27 +245,27 @@ function createFieldNodes(schema, getFields) {
   return nodes
 }
 
-function addFieldNode(nodes, schema, name, containers) {
-  let node = nodes.get(name)
+function addFieldNode(nodes, field) {
+  let node = nodes.get(field.name)
   if (!node) {
-    node = new FieldNode(name)
-    nodes.set(name, node)
+    node = new FieldNode(field.name)
+    nodes.set(field.name, node)
   }
-  node.fields.push({ schema, containers })
+  node.fields.push(field)
 }
 
 // Merge the nodes of the forms of an item into new nodes, with child sources:
 function mergeFieldNodes(nodesList, childSourceSchemas) {
   const merged = new Map()
   for (const nodes of nodesList) {
-    for (const { name, fields } of nodes.values()) {
-      for (const { schema, containers } of fields) {
-        addFieldNode(merged, schema, name, containers)
+    for (const { fields } of nodes.values()) {
+      for (const field of fields) {
+        addFieldNode(merged, field)
       }
     }
   }
   for (const child of childSourceSchemas) {
-    addFieldNode(merged, child, child.name, [])
+    addFieldNode(merged, { schema: child, name: child.name, containers: [] })
   }
   return merged
 }

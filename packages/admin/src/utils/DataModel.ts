@@ -47,6 +47,7 @@ import {
   getSchemaValue,
   shouldSetDefaultValue,
   setDefaultValue,
+  sortByOwnDefault,
   initializeData,
   isDataPathExcluded,
   shouldExcludeValue,
@@ -61,6 +62,11 @@ import {
   getEditedValue,
   parseEditedValue
 } from './schema/data.js'
+import {
+  walkData,
+  type DataEntry,
+  type WalkedDataEntry
+} from './schema/walk.js'
 import { getOptionsSettings, getReplacedValue } from './schema/options.ts'
 import type { Services } from './services.ts'
 import type {
@@ -144,11 +150,11 @@ type FieldEntry = Pick<
 > & { itemDataPath?: string | null }
 
 interface DataEntries {
-  recordedEntries: EntryMap<SchemaDataEntry>
-  entriesWithMissingValues: SchemaDataEntry[]
+  recordedEntries: EntryMap<DataEntry>
+  entriesWithMissingValues: DataEntry[]
   // Not walked, but they save the changes of the lists that they hold, unless
   // they're sent with the data:
-  sourceEntriesWithResource: WalkedEntry[]
+  sourceEntriesWithResource: WalkedDataEntry[]
 }
 
 // The state of the data that a form, view, dialog or panel edits, derived from
@@ -926,11 +932,12 @@ export class DataModel {
 
   #getDataEntries(): DataEntries {
     const { schema, data } = this
-    const recordedEntries = new EntryMap<SchemaDataEntry>()
-    const entriesWithMissingValues: SchemaDataEntry[] = []
-    const sourceEntriesWithResource: WalkedEntry[] = []
+    const recordedEntries = new EntryMap<DataEntry>()
+    const entriesWithMissingValues: DataEntry[] = []
+    const sourceEntriesWithResource: WalkedDataEntry[] = []
     if (data && !isEmptySchema(schema)) {
-      walkSchemaData(schema!, data, {
+      walkData(schema!, data, {
+        ...this.#walkOptions,
         dataPath: this.dataPath,
         shouldWalk: entry => {
           const shouldRender = this.#shouldRenderEntry(entry)
@@ -944,18 +951,23 @@ export class DataModel {
           return shouldRender
         },
         shouldSkipSourcesWithResource: true,
-        before: entry => {
-          if (
-            hasComputedValueSource(entry.schema) ||
-            getOptionsDataSchema(entry.schema)
-          ) {
-            recordedEntries.set(entry, entry)
+        visit: entries => {
+          // Of several fields of the same value, the first with a computed
+          // value or options gets the record:
+          const recordedEntry = entries.find(
+            ({ schema }) => (
+              hasComputedValueSource(schema) || getOptionsDataSchema(schema)
+            )
+          )
+          if (recordedEntry) {
+            recordedEntries.set(recordedEntry, recordedEntry)
           }
-          if (this.#shouldSetDefaultValue(entry)) {
-            entriesWithMissingValues.push(entry)
-          }
-        },
-        options: this.#walkOptions
+          entriesWithMissingValues.push(
+            ...sortByOwnDefault(entries).filter(entry =>
+              this.#shouldSetDefaultValue(entry)
+            )
+          )
+        }
       })
     }
     return {
@@ -966,7 +978,7 @@ export class DataModel {
   }
 
   // An `if` that fails only affects its own component, which counts as shown.
-  #shouldRenderEntry(entry: WalkedEntry): boolean {
+  #shouldRenderEntry(entry: WalkedDataEntry): boolean {
     if (entry.schema.if === undefined) {
       return true
     }
@@ -984,7 +996,7 @@ export class DataModel {
   }
 
   // Like `#shouldRenderEntry()`, an `exclude()` that fails counts as included.
-  #shouldExcludeEntry(entry: WalkedEntry): boolean {
+  #shouldExcludeEntry(entry: WalkedDataEntry): boolean {
     try {
       return shouldExcludeValue(entry.schema, () =>
         this.#createEntryContext(entry)
@@ -995,7 +1007,7 @@ export class DataModel {
     }
   }
 
-  #shouldSetDefaultValue(entry: SchemaDataEntry): boolean {
+  #shouldSetDefaultValue(entry: FieldEntry): boolean {
     const { schema, data, name } = entry
     return shouldSetDefaultValue(
       schema,
@@ -1006,7 +1018,7 @@ export class DataModel {
     )
   }
 
-  #setDefaultValues(entries: SchemaDataEntry[]) {
+  #setDefaultValues(entries: DataEntry[]) {
     for (const entry of entries) {
       if (this.#shouldSetDefaultValue(entry)) {
         const { schema, data, name } = entry
@@ -1017,7 +1029,7 @@ export class DataModel {
     }
   }
 
-  #updateComponentRecords(entries: EntryMap<SchemaDataEntry>) {
+  #updateComponentRecords(entries: EntryMap<DataEntry>) {
     const previousRecords = this.componentRecords
     this.componentRecords = new EntryMap()
     for (const entry of entries.values()) {
@@ -1271,23 +1283,24 @@ export class DataModel {
     return valueWithDefaults
   }
 
+  // Hand out the nested entries in the order in which they set defaults:
   #walkNestedEntries(
     entry: FieldEntry,
     value: any,
-    handleNestedEntry: (entry: SchemaDataEntry) => void
+    handleNestedEntry: (entry: DataEntry) => void
   ) {
     const { schema, data, name, dataPath } = entry
     const valueData = { ...data, [name]: value }
-    walkSchemaData({ fields: { [name]: schema } }, valueData, {
+    walkData({ fields: { [name]: schema } }, valueData, {
+      ...this.#walkOptions,
       dataPath: getParentDataPath(dataPath),
       shouldWalk: nestedEntry => this.#shouldRenderEntry(nestedEntry),
       shouldSkipSourcesWithResource: true,
-      before: nestedEntry => {
-        if (nestedEntry.data !== valueData) {
-          handleNestedEntry(nestedEntry)
+      visit: nestedEntries => {
+        if (nestedEntries[0].data !== valueData) {
+          sortByOwnDefault(nestedEntries).forEach(handleNestedEntry)
         }
-      },
-      options: this.#walkOptions
+      }
     })
   }
 
