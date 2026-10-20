@@ -53,7 +53,6 @@ import {
   shouldExcludeValue,
   getComputedValue,
   hasValueFromDataSchema,
-  walkSchemaData,
   serializeData,
   deserializeData,
   hasItemsNumberedByOrderKey,
@@ -69,12 +68,7 @@ import {
 } from './schema/walk.js'
 import { getOptionsSettings, getReplacedValue } from './schema/options.ts'
 import type { Services } from './services.ts'
-import type {
-  Data,
-  Schema,
-  SchemaDataEntry,
-  WalkedEntry
-} from './types.ts'
+import type { Data, Schema } from './types.ts'
 
 type Key = string | number
 
@@ -144,10 +138,9 @@ interface ComponentRecord {
 
 // Only the walked entries bring along the `itemDataPath`, which differs from
 // the derived one for wrapped values:
-type FieldEntry = Pick<
-  SchemaDataEntry,
-  'schema' | 'data' | 'name' | 'dataPath'
-> & { itemDataPath?: string | null }
+type FieldEntry = Pick<DataEntry, 'schema' | 'data' | 'name' | 'dataPath'> & {
+  itemDataPath?: string | null
+}
 
 // Tabs and panels are walked without a name:
 type WalkedFieldEntry = Omit<FieldEntry, 'name'> & { name: string | null }
@@ -654,7 +647,7 @@ export class DataModel {
       isMatchingDataPath?: ((dataPath: string) => boolean) | null
     } = {}
   ): Record<string, ValueError[]> | null {
-    const entries: SchemaDataEntry[] = []
+    const entries: DataEntry[] = []
     this.#walkFieldEntries(dataPath, entry => entries.push(entry))
     const errorsByDataPath: Record<string, ValueError[]> = {}
     const unmatchedErrors: Record<string, ValueError[]> = {}
@@ -803,16 +796,17 @@ export class DataModel {
 
   #walkFieldEntries(
     dataPath: string,
-    handleEntry: (entry: SchemaDataEntry) => void
+    handleEntry: (entry: DataEntry) => void
   ) {
     const { schema, data } = this
-    const isWithin = (entry: WalkedEntry) => (
+    const isWithin = (entry: WalkedDataEntry) => (
       getRelativeDataPath(entry.dataPath, dataPath) !== null
     )
     if (data && !isEmptySchema(schema)) {
-      walkSchemaData(schema!, data, {
+      walkData(schema!, data, {
+        ...this.#walkOptions,
         dataPath: this.dataPath,
-        // Walk the components within `dataPath`, and the ones that contain it:
+        // Walk the fields within `dataPath`, and the ones that contain it:
         shouldWalk: entry => (
           (
             isWithin(entry) ||
@@ -821,12 +815,13 @@ export class DataModel {
           this.#shouldRenderEntry(entry)
         ),
         shouldSkipSourcesWithResource: true,
-        before: entry => {
-          if (isWithin(entry)) {
-            handleEntry(entry)
+        visit: entries => {
+          for (const entry of entries) {
+            if (isWithin(entry)) {
+              handleEntry(entry)
+            }
           }
-        },
-        options: this.#walkOptions
+        }
       })
     }
   }

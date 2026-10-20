@@ -1180,4 +1180,103 @@ describe('DataModel', () => {
     expect(data.status).toBe('draft')
     dataModel.stop()
   })
+
+  describe('errors', () => {
+    it('gives the errors to the fields that display them', async () => {
+      const { dataModel } = await createDataModel(
+        catalogueForm,
+        createCatalogue()
+      )
+      const errors = getDataValidationErrors(
+        dataModel.schema,
+        dataModel.data,
+        { services, dataPath: '' }
+      )
+      expect(
+        dataModel.replaceErrors({
+          ...errors,
+          'collections/0/items/0/chapters/0/title/x': [{ message: 'deep' }],
+          'unknown': [{ message: 'unknown' }]
+        })
+      ).toEqual({ unknown: [{ message: 'unknown' }] })
+      expect(dataModel.getErrorDataPaths()).toEqual([
+        'title',
+        'collections/0/code',
+        'collections/0/discount',
+        'collections/0/currency',
+        'collections/0/items/0/name',
+        'collections/0/items/0/pages',
+        'collections/0/items/0/price',
+        'collections/0/items/0/chapters/0/title',
+        'collections/0/items/0/tags/1',
+        'collections/0/items/0/blurb',
+        'collections/0/items/1/summary',
+        'collections/1/name',
+        'collections/1/items/0/email',
+        'collections/1/items/0/tracks',
+        'summaryNote',
+        'notes'
+      ])
+      expect(
+        dataModel.getErrors('collections/0/items/0/chapters/0/title')
+      ).toEqual([
+        { message: 'must be at most 20 characters long' },
+        { message: 'deep', path: 'x' }
+      ])
+      dataModel.clearErrors('collections/0')
+      expect(dataModel.getErrorDataPaths()).toEqual([
+        'title',
+        'collections/1/name',
+        'collections/1/items/0/email',
+        'collections/1/items/0/tracks',
+        'summaryNote',
+        'notes'
+      ])
+      dataModel.stop()
+    })
+
+    it('gives the errors to the fields in the children of trees', async () => {
+      const pageForm = {
+        type: 'form',
+        fields: { title: { type: 'text', required: true } }
+      }
+      const { dataModel } = await createDataModel(
+        {
+          fields: {
+            pages: {
+              type: 'tree-list',
+              form: pageForm,
+              children: { name: 'subpages', form: pageForm }
+            }
+          }
+        },
+        { pages: [{ title: 'About', subpages: [{ title: '' }] }] }
+      )
+      dataModel.replaceErrors({
+        'pages/0/subpages/0/title': [{ message: 'is required' }]
+      })
+      expect(dataModel.getErrorDataPaths()).toEqual([
+        'pages/0/subpages/0/title'
+      ])
+      dataModel.stop()
+    })
+
+    it('gives the errors to all fields of the same value', async () => {
+      const { dataModel } = await createDataModel(
+        {
+          tabs: {
+            first: { type: 'tab', fields: { name: { type: 'text' } } },
+            second: { type: 'tab', fields: { name: { type: 'text' } } }
+          }
+        },
+        { name: '' }
+      )
+      dataModel.replaceErrors({ name: [{ message: 'is required' }] })
+      expect(dataModel.getErrorDataPaths()).toEqual(['name', 'name'])
+      expect(dataModel.getErrors('name')).toEqual([{ message: 'is required' }])
+      dataModel.clearErrors()
+      expect(dataModel.getErrorDataPaths()).toEqual([])
+      dataModel.stop()
+    })
+  })
 })
