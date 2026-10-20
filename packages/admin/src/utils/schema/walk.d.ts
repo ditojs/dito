@@ -8,6 +8,8 @@ export interface DataEntry {
   dataPath: string | null
   // The data path of `data`, which wrapped values keep:
   itemDataPath: string | null
+  // The copy of `data` that the walk builds, if any:
+  serializedData: Data | null
 }
 
 // Tabs and panels are walked without a name:
@@ -20,8 +22,10 @@ export function walkData(
     dataPath?: string | null
     services?: object | null
     rootData?: Data | null
+    serializedData?: Data | null
     shouldWalk?: (entry: WalkedDataEntry) => boolean
     shouldSkipSourcesWithResource?: boolean
     visit: (entries: DataEntry[]) => void
+    after?: ((entries: DataEntry[]) => void) | null
   }
 ): Data

@@ -149,6 +149,9 @@ type FieldEntry = Pick<
   'schema' | 'data' | 'name' | 'dataPath'
 > & { itemDataPath?: string | null }
 
+// Tabs and panels are walked without a name:
+type WalkedFieldEntry = Omit<FieldEntry, 'name'> & { name: string | null }
+
 interface DataEntries {
   recordedEntries: EntryMap<DataEntry>
   entriesWithMissingValues: DataEntry[]
@@ -978,7 +981,7 @@ export class DataModel {
   }
 
   // An `if` that fails only affects its own component, which counts as shown.
-  #shouldRenderEntry(entry: WalkedDataEntry): boolean {
+  #shouldRenderEntry(entry: WalkedFieldEntry): boolean {
     if (entry.schema.if === undefined) {
       return true
     }
@@ -996,7 +999,7 @@ export class DataModel {
   }
 
   // Like `#shouldRenderEntry()`, an `exclude()` that fails counts as included.
-  #shouldExcludeEntry(entry: WalkedDataEntry): boolean {
+  #shouldExcludeEntry(entry: WalkedFieldEntry): boolean {
     try {
       return shouldExcludeValue(entry.schema, () =>
         this.#createEntryContext(entry)
@@ -1332,7 +1335,7 @@ export class DataModel {
     name,
     dataPath,
     itemDataPath
-  }: Omit<FieldEntry, 'name'> & Pick<WalkedEntry, 'name'>) {
+  }: WalkedFieldEntry) {
     return SchemaContext.createForSchema(this.#options.services, {
       schema,
       name,

@@ -34,7 +34,6 @@ export interface SchemaDataEntry {
   // The data path of `data`, which wrapped values keep:
   itemDataPath: string | null
   componentPath: string
-  serializedData: Data | null
 }
 
 // Tabs and panels are walked without a name:
@@ -45,11 +44,9 @@ export type WalkedEntry = Omit<SchemaDataEntry, 'name'> & {
 export interface SchemaDataWalk {
   dataPath?: string | null
   componentPath?: string
-  serializedData?: Data | null
   wrappedValueName?: string | null
   childSourceSchemas?: Schema[]
   before?: ((entry: SchemaDataEntry) => void) | null
-  after?: ((entry: SchemaDataEntry) => void) | null
   shouldWalk?: (entry: WalkedEntry) => boolean
   shouldSkipSourcesWithResource?: boolean
   options: { services: object | null; rootData: Data | null }

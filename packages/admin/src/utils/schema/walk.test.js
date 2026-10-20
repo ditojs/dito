@@ -5,7 +5,7 @@ import { isFunction } from '@ditojs/utils'
 // Importing the types defines them, so the walk sees their descriptors:
 import '../../types/index.js'
 import { setupForm } from './setup.js'
-import { initializeData, deserializeData } from './data.js'
+import { initializeData, deserializeData, serializeData } from './data.js'
 import { getDataValidationErrors } from './validation.js'
 import { walkData } from './walk.js'
 import { DataModel } from '../DataModel.ts'
@@ -217,6 +217,32 @@ const catalogueErrors = {
   'collections/1/items/0/tracks': [{ message: 'is required' }]
 }
 
+// Add the hook `key` to all schemas, to tell which fields call it:
+function addHook(schema, key, hook) {
+  const addHooks = schemas =>
+    Object.fromEntries(
+      Object.entries(schemas).map(([name, schema]) => [
+        name,
+        addHook(schema, key, hook)
+      ])
+    )
+  const { fields, tabs, panels, form, forms, children } = schema
+  return {
+    ...schema,
+    [key]: hook,
+    ...(fields && {
+      fields: isFunction(fields)
+        ? context => addHooks(fields(context))
+        : addHooks(fields)
+    }),
+    ...(tabs && { tabs: addHooks(tabs) }),
+    ...(panels && { panels: addHooks(panels) }),
+    ...(form && { form: addHook(form, key, hook) }),
+    ...(forms && { forms: addHooks(forms) }),
+    ...(children && { children: addHook(children, key, hook) })
+  }
+}
+
 describe('walkData()', () => {
   it('asks once whether a field is walked, also for its panels', async () => {
     const form = await createForm(catalogueForm)
@@ -425,36 +451,10 @@ describe('initializeData()', () => {
 })
 
 describe('deserializeData()', () => {
-  // Add `deserializeValue()` to all schemas, to tell which fields convert:
-  function addHook(schema, deserializeValue) {
-    const addHooks = schemas =>
-      Object.fromEntries(
-        Object.entries(schemas).map(([name, schema]) => [
-          name,
-          addHook(schema, deserializeValue)
-        ])
-      )
-    const { fields, tabs, panels, form, forms, children } = schema
-    return {
-      ...schema,
-      deserializeValue,
-      ...(fields && {
-        fields: isFunction(fields)
-          ? context => addHooks(fields(context))
-          : addHooks(fields)
-      }),
-      ...(tabs && { tabs: addHooks(tabs) }),
-      ...(panels && { panels: addHooks(panels) }),
-      ...(form && { form: addHook(form, deserializeValue) }),
-      ...(forms && { forms: addHooks(forms) }),
-      ...(children && { children: addHook(children, deserializeValue) })
-    }
-  }
-
   it('converts the values of all fields', async () => {
     const dataPaths = []
     const form = await createForm(
-      addHook(catalogueForm, ({ value, dataPath }) => {
+      addHook(catalogueForm, 'deserializeValue', ({ value, dataPath }) => {
         dataPaths.push(dataPath)
         return value
       })
@@ -708,6 +708,211 @@ describe('mergeData()', () => {
     expect(target).toEqual({
       entries: [{ id: 1, title: 'Uno', notes: [{ id: 1, text: 'a' }] }],
       notes: [{ id: 1, text: 'b' }]
+    })
+  })
+})
+
+describe('serializeData()', () => {
+  it('serializes the values of all fields', async () => {
+    const form = await createForm(catalogueForm)
+    expect(
+      serializeData(form, null, createCatalogue(), '', { services })
+    ).toEqual({
+      title: '',
+      showPrices: true,
+      summaryNote: 'Too long',
+      notes: 'Too long',
+      collections: [
+        {
+          name: 'Books',
+          code: null,
+          discount: 2,
+          currency: 'GBP',
+          items: [
+            {
+              type: 'book',
+              name: '',
+              pages: 0,
+              onSale: true,
+              price: null,
+              chapters: [
+                { title: 'x'.repeat(30), length: 1 },
+                { title: 'Two', length: 1 }
+              ],
+              tags: ['a', ''],
+              blurb: 'Much too long'
+            },
+            {
+              type: 'book',
+              name: 'Long',
+              pages: 200,
+              onSale: false,
+              price: null,
+              chapters: [],
+              tags: [],
+              summary: ''
+            }
+          ]
+        },
+        {
+          name: '',
+          code: '',
+          discount: null,
+          currency: null,
+          items: [
+            {
+              type: 'record',
+              name: 'Record',
+              email: 'nope',
+              format: 'lp',
+              tracks: []
+            }
+          ]
+        }
+      ]
+    })
+  })
+
+  it('serializes the values after the values of their items', async () => {
+    const dataPaths = []
+    const form = await createForm(
+      addHook(catalogueForm, 'serializeValue', ({ value, dataPath }) => {
+        dataPaths.push(dataPath)
+        return value
+      })
+    )
+    serializeData(form, null, createCatalogue(), '', { services })
+    // Values get defaults, and sources with their own resource and passwords
+    // are serialized before they're excluded:
+    expect(dataPaths).toEqual([
+      'title',
+      'showPrices',
+      'secret',
+      'collections/0/name',
+      'collections/0/code',
+      'collections/0/discount',
+      'collections/0/currency',
+      'collections/0/items/0/name',
+      'collections/0/items/0/pages',
+      'collections/0/items/0/onSale',
+      'collections/0/items/0/price',
+      'collections/0/items/0/chapters/0/title',
+      'collections/0/items/0/chapters/0/length',
+      'collections/0/items/0/chapters/1/title',
+      'collections/0/items/0/chapters/1/length',
+      'collections/0/items/0/chapters',
+      'collections/0/items/0/tags/0',
+      'collections/0/items/0/tags/1',
+      'collections/0/items/0/tags',
+      'collections/0/items/0/blurb',
+      'collections/0/items/1/name',
+      'collections/0/items/1/pages',
+      'collections/0/items/1/onSale',
+      'collections/0/items/1/price',
+      'collections/0/items/1/chapters',
+      'collections/0/items/1/tags',
+      'collections/0/items/1/summary',
+      'collections/0/items',
+      'collections/1/name',
+      'collections/1/code',
+      'collections/1/discount',
+      'collections/1/currency',
+      'collections/1/items/0/name',
+      'collections/1/items/0/email',
+      'collections/1/items/0/format',
+      'collections/1/items/0/tracks',
+      'collections/1/items',
+      'collections',
+      'summaryNote',
+      'vendors/0/name',
+      'vendors',
+      'notes'
+    ])
+  })
+
+  it('serializes the children of trees', async () => {
+    const pageForm = {
+      type: 'form',
+      fields: {
+        title: { type: 'text', serializeValue: ({ value }) => value.trim() }
+      }
+    }
+    const form = await createForm({
+      fields: {
+        pages: {
+          type: 'tree-list',
+          form: pageForm,
+          children: { name: 'subpages', form: pageForm }
+        }
+      }
+    })
+    const data = {
+      pages: [
+        {
+          id: 1,
+          title: ' About ',
+          draft: true,
+          subpages: [{ id: 2, title: ' Team ', draft: true }]
+        }
+      ]
+    }
+    expect(serializeData(form, null, data, '', { services })).toEqual({
+      pages: [{ id: 1, title: 'About', subpages: [{ id: 2, title: 'Team' }] }]
+    })
+  })
+
+  it('serializes with the first field of the same value', async () => {
+    const form = await createForm({
+      tabs: {
+        first: {
+          type: 'tab',
+          fields: {
+            title: { type: 'text' },
+            name: { type: 'text', serializeValue: ({ value }) => `${value}1` }
+          }
+        },
+        second: {
+          type: 'tab',
+          fields: {
+            title: { type: 'text', serializeValue: ({ value }) => `${value}2` },
+            name: { type: 'text', serializeValue: ({ value }) => `${value}2` }
+          }
+        }
+      }
+    })
+    const data = { title: 'Title', name: 'Name' }
+    expect(serializeData(form, null, data, '', { services })).toEqual({
+      title: 'Title2',
+      name: 'Name1'
+    })
+  })
+
+  it('serializes the items of the same value with all their forms', async () => {
+    const form = await createForm({
+      tabs: {
+        first: {
+          type: 'tab',
+          fields: {
+            entries: {
+              type: 'list',
+              form: { type: 'form', fields: { title: { type: 'text' } } }
+            }
+          }
+        },
+        second: {
+          type: 'tab',
+          fields: {
+            entries: {
+              type: 'list',
+              form: { type: 'form', fields: { notes: { type: 'text' } } }
+            }
+          }
+        }
+      }
+    })
+    const data = { entries: [{ id: 1, title: 'One', notes: 'A', other: 1 }] }
+    expect(serializeData(form, null, data, '', { services })).toEqual({
+      entries: [{ id: 1, title: 'One', notes: 'A' }]
     })
   })
 })

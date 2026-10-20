@@ -11,6 +11,7 @@ import {
 } from './structure.js'
 import {
   hasFormSchema,
+  hasMultipleFormSchemas,
   getFormSchemas,
   getItemFormSchema,
   getItemFormSchemaFromForms
@@ -33,21 +34,33 @@ const nodesBySchema = new WeakMap()
 
 // Walk `data` along the nodes of `schema`, the forms of the items and their
 // child sources. `visit()` receives the entries of each node's fields that
-// `shouldWalk()` accepts, before the items of their value are walked.
+// `shouldWalk()` accepts, before the items of their value are walked, and
+// `after()` after them.
 // NOTE: Items with an item adapter are walked wrapped, and the wrapped value
-// keeps the item's data path. The walk writes changed values back.
+// keeps the item's data path. The walk writes changed values back, unless it
+// builds a copy in `serializedData`: then it walks the values that `visit()`
+// sets in the copy, with their items already wrapped, and replaces them with
+// copies of their items.
 export function walkData(schema, data, {
   dataPath = null,
   services = null,
   rootData = data,
+  serializedData = null,
   shouldWalk = () => true,
   shouldSkipSourcesWithResource = false,
-  visit
+  visit,
+  after = null
 }) {
   const getDataPath = (dataPath, token) =>
     dataPath != null ? appendDataPath(dataPath, token) : null
 
-  const walkNodes = (nodes, data, dataPath, wrappedValueName = null) => {
+  const walkNodes = (
+    nodes,
+    data,
+    dataPath,
+    serializedData,
+    wrappedValueName = null
+  ) => {
     const createEntry = (schema, name) => ({
       schema,
       data,
@@ -57,7 +70,8 @@ export function walkData(schema, data, {
           ? getDataPath(dataPath, name)
           : dataPath,
       // The data path of `data`, which wrapped values keep:
-      itemDataPath: dataPath
+      itemDataPath: dataPath,
+      serializedData
     })
     // Ask once per field and container, as fields contain the fields of their
     // panels:
@@ -84,16 +98,18 @@ export function walkData(schema, data, {
       if (entries.length > 0) {
         visit(entries)
         walkItems(entries)
+        after?.(entries)
       }
     }
   }
 
   const walkItems = entries => {
-    const { data, name, dataPath } = entries[0]
+    const { data, name, dataPath, serializedData } = entries[0]
     const sourceEntries = entries.filter(({ schema }) => hasFormSchema(schema))
     // Only read the values of sources with forms, or tracked walks would
     // depend on all values:
-    const value = sourceEntries.length > 0 ? data[name] : null
+    const value =
+      sourceEntries.length > 0 ? (serializedData ?? data)[name] : null
     if (value != null) {
       // Fields of the same value agree on its shape, the first one tells it:
       const [{ schema: sourceSchema }] = sourceEntries
@@ -105,18 +121,30 @@ export function walkData(schema, data, {
         ),
         childSourceSchemas: getChildSourceSchemas(entry.schema)
       }))
+      const wrappedValueName = itemAdapter?.name ?? null
+      // Return the copy of the item when building a copy:
       const walkItem = (value, index = null) => {
-        const item = itemAdapter ? itemAdapter.wrap(value) : value
+        // The values in the copy hold their items wrapped already:
+        const item =
+          itemAdapter && !serializedData ? itemAdapter.wrap(value) : value
         // Values that aren't objects hold no data of the forms, e.g. ones
         // that `computeValue()` converts to objects:
         if (isObject(item)) {
           const itemDataPath =
             index !== null ? getDataPath(dataPath, index) : dataPath
           const nodes = getItemNodes(sources, item, itemDataPath)
-          // Items without a matching form, e.g. of unknown types, stay as
-          // they are:
-          if (nodes) {
-            walkNodes(nodes, item, itemDataPath, itemAdapter?.name ?? null)
+          if (nodes && serializedData) {
+            const serializedItem = cloneItem(sourceSchema, item)
+            walkNodes(
+              nodes,
+              item,
+              itemDataPath,
+              serializedItem,
+              wrappedValueName
+            )
+            return serializedItem
+          } else if (nodes) {
+            walkNodes(nodes, item, itemDataPath, null, wrappedValueName)
             const unwrapped = itemAdapter ? itemAdapter.unwrap(item) : value
             if (unwrapped !== value) {
               if (index !== null) {
@@ -125,15 +153,27 @@ export function walkData(schema, data, {
                 data[name] = unwrapped
               }
             }
+          } else if (serializedData) {
+            // Items without a matching form, e.g. of unknown types, stay as
+            // they are, as shallow copies in copies:
+            return { ...item }
           }
         }
+        return value
       }
       if (isArray(value)) {
-        value.forEach(walkItem)
+        if (serializedData) {
+          serializedData[name] = value.map(walkItem)
+        } else {
+          value.forEach(walkItem)
+        }
       } else if (!isListSource(sourceSchema)) {
         // Lists only hold items in arrays. Apps may store them in other values
         // that `computeValue()` converts, e.g. objects by type:
-        walkItem(value)
+        const item = walkItem(value)
+        if (serializedData) {
+          serializedData[name] = item
+        }
       }
     }
   }
@@ -199,7 +239,12 @@ export function walkData(schema, data, {
     )
   }
 
-  walkNodes(getFieldNodes(schema, data, dataPath), data, dataPath)
+  walkNodes(
+    getFieldNodes(schema, data, dataPath),
+    data,
+    dataPath,
+    serializedData
+  )
   return data
 }
 
@@ -252,6 +297,23 @@ function addFieldNode(nodes, field) {
     nodes.set(field.name, node)
   }
   node.fields.push(field)
+}
+
+// Copy what identifies the item, for its serialized values to be added to:
+export function cloneItem(sourceSchema, item) {
+  const copy = {}
+  const { idKey = 'id', orderKey } = sourceSchema
+  const id = item[idKey]
+  if (id !== undefined) {
+    copy[idKey] = id
+  }
+  if (hasMultipleFormSchemas(sourceSchema)) {
+    copy.type = item.type
+  }
+  if (orderKey) {
+    copy[orderKey] = item[orderKey]
+  }
+  return copy
 }
 
 // Merge the nodes of the forms of an item into new nodes, with child sources:

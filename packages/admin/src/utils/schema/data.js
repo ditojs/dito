@@ -33,10 +33,9 @@ import {
   hasNestedData
 } from './structure.js'
 import { getLabelForRelated } from './options.ts'
-import { walkData } from './walk.js'
+import { walkData, cloneItem } from './walk.js'
 import {
   hasFormSchema,
-  hasMultipleFormSchemas,
   getFormSchemas,
   getItemFormSchema,
   getItemFormSchemaFromForms
@@ -340,23 +339,6 @@ export function parseEditedValue(schema, value, createContext) {
   return convertValue(schema, 'parseValue', value, createContext)
 }
 
-// Copy what identifies the item, for its serialized values to be added to:
-function cloneItem(sourceSchema, item) {
-  const copy = {}
-  const { idKey = 'id', orderKey } = sourceSchema
-  const id = item[idKey]
-  if (id !== undefined) {
-    copy[idKey] = id
-  }
-  if (hasMultipleFormSchemas(sourceSchema)) {
-    copy.type = item.type
-  }
-  if (orderKey) {
-    copy[orderKey] = item[orderKey]
-  }
-  return copy
-}
-
 export function serializeData(schema, sourceSchema, data, dataPath, {
   services,
   rootData,
@@ -367,14 +349,14 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
   const serializedRootData = sourceSchema ? cloneItem(sourceSchema, data) : {}
   const graph = new SchemaGraph(dataPath)
 
-  const before = ({
-    schema,
-    data,
-    name,
-    dataPath,
-    itemDataPath,
-    serializedData
-  }) => {
+  // Of several fields of the same value, the first with its own hook
+  // serializes it, else the first one:
+  const hasOwnHook = ({ schema }) => !!schema.serializeValue
+  const getEntry = entries => entries.find(hasOwnHook) ?? entries[0]
+
+  const visit = entries => {
+    const { schema, data, name, dataPath, itemDataPath, serializedData } =
+      getEntry(entries)
     const value = getValueOrDefault(
       schema,
       data,
@@ -399,14 +381,9 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
       : value
   }
 
-  const after = ({
-    schema,
-    data,
-    name,
-    dataPath,
-    itemDataPath,
-    serializedData
-  }) => {
+  const after = entries => {
+    const { schema, data, name, dataPath, itemDataPath, serializedData } =
+      getEntry(entries)
     const itemAdapter = getItemAdapter(schema)
     let value = serializedData[name]
     // Unwrap the items again, to bring the data back into its native form:
@@ -461,12 +438,13 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     }
   }
 
-  walkSchemaData(schema, data, {
+  walkData(schema, data, {
     dataPath,
+    services,
+    rootData,
     serializedData: serializedRootData,
-    before,
-    after,
-    options
+    visit,
+    after
   })
 
   return graph.serialize(sourceSchema, serializedRootData, options)
@@ -565,24 +543,21 @@ export function deserializeData(schema, data, {
 }
 
 // Walk `data` along the components of `schema`, the forms of items and their
-// child sources, and call `before()` and `after()` for each nested component.
+// child sources, and call `before()` for each nested component.
 // NOTE: Items with an item adapter are walked wrapped, and the wrapped value
-// keeps the item's data path. Walks in place write changed values back.
+// keeps the item's data path. The walk writes changed values back.
 export function walkSchemaData(schema, data, {
   dataPath = null,
   componentPath = '',
-  serializedData = null,
   wrappedValueName = null,
   childSourceSchemas = [],
   before = null,
-  after = null,
   shouldWalk = () => true,
   shouldSkipSourcesWithResource = false,
   options
 }) {
   const walkOptions = {
     before,
-    after,
     shouldWalk,
     shouldSkipSourcesWithResource,
     options
@@ -608,8 +583,7 @@ export function walkSchemaData(schema, data, {
           dataPath: componentDataPath,
           // The data path of `data`, which wrapped values keep:
           itemDataPath: dataPath,
-          componentPath: appendDataPath(parentComponentPath, name),
-          serializedData
+          componentPath: appendDataPath(parentComponentPath, name)
         }
         if (!shouldWalk(entry)) {
           continue
@@ -630,63 +604,50 @@ export function walkSchemaData(schema, data, {
           walkSchemaData(componentSchema, data, {
             ...walkOptions,
             dataPath,
-            componentPath: entry.componentPath,
-            serializedData
+            componentPath: entry.componentPath
           })
         } else {
           const itemAdapter = getItemAdapter(componentSchema)
-          const walkItem = (item, index = null) => {
-            // Serialized data holds the items wrapped already:
-            const isWrapping = !!itemAdapter && !serializedData
-            const value = item
-            if (isWrapping) {
-              item = itemAdapter.wrap(value)
-            }
-            if (!isObject(item)) {
-              // Values that aren't objects hold no data of the form, e.g. ones
-              // that `computeValue()` converts to objects:
-              return item
-            }
-            const itemDataPath =
-              index !== null
-                ? getDataPath(componentDataPath, index)
-                : componentDataPath
-            const itemComponentPath =
-              index !== null
-                ? appendDataPath(entry.componentPath, index)
-                : entry.componentPath
-            const context = SchemaContext.createForSchema(options.services, {
-              ...entry,
-              rootData: options.rootData
-            })
-            const form = getItemFormSchemaFromForms(
-              getFormSchemas(componentSchema, context),
-              item
-            )
-            if (form) {
-              const serializedItem = serializedData
-                ? cloneItem(componentSchema, item)
-                : null
-              const result = walkSchemaData(form, item, {
-                ...walkOptions,
-                dataPath: itemDataPath,
-                componentPath: itemComponentPath,
-                serializedData: serializedItem,
-                wrappedValueName: itemAdapter?.name ?? null,
-                childSourceSchemas: getChildSourceSchemas(componentSchema)
+          const walkItem = (value, index = null) => {
+            const item = itemAdapter ? itemAdapter.wrap(value) : value
+            // Values that aren't objects hold no data of the form, e.g. ones
+            // that `computeValue()` converts to objects:
+            if (isObject(item)) {
+              const itemDataPath =
+                index !== null
+                  ? getDataPath(componentDataPath, index)
+                  : componentDataPath
+              const itemComponentPath =
+                index !== null
+                  ? appendDataPath(entry.componentPath, index)
+                  : entry.componentPath
+              const context = SchemaContext.createForSchema(options.services, {
+                ...entry,
+                rootData: options.rootData
               })
-              const unwrapped = isWrapping ? itemAdapter.unwrap(item) : value
-              if (unwrapped !== value) {
-                if (index !== null) {
-                  data[name][index] = unwrapped
-                } else {
-                  data[name] = unwrapped
+              const form = getItemFormSchemaFromForms(
+                getFormSchemas(componentSchema, context),
+                item
+              )
+              // Items without a matching form, e.g. of unknown types, stay as
+              // they are:
+              if (form) {
+                walkSchemaData(form, item, {
+                  ...walkOptions,
+                  dataPath: itemDataPath,
+                  componentPath: itemComponentPath,
+                  wrappedValueName: itemAdapter?.name ?? null,
+                  childSourceSchemas: getChildSourceSchemas(componentSchema)
+                })
+                const unwrapped = itemAdapter ? itemAdapter.unwrap(item) : value
+                if (unwrapped !== value) {
+                  if (index !== null) {
+                    data[name][index] = unwrapped
+                  } else {
+                    data[name] = unwrapped
+                  }
                 }
               }
-              return result
-            } else {
-              // Pass through items without a matching form, e.g. unknown types:
-              return { ...item }
             }
           }
 
@@ -695,25 +656,16 @@ export function walkSchemaData(schema, data, {
           // Only read the values of sources with forms, or tracked walks would
           // depend on all values:
           if (hasFormSchema(componentSchema)) {
-            let value = serializedData ? serializedData[name] : data[name]
-            if (value != null) {
-              if (isArray(value)) {
-                // Optimization: No need to collect values if not cloning!
-                value = serializedData
-                  ? value.map(walkItem)
-                  : value.forEach(walkItem)
-              } else if (!isListSource(componentSchema)) {
-                // Lists only hold items in arrays. Apps may store them in other
-                // values that `computeValue()` converts, e.g. objects by type:
-                value = walkItem(value)
-              }
-              if (serializedData) {
-                serializedData[name] = value
-              }
+            const value = data[name]
+            if (isArray(value)) {
+              value.forEach(walkItem)
+            } else if (value != null && !isListSource(componentSchema)) {
+              // Lists only hold items in arrays. Apps may store them in other
+              // values that `computeValue()` converts, e.g. objects by type:
+              walkItem(value)
             }
           }
 
-          after?.(entry)
           // Their panels display the data that contains them, as above:
           walkTabOrPanelSchemas(componentSchema.panels, entry.componentPath)
         }
@@ -734,8 +686,7 @@ export function walkSchemaData(schema, data, {
           name: null,
           dataPath,
           itemDataPath: dataPath,
-          componentPath: appendDataPath(parentComponentPath, name),
-          serializedData
+          componentPath: appendDataPath(parentComponentPath, name)
         }
         if (shouldWalk(entry) && !isPanelWithOwnData(tabOrPanelSchema)) {
           walkComponents(tabOrPanelSchema.fields, entry.componentPath)
@@ -770,8 +721,6 @@ export function walkSchemaData(schema, data, {
   )
   walkTabOrPanelSchemas(schema.tabs, componentPath)
   walkTabOrPanelSchemas(schema.panels, componentPath)
-
-  return serializedData || data
 }
 
 // Walk the rendered components to the deepest one containing `dataPath`, e.g.
