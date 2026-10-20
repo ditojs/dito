@@ -3,7 +3,7 @@ import { getTypeDescriptor, getSourceType } from './types.ts'
 
 export function iterateSchemaComponents(schemas, callback) {
   for (const schema of schemas) {
-    if (isSingleComponentView(schema)) {
+    if (isSingleFieldView(schema)) {
       const res = callback(schema.field, schema.name, 0)
       if (res !== undefined) {
         return res
@@ -89,7 +89,7 @@ export function getSchemaPath(schema, name, api) {
   return schema.path ?? api.normalizePath(name)
 }
 
-export function isSingleComponentView(schema) {
+export function isSingleFieldView(schema) {
   return isView(schema) && isObject(schema.field)
 }
 
