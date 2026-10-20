@@ -19,6 +19,9 @@ export type TypeDescriptor = PublicTypeDescriptor & {
   readonly hasLabelButtons?: boolean
   // Sources hold their items in a list or an object:
   readonly sourceType?: 'list' | 'object'
+  // Parse the value that the component edits, before the schema's
+  // `parseValue()`:
+  parseValue?(context: Context): any
   // The sources routed next to the forms of the items, e.g. of trees:
   getChildSourceSchemas?(schema: Schema): Schema[]
   getItemAdapter?(schema: Schema): ItemAdapter | null

@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import SchemaContext from '../../SchemaContext.js'
 import { defineType } from './types.ts'
-import { sourceTraits } from '../../types/traits.ts'
+import { sourceTraits, numberTraits } from '../../types/traits.ts'
 import {
   walkSchemaData,
   getComponentPathByDataPath,
@@ -15,6 +15,7 @@ import {
   getDefaultValue,
   shouldExcludeValue,
   getMultipleValue,
+  parseEditedValue,
   getItemId,
   getItemUid,
   updateOrder
@@ -36,6 +37,7 @@ defineType({
 })
 defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
 defineType({ type: 'tags', defaultMultiple: true })
+defineType({ ...numberTraits, type: ['number', 'integer'] })
 // Amounts are stored in cents, and edited in units:
 defineType({
   type: 'amount',
@@ -980,6 +982,23 @@ describe('getMultipleValue()', () => {
     expect(getMultipleValue({ type: 'tags', multiple: false })).toBe(false)
     expect(getMultipleValue({ type: 'text' })).toBe(false)
     expect(getMultipleValue({ type: 'text', multiple: true })).toBe(true)
+  })
+})
+
+describe('parseEditedValue()', () => {
+  const parse = (schema, value) =>
+    parseEditedValue(schema, value, value => ({ schema, value }))
+
+  it('parses the entered strings of number types', () => {
+    expect(parse({ type: 'number' }, '4.5')).toBe(4.5)
+    expect(parse({ type: 'integer' }, '42')).toBe(42)
+    expect(parse({ type: 'number' }, '')).toBe(null)
+    expect(parse({ type: 'number' }, null)).toBe(null)
+  })
+
+  it('calls `parseValue()` with the value parsed by the type', () => {
+    const schema = { type: 'number', parseValue: ({ value }) => value * 2 }
+    expect(parse(schema, '21')).toBe(42)
   })
 })
 

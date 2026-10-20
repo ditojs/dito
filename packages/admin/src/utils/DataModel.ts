@@ -1186,9 +1186,10 @@ export class DataModel {
             getEditedValue(schema, data[name], context)
           )
           if (replaced) {
-            const { value } = replaced
             data[name] = toModelData(
-              parseEditedValue(schema, value, () => context.extend({ value }))
+              parseEditedValue(schema, replaced.value, value =>
+                context.extend({ value })
+              )
             )
           }
         }
