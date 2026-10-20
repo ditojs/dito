@@ -1,5 +1,6 @@
 import type { Context } from './types.ts'
 import type { Data, Schema, SchemaDataWalk } from '../types.ts'
+import type { WalkedDataEntry } from './walk.js'
 
 type Options = Record<string, any>
 
@@ -92,7 +93,12 @@ export function isDataPathExcluded(
 export function deserializeData(
   schema: Schema,
   data: Data,
-  options?: Options
+  options?: {
+    services?: object | null
+    dataPath?: string | null
+    rootData?: Data | null
+    shouldWalk?: (entry: WalkedDataEntry) => boolean
+  }
 ): Data
 export function walkSchemaData(
   schema: Schema,
