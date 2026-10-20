@@ -15,7 +15,7 @@ export const usernameComponent = {
 
 // The login dialog resolves to the credentials, to `'passkey'` to log in with a
 // passkey, or to `'passwordReset'` to reset the password:
-export function createLoginDialog(authentication, additionalComponents = {}) {
+export function createLoginDialog(authentication, additionalFields = {}) {
   return {
     fields: {
       username: {
@@ -27,7 +27,7 @@ export function createLoginDialog(authentication, additionalComponents = {}) {
         type: 'password',
         autocomplete: 'current-password'
       },
-      ...additionalComponents
+      ...additionalFields
     },
     // NOTE: Login comes first in DOM order for password managers, CSS places
     // cancel first:

@@ -19,7 +19,7 @@ export type User = Record<string, any>
 
 // The `login` options of the admin:
 export interface LoginOptions {
-  additionalComponents?: Record<string, any>
+  additionalFields?: Record<string, any>
   redirectAfterLogin?: string
 }
 
@@ -83,7 +83,7 @@ export class Session {
     >(
       createLoginDialog(
         this.#adminContext.authentication,
-        this.#login.additionalComponents
+        this.#login.additionalFields
       )
     )
     if (!loginData) {
