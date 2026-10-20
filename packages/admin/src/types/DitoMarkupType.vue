@@ -72,7 +72,8 @@ import {
   isObject,
   hyphenate,
   camelize,
-  labelize
+  labelize,
+  isUrl
 } from '@ditojs/utils'
 
 // @vue/component
@@ -189,7 +190,10 @@ const DitoMarkupType = {
           href: {
             type: 'url',
             label: 'Link',
-            autofocus: true
+            autofocus: true,
+            // Accept links without scheme, they get `https://` when applied:
+            rules: { url: false },
+            validate: ({ value }) => isUrl(value) || 'is not a valid URL'
           },
           title: {
             type: 'text',

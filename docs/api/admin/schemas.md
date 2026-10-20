@@ -304,6 +304,7 @@ price: {
 `InputSchema`. The types `text`, `email`, `url`, `hostname`, `domain`, `tel`,
 `password` and `creditcard` render a text input. All but `text` and `tel`
 validate their format with the rule of their name, e.g. `rules.email`.
+`url` requires a scheme, e.g. `https://`, as the server's `uri` format does.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
