@@ -1,4 +1,5 @@
 export * from './_creditcard.js'
+export * from './_date.js'
 export * from './_decimals.js'
 export * from './_email.js'
 export * from './_enum.js'

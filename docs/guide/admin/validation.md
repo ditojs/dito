@@ -20,9 +20,10 @@ fields: {
 ```
 
 The text types `email`, `url`, `hostname`, `domain` and `creditcard` validate
-their format by their name, `integer` whole numbers, and options types the
-values of [static options](../../api/admin/schemas.md#selection-options).
-Number types take the limits `minimum`, `maximum`, `range` and `decimals`.
+their format by their name, `integer` whole numbers, options types the values
+of [static options](../../api/admin/schemas.md#selection-options), and date
+types that their values are valid dates. Number types take the limits
+`minimum`, `maximum`, `range` and `decimals`.
 `password` fields don't validate a format, and `required` accepts them
 unchanged, so a saved password needn't be entered again. Validations other
 than `required` only apply to values that aren't empty. Where a type checks

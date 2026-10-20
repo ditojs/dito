@@ -86,15 +86,41 @@ describe('DitoDateType', () => {
     expect(data.createdAt).toEqual(createdAt)
   })
 
-  it(`keeps strings that aren't dates, e.g. times`, async () => {
-    const { findField, data, submit } = await mountForm({
+  it(`keeps strings that aren't dates, e.g. times, but rejects them`, async () => {
+    const { findField, data, getErrors, submit } = await mountForm({
       schema: { fields: { opensAt: { type: 'time' } } },
       data: { opensAt: '14:30' },
       request: ({ data }) => ({ data: clone(data) })
     })
     expect(data.opensAt).toBe('14:30')
     expect(findField('opensAt').find('input').element.value).toBe('')
-    expect(await submit()).toMatchObject({ opensAt: '14:30' })
+    expect(await submit()).toBe(null)
+    expect(getErrors('opensAt')).toEqual([
+      'The Opens At field must be a valid date.'
+    ])
+  })
+
+  it('rejects invalid dates that code wrote', async () => {
+    const { data, getErrors, settle, submit } = await mountForm({
+      schema: {
+        fields: {
+          publishedOn: { type: 'date' },
+          createdAt: { type: 'datetime' }
+        }
+      },
+      data: { publishedOn: null, createdAt: null },
+      request: ({ data }) => ({ data: clone(data) })
+    })
+    data.publishedOn = new Date('soon')
+    data.createdAt = 'soon'
+    await settle()
+    expect(await submit()).toBe(null)
+    expect(getErrors('publishedOn')).toEqual([
+      'The Published On field must be a valid date.'
+    ])
+    expect(getErrors('createdAt')).toEqual([
+      'The Created At field must be a valid date.'
+    ])
   })
 
   describe('date strings written by code', () => {
