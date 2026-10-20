@@ -1,6 +1,15 @@
 import { isFunction } from '@ditojs/utils'
-import { getTypeDescriptor } from './types.ts'
-import { iterateNestedSchemaComponents } from './structure.js'
+import {
+  getTypeDescriptor,
+  getChildSourceSchemas,
+  getItemAdapter
+} from './types.ts'
+import {
+  iterateNestedSchemaComponents,
+  hasNestedData,
+  isPanelWithOwnData
+} from './structure.js'
+import { getFormSchemas, getViewFormSchema } from './lookup.js'
 import {
   getDefaultValue,
   getEmptyValue,
@@ -22,13 +31,60 @@ const propertyKeys = [
 // Describe the data of the form's fields as the `properties` of server models:
 export function getFormProperties(schema, context) {
   const properties = {}
-  iterateNestedSchemaComponents(schema, (field, name) => {
-    const property = getFieldProperty(field, name, context)
-    if (property) {
-      properties[name] = property
+  const addProperty = (field, name) => {
+    if (hasNestedData(field)) {
+      const property = getFieldProperty(field, name, context)
+      if (property) {
+        properties[name] = property
+      }
+      // Their panels edit the data that contains them, unless they have own:
+      for (const [name, panel] of Object.entries(field.panels || {})) {
+        if (!isPanelWithOwnData(panel)) {
+          addProperty(panel, name)
+        }
+      }
+    } else {
+      // Unnested components share the data of the form, e.g. sections:
+      iterateNestedSchemaComponents(field, addProperty)
     }
-  })
+  }
+  iterateNestedSchemaComponents(schema, addProperty)
   return properties
+}
+
+// Describe the items of sources and nested sections. The fields of `fields()`
+// callbacks depend on the entry, so their items remain undescribed:
+export function getItemProperty(schema, context) {
+  const forms = getFormSchemas(getViewFormSchema(schema, context) ?? schema)
+  const entries = Object.entries(forms)
+  if (
+    entries.length > 0 &&
+    !entries.some(([, form]) => isFunction(form.fields))
+  ) {
+    const getProperties = form => {
+      const properties = getFormProperties(form, context)
+      // The children of trees are sources of the items:
+      for (const child of getChildSourceSchemas(schema)) {
+        properties[child.name] ??= getFieldProperty(child, child.name, context)
+      }
+      return properties
+    }
+    const itemAdapter = getItemAdapter(schema)
+    // Items of several forms hold the name of their form in `type`:
+    return entries.length === 1 && forms.default
+      ? itemAdapter
+        ? (getProperties(forms.default)[itemAdapter.name] ?? null)
+        : { type: 'object', properties: getProperties(forms.default) }
+      : {
+          type: 'object',
+          discriminator: { propertyName: 'type' },
+          oneOf: entries.map(([type, form]) => ({
+            properties: { ...getProperties(form), type: { const: type } }
+          }))
+        }
+  } else {
+    return null
+  }
 }
 
 function getFieldProperty(field, name, formContext) {

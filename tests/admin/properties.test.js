@@ -52,7 +52,60 @@ const fields = {
   },
   image: { type: 'upload' },
   images: { type: 'upload', multiple: true },
-  total: { type: 'value' }
+  total: { type: 'value' },
+  details: {
+    type: 'section',
+    fields: { subtitle: { type: 'text', maxLength: 40 } }
+  },
+  address: {
+    type: 'section',
+    nested: true,
+    fields: { street: { type: 'text', required: true } }
+  },
+  publisher: {
+    type: 'object',
+    form: {
+      type: 'form',
+      fields: { name: { type: 'text' }, founded: { type: 'integer' } }
+    }
+  },
+  chapters: {
+    type: 'list',
+    required: true,
+    maxItems: 3,
+    form: {
+      type: 'form',
+      fields: { heading: { type: 'text', required: true } }
+    }
+  },
+  prices: {
+    type: 'list',
+    wrapPrimitives: 'price',
+    form: {
+      type: 'form',
+      fields: { price: { type: 'number', minimum: 0 } }
+    }
+  },
+  blocks: {
+    type: 'list',
+    forms: {
+      text: { type: 'form', fields: { text: { type: 'markup' } } },
+      spacer: { type: 'form', fields: { height: { type: 'integer' } } }
+    }
+  },
+  parts: {
+    type: 'tree-list',
+    form: { type: 'form', fields: { name: { type: 'text', required: true } } },
+    children: {
+      name: 'sections',
+      form: { type: 'form', fields: { name: { type: 'text' } } }
+    }
+  },
+  reviews: {
+    type: 'list',
+    resource: 'reviews',
+    form: { type: 'form', fields: { text: { type: 'text' } } }
+  }
 }
 
 describe('The properties of fields on the server', async () => {
@@ -114,7 +167,20 @@ describe('The properties of fields on the server', async () => {
     editors: [{ id: 2 }, { id: 3 }],
     image: file,
     images: [file],
-    total: 3
+    total: 3,
+    subtitle: 'A Novel',
+    address: { street: 'Main Street' },
+    publisher: { name: 'Penguin', founded: 1935 },
+    chapters: [{ heading: 'Beginnings' }],
+    prices: [10, 12.5],
+    blocks: [
+      { type: 'text', text: '<p>Once</p>' },
+      { type: 'spacer', height: 20 }
+    ],
+    parts: [
+      { name: 'One', sections: [{ name: 'First' }] },
+      { name: 'Two', sections: [] }
+    ]
   }
 
   // The data paths of the errors of both sides:
@@ -158,7 +224,12 @@ describe('The properties of fields on the server', async () => {
       editors: [],
       image: null,
       images: [],
-      total: null
+      total: null,
+      subtitle: '',
+      publisher: null,
+      prices: [],
+      blocks: [],
+      parts: []
     }
     expect(getServerErrors(empty)).toEqual([])
     expect(getAdminErrors(empty)).toEqual([])
@@ -181,9 +252,28 @@ describe('The properties of fields on the server', async () => {
       rating: 6,
       format: 'scroll',
       genre: 'blues',
-      genres: []
+      genres: [],
+      subtitle: 'A'.repeat(41),
+      address: { street: '' },
+      publisher: { name: 'Penguin', founded: 'long ago' },
+      chapters: [{ heading: '' }],
+      prices: [-1],
+      blocks: [{ type: 'spacer', height: 'tall' }],
+      parts: [{ name: '', sections: [] }]
     }
-    const dataPaths = Object.keys(invalid).sort()
+    // The errors of nested values are reported at their own data paths:
+    const nestedDataPaths = {
+      address: 'address/street',
+      publisher: 'publisher/founded',
+      chapters: 'chapters/0/heading',
+      prices: 'prices/0',
+      blocks: 'blocks/0/height',
+      parts: 'parts/0/name'
+    }
+    const dataPaths = [
+      ...Object.keys(invalid).filter(key => !nestedDataPaths[key]),
+      ...Object.values(nestedDataPaths)
+    ].sort()
     expect(getServerErrors(invalid)).toEqual(dataPaths)
     expect(getAdminErrors(invalid)).toEqual(dataPaths)
   })
