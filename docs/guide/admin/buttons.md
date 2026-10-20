@@ -95,7 +95,7 @@ publish: {
 }
 ```
 
-- The serialized item, the values of the form's components, is sent with
+- The serialized item, the values of the form's fields, is sent with
   `post`, `put` and `patch`, unless `resource.data` gives other data.
 - The form validates its data first, and the server's validation errors are
   shown on the fields.

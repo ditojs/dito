@@ -30,7 +30,7 @@ read, and run again when these change.
 
 ## The data
 
-- `value` is the value of the component, stored under `name` in `item`.
+- `value` is the value of the field, stored under `name` in `item`.
 - `item` is the item that holds the value: the data of the form, or of the
   closest list entry or object.
 - `parentItem` is the closest item above `item`, e.g. the book of a chapter,

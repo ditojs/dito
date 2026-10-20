@@ -46,7 +46,7 @@ const form = {
 
 ## Bubbling
 
-`input`, `change` and the `click` of buttons bubble from the component to the
+`input`, `change` and the `click` of buttons bubble from the field to the
 schemas around it: sections, inlined forms, forms and views, until a handler
 returns `false`. Panels with their own data don't pass events on. All other
 events, including `toggle`, only fire on the schema that defines them.

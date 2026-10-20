@@ -9,7 +9,7 @@ Event handlers (`onChange()`, `onClick()`, …) are listed per type and
 described in [Events](./events.md). The context that callbacks receive is
 described in [SchemaContext](./context.md).
 
-## Component types
+## Field Types
 
 | Type | Schema type | Section |
 | ---- | ----------- | ------- |

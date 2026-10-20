@@ -5,8 +5,8 @@ them, tabs split a form into pages, and panels add boxes to the sidebar.
 
 ## Widths and lines
 
-Each component takes the full width of the line unless it sets `width`. A line
-holds components until their widths exceed it:
+Each field takes the full width of the line unless it sets `width`. A line
+holds fields until their widths exceed it:
 
 ```js
 fields: {
@@ -21,10 +21,10 @@ fields: {
 `width` takes fractions (`'1/3'`, `0.5`), percentages (`'20%'`), `'auto'` for
 the width of the content, `'fill'` for the space left in the line, and widths
 that grow or shrink to fit the line (`'>30%'`, `'<30%'`). `break` forces a new
-line before or after the component. See
+line before or after the field. See
 [Layout options](../../api/admin/schemas.md#layout-options).
 
-Components sit at the top of their line. `align` places them at its
+Fields sit at the top of their line. `align` places them at its
 `'center'` or `'bottom'` instead, e.g. a switch next to a textarea:
 
 ```js
@@ -36,7 +36,7 @@ fields: {
 
 ## Sections
 
-A section groups components under a header:
+A section groups fields under a header:
 
 ```js
 sales: {
@@ -54,7 +54,7 @@ sales: {
 }
 ```
 
-By default a section has no value of its own: its components edit the item of
+By default a section has no value of its own: its fields edit the item of
 the form, here `item.price` and `item.stock`. With `nested: true`, they edit
 an object stored under the section's name. In the customer form:
 
@@ -84,7 +84,7 @@ The `fields` of sections can be a callback, like those of forms, see
 
 ## Tabs
 
-`tabs` splits a view, form or section into tabs, each with its own components:
+`tabs` splits a view, form or section into tabs, each with its own fields:
 
 ```js
 export const book = {
@@ -147,7 +147,7 @@ A panel edits the item around it. With `nested: true`, like a section, it
 edits an object stored under its name: a panel `shippingAddress` in the
 customer form edits `item.shippingAddress`.
 
-With its own `data`, a panel's components edit that data instead, which isn't
+With its own `data`, a panel's fields edit that data instead, which isn't
 saved with the form and doesn't make it dirty:
 
 ```js
@@ -172,7 +172,7 @@ panels: {
 ```
 
 Inside such a panel, `item` is the panel's data and `rootItem` the data of the
-page, in all callbacks of its components, e.g. also in their `if` and while
+page, in all callbacks of its fields, e.g. also in their `if` and while
 the page validates. Writes through `rootItem` or `parentItem` change the page's data, and
 count as edits of it, see [Dirty state](./dirty-state.md). The filters of
 lists are a panel of this kind. Panels with their own `data` can't be nested:
@@ -180,7 +180,7 @@ lists are a panel of this kind. Panels with their own `data` can't be nested:
 
 ## Labels and spacers
 
-`label` shows text in the place of a component, and `spacer` leaves a gap:
+`label` shows text in the place of a field, and `spacer` leaves a gap:
 
 ```js
 notice: { type: 'label', label: 'Prices include VAT.' },

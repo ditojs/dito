@@ -5,7 +5,7 @@ of its value: `title: { type: 'text' }` edits `item.title`.
 
 The admin has field types for text, numbers, booleans, dates, choices, rich
 content (`markup`, `code`, `color`, `upload`) and derived values, see
-[Component types](../../api/admin/schemas.md#component-types). For your own,
+[Field types](../../api/admin/schemas.md#field-types). For your own,
 see [Custom types](./custom-types.md).
 
 ## Common options
