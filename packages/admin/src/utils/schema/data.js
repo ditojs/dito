@@ -349,14 +349,9 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
   const serializedRootData = sourceSchema ? cloneItem(sourceSchema, data) : {}
   const graph = new SchemaGraph(dataPath)
 
-  // Of several fields of the same value, the first with its own hook
-  // serializes it, else the first one:
-  const hasOwnHook = ({ schema }) => !!schema.serializeValue
-  const getEntry = entries => entries.find(hasOwnHook) ?? entries[0]
-
   const visit = entries => {
     const { schema, data, name, dataPath, itemDataPath, serializedData } =
-      getEntry(entries)
+      getEntryDefining(entries, 'serializeValue')
     const value = getValueOrDefault(
       schema,
       data,
@@ -383,7 +378,7 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
 
   const after = entries => {
     const { schema, data, name, dataPath, itemDataPath, serializedData } =
-      getEntry(entries)
+      getEntryDefining(entries, 'serializeValue')
     const itemAdapter = getItemAdapter(schema)
     let value = serializedData[name]
     // Unwrap the items again, to bring the data back into its native form:
@@ -410,7 +405,7 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
         )
       }
     }
-    const createContext = value =>
+    const createContext = (value, schema) =>
       new SchemaContext(services, {
         schema,
         value,
@@ -427,10 +422,15 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     // Convert before `exclude`, so `serializeValue()` can write other values
     // into `serializedItem`. Values that it returns nothing for, e.g. of
     // virtual fields, leave out their key:
-    value = convertValue(schema, 'serializeValue', value, createContext)
+    value = convertValue(schema, 'serializeValue', value, value =>
+      createContext(value, schema)
+    )
+    const { schema: excludeSchema } = getEntryDefining(entries, 'exclude')
     if (
       value === undefined ||
-      shouldExcludeValue(schema, () => createContext(value))
+      shouldExcludeValue(excludeSchema, () =>
+        createContext(value, excludeSchema)
+      )
     ) {
       delete serializedData[name]
     } else {
@@ -461,30 +461,28 @@ export function isDataPathExcluded(schema, data, dataPath, {
   services = null,
   rootData = data
 } = {}) {
-  // Of several components of the same value, the first decides:
-  const entriesByDataPath = new Map()
-  walkSchemaData(schema, data, {
+  // The fields of the values that contain the value, outermost first:
+  const entriesList = []
+  walkData(schema, data, {
     dataPath: itemDataPath,
-    // Only walk the components that contain the value:
+    services,
+    rootData,
+    // Only walk the fields that contain the value:
     shouldWalk: entry => getRelativeDataPath(dataPath, entry.dataPath) !== null,
-    before: entry => {
-      if (!entriesByDataPath.has(entry.dataPath)) {
-        entriesByDataPath.set(entry.dataPath, entry)
-      }
-    },
-    options: { services, rootData }
+    visit: entries => entriesList.push(entries)
   })
-  const entries = [...entriesByDataPath.values()]
-  const excludedEntry = entries.findLast(
-    entry =>
+  const excludedEntry = entriesList
+    .map(entries => getEntryDefining(entries, 'exclude'))
+    .findLast(entry =>
       shouldExcludeValue(entry.schema, () =>
         SchemaContext.createForSchema(services, { ...entry, rootData })
       )
-  )
+    )
   if (excludedEntry) {
     return !isSourceWithResource(excludedEntry.schema)
   }
-  const holder = entries.at(-1)
+  // Of several fields of the same value, the first holds it:
+  const holder = entriesList.at(-1)?.[0]
   if (!holder) {
     return true
   }
@@ -504,12 +502,11 @@ export function deserializeData(schema, data, {
   rootData = data,
   shouldWalk
 } = {}) {
-  // Of several fields of the same value, the first with its own hook converts
-  // it, else the first one:
-  const hasOwnHook = ({ schema }) => !!schema.deserializeValue
   const visit = entries => {
-    const entry = entries.find(hasOwnHook) ?? entries[0]
-    const { schema, data, name, dataPath, itemDataPath } = entry
+    const { schema, data, name, dataPath, itemDataPath } = getEntryDefining(
+      entries,
+      'deserializeValue'
+    )
     if (name in data) {
       const createContext = value =>
         new SchemaContext(services, {
@@ -835,6 +832,12 @@ function getRelatedLabels(entry, value, { services, rootData }) {
     $label: getLabelForRelated(entry.schema, options ?? [], value, context)
   })
   return isArray(value) ? value.map(toLabel) : value && toLabel(value)
+}
+
+// Of several fields of the same value, each aspect of the value comes from the
+// first one that defines it itself, else from the first one:
+function getEntryDefining(entries, key) {
+  return entries.find(({ schema }) => schema[key] !== undefined) ?? entries[0]
 }
 
 // Convert the value with the hook of its type first, then with the schema's:

@@ -5,7 +5,12 @@ import { isFunction } from '@ditojs/utils'
 // Importing the types defines them, so the walk sees their descriptors:
 import '../../types/index.js'
 import { setupForm } from './setup.js'
-import { initializeData, deserializeData, serializeData } from './data.js'
+import {
+  initializeData,
+  deserializeData,
+  serializeData,
+  isDataPathExcluded
+} from './data.js'
 import { getDataValidationErrors } from './validation.js'
 import { walkData } from './walk.js'
 import { DataModel } from '../DataModel.ts'
@@ -893,6 +898,29 @@ describe('serializeData()', () => {
     })
   })
 
+  it('excludes with the first field of the same value', async () => {
+    const form = await createForm({
+      tabs: {
+        first: {
+          type: 'tab',
+          fields: {
+            notes: { type: 'text', serializeValue: ({ value }) => `${value}1` },
+            title: { type: 'text', exclude: true }
+          }
+        },
+        second: {
+          type: 'tab',
+          fields: {
+            notes: { type: 'text', exclude: true },
+            title: { type: 'text', serializeValue: ({ value }) => `${value}2` }
+          }
+        }
+      }
+    })
+    const data = { notes: 'Notes', title: 'Title' }
+    expect(serializeData(form, null, data, '', { services })).toEqual({})
+  })
+
   it('serializes the items of the same value with all their forms', async () => {
     const form = await createForm({
       tabs: {
@@ -996,6 +1024,89 @@ describe('clipboard', () => {
       'cover',
       'cover'
     ])
+  })
+})
+
+describe('isDataPathExcluded()', () => {
+  it('tells which values are left out of the data that is sent', async () => {
+    const form = await createForm(catalogueForm)
+    const data = createCatalogue()
+    const dataPaths = [
+      'title',
+      'secret',
+      'unknown',
+      'collections',
+      'collections/0',
+      'collections/0/discount',
+      'collections/0/items/0/tags/1',
+      'collections/0/items/0/chapters/0/title',
+      'collections/0/items/0/chapters/0/title/x',
+      'collections/1/items/0/tracks',
+      'vendors',
+      'vendors/0',
+      'vendors/0/name',
+      'summaryNote',
+      'notes'
+    ]
+    expect(
+      dataPaths.filter(dataPath =>
+        isDataPathExcluded(form, data, dataPath, { services })
+      )
+    ).toEqual(['unknown', 'summaryNote'])
+  })
+
+  it('tells which values in the children of trees are left out', async () => {
+    const pageForm = {
+      type: 'form',
+      fields: {
+        title: { type: 'text' },
+        draft: { type: 'switch', exclude: true }
+      }
+    }
+    const form = await createForm({
+      fields: {
+        pages: {
+          type: 'tree-list',
+          form: pageForm,
+          children: { name: 'subpages', form: pageForm }
+        }
+      }
+    })
+    const data = {
+      pages: [{ title: 'About', subpages: [{ title: 'Team', draft: true }] }]
+    }
+    const dataPaths = [
+      'pages/0/title',
+      'pages/0/subpages/0',
+      'pages/0/subpages/0/title',
+      'pages/0/subpages/0/draft'
+    ]
+    expect(
+      dataPaths.filter(dataPath =>
+        isDataPathExcluded(form, data, dataPath, { services })
+      )
+    ).toEqual(['pages/0/subpages/0/draft'])
+  })
+
+  it('takes the exclusion of the first field of the same value', async () => {
+    const form = await createForm({
+      tabs: {
+        first: {
+          type: 'tab',
+          fields: { notes: { type: 'text' }, title: { type: 'text' } }
+        },
+        second: {
+          type: 'tab',
+          fields: {
+            notes: { type: 'text', exclude: true },
+            title: { type: 'text', exclude: false }
+          }
+        }
+      }
+    })
+    const data = { notes: 'Notes', title: 'Title' }
+    expect(isDataPathExcluded(form, data, 'notes', { services })).toBe(true)
+    expect(isDataPathExcluded(form, data, 'title', { services })).toBe(false)
   })
 })
 
