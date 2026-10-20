@@ -646,14 +646,28 @@ Converts a column name to its property name through Knex's
 
 ## Validation
 
-### compileValidator()
+### compileJsonSchema()
 
 ```js
-const validate = app.compileValidator(jsonSchema, options?)
+const validate = app.compileJsonSchema(jsonSchema, options?)
 ```
 
-Compiles a JSON schema with the app's [validator](validator.md). Returns
+Compiles a plain JSON schema with the app's [validator](validator.md). Returns
 `ValidateFunction | null`: `null` without a schema.
+
+### compileDitoSchema()
+
+```js
+const validate = app.compileDitoSchema(schema, options?)
+```
+
+Like `compileJsonSchema()`, but takes Dito.js' schema format of model
+properties, with `required: true`, the types `date`, `datetime`, `timestamp`
+and `text`, and model names as types.
+
+### compileValidator()
+
+Deprecated alias of `compileJsonSchema()`.
 
 ### compileParametersValidator()
 

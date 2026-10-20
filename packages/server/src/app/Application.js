@@ -30,7 +30,8 @@ import {
   normalizeDataPath,
   groupBy,
   mapConcurrently,
-  toPromiseCallback
+  toPromiseCallback,
+  deprecate
 } from '@ditojs/utils'
 import { Validator } from './Validator.js'
 import { EventEmitter } from '../lib/index.js'
@@ -538,10 +539,21 @@ export class Application extends Koa {
     return assetConfig
   }
 
-  compileValidator(jsonSchema, options) {
+  compileJsonSchema(jsonSchema, options) {
     return jsonSchema
       ? this.validator.compile(jsonSchema, options)
       : null
+  }
+
+  compileDitoSchema(schema, options) {
+    return this.compileJsonSchema(convertSchema(schema, options), options)
+  }
+
+  compileValidator(jsonSchema, options) {
+    deprecate(
+      'compileValidator() is deprecated, use compileJsonSchema() instead.'
+    )
+    return this.compileJsonSchema(jsonSchema, options)
   }
 
   compileParametersValidator(parameters, options = {}) {
@@ -597,7 +609,7 @@ export class Application extends Koa {
       Object.values(schema).some(hasModelRefs)
     )
 
-    const validate = this.compileValidator(schema, {
+    const validate = this.compileJsonSchema(schema, {
       // For parameters, always coerce types, including arrays.
       coerceTypes: 'array',
       ...options

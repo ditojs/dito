@@ -720,7 +720,22 @@ export class Application<$Models extends Models = Models> {
   /** Returns the admin controller, if registered. */
   getAdminController(): AdminController | null
 
-  /** Compiles a JSON schema into a validation function. */
+  /** Compiles a plain JSON schema into a validation function. */
+  compileJsonSchema(
+    jsonSchema: Schema,
+    options?: Record<string, any>
+  ): Ajv.ValidateFunction | null
+
+  /**
+   * Compiles a schema in Dito.js' format, as used by model properties, into a
+   * validation function.
+   */
+  compileDitoSchema(
+    schema: Schema,
+    options?: Record<string, any>
+  ): Ajv.ValidateFunction | null
+
+  /** @deprecated Use {@link compileJsonSchema} instead. */
   compileValidator(
     jsonSchema: Schema,
     options?: Record<string, any>

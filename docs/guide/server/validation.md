@@ -272,18 +272,17 @@ book.$validate()                 // Validates the instance again
 ```
 
 Other data can be validated with a schema compiled by the application's
-validator. `convertSchema()` turns a Dito.js schema into a JSON schema first:
+validator, in Dito.js' format through `compileDitoSchema()`, or as plain JSON
+schema through `compileJsonSchema()`:
 
 ```js
-import { convertSchema } from '@ditojs/server'
-
-const validate = app.compileValidator(
-  convertSchema({
+const validate = app.compileDitoSchema(
+  {
     type: 'object',
     properties: {
       email: { type: 'string', format: 'email', required: true }
     }
-  }),
+  },
   { throw: false }
 )
 

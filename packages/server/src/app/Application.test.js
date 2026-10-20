@@ -544,6 +544,60 @@ describe('Application', () => {
     })
   })
 
+  describe('schema validators', () => {
+    it('compiles plain JSON schemas with open objects', () => {
+      const app = createApp()
+      const validate = app.compileJsonSchema(
+        {
+          type: 'object',
+          properties: { title: { $ref: '#/$defs/title' } },
+          required: ['title'],
+          $defs: { title: { type: 'string' } }
+        },
+        { throw: false }
+      )
+      expect(validate({ title: 'Soup', servings: 2 })).toBe(true)
+      expect(validate({ title: 2 })).toBe(false)
+      expect(validate({})).toBe(false)
+    })
+
+    it(`compiles Dito.js' schema format`, () => {
+      const app = createApp()
+      const compile = schema => app.compileDitoSchema(schema, { throw: false })
+      const validateEmail = compile({
+        type: 'string',
+        format: 'email',
+        required: true
+      })
+      expect(validateEmail('')).toBe(false)
+      expect(validateEmail('ada@example.com')).toBe(true)
+      const validateDate = compile({ type: 'date' })
+      expect(validateDate('2026-10-20T12:00:00Z')).toBe(true)
+      expect(validateDate(new Date())).toBe(true)
+      expect(validateDate('tomorrow')).toBe(false)
+      const validateServings = compile({ type: 'integer', range: [1, 10] })
+      expect(validateServings(4)).toBe(true)
+      expect(validateServings(12)).toBe(false)
+    })
+
+    it('keeps compileValidator() as deprecated alias', () => {
+      const app = createApp()
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const validate = app.compileValidator(
+          { type: 'object', properties: { title: { type: 'string' } } },
+          { throw: false }
+        )
+        expect(validate({ title: 'Soup', servings: 2 })).toBe(true)
+        expect(warn).toHaveBeenCalledWith(
+          'compileValidator() is deprecated, use compileJsonSchema() instead.'
+        )
+      } finally {
+        warn.mockRestore()
+      }
+    })
+  })
+
   describe('parameter validators', () => {
     it('rejects invalid parameter definitions', () => {
       const app = createApp()

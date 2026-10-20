@@ -359,7 +359,7 @@ export class Model extends objection.Model {
     if (!validator) {
       // For `data` to be considered a reference, it needs to hold only one
       // value that is either the target's id, or an Objection.js #ref value:
-      validator = this.referenceValidator = this.app.compileValidator(
+      validator = this.referenceValidator = this.app.compileDitoSchema(
         {
           oneOf: [
             {
