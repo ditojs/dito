@@ -68,6 +68,18 @@ describe('DitoTextType', () => {
     expect(onChange.mock.calls[0][0].value).toBe(null)
   })
 
+  it('clears the value to `null`, not to its default value', async () => {
+    const { findField, data } = await mountSchema({
+      schema: {
+        fields: {
+          title: { type: 'text', clearable: true, default: 'Untitled' }
+        }
+      }
+    })
+    await findField('title').find('.dito-affixes__clear').trigger('click')
+    expect(data.title).toBe(null)
+  })
+
   it(`doesn't show the clear button for readonly fields`, async () => {
     const { findField } = await mountSchema({
       schema: {
