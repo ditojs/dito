@@ -1,4 +1,4 @@
-import { isFunction } from '@ditojs/utils'
+import { isArray, isFunction } from '@ditojs/utils'
 import {
   getTypeDescriptor,
   getChildSourceSchemas,
@@ -11,22 +11,14 @@ import {
 } from './structure.js'
 import { getFormSchemas, getViewFormSchema } from './lookup.js'
 import {
+  getSchemaValue,
   getDefaultValue,
   getEmptyValue,
   shouldIgnoreMissingValue
 } from './data.js'
 
-// The keys of fields that are keywords of the server's properties:
-const propertyKeys = [
-  'minimum',
-  'maximum',
-  'range',
-  'minLength',
-  'maxLength',
-  'pattern',
-  'minItems',
-  'maxItems'
-]
+// The limits of strings and arrays, named and applied as on the server:
+const limitKeys = ['minLength', 'maxLength', 'pattern', 'minItems', 'maxItems']
 
 // Describe the data of the form's fields as the `properties` of server models:
 export function getFormProperties(schema, context) {
@@ -87,6 +79,26 @@ export function getItemProperty(schema, context) {
   }
 }
 
+// The data keywords of fields that all types share, as properties hold them.
+// Validation resolves their callbacks with the entry's context:
+export function getDataKeywords(schema, context) {
+  const keywords = {}
+  for (const key of limitKeys) {
+    const setting = getSchemaValue(key, { schema, context })
+    if (setting != null) {
+      keywords[key] = setting
+    }
+  }
+  if (getSchemaValue('required', { type: Boolean, schema, context })) {
+    keywords.required = true
+    // Empty arrays are values, required fields that hold them need one item:
+    if (isArray(getEmptyValue(schema, context))) {
+      keywords.minItems ??= 1
+    }
+  }
+  return keywords
+}
+
 function getFieldProperty(field, name, formContext) {
   const descriptor = getTypeDescriptor(field)
   if (descriptor?.getProperty) {
@@ -97,20 +109,14 @@ function getFieldProperty(field, name, formContext) {
     const context = formContext.createChildContext(schema, name)
     const property = descriptor.getProperty(schema, context, field)
     if (property) {
-      if (schema.required) {
-        property.required = true
-        // Arrays are required to hold items, as in the admin:
-        if (property.type === 'array') {
-          property.minItems = 1
-        }
-      } else if (property.type && getEmptyValue(schema, context) === null) {
-        // Properties without a type accept `null` already:
+      Object.assign(property, getDataKeywords(schema, context))
+      // Properties without a type accept `null` already:
+      if (
+        !property.required &&
+        property.type &&
+        getEmptyValue(schema, context) === null
+      ) {
         property.nullable = true
-      }
-      for (const key of propertyKeys) {
-        if (schema[key] != null) {
-          property[key] = schema[key]
-        }
       }
       // Default callbacks depend on the entry too, and `null` is no value:
       const value =

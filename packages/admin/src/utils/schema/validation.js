@@ -1,7 +1,6 @@
 import SchemaContext from '../../SchemaContext.js'
 import * as validators from '../../validators/index.js'
 import {
-  isArray,
   isFunction,
   isString,
   isRegExp,
@@ -11,47 +10,33 @@ import {
 } from '@ditojs/utils'
 import { getTypeDescriptor } from './types.ts'
 import {
-  getSchemaValue,
   getEditedValue,
-  getEmptyValue,
   shouldRenderSchema,
   walkSchemaData
 } from './data.js'
-
-// The limits of strings and arrays, named and applied as on the server:
-const limitKeys = ['minLength', 'maxLength', 'pattern', 'minItems', 'maxItems']
+import { getDataKeywords } from './properties.js'
 
 export function getValidations(context) {
   const { schema } = context
+  const { rules, validate } = schema
   const validations = {
-    ...getTypeDescriptor(schema)?.getValidations?.(context)
+    ...getTypeDescriptor(schema)?.getValidations?.(context),
+    // The deprecated `schema.rules` change the data keywords they name too,
+    // e.g. the item that `required` asks of lists:
+    ...getDataKeywords(rules ? { ...schema, ...rules } : schema, context)
   }
-  for (const key of limitKeys) {
-    const setting = getSchemaValue(key, { schema, context })
-    if (setting != null) {
-      validations[key] = setting
-    }
-  }
-  if (getSchemaValue('required', { type: Boolean, schema, context })) {
-    validations.required = true
-  }
-  const { validate } = schema
   if (validate) {
     // Pass the validated value, after `formatValue()` like the components:
     validations.validate = value => validate(context.extend({ value }))
   }
   // The deprecated `schema.rules` override and add validations, `false` and
   // `undefined` remove them:
-  for (const [name, setting] of Object.entries(schema.rules || {})) {
+  for (const [name, setting] of Object.entries(rules || {})) {
     if (setting === undefined || setting === false) {
       delete validations[name]
     } else {
       validations[name] = setting
     }
-  }
-  // Empty arrays are values, required fields that hold them need one item:
-  if (validations.required && isArray(getEmptyValue(schema, context))) {
-    validations.minItems ??= 1
   }
   return validations
 }

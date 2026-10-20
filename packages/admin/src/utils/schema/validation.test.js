@@ -313,6 +313,38 @@ describe('getDataValidationErrors()', () => {
     })
   })
 
+  it('resolves the callbacks of data keywords per entry', () => {
+    const schema = {
+      fields: {
+        books: {
+          type: 'list',
+          form: {
+            type: 'form',
+            fields: {
+              authors: {
+                type: 'list',
+                required: ({ item }) => item.published,
+                maxItems: ({ item }) => item.maxAuthors,
+                fields: {}
+              }
+            }
+          }
+        }
+      }
+    }
+    const data = {
+      books: [
+        { published: true, maxAuthors: 1, authors: [] },
+        { published: false, maxAuthors: 1, authors: [{}, {}] },
+        { published: false, maxAuthors: 2, authors: [] }
+      ]
+    }
+    expect(getDataValidationErrors(schema, data)).toEqual({
+      'books/0/authors': [required],
+      'books/1/authors': [{ message: 'must contain at most one item' }]
+    })
+  })
+
   it('applies `minLength` to the empty values of string fields', () => {
     const schema = {
       fields: {
