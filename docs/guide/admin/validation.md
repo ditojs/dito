@@ -19,11 +19,12 @@ fields: {
 ```
 
 The rules are `required`, `email`, `url`, `hostname`, `domain`, `creditcard`,
-`minimum`, `maximum`, `range`, `decimals` and `integer`. The text types
-`email`, `url`, `hostname`, `domain` and `creditcard` validate their format by
-their name, and number types the limits they're given. `password` fields don't
-validate a format, and `required` accepts them unchanged, so a saved password
-needn't be entered again. `rules` adds or changes rules, e.g.
+`minimum`, `maximum`, `range`, `decimals`, `integer` and `enum`. The text
+types `email`, `url`, `hostname`, `domain` and `creditcard` validate their
+format by their name, number types the limits they're given, and options
+types the values of [static options](../../api/admin/schemas.md#selection-options).
+`password` fields don't validate a format, and `required` accepts them
+unchanged, so a saved password needn't be entered again. `rules` adds or changes rules, e.g.
 `rules: { maximum: 100 }`, and turns them off when set to `false` or
 `undefined`. Rules other than `required` only apply to values that
 aren't empty.

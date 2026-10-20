@@ -728,7 +728,11 @@ describe('DitoForm', () => {
         schema: {
           fields: {
             title: { type: 'text' },
-            tags: { type: 'multiselect', options: ['novel', 'classic'] }
+            tags: {
+              type: 'multiselect',
+              multiple: true,
+              options: ['novel', 'classic']
+            }
           },
           buttons: { submit: { closeForm: false } }
         },
