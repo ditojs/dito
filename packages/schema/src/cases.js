@@ -3,8 +3,8 @@
 
 export const formats = {
   color: {
-    valid: ['#f80', '#f80c', '#ff8800', '#FF8800CC'],
-    invalid: ['', 'f80', '#ff', '#ff88001', '#gg8800', 'orange'],
+    valid: ['', '#f80', '#f80c', '#ff8800', '#FF8800CC'],
+    invalid: ['f80', '#ff', '#ff88001', '#gg8800', 'orange'],
     message: 'must be a hex color'
   },
   empty: {

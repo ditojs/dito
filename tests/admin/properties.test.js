@@ -164,11 +164,10 @@ describe('The properties of fields on the server', async () => {
     expect(getAdminErrors(empty)).toEqual([])
   })
 
-  // Current behaviour, a mismatch: the server applies formats to the empty
-  // strings that emptied fields send:
-  it('rejects empty strings with formats only on the server', () => {
-    expect(getServerErrors({ email: '' })).toEqual(['email'])
-    expect(getAdminErrors({ email: '' })).toEqual([])
+  it('accepts empty strings with formats on both sides', () => {
+    const empty = { email: '', website: '', host: '', background: '' }
+    expect(getServerErrors(empty)).toEqual([])
+    expect(getAdminErrors(empty)).toEqual([])
   })
 
   it('rejects the same invalid values on both sides', () => {

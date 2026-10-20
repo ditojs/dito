@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import * as objection from 'objection'
 import { Validator } from './Validator.js'
+import { convertSchema } from '../schema/index.js'
 
 describe('Validator.getKeyword()', () => {
   it('finds keywords registered with a leading underscore', () => {
@@ -68,6 +69,10 @@ describe('color type', () => {
     expect(validate({ color })).toBe(true)
   })
 
+  it('accepts empty strings', () => {
+    expect(validate({ color: '' })).toBe(true)
+  })
+
   it.each([
     '#12',
     '#ff880',
@@ -76,12 +81,91 @@ describe('color type', () => {
     'transparent',
     'light red',
     'rgb(0, 0, 0)',
-    '',
     { r: 255, g: 136, b: 0, a: 1 },
     { h: 32, s: 1, l: 0.5 },
     255
   ])('rejects %j', color => {
     expect(validate({ color })).toBe(false)
+  })
+})
+
+describe('formats', () => {
+  const validator = new Validator()
+  const compile = schema => validator.compile(schema, { throw: false })
+
+  describe.each([
+    ['email', 'ada@example.com', 'ada'],
+    ['uri', 'https://example.com', 'example.com'],
+    ['hostname', 'example.com', '-example'],
+    ['duration', 'P1D', 'P'],
+    ['uuid', '6fa459ea-ee8a-3ca4-894e-db77e160355e', '6fa459ea'],
+    ['color', '#f80', 'orange']
+  ])('%s', (format, valid, invalid) => {
+    const validate = compile({ type: 'string', format })
+    const validateRequired = compile({
+      type: 'object',
+      properties: {
+        value: { allOf: [{ format: 'required' }, { format }] }
+      }
+    })
+
+    it('accepts empty strings and valid values', () => {
+      expect(validate('')).toBe(true)
+      expect(validate(valid)).toBe(true)
+    })
+
+    it('rejects invalid values', () => {
+      expect(validate(invalid)).toBe(false)
+    })
+
+    it('rejects empty strings with the `required` format', () => {
+      expect(validateRequired({ value: '' })).toBe(false)
+      expect(validateRequired({ value: valid })).toBe(true)
+    })
+  })
+
+  it.for([
+    'date',
+    'time',
+    'date-time',
+    'iso-time',
+    'iso-date-time'
+  ])('rejects empty strings with the %s format', format => {
+    expect(compile({ type: 'string', format })('')).toBe(false)
+  })
+
+  it('rejects empty strings for date types', () => {
+    const validate = compile(
+      convertSchema({
+        type: 'object',
+        properties: { day: { type: 'date' }, opensAt: { type: 'datetime' } }
+      })
+    )
+    expect(validate({ day: '' })).toBe(false)
+    expect(validate({ opensAt: '' })).toBe(false)
+  })
+
+  it('rejects empty strings with `minLength`', () => {
+    const validate = compile({ type: 'string', format: 'email', minLength: 1 })
+    expect(validate('')).toBe(false)
+  })
+
+  it('lets custom formats accept empty strings', () => {
+    const validator = new Validator({
+      formats: { digits: { validate: value => /^\d+$/.test(value) } }
+    })
+    const validate = validator.compile(
+      { type: 'string', format: 'digits' },
+      { throw: false }
+    )
+    expect(validate('')).toBe(true)
+    expect(validate('a')).toBe(false)
+  })
+
+  it('keeps the types of formats', () => {
+    const validate = compile({ type: 'number', format: 'int32' })
+    expect(validate(1)).toBe(true)
+    expect(validate(2 ** 40)).toBe(false)
   })
 })
 

@@ -16,6 +16,7 @@ class Event extends Model {
     title: { type: 'string', required: true },
     subtitle: { type: 'string', required: true, nullable: true },
     note: { type: 'string' },
+    email: { type: 'string', format: 'email' },
     isPublic: { type: 'boolean' },
     day: { type: 'date', nullable: true },
     opensAt: { type: 'datetime', nullable: true },
@@ -211,6 +212,18 @@ describe('Values that the admin sends', () => {
       expect(await edit({ note: '' })).toMatchObject({
         status: 200,
         data: { note: '' }
+      })
+    })
+
+    // Formats don't apply to empty strings, only `required` checks emptiness:
+    it('saves empty strings for strings with formats', async () => {
+      expect(await edit({ email: '' })).toMatchObject({
+        status: 200,
+        data: { email: '' }
+      })
+      expect(await edit({ email: 'ada' })).toMatchObject({
+        status: 400,
+        data: { errors: { email: [{ message: 'must match format "email"' }] } }
       })
     })
 
