@@ -453,8 +453,9 @@ customCss: { type: 'code', language: 'css', lines: 10, resizable: true }
 
 ### markup
 
-`MarkupSchema`. A rich text editor, based on TipTap, whose value is HTML.
-Every mark, node and tool is off unless enabled.
+`MarkupSchema`. A rich text editor, based on TipTap, whose value is HTML, and
+`null` when the editor is empty. Every mark, node and tool is off unless
+enabled.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |

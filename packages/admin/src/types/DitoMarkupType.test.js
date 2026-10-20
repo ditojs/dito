@@ -118,6 +118,37 @@ describe('DitoMarkupType', () => {
     await vi.waitFor(() => expect(data.caption).toBe('<strong>Emma</strong>'))
   })
 
+  it('stores empty documents as `null`', async () => {
+    const { getComponent, data, settle } = await mountSchema({
+      schema: {
+        fields: {
+          body: { type: 'markup', nodes: { heading: [1] } },
+          caption: { type: 'markup', hardBreak: true }
+        }
+      },
+      data: { body: '<h1>Emma</h1>', caption: 'Emma' }
+    })
+    getComponent('body').editor.commands.clearContent(true)
+    getComponent('caption').editor.commands.clearContent(true)
+    await settle()
+    expect(data).toMatchObject({ body: null, caption: null })
+  })
+
+  it('updates the editor after edits that leave it empty', async () => {
+    const { getComponent, data, settle } = await mountSchema({
+      schema: {
+        fields: { body: { type: 'markup', nodes: { heading: [1] } } }
+      }
+    })
+    const { editor } = getComponent('body')
+    editor.commands.toggleHeading({ level: 1 })
+    await settle()
+    expect(data.body).toBe(null)
+    data.body = '<h1>Emma</h1>'
+    await settle()
+    expect(editor.getHTML()).toBe('<h1>Emma</h1>')
+  })
+
   it(`doesn't allow editing disabled fields`, async () => {
     const { getComponent, data, settle } = await mountSchema({
       schema: {
