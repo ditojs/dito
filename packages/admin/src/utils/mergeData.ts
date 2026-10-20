@@ -3,13 +3,16 @@ import { isTemporaryId } from './data.js'
 import {
   getItemId,
   getItemUid,
-  walkSchemaData,
   deserializeData
 } from './schema/data.js'
 import { hasFormSchema, hasMultipleFormSchemas } from './schema/lookup.js'
 import { hasNestedData, isSourceWithResource } from './schema/structure.js'
-import type { WalkedDataEntry } from './schema/walk.js'
-import type { Data, Schema, SchemaDataEntry } from './types.ts'
+import {
+  walkData,
+  type DataEntry,
+  type WalkedDataEntry
+} from './schema/walk.js'
+import type { Data, Schema } from './types.ts'
 
 // The names of the values that are merged in place or kept, not replaced:
 interface Merge {
@@ -41,11 +44,11 @@ export function mergeData(
   addMerge(source, target)
 
   // 1. Match the objects of `source` with the ones of `target` and merge the
-  // lists in place. The walk calls `before()` before it walks the items:
-  const before = ({ schema, data, name }: SchemaDataEntry) => {
+  // lists in place. The walk visits the fields before it walks the items:
+  const mergeEntry = ({ schema, data, name }: DataEntry) => {
     const merge = mergesBySource.get(data)
-    // New items have no target, and components of the same name, e.g. in
-    // several tabs, are merged only once:
+    // New items have no target, and of several fields of the same value, e.g.
+    // in several tabs, the first one that can merges it:
     if (merge && !merge.names.has(name)) {
       const sourceValue = data[name]
       const targetValue = merge.target[name]
@@ -66,9 +69,9 @@ export function mergeData(
       }
     }
   }
-  walkSchemaData(schema, source, {
-    before,
-    options: { services, rootData: source }
+  walkData(schema, source, {
+    services,
+    visit: entries => entries.forEach(mergeEntry)
   })
 
   // 2. Replace all other values of the matched objects:

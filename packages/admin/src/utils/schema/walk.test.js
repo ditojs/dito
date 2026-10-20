@@ -9,6 +9,7 @@ import { initializeData, deserializeData } from './data.js'
 import { getDataValidationErrors } from './validation.js'
 import { walkData } from './walk.js'
 import { DataModel } from '../DataModel.ts'
+import { mergeData } from '../mergeData.ts'
 
 // The API settings that setting up forms reads, also the forms of `fields()`
 // callbacks, which the services hand out:
@@ -557,6 +558,157 @@ describe('deserializeData()', () => {
     const data = { title: 'Title', name: 'Name' }
     deserializeData(form, data, { services })
     expect(data).toEqual({ title: 'Title2', name: 'Name1' })
+  })
+})
+
+describe('mergeData()', () => {
+  it('merges the data in place, matching the items by their ids', async () => {
+    const form = await createForm(catalogueForm)
+    const target = createCatalogue()
+    target.collections.forEach((collection, index) => {
+      collection.id = index + 1
+      collection.items.forEach((item, itemIndex) => {
+        item.id = `${index}-${itemIndex}`
+      })
+    })
+    const source = structuredClone(target)
+    source.collections.reverse()
+    const [records, books] = source.collections
+    books.items[0].name = 'Merged'
+    books.items[0].chapters.push({ title: 'Three' })
+    books.items[0].tags = ['b']
+    // Items whose type changed are replaced:
+    books.items[1] = { id: '0-1', type: 'record', name: 'Record', tracks: [] }
+    records.items.push({ type: 'record', name: 'Added', tracks: [] })
+    source.vendors = [{ name: 'Vendor' }]
+    const { collections, vendors } = target
+    const [targetBooks, targetRecords] = collections
+    const [book, longBook] = targetBooks.items
+    const { chapters, tags } = book
+    const [chapter] = chapters
+    const [record] = targetRecords.items
+    const result = mergeData(form, target, source, {
+      services,
+      shouldKeepSourcesWithResource: true
+    })
+    expect(result).toBe(target)
+    expect(target).toEqual({ ...source, vendors: [{}] })
+    expect(target.collections).toBe(collections)
+    expect(collections[0]).toBe(targetRecords)
+    expect(collections[1]).toBe(targetBooks)
+    expect(targetBooks.items[0]).toBe(book)
+    expect(targetBooks.items[1]).not.toBe(longBook)
+    expect(book.chapters).toBe(chapters)
+    expect(chapters[0]).toBe(chapter)
+    expect(book.tags).toBe(tags)
+    expect(targetRecords.items[0]).toBe(record)
+    expect(target.vendors).toBe(vendors)
+  })
+
+  it('merges the children of trees in place', async () => {
+    const pageForm = { type: 'form', fields: { title: { type: 'text' } } }
+    const form = await createForm({
+      fields: {
+        pages: {
+          type: 'tree-list',
+          form: pageForm,
+          children: { name: 'subpages', form: pageForm }
+        }
+      }
+    })
+    const target = {
+      pages: [
+        {
+          id: 1,
+          title: 'About',
+          subpages: [
+            { id: 2, title: 'Team' },
+            { id: 3, title: 'History' }
+          ]
+        }
+      ]
+    }
+    const [about] = target.pages
+    const [team, history] = about.subpages
+    mergeData(
+      form,
+      target,
+      {
+        pages: [
+          {
+            id: 1,
+            title: 'About us',
+            subpages: [
+              { id: 3, title: 'Our history' },
+              { id: 2, title: 'Team' }
+            ]
+          }
+        ]
+      },
+      { services }
+    )
+    expect(target.pages[0]).toBe(about)
+    expect(about.subpages).toEqual([history, team])
+    expect(about.subpages[0]).toBe(history)
+    expect(history.title).toBe('Our history')
+    expect(about.title).toBe('About us')
+  })
+
+  it('merges with the first field of the same value that has a form', async () => {
+    const noteForm = { type: 'form', fields: { text: { type: 'text' } } }
+    const form = await createForm({
+      tabs: {
+        first: {
+          type: 'tab',
+          fields: {
+            entries: {
+              type: 'list',
+              form: { type: 'form', fields: { title: { type: 'text' } } }
+            },
+            notes: { type: 'text' }
+          }
+        },
+        second: {
+          type: 'tab',
+          fields: {
+            entries: {
+              type: 'list',
+              form: {
+                type: 'form',
+                fields: {
+                  title: { type: 'text' },
+                  notes: { type: 'list', form: noteForm }
+                }
+              }
+            },
+            notes: { type: 'list', form: noteForm }
+          }
+        }
+      }
+    })
+    const target = {
+      entries: [{ id: 1, title: 'One', notes: [{ id: 1, text: 'A' }] }],
+      notes: [{ id: 1, text: 'B' }]
+    }
+    const [entry] = target.entries
+    const [entryNote] = entry.notes
+    const [note] = target.notes
+    mergeData(
+      form,
+      target,
+      {
+        entries: [{ id: 1, title: 'Uno', notes: [{ id: 1, text: 'a' }] }],
+        notes: [{ id: 1, text: 'b' }]
+      },
+      { services }
+    )
+    expect(target.entries[0]).toBe(entry)
+    expect(entry.notes[0]).toBe(entryNote)
+    expect(target.notes[0]).toBe(note)
+    expect(target).toEqual({
+      entries: [{ id: 1, title: 'Uno', notes: [{ id: 1, text: 'a' }] }],
+      notes: [{ id: 1, text: 'b' }]
+    })
   })
 })
 
