@@ -233,7 +233,7 @@ context.isDirty: boolean
 
 Whether the data has unsaved edits: the data of the form, view, dialog or panel
 with its own data that the context belongs to. Only data with a submit button,
-or with a component whose type `submitsData`, can be dirty.
+or with a field whose type `submitsData`, can be dirty.
 
 ### isCreating
 
@@ -333,19 +333,19 @@ inlined forms, `metadata` a nested section, `author` an inlined object:
 
 | Place | `item` | `itemDataPath` | `itemIndex` | `parentItem` | `value` |
 | ----- | ------ | -------------- | ----------- | ------------ | ------- |
-| Field or button of the book | book | `''` | `null` | `null` | the component's |
-| Field in a chapter's inlined form | chapter | `'chapters/1'` | `1` | book | the component's |
+| Field or button of the book | book | `''` | `null` | `null` | the field's |
+| Field in a chapter's inlined form | chapter | `'chapters/1'` | `1` | book | the field's |
 | Event of a chapter's inlined form | chapter | `'chapters/1'` | `1` | book | `undefined` |
 | Event of a section without `nested` | book | `''` | `null` | `null` | `undefined` |
 | Event of the nested section `metadata` | metadata | `'metadata'` | `null` | book | `undefined` |
 | Event of the inlined object `author` | author | `'author'` | `null` | book | `undefined` |
-| Buttons of the list `chapters` | book | `''` | `null` | `null` | the component's |
-| `render()` of a cell of `chapters` | chapter | `'chapters/1'` | `1` | book | the component's |
+| Buttons of the list `chapters` | book | `''` | `null` | `null` | the field's |
+| `render()` of a cell of `chapters` | chapter | `'chapters/1'` | `1` | book | the cell's |
 | `render()` of the items of `chapters` | chapter | `'chapters/1'` | `1` | book | `undefined` |
 | Event of a routed chapter form | the draft | `'chapters/1'` | `1` | the draft root | `undefined` |
-| Field of a panel with its own data `search` | panel data | `'search'` | `null` | book | the component's |
-| Field of a panel with `nested: true`, `details` | details | `'details'` | `null` | book | the component's |
-| Field or button of a dialog | dialog data | `''` | `null` | `null` | the component's |
+| Field of a panel with its own data `search` | panel data | `'search'` | `null` | book | the field's |
+| Field of a panel with `nested: true`, `details` | details | `'details'` | `null` | book | the field's |
+| Field or button of a dialog | dialog data | `''` | `null` | `null` | the field's |
 
 Lists with `wrapPrimitives` give the fields of their items the wrapper object
 as `item`. The buttons of lists describe the item that holds the list; in the

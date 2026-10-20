@@ -39,7 +39,7 @@ The form events are described in [Forms](./forms.md#form-events) and
 
 ## Bubbling
 
-`input`, `change` and the `click` of buttons bubble from the component to the
+`input`, `change` and the `click` of buttons bubble from the field to the
 schemas around it: sections, inlined forms, forms and views. A form's
 `onChange()` sees the changes of all its fields:
 
@@ -59,7 +59,7 @@ export const bookForm = {
 }
 ```
 
-A bubbled event keeps the context of the component it comes from: `value`,
+A bubbled event keeps the context of the field it comes from: `value`,
 `item` and `dataPath` are the changed field's, like `event.target` in the DOM.
 `context.currentDataPath` is the path of the schema whose handler runs, like
 `event.currentTarget`. A handler that returns `false` stops the event from
