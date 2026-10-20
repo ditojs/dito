@@ -150,6 +150,25 @@ describe('formats', () => {
     expect(validate('')).toBe(false)
   })
 
+  it('lets patterns of Dito.js schemas accept empty strings', () => {
+    const validate = compile(
+      convertSchema({ type: 'string', pattern: '^\\d+$' })
+    )
+    expect(validate('')).toBe(true)
+    expect(validate('12')).toBe(true)
+    expect(validate('a')).toBe(false)
+    expect(validator.parseErrors(validate.errors)).toEqual({
+      '': [
+        {
+          message: 'must match pattern "^\\d+$"',
+          keyword: 'pattern',
+          params: { pattern: '^$|(?:^\\d+$)' }
+        }
+      ]
+    })
+    expect(compile({ type: 'string', pattern: '^\\d+$' })('')).toBe(false)
+  })
+
   it('lets custom formats accept empty strings', () => {
     const validator = new Validator({
       formats: { digits: { validate: value => /^\d+$/.test(value) } }

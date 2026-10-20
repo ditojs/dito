@@ -42,6 +42,7 @@
     "not ie_mob > 0"
   ],
   "dependencies": {
+    "@ditojs/schema": "workspace:^",
     "@ditojs/ui": "workspace:^",
     "@ditojs/utils": "workspace:^",
     "type-fest": "^5.10.0"

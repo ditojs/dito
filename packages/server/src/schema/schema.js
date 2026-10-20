@@ -79,6 +79,12 @@ export function convertSchema(
       schema = addFormat(schema, 'required')
     }
 
+    if (isString(schema.pattern)) {
+      // Like formats, patterns don't apply to empty strings, as emptiness is
+      // checked by `required` only:
+      schema.pattern = `^$|(?:${schema.pattern})`
+    }
+
     if (isString($ref)) {
       // If the $ref is a nested Dito.js definition, convert it to a JSON schema
       // reference. If it is a full URL, use it as is.

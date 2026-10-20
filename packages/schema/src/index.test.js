@@ -6,6 +6,15 @@ function getDefinition(definitions, name) {
   return definitions[name] ?? definitions[`_${name}`]
 }
 
+// Definitions don't apply to empty strings, as their engines apply them, unless
+// they validate empty values themselves:
+function validateDefinition(definition, value, setting) {
+  return (
+    value === '' && !definition.validatesEmptyValues ||
+    definition.validate(value, setting)
+  )
+}
+
 function getMessage({ message }, setting) {
   return typeof message === 'function' ? message(setting) : message
 }
@@ -19,12 +28,7 @@ describe('formats', () => {
     '%s',
     (name, { valid, invalid, message }) => {
       const format = formats[name]
-      // Formats don't apply to empty strings, as their engines register them,
-      // unless they validate empty values themselves:
-      const validate = value => (
-        value === '' && !format.validatesEmptyValues ||
-        format.validate(value)
-      )
+      const validate = value => validateDefinition(format, value)
 
       it.for(valid)('accepts %o', value => {
         expect(validate(value)).toBe(true)
@@ -54,12 +58,14 @@ describe('keywords', () => {
     describe.each(entries)(
       'with %o',
       ({ setting, valid, invalid, message }) => {
+        const validate = value => validateDefinition(keyword, value, setting)
+
         it.for(valid)('accepts %o', value => {
-          expect(keyword.validate(value, setting)).toBe(true)
+          expect(validate(value)).toBe(true)
         })
 
         it.for(invalid)('rejects %o', value => {
-          expect(keyword.validate(value, setting)).toBe(false)
+          expect(validate(value)).toBe(false)
         })
 
         it('describes the setting in the message', () => {

@@ -74,7 +74,7 @@ export function getValueValidationErrors(value, validations) {
           message: isString(result)
             ? result
             : isFunction(message)
-              ? message(value, setting, validations)
+              ? message(setting, validations)
               : message
         })
       }

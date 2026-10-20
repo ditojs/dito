@@ -1,6 +1,7 @@
-import { isInteger } from '@ditojs/utils'
+import { keywords } from '@ditojs/schema'
 
+// `integer: true` checks the type `integer` of the server:
 export const integer = {
-  validate: value => isInteger(value),
-  message: 'must be whole number'
+  validate: value => keywords.type.validate(value, 'integer'),
+  message: keywords.type.message('integer')
 }
