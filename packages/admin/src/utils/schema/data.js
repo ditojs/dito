@@ -33,6 +33,7 @@ import {
   hasNestedData
 } from './structure.js'
 import { getLabelForRelated } from './options.ts'
+import { walkData } from './walk.js'
 import {
   hasFormSchema,
   hasMultipleFormSchemas,
@@ -216,45 +217,45 @@ export function shouldSetDefaultValue(schema, data, name, context, {
 export function initializeData(schema, data = {}, services, {
   dataPath = null,
   rootData = data,
-  shouldWalk,
   shouldSkipSourcesWithResource = false,
   // New data starts with all defaults for `computeValue()` to rely on, but in
   // loaded data, `computeValue()` may derive missing values instead:
   shouldSetDefaultsOfComponentsWithCompute = true
 } = {}) {
-  const options = { services, rootData }
-
-  const before = ({ schema, data, name, dataPath, itemDataPath }) => {
-    const context = () =>
-      SchemaContext.createForSchema(services, {
+  // Of several fields of the same value, the first with its own default sets
+  // it, else the first one:
+  const hasOwnDefault = ({ schema }) => schema.default !== undefined
+  const visit = entries => {
+    const sortedEntries = [
+      ...entries.filter(hasOwnDefault),
+      ...entries.filter(entry => !hasOwnDefault(entry))
+    ]
+    for (const entry of sortedEntries) {
+      const { schema, data, name } = entry
+      const context = () =>
+        SchemaContext.createForSchema(services, { ...entry, rootData })
+      const shouldSetDefault = shouldSetDefaultValue(
         schema,
-        name,
         data,
-        dataPath,
-        itemDataPath,
-        rootData
-      })
-    const shouldSetDefault = shouldSetDefaultValue(
-      schema,
-      data,
-      name,
-      context,
-      { shouldSetDefaultsOfComponentsWithCompute }
-    )
-    if (shouldSetDefault) {
-      setDefaultValue(schema, data, name, context)
-    }
-    if (hasItemsNumberedByOrderKey(schema) && isArray(data[name])) {
-      updateOrder(schema, data[name])
+        name,
+        context,
+        { shouldSetDefaultsOfComponentsWithCompute }
+      )
+      if (shouldSetDefault) {
+        setDefaultValue(schema, data, name, context)
+      }
+      if (hasItemsNumberedByOrderKey(schema) && isArray(data[name])) {
+        updateOrder(schema, data[name])
+      }
     }
   }
 
-  return walkSchemaData(schema, data, {
+  return walkData(schema, data, {
     dataPath,
-    before,
-    shouldWalk,
+    services,
+    rootData,
     shouldSkipSourcesWithResource,
-    options
+    visit
   })
 }
 
