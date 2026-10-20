@@ -14,7 +14,7 @@ import {
   isPanelWithOwnData,
   isMenu,
   getSchemaIdentifier,
-  isSingleComponentView,
+  isSingleFieldView,
   isCompact,
   isInlined,
   hasNestedData,
@@ -154,13 +154,11 @@ describe('schema type predicates', () => {
     expect(isPanelWithOwnData({ type: 'form', data: {} })).toBe(false)
   })
 
-  it('tell single component views apart', () => {
+  it('tell single field views apart', () => {
     const list = { type: 'list' }
-    expect(isSingleComponentView({ type: 'view', field: list })).toBe(true)
-    expect(isSingleComponentView({ type: 'view', fields: {} })).toBe(false)
-    expect(isSingleComponentView({ type: 'form', component: list })).toBe(
-      false
-    )
+    expect(isSingleFieldView({ type: 'view', field: list })).toBe(true)
+    expect(isSingleFieldView({ type: 'view', fields: {} })).toBe(false)
+    expect(isSingleFieldView({ type: 'form', component: list })).toBe(false)
   })
 
   it('tell sources apart by the source type of their type', () => {

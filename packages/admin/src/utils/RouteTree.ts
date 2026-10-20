@@ -10,7 +10,7 @@ import {
   isMenu,
   hasNestedData,
   isObjectSource,
-  isSingleComponentView,
+  isSingleFieldView,
   iterateNestedSchemaComponents
 } from './schema/structure.js'
 import {
@@ -349,7 +349,7 @@ export class SourceNode extends RouteNode {
     const { parent, schema } = this
     return (
       parent instanceof ViewNode &&
-      isSingleComponentView(parent.schema) &&
+      isSingleFieldView(parent.schema) &&
       schema === parent.schema.field
     )
   }

@@ -43,7 +43,7 @@ import defaultVerbs from '../verbs.js'
 import { adminContextKey } from '../utils/keys.ts'
 import {
   isPage,
-  isSingleComponentView
+  isSingleFieldView
 } from '../utils/schema/structure.js'
 
 export default {
@@ -57,7 +57,7 @@ export default {
     const schema = computed(() => {
       const { field, ...schema } = sourceSchema.value
       // Render single-field views as views with that field:
-      return isSingleComponentView(sourceSchema.value)
+      return isSingleFieldView(sourceSchema.value)
         ? {
             ...schema,
             fields: {
