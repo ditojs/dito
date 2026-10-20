@@ -502,7 +502,7 @@ describe('required and empty formats', () => {
       notes: [
         {
           keyword: 'format',
-          message: 'needs to be empty',
+          message: 'must be empty',
           params: { format: 'empty' }
         }
       ]

@@ -382,7 +382,7 @@ describe('Security dialog', () => {
       await waitForNotification(notify, {
         type: 'error',
         title: 'Invalid Password',
-        text: ['password must NOT have fewer than 6 characters']
+        text: ['password must be at least 6 characters long']
       })
       expect(notify).not.toHaveBeenCalledWith(
         expect.objectContaining({ type: 'success' })

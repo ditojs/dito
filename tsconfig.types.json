@@ -8,6 +8,7 @@
   "files": [
     "types-shims.d.ts",
     "packages/admin/types/index.d.ts",
+    "packages/schema/types/index.d.ts",
     "packages/server/types/index.d.ts",
     "packages/utils/types/index.d.ts"
   ]

@@ -1,0 +1,39 @@
+{
+  "name": "@ditojs/schema",
+  "version": "5.3.0",
+  "type": "module",
+  "description": "Dito.js Schema – Dito.js is a declarative and modern web framework, based on Objection.js, Koa.js and Vue.js",
+  "repository": "https://github.com/ditojs/dito/tree/main/packages/schema",
+  "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
+  "license": "MIT",
+  "main": "./src/index.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src/",
+    "types/",
+    "!src/**/*.test.js"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">= 24.0.0"
+  },
+  "browserslist": [
+    "node >= 18",
+    "> 1%",
+    "last 2 versions",
+    "not ie > 0",
+    "not ie_mob > 0"
+  ],
+  "dependencies": {
+    "@ditojs/utils": "workspace:^"
+  }
+}

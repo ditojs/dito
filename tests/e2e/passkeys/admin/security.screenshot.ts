@@ -161,7 +161,7 @@ test.describe('screenshots', () => {
     await dialog.getByLabel('Confirm New Password').fill('short')
     await dialog.getByRole('button', { name: 'Change Password' }).click()
     await expect(page.locator('.dito-notification')).toContainText(
-      'password must NOT have fewer than 6 characters'
+      'password must be at least 6 characters long'
     )
     // The dialog asks again, once the submitted one has left:
     await expect(dialog).toHaveCount(1)
