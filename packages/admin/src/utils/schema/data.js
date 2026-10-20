@@ -526,7 +526,12 @@ export function deserializeData(schema, data, {
   rootData = data,
   shouldWalk
 } = {}) {
-  const before = ({ schema, data, name, dataPath, itemDataPath }) => {
+  // Of several fields of the same value, the first with its own hook converts
+  // it, else the first one:
+  const hasOwnHook = ({ schema }) => !!schema.deserializeValue
+  const visit = entries => {
+    const entry = entries.find(hasOwnHook) ?? entries[0]
+    const { schema, data, name, dataPath, itemDataPath } = entry
     if (name in data) {
       const createContext = value =>
         new SchemaContext(services, {
@@ -550,13 +555,13 @@ export function deserializeData(schema, data, {
       }
     }
   }
-  walkSchemaData(schema, data, {
+  return walkData(schema, data, {
     dataPath,
-    before,
+    services,
+    rootData,
     shouldWalk,
-    options: { services, rootData }
+    visit
   })
-  return data
 }
 
 // Walk `data` along the components of `schema`, the forms of items and their

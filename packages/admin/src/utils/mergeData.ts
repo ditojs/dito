@@ -8,7 +8,8 @@ import {
 } from './schema/data.js'
 import { hasFormSchema, hasMultipleFormSchemas } from './schema/lookup.js'
 import { hasNestedData, isSourceWithResource } from './schema/structure.js'
-import type { Data, Schema, SchemaDataEntry, WalkedEntry } from './types.ts'
+import type { WalkedDataEntry } from './schema/walk.js'
+import type { Data, Schema, SchemaDataEntry } from './types.ts'
 
 // The names of the values that are merged in place or kept, not replaced:
 interface Merge {
@@ -110,7 +111,7 @@ export function mergeValues(
     rootData,
     // Walk the unnested components of the item, e.g. sections, but only the
     // values of `values`:
-    shouldWalk: ({ schema, data, name }: WalkedEntry) => (
+    shouldWalk: ({ schema, data, name }: WalkedDataEntry) => (
       data !== item || !hasNestedData(schema) || Object.hasOwn(values, name!)
     )
   })
