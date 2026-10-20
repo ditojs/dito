@@ -51,6 +51,19 @@ describe('DitoUploadType', () => {
     ])
   })
 
+  it('holds an empty array by default with `multiple`', async () => {
+    const { data } = await mountForm({
+      schema: {
+        fields: {
+          attachments: { type: 'upload', multiple: true },
+          attachment: { type: 'upload' }
+        }
+      }
+    })
+    expect(data.attachments).toEqual([])
+    expect(data.attachment).toBe(null)
+  })
+
   it('sends single files with a `multiple()` callback that is false', async () => {
     const { submit } = await mountForm({
       schema: {

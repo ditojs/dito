@@ -618,6 +618,8 @@ const DitoUploadType = {
 defineType({
   type: 'upload',
   component: DitoUploadType,
+  defaultValue: context =>
+    getMultipleValue(context.schema, context) ? [] : null,
 
   serializeValue(context) {
     const files = getStoredFiles(context.value)
