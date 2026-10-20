@@ -54,7 +54,7 @@ test.describe('screenshots', () => {
   test('tree items with their buttons', async ({ page, url }) => {
     await openProject(page, url, 'Planning')
     await page
-      .locator('.dito-tree-header')
+      .locator('.dito-tree-item__header')
       .filter({ hasText: 'Research' })
       .hover()
     await expect(

@@ -47,7 +47,9 @@ describe('DitoTreeItem', () => {
 
   it('renders compact square edit buttons, unlike lists', async () => {
     const { wrapper } = await mountBookForm()
-    const buttons = wrapper.findAll('.dito-tree-header .dito-edit-buttons')
+    const buttons = wrapper.findAll(
+      '.dito-tree-item__header .dito-edit-buttons'
+    )
     expect(buttons.length).toBeGreaterThan(0)
     for (const button of buttons) {
       expect(button.classes()).toContain('dito-buttons--small')
@@ -171,7 +173,7 @@ describe('DitoTreeItem', () => {
         .find(
           item => (
             item.element.querySelector(
-              ':scope > .dito-tree-header .dito-tree-label'
+              ':scope > .dito-tree-item__header .dito-tree-item__label'
             )?.textContent === label
           )
         )
@@ -183,11 +185,11 @@ describe('DitoTreeItem', () => {
       ])
       expect(
         findItem(wrapper, 'Intro')
-          .find('.dito-tree-header > .dito-tree-branch')
+          .find('.dito-tree-item__header > .dito-tree-item__branch')
           .exists()
       ).toBe(true)
       const outro = findItem(wrapper, 'Outro')
-      expect(outro.find('.dito-tree-leaf').exists()).toBe(true)
+      expect(outro.find('.dito-tree-item__leaf').exists()).toBe(true)
       expect(outro.find('.dito-draggable').exists()).toBe(true)
       expect(outro.findAll('.dito-tree-item')).toHaveLength(0)
     })

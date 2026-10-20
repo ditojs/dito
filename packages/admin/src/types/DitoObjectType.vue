@@ -5,7 +5,7 @@
   ref="element"
   :class="{ 'dito-object--text': !isInlined && !schema.component }"
 )
-  .dito-object-content(
+  .dito-object__content(
     v-if="objectData"
   )
     DitoSourceItem(
@@ -84,7 +84,7 @@ export default DitoObjectType
   box-sizing: border-box;
   min-width: min-content;
 
-  .dito-object-content {
+  &__content {
     flex: 0 1 100%;
   }
 

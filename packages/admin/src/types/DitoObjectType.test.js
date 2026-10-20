@@ -120,7 +120,7 @@ describe('DitoObjectType', () => {
       },
       data: { address: { street: 'Main St', city: 'Bern' } }
     })
-    expect(findField('address').find('.dito-object-content').text()).toBe(
+    expect(findField('address').find('.dito-object__content').text()).toBe(
       'Bern'
     )
   })

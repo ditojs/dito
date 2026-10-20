@@ -62,7 +62,7 @@ async function openSecurity({ features = {}, setUp = null } = {}) {
 
 const getState = admin =>
   admin.wrapper
-    .find('.dito-dialog .dito-object[id$="totp"] .dito-object-content')
+    .find('.dito-dialog .dito-object[id$="totp"] .dito-object__content')
     .text()
 
 const getRows = admin =>

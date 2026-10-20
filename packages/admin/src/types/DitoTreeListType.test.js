@@ -50,15 +50,15 @@ const site = {
 
 function getLabels(field) {
   return field
-    .findAll('.dito-tree-header')
+    .findAll('.dito-tree-item__header')
     .filter(header => header.isVisible())
-    .map(header => header.find('.dito-tree-label').text())
+    .map(header => header.find('.dito-tree-item__label').text())
 }
 
 function findButton(field, label, selector) {
   return field
-    .findAll('.dito-tree-header')
-    .find(header => header.find('.dito-tree-label').text() === label)
+    .findAll('.dito-tree-item__header')
+    .find(header => header.find('.dito-tree-item__label').text() === label)
     .find(selector)
 }
 
@@ -70,8 +70,8 @@ describe('DitoTreeListType', () => {
     })
     const field = findField('pages')
     expect(getLabels(field)).toEqual(['About', 'Contact'])
-    const about = field.findAll('.dito-tree-branch')[0]
-    expect(about.find('.dito-tree-info').text()).toBe('2 items')
+    const about = field.findAll('.dito-tree-item__branch')[0]
+    expect(about.find('.dito-tree-item__info').text()).toBe('2 items')
     await about.trigger('click')
     await flushPromises()
     expect(about.attributes('aria-expanded')).toBe('true')
@@ -136,7 +136,7 @@ describe('DitoTreeListType', () => {
       schema: createSiteSchema({ onToggle }),
       data: site
     })
-    const about = findField('pages').findAll('.dito-tree-branch')[0]
+    const about = findField('pages').findAll('.dito-tree-item__branch')[0]
     await about.trigger('click')
     await about.trigger('click')
     expect(
@@ -211,7 +211,7 @@ describe('DitoTreeListType', () => {
       }),
       data: site
     })
-    const label = findField('pages').find('.dito-tree-label').text()
+    const label = findField('pages').find('.dito-tree-item__label').text()
     expect(label).toContain('Page')
     expect(label).toContain('About')
     expect(label).toContain('2 subpages')
@@ -315,8 +315,8 @@ describe('DitoTreeListType', () => {
     await flushPromises()
     const getMarkedLabels = () =>
       findField('pages')
-        .findAll('.dito-tree-item--error > .dito-tree-header')
-        .map(header => header.find('.dito-tree-label').text())
+        .findAll('.dito-tree-item--error > .dito-tree-item__header')
+        .map(header => header.find('.dito-tree-item__label').text())
     expect(getMarkedLabels()).toEqual(['About', 'History'])
     data.pages[0].subpages[1].title = 'Heritage'
     await flushPromises()
@@ -363,7 +363,7 @@ describe('DitoTreeListType', () => {
     const schema = createSiteSchema({ collapsed: false })
     schema.fields.pages.children.editable = true
     const { admin, findField } = await mountForm({ schema, data: site })
-    const about = findField('pages').findAll('.dito-tree-branch')[0]
+    const about = findField('pages').findAll('.dito-tree-item__branch')[0]
     expect(about.attributes('aria-expanded')).toBe('true')
     await about.trigger('click')
     await flushPromises()
@@ -405,7 +405,7 @@ describe('DitoTreeListType', () => {
       data: { pages }
     })
     await admin.navigate('/items/1/pages/10/subpages/0')
-    const branches = findField('pages').findAll('.dito-tree-branch')
+    const branches = findField('pages').findAll('.dito-tree-item__branch')
     const isExpanded = index => (
       branches[index].attributes('aria-expanded') === 'true'
     )
@@ -427,7 +427,7 @@ describe('DitoTreeListType', () => {
     })
     await admin.navigate('/items/1/pages-drafts/0')
     const hasForm = name =>
-      findField(name).find('.dito-tree-form-container').exists()
+      findField(name).find('.dito-tree-list__form-container').exists()
     expect(hasForm('drafts')).toBe(true)
     expect(hasForm('pages')).toBe(false)
   })
@@ -834,7 +834,9 @@ describe('DitoTreeListType', () => {
           title: 'Company',
           subpages
         })
-        await findField(name).findAll('.dito-tree-branch')[0].trigger('click')
+        await findField(name)
+          .findAll('.dito-tree-item__branch')[0]
+          .trigger('click')
         await flushPromises()
         expect(getLabels(findField(name))).toEqual([
           'Company',
@@ -863,7 +865,7 @@ describe('DitoTreeListType', () => {
         schema,
         data: siteData
       })
-      const about = findField('site').findAll('.dito-tree-branch')[0]
+      const about = findField('site').findAll('.dito-tree-item__branch')[0]
       await about.trigger('click')
       await flushPromises()
       expect(about.attributes('aria-expanded')).toBe('false')
@@ -890,7 +892,9 @@ describe('DitoTreeListType', () => {
 
     function getActiveLabels(field) {
       return field
-        .findAll('.dito-tree-item--active > .dito-tree-header .dito-tree-label')
+        .findAll(
+          '.dito-tree-item--active > .dito-tree-item__header .dito-tree-item__label'
+        )
         .map(label => label.text())
     }
 
