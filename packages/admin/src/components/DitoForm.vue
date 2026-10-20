@@ -65,18 +65,13 @@ import { useComponentPath } from '../composables/useComponentPath.ts'
 import { adminContextKey } from '../utils/keys.ts'
 import { isListSource, isObjectSource } from '../utils/schema/structure.js'
 import { getItemFormSchema, hasSubmitButton } from '../utils/schema/lookup.js'
-import {
-  getComponentPathByDataPath,
-  initializeData,
-  deserializeData
-} from '../utils/schema/data.js'
+import { getComponentPathByDataPath } from '../utils/schema/data.js'
 import { appendDataPath, getParentDataPath } from '../utils/data.js'
 import { cloneWithUids } from '../utils/uid.js'
 import {
   getChildSourceSchemas,
   getItemAdapter
 } from '../utils/schema/types.ts'
-import { mergeData, mergeValues } from '../utils/mergeData.ts'
 import { createDraftRoot } from '../utils/draftRoot.ts'
 
 export default {
@@ -169,7 +164,6 @@ export default {
       routeContext,
       dataContext,
       model,
-      services,
       store,
       schemaPath,
       navigateWithin
@@ -259,53 +253,19 @@ export default {
         ...pickBy(data.value ?? {}, (_, key) => keys.includes(key)),
         ...value
       }
-      if (isEditingParentItem.value) {
-        const parentModel = parentDataContext.model
-        const options = {
-          services,
-          dataPath: dataPath.value,
-          rootData: parentModel.rootData
-        }
-        deserializeData(schema.value, value, options)
-        mergeData(schema.value, data.value, value, { services })
-        // Like the data model, which writes the values of components with
-        // `computeValue()` itself:
-        initializeData(schema.value, data.value, services, {
-          ...options,
-          shouldSkipSourcesWithResource: true,
-          shouldSetDefaultsOfComponentsWithCompute: false
-        })
-        parentModel.clearErrors(dataPath.value)
-      } else {
-        model.mergeFromServer(value, { isReset: true })
-      }
-      return data.value
+      return model.mergeFromServer(value, {
+        isReset: true,
+        item: isEditingParentItem.value ? data.value : null
+      })
     }
 
     // Merge values from the server into the item like `resetItem()`, but only
     // the values in the data and their errors, which isn't an edit:
-    const mergeItem = value => {
-      if (isEditingParentItem.value) {
-        const parentModel = parentDataContext.model
-        const options = {
-          services,
-          dataPath: dataPath.value,
-          rootData: parentModel.rootData
-        }
-        mergeValues(schema.value, data.value, value, options)
-        initializeData(schema.value, data.value, services, {
-          ...options,
-          shouldSkipSourcesWithResource: true,
-          shouldSetDefaultsOfComponentsWithCompute: false
-        })
-        for (const key of Object.keys(value)) {
-          parentModel.clearErrors(appendDataPath(dataPath.value, key))
-        }
-      } else {
-        model.mergeFromServer(value, { isPartial: true })
-      }
-      return data.value
-    }
+    const mergeItem = value =>
+      model.mergeFromServer(value, {
+        isPartial: true,
+        item: isEditingParentItem.value ? data.value : null
+      })
 
     // Copy the errors of the item in the parent's model into the draft:
     const copyErrors = () => {

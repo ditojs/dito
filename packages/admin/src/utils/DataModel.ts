@@ -335,35 +335,46 @@ export class DataModel {
   // objects. Save responses leave sources with their own resource their data
   // and their edits, while resets result in the same data as a replace.
   // Partial merges only replace the values in `data` and clear their errors,
-  // which isn't an edit:
+  // which isn't an edit. Forms that edit the item of their parent in place
+  // merge into `item`, whose state the parent holds, and only clear its errors:
   mergeFromServer(
     data: Data | null,
     {
       isReset = false,
-      isPartial = false
-    }: { isReset?: boolean; isPartial?: boolean } = {}
+      isPartial = false,
+      item = null
+    }: { isReset?: boolean; isPartial?: boolean; item?: Data | null } = {}
   ): Data | null {
-    if (this.data && data) {
+    const target = item ?? this.data
+    if (target && data) {
+      // Resolve the schema also for `item`, without data of the model's own,
+      // and again after the merge, which may change the type of the data:
+      const getSchema = () => this.#options.schema()!
       if (isPartial) {
-        mergeValues(this.schema!, this.data, data, {
+        mergeValues(getSchema(), target, data, {
           ...this.#walkOptions,
           dataPath: this.dataPath
         })
       } else {
-        this.#deserializeData(this.schema, data)
-        mergeData(this.schema!, this.data, data, {
+        this.#deserializeData(getSchema(), data)
+        mergeData(getSchema(), target, data, {
           services: this.#options.services,
           shouldKeepSourcesWithResource: !isReset
         })
       }
-      this.#initializeData(this.schema, this.data)
-      this.#writeComputedValues()
-      if (isReset) {
-        this.#resetState()
-      } else if (isPartial) {
+      this.#initializeData(getSchema(), target)
+      if (!item) {
+        this.#writeComputedValues()
+      }
+      const model = item ? this.parent! : this
+      if (isPartial) {
         for (const key of Object.keys(data)) {
-          this.clearErrors(appendDataPath(this.dataPath, key))
+          model.clearErrors(appendDataPath(this.dataPath, key))
         }
+      } else if (item) {
+        model.clearErrors(this.dataPath)
+      } else if (isReset) {
+        this.#resetState()
       } else {
         this.markClean({ dataPath: '' })
       }
@@ -371,7 +382,7 @@ export class DataModel {
       // Without data on either side, partial merges have nothing to do:
       this.replaceFromServer(data)
     }
-    return this.data
+    return item ?? this.data
   }
 
   // Data that is replaced or reset, e.g. loaded or applied, isn't edited, and
