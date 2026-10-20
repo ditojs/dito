@@ -1,6 +1,12 @@
 import { h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
-import { mountSchema, mountForm, stubConfirm } from '../test/mount.js'
+import {
+  mountSchema,
+  mountForm,
+  enterValue,
+  stubConfirm
+} from '../test/mount.js'
+import DitoSchemaField from '../components/DitoSchemaField.vue'
 
 const addressForm = {
   type: 'form',
@@ -71,6 +77,42 @@ describe('DitoObjectType', () => {
     await findField('address').find('.dito-button--remove').trigger('click')
     await flushPromises()
     expect(data.address).toBe(null)
+  })
+
+  it('lays out the inlined form of the object with its component', async () => {
+    const { wrapper, data, submit } = await mountForm({
+      schema: {
+        fields: {
+          address: {
+            type: 'object',
+            inlined: true,
+            form: {
+              ...addressForm,
+              component: {
+                props: ['schema', 'context'],
+                render: () =>
+                  h('div', { class: 'layout' }, [
+                    h(DitoSchemaField, { name: 'city' }),
+                    h(DitoSchemaField, { name: 'street' })
+                  ])
+              }
+            }
+          }
+        }
+      },
+      data: { address: { street: 'Main St', city: 'Bern' } },
+      request: ({ data }) => ({ data })
+    })
+    const inputs = wrapper.findAll('.dito-object .layout input')
+    expect(inputs.map(({ element }) => element.value)).toEqual([
+      'Bern',
+      'Main St'
+    ])
+    await enterValue(inputs[1], 'Side St')
+    expect(data.address.street).toBe('Side St')
+    expect(await submit()).toMatchObject({
+      address: { street: 'Side St', city: 'Bern' }
+    })
   })
 
   it("renders objects that aren't inlined with `render()`", async () => {

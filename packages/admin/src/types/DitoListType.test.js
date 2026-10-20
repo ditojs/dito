@@ -14,6 +14,7 @@ import {
 } from '../test/mount.js'
 import DitoSchema from '../components/DitoSchema.vue'
 import DitoSchemaInlined from '../components/DitoSchemaInlined.vue'
+import DitoSchemaField from '../components/DitoSchemaField.vue'
 
 const ingredientForm = {
   type: 'form',
@@ -33,6 +34,24 @@ function createRecipeSchema(ingredients = {}) {
         form: ingredientForm,
         ...ingredients
       }
+    }
+  }
+}
+
+// A layout component that places the fields of `names` with `DitoSchemaField`:
+function createLayout(...names) {
+  return {
+    props: {
+      schema: { type: Object, required: true },
+      context: { type: Object, required: true }
+    },
+
+    render() {
+      return h(
+        'div',
+        { 'class': 'layout', 'data-form': this.context.schema.label },
+        names.map(name => h(DitoSchemaField, { name }))
+      )
     }
   }
 }
@@ -63,6 +82,29 @@ describe('DitoListType', () => {
       expect(getItemNames(field)).toEqual(['Flour', 'Salt'])
       await field.find('input[name="ingredients/1/amount"]').setValue('8')
       expect(data.ingredients[1].amount).toBe(8)
+    })
+
+    it('lays out the forms of the items with their component', async () => {
+      const { wrapper, data, submit } = await mountForm({
+        schema: createRecipeSchema({
+          form: { ...ingredientForm, component: createLayout('amount') }
+        }),
+        data: { ingredients: [{ name: 'Flour', amount: 500 }] },
+        request: ({ data }) => ({ data })
+      })
+      const layout = wrapper.find('.dito-schema-inlined .layout')
+      expect(layout.attributes('data-form')).toBe('Ingredient')
+      // Only the fields that the layout places render:
+      expect(
+        wrapper
+          .findAll('.dito-schema-inlined input')
+          .map(input => input.attributes('name'))
+      ).toEqual(['ingredients/0/amount'])
+      await enterValue(layout.find('input'), '400')
+      expect(data.ingredients[0].amount).toBe(400)
+      expect(await submit()).toMatchObject({
+        ingredients: [{ name: 'Flour', amount: 400 }]
+      })
     })
 
     it('defaults to an empty list', async () => {
@@ -543,6 +585,37 @@ describe('DitoListType', () => {
         }
       }
     }
+
+    it('lays out the forms of the types that have a component', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          fields: {
+            blocks: {
+              ...blocksSchema.fields.blocks,
+              forms: {
+                ...blocksSchema.fields.blocks.forms,
+                heading: {
+                  ...blocksSchema.fields.blocks.forms.heading,
+                  component: createLayout('text')
+                }
+              }
+            }
+          }
+        },
+        data: {
+          blocks: [
+            { type: 'image', url: 'https://example.com/a.png' },
+            { type: 'heading', text: 'Intro' }
+          ]
+        }
+      })
+      const field = findField('blocks')
+      expect(
+        field.findAll('.layout input').map(input => input.attributes('name'))
+      ).toEqual(['blocks/1/text'])
+      expect(field.findAll('input').map(input => input.attributes('name')))
+        .toEqual(['blocks/0/url', 'blocks/1/text'])
+    })
 
     it('renders the form of the type of each item', async () => {
       const { findField } = await mountSchema({
