@@ -21,6 +21,8 @@ export interface RouteContext {
   readonly state: RouteState
   readonly path: string
   readonly isLastRoute: boolean
+  // The last route that isn't an embedded form, which renders in its parent:
+  readonly isLastUnnestedRoute: boolean
   readonly isLeaving: boolean
   readonly isDirty: boolean
   readonly breadcrumb: string

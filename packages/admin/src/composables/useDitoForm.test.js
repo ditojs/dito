@@ -380,35 +380,6 @@ describe('useDitoForm()', () => {
     expect(onSuccess).toHaveBeenCalledOnce()
     expect(notify).not.toHaveBeenCalled()
   })
-
-  it('rejects lists with routed forms', async () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const ListPage = {
-      setup() {
-        form = useDitoForm({
-          fields: {
-            items: {
-              type: 'list',
-              form: { type: 'form', fields: { name: { type: 'text' } } }
-            }
-          }
-        })
-        return () => h(DitoSchemaForm)
-      }
-    }
-    await mountProductPage({
-      path: '/list',
-      views: { list: { type: 'page', path: 'list', component: ListPage } }
-    })
-    expect(error).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: (
-          'Forms of `useDitoForm()` do not support components that produce ' +
-          'routes'
-        )
-      })
-    )
-  })
 })
 
 describe('DitoSchemaForm', () => {

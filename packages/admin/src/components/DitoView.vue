@@ -3,12 +3,14 @@ template(
   v-if="adminContext.user && shouldRenderSchema(schema)"
 )
   //- NOTE: Unlike forms, views don't render while their nested routes show.
+  //- Pages stay mounted, as the form of their component holds their data:
   DitoRouterView(
-    v-if="!routeContext.isLastRoute"
+    v-if="!isActiveRoute"
     :routeLevel="routeContext.level + 1"
   )
   .dito-view.dito-scroll-parent(
-    v-else
+    v-if="isPage || isActiveRoute"
+    v-show="isActiveRoute"
     :data-resource="schemaPath"
   )
     DitoSchema(
@@ -71,6 +73,7 @@ export default {
         : schema
     })
     const name = computed(() => schema.value.name)
+    const isPageView = computed(() => isPage(sourceSchema.value))
 
     const { routeContext, dataContext, services, store, schemaPath } =
       useRouteContainer({
@@ -115,7 +118,14 @@ export default {
       schema,
       name,
       data,
-      isPage: computed(() => isPage(sourceSchema.value)),
+      isPage: isPageView,
+      // The embedded forms of trees in pages render inside the page:
+      isActiveRoute: computed(
+        () => (
+          routeContext.isLastRoute ||
+          isPageView.value && routeContext.isLastUnnestedRoute
+        )
+      ),
       shouldRenderSchema
     }
   }
