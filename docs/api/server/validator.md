@@ -175,8 +175,10 @@ const errors = validator.parseErrors(ajvErrors, { dataPath }?)
 Converts Ajv errors to an object of error arrays keyed by data path, e.g. `{
 'chapters/0/title': [{ message, keyword, params }] }`, prefixed with
 `options.dataPath`. Errors of the root object, such as unknown properties, use
-the key `''`. Applies the `message` of keywords and formats, and leaves out
-duplicates, `$` keywords, macro keywords and `silent` definitions. Returns
+the key `''`. Applies the `message` of keywords and formats, and to Ajv's
+errors of standard keywords the messages of the [shared
+definitions](#shared-definitions). Leaves out duplicates, `$` keywords, macro
+keywords and `silent` definitions. Returns
 `Record<string, { message, keyword, params }[]>`.
 
 ### prefixInstancePaths()
@@ -318,6 +320,28 @@ synchronous validation skips them.
 
 Plus the formats of `ajv-formats` in full mode (`date-time`, `email`, `uri`,
 `uuid`, …).
+
+## Shared definitions
+
+The built-in formats and the messages of standard keywords come from
+[`@ditojs/schema`](../../../packages/schema/README.md), which defines them for
+the server and the admin as plain `{ validate(value, setting), message }`
+objects, without Ajv. `formats` holds `color`, `empty` and `required`,
+`keywords` the standard keywords `type`, `enum`, `minimum`, `maximum`,
+`multipleOf`, `minLength`, `maxLength`, `pattern`, `minItems` and `maxItems`,
+and dito's `range` and `decimals`. `message` is a string or a function of the
+setting:
+
+```js
+import { keywords } from '@ditojs/schema'
+
+keywords.minLength.validate('ab', 3) // false
+keywords.minLength.message(3) // 'must be at least 3 characters long'
+```
+
+The server registers the formats with Ajv, and [parseErrors()](#parseerrors)
+uses the messages of the keywords. Keywords that are reserved words are
+exported with a leading `_`, e.g. `_enum`.
 
 ## Built-in types
 

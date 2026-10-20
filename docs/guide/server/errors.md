@@ -105,7 +105,7 @@ path of the value, and a `type` that tells what was validated, e.g.
   "errors": {
     "quantity": [
       {
-        "message": "must be >= 1",
+        "message": "must be 1 or more",
         "keyword": "minimum",
         "params": { "comparison": ">=", "limit": 1 }
       }

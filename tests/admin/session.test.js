@@ -149,7 +149,7 @@ describe('Session', () => {
       })
       await waitForNotification(notify, {
         type: 'error',
-        text: ['password must NOT have fewer than 6 characters']
+        text: ['password must be at least 6 characters long']
       })
       await answerDialog(admin, 'Set Password', {
         password: 'changed',

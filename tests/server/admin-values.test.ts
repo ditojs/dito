@@ -74,7 +74,7 @@ describe('Values that the admin sends', () => {
       })
       expect(await create({ isPublic: null })).toMatchObject({
         status: 400,
-        data: { errors: { isPublic: [{ message: 'must be boolean' }] } }
+        data: { errors: { isPublic: [{ message: 'must be a boolean' }] } }
       })
     })
   })
@@ -169,7 +169,7 @@ describe('Values that the admin sends', () => {
         await create({ color: { r: 255, g: 0, b: 0, a: 1 } })
       ).toMatchObject({
         status: 400,
-        data: { errors: { color: [{ message: 'must be string' }] } }
+        data: { errors: { color: [{ message: 'must be a string' }] } }
       })
     })
   })
@@ -191,7 +191,7 @@ describe('Values that the admin sends', () => {
       })
       expect(await create({ title: null })).toMatchObject({
         status: 400,
-        data: { errors: { title: [{ message: 'must be string' }] } }
+        data: { errors: { title: [{ message: 'must be a string' }] } }
       })
     })
 
@@ -226,8 +226,8 @@ describe('Values that the admin sends', () => {
         status: 400,
         data: {
           errors: {
-            note: [{ message: 'must be string' }],
-            tags: [{ message: 'must be array' }]
+            note: [{ message: 'must be a string' }],
+            tags: [{ message: 'must be a list' }]
           }
         }
       })
@@ -236,7 +236,7 @@ describe('Values that the admin sends', () => {
     it('rejects empty strings for other types than strings', async () => {
       expect(await edit({ note: '', pages: '' })).toMatchObject({
         status: 400,
-        data: { errors: { pages: [{ message: 'must be integer' }] } }
+        data: { errors: { pages: [{ message: 'must be a whole number' }] } }
       })
     })
   })

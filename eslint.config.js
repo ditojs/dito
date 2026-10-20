@@ -81,6 +81,12 @@ export default [
     }
   },
   {
+    files: ['packages/schema/**/*'],
+    languageOptions: {
+      globals: globalsNode
+    }
+  },
+  {
     files: ['packages/admin/**/*'],
     languageOptions: {
       globals: globalsBrowser

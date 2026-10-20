@@ -291,6 +291,50 @@ describe('Validator.parseErrors()', () => {
     })
   })
 
+  it('takes the messages of standard keywords from @ditojs/schema', () => {
+    const validate = validator.compile(
+      {
+        type: 'object',
+        properties: {
+          pages: { type: 'integer' },
+          rating: { type: 'number', range: [1, 5] },
+          title: { type: 'string', minLength: 3 },
+          tags: { type: 'array', maxItems: 1 },
+          kind: { type: 'string', enum: ['novel', 'poem'] },
+          color: { type: 'string', format: 'color' }
+        },
+        required: ['isbn']
+      },
+      { throw: false }
+    )
+    const data = {
+      pages: 1.5,
+      rating: 6,
+      title: 'ab',
+      tags: ['a', 'b'],
+      kind: 'essay',
+      color: 'red'
+    }
+    expect(validate(data)).toBe(false)
+    const errors = validator.parseErrors(validate.errors)
+    expect(
+      Object.fromEntries(
+        Object.entries(errors).map(([key, errors]) => [
+          key,
+          errors.map(({ message }) => message)
+        ])
+      )
+    ).toEqual({
+      '': [`must have required property 'isbn'`],
+      'pages': ['must be a whole number'],
+      'rating': ['must be 5 or less'],
+      'title': ['must be at least 3 characters long'],
+      'tags': ['must contain at most one item'],
+      'kind': ['must be one of the allowed values'],
+      'color': ['must be a hex color']
+    })
+  })
+
   it('supports `dataPath`, missing paths and prefixes', () => {
     expect(
       validator.parseErrors(

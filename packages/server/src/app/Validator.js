@@ -4,11 +4,13 @@ import addFormats from 'ajv-formats'
 import {
   isArray,
   isObject,
+  isFunction,
   clone,
   isAsync,
   isPromise,
   normalizeDataPath
 } from '@ditojs/utils'
+import { keywords as schemaKeywords } from '@ditojs/schema'
 import { formatJson } from '../utils/json.js'
 import {
   keywords as defaultKeywords,
@@ -259,8 +261,11 @@ export class Validator extends objection.Validator {
       ) {
         const array = errorHash[key] || (errorHash[key] = [])
         array.push({
-          // Allow custom formats and keywords to override error messages.
-          message: definition?.message || message,
+          // Allow custom formats and keywords to override error messages, and
+          // take the messages of standard keywords from `@ditojs/schema`.
+          message: definition
+            ? definition.message || message
+            : getSchemaMessage(error) || message,
           keyword,
           params
         })
@@ -373,6 +378,21 @@ function getAjvName(name) {
 
 function getDefinitionByAjvName(definitions, ajvName) {
   return definitions[ajvName] ?? definitions[`_${ajvName}`]
+}
+
+function getSchemaMessage({ keyword, params, schemaPath }) {
+  // Only replace the messages of Ajv's own errors. The errors of parameter
+  // coercion and the ones thrown by `validate()` functions, which Ajv reports
+  // at the path of the `validate` keyword, keep theirs:
+  if (schemaPath?.endsWith(`/${keyword}`)) {
+    const message = getDefinitionByAjvName(schemaKeywords, keyword)?.message
+    // Ajv reports the setting of the keyword in its params, mostly as `limit`:
+    const setting =
+      keyword === 'enum'
+        ? params.allowedValues
+        : params.limit ?? params[keyword]
+    return isFunction(message) ? message(setting) : message
+  }
 }
 
 const defaultOptions = {

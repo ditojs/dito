@@ -516,6 +516,12 @@ importers:
         specifier: workspace:^
         version: link:../utils
 
+  packages/schema:
+    dependencies:
+      '@ditojs/utils':
+        specifier: workspace:^
+        version: link:../utils
+
   packages/server:
     dependencies:
       '@ditojs/admin':
@@ -527,6 +533,9 @@ importers:
       '@ditojs/router':
         specifier: workspace:^
         version: link:../router
+      '@ditojs/schema':
+        specifier: workspace:^
+        version: link:../schema
       '@ditojs/utils':
         specifier: workspace:^
         version: link:../utils

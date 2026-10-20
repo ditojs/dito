@@ -721,7 +721,7 @@ describe('Model validation of relations and nullable references', () => {
     expect(await getGraphErrors({ author: { name: 5 } })).toEqual({
       'author/name': [
         {
-          message: 'must be string',
+          message: 'must be a string',
           keyword: 'type',
           params: { type: 'string' }
         }
@@ -730,7 +730,7 @@ describe('Model validation of relations and nullable references', () => {
     expect(await getGraphErrors({ author: 'Ursula' })).toEqual({
       author: [
         {
-          message: 'must be object',
+          message: 'must be an object',
           keyword: 'type',
           params: { type: 'object' }
         }

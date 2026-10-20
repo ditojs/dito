@@ -33,7 +33,7 @@ to the client with status 400:
     ],
     "lines/2/quantity": [
       {
-        "message": "must be >= 1",
+        "message": "must be 1 or more",
         "keyword": "minimum",
         "params": { "comparison": ">=", "limit": 1 }
       }
