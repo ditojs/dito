@@ -21,6 +21,16 @@ describe('DitoCheckboxType', () => {
     const checkbox = findField('isRead').find('input')
     expect(checkbox.attributes('disabled')).toBeDefined()
   })
+
+  // Current behaviour, a mismatch with the server: booleans that aren't
+  // nullable reject the `null` of new checkboxes:
+  it('sends `null` for new checkboxes', async () => {
+    const { submit } = await mountForm({
+      schema: { fields: { isRead: { type: 'checkbox' } } },
+      request: ({ data }) => ({ data })
+    })
+    expect(await submit()).toEqual({ isRead: null })
+  })
 })
 
 describe('DitoSwitchType', () => {

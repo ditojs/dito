@@ -58,24 +58,28 @@ describe('DitoDateType', () => {
     expect(data.publishedOn.getDate()).toBe(14)
   })
 
-  it('sends dates as plain dates and date-times as ISO strings', async () => {
+  it('sends dates as plain dates, date-times and times as ISO strings', async () => {
     const createdAt = new Date(2026, 4, 14, 8, 0)
+    const opensAt = new Date(2026, 4, 14, 14, 30)
     const { findField, dataModel, data, submit } = await mountForm({
       schema: {
         fields: {
           publishedOn: { type: 'date' },
-          createdAt: { type: 'datetime' }
+          createdAt: { type: 'datetime' },
+          opensAt: { type: 'time' }
         }
       },
-      data: { publishedOn: null, createdAt: null },
+      data: { publishedOn: null, createdAt: null, opensAt: null },
       // Respond with a copy, like a server:
       request: ({ data }) => ({ data: clone(data) })
     })
     await enterValue(findField('publishedOn').find('input'), 'May 14, 2026')
     dataModel.set({ data, name: 'createdAt', dataPath: 'createdAt' }, createdAt)
+    dataModel.set({ data, name: 'opensAt', dataPath: 'opensAt' }, opensAt)
     expect(await submit()).toMatchObject({
       publishedOn: '2026-05-14',
-      createdAt: createdAt.toISOString()
+      createdAt: createdAt.toISOString(),
+      opensAt: opensAt.toISOString()
     })
     // The response is deserialized again:
     expect(data.publishedOn).toBeInstanceOf(Date)
