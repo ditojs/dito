@@ -3399,6 +3399,14 @@ export class DitoAdmin<
 
 interface AdminOptions {
   login?: {
+    /**
+     * Fields added to the login dialog after `username` and `password`. Their
+     * values are sent with the credentials.
+     */
+    additionalFields?: Components
+    /**
+     * @deprecated Use `additionalFields`.
+     */
     additionalComponents?: Components
     redirectAfterLogin?: string
   }

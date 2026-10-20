@@ -141,6 +141,44 @@ describe('DitoAdmin', () => {
     ])
   })
 
+  describe('login.additionalFields', () => {
+    const additionalFields = {
+      remember: { type: 'checkbox', label: 'Stay logged in' }
+    }
+
+    // The admin asks for the credentials, since the session has no user:
+    async function getLoginDialogLabels(login) {
+      const admin = createAdmin({ login })
+      await vi.waitFor(() => {
+        expect(admin.el.querySelector('.dito-dialog')).not.toBe(null)
+      })
+      return [...admin.el.querySelectorAll('.dito-dialog .dito-label')].map(
+        label => label.textContent.trim()
+      )
+    }
+
+    it('adds the fields to the login dialog', async () => {
+      expect(await getLoginDialogLabels({ additionalFields })).toEqual([
+        'Username',
+        'Password',
+        'Stay logged in'
+      ])
+    })
+
+    it('accepts the deprecated additionalComponents, warning once', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const login = { additionalComponents: additionalFields }
+      expect(await getLoginDialogLabels(login)).toContain('Stay logged in')
+      createAdmin({ login })
+      expect(warn.mock.calls).toEqual([
+        [
+          '`login.additionalComponents` is deprecated, ' +
+          'use `login.additionalFields` instead.'
+        ]
+      ])
+    })
+  })
+
   it('normalizes the paths with `normalizePaths`', () => {
     const { api } = createAdmin({
       api: {
