@@ -299,11 +299,11 @@ export function getNumberSettings(
   }
 }
 
-// Colors are stored in the color format of `format`:
+// Colors are stored in the format of `colorFormat`:
 export const colorTraits = {
   // The server's colors are hex strings, the other formats are objects:
-  getProperty: ({ format = 'hex' }: Schema) => ({
-    type: format.startsWith('hex') ? 'color' : 'object'
+  getProperty: ({ colorFormat = 'hex' }: Schema) => ({
+    type: colorFormat.startsWith('hex') ? 'color' : 'object'
   }),
 
   parseValue(context: Context) {
@@ -311,7 +311,7 @@ export const colorTraits = {
     return value
       ? toTinyColorFormat(
           tinycolor(value),
-          getSchemaValue('format', {
+          getSchemaValue('colorFormat', {
             type: String,
             schema,
             context,

@@ -44,6 +44,7 @@ import { SketchPicker, tinycolor } from 'vue-color'
 import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
 import { computed, ref, watch } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
+import { assertRemovedSchemaKeys } from '../utils/schema/setup.js'
 import { colorTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
@@ -172,8 +173,9 @@ defineType({
   component: DitoColorType,
   hasFormat: true,
 
-  setupSchema({ schema }) {
-    if (schema.format === 'name') {
+  setupSchema({ schema, name }) {
+    assertRemovedSchemaKeys(schema, name, { format: `'colorFormat'` })
+    if (schema.colorFormat === 'name') {
       throw new Error(`Unsupported color format: 'name'.`)
     }
   }

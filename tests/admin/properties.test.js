@@ -34,7 +34,7 @@ const fields = {
   opensAt: { type: 'datetime' },
   opensAtTime: { type: 'time' },
   background: { type: 'color' },
-  tint: { type: 'color', format: 'rgb' },
+  tint: { type: 'color', colorFormat: 'rgb' },
   format: { type: 'select', options: ['hardcover', 'paperback'] },
   genre: { type: 'radio', options: { data: [{ value: 'jazz' }] } },
   genres: { type: 'checkboxes', options: ['jazz', 'rock'], required: true },

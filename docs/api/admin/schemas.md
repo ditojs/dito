@@ -195,7 +195,7 @@ which changes their whitespace, so apps that use them may want to set
 
 ### Removed keys
 
-Keys that 4.0 and 6.0 removed, e.g. `format` (except on dates and colors),
+Keys that 4.0 and 6.0 removed, e.g. `format` (except on dates),
 `compute`, `methods`, `watch`, `relateBy`, `components`, `rules` or `events`,
 throw when a schema still uses them, naming the replacement. The upgrade guides
 to [4.x](../../upgrading-to-4.x.md#admin-schemas) and
@@ -441,14 +441,14 @@ publishedAt: {
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
 | `type` | `'color'` | | Required. |
-| `format` | `SchemaValue<ColorFormat>` | `'hex'` | The format of the value, see below. |
+| `colorFormat` | `SchemaValue<ColorFormat>` | `'hex'` | The format of the value, see below. |
 | `alpha` | `SchemaValue<boolean>` | `false` | Shows the alpha slider. |
 | `inputs` | `SchemaValue<boolean>` | `true` | Shows inputs to enter values, e.g. RGB. |
 | `presets` | `SchemaValue<string[]>` | 16 basic colors | Colors to pick from, in any CSS format. |
 | `prefix`, `suffix` | `OrArrayOf<SchemaAffix>` | | See [Affixes](#affixes). |
 
-| `format` | Value |
-| -------- | ----- |
+| `colorFormat` | Value |
+| ------------- | ----- |
 | `'hex'`, `'hex6'` | `'#rrggbb'`, or `'#rrggbbaa'` with alpha below 1 |
 | `'hex3'`, `'hex4'` | `'#rgb'`, `'#rgba'` where the color allows it, else the long form |
 | `'hex8'` | `'#rrggbbaa'` |
@@ -456,7 +456,7 @@ publishedAt: {
 | `'prgb'` | `{ r, g, b, a }` with percentage strings |
 | `'hsl'`, `'hsv'` | `{ h, s, l, a }`, `{ h, s, v, a }` |
 
-`format: 'name'` throws `Unsupported color format`. The server's
+`colorFormat: 'name'` throws `Unsupported color format`. The server's
 `type: 'color'` only accepts hex strings; properties holding the object
 formats use `type: 'object'`.
 

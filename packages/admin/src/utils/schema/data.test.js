@@ -981,17 +981,19 @@ describe('parseEditedValue()', () => {
     expect(parse({ type: 'number' }, null)).toBe(null)
   })
 
-  it('converts colors to the color format of `format`', () => {
+  it('converts colors to the format of `colorFormat`', () => {
     expect(parse({ type: 'color' }, 'ff8000')).toBe('#ff8000')
     expect(parse({ type: 'color' }, 'rgba(0, 0, 255, 0.5)')).toBe('#0000ff80')
-    expect(parse({ type: 'color', format: 'hex3' }, '#ff0000')).toBe('#f00')
-    expect(parse({ type: 'color', format: 'rgb' }, '#ff0000')).toEqual({
+    expect(
+      parse({ type: 'color', colorFormat: 'hex3' }, '#ff0000')
+    ).toBe('#f00')
+    expect(parse({ type: 'color', colorFormat: 'rgb' }, '#ff0000')).toEqual({
       r: 255,
       g: 0,
       b: 0,
       a: 1
     })
-    expect(parse({ type: 'color', format: 'hsl' }, '#ff0000')).toEqual({
+    expect(parse({ type: 'color', colorFormat: 'hsl' }, '#ff0000')).toEqual({
       h: 0,
       s: 1,
       l: 0.5,

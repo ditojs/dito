@@ -10,8 +10,9 @@ export type Context = Record<string, any>
 
 // The members that only dito's own types use:
 export type TypeDescriptor = PublicTypeDescriptor & {
-  // Only dito's date and color types read `format` from their schema. Other
-  // types reject it, as the `format()` of 3.x is `formatValue()`:
+  // Only dito's date type reads `format` from its schema, and its color type
+  // rejects it with its own hint. Other types reject it, as the `format()` of
+  // 3.x is `formatValue()`:
   readonly hasFormat?: boolean
   // Only multiselects read `search` from their schema:
   readonly hasSearch?: boolean
