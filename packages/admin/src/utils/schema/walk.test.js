@@ -1055,7 +1055,7 @@ describe('isDataPathExcluded()', () => {
       dataPaths.filter(dataPath =>
         isDataPathExcluded(form, data, dataPath, { services })
       )
-    ).toEqual(['unknown', 'summaryNote'])
+    ).toEqual(['unknown'])
   })
 
   it('tells which values in the children of trees are left out', async () => {

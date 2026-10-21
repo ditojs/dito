@@ -24,6 +24,7 @@ export function walkData(
     rootData?: Data | null
     serializedData?: Data | null
     shouldWalk?: (entry: WalkedDataEntry) => boolean
+    shouldVisit?: (entry: DataEntry) => boolean
     shouldSkipSourcesWithResource?: boolean
     visit: (entries: DataEntry[]) => void
     after?: ((entries: DataEntry[]) => void) | null

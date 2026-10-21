@@ -467,8 +467,11 @@ export function isDataPathExcluded(schema, data, dataPath, {
     dataPath: itemDataPath,
     services,
     rootData,
-    // Only walk the fields that contain the value:
-    shouldWalk: entry => getRelativeDataPath(dataPath, entry.dataPath) !== null,
+    // Only visit the fields that contain the value. The fields of their panels
+    // edit the data around them, and decide for themselves:
+    shouldVisit: entry => (
+      getRelativeDataPath(dataPath, entry.dataPath) !== null
+    ),
     visit: entries => entriesList.push(entries)
   })
   const excludedEntry = entriesList
