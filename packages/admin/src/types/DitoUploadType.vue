@@ -185,7 +185,8 @@ import {
   resolveDownloadUrl
 } from '../utils/request.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
-import { isArray, clone, escapeHtml } from '@ditojs/utils'
+import { getHtml } from '../utils/html.js'
+import { isArray, clone } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
 import { fileDropTargetsKey } from '../utils/keys.ts'
 
@@ -472,7 +473,7 @@ const DitoUploadType = {
       ),
 
       renderFile(file, index) {
-        return render.value(getFileContext(file, index))
+        return getHtml(render.value(getFileContext(file, index)))
       },
 
       getUpload(file) {
@@ -483,7 +484,7 @@ const DitoUploadType = {
 
       async deleteFile(file) {
         await confirmAndRemove(services, {
-          label: escapeHtml(file.name),
+          label: file.name,
           // The form still needs to be saved:
           isTransient: true,
           remove: () => {

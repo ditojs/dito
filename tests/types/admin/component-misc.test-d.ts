@@ -1,4 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
+import { html } from '@ditojs/utils'
 import type {
   MenuSchema,
   UploadSchema,
@@ -145,7 +146,9 @@ describe('SchemaAffixMixin (prefix/suffix)', () => {
       type: 'number',
       prefix: [
         { type: 'icon', name: 'currency' },
-        { html: '<b>$</b>', as: 'span' }
+        { html: '<b>$</b>', as: 'span' },
+        html`<b>€</b>`,
+        { text: html`<b>£</b>`, as: 'span' }
       ]
     })
   })

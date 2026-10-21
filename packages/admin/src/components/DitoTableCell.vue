@@ -24,6 +24,7 @@ import {
   useSchemaContext
 } from '../composables/useSchemaContext.ts'
 import { appendDataPath } from '../utils/data.js'
+import { getHtml } from '../utils/html.js'
 import { getItemDisplayValue } from '../utils/schema/data.js'
 
 export default {
@@ -57,7 +58,7 @@ export default {
       cellHtml: computed(() => {
         const { name, render } = props.cell
         return render
-          ? render(cellContext.value)
+          ? getHtml(render(cellContext.value))
           : escapeHtml(
               getItemDisplayValue(props.schema, props.data, name, {
                 services,

@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { html } from '@ditojs/utils'
 import { flushPromises } from '@vue/test-utils'
 import VueUpload from 'vue-upload-component'
 import Sortable from 'sortablejs'
@@ -9,6 +10,7 @@ import {
   unmountAdmin
 } from '../test/mount.js'
 import { copyClipboardData, getClipboardData } from '../utils/clipboard.js'
+import { transientNote } from '../utils/dialogs.js'
 
 const cover = { name: 'cover.png', size: 2_500_000, type: 'image/png' }
 const scan = { name: 'scan.pdf', size: 12_000, type: 'application/pdf' }
@@ -96,6 +98,31 @@ describe('DitoUploadType', () => {
     )
   })
 
+  it('shows strings of `render()` as text, and `html` as HTML', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        fields: {
+          attachments: {
+            type: 'upload',
+            multiple: true,
+            render: ({ value }) =>
+              value.name === cover.name
+                ? `<img src=x onerror="alert(1)">${value.name}`
+                : html`<b>${value.name}</b>`
+          }
+        }
+      },
+      data: { attachments: [cover, scan] }
+    })
+    const field = findField('attachments')
+    expect(field.find('tbody img').exists()).toBe(false)
+    expect(getRows(field).map(([name]) => name)).toEqual([
+      `<img src=x onerror="alert(1)">${cover.name}`,
+      scan.name
+    ])
+    expect(field.find('tbody b').text()).toBe(scan.name)
+  })
+
   it('points its label to its input', async () => {
     const { findContainer } = await mountForm({
       schema: {
@@ -171,10 +198,7 @@ describe('DitoUploadType', () => {
     expect(notify).toHaveBeenCalledWith({
       type: 'info',
       title: 'Successfully Removed',
-      html: [
-        'Tom &amp; Jerry.pdf was removed.',
-        expect.stringContaining('<b>Note</b>')
-      ]
+      text: [html(['Tom &amp; Jerry.pdf was removed.']), transientNote]
     })
   })
 

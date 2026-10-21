@@ -4,6 +4,7 @@
 import {
   DateFormat,
   format as utilsFormat,
+  Html,
   NumberFormat,
   TimeFormat
 } from '@ditojs/utils'
@@ -799,9 +800,10 @@ export interface SourceSettings<$Item> {
    */
   component?: Resolvable<VueComponent>
   /**
-   * Custom render function for items.
+   * Custom render function for items, returning text, or HTML created with
+   * the `html` template of `@ditojs/utils`.
    */
-  render?: SchemaValueCallback<$Item, {}, string>
+  render?: SchemaValueCallback<$Item, {}, string | Html>
   /**
    * Maximum nesting depth for nested sources.
    *
@@ -1130,22 +1132,39 @@ export interface TextSettings<$Item> {
 export type SchemaTextMixin<$Item> = TextSettings<$Item>
 
 /**
- * Text, or HTML given as `{ html }`. Strings and `{ text }` are escaped, only
- * `{ html }` renders tags.
+ * Text, or HTML created with the `html` template of `@ditojs/utils`. Strings
+ * and `{ text }` are escaped, only `Html` renders tags.
  */
-export type TextOrHtml = string | { text: string } | { html: string }
+export type TextOrHtml =
+  | string
+  | Html
+  | { text: string | Html }
+  | {
+      /** @deprecated Use the `html` template of `@ditojs/utils`. */
+      html: string
+    }
 
 /** A label as text or HTML, with optional affixes. */
 export type SchemaLabel =
   | TextOrHtml
-  | (({ text?: string } | { html: string }) & {
+  | ((
+      | { text?: string | Html }
+      | {
+          /** @deprecated Use `text` with the `html` template. */
+          html: string
+        }
+    ) & {
       prefix?: OrArrayOf<SchemaAffix>
       suffix?: OrArrayOf<SchemaAffix>
     })
 
-/** Plain text, or an object that describes the content of the affix. */
+/**
+ * Text, HTML created with the `html` template of `@ditojs/utils`, or an object
+ * that describes the content of the affix.
+ */
 export type SchemaAffix =
   | string
+  | Html
   | ({
       /** Conditionally display the affix. */
       if?: SchemaValue<any, {}, boolean>
@@ -1154,14 +1173,18 @@ export type SchemaAffix =
     } & (
       | {
           type?: 'text'
-          /** Plain text content for the affix. */
-          text: string
+          /** Text, or HTML created with the `html` template. */
+          text: string | Html
           /** The element to render the text in, `'div'` if not set. */
           as?: string
         }
       | {
           type?: 'html'
-          /** Raw HTML content for the affix. */
+          /**
+           * Raw HTML content for the affix.
+           *
+           * @deprecated Use `text` with the `html` template.
+           */
           html: string
           /** The element to render the HTML in, `'div'` if not set. */
           as?: string
@@ -1710,9 +1733,10 @@ export interface UploadSchema<$Item = any> extends FieldSchemaBase<$Item> {
    */
   deletable?: SchemaValue<$Item, {}, boolean>
   /**
-   * Custom render function for file display.
+   * Custom render function for file display, returning text, or HTML created
+   * with the `html` template of `@ditojs/utils`.
    */
-  render?: SchemaValueCallback<$Item, {}, string>
+  render?: SchemaValueCallback<$Item, {}, string | Html>
   /**
    * Whether to display thumbnails for uploaded files, or their size: `true`
    * displays them in `'medium'`.
@@ -2137,14 +2161,15 @@ export type ColumnSchema<$Item = any, $Value = any> = {
    */
   sortable?: boolean
   /**
-   * A function of the value and the item returning the displayed name.
+   * A function of the value and the item returning the displayed name, as
+   * text, or as HTML created with the `html` template of `@ditojs/utils`.
    * If the column is sortable, the column is sorted by value and not by
    * rendered name.
    */
   render?: SchemaValueCallback<
     $Item,
     { value: $Value },
-    string | null | undefined
+    string | Html | null | undefined
   >
   /**
    * The provided string is applied to the class property of the column
@@ -2711,10 +2736,10 @@ export type SchemaContext<$Item = any> = {
   /**
    * Asks for a confirmation in a dialog with the message, a Cancel button
    * and a button with the text of `action`, and resolves to whether it was
-   * confirmed. The message is trusted HTML or plain text.
+   * confirmed. The message is text, or HTML created with `html`.
    */
   confirm(
-    message: string,
+    message: string | Html,
     options?: {
       /** The text of the button to confirm. @defaultValue `'OK'` */
       action?: string
@@ -2724,10 +2749,10 @@ export type SchemaContext<$Item = any> = {
    * Asks for a value in a dialog with a field of the type `type`, labelled
    * with the message, a Cancel button and a button with the text of `action`.
    * Resolves to the field's value once it validates, or to `undefined` when
-   * cancelled. The message is trusted HTML or plain text.
+   * cancelled. The message is text, or HTML created with `html`.
    */
   prompt<$Value = unknown>(
-    message: string,
+    message: string | Html,
     options?: {
       /** The text of the button to submit. @defaultValue `'OK'` */
       action?: string
@@ -2743,11 +2768,11 @@ export type SchemaContext<$Item = any> = {
   ): Promise<$Value | undefined>
   /**
    * Shows the message in a dialog with a button with the text of `action`,
-   * and resolves once it's closed, also with Escape. The message is trusted
-   * HTML or plain text.
+   * and resolves once it's closed, also with Escape. The message is text, or
+   * HTML created with `html`.
    */
   alert(
-    message: string,
+    message: string | Html,
     options?: {
       /** The text of the button to close. @defaultValue `'OK'` */
       action?: string
@@ -2755,7 +2780,7 @@ export type SchemaContext<$Item = any> = {
   ): Promise<void>
   /**
    * Displays a notification to the user, with the
-   * paragraphs of either `text` or `html`.
+   * paragraphs of `text`.
    */
   notify(
     options: {
@@ -2781,21 +2806,20 @@ export type SchemaContext<$Item = any> = {
     } & (
       | {
           /**
-           * Body text, escaped as plain text. Each entry
+           * Body text, escaped, or HTML created with the
+           * `html` template of `@ditojs/utils`. Each entry
            * is a paragraph, newlines become `<br>`, and
            * `false` and `null` entries are skipped.
            */
-          text: OrArrayOf<string | false | null>
+          text: OrArrayOf<string | Html | false | null>
           html?: never
         }
       | {
           /**
-           * Body HTML from trusted sources, rendered as
-           * it is. Every interpolated value must be
-           * escaped with `escapeHtml()` from
-           * `@ditojs/utils`. Each entry is a paragraph,
-           * newlines become `<br>`, and `false` and
-           * `null` entries are skipped.
+           * Body HTML, rendered as it is.
+           *
+           * @deprecated Pass `text` with the `html`
+           * template of `@ditojs/utils`.
            */
           html: OrArrayOf<string | false | null>
           text?: never

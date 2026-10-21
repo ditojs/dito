@@ -214,8 +214,7 @@ context.itemLabel: string | null
 
 The text of the label of the form's item. Available in every context inside a
 form, e.g. in its events and in the `if` and `label` of its fields, and
-computed when it's read. `null` inside the `itemLabel()` callback itself. Use
-`text`, not `html`, when passing it to [`notify()`](#notify).
+computed when it's read. `null` inside the `itemLabel()` callback itself.
 
 ### formLabel
 
@@ -878,7 +877,7 @@ button to confirm.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `message` | `string` | Trusted HTML, rendered as it is, or plain text, whose line breaks are kept. Escape interpolated values with `escapeHtml()` of [@ditojs/utils](../utils.md). Its text is the accessible label of the dialog. |
+| `message` | `TextOrHtml` | Text, whose line breaks are kept, or `html`, see [Text and HTML](./schemas.md#text-and-html). Its text is the accessible label of the dialog. |
 | `options.action` | `string` | The text of the button to confirm. Defaults to `'OK'`. |
 
 #### Return value
@@ -910,7 +909,7 @@ it isn't required.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `message` | `string` | Trusted HTML, rendered as it is, or plain text, whose line breaks are kept. Escape interpolated values with `escapeHtml()` of [@ditojs/utils](../utils.md). Its text is the accessible label of the dialog and the field. |
+| `message` | `TextOrHtml` | Text, whose line breaks are kept, or `html`, see [Text and HTML](./schemas.md#text-and-html). Its text is the accessible label of the dialog and the field. |
 | `options.action` | `string` | The text of the button to submit. Defaults to `'OK'`. |
 | `options.value` | `any` | The initial value of the field. |
 | `options.type` | `string` | The type of the field, any type of field that holds a value, e.g. `'email'`, `'number'` or `'textarea'`. Defaults to `'text'`. |
@@ -947,7 +946,7 @@ Shows the message in a dialog with a single button.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `message` | `string` | Trusted HTML, rendered as it is, or plain text, whose line breaks are kept. Escape interpolated values with `escapeHtml()` of [@ditojs/utils](../utils.md). Its text is the accessible label of the dialog. |
+| `message` | `TextOrHtml` | Text, whose line breaks are kept, or `html`, see [Text and HTML](./schemas.md#text-and-html). Its text is the accessible label of the dialog. |
 | `options.action` | `string` | The text of the button. Defaults to `'OK'`. |
 
 #### Return value
@@ -970,7 +969,7 @@ async onClick({ alert, item }) {
 context.notify(options): void
 ```
 
-Shows a notification toast, with the paragraphs of either `text` or `html`.
+Shows a notification toast, with the paragraphs of `text`.
 Also available outside of schemas as `admin.context.notify()`. In the handlers
 of button and form events, calling it suppresses dito's own notification.
 
@@ -980,8 +979,8 @@ of button and form events, calling it suppresses dito's own notification.
 | ---- | ---- | ----------- |
 | `options.type` | `'info' \| 'success' \| 'warning' \| 'error'` | Defaults to `'info'`. |
 | `options.title` | `string` | The heading. Defaults to a label for `type`. |
-| `options.text` | `string \| (string \| false \| null)[]` | Plain text, escaped. Each entry is a paragraph, newlines become `<br>`, `false` and `null` are skipped. |
-| `options.html` | `string \| (string \| false \| null)[]` | Trusted HTML instead of `text`, rendered as it is. Escape interpolated values with `escapeHtml()` of [@ditojs/utils](../utils.md). |
+| `options.text` | `TextOrHtml \| (TextOrHtml \| false \| null)[]` | Text or `html`, see [Text and HTML](./schemas.md#text-and-html). Each entry is a paragraph, newlines become `<br>`, `false` and `null` are skipped. |
+| `options.html` | `string \| (string \| false \| null)[]` | Deprecated: HTML strings, rendered as they are. Use `text` with `html`. |
 | `options.error` | `unknown` | The original error, logged to the console for `type: 'error'`. |
 | `options.duration` | `number` | Milliseconds to show it, `0` for sticky. Defaults to a duration from the length of the content, see [`api.notifications`](./admin.md#apiconfig). |
 

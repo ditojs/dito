@@ -1,4 +1,5 @@
 import { computed, shallowRef } from 'vue'
+import type { Html } from '@ditojs/utils'
 import type { Router } from 'vue-router'
 import { LoadingTracker } from './LoadingTracker.ts'
 import { UiRegistry } from './UiRegistry.ts'
@@ -27,7 +28,8 @@ export interface DialogOptions {
 export interface NotifyOptions {
   type?: string
   title?: string
-  text?: string | string[]
+  text?: string | Html | (string | Html | false | null | undefined)[]
+  /** @deprecated Pass `text` with the `html` template of @ditojs/utils. */
   html?: string | (string | false | null | undefined)[]
   error?: unknown
   duration?: number
@@ -135,18 +137,24 @@ export class AdminContext {
     return this.#dialogsAndNotifications!.showDialog<$Result>(options)
   }
 
-  confirm(message: string, options?: { action?: string }): Promise<boolean> {
+  confirm(
+    message: string | Html,
+    options?: { action?: string }
+  ): Promise<boolean> {
     return confirm({ adminContext: this }, message, options)
   }
 
   prompt(
-    message: string,
+    message: string | Html,
     options?: { action?: string; value?: any; type?: string }
   ): Promise<unknown> {
     return prompt({ adminContext: this }, message, options)
   }
 
-  alert(message: string, options?: { action?: string }): Promise<void> {
+  alert(
+    message: string | Html,
+    options?: { action?: string }
+  ): Promise<void> {
     return alert({ adminContext: this }, message, options)
   }
 

@@ -28,7 +28,7 @@
 
 <script>
 import { computed } from 'vue'
-import { asArray, isString } from '@ditojs/utils'
+import { asArray, isString, isHtml } from '@ditojs/utils'
 import { hasSlotContent } from '@ditojs/ui/src'
 import DitoAffix from './DitoAffix.vue'
 import DitoInfo from './DitoInfo.vue'
@@ -57,7 +57,7 @@ export default {
       asArray(props.items)
         .filter(Boolean)
         .map(item =>
-          isString(item)
+          isString(item) || isHtml(item)
             ? { type: 'text', text: item }
             : item.type
               ? item

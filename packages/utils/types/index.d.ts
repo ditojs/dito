@@ -954,6 +954,33 @@ export function escapeHtml(html: string | null | undefined): string
  */
 export function stripHtml(html: string | null | undefined): string
 
+/**
+ * HTML created by the `html` tagged template, which dito renders as HTML,
+ * unlike strings, which it renders as text.
+ */
+declare const htmlBrand: unique symbol
+
+export interface Html {
+  readonly [htmlBrand]: true
+  readonly value: string
+  toString(): string
+}
+
+/**
+ * Tagged template that escapes the interpolated values, except `Html` values,
+ * joins arrays, and renders `null`, `undefined` and `false` as empty.
+ * Trusted HTML from elsewhere passes as `html([value])`.
+ */
+export function html(
+  strings: TemplateStringsArray | readonly string[],
+  ...values: unknown[]
+): Html
+
+/**
+ * Checks whether the value was created by the `html` tagged template.
+ */
+export function isHtml(arg: unknown): arg is Html
+
 /* -------------------------- typescript utilities -------------------------- */
 export interface ArrayLike<T> {
   readonly length: number

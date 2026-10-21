@@ -1,4 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
+import { html } from '@ditojs/utils'
 import type {
   ApiConfig,
   Fields,
@@ -33,7 +34,26 @@ describe('field options', () => {
     })
   })
 
-  it('accepts labels and info as text or `{ html }`', () => {
+  it('accepts labels, info and render() results as text or `html`', () => {
+    assertType<Fields<Entry>>({
+      title: {
+        type: 'text',
+        label: html`<b>Title</b>`,
+        info: html`The <i>cover</i> title`
+      },
+      id: { type: 'number', label: { text: html`<b>ID</b>`, prefix: '1.' } }
+    })
+    assertType<ListSchema<Entry>>({
+      type: 'list',
+      itemLabel: ({ item }) => html`<b>${item.title}</b>`,
+      render: ({ item }) => html`<b>${item.title}</b>`,
+      columns: {
+        title: { render: ({ value }) => html`<b>${value}</b>` }
+      }
+    })
+  })
+
+  it('accepts the deprecated `{ html }` labels and info', () => {
     assertType<Fields<Entry>>({
       title: {
         type: 'text',

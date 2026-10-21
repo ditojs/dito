@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { html } from '@ditojs/utils'
 import { flushPromises } from '@vue/test-utils'
 import { mountAdmin, enterValue } from '../test/mount.js'
 import {
@@ -23,7 +24,7 @@ async function showDialog(ask) {
 describe('confirm()', () => {
   it('shows the HTML message with a button for the action', async () => {
     const { dialog } = await showDialog(root =>
-      confirm(root, 'Delete <b>Dune</b>?', { action: 'Delete' })
+      confirm(root, html`Delete <b>${'Dune'}</b>?`, { action: 'Delete' })
     )
     expect(dialog.find('.dito-confirm-message').html()).toContain(
       '<b>Dune</b>'
@@ -31,6 +32,18 @@ describe('confirm()', () => {
     expect(dialog.find('label').exists()).toBe(false)
     expect(dialog.attributes('aria-label')).toBe('Delete Dune?')
     expect(dialog.find('button[type="submit"]').text()).toBe('Delete')
+  })
+
+  it('shows plain messages as text', async () => {
+    const { dialog } = await showDialog(root =>
+      confirm(root, 'Delete <img src=x onerror="alert(1)">?')
+    )
+    const message = dialog.find('.dito-confirm-message')
+    expect(message.find('img').exists()).toBe(false)
+    expect(message.text()).toBe('Delete <img src=x onerror="alert(1)">?')
+    expect(dialog.attributes('aria-label')).toBe(
+      'Delete <img src=x onerror="alert(1)">?'
+    )
   })
 
   it(`confirms with an 'OK' button without an action`, async () => {
@@ -75,7 +88,10 @@ describe('confirm()', () => {
 describe('prompt()', () => {
   it('asks for the value in a field below the HTML message', async () => {
     const { promise, dialog } = await showDialog(root =>
-      prompt(root, 'Rename <b>Dune</b>:', { action: 'Rename', value: 'Dune' })
+      prompt(root, html`Rename <b>Dune</b>:`, {
+        action: 'Rename',
+        value: 'Dune'
+      })
     )
     expect(dialog.attributes('aria-label')).toBe('Rename Dune:')
     const message = dialog.find('.dito-confirm-message')
@@ -139,7 +155,7 @@ describe('prompt()', () => {
 describe('alert()', () => {
   it('shows the HTML message with only a button for the action', async () => {
     const { promise, dialog } = await showDialog(root =>
-      alert(root, 'Dune was <b>sold out</b>.', { action: 'Close' })
+      alert(root, html`Dune was <b>sold out</b>.`, { action: 'Close' })
     )
     expect(dialog.attributes('aria-label')).toBe('Dune was sold out.')
     expect(dialog.find('.dito-confirm-message').html()).toContain(
@@ -183,7 +199,7 @@ describe('confirmAndRemove()', () => {
     expect(notify).toHaveBeenCalledWith({
       type: 'info',
       title: 'Successfully Removed',
-      html: ['Dune was removed.', transientNote]
+      text: [html`Dune was removed.`, transientNote]
     })
   })
 
@@ -204,7 +220,7 @@ describe('confirmAndRemove()', () => {
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'success',
-        html: ['Dune was deleted.', false]
+        text: [html`Dune was deleted.`, false]
       })
     )
   })

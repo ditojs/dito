@@ -1,12 +1,12 @@
-import { labelize } from '@ditojs/utils'
+import { labelize, html } from '@ditojs/utils'
 import DitoConfirmMessage from '../components/DitoConfirmMessage.vue'
-import { getTextFromHtml } from './html.js'
+import { getHtml, getText } from './html.js'
 import { getVerbs } from './services.ts'
 
-export const transientNote = (
+export const transientNote = html([
   '<b>Note</b>: the parent still needs to be saved ' +
   'in order to persist this change.'
-)
+])
 
 export async function confirm(
   { adminContext },
@@ -75,14 +75,14 @@ export async function confirmAndRemove(
     : [verbs.delete, verbs.deleted]
   const isConfirmed = await confirm(
     services,
-    `Do you really want to ${verb} ${label}?`,
+    html`Do you really want to ${verb} ${label}?`,
     { action: labelize(verb) }
   )
   if (isConfirmed && (await remove()) !== false) {
     services.adminContext.notify({
       type: isTransient ? 'info' : 'success',
       title: 'Successfully Removed',
-      html: [`${label} was ${pastVerb}.`, isTransient && transientNote]
+      text: [html`${label} was ${pastVerb}.`, isTransient && transientNote]
     })
   }
 }
@@ -102,8 +102,8 @@ function showMessageDialog(
       ...fields
     },
     buttons,
-    data: { [messageName]: message, ...data },
-    settings: { label: getTextFromHtml(message) }
+    data: { [messageName]: getHtml(message), ...data },
+    settings: { label: getText(message) }
   })
 }
 

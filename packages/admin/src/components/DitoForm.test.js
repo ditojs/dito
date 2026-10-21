@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { html } from '@ditojs/utils'
 import { flushPromises, DOMWrapper } from '@vue/test-utils'
 import { h, toRaw } from 'vue'
 import {
@@ -13,6 +14,7 @@ import {
 } from '../test/mount.js'
 import { DitoSchemaField, useDitoContext } from '../index.js'
 import DitoButtonType from '../types/DitoButtonType.vue'
+import { transientNote } from '../utils/dialogs.js'
 
 const maliciousName = '<img src="x" onerror="alert(1)">'
 const escapedName = '&lt;img src=&quot;x&quot; onerror=&quot;alert(1)&quot;&gt;'
@@ -89,7 +91,7 @@ describe('DitoForm', () => {
       expect(notify).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'success',
-          html: `Book '${escapedName}' was saved.`
+          text: html([`Book '${escapedName}' was saved.`])
         })
       )
     })
@@ -115,9 +117,9 @@ describe('DitoForm', () => {
       expect(notify).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'error',
-          html: [
-            `Unable to save Book '${escapedName}':`,
-            '&lt;b&gt;Invalid&lt;/b&gt;'
+          text: [
+            html([`Unable to save Book '${escapedName}':`]),
+            html(['&lt;b&gt;Invalid&lt;/b&gt;'])
           ]
         })
       )
@@ -1545,9 +1547,9 @@ describe('DitoForm', () => {
         expect.objectContaining({
           type: 'info',
           title: 'Change Applied',
-          html: [
-            `Changes to Chapter 'Opening' were applied.`,
-            expect.stringContaining('<b>Note</b>')
+          text: [
+            html([`Changes to Chapter 'Opening' were applied.`]),
+            transientNote
           ]
         })
       )
@@ -1613,7 +1615,7 @@ describe('DitoForm', () => {
         expect.objectContaining({
           type: 'info',
           title: 'Item Added',
-          html: [`Chapter 'Epilogue' was added.`, expect.any(String)]
+          text: [html([`Chapter 'Epilogue' was added.`]), transientNote]
         })
       )
     })
@@ -1709,7 +1711,7 @@ describe('DitoForm', () => {
         expect.objectContaining({
           type: 'error',
           error: 'Could not submit transient item',
-          html: `Unable to add Chapter 'Epilogue'.`
+          text: html([`Unable to add Chapter 'Epilogue'.`])
         })
       )
     })
@@ -2726,7 +2728,7 @@ describe('DitoForm', () => {
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'error',
-        html: `Unable to save Book '${escapedName}'.`
+        text: html([`Unable to save Book '${escapedName}'.`])
       })
     )
   })

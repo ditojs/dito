@@ -18,5 +18,13 @@ export default {
   pugAttributeSeparator: 'none',
   pugCommentPreserveSpaces: 'trim-all',
   pugWrapAttributesThreshold: 1,
-  pugWrapAttributesPattern: '^(@|v-)'
+  pugWrapAttributesPattern: '^(@|v-)',
+  overrides: [
+    {
+      // Keep the content of `html` templates, whose whitespace is content. Not
+      // in Vue files, where the option turns off formatting of their blocks:
+      files: '*.{js,ts}',
+      options: { embeddedLanguageFormatting: 'off' }
+    }
+  ]
 }

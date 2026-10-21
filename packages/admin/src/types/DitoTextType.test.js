@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { html } from '@ditojs/utils'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 
 describe('DitoTextType', () => {
@@ -220,7 +221,7 @@ describe('DitoTextType', () => {
       schema: {
         fields: {
           title: { type: 'text', label: { text: 'Title', suffix: 'Book' } },
-          author: { type: 'text', label: { html: '<b>Author</b> &amp; Co' } }
+          author: { type: 'text', label: html`<b>Author</b> &amp; ${'Co'}` }
         }
       }
     })

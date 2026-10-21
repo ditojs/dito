@@ -18,7 +18,7 @@ entry point, `@ditojs/utils`, an ES module with TypeScript types.
 | [Strings](#strings) | `camelize()`, `capitalize()`, `decamelize()`, `hyphenate()`, `underscore()`, `labelize()`, `deindent()`, `escapeRegExp()`, `getCommonPrefix()`, `getCommonOffset()`, `isAbsoluteUrl()`, `isUrl()`, `isDomain()`, `isHostname()`, `isEmail()`, `isCreditCard()` |
 | [Dates and numbers](#dates-and-numbers) | `format()`, `formatDate()`, `defaultFormats`, `formatPlainDate()`, `parsePlainDate()` |
 | [Data paths](#data-paths) | `parseDataPath()`, `normalizeDataPath()`, `resolveDataPath()`, `getValueAtDataPath()`, `getEntriesAtDataPath()`, `setValueAtDataPath()`, `setEntriesAtDataPath()` |
-| [HTML](#html) | `escapeHtml()`, `stripHtml()` |
+| [HTML](#html) | `html`, `isHtml()`, `escapeHtml()`, `stripHtml()` |
 | [Functions](#functions) | `deprecate()`, `toAsync()`, `toCallback()`, `toPromiseCallback()` |
 | [Timers](#timers) | `debounce()`, `debounceAsync()` |
 | [Promises](#promises) | `mapConcurrently()`, `mapSequentially()` |
@@ -693,8 +693,41 @@ setEntriesAtDataPath(order, quantities)
 ## HTML
 
 ```js
-import { escapeHtml, stripHtml } from '@ditojs/utils'
+import { html, isHtml, escapeHtml, stripHtml } from '@ditojs/utils'
 ```
+
+### html
+
+```js
+html`<b>${value}</b>`
+```
+
+A tagged template that creates HTML, an `Html` value that dito's admin renders
+as HTML, where it renders strings as text, see
+[Text and HTML](./admin/schemas.md#text-and-html). Interpolated values are
+escaped with `escapeHtml()`, except `Html` values, so templates nest. Arrays
+are joined, escaping each item unless it's `Html`, and `null`, `undefined` and
+`false` render as empty. `value` and `toString()` return the HTML string.
+
+```js
+const title = html`<b>${'Tom & Jerry'}</b>`
+html`<p>${title} by ${['Hanna', html`<br>`, 'Barbera']}</p>`.value
+// '<p><b>Tom &amp; Jerry</b> by Hanna<br>Barbera</p>'
+```
+
+Trusted HTML from elsewhere, e.g. the value of a `markup` field, passes as an
+array of strings, like the strings of a template, and isn't escaped:
+`html([item.description])`.
+
+### isHtml()
+
+```js
+isHtml(value)
+```
+
+Returns `true` if the value was created by `html`. The check uses the brand
+`Symbol.for('dito.html')`, so it recognizes `Html` values of other copies of
+`@ditojs/utils` too.
 
 ### escapeHtml()
 

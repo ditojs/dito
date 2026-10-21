@@ -1,3 +1,4 @@
+import { html } from '@ditojs/utils'
 import { mountSchema, mountForm, mountAdmin, stubConfirm } from './mount.js'
 import { confirm } from '../utils/dialogs.js'
 
@@ -29,7 +30,7 @@ describe('stubConfirm()', () => {
   it('answers the confirmation dialogs with the mock', async () => {
     const answer = stubConfirm(false)
     const { root } = await mountAdmin({ views: {} })
-    const ask = () => confirm(root, 'Delete <b>Dune</b>?')
+    const ask = () => confirm(root, html`Delete <b>Dune</b>?`)
     expect(await ask()).toBe(false)
     answer.mockReturnValue(true)
     expect(await ask()).toBe(true)
