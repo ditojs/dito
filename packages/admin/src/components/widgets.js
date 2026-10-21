@@ -161,12 +161,24 @@ export const DitoMultiselectField = defineWidget('DitoMultiselectField', {
   getSchema: property => getOptionsSchema('multiselect', property)
 })
 
-// Dates edit dates, the others dates with times:
+// The widget picks the picker, the property only validates the value:
+const dateProps = {
+  format: { type: Object, default: undefined }
+}
+
 export const DitoDateField = defineWidget('DitoDateField', {
-  props: {
-    format: { type: Object, default: undefined }
-  },
-  getSchema: ({ type }) => ({ type: type === 'date' ? 'date' : 'datetime' })
+  props: dateProps,
+  getSchema: () => ({ type: 'date' })
+})
+
+export const DitoTimeField = defineWidget('DitoTimeField', {
+  props: dateProps,
+  getSchema: () => ({ type: 'time' })
+})
+
+export const DitoDateTimeField = defineWidget('DitoDateTimeField', {
+  props: dateProps,
+  getSchema: () => ({ type: 'datetime' })
 })
 
 export const DitoColorField = defineWidget('DitoColorField', {

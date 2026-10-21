@@ -11,6 +11,8 @@ import {
   DitoSelectField,
   DitoCheckboxesField,
   DitoDateField,
+  DitoTimeField,
+  DitoDateTimeField,
   DitoUploadField,
   DitoCustomField,
   DitoListField,
@@ -75,6 +77,8 @@ describe('widgets', () => {
     })
     h(DitoCheckboxesField, { name: 'genres', layout: 'horizontal' })
     h(DitoDateField, { name: 'day', format: { date: { day: '2-digit' } } })
+    h(DitoTimeField, { name: 'opensAt' })
+    h(DitoDateTimeField, { name: 'meetsAt' })
     h(DitoUploadField, { name: 'images', accept: 'image/*' })
   })
 

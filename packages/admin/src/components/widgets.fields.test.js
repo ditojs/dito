@@ -17,6 +17,8 @@ import {
   DitoCheckboxesField,
   DitoMultiselectField,
   DitoDateField,
+  DitoTimeField,
+  DitoDateTimeField,
   DitoColorField,
   DitoUploadField
 } from '../index.js'
@@ -34,6 +36,8 @@ const properties = {
   keywords: { type: 'array', items: { type: 'string' } },
   author: { type: 'object', relate: true },
   day: { type: 'date' },
+  opensAt: { type: 'datetime' },
+  meetsAt: { type: 'datetime' },
   tint: { type: 'string' },
   image: { type: 'asset', nullable: true },
   images: { type: 'array', items: { type: 'asset' } }
@@ -58,6 +62,8 @@ const item = {
   keywords: ['first'],
   author: { id: 1 },
   day: '2026-05-14',
+  opensAt: '2026-05-14T07:30:00.000Z',
+  meetsAt: '2026-05-20T12:15:00.000Z',
   tint: '#3366ff',
   image: null,
   images: []
@@ -89,6 +95,8 @@ const BookPage = {
             options: { data: authors, label: 'name' }
           }),
           h(DitoDateField, { name: 'day' }),
+          h(DitoTimeField, { name: 'opensAt' }),
+          h(DitoDateTimeField, { name: 'meetsAt' }),
           h(DitoColorField, { name: 'tint' }),
           h(DitoUploadField, { name: 'image', accept: 'image/*' }),
           h(DitoUploadField, { name: 'images' })
@@ -155,6 +163,12 @@ describe('widgets of values', () => {
     expect(getComponentClasses('Genres')).toContain('dito-checkboxes')
     expect(getComponentClasses('Keywords')).toContain('dito-multiselect')
     expect(getComponentClasses('Day')).toContain('dito-date')
+    // The widgets pick the pickers, also of the same type of value:
+    const getPicker = label =>
+      getContainer(wrapper, label).find('.dito-date > *').classes()
+    expect(getPicker('Day')).toContain('dito-date-picker')
+    expect(getPicker('Opens At')).toContain('dito-time-picker')
+    expect(getPicker('Meets At')).toContain('dito-date-time-picker')
     expect(getComponentClasses('Tint')).toContain('dito-color')
     expect(getComponentClasses('Image')).toContain('dito-upload')
     expect(getContainer(wrapper, 'Notes').find('textarea').element.value).toBe(
