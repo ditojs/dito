@@ -262,6 +262,43 @@ describe('useDitoForm()', () => {
     expect(page.find('input[name="price"]').element.value).toBe('1')
   })
 
+  it('adds items to the lists of items that it creates', async () => {
+    const error = vi.spyOn(console, 'error')
+    const ListPage = {
+      setup() {
+        form = useDitoForm({
+          resource: 'products',
+          fields: {
+            name: { type: 'text' },
+            parts: {
+              type: 'list',
+              inlined: true,
+              creatable: true,
+              form: { type: 'form', fields: { title: { type: 'text' } } }
+            }
+          }
+        })
+        return () => h('div', { class: 'product-page' }, [h(DitoSchemaForm)])
+      }
+    }
+    const { page } = await mountProductPage({
+      path: '/parts',
+      views: {
+        parts: {
+          type: 'page',
+          label: 'Parts',
+          path: 'parts',
+          component: ListPage
+        }
+      }
+    })
+    await page.find('.dito-list tfoot .dito-button--add').trigger('click')
+    await settleForm()
+    expect(form.item.parts).toEqual([{ title: null }])
+    expect(page.findAll('.dito-list tbody > .dito-table__row')).toHaveLength(1)
+    expect(error).not.toHaveBeenCalled()
+  })
+
   it('asks before leaving unsaved changes, also for other ids', async () => {
     const confirm = stubConfirm(false)
     const { admin, page } = await mountProductPage()
