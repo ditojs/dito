@@ -325,6 +325,33 @@ describe('DitoPanel', () => {
     expect(getComponent('title').context.isDirty).toBe(false)
   })
 
+  it('marks the edits of its fields as unsaved in the panels of lists', async () => {
+    // The panels of lists display the data that holds the list:
+    const { wrapper, routeComponent } = await mountForm({
+      schema: {
+        fields: {
+          title: { type: 'text' },
+          chapters: {
+            type: 'list',
+            inlined: true,
+            form: { type: 'form', fields: { name: { type: 'text' } } },
+            panels: {
+              summary: {
+                type: 'panel',
+                label: 'Summary',
+                fields: { summary: { type: 'text' } }
+              }
+            }
+          }
+        }
+      },
+      data: { title: 'Dune', chapters: [], summary: '' }
+    })
+    expect(routeComponent.routeContext.isDirty).toBe(false)
+    await enterValue(wrapper.find('.dito-panel input'), 'Arrakis')
+    expect(routeComponent.routeContext.isDirty).toBe(true)
+  })
+
   it('submits its own data through the form that it is in', async () => {
     const request = vi.fn(({ data }) => ({ data }))
     const { wrapper } = await mountForm({

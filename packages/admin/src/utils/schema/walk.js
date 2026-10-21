@@ -34,8 +34,9 @@ const nodesBySchema = new WeakMap()
 
 // Walk `data` along the nodes of `schema`, the forms of the items and their
 // child sources. `visit()` receives the entries of each node's fields that
-// `shouldWalk()` accepts, before the items of their value are walked, and
-// `after()` after them.
+// `shouldWalk()` and `shouldVisit()` accept, before the items of their value
+// are walked, and `after()` after them. Only `shouldWalk()` also decides for
+// the fields that a field contains, e.g. of its panels.
 // NOTE: Items with an item adapter are walked wrapped, and the wrapped value
 // keeps the item's data path. The walk writes changed values back, unless it
 // builds a copy in `serializedData`: then it walks the values that `visit()`
@@ -47,6 +48,7 @@ export function walkData(schema, data, {
   rootData = data,
   serializedData = null,
   shouldWalk = () => true,
+  shouldVisit = () => true,
   shouldSkipSourcesWithResource = false,
   visit,
   after = null
@@ -92,7 +94,10 @@ export function walkData(schema, data, {
           isWalked(field) &&
           !(shouldSkipSourcesWithResource && isSourceWithResource(schema))
         ) {
-          entries.push(createEntry(schema, name))
+          const entry = createEntry(schema, name)
+          if (shouldVisit(entry)) {
+            entries.push(entry)
+          }
         }
       }
       if (entries.length > 0) {
