@@ -20,8 +20,22 @@ export { default as DitoSchemaForm } from './components/DitoSchemaForm.vue'
 // Layouts of forms with `properties` edit them by name with widgets:
 export {
   DitoTextField,
+  DitoTextareaField,
   DitoNumberField,
-  DitoSwitchField
+  DitoSliderField,
+  DitoProgressField,
+  DitoSwitchField,
+  DitoCheckboxField,
+  DitoSelectField,
+  DitoRadioField,
+  DitoCheckboxesField,
+  DitoMultiselectField,
+  DitoDateField,
+  DitoColorField,
+  DitoCodeField,
+  DitoMarkupField,
+  DitoUploadField,
+  DitoCustomField
 } from './components/widgets.js'
 export { default as DitoSection } from './components/DitoSection.vue'
 export default DitoAdmin

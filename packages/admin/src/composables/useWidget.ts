@@ -118,17 +118,19 @@ export function useWidget(props: WidgetProps) {
       )
     },
 
-    // Unnested widgets, e.g. sections without `name`, display their scope:
+    // The props override the hints of the property, e.g. loaded `options` its
+    // `enum`. Unnested widgets, e.g. sections without `name`, display their
+    // scope:
     getContainerProps(schema: Schema, nested = true) {
       const { disabled, compact, generateLabels } = layout.props
       return {
         schema: {
+          ...schema,
           ...Object.fromEntries(
             Object.entries(props).filter(
               ([key, value]) => key !== 'name' && value !== undefined
             )
-          ),
-          ...schema
+          )
         },
         dataPath: getValueDataPath(nested),
         data: scope.data,

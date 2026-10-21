@@ -19,7 +19,25 @@ export { default as DitoPaneRows } from './DitoPaneRows.vue'
 export { default as DitoPane } from './DitoPane.vue'
 export { default as DitoContainer } from './DitoContainer.vue'
 export { default as DitoSchemaField, DitoField } from './DitoSchemaField.vue'
-export { DitoTextField, DitoNumberField, DitoSwitchField } from './widgets.js'
+export {
+  DitoTextField,
+  DitoTextareaField,
+  DitoNumberField,
+  DitoSliderField,
+  DitoProgressField,
+  DitoSwitchField,
+  DitoCheckboxField,
+  DitoSelectField,
+  DitoRadioField,
+  DitoCheckboxesField,
+  DitoMultiselectField,
+  DitoDateField,
+  DitoColorField,
+  DitoCodeField,
+  DitoMarkupField,
+  DitoUploadField,
+  DitoCustomField
+} from './widgets.js'
 export { default as DitoSection } from './DitoSection.vue'
 export { default as DitoTabs } from './DitoTabs.vue'
 export { default as DitoPanel } from './DitoPanel.vue'
