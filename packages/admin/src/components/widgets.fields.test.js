@@ -232,6 +232,19 @@ describe('DitoCustomField', () => {
     expect(form.item.code).toBe('XYZ')
   })
 
+  it('validates the field when its slot asks', async () => {
+    const { wrapper } = await mountCustomFieldPage()
+    const input = wrapper.find('input.custom-code')
+    await enterValue(input, 'TOO-LONG-CODE')
+    await input.trigger('blur')
+    expect(wrapper.find('.custom-errors').text()).toBe(
+      'must be at most 8 characters long'
+    )
+    expect(getContainer(wrapper, 'Code').find('.dito-errors').text()).toBe(
+      'The Code field must be at most 8 characters long.'
+    )
+  })
+
   it('shows the errors of the field', async () => {
     const { wrapper } = await mountCustomFieldPage()
     const { form } = wrapper.findComponent(CustomFieldPage).vm

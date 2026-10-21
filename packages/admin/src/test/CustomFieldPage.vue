@@ -7,6 +7,7 @@ DitoSchemaForm
   )
     input.custom-code(
       v-model="field.value"
+      @blur="field.validate()"
     )
     span.custom-errors(
       v-if="field.errors"
