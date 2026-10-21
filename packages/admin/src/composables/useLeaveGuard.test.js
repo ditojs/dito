@@ -39,7 +39,7 @@ describe('useLeaveGuard()', () => {
       await settle(routeComponent)
       await admin.navigate('/items')
       expect(confirm).toHaveBeenCalledWith(
-        'You have unsaved changes. Do you really want to cancel?'
+        'You have unsaved changes. Do you want to discard them?'
       )
       expect(admin.router.currentRoute.value.path).toBe('/items')
     })

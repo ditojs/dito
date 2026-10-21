@@ -255,8 +255,7 @@ export function useRouteContainer({
 
   const { navigateWithin } = useLeaveGuard(routeContext, {
     adminContext,
-    isMutating,
-    getCancelVerb: () => routeContext.verbs.cancel
+    isMutating
   })
 
   return {

@@ -14,12 +14,10 @@ export function useLeaveGuard(
   routeContext: RouteContext,
   {
     adminContext,
-    isMutating,
-    getCancelVerb
+    isMutating
   }: {
     adminContext: AdminContext
     isMutating: () => boolean
-    getCancelVerb: () => string
   }
 ) {
   const router = useRouter()
@@ -67,8 +65,7 @@ export function useLeaveGuard(
         if (routeContext.isDirty) {
           discardConfirmation ??= confirm(
             { adminContext },
-            'You have unsaved changes. ' +
-            `Do you really want to ${getCancelVerb()}?`,
+            'You have unsaved changes. Do you want to discard them?',
             { action: 'Discard' }
           ).finally(() => {
             discardConfirmation = null
