@@ -48,7 +48,7 @@ import {
   isDataPathExcluded,
   shouldExcludeValue,
   getComputedValue,
-  hasValueFromDataSchema,
+  hasComputedValueSource,
   serializeData,
   deserializeData,
   hasItemsNumberedByOrderKey,
@@ -140,8 +140,12 @@ type FieldEntry = Pick<DataEntry, 'data' | 'name' | 'dataPath'> & {
   itemDataPath?: string | null
 }
 
+// The walked entries of the values with records, with the schema that records
+// them, and a form of its own for the defaults of its computed values:
+type RecordedEntry = DataEntry & { schema: Schema; form: Schema }
+
 interface DataEntries {
-  recordedEntries: EntryMap<Required<FieldEntry>>
+  recordedEntries: EntryMap<RecordedEntry>
   entriesWithMissingValues: DataEntry[]
   // Not walked, but they save the changes of the lists that they hold, unless
   // they're sent with the data:
@@ -922,7 +926,7 @@ export class DataModel {
 
   #getDataEntries(): DataEntries {
     const { schema, data } = this
-    const recordedEntries = new EntryMap<Required<FieldEntry>>()
+    const recordedEntries = new EntryMap<RecordedEntry>()
     const entriesWithMissingValues: DataEntry[] = []
     const sourceEntriesWithResource: WalkedDataEntry[] = []
     if (data && !isEmptySchema(schema)) {
@@ -941,16 +945,9 @@ export class DataModel {
         },
         shouldSkipSourcesWithResource: true,
         visit: entry => {
-          // Of several fields of the same value, the first with a computed
-          // value or options gets the record:
-          const recordedField = entry.node.fields.find(
-            ({ schema }) => (
-              hasComputedValueSource(schema) || getOptionsDataSchema(schema)
-            )
-          )
-          if (recordedField) {
-            const { schema } = recordedField
-            recordedEntries.set(entry, { ...entry, schema })
+          const recordedValue = entry.node.getRecordedValue()
+          if (recordedValue) {
+            recordedEntries.set(entry, { ...entry, ...recordedValue })
           }
           if (this.#hasMissingValue(entry)) {
             entriesWithMissingValues.push(entry)
@@ -995,7 +992,7 @@ export class DataModel {
     }
   }
 
-  #updateComponentRecords(entries: EntryMap<Required<FieldEntry>>) {
+  #updateComponentRecords(entries: EntryMap<RecordedEntry>) {
     const previousRecords = this.componentRecords
     this.componentRecords = new EntryMap()
     for (const entry of entries.values()) {
@@ -1058,7 +1055,10 @@ export class DataModel {
       )
       const write = (result: { value: any } | null) => {
         if (result) {
-          this.#writeComputedValue(record.entry, result.value)
+          this.#writeComputedValue(
+            record.entry as RecordedEntry,
+            result.value
+          )
         }
       }
       record.writeComputedValue = () => write(currentResult.value)
@@ -1078,8 +1078,8 @@ export class DataModel {
   // Return `null` while `computeValue()` reads options that aren't loaded yet,
   // to keep the current value until they are.
   #getComputedValueResult(record: ComponentRecord): { value: any } | null {
-    const { entry } = record
-    const { schema, data, name } = entry
+    const entry = record.entry as RecordedEntry
+    const { node, schema, data, name } = entry
     try {
       const value = getComputedValue(
         schema,
@@ -1096,7 +1096,15 @@ export class DataModel {
             : null
         }
       )
-      return { value }
+      // Values that aren't computed stay, or get their defaults when missing:
+      return {
+        value:
+          value !== undefined
+            ? value
+            : node.hasMissingValue(entry)
+              ? node.getDefaultValue(entry)
+              : data[name]
+      }
     } catch (error) {
       if (error === optionsNotLoaded) {
         return null
@@ -1189,7 +1197,7 @@ export class DataModel {
     })
   }
 
-  #writeComputedValue(entry: FieldEntry, computedValue: any) {
+  #writeComputedValue(entry: RecordedEntry, computedValue: any) {
     const { data, name } = entry
     const value = this.#getValueWithNestedDefaultValues(entry, computedValue)
     const dataPath = getRelativeDataPath(entry.dataPath, this.dataPath)
@@ -1212,7 +1220,7 @@ export class DataModel {
   // Add the defaults that `setDefaultValues()` would add once it's written, or
   // the two keep replacing each other's writes. We copy only what holds missing
   // values, as the value may be shared, e.g. a constant.
-  #getValueWithNestedDefaultValues(entry: FieldEntry, value: any) {
+  #getValueWithNestedDefaultValues(entry: RecordedEntry, value: any) {
     const { data, name } = entry
     if (
       !isPlainObject(value) && !isArray(value) ||
@@ -1243,13 +1251,13 @@ export class DataModel {
   }
 
   #walkNestedEntries(
-    entry: FieldEntry,
+    entry: RecordedEntry,
     value: any,
     handleNestedEntry: (entry: DataEntry) => void
   ) {
-    const { schema, data, name, dataPath } = entry
+    const { form, data, name, dataPath } = entry
     const valueData = { ...data, [name]: value }
-    walkData({ fields: { [name]: schema } }, valueData, {
+    walkData(form, valueData, {
       ...this.#walkOptions,
       dataPath: getParentDataPath(dataPath),
       shouldSkipIrrelevant: true,
@@ -1407,10 +1415,6 @@ class EntryMap<T> extends WeakEntryMap<T> {
       yield* valuesByName.values()
     }
   }
-}
-
-function hasComputedValueSource(schema: Schema): boolean {
-  return !!schema.computeValue || hasValueFromDataSchema(schema)
 }
 
 function getErrorMessage(error: any): string {

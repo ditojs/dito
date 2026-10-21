@@ -35,6 +35,7 @@ export interface DataNode {
   deserialize(value: any, entry: DataEntry): any
   serialize(value: any, entry: DataEntry): any
   isExcluded(entry: DataEntry): boolean
+  getRecordedValue(): { schema: Schema; form: Schema } | null
 }
 
 export function getSchemaSource(schema: Schema): DataSource

@@ -5,7 +5,8 @@ import { appendDataPath } from '../data.js'
 import {
   getSourceType,
   getItemAdapter,
-  getChildSourceSchemas
+  getChildSourceSchemas,
+  getOptionsDataSchema
 } from './types.ts'
 import {
   hasNestedData,
@@ -26,6 +27,7 @@ import {
   getDefaultValue,
   shouldSetDefaultValue,
   shouldExcludeValue,
+  hasComputedValueSource,
   convertValue
 } from './data.js'
 import { getValidations, getValueValidationErrors } from './validation.js'
@@ -59,6 +61,22 @@ export class FieldNode {
       )
     )
     return fields.length > 0 ? new FieldNode(this.name, fields) : null
+  }
+
+  // Of several fields of the same value, the first with a computed value or
+  // options gets the record of the data model:
+  getRecordedValue() {
+    const field = this.fields.find(
+      ({ schema }) => (
+        hasComputedValueSource(schema) || getOptionsDataSchema(schema)
+      )
+    )
+    return field
+      ? {
+          schema: field.schema,
+          form: { fields: { [this.name]: field.schema } }
+        }
+      : null
   }
 
   // The forms of the items in the value, of each field that holds them:

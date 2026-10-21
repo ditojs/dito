@@ -182,6 +182,10 @@ function isMissingValue(schema, data, name, context) {
   )
 }
 
+export function hasComputedValueSource(schema) {
+  return !!schema.computeValue || hasValueFromDataSchema(schema)
+}
+
 export function hasValueFromDataSchema(schema) {
   return (
     !!getTypeDescriptor(schema)?.resolvesValue &&
@@ -245,6 +249,7 @@ export function initializeData(schema, data = {}, services, {
 
 // Never write into `data`, as `DataModel` writes the computed values. Functions
 // in `dataPath` are only called by computes that read it, e.g. through `index`.
+// Return `undefined` when nothing is computed, for the value to stay.
 export function getComputedValue(schema, data, name, dataPath, {
   itemDataPath = null,
   services = null,
@@ -293,12 +298,8 @@ export function getComputedValue(schema, data, name, dataPath, {
       default: true
     })
   ) {
-    const value = computeValue(getContext(context))
-    if (value !== undefined) {
-      return value
-    }
+    return computeValue(getContext(context))
   }
-  return getValueOrDefault(schema, data, name, context)
 }
 
 export function getValueOrDefault(schema, data, name, context) {

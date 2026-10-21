@@ -66,7 +66,7 @@ const validatorsByFormat = {
 }
 
 // Not supported yet:
-const unsupportedKeys = ['relate', 'computeValue', 'definitions', '$ref']
+const unsupportedKeys = ['relate', 'definitions', '$ref']
 
 // Written properties: a value of a form's data and its keywords, which may be
 // functions of the entry's context, e.g. `required`, `if` or `default`:
@@ -136,18 +136,31 @@ export class PropertyNode {
     return getValueValidationErrors(entry.data[entry.name], validations)
   }
 
-  // Irrelevant values get no defaults, and unchanged passwords stay missing:
-  hasMissingValue(entry) {
+  // The data model records the value for its computes:
+  getRecordedValue() {
+    const { name, property } = this
+    return property.computeValue
+      ? { schema: property, form: { properties: { [name]: property } } }
+      : null
+  }
+
+  // Irrelevant values get no defaults, and unchanged passwords stay missing.
+  // The data model writes computed values with their defaults:
+  hasMissingValue(entry, { shouldSetDefaultsOfComponentsWithCompute } = {}) {
     return (
       !(entry.name in entry.data) &&
+      !(
+        shouldSetDefaultsOfComponentsWithCompute === false &&
+        this.property.computeValue
+      ) &&
       this.#get('format', entry) !== 'password' &&
       this.isRelevant(entry)
     )
   }
 
-  getDefaultValue(entry) {
+  getDefaultValue(entry, options) {
     const { default: def } = this.property
-    return !this.hasMissingValue(entry)
+    return !this.hasMissingValue(entry, options)
       ? undefined
       : def !== undefined
         ? resolveValue(def, () => this.#createContext(entry))

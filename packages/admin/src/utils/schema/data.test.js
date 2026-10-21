@@ -345,25 +345,11 @@ describe('getComputedValue()', () => {
     expect(data).toEqual({ title: 'Book' })
   })
 
-  it('returns the value if `computeValue()` returns `undefined`', () => {
-    const data = { upper: 'Kept' }
-    expect(getComputedValue(schema, data, 'upper', 'upper')).toBe('Kept')
-  })
-
-  it('returns the default of missing values without writing it', () => {
-    const data = {}
-    const schema = { type: 'text', default: 'Untitled' }
-    expect(getComputedValue(schema, data, 'title', 'title')).toBe('Untitled')
-    expect(data).toEqual({})
-  })
-
-  it('returns the defaults of nested sections that are `null`', () => {
-    const chooser = { type: 'section', nested: true, fields: {} }
+  it('returns `undefined` when nothing is computed', () => {
+    expect(getComputedValue(schema, {}, 'upper', 'upper')).toBe(undefined)
     expect(
-      getComputedValue(chooser, { chooser: null }, 'chooser', 'chooser')
-    ).toEqual(
-      {}
-    )
+      getComputedValue({ type: 'text' }, { title: 'Kept' }, 'title', 'title')
+    ).toBe(undefined)
   })
 
   it('provides the data path to `computeValue()`', () => {
@@ -716,7 +702,7 @@ describe('getComputedValue() with if', () => {
       computeValue: ({ item }) => item.preview.name
     }
     expect(getComputedValue(schema, { name: 'Stored' }, 'name', 'name')).toBe(
-      'Stored'
+      undefined
     )
     expect(
       getComputedValue(schema, { preview: { name: 'Preview' } }, 'name', 'name')
@@ -762,7 +748,7 @@ describe('initializeData()', () => {
     })
   })
 
-  it('can leave the defaults of computed values to `getComputedValue()`', () => {
+  it('can leave the defaults of computed values to the data model', () => {
     const pricing = {
       type: 'text',
       default: 'auto',
@@ -779,7 +765,6 @@ describe('initializeData()', () => {
     // New data starts with all defaults:
     expect(initializeData(schema, {})).toEqual({ pricing: 'auto' })
     expect(getComputedValue(pricing, data, 'pricing', 'pricing')).toBe('factor')
-    expect(getComputedValue(pricing, {}, 'pricing', 'pricing')).toBe('auto')
   })
 
   it('numbers the items of lists with `orderKey`, also nested ones', () => {
