@@ -605,6 +605,32 @@ export class DataModel {
     this.#setErrors(this.#getFieldKey(dataPath), 'validation', errors)
   }
 
+  // Replace the validation errors of the value at `dataPath` with the ones of
+  // its node, e.g. when its component is blurred, also in the items of sources
+  // with a resource. Return whether it's valid:
+  validate(dataPath: string): boolean {
+    const { schema, data } = this
+    let errors: ValueError[] = []
+    if (data && !isEmptySchema(schema)) {
+      walkData(schema!, data, {
+        ...this.#walkOptions,
+        dataPath: this.dataPath,
+        shouldSkipIrrelevant: true,
+        // Only walk the values that contain the value:
+        shouldVisit: entry => (
+          getRelativeDataPath(dataPath, entry.dataPath) !== null
+        ),
+        visit: entry => {
+          if (entry.dataPath === dataPath) {
+            errors = entry.node.getValidationErrors(entry)
+          }
+        }
+      })
+    }
+    this.setErrors(dataPath, errors.length > 0 ? errors : null)
+    return errors.length === 0
+  }
+
   addError(dataPath: string, message: string) {
     const key = this.#getFieldKey(dataPath)
     const messages = this.#fieldErrors.value.get(key) ?? []

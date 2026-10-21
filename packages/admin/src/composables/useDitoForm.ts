@@ -17,6 +17,7 @@ import {
   adminContextKey,
   dataContextKey,
   resourceContextKey,
+  propertyScopeKey,
   routeContextKey,
   schemaFormKey
 } from '../utils/keys.ts'
@@ -188,5 +189,20 @@ export function useDitoForm({
   }
 
   provide(schemaFormKey, { dataContext, buttonSchemas: form.buttonSchemas })
+  if (schema.properties) {
+    // The widgets in the layout edit the item by the names of the properties:
+    provide(propertyScopeKey, {
+      properties: schema.properties,
+      get data() {
+        return dataContext.data!
+      },
+      get dataPath() {
+        return dataContext.dataPath
+      },
+      get componentPath() {
+        return dataContext.componentPath
+      }
+    })
+  }
   return form.context
 }

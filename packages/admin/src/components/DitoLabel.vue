@@ -3,6 +3,7 @@
 component.dito-label(
   v-if="hasContent || collapsible"
   :is="collapsible && !hasButtons ? 'button' : 'div'"
+  :class="{ 'dito-label--required': required }"
   v-bind="hasButtons ? null : toggleAttributes"
 )
   //- The chevron and the text, which the focus ring of toggles encloses:
@@ -70,6 +71,8 @@ export default {
     // The title and accessible name of the toggle, if not the label:
     title: { type: String, default: null },
     info: { type: [String, Object], default: null },
+    // Mark the label of a value that is required:
+    required: { type: Boolean, default: false },
     hasButtons: { type: Boolean, default: false }
   },
 
@@ -150,6 +153,11 @@ export default {
 
   sup {
     transform: translateY(-4px);
+  }
+
+  &--required label::after {
+    content: '*';
+    margin-left: 0.15em;
   }
 
   &--fill {

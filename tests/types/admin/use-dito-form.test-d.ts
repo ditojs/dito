@@ -1,6 +1,13 @@
 import { assertType, describe, expectTypeOf, it } from 'vitest'
-import { ref } from 'vue'
-import { useDitoForm, DitoSchemaForm } from '@ditojs/admin'
+import { h, ref } from 'vue'
+import {
+  useDitoForm,
+  DitoSchemaForm,
+  DitoTextField,
+  DitoNumberField,
+  DitoSwitchField,
+  DitoSection
+} from '@ditojs/admin'
 import type { DitoContext } from '@ditojs/admin'
 
 type Product = { id: number; name: string; price: number }
@@ -43,5 +50,26 @@ describe('useDitoForm()', () => {
 describe('DitoSchemaForm', () => {
   it('is a component', () => {
     assertType<object>(DitoSchemaForm)
+  })
+})
+
+describe('widgets', () => {
+  it('take the name of their property and display props', () => {
+    h(DitoTextField, { name: 'name', label: 'Name', width: '1/2' })
+    h(DitoNumberField, { name: 'rank', step: 5, clearable: true })
+    h(DitoSwitchField, { name: 'isFeatured', labels: { checked: 'yes' } })
+    h(DitoSection, { name: 'address', label: 'Address', collapsible: true })
+    h(DitoSection, { label: 'More', collapsed: true })
+  })
+
+  it('reject the data keywords of their property', () => {
+    // @ts-expect-error: `required` is the property's.
+    h(DitoTextField, { name: 'name', required: true })
+    // @ts-expect-error: Limits are the property's.
+    h(DitoNumberField, { name: 'rank', minimum: 1 })
+    // @ts-expect-error: Defaults are the property's.
+    h(DitoSwitchField, { name: 'isFeatured', default: false })
+    // @ts-expect-error: Widgets need the name of their property.
+    h(DitoTextField, { label: 'Name' })
   })
 })
