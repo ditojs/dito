@@ -253,7 +253,7 @@ describe('Validator.addSchema()', () => {
 })
 
 describe('Validator.processSchema()', () => {
-  it('removes required keywords and formats for patch validation', () => {
+  it('removes required keywords but keeps formats for patch validation', () => {
     const validator = new Validator()
     const schema = validator.processSchema(
       {
@@ -269,7 +269,7 @@ describe('Validator.processSchema()', () => {
     expect(schema).toEqual({
       type: 'object',
       properties: {
-        title: { type: 'string' },
+        title: { type: 'string', format: 'required' },
         email: { type: 'string', format: 'email' }
       }
     })

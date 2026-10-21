@@ -509,11 +509,20 @@ describe('required and empty formats', () => {
     })
   })
 
-  it('skips required checks in patch validation', () => {
+  it('checks only the sent required values in patch validation', () => {
     expect(() => Checklist.fromJson({}, { patch: true })).not.toThrow()
-    expect(() =>
+    const errors = getValidationErrors(() =>
       Checklist.fromJson({ title: '' }, { patch: true })
-    ).not.toThrow()
+    )
+    expect(errors).toEqual({
+      title: [
+        {
+          keyword: 'format',
+          message: 'is required',
+          params: { format: 'required' }
+        }
+      ]
+    })
   })
 })
 

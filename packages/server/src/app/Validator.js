@@ -185,15 +185,13 @@ export class Validator extends objection.Validator {
       processValue: value => {
         if (isObject(value)) {
           if (patch) {
-            // Remove all required keywords and formats from schema for patch
-            // validation, except for the discriminator's tag that Ajv needs:
+            // Remove all required keywords from schema for patch validation,
+            // except for the discriminator's tag that Ajv needs. Keep the
+            // 'required' formats, so values that are sent are still checked:
             if (value.discriminator) {
               value.required = [value.discriminator.propertyName]
             } else {
               delete value.required
-            }
-            if (value.format === 'required') {
-              delete value.format
             }
           }
           // Convert async `validate()` keywords to `validateAsync()`:
