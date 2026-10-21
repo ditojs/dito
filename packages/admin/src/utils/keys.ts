@@ -6,7 +6,7 @@ import type { RouteContext } from './RouteContext.ts'
 import type { SourceContext } from './SourceContext.ts'
 import type { FileDropTargets } from './FileDropTargets.js'
 import type { Context } from './schema/types.ts'
-import type { Schema } from './types.ts'
+import type { Data, Schema } from './types.ts'
 import type { SchemaEventsEmitter } from '../composables/useSchemaEvents.ts'
 import type { ComponentPath } from '../composables/useComponentPath.ts'
 
@@ -31,6 +31,15 @@ export interface Layout {
 export interface SchemaForm {
   readonly dataContext: DataContext
   readonly buttonSchemas: Ref<Record<string, Schema> | null>
+}
+
+// The data that widgets edit by the `name` of its written properties: of the
+// form, an object or a list item:
+export interface PropertyScope {
+  readonly properties: Record<string, Schema>
+  readonly data: Data
+  readonly dataPath: string
+  readonly componentPath: string
 }
 
 export interface PanelTab {
@@ -64,6 +73,7 @@ export const labelToggleKey: Key<Ref<LabelToggle | null>> =
   )
 export const layoutKey: Key<Layout | null> = Symbol('layout')
 export const schemaFormKey: Key<SchemaForm> = Symbol('schemaForm')
+export const propertyScopeKey: Key<PropertyScope> = Symbol('propertyScope')
 export const panelTabKey: Key<PanelTab | null> = Symbol('panelTab')
 export const accumulatedBasisKey: Key<MaybeRef<number | null>> =
   Symbol(

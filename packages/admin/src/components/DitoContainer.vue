@@ -22,6 +22,7 @@
     :label="label"
     :context="context"
     :info="info"
+    :required="isRequired"
     :hasButtons="!!labelId"
     :collapsible="!!labelToggle"
     :collapsed="labelToggle?.collapsed"
@@ -94,7 +95,9 @@ export default {
     disabled: { type: Boolean, required: true },
     compact: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
-    verticalLabels: { type: Boolean, default: false }
+    verticalLabels: { type: Boolean, default: false },
+    // Widgets mark the labels of required properties, which may be callbacks:
+    required: { type: [Boolean, Function], default: false }
   },
 
   setup(props) {
@@ -228,6 +231,9 @@ export default {
 
       shouldRenderLabel,
       labelToggle,
+      isRequired: computed(() =>
+        isFunction(props.required) ? props.required(context) : props.required
+      ),
 
       errorsElementId: computed(() => `${componentPath.value}-errors`),
 

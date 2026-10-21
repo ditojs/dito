@@ -7,10 +7,6 @@ import {
   type PropType
 } from 'vue'
 import { camelize } from '@ditojs/utils'
-import {
-  getValidations,
-  getValueValidationErrors
-} from '../utils/schema/validation.js'
 import { getInputAffixesProps } from '../utils/affixes.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { isLabelled } from '../utils/schema/structure.js'
@@ -102,10 +98,14 @@ export function useContainerField(
       ? getLabel(props.schema)
       : null
   )
-  // Add the name, also of unnested components:
+  // Add the name, also of unnested components. Sections of widgets may have
+  // none:
   const { componentPath, parentComponentPath } = useComponentPath(
     () => props.dataPath,
-    parent => appendDataPath(parent.path, props.schema.name)
+    parent => {
+      const { name } = props.schema
+      return name ? appendDataPath(parent.path, name) : parent.path
+    }
   )
 
   return {
@@ -180,18 +180,9 @@ export function useField(
     )
   )
 
-  // Replace the validation errors of the field:
-  const validate = () => {
-    const errors = getValueValidationErrors(
-      value.value,
-      getValidations(context)
-    )
-    services.dataContext!.model.setErrors(
-      props.dataPath,
-      errors.length > 0 ? errors : null
-    )
-    return errors.length === 0
-  }
+  // Replace the validation errors of the value, with the checks of all fields
+  // that edit it:
+  const validate = () => services.dataContext!.model.validate(props.dataPath)
 
   const { emitEvent } = useSchemaEvents(() => props.schema, field)
   const focused = ref(false)

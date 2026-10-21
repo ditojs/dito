@@ -1,5 +1,5 @@
 import { nextTick, shallowReactive, watch } from 'vue'
-import { parseDataPath } from '@ditojs/utils'
+import { asArray, parseDataPath } from '@ditojs/utils'
 import type { DataContext } from './DataContext.ts'
 import type { RouteContext } from './RouteContext.ts'
 
@@ -17,21 +17,35 @@ export class UiRegistry {
   readonly routes = shallowReactive<RouteContext[]>([])
   readonly #handles = new Map<string, Set<UiHandle>>()
 
-  // Follow the changes of the component path, e.g. when list items move:
-  register(getComponentPath: () => string, handle: UiHandle): () => void {
-    const add = (componentPath: string) => {
-      const handles = this.#handles.get(componentPath) ?? new Set()
-      this.#handles.set(componentPath, handles.add(handle))
-      return componentPath
+  // Follow the changes of the component paths, e.g. when list items move.
+  // Sections register for the paths of the widgets that they contain:
+  register(
+    getComponentPaths: () => string | string[],
+    handle: UiHandle
+  ): () => void {
+    const add = (componentPaths: string[]) => {
+      for (const componentPath of componentPaths) {
+        const handles = this.#handles.get(componentPath) ?? new Set()
+        this.#handles.set(componentPath, handles.add(handle))
+      }
+      return componentPaths
     }
-    let componentPath = add(getComponentPath())
-    const stop = watch(getComponentPath, path => {
-      this.#handles.get(componentPath)!.delete(handle)
-      componentPath = add(path)
-    })
+    const remove = (componentPaths: string[]) => {
+      for (const componentPath of componentPaths) {
+        this.#handles.get(componentPath)!.delete(handle)
+      }
+    }
+    let componentPaths = add(asArray(getComponentPaths()))
+    const stop = watch(
+      () => asArray(getComponentPaths()),
+      paths => {
+        remove(componentPaths)
+        componentPaths = add(paths)
+      }
+    )
     return () => {
       stop()
-      this.#handles.get(componentPath)!.delete(handle)
+      remove(componentPaths)
     }
   }
 
@@ -55,7 +69,13 @@ export class UiRegistry {
     const parts = parseDataPath(componentPath)
     for (let index = 0; index <= parts.length; index++) {
       const path = parts.slice(0, index).join('/')
-      for (const handle of this.getHandles(path, dataContext)) {
+      // Also ask the components that the revealed ones mount at the same path,
+      // e.g. nested sections:
+      const asked = new Set<UiHandle>()
+      const getNextHandle = () =>
+        this.getHandles(path, dataContext).find(handle => !asked.has(handle))
+      for (let handle = getNextHandle(); handle; handle = getNextHandle()) {
+        asked.add(handle)
         await handle.reveal?.(componentPath, { focus })
       }
     }

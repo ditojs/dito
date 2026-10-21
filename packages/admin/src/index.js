@@ -17,6 +17,13 @@ export { useDitoContext } from './composables/useDitoContext.ts'
 // Components set up forms of their own, which `DitoSchemaForm` renders:
 export { useDitoForm } from './composables/useDitoForm.ts'
 export { default as DitoSchemaForm } from './components/DitoSchemaForm.vue'
+// Layouts of forms with `properties` edit them by name with widgets:
+export {
+  DitoTextField,
+  DitoNumberField,
+  DitoSwitchField
+} from './components/widgets.js'
+export { default as DitoSection } from './components/DitoSection.vue'
 export default DitoAdmin
 
 // The members of the public `TypeDescriptor`:

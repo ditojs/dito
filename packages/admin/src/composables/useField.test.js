@@ -98,6 +98,29 @@ describe('useField()', () => {
       ])
     })
 
+    it('runs the checks of all fields of the value on blur', async () => {
+      const { wrapper, getErrors, settle } = await mountSchema({
+        schema: {
+          fields: {
+            main: {
+              type: 'section',
+              fields: { title: { type: 'text', required: true } }
+            },
+            details: {
+              type: 'section',
+              fields: { title: { type: 'text', minLength: 3 } }
+            }
+          }
+        },
+        data: { title: 'Emma' }
+      })
+      await edit(wrapper.find('input[name="title"]'), 'Em')
+      await settle()
+      expect(getErrors('title')).toEqual([
+        'The Title field must be at least 3 characters long.'
+      ])
+    })
+
     it('shows the errors of the value right after it changed', async () => {
       const { findField, getErrors, settle } = await mountRequiredTitle('Emma')
       await edit(findField('title').find('input'), '')

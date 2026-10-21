@@ -3711,6 +3711,90 @@ export function useDitoForm<$Item = any>(
  */
 export const DitoSchemaForm: DefineComponent<{}>
 
+/**
+ * The props of widgets, which only display their property: Its data keywords,
+ * e.g. `required`, limits, `default` and `if`, are not props.
+ */
+type WidgetProps<$Props = {}> = $Props & {
+  /**
+   * The key of the property in the `properties` of the form, or of the object
+   * of the section that the widget is in.
+   */
+  name: string
+  /** The label, or `false` to show none. */
+  label?: string | false
+  /** The width as a fraction, e.g. `'1/2'`, a percentage or a CSS width. */
+  width?: string | number
+  info?: string
+  placeholder?: string
+  prefix?: string
+  suffix?: string
+  clearable?: boolean
+  readonly?: boolean
+  disabled?: boolean
+  autofocus?: boolean
+} & {
+  [K in Exclude<WidgetDataKeyword, keyof $Props>]?: never
+}
+
+type WidgetDataKeyword =
+  | 'type'
+  | 'required'
+  | 'nullable'
+  | 'default'
+  | 'if'
+  | 'exclude'
+  | 'computed'
+  | 'format'
+  | 'enum'
+  | 'minimum'
+  | 'maximum'
+  | 'range'
+  | 'decimals'
+  | 'minLength'
+  | 'maxLength'
+  | 'pattern'
+  | 'minItems'
+  | 'maxItems'
+  | 'trim'
+  | 'validate'
+
+/**
+ * Edits the string property `name` in the layout of {@link DitoSchemaForm},
+ * with the input type of its `format`.
+ */
+export const DitoTextField: DefineComponent<WidgetProps>
+
+/** Edits the number or integer property `name`, within its limits. */
+export const DitoNumberField: DefineComponent<
+  WidgetProps<{
+    /** The step of the number's spin buttons. */
+    step?: number
+  }>
+>
+
+/** Edits the boolean property `name` with a switch. */
+export const DitoSwitchField: DefineComponent<
+  WidgetProps<{
+    labels?: SwitchSchema['labels']
+  }>
+>
+
+/**
+ * Lays out widgets in a section, of the object property `name` if it has
+ * one. Collapsed sections show that their widgets have errors, and open to
+ * reveal them.
+ */
+export const DitoSection: DefineComponent<{
+  /** The object property whose `properties` the widgets in it edit. */
+  name?: string
+  label?: string | false
+  width?: string | number
+  info?: string
+  collapsible?: boolean
+  collapsed?: boolean
+}>
+
 export type HttpMethod =
   | 'get'
   | 'head'

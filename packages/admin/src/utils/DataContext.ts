@@ -115,6 +115,17 @@ export function createDataContext({
     return match ? getMatchingValidationErrors(errors, match) : errors
   }
 
+  // The component that displays the value at `valueDataPath`, or contains it:
+  const getValueComponentPath = (valueDataPath: string) => {
+    const { schema, data, dataPath, componentPath, model } = context
+    return getComponentPathByDataPath(schema, data, valueDataPath, {
+      dataPath,
+      componentPath,
+      services,
+      rootData: model.rootData
+    })
+  }
+
   // Notify the errors that no field displays:
   const showErrors = async (
     errors: Errors,
@@ -128,9 +139,20 @@ export function createDataContext({
       dataPath,
       server,
       isMatchingDataPath: match ? getDataPathMatcher(match) : null
-    })
+    }) ?? {}
+    // In the layouts of written properties, the errors that no mounted widget
+    // or section shows are unmatched too, e.g. under a `v-if`:
+    if (context.schema.properties) {
+      const { ui } = services.adminContext
+      for (const [dataPath, errs] of Object.entries(errors)) {
+        const path = getValueComponentPath(dataPath)
+        if (ui.getHandles(path, context).length === 0) {
+          unmatchedErrors[dataPath] ??= errs
+        }
+      }
+    }
     await revealErrorDataPaths(
-      Object.keys(errors).filter(dataPath => !unmatchedErrors?.[dataPath])
+      Object.keys(errors).filter(dataPath => !unmatchedErrors[dataPath])
     )
     if (!isEmpty(errors)) {
       // The label of the data's schema, also for the errors of its sources:
@@ -146,7 +168,7 @@ export function createDataContext({
           })
         )
       )
-      const messages = Object.entries(unmatchedErrors ?? {}).flatMap(
+      const messages = Object.entries(unmatchedErrors).flatMap(
         ([dataPath, errs]) => {
           const field = labelize(parseDataPath(dataPath).pop())
           const prefix = field ? `The field ${field}` : `The ${label}`
@@ -164,7 +186,6 @@ export function createDataContext({
   // Fields in the forms of nested routes open the form, which reveals the
   // errors that it takes over from its item:
   const revealErrorDataPaths = async (dataPaths: string[]) => {
-    const { schema, data, dataPath, componentPath, model } = context
     const { adminContext, routeContext } = services
     const [firstDataPath] = dataPaths
     // Dialogs and panels with their own data aren't part of routes:
@@ -186,12 +207,7 @@ export function createDataContext({
       }
     } else {
       for (const errorDataPath of dataPaths) {
-        const path = getComponentPathByDataPath(schema, data, errorDataPath, {
-          dataPath,
-          componentPath,
-          services,
-          rootData: model.rootData
-        })
+        const path = getValueComponentPath(errorDataPath)
         await adminContext.ui.reveal(context, path, {
           focus: errorDataPath === firstDataPath
         })

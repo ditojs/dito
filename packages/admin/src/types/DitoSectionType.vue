@@ -3,7 +3,7 @@
   ref="element"
   :class="{ 'dito-section--labelled': isLabelled }"
   role="region"
-  :aria-label="labelText || labelize(schema.name)"
+  :aria-label="labelText || labelize(schema.name) || null"
 )
   DitoSchemaInlined.dito-section__schema(
     :schema="formSchema"
@@ -27,6 +27,12 @@
         :schema="schema"
         :context="context"
       )
+    //- The widgets of `DitoSection`:
+    template(
+      v-else-if="$slots.default"
+      #default
+    )
+      slot
 </template>
 
 <script>
