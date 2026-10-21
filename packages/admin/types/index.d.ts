@@ -3643,6 +3643,11 @@ export const DitoCustomField: DefineSetupFnComponent<
       readonly errors: { message: string }[] | null
       /** The property of the value. */
       readonly property: Record<string, any>
+      /**
+       * Validates the value like widgets do on blur, e.g. with
+       * `@blur="field.validate()"`, and returns whether it's valid.
+       */
+      validate(): boolean
     }): any
   }>
 >

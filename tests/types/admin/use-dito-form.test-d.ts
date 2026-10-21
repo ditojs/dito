@@ -104,6 +104,7 @@ describe('widgets', () => {
       { message: string }[] | null
     >()
     expectTypeOf<Field['property']>().toEqualTypeOf<Record<string, any>>()
+    expectTypeOf<Field['validate']>().toEqualTypeOf<() => boolean>()
     h(DitoCustomField, { name: 'code' })
   })
 

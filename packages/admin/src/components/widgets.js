@@ -221,7 +221,13 @@ export const DitoCustomField = defineWidget('DitoCustomField', {
             const { dataPath } = props.context
             return dataContext.getErrors(dataPath)?.[dataPath] ?? null
           },
-          property
+          property,
+
+          // Validate the value like widgets do on blur, e.g. with
+          // `@blur="field.validate()"`, and return whether it's valid:
+          validate() {
+            return dataContext.model.validate(props.context.dataPath)
+          }
         })
         return () => slots.default?.(field)
       }
