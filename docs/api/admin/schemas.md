@@ -312,7 +312,8 @@ as the server's `uri` format does.
 
 Empty strings are serialized as the default value. `password` fields show a
 mask while they have no value, and items that lack the key don't get one, as
-the server doesn't send passwords.
+the server doesn't send passwords. Emptied `password` fields count as
+unchanged and aren't sent.
 
 ```js
 email: { type: 'email', required: true, trim: true },

@@ -58,7 +58,11 @@ const DitoTextType = {
         },
 
         set(inputValue) {
-          value.value = inputValue
+          // Emptied passwords count as unchanged, like missing ones:
+          value.value =
+            props.schema.type === 'password' && inputValue === ''
+              ? undefined
+              : inputValue
         }
       }),
       inputTypes

@@ -277,6 +277,28 @@ describe('DitoTextType', () => {
     expect(input.element.value).toBe('')
   })
 
+  it('leaves emptied passwords unchanged', async () => {
+    const request = vi.fn(({ data }) => ({ data }))
+    const { findField, submit } = await mountForm({
+      schema: {
+        fields: {
+          name: { type: 'text' },
+          password: { type: 'password', required: true }
+        }
+      },
+      data: { name: 'Ada' },
+      request
+    })
+    const input = findField('password').find('input')
+    await input.trigger('focus')
+    await input.setValue('secret')
+    await input.setValue('')
+    await input.trigger('blur')
+    expect(input.element.value).toBe('****************')
+    expect(await submit()).toEqual({ id: 1, name: 'Ada' })
+    expect(request.mock.calls[0][0].data).not.toHaveProperty('password')
+  })
+
   describe('validation', () => {
     it('shows the errors of required fields on blur after edits', async () => {
       const { findField, getErrors } = await mountSchema({
