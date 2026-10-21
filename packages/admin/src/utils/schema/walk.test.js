@@ -420,6 +420,28 @@ describe('getDataValidationErrors()', () => {
     ).toEqual({ address: [{ message: 'is invalid' }] })
   })
 
+  it('validates the fields whose `if` fails, and logs the error', async () => {
+    const error = new Error('Unable to tell')
+    // Silence the logged error, which the test checks:
+    const logError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const form = await createForm({
+      fields: {
+        name: {
+          type: 'text',
+          required: true,
+          if: () => {
+            throw error
+          }
+        }
+      }
+    })
+    expect(getDataValidationErrors(form, { name: '' }, { services })).toEqual({
+      name: [{ message: 'is required' }]
+    })
+    expect(logError).toHaveBeenCalledWith(error)
+    logError.mockRestore()
+  })
+
   it('walks the forms of `fields()` callbacks as set up', async () => {
     // The defaults nest the section, once the created form is set up:
     const api = { defaults: { section: { nested: true } } }
@@ -1480,6 +1502,25 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
+    it('skips nested sections whose fields are all hidden', async () => {
+      const { dataModel } = await createDataModel(
+        {
+          fields: {
+            address: {
+              type: 'section',
+              nested: true,
+              fields: { street: { type: 'text', if: false } }
+            }
+          }
+        },
+        { address: { street: '' } }
+      )
+      const errors = { address: [{ message: 'is invalid' }] }
+      expect(dataModel.replaceErrors(errors)).toEqual(errors)
+      expect(dataModel.getErrorDataPaths()).toEqual([])
+      dataModel.stop()
+    })
+
     it('gives the errors to all fields of the same value', async () => {
       const { dataModel } = await createDataModel(
         {
@@ -1491,7 +1532,7 @@ describe('DataModel', () => {
         { name: '' }
       )
       dataModel.replaceErrors({ name: [{ message: 'is required' }] })
-      expect(dataModel.getErrorDataPaths()).toEqual(['name', 'name'])
+      expect(dataModel.getErrorDataPaths()).toEqual(['name'])
       expect(dataModel.getErrors('name')).toEqual([{ message: 'is required' }])
       dataModel.clearErrors()
       expect(dataModel.getErrorDataPaths()).toEqual([])

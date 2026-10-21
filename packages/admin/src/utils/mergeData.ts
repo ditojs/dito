@@ -45,7 +45,7 @@ export function mergeData(
 
   // 1. Match the objects of `source` with the ones of `target` and merge the
   // lists in place. The walk visits the fields before it walks the items:
-  const mergeEntry = ({ schema, data, name }: DataEntry) => {
+  const mergeField = ({ data, name }: DataEntry, schema: Schema) => {
     const merge = mergesBySource.get(data)
     // New items have no target, and of several fields of the same value, e.g.
     // in several tabs, the first one that can merges it:
@@ -71,7 +71,11 @@ export function mergeData(
   }
   walkData(schema, source, {
     services,
-    visit: entries => entries.forEach(mergeEntry)
+    visit: entry => {
+      for (const { schema } of entry.node.fields) {
+        mergeField(entry, schema)
+      }
+    }
   })
 
   // 2. Replace all other values of the matched objects:

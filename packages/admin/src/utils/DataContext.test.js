@@ -372,6 +372,23 @@ describe('DataContext', () => {
       expect(context.getErrors()).toEqual({ 'address/zip': [error] })
     })
 
+    it('tells the errors of several fields of the same value once', async () => {
+      const { context } = await mountSchema({
+        schema: {
+          fields: {
+            title: { type: 'text', required: true },
+            heading: {
+              type: 'section',
+              fields: { title: { type: 'text' } }
+            }
+          }
+        },
+        data: { title: '' }
+      }).then(result => ({ context: result.schemaComponent.context }))
+      context.validate()
+      expect(context.getErrors()).toEqual({ title: required })
+    })
+
     it('tells errors inside values by their data paths', async () => {
       const { routeComponent } = await mountSchema({
         schema: {
