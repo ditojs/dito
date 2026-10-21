@@ -21,6 +21,7 @@ import {
   getSchemaValue
 } from '../utils/schema/data.js'
 import { getItemProperty } from '../utils/schema/properties.js'
+import { createReference } from '../utils/data.js'
 import {
   findOptionForValue,
   getOptionKey,
@@ -194,13 +195,10 @@ export const optionsTraits = {
     const { schema, value } = context
     const relateKey = getRelateKey(schema)
     if (relateKey) {
-      // Convert relating objects to a shallow copy with only the id left:
-      const toRelate = (value: any) =>
-        value ? { [relateKey]: value[relateKey] } : value
       // Selected options can be both objects & arrays, e.g. 'checkboxes':
       return getMultipleValue(schema, context) && isArray(value)
-        ? value.map(toRelate)
-        : toRelate(value)
+        ? value.map(item => createReference(item, relateKey))
+        : createReference(value, relateKey)
     } else {
       return value
     }

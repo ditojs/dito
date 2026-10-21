@@ -11,6 +11,8 @@ import {
 } from './data.js'
 import { getDataValidationErrors } from './validation.js'
 import { mergeData } from '../mergeData.ts'
+import { toClipboard } from '../toClipboard.ts'
+import { fromClipboard } from '../fromClipboard.ts'
 
 async function getProperties(fields, schema = {}, services = null) {
   const api = { defaults: {}, normalizePath: hyphenate }
@@ -1011,12 +1013,68 @@ describe('written properties', () => {
     })
   })
 
+  describe('relations', () => {
+    const properties = {
+      owner: { type: 'object', relate: true, required: true },
+      tags: { type: 'array', relate: 'code', items: { type: 'object' } }
+    }
+    const form = createForm(properties)
+    const createData = () => ({
+      owner: { id: 1, name: 'Ada' },
+      tags: [{ code: 'a', label: 'A' }]
+    })
+
+    it('start empty and validate as values', () => {
+      expect(initialize(properties)).toEqual({ owner: null, tags: [] })
+      expect(validate(properties, { owner: null, tags: [] })).toEqual({
+        owner: [{ message: 'is required' }]
+      })
+    })
+
+    it('send the ids of the related objects', () => {
+      expect(serialize(properties, createData())).toEqual({
+        owner: { id: 1 },
+        tags: [{ code: 'a' }]
+      })
+    })
+
+    it('replace the related objects in merges', () => {
+      const target = createData()
+      const [tag] = target.tags
+      mergeData(form, target, {
+        owner: null,
+        tags: [{ code: 'a', label: 'B' }]
+      })
+      expect(target.owner).toBe(null)
+      expect(target.tags[0]).not.toBe(tag)
+      expect(target.tags[0].label).toBe('B')
+    })
+
+    it('keep the ids of the related objects in copies', async () => {
+      const data = createData()
+      const copy = await toClipboard(form, { type: 'list', form }, data, '', {
+        services,
+        rootData: data
+      })
+      expect(copy).toEqual({ owner: { id: 1 }, tags: [{ code: 'a' }] })
+      expect((await fromClipboard(form, copy, { services })).data).toEqual(
+        copy
+      )
+    })
+  })
+
   describe('checkProperties()', () => {
     it('rejects what properties can not describe yet', () => {
       const check = property => () => checkProperties({ value: property })
-      expect(check({ type: 'object', relate: true })).toThrow(
-        `Unsupported property keyword: 'relate'.`
+      expect(check({ type: 'object', $ref: '#node' })).toThrow(
+        `Unsupported property keyword: '$ref'.`
       )
+      expect(check({ type: 'string', relate: true })).toThrow(
+        `Unsupported property: 'relate' on 'string'.`
+      )
+      expect(
+        check({ type: 'array', relate: true, items: { type: 'string' } })
+      ).toThrow(`Unsupported property: 'relate' on 'array'.`)
       expect(check({ type: 'array' })).toThrow(
         `Unsupported property: 'array' without 'items'.`
       )
@@ -1034,10 +1092,16 @@ describe('written properties', () => {
           type: 'array',
           items: {
             type: 'object',
-            properties: { owner: { type: 'object', relate: true } }
+            properties: { owner: { type: 'object', definitions: {} } }
           }
         })
-      ).toThrow(`Unsupported property keyword: 'relate'.`)
+      ).toThrow(`Unsupported property keyword: 'definitions'.`)
+      expect(() =>
+        checkProperties({
+          owner: { type: 'object', relate: true },
+          tags: { type: 'array', relate: true, items: { type: 'object' } }
+        })
+      ).not.toThrow()
     })
   })
 })

@@ -134,3 +134,8 @@ export function isTemporaryId(id) {
 export function isReference(data, idKey = 'id') {
   return data?.[idKey] != null && Object.keys(data).length === 1
 }
+
+// Send related objects as shallow copies with only their ids:
+export function createReference(data, idKey = 'id') {
+  return data ? { [idKey]: data[idKey] } : data
+}
