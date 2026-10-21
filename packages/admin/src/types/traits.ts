@@ -314,9 +314,7 @@ export const colorTraits = {
   }
 } satisfies Partial<TypeDescriptor>
 
-// Strings are empty as `''`, which `nullable` fields store as `null`:
 export const textTraits = {
-  defaultValue: '',
   getProperty: () => ({ type: 'string' }),
 
   serializeValue(context: Context) {

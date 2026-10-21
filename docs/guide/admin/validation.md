@@ -40,7 +40,7 @@ authors: { type: 'list', form, required: true } // Needs one item at least
 ```
 
 `minLength` applies to empty text too, `minLength: 1` rejects `''`, but not
-the `null` of `nullable` fields. Lists and fields with multiple values hold
+`null`, which only `required` rejects. Lists and fields with multiple values hold
 arrays, which `required` accepts when they have one item at least, as if
 `minItems: 1` was given.
 

@@ -575,6 +575,7 @@ describe('DitoClipboard', () => {
         expect(dataModel.isDirty).toBe(true)
       })
 
+      // Empty text serializes to `null`, as when the form is submitted:
       it('copies and pastes the empty value of empty lists', async () => {
         const { click, data } = await mountFonts([
           { id: 1, cuts: [] },
@@ -583,13 +584,13 @@ describe('DitoClipboard', () => {
         expect(data.fonts[0].cuts).toEqual([''])
         await click('fonts/0/cuts', 'copy')
         expect(getClipboardData('cuts', 'list')).toEqual({
-          items: [{ name: '' }]
+          items: [{ name: null }]
         })
         await click('fonts/1/cuts', 'paste')
-        expect(data.fonts[1].cuts).toEqual(['Light', ''])
+        expect(data.fonts[1].cuts).toEqual(['Light', null])
         await click('fonts/1/cuts', 'copy')
         await click('fonts/0/cuts', 'paste')
-        expect(data.fonts[0].cuts).toEqual(['', 'Light', ''])
+        expect(data.fonts[0].cuts).toEqual(['', 'Light', null])
       })
     })
 

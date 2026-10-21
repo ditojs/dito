@@ -38,38 +38,37 @@ describe('DitoTextareaType', () => {
     expect(findField('summary').attributes('rows')).toBe('4')
   })
 
-  it('sends trimmed values with `trim`, and empty values as empty strings', async () => {
+  it('sends trimmed values with `trim`, and empty values as `null`', async () => {
     const { findField, submit } = await mountForm({
       schema: {
         fields: {
           summary: { type: 'textarea', trim: true },
-          notes: { type: 'textarea' },
-          comment: { type: 'textarea', trim: true, nullable: true }
+          notes: { type: 'textarea' }
         }
       },
-      data: { summary: '', notes: 'Some', comment: 'Fine' },
+      data: { summary: '', notes: 'Some' },
       request: ({ data }) => ({ data })
     })
     await findField('summary').setValue('\n A story. \n')
     await findField('notes').setValue('')
-    await findField('comment').setValue('  ')
     expect(await submit()).toMatchObject({
       summary: 'A story.',
-      notes: '',
-      comment: null
+      notes: null
     })
   })
 
-  it('stores no value as `null` with `nullable`', async () => {
-    const { submit } = await mountForm({
+  it('sends empty values as empty strings with `nullable: false`', async () => {
+    const { findField, submit } = await mountForm({
       schema: {
         fields: {
-          summary: { type: 'textarea' },
-          notes: { type: 'textarea', nullable: true }
+          summary: { type: 'textarea', trim: true, nullable: false },
+          notes: { type: 'textarea', nullable: false }
         }
       },
+      data: { summary: 'Fine' },
       request: ({ data }) => ({ data })
     })
-    expect(await submit()).toEqual({ summary: '', notes: null })
+    await findField('summary').setValue('  ')
+    expect(await submit()).toMatchObject({ summary: '', notes: '' })
   })
 })

@@ -55,7 +55,7 @@ describe('DitoCreateButton', () => {
     ])
     await items[1].trigger('click')
     await flushPromises()
-    expect(data.blocks).toEqual([{ type: 'quote', text: '' }])
+    expect(data.blocks).toEqual([{ type: 'quote', text: null }])
   })
 
   it('opens the menu and creates items with the keyboard', async () => {
@@ -83,7 +83,7 @@ describe('DitoCreateButton', () => {
     expect(document.activeElement).toBe(items[2].element)
 
     await pressKey(menu, 'Enter')
-    expect(data.blocks).toEqual([{ type: 'image', url: '' }])
+    expect(data.blocks).toEqual([{ type: 'image', url: null }])
     expect(button.attributes('aria-expanded')).toBe('false')
   })
 
@@ -194,7 +194,7 @@ describe('DitoCreateButton', () => {
     expect(findMenuButton(field).exists()).toBe(false)
     await field.find('.dito-create-button button').trigger('click')
     await flushPromises()
-    expect(data.blocks).toEqual([{ text: '' }])
+    expect(data.blocks).toEqual([{ text: null }])
   })
 
   it('navigates to the create form with the type and query', async () => {

@@ -17,7 +17,7 @@ async function getProperties(fields, schema = {}, services = null) {
 
 describe('getFormProperties()', () => {
   describe('text types', () => {
-    it('describes strings that are empty as empty strings', async () => {
+    it('describes strings that are empty as `null`', async () => {
       expect(
         await getProperties({
           title: { type: 'text' },
@@ -27,19 +27,19 @@ describe('getFormProperties()', () => {
           phone: { type: 'tel' }
         })
       ).toEqual({
-        title: { type: 'string', default: '' },
-        body: { type: 'string', default: '' },
-        html: { type: 'string', default: '' },
-        source: { type: 'string', default: '' },
-        phone: { type: 'string', default: '' }
+        title: { type: 'string', nullable: true },
+        body: { type: 'string', nullable: true },
+        html: { type: 'string', nullable: true },
+        source: { type: 'string', nullable: true },
+        phone: { type: 'string', nullable: true }
       })
     })
 
-    it('describes `nullable` strings without a default', async () => {
+    it('describes strings with `nullable: false` as empty strings', async () => {
       expect(
-        await getProperties({ title: { type: 'text', nullable: true } })
+        await getProperties({ title: { type: 'text', nullable: false } })
       ).toEqual({
-        title: { type: 'string', nullable: true }
+        title: { type: 'string', default: '' }
       })
     })
 
@@ -52,11 +52,10 @@ describe('getFormProperties()', () => {
           password: { type: 'password' }
         })
       ).toEqual({
-        email: { type: 'string', format: 'email', default: '' },
-        website: { type: 'string', format: 'uri', default: '' },
-        host: { type: 'string', format: 'hostname', default: '' },
-        // Passwords that aren't entered are left unchanged:
-        password: { type: 'string', format: 'password' }
+        email: { type: 'string', format: 'email', nullable: true },
+        website: { type: 'string', format: 'uri', nullable: true },
+        host: { type: 'string', format: 'hostname', nullable: true },
+        password: { type: 'string', format: 'password', nullable: true }
       })
     })
 
@@ -67,8 +66,8 @@ describe('getFormProperties()', () => {
           card: { type: 'creditcard' }
         })
       ).toEqual({
-        domain: { type: 'string', default: '' },
-        card: { type: 'string', default: '' }
+        domain: { type: 'string', nullable: true },
+        card: { type: 'string', nullable: true }
       })
     })
 
@@ -89,8 +88,7 @@ describe('getFormProperties()', () => {
           required: true,
           minLength: 2,
           maxLength: 8,
-          pattern: '^[A-Z]+$',
-          default: ''
+          pattern: '^[A-Z]+$'
         }
       })
     })
@@ -139,17 +137,19 @@ describe('getFormProperties()', () => {
   })
 
   describe('boolean types', () => {
-    it('describes booleans that are empty as `false`', async () => {
+    it('describes checkboxes that are empty as `null`, switches as `false`', async () => {
       expect(
         await getProperties({
-          isPublic: { type: 'checkbox' },
-          isActive: { type: 'switch', default: true },
-          isAnswered: { type: 'checkbox', nullable: true }
+          isAnswered: { type: 'checkbox' },
+          isPublic: { type: 'checkbox', nullable: false },
+          isListed: { type: 'switch' },
+          isActive: { type: 'switch', default: true }
         })
       ).toEqual({
+        isAnswered: { type: 'boolean', nullable: true },
         isPublic: { type: 'boolean', default: false },
-        isActive: { type: 'boolean', default: true },
-        isAnswered: { type: 'boolean', nullable: true }
+        isListed: { type: 'boolean', default: false },
+        isActive: { type: 'boolean', default: true }
       })
     })
   })
@@ -346,7 +346,7 @@ describe('getFormProperties()', () => {
 
   describe('sections and panels', () => {
     const fields = { street: { type: 'text' } }
-    const properties = { street: { type: 'string', default: '' } }
+    const properties = { street: { type: 'string', nullable: true } }
 
     it('describes the fields of unnested sections in the form', async () => {
       expect(
@@ -359,7 +359,7 @@ describe('getFormProperties()', () => {
             }
           }
         })
-      ).toEqual({ ...properties, city: { type: 'string', default: '' } })
+      ).toEqual({ ...properties, city: { type: 'string', nullable: true } })
     })
 
     it('describes nested sections as objects', async () => {
@@ -387,7 +387,7 @@ describe('getFormProperties()', () => {
           }
         })
       ).toEqual({
-        name: { type: 'string', default: '' },
+        name: { type: 'string', nullable: true },
         ...properties,
         address: { type: 'object', properties, default: {} }
       })
@@ -413,7 +413,7 @@ describe('getFormProperties()', () => {
     const item = {
       type: 'object',
       properties: {
-        title: { type: 'string', required: true, default: '' }
+        title: { type: 'string', required: true }
       }
     }
 
@@ -550,12 +550,12 @@ describe('getFormProperties()', () => {
                 items: {
                   type: 'object',
                   properties: {
-                    name: { type: 'string', default: '' },
+                    name: { type: 'string', nullable: true },
                     paragraphs: {
                       type: 'array',
                       items: {
                         type: 'object',
-                        properties: { name: { type: 'string', default: '' } }
+                        properties: { name: { type: 'string', nullable: true } }
                       },
                       default: []
                     }
@@ -607,7 +607,7 @@ describe('getFormProperties()', () => {
         price: { type: 'number', range: () => [0, 10] }
       })
     ).toEqual({
-      title: { type: 'string' },
+      title: { type: 'string', nullable: true },
       price: { type: 'number', nullable: true }
     })
   })
@@ -623,8 +623,8 @@ describe('getFormProperties()', () => {
         }
       )
     ).toEqual({
-      title: { type: 'string', default: '' },
-      note: { type: 'string', default: '' }
+      title: { type: 'string', nullable: true },
+      note: { type: 'string', nullable: true }
     })
   })
 
@@ -636,7 +636,7 @@ describe('getFormProperties()', () => {
         save: { type: 'button' }
       })
     ).toEqual({
-      title: { type: 'string', default: '' }
+      title: { type: 'string', nullable: true }
     })
   })
 })

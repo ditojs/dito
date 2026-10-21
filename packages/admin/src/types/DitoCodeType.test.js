@@ -62,13 +62,13 @@ describe('DitoCodeType', () => {
     expect(dataModel.isDirty).toBe(false)
   })
 
-  it('stores empty code as empty strings, and as `null` with `nullable`', async () => {
+  it('stores empty code as `null`, and as empty strings with `nullable: false`', async () => {
     const { findField, data, submit } = await mountForm({
       schema: {
         fields: {
           snippet: { type: 'code' },
-          script: { type: 'code', nullable: true },
-          style: { type: 'code', nullable: true }
+          script: { type: 'code', nullable: false },
+          style: { type: 'code', nullable: false }
         }
       },
       data: { snippet: 'a', script: 'b' },
@@ -81,9 +81,9 @@ describe('DitoCodeType', () => {
       expect(data).toMatchObject({ snippet: '', script: '' })
     )
     expect(await submit()).toMatchObject({
-      snippet: '',
-      script: null,
-      style: null
+      snippet: null,
+      script: '',
+      style: ''
     })
   })
 

@@ -101,7 +101,7 @@ describe('DitoForm resources', () => {
       await submit()
       // Opening the created item doesn't load it again:
       expect(getRequests(request)).toEqual([
-        ['post', '/items', { name: 'Emma', note: '' }]
+        ['post', '/items', { name: 'Emma', note: null }]
       ])
     })
 
@@ -115,7 +115,7 @@ describe('DitoForm resources', () => {
       await enterValue(wrapper.find('input[name="name"]'), 'Persuasion')
       await enterValue(wrapper.find('input[name="note"]'), 'Late')
       await submit()
-      expect(data).toEqual({ id: 1, name: 'Persuasion', note: '' })
+      expect(data).toEqual({ id: 1, name: 'Persuasion', note: null })
       expect(routeComponent.routeContext.isDirty).toBe(false)
     })
 

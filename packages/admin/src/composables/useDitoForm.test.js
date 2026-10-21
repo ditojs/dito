@@ -258,7 +258,7 @@ describe('useDitoForm()', () => {
       path: '/products',
       api: { defaults: { number: { default: 1 } } }
     })
-    expect(form.item).toMatchObject({ name: '', price: 1 })
+    expect(form.item).toMatchObject({ name: null, price: 1 })
     expect(page.find('input[name="price"]').element.value).toBe('1')
   })
 

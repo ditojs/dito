@@ -22,7 +22,6 @@ const DitoCheckboxType = {
 defineType({
   type: 'checkbox',
   component: DitoCheckboxType,
-  defaultValue: false,
   getProperty: () => ({ type: 'boolean' })
 })
 

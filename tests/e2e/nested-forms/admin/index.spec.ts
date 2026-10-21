@@ -70,7 +70,7 @@ test.describe('nested forms', () => {
     await getForm(page).getByLabel('Title', { exact: true }).fill('Changed')
     await new DitoForm(page).save()
     expect((await getStoredAlbum(id))?.tracks).toEqual([
-      { title: 'Intro', length: '' }
+      { title: 'Intro', length: null }
     ])
   })
 

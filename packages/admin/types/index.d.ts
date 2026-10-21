@@ -640,7 +640,7 @@ export interface FieldSchemaBase<$Item> extends SchemaBase<$Item> {
 
   /**
    * The minimum length of text values, in characters. `1` rejects `''`, but
-   * not the `null` of `nullable` fields.
+   * not `null`, which only `required` rejects.
    */
   minLength?: SchemaValue<$Item, {}, number>
 
@@ -1118,10 +1118,10 @@ export interface TextSettings<$Item> {
    */
   trim?: boolean
   /**
-   * Whether to store no value as `null` instead of `''`, for properties that
-   * are `nullable` on the server.
+   * Whether to store no value as `null`. `false` stores `''` instead, for
+   * properties that aren't `nullable` on the server.
    *
-   * @defaultValue `false`
+   * @defaultValue `true`
    */
   nullable?: boolean
 }
@@ -1458,13 +1458,6 @@ export interface SwitchSchema<$Item = any> extends FieldSchemaBase<$Item> {
    * The type of the field.
    */
   type: 'switch'
-  /**
-   * Whether to store no value as `null` instead of `false`, the state of not
-   * being answered yet, for properties that are `nullable` on the server.
-   *
-   * @defaultValue `false`
-   */
-  nullable?: boolean
   labels?: {
     /**
      * The displayed label when the switch is checked.
@@ -1533,10 +1526,10 @@ export interface CodeSchema<$Item = any> extends FieldSchemaBase<$Item> {
    */
   type: 'code'
   /**
-   * Whether to store no value as `null` instead of `''`, for properties that
-   * are `nullable` on the server.
+   * Whether to store no value as `null`. `false` stores `''` instead, for
+   * properties that aren't `nullable` on the server.
    *
-   * @defaultValue `false`
+   * @defaultValue `true`
    */
   nullable?: boolean
   /**
@@ -1569,10 +1562,10 @@ export interface MarkupSchema<$Item = any> extends FieldSchemaBase<$Item> {
    */
   type: 'markup'
   /**
-   * Whether to store no value as `null` instead of `''`, for properties that
-   * are `nullable` on the server.
+   * Whether to store no value as `null`. `false` stores `''` instead, for
+   * properties that aren't `nullable` on the server.
    *
-   * @defaultValue `false`
+   * @defaultValue `true`
    */
   nullable?: boolean
   /**
@@ -2057,10 +2050,11 @@ export interface CheckboxSchema<
    */
   type: 'checkbox'
   /**
-   * Whether to store no value as `null` instead of `false`, the state of not
-   * being answered yet, for properties that are `nullable` on the server.
+   * Whether to store no value as `null`, the state of not being answered yet.
+   * With `false`, unanswered checkboxes store `false`, for properties that
+   * aren't `nullable` on the server.
    *
-   * @defaultValue `false`
+   * @defaultValue `true`
    */
   nullable?: boolean
 }
