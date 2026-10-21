@@ -3528,17 +3528,19 @@ export const DitoCheckboxField: DefineComponent<WidgetProps>
  * values of its `enum`. Properties with `relate` hold the related objects.
  */
 export const DitoSelectField: DefineComponent<
-  WidgetProps<Pick<SelectSchema, 'options'>>
+  WidgetProps<Pick<SelectSchema, 'options' | 'editable' | 'view'>>
 >
 
 /** Selects the value of the property `name` with radio buttons. */
 export const DitoRadioField: DefineComponent<
-  WidgetProps<Pick<RadioSchema, 'options' | 'layout'>>
+  WidgetProps<Pick<RadioSchema, 'options' | 'layout' | 'editable' | 'view'>>
 >
 
 /** Selects the values of the array property `name` with checkboxes. */
 export const DitoCheckboxesField: DefineComponent<
-  WidgetProps<Pick<CheckboxesSchema, 'options' | 'layout'>>
+  WidgetProps<
+    Pick<CheckboxesSchema, 'options' | 'layout' | 'editable' | 'view'>
+  >
 >
 
 /**
@@ -3555,6 +3557,8 @@ export const DitoMultiselectField: DefineComponent<
       | 'search'
       | 'stayOpen'
       | 'taggable'
+      | 'editable'
+      | 'view'
     >
   >
 >
@@ -3609,7 +3613,12 @@ export const DitoListField: DefineSetupFnComponent<
   WidgetProps<
     { name: string } & Pick<
       ListSchema,
-      'collapsible' | 'collapsed' | 'creatable' | 'deletable' | 'draggable'
+      | 'collapsible'
+      | 'collapsed'
+      | 'creatable'
+      | 'deletable'
+      | 'draggable'
+      | 'itemLabel'
     >
   >,
   {},

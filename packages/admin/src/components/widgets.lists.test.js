@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { h, nextTick } from 'vue'
 import { flushPromises } from '@vue/test-utils'
+import { html } from '@ditojs/utils'
 import { DitoMenuButton } from '@ditojs/ui/src'
 import { mountAdmin, enterValue } from '../test/mount.js'
 import {
@@ -83,7 +84,8 @@ const DesignerPage = {
               collapsed: true,
               creatable: true,
               deletable: true,
-              draggable: true
+              draggable: true,
+              itemLabel: ({ item }) => html`<b>${item.title}</b>`
             },
             {
               default: ({ index }) => [
@@ -103,7 +105,12 @@ const DesignerPage = {
           ),
           h(
             DitoListField,
-            { name: 'works', creatable: true },
+            {
+              name: 'works',
+              creatable: true,
+              collapsible: true,
+              itemLabel: 'type'
+            },
             {
               // The notes of records aren't laid out:
               default: ({ item }) =>
@@ -195,6 +202,26 @@ describe('DitoListField', () => {
     expect(year.attributes('placeholder')).toBe('Year 2')
     await enterValue(getRows(wrapper, 'awards')[1].find('input'), 'Bronze')
     expect(form.item.awards[1].title).toBe('Bronze')
+  })
+
+  it('labels its items with `itemLabel`', async () => {
+    const { wrapper } = await mountDesignerPage()
+    form.item.awards[0].title = '<i>Gold</i>'
+    await nextTick()
+    const getLabels = name =>
+      getRows(wrapper, name).map(
+        row => row.find('.dito-schema-header .dito-label label').element
+      )
+    // Only `html` values are rendered as HTML, not the values in them:
+    expect(getLabels('awards').map(label => label.innerHTML)).toEqual([
+      '<b>&lt;i&gt;Gold&lt;/i&gt;</b>',
+      '<b>Silver</b>'
+    ])
+    // Strings name the key of the label:
+    expect(getLabels('works').map(label => label.textContent)).toEqual([
+      'book',
+      'record'
+    ])
   })
 
   it('edits primitive items with widgets without `name`', async () => {
