@@ -1017,9 +1017,6 @@ describe('written properties', () => {
       expect(check({ type: 'object', relate: true })).toThrow(
         `Unsupported property keyword: 'relate'.`
       )
-      expect(check({ type: 'string', computeValue: () => '' })).toThrow(
-        `Unsupported property keyword: 'computeValue'.`
-      )
       expect(check({ type: 'array' })).toThrow(
         `Unsupported property: 'array' without 'items'.`
       )

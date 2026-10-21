@@ -203,6 +203,44 @@ describe('DataModel', () => {
     dataModel.stop()
   })
 
+  it('gives missing values that nothing computes their defaults', () => {
+    const schema = {
+      type: 'form',
+      fields: {
+        pricing: {
+          type: 'text',
+          default: 'auto',
+          computeValue: ({ value, item }) => (
+            value ?? (item.customFactor != null ? 'factor' : undefined)
+          )
+        }
+      }
+    }
+    const { dataModel, data } = createDataModel(schema, {})
+    expect(data).toEqual({ pricing: 'auto' })
+    dataModel.stop()
+  })
+
+  it('writes the computed values of written properties', async () => {
+    const schema = {
+      type: 'form',
+      properties: {
+        title: { type: 'string' },
+        slug: {
+          type: 'string',
+          computeValue: ({ item }) => item.title.toLowerCase()
+        },
+        rank: { type: 'integer', default: 1, computeValue: () => undefined }
+      }
+    }
+    const { dataModel, data } = createDataModel(schema, { title: 'Hello' })
+    expect(data).toEqual({ title: 'Hello', slug: 'hello', rank: 1 })
+    data.title = 'World'
+    await nextTick()
+    expect(data.slug).toBe('world')
+    dataModel.stop()
+  })
+
   it('writes computed values that are new objects only once', async () => {
     const computeValue = vi.fn(({ value }) =>
       value.map(entry => ({ ...entry, upper: entry.name.toUpperCase() }))
