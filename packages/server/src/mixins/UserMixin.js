@@ -39,7 +39,8 @@ export const UserMixin = mixin(
           // `password` isn't stored, but this is required for validation:
           [passwordProperty]: {
             type: 'string',
-            computed: true
+            computed: true,
+            minLength: 1
           },
 
           hash: {
