@@ -1543,9 +1543,8 @@ describe('DataModel', () => {
 
 describe('written properties', () => {
   // The catalogue as written properties, without what properties can't
-  // describe yet or at all: wrapped primitives (`tags`), `fields()` callbacks
-  // (`details`) and sources with their own resource (`vendors`). Strings are
-  // `nullable`, as the values of fields are:
+  // describe: `fields()` callbacks (`details`) and sources with their own
+  // resource (`vendors`). Strings are `nullable`, as the values of fields are:
   const text = { type: 'string', nullable: true }
   const catalogueProperties = {
     title: { ...text, required: true },
@@ -1588,7 +1587,8 @@ describe('written properties', () => {
                         length: { type: 'number', nullable: true, default: 1 }
                       }
                     }
-                  }
+                  },
+                  tags: { type: 'array', items: { ...text, required: true } }
                 }
               },
               record: {
@@ -1625,15 +1625,12 @@ describe('written properties', () => {
     ...data,
     collections: data.collections.map(collection => ({
       ...collection,
-      items: collection.items.map(
-        ({ tags, blurb, summary, ...item }) => item
-      )
+      items: collection.items.map(({ blurb, summary, ...item }) => item)
     }))
   })
 
   it('validate like the fields that they describe', async () => {
     const {
-      'collections/0/items/0/tags/1': tag,
       'collections/0/items/0/blurb': blurb,
       'collections/0/items/1/summary': summary,
       'collections/1/items/0/tracks': tracks,
