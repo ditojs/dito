@@ -10,6 +10,7 @@ import {
 } from 'vue'
 import { setupForm } from '../utils/schema/setup.js'
 import { checkFormProperties } from '../utils/schema/properties.js'
+import { getItemId } from '../utils/schema/data.js'
 import { hasSubmitButton } from '../utils/schema/lookup.js'
 import { RouteTree, ViewNode } from '../utils/RouteTree.ts'
 import { isPage } from '../utils/schema/structure.js'
@@ -85,9 +86,10 @@ export function useDitoForm({
     .catch(console.error)
   const sourceSchema = { resource, form: schema } as Schema
 
-  // Created items are saved with the id that their response merged:
+  // Created items are saved with the id that their response merged. Read it
+  // from the item, as the form's resource depends on it:
   const getDataId = () => (
-    (dataContext.data && form.getItemId(sourceSchema, dataContext.data)) ?? null
+    (dataContext.data && getItemId(sourceSchema, dataContext.data)) ?? null
   )
   const itemId = computed(() => {
     const value = toValue(id)
