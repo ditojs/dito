@@ -7,6 +7,7 @@ import {
   formatPlainDate
 } from '@ditojs/utils'
 import { convertToDate } from '../date.js'
+import { createReference } from '../data.js'
 import { getStoredFiles } from '../upload.ts'
 import {
   getTypeDescriptor,
@@ -27,6 +28,7 @@ import {
   resolveValue
 } from './data.js'
 import { getValueValidationErrors } from './validation.js'
+import { getRelateKey } from './options.ts'
 
 // The limits of strings and arrays, named and applied as on the server:
 const limitKeys = ['minLength', 'maxLength', 'pattern', 'minItems', 'maxItems']
@@ -66,7 +68,7 @@ const validatorsByFormat = {
 }
 
 // Not supported yet:
-const unsupportedKeys = ['relate', 'definitions', '$ref']
+const unsupportedKeys = ['definitions', '$ref']
 
 // Written properties: a value of a form's data and its keywords, which may be
 // functions of the entry's context, e.g. `required`, `if` or `default`:
@@ -204,7 +206,12 @@ export class PropertyNode {
   // Convert values by their type, like the types of fields do:
   #convertValue(value, entry) {
     const { type } = this.property
-    if (isDate(value) && dateTypes.has(type)) {
+    const relateKey = getRelateKey(this.property)
+    if (relateKey) {
+      return isArray(value)
+        ? value.map(item => createReference(item, relateKey))
+        : createReference(value, relateKey)
+    } else if (isDate(value) && dateTypes.has(type)) {
       // Send plain dates, so they can't shift to another day through time
       // zones:
       return type === 'date' ? formatPlainDate(value) : value.toISOString()
@@ -261,7 +268,7 @@ export function checkProperties(properties) {
 }
 
 function checkProperty(property) {
-  const { type, format, items, forms } = property
+  const { type, format, items, forms, relate } = property
   const key = unsupportedKeys.find(key => key in property)
   if (key) {
     throw new Error(`Unsupported property keyword: '${key}'.`)
@@ -274,6 +281,11 @@ function checkProperty(property) {
   }
   if (type === 'array' && !forms && !items) {
     throw new Error(`Unsupported property: 'array' without 'items'.`)
+  }
+  // Relations hold references to objects, alone or in lists:
+  const related = type === 'array' ? items : property
+  if (relate && (related?.type !== 'object' || related.properties)) {
+    throw new Error(`Unsupported property: 'relate' on '${type}'.`)
   }
   if (items) {
     checkProperty(items)
@@ -396,10 +408,11 @@ function getFieldProperty(field, name, formContext) {
   }
 }
 
-// Values that hold items, of arrays or objects with properties:
+// Values that hold items, of arrays or objects with properties. Relations hold
+// references, not items:
 function getPropertySource(property) {
-  const { type, properties, items, forms, idKey, orderKey } = property
-  return type === 'array' || properties
+  const { type, properties, items, forms, idKey, orderKey, relate } = property
+  return !relate && (type === 'array' || properties)
     ? {
         isSource: true,
         isList: type === 'array',
@@ -416,8 +429,8 @@ function getPropertySource(property) {
 
 // The forms of the items in the value, by their `type`. Primitives are walked
 // as the property of their wrapper:
-function getItemForms({ type, properties, items, forms }) {
-  return type === 'array' || properties
+function getItemForms({ type, properties, items, forms, relate }) {
+  return !relate && (type === 'array' || properties)
     ? [
         {
           forms: (
