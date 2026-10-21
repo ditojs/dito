@@ -75,6 +75,7 @@ import { useContainerField } from '../composables/useField.ts'
 import { getTypeComponent, getTypeDescriptor } from '../utils/schema/types.ts'
 import { omitsSpacing, isPanel } from '../utils/schema/structure.js'
 import { getAllPanelEntries } from '../utils/schema/lookup.js'
+import { getDataKeywords } from '../utils/schema/properties.js'
 import { parseFraction } from '../utils/math.js'
 import {
   accumulatedBasisKey,
@@ -97,9 +98,7 @@ export default {
     disabled: { type: Boolean, required: true },
     compact: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
-    verticalLabels: { type: Boolean, default: false },
-    // Widgets mark the labels of required properties, which may be callbacks:
-    required: { type: [Boolean, Function], default: false }
+    verticalLabels: { type: Boolean, default: false }
   },
 
   setup(props) {
@@ -233,8 +232,9 @@ export default {
 
       shouldRenderLabel,
       labelToggle,
-      isRequired: computed(() =>
-        isFunction(props.required) ? props.required(context) : props.required
+      // Mark the labels of values that validation requires:
+      isRequired: computed(
+        () => !!getDataKeywords(props.schema, context).required
       ),
 
       errorsElementId: computed(() => `${componentPath.value}-errors`),

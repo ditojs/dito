@@ -46,6 +46,48 @@ describe('DitoContainer', () => {
     )
   })
 
+  it('marks the labels of required fields', async () => {
+    const { findContainer } = await mountSchema({
+      schema: {
+        fields: {
+          title: { type: 'text', label: 'Title', required: true },
+          subtitle: { type: 'text', label: 'Subtitle' },
+          isbn: {
+            type: 'text',
+            label: 'ISBN',
+            required: ({ item }) => item.printed
+          },
+          url: {
+            type: 'url',
+            label: 'URL',
+            required: ({ item }) => !item.printed
+          },
+          tags: {
+            type: 'checkboxes',
+            label: 'Tags',
+            options: ['a', 'b'],
+            required: true
+          }
+        }
+      },
+      data: {
+        title: '',
+        subtitle: '',
+        isbn: '',
+        url: '',
+        tags: [],
+        printed: true
+      }
+    })
+    const isMarked = name =>
+      findContainer(name).find('.dito-label--required').exists()
+    expect(isMarked('title')).toBe(true)
+    expect(isMarked('subtitle')).toBe(false)
+    expect(isMarked('isbn')).toBe(true)
+    expect(isMarked('url')).toBe(false)
+    expect(isMarked('tags')).toBe(true)
+  })
+
   it('sizes containers by numbers, percentages and fractions', async () => {
     const [number, percentage, fraction] = await mountWidths([
       0.5,
