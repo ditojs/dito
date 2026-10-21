@@ -3,6 +3,12 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 5.4.1 (2026-10-21)
+
+### Fixes
+
+- **schema:** `@ditojs/schema` 5.4.0 was published with an unresolved dependency on `@ditojs/utils` (`workspace:^`), so `@ditojs/schema` and `@ditojs/admin` 5.4.0 couldn't be installed.
+
 ## 5.4.0 (2026-10-21)
 
 ### Behaviour changes
