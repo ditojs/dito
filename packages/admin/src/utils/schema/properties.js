@@ -1,4 +1,13 @@
-import { isArray, isFunction } from '@ditojs/utils'
+import SchemaContext from '../../SchemaContext.js'
+import {
+  isArray,
+  isFunction,
+  isDate,
+  isString,
+  formatPlainDate
+} from '@ditojs/utils'
+import { convertToDate } from '../date.js'
+import { getStoredFiles } from '../upload.ts'
 import {
   getTypeDescriptor,
   getChildSourceSchemas,
@@ -14,11 +23,254 @@ import {
   getSchemaValue,
   getDefaultValue,
   getEmptyValue,
-  shouldIgnoreMissingValue
+  shouldIgnoreMissingValue,
+  resolveValue
 } from './data.js'
+import { getValueValidationErrors } from './validation.js'
 
 // The limits of strings and arrays, named and applied as on the server:
 const limitKeys = ['minLength', 'maxLength', 'pattern', 'minItems', 'maxItems']
+
+// The keywords that written properties validate with the validators of the
+// same names:
+const validatedKeys = [
+  'required',
+  ...limitKeys,
+  'minimum',
+  'maximum',
+  'range',
+  'decimals'
+]
+
+const supportedTypes = new Set([
+  'string',
+  'number',
+  'integer',
+  'boolean',
+  'date',
+  'datetime',
+  'timestamp',
+  'asset',
+  'object',
+  'array'
+])
+
+const dateTypes = new Set(['date', 'datetime', 'timestamp'])
+
+// The validators of the server's formats, `uri` with the scheme it requires:
+const validatorsByFormat = {
+  email: 'email',
+  hostname: 'hostname',
+  password: 'password',
+  uri: 'url'
+}
+
+// Not supported yet:
+const unsupportedKeys = ['relate', 'computeValue', 'definitions', '$ref']
+
+// Written properties: a value of a form's data and its keywords, which may be
+// functions of the entry's context, e.g. `required`, `if` or `default`:
+export class PropertyNode {
+  constructor(name, property) {
+    this.name = name
+    this.property = property
+    // Properties hold no fields, which only fields have for structure:
+    this.fields = []
+    this.source = getPropertySource(property)
+  }
+
+  getWalkedNode(entry, { shouldSkipIrrelevant }) {
+    return !shouldSkipIrrelevant || this.isRelevant(entry) ? this : null
+  }
+
+  // Like for fields, an `if` that fails counts as relevant:
+  isRelevant(entry) {
+    try {
+      return getSchemaValue('if', {
+        type: Boolean,
+        schema: this.property,
+        context: this.#createContext(entry),
+        default: true
+      })
+    } catch (error) {
+      console.error(error)
+      return true
+    }
+  }
+
+  getItemForms() {
+    const { forms, items } = this.property
+    return [
+      {
+        forms: forms ?? { default: items ?? this.property },
+        childSourceSchemas: []
+      }
+    ]
+  }
+
+  getValidationErrors(entry) {
+    const { property } = this
+    const context = this.#createContext(entry)
+    const get = key => getSchemaValue(key, { schema: property, context })
+    const validations = {}
+    for (const key of validatedKeys) {
+      const setting = get(key)
+      if (setting != null && setting !== false) {
+        validations[key] = setting
+      }
+    }
+    if (property.type === 'integer') {
+      validations.integer = true
+    } else if (dateTypes.has(property.type)) {
+      validations.date = true
+    }
+    const format = get('format')
+    if (format) {
+      validations[validatorsByFormat[format]] = true
+    }
+    const values = get('enum')
+    if (values) {
+      validations.enum = value => values.includes(value)
+    }
+    if (property.validate) {
+      validations.validate = value =>
+        property.validate(context.extend({ value }))
+    }
+    return getValueValidationErrors(entry.data[entry.name], validations)
+  }
+
+  // Irrelevant values get no defaults, and unchanged passwords stay missing:
+  hasMissingValue(entry) {
+    return (
+      !(entry.name in entry.data) &&
+      this.#get('format', entry) !== 'password' &&
+      this.isRelevant(entry)
+    )
+  }
+
+  getDefaultValue(entry) {
+    const { default: def } = this.property
+    return !this.hasMissingValue(entry)
+      ? undefined
+      : def !== undefined
+        ? resolveValue(def, () => this.#createContext(entry))
+        : getPropertyEmptyValue(this.property, this.#get('nullable', entry))
+  }
+
+  deserialize(value, entry) {
+    const { property } = this
+    if (dateTypes.has(property.type)) {
+      value = convertToDate(value)
+    }
+    return property.deserializeValue
+      ? property.deserializeValue(this.#createContext(entry, { value }))
+      : value
+  }
+
+  // Irrelevant and excluded values aren't sent:
+  serialize(value, entry) {
+    const { property } = this
+    if (this.isRelevant(entry)) {
+      const { serializedData, serializedRootData } = entry
+      const createContext = value =>
+        this.#createContext(entry, {
+          value,
+          serializedData,
+          serializedRootData
+        })
+      value = this.#convertValue(value, entry)
+      if (property.serializeValue) {
+        value = property.serializeValue(createContext(value))
+      }
+      return value === undefined || this.isExcluded(entry) ? undefined : value
+    }
+  }
+
+  // Computed properties are stored by the server, which doesn't accept them:
+  isExcluded(entry) {
+    return !!(this.#get('exclude', entry) || this.#get('computed', entry))
+  }
+
+  // Convert values by their type, like the types of fields do:
+  #convertValue(value, entry) {
+    const { type } = this.property
+    if (isDate(value) && dateTypes.has(type)) {
+      // Send plain dates, so they can't shift to another day through time
+      // zones:
+      return type === 'date' ? formatPlainDate(value) : value.toISOString()
+    } else if (type === 'asset') {
+      return getStoredFiles(value)[0] ?? null
+    } else if (type === 'string' && isString(value)) {
+      value = this.#get('trim', entry) ? value.trim() : value
+      return value === '' && this.#get('nullable', entry) ? null : value
+    }
+    return value
+  }
+
+  #get(key, entry) {
+    return getSchemaValue(key, {
+      schema: this.property,
+      context: this.#createContext(entry)
+    })
+  }
+
+  #createContext(entry, values = null) {
+    const { data, name, dataPath, itemDataPath, rootData, services } = entry
+    return new SchemaContext(services, {
+      schema: this.property,
+      name,
+      nested: true,
+      data,
+      dataPath,
+      itemDataPath,
+      rootData,
+      ...(values ?? {
+        get value() {
+          return data[name]
+        }
+      })
+    })
+  }
+}
+
+export function createPropertyNodes(properties) {
+  return new Map(
+    Object.entries(properties).map(([name, property]) => [
+      name,
+      new PropertyNode(name, property)
+    ])
+  )
+}
+
+// Fail early on what written properties don't support yet:
+export function checkProperties(properties) {
+  for (const property of Object.values(properties)) {
+    const { type, format, items, forms } = property
+    const key = unsupportedKeys.find(key => key in property)
+    if (key) {
+      throw new Error(`Unsupported property keyword: '${key}'.`)
+    }
+    if (!supportedTypes.has(type)) {
+      throw new Error(`Unsupported property type: '${type}'.`)
+    }
+    if (format && !isFunction(format) && !validatorsByFormat[format]) {
+      throw new Error(`Unsupported property format: '${format}'.`)
+    }
+    if (type === 'array' && !forms && !items?.properties) {
+      // Lists of primitives aren't supported yet:
+      throw new Error(`Unsupported property keyword: 'items'.`)
+    }
+    for (const { properties } of [
+      property,
+      ...(items ? [items] : []),
+      ...Object.values(forms ?? {})
+    ]) {
+      if (properties) {
+        checkProperties(properties)
+      }
+    }
+  }
+}
 
 // Describe the data of the form's fields as the `properties` of server models:
 export function getFormProperties(schema, context) {
@@ -129,4 +381,29 @@ function getFieldProperty(field, name, formContext) {
     }
     return property
   }
+}
+
+// Values that hold items, of arrays or objects with properties:
+function getPropertySource(property) {
+  const { type, properties, forms, idKey, orderKey } = property
+  return type === 'array' || properties
+    ? {
+        isSource: true,
+        isList: type === 'array',
+        hasForms: true,
+        idKey: idKey || 'id',
+        orderKey: orderKey ?? null,
+        hasItemTypes: Object.keys(forms ?? {}).length > 1,
+        hasResource: false,
+        itemAdapter: null
+      }
+    : null
+}
+
+// Empty values follow the server, `nullable` ones are `null`:
+function getPropertyEmptyValue({ type, properties }, isNullable) {
+  return isNullable
+    ? null
+    : ({ string: '', boolean: false, array: [] }[type] ??
+      (properties ? {} : null))
 }

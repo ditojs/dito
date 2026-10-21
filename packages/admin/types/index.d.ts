@@ -3669,6 +3669,14 @@ export function useDitoForm<$Item = any>(
      * @defaultValue `null`
      */
     id?: MaybeRefOrGetter<string | number | null>
+    /**
+     * The data of the form in the format of the server's model properties,
+     * instead of `fields`, with the admin's keywords such as `if`, `exclude`
+     * and `serializeValue()` in the same objects. Keywords may be functions of
+     * the context. Lists hold items of `items.properties`, or of several
+     * `forms` by their `type`.
+     */
+    properties?: Record<string, Record<string, any>>
   }
 ): DitoContext<$Item>
 

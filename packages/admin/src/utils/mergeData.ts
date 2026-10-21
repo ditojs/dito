@@ -5,13 +5,7 @@ import {
   getItemUid,
   deserializeData
 } from './schema/data.js'
-import { hasFormSchema, hasMultipleFormSchemas } from './schema/lookup.js'
-import { hasNestedData, isSourceWithResource } from './schema/structure.js'
-import {
-  walkData,
-  type DataEntry,
-  type WalkedDataEntry
-} from './schema/walk.js'
+import { walkData, type DataEntry, type DataSource } from './schema/walk.js'
 import type { Data, Schema } from './types.ts'
 
 // The names of the values that are merged in place or kept, not replaced:
@@ -45,23 +39,22 @@ export function mergeData(
 
   // 1. Match the objects of `source` with the ones of `target` and merge the
   // lists in place. The walk visits the fields before it walks the items:
-  const mergeField = ({ data, name }: DataEntry, schema: Schema) => {
+  // New items have no target:
+  const mergeEntry = ({ node: { source }, data, name }: DataEntry) => {
     const merge = mergesBySource.get(data)
-    // New items have no target, and of several fields of the same value, e.g.
-    // in several tabs, the first one that can merges it:
-    if (merge && !merge.names.has(name)) {
+    if (merge && source) {
       const sourceValue = data[name]
       const targetValue = merge.target[name]
-      if (shouldKeepSourcesWithResource && isSourceWithResource(schema)) {
+      if (shouldKeepSourcesWithResource && source.hasResource) {
         merge.names.add(name)
-      } else if (hasFormSchema(schema)) {
+      } else if (source.hasForms) {
         if (isArray(sourceValue) && isArray(targetValue)) {
-          mergeList(schema, targetValue, sourceValue, addMerge, shouldMatchUids)
+          mergeList(source, targetValue, sourceValue, addMerge, shouldMatchUids)
           merge.names.add(name)
         } else if (
           isObject(sourceValue) &&
           isObject(targetValue) &&
-          hasSameFormSchema(schema, sourceValue, targetValue)
+          hasSameFormSchema(source, sourceValue, targetValue)
         ) {
           addMerge(sourceValue, targetValue)
           merge.names.add(name)
@@ -71,11 +64,7 @@ export function mergeData(
   }
   walkData(schema, source, {
     services,
-    visit: entry => {
-      for (const { schema } of entry.node.fields) {
-        mergeField(entry, schema)
-      }
-    }
+    visit: mergeEntry
   })
 
   // 2. Replace all other values of the matched objects:
@@ -116,10 +105,9 @@ export function mergeValues(
     services,
     dataPath,
     rootData,
-    // Walk the unnested components of the item, e.g. sections, but only the
-    // values of `values`:
-    shouldWalk: ({ schema, data, name }: WalkedDataEntry) => (
-      data !== item || !hasNestedData(schema) || Object.hasOwn(values, name!)
+    // Only visit the values of `values` in the item:
+    shouldVisit: ({ data, name }: DataEntry) => (
+      data !== item || Object.hasOwn(values, name)
     )
   })
   const isMerged = (_: unknown, key: PropertyKey) => Object.hasOwn(values, key)
@@ -135,7 +123,7 @@ export function mergeValues(
 // server keeps the order of new items when it gives them their ids.
 // Copies that share the uids of their items are matched by these only:
 function mergeList(
-  sourceSchema: Schema,
+  dataSource: DataSource,
   target: any[],
   source: any[],
   addMerge: (source: Data, target: Data) => void,
@@ -144,8 +132,8 @@ function mergeList(
   const getKey = (item: any) =>
     isObject(item)
       ? shouldMatchUids
-        ? getItemUid(sourceSchema, item)
-        : getItemId(sourceSchema, item)
+        ? getItemUid(dataSource, item)
+        : getItemId(dataSource, item)
       : undefined
   const targetItemsByKey = new Map<string | undefined, Data>()
   const newTargetItems: Data[] = []
@@ -172,7 +160,7 @@ function mergeList(
       matchedItems[index] ??
       (isObject(item) ? unmatchedNewTargetItems.shift() : undefined)
     )
-    if (targetItem && hasSameFormSchema(sourceSchema, item, targetItem)) {
+    if (targetItem && hasSameFormSchema(dataSource, item, targetItem)) {
       addMerge(item, targetItem)
       return targetItem
     }
@@ -182,6 +170,6 @@ function mergeList(
 }
 
 // Items of a different type have a different shape, and are replaced:
-function hasSameFormSchema(sourceSchema: Schema, source: Data, target: Data) {
-  return !hasMultipleFormSchemas(sourceSchema) || source.type === target.type
+function hasSameFormSchema(dataSource: DataSource, source: Data, target: Data) {
+  return !dataSource.hasItemTypes || source.type === target.type
 }

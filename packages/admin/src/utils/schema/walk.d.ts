@@ -8,11 +8,27 @@ interface DefaultValueOptions {
   shouldSetDefaultsOfComponentsWithCompute?: boolean
 }
 
-// A value with the fields that edit it, which answers for the value:
-export declare class FieldNode {
+// The source of the items in a value:
+export interface DataSource {
+  isSource: boolean
+  isList: boolean
+  hasForms: boolean
+  idKey: string
+  orderKey: string | null
+  hasItemTypes: boolean
+  hasResource: boolean
+  itemAdapter: {
+    name: string
+    wrap: (value: any) => Data
+    unwrap: (item: Data) => any
+  } | null
+}
+
+// A value of the data, which answers for it. Only fields hold `fields`:
+export interface DataNode {
   name: string
   fields: { schema: Schema; name: string | null }[]
-  constructor(name: string, fields?: FieldNode['fields'])
+  source: DataSource | null
   getValidationErrors(entry: DataEntry): ValueError[]
   hasMissingValue(entry: DataEntry, options?: DefaultValueOptions): boolean
   getDefaultValue(entry: DataEntry, options?: DefaultValueOptions): any
@@ -21,9 +37,11 @@ export declare class FieldNode {
   isExcluded(entry: DataEntry): boolean
 }
 
+export function getSchemaSource(schema: Schema): DataSource
+
 // The value at a node that `walkData()` visits, with the data that holds it:
 export interface DataEntry {
-  node: FieldNode
+  node: DataNode
   data: Data
   name: string
   dataPath: string | null
