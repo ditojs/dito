@@ -6,7 +6,7 @@ import { deserializeData, getLabel } from './schema/data.js'
 import { getSourceType } from './schema/types.ts'
 import { findOptionsForLabel, getRelateKey } from './schema/options.ts'
 import { isSourceWithResource } from './schema/structure.js'
-import { walkData, type DataEntry } from './schema/walk.js'
+import { walkData, type FieldEntry } from './schema/walk.js'
 import type { Services } from './services.ts'
 import type { Data, Schema } from './types.ts'
 
@@ -40,8 +40,8 @@ export async function fromClipboard(
   }
 
   // Use the same id keys as `SchemaGraph.serialize()`:
-  const labeledEntries: DataEntry[] = []
-  const handleEntry = (entry: DataEntry) => {
+  const labeledEntries: FieldEntry[] = []
+  const handleEntry = (entry: FieldEntry) => {
     const { schema, data, name } = entry
     if (isSourceWithResource(schema)) {
       delete data[name]
@@ -58,11 +58,15 @@ export async function fromClipboard(
   walkData(schema, data, {
     dataPath,
     ...walkOptions,
-    visit: entries => entries.forEach(handleEntry)
+    visit: entry => {
+      for (const { schema } of entry.node.fields) {
+        handleEntry({ ...entry, schema })
+      }
+    }
   })
   deserializeData(schema, data, { dataPath, ...walkOptions })
 
-  const resolveLabels = async (entry: DataEntry) => {
+  const resolveLabels = async (entry: FieldEntry) => {
     const { schema, data, name } = entry
     // The options of the pasted values, loaded like the ones of fields:
     const options = (await services!

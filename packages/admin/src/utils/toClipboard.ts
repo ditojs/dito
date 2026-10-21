@@ -18,11 +18,13 @@ export async function toClipboard(
     dataPath,
     services,
     rootData,
-    visit: entries => {
-      for (const entry of entries) {
-        if (entry.schema.relate && getOptionsDataSchema(entry.schema)) {
+    visit: entry => {
+      for (const { schema } of entry.node.fields) {
+        if (schema.relate && getOptionsDataSchema(schema)) {
           loads.push(
-            services.dataContext!.model.getOptionsResolver(entry).waitForValue()
+            services
+              .dataContext!.model.getOptionsResolver({ ...entry, schema })
+              .waitForValue()
           )
         }
       }

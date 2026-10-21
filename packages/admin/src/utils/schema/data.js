@@ -161,15 +161,6 @@ export function getEmptyValue(schema, context) {
     : value
 }
 
-// Types without values, e.g. buttons, get no key, like in the data of items
-// that `computeValue()` returns:
-export function setDefaultValue(schema, data, name, context) {
-  const value = getDefaultValue(schema, context)
-  if (value !== undefined) {
-    data[name] = value
-  }
-}
-
 export function shouldExcludeValue(schema, context) {
   const exclude =
     schema.exclude !== undefined
@@ -218,16 +209,6 @@ export function shouldSetDefaultValue(schema, data, name, context, {
   )
 }
 
-// Of several fields of the same value, the first with its own default sets it,
-// else the first one:
-export function sortByOwnDefault(entries) {
-  const hasOwnDefault = ({ schema }) => schema.default !== undefined
-  return [
-    ...entries.filter(hasOwnDefault),
-    ...entries.filter(entry => !hasOwnDefault(entry))
-  ]
-}
-
 // Set missing values to their defaults to watch them for changes, and number
 // list items by their order key to store their order even if it never changes.
 export function initializeData(schema, data = {}, services, {
@@ -238,21 +219,17 @@ export function initializeData(schema, data = {}, services, {
   // loaded data, `computeValue()` may derive missing values instead:
   shouldSetDefaultsOfComponentsWithCompute = true
 } = {}) {
-  const visit = entries => {
-    for (const entry of sortByOwnDefault(entries)) {
-      const { schema, data, name } = entry
-      const context = () =>
-        SchemaContext.createForSchema(services, { ...entry, rootData })
-      const shouldSetDefault = shouldSetDefaultValue(
-        schema,
-        data,
-        name,
-        context,
-        { shouldSetDefaultsOfComponentsWithCompute }
-      )
-      if (shouldSetDefault) {
-        setDefaultValue(schema, data, name, context)
-      }
+  const visit = entry => {
+    const { node, data, name } = entry
+    const value = node.getDefaultValue(entry, {
+      shouldSetDefaultsOfComponentsWithCompute
+    })
+    // Types without values, e.g. buttons, get no key, like in the data of
+    // items that `computeValue()` returns:
+    if (value !== undefined) {
+      data[name] = value
+    }
+    for (const { schema } of node.fields) {
       if (hasItemsNumberedByOrderKey(schema) && isArray(data[name])) {
         updateOrder(schema, data[name])
       }
@@ -356,23 +333,13 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
   const serializedRootData = sourceSchema ? cloneItem(sourceSchema, data) : {}
   const graph = new SchemaGraph(dataPath)
 
-  const visit = entries => {
-    const { schema, data, name, dataPath, itemDataPath, serializedData } =
-      getEntryDefining(entries, 'serializeValue')
-    const value = getValueOrDefault(
-      schema,
-      data,
-      name,
-      () =>
-        SchemaContext.createForSchema(services, {
-          schema,
-          name,
-          data,
-          dataPath,
-          itemDataPath,
-          rootData: options.rootData
-        })
-    )
+  const visit = entry => {
+    const { node, data, name, serializedData } = entry
+    const value = node.hasMissingValue(entry)
+      ? node.getDefaultValue(entry)
+      : data[name]
+    // Fields of the same value agree on its shape, the first one tells it:
+    const [{ schema }] = node.fields
     // The forms of the items expect them wrapped by the item adapter of the
     // schema, so wrap before and unwrap after. Always shallow-clone arrays:
     const itemAdapter = getItemAdapter(schema)
@@ -383,9 +350,9 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
       : value
   }
 
-  const after = entries => {
-    const { schema, data, name, dataPath, itemDataPath, serializedData } =
-      getEntryDefining(entries, 'serializeValue')
+  const after = entry => {
+    const { node, data, name, dataPath, itemDataPath, serializedData } = entry
+    const [{ schema }] = node.fields
     const itemAdapter = getItemAdapter(schema)
     let value = serializedData[name]
     // Unwrap the items again, to bring the data back into its native form:
@@ -412,33 +379,10 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
         )
       }
     }
-    const createContext = (value, schema) =>
-      new SchemaContext(services, {
-        schema,
-        value,
-        name,
-        nested: true,
-        data,
-        dataPath,
-        itemDataPath,
-        rootData: options.rootData,
-        // For `serializedItem` and `serializedRootItem`:
-        serializedData,
-        serializedRootData
-      })
-    // Convert before `exclude`, so `serializeValue()` can write other values
-    // into `serializedItem`. Values that it returns nothing for, e.g. of
-    // virtual fields, leave out their key:
-    value = convertValue(schema, 'serializeValue', value, value =>
-      createContext(value, schema)
-    )
-    const { schema: excludeSchema } = getEntryDefining(entries, 'exclude')
-    if (
-      value === undefined ||
-      shouldExcludeValue(excludeSchema, () =>
-        createContext(value, excludeSchema)
-      )
-    ) {
+    // Values that are excluded or that `serializeValue()` returns nothing for,
+    // e.g. of virtual fields, leave out their key:
+    value = node.serialize(value, entry)
+    if (value === undefined) {
       delete serializedData[name]
     } else {
       serializedData[name] = labels ?? value
@@ -468,8 +412,8 @@ export function isDataPathExcluded(schema, data, dataPath, {
   services = null,
   rootData = data
 } = {}) {
-  // The fields of the values that contain the value, outermost first:
-  const entriesList = []
+  // The entries of the values that contain the value, outermost first:
+  const entries = []
   walkData(schema, data, {
     dataPath: itemDataPath,
     services,
@@ -479,28 +423,23 @@ export function isDataPathExcluded(schema, data, dataPath, {
     shouldVisit: entry => (
       getRelativeDataPath(dataPath, entry.dataPath) !== null
     ),
-    visit: entries => entriesList.push(entries)
+    visit: entry => entries.push(entry)
   })
-  const excludedEntry = entriesList
-    .map(entries => getEntryDefining(entries, 'exclude'))
-    .findLast(entry =>
-      shouldExcludeValue(entry.schema, () =>
-        SchemaContext.createForSchema(services, { ...entry, rootData })
-      )
-    )
+  const excludedEntry = entries.findLast(entry => entry.node.isExcluded(entry))
   if (excludedEntry) {
-    return !isSourceWithResource(excludedEntry.schema)
+    return !isSourceWithResource(excludedEntry.node.fields[0].schema)
   }
-  // Of several fields of the same value, the first holds it:
-  const holder = entriesList.at(-1)?.[0]
+  const holder = entries.at(-1)
   if (!holder) {
     return true
   }
+  // Of several fields of the same value, the first holds it:
+  const [{ schema: holderSchema }] = holder.node.fields
   const relativeDataPath = getRelativeDataPath(dataPath, holder.dataPath)
   return (
-    hasFormSchema(holder.schema) &&
+    hasFormSchema(holderSchema) &&
     relativeDataPath !== '' &&
-    !(isListSource(holder.schema) && /^\d+$/.test(relativeDataPath))
+    !(isListSource(holderSchema) && /^\d+$/.test(relativeDataPath))
   )
 }
 
@@ -512,29 +451,10 @@ export function deserializeData(schema, data, {
   rootData = data,
   shouldWalk
 } = {}) {
-  const visit = entries => {
-    const { schema, data, name, dataPath, itemDataPath } = getEntryDefining(
-      entries,
-      'deserializeValue'
-    )
+  const visit = entry => {
+    const { node, data, name } = entry
     if (name in data) {
-      const createContext = value =>
-        new SchemaContext(services, {
-          schema,
-          value,
-          name,
-          nested: true,
-          data,
-          dataPath,
-          itemDataPath,
-          rootData
-        })
-      const value = convertValue(
-        schema,
-        'deserializeValue',
-        data[name],
-        createContext
-      )
+      const value = node.deserialize(data[name], entry)
       if (value !== data[name]) {
         data[name] = value
       }
@@ -766,10 +686,10 @@ export function getItemDisplayValue(sourceSchema, item, name, {
     rootData: context.rootItem,
     // Leave out the items of nested sources:
     shouldWalk: entry => !getSourceType(entry.schema),
-    visit: ([entry]) => {
+    visit: entry => {
       if (entry.name === name) {
         // Of several fields of the value, the first wins:
-        schema ??= entry.schema
+        schema ??= entry.node.fields[0].schema
       }
     }
   })
@@ -827,14 +747,8 @@ function getRelatedLabels(entry, value, { services, rootData }) {
   return isArray(value) ? value.map(toLabel) : value && toLabel(value)
 }
 
-// Of several fields of the same value, each aspect of the value comes from the
-// first one that defines it itself, else from the first one:
-function getEntryDefining(entries, key) {
-  return entries.find(({ schema }) => schema[key] !== undefined) ?? entries[0]
-}
-
 // Convert the value with the hook of its type first, then with the schema's:
-function convertValue(schema, hookName, value, createContext) {
+export function convertValue(schema, hookName, value, createContext) {
   for (const convert of [
     getTypeDescriptor(schema)?.[hookName],
     schema[hookName]

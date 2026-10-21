@@ -33,17 +33,8 @@ export function shouldSetDefaultValue(
   context: Context | (() => Context),
   options?: Options
 ): boolean
-export function setDefaultValue(
-  schema: Schema,
-  data: Data,
-  name: string,
-  context: Context | (() => Context)
-): void
 export function hasValueFromDataSchema(schema: Schema): boolean
 export function getMultipleValue(schema: Schema, context: Context): boolean
-export function sortByOwnDefault<T extends { schema: Schema }>(
-  entries: T[]
-): T[]
 export function initializeData(
   schema: Schema,
   data?: Data,
@@ -67,6 +58,12 @@ export function getEditedValue(
   schema: Schema,
   value: any,
   context: Context | (() => Context)
+): any
+export function convertValue(
+  schema: Schema,
+  hookName: string,
+  value: any,
+  createContext: (value: any) => Context
 ): any
 export function parseEditedValue(
   schema: Schema,
