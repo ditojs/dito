@@ -144,7 +144,9 @@ export function useWidget(
             Object.entries(props).filter(
               ([key, value]) => key !== 'name' && value !== undefined
             )
-          )
+          ),
+          // Only to mark the label, the property validates the value:
+          required: property?.required
         },
         dataPath: getValueDataPath(nested),
         data: scope.data,
@@ -153,8 +155,7 @@ export function useWidget(
         nested,
         disabled,
         compact,
-        generateLabels,
-        required: property?.required ?? false
+        generateLabels
       }
     }
   }
