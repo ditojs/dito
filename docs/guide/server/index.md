@@ -67,7 +67,8 @@ The [API reference](../../api/server/index.md) lists every class, method and
 option. To build an admin interface for the API, see the
 [admin guide](../admin/index.md). Upgrading from Dito.js 3.x is described in
 [Upgrading to Dito.js 4.x](../../upgrading-to-4.x.md), from 4.x in
-[Upgrading to Dito.js 5.x](../../upgrading-to-5.x.md).
+[Upgrading to Dito.js 5.x](../../upgrading-to-5.x.md), from 5.x in
+[Upgrading to Dito.js 6.x](../../upgrading-to-6.x.md).
 
 ## Installation
 

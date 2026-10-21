@@ -1468,28 +1468,6 @@ describe('DitoListType', () => {
       expect(cells[1].find('b').text()).toBe('474')
     })
 
-    it('renders deprecated `{ html }` of `render()` as HTML', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const { findField } = await mountSchema({
-        schema: {
-          fields: {
-            books: {
-              type: 'list',
-              columns: {
-                title: { render: ({ value }) => ({ html: `<b>${value}</b>` }) }
-              }
-            }
-          }
-        },
-        data: { books: [{ title: 'Emma' }] }
-      })
-      expect(findField('books').find('tbody td b').text()).toBe('Emma')
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('`{ html }` is deprecated')
-      )
-      warn.mockRestore()
-    })
-
     it('passes the data path of the value to `render()`', async () => {
       const { findField } = await mountSchema({
         schema: {

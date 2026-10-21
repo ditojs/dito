@@ -1,5 +1,5 @@
 import type {
-  Components,
+  Fields,
   FormSchema,
   ListSchema,
   ViewSchema
@@ -26,7 +26,7 @@ function createEntries(
   }
 }
 
-const bookComponents: Components<Book> = {
+const bookFields: Fields<Book> = {
   title: { type: 'text', label: 'Title' },
   chapters: createEntries('Chapters'),
   // Routes its forms under its own path instead of its name.
@@ -59,7 +59,7 @@ const bookComponents: Components<Book> = {
 const bookForm: FormSchema<Book> = {
   type: 'form',
   label: 'Book',
-  fields: bookComponents
+  fields: bookFields
 }
 
 function createBooksView(label: string): ViewSchema<Book> {

@@ -168,22 +168,6 @@ describe('DitoDialog', () => {
     expect(isShown()).toBe(false)
   })
 
-  it('renders the deprecated `components`, warning once', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const { dialog, promise } = await showDialog({
-      components: { title: { type: 'text' } },
-      buttons: { cancel: {}, apply: { type: 'submit' } },
-      data: { title: 'Emma' }
-    })
-    expect(dialog.find('input[name="title"]').element.value).toBe('Emma')
-    await dialog.find('form').trigger('submit')
-    expect(await promise).toEqual({ title: 'Emma' })
-    expect(warn.mock.calls).toEqual([
-      ['Schema `components` are deprecated, use `fields` instead.']
-    ])
-    warn.mockRestore()
-  })
-
   it('stays visible for `minDuration` when submitted right away', async () => {
     vi.useFakeTimers({ toFake: ['Date', 'setTimeout'] })
     try {
@@ -316,20 +300,6 @@ describe('DitoDialog', () => {
     await dialog.find('button.dito-button--cancel').trigger('click')
     expect(await promise).toBe(undefined)
     expect(isShown()).toBe(false)
-  })
-
-  it('closes with its cancel button over a deprecated click event', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const click = vi.fn()
-    const { dialog, promise, isShown } = await showDialog({
-      fields,
-      buttons: { cancel: { events: { click } } }
-    })
-    await dialog.find('button.dito-button--cancel').trigger('click')
-    expect(await promise).toBe(undefined)
-    expect(isShown()).toBe(false)
-    expect(click).not.toHaveBeenCalled()
-    warn.mockRestore()
   })
 
   it('caches local requests while it is shown', async () => {

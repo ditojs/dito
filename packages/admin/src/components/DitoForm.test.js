@@ -1862,7 +1862,7 @@ describe('DitoForm', () => {
             nested: true,
             fields: {
               chapter: {
-                type: 'computed',
+                type: 'value',
                 exclude: true,
                 computeValue: ({ parentItem }) => parentItem
               }
@@ -2731,51 +2731,6 @@ describe('DitoForm', () => {
         text: html([`Unable to save Book '${escapedName}'.`])
       })
     )
-  })
-
-  it('renders and saves the deprecated `component` and `components`', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const book = { id: 1, title: 'Dune' }
-    const request = vi.fn(({ method = 'get', url, data }) =>
-      method === 'get'
-        ? { data: url === '/books' ? [book] : book }
-        : { data }
-    )
-    const admin = await mountAdmin({
-      views: {
-        books: {
-          type: 'view',
-          component: {
-            type: 'list',
-            resource: { path: 'books' },
-            form: { type: 'form', components: { title: { type: 'text' } } }
-          }
-        }
-      },
-      request
-    })
-    await admin.navigate('/books/1')
-    await settle(admin.getRouteComponent(isForm))
-    const input = admin.wrapper.find('input[name="title"]')
-    expect(input.element.value).toBe('Dune')
-    await enterValue(input, 'Emma')
-    await admin.wrapper.find('button[id$="submit"]').trigger('click')
-    await vi.waitFor(() =>
-      expect(request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          method: 'patch',
-          url: '/books/1',
-          data: { id: 1, title: 'Emma' }
-        })
-      )
-    )
-    expect(warn.mock.calls).toEqual([
-      [
-        'The `component` of views with a schema is deprecated, ' +
-        'use `field` instead.'
-      ],
-      ['Schema `components` are deprecated, use `fields` instead.']
-    ])
   })
 })
 

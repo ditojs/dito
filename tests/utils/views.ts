@@ -1,9 +1,9 @@
-import type { Components, ListSchema, ViewSchema } from '@ditojs/admin'
+import type { Fields, ListSchema, ViewSchema } from '@ditojs/admin'
 
 export function createWidgetView<T>(
   itemLabel: string,
   resource: string,
-  fields: Components<T>,
+  fields: Fields<T>,
   listOptions: Partial<ListSchema<T>> = {}
 ): ViewSchema<T> {
   return {

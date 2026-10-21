@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { startAuthentication } from '@simplewebauthn/browser'
+import { html } from '@ditojs/utils'
 import appState from '../appState.js'
 import DitoAdmin from '../DitoAdmin.js'
 import {
@@ -548,8 +549,8 @@ describe('DitoRoot', () => {
       expect(tooltip.querySelector('b')).toBe(null)
     })
 
-    it('renders the HTML of `{ html }` info', async () => {
-      const tooltip = await showInfoTooltip({ html: 'The <b>cover</b>' })
+    it('renders the HTML of `html` info', async () => {
+      const tooltip = await showInfoTooltip(html`The <b>cover</b>`)
       expect(tooltip.querySelector('b').textContent).toBe('cover')
       expect(tooltip.textContent).toBe('The cover')
     })

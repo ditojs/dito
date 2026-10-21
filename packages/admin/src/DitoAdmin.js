@@ -6,8 +6,7 @@ import {
   assignDeeply,
   hyphenate,
   camelize,
-  defaultFormats,
-  deprecate
+  defaultFormats
 } from '@ditojs/utils'
 import * as components from './components/index.js'
 import * as types from './types/index.js'
@@ -41,17 +40,6 @@ export default class DitoAdmin {
         console.warn(`Unknown DitoAdmin option: '${key}'.`)
       }
     }
-    // Rename the deprecated `login.additionalComponents`, which wins over
-    // `additionalFields` like the deprecated keys of schemas:
-    const { additionalComponents, ...login } = options.login ?? {}
-    if (additionalComponents !== undefined) {
-      deprecate(
-        '`login.additionalComponents` is deprecated, ' +
-        'use `login.additionalFields` instead.'
-      )
-      options.login = { ...login, additionalFields: additionalComponents }
-    }
-
     api.locale ||= 'en-US'
     api.formats = assignDeeply({}, defaultFormats, api.formats)
     api.request ||= options => request(api, options)

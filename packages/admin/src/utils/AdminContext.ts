@@ -12,8 +12,6 @@ import type { Api, Schema } from './types.ts'
 
 export interface DialogOptions {
   fields?: Record<string, Schema>
-  /** @deprecated Use `fields`. */
-  components?: Record<string, Schema>
   buttons?: Record<string, Schema>
   data?: Record<string, any>
   settings?: {
@@ -29,8 +27,6 @@ export interface NotifyOptions {
   type?: string
   title?: string
   text?: string | Html | (string | Html | false | null | undefined)[]
-  /** @deprecated Pass `text` with the `html` template of @ditojs/utils. */
-  html?: string | (string | false | null | undefined)[]
   error?: unknown
   duration?: number
 }

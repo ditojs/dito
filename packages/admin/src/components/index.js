@@ -18,7 +18,7 @@ export { default as DitoSchemaPane } from './DitoSchemaPane.vue'
 export { default as DitoPaneRows } from './DitoPaneRows.vue'
 export { default as DitoPane } from './DitoPane.vue'
 export { default as DitoContainer } from './DitoContainer.vue'
-export { default as DitoSchemaField, DitoField } from './DitoSchemaField.vue'
+export { default as DitoSchemaField } from './DitoSchemaField.vue'
 export {
   DitoTextField,
   DitoTextareaField,

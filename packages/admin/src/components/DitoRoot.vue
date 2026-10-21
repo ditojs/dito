@@ -140,15 +140,9 @@ export default {
     // header's width, so measure the room whenever the root's columns change:
     let sidebarObserver = null
 
-    const showDialog = async ({
-      fields,
-      components,
-      buttons,
-      data,
-      settings
-    }) => {
+    const showDialog = async ({ fields, buttons, data, settings }) => {
       // Resolve async schemas first, so that their errors reject:
-      const schema = { type: 'dialog', fields, components, buttons }
+      const schema = { type: 'dialog', fields, buttons }
       const { api } = adminContext
       applySchemaDefaults(api, schema)
       await setupSchemaComponents(api, schema)

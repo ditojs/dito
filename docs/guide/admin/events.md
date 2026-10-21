@@ -85,10 +85,6 @@ Fields add their other `on…` handlers to their input element as native event
 listeners, e.g. `onKeydown()` of a text field. These handlers receive the
 context too, not the DOM event.
 
-The `events` object of Dito.js 3.x is deprecated: `on…` handlers win over it,
-also on the default buttons of forms, see
-[Upgrading to 4.x](../../upgrading-to-4.x.md).
-
 ## Reference
 
 - [Events](../../api/admin/events.md): every event with its context values.

@@ -1,7 +1,6 @@
 <template lang="pug">
-//- Deprecated `type: 'html'` affixes render their `html` like text affixes:
 component(
-  v-if="item.type === 'text' || item.type === 'html'"
+  v-if="item.type === 'text'"
   :is="item.as || 'div'"
   v-html="getHtml(item)"
 )
@@ -44,7 +43,6 @@ export default {
 @import '../styles/_imports';
 
 .dito-affix {
-  &--html,
   &--text {
     display: inline-block;
   }

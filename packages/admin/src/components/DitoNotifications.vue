@@ -16,7 +16,7 @@ import { inject } from 'vue'
 import { notify as showNotification } from '@kyvg/vue3-notification'
 import { asArray, isString, escapeHtml } from '@ditojs/utils'
 import { adminContextKey } from '../utils/keys.ts'
-import { getContent, getHtml, getText } from '../utils/html.js'
+import { getHtml, getText } from '../utils/html.js'
 
 // Detect opening tags of formatted text passed as plain strings:
 function isLikelyMarkup(paragraph) {
@@ -31,7 +31,7 @@ export default {
     const adminContext = inject(adminContextKey)
     return {
       // Strings in `text` are escaped, only `html` values render as HTML:
-      notify({ type = 'info', title, text, html, error, duration } = {}) {
+      notify({ type = 'info', title, text, error, duration } = {}) {
         title ||= (
           {
             warning: 'Warning',
@@ -41,13 +41,9 @@ export default {
           }[type] ||
           'Notification'
         )
-        // Skip empty paragraphs, like `transientNote` when it's `false`. The
-        // deprecated `html` option holds HTML strings:
-        const paragraphs = asArray(html ?? text)
+        // Skip empty paragraphs, like `transientNote` when it's `false`:
+        const paragraphs = asArray(text)
           .filter(paragraph => paragraph != null && paragraph !== false)
-          .map(paragraph =>
-            html != null ? getContent({ html: paragraph }) : paragraph
-          )
         if (paragraphs.some(isLikelyMarkup)) {
           console.warn(
             'notify(): `text` is escaped and seems to contain HTML markup. Use ' +

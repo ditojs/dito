@@ -2,9 +2,8 @@ import { assertType, describe, expectTypeOf, it } from 'vitest'
 import type {
   default as DitoAdmin,
   ApiConfig,
-  Form,
+  FormSchema,
   HttpMethod,
-  HTTPMethod,
   TypeDescriptor,
   View
 } from '@ditojs/admin'
@@ -94,7 +93,7 @@ describe('DitoAdmin', () => {
   })
 
   it('accepts the form of the account settings, also as a module', () => {
-    const settings = {} as Promise<{ default: Form<Entry> }>
+    const settings = {} as Promise<{ default: FormSchema<Entry> }>
     assertType<ConstructorParameters<typeof DitoAdmin>>([
       '#app',
       {
@@ -185,8 +184,4 @@ describe('defineType()', () => {
   })
 })
 
-describe('HttpMethod', () => {
-  it('keeps the deprecated name HTTPMethod', () => {
-    expectTypeOf<HTTPMethod>().toEqualTypeOf<HttpMethod>()
-  })
-})
+describe('HttpMethod', () => {})

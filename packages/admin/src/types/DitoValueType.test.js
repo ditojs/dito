@@ -41,41 +41,6 @@ describe('DitoValueType', () => {
     expect(input.attributes('readonly')).toBeDefined()
   })
 
-  it('supports the deprecated names, warning once for each', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const { findField, data } = await mountSchema({
-      schema: {
-        fields: {
-          title: { type: 'text' },
-          slug: {
-            type: 'computed',
-            computeValue: ({ item }) => item.title?.toLowerCase()
-          },
-          initials: {
-            type: 'computed',
-            computeValue: ({ item }) => item.title?.[0]
-          },
-          copy: { type: 'data', dataPath: 'title' },
-          count: { type: 'hidden', data: () => 42 }
-        }
-      },
-      data: { title: 'Dune' }
-    })
-    expect(data).toMatchObject({
-      slug: 'dune',
-      initials: 'D',
-      copy: 'Dune',
-      count: 42
-    })
-    expect(findField('slug').isVisible()).toBe(false)
-    expect(warn.mock.calls).toEqual(
-      ['computed', 'data', 'hidden'].map(type => [
-        `\`type: '${type}'\` is deprecated, use \`type: 'value'\` instead.`
-      ])
-    )
-    warn.mockRestore()
-  })
-
   it('resolves the value of `data` and `dataPath`', async () => {
     const { data } = await mountSchema({
       schema: {

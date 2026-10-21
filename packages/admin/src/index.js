@@ -8,10 +8,7 @@ import { wrapCustomComponent } from './types/DitoComponentType.vue'
 
 export { DitoAdmin }
 // Layouts place their components with `DitoSchemaField` and `DitoPane`:
-export {
-  default as DitoSchemaField,
-  DitoField
-} from './components/DitoSchemaField.vue'
+export { default as DitoSchemaField } from './components/DitoSchemaField.vue'
 export { default as DitoPane } from './components/DitoPane.vue'
 export { useDitoContext } from './composables/useDitoContext.ts'
 // Components set up forms of their own, which `DitoSchemaForm` renders:

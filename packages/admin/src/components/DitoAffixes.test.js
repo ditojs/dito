@@ -47,28 +47,18 @@ describe('DitoAffixes', () => {
     expect(wrapper.find('span.dito-affix--text i').text()).toBe('Sale')
   })
 
-  it('renders objects with deprecated `html` as HTML, with a warning', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const wrapper = mountAffixes({ items: { html: '<b>New</b>' } })
-    expect(wrapper.find('.dito-affix--html b').text()).toBe('New')
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('`{ html }` is deprecated')
-    )
-  })
-
   it('renders items with a `type` as they are', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const wrapper = mountAffixes({
       items: [
-        { type: 'html', html: '<i>Sale</i>', as: 'span' },
+        { type: 'text', text: html`<i>Sale</i>`, as: 'span' },
         { type: 'component', component: () => h('em', 'Custom') }
       ]
     })
-    expect(wrapper.find('span.dito-affix--html i').text()).toBe('Sale')
+    expect(wrapper.find('span.dito-affix--text i').text()).toBe('Sale')
     expect(wrapper.find('.dito-affix--component').text()).toBe('Custom')
   })
 
-  it(`renders nothing for items without type, text or html`, () => {
+  it(`renders nothing for items without type or text`, () => {
     const wrapper = mountAffixes({ items: [{ class: 'empty' }] })
     expect(wrapper.find('.dito-affixes').exists()).toBe(true)
     expect(wrapper.find('.dito-affix').exists()).toBe(false)

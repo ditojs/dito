@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import { html } from '@ditojs/utils'
 import {
   mountAdmin,
   mountForm,
@@ -85,7 +86,7 @@ describe('useSource()', () => {
       })
       const { findField, data } = await mountBookForm({
         itemLabel: ({ item }) =>
-          item.html ? { html: `<b>${item.title}</b>` } : item.title,
+          item.html ? html`<b>${item.title}</b>` : item.title,
         chapters: [
           { title: 'Tom & <i>Jerry</i>' },
           { title: 'Dune', html: true }

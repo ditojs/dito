@@ -63,9 +63,7 @@ export default {
               ? item
               : item.text != null
                 ? { type: 'text', ...item }
-                : item.html != null
-                  ? { type: 'html', ...item }
-                  : item
+                : item
         )
         .filter(item => shouldRenderSchema(item, props.parentContext))
     )
@@ -105,7 +103,7 @@ export default {
             [`${prefix}--${item.type}`]: item.type,
             [`${prefix}--ellipsis`]: (
               props.mode === 'ellipsis' &&
-              ['text', 'html'].includes(item.type)
+              item.type === 'text'
             )
           },
           item.class

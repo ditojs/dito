@@ -11,7 +11,6 @@ input.dito-text.dito-input(
 </template>
 
 <script>
-import { deprecate } from '@ditojs/utils'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 
@@ -22,22 +21,12 @@ const DitoValueType = {
 }
 
 defineType({
-  // `computed`, `data` and `hidden` are deprecated names until 5.0:
-  type: ['value', 'computed', 'data', 'hidden'],
+  type: 'value',
   component: DitoValueType,
   defaultValue: undefined,
   defaultVisible: false,
   resolvesValue: true,
-  getProperty: () => ({}),
-
-  setupSchema({ schema }) {
-    if (schema.type !== 'value') {
-      deprecate(
-        `\`type: '${schema.type}'\` is deprecated, use \`type: 'value'\` ` +
-        'instead.'
-      )
-    }
-  }
+  getProperty: () => ({})
 })
 
 export default DitoValueType

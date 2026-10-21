@@ -321,7 +321,7 @@ describe('services', () => {
           fields: {
             isbn: { type: 'text' },
             cover: {
-              type: 'computed',
+              type: 'value',
               data: ({ item }) => {
                 const { isbn } = item
                 return () =>

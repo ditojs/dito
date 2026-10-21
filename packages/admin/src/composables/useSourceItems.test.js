@@ -1,5 +1,6 @@
 import { toRaw } from 'vue'
 import { flushPromises } from '@vue/test-utils'
+import { html } from '@ditojs/utils'
 import { mountSchema, mountForm } from '../test/mount.js'
 
 const bookForm = {
@@ -112,13 +113,13 @@ describe('useSourceItems()', () => {
       expect(field.text()).toContain('<b>Emma</b>')
     })
 
-    it('keeps the HTML that `itemLabel()` returns as `{ html }`', async () => {
+    it('keeps the HTML that `itemLabel()` returns as `html`', async () => {
       const { findField } = await mountSchema({
         schema: {
           fields: {
             books: {
               type: 'list',
-              itemLabel: ({ item }) => ({ html: `<b>${item.title}</b>` }),
+              itemLabel: ({ item }) => html`<b>${item.title}</b>`,
               form: bookForm
             }
           }
@@ -160,7 +161,7 @@ describe('useSourceItems()', () => {
                 formLabels.push(formLabel)
                 return item.title
               },
-              form: { ...bookForm, label: { html: '<b>Book</b> &amp; co' } }
+              form: { ...bookForm, label: html`<b>Book</b> &amp; co` }
             }
           }
         },

@@ -1,11 +1,5 @@
-import { vi } from 'vitest'
 import { html } from '@ditojs/utils'
 import { getHtml, getText, getTextFromHtml } from './html.js'
-
-const deprecation = (
-  '`{ html }` is deprecated, use the `html` template of @ditojs/utils ' +
-  'instead, which escapes the values that it includes.'
-)
 
 describe('getHtml()', () => {
   it('escapes text, also as `{ text }`', () => {
@@ -20,13 +14,6 @@ describe('getHtml()', () => {
     expect(getHtml({ text: html`<b>Q</b>`, prefix: '1.' })).toBe('<b>Q</b>')
   })
 
-  it('keeps HTML given as deprecated `{ html }`, with a warning', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    expect(getHtml({ html: '<b>Q &amp; A</b>' })).toBe('<b>Q &amp; A</b>')
-    expect(warn).toHaveBeenCalledWith(deprecation)
-    warn.mockRestore()
-  })
-
   it('keeps line breaks and returns null without content', () => {
     expect(getHtml('Hardcover\nPaperback')).toBe('Hardcover\nPaperback')
     expect(getHtml(null)).toBe(null)
@@ -38,12 +25,6 @@ describe('getText()', () => {
     expect(getText('Q & <b>A</b>')).toBe('Q & <b>A</b>')
     expect(getText({ text: 'Q & A' })).toBe('Q & A')
     expect(getText(html`<b>Q</b> &amp; ${'<A>'}`)).toBe('Q & <A>')
-  })
-
-  it('returns the text of deprecated `{ html }`', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    expect(getText({ html: '<b>Q</b> &amp; A' })).toBe('Q & A')
-    vi.restoreAllMocks()
   })
 })
 

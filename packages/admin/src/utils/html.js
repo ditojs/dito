@@ -1,26 +1,9 @@
-import {
-  isPlainObject,
-  isHtml,
-  html,
-  escapeHtml,
-  deprecate
-} from '@ditojs/utils'
+import { isPlainObject, isHtml, escapeHtml } from '@ditojs/utils'
 
 // Content is text unless it's marked with `html`. Labels and affixes hold it as
-// `text`, or as the deprecated `html` string:
+// `text`:
 export function getContent(content) {
-  if (isPlainObject(content)) {
-    const { text, html: htmlString } = content
-    if (htmlString != null) {
-      deprecate(
-        '`{ html }` is deprecated, use the `html` template of @ditojs/utils ' +
-        'instead, which escapes the values that it includes.'
-      )
-      return html([htmlString])
-    }
-    return text
-  }
-  return content
+  return isPlainObject(content) ? content.text : content
 }
 
 export function getHtml(content) {

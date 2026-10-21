@@ -24,7 +24,6 @@ import type {
   ControllerAssets,
   Authorize,
   HttpMethod,
-  HTTPMethod,
   Page,
   ModelClass
 } from '@ditojs/server'
@@ -559,11 +558,7 @@ describe('AdminController', () => {
   })
 })
 
-describe('HttpMethod', () => {
-  it('keeps the deprecated name HTTPMethod', () => {
-    expectTypeOf<HTTPMethod>().toEqualTypeOf<HttpMethod>()
-  })
-})
+describe('HttpMethod', () => {})
 
 describe('Controller settings', () => {
   it('authorizes by action name, not by method', () => {

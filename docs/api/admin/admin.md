@@ -43,7 +43,7 @@ new DitoAdmin(element, options)
 | `options.views` | `Record<string, View> \| Promise \| () => …` | The top-level views and menus, keyed by name. Also a promise or a function returning them, e.g. a module namespace or a dynamic `import()`, or an array of modules that each export one named view. Resolved anew for each login. Default `{}`. See [Views](./schemas.md#view). |
 | `options.api` | [`ApiConfig`](#apiconfig) | The API configuration, deep-merged over `dito.api`. |
 | `options.dito` | [`GlobalConfig`](#globalconfig) | The global configuration. Defaults to `globalThis.dito`, which `AdminController` provides. |
-| `options.login.additionalFields` | `Fields` | Fields added to the login dialog after `username` and `password`. Their values are sent with the credentials. `additionalComponents` is the deprecated name of this option. |
+| `options.login.additionalFields` | `Fields` | Fields added to the login dialog after `username` and `password`. Their values are sent with the credentials. |
 | `options.login.redirectAfterLogin` | `string` | A URL to load after a successful login, instead of resolving the views in place. |
 | `options.spinner` | `{ size?: string, color?: string } \| null` | Size and color of the loading spinner in the header. `null` hides it. |
 | `options.account.settings` | `Form \| Promise \| () => …` | The form of the account settings, which the account menu opens at `/account/settings`, to edit the logged-in user through [`api.users.self`](#users). Also a promise or a function returning it, e.g. a dynamic `import()`. Its `label` is the view's label, default `'Settings'`. See [Account settings](../../guide/admin/views.md#account-settings). |

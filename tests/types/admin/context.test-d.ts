@@ -6,39 +6,19 @@ import type {
   SchemaValueCallback,
   SchemaBase,
   FieldSchemaBase,
-  ComponentSchemaBase,
   Field,
-  Component,
   Fields,
-  Components,
   SourceField,
-  SourceComponent,
   RouteSchemaBase,
-  OrItemAccessor,
-  ItemAccessor,
-  SchemaFields,
-  SchemaSetupMixin,
-  BaseSchema,
-  SchemaRoute,
-  SchemaRouteMixin,
-  Form,
   FormSchema,
   PanelSchema,
   SchemaByType,
-  DitoContext,
-  DitoGlobal,
   GlobalConfig,
-  SchemaSourceMixin,
   SourceSettings,
-  SchemaOptionsMixin,
   SelectionSettings,
-  SchemaNumberMixin,
   NumberSettings,
-  SchemaTextMixin,
   TextSettings,
-  SchemaAffixMixin,
   AffixSettings,
-  SchemaDataMixin,
   DataSettings
 } from '@ditojs/admin'
 import type { Entry, ParentWithMarkers } from './fixtures.ts'
@@ -212,50 +192,6 @@ describe('SchemaContext', () => {
       (ctx: SchemaContext<Entry>) => ctx.item.title
     )
   })
-
-  it('keeps the deprecated names of the schema types', () => {
-    expectTypeOf<OrItemAccessor<Entry, {}, string>>().toEqualTypeOf<
-      SchemaValue<Entry, {}, string>
-    >()
-    expectTypeOf<ItemAccessor<Entry>>().toEqualTypeOf<
-      SchemaValueCallback<Entry>
-    >()
-    expectTypeOf<SchemaFields<Entry>>().toEqualTypeOf<SchemaBase<Entry>>()
-    expectTypeOf<SchemaSetupMixin<Entry>>().toEqualTypeOf<SchemaBase<Entry>>()
-    expectTypeOf<BaseSchema<Entry>>().toEqualTypeOf<
-      FieldSchemaBase<Entry>
-    >()
-    expectTypeOf<ComponentSchemaBase<Entry>>().toEqualTypeOf<
-      FieldSchemaBase<Entry>
-    >()
-    expectTypeOf<Component<Entry>>().toEqualTypeOf<Field<Entry>>()
-    expectTypeOf<Components<Entry>>().toEqualTypeOf<Fields<Entry>>()
-    expectTypeOf<SourceComponent<Entry>>().toEqualTypeOf<SourceField<Entry>>()
-    expectTypeOf<SchemaRoute<Entry>>().toEqualTypeOf<RouteSchemaBase<Entry>>()
-    expectTypeOf<SchemaRouteMixin<Entry>>().toEqualTypeOf<
-      RouteSchemaBase<Entry>
-    >()
-    expectTypeOf<Form<Entry>>().toEqualTypeOf<FormSchema<Entry>>()
-  })
-
-  it('keeps the deprecated names of the context, config and settings', () => {
-    expectTypeOf<DitoContext<Entry>>().toEqualTypeOf<SchemaContext<Entry>>()
-    expectTypeOf<DitoGlobal>().toEqualTypeOf<GlobalConfig>()
-    expectTypeOf<SchemaSourceMixin<Entry>>().toEqualTypeOf<
-      SourceSettings<Entry>
-    >()
-    expectTypeOf<SchemaOptionsMixin<Entry, string>>().toEqualTypeOf<
-      SelectionSettings<Entry, string>
-    >()
-    expectTypeOf<SchemaNumberMixin<Entry>>().toEqualTypeOf<
-      NumberSettings<Entry>
-    >()
-    expectTypeOf<SchemaTextMixin<Entry>>().toEqualTypeOf<TextSettings<Entry>>()
-    expectTypeOf<SchemaAffixMixin<Entry>>().toEqualTypeOf<
-      AffixSettings<Entry>
-    >()
-    expectTypeOf<SchemaDataMixin<Entry>>().toEqualTypeOf<DataSettings<Entry>>()
-  })
 })
 
 describe('SchemaByType', () => {
@@ -269,7 +205,7 @@ describe('SchemaByType', () => {
 describe('useDitoContext()', () => {
   it('types the context with the item', () => {
     const context = useDitoContext<Entry>()
-    expectTypeOf(context).toEqualTypeOf<DitoContext<Entry>>()
+    expectTypeOf(context).toEqualTypeOf<SchemaContext<Entry>>()
     expectTypeOf(context.item.title).toBeString()
   })
 })

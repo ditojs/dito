@@ -46,13 +46,13 @@ export default [
       shown: { First: 'Ada', Last: 'Lovelace' }
     },
     {
-      title: 'stores values of computed components',
+      title: 'stores computed values of value components',
       schema: {
         nested: true,
         fields: {
           first: text('First'),
           upper: {
-            type: 'computed',
+            type: 'value',
             label: 'Upper',
             computeValue: ({ item }: { item: { first?: string } }) =>
               item.first?.toUpperCase()
@@ -63,13 +63,13 @@ export default [
       stored: { first: 'ada', upper: 'ADA' }
     },
     {
-      title: 'stores values of data components',
+      title: 'stores the data of value components',
       schema: {
         nested: true,
         fields: {
           first: text('First'),
           upper: {
-            type: 'data',
+            type: 'value',
             data: ({ item }: { item: { first?: string } }) =>
               item.first?.toUpperCase()
           }
@@ -79,10 +79,10 @@ export default [
       stored: { first: 'ada', upper: 'ADA' }
     },
     {
-      title: 'keeps values of hidden components',
+      title: 'keeps the values of value components',
       schema: {
         nested: true,
-        fields: { first: text('First'), secret: { type: 'hidden' } }
+        fields: { first: text('First'), secret: { type: 'value' } }
       },
       seed: { first: 'Ada', secret: 'kept' },
       value: { First: 'Grace' },

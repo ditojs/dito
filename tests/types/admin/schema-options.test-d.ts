@@ -53,21 +53,6 @@ describe('field options', () => {
     })
   })
 
-  it('accepts the deprecated `{ html }` labels and info', () => {
-    assertType<Fields<Entry>>({
-      title: {
-        type: 'text',
-        label: { html: '<b>Title</b>', prefix: '1.' },
-        info: { html: 'The <i>cover</i> title' }
-      },
-      id: { type: 'number', label: { text: 'ID' }, info: 'Or ISBN' }
-    })
-    assertType<ListSchema<Entry>>({
-      type: 'list',
-      itemLabel: ({ item }) => ({ html: `<b>${item.title}</b>` })
-    })
-  })
-
   it('accepts the width operators and CSS units', () => {
     assertType<Fields<Entry>>({
       title: { type: 'text', width: '>50%' },

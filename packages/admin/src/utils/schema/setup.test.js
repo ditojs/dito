@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { reactive, isReactive } from 'vue'
-import { hyphenate } from '@ditojs/utils'
+import { hyphenate, html } from '@ditojs/utils'
 import { defineType } from './types.ts'
 import { sourceTraits, numberTraits } from '../../types/traits.ts'
 import {
@@ -40,7 +40,7 @@ defineType({
   type: 'component',
   setupSchema: ({ schema }) => resolveSchemaComponent(schema)
 })
-defineType({ type: 'computed', resolvesValue: true })
+defineType({ type: 'value', resolvesValue: true })
 defineType({ type: 'color', hasFormat: true })
 defineType({ ...numberTraits, type: 'number' })
 
@@ -202,10 +202,10 @@ describe('resolveViews()', () => {
     })
   })
 
-  it('names sub-menus after the text of `{ text }` and `{ html }` labels', async () => {
+  it('names sub-menus after the text of `{ text }` and `html` labels', async () => {
     const views = await resolveViews([
       { type: 'menu', label: { text: 'New Books' }, items: [] },
-      { type: 'menu', label: { html: '<b>Used</b> Books' }, items: [] }
+      { type: 'menu', label: html`<b>Used</b> Books`, items: [] }
     ])
     expect(Object.keys(views)).toEqual(['newBooks', 'usedBooks'])
   })
@@ -370,9 +370,7 @@ describe('the schema keys of 3.x', () => {
 
   it.each([
     ['onCreate', { onCreate() {} }],
-    ['onSubmit', { onSubmit() {} }],
-    ['events.create', { events: { create() {} } }],
-    ['events.submit', { events: { submit() {} } }]
+    ['onSubmit', { onSubmit() {} }]
   ])('rejects the event %s of forms', async (key, schema) => {
     await expect(
       setupForm(createApi(), { type: 'form', fields: {}, ...schema })
@@ -382,16 +380,13 @@ describe('the schema keys of 3.x', () => {
     )
   })
 
-  it.each([
-    ['onOpen', { onOpen() {} }],
-    ['events.open', { events: { open() {} } }]
-  ])('rejects the event %s of collapsible schemas', async (key, schema) => {
+  it('rejects the event onOpen() of collapsible schemas', async () => {
     await expect(
       setupBookView({
-        details: { type: 'section', collapsible: true, ...schema }
+        details: { type: 'section', collapsible: true, onOpen() {} }
       })
     ).rejects.toThrow(
-      `Unsupported schema key '${key}' in 'details': Use 'onToggle()', or ` +
+      `Unsupported schema key 'onOpen' in 'details': Use 'onToggle()', or ` +
       `'form: { onToggle() }' in lists and objects, instead.`
     )
   })
@@ -483,7 +478,7 @@ describe('the schema keys of 3.x', () => {
   it('keeps the data of panels and of types that resolve their value', async () => {
     await expect(
       setupBookView({
-        count: { type: 'computed', data: () => ({}) },
+        count: { type: 'value', data: () => ({}) },
         filters: { type: 'panel', data: () => ({}), fields: {} }
       })
     ).resolves.toBe(undefined)
@@ -527,134 +522,40 @@ describe('the schema key nested', () => {
   })
 })
 
-describe('the deprecated keys components and component', () => {
-  const componentsDeprecation =
-    'Schema `components` are deprecated, use `fields` instead.'
+describe('the schema keys of 5.x', () => {
+  const setupBookView = fields =>
+    setupView(createApi(), { type: 'view', fields }, 'books')
 
-  afterEach(() => {
-    vi.restoreAllMocks()
+  it('rejects components with its replacement fields', async () => {
+    await expect(
+      setupBookView({
+        details: { type: 'section', components: { title: { type: 'text' } } }
+      })
+    ).rejects.toThrow(
+      `Unsupported schema key 'components' in 'details': Use 'fields' instead.`
+    )
   })
 
-  it('renames components to fields in all schemas, warning once', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const api = createApi({ text: { trim: true } })
-    const library = {
-      type: 'view',
-      components: {
-        details: { type: 'section', components: { title: { type: 'text' } } },
-        authors: { type: 'list', components: { name: { type: 'text' } } },
-        books: {
-          type: 'list',
-          form: { type: 'form', components: { isbn: { type: 'text' } } }
-        }
-      },
-      tabs: {
-        stats: { type: 'tab', components: { total: { type: 'text' } } }
-      },
-      panels: {
-        search: { type: 'panel', components: { term: { type: 'text' } } }
-      }
-    }
-    await setupView(api, library, 'library')
-    const { details, authors, books } = library.fields
-    expect(details.fields.title.trim).toBe(true)
-    expect(authors.fields.name.trim).toBe(true)
-    expect(books.form.fields.isbn.trim).toBe(true)
-    expect(library.tabs.stats.fields.total.trim).toBe(true)
-    expect(library.panels.search.fields.term.trim).toBe(true)
-    expect(library).not.toHaveProperty('components')
-    expect(warn.mock.calls).toEqual([[componentsDeprecation]])
+  it('rejects the components of the defaults of the type', () => {
+    const api = createApi({ section: { components: {} } })
+    expect(() =>
+      applySchemaDefaults(api, { type: 'section' }, 'details')
+    ).toThrow(`Unsupported schema key 'components' in 'details'`)
   })
 
-  it('renames the component of views to field, warning once', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const api = createApi({ text: { trim: true } })
-    const createBooksView = () => ({
-      type: 'view',
-      component: { type: 'list', form: createBookForm() }
-    })
-    const books = createBooksView()
-    await setupView(api, books, 'books')
-    await setupView(api, createBooksView(), 'books')
-    expect(books.field.form.fields.title.trim).toBe(true)
-    expect(books).not.toHaveProperty('component')
-    expect(warn.mock.calls).toEqual([
-      [
-        'The `component` of views with a schema is deprecated, ' +
-        'use `field` instead.'
-      ]
-    ])
-  })
-
-  it('renames components before the defaults, which see fields', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const defaults = vi.fn()
-    const components = { title: { type: 'text' } }
-    applySchemaDefaults(createApi({ section: defaults }), {
-      type: 'section',
-      components
-    })
-    expect(defaults).toHaveBeenCalledWith({
-      type: 'section',
-      fields: components
-    })
-  })
-
-  it('renames the components of object defaults', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const api = createApi({
-      section: { components: { title: { type: 'text' } } }
-    })
-    const schema = { type: 'section' }
-    applySchemaDefaults(api, schema)
-    expect(schema).toEqual({
-      type: 'section',
-      fields: { title: { type: 'text' } }
-    })
-  })
-
-  it('merges the components of object defaults below the fields', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const api = createApi({
-      section: { components: { title: { type: 'text', label: 'Title' } } }
-    })
-    const schema = {
-      type: 'section',
-      fields: { title: { type: 'text', label: 'Name' } }
-    }
-    applySchemaDefaults(api, schema)
-    expect(schema).toEqual({
-      type: 'section',
-      fields: { title: { type: 'text', label: 'Name' } }
-    })
-  })
-
-  it('renames the components of callback defaults', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const api = createApi({
-      section: () => ({ components: { title: { type: 'text' } } })
-    })
-    const schema = { type: 'section' }
-    applySchemaDefaults(api, schema)
-    expect(schema).toEqual({
-      type: 'section',
-      fields: { title: { type: 'text' } }
-    })
-  })
-
-  it('sets up the components of form defaults', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const api = createApi({
-      form: { components: { title: { type: 'text' } } },
-      text: { trim: true }
-    })
-    const form = await setupForm(api, { type: 'form' })
-    expect(form.fields.title.trim).toBe(true)
-    expect(form).not.toHaveProperty('components')
+  it('rejects the component of views with its replacement field', async () => {
+    await expect(
+      setupView(
+        createApi(),
+        { type: 'view', component: { type: 'list', form: createBookForm() } },
+        'books'
+      )
+    ).rejects.toThrow(
+      `Unsupported schema key 'component' in 'books': Use 'field' instead.`
+    )
   })
 
   it('keeps the Vue components of forms, sections, fields and pages', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const layout = { name: 'BookLayout' }
     const form = await setupForm(createApi(), {
       type: 'form',
@@ -674,104 +575,41 @@ describe('the deprecated keys components and component', () => {
     expect(form.fields.details.component).toBe(layout)
     expect(form.fields.rating.component).toBe(layout)
     expect(page.component).toBe(layout)
-    expect(warn).not.toHaveBeenCalled()
   })
 
-  it('uses the components of extensions of set-up schemas', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const form = await setupForm(createApi(), createBookForm())
-    const extended = await setupForm(createApi(), {
-      ...form,
-      components: { ...form.fields, published: { type: 'date' } }
-    })
-    expect(Object.keys(extended.fields)).toEqual(['title', 'isbn', 'published'])
-  })
-})
-
-describe('the deprecated rules', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
+  it('rejects rules with the limits of fields as replacement', async () => {
+    await expect(
+      setupBookView({ title: { type: 'text', rules: { minLength: 2 } } })
+    ).rejects.toThrow(
+      `Unsupported schema key 'rules' in 'title': Use the limits of fields, ` +
+      `their types and 'validate()' instead.`
+    )
   })
 
-  it('moves the limits to the field, warning once', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const api = createApi({ number: { rules: { decimals: 2 } } })
-    const price = {
-      type: 'number',
-      maximum: 10,
-      rules: { required: true, minimum: 1, maximum: 100 }
-    }
-    const code = {
-      type: 'text',
-      rules: { minLength: 2, pattern: '^[A-Z]+$', email: true }
-    }
-    applySchemaDefaults(api, price)
-    applySchemaDefaults(api, code)
-    expect(price).toEqual({
-      type: 'number',
-      required: true,
-      minimum: 1,
-      maximum: 100,
-      decimals: 2
-    })
-    expect(code).toEqual({
-      type: 'text',
-      minLength: 2,
-      pattern: '^[A-Z]+$',
-      rules: { email: true }
-    })
-    expect(warn.mock.calls).toEqual([
-      [
-        'Schema `rules` are deprecated, use the limits of fields, ' +
-        'their types and `validate()` instead.'
-      ]
-    ])
+  it('rejects events with the on… handlers as replacement', async () => {
+    await expect(
+      setupBookView({ title: { type: 'text', events: { change() {} } } })
+    ).rejects.toThrow(
+      `Unsupported schema key 'events' in 'title': ` +
+      `Use the 'on…' handlers, e.g. 'onChange()', instead.`
+    )
   })
 
-  it('keeps the rules that turn validations off', () => {
-    const schema = {
-      type: 'number',
-      maximum: 10,
-      rules: { required: false, maximum: undefined, integer: true }
-    }
-    applySchemaDefaults(createApi(), schema)
-    expect(schema).toEqual({
-      type: 'number',
-      maximum: 10,
-      rules: { required: false, maximum: undefined, integer: true }
-    })
-  })
-})
-
-describe('the deprecated keys min and max', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
+  it.each([
+    ['min', 'minimum'],
+    ['max', 'maximum']
+  ])('rejects %s of number types with its replacement', async (key, by) => {
+    await expect(
+      setupBookView({ price: { type: 'number', [key]: 1 } })
+    ).rejects.toThrow(
+      `Unsupported schema key '${key}' in 'price': Use '${by}' instead.`
+    )
   })
 
-  it('renames them in number types and their rules, warning once', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const api = createApi({ number: { max: 100 } })
-    const price = { type: 'number', min: 0 }
-    const discount = { type: 'number', rules: { min: 1, max: false } }
-    applySchemaDefaults(api, price)
-    applySchemaDefaults(api, discount)
-    expect(price).toEqual({ type: 'number', minimum: 0, maximum: 100 })
-    expect(discount).toEqual({
-      type: 'number',
-      minimum: 1,
-      maximum: 100,
-      rules: { maximum: false }
-    })
-    expect(warn.mock.calls).toEqual([
-      ['Schema `min` is deprecated, use `minimum` instead.'],
-      ['Schema `max` is deprecated, use `maximum` instead.']
-    ])
-  })
-
-  it('keeps them in other types', () => {
-    const schema = { type: 'text', min: 0, rules: { max: 1 } }
-    applySchemaDefaults(createApi(), schema)
-    expect(schema).toEqual({ type: 'text', min: 0, rules: { max: 1 } })
+  it('keeps min and max of other types', async () => {
+    await expect(
+      setupBookView({ title: { type: 'text', min: 0, max: 1 } })
+    ).resolves.toBe(undefined)
   })
 })
 

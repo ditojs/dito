@@ -164,19 +164,6 @@ describe('DitoAdmin', () => {
         'Stay logged in'
       ])
     })
-
-    it('accepts the deprecated additionalComponents, warning once', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const login = { additionalComponents: additionalFields }
-      expect(await getLoginDialogLabels(login)).toContain('Stay logged in')
-      createAdmin({ login })
-      expect(warn.mock.calls).toEqual([
-        [
-          '`login.additionalComponents` is deprecated, ' +
-          'use `login.additionalFields` instead.'
-        ]
-      ])
-    })
   })
 
   it('normalizes the paths with `normalizePaths`', () => {

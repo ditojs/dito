@@ -56,10 +56,7 @@ export const bookForm: FormSchema<Book> = {
 | `ItemEventHandler<$Item>` | An event handler that receives the `SchemaContext`. |
 | `ErrorEventHandler<$Item>` | An event handler whose context has the `error`. |
 | `ToggleEventHandler<$Item>` | The `onToggle` handler of sections, inlined forms and trees, with `collapsed` in its context. |
-| `SchemaEvents<$Item>` | The deprecated `events: {}` object of views and forms. Use the `on…` options. |
-| `BaseSchemaEvents<$Item>` | The deprecated `events: {}` object of fields, adding `focus` and `blur`. |
 | `SchemaToggle<$Item>` | The `onToggle` option of collapsible schemas. |
-| `SchemaRules` | The deprecated `rules` option. Use the limits of fields, their types and `validate()`. |
 
 See [Events](./events.md).
 
@@ -145,17 +142,6 @@ See [Schemas](./schemas.md).
 | `OrRecordOf<T>` | `T \| Record<string, T>` |
 | `OrFunctionReturning<T>` | `T \| (() => T)` |
 | `Resolvable<T>` | A value, record, promise or function, resolved to `T` or a record of it. |
-
-## Deprecated
-
-The earlier names of these types, e.g. `DitoContext` or `HTTPMethod`, keep
-working as deprecated aliases until a future major version. The
-[upgrade guide](../../upgrading-to-4.x.md#typescript-types) lists them with
-their new names. `ComputedSchema`, `DataSchema` and `HiddenSchema` are
-deprecated aliases of `ValueSchema`, until 5.0. `Component`, `Components`,
-`SourceComponent` and `ComponentSchemaBase` are deprecated aliases of `Field`,
-`Fields`, `SourceField` and `FieldSchemaBase`. The `events: {}` options of schemas are deprecated too, see
-[Events](./events.md#deprecated-events).
 
 ## TypeDescriptor
 

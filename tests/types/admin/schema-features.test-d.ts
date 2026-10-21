@@ -4,10 +4,7 @@ import type {
   Fields,
   PanelSchema,
   UploadSchema,
-  ValueSchema,
-  ComputedSchema,
-  DataSchema,
-  HiddenSchema
+  ValueSchema
 } from '@ditojs/admin'
 import type { Entry, Parent } from './fixtures.ts'
 
@@ -146,17 +143,7 @@ describe('SchemaDataMixin: data callback', () => {
   })
 })
 
-describe('ValueSchema', () => {
-  it('accepts the deprecated names of the type and its schema', () => {
-    assertType<ValueSchema<Entry>>({ type: 'computed' })
-    assertType<ValueSchema<Entry>>({ type: 'data', dataPath: 'title' })
-    assertType<ValueSchema<Entry>>({ type: 'hidden', data: () => 42 })
-    assertType<Fields<Entry>>({ title: { type: 'computed' } })
-    expectTypeOf<ComputedSchema<Entry>>().toEqualTypeOf<ValueSchema<Entry>>()
-    expectTypeOf<DataSchema<Entry>>().toEqualTypeOf<ValueSchema<Entry>>()
-    expectTypeOf<HiddenSchema<Entry>>().toEqualTypeOf<ValueSchema<Entry>>()
-  })
-})
+describe('ValueSchema', () => {})
 
 describe('UploadSchema', () => {
   it('accepts multiple, extensions, accept, and maxSize', () => {

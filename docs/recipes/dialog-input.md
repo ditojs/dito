@@ -55,7 +55,7 @@ export const books = {
           const data = await showDialog({
             fields: {
               isbn: { type: 'text', label: 'ISBN' },
-              stock: { type: 'integer', min: 0 }
+              stock: { type: 'integer', minimum: 0 }
             },
             buttons: {
               cancel: {},
