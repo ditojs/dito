@@ -9,7 +9,7 @@ import {
   type MaybeRefOrGetter
 } from 'vue'
 import { setupForm } from '../utils/schema/setup.js'
-import { checkProperties } from '../utils/schema/properties.js'
+import { checkFormProperties } from '../utils/schema/properties.js'
 import { hasSubmitButton } from '../utils/schema/lookup.js'
 import { RouteTree, ViewNode } from '../utils/RouteTree.ts'
 import { isPage } from '../utils/schema/structure.js'
@@ -17,7 +17,6 @@ import {
   adminContextKey,
   dataContextKey,
   resourceContextKey,
-  propertyScopeKey,
   routeContextKey,
   schemaFormKey
 } from '../utils/keys.ts'
@@ -41,14 +40,7 @@ export function useDitoForm({
   buttons,
   ...formSchema
 }: DitoFormOptions) {
-  if (formSchema.properties) {
-    if (formSchema.fields) {
-      throw new Error(
-        'Unable to set up the form: It has both `fields` and `properties`.'
-      )
-    }
-    checkProperties(formSchema.properties)
-  }
+  checkFormProperties(formSchema)
   const adminContext = inject(adminContextKey)!
   const routeContext = inject(routeContextKey, null)
   const isInDialog = !!inject(dataContextKey, null)?.closeDialog
@@ -189,20 +181,5 @@ export function useDitoForm({
   }
 
   provide(schemaFormKey, { dataContext, buttonSchemas: form.buttonSchemas })
-  if (schema.properties) {
-    // The widgets in the layout edit the item by the names of the properties:
-    provide(propertyScopeKey, {
-      properties: schema.properties,
-      get data() {
-        return dataContext.data!
-      },
-      get dataPath() {
-        return dataContext.dataPath
-      },
-      get componentPath() {
-        return dataContext.componentPath
-      }
-    })
-  }
   return form.context
 }

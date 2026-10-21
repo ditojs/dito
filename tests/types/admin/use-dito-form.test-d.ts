@@ -18,7 +18,7 @@ import {
   DitoListField,
   DitoObjectField
 } from '@ditojs/admin'
-import type { SchemaContext } from '@ditojs/admin'
+import type { FormSchema, SchemaContext } from '@ditojs/admin'
 
 type Product = { id: number; name: string; price: number }
 
@@ -54,6 +54,25 @@ describe('useDitoForm()', () => {
     useDitoForm({ resource: 'products', id: true })
     // @ts-expect-error: The type is always `form`.
     useDitoForm({ type: 'view' })
+  })
+})
+
+describe('FormSchema', () => {
+  it('takes properties with a component in nested forms', () => {
+    const LimitsLayout = { render: () => h(DitoNumberField, { name: 'min' }) }
+    assertType<FormSchema>({
+      type: 'form',
+      fields: {
+        limits: {
+          type: 'object',
+          form: {
+            type: 'form',
+            properties: { min: { type: 'number' } },
+            component: LimitsLayout
+          }
+        }
+      }
+    })
   })
 })
 

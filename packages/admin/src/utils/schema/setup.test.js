@@ -781,14 +781,40 @@ describe('setupForms()', () => {
     expect(schema.form.component).toEqual({ name: 'BookLayout' })
   })
 
-  it('rejects forms with a component and no fields', async () => {
+  it('rejects forms with both fields and properties', async () => {
+    const schema = {
+      type: 'list',
+      name: 'books',
+      form: {
+        type: 'form',
+        fields: { title: { type: 'text' } },
+        properties: { title: { type: 'string' } }
+      }
+    }
+    await expect(setupForms(createApi(), schema)).rejects.toThrow(
+      'Unable to set up the form: It has both `fields` and `properties`.'
+    )
+  })
+
+  it('rejects forms with unsupported properties', async () => {
+    const schema = {
+      type: 'object',
+      name: 'publisher',
+      form: { type: 'form', properties: { name: { type: 'text' } } }
+    }
+    await expect(setupForms(createApi(), schema)).rejects.toThrow(
+      `Unsupported property type: 'text'.`
+    )
+  })
+
+  it('rejects forms with a component and neither fields nor properties', async () => {
     const schema = {
       type: 'list',
       name: 'books',
       form: { type: 'form', component: { name: 'BookEditor' } }
     }
     await expect(setupForms(createApi(), schema)).rejects.toThrow(
-      `Invalid form schema: 'component' needs 'fields'.`
+      `Invalid form schema: 'component' needs 'fields' or 'properties'.`
     )
   })
 

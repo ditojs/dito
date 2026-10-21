@@ -50,8 +50,7 @@ export function useWidget(
   const layout = inject(layoutKey, null)
   if (!scope || !layout) {
     throw new Error(
-      `Unable to place '${props.name}' outside of \`DitoSchemaForm\` with ` +
-      '`properties`.'
+      `Unable to place '${props.name}' outside of forms with \`properties\`.`
     )
   }
   const isScopeValue = props.name == null && !isLayout

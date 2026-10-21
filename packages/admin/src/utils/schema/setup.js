@@ -26,6 +26,7 @@ import {
   getPanelSchemas
 } from './structure.js'
 import { getFormSchemas } from './lookup.js'
+import { checkFormProperties } from './properties.js'
 import { getText } from '../html.js'
 
 const resolvedSchemas = new WeakMap()
@@ -292,8 +293,11 @@ export async function setupForm(api, schema) {
     throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
   }
   applySchemaDefaults(api, schema)
-  if (schema.component && !schema.fields) {
-    throw new Error(`Invalid form schema: 'component' needs 'fields'.`)
+  checkFormProperties(schema)
+  if (schema.component && !schema.fields && !schema.properties) {
+    throw new Error(
+      `Invalid form schema: 'component' needs 'fields' or 'properties'.`
+    )
   }
   await Promise.all([
     resolveSchemaComponent(schema),

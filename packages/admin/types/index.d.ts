@@ -3129,9 +3129,18 @@ export interface FormSchema<$Item = any>
   /** The form's fields. */
   fields?: Fields<$Item>
   /**
-   * A Vue component that lays out the form's fields instead of its pane,
-   * placing them with {@link DitoSchemaField} and {@link DitoPane}. It
-   * receives the `schema` and `context` of the form, and needs `fields`.
+   * The data of the form in the format of the server's model properties,
+   * instead of `fields`, with the admin's keywords such as `if`, `exclude`
+   * and `serializeValue()` in the same objects. Keywords may be functions of
+   * the context. Lists hold items of `items.properties`, or of several
+   * `forms` by their `type`. Widgets lay out the data, in the `component` of
+   * nested forms or in the default slot of {@link DitoSchemaForm}.
+   */
+  properties?: Record<string, Record<string, any>>
+  /**
+   * A Vue component that lays out the form instead of its pane: its `fields`
+   * with {@link DitoSchemaField} and {@link DitoPane}, or its `properties`
+   * with widgets. It receives the `schema` and `context` of the form.
    */
   component?: Resolvable<VueComponent>
   /**
@@ -3388,14 +3397,6 @@ export function useDitoForm<$Item = any>(
      * @defaultValue `null`
      */
     id?: MaybeRefOrGetter<string | number | null>
-    /**
-     * The data of the form in the format of the server's model properties,
-     * instead of `fields`, with the admin's keywords such as `if`, `exclude`
-     * and `serializeValue()` in the same objects. Keywords may be functions of
-     * the context. Lists hold items of `items.properties`, or of several
-     * `forms` by their `type`.
-     */
-    properties?: Record<string, Record<string, any>>
   }
 ): SchemaContext<$Item>
 
