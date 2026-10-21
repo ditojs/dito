@@ -6,7 +6,7 @@ import {
   isString,
   formatPlainDate
 } from '@ditojs/utils'
-import { convertToDate } from '../date.js'
+import { convertToDate, convertTimeToDate, formatTime } from '../date.js'
 import { createReference } from '../data.js'
 import { getStoredFiles } from '../upload.ts'
 import {
@@ -61,10 +61,11 @@ const dateTypes = new Set(['date', 'datetime', 'timestamp'])
 
 // The validators of the server's formats, `uri` with the scheme it requires:
 const validatorsByFormat = {
-  email: 'email',
-  hostname: 'hostname',
-  password: 'password',
-  uri: 'url'
+  'email': 'email',
+  'hostname': 'hostname',
+  'password': 'password',
+  'uri': 'url',
+  'iso-time': 'isoTime'
 }
 
 // Not supported yet:
@@ -173,6 +174,9 @@ export class PropertyNode {
     const { property } = this
     if (dateTypes.has(property.type)) {
       value = convertToDate(value)
+    } else if (this.#get('format', entry) === 'iso-time') {
+      // `DitoTimeField` edits times as `Date` objects too:
+      value = convertTimeToDate(value)
     }
     return property.deserializeValue
       ? property.deserializeValue(this.#createContext(entry, { value }))
@@ -215,6 +219,8 @@ export class PropertyNode {
       // Send plain dates, so they can't shift to another day through time
       // zones:
       return type === 'date' ? formatPlainDate(value) : value.toISOString()
+    } else if (isDate(value) && this.#get('format', entry) === 'iso-time') {
+      return formatTime(value)
     } else if (type === 'asset') {
       return getStoredFiles(value)[0] ?? null
     } else if (type === 'array' && this.property.items?.type === 'asset') {
