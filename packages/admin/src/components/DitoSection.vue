@@ -40,8 +40,10 @@ const DitoSection = {
   setup(props, { slots }) {
     const services = useServices()
     const { adminContext, dataContext } = services
-    const { scope, property, store, isRelevant, getContainerProps } =
-      useWidget(props)
+    const { scope, property, store, isRelevant, getContainerProps } = useWidget(
+      props,
+      { isLayout: true }
+    )
     const { name } = props
     // The scope of the widgets in the slot:
     let slotScope = scope
@@ -74,7 +76,7 @@ const DitoSection = {
     // that contain them, e.g. of nested sections:
     const isRelevantInSlot = path => {
       let { properties, data, dataPath } = slotScope
-      for (const key of parseDataPath(path)) {
+      for (const key of path ? parseDataPath(path) : []) {
         const property = properties[key]
         if (!property) {
           // The widget throws for its unknown name:
@@ -117,9 +119,7 @@ const DitoSection = {
 
     return () => {
       const { names, hasDisplayContent } = getSlotContent(slots.default?.())
-      const paths = names.map(name =>
-        appendDataPath(slotScope.componentPath, name)
-      )
+      const paths = names.map(name => appendName(slotScope.componentPath, name))
       if (paths.join() !== componentPaths.value.join()) {
         componentPaths.value = paths
       }
@@ -134,7 +134,7 @@ const DitoSection = {
       const containsErrors = (
         !isOpened() &&
         names.some(name => {
-          const dataPath = appendDataPath(slotScope.dataPath, name)
+          const dataPath = appendName(slotScope.dataPath, name)
           return !!(model.getErrors(dataPath) || model.getFieldErrors(dataPath))
         })
       )
@@ -160,8 +160,9 @@ const DitoSection = {
 export default DitoSection
 
 // The names of the widgets in the slot, also in elements and nested sections,
-// and whether it displays anything else, e.g. text or other components:
-function getSlotContent(
+// and whether it displays anything else, e.g. text or other components. Widgets
+// of the scope's own value have no name:
+export function getSlotContent(
   vnodes,
   content = { names: [], hasDisplayContent: false },
   prefix = null
@@ -175,10 +176,10 @@ function getSlotContent(
         getSlotContent(
           children?.default?.(),
           content,
-          props?.name ? appendDataPath(prefix, props.name) : prefix
+          appendName(prefix, props?.name)
         )
       } else if (widgetComponents.has(type)) {
-        content.names.push(appendDataPath(prefix, props.name))
+        content.names.push(appendName(prefix, props?.name))
       } else if (isArray(children)) {
         getSlotContent(children, content, prefix)
       } else if (type === Text) {
@@ -191,6 +192,10 @@ function getSlotContent(
     }
   }
   return content
+}
+
+export function appendName(path, name) {
+  return name ? appendDataPath(path, name) : path
 }
 </script>
 

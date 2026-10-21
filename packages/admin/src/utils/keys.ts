@@ -40,6 +40,8 @@ export interface PropertyScope {
   readonly data: Data
   readonly dataPath: string
   readonly componentPath: string
+  // The name of the scope's own value, e.g. of primitive list items:
+  readonly valueName?: string
 }
 
 export interface PanelTab {

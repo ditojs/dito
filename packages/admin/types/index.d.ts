@@ -3720,9 +3720,10 @@ export const DitoSchemaForm: DefineComponent<{}>
 type WidgetProps<$Props = {}> = $Props & {
   /**
    * The key of the property in the `properties` of the form, or of the object
-   * of the section that the widget is in.
+   * of the section, object or list item that the widget is in. Widgets
+   * without `name` edit the items of lists of values.
    */
-  name: string
+  name?: string
   /** The label, or `false` to show none. */
   label?: string | false
   /** The width as a fraction, e.g. `'1/2'`, a percentage or a CSS width. */
@@ -3896,6 +3897,41 @@ export const DitoUploadField: DefineComponent<
       | 'downloadUrl'
     >
   >
+>
+
+/**
+ * Edits the items of the array property `name`, laid out in its default slot
+ * with the slot props `{ item, index }`, in which widgets edit the item's
+ * properties. Items of several `forms` are laid out by their `type`.
+ */
+export const DitoListField: DefineSetupFnComponent<
+  WidgetProps<
+    { name: string } & Pick<
+      ListSchema,
+      'collapsible' | 'collapsed' | 'creatable' | 'deletable' | 'draggable'
+    >
+  >,
+  {},
+  SlotsType<{
+    default(props: { item: any; index: number }): any
+  }>
+>
+
+/**
+ * Edits the object property `name`, laid out in its default slot with the slot
+ * prop `{ item }`. Objects that are `nullable` can be created and deleted.
+ */
+export const DitoObjectField: DefineSetupFnComponent<
+  WidgetProps<
+    { name: string } & Pick<
+      ObjectSchema,
+      'collapsible' | 'collapsed' | 'creatable' | 'deletable'
+    >
+  >,
+  {},
+  SlotsType<{
+    default(props: { item: Record<string, any> }): any
+  }>
 >
 
 /**

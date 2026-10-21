@@ -20,6 +20,11 @@
       :deletable="deletable"
       @delete="deleteItem(objectData)"
     )
+      template(
+        v-if="$slots.default"
+        #default
+      )
+        slot(:item="objectData")
   //- NOTE: Inlined objects only get the create button here, the other edit
   //- buttons are in `DitoSchemaInlined`.
   DitoEditButtons(
