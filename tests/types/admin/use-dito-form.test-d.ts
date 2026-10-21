@@ -10,6 +10,7 @@ import {
   DitoTextareaField,
   DitoSelectField,
   DitoCheckboxesField,
+  DitoMultiselectField,
   DitoDateField,
   DitoTimeField,
   DitoDateTimeField,
@@ -95,6 +96,8 @@ describe('widgets', () => {
       options: { data: [{ id: 1, name: 'Ada' }], label: 'name' }
     })
     h(DitoCheckboxesField, { name: 'genres', layout: 'horizontal' })
+    h(DitoMultiselectField, { name: 'genre', editable: true, view: 'genres' })
+    h(DitoSelectField, { name: 'genre', editable: true, view: 'genres' })
     h(DitoDateField, { name: 'day', format: { date: { day: '2-digit' } } })
     h(DitoTimeField, { name: 'opensAt' })
     h(DitoDateTimeField, { name: 'meetsAt' })
@@ -105,6 +108,8 @@ describe('widgets', () => {
     type Slot = InstanceType<typeof DitoListField>['$slots']['default']
     expectTypeOf<Parameters<Slot>[0]['index']>().toEqualTypeOf<number>()
     h(DitoListField, { name: 'awards', creatable: true, draggable: true })
+    h(DitoListField, { name: 'awards', itemLabel: ({ item }) => item.title })
+    h(DitoListField, { name: 'awards', itemLabel: 'title' })
     h(DitoObjectField, { name: 'address', collapsible: true })
     // Widgets without `name` edit the items of lists of values:
     h(DitoNumberField, { step: 5 })

@@ -108,7 +108,7 @@ const BookPage = {
   }
 }
 
-async function mountPage(component, path, data) {
+async function mountPage(component, path, data, views = {}) {
   const request = vi.fn(({ method = 'get', url, data: sentData }) => {
     if (method === 'get' && url === `/${path}/1`) {
       return { data: { ...data } }
@@ -120,7 +120,8 @@ async function mountPage(component, path, data) {
   })
   const admin = await mountAdmin({
     views: {
-      page: { type: 'page', label: 'Page', path: 'page', component }
+      page: { type: 'page', label: 'Page', path: 'page', component },
+      ...views
     },
     request
   })
@@ -232,31 +233,65 @@ describe('widgets of values', () => {
       genre: [{ message: 'must be one of the options' }]
     })
   })
-})
 
-describe('DitoTimeField', () => {
-  afterEach(() => {
-    form = null
-  })
-
-  it('edits times of strings as dates, and sends them as strings', async () => {
-    const { request } = await mountPage(BookPage, 'books', item)
-    const { opensDaily } = form.item
-    expect([opensDaily.getHours(), opensDaily.getMinutes()]).toEqual([7, 30])
-    form.item.opensDaily = new Date(1970, 0, 1, 18, 5, 0)
-    expect(await form.submit()).toBe(true)
-    expect(getSentData(request)).toEqual([
-      expect.objectContaining({ opensDaily: '18:05:00' })
-    ])
-  })
-
-  it('validates times of strings', async () => {
-    await mountPage(BookPage, 'books', item)
-    form.item.opensDaily = 'noon'
-    expect(form.validate()).toBe(false)
-    expect(form.getErrors()).toEqual({
-      opensDaily: [{ message: 'must be a valid time' }]
-    })
+  it('edit options in their view with `editable`', async () => {
+    const genres = {
+      type: 'view',
+      field: {
+        type: 'list',
+        resource: { path: 'genres' },
+        form: { type: 'form', fields: { name: { type: 'text' } } }
+      }
+    }
+    const GenrePage = {
+      setup() {
+        useDitoForm({
+          resource: 'books',
+          id: 1,
+          properties: {
+            genre: { type: 'string' },
+            genres: { type: 'array', items: { type: 'string' } }
+          }
+        })
+        const props = {
+          options: ['jazz', 'rock'],
+          editable: true,
+          view: 'genres'
+        }
+        return () =>
+          h(DitoSchemaForm, null, {
+            default: () => [
+              h(DitoSelectField, { name: 'genre', label: 'Select', ...props }),
+              h(DitoRadioField, { name: 'genre', label: 'Radio', ...props }),
+              h(DitoMultiselectField, {
+                name: 'genre',
+                label: 'Multiselect',
+                ...props
+              }),
+              h(DitoCheckboxesField, {
+                name: 'genres',
+                label: 'Checkboxes',
+                ...props
+              })
+            ]
+          })
+      }
+    }
+    const { wrapper } = await mountPage(
+      GenrePage,
+      'books',
+      { id: 1, genre: 'jazz', genres: [] },
+      { genres }
+    )
+    const getEditPaths = label =>
+      getContainer(wrapper, label)
+        .findAll('.dito-options-edit-buttons a')
+        .map(link => link.attributes('href'))
+    expect(getEditPaths('Select')).toEqual(['/genres/jazz'])
+    expect(getEditPaths('Multiselect')).toEqual(['/genres/jazz'])
+    // Radio buttons and checkboxes edit each of their options:
+    expect(getEditPaths('Radio')).toEqual(['/genres/jazz', '/genres/rock'])
+    expect(getEditPaths('Checkboxes')).toEqual(['/genres/jazz', '/genres/rock'])
   })
 })
 

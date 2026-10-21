@@ -53,7 +53,10 @@ const numberProps = {
 }
 
 const optionsProps = {
-  options: { type: [Array, Object], default: undefined }
+  options: { type: [Array, Object], default: undefined },
+  // Options are edited in the forms of their items in `view`:
+  editable: { type: [Boolean, Function], default: undefined },
+  view: { type: String, default: undefined }
 }
 
 const linesProps = {
@@ -255,7 +258,8 @@ const sourceProps = {
 // or values that their items wrap, which widgets without `name` edit:
 export const DitoListField = defineSourceWidget('DitoListField', {
   props: {
-    draggable: { type: Boolean, default: undefined }
+    draggable: { type: Boolean, default: undefined },
+    itemLabel: { type: [String, Function, Object, Boolean], default: undefined }
   },
   getSchema: ({ items, forms, orderKey, idKey }) => ({
     type: 'list',
