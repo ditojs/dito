@@ -960,6 +960,34 @@ describe('written properties', () => {
       })
     })
 
+    it('handles lists of primitives by the property of their items', () => {
+      const properties = {
+        tags: {
+          type: 'array',
+          items: { type: 'string', required: true, trim: true, nullable: true }
+        },
+        dates: { type: 'array', items: { type: 'date' } },
+        images: { type: 'array', items: { type: 'asset' } }
+      }
+      const data = deserializeData(createForm(properties), {
+        tags: ['a', ' b ', ''],
+        dates: ['2026-10-21'],
+        images: [
+          { key: 'a', name: 'a.png' },
+          { name: 'b.png', upload: { success: false } }
+        ]
+      })
+      expect(data.dates[0]).toBeInstanceOf(Date)
+      expect(validate(properties, data)).toEqual({
+        'tags/2': [{ message: 'is required' }]
+      })
+      expect(serialize(properties, data)).toEqual({
+        tags: ['a', 'b', null],
+        dates: ['2026-10-21'],
+        images: [{ key: 'a', name: 'a.png' }]
+      })
+    })
+
     it('merges the items in place, matching them by `idKey`', () => {
       const form = createForm({
         entries: {
@@ -992,8 +1020,11 @@ describe('written properties', () => {
       expect(check({ type: 'string', computeValue: () => '' })).toThrow(
         `Unsupported property keyword: 'computeValue'.`
       )
-      expect(check({ type: 'array', items: { type: 'string' } })).toThrow(
-        `Unsupported property keyword: 'items'.`
+      expect(check({ type: 'array' })).toThrow(
+        `Unsupported property: 'array' without 'items'.`
+      )
+      expect(check({ type: 'array', items: { type: 'text' } })).toThrow(
+        `Unsupported property type: 'text'.`
       )
       expect(check({ type: 'text' })).toThrow(
         `Unsupported property type: 'text'.`

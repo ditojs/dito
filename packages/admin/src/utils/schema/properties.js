@@ -71,12 +71,15 @@ const unsupportedKeys = ['relate', 'computeValue', 'definitions', '$ref']
 // Written properties: a value of a form's data and its keywords, which may be
 // functions of the entry's context, e.g. `required`, `if` or `default`:
 export class PropertyNode {
+  #itemForms
+
   constructor(name, property) {
     this.name = name
     this.property = property
     // Properties hold no fields, which only fields have for structure:
     this.fields = []
     this.source = getPropertySource(property)
+    this.#itemForms = getItemForms(property)
   }
 
   getWalkedNode(entry, { shouldSkipIrrelevant }) {
@@ -99,13 +102,7 @@ export class PropertyNode {
   }
 
   getItemForms() {
-    const { forms, items } = this.property
-    return [
-      {
-        forms: forms ?? { default: items ?? this.property },
-        childSourceSchemas: []
-      }
-    ]
+    return this.#itemForms
   }
 
   getValidationErrors(entry) {
@@ -200,6 +197,9 @@ export class PropertyNode {
       return type === 'date' ? formatPlainDate(value) : value.toISOString()
     } else if (type === 'asset') {
       return getStoredFiles(value)[0] ?? null
+    } else if (type === 'array' && this.property.items?.type === 'asset') {
+      // Leave out the files that weren't uploaded:
+      return value?.filter(file => file)
     } else if (type === 'string' && isString(value)) {
       value = this.#get('trim', entry) ? value.trim() : value
       return value === '' && this.#get('nullable', entry) ? null : value
@@ -244,30 +244,30 @@ export function createPropertyNodes(properties) {
 
 // Fail early on what written properties don't support yet:
 export function checkProperties(properties) {
-  for (const property of Object.values(properties)) {
-    const { type, format, items, forms } = property
-    const key = unsupportedKeys.find(key => key in property)
-    if (key) {
-      throw new Error(`Unsupported property keyword: '${key}'.`)
-    }
-    if (!supportedTypes.has(type)) {
-      throw new Error(`Unsupported property type: '${type}'.`)
-    }
-    if (format && !isFunction(format) && !validatorsByFormat[format]) {
-      throw new Error(`Unsupported property format: '${format}'.`)
-    }
-    if (type === 'array' && !forms && !items?.properties) {
-      // Lists of primitives aren't supported yet:
-      throw new Error(`Unsupported property keyword: 'items'.`)
-    }
-    for (const { properties } of [
-      property,
-      ...(items ? [items] : []),
-      ...Object.values(forms ?? {})
-    ]) {
-      if (properties) {
-        checkProperties(properties)
-      }
+  Object.values(properties).forEach(checkProperty)
+}
+
+function checkProperty(property) {
+  const { type, format, items, forms } = property
+  const key = unsupportedKeys.find(key => key in property)
+  if (key) {
+    throw new Error(`Unsupported property keyword: '${key}'.`)
+  }
+  if (!supportedTypes.has(type)) {
+    throw new Error(`Unsupported property type: '${type}'.`)
+  }
+  if (format && !isFunction(format) && !validatorsByFormat[format]) {
+    throw new Error(`Unsupported property format: '${format}'.`)
+  }
+  if (type === 'array' && !forms && !items) {
+    throw new Error(`Unsupported property: 'array' without 'items'.`)
+  }
+  if (items) {
+    checkProperty(items)
+  }
+  for (const { properties } of [property, ...Object.values(forms ?? {})]) {
+    if (properties) {
+      checkProperties(properties)
     }
   }
 }
@@ -385,7 +385,7 @@ function getFieldProperty(field, name, formContext) {
 
 // Values that hold items, of arrays or objects with properties:
 function getPropertySource(property) {
-  const { type, properties, forms, idKey, orderKey } = property
+  const { type, properties, items, forms, idKey, orderKey } = property
   return type === 'array' || properties
     ? {
         isSource: true,
@@ -395,9 +395,38 @@ function getPropertySource(property) {
         orderKey: orderKey ?? null,
         hasItemTypes: Object.keys(forms ?? {}).length > 1,
         hasResource: false,
-        itemAdapter: null
+        // Lists of primitives are walked with their items wrapped:
+        itemAdapter: items && !items.properties ? primitiveItemAdapter : null
       }
     : null
+}
+
+// The forms of the items in the value, by their `type`. Primitives are walked
+// as the property of their wrapper:
+function getItemForms({ type, properties, items, forms }) {
+  return type === 'array' || properties
+    ? [
+        {
+          forms: (
+            forms ??
+            {
+              default: items
+                ? items.properties
+                  ? items
+                  : { properties: { [primitiveItemAdapter.name]: items } }
+                : { properties }
+            }
+          ),
+          childSourceSchemas: []
+        }
+      ]
+    : []
+}
+
+const primitiveItemAdapter = {
+  name: 'value',
+  wrap: value => ({ value }),
+  unwrap: item => item.value
 }
 
 // Empty values follow the server, `nullable` ones are `null`:
