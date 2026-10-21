@@ -28,6 +28,8 @@ export {
   DitoCheckboxesField,
   DitoMultiselectField,
   DitoDateField,
+  DitoTimeField,
+  DitoDateTimeField,
   DitoColorField,
   DitoCodeField,
   DitoMarkupField,

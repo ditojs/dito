@@ -3558,11 +3558,18 @@ export const DitoMultiselectField: DefineComponent<
   >
 >
 
-/**
- * Edits the date property `name`, or a date with its time for `datetime` and
- * `timestamp`, displayed in `format`.
- */
+/** Edits the date of the property `name` with a date picker. */
 export const DitoDateField: DefineComponent<
+  WidgetProps<Pick<DateSchema, 'format'>>
+>
+
+/** Edits the time of the property `name` with a time picker. */
+export const DitoTimeField: DefineComponent<
+  WidgetProps<Pick<DateSchema, 'format'>>
+>
+
+/** Edits the date and time of the property `name`. */
+export const DitoDateTimeField: DefineComponent<
   WidgetProps<Pick<DateSchema, 'format'>>
 >
 
