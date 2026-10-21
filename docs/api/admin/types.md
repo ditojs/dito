@@ -79,7 +79,7 @@ See [Events](./events.md).
 | `CheckboxesSchema<$Item>` | `type: 'checkboxes'`. |
 | `CodeSchema<$Item>` | `type: 'code'`. |
 | `ColorSchema<$Item>` | `type: 'color'`. |
-| `ColorFormat` | The `format` option of colors: `'hex'`, `'rgb'`, `'hsl'`, … |
+| `ColorFormat` | The `colorFormat` option of colors: `'hex'`, `'rgb'`, `'hsl'`, … |
 | `ComponentSchema<$Item>` | `type: 'component'`, with a custom Vue component. |
 | `DateSchema<$Item>` | `type: 'date' \| 'datetime' \| 'time'`. |
 | `InputSchema<$Item>` | The text inputs: `'text'`, `'email'`, `'url'`, `'password'`, `'tel'`, `'hostname'`, `'domain'`, `'creditcard'`. |

@@ -75,12 +75,12 @@ describe('DitoColorType', () => {
     expect(data.background).toBe('#ff8000')
   })
 
-  it('converts colors to the color format of `format`', async () => {
+  it('converts colors to the format of `colorFormat`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
         fields: {
-          rgb: { type: 'color', format: 'rgb' },
-          hex8: { type: 'color', format: 'hex8' }
+          rgb: { type: 'color', colorFormat: 'rgb' },
+          hex8: { type: 'color', colorFormat: 'hex8' }
         }
       }
     })
@@ -93,11 +93,24 @@ describe('DitoColorType', () => {
   it('rejects the color format `name`', async () => {
     const schema = {
       type: 'view',
-      fields: { background: { type: 'color', format: 'name' } }
+      fields: { background: { type: 'color', colorFormat: 'name' } }
     }
     await expect(
       setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'colors')
     ).rejects.toThrow(`Unsupported color format: 'name'.`)
+  })
+
+  it('rejects the `format` of 5.x', async () => {
+    const schema = {
+      type: 'view',
+      fields: { background: { type: 'color', format: 'rgb' } }
+    }
+    await expect(
+      setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'colors')
+    ).rejects.toThrow(
+      `Unsupported schema key 'format' in 'background': ` +
+      `Use 'colorFormat' instead.`
+    )
   })
 
   it('emits change once entered colors are written on blur', async () => {
@@ -206,7 +219,10 @@ describe('DitoColorType', () => {
     const { findField, data } = await mountSchema({
       schema: {
         fields: Object.fromEntries(
-          formats.map(format => [format, { type: 'color', format }])
+          formats.map(format => [
+            format,
+            { type: 'color', colorFormat: format }
+          ])
         )
       }
     })

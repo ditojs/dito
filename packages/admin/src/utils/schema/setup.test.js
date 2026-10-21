@@ -41,7 +41,7 @@ defineType({
   setupSchema: ({ schema }) => resolveSchemaComponent(schema)
 })
 defineType({ type: 'value', resolvesValue: true })
-defineType({ type: 'color', hasFormat: true })
+defineType({ type: 'date', hasFormat: true })
 defineType({ ...numberTraits, type: 'number' })
 
 function createApi(defaults = {}) {
@@ -471,7 +471,9 @@ describe('the schema keys of 3.x', () => {
 
   it('keeps the format of types that read it', async () => {
     await expect(
-      setupBookView({ cover: { type: 'color', format: 'rgb' } })
+      setupBookView({
+        published: { type: 'date', format: { day: 'numeric' } }
+      })
     ).resolves.toBe(undefined)
   })
 

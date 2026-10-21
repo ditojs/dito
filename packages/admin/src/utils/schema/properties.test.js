@@ -185,8 +185,8 @@ describe('getFormProperties()', () => {
       expect(
         await getProperties({
           background: { type: 'color' },
-          overlay: { type: 'color', format: 'hex8', default: '#ff000080' },
-          tint: { type: 'color', format: 'rgb' }
+          overlay: { type: 'color', colorFormat: 'hex8', default: '#ff000080' },
+          tint: { type: 'color', colorFormat: 'rgb' }
         })
       ).toEqual({
         background: { type: 'color', nullable: true },
