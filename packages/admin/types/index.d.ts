@@ -12,7 +12,9 @@ import { RequireAtLeastOne, SetOptional } from 'type-fest'
 import {
   Component as VueComponent,
   DefineComponent,
-  MaybeRefOrGetter
+  DefineSetupFnComponent,
+  MaybeRefOrGetter,
+  SlotsType
 } from 'vue'
 import { Router as VueRouter } from 'vue-router'
 
@@ -3733,6 +3735,8 @@ type WidgetProps<$Props = {}> = $Props & {
   readonly?: boolean
   disabled?: boolean
   autofocus?: boolean
+  /** Called when the user changed the value, with the context of the field. */
+  onChange?: (context: SchemaContext) => void
 } & {
   [K in Exclude<WidgetDataKeyword, keyof $Props>]?: never
 }
@@ -3758,12 +3762,45 @@ type WidgetDataKeyword =
   | 'maxItems'
   | 'trim'
   | 'validate'
+  | 'relate'
+  | 'computeValue'
+  | 'serializeValue'
+  | 'deserializeValue'
 
 /**
  * Edits the string property `name` in the layout of {@link DitoSchemaForm},
  * with the input type of its `format`.
  */
 export const DitoTextField: DefineComponent<WidgetProps>
+
+/** Edits the string property `name` in a text area. */
+export const DitoTextareaField: DefineComponent<
+  WidgetProps<Pick<TextareaSchema, 'lines' | 'resizable'>>
+>
+
+/** Edits the string property `name` as code. */
+export const DitoCodeField: DefineComponent<
+  WidgetProps<
+    Pick<CodeSchema, 'language' | 'indentSize' | 'lines' | 'resizable'>
+  >
+>
+
+/** Edits the string property `name` as rich text, stored as HTML. */
+export const DitoMarkupField: DefineComponent<
+  WidgetProps<
+    Pick<
+      MarkupSchema,
+      | 'lines'
+      | 'resizable'
+      | 'whitespace'
+      | 'enableRules'
+      | 'hardBreak'
+      | 'marks'
+      | 'nodes'
+      | 'tools'
+    >
+  >
+>
 
 /** Edits the number or integer property `name`, within its limits. */
 export const DitoNumberField: DefineComponent<
@@ -3773,10 +3810,111 @@ export const DitoNumberField: DefineComponent<
   }>
 >
 
+/** Edits the number property `name` with a slider, within its limits. */
+export const DitoSliderField: DefineComponent<
+  WidgetProps<Pick<SliderSchema, 'step' | 'input'>>
+>
+
+/** Displays the number property `name` as progress, within its limits. */
+export const DitoProgressField: DefineComponent<WidgetProps>
+
 /** Edits the boolean property `name` with a switch. */
 export const DitoSwitchField: DefineComponent<
   WidgetProps<{
     labels?: SwitchSchema['labels']
+  }>
+>
+
+/** Edits the boolean property `name` with a checkbox. */
+export const DitoCheckboxField: DefineComponent<WidgetProps>
+
+/**
+ * Selects the value of the property `name` among the `options`, or among the
+ * values of its `enum`. Properties with `relate` hold the related objects.
+ */
+export const DitoSelectField: DefineComponent<
+  WidgetProps<Pick<SelectSchema, 'options'>>
+>
+
+/** Selects the value of the property `name` with radio buttons. */
+export const DitoRadioField: DefineComponent<
+  WidgetProps<Pick<RadioSchema, 'options' | 'layout'>>
+>
+
+/** Selects the values of the array property `name` with checkboxes. */
+export const DitoCheckboxesField: DefineComponent<
+  WidgetProps<Pick<CheckboxesSchema, 'options' | 'layout'>>
+>
+
+/**
+ * Selects the value of the property `name`, or the values of the array
+ * property, in a searchable list, also as tags.
+ */
+export const DitoMultiselectField: DefineComponent<
+  WidgetProps<
+    Pick<
+      MultiselectSchema,
+      | 'options'
+      | 'placeholder'
+      | 'searchable'
+      | 'search'
+      | 'stayOpen'
+      | 'taggable'
+    >
+  >
+>
+
+/**
+ * Edits the date property `name`, or a date with its time for `datetime` and
+ * `timestamp`, displayed in `format`.
+ */
+export const DitoDateField: DefineComponent<
+  WidgetProps<Pick<DateSchema, 'format'>>
+>
+
+/** Edits the color of the string property `name`. */
+export const DitoColorField: DefineComponent<
+  WidgetProps<Pick<ColorSchema, 'alpha' | 'inputs' | 'presets'>>
+>
+
+/**
+ * Uploads the file of the `asset` property `name`, or the files of the array
+ * property, to the upload route of the form's resource.
+ */
+export const DitoUploadField: DefineComponent<
+  WidgetProps<
+    Pick<
+      UploadSchema,
+      | 'accept'
+      | 'extensions'
+      | 'maxSize'
+      | 'draggable'
+      | 'deletable'
+      | 'render'
+      | 'thumbnails'
+      | 'thumbnailUrl'
+      | 'downloadUrl'
+    >
+  >
+>
+
+/**
+ * Edits the property `name` with the content of its default slot, which
+ * receives the field as one reactive object: `v-slot="field"` with
+ * `v-model="field.value"`. Destructured, its values are read-only.
+ */
+export const DitoCustomField: DefineSetupFnComponent<
+  WidgetProps,
+  {},
+  SlotsType<{
+    default(field: {
+      /** The value, which writes through the form's data. */
+      value: any
+      /** The errors of the value, or `null`. */
+      readonly errors: { message: string }[] | null
+      /** The property of the value. */
+      readonly property: Record<string, any>
+    }): any
   }>
 >
 

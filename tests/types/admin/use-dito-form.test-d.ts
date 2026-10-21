@@ -6,7 +6,13 @@ import {
   DitoTextField,
   DitoNumberField,
   DitoSwitchField,
-  DitoSection
+  DitoSection,
+  DitoTextareaField,
+  DitoSelectField,
+  DitoCheckboxesField,
+  DitoDateField,
+  DitoUploadField,
+  DitoCustomField
 } from '@ditojs/admin'
 import type { DitoContext } from '@ditojs/admin'
 
@@ -60,6 +66,34 @@ describe('widgets', () => {
     h(DitoSwitchField, { name: 'isFeatured', labels: { checked: 'yes' } })
     h(DitoSection, { name: 'address', label: 'Address', collapsible: true })
     h(DitoSection, { label: 'More', collapsed: true })
+    h(DitoTextareaField, { name: 'notes', lines: 4 })
+    h(DitoSelectField, {
+      name: 'author',
+      options: { data: [{ id: 1, name: 'Ada' }], label: 'name' }
+    })
+    h(DitoCheckboxesField, { name: 'genres', layout: 'horizontal' })
+    h(DitoDateField, { name: 'day', format: { date: { day: '2-digit' } } })
+    h(DitoUploadField, { name: 'images', accept: 'image/*' })
+  })
+
+  it('emit changes with the context of the field', () => {
+    h(DitoSelectField, {
+      name: 'format',
+      onChange: context => {
+        expectTypeOf(context.value).toBeAny()
+      }
+    })
+  })
+
+  it('pass the field to the slot of custom fields', () => {
+    type Slot = InstanceType<typeof DitoCustomField>['$slots']['default']
+    type Field = Parameters<Slot>[0]
+    expectTypeOf<Field['value']>().toBeAny()
+    expectTypeOf<Field['errors']>().toEqualTypeOf<
+      { message: string }[] | null
+    >()
+    expectTypeOf<Field['property']>().toEqualTypeOf<Record<string, any>>()
+    h(DitoCustomField, { name: 'code' })
   })
 
   it('reject the data keywords of their property', () => {
@@ -69,6 +103,10 @@ describe('widgets', () => {
     h(DitoNumberField, { name: 'rank', minimum: 1 })
     // @ts-expect-error: Defaults are the property's.
     h(DitoSwitchField, { name: 'isFeatured', default: false })
+    // @ts-expect-error: Options come from the `enum` of the property.
+    h(DitoSelectField, { name: 'format', enum: ['a', 'b'] })
+    // @ts-expect-error: Relations are the property's.
+    h(DitoSelectField, { name: 'author', relate: true })
     // @ts-expect-error: Widgets need the name of their property.
     h(DitoTextField, { label: 'Name' })
   })
