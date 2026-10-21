@@ -559,11 +559,6 @@ describe('Application', () => {
       expect(validate({ title: 'Soup', servings: 2 })).toBe(true)
       expect(validate({ title: 2 })).toBe(false)
       expect(validate({})).toBe(false)
-      const validateCode = app.compileJsonSchema(
-        { type: 'string', pattern: '^[A-Z]+$' },
-        { throw: false }
-      )
-      expect(validateCode('')).toBe(false)
     })
 
     it(`compiles Dito.js' schema format`, () => {
@@ -583,9 +578,6 @@ describe('Application', () => {
       const validateServings = compile({ type: 'integer', range: [1, 10] })
       expect(validateServings(4)).toBe(true)
       expect(validateServings(12)).toBe(false)
-      const validateCode = compile({ type: 'string', pattern: '^[A-Z]+$' })
-      expect(validateCode('')).toBe(true)
-      expect(validateCode('ab')).toBe(false)
     })
 
     it('keeps compileValidator() as deprecated alias', () => {

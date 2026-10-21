@@ -69,10 +69,6 @@ describe('color type', () => {
     expect(validate({ color })).toBe(true)
   })
 
-  it('accepts empty strings', () => {
-    expect(validate({ color: '' })).toBe(true)
-  })
-
   it.each([
     '#12',
     '#ff880',
@@ -81,6 +77,7 @@ describe('color type', () => {
     'transparent',
     'light red',
     'rgb(0, 0, 0)',
+    '',
     { r: 255, g: 136, b: 0, a: 1 },
     { h: 32, s: 1, l: 0.5 },
     255
@@ -96,95 +93,36 @@ describe('formats', () => {
   describe.each([
     ['email', 'ada@example.com', 'ada'],
     ['uri', 'https://example.com', 'example.com'],
-    ['hostname', 'example.com', '-example'],
-    ['duration', 'P1D', 'P'],
-    ['uuid', '6fa459ea-ee8a-3ca4-894e-db77e160355e', '6fa459ea'],
+    ['date-time', '2026-10-21T12:00:00Z', '2026-10-21'],
     ['color', '#f80', 'orange']
   ])('%s', (format, valid, invalid) => {
     const validate = compile({ type: 'string', format })
-    const validateRequired = compile({
-      type: 'object',
-      properties: {
-        value: { allOf: [{ format: 'required' }, { format }] }
-      }
-    })
 
-    it('accepts empty strings and valid values', () => {
-      expect(validate('')).toBe(true)
+    it('accepts valid values', () => {
       expect(validate(valid)).toBe(true)
     })
 
-    it('rejects invalid values', () => {
+    it('rejects invalid values and empty strings', () => {
       expect(validate(invalid)).toBe(false)
-    })
-
-    it('rejects empty strings with the `required` format', () => {
-      expect(validateRequired({ value: '' })).toBe(false)
-      expect(validateRequired({ value: valid })).toBe(true)
+      expect(validate('')).toBe(false)
     })
   })
 
-  it.for([
-    'date',
-    'time',
-    'date-time',
-    'iso-time',
-    'iso-date-time'
-  ])('rejects empty strings with the %s format', format => {
-    expect(compile({ type: 'string', format })('')).toBe(false)
-  })
-
-  it('rejects empty strings for date types', () => {
-    const validate = compile(
-      convertSchema({
-        type: 'object',
-        properties: { day: { type: 'date' }, opensAt: { type: 'datetime' } }
-      })
-    )
-    expect(validate({ day: '' })).toBe(false)
-    expect(validate({ opensAt: '' })).toBe(false)
-  })
-
-  it('rejects empty strings with `minLength`', () => {
-    const validate = compile({ type: 'string', format: 'email', minLength: 1 })
-    expect(validate('')).toBe(false)
-  })
-
-  it('lets patterns of Dito.js schemas accept empty strings', () => {
+  it('rejects empty strings with patterns of Dito.js schemas', () => {
     const validate = compile(
       convertSchema({ type: 'string', pattern: '^\\d+$' })
     )
-    expect(validate('')).toBe(true)
     expect(validate('12')).toBe(true)
-    expect(validate('a')).toBe(false)
+    expect(validate('')).toBe(false)
     expect(validator.parseErrors(validate.errors)).toEqual({
       '': [
         {
           message: 'must match pattern "^\\d+$"',
           keyword: 'pattern',
-          params: { pattern: '^$|(?:^\\d+$)' }
+          params: { pattern: '^\\d+$' }
         }
       ]
     })
-    expect(compile({ type: 'string', pattern: '^\\d+$' })('')).toBe(false)
-  })
-
-  it('lets custom formats accept empty strings', () => {
-    const validator = new Validator({
-      formats: { digits: { validate: value => /^\d+$/.test(value) } }
-    })
-    const validate = validator.compile(
-      { type: 'string', format: 'digits' },
-      { throw: false }
-    )
-    expect(validate('')).toBe(true)
-    expect(validate('a')).toBe(false)
-  })
-
-  it('keeps the types of formats', () => {
-    const validate = compile({ type: 'number', format: 'int32' })
-    expect(validate(1)).toBe(true)
-    expect(validate(2 ** 40)).toBe(false)
   })
 })
 

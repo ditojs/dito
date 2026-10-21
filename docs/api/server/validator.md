@@ -321,12 +321,6 @@ synchronous validation skips them.
 Plus the formats of `ajv-formats` in full mode (`date-time`, `email`, `uri`,
 `uuid`, …).
 
-Unlike in JSON Schema, formats accept `''`: emptiness is checked by `required`
-only. Formats that describe dates and times (`date`, `time`, `date-time`,
-`iso-time`, `iso-date-time`) still reject `''`, and formats that check
-emptiness themselves set `validatesEmptyValues: true`, as `required` and
-`empty` do.
-
 ## Shared definitions
 
 The built-in formats and the messages of standard keywords come from
@@ -364,7 +358,6 @@ Dito.js schemas are JSON schemas with additions that
 | Addition                                       | Translation                                                                                                     |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `required: true` on a property                 | The `required` format plus an entry in the parent's `required` array, added to the entries the parent lists itself. A JSON Schema `required` array doesn't make the property itself required. |
-| `pattern`                                      | `'^$\|(?:<pattern>)'`: like formats, patterns accept `''`. Error messages show the original pattern, the error's `params.pattern` the translated one. |
 | `type: 'text'`                                 | `type: 'string'`.                                                                                               |
 | `type: 'date' \| 'datetime' \| 'timestamp'`    | `type: ['string', 'object']` with the `date-time` format; accepts `Date` objects.                               |
 | `type: '<Model>'` or a type name               | `$ref` to the model or [type](#types).                                                                          |

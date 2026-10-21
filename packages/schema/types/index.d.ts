@@ -7,7 +7,7 @@
 export interface Format {
   validate(value: unknown): boolean
   message: string
-  /** Validate empty strings too, which other formats let pass. */
+  /** Validate empty values too, which the admin skips for other formats. */
   validatesEmptyValues?: boolean
 }
 

@@ -235,9 +235,11 @@ describe('The properties of fields on the server', async () => {
     expect(getAdminErrors(empty)).toEqual([])
   })
 
-  it('accepts empty strings with formats on both sides', () => {
+  // Where both sides differ: the server applies formats to `''`, as JSON Schema
+  // does, while the admin skips empty values. Emptied fields send `null`:
+  it('rejects empty strings with formats only on the server', () => {
     const empty = { email: '', website: '', host: '', background: '' }
-    expect(getServerErrors(empty)).toEqual([])
+    expect(getServerErrors(empty)).toEqual(Object.keys(empty).sort())
     expect(getAdminErrors(empty)).toEqual([])
   })
 

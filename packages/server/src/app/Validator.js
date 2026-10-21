@@ -1,12 +1,10 @@
 import * as objection from 'objection'
 import Ajv from 'ajv/dist/2020.js'
-import { fullFormats } from 'ajv-formats/dist/formats.js'
+import addFormats from 'ajv-formats'
 import {
   isArray,
   isObject,
-  isPlainObject,
   isFunction,
-  isRegExp,
   clone,
   isAsync,
   isPromise,
@@ -66,14 +64,7 @@ export class Validator extends objection.Validator {
       // Patch-validators don't use default values:
       ...(patch && { useDefaults: false })
     })
-    for (const [name, format] of Object.entries(fullFormats)) {
-      ajv.addFormat(
-        name,
-        dateTimeFormats.includes(name)
-          ? format
-          : getFormatAcceptingEmptyStrings(format)
-      )
-    }
+    addFormats(ajv, { mode: 'full' })
 
     const addSchemas = (schemas, callback) => {
       for (const [name, schema] of Object.entries(schemas)) {
@@ -90,7 +81,9 @@ export class Validator extends objection.Validator {
       })
     )
     addSchemas(this.formats, (format, schema) =>
-      ajv.addFormat(format, getFormatAcceptingEmptyStrings(schema))
+      ajv.addFormat(format, {
+        ...schema
+      })
     )
 
     addSchemas(this.types, (type, schema) => {
@@ -376,29 +369,6 @@ function hasDefaults(obj) {
   return false
 }
 
-// Unlike in JSON Schema, formats don't apply to empty strings, unless they
-// validate empty values themselves: Emptiness is decided by `required` only.
-// Date and time formats describe the value's type, not the content of a string,
-// and dito's date types compile to them, so they keep rejecting `''`:
-const dateTimeFormats = [
-  'date', 'time', 'date-time', 'iso-time', 'iso-date-time'
-]
-
-function getFormatAcceptingEmptyStrings(format) {
-  // Ajv formats are regular expressions, functions, `true` or definitions:
-  const { validate, ...definition } = isPlainObject(format)
-    ? format
-    : { validate: format }
-  return format === true || definition.validatesEmptyValues
-    ? format
-    : {
-        ...definition,
-        validate: isRegExp(validate)
-          ? value => value === '' || validate.test(value)
-          : value => value === '' || validate(value)
-      }
-}
-
 // Keywords, formats and types may be registered with a leading '_' to avoid
 // clashes with JS reserved words (e.g. `_instanceof`). Ajv receives and reports
 // them without it.
@@ -420,10 +390,7 @@ function getSchemaMessage({ keyword, params, schemaPath }) {
     const setting =
       keyword === 'enum'
         ? params.allowedValues
-        : keyword === 'pattern'
-          ? // Report the pattern before `convertSchema()` let it accept `''`:
-            params.pattern.replace(/^\^\$\|\(\?:(.*)\)$/s, '$1')
-          : params.limit ?? params[keyword]
+        : params.limit ?? params[keyword]
     return isFunction(message) ? message(setting) : message
   }
 }
