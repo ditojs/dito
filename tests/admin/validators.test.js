@@ -44,14 +44,17 @@ const entries = [
       validations: { [name]: setting },
       schema: { [name]: setting },
       message,
-      values: [...new Set([...valid, ...invalid, ''])]
+      // Without `''` for `pattern`, see the differences below:
+      values: [...new Set([...valid, ...invalid, ''])].filter(
+        value => value !== '' || name !== 'pattern'
+      )
     }))
   )
 ]
 
-describe('The shared validation on both sides', () => {
-  const validator = new Validator()
+const validator = new Validator()
 
+describe('The shared validation on both sides', () => {
   describe.each(entries)(
     '$name with $schema',
     ({ validations, schema, message, values }) => {
@@ -69,4 +72,17 @@ describe('The shared validation on both sides', () => {
       })
     }
   )
+})
+
+// Where both sides differ: the server applies `pattern` to `''`, as JSON Schema
+// does, while the admin skips empty values. Emptied fields send `null`:
+describe('The differences between both sides', () => {
+  it('rejects empty strings with `pattern` only on the server', () => {
+    const pattern = '^[A-Z]+$'
+    const validate = validator.compile(convertSchema({ pattern }), {
+      throw: false
+    })
+    expect(validate('')).toBe(false)
+    expect(getValueValidationErrors('', { pattern })).toEqual([])
+  })
 })

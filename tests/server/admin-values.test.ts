@@ -215,13 +215,9 @@ describe('Values that the admin sends', () => {
       })
     })
 
-    // Formats don't apply to empty strings, only `required` checks emptiness:
-    it('saves empty strings for strings with formats', async () => {
+    // Formats apply to empty strings, as in JSON Schema:
+    it('rejects empty strings for strings with formats', async () => {
       expect(await edit({ email: '' })).toMatchObject({
-        status: 200,
-        data: { email: '' }
-      })
-      expect(await edit({ email: 'ada' })).toMatchObject({
         status: 400,
         data: { errors: { email: [{ message: 'must match format "email"' }] } }
       })

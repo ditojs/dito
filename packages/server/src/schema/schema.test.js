@@ -126,13 +126,6 @@ describe('convertSchema()', () => {
     })
   })
 
-  it('lets patterns accept empty strings, like formats', () => {
-    expect(convertSchema({ type: 'string', pattern: '^[A-Z]+$' })).toEqual({
-      type: 'string',
-      pattern: '^$|(?:^[A-Z]+$)'
-    })
-  })
-
   it('preserves JSON schema-style `required` arrays', () => {
     expect(
       convertSchema({
