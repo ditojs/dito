@@ -59,6 +59,7 @@ import {
 } from './schema/data.js'
 import {
   walkData,
+  getSchemaSource,
   type DataEntry,
   type WalkedDataEntry
 } from './schema/walk.js'
@@ -571,7 +572,7 @@ export class DataModel {
     if (isEdit) {
       this.#markWriteEdited(dataPath)
     }
-    const isNumbered = hasItemsNumberedByOrderKey(schema)
+    const isNumbered = hasItemsNumberedByOrderKey(getSchemaSource(schema))
     const offset = isNumbered ? (list[0]?.[schema.orderKey] ?? 0) : 0
     change(list)
     if (isNumbered) {

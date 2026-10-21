@@ -2,7 +2,11 @@ import SchemaContext from '../../SchemaContext.js'
 import { computed, toRaw } from 'vue'
 import { isArray, isObject, isFunction } from '@ditojs/utils'
 import { appendDataPath } from '../data.js'
-import { getItemAdapter, getChildSourceSchemas } from './types.ts'
+import {
+  getSourceType,
+  getItemAdapter,
+  getChildSourceSchemas
+} from './types.ts'
 import {
   hasNestedData,
   isPanelWithOwnData,
@@ -25,6 +29,7 @@ import {
   convertValue
 } from './data.js'
 import { getValidations, getValueValidationErrors } from './validation.js'
+import { createPropertyNodes } from './properties.js'
 
 // A value in the data of a form, with all the fields that edit it in form
 // order, e.g. from several tabs. Each field comes with the unnested sections,
@@ -33,9 +38,37 @@ import { getValidations, getValueValidationErrors } from './validation.js'
 // and answers for the value. Each aspect of it comes from the first field that
 // defines it itself, else from the first one:
 export class FieldNode {
-  constructor(name, fields = []) {
+  constructor(name, fields) {
     this.name = name
     this.fields = fields
+    // Fields of the same value agree on its shape, the first one with items
+    // tells it:
+    const sourceField = fields.find(
+      ({ schema }) => getSourceType(schema) || hasFormSchema(schema)
+    )
+    this.source = sourceField ? getSchemaSource(sourceField.schema) : null
+  }
+
+  // The node of the fields that the walk accepts, with their containers:
+  getWalkedNode(entry, { isWalked, shouldSkipSourcesWithResource }) {
+    const fields = this.fields.filter(
+      field => (
+        field.containers.every(isWalked) &&
+        isWalked(field) &&
+        !(shouldSkipSourcesWithResource && isSourceWithResource(field.schema))
+      )
+    )
+    return fields.length > 0 ? new FieldNode(this.name, fields) : null
+  }
+
+  // The forms of the items in the value, of each field that holds them:
+  getItemForms(entry) {
+    return this.fields
+      .filter(({ schema }) => hasFormSchema(schema))
+      .map(({ schema }) => ({
+        forms: getFormSchemas(schema, createContext(schema, entry)),
+        childSourceSchemas: getChildSourceSchemas(schema)
+      }))
   }
 
   // Run the checks of all fields, each message once:
@@ -127,15 +160,18 @@ export class FieldNode {
 }
 
 // The nodes of the schemas without `fields()` callbacks, computed so that the
-// forms that these callbacks create get new nodes once they're set up:
+// forms that these callbacks create get new nodes once they're set up. Forms
+// with written `properties` have a node per property:
 const nodesBySchema = new WeakMap()
 
 // Walk `data` along the nodes of `schema`, the forms of the items and their
 // child sources. `visit()` receives an entry for each node with the fields that
 // `shouldWalk()` accepts, if `shouldVisit()` accepts it, before the items of
 // its value are walked, and `after()` after them. Only `shouldWalk()` also
-// decides for the fields that a field contains, e.g. of its panels. With
-// `shouldSkipIrrelevant`, it's only asked for relevant fields and containers.
+// decides for the fields that a field contains, e.g. of its panels, and it's
+// only asked for fields. With `shouldSkipIrrelevant`, irrelevant values are
+// left out, and `shouldWalk()` is only asked for relevant fields and
+// containers.
 // NOTE: Items with an item adapter are walked wrapped, and the wrapped value
 // keeps the item's data path. The walk writes changed values back, unless it
 // builds a copy in `serializedData`: then it walks the values that `visit()`
@@ -193,19 +229,15 @@ export function walkData(schema, data, {
       }
       return isWalkedByField.get(field)
     }
-    for (const { name, fields } of nodes.values()) {
-      const walkedFields = fields.filter(
-        field => (
-          field.containers.every(isWalked) &&
-          isWalked(field) &&
-          !(shouldSkipSourcesWithResource && isSourceWithResource(field.schema))
-        )
-      )
-      if (walkedFields.length > 0) {
-        const entry = {
-          node: new FieldNode(name, walkedFields),
-          ...createEntry(name, true)
-        }
+    for (const node of nodes.values()) {
+      const location = createEntry(node.name, true)
+      const walkedNode = node.getWalkedNode(location, {
+        isWalked,
+        shouldSkipIrrelevant,
+        shouldSkipSourcesWithResource
+      })
+      if (walkedNode) {
+        const entry = { node: walkedNode, ...location }
         if (shouldVisit(entry)) {
           visit(entry)
           walkItems(entry)
@@ -217,21 +249,13 @@ export function walkData(schema, data, {
 
   const walkItems = entry => {
     const { node, data, name, dataPath, serializedData } = entry
-    const sourceFields = node.fields.filter(({ schema }) =>
-      hasFormSchema(schema)
-    )
+    const { source } = node
     // Only read the values of sources with forms, or tracked walks would
     // depend on all values:
-    const value =
-      sourceFields.length > 0 ? (serializedData ?? data)[name] : null
+    const value = source?.hasForms ? (serializedData ?? data)[name] : null
     if (value != null) {
-      // Fields of the same value agree on its shape, the first one tells it:
-      const [{ schema: sourceSchema }] = sourceFields
-      const itemAdapter = getItemAdapter(sourceSchema)
-      const sources = sourceFields.map(({ schema }) => ({
-        forms: getFormSchemas(schema, createContext(schema, entry)),
-        childSourceSchemas: getChildSourceSchemas(schema)
-      }))
+      const { itemAdapter } = source
+      const sources = node.getItemForms(entry)
       const wrappedValueName = itemAdapter?.name ?? null
       // Return the copy of the item when building a copy:
       const walkItem = (value, index = null) => {
@@ -245,7 +269,7 @@ export function walkData(schema, data, {
             index !== null ? getDataPath(dataPath, index) : dataPath
           const nodes = getItemNodes(sources, item, itemDataPath)
           if (nodes && serializedData) {
-            const serializedItem = cloneItem(sourceSchema, item)
+            const serializedItem = cloneItem(source, item)
             walkNodes(
               nodes,
               item,
@@ -278,7 +302,7 @@ export function walkData(schema, data, {
         } else {
           value.forEach(walkItem)
         }
-      } else if (!isListSource(sourceSchema)) {
+      } else if (!source.isList) {
         // Lists only hold items in arrays. Apps may store them in other values
         // that `computeValue()` converts, e.g. objects by type:
         const item = walkItem(value)
@@ -335,6 +359,9 @@ export function walkData(schema, data, {
     let nodes = nodesBySchema.get(toRaw(schema))
     if (!nodes) {
       nodes = computed(() => {
+        if (schema.properties) {
+          return createPropertyNodes(schema.properties)
+        }
         let hasFieldsCallbacks = false
         const nodes = createFieldNodes(schema, schema => {
           hasFieldsCallbacks ||= isFunction(schema.fields)
@@ -438,24 +465,39 @@ function getFieldDefining(fields, key) {
   return fields.find(({ schema }) => schema[key] !== undefined) ?? fields[0]
 }
 
+// Nodes describe their fields once complete, so add fields with new nodes:
 function addFieldNode(nodes, field) {
-  let node = nodes.get(field.name)
-  if (!node) {
-    node = new FieldNode(field.name)
-    nodes.set(field.name, node)
+  const fields = nodes.get(field.name)?.fields ?? []
+  nodes.set(field.name, new FieldNode(field.name, [...fields, field]))
+}
+
+// The source of the items of a schema, in the shape that nodes describe it:
+export function getSchemaSource(schema) {
+  return {
+    // Nested sections hold their items without being sources:
+    isSource: !!getSourceType(schema),
+    isList: isListSource(schema),
+    // Sources of views have no forms of their own, and their items aren't
+    // walked:
+    hasForms: hasFormSchema(schema),
+    idKey: schema.idKey || 'id',
+    orderKey: schema.orderKey ?? null,
+    // Items of several forms hold the name of their form in `type`:
+    hasItemTypes: hasMultipleFormSchemas(schema),
+    hasResource: isSourceWithResource(schema),
+    itemAdapter: getItemAdapter(schema)
   }
-  node.fields.push(field)
 }
 
 // Copy what identifies the item, for its serialized values to be added to:
-export function cloneItem(sourceSchema, item) {
+export function cloneItem(source, item) {
   const copy = {}
-  const { idKey = 'id', orderKey } = sourceSchema
+  const { idKey, orderKey, hasItemTypes } = source
   const id = item[idKey]
   if (id !== undefined) {
     copy[idKey] = id
   }
-  if (hasMultipleFormSchemas(sourceSchema)) {
+  if (hasItemTypes) {
     copy.type = item.type
   }
   if (orderKey) {

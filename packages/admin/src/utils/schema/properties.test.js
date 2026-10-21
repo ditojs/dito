@@ -2,7 +2,15 @@ import { hyphenate } from '@ditojs/utils'
 import '../../types/index.js'
 import SchemaContext from '../../SchemaContext.js'
 import { setupForm } from './setup.js'
-import { getFormProperties } from './properties.js'
+import { getFormProperties, checkProperties } from './properties.js'
+import {
+  initializeData,
+  serializeData,
+  deserializeData,
+  isDataPathExcluded
+} from './data.js'
+import { getDataValidationErrors } from './validation.js'
+import { mergeData } from '../mergeData.ts'
 
 async function getProperties(fields, schema = {}, services = null) {
   const api = { defaults: {}, normalizePath: hyphenate }
@@ -670,6 +678,338 @@ describe('getFormProperties()', () => {
       })
     ).toEqual({
       title: { type: 'string', nullable: true }
+    })
+  })
+})
+
+describe('written properties', () => {
+  const services = { adminContext: { api: { defaults: {} } } }
+  const createForm = properties => ({ type: 'form', properties })
+  const initialize = (properties, data = {}) =>
+    initializeData(createForm(properties), data, services)
+  const validate = (properties, data) =>
+    getDataValidationErrors(createForm(properties), data, { services })
+  const serialize = (properties, data) =>
+    serializeData(createForm(properties), null, data, '', { services })
+
+  describe('defaults', () => {
+    it('start with the empty values of the server', () => {
+      expect(
+        initialize({
+          title: { type: 'string' },
+          subtitle: { type: 'string', nullable: true },
+          isFeatured: { type: 'boolean' },
+          rank: { type: 'integer' },
+          awards: { type: 'array', items: { type: 'object', properties: {} } },
+          address: {
+            type: 'object',
+            properties: { city: { type: 'string' } }
+          },
+          location: { type: 'object', nullable: true, properties: {} }
+        })
+      ).toEqual({
+        title: '',
+        subtitle: null,
+        isFeatured: false,
+        rank: null,
+        awards: [],
+        address: { city: '' },
+        location: null
+      })
+    })
+
+    it('take `default`, also of callbacks, and keep values', () => {
+      expect(
+        initialize(
+          {
+            format: { type: 'string', default: 'lp' },
+            code: { type: 'string', default: ({ item }) => item.format },
+            title: { type: 'string', default: 'Untitled' }
+          },
+          { title: null }
+        )
+      ).toEqual({ format: 'lp', code: 'lp', title: null })
+    })
+
+    it('leave out passwords, which stay unchanged', () => {
+      expect(
+        initialize({ secret: { type: 'string', format: 'password' } })
+      ).toEqual({})
+    })
+
+    it('number the items by `orderKey`', () => {
+      expect(
+        initialize(
+          {
+            awards: {
+              type: 'array',
+              orderKey: 'order',
+              items: { type: 'object', properties: {} }
+            }
+          },
+          { awards: [{}, {}] }
+        )
+      ).toEqual({ awards: [{ order: 0 }, { order: 1 }] })
+    })
+  })
+
+  describe('`if`', () => {
+    const properties = {
+      isFeatured: { type: 'boolean' },
+      rank: {
+        type: 'integer',
+        required: true,
+        default: 1,
+        if: ({ item }) => item.isFeatured
+      }
+    }
+
+    it('leaves out irrelevant values in validation, defaults and data', () => {
+      const data = initialize(properties, { isFeatured: false })
+      expect(data).toEqual({ isFeatured: false })
+      expect(validate(properties, { ...data, rank: null })).toBe(null)
+      expect(serialize(properties, { ...data, rank: 3 })).toEqual({
+        isFeatured: false
+      })
+    })
+
+    it('handles relevant values', () => {
+      const data = initialize(properties, { isFeatured: true })
+      expect(data).toEqual({ isFeatured: true, rank: 1 })
+      expect(validate(properties, { ...data, rank: null })).toEqual({
+        rank: [{ message: 'is required' }]
+      })
+      expect(serialize(properties, data)).toEqual(data)
+    })
+  })
+
+  describe('validation', () => {
+    it('checks the keywords of the server, also of callbacks', () => {
+      expect(
+        validate(
+          {
+            name: { type: 'string', required: true },
+            code: { type: 'string', maxLength: ({ item }) => item.limit },
+            limit: { type: 'integer' },
+            count: { type: 'integer' },
+            pages: { type: 'integer', minimum: 1 },
+            price: { type: 'number', range: [0, 10], decimals: 2 },
+            format: { type: 'string', enum: ['lp', 'cd'] },
+            email: { type: 'string', format: 'email' },
+            website: { type: 'string', format: 'uri' },
+            published: { type: 'date' },
+            tracks: { type: 'array', minItems: 1, items: { properties: {} } }
+          },
+          {
+            name: '',
+            code: 'abcd',
+            limit: 2,
+            count: 1.5,
+            pages: 0,
+            price: 3.333,
+            format: 'mp3',
+            email: 'nope',
+            website: 'example.com',
+            published: new Date('soon'),
+            tracks: []
+          }
+        )
+      ).toEqual({
+        name: [{ message: 'is required' }],
+        code: [{ message: 'must be at most 2 characters long' }],
+        count: [{ message: 'must be a whole number' }],
+        pages: [{ message: 'must be 1 or more' }],
+        price: [{ message: 'must be a number with at most 2 decimal places' }],
+        format: [{ message: 'must be one of the options' }],
+        email: [{ message: 'must be a valid email' }],
+        website: [{ message: 'is not a valid URL' }],
+        published: [{ message: 'must be a valid date' }],
+        tracks: [{ message: 'must contain at least one item' }]
+      })
+    })
+
+    it('calls `validate()` with the value', () => {
+      expect(
+        validate(
+          {
+            code: {
+              type: 'string',
+              validate: ({ value, item }) => (
+                value === item.name || 'must match the name'
+              )
+            },
+            name: { type: 'string' }
+          },
+          { code: 'a', name: 'b' }
+        )
+      ).toEqual({ code: [{ message: 'must match the name' }] })
+    })
+
+    it('validates the items of lists by their forms', () => {
+      const book = { properties: { pages: { type: 'integer', minimum: 1 } } }
+      const record = {
+        properties: { name: { type: 'string', required: true } }
+      }
+      expect(
+        validate(
+          { items: { type: 'array', forms: { book, record } } },
+          {
+            items: [
+              { type: 'book', pages: 0 },
+              { type: 'record', name: '' }
+            ]
+          }
+        )
+      ).toEqual({
+        'items/0/pages': [{ message: 'must be 1 or more' }],
+        'items/1/name': [{ message: 'is required' }]
+      })
+    })
+  })
+
+  describe('data', () => {
+    it('converts dates', () => {
+      const properties = {
+        published: { type: 'date' },
+        updated: { type: 'datetime' }
+      }
+      const data = deserializeData(createForm(properties), {
+        published: '2026-10-21',
+        updated: '2026-10-21T10:30:00.000Z'
+      })
+      expect(data.published).toBeInstanceOf(Date)
+      expect(data.updated).toEqual(new Date('2026-10-21T10:30:00.000Z'))
+      expect(serialize(properties, data)).toEqual({
+        published: '2026-10-21',
+        updated: '2026-10-21T10:30:00.000Z'
+      })
+    })
+
+    it('sends the stored files of assets', () => {
+      const properties = {
+        image: { type: 'asset' },
+        pending: { type: 'asset' }
+      }
+      expect(
+        serialize(properties, {
+          image: { key: 'a', name: 'a.png', upload: { success: true } },
+          pending: { name: 'b.png', upload: { success: false } }
+        })
+      ).toEqual({ image: { key: 'a', name: 'a.png' }, pending: null })
+    })
+
+    it('trims strings, and sends empty `nullable` ones as `null`', () => {
+      expect(
+        serialize(
+          {
+            title: { type: 'string', trim: true },
+            subtitle: { type: 'string', trim: true, nullable: true }
+          },
+          { title: '  ', subtitle: '  ' }
+        )
+      ).toEqual({ title: '', subtitle: null })
+    })
+
+    it('converts with the value hooks', () => {
+      const properties = {
+        tags: {
+          type: 'string',
+          deserializeValue: ({ value }) => value.split(','),
+          serializeValue: ({ value }) => value.join(',')
+        }
+      }
+      const data = deserializeData(createForm(properties), { tags: 'a,b' })
+      expect(data).toEqual({ tags: ['a', 'b'] })
+      expect(serialize(properties, data)).toEqual({ tags: 'a,b' })
+    })
+
+    it('leaves out excluded and computed values', () => {
+      const properties = {
+        name: { type: 'string' },
+        importName: { type: 'string', exclude: true },
+        slug: { type: 'string', computed: true }
+      }
+      const form = createForm(properties)
+      const data = { name: 'a', importName: 'b', slug: 'c' }
+      expect(serialize(properties, data)).toEqual({ name: 'a' })
+      expect(isDataPathExcluded(form, data, 'importName')).toBe(true)
+      expect(isDataPathExcluded(form, data, 'slug')).toBe(true)
+      expect(isDataPathExcluded(form, data, 'name')).toBe(false)
+    })
+
+    it('sends the items with their ids, types and order', () => {
+      const entry = { properties: { title: { type: 'string' } } }
+      expect(
+        serialize(
+          {
+            entries: {
+              type: 'array',
+              idKey: 'key',
+              orderKey: 'order',
+              forms: { entry, note: entry }
+            }
+          },
+          {
+            entries: [
+              { key: 1, type: 'note', order: 0, title: 'One', other: 1 }
+            ]
+          }
+        )
+      ).toEqual({
+        entries: [{ key: 1, type: 'note', order: 0, title: 'One' }]
+      })
+    })
+
+    it('merges the items in place, matching them by `idKey`', () => {
+      const form = createForm({
+        entries: {
+          type: 'array',
+          idKey: 'key',
+          items: { type: 'object', properties: { title: { type: 'string' } } }
+        }
+      })
+      const item = { key: 1, title: 'One' }
+      const target = { entries: [item] }
+      mergeData(
+        form,
+        target,
+        { entries: [{ key: 1, title: 'Uno' }] },
+        {
+          services
+        }
+      )
+      expect(target.entries[0]).toBe(item)
+      expect(item.title).toBe('Uno')
+    })
+  })
+
+  describe('checkProperties()', () => {
+    it('rejects what properties can not describe yet', () => {
+      const check = property => () => checkProperties({ value: property })
+      expect(check({ type: 'object', relate: true })).toThrow(
+        `Unsupported property keyword: 'relate'.`
+      )
+      expect(check({ type: 'string', computeValue: () => '' })).toThrow(
+        `Unsupported property keyword: 'computeValue'.`
+      )
+      expect(check({ type: 'array', items: { type: 'string' } })).toThrow(
+        `Unsupported property keyword: 'items'.`
+      )
+      expect(check({ type: 'text' })).toThrow(
+        `Unsupported property type: 'text'.`
+      )
+      expect(check({ type: 'string', format: 'phone' })).toThrow(
+        `Unsupported property format: 'phone'.`
+      )
+      expect(
+        check({
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { owner: { type: 'object', relate: true } }
+          }
+        })
+      ).toThrow(`Unsupported property keyword: 'relate'.`)
     })
   })
 })

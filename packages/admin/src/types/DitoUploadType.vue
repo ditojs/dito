@@ -170,7 +170,12 @@ import DitoDragHandle from '../components/DitoDragHandle.vue'
 import DitoClipboard from '../components/DitoClipboard.vue'
 import { DitoButton, DitoProgress } from '@ditojs/ui/src'
 import { formatFileSize } from '../utils/units.js'
-import { getUploadLimits, isAcceptedFile } from '../utils/upload.ts'
+import {
+  getUploadLimits,
+  isAcceptedFile,
+  asFiles,
+  getStoredFiles
+} from '../utils/upload.ts'
 import { appendDataPath } from '../utils/data.js'
 import { getMultipleValue } from '../utils/schema/data.js'
 import { downloadBlob, getResourceUrl, getVerbs } from '../utils/services.ts'
@@ -180,7 +185,7 @@ import {
   resolveDownloadUrl
 } from '../utils/request.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
-import { isArray, asArray, clone, escapeHtml } from '@ditojs/utils'
+import { isArray, clone, escapeHtml } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
 import { fileDropTargetsKey } from '../utils/keys.ts'
 
@@ -632,17 +637,6 @@ defineType({
 })
 
 export default DitoUploadType
-
-function asFiles(value) {
-  return value ? asArray(value) : []
-}
-
-// Filter out added files that weren't uploaded:
-function getStoredFiles(value) {
-  return asFiles(value)
-    .map(({ upload, ...file }) => (!upload || upload.success ? file : null))
-    .filter(file => file)
-}
 </script>
 
 <style lang="scss">

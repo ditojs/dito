@@ -434,4 +434,73 @@ describe('DitoSchemaForm', () => {
       })
     )
   })
+
+  describe('with `properties`', () => {
+    const properties = {
+      name: { type: 'string', required: true, trim: true },
+      price: { type: 'number', nullable: true, minimum: 0 },
+      notes: { type: 'string', nullable: true },
+      importName: { type: 'string', exclude: true }
+    }
+
+    // A page whose template lays out the data of its properties:
+    const PropertiesPage = {
+      setup() {
+        const route = useRoute()
+        form = useDitoForm({
+          resource: 'products',
+          id: () => route.params.id || null,
+          properties
+        })
+        return () => h('div', { class: 'product-page' }, [h(DitoSchemaForm)])
+      }
+    }
+
+    const mountPropertiesPage = path =>
+      mountProductPage({
+        path,
+        views: {
+          properties: {
+            type: 'page',
+            label: 'Properties',
+            path: 'properties/:id?',
+            component: PropertiesPage
+          }
+        }
+      })
+
+    it('creates items with the defaults of the properties', async () => {
+      await mountPropertiesPage('/properties')
+      expect(form.item).toEqual({
+        name: '',
+        price: null,
+        notes: null,
+        importName: ''
+      })
+    })
+
+    it('validates and submits the data of the properties', async () => {
+      const { request } = await mountPropertiesPage('/properties/7')
+      expect(form.item).toMatchObject({ name: 'Chair', price: 120 })
+      form.item.name = ''
+      expect(await form.submit()).toBe(false)
+      expect(form.getErrors()).toEqual({ name: [{ message: 'is required' }] })
+      form.item.name = ' Stool '
+      form.item.importName = 'stool'
+      expect(await form.submit()).toBe(true)
+      expect(getSentRequests(request)).toEqual([
+        {
+          method: 'patch',
+          url: '/products/7',
+          data: { id: 7, name: 'Stool', price: 120, notes: null }
+        }
+      ])
+    })
+
+    it('can not be combined with `fields`', () => {
+      expect(() => useDitoForm({ fields, properties })).toThrow(
+        'Unable to set up the form: It has both `fields` and `properties`.'
+      )
+    })
+  })
 })

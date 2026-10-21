@@ -9,6 +9,7 @@ import {
   type MaybeRefOrGetter
 } from 'vue'
 import { setupForm } from '../utils/schema/setup.js'
+import { checkProperties } from '../utils/schema/properties.js'
 import { hasSubmitButton } from '../utils/schema/lookup.js'
 import { RouteTree, ViewNode } from '../utils/RouteTree.ts'
 import { isPage } from '../utils/schema/structure.js'
@@ -39,6 +40,14 @@ export function useDitoForm({
   buttons,
   ...formSchema
 }: DitoFormOptions) {
+  if (formSchema.properties) {
+    if (formSchema.fields) {
+      throw new Error(
+        'Unable to set up the form: It has both `fields` and `properties`.'
+      )
+    }
+    checkProperties(formSchema.properties)
+  }
   const adminContext = inject(adminContextKey)!
   const routeContext = inject(routeContextKey, null)
   const isInDialog = !!inject(dataContextKey, null)?.closeDialog

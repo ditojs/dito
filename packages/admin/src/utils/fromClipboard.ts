@@ -3,9 +3,7 @@ import SchemaContext from '../SchemaContext.js'
 import { createTemporaryId, isTemporaryId } from './data.js'
 import { getText } from './html.js'
 import { deserializeData, getLabel } from './schema/data.js'
-import { getSourceType } from './schema/types.ts'
 import { findOptionsForLabel, getRelateKey } from './schema/options.ts'
-import { isSourceWithResource } from './schema/structure.js'
 import { walkData, type FieldEntry } from './schema/walk.js'
 import type { Services } from './services.ts'
 import type { Data, Schema } from './types.ts'
@@ -43,11 +41,7 @@ export async function fromClipboard(
   const labeledEntries: FieldEntry[] = []
   const handleEntry = (entry: FieldEntry) => {
     const { schema, data, name } = entry
-    if (isSourceWithResource(schema)) {
-      delete data[name]
-    } else if (getSourceType(schema)) {
-      replaceTemporaryIds(data[name], schema.idKey || 'id')
-    } else if (schema.relate) {
+    if (schema.relate) {
       replaceTemporaryIds(data[name], getRelateKey(schema)!)
       if (asArray(data[name]).some(isLabel)) {
         labeledEntries.push(entry)
@@ -59,8 +53,15 @@ export async function fromClipboard(
     dataPath,
     ...walkOptions,
     visit: entry => {
-      for (const { schema } of entry.node.fields) {
-        handleEntry({ ...entry, schema })
+      const { node, data, name } = entry
+      if (node.source?.hasResource) {
+        delete data[name]
+      } else if (node.source?.isSource) {
+        replaceTemporaryIds(data[name], node.source.idKey)
+      } else {
+        for (const { schema } of node.fields) {
+          handleEntry({ ...entry, schema })
+        }
       }
     }
   })

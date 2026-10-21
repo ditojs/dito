@@ -51,3 +51,14 @@ function getExtensionsPattern(extensions: UploadLimits['extensions']) {
     return pattern ? new RegExp(`\\.(${pattern})$`, 'i') : null
   }
 }
+
+export function asFiles(value: any): any[] {
+  return value ? asArray(value) : []
+}
+
+// Filter out added files that weren't uploaded:
+export function getStoredFiles(value: any): any[] {
+  return asFiles(value)
+    .map(({ upload, ...file }) => (!upload || upload.success ? file : null))
+    .filter(file => file)
+}

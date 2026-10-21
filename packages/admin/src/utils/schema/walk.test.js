@@ -1540,3 +1540,125 @@ describe('DataModel', () => {
     })
   })
 })
+
+describe('written properties', () => {
+  // The catalogue as written properties, without what properties can't
+  // describe yet or at all: wrapped primitives (`tags`), `fields()` callbacks
+  // (`details`) and sources with their own resource (`vendors`). Strings are
+  // `nullable`, as the values of fields are:
+  const text = { type: 'string', nullable: true }
+  const catalogueProperties = {
+    title: { ...text, required: true },
+    showPrices: { type: 'boolean' },
+    secret: { ...text, format: 'password' },
+    collections: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: { ...text, required: true },
+          code: { ...text, required: ({ item }) => item.items.length > 1 },
+          discount: {
+            type: 'number',
+            nullable: true,
+            if: showPrices,
+            range: [0, 1]
+          },
+          currency: { ...text, if: showPrices, enum: ['EUR', 'USD'] },
+          items: {
+            type: 'array',
+            forms: {
+              book: {
+                properties: {
+                  name: { ...text, required: true },
+                  pages: { type: 'integer', nullable: true, minimum: 1 },
+                  onSale: { type: 'boolean' },
+                  price: {
+                    type: 'number',
+                    nullable: true,
+                    if: showPrices,
+                    required: ({ item }) => item.onSale
+                  },
+                  chapters: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        title: { ...text, required: true, maxLength: 20 },
+                        length: { type: 'number', nullable: true, default: 1 }
+                      }
+                    }
+                  }
+                }
+              },
+              record: {
+                properties: {
+                  name: { ...text, required: true },
+                  email: { ...text, format: 'email' },
+                  format: { ...text, enum: ['lp', 'cd'], default: 'lp' },
+                  // Fields derive `minItems: 1` from `required`:
+                  tracks: {
+                    type: 'array',
+                    minItems: 1,
+                    items: {
+                      type: 'object',
+                      properties: {
+                        title: { ...text, required: true },
+                        seconds: { type: 'integer', nullable: true, minimum: 1 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    summaryNote: { ...text, maxLength: 5 },
+    notes: { ...text, maxLength: 5 }
+  }
+  const propertiesForm = { type: 'form', properties: catalogueProperties }
+
+  // Leave out the values that only the fields describe:
+  const withoutFieldsOnlyValues = ({ vendors, ...data }) => ({
+    ...data,
+    collections: data.collections.map(collection => ({
+      ...collection,
+      items: collection.items.map(
+        ({ tags, blurb, summary, ...item }) => item
+      )
+    }))
+  })
+
+  it('validate like the fields that they describe', async () => {
+    const {
+      'collections/0/items/0/tags/1': tag,
+      'collections/0/items/0/blurb': blurb,
+      'collections/0/items/1/summary': summary,
+      'collections/1/items/0/tracks': tracks,
+      ...errors
+    } = catalogueErrors
+    expect(
+      getDataValidationErrors(propertiesForm, createCatalogue(), { services })
+    ).toEqual({
+      ...errors,
+      'collections/1/items/0/tracks': [
+        { message: 'must contain at least one item' }
+      ]
+    })
+  })
+
+  it('set the defaults of the fields that they describe', async () => {
+    const form = await createForm(catalogueForm)
+    const initialize = form =>
+      withoutFieldsOnlyValues(initializeData(form, createCatalogue(), services))
+    expect(initialize(propertiesForm)).toEqual(initialize(form))
+  })
+
+  it('serialize like the fields that they describe', async () => {
+    expect(
+      serializeData(propertiesForm, null, createCatalogue(), '', { services })
+    ).toEqual(withoutFieldsOnlyValues({ ...serializedCatalogue, vendors: [] }))
+  })
+})

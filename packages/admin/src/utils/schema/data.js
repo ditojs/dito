@@ -28,12 +28,11 @@ import {
   someNestedSchemaComponent,
   hasNestedSchemaComponents,
   isPanelWithOwnData,
-  isSourceWithResource,
   isListSource,
   hasNestedData
 } from './structure.js'
 import { getLabelForRelated } from './options.ts'
-import { walkData, cloneItem } from './walk.js'
+import { walkData, cloneItem, getSchemaSource } from './walk.js'
 import {
   hasFormSchema,
   getFormSchemas,
@@ -133,7 +132,7 @@ function getContext(context) {
   return isFunction(context) ? context() : context
 }
 
-function resolveValue(value, context) {
+export function resolveValue(value, context) {
   return isFunction(value)
     ? toModelData(value(getContext(context)))
     : clone(value)
@@ -229,10 +228,9 @@ export function initializeData(schema, data = {}, services, {
     if (value !== undefined) {
       data[name] = value
     }
-    for (const { schema } of node.fields) {
-      if (hasItemsNumberedByOrderKey(schema) && isArray(data[name])) {
-        updateOrder(schema, data[name])
-      }
+    const { source } = node
+    if (source && hasItemsNumberedByOrderKey(source) && isArray(data[name])) {
+      updateOrder(source, data[name])
     }
   }
 
@@ -330,7 +328,9 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
 } = {}) {
   const options = { services, rootData, target }
   // Data without a source, e.g. of dialogs and panels, has nothing to identify:
-  const serializedRootData = sourceSchema ? cloneItem(sourceSchema, data) : {}
+  const serializedRootData = sourceSchema
+    ? cloneItem(getSchemaSource(sourceSchema), data)
+    : {}
   const graph = new SchemaGraph(dataPath)
 
   const visit = entry => {
@@ -338,11 +338,9 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     const value = node.hasMissingValue(entry)
       ? node.getDefaultValue(entry)
       : data[name]
-    // Fields of the same value agree on its shape, the first one tells it:
-    const [{ schema }] = node.fields
     // The forms of the items expect them wrapped by the item adapter of the
-    // schema, so wrap before and unwrap after. Always shallow-clone arrays:
-    const itemAdapter = getItemAdapter(schema)
+    // source, so wrap before and unwrap after. Always shallow-clone arrays:
+    const itemAdapter = node.source?.itemAdapter
     serializedData[name] = isArray(value)
       ? itemAdapter
         ? value.map(itemAdapter.wrap)
@@ -352,8 +350,8 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
 
   const after = entry => {
     const { node, data, name, dataPath, itemDataPath, serializedData } = entry
-    const [{ schema }] = node.fields
-    const itemAdapter = getItemAdapter(schema)
+    const { source } = node
+    const itemAdapter = source?.itemAdapter
     let value = serializedData[name]
     // Unwrap the items again, to bring the data back into its native form:
     if (itemAdapter && isArray(value)) {
@@ -361,9 +359,10 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     }
     // Register the sources and relations whose ids the graph serializes:
     let labels
-    if (getSourceType(schema)) {
-      graph.addSource(dataPath, schema)
-    } else if (schema.relate) {
+    const schema = node.fields[0]?.schema
+    if (source?.isSource) {
+      graph.addSource(dataPath, source)
+    } else if (schema?.relate) {
       // Internally related data (`options.dataPath`) needs both the options
       // (for '#ref') and the value ('#id') serialized:
       const path = schema.options?.dataPath
@@ -427,19 +426,18 @@ export function isDataPathExcluded(schema, data, dataPath, {
   })
   const excludedEntry = entries.findLast(entry => entry.node.isExcluded(entry))
   if (excludedEntry) {
-    return !isSourceWithResource(excludedEntry.node.fields[0].schema)
+    return !excludedEntry.node.source?.hasResource
   }
   const holder = entries.at(-1)
   if (!holder) {
     return true
   }
-  // Of several fields of the same value, the first holds it:
-  const [{ schema: holderSchema }] = holder.node.fields
+  const { source } = holder.node
   const relativeDataPath = getRelativeDataPath(dataPath, holder.dataPath)
   return (
-    hasFormSchema(holderSchema) &&
+    !!source?.hasForms &&
     relativeDataPath !== '' &&
-    !(isListSource(holderSchema) && /^\d+$/.test(relativeDataPath))
+    !(source.isList && /^\d+$/.test(relativeDataPath))
   )
 }
 
@@ -449,7 +447,7 @@ export function deserializeData(schema, data, {
   services = null,
   dataPath = null,
   rootData = data,
-  shouldWalk
+  shouldVisit
 } = {}) {
   const visit = entry => {
     const { node, data, name } = entry
@@ -464,7 +462,7 @@ export function deserializeData(schema, data, {
     dataPath,
     services,
     rootData,
-    shouldWalk,
+    shouldVisit,
     visit
   })
 }
@@ -689,7 +687,7 @@ export function getItemDisplayValue(sourceSchema, item, name, {
     visit: entry => {
       if (entry.name === name) {
         // Of several fields of the value, the first wins:
-        schema ??= entry.node.fields[0].schema
+        schema ??= entry.node.fields[0]?.schema
       }
     }
   })
@@ -713,8 +711,8 @@ export function getItemId(sourceSchema, item) {
 }
 
 // Lists of primitives have no items that could hold an order key:
-export function hasItemsNumberedByOrderKey(schema) {
-  return !!schema.orderKey && !getItemAdapter(schema)
+export function hasItemsNumberedByOrderKey(source) {
+  return !!source.orderKey && !source.itemAdapter
 }
 
 export function updateOrder(sourceSchema, list, offset = 0) {

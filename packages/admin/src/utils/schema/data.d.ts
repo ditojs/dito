@@ -1,6 +1,6 @@
 import type { Context } from './types.ts'
 import type { Data, Schema } from '../types.ts'
-import type { WalkedDataEntry } from './walk.js'
+import type { DataEntry, DataSource } from './walk.js'
 
 type Options = Record<string, any>
 
@@ -20,6 +20,10 @@ export function shouldRenderSchema(
   schema: Schema | null,
   context: Context
 ): boolean
+export function resolveValue(
+  value: any,
+  context: Context | (() => Context)
+): any
 export function getDefaultValue(schema: Schema, context: Context): any
 export function getEmptyValue(schema: Schema, context: Context): any
 export function shouldIgnoreMissingValue(
@@ -94,7 +98,7 @@ export function deserializeData(
     services?: object | null
     dataPath?: string | null
     rootData?: Data | null
-    shouldWalk?: (entry: WalkedDataEntry) => boolean
+    shouldVisit?: (entry: DataEntry) => boolean
   }
 ): Data
 // The components, tabs and panels that `walkComponentPaths()` walks, with the
@@ -135,7 +139,7 @@ export function getItemDisplayValue(
   options: { services: object; dataPath: string; context: Context }
 ): any
 export function getItemId(sourceSchema: Schema, item: Data): string | undefined
-export function hasItemsNumberedByOrderKey(schema: Schema): boolean
+export function hasItemsNumberedByOrderKey(source: DataSource): boolean
 export function updateOrder<T extends any[]>(
   sourceSchema: Schema,
   list: T,
