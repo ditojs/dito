@@ -65,13 +65,6 @@ const form = {
 }
 ```
 
-## Deprecated `events`
-
-The object `events: { change() { … } }` is deprecated and logs a warning.
-It's used only for events that the schema has no `on…` handler for: `on…`
-handlers win, also the default `onClick()` of the Save and Cancel buttons of
-forms. During development, an ignored `events` entry logs a warning.
-
 ## Schema events
 
 ### onInitialize()

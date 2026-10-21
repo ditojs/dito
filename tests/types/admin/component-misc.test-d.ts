@@ -105,17 +105,6 @@ describe('NumberSchema', () => {
     })
   })
 
-  it('accepts the deprecated rules', () => {
-    assertType<NumberSchema<Entry>>({
-      type: 'number',
-      rules: {
-        minimum: 0,
-        maximum: 999,
-        integer: true
-      }
-    })
-  })
-
   it('accepts validate callbacks that return booleans or messages', () => {
     assertType<NumberSchema<Entry>>({
       type: 'integer',
@@ -146,7 +135,7 @@ describe('SchemaAffixMixin (prefix/suffix)', () => {
       type: 'number',
       prefix: [
         { type: 'icon', name: 'currency' },
-        { html: '<b>$</b>', as: 'span' },
+        { type: 'text', text: '$' },
         html`<b>€</b>`,
         { text: html`<b>£</b>`, as: 'span' }
       ]

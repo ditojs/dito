@@ -579,23 +579,6 @@ describe('Application', () => {
       expect(validateServings(4)).toBe(true)
       expect(validateServings(12)).toBe(false)
     })
-
-    it('keeps compileValidator() as deprecated alias', () => {
-      const app = createApp()
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      try {
-        const validate = app.compileValidator(
-          { type: 'object', properties: { title: { type: 'string' } } },
-          { throw: false }
-        )
-        expect(validate({ title: 'Soup', servings: 2 })).toBe(true)
-        expect(warn).toHaveBeenCalledWith(
-          'compileValidator() is deprecated, use compileJsonSchema() instead.'
-        )
-      } finally {
-        warn.mockRestore()
-      }
-    })
   })
 
   describe('parameter validators', () => {

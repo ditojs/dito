@@ -8,9 +8,7 @@ import {
   camelize,
   assignDeeply,
   mapConcurrently,
-  getValueAtDataPath,
-  isEmpty,
-  deprecate
+  getValueAtDataPath
 } from '@ditojs/utils'
 import { markRaw } from 'vue'
 import { getTypeDescriptor } from './types.ts'
@@ -18,7 +16,6 @@ import {
   iterateSchemaComponents,
   iterateNestedSchemaComponents,
   isForm,
-  isSchema,
   isView,
   isPage,
   isTab,
@@ -39,65 +36,33 @@ const onToggle = `'onToggle()', or 'form: { onToggle() }' in lists and objects,`
 // The schema keys of earlier versions that were renamed or removed, which would
 // otherwise be ignored silently:
 const removedSchemaKeys = {
-  'format': `'formatValue()'`,
-  'parse': `'parseValue()'`,
-  'compute': `'computeValue()'`,
-  'process': `'serializeValue()'`,
-  'formats': `'format'`,
-  'methods': 'plain functions in the module of the schema',
-  'computed': `the values of the context, or 'computeValue()'`,
-  'watch': `'onChange()'`,
-  'data': 'state in the module of the schema',
-  'relateBy': `'relate: <key>'`,
-  'groupBy': `'options.group'`,
-  'onOpen': onToggle,
-  'events.open': onToggle
+  format: `'formatValue()'`,
+  parse: `'parseValue()'`,
+  compute: `'computeValue()'`,
+  process: `'serializeValue()'`,
+  formats: `'format'`,
+  methods: 'plain functions in the module of the schema',
+  computed: `the values of the context, or 'computeValue()'`,
+  watch: `'onChange()'`,
+  data: 'state in the module of the schema',
+  relateBy: `'relate: <key>'`,
+  groupBy: `'options.group'`,
+  onOpen: onToggle,
+  events: `the 'on…' handlers, e.g. 'onChange()',`,
+  components: `'fields'`,
+  rules: `the limits of fields, their types and 'validate()'`
 }
-
-// The deprecated keys of schemas, by the keys that replace them:
-const renamedSchemaKeys = {
-  fields: {
-    oldKey: 'components',
-    deprecation: 'Schema `components` are deprecated, use `fields` instead.'
-  },
-  field: {
-    oldKey: 'component',
-    deprecation: (
-      'The `component` of views with a schema is deprecated, ' +
-      'use `field` instead.'
-    )
-  },
-  minimum: {
-    oldKey: 'min',
-    deprecation: 'Schema `min` is deprecated, use `minimum` instead.'
-  },
-  maximum: {
-    oldKey: 'max',
-    deprecation: 'Schema `max` is deprecated, use `maximum` instead.'
-  }
-}
-
-// The deprecated rules that fields take as keys:
-const ruleKeys = [
-  'required',
-  'minimum',
-  'maximum',
-  'range',
-  'decimals',
-  'minLength',
-  'maxLength',
-  'pattern',
-  'minItems',
-  'maxItems'
-]
 
 // The events of forms that `onSuccess()` replaces:
 const onSuccess = `'onSuccess()' with 'context.isCreating'`
 const removedFormKeys = {
-  'onCreate': onSuccess,
-  'onSubmit': onSuccess,
-  'events.create': onSuccess,
-  'events.submit': onSuccess
+  onCreate: onSuccess,
+  onSubmit: onSuccess
+}
+
+// Views hold their single field in `field`, not `component`:
+const removedViewKeys = {
+  component: `'field'`
 }
 
 export async function resolveSchema(value, unwrapModule = false) {
@@ -260,48 +225,6 @@ export async function setupView(api, schema, name) {
 }
 
 export function applySchemaDefaults(api, schema, name = schema.name) {
-  const renameSchemaKeys = object => {
-    renameSchemaKey(object, 'fields')
-    // Only views take schemas in `component`, all other schemas Vue components:
-    if (isView(schema) && isSchema(object.component)) {
-      renameSchemaKey(object, 'field')
-    }
-    for (const key of getTypeDescriptor(schema)?.renamedSchemaKeys ?? []) {
-      renameSchemaKey(object, key)
-      // `rules` are keyed by the validators, which carry the new names too:
-      if (object.rules) {
-        renameSchemaKey(object.rules, key)
-      }
-    }
-    if (object.rules) {
-      deprecate(
-        'Schema `rules` are deprecated, use the limits of fields, ' +
-        'their types and `validate()` instead.'
-      )
-      // Move the rules that fields take as keys to the field, only those that
-      // turn validations off and other validators remain rules:
-      const rules = {}
-      for (const [key, setting] of Object.entries(object.rules)) {
-        if (
-          ruleKeys.includes(key) &&
-          setting !== false &&
-          setting !== undefined
-        ) {
-          object[key] = setting
-        } else {
-          rules[key] = setting
-        }
-      }
-      if (isEmpty(rules)) {
-        delete object.rules
-      } else {
-        object.rules = rules
-      }
-    }
-  }
-  // Rename the deprecated keys of the schema before the defaults, which see
-  // the new ones, and those of the defaults before merging them:
-  renameSchemaKeys(schema)
   let defaults = (
     api.defaults[schema.type] ||
     api.defaults[camelize(schema.type)]
@@ -314,7 +237,6 @@ export function applySchemaDefaults(api, schema, name = schema.name) {
       defaults = defaults(schema)
     }
     if (isObject(defaults)) {
-      renameSchemaKeys(defaults)
       for (const [key, value] of Object.entries(defaults)) {
         const current = schema[key]
         schema[key] =
@@ -419,6 +341,8 @@ function assertSupportedSchemaKeys(schema, name) {
   })
   if (isForm(schema)) {
     assertRemovedSchemaKeys(schema, name, removedFormKeys)
+  } else if (isView(schema)) {
+    assertRemovedSchemaKeys(schema, name, removedViewKeys)
   }
   // Other types ignore `search`, so we only warn about it:
   if (schema.search !== undefined && !descriptor?.hasSearch) {
@@ -464,15 +388,5 @@ export function assertRemovedSchemaKeys(
         }': Use ${replacement} instead.`
       )
     }
-  }
-}
-
-// Setup removes the old keys, so those still there come from the app, and win:
-export function renameSchemaKey(schema, key) {
-  const { oldKey, deprecation } = renamedSchemaKeys[key]
-  if (schema[oldKey] !== undefined) {
-    deprecate(deprecation)
-    schema[key] = schema[oldKey]
-    delete schema[oldKey]
   }
 }

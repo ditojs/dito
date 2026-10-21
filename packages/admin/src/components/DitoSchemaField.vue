@@ -21,7 +21,6 @@ DitoContainer(
 
 <script>
 import { computed, inject } from 'vue'
-import { deprecate } from '@ditojs/utils'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { layoutKey } from '../utils/keys.ts'
 
@@ -47,17 +46,6 @@ const DitoSchemaField = {
       pane: layout.props,
       entry: computed(() => layout.getEntry(props.name))
     }
-  }
-}
-
-// `DitoField` is the deprecated name of `DitoSchemaField` until 6.0. It extends
-// the component, as its render function is only added after this script:
-export const DitoField = {
-  extends: DitoSchemaField,
-
-  setup(props, context) {
-    deprecate('`DitoField` is deprecated, use `DitoSchemaField` instead.')
-    return DitoSchemaField.setup(props, context)
   }
 }
 

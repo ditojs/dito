@@ -77,9 +77,6 @@ export interface GlobalConfig {
   }
 }
 
-/** @deprecated Use {@link GlobalConfig}. */
-export type DitoGlobal = GlobalConfig
-
 /**
  * A function that performs an HTTP request and returns the parsed
  * response. Used by the admin to communicate with the Dito.js
@@ -407,17 +404,6 @@ export interface ApiConfig {
 }
 
 /**
- * Validation rules shared by all schemas, extended by the individual types.
- *
- * @deprecated Until 6.0: use the limits of fields, their types and
- * `validate()`.
- */
-export interface SchemaRules {
-  /** Override whether the field is required. */
-  required?: boolean
-}
-
-/**
  * Handlers can be async, as events are awaited, e.g. by buttons that show
  * their progress while their `click` handler runs. What their return value
  * means depends on the event:
@@ -451,38 +437,6 @@ export type ErrorEventHandler<$Item = any> = (
   context: SchemaContext<$Item> & { error: unknown }
 ) => unknown
 
-/**
- * Event handlers shared by field schemas, views,
- * and forms.
- */
-export interface SchemaEvents<$Item = any> {
-  /**
-   * Fires when the schema's component tree is set up.
-   * @see {@link RouteSchemaBase.onInitialize}
-   */
-  initialize?: ItemEventHandler<$Item>
-  /**
-   * Fires when the schema component is unmounted.
-   * @see {@link RouteSchemaBase.onDestroy}
-   */
-  destroy?: ItemEventHandler<$Item>
-  /**
-   * Fires after data has been fetched from the API.
-   * @see {@link RouteSchemaBase.onLoad}
-   */
-  load?: ItemEventHandler<$Item>
-  /**
-   * Fires after a value change is committed.
-   * @see {@link SchemaBase.onChange}
-   */
-  change?: ItemEventHandler<$Item>
-  /**
-   * Fires for each edit that changes the value.
-   * @see {@link SchemaBase.onInput}
-   */
-  input?: ItemEventHandler<$Item>
-}
-
 export interface SchemaToggle<$Item = any> {
   /**
    * Called when a collapsible schema is collapsed or
@@ -500,18 +454,8 @@ export interface FieldSchemaBase<$Item> extends SchemaBase<$Item> {
   if?: SchemaValue<$Item, {}, boolean>
 
   /**
-   * Specifies validations rules to add, remove (by setting to `false` or
-   * `undefined`) or change before value validation occurs. Rule changes do
-   * not influence how the field is rendered.
-   *
-   * @deprecated Until 6.0: use the limits of fields, their types and
-   * `validate()`.
-   */
-  rules?: SchemaRules
-
-  /**
-   * Validates values that aren't empty, together with the other rules, and
-   * receives the value after `formatValue()`. Return `false` to fail with
+   * Validates values that aren't empty, together with the other validations,
+   * and receives the value after `formatValue()`. Return `false` to fail with
    * "is invalid", or a message to fail with, e.g. `'must have 13 digits'`.
    */
   validate?: (context: SchemaContext<$Item>) => boolean | string | void
@@ -729,30 +673,6 @@ export interface FieldSchemaBase<$Item> extends SchemaBase<$Item> {
    * Called when the input element loses focus.
    */
   onBlur?: ItemEventHandler<$Item>
-  /**
-   * Grouped event handlers, used only for the events without an `on…`
-   * handler in the same schema.
-   *
-   * @deprecated Use the `on…` handlers, e.g. `onChange()`.
-   */
-  events?: BaseSchemaEvents<$Item>
-}
-
-/** @deprecated Use {@link FieldSchemaBase}. */
-export type ComponentSchemaBase<$Item> = FieldSchemaBase<$Item>
-
-/** @deprecated Use {@link FieldSchemaBase}. */
-export type BaseSchema<$Item> = FieldSchemaBase<$Item>
-
-/**
- * Grouped event handlers shared by all schemas, extended by the individual
- * types.
- */
-export interface BaseSchemaEvents<$Item> extends SchemaEvents<$Item> {
-  /** @see {@link FieldSchemaBase.onFocus} */
-  focus?: ItemEventHandler<$Item>
-  /** @see {@link FieldSchemaBase.onBlur} */
-  blur?: ItemEventHandler<$Item>
 }
 
 /** The schema settings shared by lists, objects and trees. */
@@ -773,7 +693,7 @@ export interface SourceSettings<$Item> {
    * the default is the 'name' property of the item,
    * followed by the label of the form (plus item id)
    * and other defaults.
-   * Callbacks return text, or `{ html }` for HTML.
+   * Callbacks return text, or `html` values for HTML.
    */
   itemLabel?: SchemaValue<$Item, {}, SchemaLabel> | false
   /**
@@ -846,8 +766,6 @@ export interface SourceSettings<$Item> {
    * page.
    */
   fields?: Fields<$Item>
-  /** @deprecated Use `fields`. */
-  components?: Fields<$Item>
   /**
    * The tabs of the inlined form of `fields`.
    */
@@ -942,9 +860,6 @@ export interface SourceSettings<$Item> {
    */
   view?: string
 }
-
-/** @deprecated Use {@link SourceSettings}. */
-export type SchemaSourceMixin<$Item> = SourceSettings<$Item>
 
 export type SchemaOptionsOption<$Value> =
   | { label: string; value: $Value }
@@ -1067,12 +982,6 @@ export interface SelectionSettings<$Item, $Option = any> {
   view?: string
 }
 
-/** @deprecated Use {@link SelectionSettings}. */
-export type SchemaOptionsMixin<$Item, $Option = any> = SelectionSettings<
-  $Item,
-  $Option
->
-
 /** The schema settings shared by numbers, sliders and progress bars. */
 export interface NumberSettings<$Item> {
   /**
@@ -1084,12 +993,6 @@ export interface NumberSettings<$Item> {
    * The maximum value.
    */
   maximum?: SchemaValue<$Item, {}, number>
-
-  /** @deprecated Use `minimum`. */
-  min?: SchemaValue<$Item, {}, number>
-
-  /** @deprecated Use `maximum`. */
-  max?: SchemaValue<$Item, {}, number>
 
   /**
    * The minimum and maximum value.
@@ -1104,16 +1007,7 @@ export interface NumberSettings<$Item> {
    * The maximum amount of decimals allowed, validated on input.
    */
   decimals?: SchemaValue<$Item, {}, number>
-  /** @deprecated Until 6.0: use the limits of fields and `validate()`. */
-  rules?: SchemaRules &
-    Omit<NumberSettings<$Item>, 'rules'> & {
-      /** Restrict the value to whole numbers. */
-      integer?: boolean
-    }
 }
-
-/** @deprecated Use {@link NumberSettings}. */
-export type SchemaNumberMixin<$Item> = NumberSettings<$Item>
 
 /** The schema settings shared by text inputs and textareas. */
 export interface TextSettings<$Item> {
@@ -1130,9 +1024,6 @@ export interface TextSettings<$Item> {
   nullable?: boolean
 }
 
-/** @deprecated Use {@link TextSettings}. */
-export type SchemaTextMixin<$Item> = TextSettings<$Item>
-
 /**
  * Text, or HTML created with the `html` template of `@ditojs/utils`. Strings
  * and `{ text }` are escaped, only `Html` renders tags.
@@ -1141,24 +1032,15 @@ export type TextOrHtml =
   | string
   | Html
   | { text: string | Html }
-  | {
-      /** @deprecated Use the `html` template of `@ditojs/utils`. */
-      html: string
-    }
 
 /** A label as text or HTML, with optional affixes. */
 export type SchemaLabel =
   | TextOrHtml
-  | ((
-      | { text?: string | Html }
-      | {
-          /** @deprecated Use `text` with the `html` template. */
-          html: string
-        }
-    ) & {
+  | {
+      text?: string | Html
       prefix?: OrArrayOf<SchemaAffix>
       suffix?: OrArrayOf<SchemaAffix>
-    })
+    }
 
 /**
  * Text, HTML created with the `html` template of `@ditojs/utils`, or an object
@@ -1178,17 +1060,6 @@ export type SchemaAffix =
           /** Text, or HTML created with the `html` template. */
           text: string | Html
           /** The element to render the text in, `'div'` if not set. */
-          as?: string
-        }
-      | {
-          type?: 'html'
-          /**
-           * Raw HTML content for the affix.
-           *
-           * @deprecated Use `text` with the `html` template.
-           */
-          html: string
-          /** The element to render the HTML in, `'div'` if not set. */
           as?: string
         }
       | {
@@ -1224,9 +1095,6 @@ export interface AffixSettings<$Item> {
   suffix?: OrArrayOf<SchemaAffix>
 }
 
-/** @deprecated Use {@link AffixSettings}. */
-export type SchemaAffixMixin<$Item> = AffixSettings<$Item>
-
 /**
  * The settings of `value` fields, which resolve their value from `data` or
  * `dataPath`, unless they compute it with `computeValue()`.
@@ -1244,9 +1112,6 @@ export interface DataSettings<$Item> {
    */
   dataPath?: string
 }
-
-/** @deprecated Use {@link DataSettings}. */
-export type SchemaDataMixin<$Item> = DataSettings<$Item>
 
 /**
  * Properties shared by field schemas, views and forms: their panels, and
@@ -1275,12 +1140,6 @@ export interface SchemaBase<$Item> {
    */
   onInput?: ItemEventHandler<$Item>
 }
-
-/** @deprecated Use {@link SchemaBase}. */
-export type SchemaFields<$Item> = SchemaBase<$Item>
-
-/** @deprecated Use {@link SchemaBase}. */
-export type SchemaSetupMixin<$Item = any> = SchemaBase<$Item>
 
 /**
  * The base of views and forms, also used by inlined and dialog forms.
@@ -1336,12 +1195,6 @@ export interface RouteSchemaBase<$Item = any> extends SchemaBase<$Item> {
    */
   if?: SchemaValue<$Item, {}, boolean>
 }
-
-/** @deprecated Use {@link RouteSchemaBase}. */
-export type SchemaRoute<$Item = any> = RouteSchemaBase<$Item>
-
-/** @deprecated Use {@link RouteSchemaBase}. */
-export type SchemaRouteMixin<$Item = any> = RouteSchemaBase<$Item>
 
 export interface ComponentSchema<
   $Item = any
@@ -1413,16 +1266,6 @@ export interface InputSchema<$Item = any>
     | 'tel'
     | 'password'
     | 'creditcard'
-  /** @deprecated Until 6.0: use `type: 'text'` and `validate()`. */
-  rules?: SchemaRules & {
-    text?: boolean
-    email?: boolean
-    url?: boolean
-    hostname?: boolean
-    domain?: boolean
-    password?: boolean
-    creditcard?: boolean
-  }
 }
 
 export interface DateSchema<$Item = any>
@@ -1465,17 +1308,6 @@ export interface ButtonSchema<$Item = any>
   onClick?: ItemEventHandler<$Item>
   onSuccess?: ItemEventHandler<$Item>
   onError?: ErrorEventHandler<$Item>
-  /**
-   * Grouped event handlers, used only for the events without an `on…`
-   * handler in the same schema.
-   *
-   * @deprecated Use the `on…` handlers, e.g. `onChange()`.
-   */
-  events?: BaseSchemaEvents<$Item> & {
-    click?: ItemEventHandler<$Item>
-    success?: ItemEventHandler<$Item>
-    error?: ErrorEventHandler<$Item>
-  }
 }
 
 export interface SwitchSchema<$Item = any> extends FieldSchemaBase<$Item> {
@@ -1500,9 +1332,8 @@ export interface SwitchSchema<$Item = any> extends FieldSchemaBase<$Item> {
 }
 
 export interface NumberSchema<$Item = any>
-  // `rules` comes from `NumberSettings`, which extends `SchemaRules`.
   extends NumberSettings<$Item>,
-    Omit<FieldSchemaBase<$Item>, 'rules'>,
+    FieldSchemaBase<$Item>,
     AffixSettings<$Item> {
   /**
    * The type of the field.
@@ -1511,9 +1342,8 @@ export interface NumberSchema<$Item = any>
 }
 
 export interface SliderSchema<$Item = any>
-  // `rules` comes from `NumberSettings`, which extends `SchemaRules`.
   extends NumberSettings<$Item>,
-    Omit<FieldSchemaBase<$Item>, 'rules'> {
+    FieldSchemaBase<$Item> {
   /**
    * The type of the field.
    */
@@ -1676,20 +1506,10 @@ export interface ValueSchema<$Item = any>
   extends FieldSchemaBase<$Item>,
     DataSettings<$Item> {
   /**
-   * The type of the field. `'computed'`, `'data'` and `'hidden'` are
-   * deprecated names of `'value'`.
+   * The type of the field.
    */
-  type: 'value' | 'computed' | 'data' | 'hidden'
+  type: 'value'
 }
-
-/** @deprecated Use {@link ValueSchema}. */
-export type ComputedSchema<$Item = any> = ValueSchema<$Item>
-
-/** @deprecated Use {@link ValueSchema}. */
-export type DataSchema<$Item = any> = ValueSchema<$Item>
-
-/** @deprecated Use {@link ValueSchema}. */
-export type HiddenSchema<$Item = any> = ValueSchema<$Item>
 
 export interface UploadSchema<$Item = any> extends FieldSchemaBase<$Item> {
   /**
@@ -1888,10 +1708,6 @@ type SectionContent<$Data, $Item = $Data> = {
   fields?:
     | Fields<$Data>
     | SchemaValueCallback<$Item, {}, Fields<$Data>>
-  /** @deprecated Use `fields`. */
-  components?:
-    | Fields<$Data>
-    | SchemaValueCallback<$Item, {}, Fields<$Data>>
   /**
    * A form schema for the section's content. Use this
    * instead of `fields` to get form-level options
@@ -2028,19 +1844,6 @@ export type SectionSchema<
     collapsible?: SchemaValue<$Item, {}, boolean>
     /** Whether the section is collapsed. */
     collapsed?: SchemaValue<$Item, {}, boolean>
-    /**
-     * Grouped event handlers, used only for the events without an `on…`
-     * handler in the same schema.
-     *
-     * @deprecated Use the `on…` handlers, e.g. `onChange()`.
-     */
-    events?: {
-      /**
-       * Called when a collapsible section is collapsed
-       * or expanded.
-       */
-      toggle?: ToggleEventHandler<$Item>
-    }
   } & (
     | ({
         /**
@@ -2253,11 +2056,6 @@ export interface ListSchema<$Item = { [key: string]: any }>
               label?: string
               fields: Fields
             }
-          | {
-              label?: string
-              /** @deprecated Use `fields`. */
-              components: Fields
-            }
         ) & {
           /** The width of the filter in the filters panel. */
           width?: FieldSchemaBase<any>['width']
@@ -2272,13 +2070,6 @@ export type SchemaValue<
   $Params extends {} = {},
   $ReturnValue = any
 > = SchemaValueCallback<$Item, $Params, $ReturnValue> | $ReturnValue
-
-/** @deprecated Use {@link SchemaValue}. */
-export type OrItemAccessor<
-  $Item = any,
-  $Params extends {} = {},
-  $ReturnValue = any
-> = SchemaValue<$Item, $Params, $ReturnValue>
 
 /**
  * Merges two object types into a single flat mapped type.
@@ -2298,13 +2089,6 @@ export type SchemaValueCallback<
   $Params extends {} = {},
   $ReturnValue = any
 > = (context: Merge<SchemaContext<$Item>, $Params>) => $ReturnValue
-
-/** @deprecated Use {@link SchemaValueCallback}. */
-export type ItemAccessor<
-  $Item = any,
-  $Params extends {} = {},
-  $ReturnValue = any
-> = SchemaValueCallback<$Item, $Params, $ReturnValue>
 
 /** The user that is logged in to the admin. */
 /** The user of the server's session, with the properties of its model. */
@@ -2697,8 +2481,6 @@ export type SchemaContext<$Item = any> = {
    */
   showDialog<$Result = unknown>(options: {
     fields?: Fields
-    /** @deprecated Use `fields`. */
-    components?: Fields
     buttons: Buttons<any>
     data?: Record<string, any>
     settings?: {
@@ -2805,33 +2587,16 @@ export type SchemaContext<$Item = any> = {
        * Use `0` for sticky.
        */
       duration?: number
-    } & (
-      | {
-          /**
-           * Body text, escaped, or HTML created with the
-           * `html` template of `@ditojs/utils`. Each entry
-           * is a paragraph, newlines become `<br>`, and
-           * `false` and `null` entries are skipped.
-           */
-          text: OrArrayOf<string | Html | false | null>
-          html?: never
-        }
-      | {
-          /**
-           * Body HTML, rendered as it is.
-           *
-           * @deprecated Pass `text` with the `html`
-           * template of `@ditojs/utils`.
-           */
-          html: OrArrayOf<string | false | null>
-          text?: never
-        }
-    )
+      /**
+       * Body text, escaped, or HTML created with the
+       * `html` template of `@ditojs/utils`. Each entry
+       * is a paragraph, newlines become `<br>`, and
+       * `false` and `null` entries are skipped.
+       */
+      text: OrArrayOf<string | Html | false | null>
+    }
   ): void
 }
-
-/** @deprecated Use {@link SchemaContext}. */
-export type DitoContext<$Item = any> = SchemaContext<$Item>
 
 /**
  * The context of the admin, as `DitoAdmin.context`. `user`, `views` and
@@ -2949,22 +2714,11 @@ export interface ViewSchema<$Item = any> extends RouteSchemaBase<$Item> {
     }
   >
   /**
-   * Grouped event handlers, used only for the events without an `on…`
-   * handler in the same schema.
-   *
-   * @deprecated Use the `on…` handlers, e.g. `onChange()`.
-   */
-  events?: SchemaEvents<$Item>
-  /**
    * The single field that the view displays instead of `fields`, e.g. a list.
    */
   field?: Field<$Item>
-  /** @deprecated Use `field`. */
-  component?: Field<$Item>
   /** The view's fields. */
   fields?: Fields<$Item>
-  /** @deprecated Use `fields`. */
-  components?: Fields<$Item>
 }
 
 /**
@@ -3048,18 +2802,6 @@ interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
    * state.
    */
   onToggle?: ToggleEventHandler<$Item>
-  /**
-   * Grouped event handlers, used only for the events without an `on…`
-   * handler in the same schema.
-   *
-   * @deprecated Use the `on…` handlers, e.g. `onChange()`.
-   */
-  events?: BaseSchemaEvents<$Item> & {
-    /**
-     * Called when a tree item is collapsed or expanded.
-     */
-    toggle?: ToggleEventHandler<$Item>
-  }
 }
 
 export type TreeListSchema<$Item = any> = TreeSchema<$Item, 'tree-list'>
@@ -3113,8 +2855,6 @@ export type PanelSchema<$Item = any> = Omit<
    * The fields within the panel.
    */
   fields?: Fields<$Item>
-  /** @deprecated Use `fields`. */
-  components?: Fields<$Item>
   /** Buttons rendered at the bottom of the panel. */
   buttons?: Buttons<$Item>
   /**
@@ -3139,9 +2879,8 @@ export interface SpacerSchema<$Item = any> extends FieldSchemaBase<$Item> {
 }
 
 export interface ProgressSchema<$Item = any>
-  // `rules` comes from `NumberSettings`, which extends `SchemaRules`.
   extends NumberSettings<$Item>,
-    Omit<FieldSchemaBase<$Item>, 'rules'> {
+    FieldSchemaBase<$Item> {
   /**
    * The type of the field.
    */
@@ -3180,9 +2919,6 @@ export type Field<$Item = any> =
   | SectionSchema<$Item>
   | PanelSchema<$Item>
 
-/** @deprecated Use {@link Field}. */
-export type Component<$Item = any> = Field<$Item>
-
 /**
  * Source fields (list, object, tree) that contain nested
  * items with their own item type.
@@ -3192,9 +2928,6 @@ export type SourceField<$Item = any> =
   | ObjectSchema<$Item>
   | TreeListSchema<$Item>
   | TreeObjectSchema<$Item>
-
-/** @deprecated Use {@link SourceField}. */
-export type SourceComponent<$Item = any> = SourceField<$Item>
 
 /**
  * Fields that don't have an options mixin (excludes
@@ -3316,9 +3049,6 @@ export type Fields<$Item = any> = 0 extends 1 & $Item
                 | SectionSchema<$Item>
     }
 
-/** @deprecated Use {@link Fields}. */
-export type Components<$Item = any> = Fields<$Item>
-
 export type Columns<$Item = any> = 0 extends 1 & $Item
   ? { [key: string]: ColumnSchema | undefined }
   : {
@@ -3398,39 +3128,12 @@ export interface FormSchema<$Item = any>
   >
   /** The form's fields. */
   fields?: Fields<$Item>
-  /** @deprecated Use `fields`. */
-  components?: Fields<$Item>
   /**
    * A Vue component that lays out the form's fields instead of its pane,
    * placing them with {@link DitoSchemaField} and {@link DitoPane}. It
    * receives the `schema` and `context` of the form, and needs `fields`.
    */
   component?: Resolvable<VueComponent>
-  /**
-   * Grouped event handlers, used only for the events without an `on…`
-   * handler in the same schema.
-   *
-   * @deprecated Use the `on…` handlers, e.g. `onChange()`.
-   */
-  events?: SchemaEvents<$Item> & {
-    /**
-     * Called when a collapsible schema section is
-     * collapsed or expanded.
-     */
-    toggle?: ToggleEventHandler<$Item>
-    /**
-     * Called when a submit request fails. The
-     * `error` property on the context contains the
-     * request error.
-     */
-    error?: ErrorEventHandler<$Item>
-    /** Called after saving the item, like `onSuccess()`. */
-    success?: ItemEventHandler<$Item>
-    /** Called after applying the draft, like `onApply()`. */
-    apply?: ItemEventHandler<$Item>
-    /** Called after cancelling, like `onCancel()`. */
-    cancel?: ItemEventHandler<$Item>
-  }
   /**
    * Called after saving the item of a form with its own resource, new and
    * existing ones. `context.isCreating` tells whether the item was created.
@@ -3451,9 +3154,6 @@ export interface FormSchema<$Item = any>
   /** Called after the form is closed with its cancel button. */
   onCancel?: ItemEventHandler<$Item>
 }
-
-/** @deprecated Use {@link FormSchema}. */
-export type Form<$Item = any> = FormSchema<$Item>
 
 type ResourceOptions = RequireAtLeastOne<{
   path?: string
@@ -3523,10 +3223,6 @@ interface AdminOptions {
      * values are sent with the credentials.
      */
     additionalFields?: Fields
-    /**
-     * @deprecated Use `additionalFields`.
-     */
-    additionalComponents?: Fields
     redirectAfterLogin?: string
   }
   /**
@@ -3656,9 +3352,6 @@ export const DitoSchemaField: DefineComponent<{
   name: string
 }>
 
-/** @deprecated Use {@link DitoSchemaField}. */
-export const DitoField: typeof DitoSchemaField
-
 /**
  * Places the fields `names` of the `fields` of a layout section, see
  * {@link SectionSchema.component}, in rows as the section's pane would render
@@ -3673,7 +3366,7 @@ export const DitoPane: DefineComponent<{
  * Returns the context of the form or page, or of the list item, that the
  * calling component is in.
  */
-export function useDitoContext<$Item = any>(): DitoContext<$Item>
+export function useDitoContext<$Item = any>(): SchemaContext<$Item>
 
 /**
  * Sets up a form in the calling component, with the options of
@@ -3704,7 +3397,7 @@ export function useDitoForm<$Item = any>(
      */
     properties?: Record<string, Record<string, any>>
   }
-): DitoContext<$Item>
+): SchemaContext<$Item>
 
 /**
  * Renders the form of {@link useDitoForm} of the component that it's in, with
@@ -3944,9 +3637,6 @@ export type HttpMethod =
   | 'trace'
   | 'connect'
 
-/** @deprecated Use {@link HttpMethod}. */
-export type HTTPMethod = HttpMethod
-
 export type SchemaByType<$Item = any> = {
   'button': ButtonSchema<$Item>
   'checkbox': CheckboxSchema<$Item>
@@ -3954,11 +3644,7 @@ export type SchemaByType<$Item = any> = {
   'code': CodeSchema<$Item>
   'color': ColorSchema<$Item>
   'component': ComponentSchema<$Item>
-  /** @deprecated Use `'value'`. */
-  'computed': ValueSchema<$Item>
   'creditcard': InputSchema<$Item>
-  /** @deprecated Use `'value'`. */
-  'data': ValueSchema<$Item>
   'date': DateSchema<$Item>
   'datetime': DateSchema<$Item>
   'domain': InputSchema<$Item>
@@ -3990,8 +3676,6 @@ export type SchemaByType<$Item = any> = {
   'label': LabelSchema<$Item>
   'section': SectionSchema<$Item>
   'panel': PanelSchema<$Item>
-  /** @deprecated Use `'value'`. */
-  'hidden': ValueSchema<$Item>
   'unknown': never
 }
 

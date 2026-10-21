@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 // Register the actual type components, for their `deserializeValue()`:
 import '../types/index.js'
 import { ref } from 'vue'
+import { html } from '@ditojs/utils'
 import {
   createFiltersPanel,
   filterComponents,
@@ -150,14 +151,14 @@ describe('createFiltersPanel()', () => {
     )
   })
 
-  it('converts `{ text }` and `{ html }` labels to text placeholders', () => {
+  it('converts `{ text }` and `html` labels to text placeholders', () => {
     const label = ({ item }) => item.title
     const { panel } = createPanel({
       filters: {
         price: {
           fields: {
             from: { type: 'number', label: { text: 'From & <up>' } },
-            to: { type: 'number', label: { html: '<b>To</b> &amp; under' } },
+            to: { type: 'number', label: html`<b>To</b> &amp; under` },
             currency: { type: 'text', label }
           }
         }
@@ -167,29 +168,6 @@ describe('createFiltersPanel()', () => {
     expect(fields.from.placeholder).toBe('From & <up>')
     expect(fields.to.placeholder).toBe('To & under')
     expect(fields.currency.placeholder).toBe(label)
-  })
-
-  it('supports the deprecated `components` of filters, warning once', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const { panel } = createPanel({
-      filters: {
-        price: {
-          components: {
-            min: { type: 'number', label: 'Min' },
-            max: { type: 'number' }
-          }
-        }
-      },
-      query: { filter: 'price:10,20' }
-    })
-    const { fields } = panel.fields.$price.form
-    expect(fields.min).toMatchObject({ type: 'number', placeholder: 'Min' })
-    expect(fields.max.placeholder).toBe('Max')
-    expect(panel.data()).toEqual({ $price: { min: 10, max: 20 } })
-    expect(warn.mock.calls).toEqual([
-      ['Schema `components` are deprecated, use `fields` instead.']
-    ])
-    warn.mockRestore()
   })
 
   it('leaves out the operator component of text filters without operators', () => {

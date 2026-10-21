@@ -735,12 +735,6 @@ export class Application<$Models extends Models = Models> {
     options?: Record<string, any>
   ): Ajv.ValidateFunction | null
 
-  /** @deprecated Use {@link compileJsonSchema} instead. */
-  compileValidator(
-    jsonSchema: Schema,
-    options?: Record<string, any>
-  ): Ajv.ValidateFunction | null
-
   /**
    * Compiles action parameter definitions into a
    * validation function and metadata.
@@ -4678,9 +4672,6 @@ export type HttpMethod =
   | 'trace'
   | 'connect'
 
-/** @deprecated Use {@link HttpMethod}. */
-export type HTTPMethod = HttpMethod
-
 export interface KnexHelper {
   getDialect(): string | null
 
@@ -4865,15 +4856,6 @@ export type SerializedModel<T extends Model> = {
     ? never
     : ModelDataKey<T, K>]: SerializeModelPropertyValue<T[K]>
 }
-
-/** @deprecated Use `SerializedModel` instead. */
-export type SelectModelProperties<T extends Model> = SerializedModel<T>
-/** @deprecated Use `keyof SerializedModel<T>` instead. */
-export type SelectModelKeys<T extends Model> = keyof SerializedModel<T>
-/** @deprecated Use `SerializedModel` instead. */
-export type ExtractModelProperties<T extends Model> = SerializedModel<T>
-/** @deprecated Use `keyof SerializedModel<T>` instead. */
-export type SelectModelPropertyKeys<T extends Model> = keyof SerializedModel<T>
 
 /* ---------------------- Extended from Ajv JSON Schema --------------------- */
 

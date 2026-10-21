@@ -38,10 +38,6 @@ class Shop extends ShopController {
     'after:actions:get-isbn-price'(ctx: any, result: any) {
       events.push('sub after')
       return { ...result, checkedBy: `${result.checkedBy} and sub` }
-    },
-    // Deprecated hook keys that name actions by their keys:
-    'before:actions:get :isbn/sample-:format'() {
-      events.push('deprecated before')
     }
   }
 
@@ -55,7 +51,6 @@ class Shop extends ShopController {
     'get tech-doc-typst'() {},
     'get job-status/:token'() {},
     'post :id/publish'() {},
-    'get :isbn/sample-:format'() {},
 
     'get :isbn/stock': {
       after() {
@@ -71,15 +66,8 @@ class Shop extends ShopController {
 describe('Controller hooks', () => {
   let app: ReturnType<typeof createTestApp>
   let url: string
-  // Collect the warnings separately, as the spy's calls are cleared before
-  // tests.
-  const warnings: string[] = []
-  let warn: ReturnType<typeof vi.spyOn>
 
   beforeAll(async () => {
-    warn = vi
-      .spyOn(console, 'warn')
-      .mockImplementation(message => warnings.push(message))
     app = createTestApp({ controllers: { Shop } })
     await app.start()
     url = getAppUrl(app)
@@ -88,7 +76,6 @@ describe('Controller hooks', () => {
   afterAll(async () => {
     await app.stop()
     await app.knex.destroy()
-    warn.mockRestore()
   })
 
   afterEach(() => {
@@ -153,15 +140,6 @@ describe('Controller hooks', () => {
   it(`keeps the result when the action's after hook returns nothing`, async () => {
     const response = await fetch(`${url}/shop/1/stock`)
     expect(await response.json()).toEqual({ count: 3 })
-  })
-
-  it('maps deprecated hook keys to the identifiers of actions', async () => {
-    await fetch(`${url}/shop/1/sample-pdf`)
-    expect(events).toContain('deprecated before')
-    expect(warnings).toEqual([
-      `Hook 'before:actions:get :isbn/sample-:format' is deprecated, ` +
-      `use 'before:actions:get-isbn-sample-format' instead.`
-    ])
   })
 })
 

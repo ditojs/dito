@@ -665,10 +665,6 @@ Like `compileJsonSchema()`, but takes Dito.js' schema format of model
 properties, with `required: true`, the types `date`, `datetime`, `timestamp`
 and `text`, and model names as types.
 
-### compileValidator()
-
-Deprecated alias of `compileJsonSchema()`.
-
 ### compileParametersValidator()
 
 ```js

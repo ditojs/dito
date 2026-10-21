@@ -14,7 +14,10 @@ import {
   isObjectSource
 } from '../utils/schema/structure.js'
 import { hasFormSchema } from '../utils/schema/lookup.js'
-import { setupForms } from '../utils/schema/setup.js'
+import {
+  setupForms,
+  assertRemovedSchemaKeys
+} from '../utils/schema/setup.js'
 import {
   getDefaultValue,
   getMultipleValue,
@@ -206,7 +209,13 @@ export const optionsTraits = {
 } satisfies Partial<TypeDescriptor>
 
 export const numberTraits = {
-  renamedSchemaKeys: ['minimum', 'maximum'],
+  setupSchema({ schema, name }) {
+    assertRemovedSchemaKeys(schema, name, {
+      min: `'minimum'`,
+      max: `'maximum'`
+    })
+  },
+
   // The limits as written, without rounding them for integers:
   getProperty: ({ type, minimum, maximum, range }: Schema) => ({
     type: type === 'integer' ? 'integer' : 'number',

@@ -239,7 +239,7 @@ export const articles = createWidgetView<ArticleItem>(
               if: ({ item }) => !!item.previewKey,
               fields: {
                 previewText: {
-                  type: 'computed',
+                  type: 'value',
                   exclude: true,
                   data: ({ item }) => {
                     // Rely on the section's `if` for the key.
@@ -329,14 +329,14 @@ export const articles = createWidgetView<ArticleItem>(
               collapsed: true,
               fields: {
                 slug: {
-                  type: 'computed',
+                  type: 'value',
                   computeValue: ({ item }) => (
                     item.title?.toLowerCase().replaceAll(' ', '-') ?? null
                   )
                 },
                 // Resolved asynchronously from a data schema.
                 titleLength: {
-                  type: 'computed',
+                  type: 'value',
                   data: ({ item }) => {
                     const { title } = item
                     return async () => title?.length ?? null

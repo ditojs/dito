@@ -21,7 +21,7 @@ vi.mock('./schema/setup.js', () => ({ setupForm: async form => form }))
 defineType({ type: 'text' })
 defineType({ ...optionsTraits, type: 'select' })
 defineType({
-  type: 'computed',
+  type: 'value',
   defaultValue: undefined,
   resolvesValue: true
 })
@@ -59,7 +59,7 @@ function createDataModel(schema, data, options) {
 }
 
 const slug = {
-  type: 'computed',
+  type: 'value',
   computeValue: ({ item }) => item.title?.toLowerCase().replaceAll(' ', '-')
 }
 
@@ -145,7 +145,7 @@ describe('DataModel', () => {
       fields: {
         price: { type: 'text' },
         orderedPrice: {
-          type: 'computed',
+          type: 'value',
           computeValue: ({ item }) => item.orderedPrice ?? item.price
         }
       }
@@ -266,7 +266,7 @@ describe('DataModel', () => {
     )
     const schema = {
       type: 'form',
-      fields: { names: { type: 'computed', computeValue } }
+      fields: { names: { type: 'value', computeValue } }
     }
     const { dataModel, data } = createDataModel(schema, {
       authors: [{ name: 'Jane' }]
@@ -328,7 +328,7 @@ describe('DataModel', () => {
               name: { type: 'text' },
               volume: { type: 'text', default: 0 },
               // Buttons have no value, and don't get a key in the items:
-              play: { type: 'computed' }
+              play: { type: 'value' }
             }
           }
         }
@@ -556,7 +556,7 @@ describe('DataModel', () => {
     it('writes their computed values', async () => {
       const schema = getSchema(({ item }) => ({
         upper: {
-          type: 'computed',
+          type: 'value',
           computeValue: () => item.title.toUpperCase()
         }
       }))
@@ -601,12 +601,12 @@ describe('DataModel', () => {
       fields: {
         title: { type: 'text' },
         upper: {
-          type: 'computed',
+          type: 'value',
           data: ({ item }) => item.title.toUpperCase()
         },
-        copy: { type: 'computed', dataPath: 'title' },
+        copy: { type: 'value', dataPath: 'title' },
         length: {
-          type: 'computed',
+          type: 'value',
           data: ({ item }) => {
             const { title } = item
             return async () => title.length
@@ -635,7 +635,7 @@ describe('DataModel', () => {
       fields: {
         title: { type: 'text' },
         loaded: {
-          type: 'computed',
+          type: 'value',
           data: ({ item }) => {
             const { title } = item
             return new Promise(resolve => resolvers.push(() => resolve(title)))
@@ -1539,7 +1539,7 @@ describe('DataModel', () => {
           fields: {
             title: { type: 'text' },
             label: {
-              type: 'computed',
+              type: 'value',
               data: ({ item }) => item.title.toUpperCase()
             }
           }
@@ -1629,7 +1629,7 @@ describe('DataModel', () => {
               nested: true,
               fields: {
                 chapter: {
-                  type: 'computed',
+                  type: 'value',
                   computeValue: ({ parentItem }) => parentItem
                 }
               }
@@ -1983,7 +1983,7 @@ describe('DataModel', () => {
             nested: true,
             fields: {
               book: {
-                type: 'computed',
+                type: 'value',
                 computeValue: ({ parentItem }) => parentItem
               }
             }
@@ -2254,7 +2254,7 @@ describe('DataModel', () => {
         type: 'form',
         fields: {
           preview: {
-            type: 'computed',
+            type: 'value',
             data: () => () =>
               new Promise(resolve =>
                 setTimeout(() => resolve('Loaded'), 60_000)
@@ -2518,7 +2518,7 @@ describe('DataModel', () => {
                 title: { type: 'text' },
                 slug,
                 summary: {
-                  type: 'computed',
+                  type: 'value',
                   data: () => () => new Promise(resolve => loads.push(resolve))
                 }
               }

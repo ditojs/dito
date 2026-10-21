@@ -239,9 +239,7 @@ one function.
 
 Two actions of the same type with the same identifier throw when the
 controller is set up, e.g. `'get :token'` and `'get token'`: change the route
-of one of them. Keys with the action's key instead of its identifier, e.g.
-`'before:member:get tech-doc-:format'`, keep working until 5.0, with a
-deprecation warning.
+of one of them.
 
 - `before:` hooks receive `(ctx, ...args)`, the arguments of the handler
   after `ctx` (none for the default actions), and run after authorization.
@@ -1133,5 +1131,3 @@ type HttpMethod =
 
 The methods of action names and routes, lowercase. At runtime, every method
 that Node.js supports is accepted.
-
-`HTTPMethod` is a deprecated alias of `HttpMethod`.

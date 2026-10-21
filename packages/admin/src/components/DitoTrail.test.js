@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import { html } from '@ditojs/utils'
 import { mountAdmin, mountForm } from '../test/mount.js'
 
 describe('DitoTrail', () => {
@@ -94,7 +95,7 @@ describe('DitoTrail', () => {
     expect(trail.find('i').exists()).toBe(false)
   })
 
-  it('shows the text of `{ html }` form labels', async () => {
+  it('shows the text of `html` form labels', async () => {
     const { admin } = await mountForm({
       schema: {
         fields: {
@@ -102,7 +103,7 @@ describe('DitoTrail', () => {
             type: 'list',
             form: {
               type: 'form',
-              label: { html: '<b>Chapter</b>' },
+              label: html`<b>Chapter</b>`,
               fields: { title: { type: 'text' } }
             }
           }

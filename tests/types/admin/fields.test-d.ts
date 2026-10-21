@@ -76,18 +76,4 @@ describe('fields and field', () => {
       }
     })
   })
-
-  it('keeps accepting the deprecated components and component', () => {
-    const components: Fields<Entry> = { title: { type: 'text' } }
-    assertType<View<Entry>>({ type: 'view', components })
-    assertType<View<Entry>>({
-      type: 'view',
-      component: { type: 'list', form: { type: 'form', components } }
-    })
-    assertType<FormSchema<Entry>>({ type: 'form', components })
-    assertType<SectionSchema<Entry>>({ type: 'section', components })
-    assertType<PanelSchema<Entry>>({ type: 'panel', components })
-    const context = {} as SchemaContext<Entry>
-    assertType(context.showDialog({ components, buttons: { cancel: {} } }))
-  })
 })

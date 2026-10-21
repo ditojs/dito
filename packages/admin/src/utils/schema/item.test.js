@@ -91,14 +91,6 @@ describe('getItemLabel()', () => {
     )
   })
 
-  it('keeps the HTML that `itemLabel()` returns as deprecated `{ html }`', () => {
-    const schema = {
-      type: 'list',
-      itemLabel: ({ item }) => ({ html: `<b>${item.id}</b>` })
-    }
-    expect(getLabel(schema, books[0], { extended: true })).toBe('<b>7</b>')
-  })
-
   it('extends `html` form labels with escaped values', () => {
     const schema = { type: 'list', itemLabel: 'title' }
     expect(

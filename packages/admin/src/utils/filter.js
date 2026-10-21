@@ -9,7 +9,7 @@ import {
 } from '@ditojs/utils'
 import { getText } from './html.js'
 import { getNamedSchemas } from './schema/lookup.js'
-import { applyNestedSchemaDefaults, renameSchemaKey } from './schema/setup.js'
+import { applyNestedSchemaDefaults } from './schema/setup.js'
 import { deserializeData } from './schema/data.js'
 
 export const filterComponents = {
@@ -146,8 +146,6 @@ function getFilterName(dataName) {
 function createFiltersComponents(filters) {
   const comps = {}
   for (const filter of Object.values(getNamedSchemas(filters) || {})) {
-    // Filters aren't schemas, so they don't pass `applySchemaDefaults()`:
-    renameSchemaKey(filter, 'fields')
     // Use the properties of default filters as the base of `form` too, so
     // things like `label` can be changed:
     const { filter: type, width, ...form } = filter

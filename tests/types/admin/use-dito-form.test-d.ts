@@ -14,7 +14,7 @@ import {
   DitoUploadField,
   DitoCustomField
 } from '@ditojs/admin'
-import type { DitoContext } from '@ditojs/admin'
+import type { SchemaContext } from '@ditojs/admin'
 
 type Product = { id: number; name: string; price: number }
 
@@ -32,7 +32,7 @@ describe('useDitoForm()', () => {
         expectTypeOf(item).toEqualTypeOf<Product>()
       }
     })
-    expectTypeOf(form).toEqualTypeOf<DitoContext<Product>>()
+    expectTypeOf(form).toEqualTypeOf<SchemaContext<Product>>()
     expectTypeOf(form.isDirty).toEqualTypeOf<boolean>()
   })
 

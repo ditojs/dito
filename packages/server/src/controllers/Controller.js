@@ -31,7 +31,6 @@ import {
   asArray,
   equals,
   hyphenate,
-  deprecate,
   parseDataPath,
   normalizeDataPath
 } from '@ditojs/utils'
@@ -66,27 +65,14 @@ export class Controller {
     // that the base class callbacks are run first.
     const chain = getInheritanceChain(hooks).reverse()
     const keys = Object.keys(Object.assign({}, hooks, ...chain))
-    // Map the deprecated events that name actions by their keys to their
-    // identifiers, e.g. 'before:actions:get :id/tech-doc-:format' to
-    // 'before:actions:get-id-tech-doc-format'. Remove in 5.0.
-    const getEvent = event => {
-      const [prefix, type, ...parts] = event.split(':')
-      const key = parts.join(':')
-      if (key.includes(' ')) {
-        const mapped = `${prefix}:${getIdentifier(type, key)}`
-        deprecate(`Hook '${event}' is deprecated, use '${mapped}' instead.`)
-        return mapped
-      }
-      return event
-    }
     const events = {}
     for (const key of keys) {
       const callbacks = chain
         .map(hooks => (hooks.hasOwnProperty(key) ? hooks[key] : null))
         .filter(Boolean)
       for (const part of key.split(',')) {
-        // Deprecated events can map to the same event as others, so merge:
-        const event = getEvent(part.trim())
+        // Keys can list events that other keys name too, so merge:
+        const event = part.trim()
         events[event] = [...(events[event] ?? []), ...callbacks]
       }
     }

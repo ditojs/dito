@@ -48,19 +48,6 @@ describe('FormSchema assignability', () => {
     assertType<ResolvableForm<Entry>>(importForm)
   })
 
-  it('accepts the deprecated `events` with typed item', () => {
-    assertType<FormSchema<Entry>>({
-      type: 'form',
-      events: {
-        error({ item, error }) {
-          expectTypeOf(item).not.toBeAny()
-          expectTypeOf(item.title).toBeString()
-          expectTypeOf(error).toBeUnknown()
-        }
-      }
-    })
-  })
-
   it('accepts onSuccess with isCreating', () => {
     assertType<FormSchema<Entry>>({
       type: 'form',

@@ -60,18 +60,6 @@ describe('DitoNotifications', () => {
     expect(console.error).toHaveBeenCalledWith('Emma was saved.\nLine\nbreak')
   })
 
-  it('renders the paragraphs of deprecated `html` as HTML', async () => {
-    const notifications = await mountNotifications()
-    notifications.notify({ html: ['<b>Emma</b> was saved.', false] })
-    await flushPromises()
-    const [notification] = findNotifications()
-    expect(notification.querySelector('p b').textContent).toBe('Emma')
-    expect(notification.querySelectorAll('p')).toHaveLength(1)
-    expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining('`{ html }` is deprecated')
-    )
-  })
-
   it('warns when `text` seems to contain HTML markup', async () => {
     const notifications = await mountNotifications()
     notifications.notify({ text: '<a href="/books/1">Book created</a>' })

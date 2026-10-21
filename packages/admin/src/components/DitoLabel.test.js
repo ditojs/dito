@@ -1,4 +1,3 @@
-import { vi } from 'vitest'
 import { html } from '@ditojs/utils'
 import { mountSchema } from '../test/mount.js'
 
@@ -21,17 +20,6 @@ describe('DitoLabel', () => {
     const label = await mountLabel(html`<b>Title</b> &amp; ${'<more>'}`)
     expect(label.find('label b').text()).toBe('Title')
     expect(label.find('label').text()).toBe('Title & <more>')
-  })
-
-  it('renders the HTML of deprecated `{ html }` labels, with a warning', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const label = await mountLabel({ html: '<b>Title</b> &amp; more' })
-    expect(label.find('label b').text()).toBe('Title')
-    expect(label.find('label').text()).toBe('Title & more')
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('`{ html }` is deprecated')
-    )
-    warn.mockRestore()
   })
 
   it('renders the HTML of `html` labels with affixes', async () => {

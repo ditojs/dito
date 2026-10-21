@@ -41,7 +41,7 @@ export const books = createWidgetView<Book>(
           // Edited in the form, but not stored on the server.
           note: { type: 'text', label: 'Note', exclude: true },
           // Not edited, but stored with the chapter.
-          pageCount: { type: 'hidden' },
+          pageCount: { type: 'value' },
           // Related objects are stored as references, but displayed with
           // their data, e.g. in the list's column.
           author: {

@@ -259,13 +259,13 @@ describe('SerializedModel', () => {
     type StreamCheck = SerializedModel<StreamCheckModel>
     const view: View<StreamCheck> = {
       type: 'view',
-      components: {
+      fields: {
         result: { type: 'text' }
       },
       panels: {
         info: {
           type: 'panel',
-          components: {
+          fields: {
             src: { type: 'text' }
           }
         }

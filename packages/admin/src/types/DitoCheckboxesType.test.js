@@ -1,3 +1,4 @@
+import { html } from '@ditojs/utils'
 import {
   mountSchema,
   mountForm,
@@ -237,7 +238,7 @@ describe('DitoCheckboxesType', () => {
         fields: {
           genres: {
             type: 'checkboxes',
-            label: { html: '<b>Genres</b> &amp; forms' },
+            label: html`<b>Genres</b> &amp; forms`,
             options: genres
           }
         }

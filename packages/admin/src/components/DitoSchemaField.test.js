@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { h, resolveComponent } from 'vue'
+import { h } from 'vue'
 import {
   mountAdmin,
   mountSchema,
@@ -276,32 +276,6 @@ describe('DitoSchemaField', () => {
     })
     expect(await submit()).toBe(null)
     expect(document.activeElement).toBe(findField('note').find('input').element)
-  })
-
-  it('keeps the deprecated name `DitoField` as global component', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const Layout = {
-      props: { schema: Object, context: Object },
-      render: () => h(resolveComponent('DitoField'), { name: 'title' })
-    }
-    const { wrapper } = await mountSchema({
-      schema: {
-        fields: {
-          details: {
-            type: 'section',
-            component: Layout,
-            fields: { title: { type: 'text', label: 'Title' } }
-          }
-        }
-      },
-      data: { title: 'Emma' }
-    })
-    expect(wrapper.find('.dito-section .dito-label').text()).toBe('Title')
-    expect(wrapper.find('.dito-section input').element.value).toBe('Emma')
-    expect(warn).toHaveBeenCalledWith(
-      '`DitoField` is deprecated, use `DitoSchemaField` instead.'
-    )
-    warn.mockRestore()
   })
 
   it.each([

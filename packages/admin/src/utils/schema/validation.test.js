@@ -49,18 +49,6 @@ describe('getValidations()', () => {
     })
   })
 
-  it('removes validations that the deprecated rules turn off', () => {
-    expect(
-      getValidations({
-        schema: {
-          type: 'password',
-          required: true,
-          rules: { password: false, required: undefined }
-        }
-      })
-    ).toEqual({})
-  })
-
   it('adds the limits of strings and arrays, also as callbacks', () => {
     expect(
       getValidations({
@@ -85,11 +73,6 @@ describe('getValidations()', () => {
     expect(
       getValidations({ schema: { type: 'list', required: true, minItems: 3 } })
     ).toEqual({ required: true, minItems: 3 })
-    expect(
-      getValidations({
-        schema: { type: 'list', required: true, rules: { required: false } }
-      })
-    ).toEqual({})
     // Objects hold no arrays:
     expect(
       getValidations({ schema: { type: 'object', required: true } })

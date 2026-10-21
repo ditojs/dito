@@ -1,3 +1,4 @@
+import { html } from '@ditojs/utils'
 import { mountForm } from '../test/mount.js'
 
 const schema = {
@@ -112,7 +113,7 @@ describe('DitoTabs', () => {
           },
           notes: {
             type: 'tab',
-            label: { html: '<b>Notes</b>' },
+            label: html`<b>Notes</b>`,
             fields: { notes: { type: 'text' } }
           }
         }

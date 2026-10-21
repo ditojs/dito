@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { toRaw } from 'vue'
 import { flushPromises } from '@vue/test-utils'
-import { hyphenate } from '@ditojs/utils'
+import { hyphenate, html } from '@ditojs/utils'
 import { setupView } from '../utils/schema/setup.js'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 import DitoSectionType from './DitoSectionType.vue'
@@ -144,13 +144,13 @@ describe('DitoSectionType', () => {
     expect(section.attributes('aria-label')).toBe('Details')
   })
 
-  it('labels its region with the text of `{ html }` labels', async () => {
+  it('labels its region with the text of `html` labels', async () => {
     const { findField } = await mountSchema({
       schema: {
         fields: {
           details: {
             type: 'section',
-            label: { html: '<b>Details</b> &amp; notes' },
+            label: html`<b>Details</b> &amp; notes`,
             fields: { title: { type: 'text' } }
           }
         }

@@ -130,7 +130,6 @@ inputs and selects, `clearable` to inputs that can be cleared.
 | `class` | `string \| Record<string, boolean>` | | CSS classes added to the field's container. |
 | `onFocus` | `ItemEventHandler` | | Called when the input receives focus. |
 | `onBlur` | `ItemEventHandler` | | Called when the input loses focus. The value is validated first. |
-| `events` | `object` | | Deprecated, see [Events](./events.md#deprecated-events). |
 
 ```js
 price: {
@@ -190,25 +189,17 @@ author: { type: 'text', info: ({ item }) => html`By <b>${item.author}</b>` }
 ```
 
 Where labels show as text, e.g. in tabs, the menu, the trail, column headers
-and accessible names, `html` shows its text without the tags. `{ html }`
-objects with HTML strings still render as HTML until 6.0, but are deprecated
-and log a warning. Prettier formats `html` templates as HTML by default,
+and accessible names, `html` shows its text without the tags. Prettier formats `html` templates as HTML by default,
 which changes their whitespace, so apps that use them may want to set
 `embeddedLanguageFormatting: 'off'` for their JavaScript and TypeScript files.
 
 ### Removed keys
 
-Keys that 4.0 removed, e.g. `format` (except on dates and colors), `compute`,
-`methods`, `watch` or `relateBy`, throw when a schema still uses them, naming
-the replacement. The [upgrade guide](../../upgrading-to-4.x.md#admin-schemas)
-lists them all.
-
-### Renamed keys
-
-`fields`, also of custom filters, and the `field` of views were named
-`components` and `component` before 5.2. The old names still work, but are
-deprecated and log a warning. Setup renames them, so code that reads them from
-schemas after setup needs to read `fields` and `field`.
+Keys that 4.0 and 6.0 removed, e.g. `format` (except on dates and colors),
+`compute`, `methods`, `watch`, `relateBy`, `components`, `rules` or `events`,
+throw when a schema still uses them, naming the replacement. The upgrade guides
+to [4.x](../../upgrading-to-4.x.md#admin-schemas) and
+[6.x](../../upgrading-to-6.x.md#admin) list them all.
 
 ## RouteSchemaBase
 
@@ -355,8 +346,8 @@ summary: { type: 'textarea', lines: 6, maxLength: 1000 }
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
 | `type` | `'number' \| 'integer'` | | Required. |
-| `minimum` | `SchemaValue<number>` | `range[0]` | The minimum value. `min` is a deprecated alias until 6.0. |
-| `maximum` | `SchemaValue<number>` | `range[1]` | The maximum value. `max` is a deprecated alias until 6.0. |
+| `minimum` | `SchemaValue<number>` | `range[0]` | The minimum value. |
+| `maximum` | `SchemaValue<number>` | `range[1]` | The maximum value. |
 | `range` | `SchemaValue<[number, number]>` | | The minimum and maximum value. |
 | `step` | `SchemaValue<number>` | | The step of the input. Without `decimals`, a whole step validates whole numbers, a fractional one its decimals. |
 | `decimals` | `SchemaValue<number>` | | The maximum number of decimals. |
@@ -557,10 +548,6 @@ samplePages: {
 `dataPath`. It is invisible by default; `visible: true` shows the value in a
 read-only input. Values are part of the data and sent to the server, unless
 `exclude: true`.
-
-`computed`, `data` and `hidden` are deprecated names of `value`, with the
-deprecated schema types `ComputedSchema`, `DataSchema` and `HiddenSchema`.
-They keep working until 5.0, with a warning when their schemas are set up.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |

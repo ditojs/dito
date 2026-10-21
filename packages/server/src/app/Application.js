@@ -30,8 +30,7 @@ import {
   normalizeDataPath,
   groupBy,
   mapConcurrently,
-  toPromiseCallback,
-  deprecate
+  toPromiseCallback
 } from '@ditojs/utils'
 import { Validator } from './Validator.js'
 import { EventEmitter } from '../lib/index.js'
@@ -547,13 +546,6 @@ export class Application extends Koa {
 
   compileDitoSchema(schema, options) {
     return this.compileJsonSchema(convertSchema(schema, options), options)
-  }
-
-  compileValidator(jsonSchema, options) {
-    deprecate(
-      'compileValidator() is deprecated, use compileJsonSchema() instead.'
-    )
-    return this.compileJsonSchema(jsonSchema, options)
   }
 
   compileParametersValidator(parameters, options = {}) {

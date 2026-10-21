@@ -6,7 +6,3 @@
 ### Behaviour changes
 
 - **admin:** The strings that `render()` of columns, lists, objects and uploads returns, and the messages of `confirm()`, `prompt()` and `alert()`, show as text, escaped, so data in them can't inject HTML. Before, they were rendered as HTML. Callbacks that return HTML need to create it with `html` of `@ditojs/utils`, e.g. ``render: ({ value }) => html`<b>${value}</b>` ``.
-
-### Deprecations
-
-- **admin:** `{ html }` objects in labels, item labels, info, affixes and `render()` results, `type: 'html'` affixes and the `html` option of `notify()` are deprecated until 6.0. They keep rendering their strings as HTML and log a deprecation warning. Use the `html` template instead, e.g. as `text` of label objects, affixes and `notify()`.

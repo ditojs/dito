@@ -13,25 +13,14 @@ import { walkData } from './walk.js'
 
 export function getValidations(context) {
   const { schema } = context
-  const { rules, validate } = schema
+  const { validate } = schema
   const validations = {
     ...getTypeDescriptor(schema)?.getValidations?.(context),
-    // The deprecated `schema.rules` change the data keywords they name too,
-    // e.g. the item that `required` asks of lists:
-    ...getDataKeywords(rules ? { ...schema, ...rules } : schema, context)
+    ...getDataKeywords(schema, context)
   }
   if (validate) {
     // Pass the validated value, after `formatValue()` like the components:
     validations.validate = value => validate(context.extend({ value }))
-  }
-  // The deprecated `schema.rules` override and add validations, `false` and
-  // `undefined` remove them:
-  for (const [name, setting] of Object.entries(rules || {})) {
-    if (setting === undefined || setting === false) {
-      delete validations[name]
-    } else {
-      validations[name] = setting
-    }
   }
   return validations
 }
@@ -65,7 +54,7 @@ export function getValueValidationErrors(value, validations) {
 
 const warnedUnknownValidatorNames = new Set()
 
-// Warn once per name about unknown validators, e.g. misspelled `schema.rules`:
+// Warn once per name about unknown validators:
 function getValidator(name) {
   // eslint-disable-next-line import/namespace
   const validator = validators[name] ?? null

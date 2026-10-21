@@ -344,7 +344,7 @@ export class DitoFilterPanel {
   }
 
   async fillFilter(label: string, value: string) {
-    // Filters use a `components: { ... }` wrapping schema, so the rendered
+    // Filters use a `fields: { ... }` wrapping schema, so the rendered
     // `<label for="…">` points at the outer wrapper div, not the input.
     // Match by role + accessible name (resolves through placeholder/title)
     // for a stable target.
