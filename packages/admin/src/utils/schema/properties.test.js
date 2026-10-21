@@ -593,6 +593,39 @@ describe('getFormProperties()', () => {
         })
       ).toEqual({})
     })
+
+    it('skips sources with resource callbacks', async () => {
+      expect(
+        await getProperties({
+          reviews: { type: 'list', resource: () => 'reviews', form },
+          publisher: { type: 'object', resource: () => 'publishers', form }
+        })
+      ).toEqual({})
+    })
+
+    it('skips sources with resource callbacks in their own forms', async () => {
+      // Pages that list their child pages, loaded by their own resource:
+      const page = {
+        type: 'form',
+        fields: {
+          title: { type: 'text' },
+          children: {
+            type: 'list',
+            form: () => page,
+            resource: ({ item }) => `pages/${item.id}/children`
+          }
+        }
+      }
+      expect(
+        await getProperties({ page: { type: 'object', form: page } })
+      ).toEqual({
+        page: {
+          type: 'object',
+          properties: { title: { type: 'string', nullable: true } },
+          nullable: true
+        }
+      })
+    })
   })
 
   it('leaves out the data keywords with callbacks', async () => {

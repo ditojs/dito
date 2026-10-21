@@ -52,9 +52,10 @@ export const sourceTraits = {
   // Exclude all sources that have their own resource handling the data.
   defaultExclude: ({ schema }: Context) => !!schema.resource,
 
-  // The items of sources with their own resource aren't part of the data:
+  // The items of sources with their own resource aren't part of the data,
+  // also when a callback returns the resource:
   getProperty(schema: Schema, context: Context, field: Schema) {
-    if (schema.resource) {
+    if (field.resource) {
       return null
     } else {
       const item = getItemProperty(field, context)
