@@ -157,13 +157,11 @@ function createFiltersComponents(filters) {
     if (fields) {
       form.type = 'form'
       form.fields = {}
-      // Convert labels to placeholders, which are text. Filters without values
-      // don't apply, see `formatFiltersData()`, so their fields are `nullable`:
+      // Convert labels to placeholders, which are text:
       for (const [key, component] of Object.entries(fields)) {
         if (component) {
           const { label } = component
           form.fields[key] = {
-            nullable: true,
             ...component,
             label: false,
             placeholder: isObject(label)

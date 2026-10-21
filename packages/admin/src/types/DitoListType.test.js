@@ -123,7 +123,7 @@ describe('DitoListType', () => {
       expect(button.text()).toBe('Add Ingredient')
       await button.trigger('click')
       await flushPromises()
-      expect(data.ingredients).toEqual([{ name: '', amount: 1 }])
+      expect(data.ingredients).toEqual([{ name: null, amount: 1 }])
       await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
     })
 
@@ -198,7 +198,7 @@ describe('DitoListType', () => {
         .find('.dito-create-button button')
         .trigger('click')
       await flushPromises()
-      expect(data.ingredients).toEqual([{ name: '', amount: 1 }])
+      expect(data.ingredients).toEqual([{ name: null, amount: 1 }])
       expect(dataModel.isEdited).toBe(true)
     })
 
@@ -489,7 +489,7 @@ describe('DitoListType', () => {
           .filter(schema => schema.inlined && schema.opened)
           .map(schema => schema.data.name)
           .sort()
-      expect(getOpenedNames()).toEqual(['', 'Salt'])
+      expect(getOpenedNames()).toEqual(['Salt', null])
       expect(getItemNames(findField('ingredients'))).toEqual(['', 'Salt'])
     })
 
@@ -645,7 +645,7 @@ describe('DitoListType', () => {
       expect(items.map(item => item.text())).toEqual(['Heading', 'Image'])
       await items[1].trigger('click')
       await flushPromises()
-      expect(data.blocks).toEqual([{ type: 'image', url: '' }])
+      expect(data.blocks).toEqual([{ type: 'image', url: null }])
     })
 
     it('inserts items of all forms through the buttons of an item', async () => {

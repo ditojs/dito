@@ -678,7 +678,7 @@ describe('the contexts of components', () => {
       expect(data).toMatchObject({ color: 'blue', details: { color: 'green' } })
       expect(routeComponent.dataContext.model.serializedData.value).toEqual({
         title: 'Emma',
-        summary: '',
+        summary: null,
         details: { color: 'green' },
         info: { note: 'Info' }
       })

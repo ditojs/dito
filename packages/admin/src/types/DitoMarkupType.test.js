@@ -118,26 +118,36 @@ describe('DitoMarkupType', () => {
     await vi.waitFor(() => expect(data.caption).toBe('<strong>Emma</strong>'))
   })
 
-  it('stores empty documents as empty strings, and as `null` with `nullable`', async () => {
-    const { getComponent, submit } = await mountForm({
+  it('stores empty documents as `null`', async () => {
+    const { getComponent, data, settle } = await mountSchema({
       schema: {
         fields: {
           body: { type: 'markup', nodes: { heading: [1] } },
-          caption: { type: 'markup', hardBreak: true },
-          note: { type: 'markup', nullable: true }
+          caption: { type: 'markup', hardBreak: true }
         }
       },
-      data: { body: '<h1>Emma</h1>', caption: 'Emma', note: '<p>Read</p>' },
+      data: { body: '<h1>Emma</h1>', caption: 'Emma' }
+    })
+    getComponent('body').editor.commands.clearContent(true)
+    getComponent('caption').editor.commands.clearContent(true)
+    await settle()
+    expect(data).toMatchObject({ body: null, caption: null })
+  })
+
+  it('stores empty documents as empty strings with `nullable: false`', async () => {
+    const { getComponent, data, submit } = await mountForm({
+      schema: {
+        fields: {
+          body: { type: 'markup', nullable: false },
+          note: { type: 'markup', nullable: false }
+        }
+      },
+      data: { body: '<p>Emma</p>' },
       request: ({ data }) => ({ data })
     })
-    for (const name of ['body', 'caption', 'note']) {
-      getComponent(name).editor.commands.clearContent(true)
-    }
-    expect(await submit()).toMatchObject({
-      body: '',
-      caption: '',
-      note: null
-    })
+    expect(data.note).toBe('')
+    getComponent('body').editor.commands.clearContent(true)
+    expect(await submit()).toMatchObject({ body: '', note: '' })
   })
 
   it('updates the editor after edits that leave it empty', async () => {
@@ -149,7 +159,7 @@ describe('DitoMarkupType', () => {
     const { editor } = getComponent('body')
     editor.commands.toggleHeading({ level: 1 })
     await settle()
-    expect(data.body).toBe('')
+    expect(data.body).toBe(null)
     data.body = '<h1>Emma</h1>'
     await settle()
     expect(editor.getHTML()).toBe('<h1>Emma</h1>')

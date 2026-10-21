@@ -53,7 +53,7 @@ describe('DitoObjectType', () => {
     expect(field.find('input').exists()).toBe(false)
     await field.find('.dito-create-button button').trigger('click')
     await flushPromises()
-    expect(data.address).toEqual({ street: '', city: 'Basel' })
+    expect(data.address).toEqual({ street: null, city: 'Basel' })
     expect(findField('address').find('.dito-create-button').exists()).toBe(
       false
     )

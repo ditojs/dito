@@ -256,7 +256,7 @@ function addHook(schema, key, hook) {
 
 // The catalogue as it is serialized:
 const serializedCatalogue = {
-  title: '',
+  title: null,
   showPrices: true,
   summaryNote: 'Too long',
   notes: 'Too long',
@@ -269,7 +269,7 @@ const serializedCatalogue = {
       items: [
         {
           type: 'book',
-          name: '',
+          name: null,
           pages: 0,
           onSale: true,
           price: null,
@@ -277,7 +277,7 @@ const serializedCatalogue = {
             { title: 'x'.repeat(30), length: 1 },
             { title: 'Two', length: 1 }
           ],
-          tags: ['a', ''],
+          tags: ['a', null],
           blurb: 'Much too long'
         },
         {
@@ -288,13 +288,13 @@ const serializedCatalogue = {
           price: null,
           chapters: [],
           tags: [],
-          summary: ''
+          summary: null
         }
       ]
     },
     {
-      name: '',
-      code: '',
+      name: null,
+      code: null,
       discount: null,
       currency: null,
       items: [
@@ -468,11 +468,11 @@ describe('initializeData()', () => {
       price: null,
       chapters: [],
       tags: [],
-      summary: ''
+      summary: null
     })
     expect(records).toEqual({
       name: '',
-      code: '',
+      code: null,
       discount: null,
       currency: null,
       items: [
@@ -488,7 +488,7 @@ describe('initializeData()', () => {
     // Passwords keep their missing value, sources with their own resource get
     // the defaults of their items unless they're skipped:
     expect('secret' in data).toBe(false)
-    expect(data.vendors).toEqual([{ name: '' }])
+    expect(data.vendors).toEqual([{ name: null }])
     const skipped = initializeData(form, createCatalogue(), services, {
       shouldSkipSourcesWithResource: true
     })
@@ -1272,11 +1272,11 @@ describe('DataModel', () => {
     data.vendors.push({})
     await nextTick()
     expect(books.items[0].chapters[1]).toEqual({ title: 'Two', length: 1 })
-    expect(data.notes).toBe('')
+    expect(data.notes).toBe(null)
     expect(records.items[1]).toEqual({
       type: 'record',
       name: 'New',
-      email: '',
+      email: null,
       format: 'lp',
       tracks: []
     })

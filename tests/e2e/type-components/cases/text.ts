@@ -19,17 +19,17 @@ export default [
       shown: 'Hi'
     },
     {
-      title: 'stores an empty string for an empty value',
-      seed: 'Seeded',
-      value: '',
-      stored: ''
-    },
-    {
-      title: 'stores null for an empty value with nullable',
-      schema: { nullable: true },
+      title: 'stores null for an empty value',
       seed: 'Seeded',
       value: '',
       stored: null
+    },
+    {
+      title: 'stores an empty string for an empty value with nullable: false',
+      schema: { nullable: false },
+      seed: 'Seeded',
+      value: '',
+      stored: ''
     }
   ]),
   defineCases('email', string, [

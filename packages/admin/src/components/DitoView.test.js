@@ -21,7 +21,7 @@ describe('DitoView', () => {
     const view = admin.getRouteComponent(isView)
     expect(view).not.toBe(booksView)
     // The new view sets up its data with the defaults again:
-    expect(view.data.title).toBe('')
+    expect(view.data.title).toBe(null)
   })
 
   it('stays busy until all of its lists are loaded', async () => {
