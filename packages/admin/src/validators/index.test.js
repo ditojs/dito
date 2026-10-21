@@ -23,6 +23,7 @@ describe('validators', () => {
       'enum',
       'hostname',
       'integer',
+      'isoTime',
       'maxItems',
       'maxLength',
       'maximum',
@@ -123,11 +124,17 @@ describe('validators', () => {
         'is not a host name'
       ],
       ['domain', 'example.com', 'example', 'is not a domain'],
-      ['creditcard', '4111111111111111', '4111111111111112', 'is invalid']
+      ['creditcard', '4111111111111111', '4111111111111112', 'is invalid'],
+      ['isoTime', '14:30:00', '14:30', 'must be a valid time']
     ])('%s accepts %o and rejects %o', (name, valid, invalid, message) => {
       expect(validate(name, valid)).toBe(true)
       expect(validate(name, invalid)).toBe(false)
       expect(getMessage(name)).toBe(message)
+    })
+
+    it('accepts the dates that time fields edit as times', () => {
+      expect(validate('isoTime', new Date(1970, 0, 1, 14, 30))).toBe(true)
+      expect(validate('isoTime', new Date(NaN))).toBe(false)
     })
 
     it('requires a scheme in URLs, as the server does', () => {

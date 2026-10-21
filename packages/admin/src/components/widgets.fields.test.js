@@ -37,6 +37,7 @@ const properties = {
   author: { type: 'object', relate: true },
   day: { type: 'date' },
   opensAt: { type: 'datetime' },
+  opensDaily: { type: 'string', format: 'iso-time' },
   meetsAt: { type: 'datetime' },
   tint: { type: 'string' },
   image: { type: 'asset', nullable: true },
@@ -63,6 +64,7 @@ const item = {
   author: { id: 1 },
   day: '2026-05-14',
   opensAt: '2026-05-14T07:30:00.000Z',
+  opensDaily: '07:30:00',
   meetsAt: '2026-05-20T12:15:00.000Z',
   tint: '#3366ff',
   image: null,
@@ -96,6 +98,7 @@ const BookPage = {
           }),
           h(DitoDateField, { name: 'day' }),
           h(DitoTimeField, { name: 'opensAt' }),
+          h(DitoTimeField, { name: 'opensDaily' }),
           h(DitoDateTimeField, { name: 'meetsAt' }),
           h(DitoColorField, { name: 'tint' }),
           h(DitoUploadField, { name: 'image', accept: 'image/*' }),
@@ -227,6 +230,32 @@ describe('widgets of values', () => {
     expect(form.validate()).toBe(false)
     expect(form.getErrors()).toEqual({
       genre: [{ message: 'must be one of the options' }]
+    })
+  })
+})
+
+describe('DitoTimeField', () => {
+  afterEach(() => {
+    form = null
+  })
+
+  it('edits times of strings as dates, and sends them as strings', async () => {
+    const { request } = await mountPage(BookPage, 'books', item)
+    const { opensDaily } = form.item
+    expect([opensDaily.getHours(), opensDaily.getMinutes()]).toEqual([7, 30])
+    form.item.opensDaily = new Date(1970, 0, 1, 18, 5, 0)
+    expect(await form.submit()).toBe(true)
+    expect(getSentData(request)).toEqual([
+      expect.objectContaining({ opensDaily: '18:05:00' })
+    ])
+  })
+
+  it('validates times of strings', async () => {
+    await mountPage(BookPage, 'books', item)
+    form.item.opensDaily = 'noon'
+    expect(form.validate()).toBe(false)
+    expect(form.getErrors()).toEqual({
+      opensDaily: [{ message: 'must be a valid time' }]
     })
   })
 })

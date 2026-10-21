@@ -86,3 +86,34 @@ describe('The differences between both sides', () => {
     expect(getValueValidationErrors('', { pattern })).toEqual([])
   })
 })
+
+// The admin's `iso-time` agrees with the format of ajv-formats on the server,
+// with its own message:
+describe('The format `iso-time` on both sides', () => {
+  const validate = validator.compile(convertSchema({ format: 'iso-time' }), {
+    throw: false
+  })
+
+  it.for([
+    '14:30:00',
+    '00:00:00',
+    '14:30:00.5',
+    '14:30:00Z',
+    '14:30:00+02:00',
+    '23:59:60Z',
+    '22:59:60-01:00',
+    '14:30',
+    '24:00:00',
+    '14:60:00',
+    '14:30:60',
+    '14:30:00+24:00',
+    '1:30:00',
+    'noon'
+  ])('agrees on %o', value => {
+    expect(
+      getValueValidationErrors(value, { isoTime: true }).length === 0
+    ).toBe(
+      validate(value)
+    )
+  })
+})
