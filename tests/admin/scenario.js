@@ -79,8 +79,12 @@ export function startPasskeysApp() {
     async setUpTotp() {
       const { secret } = await post('totp')
       const totp = new TOTP({ secret })
-      const code = totp.generate({ timestamp: Date.now() - totp.period * 1000 })
-      const { backupCodes } = await post('totp-confirm', { code })
+      const confirm = () =>
+        post('totp-confirm', {
+          code: totp.generate({ timestamp: Date.now() - totp.period * 1000 })
+        })
+      // A period that rolls over meanwhile expires the code, so we try again:
+      const { backupCodes } = await confirm().catch(confirm)
       return { totp, backupCodes }
     }
   }
