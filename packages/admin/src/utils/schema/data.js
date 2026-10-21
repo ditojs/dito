@@ -539,26 +539,23 @@ export function deserializeData(schema, data, {
   })
 }
 
-// Walk `data` along the components of `schema`, the forms of items and their
-// child sources, and call `before()` for each nested component.
+// Walk the layout of `schema` along `data`, with the component paths of its
+// components, tabs and panels, the forms of items and their child sources, and
+// call `visit()` for each nested component. Several components of the same
+// value each have their own component path.
 // NOTE: Items with an item adapter are walked wrapped, and the wrapped value
-// keeps the item's data path. The walk writes changed values back.
-export function walkSchemaData(schema, data, {
+// keeps the item's data path.
+export function walkComponentPaths(schema, data, {
   dataPath = null,
   componentPath = '',
+  services = null,
+  rootData = data,
   wrappedValueName = null,
   childSourceSchemas = [],
-  before = null,
   shouldWalk = () => true,
-  shouldSkipSourcesWithResource = false,
-  options
+  visit = null
 }) {
-  const walkOptions = {
-    before,
-    shouldWalk,
-    shouldSkipSourcesWithResource,
-    options
-  }
+  const walkOptions = { services, rootData, shouldWalk, visit }
   const getDataPath = (dataPath, token) =>
     dataPath != null
       ? appendDataPath(dataPath, token)
@@ -585,20 +582,12 @@ export function walkSchemaData(schema, data, {
         if (!shouldWalk(entry)) {
           continue
         }
-        if (
-          shouldSkipSourcesWithResource &&
-          isSourceWithResource(componentSchema)
-        ) {
-          // Their panels display the data that contains them:
-          walkTabOrPanelSchemas(componentSchema.panels, entry.componentPath)
-          continue
-        }
         if (isPanelWithOwnData(componentSchema)) {
           // The components of panels with their own data don't edit `data`.
           continue
         }
         if (!isNestedComponent) {
-          walkSchemaData(componentSchema, data, {
+          walkComponentPaths(componentSchema, data, {
             ...walkOptions,
             dataPath,
             componentPath: entry.componentPath
@@ -618,9 +607,9 @@ export function walkSchemaData(schema, data, {
                 index !== null
                   ? appendDataPath(entry.componentPath, index)
                   : entry.componentPath
-              const context = SchemaContext.createForSchema(options.services, {
+              const context = SchemaContext.createForSchema(services, {
                 ...entry,
-                rootData: options.rootData
+                rootData
               })
               const form = getItemFormSchemaFromForms(
                 getFormSchemas(componentSchema, context),
@@ -629,26 +618,18 @@ export function walkSchemaData(schema, data, {
               // Items without a matching form, e.g. of unknown types, stay as
               // they are:
               if (form) {
-                walkSchemaData(form, item, {
+                walkComponentPaths(form, item, {
                   ...walkOptions,
                   dataPath: itemDataPath,
                   componentPath: itemComponentPath,
                   wrappedValueName: itemAdapter?.name ?? null,
                   childSourceSchemas: getChildSourceSchemas(componentSchema)
                 })
-                const unwrapped = itemAdapter ? itemAdapter.unwrap(item) : value
-                if (unwrapped !== value) {
-                  if (index !== null) {
-                    data[name][index] = unwrapped
-                  } else {
-                    data[name] = unwrapped
-                  }
-                }
               }
             }
           }
 
-          before?.(entry)
+          visit?.(entry)
 
           // Only read the values of sources with forms, or tracked walks would
           // depend on all values:
@@ -697,12 +678,12 @@ export function walkSchemaData(schema, data, {
       getItemFormSchema(
         schema,
         data,
-        new SchemaContext(options.services, {
+        new SchemaContext(services, {
           schema,
           nested: false,
           data,
           dataPath,
-          rootData: options.rootData
+          rootData
         })
       ).fields
     : schema.fields
@@ -731,9 +712,11 @@ export function getComponentPathByDataPath(schema, data, dataPath, {
 } = {}) {
   let deepestEntry = { dataPath: itemDataPath, componentPath }
   if (data) {
-    walkSchemaData(schema, data, {
+    walkComponentPaths(schema, data, {
       dataPath: itemDataPath,
       componentPath,
+      services,
+      rootData,
       // Only walk the rendered components that contain the value:
       shouldWalk: entry => (
         getRelativeDataPath(dataPath, entry.dataPath) !== null &&
@@ -747,12 +730,11 @@ export function getComponentPathByDataPath(schema, data, dataPath, {
           default: true
         })
       ),
-      before: entry => {
+      visit: entry => {
         if (entry.dataPath.length > deepestEntry.dataPath.length) {
           deepestEntry = entry
         }
-      },
-      options: { services, rootData }
+      }
     })
   }
   const relativeDataPath = getRelativeDataPath(dataPath, deepestEntry.dataPath)
@@ -769,16 +751,17 @@ export function getItemDisplayValue(sourceSchema, item, name, {
   context
 }) {
   let schema = null
-  walkSchemaData(getItemFormSchema(sourceSchema, item, context), item, {
+  walkData(getItemFormSchema(sourceSchema, item, context), item, {
+    services,
+    rootData: context.rootItem,
     // Leave out the items of nested sources:
     shouldWalk: entry => !getSourceType(entry.schema),
-    before: entry => {
+    visit: ([entry]) => {
       if (entry.name === name) {
-        // Of several components of the value, the first wins:
+        // Of several fields of the value, the first wins:
         schema ??= entry.schema
       }
-    },
-    options: { services, rootData: context.rootItem }
+    }
   })
   const getDisplayValue = schema && getTypeDescriptor(schema)?.getDisplayValue
   return getDisplayValue

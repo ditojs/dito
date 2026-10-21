@@ -7,7 +7,7 @@ import {
   colorTraits
 } from '../../types/traits.ts'
 import {
-  walkSchemaData,
+  walkComponentPaths,
   getComponentPathByDataPath,
   getComputedValue,
   serializeData,
@@ -95,17 +95,16 @@ const data = {
   chapters: [{ title: 'One' }, { title: 'Two' }]
 }
 
-describe('walkSchemaData()', () => {
+describe('walkComponentPaths()', () => {
   it('passes the component paths of components, tabs and panels', () => {
     const componentPaths = {}
-    walkSchemaData(schema, data, {
+    walkComponentPaths(schema, data, {
       dataPath: '',
       componentPath: 'book',
       shouldWalk: ({ componentPath, dataPath }) => {
         componentPaths[componentPath] = dataPath
         return true
-      },
-      options: { services: null }
+      }
     })
     expect(componentPaths).toEqual({
       'book/title': 'title',
@@ -125,7 +124,7 @@ describe('walkSchemaData()', () => {
   })
 })
 
-describe('walkSchemaData() with child sources', () => {
+describe('walkComponentPaths() with child sources', () => {
   // Like trees, whose items hold their children:
   defineType({
     type: 'outline',
@@ -140,7 +139,7 @@ describe('walkSchemaData() with child sources', () => {
       form: { type: 'form', fields: { heading: { type: 'text' } } }
     }
     const componentPaths = {}
-    walkSchemaData(
+    walkComponentPaths(
       {
         type: 'form',
         fields: {
@@ -158,8 +157,7 @@ describe('walkSchemaData() with child sources', () => {
         shouldWalk: ({ componentPath, dataPath }) => {
           componentPaths[componentPath] = dataPath
           return true
-        },
-        options: { services: null }
+        }
       }
     )
     expect(componentPaths).toEqual({
@@ -176,8 +174,8 @@ describe('walkSchemaData() with child sources', () => {
       name: 'sections',
       form: { type: 'form', fields: { heading: { type: 'text' } } }
     }
-    const before = vi.fn()
-    walkSchemaData(
+    const visit = vi.fn()
+    walkComponentPaths(
       {
         type: 'form',
         fields: {
@@ -189,17 +187,17 @@ describe('walkSchemaData() with child sources', () => {
         }
       },
       { outline: [{ sections: [{ heading: 'Arrakis' }] }] },
-      { dataPath: '', before, options: { services: null } }
+      { dataPath: '', visit }
     )
-    const names = before.mock.calls.map(([{ name }]) => name)
+    const names = visit.mock.calls.map(([{ name }]) => name)
     expect(names).toEqual(['outline', 'sections', 'heading'])
   })
 })
 
-describe('walkSchemaData() with panel components', () => {
+describe('walkComponentPaths() with panel components', () => {
   it('walks the components of panel components with their data', () => {
     const componentPaths = {}
-    walkSchemaData(
+    walkComponentPaths(
       {
         type: 'form',
         fields: {
@@ -216,8 +214,7 @@ describe('walkSchemaData() with panel components', () => {
         shouldWalk: ({ componentPath, dataPath }) => {
           componentPaths[componentPath] = dataPath
           return true
-        },
-        options: { services: null }
+        }
       }
     )
     expect(componentPaths).toEqual({
@@ -227,10 +224,10 @@ describe('walkSchemaData() with panel components', () => {
   })
 })
 
-describe('walkSchemaData() with panels of nested components', () => {
+describe('walkComponentPaths() with panels of nested components', () => {
   it('walks their components with the data around the components', () => {
     const componentPaths = {}
-    walkSchemaData(
+    walkComponentPaths(
       {
         type: 'form',
         fields: {
@@ -252,8 +249,7 @@ describe('walkSchemaData() with panels of nested components', () => {
         shouldWalk: ({ componentPath, dataPath }) => {
           componentPaths[componentPath] = dataPath
           return true
-        },
-        options: { services: null }
+        }
       }
     )
     expect(componentPaths).toEqual({
@@ -264,10 +260,10 @@ describe('walkSchemaData() with panels of nested components', () => {
   })
 })
 
-describe('walkSchemaData() with panels that have their own data', () => {
+describe('walkComponentPaths() with panels that have their own data', () => {
   it(`doesn't walk their components with the data of the schema`, () => {
     const componentPaths = []
-    walkSchemaData(
+    walkComponentPaths(
       {
         type: 'form',
         fields: {
@@ -292,8 +288,7 @@ describe('walkSchemaData() with panels that have their own data', () => {
         shouldWalk: ({ componentPath }) => {
           componentPaths.push(componentPath)
           return true
-        },
-        options: { services: null }
+        }
       }
     )
     expect(componentPaths).toEqual(['search', 'filters'])
