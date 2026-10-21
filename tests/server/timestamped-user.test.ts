@@ -3,7 +3,8 @@ import {
   AuthenticationError,
   Model,
   TimestampedModel,
-  UserMixin
+  UserMixin,
+  ValidationError
 } from '@ditojs/server'
 import {
   createTestApp,
@@ -183,6 +184,16 @@ describe('UserMixin', () => {
       expect(patron.hash).toMatch(/^\$2[aby]\$10\$/)
       expect((patron as any).pin).toBeUndefined()
       expect(await patron.$verifyPassword('1234')).toBe(true)
+    })
+
+    it('rejects empty passwords', async () => {
+      expect(() =>
+        Librarian.fromJson({ email: 'c@example.com', password: '' } as any)
+      ).toThrow(ValidationError)
+      await expect(
+        alice.$query().patch({ password: '' } as any)
+      ).rejects.toThrow(ValidationError)
+      expect(await alice.$verifyPassword('open sesame')).toBe(true)
     })
 
     it('creates a new hash when setting a new password', () => {
