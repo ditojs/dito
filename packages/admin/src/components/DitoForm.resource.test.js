@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { html } from '@ditojs/utils'
 import { DOMWrapper } from '@vue/test-utils'
 import {
   mountForm,
@@ -246,7 +247,7 @@ describe('DitoForm resources', () => {
       expect(notify).toHaveBeenCalledWith({
         type: 'success',
         title: 'Successfully Created',
-        html: `Book 'Emma (1815)' was created.`
+        text: html([`Book 'Emma (1815)' was created.`])
       })
     })
 
@@ -264,7 +265,10 @@ describe('DitoForm resources', () => {
         expect.objectContaining({
           type: 'error',
           title: 'Request Error',
-          html: [`Unable to create Book 'Emma':`, 'Storage is full.']
+          text: [
+            html([`Unable to create Book 'Emma':`]),
+            html(['Storage is full.'])
+          ]
         })
       )
     })

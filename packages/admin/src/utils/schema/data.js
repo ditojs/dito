@@ -79,7 +79,7 @@ export function getSchemaValue(
   return value
 }
 
-// Labels are text or `{ text | html, prefix, suffix }` objects, which the
+// Labels are text, `html`, or `{ text, prefix, suffix }` objects, which the
 // renderers display as they are:
 export function getLabel(schema, context, name) {
   return schema

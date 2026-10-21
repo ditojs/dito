@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { h } from 'vue'
+import { html } from '@ditojs/utils'
 import { DOMWrapper, flushPromises } from '@vue/test-utils'
 import Sortable from 'sortablejs'
 import { RequestError } from '../utils/request.js'
@@ -749,6 +750,19 @@ describe('DitoListType', () => {
       expect(texts).toEqual(['1: Flour', '2: Salt'])
     })
 
+    it('shows strings of `render()` as text, and `html` as HTML', async () => {
+      const texts = await getItemTexts({
+        render: ({ item }) =>
+          item.name === 'Flour'
+            ? `<img src=x onerror="alert(1)">${item.name}`
+            : html`<b>${item.name}</b> &amp; ${'<i>'}`
+      })
+      expect(texts).toEqual([
+        '<img src=x onerror="alert(1)">Flour',
+        'Salt & <i>'
+      ])
+    })
+
     it('renders the items with their label', async () => {
       const texts = await getItemTexts({})
       expect(texts).toEqual(['Flour', 'Salt'])
@@ -1433,6 +1447,49 @@ describe('DitoListType', () => {
         ['Dune', '412 pages']
       ])
     })
+    it('shows strings of `render()` as text, and `html` as HTML', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          fields: {
+            books: {
+              type: 'list',
+              columns: {
+                title: { render: ({ value }) => `<img src=x>${value}` },
+                pages: { render: ({ value }) => html`<b>${value}</b> pages` }
+              }
+            }
+          }
+        },
+        data: { books: [{ title: 'Emma', pages: 474 }] }
+      })
+      const cells = findField('books').findAll('tbody td')
+      expect(cells[0].find('img').exists()).toBe(false)
+      expect(cells[0].text()).toBe('<img src=x>Emma')
+      expect(cells[1].find('b').text()).toBe('474')
+    })
+
+    it('renders deprecated `{ html }` of `render()` as HTML', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { findField } = await mountSchema({
+        schema: {
+          fields: {
+            books: {
+              type: 'list',
+              columns: {
+                title: { render: ({ value }) => ({ html: `<b>${value}</b>` }) }
+              }
+            }
+          }
+        },
+        data: { books: [{ title: 'Emma' }] }
+      })
+      expect(findField('books').find('tbody td b').text()).toBe('Emma')
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('`{ html }` is deprecated')
+      )
+      warn.mockRestore()
+    })
+
     it('passes the data path of the value to `render()`', async () => {
       const { findField } = await mountSchema({
         schema: {

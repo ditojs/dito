@@ -1,3 +1,4 @@
+import { html } from '@ditojs/utils'
 import type { Widget } from './models/Widget.js'
 import { createWidgetView } from '../../utils/views.js'
 import nameLayout from './components/name-layout.js'
@@ -42,7 +43,7 @@ export const widgets = createWidgetView<Widget>(
               clipboard: true,
               itemLabel: ({ item }) => ({
                 text: 'Link',
-                suffix: { html: ` — <small>${item.url}</small>` }
+                suffix: html` — <small>${item.url}</small>`
               }),
               form: {
                 type: 'form',
@@ -58,9 +59,7 @@ export const widgets = createWidgetView<Widget>(
                   // Long labels are clipped with an ellipsis:
                   parts: {
                     type: 'list',
-                    label: {
-                      html: `Parts <small>${'long '.repeat(100)}</small>`
-                    },
+                    label: html`Parts <small>${'long '.repeat(100)}</small>`,
                     inlined: true,
                     form: {
                       type: 'form',

@@ -14,10 +14,11 @@
 <script>
 import { inject } from 'vue'
 import { notify as showNotification } from '@kyvg/vue3-notification'
-import { asArray, isString, escapeHtml, stripHtml } from '@ditojs/utils'
+import { asArray, isString, escapeHtml } from '@ditojs/utils'
 import { adminContextKey } from '../utils/keys.ts'
+import { getContent, getHtml, getText } from '../utils/html.js'
 
-// Detect opening tags of formatted text passed through the escaped `text`:
+// Detect opening tags of formatted text passed as plain strings:
 function isLikelyMarkup(paragraph) {
   return (
     isString(paragraph) &&
@@ -29,8 +30,7 @@ export default {
   setup() {
     const adminContext = inject(adminContextKey)
     return {
-      // `text` is escaped, `html` is rendered as is: Only pass trusted HTML to
-      // it, and escape all values that it includes.
+      // Strings in `text` are escaped, only `html` values render as HTML:
       notify({ type = 'info', title, text, html, error, duration } = {}) {
         title ||= (
           {
@@ -41,23 +41,21 @@ export default {
           }[type] ||
           'Notification'
         )
-        const isHtml = html != null
-        // Skip empty paragraphs, like `transientNote` when it's `false`:
-        const paragraphs = asArray(isHtml ? html : text).filter(
-          paragraph => paragraph != null && paragraph !== false
-        )
-        if (!isHtml && paragraphs.some(isLikelyMarkup)) {
+        // Skip empty paragraphs, like `transientNote` when it's `false`. The
+        // deprecated `html` option holds HTML strings:
+        const paragraphs = asArray(html ?? text)
+          .filter(paragraph => paragraph != null && paragraph !== false)
+          .map(paragraph =>
+            html != null ? getContent({ html: paragraph }) : paragraph
+          )
+        if (paragraphs.some(isLikelyMarkup)) {
           console.warn(
             'notify(): `text` is escaped and seems to contain HTML markup. Use ' +
-            'the `html` option for formatted text, and escape all values that ' +
-            'it includes.'
+            'the `html` template of @ditojs/utils for formatted text.'
           )
         }
-        const htmlParagraphs = isHtml
-          ? paragraphs
-          : paragraphs.map(paragraph => escapeHtml(paragraph))
         const content = `<p>${
-          htmlParagraphs.join('</p> <p>')
+          paragraphs.map(getHtml).join('</p> <p>')
         }</p>`.replace(/\n|\r\n|\r/g, '<br>')
         const log = (
           {
@@ -71,7 +69,7 @@ export default {
         // eslint-disable-next-line no-console
         console[log](
           ...[
-            isHtml ? stripHtml(content) : paragraphs.join('\n'),
+            paragraphs.map(getText).join('\n'),
             ...(type === 'error' && error ? [error] : [])
           ]
         )

@@ -1,4 +1,5 @@
 import type { ListSchema } from '@ditojs/admin'
+import { html } from '@ditojs/utils'
 import type { Project } from './models/Project.js'
 import { createWidgetView } from '../../utils/views.js'
 
@@ -286,7 +287,7 @@ export const projects = createWidgetView<Project>(
                 item: { url?: string; text?: string }
               }) => ({
                 text: formLabel ?? '',
-                suffix: { html: ` — <small>${item.url ?? item.text}</small>` }
+                suffix: html` — <small>${item.url ?? item.text}</small>`
               }),
               forms: {
                 link: {

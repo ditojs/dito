@@ -19,7 +19,7 @@ books: {
   columns: {
     title: { sortable: true, defaultSort: 'asc' },
     author: {
-      render: ({ value }) => escapeHtml(value?.name ?? '')
+      render: ({ value }) => html`<b>${value?.name}</b>`
     },
     price: { sortable: true }
   },
@@ -36,9 +36,10 @@ filters, and keeps that query in the URL, so a reload or a shared link shows
 the same page. Its forms load, save and delete their items themselves.
 
 - `columns` lists the keys to show, or maps them to column options. `render()`
-  returns HTML, so escape item values with `escapeHtml()` from
-  `@ditojs/utils`. Without `render()`, cells show values as their types display
-  them, e.g. dates formatted.
+  returns text, or HTML created with `html` of `@ditojs/utils`, see
+  [Text and HTML](../../api/admin/schemas.md#text-and-html). Without
+  `render()`, cells show values as their types display them, e.g. dates
+  formatted.
 - `sortable` columns sort through the `order` of the query, which the server's
   model controllers understand.
 - `paginate` sets the page size. Without it, the list shows all items.
@@ -53,7 +54,7 @@ them: their changes are saved through their own requests, not with the form.
 
 `itemLabel` sets how items are named in lists without columns, delete
 confirmations and notifications. A string names the key to show, a
-callback returns text, or HTML as `{ html }`, see
+callback returns text, or HTML created with `html`, see
 [Text and HTML](../../api/admin/schemas.md#text-and-html):
 
 ```js

@@ -99,7 +99,7 @@ inputs and selects, `clearable` to inputs that can be cleared.
 | ------ | ---- | ------- | ----------- |
 | `type` | `string` | | The field type. Required. |
 | `name` | `string` | the key | The key of the value in the item. Set from the key in `fields`. |
-| `label` | `SchemaValue<TextOrHtml \| boolean \| { text? \| html?, prefix?, suffix? }>` | the labelized name | The label, see [Text and HTML](#text-and-html). `false` hides it. The object form adds [affixes](#affixes). Buttons, labels, panels, sections and spacers don't generate one. |
+| `label` | `SchemaValue<TextOrHtml \| boolean \| { text?, prefix?, suffix? }>` | the labelized name | The label, see [Text and HTML](#text-and-html). `false` hides it. The object form adds [affixes](#affixes). Buttons, labels, panels, sections and spacers don't generate one. |
 | `if` | `SchemaValue<boolean>` | `true` | Renders the field only if `true`. Values of fields that aren't rendered aren't computed. |
 | `visible` | `SchemaValue<boolean>` | `true`, `false` for `value` | Shows or hides the field. Hidden fields keep their value. |
 | `default` | `SchemaValue` | the type's default | The value used when the item lacks the key, e.g. in new items. Lists, `checkboxes` and multiselects with `multiple` also use it for `null`. |
@@ -173,18 +173,28 @@ the field.
 
 ### Text and HTML
 
-Labels, item labels and info are `TextOrHtml`: a string or `{ text }` is text
-and shows as it is, `{ html }` is HTML. Only `{ html }` renders tags, so escape
-the values that its HTML includes with `escapeHtml()` of
-[@ditojs/utils](../utils.md).
+Everything that schemas and callbacks give the admin to show is text, unless
+it's created with the [`html`](../utils.md#html) template of `@ditojs/utils`:
+labels, item labels, info, affixes, the results of `render()`, the messages of
+`confirm()`, `prompt()` and `alert()`, and the paragraphs of `notify()`.
+Strings show as they are, also when they contain tags. Only `html` renders
+tags, and it escapes the values that it includes, so data can't inject HTML.
+These options are `TextOrHtml`: a string, `html`, or `{ text }`.
 
 ```js
+import { html } from '@ditojs/utils'
+
 title: { type: 'text', label: 'Title & Subtitle' },
-isbn: { type: 'text', label: { html: '<abbr>ISBN</abbr>' } }
+isbn: { type: 'text', label: html`<abbr>ISBN</abbr>` },
+author: { type: 'text', info: ({ item }) => html`By <b>${item.author}</b>` }
 ```
 
 Where labels show as text, e.g. in tabs, the menu, the trail, column headers
-and accessible names, `{ html }` shows its text without the tags.
+and accessible names, `html` shows its text without the tags. `{ html }`
+objects with HTML strings still render as HTML until 6.0, but are deprecated
+and log a warning. Prettier formats `html` templates as HTML by default,
+which changes their whitespace, so apps that use them may want to set
+`embeddedLanguageFormatting: 'off'` for their JavaScript and TypeScript files.
 
 ### Removed keys
 
@@ -277,15 +287,14 @@ before or after the input.
 
 | Affix | Description |
 | ----- | ----------- |
-| `'text'` | A string is shown as text. |
-| `{ text, as? }` | Text, in an element of the tag `as` (default `div`). |
-| `{ html, as? }` | HTML. |
+| `'text'`, `` html`…` `` | Text or HTML, see [Text and HTML](#text-and-html). |
+| `{ text, as? }` | Text or HTML, in an element of the tag `as` (default `div`). |
 | `{ type: 'icon', name }` | An icon of [@ditojs/ui](../ui.md). |
 | `{ type: 'spinner', size?, color? }` | A loading spinner. |
 | `{ type: 'component', component, props? }` | A Vue component. |
 
 Each affix can have `if: SchemaValue<boolean>`, `class` and `style`. Objects
-with `text` or `html` don't need a `type`. Clearable fields show their clear
+with `text` don't need a `type`. Clearable fields show their clear
 button in the suffix.
 
 ```js
@@ -527,7 +536,7 @@ for running uploads, and files that failed to upload are left out.
 | `thumbnails` | `SchemaValue<boolean \| 'small' \| 'medium' \| 'large'>` | `true` when `thumbnailUrl` is set | Shows thumbnails of images, `true` meaning `'medium'`. |
 | `thumbnailUrl` | `SchemaValue<string>` | the file's `url` for images | The thumbnail URL. Receives the file as `value`. |
 | `downloadUrl` | `SchemaValue<string>` | the file's `url` | The download URL of files without a `url`. Receives the file as `value`. |
-| `render` | `SchemaValueCallback<string>` | | Returns the HTML shown for each file, instead of its name and thumbnail. Receives the file as `value`. |
+| `render` | `SchemaValueCallback<TextOrHtml>` | | Returns the text or `html` shown for each file, instead of its name and thumbnail, see [Text and HTML](#text-and-html). Receives the file as `value`. |
 | `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons for the files next to the upload button. Pasting adds the files that aren't in the field yet, or replaces the file of single uploads, and leaves out files that `extensions` and `maxSize` don't accept. Files paste into all upload fields, also of other storages, as `{ files }`. |
 
 ```js
@@ -985,8 +994,8 @@ sources share the [source options](#source-options), in addition to the
 | `deletable` | `SchemaValue<boolean>` | `false` | Adds delete buttons, which ask first. Sources with a resource delete the item through it; others remove it from the data. |
 | `draggable` | `SchemaValue<boolean>` | `false` | Lets the items of lists be reordered by dragging. |
 | `orderKey` | `string` | | The key that stores the order of dragged items. Items are numbered when loaded and when added, removed or moved. |
-| `itemLabel` | `SchemaValue<TextOrHtml \| { text? \| html?, prefix?, suffix? }> \| false` | the value of the first column, else of `name` | The label of items. A string names the item's key, or is the label itself when the item has no such key. Callbacks return text, or `{ html }`, see [Text and HTML](#text-and-html). Callbacks can also return objects with `prefix` and `suffix`, [affixes](#affixes) shown in the headers of inlined forms and in tree items. Items of lists without a label show their number. `false` shows none. |
-| `render` | `SchemaValueCallback<string>` | | Renders the HTML of items without inlined forms, instead of their label. |
+| `itemLabel` | `SchemaValue<TextOrHtml \| { text?, prefix?, suffix? }> \| false` | the value of the first column, else of `name` | The label of items. A string names the item's key, or is the label itself when the item has no such key. Callbacks return text or `html`, see [Text and HTML](#text-and-html). Callbacks can also return objects with `prefix` and `suffix`, [affixes](#affixes) shown in the headers of inlined forms and in tree items. Items of lists without a label show their number. `false` shows none. |
+| `render` | `SchemaValueCallback<TextOrHtml>` | | Returns the text or `html` of items without inlined forms, instead of their label, see [Text and HTML](#text-and-html). |
 | `component` | `Resolvable<VueComponent>` | | A Vue component that renders items without inlined forms. It receives `schema`, `context` and `modelValue` (the item). |
 | `columns` | `Columns \| string[]` | | The table columns of lists, see [Columns](#columns). |
 | `scopes` | `string[] \| Record<string, string \| { label?, hint?, defaultScope? }>` | | Buttons that switch between the model scopes of the list's resource. A string value is the label, `hint` the tooltip. The first scope, or the one with `defaultScope: true`, is selected by default. |
@@ -1025,7 +1034,7 @@ books: {
   columns: {
     title: { sortable: true, defaultSort: 'asc' },
     author: {
-      render: ({ value }) => escapeHtml(value?.name ?? '')
+      render: ({ value }) => html`<b>${value?.name}</b>`
     }
   },
   filters: {
@@ -1066,7 +1075,7 @@ chapters: {
 | `label` | `TextOrHtml` | the labelized key | The column header. |
 | `sortable` | `boolean` | `false` | Makes the column sortable, by the value. |
 | `defaultSort` | `true \| 'asc' \| 'desc'` | | Sorts by this column by default, `true` meaning `'asc'`. The first column with it wins. |
-| `render` | `SchemaValueCallback<string \| null>` | | Returns the HTML of the cell. Receives `value` in the context. |
+| `render` | `SchemaValueCallback<TextOrHtml \| null>` | | Returns the text or `html` of the cell, see [Text and HTML](#text-and-html). Receives `value` in the context. |
 | `component` | `Resolvable<VueComponent>` | | A Vue component that renders the cell. |
 | `class` | `string` | | CSS classes of the cells. |
 | `style` | `string \| object` | | Styles of the cells. |

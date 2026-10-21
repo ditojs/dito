@@ -1,4 +1,5 @@
-import { afterEach } from 'vitest'
+import { afterEach, vi } from 'vitest'
+import { html } from '@ditojs/utils'
 import { h } from 'vue'
 import { mount, enableAutoUnmount } from '@vue/test-utils'
 import DitoAffixes from './DitoAffixes.vue'
@@ -14,6 +15,7 @@ const getAffixClasses = wrapper =>
 
 describe('DitoAffixes', () => {
   enableAutoUnmount(afterEach)
+  afterEach(() => vi.restoreAllMocks())
 
   it('renders strings and objects with `text` as text', () => {
     const wrapper = mountAffixes({
@@ -27,12 +29,35 @@ describe('DitoAffixes', () => {
     ])
   })
 
-  it('renders objects with `html` as HTML', () => {
+  it('renders strings with HTML as text', () => {
+    const wrapper = mountAffixes({
+      items: ['<img src=x onerror="alert(1)">', { text: '<b>New</b>' }]
+    })
+    expect(wrapper.find('img, b').exists()).toBe(false)
+    expect(wrapper.findAll('.dito-affix').map(affix => affix.text())).toEqual(
+      ['<img src=x onerror="alert(1)">', '<b>New</b>']
+    )
+  })
+
+  it('renders `html` as HTML, also as `text`', () => {
+    const wrapper = mountAffixes({
+      items: [html`<b>${'New'}</b>`, { text: html`<i>Sale</i>`, as: 'span' }]
+    })
+    expect(wrapper.find('.dito-affix--text b').text()).toBe('New')
+    expect(wrapper.find('span.dito-affix--text i').text()).toBe('Sale')
+  })
+
+  it('renders objects with deprecated `html` as HTML, with a warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const wrapper = mountAffixes({ items: { html: '<b>New</b>' } })
     expect(wrapper.find('.dito-affix--html b').text()).toBe('New')
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('`{ html }` is deprecated')
+    )
   })
 
   it('renders items with a `type` as they are', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const wrapper = mountAffixes({
       items: [
         { type: 'html', html: '<i>Sale</i>', as: 'span' },

@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { html } from '@ditojs/utils'
 import { flushPromises } from '@vue/test-utils'
 import { mountAdmin } from '../test/mount.js'
 
@@ -43,14 +44,31 @@ describe('DitoNotifications', () => {
     ).toEqual(['<img src="x" onerror="alert(1)">', 'Tom & Jerry'])
   })
 
-  it('renders the paragraphs of `html` as HTML', async () => {
+  it('renders `html` paragraphs of `text` as HTML', async () => {
     const notifications = await mountNotifications()
-    notifications.notify({ html: ['<b>Emma</b> was saved.', 'Line\nbreak'] })
+    notifications.notify({
+      type: 'error',
+      text: [html`<b>${'Emma'}</b> was saved.`, 'Line\nbreak']
+    })
     await flushPromises()
     const [notification] = findNotifications()
     expect(notification.querySelector('p b').textContent).toBe('Emma')
     expect(notification.querySelectorAll('p')[1].innerHTML).toBe(
       'Line<br>break'
+    )
+    // Logged as text:
+    expect(console.error).toHaveBeenCalledWith('Emma was saved.\nLine\nbreak')
+  })
+
+  it('renders the paragraphs of deprecated `html` as HTML', async () => {
+    const notifications = await mountNotifications()
+    notifications.notify({ html: ['<b>Emma</b> was saved.', false] })
+    await flushPromises()
+    const [notification] = findNotifications()
+    expect(notification.querySelector('p b').textContent).toBe('Emma')
+    expect(notification.querySelectorAll('p')).toHaveLength(1)
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('`{ html }` is deprecated')
     )
   })
 
@@ -58,20 +76,20 @@ describe('DitoNotifications', () => {
     const notifications = await mountNotifications()
     notifications.notify({ text: '<a href="/books/1">Book created</a>' })
     expect(console.warn).toHaveBeenCalledTimes(1)
-    expect(console.warn.mock.calls[0][0]).toMatch('Use the `html` option')
+    expect(console.warn.mock.calls[0][0]).toMatch('Use the `html` template')
   })
 
   it("doesn't warn about plain text or `html`", async () => {
     const notifications = await mountNotifications()
     notifications.notify({ text: ['Sorted by price < 10', 'Tom & Jerry'] })
-    notifications.notify({ html: '<b>Saved</b>' })
+    notifications.notify({ text: html`<b>Saved</b>` })
     expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('skips empty paragraphs', async () => {
     const notifications = await mountNotifications()
     notifications.notify({ text: ['Saved.', false, null] })
-    notifications.notify({ html: ['<b>Saved.</b>', false] })
+    notifications.notify({ text: [html`<b>Saved.</b>`, false] })
     await flushPromises()
     expect(
       findNotifications().map(notification =>

@@ -39,7 +39,7 @@ component(
 )
 span(
   v-else
-  v-html="label"
+  v-html="labelHtml"
 )
 </template>
 
@@ -48,6 +48,7 @@ import { computed, provide } from 'vue'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { isInlined } from '../utils/schema/structure.js'
 import { sourceSchemaKey } from '../utils/keys.ts'
+import { getHtml } from '../utils/html.js'
 
 export default {
   emits: ['delete', 'move'],
@@ -81,6 +82,9 @@ export default {
       computed(() => props.schema)
     )
     const { createContext, services } = useSchemaContext(props)
+    const label = computed(() =>
+      services.sourceContext.getSourceItemLabel(props.data, props.index)
+    )
     return {
       // For the custom components that render the items:
       context: createContext({
@@ -95,9 +99,8 @@ export default {
         }
       }),
       isInlined: computed(() => isInlined(props.schema)),
-      label: computed(() =>
-        services.sourceContext.getSourceItemLabel(props.data, props.index)
-      )
+      label,
+      labelHtml: computed(() => getHtml(label.value))
     }
   }
 }

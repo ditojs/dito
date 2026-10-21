@@ -1,3 +1,4 @@
+import { html } from '@ditojs/utils'
 import { defineType } from './types.ts'
 import {
   getItemIdOrIndex,
@@ -44,13 +45,17 @@ describe('findItemIndexById()', () => {
 
 describe('getItemLabel()', () => {
   const getFormLabel = () => 'Book'
-  const getLabel = (sourceSchema, item, options = {}) =>
+  const getLabelObject = (sourceSchema, item, options = {}) =>
     getItemLabel(sourceSchema, item, {
       getFormLabel,
       getDisplayValue: key => item[key],
       evaluateItemLabel: () => sourceSchema.itemLabel({ item }),
       ...options
     })
+  // Item labels are `html`, except for objects:
+  const getLabel = (sourceSchema, item, options = {}) => (
+    getLabelObject(sourceSchema, item, options)?.value ?? null
+  )
 
   it('escapes the values of items', () => {
     const schema = { type: 'list', itemLabel: 'title' }
@@ -76,7 +81,17 @@ describe('getItemLabel()', () => {
     )
   })
 
-  it('keeps the HTML that `itemLabel()` returns as `{ html }`', () => {
+  it('keeps the HTML that `itemLabel()` returns with `html`', () => {
+    const schema = {
+      type: 'list',
+      itemLabel: ({ item }) => html`<b>${item.id}</b> &amp; ${'<i>'}`
+    }
+    expect(getLabel(schema, books[0], { extended: true })).toBe(
+      '<b>7</b> &amp; &lt;i&gt;'
+    )
+  })
+
+  it('keeps the HTML that `itemLabel()` returns as deprecated `{ html }`', () => {
     const schema = {
       type: 'list',
       itemLabel: ({ item }) => ({ html: `<b>${item.id}</b>` })
@@ -84,9 +99,23 @@ describe('getItemLabel()', () => {
     expect(getLabel(schema, books[0], { extended: true })).toBe('<b>7</b>')
   })
 
+  it('extends `html` form labels with escaped values', () => {
+    const schema = { type: 'list', itemLabel: 'title' }
+    expect(
+      getLabel(
+        schema,
+        { title: '<i>Emma</i>' },
+        {
+          extended: true,
+          getFormLabel: () => html`<b>Book</b>`
+        }
+      )
+    ).toBe(`<b>Book</b> '&lt;i&gt;Emma&lt;/i&gt;'`)
+  })
+
   it('uses numeric values of items as labels', () => {
     const schema = { type: 'list', itemLabel: 'year' }
-    expect(getLabel(schema, { year: 1815 })).toBe(1815)
+    expect(getLabel(schema, { year: 1815 })).toBe('1815')
     expect(getLabel(schema, { year: 1815 }, { extended: true })).toBe(
       `Book '1815'`
     )
@@ -130,27 +159,37 @@ describe('getItemLabel()', () => {
       type: 'list',
       itemLabel: () => ({ text: 'Tom & Jerry', prefix: '1.' })
     }
-    expect(getLabel(schema, books[0], { asObject: true })).toEqual({
-      html: 'Tom &amp; Jerry',
+    expect(getLabelObject(schema, books[0], { asObject: true })).toEqual({
+      text: html`${'Tom & Jerry'}`,
       prefix: '1.',
       suffix: undefined
     })
     expect(
-      getLabel(
-        { type: 'list', itemLabel: () => ({ html: '<b>Emma</b>', suffix: 1 }) },
+      getLabelObject(
+        {
+          type: 'list',
+          itemLabel: () => ({ text: html`<b>Emma</b>`, suffix: 1 })
+        },
         books[0],
         { asObject: true }
       )
-    ).toEqual({ html: '<b>Emma</b>', prefix: undefined, suffix: 1 })
+    ).toEqual({ text: html`<b>Emma</b>`, prefix: undefined, suffix: 1 })
     expect(
-      getLabel(
+      getLabelObject(
         { type: 'list', itemLabel: () => ({ prefix: '1.' }) },
         books[0],
         { index: 0, asObject: true }
       )
-    ).toEqual({ html: 'Book 1', prefix: '1.', suffix: undefined })
+    ).toEqual({ text: html`Book 1`, prefix: '1.', suffix: undefined })
     expect(
-      getLabel({ type: 'list' }, {}, { asObject: true, getFormLabel: () => '' })
+      getLabelObject(
+        { type: 'list' },
+        {},
+        {
+          asObject: true,
+          getFormLabel: () => ''
+        }
+      )
     ).toBe(null)
   })
 })

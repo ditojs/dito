@@ -1,12 +1,12 @@
 import { computed } from 'vue'
-import { assignDeeply, capitalize, equals, escapeHtml } from '@ditojs/utils'
+import { assignDeeply, capitalize, equals, html } from '@ditojs/utils'
 import { getResource } from '../utils/resource.js'
 import { getErrorMessage } from '../utils/request.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { deserializeData } from '../utils/schema/data.js'
 import { mergeData } from '../utils/mergeData.ts'
 import { transientNote } from '../utils/dialogs.js'
-import { getTextFromHtml } from '../utils/html.js'
+import { getText } from '../utils/html.js'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 import { useSchemaContext } from './useSchemaContext.ts'
 import { useSchemaValue } from './useSchemaValue.ts'
@@ -93,11 +93,11 @@ export function useForm({
     getDataPath: () => dataContext.dataPath,
     isTransient: () => isTransient.value
   })
-  // HTML for notifications, text for the contexts and the form's label:
+  // `html` for notifications, text for the contexts and the form's label:
   const itemLabel = computed(() =>
     getItemLabel(sourceSchema(), dataContext.data, { extended: true })
   )
-  const itemLabelText = computed(() => getTextFromHtml(itemLabel.value))
+  const itemLabelText = computed(() => getText(itemLabel.value))
 
   // Fire `cancel` only once the form closed:
   const cancel = async () => {
@@ -223,16 +223,15 @@ export function useForm({
     method = resource?.method || method
 
     const getVerb = (present: boolean) => verbs.value[getSubmitVerb(present)]
-    // NOTE: `itemLabel` is HTML, the other values need to be escaped:
     const notifySubmitError = (error: any, message: string | null = null) => {
       const verb = getVerb(true)
       adminContext.notify({
         type: 'error',
         error,
         title: 'Request Error',
-        html: message
-          ? [`Unable to ${verb} ${itemLabel.value}:`, escapeHtml(message)]
-          : `Unable to ${verb} ${itemLabel.value}.`
+        text: message
+          ? [html`Unable to ${verb} ${itemLabel.value}:`, html`${message}`]
+          : html`Unable to ${verb} ${itemLabel.value}.`
       })
     }
     // Resolve to whether the handlers of the event returned a value or
@@ -273,10 +272,10 @@ export function useForm({
             title: dataContext.isCreating
               ? `Item ${capitalize(verb)}`
               : `Change ${capitalize(verb)}`,
-            html: [
+            text: [
               dataContext.isCreating
-                ? `${itemLabel.value} was ${verb}.`
-                : `Changes to ${itemLabel.value} were ${verb}.`,
+                ? html`${itemLabel.value} was ${verb}.`
+                : html`Changes to ${itemLabel.value} were ${verb}.`,
               transientNote
             ]
           })
@@ -303,7 +302,7 @@ export function useForm({
             adminContext.notify({
               type: 'success',
               title: `Successfully ${capitalize(verb)}`,
-              html: `${itemLabel.value} was ${verb}.`
+              text: html`${itemLabel.value} was ${verb}.`
             })
           },
           // Errors without a message are notified without details:

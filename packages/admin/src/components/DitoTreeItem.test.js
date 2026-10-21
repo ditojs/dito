@@ -1,8 +1,9 @@
 import { vi } from 'vitest'
-import { asArray } from '@ditojs/utils'
+import { asArray, html } from '@ditojs/utils'
 import { flushPromises } from '@vue/test-utils'
 import Sortable from 'sortablejs'
 import { mountForm, stubConfirm, enterValue } from '../test/mount.js'
+import { transientNote } from '../utils/dialogs.js'
 
 const chapterForm = {
   type: 'form',
@@ -68,9 +69,9 @@ describe('DitoTreeItem', () => {
       )
       expect(notify).toHaveBeenCalledWith(
         expect.objectContaining({
-          html: [
-            `Chapter 'Tom &amp; Jerry' was removed.`,
-            expect.stringContaining('<b>Note</b>')
+          text: [
+            html([`Chapter 'Tom &amp; Jerry' was removed.`]),
+            transientNote
           ]
         })
       )

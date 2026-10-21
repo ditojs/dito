@@ -9,7 +9,7 @@ import { getHtml } from '../utils/html.js'
 
 export default {
   props: {
-    // Text, or `{ text }` or `{ html }`:
+    // Text or `html`:
     info: { type: [String, Object], required: true }
   },
 

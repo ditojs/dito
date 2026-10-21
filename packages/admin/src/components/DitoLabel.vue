@@ -26,13 +26,9 @@ component.dito-label(
         :parentContext="context"
       )
       label(
-        v-if="content.text"
+        v-if="hasContent"
         :for="htmlFor"
-      ) {{ content.text }}
-      label(
-        v-else-if="content.html"
-        :for="htmlFor"
-        v-html="content.html"
+        v-html="html"
       )
       DitoAffixes(
         :items="suffixes"
@@ -52,16 +48,17 @@ component.dito-label(
 
 <script>
 import { computed } from 'vue'
-import { isObject, asArray } from '@ditojs/utils'
+import { asArray } from '@ditojs/utils'
 import DitoAffixes from './DitoAffixes.vue'
 import DitoInfo from './DitoInfo.vue'
+import { getHtml } from '../utils/html.js'
 
 export default {
   components: { DitoAffixes, DitoInfo },
   emits: ['toggle'],
 
   props: {
-    // Text, or `{ text | html, prefix, suffix }`:
+    // Text or `html`, or `{ text, prefix, suffix }`:
     label: { type: [String, Object], default: null },
     // For the callbacks of the affixes:
     context: { type: Object, required: true },
@@ -77,12 +74,10 @@ export default {
   },
 
   setup(props, { emit }) {
-    const content = computed(() =>
-      isObject(props.label) ? props.label : { text: props.label }
-    )
+    const html = computed(() => getHtml(props.label))
     return {
-      content,
-      hasContent: computed(() => !!(content.value.text || content.value.html)),
+      html,
+      hasContent: computed(() => !!html.value),
       prefixes: computed(() => asArray(props.label?.prefix)),
       suffixes: computed(() => asArray(props.label?.suffix)),
       toggleAttributes: computed(() =>

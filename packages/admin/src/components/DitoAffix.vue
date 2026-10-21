@@ -1,12 +1,9 @@
 <template lang="pug">
+//- Deprecated `type: 'html'` affixes render their `html` like text affixes:
 component(
-  v-if="item.type === 'text'"
+  v-if="item.type === 'text' || item.type === 'html'"
   :is="item.as || 'div'"
-) {{ item.text }}
-component(
-  v-else-if="item.type === 'html'"
-  :is="item.as || 'div'"
-  v-html="item.html"
+  v-html="getHtml(item)"
 )
 DitoSpinner(
   v-else-if="item.type === 'spinner'"
@@ -28,12 +25,17 @@ component(
 <script>
 import DitoSpinner from './DitoSpinner.vue'
 import { DitoIcon } from '@ditojs/ui/src'
+import { getHtml } from '../utils/html.js'
 
 export default {
   components: { DitoSpinner, DitoIcon },
 
   props: {
     item: { type: Object, required: true }
+  },
+
+  setup() {
+    return { getHtml }
   }
 }
 </script>
