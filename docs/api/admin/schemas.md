@@ -314,6 +314,10 @@ Empty strings are serialized as the default value. `password` fields show a
 mask while they have no value, and items that lack the key don't get one, as
 the server doesn't send passwords.
 
+Text fields edit strings. Read-only fields that display other values through
+`formatValue()`, e.g. dates, prices or lists, are [`value`](#value) fields
+with `visible: true`.
+
 ```js
 email: { type: 'email', required: true, trim: true },
 website: { type: 'url', placeholder: 'https://' }
