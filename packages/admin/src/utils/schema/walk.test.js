@@ -2,14 +2,17 @@ import { vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { isFunction } from '@ditojs/utils'
+import SchemaContext from '../../SchemaContext.js'
 // Importing the types defines them, so the walk sees their descriptors:
 import '../../types/index.js'
 import { setupForm } from './setup.js'
+import { defineType } from './types.ts'
 import {
   initializeData,
   deserializeData,
   serializeData,
-  isDataPathExcluded
+  isDataPathExcluded,
+  getItemDisplayValue
 } from './data.js'
 import { getDataValidationErrors } from './validation.js'
 import { walkData } from './walk.js'
@@ -1107,6 +1110,111 @@ describe('isDataPathExcluded()', () => {
     const data = { notes: 'Notes', title: 'Title' }
     expect(isDataPathExcluded(form, data, 'notes', { services })).toBe(true)
     expect(isDataPathExcluded(form, data, 'title', { services })).toBe(false)
+  })
+})
+
+describe('getItemDisplayValue()', () => {
+  // A type that displays its values differently from how they're stored:
+  defineType({
+    type: 'status',
+    component: {},
+    getDisplayValue: ({ value }) => value.toUpperCase()
+  })
+  const status = { type: 'status' }
+  const getDisplayValues = (sourceSchema, item, names) => {
+    const context = new SchemaContext(services, {
+      schema: sourceSchema,
+      data: item,
+      dataPath: '',
+      rootData: item
+    })
+    return names.map(name =>
+      getItemDisplayValue(sourceSchema, item, name, {
+        services,
+        dataPath: '',
+        context
+      })
+    )
+  }
+
+  it('displays the values of the fields of items', async () => {
+    const form = await createForm(catalogueForm)
+    const { items } = form.fields.collections.form.fields
+    const [books, records] = createCatalogue().collections
+    expect(
+      getDisplayValues(items, books.items[0], [
+        'name',
+        'pages',
+        'onSale',
+        'chapters',
+        'blurb',
+        'unknown'
+      ])
+    ).toEqual([
+      '',
+      0,
+      true,
+      [{ title: 'x'.repeat(30) }, { title: 'Two' }],
+      'Much too long',
+      undefined
+    ])
+    expect(
+      getDisplayValues(items, records.items[0], ['email', 'format', 'tracks'])
+    ).toEqual(['nope', undefined, []])
+  })
+
+  it('displays the values of the children of trees', async () => {
+    const pageForm = {
+      type: 'form',
+      fields: { status, title: { type: 'text' } }
+    }
+    const form = await createForm({
+      fields: {
+        pages: {
+          type: 'tree-list',
+          form: pageForm,
+          children: { name: 'subpages', form: pageForm }
+        }
+      }
+    })
+    const { children } = form.fields.pages
+    expect(
+      getDisplayValues(
+        children,
+        { title: 'Team', status: 'live' },
+        ['title', 'status']
+      )
+    ).toEqual(['Team', 'LIVE'])
+  })
+
+  it('displays with the first field of the same value', async () => {
+    const form = await createForm({
+      fields: {
+        entries: {
+          type: 'list',
+          form: {
+            type: 'form',
+            tabs: {
+              first: {
+                type: 'tab',
+                fields: { status: { type: 'text' } }
+              },
+              second: {
+                type: 'tab',
+                fields: { status }
+              }
+            }
+          }
+        }
+      }
+    })
+    expect(
+      getDisplayValues(
+        form.fields.entries,
+        { status: 'live' },
+        ['status']
+      )
+    ).toEqual(['live'])
   })
 })
 

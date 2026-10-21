@@ -24,30 +24,3 @@ export type Api = Omit<ApiConfig, 'users'> &
       | 'defaults'
     >
   > & { users: Record<string, Resource> }
-
-// The components that `walkSchemaData()` walks, with the data they edit:
-export interface SchemaDataEntry {
-  schema: Schema
-  data: Data
-  name: string
-  dataPath: string | null
-  // The data path of `data`, which wrapped values keep:
-  itemDataPath: string | null
-  componentPath: string
-}
-
-// Tabs and panels are walked without a name:
-export type WalkedEntry = Omit<SchemaDataEntry, 'name'> & {
-  name: string | null
-}
-
-export interface SchemaDataWalk {
-  dataPath?: string | null
-  componentPath?: string
-  wrappedValueName?: string | null
-  childSourceSchemas?: Schema[]
-  before?: ((entry: SchemaDataEntry) => void) | null
-  shouldWalk?: (entry: WalkedEntry) => boolean
-  shouldSkipSourcesWithResource?: boolean
-  options: { services: object | null; rootData: Data | null }
-}
