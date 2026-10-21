@@ -3,6 +3,44 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 5.4.0 (2026-10-21)
+
+### Behaviour changes
+
+- **server:** Validation errors of standard keywords carry the messages of `@ditojs/schema`, the wording that the admin shows, instead of Ajv's: `minimum` "must be 5 or more" (was "must be >= 5"), `maximum` "must be 10 or less", `minLength` "must be at least 6 characters long" or "must not be empty" (was "must NOT have fewer than 6 characters"), `maxLength` "must be at most 3 characters long", `minItems` "must contain at least 2 items" or "must contain at least one item", `maxItems` "must contain at most 2 items", `type` "must be a string", "must be a whole number", "must be a list" for arrays, "must be a string or null" for several types (was "must be string", "must be integer", "must be array", "must be string,null"), `multipleOf` "must be a multiple of 5", `enum` "must be one of the allowed values". The formats `color` and `empty` say "must be a hex color" and "must be empty" (was "needs to be …"). This applies to `range` too, whose errors are those of `minimum` and `maximum`. The `keyword` and `params` of the errors stay the same, and so do the messages of errors thrown by `validate()` functions and of parameter coercion. Clients that match message texts need to match `keyword` and `params` instead.
+- **admin:** Several fields that edit the same value, e.g. in two tabs, follow one rule: each aspect of the value comes from the first field in form order that defines it itself (`default`, `deserializeValue()`, `serializeValue()`, `computeValue()`, a data schema or options, `exclude`), else from the first field through its type, and items are sent with the values of all their fields' forms. All these fields are validated, and their errors are collected, each message once. Before, depending on the aspect, the first or the last field decided or each field applied in turn, only the last field's form was sent, and the last field's errors replaced the others'.
+- **admin:** `maxLength` is validated, not only set as the `maxlength` of text inputs: saving fails where code wrote longer values, or where `maxLength` is set on other types with text values, e.g. `markup`. Lengths are counted in characters (code points), as on the server.
+- **admin:** `required` accepts empty arrays, as the server does. Lists, `tree-list`, `checkboxes`, multiselects and uploads with `multiple` still need one item, as `required` adds `minItems: 1` to the types whose empty value is an array, with the same message "is required". Other fields with array values, e.g. of `component` or custom types, accept `[]` when required.
+- **admin:** `markup` stores an empty editor as `null` instead of the HTML of its empty nodes, e.g. `<p></p>`, or `''` with `hardBreak`, and `code` sends `null` instead of `''` when emptied, like `text` and `textarea`: code that compares these values with `'<p></p>'` or `''` needs to check for `null`.
+- **admin:** The validators take their checks and messages from `@ditojs/schema`, the definitions that the server uses. Two messages change: `integer` says "must be a whole number" (was "must be whole number"), and `decimals` "must be a number with at most 2 decimal places" or "must be a number with at most one decimal place" (was "must be numeric and may contain 2 decimal points"), "must be a whole number" for `decimals: 0` (was "must be numeric and may not contain decimal points") and "must be a number" for `'*'` (was "must be numeric and may contain decimal points").
+- **admin:** `minimum`, `maximum` and `range` only apply to numbers, as on the server, so `rules` that set them on text values are ignored.
+- **admin:** `upload` with `multiple` holds `[]` instead of `null` when it has no value yet, as it already sends: code that checks new items for `null` needs to check for an empty array.
+- **admin:** `url` fields require a scheme, e.g. `https://`, as the server's `uri` format does: values like `example.com` no longer pass and need to be entered as `https://example.com`.
+- **admin:** `date`, `datetime` and `time` fields validate their values, with "must be a valid date": saving fails where code wrote invalid `Date` objects, e.g. `new Date('soon')`, or strings that aren't dates, e.g. times like `'14:30'`, which were sent unchanged and failed on the server for date properties.
+- **admin:** `select`, `multiselect`, `radio` and `checkboxes` with options given as an array, in `options` or `options.data`, validate that their values are among them, with "must be one of the options": saving fails where the data holds values missing from the options, e.g. stored before an option was removed, or written by code. Options loaded through callbacks or `dataPath`, and multiselects with `taggable` or `search`, keep accepting values without option.
+
+### Deprecations
+
+- **server:** `app.compileValidator()` is deprecated in favour of `app.compileJsonSchema()`. It keeps working until 6.0 and logs a deprecation warning.
+- **admin:** The `rules` of fields are deprecated until 6.0 and log a deprecation warning. Limits are field keys, e.g. `minimum`, `maxLength` or `minItems`, and setup moves rules with their names to them. Type checks come from the type, e.g. `type: 'text'` instead of `type: 'url'` with `rules: { url: false }`, and everything else goes through `validate()`. Rules that turn validations off with `false` or `undefined` keep working until 6.0.
+- **admin:** `min` and `max` of number types and their `rules` are deprecated aliases of `minimum` and `maximum` until 6.0. They keep working and log a deprecation warning. Custom types that return `min` or `max` from `getValidations()` need to return `minimum` and `maximum`.
+
+### New
+
+- **server:** `app.compileDitoSchema(schema, options?)` compiles a schema in Dito.js' format of model properties, with `required: true`, `type: 'date'` and model names as types, and `app.compileJsonSchema(jsonSchema, options?)` compiles plain JSON schemas.
+- **admin:** `context.getErrors(match?)` returns the errors that the data holds, from validation and from the server, by data path, e.g. to show them in the markup of `useDitoForm()` pages.
+- **admin:** Fields take `minLength`, `pattern`, `minItems` and `maxItems`, with the names and meanings of the server's model properties, validated in the browser like `required`.
+- **admin:** Number types (`number`, `integer`, `slider`, `progress`) take `minimum` and `maximum`, the names of the server's model properties.
+- **admin:** `nullable: false` on string fields (`text` and its variants, `textarea`, `code`, `markup`) and `checkbox` stores no value as `''` or `false` instead of `null`, for properties that aren't `nullable` on the server.
+- **schema:** New package `@ditojs/schema` with the validation definitions that the server and the admin share, without Ajv: the formats `color`, `empty` and `required`, the standard keywords `type`, `enum`, `minimum`, `maximum`, `multipleOf`, `minLength`, `maxLength`, `pattern`, `minItems` and `maxItems`, and dito's `range` and `decimals`, each as `{ validate(value, setting), message }`. The server takes its formats from it.
+
+### Fixes
+
+- **admin:** Leaving a form with unsaved changes asks "Do you want to discard them?" instead of "Do you really want to cancel?", which read ambiguously next to the dialog's Cancel button.
+- **admin:** Clear buttons don't show for `''`, e.g. after deleting the text of an input.
+- **admin:** Values merged into the data, e.g. with `context.mergeItem()`, replace the errors of fields in the panels of lists and other sources too.
+- **admin:** Edits of fields in the panels of lists and other sources mark the form as unsaved, like the edits of other fields.
+
 ## 5.3.0 (2026-10-20)
 
 ### Behaviour changes
