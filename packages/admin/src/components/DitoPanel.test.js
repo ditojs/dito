@@ -352,6 +352,34 @@ describe('DitoPanel', () => {
     expect(routeComponent.routeContext.isDirty).toBe(true)
   })
 
+  it('replaces the errors of its fields in the panels of lists', async () => {
+    const { submit, getComponent, getErrors } = await mountForm({
+      schema: {
+        fields: {
+          chapters: {
+            type: 'list',
+            inlined: true,
+            form: { type: 'form', fields: { name: { type: 'text' } } },
+            panels: {
+              summary: {
+                type: 'panel',
+                label: 'Summary',
+                fields: { summary: { type: 'text', required: true } }
+              }
+            }
+          }
+        }
+      },
+      data: { chapters: [], summary: '' }
+    })
+    await submit()
+    expect(getErrors('summary')).toEqual(['The Summary field is required.'])
+    // Values merged from the server replace their errors, also unchanged:
+    getComponent('summary').context.mergeItem({ summary: '' })
+    await flushPromises()
+    expect(getErrors('summary')).toEqual([])
+  })
+
   it('submits its own data through the form that it is in', async () => {
     const request = vi.fn(({ data }) => ({ data }))
     const { wrapper } = await mountForm({

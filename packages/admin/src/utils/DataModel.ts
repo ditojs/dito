@@ -806,13 +806,12 @@ export class DataModel {
       walkData(schema!, data, {
         ...this.#walkOptions,
         dataPath: this.dataPath,
-        // Walk the fields within `dataPath`, and the ones that contain it:
-        shouldWalk: entry => (
-          (
-            isWithin(entry) ||
-            getRelativeDataPath(dataPath, entry.dataPath) !== null
-          ) &&
-          this.#shouldRenderEntry(entry)
+        shouldWalk: entry => this.#shouldRenderEntry(entry),
+        // Visit the fields within `dataPath`, and the ones that contain it. The
+        // fields of their panels edit the data around them:
+        shouldVisit: entry => (
+          isWithin(entry) ||
+          getRelativeDataPath(dataPath, entry.dataPath) !== null
         ),
         shouldSkipSourcesWithResource: true,
         visit: entries => {
