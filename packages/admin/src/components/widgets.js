@@ -1,5 +1,16 @@
-import { h, markRaw, shallowReactive } from 'vue'
+import {
+  h,
+  markRaw,
+  onUnmounted,
+  provide,
+  shallowReactive,
+  shallowRef
+} from 'vue'
 import DitoContainer from './DitoContainer.vue'
+import { getSlotContent, appendName } from './DitoSection.vue'
+import { appendDataPath } from '../utils/data.js'
+import { getItemFormSchemaFromForms } from '../utils/schema/lookup.js'
+import { propertyScopeKey } from '../utils/keys.ts'
 import { useServices } from '../composables/useSchemaContext.ts'
 import {
   useWidget,
@@ -218,6 +229,156 @@ export const DitoCustomField = defineWidget('DitoCustomField', {
   })
 })
 
+const sourceProps = {
+  collapsible: { type: [Boolean, String], default: undefined },
+  collapsed: { type: Boolean, default: undefined },
+  creatable: { type: Boolean, default: undefined },
+  deletable: { type: Boolean, default: undefined }
+}
+
+// Lists hold objects of their `items`, or of several `forms` by their `type`,
+// or values that their items wrap, which widgets without `name` edit:
+export const DitoListField = defineSourceWidget('DitoListField', {
+  props: {
+    draggable: { type: Boolean, default: undefined }
+  },
+  getSchema: ({ items, forms, orderKey, idKey }) => ({
+    type: 'list',
+    ...(
+      forms
+        ? { forms }
+        : { form: items.properties ? items : { properties: { value: items } } }
+    ),
+    wrapPrimitives: forms || items.properties ? undefined : 'value',
+    orderKey,
+    idKey
+  })
+})
+
+// Objects that are `nullable` can be created and deleted:
+export const DitoObjectField = defineSourceWidget('DitoObjectField', {
+  getSchema: property => ({
+    type: 'object',
+    form: property,
+    creatable: !!property.nullable,
+    deletable: !!property.nullable
+  })
+})
+
+// The scope of the widgets in the form of an item:
+const DitoPropertyScope = {
+  name: 'DitoPropertyScope',
+  props: {
+    scope: { type: Object, required: true }
+  },
+
+  setup(props, { slots }) {
+    provide(propertyScopeKey, {
+      get properties() {
+        return props.scope.properties
+      },
+      get data() {
+        return props.scope.data
+      },
+      get dataPath() {
+        return props.scope.dataPath
+      },
+      get componentPath() {
+        return props.scope.componentPath
+      },
+      get valueName() {
+        return props.scope.valueName
+      }
+    })
+    return () => slots.default()
+  }
+}
+
+// Lists and objects lay out the form of their items in their default slot,
+// with a scope for each item, and the slot props `{ item, index }`:
+function defineSourceWidget(widgetName, { props = {}, getSchema }) {
+  const widget = {
+    name: widgetName,
+    props: { ...widgetProps, ...sourceProps, ...props },
+    emits: ['change'],
+
+    setup(props, { emit, slots }) {
+      const { scope, name, property, isRelevant, getContainerProps } =
+        useWidget(props)
+      const { adminContext, dataContext } = useServices()
+      const schema = {
+        ...getSchema(property),
+        name,
+        inlined: true,
+        onChange: context => emit('change', context)
+      }
+      const isList = property.type === 'array'
+      const valueName = schema.wrapPrimitives
+      const getItemProperties = item =>
+        isList
+          ? property.forms
+            ? (getItemFormSchemaFromForms(property.forms, item)
+                ?.properties ?? {})
+            : schema.form.properties
+          : property.properties
+      const getItemScope = (item, index) => {
+        const getPath = path => {
+          path = appendDataPath(path, name)
+          return index != null ? appendDataPath(path, index) : path
+        }
+        return {
+          properties: getItemProperties(item),
+          data: item,
+          dataPath: getPath(scope.dataPath),
+          componentPath: getPath(scope.componentPath),
+          valueName
+        }
+      }
+      // Collapsed items don't mount their widgets, so register their paths,
+      // which the items reveal:
+      const componentPaths = shallowRef([])
+      const unregister = adminContext.ui.register(
+        () => componentPaths.value,
+        { dataContext }
+      )
+      onUnmounted(unregister)
+
+      const renderItem = ({ item, index = null }) =>
+        h(DitoPropertyScope, { scope: getItemScope(item, index) }, () =>
+          slots.default({ item: valueName ? item[valueName] : item, index })
+        )
+
+      return () => {
+        const value = scope.data[name]
+        const items = isList ? (value ?? []) : value ? [value] : []
+        const paths = slots.default
+          ? items.flatMap((item, index) => {
+              const { componentPath } = getItemScope(
+                item,
+                isList ? index : null
+              )
+              return getSlotContent(slots.default({ item, index })).names.map(
+                name => appendName(componentPath, name)
+              )
+            })
+          : []
+        if (paths.join() !== componentPaths.value.join()) {
+          componentPaths.value = paths
+        }
+        return isRelevant()
+          ? h(
+              DitoContainer,
+              getContainerProps(schema),
+              slots.default ? { default: renderItem } : null
+            )
+          : null
+      }
+    }
+  }
+  widgetComponents.add(widget)
+  return widget
+}
+
 // The widgets render the type components of fields, with the display schema
 // of the property's hints and of their props. Their `change` event is the one
 // of the field, for edits of the user:
@@ -228,10 +389,10 @@ function defineWidget(name, { props = {}, getSchema }) {
     emits: ['change'],
 
     setup(props, { emit, slots }) {
-      const { property, isRelevant, getContainerProps } = useWidget(props)
+      const { name, property, isRelevant, getContainerProps } = useWidget(props)
       const schema = {
         ...getSchema(property, slots),
-        name: props.name,
+        name,
         onChange: context => emit('change', context)
       }
       return () =>

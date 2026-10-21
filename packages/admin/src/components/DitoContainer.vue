@@ -46,12 +46,14 @@
     :labelId="labelId"
   )
     //- The content that layouts place in custom components, see
-    //- `DitoSchemaField`:
+    //- `DitoSchemaField`, and the items of widgets with their slot props:
     template(
       v-if="$slots.default"
-      #default
+      #default="slotProps"
     )
-      slot
+      slot(
+        v-bind="slotProps"
+      )
   DitoErrors(
     :id="errorsElementId"
     :errors="errors"

@@ -30,6 +30,12 @@ DitoSchemaInlined(
       :schema="formSchema"
       :context="formContext"
     )
+  //- The widgets of `DitoListField` and `DitoObjectField`:
+  template(
+    v-else-if="$slots.default"
+    #default
+  )
+    slot
 component(
   v-else-if="schema.component"
   :is="schema.component"

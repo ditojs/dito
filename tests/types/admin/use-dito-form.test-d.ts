@@ -12,7 +12,9 @@ import {
   DitoCheckboxesField,
   DitoDateField,
   DitoUploadField,
-  DitoCustomField
+  DitoCustomField,
+  DitoListField,
+  DitoObjectField
 } from '@ditojs/admin'
 import type { DitoContext } from '@ditojs/admin'
 
@@ -76,6 +78,15 @@ describe('widgets', () => {
     h(DitoUploadField, { name: 'images', accept: 'image/*' })
   })
 
+  it('lay out the items of lists and objects in their slots', () => {
+    type Slot = InstanceType<typeof DitoListField>['$slots']['default']
+    expectTypeOf<Parameters<Slot>[0]['index']>().toEqualTypeOf<number>()
+    h(DitoListField, { name: 'awards', creatable: true, draggable: true })
+    h(DitoObjectField, { name: 'address', collapsible: true })
+    // Widgets without `name` edit the items of lists of values:
+    h(DitoNumberField, { step: 5 })
+  })
+
   it('emit changes with the context of the field', () => {
     h(DitoSelectField, {
       name: 'format',
@@ -107,7 +118,7 @@ describe('widgets', () => {
     h(DitoSelectField, { name: 'format', enum: ['a', 'b'] })
     // @ts-expect-error: Relations are the property's.
     h(DitoSelectField, { name: 'author', relate: true })
-    // @ts-expect-error: Widgets need the name of their property.
-    h(DitoTextField, { label: 'Name' })
+    // @ts-expect-error: Lists need the name of their property.
+    h(DitoListField, { label: 'Awards' })
   })
 })

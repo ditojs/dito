@@ -17,7 +17,7 @@ import type { Schema } from '../utils/types.ts'
 // The display props that all widgets pass to their components. The data
 // keywords, e.g. `required` or `default`, are only the property's:
 export const widgetProps = {
-  name: { type: String, required: true },
+  name: { type: String, default: null },
   label: { type: [String, Boolean], default: undefined },
   width: { type: [String, Number], default: undefined },
   info: { type: String, default: undefined },
@@ -40,15 +40,25 @@ export interface WidgetProps {
 
 // Find the property of the widget's `name` in the scope that it's in, for the
 // widget to render it through `DitoContainer` like panes render fields, with a
-// display schema of its props:
-export function useWidget(props: WidgetProps) {
+// display schema of its props. Widgets without `name` edit the value of their
+// scope, e.g. the primitive items of lists, and layouts the scope's data:
+export function useWidget(
+  props: WidgetProps,
+  { isLayout = false }: { isLayout?: boolean } = {}
+) {
   const scope = inject(propertyScopeKey, null)
   const layout = inject(layoutKey, null)
-  const { name } = props
   if (!scope || !layout) {
     throw new Error(
-      `Unable to place '${name}' outside of \`DitoSchemaForm\` with ` +
+      `Unable to place '${props.name}' outside of \`DitoSchemaForm\` with ` +
       '`properties`.'
+    )
+  }
+  const isScopeValue = props.name == null && !isLayout
+  const name = isScopeValue ? (scope.valueName ?? null) : props.name
+  if (isScopeValue && name == null) {
+    throw new Error(
+      'Unable to place widgets without `name` outside of lists of values.'
     )
   }
   const property = name != null ? scope.properties[name] : null
@@ -57,24 +67,30 @@ export function useWidget(props: WidgetProps) {
   }
   const services = useServices()
   const { adminContext, dataContext } = services
+  const getValueDataPath = (nested = true) =>
+    nested && !isScopeValue
+      ? appendDataPath(scope.dataPath, name!)
+      : scope.dataPath
   // Widgets have the component paths of their data paths, so that errors are
-  // revealed by their data paths, also in sections. Several widgets of a value
-  // get paths of their own, and the others reveal it through them. Widgets
-  // without `name` get one of their own that contains no widgets:
+  // revealed by their data paths, also in sections and list items. Several
+  // widgets of a value and the values of scopes get paths of their own, and
+  // reveal their value through them. Layouts get one that contains no widgets:
   let getParentPath = () => scope.componentPath
   if (name != null) {
-    const occurrence = addOccurrence(
-      dataContext!,
-      appendDataPath(scope.dataPath, name)
-    )
+    const occurrence = addOccurrence(dataContext!, getValueDataPath())
     if (occurrence > 0) {
       getParentPath = () =>
         appendDataPath(scope.componentPath, `~${occurrence + 1}`)
+    }
+    if (occurrence > 0 || isScopeValue) {
       let unregister: () => void
       onBeforeMount(() => {
         const { ui } = adminContext
         unregister = ui.register(
-          () => appendDataPath(scope.componentPath, name),
+          () =>
+            isScopeValue
+              ? scope.componentPath
+              : appendDataPath(scope.componentPath, name),
           {
             dataContext,
             focus() {
@@ -95,11 +111,9 @@ export function useWidget(props: WidgetProps) {
   const store = reactive({})
   const node = property ? getPropertyNode(name!, property) : null
 
-  const getValueDataPath = (nested: boolean) =>
-    nested ? appendDataPath(scope.dataPath, name!) : scope.dataPath
-
   return {
     scope,
+    name,
     property: property as Schema | null,
     store,
 

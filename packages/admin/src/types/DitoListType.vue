@@ -122,6 +122,14 @@
                 @delete="deleteItem(item, index)"
                 @move="delta => moveItem(index, delta)"
               )
+                template(
+                  v-if="$slots.default"
+                  #default
+                )
+                  slot(
+                    :item="item"
+                    :index="index"
+                  )
           td.dito-table__buttons(
             v-if="hasCellEditButtons"
           )

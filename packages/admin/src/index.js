@@ -35,6 +35,8 @@ export {
   DitoCodeField,
   DitoMarkupField,
   DitoUploadField,
+  DitoListField,
+  DitoObjectField,
   DitoCustomField
 } from './components/widgets.js'
 export { default as DitoSection } from './components/DitoSection.vue'
