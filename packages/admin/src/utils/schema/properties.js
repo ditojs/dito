@@ -268,6 +268,19 @@ export function createPropertyNodes(properties) {
   )
 }
 
+// Forms describe their data with either `fields` or `properties`:
+export function checkFormProperties(schema) {
+  const { fields, properties } = schema
+  if (properties) {
+    if (fields) {
+      throw new Error(
+        'Unable to set up the form: It has both `fields` and `properties`.'
+      )
+    }
+    checkProperties(properties)
+  }
+}
+
 // Fail early on what written properties don't support yet:
 export function checkProperties(properties) {
   Object.values(properties).forEach(checkProperty)
@@ -337,6 +350,9 @@ export function getItemProperty(schema, context) {
     !entries.some(([, form]) => isFunction(form.fields))
   ) {
     const getProperties = form => {
+      if (form.properties) {
+        return form.properties
+      }
       const properties = getFormProperties(form, context)
       // The children of trees are sources of the items:
       for (const child of getChildSourceSchemas(schema)) {

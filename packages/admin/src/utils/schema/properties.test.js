@@ -460,6 +460,20 @@ describe('getFormProperties()', () => {
       })
     })
 
+    it('describes items by the written properties of their form', async () => {
+      const component = { name: 'TitleLayout' }
+      const form = { type: 'form', properties: item.properties, component }
+      expect(
+        await getProperties({
+          publisher: { type: 'object', form },
+          chapters: { type: 'list', form }
+        })
+      ).toEqual({
+        publisher: { ...item, nullable: true },
+        chapters: { type: 'array', items: item, default: [] }
+      })
+    })
+
     it('describes the items of the forms of views', async () => {
       const books = { type: 'view', field: { type: 'list', form } }
       expect(

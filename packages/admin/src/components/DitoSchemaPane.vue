@@ -37,7 +37,12 @@ import {
 import { shouldRenderSchema } from '../utils/schema/data.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { getItemAdapter } from '../utils/schema/types.ts'
-import { layoutKey, panelTabKey, sourceSchemaKey } from '../utils/keys.ts'
+import {
+  layoutKey,
+  panelTabKey,
+  propertyScopeKey,
+  sourceSchemaKey
+} from '../utils/keys.ts'
 
 export default {
   props: {
@@ -176,6 +181,28 @@ export default {
           }
         : null
     )
+    // The widgets in the layouts of forms with written properties edit the
+    // form's data by the names of its properties:
+    if (slots.default && props.schema?.properties) {
+      provide(propertyScopeKey, {
+        get properties() {
+          return props.schema.properties
+        },
+        get data() {
+          return props.data
+        },
+        get dataPath() {
+          return props.dataPath
+        },
+        get componentPath() {
+          return componentPath.value
+        },
+        // Primitive list items are edited as the value of their wrapper:
+        get valueName() {
+          return getItemAdapter(unref(sourceSchema))?.name
+        }
+      })
+    }
 
     return {
       dataContext: services.dataContext,
