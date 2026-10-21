@@ -196,12 +196,17 @@ describe('Values that the admin sends', () => {
       })
     })
 
-    // Current behaviour, a mismatch with the admin: PATCH doesn't check
-    // `required`, where the admin's `required` rejects empty strings:
-    it('accepts empty strings on edit', async () => {
+    it('rejects empty strings on edit', async () => {
       expect(await edit({ title: '' })).toMatchObject({
+        status: 400,
+        data: { errors: { title: [{ message: 'is required' }] } }
+      })
+    })
+
+    it('leaves required values unchecked on edit unless sent', async () => {
+      expect(await edit({ note: 'Note' })).toMatchObject({
         status: 200,
-        data: { title: '' }
+        data: { title: 'Opening', note: 'Note' }
       })
     })
   })
