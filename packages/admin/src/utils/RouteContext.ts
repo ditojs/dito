@@ -35,6 +35,11 @@ export interface RouteClaim {
   claimItem(item: object): RouteClaim | null
 }
 
+// The tab that the route's schema claims in the path below the route.
+export interface TabClaim {
+  readonly tab: string
+}
+
 // The route of a view or form, which `useRouteContainer()` provides.
 export interface RouteContext {
   readonly parent: RouteContext | null
@@ -46,6 +51,8 @@ export interface RouteContext {
   readonly claim: RouteClaim | null
   // The claim of the form below:
   readonly childClaim: RouteClaim | null
+  // The tab that the path names below the route:
+  readonly routeTab: string | null
   readonly level: number
   readonly isForm: boolean
   readonly isTransient: boolean

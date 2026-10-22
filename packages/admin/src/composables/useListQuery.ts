@@ -93,7 +93,6 @@ export function useListQuery(
       if (
         isRouted() &&
         from.path === to.path &&
-        from.hash === to.hash &&
         listQuery.setFromRoute(to.query)
       ) {
         onChange()

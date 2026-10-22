@@ -1,7 +1,7 @@
 import { nextTick, shallowReactive, watch } from 'vue'
 import { parseDataPath } from '@ditojs/utils'
 import type { DataContext } from './DataContext.ts'
-import type { RouteClaim, RouteContext } from './RouteContext.ts'
+import type { RouteClaim, RouteContext, TabClaim } from './RouteContext.ts'
 
 export interface UiHandle {
   readonly dataContext: DataContext | null
@@ -14,8 +14,9 @@ export interface UiHandle {
   // an item of a routed source:
   getErrorComponentPath?(dataPath: string): string | null
   // The form that the route's `path` opens, if this component claims it, e.g.
-  // a source for the form of one of its items:
-  claimRoute?(path: string): RouteClaim | null
+  // a source for the form of one of its items, or the tab that it names in a
+  // schema:
+  claimRoute?(path: string): RouteClaim | TabClaim | null
   // The route of the form that shows the component at `componentPath` inside
   // this one, with the component path within the form:
   getFormRoute?(
@@ -85,7 +86,10 @@ export class UiRegistry {
 
   // The first component that claims the route's `path`, in the order the
   // components were created, like the ones that display errors:
-  claimRoute(dataContext: DataContext, path: string): RouteClaim | null {
+  claimRoute(
+    dataContext: DataContext,
+    path: string
+  ): RouteClaim | TabClaim | null {
     for (const handles of this.#handles.values()) {
       for (const handle of handles) {
         const claim =

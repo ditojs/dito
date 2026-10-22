@@ -101,7 +101,7 @@ describe('DitoSchema', () => {
     expect(schemaComponent.selectedTab).toBe('details')
     expect(await submit()).toBe(null)
     expect(getErrors('notes')).toEqual(['The Notes field is required.'])
-    expect(admin.router.currentRoute.value.hash).toBe('#history')
+    expect(admin.router.currentRoute.value.path).toBe('/items/1/history')
     expect(schemaComponent.selectedTab).toBe('history')
   })
 
@@ -138,7 +138,7 @@ describe('DitoSchema', () => {
       data: { title: 'Emma', author: { name: 'Jane', notes: '' } }
     })
     expect(await submit()).toBe(null)
-    expect(admin.router.currentRoute.value.hash).toBe('#history')
+    expect(admin.router.currentRoute.value.path).toBe('/items/1/history')
     expect(schemaComponent.selectedTab).toBe('history')
   })
 
@@ -228,7 +228,7 @@ describe('DitoSchema', () => {
         data: { title: 'Emma', rating: 5 }
       })
       expect(schemaComponent.selectedTab).toBe('reviews')
-      expect(admin.router.currentRoute.value.hash).toBe('#reviews')
+      expect(admin.router.currentRoute.value.path).toBe('/items/1/reviews')
     })
 
     it('keeps the default tab when the loaded data changes', async () => {
@@ -283,8 +283,8 @@ describe('DitoSchema', () => {
       it('selects the default tab of the loaded item', async () => {
         const { admin, schemaComponent, loadItem } =
           await mountLoadingForm('/items/1')
-        // The hash that follows the selection isn't a selection by the route:
-        expect(admin.router.currentRoute.value.hash).toBe('#details')
+        // The path that follows the selection isn't a selection by the route:
+        expect(admin.router.currentRoute.value.path).toBe('/items/1/details')
         await loadItem()
         expect(schemaComponent.selectedTab).toBe('reviews')
       })
@@ -308,9 +308,75 @@ describe('DitoSchema', () => {
 
       it('keeps the tab selected by the route', async () => {
         const { schemaComponent, loadItem } =
-          await mountLoadingForm('/items/1#details')
+          await mountLoadingForm('/items/1/details')
         await loadItem()
         expect(schemaComponent.selectedTab).toBe('details')
+      })
+    })
+
+    describe('in the path', () => {
+      const schema = { tabs: createTabs(false) }
+      const data = { title: 'Emma', rating: 5 }
+
+      it('names the default tab', async () => {
+        const { admin, schemaComponent } = await mountForm({ schema, data })
+        expect(schemaComponent.selectedTab).toBe('details')
+        expect(admin.router.currentRoute.value.path).toBe('/items/1/details')
+      })
+
+      it('selects the tab that the path names', async () => {
+        const { admin, schemaComponent } = await mountForm({ schema, data })
+        await admin.navigate('/items/1/reviews')
+        expect(schemaComponent.selectedTab).toBe('reviews')
+      })
+
+      it('selects the tab that the path names on reload', async () => {
+        const { admin, schemaComponent } = await mountForm({
+          schema,
+          data,
+          path: '/items/1/reviews'
+        })
+        expect(schemaComponent.selectedTab).toBe('reviews')
+        expect(admin.router.currentRoute.value.path).toBe('/items/1/reviews')
+      })
+
+      it('replaces the path with the clicked tab', async () => {
+        const { admin } = await mountForm({ schema, data })
+        const { length } = window.history
+        admin.element.querySelectorAll('.dito-tabs__link')[1].click()
+        await flushPromises()
+        expect(admin.router.currentRoute.value.path).toBe('/items/1/reviews')
+        expect(window.history.length).toBe(length)
+      })
+
+      it('names the selected tab when the path leaves it out', async () => {
+        const { admin, schemaComponent } = await mountForm({
+          schema,
+          data,
+          path: '/items/1/reviews'
+        })
+        await admin.navigate('/items/1')
+        expect(schemaComponent.selectedTab).toBe('reviews')
+        expect(admin.router.currentRoute.value.path).toBe('/items/1/reviews')
+      })
+
+      // Tabs and the sources of the form share the names in the path:
+      it('selects the tab over a source of the same name', async () => {
+        const { admin, schemaComponent } = await mountForm({
+          schema: {
+            fields: {
+              reviews: {
+                type: 'object',
+                form: { type: 'form', fields: { text: { type: 'text' } } }
+              }
+            },
+            tabs: createTabs(false)
+          },
+          data: { ...data, reviews: { text: 'Witty' } }
+        })
+        await admin.navigate('/items/1/reviews')
+        expect(schemaComponent.selectedTab).toBe('reviews')
+        expect(admin.getRouteComponents(isForm)).toHaveLength(1)
       })
     })
 
@@ -358,7 +424,7 @@ describe('DitoSchema', () => {
   })
 
   // ditojs/dito#192: The forms of the items of trees and lists in tabs are
-  // nested routes, whose path doesn't carry the hash of the parent's tab.
+  // nested routes below the path of the parent's tab.
   describe('tabs with forms of nested routes', () => {
     const pageForm = { type: 'form', fields: { title: { type: 'text' } } }
 
@@ -380,7 +446,7 @@ describe('DitoSchema', () => {
         },
         data: { title: 'Site', pages: [{ title: 'About' }] }
       })
-      await admin.navigate('/items/1#planning')
+      await admin.navigate('/items/1/planning')
       await wrapper.find('.dito-button--edit').trigger('click')
       await flushPromises()
       expect(admin.router.currentRoute.value.path).toBe(
@@ -393,8 +459,7 @@ describe('DitoSchema', () => {
         )
       await pageFormComponent.routeContext.close()
       await flushPromises()
-      // The route is kept without hash, as before, but the tab stays selected:
-      expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
+      expect(admin.router.currentRoute.value.path).toBe('/items/1/planning')
       expect(schemaComponent.selectedTab).toBe('planning')
     })
 
@@ -428,7 +493,7 @@ describe('DitoSchema', () => {
         },
         data: { title: 'Site', pages: [{ title: 'About' }] }
       })
-      await admin.navigate('/items/1#planning')
+      await admin.navigate('/items/1/planning')
       const { router } = admin
       const replace = router.replace.bind(router)
       let replaceCount = 0
@@ -448,12 +513,12 @@ describe('DitoSchema', () => {
       const { admin, schemaComponent, pageSchemaComponent, getReplaceCount } =
         await openTabbedPageForm(['content', 'text'])
       expect(getReplaceCount()).toBeLessThanOrEqual(1)
-      expect(admin.router.currentRoute.value.fullPath).toBe(
-        '/items/1/planning/pages/0#content'
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/planning/pages/0/content'
       )
       expect(schemaComponent.selectedTab).toBe('planning')
       expect(pageSchemaComponent.selectedTab).toBe('content')
-      await admin.navigate('/items/1/planning/pages/0#text')
+      await admin.navigate('/items/1/planning/pages/0/text')
       expect(pageSchemaComponent.selectedTab).toBe('text')
       expect(schemaComponent.selectedTab).toBe('planning')
     })
@@ -464,7 +529,7 @@ describe('DitoSchema', () => {
       expect(getReplaceCount()).toBeLessThanOrEqual(1)
       expect(schemaComponent.selectedTab).toBe('planning')
       expect(pageSchemaComponent.selectedTab).toBe('content')
-      await admin.navigate('/items/1/planning/pages/0#details')
+      await admin.navigate('/items/1/planning/pages/0/details')
       expect(pageSchemaComponent.selectedTab).toBe('details')
       expect(schemaComponent.selectedTab).toBe('planning')
     })
@@ -523,7 +588,7 @@ describe('DitoSchema', () => {
 
     it('selects the tab of the source after closing a reloaded form', async () => {
       const { admin, getForms } = await mountAdminAt(
-        '/items/1/planning/pages/0#text'
+        '/items/1/planning/pages/0/text'
       )
       const [itemForm, pageForm] = getForms()
       const schemaComponent = admin.getSchemaComponent(itemForm)
@@ -531,13 +596,12 @@ describe('DitoSchema', () => {
       expect(schemaComponent.selectedTab).toBe('planning')
       await pageForm.routeContext.close()
       await flushPromises()
-      expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
-      // The hash names the tab of the page form, the route the one of its list:
+      expect(admin.router.currentRoute.value.path).toBe('/items/1/planning')
       expect(schemaComponent.selectedTab).toBe('planning')
     })
 
     it('selects the tab of the route when loaded directly', async () => {
-      const { admin, getForms } = await mountAdminAt('/items/1#planning')
+      const { admin, getForms } = await mountAdminAt('/items/1/planning')
       expect(admin.getSchemaComponent(getForms()[0]).selectedTab).toBe(
         'planning'
       )
@@ -961,12 +1025,12 @@ describe('DitoSchema', () => {
       })
       await submit()
       await flushPromises()
-      expect(admin.router.currentRoute.value.path).toBe(
-        '/items/1/content/chapters/0'
-      )
       const form = admin.getRouteComponent(isForm)
       await settle(form)
       // The error reveals its tab in the nested form, and focuses its field:
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/content/chapters/0/details'
+      )
       const input = form.$el.querySelector(
         'input[id="content/chapters/0/details/pages"]'
       )
@@ -1145,12 +1209,12 @@ describe('DitoSchema', () => {
         },
         data: { title: 'Emma' }
       })
-      await admin.navigate('/test#drafts')
-      expect(admin.router.currentRoute.value.hash).toBe('#details')
+      await admin.navigate('/test/drafts')
+      expect(admin.router.currentRoute.value.path).toBe('/test/details')
       expect(schemaComponent.selectedTab).toBe('details')
     })
 
-    it('removes the hash without any rendered tabs', async () => {
+    it('leaves the tab out of the path without rendered tabs', async () => {
       const { admin, schemaComponent } = await mountSchema({
         schema: {
           tabs: {
@@ -1164,8 +1228,8 @@ describe('DitoSchema', () => {
         data: { notes: '' }
       })
       expect(schemaComponent.selectedTab).toBe(null)
-      await admin.navigate('/test#drafts')
-      expect(admin.router.currentRoute.value.hash).toBe('')
+      await admin.navigate('/test/drafts')
+      expect(admin.router.currentRoute.value.path).toBe('/test')
     })
   })
 

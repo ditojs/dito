@@ -267,11 +267,10 @@ export default {
           )
           if (itemClaim) {
             // Keep the path below the form, e.g. of the form of a child item:
-            const { path, query, hash } = router.currentRoute.value
+            const { path, query } = router.currentRoute.value
             replaceWithin({
               path: itemClaim.path + path.slice(routeContext.path.length),
-              query,
-              hash
+              query
             })
           } else if (hasDataChanged && isListSource(sourceSchema.value)) {
             close()
@@ -391,10 +390,7 @@ export default {
                   : sourceData.value.length - 1
               navigateWithin(submittedPath, () => {
                 const { sourcePath } = claim.value
-                router.replace({
-                  path: id !== null ? `${sourcePath}/${id}` : sourcePath,
-                  hash: router.currentRoute.value.hash // Keep the tab.
-                })
+                router.replace(id !== null ? `${sourcePath}/${id}` : sourcePath)
               })
             }
           }

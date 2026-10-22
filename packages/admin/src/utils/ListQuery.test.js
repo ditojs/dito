@@ -8,7 +8,7 @@ function createListQuery({
   isInRoute = true
 } = {}) {
   const onChange = vi.fn()
-  const route = { path: '/books', query: routeQuery, hash: '#main' }
+  const route = { path: '/books', query: routeQuery }
   const store = { query: storedQuery }
   const router = {
     push: vi.fn(async ({ query }) => {
@@ -44,14 +44,13 @@ describe('ListQuery', () => {
   })
 
   describe('update()', () => {
-    it('navigates to the changed query and keeps the hash', async () => {
+    it('navigates to the changed query', async () => {
       const { listQuery, router } = createListQuery({
         storedQuery: { scope: 'all', order: 'title asc' }
       })
       await listQuery.update({ order: 'title desc' })
       expect(router.push).toHaveBeenCalledWith({
-        query: { scope: 'all', order: 'title desc' },
-        hash: '#main'
+        query: { scope: 'all', order: 'title desc' }
       })
     })
 
@@ -166,7 +165,7 @@ describe('ListQuery', () => {
       listQuery.syncWithRoute()
       const query = { scope: 'drafts', order: 'title asc', page: '2' }
       expect(store.query).toEqual(query)
-      expect(router.replace).toHaveBeenCalledWith({ query, hash: '#main' })
+      expect(router.replace).toHaveBeenCalledWith({ query })
     })
 
     it(`doesn't replace the route if it holds the query`, () => {
