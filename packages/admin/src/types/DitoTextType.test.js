@@ -329,25 +329,33 @@ describe('DitoTextType', () => {
   })
 
   describe('serializing', () => {
-    it('trims values with `trim` and sends empty values as defaults', async () => {
+    it('trims values with `trim` and sends empty values, not defaults', async () => {
       const { findField, submit } = await mountForm({
         schema: {
           fields: {
             title: { type: 'text', trim: true },
             subtitle: { type: 'text' },
-            note: { type: 'text', default: 'none' }
+            note: { type: 'text', default: 'none' },
+            summary: { type: 'text', default: 'none', nullable: false }
           }
         },
-        data: { title: 'Dune', subtitle: 'Book', note: 'Read' },
+        data: {
+          title: 'Dune',
+          subtitle: 'Book',
+          note: 'Read',
+          summary: 'Long'
+        },
         request: ({ data }) => ({ data })
       })
       await findField('title').find('input').setValue('  Emma ')
       await findField('subtitle').find('input').setValue('')
       await findField('note').find('input').setValue('')
+      await findField('summary').find('input').setValue('')
       expect(await submit()).toMatchObject({
         title: 'Emma',
         subtitle: null,
-        note: 'none'
+        note: null,
+        summary: ''
       })
     })
   })
