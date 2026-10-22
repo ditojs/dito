@@ -735,8 +735,8 @@ Returns `true` if the value was created by `html`. The check uses the brand
 escapeHtml(html)
 ```
 
-Escapes `"`, `&`, `<` and `>` as HTML entities, so that a string can be
-inserted into HTML as text or as an attribute value in double quotes. Returns
+Escapes `"`, `'`, `&`, `<` and `>` as HTML entities, so that a string can be
+inserted into HTML as text or as an attribute value in quotes. Returns
 `''` for `null` and `undefined`, and converts other values with `toString()`.
 
 ```js
