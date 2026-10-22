@@ -122,6 +122,15 @@ test.describe('forms with properties and widgets', () => {
       'The Rank field must be 1 or more.'
     )
     await expect(form.getField('Rank')).toBeFocused()
+    // Collapsed again, the section marks its label in the color of errors:
+    const errorColor = await getErrors(page, 'Rank').evaluate(
+      element => getComputedStyle(element).color
+    )
+    const label = ranking.locator('.dito-label')
+    await expect(label).not.toHaveCSS('color', errorColor)
+    await ranking.click()
+    await expect(form.getField('Rank')).toBeHidden()
+    await expect(label).toHaveCSS('color', errorColor)
   })
 
   test('leave out the values of irrelevant properties', async ({

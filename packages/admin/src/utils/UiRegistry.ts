@@ -1,5 +1,5 @@
 import { nextTick, shallowReactive, watch } from 'vue'
-import { asArray, parseDataPath } from '@ditojs/utils'
+import { parseDataPath } from '@ditojs/utils'
 import type { DataContext } from './DataContext.ts'
 import type { RouteContext } from './RouteContext.ts'
 
@@ -19,35 +19,21 @@ export class UiRegistry {
   readonly routes = shallowReactive<RouteContext[]>([])
   readonly #handles = new Map<string, Set<UiHandle>>()
 
-  // Follow the changes of the component paths, e.g. when list items move.
-  // Sections register for the paths of the widgets that they contain:
-  register(
-    getComponentPaths: () => string | string[],
-    handle: UiHandle
-  ): () => void {
-    const add = (componentPaths: string[]) => {
-      for (const componentPath of componentPaths) {
-        const handles = this.#handles.get(componentPath) ?? new Set()
-        this.#handles.set(componentPath, handles.add(handle))
-      }
-      return componentPaths
+  // Follow the changes of the component path, e.g. when list items move:
+  register(getComponentPath: () => string, handle: UiHandle): () => void {
+    const add = (componentPath: string) => {
+      const handles = this.#handles.get(componentPath) ?? new Set()
+      this.#handles.set(componentPath, handles.add(handle))
+      return componentPath
     }
-    const remove = (componentPaths: string[]) => {
-      for (const componentPath of componentPaths) {
-        this.#handles.get(componentPath)!.delete(handle)
-      }
-    }
-    let componentPaths = add(asArray(getComponentPaths()))
-    const stop = watch(
-      () => asArray(getComponentPaths()),
-      paths => {
-        remove(componentPaths)
-        componentPaths = add(paths)
-      }
-    )
+    let componentPath = add(getComponentPath())
+    const stop = watch(getComponentPath, path => {
+      this.#handles.get(componentPath)!.delete(handle)
+      componentPath = add(path)
+    })
     return () => {
       stop()
-      remove(componentPaths)
+      this.#handles.get(componentPath)!.delete(handle)
     }
   }
 
@@ -62,15 +48,21 @@ export class UiRegistry {
       : handles.filter(handle => handle.dataContext === dataContext)
   }
 
-  isDisplayingErrors(dataContext: DataContext, dataPath: string): boolean {
-    return [...this.#handles.values()].some(handles =>
-      [...handles].some(
-        handle => (
-          handle.dataContext === dataContext &&
-          handle.errorDataPath === dataPath
+  // The paths of the components that display the errors at `dataPath`:
+  getErrorComponentPaths(
+    dataContext: DataContext,
+    dataPath: string
+  ): string[] {
+    return [...this.#handles]
+      .filter(([, handles]) =>
+        [...handles].some(
+          handle => (
+            handle.dataContext === dataContext &&
+            handle.errorDataPath === dataPath
+          )
         )
       )
-    )
+      .map(([componentPath]) => componentPath)
   }
 
   // Ask the components on the way from the outside in:

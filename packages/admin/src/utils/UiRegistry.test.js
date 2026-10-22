@@ -45,7 +45,7 @@ describe('UiRegistry', () => {
     expect(registry.getHandles('title', dataContext)).toEqual([handle])
   })
 
-  it('tells the errors that the components of a data context display', () => {
+  it('finds the components of a data context that display errors', () => {
     const registry = new UiRegistry()
     registry.register(() => 'main/title', {
       dataContext,
@@ -55,8 +55,10 @@ describe('UiRegistry', () => {
       dataContext: {},
       errorDataPath: 'author'
     })
-    expect(registry.isDisplayingErrors(dataContext, 'title')).toBe(true)
-    expect(registry.isDisplayingErrors(dataContext, 'author')).toBe(false)
+    expect(registry.getErrorComponentPaths(dataContext, 'title')).toEqual([
+      'main/title'
+    ])
+    expect(registry.getErrorComponentPaths(dataContext, 'author')).toEqual([])
   })
 
   it('reveals components from the outside in, and focuses them', async () => {

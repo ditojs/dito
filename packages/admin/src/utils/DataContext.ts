@@ -8,10 +8,7 @@ import {
 import SchemaContext from '../SchemaContext.js'
 import { appendDataPath } from './data.js'
 import { getText } from './html.js'
-import {
-  getLabel,
-  getComponentPathByDataPath
-} from './schema/data.js'
+import { getLabel } from './schema/data.js'
 import {
   getDataPathMatcher,
   getDataValidationErrors,
@@ -115,17 +112,6 @@ export function createDataContext({
     return match ? getMatchingValidationErrors(errors, match) : errors
   }
 
-  // The component that displays the value at `valueDataPath`, or contains it:
-  const getValueComponentPath = (valueDataPath: string) => {
-    const { schema, data, dataPath, componentPath, model } = context
-    return getComponentPathByDataPath(schema, data, valueDataPath, {
-      dataPath,
-      componentPath,
-      services,
-      rootData: model.rootData
-    })
-  }
-
   // Notify the errors that no mounted component displays once they're revealed:
   const showErrors = async (
     errors: Errors,
@@ -201,17 +187,30 @@ export function createDataContext({
           ...(await ui.routes[level].dataContext.revealErrors())
         )
       }
-    } else {
-      for (const dataPath of dataPaths) {
-        await ui.reveal(context, getValueComponentPath(dataPath), {
-          focus: dataPath === firstDataPath
+    }
+    // Collapsed schemas render their content with errors hidden, so we can
+    // find the components that display them:
+    await nextTick()
+    const componentPathsByDataPath = new Map(
+      dataPaths.map(dataPath => [
+        dataPath,
+        ui.getErrorComponentPaths(context, dataPath)
+      ])
+    )
+    if (!formRoute) {
+      // Reveal them, and focus the first one:
+      const componentPaths = [...componentPathsByDataPath.values()].flat()
+      for (const componentPath of componentPaths) {
+        await ui.reveal(context, componentPath, {
+          focus: componentPath === componentPaths[0]
         })
       }
     }
-    await nextTick()
     return [
       ...displayedDataPaths,
-      ...dataPaths.filter(dataPath => ui.isDisplayingErrors(context, dataPath))
+      ...dataPaths.filter(
+        dataPath => componentPathsByDataPath.get(dataPath)!.length > 0
+      )
     ]
   }
 

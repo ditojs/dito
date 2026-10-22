@@ -325,6 +325,39 @@ describe('DitoSectionType', () => {
     )
   })
 
+  it('marks collapsed sections that hold errors', async () => {
+    const { findField, findContainer, submit, data } = await mountForm({
+      schema: {
+        fields: {
+          details: {
+            type: 'section',
+            label: 'Details',
+            collapsible: true,
+            fields: { title: { type: 'text', required: true } }
+          }
+        }
+      },
+      data: { title: '' },
+      request: ({ data }) => ({ data })
+    })
+    expect(await submit()).toBe(null)
+    await findContainer('details')
+      .find('.dito-schema-header .dito-label')
+      .trigger('click')
+    await flushPromises()
+    // The collapsed section keeps its content with the errors hidden, which
+    // marks its label:
+    const section = findField('details')
+    const content = () => section.find('.dito-schema-content')
+    expect(section.classes()).not.toContain('dito-schema--open')
+    // Once the closing transition is done:
+    await vi.waitFor(() => expect(content().isVisible()).toBe(false))
+    expect(content().find('.dito-container--has-errors').exists()).toBe(true)
+    data.title = 'Emma'
+    expect(await submit()).not.toBe(null)
+    expect(content().exists()).toBe(false)
+  })
+
   it('reveals the components with errors in sections of list items', async () => {
     const { findField, submit, getErrors } = await mountForm({
       schema: {

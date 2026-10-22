@@ -1,19 +1,7 @@
-import {
-  h,
-  markRaw,
-  onUnmounted,
-  shallowReactive,
-  shallowRef
-} from 'vue'
+import { h, markRaw, shallowReactive } from 'vue'
 import DitoContainer from './DitoContainer.vue'
-import { getSlotContent, appendName } from './DitoSection.vue'
-import { appendDataPath } from '../utils/data.js'
 import { useServices } from '../composables/useSchemaContext.ts'
-import {
-  useWidget,
-  widgetComponents,
-  widgetProps
-} from '../composables/useWidget.ts'
+import { useWidget, widgetProps } from '../composables/useWidget.ts'
 
 // The text types of the server's formats:
 const textTypesByFormat = {
@@ -290,69 +278,39 @@ export const DitoObjectField = defineSourceWidget('DitoObjectField', {
 // with the slot props `{ item, index }`. The forms of the items provide the
 // scopes of the widgets in them:
 function defineSourceWidget(widgetName, { props = {}, getSchema }) {
-  const widget = {
+  return {
     name: widgetName,
     props: { ...widgetProps, ...sourceProps, ...props },
     emits: ['change'],
 
     setup(props, { emit, slots }) {
-      const { scope, name, property, isRelevant, getContainerProps } =
-        useWidget(props)
-      const { adminContext, dataContext } = useServices()
+      const { name, property, isRelevant, getContainerProps } = useWidget(props)
       const schema = {
         ...getSchema(property),
         name,
         inlined: true,
         onChange: context => emit('change', context)
       }
-      const isList = property.type === 'array'
       const valueName = schema.wrapPrimitives
-      // Collapsed items don't mount their widgets, so register their paths,
-      // which the items reveal:
-      const componentPaths = shallowRef([])
-      const unregister = adminContext.ui.register(
-        () => componentPaths.value,
-        { dataContext }
-      )
-      onUnmounted(unregister)
-
       const renderItem = ({ item, index = null }) =>
         slots.default({ item: valueName ? item[valueName] : item, index })
-
-      return () => {
-        const value = scope.data[name]
-        const items = isList ? (value ?? []) : value ? [value] : []
-        const paths = slots.default
-          ? items.flatMap((item, index) => {
-              const path = appendDataPath(scope.componentPath, name)
-              const componentPath = isList ? appendDataPath(path, index) : path
-              return getSlotContent(slots.default({ item, index })).names.map(
-                name => appendName(componentPath, name)
-              )
-            })
-          : []
-        if (paths.join() !== componentPaths.value.join()) {
-          componentPaths.value = paths
-        }
-        return isRelevant()
+      return () =>
+        isRelevant()
           ? h(
               DitoContainer,
               getContainerProps(schema),
               slots.default ? { default: renderItem } : null
             )
           : null
-      }
     }
   }
-  widgetComponents.add(widget)
-  return widget
 }
 
 // The widgets render the type components of fields, with the display schema
 // of the property's hints and of their props. Their `change` event is the one
 // of the field, for edits of the user:
 function defineWidget(name, { props = {}, getSchema }) {
-  const widget = {
+  return {
     name,
     props: { ...widgetProps, ...props },
     emits: ['change'],
@@ -368,6 +326,4 @@ function defineWidget(name, { props = {}, getSchema }) {
         isRelevant() ? h(DitoContainer, getContainerProps(schema)) : null
     }
   }
-  widgetComponents.add(widget)
-  return widget
 }
