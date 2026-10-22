@@ -159,6 +159,27 @@ describe('DitoUploadType', () => {
     })
   })
 
+  it('passes each file and its index to `downloadUrl()` with `multiple`', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        fields: {
+          files: {
+            type: 'upload',
+            multiple: true,
+            downloadUrl: ({ value, valueIndex }) =>
+              `/files/${valueIndex}/${value.name}`
+          }
+        }
+      },
+      data: { files: [cover, scan] }
+    })
+    const links = findField('files').findAll('a[download]')
+    expect(links.map(link => link.attributes('href'))).toEqual([
+      '/files/0/cover.png',
+      '/files/1/scan.pdf'
+    ])
+  })
+
   it('removes files after confirmation', async () => {
     const confirm = stubConfirm(true)
     const { findField, data, routeComponent } = await mountForm({

@@ -12,16 +12,17 @@ export interface SchemaValueOptions {
   type?: any
   default?: any
   schema?: Schema | null
+  context?: Context
   callback?: boolean
 }
 
 // Resolve the callbacks of the schemas that the component renders with its
-// `context`:
+// `context`, unless a call passes its own, e.g. uploads pass one per file:
 export function useSchemaValue(context: Context) {
   const getSchemaValue = (
     keyOrDataPath: string | string[],
     { schema = context.schema, ...options }: SchemaValueOptions = {}
-  ) => getValue(keyOrDataPath, { ...options, schema, context })
+  ) => getValue(keyOrDataPath, { context, ...options, schema })
 
   return {
     getSchemaValue,
