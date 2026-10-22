@@ -4,7 +4,8 @@ import {
   useDitoForm,
   DitoSchemaForm,
   DitoTextField,
-  DitoTreeListField
+  DitoTreeListField,
+  DitoTreeLevel
 } from '@ditojs/admin'
 import type { Collection } from '../models/Collection.js'
 
@@ -13,7 +14,7 @@ const nameProperties = {
 } as const
 
 // A page that edits the shop sets of a collection and their cuts in a tree,
-// one slot per level:
+// one level each:
 export default defineComponent({
   setup() {
     const route = useRoute()
@@ -45,8 +46,15 @@ export default defineComponent({
             DitoTreeListField,
             { name: 'shopSets', itemLabel: 'name', deletable: true },
             {
-              shopSets: () => h(DitoTextField, { name: 'name', label: 'Set' }),
-              cuts: () => h(DitoTextField, { name: 'name', label: 'Cut' })
+              form: () => h(DitoTextField, { name: 'name', label: 'Set' }),
+              default: () =>
+                h(
+                  DitoTreeLevel,
+                  { name: 'cuts', itemLabel: 'name', draggable: true },
+                  {
+                    form: () => h(DitoTextField, { name: 'name', label: 'Cut' })
+                  }
+                )
             }
           )
         ]

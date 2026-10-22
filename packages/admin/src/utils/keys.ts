@@ -1,4 +1,4 @@
-import type { InjectionKey, MaybeRef, Ref } from 'vue'
+import type { InjectionKey, MaybeRef, Ref, ShallowRef } from 'vue'
 import type { AdminContext } from './AdminContext.ts'
 import type { DataContext } from './DataContext.ts'
 import type { ResourceContext } from './ResourceContext.ts'
@@ -51,6 +51,14 @@ export interface PanelTab {
   isTabSelected(): boolean
 }
 
+// A level of a tree widget, with its current `#form` slot and the levels below
+// it that registered:
+export interface TreeLevel {
+  readonly props: Record<string, any>
+  readonly formSlot: ShallowRef<((context: Context) => any) | undefined>
+  readonly levels: TreeLevel[]
+}
+
 type Key<T> = InjectionKey<T>
 
 export const adminContextKey: Key<AdminContext> = Symbol('adminContext')
@@ -87,3 +95,4 @@ export const fileDropTargetsKey: Key<FileDropTargets> =
   Symbol(
     'fileDropTargets'
   )
+export const treeLevelsKey: Key<TreeLevel[]> = Symbol('treeLevels')

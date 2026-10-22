@@ -3651,23 +3651,37 @@ export const DitoObjectField: DefineSetupFnComponent<
   }>
 >
 
+type TreeLevelProps = Pick<
+  TreeListSchema,
+  'collapsed' | 'deletable' | 'draggable' | 'itemLabel'
+>
+
+type TreeLevelSlots = SlotsType<{
+  /** The form of the selected item, with the context of the item. */
+  form(context: SchemaContext): any
+  /** The `DitoTreeLevel` of the next level. */
+  default(): any
+}>
+
 /**
- * Shows the array property `name` as a tree, with the lists of its items that
- * have a slot of their name as their children. The slot named after each list,
- * e.g. `#cuts`, lays out the form of the selected item beside the tree, with
- * the context of the item.
+ * Shows the array property `name` as a tree. The `#form` slot lays out the
+ * form of the selected item beside the tree, and a `DitoTreeLevel` in the
+ * default slot declares the next level.
  */
 export const DitoTreeListField: DefineSetupFnComponent<
-  WidgetProps<
-    { name: string } & Pick<
-      TreeListSchema,
-      'collapsed' | 'deletable' | 'draggable' | 'itemLabel'
-    >
-  >,
+  WidgetProps<{ name: string } & TreeLevelProps>,
   {},
-  SlotsType<{
-    [name: string]: (context: SchemaContext) => any
-  }>
+  TreeLevelSlots
+>
+
+/**
+ * Declares the level of the array property `name` of the items of the level
+ * around it in a `DitoTreeListField`, with its own props and `#form` slot.
+ */
+export const DitoTreeLevel: DefineSetupFnComponent<
+  { name: string } & TreeLevelProps,
+  {},
+  TreeLevelSlots
 >
 
 /**

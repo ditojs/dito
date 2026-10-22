@@ -214,10 +214,12 @@ They have no forms with routes of their own, except in trees.
 
 ## Trees
 
-`DitoTreeListField` shows an array of objects as a tree, with the arrays of its
-items as their children, e.g. sets and their cuts. Each level has a slot named
-after its array, which receives the [context](./context.md) of the item like
-the slots of lists, and lays out the form of the selected item:
+`DitoTreeListField` shows an array of objects as a tree, e.g. sets and their
+cuts. Each level of the tree lays out the form of its selected item in its
+`#form` slot, which receives the [context](./context.md) of the item like the
+slots of lists. A `DitoTreeLevel` in the default slot declares the next level:
+the array of its `name` in the items of the level around it, nested like the
+data:
 
 ```js
 shopSets: {
@@ -230,7 +232,7 @@ shopSets: {
         type: 'array',
         items: {
           type: 'object',
-          properties: { name: { type: 'string', required: true } }
+          properties: { title: { type: 'string', required: true } }
         }
       }
     }
@@ -239,19 +241,24 @@ shopSets: {
 ```
 
 ```pug
-DitoTreeListField(name="shopSets" itemLabel="name" draggable)
-  template(#shopSets="context")
+DitoTreeListField(name="shopSets" itemLabel="name")
+  template(#form="context")
     DitoTextField(name="name" label="Set")
-  template(#cuts="context")
-    DitoTextField(name="name" label="Cut")
+  DitoTreeLevel(name="cuts" itemLabel="title" draggable)
+    template(#form="context")
+      DitoTextField(name="title" label="Cut")
 ```
 
-Only the arrays with a slot are levels of the tree, and each level has at most
-one. Selecting an item opens its form beside the tree, which edits the item in
+The props of each level, e.g. `itemLabel` and `draggable`, apply to that level
+only, like the `children` of tree lists in schema views. Levels without a
+`#form` slot aren't editable, and each level has at most one level below it.
+Levels can be shown and hidden like other components, e.g. with `v-if`.
+
+Selecting an item opens its form beside the tree, which edits the item in
 place. The form has its own route in the page, which follows the item's place
 in the data, e.g. `/fonts/1/shop-sets/0/cuts/1`, so reloads, the browser's
 history and shared links open it again. Errors in items open the forms that
-show them. The props of the tree apply to all its levels.
+show them.
 
 ## Custom fields
 

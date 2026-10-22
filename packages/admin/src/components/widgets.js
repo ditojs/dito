@@ -1,8 +1,22 @@
-import { h, markRaw, shallowReactive } from 'vue'
+import {
+  computed,
+  h,
+  inject,
+  markRaw,
+  onMounted,
+  onUnmounted,
+  provide,
+  reactive,
+  ref,
+  shallowReactive,
+  shallowRef,
+  toRefs
+} from 'vue'
 import DitoContainer from './DitoContainer.vue'
 import { useServices } from '../composables/useSchemaContext.ts'
 import { useWidget, widgetProps } from '../composables/useWidget.ts'
 import { getArrayItemForm } from '../utils/schema/properties.js'
+import { treeLevelsKey } from '../utils/keys.ts'
 
 // Cleared strings are empty, unless they're `nullable`:
 const getTextSchema = (type, { maxLength, nullable }) => ({
@@ -242,23 +256,17 @@ const sourceProps = {
   deletable: { type: Boolean, default: undefined }
 }
 
-const itemLabelProps = {
-  itemLabel: { type: [String, Function, Object, Boolean], default: undefined }
-}
-
 // Lists hold objects of their `items`, or of several `forms` by their `type`,
 // or values that their items wrap, which widgets without `name` edit:
 export const DitoListField = defineSourceWidget('DitoListField', {
   props: {
-    ...sourceProps,
-    ...itemLabelProps,
-    draggable: { type: Boolean, default: undefined }
+    draggable: { type: Boolean, default: undefined },
+    itemLabel: { type: [String, Function, Object, Boolean], default: undefined }
   },
   getSchema: ({ items, forms, orderKey, idKey }) => {
     const { form, itemAdapter } = forms ? {} : getArrayItemForm(items)
     return {
       type: 'list',
-      inlined: true,
       ...(forms ? { forms } : { form }),
       wrapPrimitives: itemAdapter?.name,
       orderKey,
@@ -269,84 +277,105 @@ export const DitoListField = defineSourceWidget('DitoListField', {
 
 // Objects that are `nullable` can be created and deleted:
 export const DitoObjectField = defineSourceWidget('DitoObjectField', {
-  props: sourceProps,
   getSchema: property => ({
     type: 'object',
-    inlined: true,
     form: property,
     creatable: !!property.nullable,
     deletable: !!property.nullable
   })
 })
 
-// Trees show nested lists as levels: the items of each level hold the next one
-// in their list that has a slot of its name. The slot of each level, e.g.
-// `#cuts`, lays out the form of the selected item, which edits it in place
-// beside the tree, in its own route:
-export const DitoTreeListField = defineSourceWidget('DitoTreeListField', {
-  props: {
-    ...itemLabelProps,
-    collapsed: { type: Boolean, default: undefined },
-    deletable: { type: Boolean, default: undefined },
-    draggable: { type: Boolean, default: undefined }
-  },
-  getSchema: (property, slots, props) => {
-    const { itemLabel, collapsed, deletable, draggable } = props
-    const getLevelSchema = (name, { items, orderKey, idKey }) => {
-      const children = Object.entries(items.properties).filter(
-        ([key, { type }]) => type === 'array' && slots[key]
-      )
-      if (children.length > 1) {
-        throw new Error(
-          `Unsupported tree level with several child lists: '${
-            children.map(([key]) => key).join(`', '`)
-          }'.`
-        )
-      }
-      const [child] = children
-      return {
-        type: 'tree-list',
-        name,
-        form: {
-          ...items,
-          component: markRaw({
-            name: 'DitoTreeListItemForm',
-            props: {
-              schema: { type: Object, required: true },
-              context: { type: Object, required: true }
-            },
-            setup: props => () => slots[name]?.(props.context)
-          })
-        },
-        ...(child && { children: getLevelSchema(...child) }),
-        orderKey,
-        idKey,
-        itemLabel,
-        collapsed,
-        deletable,
-        draggable,
-        editable: !!slots[name],
-        mutate: true
-      }
-    }
-    return getLevelSchema(props.name, property)
-  }
-})
+const treeLevelProps = {
+  itemLabel: { type: [String, Function, Object, Boolean], default: undefined },
+  collapsed: { type: Boolean, default: undefined },
+  deletable: { type: Boolean, default: undefined },
+  draggable: { type: Boolean, default: undefined }
+}
 
-// Sources lay out the forms of their items in their slots, which receive the
-// context of the item itself, e.g. `v-slot="context"`. The forms of the items
-// provide the scopes of the widgets in them:
+// Trees show nested lists as levels, each with its own props: the tree, and
+// below it the `DitoTreeLevel` in the default slot of each level. Levels lay
+// out the form of the selected item in their `#form` slot, which edits it in
+// place beside the tree, in its own route:
+export const DitoTreeListField = {
+  name: 'DitoTreeListField',
+  props: { ...widgetProps, ...treeLevelProps },
+  emits: ['change'],
+
+  setup(props, { emit, slots }) {
+    const { name, property, isRelevant, getContainerProps } = useWidget(props)
+    const levels = shallowReactive([])
+    provide(treeLevelsKey, levels)
+    const formSlot = shallowRef(slots.form)
+    const schema = createTreeLevelSchema(name, property, {
+      props,
+      formSlot,
+      levels
+    })
+    const onChange = context => emit('change', context)
+    // Render the levels, which render nothing, so that they register, and the
+    // tree once they did, as it claims the routes into them. Each render hands
+    // the current `#form` slot to the forms of the items:
+    const isMounted = ref(false)
+    onMounted(() => {
+      isMounted.value = true
+    })
+    return () => {
+      formSlot.value = slots.form
+      return isRelevant()
+        ? [
+            slots.default?.(),
+            isMounted.value
+              ? h(DitoContainer, getContainerProps({ ...schema, onChange }))
+              : null
+          ]
+        : null
+    }
+  }
+}
+
+// A level of a tree, which registers its props and `#form` slot with the level
+// around it while it's mounted:
+export const DitoTreeLevel = {
+  name: 'DitoTreeLevel',
+  props: {
+    name: { type: String, required: true },
+    ...treeLevelProps
+  },
+
+  setup(props, { slots }) {
+    const parentLevels = inject(treeLevelsKey, null)
+    if (!parentLevels) {
+      throw new Error(
+        `Unable to place the tree level '${props.name}' outside of trees.`
+      )
+    }
+    const levels = shallowReactive([])
+    provide(treeLevelsKey, levels)
+    const level = { props, formSlot: shallowRef(slots.form), levels }
+    parentLevels.push(level)
+    onUnmounted(() => parentLevels.splice(parentLevels.indexOf(level), 1))
+    return () => {
+      level.formSlot.value = slots.form
+      return slots.default?.()
+    }
+  }
+}
+
+// Lists and objects lay out the form of their items in their default slot,
+// which receives the context of the item itself, e.g. `v-slot="context"`. The
+// forms of the items provide the scopes of the widgets in them:
 function defineSourceWidget(widgetName, { props = {}, getSchema }) {
   return {
     name: widgetName,
-    props: { ...widgetProps, ...props },
+    props: { ...widgetProps, ...sourceProps, ...props },
     emits: ['change'],
 
     setup(props, { emit, slots }) {
       const { name, property, isRelevant, getContainerProps } = useWidget(props)
       const schema = {
-        ...getSchema(property, slots, props),
+        ...getSchema(property),
         name,
+        inlined: true,
         onChange: context => emit('change', context)
       }
       const renderItem = ({ context }) => slots.default(context)
@@ -382,4 +411,57 @@ function defineWidget(name, { props = {}, getSchema }) {
         isRelevant() ? h(DitoContainer, getContainerProps(schema)) : null
     }
   }
+}
+
+// The schema of a tree level, with the schema of the level below it while one
+// is registered. Its props are read from the level, so that the schemas only
+// change with the registered levels:
+function createTreeLevelSchema(name, { items, orderKey, idKey }, level) {
+  const { props, formSlot } = level
+  const { itemLabel, collapsed, deletable, draggable } = toRefs(props)
+  return reactive({
+    type: 'tree-list',
+    name,
+    form: {
+      ...items,
+      component: markRaw({
+        name: 'DitoTreeLevelForm',
+        props: {
+          schema: { type: Object, required: true },
+          context: { type: Object, required: true }
+        },
+        setup: props => () => formSlot.value?.(props.context)
+      })
+    },
+    children: computed(() => {
+      const { levels } = level
+      if (levels.length > 1) {
+        throw new Error(
+          `Unsupported tree level with several child levels: '${
+            levels.map(({ props }) => props.name).join(`', '`)
+          }'.`
+        )
+      }
+      const [child] = levels
+      if (child) {
+        const { name } = child.props
+        const property = items.properties[name]
+        if (!property) {
+          throw new Error(`Unknown property '${name}'.`)
+        }
+        return createTreeLevelSchema(name, property, child)
+      } else {
+        return null
+      }
+    }),
+    orderKey,
+    idKey,
+    itemLabel,
+    collapsed,
+    deletable,
+    draggable,
+    // Levels without a form have no items to edit:
+    editable: computed(() => !!formSlot.value),
+    mutate: true
+  })
 }

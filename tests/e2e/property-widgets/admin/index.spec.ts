@@ -2,7 +2,11 @@ import { test, expect } from '../fixtures.js'
 import { Designer } from '../models/Designer.js'
 import { ShopSet } from '../models/ShopSet.js'
 import { Collection } from '../models/Collection.js'
-import { DitoForm, DitoNestedList } from '../../../utils/pages.js'
+import {
+  DitoForm,
+  DitoNestedList,
+  dragHandle
+} from '../../../utils/pages.js'
 import type { Page } from '@playwright/test'
 
 const getContainer = (page: Page, label: string) =>
@@ -301,6 +305,30 @@ test.describe('trees in forms with properties', () => {
       .poll(async () => (await Collection.query().findById(id))?.shopSets)
       .toEqual([
         { name: 'Sans', cuts: [{ name: 'Regular' }, { name: 'Black' }] },
+        { name: 'Serif', cuts: [] }
+      ])
+  })
+
+  test('reorder the items of draggable levels only', async ({ page, url }) => {
+    const { id } = await Collection.query().insert({
+      name: 'Fonts',
+      shopSets: [
+        { name: 'Sans', cuts: [{ name: 'Regular' }, { name: 'Bold' }] },
+        { name: 'Serif', cuts: [] }
+      ]
+    })
+    await page.goto(`${url}/admin/collections/${id}`)
+    await page.getByRole('button', { name: 'Sans' }).click()
+    const getHandle = (label: string) =>
+      getTreeHeader(page, label).locator('.dito-button[title="Drag"]')
+    await expect(getHandle('Sans')).toHaveCount(0)
+    await getTreeHeader(page, 'Regular').hover()
+    await dragHandle(page, getHandle('Regular'), getHandle('Bold'))
+    await new DitoForm(page).save()
+    await expect
+      .poll(async () => (await Collection.query().findById(id))?.shopSets)
+      .toEqual([
+        { name: 'Sans', cuts: [{ name: 'Bold' }, { name: 'Regular' }] },
         { name: 'Serif', cuts: [] }
       ])
   })
