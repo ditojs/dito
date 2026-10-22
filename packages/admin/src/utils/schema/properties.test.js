@@ -170,7 +170,7 @@ describe('getFormProperties()', () => {
         await getProperties({
           day: { type: 'date', required: true },
           opensAt: { type: 'datetime' },
-          opensAtTime: { type: 'time', format: { time: 'short' } }
+          opensAtTime: { type: 'time', formats: { time: 'short' } }
         })
       ).toEqual({
         day: { type: 'date', required: true },

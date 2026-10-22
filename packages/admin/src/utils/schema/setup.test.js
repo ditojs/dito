@@ -392,12 +392,12 @@ describe('the schema keys of 3.x', () => {
     )
   })
 
-  it('rejects the formats of dates', async () => {
+  it('keeps the formats of dates', async () => {
     await expect(
-      setupBookView({ published: { type: 'date', formats: {} } })
-    ).rejects.toThrow(
-      `Unsupported schema key 'formats' in 'published': Use 'format' instead.`
-    )
+      setupBookView({
+        published: { type: 'date', formats: { date: { day: 'numeric' } } }
+      })
+    ).resolves.toBe(undefined)
   })
 
   it.each([

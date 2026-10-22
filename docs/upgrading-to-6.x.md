@@ -23,6 +23,7 @@ a warning.
 | `events: { change() {} }`                              | `onChange() {}`                                     |
 | `type: 'computed'`, `'data'` or `'hidden'`             | `type: 'value'`                                     |
 | `{ type: 'color', format: 'rgb' }`                     | `{ type: 'color', colorFormat: 'rgb' }`             |
+| `{ type: 'date', format: { date } }`                   | `{ type: 'date', formats: { date } }`               |
 
 - Custom types that return `min` or `max` from `getValidations()` need to
   return `minimum` and `maximum`.

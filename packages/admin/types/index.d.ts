@@ -1276,9 +1276,9 @@ export interface DateSchema<$Item = any>
    */
   type: 'date' | 'datetime' | 'time'
   /**
-   * Format configuration for date/time display.
+   * The date and time formats of the display, merged over `api.formats`.
    */
-  format?: SchemaValue<
+  formats?: SchemaValue<
     $Item,
     {},
     {
@@ -3567,17 +3567,17 @@ export const DitoMultiselectField: DefineComponent<
 
 /** Edits the date of the property `name` with a date picker. */
 export const DitoDateField: DefineComponent<
-  WidgetProps<Pick<DateSchema, 'format'>>
+  WidgetProps<Pick<DateSchema, 'formats'>>
 >
 
 /** Edits the time of the property `name` with a time picker. */
 export const DitoTimeField: DefineComponent<
-  WidgetProps<Pick<DateSchema, 'format'>>
+  WidgetProps<Pick<DateSchema, 'formats'>>
 >
 
 /** Edits the date and time of the property `name`. */
 export const DitoDateTimeField: DefineComponent<
-  WidgetProps<Pick<DateSchema, 'format'>>
+  WidgetProps<Pick<DateSchema, 'formats'>>
 >
 
 /** Edits the color of the string property `name`. */

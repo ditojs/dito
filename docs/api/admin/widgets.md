@@ -48,9 +48,9 @@ props are the options of that type, with the same meaning.
 | `DitoRadioField` | [radio](./schemas.md#radio) | `options`, `editable`, `view`, `layout` | Options of `enum`, `relate` |
 | `DitoCheckboxesField` | [checkboxes](./schemas.md#checkboxes) | `options`, `editable`, `view`, `layout` | Options of `items.enum`, `relate` |
 | `DitoMultiselectField` | [multiselect](./schemas.md#multiselect) | `options`, `editable`, `view`, `placeholder` (also `false`), `searchable`, `search`, `stayOpen`, `taggable` | Options of `enum`, `multiple` of arrays, `relate` |
-| `DitoDateField` | [date](./schemas.md#date-datetime-time) | `format` | |
-| `DitoTimeField` | [time](./schemas.md#date-datetime-time) | `format` | Strings of `format: 'iso-time'` edit as times |
-| `DitoDateTimeField` | [datetime](./schemas.md#date-datetime-time) | `format` | |
+| `DitoDateField` | [date](./schemas.md#date-datetime-time) | `formats` | |
+| `DitoTimeField` | [time](./schemas.md#date-datetime-time) | `formats` | Strings of `format: 'iso-time'` edit as times |
+| `DitoDateTimeField` | [datetime](./schemas.md#date-datetime-time) | `formats` | |
 | `DitoColorField` | [color](./schemas.md#color) | `alpha`, `inputs`, `presets` | |
 | `DitoUploadField` | [upload](./schemas.md#upload) | `accept`, `extensions`, `maxSize`, `draggable`, `deletable`, `render`, `thumbnails`, `thumbnailUrl`, `downloadUrl` | `multiple` of arrays of assets |
 | `DitoListField` | [list](./schemas.md#list) | `collapsible`, `collapsed`, `creatable`, `deletable`, `draggable`, `itemLabel` | The items of `items`, or of `forms` by their `type`, `orderKey`, `idKey` |

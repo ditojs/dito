@@ -41,7 +41,6 @@ const removedSchemaKeys = {
   parse: `'parseValue()'`,
   compute: `'computeValue()'`,
   process: `'serializeValue()'`,
-  formats: `'format'`,
   methods: 'plain functions in the module of the schema',
   computed: `the values of the context, or 'computeValue()'`,
   watch: `'onChange()'`,
