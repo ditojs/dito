@@ -13,6 +13,10 @@ DitoSchemaForm
       v-if="field.errors"
     ) {{ field.errors[0].message }}
     span.custom-limit {{ field.property.maxLength }}
+    button.custom-normalize(
+      type="button"
+      @click="normalize(field)"
+    )
 </template>
 
 <script setup>
@@ -26,4 +30,10 @@ const form = useDitoForm({
   properties: { code: { type: 'string', required: true, maxLength: 8 } }
 })
 defineExpose({ form })
+
+// Each step reads the value that the previous one wrote:
+function normalize(field) {
+  field.value = field.value.trim()
+  field.value = field.value.toUpperCase()
+}
 </script>

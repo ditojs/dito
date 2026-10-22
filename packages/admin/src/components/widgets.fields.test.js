@@ -310,6 +310,16 @@ describe('DitoCustomField', () => {
     expect(form.item.code).toBe('XYZ')
   })
 
+  it('reads back the values that its slot writes right away', async () => {
+    const { wrapper } = await mountCustomFieldPage()
+    const { form } = wrapper.findComponent(CustomFieldPage).vm
+    const input = wrapper.find('input.custom-code')
+    await enterValue(input, ' xyz ')
+    await wrapper.find('button.custom-normalize').trigger('click')
+    expect(form.item.code).toBe('XYZ')
+    expect(input.element.value).toBe('XYZ')
+  })
+
   it('validates the field when its slot asks', async () => {
     const { wrapper } = await mountCustomFieldPage()
     const input = wrapper.find('input.custom-code')
