@@ -113,6 +113,16 @@ describe('widgets', () => {
     h(DitoUploadField, { name: 'images', accept: 'image/*' })
   })
 
+  it('take the layout options of fields', () => {
+    h(DitoTextField, { name: 'name', break: 'before', align: 'center' })
+    h(DitoListField, { name: 'awards', class: { 'is-wide': true } })
+    h(DitoSection, { name: 'more', break: 'both', class: 'more' })
+    // @ts-expect-error: Breaks are only before, after or on both sides.
+    h(DitoTextField, { name: 'name', break: 'around' })
+    // @ts-expect-error: Widgets align only vertically.
+    h(DitoTextField, { name: 'name', align: 'left' })
+  })
+
   it('lay out the items of lists and objects in their slots', () => {
     type Slot = InstanceType<typeof DitoListField>['$slots']['default']
     // The slots receive the context of the item:
@@ -139,9 +149,9 @@ describe('widgets', () => {
     })
   })
 
-  it('pass the field to the slot of custom fields', () => {
-    type Slot = InstanceType<typeof DitoCustomField>['$slots']['default']
-    type Field = Parameters<Slot>[0]
+  it('pass the field to the slot of custom fields with a name', () => {
+    const { $slots } = new DitoCustomField({ name: 'code' })
+    type Field = Parameters<typeof $slots.default>[0]
     expectTypeOf<Field['value']>().toBeAny()
     expectTypeOf<Field['errors']>().toEqualTypeOf<
       { message: string }[] | null
@@ -149,6 +159,16 @@ describe('widgets', () => {
     expectTypeOf<Field['property']>().toEqualTypeOf<Record<string, any>>()
     expectTypeOf<Field['validate']>().toEqualTypeOf<() => boolean>()
     h(DitoCustomField, { name: 'code' })
+  })
+
+  it('pass the field to custom fields without a name only in lists', () => {
+    // Elsewhere, they display their content without a value:
+    const named = new DitoCustomField({ name: 'code' })
+    const { $slots } = new DitoCustomField({ label: 'Note', width: '1/2' })
+    expectTypeOf<Parameters<typeof $slots.default>[0]>().toEqualTypeOf<
+      Parameters<typeof named.$slots.default>[0] | undefined
+    >()
+    h(DitoCustomField, { label: 'Note', width: '1/2', info: 'About codes' })
   })
 
   it('reject the data keywords of their property', () => {

@@ -98,8 +98,8 @@ export function useContainerField(
       ? getLabel(props.schema)
       : null
   )
-  // Add the name, also of unnested components. Sections of widgets may have
-  // none:
+  // Add the name, also of unnested components. The display content of widgets
+  // has none:
   const { componentPath, parentComponentPath } = useComponentPath(
     () => props.dataPath,
     parent => {

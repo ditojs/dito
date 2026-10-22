@@ -15,6 +15,9 @@ export default {
     nested: { type: Boolean, default: false },
     label: widgetProps.label,
     width: widgetProps.width,
+    align: widgetProps.align,
+    break: widgetProps.break,
+    class: widgetProps.class,
     info: widgetProps.info,
     collapsible: { type: Boolean, default: undefined },
     collapsed: { type: Boolean, default: undefined }
@@ -22,10 +25,13 @@ export default {
 
   setup(props, { slots }) {
     const { name, nested } = props
-    const { scope, property, isRelevant, getContainerProps } = useWidget(
-      props,
-      { isLayout: true, nested }
-    )
+    const {
+      scope,
+      property,
+      isRelevant,
+      getContainerProps,
+      renderWithBreaks
+    } = useWidget(props, { isLayout: true, nested })
     if (nested) {
       if (!property.properties) {
         throw new Error(
@@ -45,9 +51,11 @@ export default {
     }
     return () =>
       isRelevant()
-        ? h(DitoContainer, getContainerProps({ type: 'section', name }), {
-            default: () => slots.default?.()
-          })
+        ? renderWithBreaks(
+            h(DitoContainer, getContainerProps({ type: 'section', name }), {
+              default: () => slots.default?.()
+            })
+          )
         : null
   }
 }

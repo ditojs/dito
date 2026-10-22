@@ -206,47 +206,27 @@ export const DitoUploadField = defineWidget('DitoUploadField', {
 })
 
 // Custom fields pass the field to their slot, as one reactive object whose
-// `value` writes through the data model, e.g. with `v-model="field.value"`:
+// `value` writes through the data model, e.g. with `v-model="field.value"`.
+// Without a value, they display their content, like custom components without
+// a value in schema views:
 export const DitoCustomField = defineWidget('DitoCustomField', {
-  getSchema: (property, slots) => ({
-    type: 'component',
-    component: markRaw({
-      name: 'DitoCustomFieldContent',
-      props: {
-        schema: { type: Object, required: true },
-        context: { type: Object, required: true },
-        modelValue: { type: null, default: undefined }
-      },
-      emits: ['update:modelValue', 'change'],
-
-      setup(props, { emit }) {
-        const { dataContext } = useServices()
-        const field = shallowReactive({
-          // Read the value from the context, not the `modelValue` prop, which
-          // only receives written values with the next render:
-          get value() {
-            return props.context.value
-          },
-          set value(value) {
-            emit('update:modelValue', value)
-            emit('change')
-          },
-          get errors() {
-            const { dataPath } = props.context
-            return dataContext.getErrors(dataPath)?.[dataPath] ?? null
-          },
-          property,
-
-          // Validate the value like widgets do on blur, e.g. with
-          // `@blur="field.validate()"`, and return whether it's valid:
-          validate() {
-            return dataContext.model.validate(props.context.dataPath)
-          }
-        })
-        return () => slots.default?.(field)
-      }
-    })
-  })
+  hasContent: true,
+  getSchema: (property, slots) =>
+    property
+      ? {
+          type: 'component',
+          component: markRaw(createCustomFieldComponent(property, slots))
+        }
+      : {
+          type: 'component',
+          label: false,
+          component: markRaw({
+            name: 'DitoCustomFieldContent',
+            // Display content has no input that the container's id is for:
+            inheritAttrs: false,
+            render: () => slots.default?.()
+          })
+        }
 })
 
 const sourceProps = {
@@ -302,7 +282,8 @@ export const DitoTreeListField = {
   emits: ['change'],
 
   setup(props, { emit, slots }) {
-    const { name, property, isRelevant, getContainerProps } = useWidget(props)
+    const { name, property, isRelevant, getContainerProps, renderWithBreaks } =
+      useWidget(props)
     const levels = shallowReactive([])
     provide(treeLevelsKey, levels)
     const formSlot = shallowRef(slots.form)
@@ -325,7 +306,9 @@ export const DitoTreeListField = {
         ? [
             slots.default?.(),
             isMounted.value
-              ? h(DitoContainer, getContainerProps({ ...schema, onChange }))
+              ? renderWithBreaks(
+                  h(DitoContainer, getContainerProps({ ...schema, onChange }))
+                )
               : null
           ]
         : null
@@ -371,20 +354,22 @@ function defineSourceWidget(widgetName, { props = {}, getSchema }) {
     emits: ['change'],
 
     setup(props, { emit, slots }) {
-      const { name, property, isRelevant, getContainerProps } = useWidget(props)
+      const widget = useWidget(props)
       const schema = {
-        ...getSchema(property),
-        name,
+        ...getSchema(widget.property),
+        name: widget.name,
         inlined: true,
         onChange: context => emit('change', context)
       }
       const renderItem = ({ context }) => slots.default(context)
       return () =>
-        isRelevant()
-          ? h(
-              DitoContainer,
-              getContainerProps(schema),
-              slots.default ? { default: renderItem } : null
+        widget.isRelevant()
+          ? widget.renderWithBreaks(
+              h(
+                DitoContainer,
+                widget.getContainerProps(schema),
+                slots.default ? { default: renderItem } : null
+              )
             )
           : null
     }
@@ -394,21 +379,25 @@ function defineSourceWidget(widgetName, { props = {}, getSchema }) {
 // The widgets render the type components of fields, with the display schema
 // of the property's hints and of their props. Their `change` event is the one
 // of the field, for edits of the user:
-function defineWidget(name, { props = {}, getSchema }) {
+function defineWidget(name, { props = {}, hasContent, getSchema }) {
   return {
     name,
     props: { ...widgetProps, ...props },
     emits: ['change'],
 
     setup(props, { emit, slots }) {
-      const { name, property, isRelevant, getContainerProps } = useWidget(props)
+      const widget = useWidget(props, { hasContent })
       const schema = {
-        ...getSchema(property, slots),
-        name,
+        ...getSchema(widget.property, slots),
+        name: widget.name,
         onChange: context => emit('change', context)
       }
       return () =>
-        isRelevant() ? h(DitoContainer, getContainerProps(schema)) : null
+        widget.isRelevant()
+          ? widget.renderWithBreaks(
+              h(DitoContainer, widget.getContainerProps(schema))
+            )
+          : null
     }
   }
 }
@@ -464,4 +453,45 @@ function createTreeLevelSchema(name, { items, orderKey, idKey }, level) {
     editable: computed(() => !!formSlot.value),
     mutate: true
   })
+}
+
+// The component of custom fields with a value, which passes the field to the
+// slot:
+function createCustomFieldComponent(property, slots) {
+  return {
+    name: 'DitoCustomFieldContent',
+    props: {
+      schema: { type: Object, required: true },
+      context: { type: Object, required: true },
+      modelValue: { type: null, default: undefined }
+    },
+    emits: ['update:modelValue', 'change'],
+
+    setup(props, { emit }) {
+      const { dataContext } = useServices()
+      const field = shallowReactive({
+        // Read the value from the context, not the `modelValue` prop, which
+        // only receives written values with the next render:
+        get value() {
+          return props.context.value
+        },
+        set value(value) {
+          emit('update:modelValue', value)
+          emit('change')
+        },
+        get errors() {
+          const { dataPath } = props.context
+          return dataContext.getErrors(dataPath)?.[dataPath] ?? null
+        },
+        property,
+
+        // Validate the value like widgets do on blur, e.g. with
+        // `@blur="field.validate()"`, and return whether it's valid:
+        validate() {
+          return dataContext.model.validate(props.context.dataPath)
+        }
+      })
+      return () => slots.default?.(field)
+    }
+  }
 }

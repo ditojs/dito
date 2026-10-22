@@ -16,9 +16,12 @@ import { DitoTextField, DitoListField } from '@ditojs/admin'
 
 | Prop | Type | Description |
 | ---- | ---- | ----------- |
-| `name` | `string` | The key of the property in the scope of the widget: the form, the object of a nested `DitoSection`, or the item of a list or object. Widgets without `name` edit the items of arrays of values. |
+| `name` | `string` | The key of the property in the scope of the widget: the form, the object of a nested `DitoSection`, or the item of a list or object. Widgets without `name` edit the items of arrays of values, and elsewhere `DitoCustomField` displays its content without a value. |
 | `label` | `string \| false` | The label, by default the labelized `name`, or `false` for none. |
 | `width` | `string \| number` | The width, as for [fields](./schemas.md#layout-options). |
+| `align` | `'top' \| 'center' \| 'bottom'` | The vertical position in the line, as for [fields](./schemas.md#layout-options). |
+| `break` | `'before' \| 'after' \| 'both'` | Forces a line break before or after the widget. |
+| `class` | `string \| Record<string, boolean>` | CSS classes added to the widget's container. |
 | `info` | `string` | The info of the label. |
 | `placeholder` | `string` | The placeholder of the input. |
 | `prefix`, `suffix` | `string` | The [affixes](./schemas.md#affixes) of the input. |
@@ -70,8 +73,8 @@ all widgets hide while their property's `if` is false.
 | `DitoListField` | `context` | The form of each item, in which widgets edit the item's properties. The slot receives the [context](./context.md) of the item itself, e.g. `v-slot="context"` with `context.item` and `context.itemIndex`. In arrays of values, `item` wraps the value as `item.value`. |
 | `DitoObjectField` | `context` | The form of the object, with the [context](./context.md) of the object as for lists. |
 | `DitoTreeListField`, `DitoTreeLevel` | `context` | `#form`: the form of the selected item of the level, routed beside the tree, with the [context](./context.md) of the item as for lists. The default slot holds the `DitoTreeLevel` of the next level, the array of its `name` in the items. |
-| `DitoSection` | | The widgets of the section, of the object of its `name` if it's `nested`. `DitoSection` takes only `label`, `width` and `info` of the props of all widgets. |
-| `DitoCustomField` | `field` | The content that edits the value, with the field as one reactive object, see below. |
+| `DitoSection` | | The widgets of the section, of the object of its `name` if it's `nested`. `DitoSection` takes only `label`, `width`, `align`, `break`, `class` and `info` of the props of all widgets. |
+| `DitoCustomField` | `field` | The content that edits the value, with the field as one reactive object, see below. Without `name`, outside of arrays of values, the content only displays, like `component` fields without a value, and the slot receives no field. |
 
 ### The field of `DitoCustomField`
 

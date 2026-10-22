@@ -445,6 +445,64 @@ describe('widgets', () => {
     expect(email.attributes('id')).toBe('address/email')
   })
 
+  it('take the layout options `break`, `align` and `class` of fields', async () => {
+    const { wrapper } = await mountDesignerPage({
+      setup() {
+        form = useDitoForm({ resource: 'designers', id: 7, properties })
+        return () =>
+          h(DitoSchemaForm, null, {
+            default: () => [
+              h(DitoTextField, {
+                name: 'name',
+                width: '1/4',
+                align: 'center',
+                class: 'name-field'
+              }),
+              h(DitoTextField, {
+                name: 'email',
+                width: '1/4',
+                break: 'before',
+                class: { 'email-field': true }
+              }),
+              h(
+                DitoSection,
+                {
+                  name: 'featured',
+                  width: '1/4',
+                  break: 'both',
+                  align: 'bottom',
+                  class: 'featured-section'
+                },
+                { default: () => h(DitoSwitchField, { name: 'isFeatured' }) }
+              )
+            ]
+          })
+      }
+    })
+    const pane = wrapper.find('.name-field').element.parentElement
+    const children = [...pane.children].map(element =>
+      element.matches('.dito-pane__break')
+        ? 'break'
+        : ['name-field', 'email-field', 'featured-section'].find(name =>
+            element.classList.contains(name)
+          )
+    )
+    expect(children).toEqual([
+      'name-field',
+      'break',
+      'email-field',
+      'break',
+      'featured-section',
+      'break'
+    ])
+    expect(wrapper.find('.name-field').classes()).toContain(
+      'dito-container--align-center'
+    )
+    expect(wrapper.find('.featured-section').classes()).toContain(
+      'dito-container--align-bottom'
+    )
+  })
+
   it('throw for names without a property', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})

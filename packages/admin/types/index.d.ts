@@ -3417,13 +3417,20 @@ type WidgetProps<$Props = {}> = $Props & {
   /**
    * The key of the property in the `properties` of the form, or of the object
    * of the section, object or list item that the widget is in. Widgets
-   * without `name` edit the items of lists of values.
+   * without `name` edit the items of lists of values, and elsewhere
+   * {@link DitoCustomField} displays its content without a value.
    */
   name?: string
   /** The label, or `false` to show none. */
   label?: string | false
   /** The width as a fraction, e.g. `'1/2'`, a percentage or a CSS width. */
   width?: string | number
+  /** The vertical position in its line, as for fields. */
+  align?: 'top' | 'center' | 'bottom'
+  /** Forces a line break before, after, or on both sides of the widget. */
+  break?: 'before' | 'after' | 'both'
+  /** CSS classes added to the widget's container. */
+  class?: string | Record<string, boolean>
   info?: string
   placeholder?: string
   prefix?: string
@@ -3684,29 +3691,47 @@ export const DitoTreeLevel: DefineSetupFnComponent<
   TreeLevelSlots
 >
 
+/** The field that `DitoCustomField` passes to its slot. */
+type CustomFieldSlotField = {
+  /** The value, which writes through the form's data. */
+  value: any
+  /** The errors of the value, or `null`. */
+  readonly errors: { message: string }[] | null
+  /** The property of the value. */
+  readonly property: Record<string, any>
+  /**
+   * Validates the value like widgets do on blur, e.g. with
+   * `@blur="field.validate()"`, and returns whether it's valid.
+   */
+  validate(): boolean
+}
+
 /**
  * Edits the property `name` with the content of its default slot, which
  * receives the field as one reactive object: `v-slot="field"` with
- * `v-model="field.value"`. Destructured, its values are read-only.
+ * `v-model="field.value"`. Destructured, its values are read-only. Without
+ * `name`, it edits the items of lists of values, and elsewhere displays its
+ * content without a value, with no field for the slot.
  */
-export const DitoCustomField: DefineSetupFnComponent<
-  WidgetProps,
-  {},
-  SlotsType<{
-    default(field: {
-      /** The value, which writes through the form's data. */
-      value: any
-      /** The errors of the value, or `null`. */
-      readonly errors: { message: string }[] | null
-      /** The property of the value. */
-      readonly property: Record<string, any>
-      /**
-       * Validates the value like widgets do on blur, e.g. with
-       * `@blur="field.validate()"`, and returns whether it's valid.
-       */
-      validate(): boolean
-    }): any
-  }>
+export const DitoCustomField: new <
+  $Name extends string | undefined = undefined
+>(
+  ...args: ConstructorParameters<
+    DefineSetupFnComponent<WidgetProps<{ name?: $Name }>>
+  >
+) => InstanceType<
+  DefineSetupFnComponent<
+    WidgetProps<{ name?: $Name }>,
+    {},
+    SlotsType<{
+      // Without `name`, only the items of lists of values have a field:
+      default(
+        field: undefined extends $Name
+          ? CustomFieldSlotField | undefined
+          : CustomFieldSlotField
+      ): any
+    }>
+  >
 >
 
 /**
@@ -3724,6 +3749,9 @@ export const DitoSection: DefineComponent<{
   nested?: boolean
   label?: string | false
   width?: string | number
+  align?: 'top' | 'center' | 'bottom'
+  break?: 'before' | 'after' | 'both'
+  class?: string | Record<string, boolean>
   info?: string
   collapsible?: boolean
   collapsed?: boolean
