@@ -65,6 +65,7 @@ import {
   computed,
   inject,
   onMounted,
+  onUnmounted,
   provide,
   ref,
   shallowRef,
@@ -193,6 +194,18 @@ export default {
       }
       return null
     })
+    // Register the errors that the container displays, to notify the ones that
+    // no container displays:
+    const unregister = services.adminContext.ui.register(
+      () => componentPath.value,
+      {
+        dataContext: services.dataContext,
+        get errorDataPath() {
+          return props.nested ? props.dataPath : null
+        }
+      }
+    )
+    onUnmounted(unregister)
 
     const getLayoutClasses = prefix => ({
       [`${prefix}--fill`]: width.value === 'fill' || flexBasis.value !== 'auto',

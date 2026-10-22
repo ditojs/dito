@@ -1883,18 +1883,18 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
-    it('replaces the errors within a data path, returning unmatched ones', () => {
+    it('replaces the errors within a data path, returning their fields', () => {
       const { dataModel } = createBook()
       dataModel.setErrors('title', tooShort)
       dataModel.setErrors('chapters/0/title', tooShort)
-      const unmatchedErrors = dataModel.replaceErrors(
+      const fieldDataPaths = dataModel.replaceErrors(
         {
           'chapters/1/title': tooShort,
           'title': tooShort
         },
         { dataPath: 'chapters' }
       )
-      expect(unmatchedErrors).toEqual({ title: tooShort })
+      expect(fieldDataPaths).toEqual({ 'chapters/1/title': 'chapters/1/title' })
       expect(dataModel.getErrors('chapters/0/title')).toBe(null)
       expect(dataModel.getErrors('chapters/1/title')).toEqual(tooShort)
       // Errors outside of the data path are kept:
@@ -1903,8 +1903,8 @@ describe('DataModel', () => {
         'title',
         'chapters/1/title'
       ])
-      expect(dataModel.replaceErrors({ 'details/subtitle': tooShort })).toBe(
-        null
+      expect(dataModel.replaceErrors({ 'details/subtitle': tooShort })).toEqual(
+        { 'details/subtitle': 'details/subtitle' }
       )
       expect(dataModel.getErrorDataPaths()).toEqual(['details/subtitle'])
       dataModel.stop()
@@ -1914,7 +1914,7 @@ describe('DataModel', () => {
       // E.g. of objects that a code field edits as JSON:
       const { dataModel } = createBook()
       const isRequired = [{ message: 'is required' }]
-      const unmatchedErrors = dataModel.replaceErrors(
+      const fieldDataPaths = dataModel.replaceErrors(
         {
           'details/subtitle': tooShort,
           'details/author/name': isRequired,
@@ -1923,7 +1923,11 @@ describe('DataModel', () => {
         },
         { server: true }
       )
-      expect(unmatchedErrors).toEqual({ publisher: isRequired })
+      expect(fieldDataPaths).toEqual({
+        'details/subtitle': 'details/subtitle',
+        'details/author/name': 'details',
+        'chapters/1/isbn': 'chapters'
+      })
       expect(dataModel.getErrors('details/subtitle')).toEqual(tooShort)
       expect(dataModel.getErrors('details')).toEqual([
         { message: 'is required', path: 'author/name' }

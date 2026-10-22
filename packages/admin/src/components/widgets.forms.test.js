@@ -1,5 +1,6 @@
+import { vi } from 'vitest'
 import { h } from 'vue'
-import { mountForm, enterValue } from '../test/mount.js'
+import { mountForm, enterValue, isForm, settle } from '../test/mount.js'
 import {
   DitoTextField,
   DitoNumberField,
@@ -210,6 +211,63 @@ describe('nested forms with properties', () => {
     expect(findField('sensors').find('.dito-errors').text()).toBe(
       'The Interval field must be 1 or more.'
     )
+  })
+
+  describe('with properties that their component does not show', () => {
+    const sensorForm = {
+      ...schema.fields.sensors.form,
+      properties: {
+        ...schema.fields.sensors.form.properties,
+        location: { type: 'string', required: true }
+      }
+    }
+
+    const mountSensors = async sensors => {
+      const result = await mountForm({
+        schema: { fields: { sensors } },
+        data: { sensors: [{ label: '', interval: 5, location: '' }] }
+      })
+      const notify = vi.spyOn(result.admin.context, 'notify')
+      return { ...result, notify }
+    }
+
+    it('notify their errors', async () => {
+      const { findField, submit, notify } = await mountSensors({
+        ...schema.fields.sensors,
+        form: sensorForm
+      })
+      expect(await submit()).toBe(null)
+      expect(findField('sensors').find('.dito-errors').text()).toBe(
+        'The Label field is required.'
+      )
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Validation Errors',
+          text: 'The field Location is required'
+        })
+      )
+    })
+
+    it('notify their errors in routed forms', async () => {
+      const { admin, submit, notify } = await mountSensors({
+        type: 'list',
+        editable: true,
+        form: sensorForm
+      })
+      expect(await submit()).toBe(null)
+      expect(admin.router.currentRoute.value.path).toBe('/items/1/sensors/0')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      expect(form.$el.querySelector('.dito-errors').textContent).toBe(
+        'The Label field is required.'
+      )
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Validation Errors',
+          text: 'The field Location is required'
+        })
+      )
+    })
   })
 
   it('lay out the routed forms of list items', async () => {

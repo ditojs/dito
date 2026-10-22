@@ -1433,13 +1433,16 @@ describe('DataModel', () => {
         dataModel.data,
         { services, dataPath: '' }
       )
-      expect(
-        dataModel.replaceErrors({
-          ...errors,
-          'collections/0/items/0/chapters/0/title/x': [{ message: 'deep' }],
-          'unknown': [{ message: 'unknown' }]
-        })
-      ).toEqual({ unknown: [{ message: 'unknown' }] })
+      const fieldDataPaths = dataModel.replaceErrors({
+        ...errors,
+        'collections/0/items/0/chapters/0/title/x': [{ message: 'deep' }],
+        'unknown': [{ message: 'unknown' }]
+      })
+      expect(fieldDataPaths).toMatchObject({
+        'collections/0/items/0/chapters/0/title/x':
+          'collections/0/items/0/chapters/0/title'
+      })
+      expect(fieldDataPaths).not.toHaveProperty('unknown')
       expect(dataModel.getErrorDataPaths()).toEqual([
         'title',
         'collections/0/code',
@@ -1516,7 +1519,7 @@ describe('DataModel', () => {
         { address: { street: '' } }
       )
       const errors = { address: [{ message: 'is invalid' }] }
-      expect(dataModel.replaceErrors(errors)).toEqual(errors)
+      expect(dataModel.replaceErrors(errors)).toEqual({})
       expect(dataModel.getErrorDataPaths()).toEqual([])
       dataModel.stop()
     })
