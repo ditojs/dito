@@ -1011,7 +1011,25 @@ describe('clipboard', () => {
     })
   })
 
-  it('finds the upload fields', async () => {
+  it('copies only the values with fields, also in nested sections', async () => {
+    const address = { type: 'form', fields: { city: { type: 'text' } } }
+    const form = await createForm({
+      fields: {
+        home: { type: 'section', nested: true, fields: address.fields },
+        office: { type: 'object', form: address }
+      }
+    })
+    const copy = await createCopy(form, {
+      home: { id: 1, city: 'Basel' },
+      office: { id: 2, city: 'Zurich' }
+    })
+    expect(copy).toEqual({
+      home: { city: 'Basel' },
+      office: { city: 'Zurich' }
+    })
+  })
+
+  it('finds the values with files, once per value', async () => {
     const upload = { type: 'upload' }
     const pageForm = {
       type: 'form',
@@ -1044,7 +1062,6 @@ describe('clipboard', () => {
       'pages/0/files',
       'pages/0/subpages/0/image',
       'pages/0/subpages/0/files',
-      'cover',
       'cover'
     ])
   })

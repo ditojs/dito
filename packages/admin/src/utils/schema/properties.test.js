@@ -7,12 +7,14 @@ import {
   initializeData,
   serializeData,
   deserializeData,
-  isDataPathExcluded
+  isDataPathExcluded,
+  getItemDisplayValue
 } from './data.js'
 import { getDataValidationErrors } from './validation.js'
 import { mergeData } from '../mergeData.ts'
 import { toClipboard } from '../toClipboard.ts'
 import { fromClipboard } from '../fromClipboard.ts'
+import { getUploadEntries } from '../interchange.ts'
 
 async function getProperties(fields, schema = {}, services = null) {
   const api = { defaults: {}, normalizePath: hyphenate }
@@ -1125,6 +1127,75 @@ describe('written properties', () => {
         copy
       )
     })
+  })
+
+  it('copy only the values with properties, also in nested objects', async () => {
+    const form = createForm({
+      title: { type: 'string' },
+      address: { type: 'object', properties: { city: { type: 'string' } } }
+    })
+    const data = {
+      id: 1,
+      title: 'Talk',
+      notes: 'Draft',
+      address: { id: 2, city: 'Basel', zip: '4051' }
+    }
+    const copy = await toClipboard(form, { type: 'list', form }, data, '', {
+      services,
+      rootData: data
+    })
+    expect(copy).toEqual({ title: 'Talk', address: { city: 'Basel' } })
+  })
+
+  it('find the assets in clipboard data', () => {
+    const form = createForm({
+      cover: { type: 'asset', nullable: true },
+      pages: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            images: { type: 'array', items: { type: 'asset' } }
+          }
+        }
+      }
+    })
+    const data = { cover: null, pages: [{ images: [] }] }
+    const entries = getUploadEntries(form, data, {
+      dataPath: '',
+      services,
+      rootData: data
+    })
+    expect(entries.map(({ dataPath }) => dataPath)).toEqual([
+      'cover',
+      'pages/0/images'
+    ])
+  })
+
+  it('display dates and times in the formats of the admin', () => {
+    const list = {
+      type: 'list',
+      form: createForm({
+        day: { type: 'date' },
+        time: { type: 'string', format: 'iso-time' },
+        title: { type: 'string' }
+      })
+    }
+    const date = new Date(2026, 9, 22, 14, 30)
+    const item = { day: date, time: date, title: 'Talk' }
+    const context = new SchemaContext(services, {
+      schema: list,
+      data: item,
+      dataPath: '',
+      rootData: item
+    })
+    const getDisplayValue = name =>
+      getItemDisplayValue(list, item, name, { services, dataPath: '', context })
+    expect(['day', 'time', 'title'].map(getDisplayValue)).toEqual([
+      'October 22, 2026',
+      '02:30:00 PM',
+      'Talk'
+    ])
   })
 
   describe('checkProperties()', () => {

@@ -3,7 +3,6 @@ import { getUid } from '../uid.js'
 import { SchemaGraph } from '../SchemaGraph.js'
 import {
   toModelData,
-  appendDataPath,
   getRelativeDataPath,
   getItemDataPath
 } from '../data.js'
@@ -338,7 +337,7 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
 
   const after = entry => {
     const { node, data, name, dataPath, itemDataPath, serializedData } = entry
-    const { source } = node
+    const { source, relation } = node
     const itemAdapter = source?.itemAdapter
     let value = serializedData[name]
     // Unwrap the items again, to bring the data back into its native form:
@@ -347,10 +346,10 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     }
     // Register the sources and relations whose ids the graph serializes:
     let labels
-    const schema = node.fields[0]?.schema
-    if (source?.isSource) {
+    if (source) {
       graph.addSource(dataPath, source)
-    } else if (schema?.relate) {
+    } else if (relation) {
+      const { schema, hasOptions } = relation
       // Internally related data (`options.dataPath`) needs both the options
       // (for '#ref') and the value ('#id') serialized:
       const path = schema.options?.dataPath
@@ -358,7 +357,11 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
         ? resolveDataPath(getItemDataPath(dataPath, true), path)
         : null
       graph.addRelation(dataPath, relatedDataPath, schema)
-      if (target === 'clipboard' && !graph.isInternal(relatedDataPath)) {
+      if (
+        target === 'clipboard' &&
+        hasOptions &&
+        !graph.isInternal(relatedDataPath)
+      ) {
         labels = getRelatedLabels(
           { schema, data, name, dataPath, itemDataPath },
           value,
@@ -455,38 +458,27 @@ export function deserializeData(schema, data, {
   })
 }
 
-// Get the text of the value `name` of the item through the type of the
-// component that edits it in the item's form, also in sections and tabs:
+// Get the text of the value `name` of the item from its node in the item's
+// form, also in sections and tabs:
 export function getItemDisplayValue(sourceSchema, item, name, {
   services,
   dataPath,
   context
 }) {
-  let schema = null
+  let valueEntry = null
   walkData(getItemFormSchema(sourceSchema, item, context), item, {
+    dataPath,
     services,
     rootData: context.rootItem,
     // Leave out the items of nested sources:
     shouldWalk: entry => !getSourceType(entry.schema),
     visit: entry => {
       if (entry.name === name) {
-        // Of several fields of the value, the first wins:
-        schema ??= entry.node.fields[0]?.schema
+        valueEntry ??= entry
       }
     }
   })
-  const getDisplayValue = schema && getTypeDescriptor(schema)?.getDisplayValue
-  return getDisplayValue
-    ? getDisplayValue(
-        SchemaContext.createForSchema(services, {
-          schema,
-          name,
-          data: item,
-          dataPath: appendDataPath(dataPath, name),
-          rootData: context.rootItem
-        })
-      )
-    : item[name]
+  return valueEntry ? valueEntry.node.getDisplayValue(valueEntry) : item[name]
 }
 
 export function getItemId(sourceSchema, item) {

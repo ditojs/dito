@@ -1,17 +1,15 @@
 import { asArray, isArray, isObject, isString } from '@ditojs/utils'
-import SchemaContext from '../SchemaContext.js'
-import { walkData, type FieldEntry } from './schema/walk.js'
+import { walkData, type DataEntry } from './schema/walk.js'
 import { fetchBlob } from './request.js'
 import { getResourceUrl } from './services.ts'
-import { getUploadLimits, isAcceptedFile, type UploadLimits } from './upload.ts'
+import { isAcceptedFile, type UploadLimits } from './upload.ts'
 import type { Services } from './services.ts'
 import type { Data, Schema } from './types.ts'
 
-// The upload fields in clipboard data, as `walkData()` finds them:
-export type UploadEntry = Pick<
-  FieldEntry,
-  'schema' | 'data' | 'name' | 'dataPath'
->
+// The values with files in clipboard data, as `walkData()` finds them:
+export type UploadEntry = Pick<DataEntry, 'data' | 'name' | 'dataPath'> & {
+  limits: UploadLimits
+}
 
 export function getUploadEntries(
   schema: Schema,
@@ -28,10 +26,9 @@ export function getUploadEntries(
     services,
     rootData,
     visit: entry => {
-      for (const { schema } of entry.node.fields) {
-        if (schema.type === 'upload') {
-          entries.push({ ...entry, schema })
-        }
+      const limits = entry.node.getUploadLimits(entry)
+      if (limits) {
+        entries.push({ ...entry, limits })
       }
     }
   })
@@ -97,21 +94,8 @@ export async function uploadInterchangeFiles(
   entries: UploadEntry[]
 ): Promise<string[]> {
   const { api } = services.adminContext
-  const limitsByEntry = new Map<UploadEntry, UploadLimits>(
-    entries.map(entry => [
-      entry,
-      getUploadLimits(
-        entry.schema,
-        SchemaContext.createForSchema(services, {
-          itemDataPath: null,
-          rootData: null,
-          ...entry
-        })
-      )
-    ])
-  )
-  const isAccepted = (file: Data, entry: UploadEntry, size: number) =>
-    isAcceptedFile({ name: file.name, size }, limitsByEntry.get(entry)!)
+  const isAccepted = (file: Data, { limits }: UploadEntry, size: number) =>
+    isAcceptedFile({ name: file.name, size }, limits)
   const references = entries.flatMap(entry =>
     getFiles(entry)
       .filter(isFileReference)

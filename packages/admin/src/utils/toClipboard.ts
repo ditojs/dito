@@ -1,6 +1,5 @@
 import { serializeData } from './schema/data.js'
 import { walkData } from './schema/walk.js'
-import { getOptionsDataSchema } from './schema/types.ts'
 import type { Services } from './services.ts'
 import type { Data, Schema } from './types.ts'
 
@@ -19,14 +18,16 @@ export async function toClipboard(
     services,
     rootData,
     visit: entry => {
-      for (const { schema } of entry.node.fields) {
-        if (schema.relate && getOptionsDataSchema(schema)) {
-          loads.push(
-            services
-              .dataContext!.model.getOptionsResolver({ ...entry, schema })
-              .waitForValue()
-          )
-        }
+      const { relation } = entry.node
+      if (relation?.hasOptions) {
+        loads.push(
+          services
+            .dataContext!.model.getOptionsResolver({
+              ...entry,
+              schema: relation.schema
+            })
+            .waitForValue()
+        )
       }
     }
   })

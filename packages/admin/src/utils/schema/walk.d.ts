@@ -1,4 +1,5 @@
 import type { Data, Schema } from '../types.ts'
+import type { UploadLimits } from '../upload.ts'
 
 interface ValueError {
   message: string
@@ -10,7 +11,6 @@ interface DefaultValueOptions {
 
 // The source of the items in a value:
 export interface DataSource {
-  isSource: boolean
   isList: boolean
   hasForms: boolean
   idKey: string
@@ -24,17 +24,25 @@ export interface DataSource {
   } | null
 }
 
-// A value of the data, which answers for it. Only fields hold `fields`:
+// The relation of a value to records, by the schema that relates them:
+export interface DataRelation {
+  schema: Schema
+  hasOptions: boolean
+}
+
+// A value of the data, which answers for it:
 export interface DataNode {
   name: string
-  fields: { schema: Schema; name: string | null }[]
   source: DataSource | null
+  relation: DataRelation | null
   getValidationErrors(entry: DataEntry): ValueError[]
   hasMissingValue(entry: DataEntry, options?: DefaultValueOptions): boolean
   getDefaultValue(entry: DataEntry, options?: DefaultValueOptions): any
   deserialize(value: any, entry: DataEntry): any
   serialize(value: any, entry: DataEntry): any
   isExcluded(entry: DataEntry): boolean
+  getUploadLimits(entry: DataEntry): UploadLimits | null
+  getDisplayValue(entry: DataEntry): any
   getRecordedValue(): { schema: Schema; form: Schema } | null
 }
 
