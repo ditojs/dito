@@ -14,6 +14,7 @@ import {
   DitoDateField,
   DitoTimeField,
   DitoDateTimeField,
+  DitoColorField,
   DitoUploadField,
   DitoCustomField,
   DitoListField,
@@ -86,6 +87,10 @@ describe('DitoSchemaForm', () => {
 describe('widgets', () => {
   it('take the name of their property and display props', () => {
     h(DitoTextField, { name: 'name', label: 'Name', width: '1/2' })
+    h(DitoTextField, { name: 'email', type: 'email' })
+    // @ts-expect-error: Text fields only take the text types of fields.
+    h(DitoTextField, { name: 'rank', type: 'number' })
+    h(DitoColorField, { name: 'tint', colorFormat: 'rgb', alpha: true })
     h(DitoNumberField, { name: 'rank', step: 5, clearable: true })
     h(DitoSwitchField, { name: 'isFeatured', labels: { checked: 'yes' } })
     h(DitoSection, { name: 'address', label: 'Address', collapsible: true })

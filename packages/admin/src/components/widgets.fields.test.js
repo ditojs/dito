@@ -6,6 +6,7 @@ import CustomFieldPage from '../test/CustomFieldPage.vue'
 import {
   useDitoForm,
   DitoSchemaForm,
+  DitoTextField,
   DitoTextareaField,
   DitoCodeField,
   DitoMarkupField,
@@ -24,6 +25,8 @@ import {
 } from '../index.js'
 
 const properties = {
+  website: { type: 'string' },
+  contact: { type: 'string', format: 'email' },
   notes: { type: 'string', maxLength: 200 },
   source: { type: 'string' },
   body: { type: 'string', nullable: true },
@@ -40,6 +43,7 @@ const properties = {
   opensDaily: { type: 'string', format: 'iso-time' },
   meetsAt: { type: 'datetime' },
   tint: { type: 'string' },
+  shade: { type: 'object' },
   image: { type: 'asset', nullable: true },
   images: { type: 'array', items: { type: 'asset' } }
 }
@@ -51,6 +55,8 @@ const authors = [
 
 const item = {
   id: 1,
+  website: 'https://example.com',
+  contact: 'ada@example.com',
   notes: 'Signed',
   source: 'let a = 1',
   body: '<p>Hello</p>',
@@ -67,6 +73,7 @@ const item = {
   opensDaily: '07:30:00',
   meetsAt: '2026-05-20T12:15:00.000Z',
   tint: '#3366ff',
+  shade: { r: 0, g: 0, b: 255, a: 1 },
   image: null,
   images: []
 }
@@ -82,6 +89,8 @@ const BookPage = {
     return () =>
       h(DitoSchemaForm, null, {
         default: () => [
+          h(DitoTextField, { name: 'website', type: 'url' }),
+          h(DitoTextField, { name: 'contact' }),
           h(DitoTextareaField, { name: 'notes', lines: 3 }),
           h(DitoCodeField, { name: 'source', language: 'javascript' }),
           h(DitoMarkupField, { name: 'body' }),
@@ -104,6 +113,7 @@ const BookPage = {
           h(DitoTimeField, { name: 'opensDaily' }),
           h(DitoDateTimeField, { name: 'meetsAt' }),
           h(DitoColorField, { name: 'tint' }),
+          h(DitoColorField, { name: 'shade', colorFormat: 'rgb' }),
           h(DitoUploadField, { name: 'image', accept: 'image/*' }),
           h(DitoUploadField, { name: 'images' })
         ]
@@ -191,6 +201,22 @@ describe('widgets of values', () => {
     expect(
       getContainer(wrapper, 'Rating').find('input').attributes('max')
     ).toBe('5')
+  })
+
+  it('pick the input type with `type`, not the `format` of the property', async () => {
+    const { wrapper } = await mountPage(BookPage, 'books', item)
+    const getInputType = label =>
+      getContainer(wrapper, label).find('input').attributes('type')
+    expect(getInputType('Website')).toBe('url')
+    expect(getInputType('Contact')).toBe('text')
+  })
+
+  it('store colors in the format of `colorFormat`', async () => {
+    const { wrapper } = await mountPage(BookPage, 'books', item)
+    const input = getContainer(wrapper, 'Shade').find('input')
+    expect(input.element.value).toBe('0000ff')
+    await enterValue(input, 'ff0000')
+    expect(form.item.shade).toEqual({ r: 255, g: 0, b: 0, a: 1 })
   })
 
   it('offer the `enum` of their properties as options', async () => {

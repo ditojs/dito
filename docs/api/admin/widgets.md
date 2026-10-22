@@ -35,7 +35,7 @@ props are the options of that type, with the same meaning.
 
 | Widget | Field type | Own props | Picks from the property |
 | ------ | ---------- | --------- | ----------------------- |
-| `DitoTextField` | [text](./schemas.md#text) | | The input type of `format`: `email`, `hostname`, `password` or `uri`. `maxLength`. |
+| `DitoTextField` | [text](./schemas.md#text) | `type`: `text` (default), `email`, `url`, `hostname`, `domain`, `creditcard` or `password` | `maxLength` |
 | `DitoTextareaField` | [textarea](./schemas.md#textarea) | `lines`, `resizable` | `maxLength` |
 | `DitoCodeField` | [code](./schemas.md#code) | `language`, `indentSize`, `lines`, `resizable` | |
 | `DitoMarkupField` | [markup](./schemas.md#markup) | `lines`, `resizable`, `whitespace`, `enableRules`, `hardBreak`, `marks`, `nodes`, `tools` | |
@@ -51,7 +51,7 @@ props are the options of that type, with the same meaning.
 | `DitoDateField` | [date](./schemas.md#date-datetime-time) | `formats` | |
 | `DitoTimeField` | [time](./schemas.md#date-datetime-time) | `formats` | Strings of `format: 'iso-time'` edit as times |
 | `DitoDateTimeField` | [datetime](./schemas.md#date-datetime-time) | `formats` | |
-| `DitoColorField` | [color](./schemas.md#color) | `alpha`, `inputs`, `presets` | |
+| `DitoColorField` | [color](./schemas.md#color) | `colorFormat`, `alpha`, `inputs`, `presets` | |
 | `DitoUploadField` | [upload](./schemas.md#upload) | `accept`, `extensions`, `maxSize`, `draggable`, `deletable`, `render`, `thumbnails`, `thumbnailUrl`, `downloadUrl` | `multiple` of arrays of assets |
 | `DitoListField` | [list](./schemas.md#list) | `collapsible`, `collapsed`, `creatable`, `deletable`, `draggable`, `itemLabel` | The items of `items`, or of `forms` by their `type`, `orderKey`, `idKey` |
 | `DitoObjectField` | [object](./schemas.md#object) | `collapsible`, `collapsed`, `creatable`, `deletable` | Create and delete buttons for `nullable` objects |

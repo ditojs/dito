@@ -3466,9 +3466,11 @@ type WidgetDataKeyword =
 
 /**
  * Edits the string property `name` in the layout of {@link DitoSchemaForm},
- * with the input type of its `format`.
+ * with the input of the text type `type`, `'text'` by default.
  */
-export const DitoTextField: DefineComponent<WidgetProps>
+export const DitoTextField: DefineComponent<
+  WidgetProps<{ type?: Exclude<InputSchema['type'], 'tel'> }>
+>
 
 /** Edits the string property `name` in a text area. */
 export const DitoTextareaField: DefineComponent<
@@ -3580,9 +3582,11 @@ export const DitoDateTimeField: DefineComponent<
   WidgetProps<Pick<DateSchema, 'formats'>>
 >
 
-/** Edits the color of the string property `name`. */
+/** Edits the color of the property `name`, in the format of `colorFormat`. */
 export const DitoColorField: DefineComponent<
-  WidgetProps<Pick<ColorSchema, 'alpha' | 'inputs' | 'presets'>>
+  WidgetProps<
+    Pick<ColorSchema, 'colorFormat' | 'alpha' | 'inputs' | 'presets'>
+  >
 >
 
 /**
