@@ -742,12 +742,12 @@ describe('written properties', () => {
             code: { type: 'string', default: ({ item }) => item.format },
             title: { type: 'string', default: 'Untitled' }
           },
-          { title: null }
+          { title: 'Notes' }
         )
-      ).toEqual({ format: 'lp', code: 'lp', title: null })
+      ).toEqual({ format: 'lp', code: 'lp', title: 'Notes' })
     })
 
-    it('replace `null` in lists and objects unless they are `nullable`', () => {
+    it('replace `null` unless the property is `nullable`', () => {
       const awards = { type: 'array', items: { type: 'string' } }
       const address = {
         type: 'object',
@@ -756,16 +756,42 @@ describe('written properties', () => {
       expect(
         initialize(
           {
+            title: { type: 'string' },
+            format: { type: 'string', default: 'lp' },
+            isFeatured: { type: 'boolean' },
+            rank: { type: 'integer' },
+            day: { type: 'date' },
             awards,
             address,
+            subtitle: { type: 'string', nullable: true },
             prizes: { ...awards, nullable: true },
             location: { ...address, nullable: true }
           },
-          { awards: null, address: null, prizes: null, location: null }
+          {
+            title: null,
+            format: null,
+            isFeatured: null,
+            rank: null,
+            day: null,
+            awards: null,
+            address: null,
+            subtitle: null,
+            prizes: null,
+            location: null
+          }
         )
       ).toEqual({
+        // The empty values of strings, booleans, lists and objects:
+        title: '',
+        format: 'lp',
+        isFeatured: false,
         awards: [],
         address: { city: '' },
+        // Their empty value is `null`:
+        rank: null,
+        day: null,
+        // `nullable` values keep `null`:
+        subtitle: null,
         prizes: null,
         location: null
       })
