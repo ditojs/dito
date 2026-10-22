@@ -21,8 +21,12 @@ export interface SchemaValueOptions {
 export function useSchemaValue(context: Context) {
   const getSchemaValue = (
     keyOrDataPath: string | string[],
-    { schema = context.schema, ...options }: SchemaValueOptions = {}
-  ) => getValue(keyOrDataPath, { context, ...options, schema })
+    {
+      schema = context.schema,
+      context: valueContext = context,
+      ...options
+    }: SchemaValueOptions = {}
+  ) => getValue(keyOrDataPath, { ...options, schema, context: valueContext })
 
   return {
     getSchemaValue,
