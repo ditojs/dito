@@ -24,6 +24,7 @@ import {
 } from './structure.js'
 import { getLabelForRelated } from './options.ts'
 import { walkData, cloneItem, getSchemaSource } from './walk.js'
+import { getPropertyEmptyValue } from './properties.js'
 import { getFormSchemas, getItemFormSchema } from './lookup.js'
 
 export function getSchemaValue(
@@ -130,8 +131,6 @@ export function getDefaultValue(schema, context) {
     : getEmptyValue(schema, context)
 }
 
-const emptyValuesByPropertyType = { string: '', boolean: false }
-
 export function getEmptyValue(schema, context) {
   // NOTE: Components may not be instantiated when items are created, e.g. in
   // nested forms, so the type descriptors define `defaultValue`:
@@ -140,9 +139,9 @@ export function getEmptyValue(schema, context) {
   // Fields with `nullable: false` store the empty value of their property's
   // type instead of `null`, e.g. `''` for strings:
   return value === null && schema.nullable === false
-    ? (emptyValuesByPropertyType[
-        descriptor.getProperty?.(schema, getContext(context))?.type
-      ] ?? null)
+    ? getPropertyEmptyValue(
+        descriptor.getProperty?.(schema, getContext(context)) ?? {}
+      )
     : value
 }
 
@@ -390,12 +389,8 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
   return graph.serialize(sourceSchema, serializedRootData, options)
 }
 
-// Return whether the value at `dataPath` is excluded from the data that is
-// sent: whether no component holds it, or its component or one that contains
-// it is excluded. Of the items of lists and objects, only the values of their
-// forms' components are sent, see `cloneItem()`. Excluded sources with their
-// own resource send their data themselves, so only the components below them
-// decide.
+// Return whether the value at `dataPath` isn't sent, as no node holds it or one
+// that contains it is excluded:
 export function isDataPathExcluded(schema, data, dataPath, {
   dataPath: itemDataPath = '',
   services = null,
@@ -416,12 +411,14 @@ export function isDataPathExcluded(schema, data, dataPath, {
   })
   const excludedEntry = entries.findLast(entry => entry.node.isExcluded(entry))
   if (excludedEntry) {
+    // Sources with their own resource send their data themselves:
     return !excludedEntry.node.source?.hasResource
   }
   const holder = entries.at(-1)
   if (!holder) {
     return true
   }
+  // Of the items of lists and objects, only the values of their forms are sent:
   const { source } = holder.node
   const relativeDataPath = getRelativeDataPath(dataPath, holder.dataPath)
   return (

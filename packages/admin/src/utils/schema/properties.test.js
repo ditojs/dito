@@ -957,17 +957,46 @@ describe('written properties', () => {
       })
     })
 
-    it('sends the stored files of assets', () => {
+    it('sends the stored files of assets like upload fields', () => {
       const properties = {
-        image: { type: 'asset' },
-        pending: { type: 'asset' }
+        image: { type: 'asset', nullable: true },
+        cover: { type: 'asset', nullable: true },
+        pending: { type: 'asset', nullable: true },
+        gallery: { type: 'array', items: { type: 'asset' } }
       }
+      const stored = { key: 'a', name: 'a.png', upload: { success: true } }
+      const pending = { name: 'b.png', upload: { success: false } }
       expect(
         serialize(properties, {
-          image: { key: 'a', name: 'a.png', upload: { success: true } },
-          pending: { name: 'b.png', upload: { success: false } }
+          image: stored,
+          cover: null,
+          pending,
+          gallery: [stored, stored]
         })
-      ).toEqual({ image: { key: 'a', name: 'a.png' }, pending: null })
+      ).toEqual({
+        image: { key: 'a', name: 'a.png' },
+        cover: null,
+        pending: null,
+        gallery: [
+          { key: 'a', name: 'a.png' },
+          { key: 'a', name: 'a.png' }
+        ]
+      })
+    })
+
+    it('keeps the items of arrays that serialize to nothing', () => {
+      const properties = {
+        tags: {
+          type: 'array',
+          items: {
+            type: 'string',
+            serializeValue: ({ value }) => value || undefined
+          }
+        }
+      }
+      expect(serialize(properties, { tags: ['a', '', 'b'] })).toEqual({
+        tags: ['a', undefined, 'b']
+      })
     })
 
     it('trims strings, and sends empty `nullable` ones as `null`', () => {
@@ -1044,10 +1073,7 @@ describe('written properties', () => {
       const data = deserializeData(createForm(properties), {
         tags: ['a', ' b ', ''],
         dates: ['2026-10-21'],
-        images: [
-          { key: 'a', name: 'a.png' },
-          { name: 'b.png', upload: { success: false } }
-        ]
+        images: [{ key: 'a', name: 'a.png' }]
       })
       expect(data.dates[0]).toBeInstanceOf(Date)
       expect(validate(properties, data)).toEqual({

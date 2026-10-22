@@ -85,7 +85,19 @@ export class PropertyNode {
     this.relation = property.relate
       ? { schema: property, hasOptions: false }
       : null
-    this.#itemForms = getItemForms(property)
+    // The forms of the items by their `type`:
+    this.#itemForms = this.source
+      ? [
+          {
+            forms: property.forms ?? {
+              default: property.items
+                ? getArrayItemForm(property.items).form
+                : { properties: property.properties }
+            },
+            childSourceSchemas: []
+          }
+        ]
+      : []
   }
 
   // Like for fields, an `if` that fails counts as relevant:
@@ -176,7 +188,9 @@ export class PropertyNode {
       ? undefined
       : def !== undefined
         ? resolveValue(def, () => this.#createContext(entry))
-        : getPropertyEmptyValue(this.property, this.#get('nullable', entry))
+        : this.#get('nullable', entry)
+          ? null
+          : getPropertyEmptyValue(this.property)
   }
 
   getValueOrDefault(entry) {
@@ -239,9 +253,7 @@ export class PropertyNode {
     const { type } = this.property
     const relateKey = getRelateKey(this.property)
     if (relateKey) {
-      return isArray(value)
-        ? value.map(item => createReference(item, relateKey))
-        : createReference(value, relateKey)
+      return createReference(value, relateKey)
     } else if (isDate(value) && dateTypes.has(type)) {
       // Send plain dates, so they can't shift to another day through time
       // zones:
@@ -249,10 +261,8 @@ export class PropertyNode {
     } else if (isDate(value) && this.#get('format', entry) === 'iso-time') {
       return formatTime(value)
     } else if (type === 'asset') {
-      return getStoredFiles(value)[0] ?? null
-    } else if (type === 'array' && this.property.items?.type === 'asset') {
-      // Leave out the files that weren't uploaded:
-      return value?.filter(file => file)
+      // Send the stored file as upload fields do, else `null`:
+      return getStoredFiles(value)[0] || null
     } else if (type === 'string' && isString(value)) {
       value = this.#get('trim', entry) ? value.trim() : value
       return value === '' && this.#get('nullable', entry) ? null : value
@@ -414,7 +424,7 @@ export function getDataKeywords(schema, context) {
 function getFieldProperty(field, name, formContext) {
   const descriptor = getTypeDescriptor(field)
   if (descriptor?.getProperty) {
-    // Callbacks depend on the entry, so they remain rules of the field:
+    // Leave out callbacks, which depend on the entry:
     const schema = Object.fromEntries(
       Object.entries(field).filter(([, value]) => !isFunction(value))
     )
@@ -456,32 +466,20 @@ function getPropertySource(property) {
         hasItemTypes: Object.keys(forms ?? {}).length > 1,
         hasResource: false,
         hasSubmitButton: false,
-        // Lists of primitives are walked with their items wrapped:
-        itemAdapter: items && !items.properties ? primitiveItemAdapter : null
+        itemAdapter: items ? getArrayItemForm(items).itemAdapter : null
       }
     : null
 }
 
-// The forms of the items in the value, by their `type`. Primitives are walked
-// as the property of their wrapper:
-function getItemForms({ type, properties, items, forms, relate }) {
-  return !relate && (type === 'array' || properties)
-    ? [
-        {
-          forms: (
-            forms ??
-            {
-              default: items
-                ? items.properties
-                  ? items
-                  : { properties: { [primitiveItemAdapter.name]: items } }
-                : { properties }
-            }
-          ),
-          childSourceSchemas: []
-        }
-      ]
-    : []
+// Arrays of objects hold the items of their form, arrays of primitives hold
+// values that the walk wraps as the value of their form:
+export function getArrayItemForm(items) {
+  return items.properties
+    ? { form: items, itemAdapter: null }
+    : {
+        form: { properties: { [primitiveItemAdapter.name]: items } },
+        itemAdapter: primitiveItemAdapter
+      }
 }
 
 const primitiveItemAdapter = {
@@ -490,10 +488,10 @@ const primitiveItemAdapter = {
   unwrap: item => item.value
 }
 
-// Empty values follow the server, `nullable` ones are `null`:
-function getPropertyEmptyValue({ type, properties }, isNullable) {
-  return isNullable
-    ? null
-    : ({ string: '', boolean: false, array: [] }[type] ??
-      (properties ? {} : null))
+// The empty values of the server's types, for values that aren't `nullable`:
+export function getPropertyEmptyValue({ type, properties }) {
+  return (
+    { string: '', boolean: false, array: [] }[type] ??
+    (properties ? {} : null)
+  )
 }
