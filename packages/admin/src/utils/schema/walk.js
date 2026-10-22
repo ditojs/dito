@@ -335,7 +335,8 @@ export function walkData(schema, data, {
   }
 
   // The nodes of the item in the forms of all its sources, with their child
-  // sources as fields of the forms, unless they have fields of their name:
+  // sources as fields of the forms, unless they have fields or properties of
+  // their name:
   const getItemNodes = (sources, item, dataPath) => {
     const forms = new Set()
     const childSourceSchemas = []
@@ -345,7 +346,7 @@ export function walkData(schema, data, {
         forms.add(form)
         childSourceSchemas.push(
           ...source.childSourceSchemas.filter(
-            ({ name }) => !form.fields?.[name]
+            ({ name }) => !(form.fields ?? form.properties)?.[name]
           )
         )
       }

@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures.js'
 import { Designer } from '../models/Designer.js'
 import { ShopSet } from '../models/ShopSet.js'
+import { Collection } from '../models/Collection.js'
 import { DitoForm, DitoNestedList } from '../../../utils/pages.js'
 import type { Page } from '@playwright/test'
 
@@ -260,6 +261,62 @@ test.describe('lists of several kinds in forms with properties', () => {
     )
     await expect(getErrors(page, 'Price')).toHaveText(
       'The Price field must be 0 or more.'
+    )
+  })
+})
+
+test.describe('trees in forms with properties', () => {
+  const getTreeHeader = (page: Page, label: string) =>
+    page.locator('.dito-tree-item__header').filter({
+      has: page.locator('.dito-tree-item__label', { hasText: label })
+    })
+
+  test('edit the selected items in the forms of their slots', async ({
+    page,
+    url
+  }) => {
+    const { id } = await Collection.query().insert({
+      name: 'Fonts',
+      shopSets: [
+        { name: 'Sans', cuts: [{ name: 'Regular' }, { name: 'Bold' }] },
+        { name: 'Serif', cuts: [] }
+      ]
+    })
+    const form = new DitoForm(page)
+    await page.goto(`${url}/admin/collections/${id}`)
+    await page.getByRole('button', { name: 'Sans' }).click()
+    const header = getTreeHeader(page, 'Bold')
+    await header.hover()
+    await header.getByRole('link', { name: 'Edit' }).click()
+    await expect(page).toHaveURL(/\/collections\/\d+\/shop-sets\/0\/cuts\/1$/)
+    await expect(form.getField('Cut')).toHaveValue('Bold')
+    await form.fill('Cut', 'Black')
+    await expect(getTreeHeader(page, 'Black')).toBeVisible()
+    await page.reload()
+    // The reload loses the edit, and opens the form of the link again:
+    await expect(form.getField('Cut')).toHaveValue('Bold')
+    await form.fill('Cut', 'Black')
+    await form.save()
+    await expect
+      .poll(async () => (await Collection.query().findById(id))?.shopSets)
+      .toEqual([
+        { name: 'Sans', cuts: [{ name: 'Regular' }, { name: 'Black' }] },
+        { name: 'Serif', cuts: [] }
+      ])
+  })
+
+  test('reveal errors in the forms of their items', async ({ page, url }) => {
+    const { id } = await Collection.query().insert({
+      name: 'Fonts',
+      shopSets: [{ name: 'Sans', cuts: [{ name: '' }] }]
+    })
+    const form = new DitoForm(page)
+    await page.goto(`${url}/admin/collections/${id}`)
+    await form.fill('Name', 'Types')
+    await form.save()
+    await expect(page).toHaveURL(/\/shop-sets\/0\/cuts\/0$/)
+    await expect(getErrors(page, 'Cut')).toHaveText(
+      'The Cut field is required.'
     )
   })
 })

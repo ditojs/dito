@@ -18,7 +18,8 @@ import {
   DitoUploadField,
   DitoCustomField,
   DitoListField,
-  DitoObjectField
+  DitoObjectField,
+  DitoTreeListField
 } from '@ditojs/admin'
 import type { FormSchema, SchemaContext } from '@ditojs/admin'
 
@@ -119,6 +120,9 @@ describe('widgets', () => {
     h(DitoListField, { name: 'awards', itemLabel: ({ item }) => item.title })
     h(DitoListField, { name: 'awards', itemLabel: 'title' })
     h(DitoObjectField, { name: 'address', collapsible: true })
+    type LevelSlot = InstanceType<typeof DitoTreeListField>['$slots']['cuts']
+    expectTypeOf<Parameters<LevelSlot>[0]>().toEqualTypeOf<SchemaContext>()
+    h(DitoTreeListField, { name: 'shopSets', itemLabel: 'name' })
     // Widgets without `name` edit the items of lists of values:
     h(DitoNumberField, { step: 5 })
   })
