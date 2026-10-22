@@ -348,6 +348,42 @@ describe('widgets', () => {
     )
   })
 
+  it('keep their state while their section is collapsed', async () => {
+    const { wrapper } = await mountDesignerPage({
+      setup() {
+        form = useDitoForm({ resource: 'designers', id: 7, properties })
+        return () =>
+          h(DitoSchemaForm, null, {
+            default: () =>
+              h(
+                DitoSection,
+                { label: 'Location', collapsible: true },
+                {
+                  default: () =>
+                    h(
+                      DitoSection,
+                      { name: 'address', label: 'Address', collapsible: true },
+                      { default: () => h(DitoTextField, { name: 'city' }) }
+                    )
+                }
+              )
+          })
+      }
+    })
+    const toggle = async label => {
+      await getContainer(wrapper, label)
+        .find('.dito-schema-header .dito-label')
+        .trigger('click')
+      await settle()
+    }
+    await toggle('Address')
+    expect(getContainer(wrapper, 'City')).toBeUndefined()
+    await toggle('Location')
+    await toggle('Location')
+    expect(getContainer(wrapper, 'Address')).toBeDefined()
+    expect(getContainer(wrapper, 'City')).toBeUndefined()
+  })
+
   it('throw for names without a property', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})

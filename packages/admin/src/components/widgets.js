@@ -2,6 +2,7 @@ import { h, markRaw, shallowReactive } from 'vue'
 import DitoContainer from './DitoContainer.vue'
 import { useServices } from '../composables/useSchemaContext.ts'
 import { useWidget, widgetProps } from '../composables/useWidget.ts'
+import { getArrayItemForm } from '../utils/schema/properties.js'
 
 // Cleared strings are empty, unless they're `nullable`:
 const getTextSchema = (type, { maxLength, nullable }) => ({
@@ -248,17 +249,16 @@ export const DitoListField = defineSourceWidget('DitoListField', {
     draggable: { type: Boolean, default: undefined },
     itemLabel: { type: [String, Function, Object, Boolean], default: undefined }
   },
-  getSchema: ({ items, forms, orderKey, idKey }) => ({
-    type: 'list',
-    ...(
-      forms
-        ? { forms }
-        : { form: items.properties ? items : { properties: { value: items } } }
-    ),
-    wrapPrimitives: forms || items.properties ? undefined : 'value',
-    orderKey,
-    idKey
-  })
+  getSchema: ({ items, forms, orderKey, idKey }) => {
+    const { form, itemAdapter } = forms ? {} : getArrayItemForm(items)
+    return {
+      type: 'list',
+      ...(forms ? { forms } : { form }),
+      wrapPrimitives: itemAdapter?.name,
+      orderKey,
+      idKey
+    }
+  }
 })
 
 // Objects that are `nullable` can be created and deleted:

@@ -8,6 +8,7 @@ import {
   continueComponentPath
 } from './useComponentPath.ts'
 import { useServices } from './useSchemaContext.ts'
+import { useStore } from './useStore.ts'
 import type { DataContext } from '../utils/DataContext.ts'
 import type { Schema } from '../utils/types.ts'
 
@@ -77,7 +78,12 @@ export function useWidget(
       return segment ? appendDataPath(path, segment) : path
     }
   )
-  const store = reactive({})
+  // Like the components of panes, widgets keep their state in the store of
+  // their layout, while they're unmounted. Layouts without name have no key:
+  const store =
+    name != null
+      ? useStore(layout.props).getChildStore(`${name}${segment ?? ''}`)
+      : reactive({})
   const node = property ? getPropertyNode(name!, property) : null
 
   return {
