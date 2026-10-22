@@ -262,6 +262,7 @@ name as `type`: `{ type: 'price' }` becomes a `$ref` to the type's schema.
 | `validateAsync` | `async function(params)`      | Asynchronous custom validation; async `validate` functions are moved here.                                                        |
 | `instanceof`    | `string \| function \| array` | The value is an instance of one of the types: names of JS constructors (`'Date'`, `'Buffer'`, …), model names or constructors.    |
 | `range`         | `[min, max]`                  | The value lies between `min` and `max`, both included.                                                                           |
+| `decimals`      | `number \| '*'`               | The number has at most that many decimal places, any with `'*'`.                                                                  |
 | `primary`       | `boolean`                     | Metadata: primary key column.                                                                                                     |
 | `foreign`       | `boolean`                     | Metadata: foreign key column.                                                                                                     |
 | `unique`        | `boolean \| string`           | Metadata: unique constraint; properties with the same string form a composite one.                                                |
@@ -329,8 +330,8 @@ the server and the admin as plain `{ validate(value, setting), message }`
 objects, without Ajv. `formats` holds `color`, `empty` and `required`,
 `keywords` the standard keywords `type`, `enum`, `minimum`, `maximum`,
 `multipleOf`, `minLength`, `maxLength`, `pattern`, `minItems` and `maxItems`,
-and dito's `range` and `decimals`. `message` is a string or a function of the
-setting:
+and dito's `range` and `decimals`; `enum` and `multipleOf` only carry their
+messages. `message` is a string or a function of the setting:
 
 ```js
 import { keywords } from '@ditojs/schema'

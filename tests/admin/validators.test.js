@@ -2,13 +2,13 @@ import { Validator, convertSchema } from '@ditojs/server'
 import * as cases from '../../packages/schema/src/cases.js'
 import { getValueValidationErrors } from '../../packages/admin/src/utils/schema/validation.js'
 
-// The shared cases that both sides validate: the server has no `decimals`, and
-// the admin no `color`, `empty`, `multipleOf`, `enum` of values, and no `type`
-// other than `integer`:
+// The shared cases that both sides validate: the admin has no `color`, `empty`,
+// `multipleOf`, `enum` of values, and no `type` other than `integer`:
 const keywordNames = [
   'minimum',
   'maximum',
   'range',
+  'decimals',
   'minLength',
   'maxLength',
   'pattern',
@@ -44,9 +44,12 @@ const entries = [
       validations: { [name]: setting },
       schema: { [name]: setting },
       message,
-      // Without `''` for `pattern`, see the differences below:
-      values: [...new Set([...valid, ...invalid, ''])].filter(
-        value => value !== '' || name !== 'pattern'
+      // Without `''` for `pattern`, see the differences below, and only
+      // numbers for `decimals`, which Ajv applies to numbers only:
+      values: [...new Set([...valid, ...invalid, ''])].filter(value =>
+        name === 'decimals'
+          ? typeof value === 'number'
+          : value !== '' || name !== 'pattern'
       )
     }))
   )

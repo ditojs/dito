@@ -13,4 +13,4 @@ with Ajv, see the
 [validator API docs](https://github.com/ditojs/dito/blob/main/docs/api/server/validator.md#shared-definitions).
 The admin doesn't apply formats and keywords to empty values, except those that
 check emptiness themselves and set `validatesEmptyValues: true`, i.e. the
-formats `required` and `empty` and the keyword `minLength`.
+format `required` and the keyword `minLength`.

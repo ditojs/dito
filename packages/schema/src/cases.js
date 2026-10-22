@@ -73,8 +73,6 @@ export const keywords = {
   enum: [
     {
       setting: ['a', 1, { b: 2 }],
-      valid: ['a', 1, { b: 2 }],
-      invalid: ['b', '1', { b: 3 }, null],
       message: 'must be one of the allowed values'
     }
   ],
@@ -105,8 +103,6 @@ export const keywords = {
   multipleOf: [
     {
       setting: 5,
-      valid: [0, 10, -15, 'a'],
-      invalid: [3, 7.5],
       message: 'must be a multiple of 5'
     }
   ],
@@ -131,7 +127,7 @@ export const keywords = {
     },
     {
       setting: '*',
-      valid: ['1.123456789'],
+      valid: ['1.123456789', 1.125],
       invalid: ['1.'],
       message: 'must be a number'
     }

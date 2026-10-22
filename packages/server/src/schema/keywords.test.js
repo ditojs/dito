@@ -408,6 +408,59 @@ describe('range keyword', () => {
   })
 })
 
+describe('decimals keyword', () => {
+  class Product extends Model {
+    static properties = {
+      price: {
+        type: 'number',
+        nullable: true,
+        decimals: 2
+      },
+      weight: {
+        type: 'number',
+        decimals: '*'
+      }
+    }
+  }
+
+  createApp({ Product })
+
+  it('accepts numbers with up to the given decimal places, and null', () => {
+    expect(() => Product.fromJson({ price: 1.25, weight: 0.125 })).not.toThrow()
+    expect(() => Product.fromJson({ price: 3 })).not.toThrow()
+    expect(() => Product.fromJson({ price: null })).not.toThrow()
+  })
+
+  it('reports `decimals` errors with the message of @ditojs/schema', () => {
+    const errors = getValidationErrors(() => Product.fromJson({ price: 1.255 }))
+    expect(errors).toEqual({
+      price: [
+        {
+          message: 'must be a number with at most 2 decimal places',
+          keyword: 'decimals',
+          params: {}
+        }
+      ]
+    })
+  })
+
+  it('rejects decimals definitions that are no counts', () => {
+    class Broken extends Model {
+      static properties = {
+        price: {
+          type: 'number',
+          decimals: -1
+        }
+      }
+    }
+    createApp({ Broken })
+    // Schemas compile lazily, on the first validation.
+    expect(() => Broken.fromJson({ price: 1 })).toThrow(
+      /keyword "decimals" value is invalid/
+    )
+  })
+})
+
 describe('relate keyword', () => {
   class Author extends Model {
     static properties = {

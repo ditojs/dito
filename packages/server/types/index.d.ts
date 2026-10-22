@@ -4746,6 +4746,7 @@ export const keywords: {
   validateAsync: Keyword
   relate: Keyword
   range: Keyword
+  decimals: Keyword
 }
 
 /** Built-in AJV format definitions. */
@@ -4983,6 +4984,7 @@ interface NumberKeywords {
   multipleOf?: number
   format?: string
   range?: [number, number]
+  decimals?: number | '*'
 }
 interface StringKeywords {
   minLength?: number
