@@ -67,7 +67,8 @@ slot(name="prepend")
       slot.dito-schema-header__buttons(name="edit-buttons")
   TransitionHeight(:enabled="inlined")
     .dito-schema-content(
-      v-if="opened"
+      v-if="opened || hasErrors"
+      v-show="opened"
       ref="content"
       :class="{ 'dito-scroll': scrollable }"
     )
@@ -248,6 +249,9 @@ export default {
     const scrollPositions = {}
 
     const opened = useStore(props).getStoreRef('opened', () => !props.collapsed)
+    // Collapsed content and tabs with errors render hidden, so that errors are
+    // revealed in the components that display them:
+    const hasErrors = computed(() => getModel().hasErrorsWithin(props.data))
     // Fire the toggle events of the form, and of the component that holds it,
     // also when lists with `collapsible: 'all'` toggle it through its store:
     watch(opened, opened => {
@@ -435,6 +439,7 @@ export default {
       createContext,
       dataContext: services.dataContext,
       opened,
+      hasErrors,
       tabs,
       hasTabs,
       hasData,
@@ -476,7 +481,7 @@ export default {
       }),
 
       shouldRenderTab(tab) {
-        return isTabSelected(tab) || !!mountedTabs[tab]
+        return isTabSelected(tab) || !!mountedTabs[tab] || hasErrors.value
       },
 
       async pasteData(clipboardData) {
@@ -564,6 +569,13 @@ export default {
     > :only-child {
       grid-row-end: none;
     }
+  }
+
+  // Collapsed schemas show that their hidden content contains errors:
+  &:not(&--open):has(> .dito-schema-content .dito-container--has-errors)
+    > .dito-schema-header
+    > .dito-label {
+    color: $color-error;
   }
 
   &--bordered {

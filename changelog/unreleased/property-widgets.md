@@ -4,4 +4,4 @@
 
 ### New
 
-- **admin:** `DitoTextField`, `DitoNumberField`, `DitoSwitchField` and `DitoSection` lay out the `properties` of `useDitoForm()` in `DitoSchemaForm` by their `name`, with display props only: the labels of required properties are marked, irrelevant properties hide their widgets and sections whose content is all hidden, collapsed sections show that they contain errors and open to reveal them, and errors that no widget shows are notified.
+- **admin:** `DitoTextField`, `DitoNumberField`, `DitoSwitchField` and `DitoSection` lay out the `properties` of `useDitoForm()` in `DitoSchemaForm` by their `name`, with display props only: the labels of required properties are marked, irrelevant properties hide their widgets, collapsed sections show that they contain errors and open to reveal them, also in the page's own components, and errors that no widget shows are notified.

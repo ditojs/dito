@@ -141,11 +141,12 @@ See [Widgets](../../api/admin/widgets.md) for all widgets and their props.
 and `collapsed`. With `name`, it edits the object of that property, flat in
 the layout: the widgets in it edit the properties of the object.
 
-Collapsed sections don't render their widgets. Until they open, they read the
-names of the widgets in their slot to show that they contain errors, and to
-open when an error inside them is revealed. They don't see widgets inside
-other components of the page. A section whose widgets are all hidden by their
-property's `if` is hidden too.
+Collapsed sections don't render their widgets. While the form holds errors in
+their data, they render them hidden: errors open the sections whose widgets
+show them, also widgets inside other components of the page, and collapsed
+sections with such errors mark their label. Sections don't hide themselves
+when all their widgets are hidden by their property's `if`: hide them in the
+template with a `v-if`.
 
 ## Lists and objects
 

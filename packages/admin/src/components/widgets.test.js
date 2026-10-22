@@ -24,6 +24,11 @@ const properties = {
   }
 }
 
+// A component of the page that lays out widgets of the form:
+const RankFields = {
+  setup: () => () => h('div', [h(DitoNumberField, { name: 'rank', step: 1 })])
+}
+
 // The form of the page, and whether its template shows the name and email:
 let form = null
 const showsName = ref(true)
@@ -56,7 +61,7 @@ const DesignerPage = {
             { label: 'Ranking', collapsible: true, collapsed: true },
             {
               default: () => [
-                h('div', [h(DitoNumberField, { name: 'rank', step: 1 })]),
+                h(RankFields),
                 h(
                   DitoSection,
                   { label: 'More', collapsible: true, collapsed: true },
@@ -205,9 +210,13 @@ describe('widgets', () => {
       'The Name field is required.'
     )
     // The nested sections with the other widget of `name` are revealed:
+    const displayName = getContainer(wrapper, 'Display Name')
     expect(
-      getContainer(wrapper, 'Display Name').find('.dito-errors').text()
-    ).toBe('The Display Name field is required.')
+      displayName.element.closest('.dito-schema:not(.dito-schema--open)')
+    ).toBe(null)
+    expect(displayName.find('.dito-errors').text()).toBe(
+      'The Display Name field is required.'
+    )
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Validation Errors',
@@ -231,22 +240,38 @@ describe('widgets', () => {
   })
 
   it('reveal errors in collapsed sections, which show them', async () => {
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper, notify } = await mountDesignerPage()
     const section = getContainer(wrapper, 'Ranking')
-    expect(section.find('.dito-schema-content').exists()).toBe(false)
+    const content = () => section.find('.dito-schema-content')
+    expect(content().exists()).toBe(false)
     form.item.rank = 0
     expect(form.validate()).toBe(false)
     await settle()
+    // Also the widgets in the page's own components:
     const rank = getContainer(wrapper, 'Rank')
     expect(rank.find('.dito-errors').text()).toBe(
       'The Rank field must be 1 or more.'
     )
     expect(document.activeElement).toBe(rank.find('input').element)
-    // Collapsed again, the section shows that it contains errors:
-    expect(section.classes()).not.toContain('dito-container--contains-errors')
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: 'Please correct the highlighted errors.'
+      })
+    )
+    // Collapsed again, the section keeps its content with the errors hidden,
+    // which marks its label:
     await section.find('.dito-schema-header .dito-label').trigger('click')
-    await nextTick()
-    expect(section.classes()).toContain('dito-container--contains-errors')
+    await settle()
+    expect(section.find('.dito-schema').classes()).not.toContain(
+      'dito-schema--open'
+    )
+    expect(content().isVisible()).toBe(false)
+    expect(content().find('.dito-container--has-errors').exists()).toBe(true)
+    // Without errors, it unmounts its content again:
+    form.item.rank = 2
+    expect(form.validate()).toBe(true)
+    await settle()
+    expect(content().exists()).toBe(false)
   })
 
   it('hide themselves for irrelevant properties', async () => {
@@ -260,8 +285,6 @@ describe('widgets', () => {
     form.item.isFeatured = false
     await nextTick()
     expect(getContainer(wrapper, 'Rank')).toBeUndefined()
-    // Sections whose content is all hidden are hidden too:
-    expect(getContainer(wrapper, 'Award')).toBeUndefined()
     expect(getContainer(wrapper, 'Ranking')).toBeDefined()
     expect(form.validate()).toBe(true)
   })

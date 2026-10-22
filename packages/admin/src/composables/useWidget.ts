@@ -1,15 +1,12 @@
-import {
-  inject,
-  onBeforeMount,
-  onUnmounted,
-  reactive,
-  useId
-} from 'vue'
+import { inject, onUnmounted, reactive, useId } from 'vue'
 import { appendDataPath } from '../utils/data.js'
 import { getRootData } from '../utils/services.ts'
 import { PropertyNode } from '../utils/schema/properties.js'
 import { layoutKey, propertyScopeKey } from '../utils/keys.ts'
-import { useComponentPath } from './useComponentPath.ts'
+import {
+  useComponentPath,
+  continueComponentPath
+} from './useComponentPath.ts'
 import { useServices } from './useSchemaContext.ts'
 import type { DataContext } from '../utils/DataContext.ts'
 import type { Schema } from '../utils/types.ts'
@@ -29,9 +26,6 @@ export const widgetProps = {
   disabled: { type: Boolean, default: undefined },
   autofocus: { type: Boolean, default: undefined }
 } as const
-
-// The widgets that sections find in their slots:
-export const widgetComponents = new WeakSet<object>()
 
 export interface WidgetProps {
   readonly name: string | null
@@ -65,48 +59,24 @@ export function useWidget(
     throw new Error(`Unknown property '${name}'.`)
   }
   const services = useServices()
-  const { adminContext, dataContext } = services
+  const { dataContext } = services
   const getValueDataPath = (nested = true) =>
     nested && !isScopeValue
       ? appendDataPath(scope.dataPath, name!)
       : scope.dataPath
-  // Widgets have the component paths of their data paths, so that errors are
-  // revealed by their data paths, also in sections and list items. Several
-  // widgets of a value and the values of scopes get paths of their own, and
-  // reveal their value through them. Layouts get one that contains no widgets:
-  let getParentPath = () => scope.componentPath
-  if (name != null) {
-    const occurrence = addOccurrence(dataContext!, getValueDataPath())
-    if (occurrence > 0) {
-      getParentPath = () =>
-        appendDataPath(scope.componentPath, `~${occurrence + 1}`)
+  // Several widgets of a value, and layouts, add a segment to the component
+  // path of their parent to tell them apart:
+  const occurrence =
+    name != null ? addOccurrence(dataContext!, getValueDataPath()) : 0
+  const segment =
+    name == null ? useId() : occurrence > 0 ? `~${occurrence + 1}` : null
+  useComponentPath(
+    () => scope.dataPath,
+    parent => {
+      const path = continueComponentPath(parent, scope.dataPath)
+      return segment ? appendDataPath(path, segment) : path
     }
-    if (occurrence > 0 || isScopeValue) {
-      let unregister: () => void
-      onBeforeMount(() => {
-        const { ui } = adminContext
-        unregister = ui.register(
-          () =>
-            isScopeValue
-              ? scope.componentPath
-              : appendDataPath(scope.componentPath, name),
-          {
-            dataContext,
-            focus() {
-              const path = appendDataPath(getParentPath(), name)
-              ui.getHandles(path, dataContext).find(handle => !!handle.focus)
-                ?.focus!()
-            }
-          }
-        )
-      })
-      onUnmounted(() => unregister())
-    }
-  } else {
-    const id = useId()
-    getParentPath = () => appendDataPath(scope.componentPath, id)
-  }
-  useComponentPath(() => scope.dataPath, getParentPath)
+  )
   const store = reactive({})
   const node = property ? getPropertyNode(name!, property) : null
 
@@ -114,7 +84,6 @@ export function useWidget(
     scope,
     name,
     property: property as Schema | null,
-    store,
 
     // Widgets of irrelevant properties hide themselves:
     isRelevant(nested = true) {

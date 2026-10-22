@@ -194,9 +194,6 @@ export default {
         get dataPath() {
           return props.dataPath
         },
-        get componentPath() {
-          return componentPath.value
-        },
         // Primitive list items are edited as the value of their wrapper:
         get valueName() {
           return getItemAdapter(unref(sourceSchema))?.name
