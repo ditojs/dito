@@ -335,26 +335,6 @@ describe('DitoMultiselectType', () => {
       expect(getTagLabels(field)).toEqual(['Classic', 'Gothic'])
     })
 
-    it('accepts added tags among static options on submit', async () => {
-      const { findField, submit } = await mountForm({
-        schema: {
-          fields: {
-            keywords: {
-              type: 'multiselect',
-              multiple: true,
-              searchable: true,
-              taggable: true,
-              options: ['classic']
-            }
-          }
-        },
-        data: { keywords: ['classic'] },
-        request: ({ data }) => ({ data })
-      })
-      await addTag(findField('keywords'), 'gothic')
-      expect(await submit()).toEqual({ id: 1, keywords: ['classic', 'gothic'] })
-    })
-
     it('emits change for added tags and keeps the options', async () => {
       const onChange = vi.fn()
       const keywords = ['classic']

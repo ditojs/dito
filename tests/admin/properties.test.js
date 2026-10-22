@@ -245,6 +245,13 @@ describe('The properties of fields on the server', async () => {
     expect(getAdminErrors(empty)).toEqual([])
   })
 
+  // The `enum` of static options is the server's to check:
+  it('rejects values missing from static options only on the server', () => {
+    const missing = { format: 'scroll', genre: 'blues', genres: ['pop'] }
+    expect(getServerErrors(missing)).toEqual(['format', 'genre', 'genres/0'])
+    expect(getAdminErrors(missing)).toEqual([])
+  })
+
   it('rejects the same invalid values on both sides', () => {
     const invalid = {
       title: '',
@@ -254,8 +261,6 @@ describe('The properties of fields on the server', async () => {
       price: -1,
       pages: 1001,
       rating: 6,
-      format: 'scroll',
-      genre: 'blues',
       genres: [],
       subtitle: 'A'.repeat(41),
       address: { street: '' },

@@ -211,7 +211,6 @@ const catalogueErrors = {
   'summaryNote': [{ message: 'must be at most 5 characters long' }],
   'collections/0/code': [{ message: 'is required' }],
   'collections/0/discount': [{ message: 'must be between 0 and 1' }],
-  'collections/0/currency': [{ message: 'must be one of the options' }],
   'collections/0/items/0/name': [{ message: 'is required' }],
   'collections/0/items/0/pages': [{ message: 'must be 1 or more' }],
   'collections/0/items/0/price': [{ message: 'is required' }],
@@ -340,7 +339,6 @@ describe('getDataValidationErrors()', () => {
     const data = { ...createCatalogue(), showPrices: false }
     const {
       'collections/0/discount': discount,
-      'collections/0/currency': currency,
       'collections/0/items/0/price': price,
       ...errors
     } = catalogueErrors
@@ -1447,7 +1445,6 @@ describe('DataModel', () => {
         'title',
         'collections/0/code',
         'collections/0/discount',
-        'collections/0/currency',
         'collections/0/items/0/name',
         'collections/0/items/0/pages',
         'collections/0/items/0/price',
@@ -1643,6 +1640,8 @@ describe('written properties', () => {
       getDataValidationErrors(propertiesForm, createCatalogue(), { services })
     ).toEqual({
       ...errors,
+      // Unlike static options, `enum` rejects other values:
+      'collections/0/currency': [{ message: 'must be one of the options' }],
       'collections/1/items/0/tracks': [
         { message: 'must contain at least one item' }
       ]

@@ -25,13 +25,7 @@ import {
 } from '../utils/schema/data.js'
 import { getItemProperty } from '../utils/schema/properties.js'
 import { createReference } from '../utils/data.js'
-import {
-  findOptionForValue,
-  getOptionKey,
-  getOptionsSettings,
-  getRelateKey,
-  getValueForOption
-} from '../utils/schema/options.ts'
+import { getOptionKey, getRelateKey } from '../utils/schema/options.ts'
 
 // Nested sections and panels hold their data in an object, others have no own
 // value:
@@ -123,40 +117,6 @@ export const optionsTraits = {
   treatsNullAsMissing: (context: Context) =>
     getMultipleValue(context.schema, context),
   getOptionsDataSchema: schema => schema.options,
-
-  // Values need to be among static options. Loaded options can miss values
-  // while they change, and tags and searches add values of their own:
-  getValidations(context: Context) {
-    const { schema } = context
-    const { options } = schema
-    const staticOptions = isArray(options) ? options : options?.data
-    if (
-      isArray(staticOptions) &&
-      !schema.search &&
-      !getSchemaValue('taggable', { type: [Boolean, Object], schema, context })
-    ) {
-      const multiple = getMultipleValue(schema, context)
-      const settings = getOptionsSettings(schema, staticOptions, {
-        multiple,
-        isGrouped: false,
-        createContext: values =>
-          context.extend({ options: staticOptions, ...values })
-      })
-      const isOption = (value: any) => (
-        findOptionForValue(
-          settings,
-          staticOptions,
-          settings.relateKey ? getValueForOption(settings, value) : value
-        ) !== undefined
-      )
-      return {
-        enum: (value: any) =>
-          multiple && isArray(value) ? value.every(isOption) : isOption(value)
-      }
-    } else {
-      return {}
-    }
-  },
 
   // Related values are objects. Static options give the type of the values,
   // and their `enum`:
