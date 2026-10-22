@@ -2208,6 +2208,110 @@ describe('DitoForm', () => {
     })
   })
 
+  describe('nested forms of sources of the same data in tabs', () => {
+    // Both tabs list the families, each with a form of its own:
+    const createFamilies = fields => ({
+      type: 'list',
+      editable: true,
+      form: { type: 'form', fields }
+    })
+    const schema = {
+      tabs: {
+        info: {
+          type: 'tab',
+          fields: { families: createFamilies({ name: { type: 'text' } }) }
+        },
+        pricing: {
+          type: 'tab',
+          fields: { families: createFamilies({ price: { type: 'number' } }) }
+        }
+      }
+    }
+    const data = { families: [{ name: 'Sans', price: 3 }] }
+    const fieldsByTab = { info: 'name', pricing: 'price' }
+
+    const expectFamilyForm = async (form, tab) => {
+      await settle(form)
+      expect(form.dataPath).toBe('families/0')
+      expect(form.dataContext.componentPath).toBe(`${tab}/families/0`)
+      expect([...form.$el.querySelectorAll('input')].map(({ id }) => id))
+        .toEqual([`${tab}/families/0/${fieldsByTab[tab]}`])
+    }
+
+    it.each(['info', 'pricing'])(
+      'link to their own forms from the %s tab',
+      async tab => {
+        const { admin, wrapper } = await mountForm({ schema, data })
+        await admin.navigate('/items/1#pricing')
+        const links = wrapper.findAll('a.dito-button--edit')
+        expect(links.map(link => link.attributes('href'))).toEqual([
+          '/items/1/info/families/0',
+          '/items/1/pricing/families/0'
+        ])
+        await admin.navigate(`/items/1#${tab}`)
+        await links[tab === 'info' ? 0 : 1].trigger('click')
+        await flushPromises()
+        expect(admin.router.currentRoute.value.path).toBe(
+          `/items/1/${tab}/families/0`
+        )
+        await expectFamilyForm(admin.getRouteComponent(isForm), tab)
+      }
+    )
+
+    it.each(['info', 'pricing'])(
+      'open their own forms from the %s tab on reload',
+      async tab => {
+        const { admin, routeComponent: form } = await mountForm({
+          schema,
+          data,
+          path: `/items/1/${tab}/families/0`
+        })
+        await expectFamilyForm(form, tab)
+        const [itemForm] = admin.getRouteComponents(isForm)
+        await form.routeContext.close()
+        await flushPromises()
+        expect(admin.router.currentRoute.value.path).toBe('/items/1')
+        expect(admin.getSchemaComponent(itemForm).selectedTab).toBe(tab)
+      }
+    )
+
+    it('reveal errors in the form of the source that displays them', async () => {
+      const { admin, submit } = await mountForm({
+        schema,
+        data,
+        request: ({ method = 'get' }) => {
+          if (method !== 'get') {
+            throw Object.assign(new Error('Validation failed'), {
+              response: {
+                status: 400,
+                data: {
+                  type: 'ValidationError',
+                  errors: { 'families/0/price': [{ message: 'is too high' }] }
+                }
+              }
+            })
+          }
+          return { data: [] }
+        }
+      })
+      await submit()
+      await flushPromises()
+      // The info tab is rendered first, but only the pricing form has a price:
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/pricing/families/0'
+      )
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      const input = form.$el.querySelector(
+        'input[id="pricing/families/0/price"]'
+      )
+      expect(input.closest('.dito-container').textContent).toContain(
+        'is too high'
+      )
+      expect(document.activeElement).toBe(input)
+    })
+  })
+
   describe('nested forms of items in views', () => {
     const recipesSchema = {
       type: 'list',

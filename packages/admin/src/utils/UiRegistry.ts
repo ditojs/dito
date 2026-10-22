@@ -9,8 +9,10 @@ export interface UiHandle {
   // open a collapsed schema and render its tab, which `focus` also selects:
   reveal?(componentPath: string, options: { focus: boolean }): Promise<void>
   focus?(): void
-  // The data path of the value whose errors the component displays:
-  readonly errorDataPath?: string | null
+  // The component path at which the component can display the errors at
+  // `dataPath`, if it can, e.g. its own, or the one of a field in the form of
+  // an item of a routed source:
+  getErrorComponentPath?(dataPath: string): string | null
 }
 
 export class UiRegistry {
@@ -48,21 +50,25 @@ export class UiRegistry {
       : handles.filter(handle => handle.dataContext === dataContext)
   }
 
-  // The paths of the components that display the errors at `dataPath`:
+  // The paths at which components can display the errors at `dataPath`, in
+  // the order the components were created:
   getErrorComponentPaths(
     dataContext: DataContext,
     dataPath: string
   ): string[] {
-    return [...this.#handles]
-      .filter(([, handles]) =>
-        [...handles].some(
-          handle => (
-            handle.dataContext === dataContext &&
-            handle.errorDataPath === dataPath
-          )
-        )
-      )
-      .map(([componentPath]) => componentPath)
+    const componentPaths = new Set<string>()
+    for (const handles of this.#handles.values()) {
+      for (const handle of handles) {
+        const componentPath =
+          handle.dataContext === dataContext
+            ? (handle.getErrorComponentPath?.(dataPath) ?? null)
+            : null
+        if (componentPath !== null) {
+          componentPaths.add(componentPath)
+        }
+      }
+    }
+    return [...componentPaths]
   }
 
   // Ask the components on the way from the outside in:

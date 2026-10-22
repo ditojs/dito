@@ -106,25 +106,28 @@ export function useRouteContainer({
       : router.currentRoute.value.path
   })
 
-  // Resolve the routes of the data path in the data of the route, which only
-  // views and forms render, menus don't:
+  // Resolve the routes of the component path in the components of the route,
+  // which only views and forms render, menus don't:
   const resolveRoute = (
-    dataPath: string,
+    componentPath: string,
     getRoute: (
       node: ViewNode | FormNode,
       path: string
     ) => (Route & Partial<FormRoute>) | null
   ) => {
     const path = getRelativeDataPath(
-      dataPath,
-      routeContext.dataContext.dataPath
+      componentPath,
+      routeContext.dataContext.componentPath
     )
     const route = (
       path !== null &&
       getRoute(getNode() as ViewNode | FormNode, path)
     )
     return route
-      ? { path: router.resolve(route).path, dataPath: route.dataPath ?? '' }
+      ? {
+          path: router.resolve(route).path,
+          componentPath: route.componentPath ?? ''
+        }
       : null
   }
 
@@ -209,20 +212,20 @@ export function useRouteContainer({
       markRaw(new LoadingTracker(adminContext.loadingTracker))
     ),
 
-    getFormRoute(dataPath: string) {
-      return resolveRoute(dataPath, (node, path) =>
+    getFormRoute(componentPath: string) {
+      return resolveRoute(componentPath, (node, path) =>
         node.getFormRoute(path, routeContext.state)
       )
     },
 
-    getFormPath(dataPath: string) {
-      const route = routeContext.getFormRoute(dataPath)
-      return route && !route.dataPath ? route.path : null
+    getFormPath(componentPath: string) {
+      const route = routeContext.getFormRoute(componentPath)
+      return route && !route.componentPath ? route.path : null
     },
 
-    getCreatePath(dataPath: string) {
+    getCreatePath(componentPath: string) {
       return (
-        resolveRoute(dataPath, (node, path) =>
+        resolveRoute(componentPath, (node, path) =>
           node.getCreateRoute(path, routeContext.state)
         )?.path ?? null
       )

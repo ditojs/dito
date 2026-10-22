@@ -60,11 +60,13 @@ export async function mountSchema({
 // an item of a list with a resource, at `/items/1` when there's `data`, which
 // the form loads as the item, or else at `/items/create`. Requests that the
 // form makes for the item, e.g. to submit, are passed to `request()`, so the
-// item isn't loaded through it.
+// item isn't loaded through it. With a `path`, e.g. of a nested form, the admin
+// starts there, as when reloading it, and returns its deepest form.
 export async function mountForm({
   schema,
   data = null,
   request = null,
+  path = null,
   ...options
 }) {
   const id = data?.id ?? 1
@@ -89,9 +91,12 @@ export async function mountForm({
       }
       return request?.(options)
     },
+    path: path ?? '/',
     ...options
   })
-  await admin.navigate(data ? `/items/${id}` : '/items/create')
+  if (!path) {
+    await admin.navigate(data ? `/items/${id}` : '/items/create')
+  }
   const form = admin.getRouteComponent(isForm)
   await settle(form)
   return createMountResult(admin, form)

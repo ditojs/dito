@@ -159,17 +159,18 @@ export default {
     const { getSchemaValue, getLabel } = useSchemaValue(context)
     // Continue the path of the tree list, whose name the data path of the root
     // item doesn't contain:
+    const getComponentPath = dataPath => {
+      const relativeDataPath = getRelativeDataPath(
+        dataPath,
+        sourceContext.dataPath
+      )
+      return relativeDataPath
+        ? appendDataPath(sourceContext.componentPath, relativeDataPath)
+        : sourceContext.componentPath
+    }
     const { componentPath } = useComponentPath(
       () => props.dataPath,
-      () => {
-        const relativeDataPath = getRelativeDataPath(
-          props.dataPath,
-          sourceContext.dataPath
-        )
-        return relativeDataPath
-          ? appendDataPath(sourceContext.componentPath, relativeDataPath)
-          : sourceContext.componentPath
-      }
+      () => getComponentPath(props.dataPath)
     )
     const { getItemDataPath, getItemLabel } = useSourceItems({
       services,
@@ -280,7 +281,7 @@ export default {
           // Reflect the route in `open`, to reopen items closed by the user:
           return list.map((data, index) => {
             const path = services.routeContext?.getFormPath(
-              getItemDataPath(schema, index)
+              getComponentPath(getItemDataPath(schema, index))
             )
             const active = !!path && routePath === path
             const open = !!path && !active && isPathWithin(routePath, path)

@@ -154,6 +154,7 @@ import {
   getItemFormSchema,
   isEmptySchema
 } from '../utils/schema/lookup.js'
+import { FormNode } from '../utils/RouteTree.ts'
 import { fromClipboard } from '../utils/fromClipboard.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
 import { getUploadEntries } from '../utils/interchange.ts'
@@ -302,6 +303,29 @@ export default {
       )
     )
 
+    // The tab that holds the source of the nested route's form, which its route
+    // names, e.g. `pricing` in `/items/1/pricing/families/0`:
+    const nestedRouteTab = computed(() => {
+      const form = (
+        hasTabs.value &&
+        isTopLevelSchema.value &&
+        routeContext?.childNode
+      )
+      if (form instanceof FormNode) {
+        // The source in this route's container, which the form may be below,
+        // unless the form belongs to another one, e.g. while leaving:
+        let node = form.source
+        while (node && node.parent !== routeContext.node) {
+          node = node.parent
+        }
+        const tab = node && parseDataPath(node.componentPath)[0]
+        if (tab && tab in renderedTabs.value) {
+          return tab
+        }
+      }
+      return null
+    })
+
     const isTabSelected = tab => selectedTab.value === tab
 
     const selectTab = tab => {
@@ -362,6 +386,13 @@ export default {
       }
     })
 
+    // Show the source of the nested form, to return to it when it closes:
+    watch(nestedRouteTab, tab => {
+      if (tab) {
+        selectTab(tab)
+      }
+    })
+
     // `defaultTab()` and the tabs' `if` may depend on data loaded later:
     watch(hasData, hasData => {
       if (hasData && shouldFollowDefaultTab) {
@@ -417,9 +448,12 @@ export default {
     }
 
     onMounted(() => {
-      // The tab of a nested route belongs to the nested form:
-      const tab = routeTab.value
-      if (shouldFollowRouteTab.value && tab && tab in renderedTabs.value) {
+      // The tab of a nested route belongs to the nested form, which names the
+      // tab of its source in its route, e.g. after a reload:
+      const tab = shouldFollowRouteTab.value
+        ? routeTab.value
+        : nestedRouteTab.value
+      if (tab && tab in renderedTabs.value) {
         selectTab(tab)
       } else {
         selectDefaultTab()

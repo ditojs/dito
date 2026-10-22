@@ -83,8 +83,8 @@ export const books = createBooksView('Books')
 
 export const drafts = createBooksView('Drafts')
 
-// The book's chapters in a tab, so that the book's form is reloaded on the
-// form of a chapter without its tab in the URL.
+// The book's chapters in a tab, whose name the URLs of their forms contain, so
+// that the book's form is reloaded on the form of a chapter with its tab.
 export const tabbedBooks: ViewSchema<Book> = {
   type: 'view',
   label: 'Tabbed Books',

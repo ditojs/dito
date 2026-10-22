@@ -77,11 +77,11 @@ describe('RouteContext', () => {
     expect(chapterForm.routeContext.state.isTransient).toBe(true)
   })
 
-  it('resolves the form of the item at the data path', async () => {
+  it('resolves the form of the item at the component path', async () => {
     const { routeComponent: form } = await mountChapters()
     expect(form.routeContext.getFormRoute('chapters/0/title')).toEqual({
       path: '/items/1/chapters/0',
-      dataPath: 'title'
+      componentPath: 'title'
     })
   })
 

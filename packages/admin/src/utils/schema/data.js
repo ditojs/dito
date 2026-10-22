@@ -9,7 +9,6 @@ import {
 } from '../data.js'
 import { isMatchingType, convertType } from '../type.js'
 import {
-  isObject,
   isArray,
   isFunction,
   asArray,
@@ -18,27 +17,15 @@ import {
   getValueAtDataPath,
   resolveDataPath
 } from '@ditojs/utils'
-import {
-  getTypeDescriptor,
-  getSourceType,
-  getChildSourceSchemas,
-  getItemAdapter
-} from './types.ts'
+import { getTypeDescriptor, getSourceType } from './types.ts'
 import {
   someNestedSchemaComponent,
   hasNestedSchemaComponents,
-  isPanelWithOwnData,
-  isListSource,
-  hasNestedData
+  isPanelWithOwnData
 } from './structure.js'
 import { getLabelForRelated } from './options.ts'
 import { walkData, cloneItem, getSchemaSource } from './walk.js'
-import {
-  hasFormSchema,
-  getFormSchemas,
-  getItemFormSchema,
-  getItemFormSchemaFromForms
-} from './lookup.js'
+import { getFormSchemas, getItemFormSchema } from './lookup.js'
 
 export function getSchemaValue(
   keyOrDataPath,
@@ -466,210 +453,6 @@ export function deserializeData(schema, data, {
     shouldVisit,
     visit
   })
-}
-
-// Walk the layout of `schema` along `data`, with the component paths of its
-// components, tabs and panels, the forms of items and their child sources, and
-// call `visit()` for each nested component. Several components of the same
-// value each have their own component path.
-// NOTE: Items with an item adapter are walked wrapped, and the wrapped value
-// keeps the item's data path.
-export function walkComponentPaths(schema, data, {
-  dataPath = null,
-  componentPath = '',
-  services = null,
-  rootData = data,
-  wrappedValueName = null,
-  childSourceSchemas = [],
-  shouldWalk = () => true,
-  visit = null
-}) {
-  const walkOptions = { services, rootData, shouldWalk, visit }
-  const getDataPath = (dataPath, token) =>
-    dataPath != null
-      ? appendDataPath(dataPath, token)
-      : null
-
-  const walkComponents = (components, parentComponentPath) => {
-    if (components) {
-      for (const [name, componentSchema] of Object.entries(components)) {
-        const isNestedComponent = hasNestedData(componentSchema)
-        const isWrappedValue = name === wrappedValueName
-        const componentDataPath =
-          isNestedComponent && !isWrappedValue
-            ? getDataPath(dataPath, name)
-            : dataPath
-        const entry = {
-          schema: componentSchema,
-          data,
-          name,
-          dataPath: componentDataPath,
-          // The data path of `data`, which wrapped values keep:
-          itemDataPath: dataPath,
-          componentPath: appendDataPath(parentComponentPath, name)
-        }
-        if (!shouldWalk(entry)) {
-          continue
-        }
-        if (isPanelWithOwnData(componentSchema)) {
-          // The components of panels with their own data don't edit `data`.
-          continue
-        }
-        if (!isNestedComponent) {
-          walkComponentPaths(componentSchema, data, {
-            ...walkOptions,
-            dataPath,
-            componentPath: entry.componentPath
-          })
-        } else {
-          const itemAdapter = getItemAdapter(componentSchema)
-          const walkItem = (value, index = null) => {
-            const item = itemAdapter ? itemAdapter.wrap(value) : value
-            // Values that aren't objects hold no data of the form, e.g. ones
-            // that `computeValue()` converts to objects:
-            if (isObject(item)) {
-              const itemDataPath =
-                index !== null
-                  ? getDataPath(componentDataPath, index)
-                  : componentDataPath
-              const itemComponentPath =
-                index !== null
-                  ? appendDataPath(entry.componentPath, index)
-                  : entry.componentPath
-              const context = SchemaContext.createForSchema(services, {
-                ...entry,
-                rootData
-              })
-              const form = getItemFormSchemaFromForms(
-                getFormSchemas(componentSchema, context),
-                item
-              )
-              // Items without a matching form, e.g. of unknown types, stay as
-              // they are:
-              if (form) {
-                walkComponentPaths(form, item, {
-                  ...walkOptions,
-                  dataPath: itemDataPath,
-                  componentPath: itemComponentPath,
-                  wrappedValueName: itemAdapter?.name ?? null,
-                  childSourceSchemas: getChildSourceSchemas(componentSchema)
-                })
-              }
-            }
-          }
-
-          visit?.(entry)
-
-          // Only read the values of sources with forms, or tracked walks would
-          // depend on all values:
-          if (hasFormSchema(componentSchema)) {
-            const value = data[name]
-            if (isArray(value)) {
-              value.forEach(walkItem)
-            } else if (value != null && !isListSource(componentSchema)) {
-              // Lists only hold items in arrays. Apps may store them in other
-              // values that `computeValue()` converts, e.g. objects by type:
-              walkItem(value)
-            }
-          }
-
-          // Their panels display the data that contains them, as above:
-          walkTabOrPanelSchemas(componentSchema.panels, entry.componentPath)
-        }
-      }
-    }
-  }
-
-  const walkTabOrPanelSchemas = (schemas, parentComponentPath) => {
-    // Tabs and panels add their names to component paths, not to data paths,
-    // except nested panels, which hold their data like nested components:
-    for (const [name, tabOrPanelSchema] of Object.entries(schemas || {})) {
-      if (hasNestedData(tabOrPanelSchema)) {
-        walkComponents({ [name]: tabOrPanelSchema }, parentComponentPath)
-      } else {
-        const entry = {
-          schema: tabOrPanelSchema,
-          data,
-          name: null,
-          dataPath,
-          itemDataPath: dataPath,
-          componentPath: appendDataPath(parentComponentPath, name)
-        }
-        if (shouldWalk(entry) && !isPanelWithOwnData(tabOrPanelSchema)) {
-          walkComponents(tabOrPanelSchema.fields, entry.componentPath)
-        }
-      }
-    }
-  }
-
-  const components = isFunction(schema.fields)
-    ? // Unnested components with `fields()` callbacks, e.g. sections:
-      getItemFormSchema(
-        schema,
-        data,
-        new SchemaContext(services, {
-          schema,
-          nested: false,
-          data,
-          dataPath,
-          rootData
-        })
-      ).fields
-    : schema.fields
-  walkComponents(components, componentPath)
-  // Walk the child sources like components of the form, unless they are:
-  walkComponents(
-    Object.fromEntries(
-      childSourceSchemas
-        .filter(({ name }) => !components?.[name])
-        .map(child => [child.name, child])
-    ),
-    componentPath
-  )
-  walkTabOrPanelSchemas(schema.tabs, componentPath)
-  walkTabOrPanelSchemas(schema.panels, componentPath)
-}
-
-// Walk the rendered components to the deepest one containing `dataPath`, e.g.
-// `main/chapters/1` for `chapters/1` in the tab `main`. Of several components
-// that display the same data, the first in schema order wins.
-export function getComponentPathByDataPath(schema, data, dataPath, {
-  dataPath: itemDataPath = '',
-  componentPath = '',
-  services = null,
-  rootData = data
-} = {}) {
-  let deepestEntry = { dataPath: itemDataPath, componentPath }
-  if (data) {
-    walkComponentPaths(schema, data, {
-      dataPath: itemDataPath,
-      componentPath,
-      services,
-      rootData,
-      // Only walk the rendered components that contain the value:
-      shouldWalk: entry => (
-        getRelativeDataPath(dataPath, entry.dataPath) !== null &&
-        getSchemaValue('if', {
-          type: Boolean,
-          schema: entry.schema,
-          context: SchemaContext.createForSchema(services, {
-            ...entry,
-            rootData
-          }),
-          default: true
-        })
-      ),
-      visit: entry => {
-        if (entry.dataPath.length > deepestEntry.dataPath.length) {
-          deepestEntry = entry
-        }
-      }
-    })
-  }
-  const relativeDataPath = getRelativeDataPath(dataPath, deepestEntry.dataPath)
-  return relativeDataPath
-    ? appendDataPath(deepestEntry.componentPath, relativeDataPath)
-    : deepestEntry.componentPath
 }
 
 // Get the text of the value `name` of the item through the type of the

@@ -1,9 +1,12 @@
 import { toRaw, type Component } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
 import { getValueAtDataPath, parseDataPath } from '@ditojs/utils'
-import { getFormSchemas, hasFormSchema } from './schema/lookup.js'
 import {
-  getPanelSchemas,
+  getFormSchemas,
+  getNamedSchemas,
+  hasFormSchema
+} from './schema/lookup.js'
+import {
   getSchemaPath,
   isInlined,
   isListSource,
@@ -12,7 +15,7 @@ import {
   hasNestedData,
   isObjectSource,
   isSingleFieldView,
-  iterateNestedSchemaComponents
+  iterateSchemaComponents
 } from './schema/structure.js'
 import {
   getSourceType,
@@ -44,8 +47,8 @@ export interface Route {
 }
 
 export interface FormRoute extends Route {
-  // The data path that remains within the form:
-  dataPath: string
+  // The component path that remains within the form:
+  componentPath: string
 }
 
 export interface RouteState {
@@ -56,6 +59,7 @@ export interface RouteState {
 
 export interface ItemLocation {
   dataPath: string
+  componentPath: string
   // `key` is `null` for new items of lists:
   data: any
   key: string | number | null
@@ -123,19 +127,19 @@ abstract class ContainerNode extends RouteNode {
     return this.sources
   }
 
-  findSource(dataPath: string): SourceNode | null {
-    for (const { source, key, path } of walkSources(this, dataPath)) {
+  findSource(componentPath: string): SourceNode | null {
+    for (const { source, key, path } of walkSources(this, componentPath)) {
       if (key === undefined && !path) return source
     }
     return null
   }
 
-  getFormRoute(dataPath: string, state: RouteState): FormRoute | null {
-    return this.#walk(dataPath, state).route
+  getFormRoute(componentPath: string, state: RouteState): FormRoute | null {
+    return this.#walk(componentPath, state).route
   }
 
-  getCreateRoute(dataPath: string, state: RouteState): Route | null {
-    const { source, params } = this.#walk(dataPath, state)
+  getCreateRoute(componentPath: string, state: RouteState): Route | null {
+    const { source, params } = this.#walk(componentPath, state)
     const form = source?.form
     return form && !form.isInlined
       ? { name: form.routeName, params: { ...params, [form.param]: 'create' } }
@@ -170,7 +174,7 @@ abstract class ContainerNode extends RouteNode {
     const find = (
       index: number,
       value: any,
-      { dataPath, data, key }: ItemLocation,
+      { dataPath, componentPath, data, key }: ItemLocation,
       isTransient: boolean
     ): ItemLocation | null => {
       for (; index < nodes.length; index++) {
@@ -181,6 +185,7 @@ abstract class ContainerNode extends RouteNode {
           data = getValueAtDataPath(value, segments, () => null)
           value = data?.[key]
           dataPath = appendDataPath(dataPath, node.dataPath)
+          componentPath = appendDataPath(componentPath, node.componentPath)
         } else if (node instanceof FormNode) {
           const { source } = node
           const usesIndexKeys = source.usesIndexKeys(isTransient)
@@ -196,7 +201,12 @@ abstract class ContainerNode extends RouteNode {
                 const location = find(
                   index + 1,
                   data[key],
-                  { dataPath: appendDataPath(dataPath, key), data, key },
+                  {
+                    dataPath: appendDataPath(dataPath, key),
+                    componentPath: appendDataPath(componentPath, key),
+                    data,
+                    key
+                  },
                   isTransient
                 )
                 if (location) return location
@@ -213,30 +223,34 @@ abstract class ContainerNode extends RouteNode {
               params[node.param] = param
               value = key !== null ? data?.[key] : null
               dataPath = appendDataPath(dataPath, key ?? param)
+              componentPath = appendDataPath(componentPath, key ?? param)
             }
           }
         }
       }
       return !item || toRaw(value) === toRaw(item)
-        ? { dataPath, data, key }
+        ? { dataPath, componentPath, data, key }
         : null
     }
     const location = find(
       0,
       data,
-      { dataPath: '', data: null, key: null },
+      { dataPath: '', componentPath: '', data: null, key: null },
       isTransient
     )
     return location && { location, params }
   }
 
-  // Walk to the deepest form with a route and to the source that the path ends
-  // at, collecting the ids or indices of the items on the way:
-  #walk(dataPath: string, { data, routeParams, isTransient }: RouteState) {
+  // Walk to the deepest form with a route and to the source that the component
+  // path ends at, collecting the ids or indices of the items on the way:
+  #walk(componentPath: string, { data, routeParams, isTransient }: RouteState) {
     let route: FormRoute | null = null
     let source: SourceNode | null = null
     let params = this.getParams(routeParams)
-    for (const { source: child, key, path } of walkSources(this, dataPath)) {
+    for (const { source: child, key, path } of walkSources(
+      this,
+      componentPath
+    )) {
       data = getValueAtDataPath(data, child.dataPath, () => null)
       source = key === undefined && !path ? child : null
       const { form } = child
@@ -255,7 +269,7 @@ abstract class ContainerNode extends RouteNode {
         }
         if (!form.isInlined) {
           isTransient = usesIndexKeys
-          route = { name: form.routeName, params, dataPath: path }
+          route = { name: form.routeName, params, componentPath: path }
         }
       }
     }
@@ -328,6 +342,9 @@ export class SourceNode extends RouteNode {
     parent: ContainerNode | SourceNode,
     // Relative to the container, e.g. `contents/notes` in a nested section:
     readonly dataPath: string,
+    // Relative to the container too, with the names of the tabs, sections and
+    // panels around it, as rendered, e.g. `pricing/families` in a tab:
+    readonly componentPath: string,
     // Routed next to the form of their parent item, like tree children:
     readonly isFlattened: boolean,
     // Recursive forms stop after `maxDepth` repetitions, without routes:
@@ -449,25 +466,49 @@ export class RouteTree {
     schema: Schema,
     sourcesWithRoutes: Set<Schema>
   ) {
-    forEachSource(schema, (source, dataPath) =>
-      this.#addSource(container, source, dataPath, sourcesWithRoutes)
-    )
+    // The sources of a schema can't share their routes:
+    const sourcesByPath = new Map<string, SourceNode>()
+    forEachSource(schema, (sourceSchema, dataPath, componentPath) => {
+      const source = this.#addSource(
+        container,
+        sourceSchema,
+        dataPath,
+        componentPath,
+        sourcesWithRoutes
+      )
+      if (source) {
+        const path = this.#getSourcePath(source)
+        const other = sourcesByPath.get(path)
+        if (other) {
+          throw new Error(
+            `Invalid route path '${path}' of the sources '${
+              other.componentPath
+            }' and '${
+              source.componentPath
+            }': Give one of them a different \`path\`.`
+          )
+        }
+        sourcesByPath.set(path, source)
+      }
+    })
   }
 
   #addSource(
     parent: ContainerNode | SourceNode,
     schema: Schema,
     dataPath: string,
+    componentPath: string,
     sourcesWithRoutes: Set<Schema>,
     isFlattened = false
-  ) {
+  ): SourceNode | null {
     // Inlined sources render their forms without routes, and only need nodes
     // if forms with routes can be reached through them:
-    if (isInlined(schema) && !sourcesWithRoutes.has(schema)) return
+    if (isInlined(schema) && !sourcesWithRoutes.has(schema)) return null
     const source = new SourceNode(
       schema,
       parent,
       dataPath,
+      componentPath,
       isFlattened,
       isBeyondMaxDepth(parent, schema)
     )
@@ -489,6 +530,7 @@ export class RouteTree {
         this.#addChildSources(source, schema, sourcesWithRoutes)
       }
     }
+    return source
   }
 
   #addChildSources(
@@ -500,6 +542,7 @@ export class RouteTree {
       this.#addSource(
         parent,
         childSchema,
+        childSchema.name,
         childSchema.name,
         sourcesWithRoutes,
         true
@@ -590,13 +633,13 @@ export class RouteTree {
   }
 
   // Single-component views use the path of their view, all other sources
-  // replace the last segment of their data path with their own `path`:
+  // replace the last segment of their component path with their own `path`:
   #getSourcePath(source: SourceNode): string {
-    const { schema, dataPath } = source
+    const { schema, componentPath } = source
     if (source.isViewComponent) {
       return ''
     } else {
-      const segments = parseDataPath(dataPath)
+      const segments = parseDataPath(componentPath)
       const name = segments.pop()
       return [
         ...segments.map((segment: string) => this.#api.normalizePath(segment)),
@@ -606,32 +649,50 @@ export class RouteTree {
   }
 }
 
-// Also find the sources in tabs, panels and sections:
+// Also find the sources in tabs, panels and sections, whose names their
+// component paths contain, as the rendered components do:
 function forEachSource(
   schema: Schema,
-  callback: (source: Schema, dataPath: string) => void,
-  dataPath = ''
+  callback: (source: Schema, dataPath: string, componentPath: string) => void,
+  dataPath = '',
+  componentPath = ''
 ) {
-  const forEachPanelSource = (schema: Schema) => {
-    for (const panel of getPanelSchemas(schema)) {
-      forEachSource(panel, callback, dataPath)
-    }
-  }
-  iterateNestedSchemaComponents(schema, (component: Schema, name: string) => {
-    const componentDataPath = appendDataPath(dataPath, name)
-    if (getSourceType(component)) {
-      callback(component, componentDataPath)
-    } else if (component.fields) {
-      // Only nested sections hold the data of their components:
+  const forEachPanelSource = (schema: Schema, componentPath: string) => {
+    for (const [name, panel] of Object.entries(schema.panels ?? {})) {
       forEachSource(
-        component,
+        panel as Schema,
         callback,
-        hasNestedData(component) ? componentDataPath : dataPath
+        dataPath,
+        appendDataPath(componentPath, name)
       )
     }
-    forEachPanelSource(component)
-  })
-  forEachPanelSource(schema)
+  }
+  const forEachComponentSource = (schema: Schema, componentPath: string) => {
+    iterateSchemaComponents([schema], (component: Schema, name: string) => {
+      const componentDataPath = appendDataPath(dataPath, name)
+      const path = appendDataPath(componentPath, name)
+      if (getSourceType(component)) {
+        callback(component, componentDataPath, path)
+      } else if (component.fields) {
+        // Only nested sections hold the data of their components:
+        forEachSource(
+          component,
+          callback,
+          hasNestedData(component) ? componentDataPath : dataPath,
+          path
+        )
+      }
+      forEachPanelSource(component, path)
+    })
+  }
+  forEachComponentSource(schema, componentPath)
+  for (const tab of Object.values(getNamedSchemas(schema.tabs) ?? {})) {
+    forEachComponentSource(
+      tab as Schema,
+      appendDataPath(componentPath, (tab as Schema).name)
+    )
+  }
+  forEachPanelSource(schema, componentPath)
 }
 
 // Collect the graph of all sources once, then follow it back from the sources
@@ -713,15 +774,15 @@ function getForms(schema: Schema): Schema[] {
     : [schema.form ?? schema.fields].filter(Boolean)
 }
 
-// Step through the sources that `dataPath` leads to, with the key of the item
-// in lists with forms, and the path that remains below them. Object sources
-// without forms continue with their own sources:
+// Step through the sources that `componentPath` leads to, with the key of the
+// item in lists with forms, and the path that remains below them. Object
+// sources without forms continue with their own sources:
 function* walkSources(
   node: ContainerNode | SourceNode,
-  dataPath: string
+  componentPath: string
 ): Generator<{ source: SourceNode; key?: string; path: string }> {
   for (const source of node.sources) {
-    let path = getRelativeDataPath(dataPath, source.dataPath)
+    let path = getRelativeDataPath(componentPath, source.componentPath)
     if (path !== null) {
       let key: string | undefined
       if (source.form && source.isList) {

@@ -89,6 +89,12 @@ template of `@ditojs/utils`, which escapes the values that it includes, see
   validation errors notification instead of the hidden section.
 - Validation logs an `if` that throws and treats its field as shown, instead
   of stopping.
+- The URLs of routed forms of sources in tabs, sections and panels contain
+  their names, e.g. `/admin/books/1/pricing/editions/0` for `editions` in the
+  tab `pricing` instead of `/admin/books/1/editions/0`, so that sources of the
+  same data in different tabs have their own forms. Links and bookmarks to them
+  need updating, and renaming a tab changes them. Sources of the same form with
+  the same URL path throw: give one of them another `path`.
 
 ## Server
 

@@ -65,7 +65,6 @@ import { useComponentPath } from '../composables/useComponentPath.ts'
 import { adminContextKey } from '../utils/keys.ts'
 import { isListSource, isObjectSource } from '../utils/schema/structure.js'
 import { getItemFormSchema, hasSubmitButton } from '../utils/schema/lookup.js'
-import { getComponentPathByDataPath } from '../utils/schema/data.js'
 import { appendDataPath, getParentDataPath } from '../utils/data.js'
 import { cloneWithUids } from '../utils/uid.js'
 import {
@@ -146,16 +145,9 @@ export default {
       () => dataPath.value,
       () =>
         isTransient.value
-          ? getComponentPathByDataPath(
-              parentDataContext.schema,
-              parentDataContext.data,
-              dataPath.value,
-              {
-                dataPath: parentDataContext.dataPath,
-                componentPath: parentDataContext.componentPath,
-                services: parentDataContext.services,
-                rootData: parentDataContext.model.rootData
-              }
+          ? appendDataPath(
+              parentDataContext.componentPath,
+              sourceLocation.value?.componentPath ?? ''
             )
           : ''
     )

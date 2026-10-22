@@ -6,7 +6,7 @@ import {
   parseDataPath
 } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
-import { appendDataPath } from './data.js'
+import { appendDataPath, getRelativeDataPath } from './data.js'
 import { getText } from './html.js'
 import { getLabel } from './schema/data.js'
 import {
@@ -168,10 +168,43 @@ export function createDataContext({
     const { adminContext, routeContext } = services
     const { router, ui } = adminContext
     const [firstDataPath] = dataPaths
-    // Dialogs and panels with their own data aren't part of routes:
-    const formRoute =
-      firstDataPath && routeContext?.dataContext === context
-        ? routeContext.getFormRoute(firstDataPath)
+    // Collapsed schemas render their content with errors hidden, so we can
+    // find the components that display them:
+    await nextTick()
+    // Routed sources display errors in the forms of their items, which their
+    // component paths lead to. Dialogs and panels with their own data aren't
+    // part of routes:
+    const getFormRoute = (componentPath: string) =>
+      routeContext?.dataContext === context
+        ? routeContext.getFormRoute(componentPath)
+        : null
+    // Without a component that displays it, the first source that holds the
+    // value opens the form of its item, which notifies its errors:
+    const getSourceFormRoute = (dataPath: string) => {
+      for (const source of context.sources) {
+        const path = getRelativeDataPath(dataPath, source.dataPath)
+        const formRoute = path
+          ? getFormRoute(appendDataPath(source.componentPath, path))
+          : null
+        if (formRoute) return formRoute
+      }
+      return null
+    }
+    const entriesByDataPath = new Map(
+      dataPaths.map(dataPath => [
+        dataPath,
+        ui.getErrorComponentPaths(context, dataPath).map(componentPath => ({
+          componentPath,
+          formRoute: getFormRoute(componentPath)
+        }))
+      ])
+    )
+    // The first component that can display the first error wins:
+    const [firstEntry] = entriesByDataPath.get(firstDataPath) ?? []
+    const formRoute = firstEntry
+      ? firstEntry.formRoute
+      : firstDataPath
+        ? getSourceFormRoute(firstDataPath)
         : null
     const displayedDataPaths: string[] = []
     if (formRoute) {
@@ -188,13 +221,13 @@ export function createDataContext({
         )
       }
     }
-    // Collapsed schemas render their content with errors hidden, so we can
-    // find the components that display them:
-    await nextTick()
+    // The errors that the components of this data display:
     const componentPathsByDataPath = new Map(
-      dataPaths.map(dataPath => [
+      [...entriesByDataPath].map(([dataPath, entries]) => [
         dataPath,
-        ui.getErrorComponentPaths(context, dataPath)
+        entries
+          .filter(({ formRoute }) => !formRoute)
+          .map(({ componentPath }) => componentPath)
       ])
     )
     if (!formRoute) {

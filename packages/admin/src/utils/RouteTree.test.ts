@@ -1,4 +1,4 @@
-import type { RouteTree } from './RouteTree.ts'
+import { RouteTree } from './RouteTree.ts'
 import { mountAdmin } from '../test/mount.js'
 import { DitoView, DitoForm, DitoFormEmbedded } from '../components/index.js'
 
@@ -102,7 +102,7 @@ describe('RouteTree', () => {
     }
   })
 
-  it('routes lists under their data path, also in nested containers', async () => {
+  it('routes lists under their component path, also in sections', async () => {
     const views = {
       books: createListView('books', {
         form: createForm({
@@ -118,7 +118,7 @@ describe('RouteTree', () => {
     }
     for (const path of [
       '/books/1/contents/notes/2',
-      '/books/1/quotes/2',
+      '/books/1/more/quotes/2',
       '/books/1/meta/sources/2'
     ]) {
       expect(await getRouteComponents(views, path)).toEqual([
@@ -141,6 +141,44 @@ describe('RouteTree', () => {
       DitoForm
     ])
     expect(await getRouteComponents(views, '/books/1/appendices/2')).toBe(null)
+  })
+
+  it('routes the sources of tabs under the names of their tabs', async () => {
+    const views = {
+      books: createListView('books', {
+        form: {
+          type: 'form',
+          tabs: {
+            info: { type: 'tab', fields: { notes: createList() } },
+            pricing: { type: 'tab', fields: { notes: createList() } }
+          }
+        }
+      })
+    }
+    for (const path of ['/books/1/info/notes/2', '/books/1/pricing/notes/2']) {
+      expect(await getRouteComponents(views, path)).toEqual([
+        DitoView,
+        DitoForm,
+        DitoForm
+      ])
+    }
+    expect(await getRouteComponents(views, '/books/1/notes/2')).toBe(null)
+  })
+
+  it('rejects the sources of a form with the same route path', async () => {
+    const views = {
+      books: createListView('books', {
+        form: createForm({
+          appendices: createList({ path: 'extras' }),
+          extras: createList()
+        })
+      })
+    }
+    const { context } = await mountAdmin({ views: {} })
+    expect(() => new RouteTree(views, context.api)).toThrow(
+      `Invalid route path 'extras' of the sources 'appendices' and 'extras': ` +
+      'Give one of them a different `path`.'
+    )
   })
 
   it('routes the nested lists of forms shared by several views', async () => {
