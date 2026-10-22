@@ -41,8 +41,11 @@ export interface RouteContext {
   readonly loadingTracker: LoadingTracker
   // Forms without a resource of their own continue the one of their parent:
   readonly resourceContext: ResourceContext | null
-  getFormRoute(dataPath: string): { path: string; dataPath: string } | null
-  getFormPath(dataPath: string): string | null
-  getCreatePath(dataPath: string): string | null
+  // The routes of the sources at component paths, which their URLs contain:
+  getFormRoute(
+    componentPath: string
+  ): { path: string; componentPath: string } | null
+  getFormPath(componentPath: string): string | null
+  getCreatePath(componentPath: string): string | null
   close(): Promise<boolean>
 }

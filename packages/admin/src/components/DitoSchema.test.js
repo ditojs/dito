@@ -383,7 +383,9 @@ describe('DitoSchema', () => {
       await admin.navigate('/items/1#planning')
       await wrapper.find('.dito-button--edit').trigger('click')
       await flushPromises()
-      expect(admin.router.currentRoute.value.path).toBe('/items/1/pages/0')
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/planning/pages/0'
+      )
       expect(schemaComponent.selectedTab).toBe('planning')
       const pageFormComponent =
         admin.getRouteComponent(
@@ -447,11 +449,11 @@ describe('DitoSchema', () => {
         await openTabbedPageForm(['content', 'text'])
       expect(getReplaceCount()).toBeLessThanOrEqual(1)
       expect(admin.router.currentRoute.value.fullPath).toBe(
-        '/items/1/pages/0#content'
+        '/items/1/planning/pages/0#content'
       )
       expect(schemaComponent.selectedTab).toBe('planning')
       expect(pageSchemaComponent.selectedTab).toBe('content')
-      await admin.navigate('/items/1/pages/0#text')
+      await admin.navigate('/items/1/planning/pages/0#text')
       expect(pageSchemaComponent.selectedTab).toBe('text')
       expect(schemaComponent.selectedTab).toBe('planning')
     })
@@ -462,7 +464,7 @@ describe('DitoSchema', () => {
       expect(getReplaceCount()).toBeLessThanOrEqual(1)
       expect(schemaComponent.selectedTab).toBe('planning')
       expect(pageSchemaComponent.selectedTab).toBe('content')
-      await admin.navigate('/items/1/pages/0#details')
+      await admin.navigate('/items/1/planning/pages/0#details')
       expect(pageSchemaComponent.selectedTab).toBe('details')
       expect(schemaComponent.selectedTab).toBe('planning')
     })
@@ -519,16 +521,19 @@ describe('DitoSchema', () => {
       return { admin, getForms }
     }
 
-    it('selects the default tab after closing a reloaded form', async () => {
-      const { admin, getForms } = await mountAdminAt('/items/1/pages/0#text')
+    it('selects the tab of the source after closing a reloaded form', async () => {
+      const { admin, getForms } = await mountAdminAt(
+        '/items/1/planning/pages/0#text'
+      )
       const [itemForm, pageForm] = getForms()
       const schemaComponent = admin.getSchemaComponent(itemForm)
       expect(admin.getSchemaComponent(pageForm).selectedTab).toBe('text')
+      expect(schemaComponent.selectedTab).toBe('planning')
       await pageForm.routeContext.close()
       await flushPromises()
       expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
-      // The tab of the page form isn't one of the item form's tabs:
-      expect(schemaComponent.selectedTab).toBe('details')
+      // The hash names the tab of the page form, the route the one of its list:
+      expect(schemaComponent.selectedTab).toBe('planning')
     })
 
     it('selects the tab of the route when loaded directly', async () => {
@@ -919,6 +924,56 @@ describe('DitoSchema', () => {
           text: 'Please correct the highlighted errors.'
         })
       )
+    })
+
+    it('shows the errors of items in nested forms of lists in tabs', async () => {
+      const { admin, submit } = await mountForm({
+        schema: {
+          tabs: {
+            content: {
+              type: 'tab',
+              fields: {
+                chapters: {
+                  type: 'list',
+                  editable: true,
+                  form: {
+                    type: 'form',
+                    tabs: {
+                      text: {
+                        type: 'tab',
+                        fields: { title: { type: 'text' } }
+                      },
+                      details: {
+                        type: 'tab',
+                        fields: { pages: { type: 'number' } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One', pages: 3 }] },
+        request: respondWithErrors({
+          'chapters/0/pages': [{ message: 'is too few' }]
+        })
+      })
+      await submit()
+      await flushPromises()
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/content/chapters/0'
+      )
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      // The error reveals its tab in the nested form, and focuses its field:
+      const input = form.$el.querySelector(
+        'input[id="content/chapters/0/details/pages"]'
+      )
+      expect(input.closest('.dito-container').textContent).toContain(
+        'is too few'
+      )
+      expect(document.activeElement).toBe(input)
     })
 
     it('notifies the errors that the nested forms do not show', async () => {

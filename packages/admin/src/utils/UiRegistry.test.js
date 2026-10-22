@@ -47,13 +47,15 @@ describe('UiRegistry', () => {
 
   it('finds the components of a data context that display errors', () => {
     const registry = new UiRegistry()
+    const getErrorComponentPath = (componentPath, errorDataPath) => dataPath =>
+      dataPath === errorDataPath ? componentPath : null
     registry.register(() => 'main/title', {
       dataContext,
-      errorDataPath: 'title'
+      getErrorComponentPath: getErrorComponentPath('main/title', 'title')
     })
     registry.register(() => 'author', {
       dataContext: {},
-      errorDataPath: 'author'
+      getErrorComponentPath: getErrorComponentPath('author', 'author')
     })
     expect(registry.getErrorComponentPaths(dataContext, 'title')).toEqual([
       'main/title'

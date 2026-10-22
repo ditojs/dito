@@ -200,9 +200,10 @@ export default {
       () => componentPath.value,
       {
         dataContext: services.dataContext,
-        get errorDataPath() {
-          return props.nested ? props.dataPath : null
-        }
+        getErrorComponentPath: dataPath =>
+          props.nested && dataPath === props.dataPath
+            ? componentPath.value
+            : null
       }
     )
     onUnmounted(unregister)

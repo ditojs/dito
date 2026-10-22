@@ -987,7 +987,7 @@ sources share the [source options](#source-options), in addition to the
 | `page` | `number` | `0` | The initial page, counted from 0. |
 | `buttons` | `Buttons` | | Buttons of the source, see [`button`](#button-submit). Buttons with a `resource` submit to it relative to the source's resource. |
 | `idKey` | `string` | `'id'` | The key of the items' ids. |
-| `path` | `string` | the normalized name | The URL path of routed forms. |
+| `path` | `string` | the normalized name | The URL path of routed forms, after the names of the tabs, sections and panels around the source, e.g. `/admin/books/1/pricing/editions/0` for `editions` in the tab `pricing`. Sources of the same form with the same URL path throw. |
 | `maxDepth` | `number` | `1` | How often a form that contains itself is repeated before its sources stop rendering. |
 | `mutate` | `boolean` | `false` | Routed forms edit the parent's data directly instead of a draft. Their edits make the parent dirty right away, and they have no submit button. |
 | `wrapPrimitives` | `string` | | Wraps primitive items, e.g. strings, in objects under this key for their forms, e.g. `'value'`. Throws together with `mutate` on routed forms. |

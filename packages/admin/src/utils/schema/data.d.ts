@@ -102,37 +102,6 @@ export function deserializeData(
     shouldVisit?: (entry: DataEntry) => boolean
   }
 ): Data
-// The components, tabs and panels that `walkComponentPaths()` walks, with the
-// data they display. Tabs and panels have no name:
-export interface ComponentEntry {
-  schema: Schema
-  data: Data
-  name: string | null
-  dataPath: string | null
-  // The data path of `data`, which wrapped values keep:
-  itemDataPath: string | null
-  componentPath: string
-}
-export function walkComponentPaths(
-  schema: Schema,
-  data: Data,
-  options: {
-    dataPath?: string | null
-    componentPath?: string
-    services?: object | null
-    rootData?: Data | null
-    wrappedValueName?: string | null
-    childSourceSchemas?: Schema[]
-    shouldWalk?: (entry: ComponentEntry) => boolean
-    visit?: ((entry: ComponentEntry) => void) | null
-  }
-): void
-export function getComponentPathByDataPath(
-  schema: Schema,
-  data: Data | null,
-  dataPath: string,
-  options?: Options
-): string
 export function getItemDisplayValue(
   sourceSchema: Schema,
   item: Data,

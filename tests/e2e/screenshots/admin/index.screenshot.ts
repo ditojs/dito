@@ -64,7 +64,7 @@ test.describe('screenshots', () => {
   })
 
   test('nested form', async ({ page, url }) => {
-    await page.goto(`${url}/admin/projects/1/milestones/0`)
+    await page.goto(`${url}/admin/projects/1/planning/milestones/0`)
     await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
       'Design'
     )

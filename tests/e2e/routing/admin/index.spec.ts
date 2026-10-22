@@ -53,12 +53,12 @@ test.describe('routes of nested forms', () => {
     ).toHaveValue('Second')
   })
 
-  test('shows the parent form with tabs after closing reloaded forms', async ({
+  test('shows the tab of the list after closing reloaded forms', async ({
     page,
     url
   }) => {
     const id = await insertBook({ chapters: entries })
-    await page.goto(`${url}/admin/tabbed-books/${id}/chapters/1`)
+    await page.goto(`${url}/admin/tabbed-books/${id}/content/chapters/1`)
     await expect(
       getForm(page).getByLabel('Entry Title', { exact: true })
     ).toHaveValue('Second')
@@ -66,7 +66,9 @@ test.describe('routes of nested forms', () => {
       .getByRole('button', { name: 'Close', exact: true })
       .click()
     await expect(page).toHaveURL(new RegExp(`/tabbed-books/${id}$`))
-    await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Emma')
+    await expect(
+      page.getByRole('tab', { name: 'Content', exact: true })
+    ).toHaveAttribute('aria-selected', 'true')
   })
 
   test('opens the forms of lists with their own path', async ({
