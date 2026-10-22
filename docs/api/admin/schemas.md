@@ -987,7 +987,7 @@ sources share the [source options](#source-options), in addition to the
 | `page` | `number` | `0` | The initial page, counted from 0. |
 | `buttons` | `Buttons` | | Buttons of the source, see [`button`](#button-submit). Buttons with a `resource` submit to it relative to the source's resource. |
 | `idKey` | `string` | `'id'` | The key of the items' ids. |
-| `path` | `string` | the normalized name | The URL path of routed forms, after the names of the tabs, sections and panels around the source, e.g. `/admin/books/1/pricing/editions/0` for `editions` in the tab `pricing`. Of the sources of a form with the same URL path, the first one opens its forms. |
+| `path` | `string` | the normalized name | The URL path of routed forms, after the names of the tabs, sections and panels around the source, e.g. `/admin/books/1/pricing/editions/0` for `editions` in the tab `pricing`. Of the sources of a form with the same URL path, the first one opens its forms, see [Routes of forms](#routes-of-forms). |
 | `maxDepth` | `number` | `1` | How often a form that contains itself is repeated before its sources stop rendering. |
 | `mutate` | `boolean` | `false` | Routed forms edit the parent's data directly instead of a draft. Their edits make the parent dirty right away, and they have no submit button. |
 | `wrapPrimitives` | `string` | | Wraps primitive items, e.g. strings, in objects under this key for their forms, e.g. `'value'`. Throws together with `mutate` on routed forms. |
@@ -1328,6 +1328,24 @@ buttons: {
 | Nested | `form` on a list or object without its own `resource`, whose items are part of the data around it | Routed. Edits a draft of the item that is applied to the parent's data on submit (`onApply`); the parent saves it. With `mutate: true` it edits the parent's data directly. |
 | Embedded | the forms of `tree-list` and `tree-object` items | Routed, and shown next to the tree in the page of the form or view around it. |
 
+#### Routes of forms
+
+The paths below a view, form or page open the routed forms of the sources
+that it renders: of the rendered sources, the first one whose `path`, after
+the names of the tabs, sections and panels around it, matches opens its form. Collapsed
+sections, tabs and panels render their content hidden while the path
+continues into it, so links reach the sources in them. Paths that no source
+claims lead back to the view, form or page once it rendered its components
+with its data. The forms of items of items open once the parent item exists,
+e.g. `/admin/books/1/chapters/0/notes/0` needs chapter `0`.
+
+While a form is open, the view or form below which it opened stays mounted,
+hidden, so its sources keep their state. Hidden sources load their items once
+they're shown: a link into the form of an item doesn't load the list, the
+form loads the item by its id. Closing the form returns to the list with its
+query, e.g. `/admin/books?page=2`, and the list loads again only if the form
+saved an item.
+
 ### Tabs
 
 `tabs` of views, forms and sections map names to tab schemas: the options of
@@ -1339,10 +1357,11 @@ a form or view without `tabs` and `type`, plus:
 | `label` | `string` | the labelized name | The label of the tab. |
 | `defaultTab` | `SchemaValue<boolean>` | the first tab | Selects this tab initially. |
 
-The selected tab is named in the URL after its view or form, e.g.
+The selected tab of a view or form is named in the URL after its path, e.g.
 `/admin/books/1/metadata`, and the forms of the sources in a tab open below it.
-Tabs share these names with the `path` of the sources of their form: give a
-source with the name of a tab another `path`.
+The tabs of sections and inlined forms aren't in the URL. Tabs share these
+names with the `path` of the sources of their form: give a source with the
+name of a tab another `path`.
 
 ```js
 tabs: {

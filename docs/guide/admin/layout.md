@@ -112,8 +112,8 @@ export const book = {
 ```
 
 The first tab is selected unless one sets `defaultTab`. The tab of a form or
-view is the last segment of its URL, e.g. `/admin/books/1/content`, so reloads
-and links keep it. Tabs render once they
+view is the segment after its path in the URL, e.g. `/admin/books/1/content`,
+so reloads and links keep it. Tabs render once they
 are selected and stay rendered, and all their data is validated and saved, also
 of tabs that were never opened. In forms, `context.selectedTab` names the
 selected tab.

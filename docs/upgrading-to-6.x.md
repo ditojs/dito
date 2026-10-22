@@ -5,8 +5,9 @@ This guide describes how to upgrade an app from Dito.js 5.x to 6.x.
 
 6.0 removes the names and forms that 4.x and 5.x deprecated, without aliases
 or warnings. Upgrade to the latest 5.x first and fix its deprecation warnings,
-which name each replacement, except for `{ html }`, which 5.x supported without
-a warning.
+which name each replacement. Three changes have no 5.x warning: `{ html }`,
+which 5.x supported without one, and the renames of `format` of colors to
+`colorFormat` and of dates to `formats`, whose old keys 6.0 ignores silently.
 
 ## Admin
 
@@ -27,8 +28,8 @@ a warning.
 
 - Custom types that return `min` or `max` from `getValidations()` need to
   return `minimum` and `maximum`.
-- Setup no longer renames the old keys, so code that reads `components` or
-  `component` from schemas after setup reads `fields` and `field`.
+- Setup no longer renames `components` and `component`: schemas need `fields`
+  and `field`, and the old keys are ignored silently.
 
 ### HTML
 
@@ -99,6 +100,30 @@ template of `@ditojs/utils`, which escapes the values that it includes, see
   `/admin/books/1#pricing`. Links and bookmarks with `#` tabs need updating.
   Tabs share the URL with the sources of their form: give a source with the
   name of a tab another `path`.
+- Paths that no source claims lead back to the form or page, once it rendered
+  its components with its data. This reverses 5.3.0, where the paths below a
+  page rendered the page, e.g. `/tools/cache-purge/unknown`.
+- The forms of items of items open once their parent item exists, e.g.
+  `/admin/books/1/chapters/0/notes/0` needs chapter `0`.
+- Views keep their components mounted, hidden, while the form of an item is
+  open. Hidden lists load their items once they're shown, closing a form
+  returns to the list's query, e.g. `/admin/books?page=2`, and lists load again
+  only if the form saved an item.
+- Hidden values aren't sent: fields whose `if` is false, or that are in hidden
+  sections, tabs or panels, leave out their values when the data is saved or
+  copied. Hidden fields set no defaults and run no `serializeValue()`, and
+  item labels and table cells only display the values of the item itself.
+- Emptied text fields (`text` and its variants, `textarea`, `code` and
+  `markup`) save their empty value, `null`, or `''` with `nullable: false`,
+  instead of their `default`.
+- The labels of `required` fields are marked with `*`.
+- Copies drop the ids in nested sections (`nested: true`), like those of
+  objects and lists, so pasting creates new records.
+- `object` fields with `nullable: false` start as an object with the defaults
+  of their form instead of `null`.
+- Uploads with `multiple` call `downloadUrl()` and `thumbnailUrl()` with the
+  context of each file: `value` is the file instead of the list, and
+  `valueIndex` its index.
 
 ## UI
 
@@ -126,3 +151,21 @@ the fields inside it.
 Hook keys that name actions by their keys no longer match any action, so
 their hooks don't run: use the identifiers that the 5.x deprecation warnings
 name, see [Hooks](api/server/controllers.md#hooks).
+
+### Behaviour changes
+
+- Patches check the values of `required` properties that they send, and
+  reject empty strings with 'is required'. Properties that patches leave out
+  remain unchecked.
+- `UserMixin` rejects empty passwords with a validation error, instead of
+  setting the hash of `''`.
+- Values outside `range` are reported with the keyword `range` and the message
+  "must be between 1 and 5", instead of as `minimum` or `maximum` errors.
+  Clients that match the `keyword` of errors, as 5.4.0 recommended, need to
+  match `range` for them.
+
+## Schema
+
+`keywords._enum` and `keywords.multipleOf` of `@ditojs/schema` lose
+`validate()` and only carry the messages that the server reports, and the
+`empty` format loses `validatesEmptyValues`.

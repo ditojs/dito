@@ -86,6 +86,8 @@ meaning: `type` (`string`, `number`, `integer`, `boolean`, `date`,
 `format` (`email`, `hostname`, `password`, `uri` and `iso-time`). Objects
 hold `properties`, and arrays hold `items`. The admin validates them as the
 server does, so the same properties can describe the model and the form.
+Other types and formats, and `definitions` and `$ref`, aren't supported yet:
+properties with them throw when the form is set up.
 
 The admin's own keywords go into the same objects:
 
@@ -108,8 +110,8 @@ Every keyword may be a function of the [context](./context.md), e.g.
 Values without a `default` start with the empty value of their type: `''`
 for strings, `false` for booleans, `[]` for arrays, `{}` with the defaults of
 its properties for objects, and `null` for everything else and for all
-`nullable` values. Arrays and objects that aren't `nullable` get their empty
-value also when they're loaded as `null`.
+`nullable` values. Values that aren't `nullable` get their `default` or their
+empty value also when they're loaded as `null`.
 
 Times of day are strings with `format: 'iso-time'`, e.g. `'14:30:00'`, which
 `DitoTimeField` edits.
@@ -175,7 +177,7 @@ are edited by a widget without `name`:
 
 ```pug
 DitoListField(name="prices" creatable)
-  DitoNumberField(label="Price" step="5")
+  DitoNumberField(label="Price" :step="5")
 ```
 
 Arrays with items of several kinds describe each kind as a form in `forms`,
@@ -256,9 +258,10 @@ Levels can be shown and hidden like other components, e.g. with `v-if`.
 
 Selecting an item opens its form beside the tree, which edits the item in
 place. The form has its own route in the page, which follows the item's place
-in the data, e.g. `/fonts/1/shop-sets/0/cuts/1`, so reloads, the browser's
-history and shared links open it again. Errors in items open the forms that
-show them.
+in the data, e.g. `/fonts/1/shopSets/0/cuts/1`, or
+`/fonts/1/shop-sets/0/cuts/1` with `api.normalizePaths`, so reloads, the
+browser's history and shared links open it again. Errors in items open the
+forms that show them.
 
 ## Custom fields
 
@@ -282,7 +285,7 @@ Destructured, e.g. `v-slot="{ value }"`, the values are read-only.
 
 Without `name`, `DitoCustomField` displays its content in the layout of the
 form, with a `label`, `width` and `info` like the other widgets, but without a
-value:
+value, here with the `form` of `const form = useDitoForm({ ... })`:
 
 ```pug
 DitoCustomField(label="Preview" width="1/2")

@@ -192,12 +192,12 @@ dirty, so their edits could be lost without a warning.
 Date fields hold `Date` objects: loaded date strings are converted when the
 data loads, and converted back when it's saved. Code may write strings into
 date fields too, e.g. `item.publishedAt = '2026-10-01'`: they are shown as
-dates and saved as they are. `format` sets how dates are shown:
+dates and saved as they are. `formats` sets how dates are shown:
 
 ```js
 publishedAt: {
   type: 'date',
-  format: { date: { day: 'numeric', month: 'long', year: 'numeric' } }
+  formats: { date: { day: 'numeric', month: 'long', year: 'numeric' } }
 }
 ```
 
