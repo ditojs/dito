@@ -261,7 +261,7 @@ name as `type`: `{ type: 'price' }` becomes a `$ref` to the type's schema.
 | `validate`      | `function(params)`            | Custom validation, see [below](#validate).                                                                                        |
 | `validateAsync` | `async function(params)`      | Asynchronous custom validation; async `validate` functions are moved here.                                                        |
 | `instanceof`    | `string \| function \| array` | The value is an instance of one of the types: names of JS constructors (`'Date'`, `'Buffer'`, …), model names or constructors.    |
-| `range`         | `[min, max]`                  | Shorthand for `minimum` and `maximum`.                                                                                            |
+| `range`         | `[min, max]`                  | The value lies between `min` and `max`, both included.                                                                           |
 | `primary`       | `boolean`                     | Metadata: primary key column.                                                                                                     |
 | `foreign`       | `boolean`                     | Metadata: foreign key column.                                                                                                     |
 | `unique`        | `boolean \| string`           | Metadata: unique constraint; properties with the same string form a composite one.                                                |
