@@ -1263,7 +1263,8 @@ schemas, also as promises, functions returning them, or module namespaces of
 | `name` | `SchemaValue<string>` | | The name of the item model, used in labels. |
 | `label` | `SchemaValue<TextOrHtml \| boolean>` | the labelized name | The label of the form, e.g. in `'Edit Book'`. |
 | `fields` | `Fields` | | The fields of the form. Can also be a callback that creates them from the context, which runs again when the data it reads changes. |
-| `component` | `Resolvable<VueComponent>` | | A Vue component that lays out the form's `fields`, which it needs, as in [`section`](#section), and receives the props `schema` and `context` of the form, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields). |
+| `properties` | `Record<string, object>` | | The data of the form in the format of the server's model properties, instead of `fields`, laid out with [widgets](./widgets.md) in `component`, see [Forms with properties and widgets](../../guide/admin/widgets.md). |
+| `component` | `Resolvable<VueComponent>` | | A Vue component that lays out the form's `fields`, which it needs, as in [`section`](#section), or the widgets of its `properties`, and receives the props `schema` and `context` of the form, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields). |
 | `tabs` | `Record<string, object>` | | Shows groups of fields in tabs, see [Tabs](#tabs). |
 | `idKey` | `string` | `'id'` | The key of the item's id. |
 | `buttons` | `Buttons` | | Merged into the default buttons, see below. |

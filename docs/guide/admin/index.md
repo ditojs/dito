@@ -196,6 +196,7 @@ receive the context too, see [Events](./events.md).
 - [Events](./events.md), [Validation](./validation.md),
   [Dirty state](./dirty-state.md), [Nested forms](./nested-forms.md) and
   [Dialogs](./dialogs.md).
+- [Forms with properties and widgets](./widgets.md): forms in Vue templates.
 - [Custom types](./custom-types.md): your own components and type defaults.
 
 Upgrading from Dito.js 3.x: see [Upgrading to 4.x](../../upgrading-to-4.x.md).

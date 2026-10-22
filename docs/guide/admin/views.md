@@ -165,6 +165,10 @@ same component also works in a [dialog](./dialogs.md), as the `component` of a
 `type: 'component'` field, without the route: there, the form has a cancel
 button, and its submit button closes the dialog with the saved item.
 
+Instead of `fields`, the form can describe its data with `properties`, in the
+format of the server's models, and lay it out with widgets, see
+[Forms with properties and widgets](./widgets.md).
+
 Lists and trees in the form edit their items in forms with routes of their
 own below the page's path, which apply their changes to the page's form, as
 in the forms of views. Links into these forms open them with the page. Outside

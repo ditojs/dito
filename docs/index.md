@@ -47,6 +47,7 @@ Start here to learn how the pieces fit together.
 - [Nested forms](guide/admin/nested-forms.md)
 - [Dialogs](guide/admin/dialogs.md)
 - [Clipboard](guide/admin/forms.md#clipboard)
+- [Forms with properties and widgets](guide/admin/widgets.md)
 - [Custom types](guide/admin/custom-types.md)
 
 ## Recipes
