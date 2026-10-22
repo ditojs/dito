@@ -78,6 +78,16 @@ describe('field options', () => {
     })
   })
 
+  it('accepts the display formats of dates in `formats`', () => {
+    assertType<Fields<Entry>>({
+      title: { type: 'date', formats: { date: { month: 'short' } } }
+    })
+    assertType<Fields<Entry>>({
+      // @ts-expect-error - dates take their display formats in `formats`
+      title: { type: 'date', format: { date: { month: 'short' } } }
+    })
+  })
+
   it('takes plain values for options that are read raw', () => {
     assertType<Fields<Entry>>({
       // @ts-expect-error - `trim` isn't a callback

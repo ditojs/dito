@@ -30,13 +30,13 @@ describe('DitoDateType', () => {
     expect(getText('opensAt')).toMatch(/^09:15/)
   })
 
-  it('uses the date and time formats of `format`', async () => {
+  it('uses the date and time formats of `formats`', async () => {
     const { findField } = await mountSchema({
       schema: {
         fields: {
           publishedOn: {
             type: 'date',
-            format: { date: { month: 'short' } }
+            formats: { date: { month: 'short' } }
           }
         }
       },

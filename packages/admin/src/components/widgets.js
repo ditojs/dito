@@ -151,7 +151,7 @@ export const DitoMultiselectField = defineWidget('DitoMultiselectField', {
 
 // The widget picks the picker, the property only validates the value:
 const dateProps = {
-  format: { type: Object, default: undefined }
+  formats: { type: Object, default: undefined }
 }
 
 export const DitoDateField = defineWidget('DitoDateField', {

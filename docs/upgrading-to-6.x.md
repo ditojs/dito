@@ -27,6 +27,7 @@ replacement, e.g. `Unsupported schema key 'components' in 'details': Use
 | `events: { change() {} }`                              | `onChange() {}`                                     |
 | `type: 'computed'`, `'data'` or `'hidden'`             | `type: 'value'`                                     |
 | `{ type: 'color', format: 'rgb' }`                     | `{ type: 'color', colorFormat: 'rgb' }`             |
+| `{ type: 'date', format: { date } }`                   | `{ type: 'date', formats: { date } }`               |
 
 - `min` and `max` only throw on `number`, `integer`, `slider` and `progress`
   fields. Custom types that return `min` or `max` from `getValidations()` need

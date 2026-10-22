@@ -6,7 +6,7 @@
     ref="element"
     v-model="dateValue"
     :locale="adminContext.api.locale"
-    :format="format"
+    :format="formats"
     v-bind="attributes"
   )
     template(#prefix)
@@ -64,7 +64,7 @@ const DitoDateType = {
       ...field,
       adminContext: services.adminContext,
       pickerComponents,
-      format: computed(() => getFormat(props.schema, context)),
+      formats: computed(() => getFormats(props.schema, context)),
 
       // Strings written by code stay in the data until the user edits them.
       // The picker only shows dates:
@@ -98,7 +98,7 @@ defineType({
 
   getDisplayValue(context) {
     const { schema, value, format } = context
-    const { date, time } = getFormat(schema, context)
+    const { date, time } = getFormats(schema, context)
     const dateValue = convertToDate(value)
     return isDate(dateValue)
       ? format(dateValue, { date: date ?? false, time: time ?? false })
@@ -118,12 +118,12 @@ defineType({
 export default DitoDateType
 
 // The date and time formats of the type, `null` for the parts it doesn't show:
-function getFormat(schema, context) {
+function getFormats(schema, context) {
   const { type } = schema
   const { date, time } = assignDeeply(
     {},
     context.api.formats,
-    getSchemaValue('format', { type: Object, default: null, schema, context })
+    getSchemaValue('formats', { type: Object, default: null, schema, context })
   )
   return {
     date: ['date', 'datetime'].includes(type) ? date : null,

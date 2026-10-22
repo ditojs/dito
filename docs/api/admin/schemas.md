@@ -418,7 +418,7 @@ isAvailable: { type: 'switch', labels: { checked: 'yes', unchecked: 'no' } }
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
 | `type` | `'date' \| 'datetime' \| 'time'` | | Required. |
-| `format` | `SchemaValue<{ date?: DateFormat, time?: TimeFormat }>` | `api.formats` | The display format, merged over the admin's `api.formats`. See `format()` in [@ditojs/utils](../utils.md). |
+| `formats` | `SchemaValue<{ date?: DateFormat, time?: TimeFormat }>` | `api.formats` | The display formats, merged over the admin's `api.formats`. See `format()` in [@ditojs/utils](../utils.md). |
 | `prefix`, `suffix` | `OrArrayOf<SchemaAffix>` | | See [Affixes](#affixes). |
 
 Loaded values become `Date` objects; dates without a time are read in the
@@ -430,7 +430,7 @@ and strings that aren't dates, e.g. times like `'14:30'`, fail validation.
 ```js
 publishedAt: {
   type: 'date',
-  format: { date: { day: 'numeric', month: 'short', year: 'numeric' } }
+  formats: { date: { day: 'numeric', month: 'short', year: 'numeric' } }
 }
 ```
 

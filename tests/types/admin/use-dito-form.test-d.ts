@@ -98,7 +98,7 @@ describe('widgets', () => {
     h(DitoCheckboxesField, { name: 'genres', layout: 'horizontal' })
     h(DitoMultiselectField, { name: 'genre', editable: true, view: 'genres' })
     h(DitoSelectField, { name: 'genre', editable: true, view: 'genres' })
-    h(DitoDateField, { name: 'day', format: { date: { day: '2-digit' } } })
+    h(DitoDateField, { name: 'day', formats: { date: { day: '2-digit' } } })
     h(DitoTimeField, { name: 'opensAt' })
     h(DitoDateTimeField, { name: 'meetsAt' })
     h(DitoUploadField, { name: 'images', accept: 'image/*' })
@@ -145,6 +145,8 @@ describe('widgets', () => {
     h(DitoSwitchField, { name: 'isFeatured', default: false })
     // @ts-expect-error: Options come from the `enum` of the property.
     h(DitoSelectField, { name: 'format', enum: ['a', 'b'] })
+    // @ts-expect-error: `format` is the property's, `formats` the display's.
+    h(DitoDateField, { name: 'day', format: { date: { day: '2-digit' } } })
     // @ts-expect-error: Relations are the property's.
     h(DitoSelectField, { name: 'author', relate: true })
     // @ts-expect-error: Lists need the name of their property.

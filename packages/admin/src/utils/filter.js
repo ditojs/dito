@@ -45,7 +45,7 @@ export const filterComponents = {
     const datetime = {
       type: 'datetime',
       width: '1/2',
-      format: {
+      formats: {
         // Use shorter date format in date-range filters:
         date: { day: '2-digit', month: '2-digit', year: 'numeric' }
       },
