@@ -19,7 +19,7 @@ import {
   assertRemovedSchemaKeys
 } from '../utils/schema/setup.js'
 import {
-  getDefaultValue,
+  getEmptyValue,
   getMultipleValue,
   getSchemaValue
 } from '../utils/schema/data.js'
@@ -333,7 +333,7 @@ export const textTraits = {
       value = value.trim()
     }
     if (value === '') {
-      value = getDefaultValue(schema, context)
+      value = getEmptyValue(schema, context)
     }
     return value
   }
