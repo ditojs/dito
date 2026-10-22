@@ -53,6 +53,24 @@ test.describe('forms with properties and widgets', () => {
       })
   })
 
+  test('display content without a value, with the layout options', async ({
+    page,
+    url
+  }) => {
+    const { id } = await Designer.query().insert({ name: 'Ada' })
+    const form = new DitoForm(page)
+    await page.goto(`${url}/admin/designers/${id}`)
+    const profile = getContainer(page, 'Profile')
+    await expect(profile.locator('.designer-profile')).toHaveText('Ada')
+    await form.fill('Name', 'Grace')
+    await expect(profile.locator('.designer-profile')).toHaveText('Grace')
+    // `break: 'before'` starts a new line, although the widget would fit:
+    const nameBox = await getContainer(page, 'Name').boundingBox()
+    const profileBox = await profile.boundingBox()
+    expect(profileBox!.y).toBeGreaterThan(nameBox!.y + nameBox!.height - 1)
+    expect(profileBox!.width).toBeCloseTo(nameBox!.width / 2, 0)
+  })
+
   test('create items with the defaults of the properties', async ({
     page,
     url

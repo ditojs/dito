@@ -7,7 +7,8 @@ import {
   DitoNumberField,
   DitoSwitchField,
   DitoListField,
-  DitoSection
+  DitoSection,
+  DitoCustomField
 } from '@ditojs/admin'
 import type { Designer } from '../models/Designer.js'
 
@@ -16,7 +17,7 @@ import type { Designer } from '../models/Designer.js'
 export default defineComponent({
   setup() {
     const route = useRoute()
-    useDitoForm<Designer>({
+    const form = useDitoForm<Designer>({
       resource: 'designers',
       id: () => (route.params.id as string) || null,
       properties: {
@@ -60,6 +61,12 @@ export default defineComponent({
       h(DitoSchemaForm, null, {
         default: () => [
           h(DitoTextField, { name: 'name', width: '1/2' }),
+          // Display content without a value, in a line of its own:
+          h(
+            DitoCustomField,
+            { label: 'Profile', width: '1/4', break: 'before' },
+            () => h('span', { class: 'designer-profile' }, form.item?.name)
+          ),
           showsContact.value
             ? h(
                 DitoSection,

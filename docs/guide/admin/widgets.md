@@ -280,6 +280,15 @@ DitoCustomField(name="code" label="Code" v-slot="field")
 
 Destructured, e.g. `v-slot="{ value }"`, the values are read-only.
 
+Without `name`, `DitoCustomField` displays its content in the layout of the
+form, with a `label`, `width` and `info` like the other widgets, but without a
+value:
+
+```pug
+DitoCustomField(label="Preview" width="1/2")
+  img(:src="form.item.imageUrl")
+```
+
 ## Errors
 
 Widgets validate their value when the user leaves them after editing it.

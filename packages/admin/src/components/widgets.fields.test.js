@@ -21,7 +21,9 @@ import {
   DitoTimeField,
   DitoDateTimeField,
   DitoColorField,
-  DitoUploadField
+  DitoUploadField,
+  DitoCustomField,
+  DitoListField
 } from '../index.js'
 
 const properties = {
@@ -376,5 +378,86 @@ describe('DitoCustomField', () => {
     expect(getContainer(wrapper, 'Code').find('.dito-errors').text()).toBe(
       'The Code field is required.'
     )
+  })
+
+  // A page that displays content without a value beside a list of values,
+  // whose items the custom field edits without `name`:
+  let notesForm = null
+  const NotesPage = {
+    setup() {
+      notesForm = useDitoForm({
+        resource: 'codes',
+        id: 1,
+        properties: {
+          code: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } }
+        }
+      })
+      return () =>
+        h(DitoSchemaForm, null, {
+          default: () => [
+            h(
+              DitoCustomField,
+              { label: 'Note', width: '1/2', info: 'About codes' },
+              {
+                default: () =>
+                  h('p', { class: 'custom-note' }, notesForm.item.code)
+              }
+            ),
+            h(
+              DitoCustomField,
+              { width: '1/2' },
+              { default: () => h('p', { class: 'custom-hint' }, 'Hint') }
+            ),
+            h(
+              DitoListField,
+              { name: 'tags' },
+              {
+                default: () =>
+                  h(DitoCustomField, null, {
+                    default: field =>
+                      h('input', {
+                        class: 'custom-tag',
+                        value: field.value,
+                        onInput: event => (field.value = event.target.value)
+                      })
+                  })
+              }
+            )
+          ]
+        })
+    }
+  }
+
+  it('displays its content without `name`, in a field container', async () => {
+    const { wrapper } = await mountPage(NotesPage, 'codes', {
+      id: 1,
+      code: 'ABC',
+      tags: []
+    })
+    const container = getContainer(wrapper, 'Note')
+    expect(container.find('.custom-note').text()).toBe('ABC')
+    expect(container.find('.custom-note').attributes('id')).toBeUndefined()
+    expect(container.attributes('style')).toContain('--basis: 50%')
+    expect(container.find('.dito-info').exists()).toBe(true)
+    // Content without `label` shows none:
+    const hint = wrapper.find('.custom-hint')
+    expect(hint.element.closest('.dito-container').querySelector('.dito-label'))
+      .toBeNull()
+    // It holds no value of its own:
+    expect(notesForm.item).toEqual({ id: 1, code: 'ABC', tags: [] })
+    expect(notesForm.validate()).toBe(true)
+  })
+
+  it('edits the items of lists of values without `name`', async () => {
+    const { wrapper } = await mountPage(NotesPage, 'codes', {
+      id: 1,
+      code: 'ABC',
+      tags: ['first']
+    })
+    const input = wrapper.find('input.custom-tag')
+    expect(input.element.value).toBe('first')
+    await enterValue(input, 'second')
+    expect(notesForm.item.tags).toEqual(['second'])
   })
 })
