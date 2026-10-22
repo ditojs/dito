@@ -1237,6 +1237,174 @@ describe('useSource()', () => {
       expect(await getFormData(admin, path)).toEqual({ title: 'Epilogue' })
     })
 
+    describe('of sources in views', () => {
+      // Mounts a `books` view with a paginated list of `books`, whose loads
+      // the returned `getListQueries()` lists:
+      async function mountBooksView(path) {
+        const admin = await mountAdmin({
+          views: {
+            books: {
+              type: 'view',
+              field: {
+                type: 'list',
+                resource: { path: 'books' },
+                paginate: 2,
+                filters: { title: { filter: 'text' } },
+                editable: true,
+                form: createChapterForm()
+              }
+            }
+          },
+          request: ({ url, query }) => ({
+            data:
+              url === '/books'
+                ? {
+                    results: [{ id: 1, title: `Page ${query.range}` }],
+                    total: 9
+                  }
+                : { id: 7, title: 'Late' }
+          })
+        })
+        await admin.navigate(path)
+        const getListQueries = () =>
+          admin.request.mock.calls
+            .map(([options]) => options)
+            .filter(({ url }) => url === '/books')
+            .map(({ query }) => query)
+        return { admin, getListQueries }
+      }
+
+      it(`open forms of items that aren't loaded, without loading the list`, async () => {
+        const { admin, getListQueries } = await mountBooksView('/books/7')
+        const form = admin.getRouteComponent(isForm)
+        await settle(form)
+        expect(form.data).toEqual({ id: 7, title: 'Late' })
+        expect(getListQueries()).toEqual([])
+        await form.routeContext.close()
+        await flushPromises()
+        expect(admin.router.currentRoute.value.path).toBe('/books')
+        expect(getListQueries()).toEqual([{ range: '0,1' }])
+      })
+
+      it('hide the panels of the list while the form is open', async () => {
+        const { admin } = await mountBooksView('/books')
+        const findFilters = () =>
+          admin.wrapper.find('.dito-panel[aria-label="Filters"]')
+        expect(findFilters().exists()).toBe(true)
+        await admin.navigate('/books/7')
+        expect(findFilters().exists()).toBe(false)
+      })
+
+      it('return to the query of the list when the form closes', async () => {
+        const { admin, getListQueries } = await mountBooksView('/books?page=2')
+        await admin.navigate('/books/7')
+        const form = admin.getRouteComponent(isForm)
+        await settle(form)
+        await form.routeContext.close()
+        await flushPromises()
+        expect(admin.router.currentRoute.value.fullPath).toBe('/books?page=2')
+        expect(getListQueries()).toEqual([{ range: '4,5' }])
+      })
+
+      it('keep the forms of objects that share the path of their view', async () => {
+        const admin = await mountAdmin({
+          views: {
+            settings: {
+              type: 'view',
+              field: {
+                type: 'object',
+                resource: { path: 'settings' },
+                form: {
+                  type: 'form',
+                  fields: {
+                    owner: {
+                      type: 'object',
+                      creatable: true,
+                      form: createChapterForm()
+                    }
+                  }
+                }
+              }
+            }
+          },
+          request: () => ({ data: { id: 1, owner: null } })
+        })
+        await admin.navigate('/settings')
+        const form = admin.getRouteComponent(isForm)
+        await settle(form)
+        expect(form.routeContext.path).toBe('/settings')
+        await admin.navigate('/settings/owner/create')
+        expect(admin.getRouteComponents(isForm)[0]).toBe(form)
+        const loads = admin.request.mock.calls.filter(
+          ([{ url }]) => url === '/settings'
+        )
+        expect(loads).toHaveLength(1)
+      })
+
+      it('open the forms of lists in the items of inlined lists', async () => {
+        const { admin, view } = await mountView(
+          {
+            fields: {
+              books: {
+                type: 'list',
+                inlined: true,
+                form: {
+                  type: 'form',
+                  fields: { chapters: createChaptersSchema() }
+                }
+              }
+            }
+          },
+          { books: [{ chapters: [] }, { chapters }] }
+        )
+        const list = admin.getComponent(view, 'books/1/chapters')
+        expect(list.getEditPath(1)).toBe('/test/books/1/chapters/1')
+        expect(await getFormData(admin, '/test/books/1/chapters/1')).toEqual({
+          title: 'Epilogue'
+        })
+      })
+    })
+
+    it('return to the query of lists in forms when their nested forms close', async () => {
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            field: {
+              type: 'list',
+              resource: { path: 'books' },
+              form: {
+                type: 'form',
+                fields: {
+                  reviews: {
+                    type: 'list',
+                    resource: { path: 'reviews' },
+                    paginate: 2,
+                    editable: true,
+                    form: createChapterForm()
+                  }
+                }
+              }
+            }
+          }
+        },
+        request: ({ url }) => ({
+          data:
+            url === '/books/1'
+              ? { id: 1 }
+              : url === '/books/1/reviews'
+                ? { results: [{ id: 9, title: 'Good' }], total: 9 }
+                : { id: 9, title: 'Good' }
+        })
+      })
+      await admin.navigate('/books/1?page=2')
+      const nested = await getFormData(admin, '/books/1/reviews/9')
+      expect(nested).toEqual({ id: 9, title: 'Good' })
+      await admin.getRouteComponent(isForm).routeContext.close()
+      await flushPromises()
+      expect(admin.router.currentRoute.value.fullPath).toBe('/books/1?page=2')
+    })
+
     describe('of lists linked to views', () => {
       // Mounts a `books` view with a list that edits the books in its form,
       // and the `test` view with a list linked to the `books` view.

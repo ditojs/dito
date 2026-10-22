@@ -14,12 +14,7 @@ import { isPathWithin, navigate } from '../utils/route.js'
 import { getSchemaPath, isPage } from '../utils/schema/structure.js'
 import { adminContextKey, routeContextKey } from '../utils/keys.ts'
 import { LoadingTracker } from '../utils/LoadingTracker.ts'
-import {
-  claimSourceRoute,
-  MenuNode,
-  SourceNode,
-  type ViewNode
-} from '../utils/RouteTree.ts'
+import { MenuNode } from '../utils/RouteTree.ts'
 import { useContainer, type ContainerOptions } from './useContainer.ts'
 import { useLeaveGuard } from './useLeaveGuard.ts'
 import type { RouteClaim, RouteContext } from '../utils/RouteContext.ts'
@@ -60,7 +55,6 @@ export function useRouteRecord() {
       const matchedRecord = matched[level]
       if (
         matchedRecord?.meta.node &&
-        !(matchedRecord.meta.node instanceof SourceNode) &&
         (!record.value || matchedRecord.path === record.value.path)
       ) {
         record.value = matchedRecord
@@ -86,9 +80,7 @@ export function useRouteRecord() {
     record,
     params,
     claim,
-    node: computed(
-      () => (record.value?.meta.node as MenuNode | ViewNode | undefined) ?? null
-    )
+    node: computed(() => record.value?.meta.node ?? null)
   }
 }
 
@@ -123,25 +115,13 @@ export function useRouteContainer({
       : getCurrentPath()
   })
 
-  // Views claim the paths of the forms of their sources by their records, as
-  // they don't render their components meanwhile. The components of forms and
-  // pages claim the paths below them:
-  const getSourceNode = () => {
-    const node = router.currentRoute.value.matched[level + 1]?.meta.node
-    return node instanceof SourceNode ? node : null
-  }
-  const childClaim = computed(() => {
-    const node = getSourceNode()
-    return routeContext.isLastRoute || routeContext.isLeaving
+  // The components of the route claim the paths below it, and the forms of
+  // single-component views that share the path of their view:
+  const childClaim = computed(() =>
+    routeContext.isLeaving
       ? null
-      : node
-        ? claimSourceRoute(
-            node.getSourceRoute(routeContext.dataContext.data, path.value),
-            getCurrentPath(),
-            adminContext.api
-          )
-        : adminContext.ui.claimRoute(routeContext.dataContext, getCurrentPath())
-  })
+      : adminContext.ui.claimRoute(routeContext.dataContext, getCurrentPath())
+  )
 
   const routeContext: RouteContext = shallowReactive({
     parent,
@@ -183,15 +163,13 @@ export function useRouteContainer({
       return path.value
     },
 
-    // Object forms of single-component views share the path of their view:
     get isLastRoute() {
-      return getCurrentPath() === path.value && !getSourceNode()
+      return !childClaim.value && getCurrentPath() === path.value
     },
 
     get isActive() {
-      const claim = childClaim.value
-      return claim
-        ? claim.isEmbedded && !!claim.source
+      return childClaim.value
+        ? childClaim.value.isEmbedded
         : routeContext.isLastRoute
     },
 

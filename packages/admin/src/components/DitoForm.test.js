@@ -2333,7 +2333,8 @@ describe('DitoForm', () => {
             }
           }
         },
-        path: '/items/1/details/notes/0'
+        path: '/items/1/details/notes/0',
+        list: 'details/notes'
       },
       {
         content: 'panels',
@@ -2341,9 +2342,10 @@ describe('DitoForm', () => {
           fields: { title: { type: 'text' } },
           panels: { side: { type: 'panel', fields: { notes } } }
         },
-        path: '/items/1/side/notes/0'
+        path: '/items/1/side/notes/0',
+        list: 'side/notes'
       }
-    ])('open from $content on reload', async ({ schema, path }) => {
+    ])('open from $content on reload', async ({ schema, path, list }) => {
       const { admin, routeComponent: form } = await mountForm({
         schema,
         data,
@@ -2354,7 +2356,7 @@ describe('DitoForm', () => {
       // The section stays collapsed once the form closes:
       await form.routeContext.close()
       await flushPromises()
-      expect(admin.wrapper.find('.dito-list').isVisible()).toBe(
+      expect(admin.wrapper.find(`[id="${list}"]`).isVisible()).toBe(
         !schema.fields.details
       )
     })

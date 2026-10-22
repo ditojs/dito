@@ -20,7 +20,7 @@ export function useListQuery(
     getPaginate: () => number | undefined
     // Lists in routes change the query through the route...
     isInRoute: () => boolean
-    // ...and those that load their data also follow it:
+    // ...and those that load their data also follow it while they're shown:
     isRouted: () => boolean
     // Called once the query changed, which the list loads:
     onChange: () => void
@@ -76,10 +76,17 @@ export function useListQuery(
   })
 
   // Setting the query navigates to it, and the stored query only changes once
-  // the route did, when the list loads:
-  if (isRouted()) {
-    listQuery.syncWithRoute()
-  }
+  // the route did, when the list loads. Lists take the route again when they're
+  // shown, e.g. once the forms of their items close:
+  watch(
+    isRouted,
+    isRouted => {
+      if (isRouted) {
+        listQuery.syncWithRoute()
+      }
+    },
+    { immediate: true }
+  )
   watch(
     () => router.currentRoute.value,
     (to, from) => {

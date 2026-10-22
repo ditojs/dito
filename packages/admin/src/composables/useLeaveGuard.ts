@@ -26,8 +26,8 @@ export function useLeaveGuard(
   let hasPreventedLeavingInvalidData = false
   // Shared by the navigations while its dialog is open, e.g. the back button:
   let discardConfirmation: Promise<boolean> | null = null
-  // The latest navigation from the form's route until it settled, as it
-  // cancels the earlier ones:
+  // The latest navigation until it settled, as it cancels the earlier ones.
+  // Tracked by a global hook, as guards before the form's own may cancel it:
   let pendingNavigation: RouteLocationNormalized | null = null
   // The path that the form moves to, e.g. with its item:
   let movedPath: string | null = null
@@ -36,7 +36,6 @@ export function useLeaveGuard(
     to: RouteLocationNormalized,
     from: RouteLocationNormalized
   ) => {
-    pendingNavigation = to
     let ok = true
     const isClosing = (
       to.path !== movedPath &&
@@ -83,6 +82,11 @@ export function useLeaveGuard(
 
   onBeforeRouteLeave(beforeRouteChange)
   onBeforeRouteUpdate(beforeRouteChange)
+  onUnmounted(
+    router.beforeEach(to => {
+      pendingNavigation = to
+    })
+  )
   onUnmounted(
     router.afterEach(to => {
       if (to === pendingNavigation) {

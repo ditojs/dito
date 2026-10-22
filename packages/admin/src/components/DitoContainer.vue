@@ -4,8 +4,9 @@
   :class="[containerClasses, schema.class]"
   :style="containerStyles"
 )
+  //- Routes that are hidden by the forms of their items hide their panels:
   Teleport(
-    v-if="isMounted && panelEntries.length > 0"
+    v-if="isMounted && isRouteShown && panelEntries.length > 0"
     to=".dito-sidebar__teleport"
   )
     DitoPanels(
@@ -302,6 +303,8 @@ export default {
         'dito-label--visible': isReplacedWithLabel.value,
         ...getLayoutClasses('dito-label')
       })),
+
+      isRouteShown: computed(() => services.routeContext?.isActive !== false),
 
       panelEntries: computed(() =>
         getAllPanelEntries(
