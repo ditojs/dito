@@ -368,7 +368,7 @@ describe('Validator.parseErrors()', () => {
     ).toEqual({
       '': [`must have required property 'isbn'`],
       'pages': ['must be a whole number'],
-      'rating': ['must be 5 or less'],
+      'rating': ['must be between 1 and 5'],
       'title': ['must be at least 3 characters long'],
       'tags': ['must contain at most one item'],
       'kind': ['must be one of the allowed values'],

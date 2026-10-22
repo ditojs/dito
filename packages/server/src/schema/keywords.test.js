@@ -369,22 +369,24 @@ describe('range keyword', () => {
     expect(() => Rating.fromJson({ percentage: 33.3 })).not.toThrow()
   })
 
-  it('reports the expanded minimum and maximum keywords', () => {
+  it('reports `range` errors with the message of @ditojs/schema', () => {
     const errors = getValidationErrors(() =>
       Rating.fromJson({ stars: 0, percentage: 100.5 })
     )
     expect(errors).toEqual({
       stars: [
-        expect.objectContaining({
-          keyword: 'minimum',
-          params: { comparison: '>=', limit: 1 }
-        })
+        {
+          message: 'must be between 1 and 5',
+          keyword: 'range',
+          params: {}
+        }
       ],
       percentage: [
-        expect.objectContaining({
-          keyword: 'maximum',
-          params: { comparison: '<=', limit: 100 }
-        })
+        {
+          message: 'must be between 0 and 100',
+          keyword: 'range',
+          params: {}
+        }
       ]
     })
   })
