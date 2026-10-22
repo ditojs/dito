@@ -54,7 +54,9 @@ export default {
       return [
         this.$attrs.class,
         {
-          'dito-input--focus': this.focused
+          'dito-input--focus': this.focused,
+          'dito-input--has-errors': !!this.$attrs['aria-invalid'],
+          'dito-input--disabled': this.disabled
         }
       ]
     },
@@ -126,6 +128,14 @@ export default {
   align-items: center;
 
   @extend %input;
+
+  &--has-errors {
+    @extend %input-has-errors;
+  }
+
+  &--disabled {
+    @extend %field-disabled;
+  }
 
   input {
     // Inherit all styling from .dito-input

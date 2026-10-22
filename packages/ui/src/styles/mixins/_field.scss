@@ -6,18 +6,21 @@
   padding: $input-padding;
   background: $color-white;
 
-  .dito-container--has-errors & {
-    border-color: $color-error;
+  &:disabled {
+    @extend %field-disabled;
   }
+}
 
-  &:disabled,
-  .dito-container--disabled & {
-    color: $color-disabled;
-    pointer-events: none;
-    cursor: text;
+%field-has-errors {
+  border-color: $color-error;
+}
 
-    button {
-      @extend %button-disabled;
-    }
+%field-disabled {
+  color: $color-disabled;
+  pointer-events: none;
+  cursor: text;
+
+  button {
+    @extend %button-disabled;
   }
 }

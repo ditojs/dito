@@ -1,5 +1,10 @@
 <template lang="pug">
-.dito-slider
+.dito-slider(
+  :class=`{
+    'dito-slider--has-errors': !!errorsElementId,
+    'dito-slider--disabled': disabled
+  }`
+)
   input.dito-range(
     :id="componentPath"
     ref="element"
@@ -67,6 +72,14 @@ export default DitoSliderType
   @extend %input;
 
   display: flex;
+
+  &--has-errors {
+    @extend %input-has-errors;
+  }
+
+  &--disabled {
+    @extend %field-disabled;
+  }
 
   .dito-range {
     flex: auto;

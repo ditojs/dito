@@ -2,6 +2,10 @@
 .dito-markup(
   :id="componentPath"
   ref="element"
+  :class=`{
+    'dito-markup--has-errors': !!errorsElementId,
+    'dito-markup--disabled': disabled
+  }`
 )
   .dito-buttons.dito-buttons--toolbar(
     v-if="groupedButtons.length > 0"
@@ -550,6 +554,14 @@ const LinkWithTitle = Link.extend({
   @extend %input;
 
   position: relative;
+
+  &--has-errors {
+    @extend %input-has-errors;
+  }
+
+  &--disabled {
+    @extend %field-disabled;
+  }
 
   .ProseMirror {
     height: 100%;

@@ -3,6 +3,7 @@
 .dito-select(
   :class=`{
     'dito-select--placeholder': isShowingPlaceholder,
+    'dito-select--has-errors': !!errorsElementId,
     'dito-select--disabled': disabled
   }`
 )
@@ -156,6 +157,10 @@ export default DitoSelectType
       bottom: $select-arrow-bottom;
       right: $select-arrow-right;
     }
+  }
+
+  &--has-errors select {
+    @extend %input-has-errors;
   }
 
   &--disabled &__inner::before {

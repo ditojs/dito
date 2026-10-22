@@ -7,6 +7,7 @@ input.dito-text.dito-input(
   :value="value"
   :disabled="disabled"
   :readonly="true"
+  :class="{ 'dito-input--has-errors': !!errorsElementId }"
 )
 </template>
 
