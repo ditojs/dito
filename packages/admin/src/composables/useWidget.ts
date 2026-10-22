@@ -1,4 +1,4 @@
-import { inject, onUnmounted, reactive, useId } from 'vue'
+import { inject, onUnmounted } from 'vue'
 import { appendDataPath } from '../utils/data.js'
 import { getRootData } from '../utils/services.ts'
 import { PropertyNode } from '../utils/schema/properties.js'
@@ -36,10 +36,14 @@ export interface WidgetProps {
 // Find the property of the widget's `name` in the scope that it's in, for the
 // widget to render it through `DitoContainer` like panes render fields, with a
 // display schema of its props. Widgets without `name` edit the value of their
-// scope, e.g. the primitive items of lists, and layouts the scope's data:
+// scope, e.g. the primitive items of lists, and unnested layouts the scope's
+// data:
 export function useWidget(
   props: WidgetProps,
-  { isLayout = false }: { isLayout?: boolean } = {}
+  {
+    isLayout = false,
+    nested = true
+  }: { isLayout?: boolean; nested?: boolean } = {}
 ) {
   const scope = inject(propertyScopeKey, null)
   const layout = inject(layoutKey, null)
@@ -50,27 +54,30 @@ export function useWidget(
   }
   const isScopeValue = props.name == null && !isLayout
   const name = isScopeValue ? (scope.valueName ?? null) : props.name
-  if (isScopeValue && name == null) {
+  if (name == null) {
     throw new Error(
-      'Unable to place widgets without `name` outside of lists of values.'
+      isLayout
+        ? 'Unable to place sections without `name`.'
+        : 'Unable to place widgets without `name` outside of lists of values.'
     )
   }
-  const property = name != null ? scope.properties[name] : null
-  if (name != null && !property) {
+  const property = nested ? scope.properties[name] : null
+  if (nested && !property) {
     throw new Error(`Unknown property '${name}'.`)
   }
   const services = useServices()
   const { dataContext } = services
-  const getValueDataPath = (nested = true) =>
+  const getValueDataPath = () =>
     nested && !isScopeValue
-      ? appendDataPath(scope.dataPath, name!)
+      ? appendDataPath(scope.dataPath, name)
       : scope.dataPath
-  // Several widgets of a value, and layouts, add a segment to the component
+  // Several widgets of the same name in a scope add a segment to the component
   // path of their parent to tell them apart:
-  const occurrence =
-    name != null ? addOccurrence(dataContext!, getValueDataPath()) : 0
-  const segment =
-    name == null ? useId() : occurrence > 0 ? `~${occurrence + 1}` : null
+  const occurrence = addOccurrence(
+    dataContext!,
+    appendDataPath(scope.dataPath, name)
+  )
+  const segment = occurrence > 0 ? `~${occurrence + 1}` : null
   useComponentPath(
     () => scope.dataPath,
     parent => {
@@ -79,12 +86,9 @@ export function useWidget(
     }
   )
   // Like the components of panes, widgets keep their state in the store of
-  // their layout, while they're unmounted. Layouts without name have no key:
-  const store =
-    name != null
-      ? useStore(layout.props).getChildStore(`${name}${segment ?? ''}`)
-      : reactive({})
-  const node = property ? getPropertyNode(name!, property) : null
+  // their layout, while they're unmounted:
+  const store = useStore(layout.props).getChildStore(`${name}${segment ?? ''}`)
+  const node = property ? getPropertyNode(name, property) : null
 
   return {
     scope,
@@ -92,13 +96,13 @@ export function useWidget(
     property: property as Schema | null,
 
     // Widgets of irrelevant properties hide themselves:
-    isRelevant(nested = true) {
+    isRelevant() {
       return (
         !node ||
         node.isRelevant({
           data: scope.data,
           name,
-          dataPath: getValueDataPath(nested),
+          dataPath: getValueDataPath(),
           itemDataPath: scope.dataPath,
           rootData: getRootData(services),
           services
@@ -107,9 +111,8 @@ export function useWidget(
     },
 
     // The props override the hints of the property, e.g. loaded `options` its
-    // `enum`. Unnested widgets, e.g. sections without `name`, display their
-    // scope:
-    getContainerProps(schema: Schema, nested = true) {
+    // `enum`. Unnested sections display their scope:
+    getContainerProps(schema: Schema) {
       const { disabled, compact, generateLabels } = layout.props
       return {
         schema: {
@@ -122,7 +125,7 @@ export function useWidget(
           // Only to mark the label, the property validates the value:
           required: property?.required
         },
-        dataPath: getValueDataPath(nested),
+        dataPath: getValueDataPath(),
         data: scope.data,
         itemDataPath: scope.dataPath,
         store,
@@ -147,21 +150,21 @@ export function getPropertyNode(name: string, property: Schema) {
   return node
 }
 
-// The occurrences of the widgets of each value, by their data paths:
+// The occurrences of the widgets of each name, by its path in their scopes:
 const occurrencesByDataContext = new WeakMap<
   DataContext,
   Map<string, Set<number>>
 >()
 
-// Take the first free occurrence of the value, until the widget is unmounted:
-function addOccurrence(dataContext: DataContext, dataPath: string) {
-  let occurrencesByDataPath = occurrencesByDataContext.get(dataContext)
-  if (!occurrencesByDataPath) {
-    occurrencesByDataPath = new Map()
-    occurrencesByDataContext.set(dataContext, occurrencesByDataPath)
+// Take the first free occurrence of the name, until the widget is unmounted:
+function addOccurrence(dataContext: DataContext, path: string) {
+  let occurrencesByPath = occurrencesByDataContext.get(dataContext)
+  if (!occurrencesByPath) {
+    occurrencesByPath = new Map()
+    occurrencesByDataContext.set(dataContext, occurrencesByPath)
   }
-  const occurrences = occurrencesByDataPath.get(dataPath) ?? new Set()
-  occurrencesByDataPath.set(dataPath, occurrences)
+  const occurrences = occurrencesByPath.get(path) ?? new Set()
+  occurrencesByPath.set(path, occurrences)
   let occurrence = 0
   while (occurrences.has(occurrence)) {
     occurrence++

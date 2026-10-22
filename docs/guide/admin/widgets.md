@@ -14,12 +14,12 @@ DitoSchemaForm
   DitoTextField(name="name" width="1/2")
   DitoTextField(name="email" type="email" width="1/2")
   DitoSwitchField(name="isFeatured" label="Featured")
-  DitoSection(label="Ranking" collapsible collapsed)
+  DitoSection(name="ranking" label="Ranking" collapsible collapsed)
     DitoNumberField(name="rank")
   DitoListField(name="awards" collapsible creatable deletable)
     DitoTextField(name="title" width="3/4")
     DitoNumberField(name="year" width="1/4")
-  DitoSection(name="address" label="Address")
+  DitoSection(name="address" label="Address" nested)
     DitoTextField(name="city")
 </template>
 
@@ -117,7 +117,7 @@ Times of day are strings with `format: 'iso-time'`, e.g. `'14:30:00'`, which
 ## Widgets
 
 Each widget edits the property of its `name` in its scope: the form, the
-object of a `DitoSection` with `name`, or an item of a list or object. A
+object of a nested `DitoSection`, or an item of a list or object. A
 widget whose `name` has no property throws: "Unknown property 'x'".
 
 The widgets render the same components as the field types, e.g. `DitoTextField`
@@ -139,8 +139,11 @@ See [Widgets](../../api/admin/widgets.md) for all widgets and their props.
 ## Sections
 
 `DitoSection` lays out widgets in a section, with a `label`, and `collapsible`
-and `collapsed`. With `name`, it edits the object of that property, flat in
-the layout: the widgets in it edit the properties of the object.
+and `collapsed`. Like the [sections](../../api/admin/schemas.md#section) of
+schema views, each section has a `name`, which keeps its state, e.g. whether
+it's collapsed. With `nested`, it edits the object of the property `name`,
+flat in the layout: the widgets in it edit the properties of the object.
+Without, they edit the data of the section's scope.
 
 Collapsed sections don't render their widgets. While the form holds errors in
 their data, they render them hidden: errors open the sections whose widgets

@@ -61,15 +61,24 @@ export default defineComponent({
         default: () => [
           h(DitoTextField, { name: 'name', width: '1/2' }),
           showsContact.value
-            ? h(DitoSection, null, {
-                default: () =>
-                  h(DitoTextField, { name: 'email', type: 'email' })
-              })
+            ? h(
+                DitoSection,
+                { name: 'contact' },
+                {
+                  default: () =>
+                    h(DitoTextField, { name: 'email', type: 'email' })
+                }
+              )
             : null,
           h(DitoSwitchField, { name: 'isFeatured', label: 'Featured' }),
           h(
             DitoSection,
-            { label: 'Ranking', collapsible: true, collapsed: true },
+            {
+              name: 'ranking',
+              label: 'Ranking',
+              collapsible: true,
+              collapsed: true
+            },
             { default: () => h(DitoNumberField, { name: 'rank' }) }
           ),
           h(
@@ -90,7 +99,7 @@ export default defineComponent({
           ),
           h(
             DitoSection,
-            { name: 'address', label: 'Address' },
+            { name: 'address', label: 'Address', nested: true },
             { default: () => h(DitoTextField, { name: 'city' }) }
           )
         ]

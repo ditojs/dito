@@ -3677,13 +3677,18 @@ export const DitoCustomField: DefineSetupFnComponent<
 >
 
 /**
- * Lays out widgets in a section, of the object property `name` if it has
- * one. Collapsed sections show that their widgets have errors, and open to
- * reveal them.
+ * Lays out widgets in a section, of the object property `name` if it's
+ * `nested`. Collapsed sections show that their widgets have errors, and open
+ * to reveal them.
  */
 export const DitoSection: DefineComponent<{
-  /** The object property whose `properties` the widgets in it edit. */
-  name?: string
+  /**
+   * The name of the section, or with `nested` the object property whose
+   * `properties` the widgets in it edit.
+   */
+  name: string
+  /** Whether the widgets in it edit the object property `name`. */
+  nested?: boolean
   label?: string | false
   width?: string | number
   info?: string

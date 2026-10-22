@@ -5,12 +5,14 @@ import { useWidget, widgetProps } from '../composables/useWidget.ts'
 import { appendDataPath } from '../utils/data.js'
 import { propertyScopeKey } from '../utils/keys.ts'
 
-// Lays out widgets in a section, of the object of its `name` if it has one:
+// Lays out widgets in a section, of the object of its `name` if it's nested,
+// like sections in schema views:
 export default {
   name: 'DitoSection',
 
   props: {
-    name: { type: String, default: null },
+    name: { type: String, required: true },
+    nested: { type: Boolean, default: false },
     label: widgetProps.label,
     width: widgetProps.width,
     info: widgetProps.info,
@@ -19,12 +21,12 @@ export default {
   },
 
   setup(props, { slots }) {
+    const { name, nested } = props
     const { scope, property, isRelevant, getContainerProps } = useWidget(
       props,
-      { isLayout: true }
+      { isLayout: true, nested }
     )
-    const { name } = props
-    if (property) {
+    if (nested) {
       if (!property.properties) {
         throw new Error(
           `Unable to place '${name}' in a section: It has no 'properties'.`
@@ -41,18 +43,11 @@ export default {
         }
       })
     }
-    const isNested = !!name
-    // Unnamed sections display the data of their scope:
     return () =>
-      isRelevant(isNested)
-        ? h(
-            DitoContainer,
-            getContainerProps(
-              { type: 'section', ...(isNested && { name }) },
-              isNested
-            ),
-            { default: () => slots.default?.() }
-          )
+      isRelevant()
+        ? h(DitoContainer, getContainerProps({ type: 'section', name }), {
+            default: () => slots.default?.()
+          })
         : null
   }
 }

@@ -93,7 +93,9 @@ describe('widgets', () => {
     h(DitoColorField, { name: 'tint', colorFormat: 'rgb', alpha: true })
     h(DitoNumberField, { name: 'rank', step: 5, clearable: true })
     h(DitoSwitchField, { name: 'isFeatured', labels: { checked: 'yes' } })
-    h(DitoSection, { name: 'address', label: 'Address', collapsible: true })
+    h(DitoSection, { name: 'address', label: 'Address', nested: true })
+    h(DitoSection, { name: 'more', label: 'More', collapsed: true })
+    // @ts-expect-error: Sections need a name.
     h(DitoSection, { label: 'More', collapsed: true })
     h(DitoTextareaField, { name: 'notes', lines: 4 })
     h(DitoSelectField, {
