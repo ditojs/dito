@@ -66,15 +66,23 @@ describe('RouteContext', () => {
     )
   })
 
-  it('tells the state that the routes below it depend on', async () => {
+  it('tells whether the routes below it edit transient data', async () => {
     const { admin, routeComponent: form } = await mountChapters()
-    expect(form.routeContext.state).toEqual({
-      data: form.data,
-      routeParams: { id1: '1' },
-      isTransient: false
-    })
+    expect(form.routeContext.isTransient).toBe(false)
     const chapterForm = await openChapterForm(admin, '/items/1/chapters/create')
-    expect(chapterForm.routeContext.state.isTransient).toBe(true)
+    expect(chapterForm.routeContext.isTransient).toBe(true)
+  })
+
+  it('holds the claim of the form below, which opened it', async () => {
+    const { admin, routeComponent: form, getComponent } = await mountChapters()
+    expect(form.routeContext.childClaim).toBe(null)
+    const chapterForm = await openChapterForm(admin, '/items/1/chapters/0')
+    const claim = form.routeContext.childClaim
+    expect(claim.path).toBe('/items/1/chapters/0')
+    expect(claim.sourcePath).toBe('/items/1/chapters')
+    expect(claim.param).toBe('0')
+    expect(claim.source).toBe(getComponent('chapters').sourceContext)
+    expect(chapterForm.routeContext.claim).toBe(claim)
   })
 
   it('resolves the form of the item at the component path', async () => {
@@ -88,14 +96,6 @@ describe('RouteContext', () => {
   it('resolves to null without a form for the data path', async () => {
     const { routeComponent: form } = await mountChapters()
     expect(form.routeContext.getFormRoute('unknown/path')).toBe(null)
-  })
-
-  it('resolves the path of the form that creates an item', async () => {
-    const { routeComponent: form } = await mountChapters()
-    expect(form.routeContext.getCreatePath('chapters')).toBe(
-      '/items/1/chapters/create'
-    )
-    expect(form.routeContext.getCreatePath('unknown')).toBe(null)
   })
 
   it('closes forms by navigating to their parent', async () => {

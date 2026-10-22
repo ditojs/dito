@@ -3,8 +3,6 @@ import { watch } from 'vue'
 import { mountAdmin, isForm } from '../test/mount.js'
 import { ViewRegistry } from './ViewRegistry.js'
 import DitoView from '../components/DitoView.vue'
-import DitoForm from '../components/DitoForm.vue'
-import DitoFormEmbedded from '../components/DitoFormEmbedded.vue'
 
 describe('ViewRegistry', () => {
   afterEach(() => {
@@ -20,11 +18,7 @@ describe('ViewRegistry', () => {
       api,
       router,
       unresolvedViews: views,
-      routeComponents: {
-        view: DitoView,
-        form: DitoForm,
-        embeddedForm: DitoFormEmbedded
-      }
+      routeComponents: { view: DitoView }
     })
     return { admin, viewRegistry }
   }

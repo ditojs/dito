@@ -1,4 +1,3 @@
-import type { SourceNode } from './RouteTree.ts'
 import type { SubmitButton } from './ResourceContext.ts'
 import type { ListQuery } from './ListQuery.js'
 import type { Schema } from './types.ts'
@@ -6,7 +5,6 @@ import type { Schema } from './types.ts'
 // The context that `useSource()` provides to the components of its items.
 export interface SourceContext {
   readonly schema: Schema
-  readonly node: SourceNode | null
   readonly listQuery: ListQuery
   readonly dataPath: string
   readonly componentPath: string

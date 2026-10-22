@@ -63,21 +63,6 @@ export class ViewRegistry {
     return true
   }
 
-  // Add the routes of the form of `useDitoForm()` in the component of a page,
-  // and return a function that removes them again:
-  addPageFormRoutes(view, schema) {
-    const { records, remove } = this.routeTree.addPageForm(
-      view,
-      schema,
-      this.#routeComponents
-    )
-    const removeRoutes = addRoutes(this.#router, records, view.routeName)
-    return () => {
-      removeRoutes()
-      remove()
-    }
-  }
-
   // The routes stay until the views are resolved again:
   clear() {
     this.#views.value = {}
@@ -101,10 +86,8 @@ async function resolveAccountViews(api, { settings } = {}) {
     : {}
 }
 
-function addRoutes(router, routes, parentName = null) {
-  const removers = routes.map(route =>
-    parentName ? router.addRoute(parentName, route) : router.addRoute(route)
-  )
+function addRoutes(router, routes) {
+  const removers = routes.map(route => router.addRoute(route))
   return () => {
     for (const remove of removers) {
       remove()

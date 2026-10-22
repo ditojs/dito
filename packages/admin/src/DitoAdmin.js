@@ -12,8 +12,6 @@ import * as components from './components/index.js'
 import * as types from './types/index.js'
 import DitoRoot from './components/DitoRoot.vue'
 import DitoView from './components/DitoView.vue'
-import DitoForm from './components/DitoForm.vue'
-import DitoFormEmbedded from './components/DitoFormEmbedded.vue'
 import ResizeDirective from './directives/resize.js'
 import { getResource } from './utils/resource.js'
 import { request, getApiUrl, isApiUrl } from './utils/request.js'
@@ -147,11 +145,7 @@ export default class DitoAdmin {
       router,
       unresolvedViews: views,
       account: options.account,
-      routeComponents: {
-        view: DitoView,
-        form: DitoForm,
-        embeddedForm: DitoFormEmbedded
-      }
+      routeComponents: { view: DitoView }
     })
 
     const admin = (this.context = new AdminContext({

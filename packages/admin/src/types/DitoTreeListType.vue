@@ -58,15 +58,10 @@ const DitoTreeListType = {
       routeContext,
       labelize,
 
-      // The forms of the tree's items are routed right after its route:
-      isEditingItem: computed(() => {
-        const node = source.sourceNode.value
-        let routeNode = node && routeContext.childNode
-        while (routeNode && routeNode !== node) {
-          routeNode = routeNode.parent
-        }
-        return !!routeNode
-      }),
+      // The tree renders the forms of the items that it claimed:
+      isEditingItem: computed(
+        () => routeContext.childClaim?.source === source.sourceContext
+      ),
 
       treeData: computed(() =>
         isListSource.value ? { [props.schema.name]: value.value } : value.value

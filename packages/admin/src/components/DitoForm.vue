@@ -3,10 +3,9 @@
   :class="{ 'dito-form--embedded': isEmbeddedRoute }"
   :data-resource="schemaPath"
 )
-  //- Embedded form routes render in the view of their parent instead:
+  //- Embedded forms render inside the components that claimed them:
   DitoRouterView(
-    v-if="!routeContext.isLastUnnestedRoute && !isEmbeddedRoute"
-    v-show="!isActiveRoute"
+    v-if="!isActiveRoute"
     :routeLevel="routeContext.level + 1"
   )
   //- NOTE: `v-show` keeps forms alive while nested forms edit their data.
@@ -65,7 +64,7 @@ import { useComponentPath } from '../composables/useComponentPath.ts'
 import { adminContextKey } from '../utils/keys.ts'
 import { isListSource, isObjectSource } from '../utils/schema/structure.js'
 import { getItemFormSchema, hasSubmitButton } from '../utils/schema/lookup.js'
-import { appendDataPath, getParentDataPath } from '../utils/data.js'
+import { getParentDataPath } from '../utils/data.js'
 import { cloneWithUids } from '../utils/uid.js'
 import {
   getChildSourceSchemas,
@@ -78,22 +77,18 @@ export default {
     const router = useRouter()
     const adminContext = inject(adminContextKey)
     const route = useRouteRecord()
-    const { node, parent: parentRouteContext } = route
+    const { claim, parent: parentRouteContext } = route
     const parentDataContext = parentRouteContext.dataContext
 
     // The source of the item, and what the route says about it:
-    const sourceSchema = computed(() => node.value.source.schema)
+    const sourceSchema = computed(() => claim.value.schema)
     const itemAdapter = computed(() => getItemAdapter(sourceSchema.value))
-    // vue-router can't map several parameters of the same name to several
-    // components, see https://github.com/vuejs/vue-router/issues/1345
-    const param = computed(
-      () => router.currentRoute.value.params[node.value.param] ?? null
-    )
+    const param = computed(() => claim.value.param)
     const isCreating = computed(() => param.value === 'create')
     const isMutating = computed(() => !!sourceSchema.value.mutate)
     const creationType = computed(() => router.currentRoute.value.query.type)
     const itemId = computed(() => (isCreating.value ? null : param.value))
-    const isEmbeddedRoute = computed(() => node.value.isEmbeddedForm)
+    const isEmbeddedRoute = computed(() => claim.value.isEmbedded)
 
     // Forms without a resource of their own edit an item of their parent:
     const requests = useResource({
@@ -114,17 +109,9 @@ export default {
     )
 
     // The item of the form in the data of its parent route:
-    const sourceLocation = computed(() => {
-      const { node: parentNode, state } = parentRouteContext
-      return state.data
-        ? parentNode.findItem(node.value, {
-            ...state,
-            routeParams: route.params.value
-          })
-        : null
-    })
-    const sourceData = computed(() => sourceLocation.value?.data ?? null)
-    const sourceKey = computed(() => sourceLocation.value?.key ?? null)
+    const sourceLocation = computed(() => claim.value.location)
+    const sourceData = computed(() => sourceLocation.value.data)
+    const sourceKey = computed(() => sourceLocation.value.key)
     const sourceItem = computed(() =>
       sourceData.value && sourceKey.value !== null
         ? sourceData.value[sourceKey.value]
@@ -132,24 +119,13 @@ export default {
     )
     // Forms that load their own data start a new data path:
     const dataPath = computed(() =>
-      isTransient.value
-        ? appendDataPath(
-            parentDataContext.dataPath,
-            sourceLocation.value?.dataPath ?? ''
-          )
-        : ''
+      isTransient.value ? sourceLocation.value.dataPath : ''
     )
     // Forms of items in the data of their parent continue the component path
     // of their source, e.g. `main/chapters/1`:
     const { componentPath } = useComponentPath(
       () => dataPath.value,
-      () =>
-        isTransient.value
-          ? appendDataPath(
-              parentDataContext.componentPath,
-              sourceLocation.value?.componentPath ?? ''
-            )
-          : ''
+      () => (isTransient.value ? sourceLocation.value.componentPath : '')
     )
 
     const {
@@ -158,7 +134,8 @@ export default {
       model,
       store,
       schemaPath,
-      navigateWithin
+      navigateWithin,
+      replaceWithin
     } = useRouteContainer({
       route,
       schema: () => schema.value,
@@ -284,24 +261,18 @@ export default {
         if (toRaw(item) !== toRaw(original.value)) {
           // Other items at the same path mean that the data changed:
           const hasDataChanged = !!original.value && path === previousPath
-          const params = (
+          const itemClaim = (
             hasDataChanged &&
-            parentRouteContext.node.findItemParams(
-              node.value,
-              { ...parentRouteContext.state, routeParams: route.params.value },
-              original.value
-            )
+            claim.value.claimItem(original.value)
           )
-          if (params) {
-            // Change the parameters first, to not leave the form on the way:
-            const {
-              name,
+          if (itemClaim) {
+            // Keep the path below the form, e.g. of the form of a child item:
+            const { path, query, hash } = router.currentRoute.value
+            replaceWithin({
+              path: itemClaim.path + path.slice(routeContext.path.length),
               query,
-              hash,
-              params: currentParams
-            } = router.currentRoute.value
-            route.params.value = { ...currentParams, ...params }
-            router.replace({ name, params: route.params.value, query, hash })
+              hash
+            })
           } else if (hasDataChanged && isListSource(sourceSchema.value)) {
             close()
           } else {
@@ -405,10 +376,7 @@ export default {
           if (success) {
             if (!isTransientSubmit) {
               // The source that lists the item loads it again:
-              const source = [...parentDataContext.sources].find(
-                source => source.node === node.value.source
-              )
-              source?.reload()
+              claim.value.source?.reload()
             }
             if (options.closeForm || button.closeForm) {
               navigateWithin(submittedPath, close)
@@ -422,11 +390,10 @@ export default {
                   ? null
                   : sourceData.value.length - 1
               navigateWithin(submittedPath, () => {
-                const { params, hash } = router.currentRoute.value
+                const { sourcePath } = claim.value
                 router.replace({
-                  name: route.record.value.name,
-                  params: { ...params, [node.value.param]: id },
-                  hash // Keep the tab.
+                  path: id !== null ? `${sourcePath}/${id}` : sourcePath,
+                  hash: router.currentRoute.value.hash // Keep the tab.
                 })
               })
             }
@@ -454,22 +421,17 @@ export default {
     })
 
     watch(
-      router.currentRoute,
-      (to, from) => {
-        // Load the data of other items that the form navigates to:
-        const { param } = node.value
-        const toParam = to.params[param]
-        const fromParam = from.params[param]
-        // Created items are merged into the form, which opens them as they are:
+      param,
+      (toParam, fromParam) => {
+        // Load the data of other items that the form navigates to. Created
+        // items are merged into the form, which opens them as they are:
         const isOpeningCreatedItem = (
           fromParam === 'create' &&
           getItemId(sourceSchema.value, data.value) === toParam
         )
         if (
-          param &&
           providesData.value &&
           toParam !== 'create' &&
-          toParam !== fromParam &&
           !isOpeningCreatedItem
         ) {
           loadData()
@@ -489,9 +451,7 @@ export default {
       schemaPath,
       buttonSchemas,
       isEmbeddedRoute,
-      isActiveRoute: computed(
-        () => routeContext.isLastRoute || routeContext.isLastUnnestedRoute
-      ),
+      isActiveRoute: computed(() => routeContext.isActive),
       itemLabelText,
       context
     }

@@ -85,8 +85,10 @@ export default {
         source && isInlined(source) ? getItemAdapter(source) : null
       return Object.entries(props.schema?.fields || {}).map(
         ([name, schema]) => {
-          // The schema may be used elsewhere too:
-          schema = { ...schema, name }
+          // The schema may be used elsewhere too, under another name:
+          if (schema.name !== name) {
+            schema = { ...schema, name }
+          }
           const nested = hasNestedData(schema)
           const nestedDataPath = appendDataPath(props.dataPath, name)
           const dataPath =

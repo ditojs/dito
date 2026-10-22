@@ -8,8 +8,9 @@ export function iterateSchemaComponents(schemas, callback) {
       if (res !== undefined) {
         return res
       }
-    } else if (isSchema(schema)) {
-      for (const [name, component] of Object.entries(schema.fields || {})) {
+    } else if (isSchema(schema) && isObject(schema.fields)) {
+      // Components of `fields()` callbacks only exist for their data:
+      for (const [name, component] of Object.entries(schema.fields)) {
         const res = callback(component, name, 1)
         if (res !== undefined) {
           return res

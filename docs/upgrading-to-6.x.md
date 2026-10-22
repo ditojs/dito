@@ -91,8 +91,9 @@ template of `@ditojs/utils`, which escapes the values that it includes, see
   their names, e.g. `/admin/books/1/pricing/editions/0` for `editions` in the
   tab `pricing` instead of `/admin/books/1/editions/0`, so that sources of the
   same data in different tabs have their own forms. Links and bookmarks to them
-  need updating, and renaming a tab changes them. Sources of the same form with
-  the same URL path throw: give one of them another `path`.
+  need updating, and renaming a tab changes them. Of the sources of a form with
+  the same URL path, the first one opens its forms: give the others another
+  `path`.
 
 ## UI
 

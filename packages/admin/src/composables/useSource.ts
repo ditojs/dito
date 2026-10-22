@@ -30,13 +30,24 @@ import {
   getViewSchema,
   hasFormSchema
 } from '../utils/schema/lookup.js'
-import { isInlined, isListSource } from '../utils/schema/structure.js'
+import {
+  isInlined,
+  isListSource,
+  isSingleFieldView
+} from '../utils/schema/structure.js'
+import {
+  claimSourceRoute,
+  getItemKey,
+  getSourceFormRoute,
+  getSourcePath,
+  ViewNode,
+  type SourceRoute
+} from '../utils/RouteTree.ts'
 import { useField, type FieldProps } from './useField.ts'
 import { useResource } from './useResource.ts'
 import { useListQuery } from './useListQuery.ts'
 import { useSourceData } from './useSourceData.ts'
 import { useSourceItems } from './useSourceItems.ts'
-import type { FormNode, ViewNode } from '../utils/RouteTree.ts'
 import type { SubmitButton } from '../utils/ResourceContext.ts'
 import type { SourceContext } from '../utils/SourceContext.ts'
 import type { Data, Schema } from '../utils/types.ts'
@@ -66,7 +77,7 @@ export function useSource(
     parentRouteContext: routeContext,
     getSchema: () => props.schema,
     isTransient: providesData => (
-      (!providesData && !linksToView.value) || !!routeContext?.state.isTransient
+      (!providesData && !linksToView.value) || !!routeContext?.isTransient
     )
   })
   const { resourceContext, isTransient, providesData } = requests
@@ -373,22 +384,71 @@ export function useSource(
     getSchemaValue('render', { type: Function, default: null })
   )
 
-  const sourceNode = computed(() => {
-    const path = (
-      routeContext &&
-      getRelativeDataPath(
-        componentPath.value,
-        routeContext.dataContext.componentPath
-      )
-    )
-    return routeContext && path !== null
-      ? (routeContext.node as ViewNode | FormNode).findSource(path)
-      : null
+  // Forms that contain themselves stop routing their sources after `maxDepth`
+  // repetitions:
+  const isBeyondMaxDepth = computed(() => {
+    let depth = 1
+    for (let route = routeContext; route; route = route.parent) {
+      if (route.claim?.schema === props.schema) depth++
+    }
+    return depth > (props.schema.maxDepth ?? 1)
   })
+
+  // The path of the forms of the items within the source's route, after the
+  // names of the tabs, sections and panels around it, e.g. `pricing/families`.
+  // Trees route the forms of their children below the ones of their items:
+  const routePath = computed(() => {
+    const isRouted = (
+      !!routeContext &&
+      !linksToView.value &&
+      !hasInlinedItems() &&
+      !isBeyondMaxDepth.value
+    )
+    const path = isRouted
+      ? getRelativeDataPath(
+          componentPath.value,
+          routeContext.dataContext.componentPath
+        )
+      : null
+    if (path !== null) {
+      // Single-component views route their component under their own path:
+      const { node, path: basePath } = routeContext!
+      return (
+        node instanceof ViewNode &&
+        isSingleFieldView(node.schema) &&
+        path === node.schema.name
+      )
+        ? basePath
+        : `${basePath}/${getSourcePath(props.schema, path, adminContext.api)}`
+    }
+    return null
+  })
+
+  // The source and where its value and routes are, for the forms of its items:
+  const sourceRoute = computed<SourceRoute | null>(() =>
+    routePath.value
+      ? {
+          schema: props.schema,
+          location: {
+            data: props.data,
+            key: props.schema.name,
+            dataPath: props.dataPath,
+            componentPath: componentPath.value
+          },
+          path: routePath.value,
+          isTransient: isTransient.value,
+          source: sourceContext
+        }
+      : null
+  )
+
+  // Sources link to the forms of their items, if they have one:
+  const formPath = computed(() =>
+    hasFormSchema(props.schema) ? routePath.value : null
+  )
 
   const sourceContext: SourceContext = reactive({
     schema: toRef(props, 'schema'),
-    node: sourceNode,
     listQuery,
     dataPath: toRef(props, 'dataPath'),
     componentPath,
@@ -433,7 +493,7 @@ export function useSource(
       creatable.value
         ? linksToView.value
           ? getViewItemPath('create')
-          : (routeContext?.getCreatePath(componentPath.value) ?? null)
+          : formPath.value && `${formPath.value}/create`
         : null
     ),
 
@@ -442,15 +502,21 @@ export function useSource(
       linksToView.value
         ? objectData.value &&
           getViewItemPath(getItemId(props.schema, objectData.value))
-        : (routeContext?.getFormPath(componentPath.value) ?? null)
+        : formPath.value
     ),
 
     getItemPath(index: number) {
       return linksToView.value
         ? getViewItemPath(getItemId(props.schema, listData.value[index], index))
-        : (routeContext?.getFormPath(
-            appendDataPath(componentPath.value, index)
-          ) ?? null)
+        : formPath.value &&
+          `${formPath.value}/${
+            getItemKey(
+              props.schema,
+              listData.value[index],
+              index,
+              isTransient.value
+            )
+          }`
     }
   })
 
@@ -463,7 +529,8 @@ export function useSource(
   onUnmounted(() => sources.delete(sourceContext))
 
   // Routed forms display the errors of the fields that they render for their
-  // items, which their component paths lead to:
+  // items, which their component paths lead to. The source opens them, for
+  // the route and for the errors alike:
   const errorSchema = computed(() => ({
     fields: { [props.schema.name]: props.schema }
   }))
@@ -472,7 +539,7 @@ export function useSource(
     getErrorComponentPath(dataPath) {
       const path = getRelativeDataPath(dataPath, props.dataPath)
       let isDisplayed = false
-      if (path && sourceNode.value?.form && !sourceNode.value.form.isInlined) {
+      if (path && formPath.value) {
         walkData(errorSchema.value, props.data, {
           dataPath: getParentDataPath(props.dataPath),
           services,
@@ -488,7 +555,15 @@ export function useSource(
         })
       }
       return isDisplayed ? appendDataPath(componentPath.value, path!) : null
-    }
+    },
+    claimRoute: path =>
+      sourceRoute.value
+        ? claimSourceRoute(sourceRoute.value, path, adminContext.api)
+        : null,
+    getFormRoute: path =>
+      sourceRoute.value
+        ? getSourceFormRoute(sourceRoute.value, path, adminContext.api)
+        : null
   })
   onUnmounted(unregisterUi)
 
@@ -507,7 +582,6 @@ export function useSource(
     onChange,
     services,
     sourceContext,
-    sourceNode,
     listQuery,
     columns,
     scopes,
@@ -534,7 +608,7 @@ export function useSource(
     // for `computeValue()`:
     isReady: computed(
       () => (
-        (hasInlinedItems() || !sourceNode.value?.isBeyondMaxDepth) &&
+        (hasInlinedItems() || !isBeyondMaxDepth.value) &&
         (sourceData.hasData.value || !providesData.value)
       )
     ),

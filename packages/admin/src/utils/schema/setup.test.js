@@ -648,14 +648,15 @@ describe('setupForm()', () => {
     })
     expect(form.tabs.notes).toEqual({
       type: 'tab',
+      name: 'notes',
       defaultTab: false,
-      fields: { remark: { type: 'text', trim: true } }
+      fields: { remark: { type: 'text', name: 'remark', trim: true } }
     })
     expect(form.panels.summary).toEqual({
       type: 'panel',
       name: 'summary',
       sticky: true,
-      fields: { excerpt: { type: 'text', trim: true } }
+      fields: { excerpt: { type: 'text', name: 'excerpt', trim: true } }
     })
   })
 

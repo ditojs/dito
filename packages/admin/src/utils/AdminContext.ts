@@ -5,7 +5,7 @@ import { LoadingTracker } from './LoadingTracker.ts'
 import { UiRegistry } from './UiRegistry.ts'
 import { flattenViews } from './schema/setup.js'
 import { confirm, prompt, alert } from './dialogs.js'
-import type { RouteTree, ViewNode } from './RouteTree.ts'
+import type { RouteTree } from './RouteTree.ts'
 import { Session, type User, type LoginOptions } from './Session.ts'
 import type { ViewRegistry } from './ViewRegistry.js'
 import type { Api, Schema } from './types.ts'
@@ -109,10 +109,6 @@ export class AdminContext {
 
   get routeTree(): RouteTree | null {
     return this.#viewRegistry.routeTree
-  }
-
-  addPageFormRoutes(view: ViewNode, schema: Schema): () => void {
-    return this.#viewRegistry.addPageFormRoutes(view, schema)
   }
 
   get views(): Record<string, Schema> {

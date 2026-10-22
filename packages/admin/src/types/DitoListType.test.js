@@ -1232,7 +1232,7 @@ describe('DitoListType', () => {
       await settle()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/1')
       const chapterForm = admin.getRouteComponent(isForm)
-      expect(chapterForm.routeContext.state.isTransient).toBe(true)
+      expect(chapterForm.routeContext.isTransient).toBe(true)
       const input = admin.wrapper.find('input[name="chapters/1/title"]')
       await enterValue(input, 'Departure')
       // Nested forms edit a copy of the item until the changes are applied:

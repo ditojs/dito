@@ -13,7 +13,7 @@ slot(name="prepend")
     to=".dito-sidebar__teleport"
   )
     DitoPanels(
-      v-if="active"
+      v-show="active"
       :panels="panelEntries"
       :data="data"
       :store="store"
@@ -67,7 +67,7 @@ slot(name="prepend")
       slot.dito-schema-header__buttons(name="edit-buttons")
   TransitionHeight(:enabled="inlined")
     .dito-schema-content(
-      v-if="opened || hasErrors"
+      v-if="opened || hasErrors || isClaimingRoute()"
       v-show="opened"
       ref="content"
       :class="{ 'dito-scroll': scrollable }"
@@ -154,7 +154,6 @@ import {
   getItemFormSchema,
   isEmptySchema
 } from '../utils/schema/lookup.js'
-import { FormNode } from '../utils/RouteTree.ts'
 import { fromClipboard } from '../utils/fromClipboard.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
 import { getUploadEntries } from '../utils/interchange.ts'
@@ -253,6 +252,19 @@ export default {
     // Collapsed content and tabs with errors render hidden, so that errors are
     // revealed in the components that display them:
     const hasErrors = computed(() => getModel().hasErrorsWithin(props.data))
+    // So does the content at `path` while the route continues below its form,
+    // so that its components can claim it, and the one that claimed it stays:
+    const isClaimingRoute = (path = componentPath.value) => {
+      const claim = routeContext?.childClaim
+      return (
+        !!routeContext &&
+        !routeContext.isLastRoute &&
+        !routeContext.isLeaving && (
+          !claim ||
+          getRelativeDataPath(claim.source.componentPath, path) !== null
+        )
+      )
+    }
     // Fire the toggle events of the form, and of the component that holds it,
     // also when lists with `collapsible: 'all'` toggle it through its store:
     watch(opened, opened => {
@@ -303,27 +315,18 @@ export default {
       )
     )
 
-    // The tab that holds the source of the nested route's form, which its route
-    // names, e.g. `pricing` in `/items/1/pricing/families/0`:
+    // The tab that holds the source that claimed the nested route:
     const nestedRouteTab = computed(() => {
-      const form = (
+      const source = (
         hasTabs.value &&
         isTopLevelSchema.value &&
-        routeContext?.childNode
+        routeContext?.childClaim?.source
       )
-      if (form instanceof FormNode) {
-        // The source in this route's container, which the form may be below,
-        // unless the form belongs to another one, e.g. while leaving:
-        let node = form.source
-        while (node && node.parent !== routeContext.node) {
-          node = node.parent
-        }
-        const tab = node && parseDataPath(node.componentPath)[0]
-        if (tab && tab in renderedTabs.value) {
-          return tab
-        }
-      }
-      return null
+      const path = source
+        ? getRelativeDataPath(source.componentPath, componentPath.value)
+        : null
+      const [tab] = parseDataPath(path ?? '')
+      return tab && tab in renderedTabs.value ? tab : null
     })
 
     const isTabSelected = tab => selectedTab.value === tab
@@ -474,6 +477,7 @@ export default {
       dataContext: services.dataContext,
       opened,
       hasErrors,
+      isClaimingRoute,
       tabs,
       hasTabs,
       hasData,
@@ -484,15 +488,21 @@ export default {
       isTopLevelSchema,
       isTabSelected,
 
-      panelEntries: computed(() =>
+      panelEntries: computed(() => {
         // Panels of schemas inlined in tabs only show with their tab:
-        getPanelEntries(
+        const entries = getPanelEntries(
           props.schema.panels,
           props.dataPath,
           componentPath.value,
           panelTab
         )
-      ),
+        // Inactive schemas render the panels that the route continues into:
+        return props.active
+          ? entries
+          : entries.filter(({ componentPath }) =>
+              isClaimingRoute(componentPath)
+            )
+      }),
 
       clipboard: computed(() => props.schema?.clipboard ?? null),
 
@@ -515,7 +525,12 @@ export default {
       }),
 
       shouldRenderTab(tab) {
-        return isTabSelected(tab) || !!mountedTabs[tab] || hasErrors.value
+        return (
+          isTabSelected(tab) ||
+          !!mountedTabs[tab] ||
+          hasErrors.value ||
+          isClaimingRoute(appendDataPath(componentPath.value, tab))
+        )
       },
 
       async pasteData(clipboardData) {

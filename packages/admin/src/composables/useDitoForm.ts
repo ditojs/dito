@@ -12,7 +12,7 @@ import { setupForm } from '../utils/schema/setup.js'
 import { checkFormProperties } from '../utils/schema/properties.js'
 import { getItemId } from '../utils/schema/data.js'
 import { hasSubmitButton } from '../utils/schema/lookup.js'
-import { RouteTree, ViewNode } from '../utils/RouteTree.ts'
+import { hasRoutedForms, ViewNode } from '../utils/RouteTree.ts'
 import { isPage } from '../utils/schema/structure.js'
 import {
   adminContextKey,
@@ -52,31 +52,13 @@ export function useDitoForm({
     ...formSchema,
     buttons: isInDialog ? buttons : { cancel: false, ...buttons }
   }) as Schema
-  // In pages, the sources of the form route their forms under the page while
-  // the form is mounted:
+  // In pages, the sources of the form route their forms under the page, as
+  // the page's route claims the paths below it:
   const node = routeContext?.node
-  const page = node instanceof ViewNode && isPage(node.schema) ? node : null
-  let removeRoutes: (() => void) | null = null
-  let isUnmounted = false
-  onUnmounted(() => {
-    isUnmounted = true
-    removeRoutes?.()
-  })
+  const isInPage = node instanceof ViewNode && isPage(node.schema)
   const formSetup = setupForm(adminContext.api, schema)
     .then(() => {
-      if (page) {
-        if (!isUnmounted) {
-          removeRoutes = adminContext.addPageFormRoutes(page, schema)
-          // Until now, the paths that lead into the forms render the page,
-          // e.g. in deep links. Resolve them again:
-          if (!routeContext!.isLastRoute) {
-            const { router } = adminContext
-            return router.replace(router.currentRoute.value.fullPath)
-          }
-        }
-      } else if (
-        new RouteTree({ form: schema }, adminContext.api).hasRoutedForms()
-      ) {
+      if (!isInPage && hasRoutedForms(schema)) {
         throw new Error(
           'Forms of `useDitoForm()` only support components that produce ' +
           'routes in pages'

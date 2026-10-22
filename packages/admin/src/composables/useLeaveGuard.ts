@@ -3,7 +3,8 @@ import {
   onBeforeRouteLeave,
   onBeforeRouteUpdate,
   useRouter,
-  type RouteLocationNormalized
+  type RouteLocationNormalized,
+  type RouteLocationRaw
 } from 'vue-router'
 import { isPathWithin } from '../utils/route.js'
 import { confirm } from '../utils/dialogs.js'
@@ -28,6 +29,8 @@ export function useLeaveGuard(
   // The latest navigation from the form's route until it settled, as it
   // cancels the earlier ones:
   let pendingNavigation: RouteLocationNormalized | null = null
+  // The path that the form moves to, e.g. with its item:
+  let movedPath: string | null = null
 
   const beforeRouteChange = async (
     to: RouteLocationNormalized,
@@ -36,6 +39,7 @@ export function useLeaveGuard(
     pendingNavigation = to
     let ok = true
     const isClosing = (
+      to.path !== movedPath &&
       // Include the parents of closing nested forms. Tab changes and nested
       // forms that open stay within the path, other items leave it:
       isPathWithin(from.path, routeContext.path) &&
@@ -101,5 +105,16 @@ export function useLeaveGuard(
     }
   }
 
-  return { navigateWithin }
+  // Replace the route without leaving the form, e.g. to follow its item to
+  // its new path when it moved:
+  const replaceWithin = async (location: RouteLocationRaw) => {
+    movedPath = router.resolve(location).path
+    try {
+      return await router.replace(location)
+    } finally {
+      movedPath = null
+    }
+  }
+
+  return { navigateWithin, replaceWithin }
 }
