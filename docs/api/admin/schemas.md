@@ -195,11 +195,11 @@ which changes their whitespace, so apps that use them may want to set
 
 ### Removed keys
 
-Keys that 4.0 and 6.0 removed, e.g. `format` (except on dates),
-`compute`, `methods`, `watch`, `relateBy`, `components`, `rules` or `events`,
-throw when a schema still uses them, naming the replacement. The upgrade guides
-to [4.x](../../upgrading-to-4.x.md#admin-schemas) and
-[6.x](../../upgrading-to-6.x.md#admin) list them all.
+Keys that 4.0 removed, e.g. the callbacks `format()` and `compute()`, or
+`methods`, `watch` and `relateBy`, throw when a schema still uses them, naming
+the replacement, see the [upgrade guide to 4.x](../../upgrading-to-4.x.md#admin-schemas).
+Keys that 6.0 removed aren't checked: the
+[upgrade guide to 6.x](../../upgrading-to-6.x.md#admin) lists them.
 
 ## RouteSchemaBase
 

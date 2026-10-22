@@ -12,10 +12,6 @@ a warning.
 
 ### Schemas
 
-Schema keys that 6.0 removed throw when the schema is set up, naming their
-replacement, e.g. `Unsupported schema key 'components' in 'details': Use
-'fields' instead.`
-
 | 5.x                                                    | 6.x                                                 |
 | ------------------------------------------------------ | --------------------------------------------------- |
 | `components: { title }`, also of filters and dialogs   | `fields: { title }`                                 |
@@ -28,9 +24,8 @@ replacement, e.g. `Unsupported schema key 'components' in 'details': Use
 | `type: 'computed'`, `'data'` or `'hidden'`             | `type: 'value'`                                     |
 | `{ type: 'color', format: 'rgb' }`                     | `{ type: 'color', colorFormat: 'rgb' }`             |
 
-- `min` and `max` only throw on `number`, `integer`, `slider` and `progress`
-  fields. Custom types that return `min` or `max` from `getValidations()` need
-  to return `minimum` and `maximum`.
+- Custom types that return `min` or `max` from `getValidations()` need to
+  return `minimum` and `maximum`.
 - Setup no longer renames the old keys, so code that reads `components` or
   `component` from schemas after setup reads `fields` and `field`.
 

@@ -100,19 +100,6 @@ describe('DitoColorType', () => {
     ).rejects.toThrow(`Unsupported color format: 'name'.`)
   })
 
-  it('rejects the `format` of 5.x', async () => {
-    const schema = {
-      type: 'view',
-      fields: { background: { type: 'color', format: 'rgb' } }
-    }
-    await expect(
-      setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'colors')
-    ).rejects.toThrow(
-      `Unsupported schema key 'format' in 'background': ` +
-      `Use 'colorFormat' instead.`
-    )
-  })
-
   it('emits change once entered colors are written on blur', async () => {
     const onChange = vi.fn()
     const { findField, data } = await mountForm({

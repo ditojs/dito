@@ -41,7 +41,8 @@ defineType({
   setupSchema: ({ schema }) => resolveSchemaComponent(schema)
 })
 defineType({ type: 'value', resolvesValue: true })
-defineType({ type: 'date', hasFormat: true })
+defineType({ type: 'date' })
+defineType({ type: 'color' })
 defineType({ ...numberTraits, type: 'number' })
 
 function createApi(defaults = {}) {
@@ -469,10 +470,11 @@ describe('the schema keys of 3.x', () => {
     ).rejects.toThrow(`Unsupported schema key 'data' in 'submit'`)
   })
 
-  it('keeps the format of types that read it', async () => {
+  it('ignores the values of the value hooks that are no callbacks', async () => {
     await expect(
       setupBookView({
-        published: { type: 'date', format: { day: 'numeric' } }
+        published: { type: 'date', format: { date: { day: 'numeric' } } },
+        background: { type: 'color', format: 'rgb' }
       })
     ).resolves.toBe(undefined)
   })
@@ -525,92 +527,21 @@ describe('the schema key nested', () => {
 })
 
 describe('the schema keys of 5.x', () => {
-  const setupBookView = fields =>
-    setupView(createApi(), { type: 'view', fields }, 'books')
-
-  it('rejects components with its replacement fields', async () => {
-    await expect(
-      setupBookView({
-        details: { type: 'section', components: { title: { type: 'text' } } }
-      })
-    ).rejects.toThrow(
-      `Unsupported schema key 'components' in 'details': Use 'fields' instead.`
-    )
-  })
-
-  it('rejects the components of the defaults of the type', () => {
-    const api = createApi({ section: { components: {} } })
-    expect(() =>
-      applySchemaDefaults(api, { type: 'section' }, 'details')
-    ).toThrow(`Unsupported schema key 'components' in 'details'`)
-  })
-
-  it('rejects the component of views with its replacement field', async () => {
+  it('ignores the keys that 6.0 removed, as the upgrade guide lists them', async () => {
     await expect(
       setupView(
         createApi(),
-        { type: 'view', component: { type: 'list', form: createBookForm() } },
+        {
+          type: 'view',
+          component: {},
+          fields: {
+            details: { type: 'section', components: {}, fields: {} },
+            title: { type: 'text', rules: { minLength: 2 }, events: {} },
+            price: { type: 'number', min: 0, max: 10 }
+          }
+        },
         'books'
       )
-    ).rejects.toThrow(
-      `Unsupported schema key 'component' in 'books': Use 'field' instead.`
-    )
-  })
-
-  it('keeps the Vue components of forms, sections, fields and pages', async () => {
-    const layout = { name: 'BookLayout' }
-    const form = await setupForm(createApi(), {
-      type: 'form',
-      component: layout,
-      fields: {
-        details: {
-          type: 'section',
-          component: layout,
-          fields: { title: { type: 'text' } }
-        },
-        rating: { type: 'component', component: layout }
-      }
-    })
-    const page = { type: 'page', component: layout }
-    await setupView(createApi(), page, 'tools')
-    expect(form.component).toBe(layout)
-    expect(form.fields.details.component).toBe(layout)
-    expect(form.fields.rating.component).toBe(layout)
-    expect(page.component).toBe(layout)
-  })
-
-  it('rejects rules with the limits of fields as replacement', async () => {
-    await expect(
-      setupBookView({ title: { type: 'text', rules: { minLength: 2 } } })
-    ).rejects.toThrow(
-      `Unsupported schema key 'rules' in 'title': Use the limits of fields, ` +
-      `their types and 'validate()' instead.`
-    )
-  })
-
-  it('rejects events with the on… handlers as replacement', async () => {
-    await expect(
-      setupBookView({ title: { type: 'text', events: { change() {} } } })
-    ).rejects.toThrow(
-      `Unsupported schema key 'events' in 'title': ` +
-      `Use the 'on…' handlers, e.g. 'onChange()', instead.`
-    )
-  })
-
-  it.each([
-    ['min', 'minimum'],
-    ['max', 'maximum']
-  ])('rejects %s of number types with its replacement', async (key, by) => {
-    await expect(
-      setupBookView({ price: { type: 'number', [key]: 1 } })
-    ).rejects.toThrow(
-      `Unsupported schema key '${key}' in 'price': Use '${by}' instead.`
-    )
-  })
-
-  it('keeps min and max of other types', async () => {
-    await expect(
-      setupBookView({ title: { type: 'text', min: 0, max: 1 } })
     ).resolves.toBe(undefined)
   })
 })
