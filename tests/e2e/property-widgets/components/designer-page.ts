@@ -62,7 +62,8 @@ export default defineComponent({
           h(DitoTextField, { name: 'name', width: '1/2' }),
           showsContact.value
             ? h(DitoSection, null, {
-                default: () => h(DitoTextField, { name: 'email' })
+                default: () =>
+                  h(DitoTextField, { name: 'email', type: 'email' })
               })
             : null,
           h(DitoSwitchField, { name: 'isFeatured', label: 'Featured' }),

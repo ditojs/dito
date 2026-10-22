@@ -12,7 +12,7 @@ props are display options only.
 <template lang="pug">
 DitoSchemaForm
   DitoTextField(name="name" width="1/2")
-  DitoTextField(name="email" width="1/2")
+  DitoTextField(name="email" type="email" width="1/2")
   DitoSwitchField(name="isFeatured" label="Featured")
   DitoSection(label="Ranking" collapsible collapsed)
     DitoNumberField(name="rank")
@@ -125,9 +125,10 @@ the text field. Their props are the display options of these types, e.g.
 `label`, `width`, `placeholder`, `clearable` or a select's `options`, and
 never the data keywords: `required`, limits, `default` or `if` are the
 property's. The property gives the widget its display hints: the required mark
-of the label, limits and `maxLength` for the input, the input type of the
-`format`, and `enum` as options. A widget's props override these hints, e.g.
-loaded `options` override `enum`. The widgets emit `change` when the user
+of the label, limits and `maxLength` for the input, and `enum` as options. A
+widget's props override these hints, e.g. loaded `options` override `enum`.
+The `format` of the property only validates the value: the widget decides how
+it's shown, e.g. `DitoTextField(type="email")`. The widgets emit `change` when the user
 changes the value, with the [context](./context.md) of the field.
 
 Several widgets may edit the same value, e.g. in two sections. They share its

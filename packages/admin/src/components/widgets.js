@@ -3,14 +3,6 @@ import DitoContainer from './DitoContainer.vue'
 import { useServices } from '../composables/useSchemaContext.ts'
 import { useWidget, widgetProps } from '../composables/useWidget.ts'
 
-// The text types of the server's formats:
-const textTypesByFormat = {
-  email: 'email',
-  hostname: 'hostname',
-  password: 'password',
-  uri: 'url'
-}
-
 // Cleared strings are empty, unless they're `nullable`:
 const getTextSchema = (type, { maxLength, nullable }) => ({
   type,
@@ -56,9 +48,13 @@ const layoutProps = {
   layout: { type: String, default: undefined }
 }
 
+// The `type` prop picks the text type of the input, the property's `format`
+// only validates the value:
 export const DitoTextField = defineWidget('DitoTextField', {
-  getSchema: property =>
-    getTextSchema(textTypesByFormat[property.format] ?? 'text', property)
+  props: {
+    type: { type: String, default: undefined }
+  },
+  getSchema: property => getTextSchema('text', property)
 })
 
 export const DitoTextareaField = defineWidget('DitoTextareaField', {
@@ -171,6 +167,7 @@ export const DitoDateTimeField = defineWidget('DitoDateTimeField', {
 
 export const DitoColorField = defineWidget('DitoColorField', {
   props: {
+    colorFormat: { type: String, default: undefined },
     alpha: { type: Boolean, default: undefined },
     inputs: { type: Boolean, default: undefined },
     presets: { type: Array, default: undefined }

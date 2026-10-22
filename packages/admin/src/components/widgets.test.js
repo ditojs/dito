@@ -45,7 +45,7 @@ const DesignerPage = {
             ? h(DitoTextField, { name: 'name', width: '1/2' })
             : null,
           showsEmail.value
-            ? h(DitoTextField, { name: 'email', width: '1/2' })
+            ? h(DitoTextField, { name: 'email', type: 'email', width: '1/2' })
             : null,
           h(DitoSection, null, {
             default: () =>
