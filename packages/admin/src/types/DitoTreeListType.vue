@@ -110,8 +110,8 @@ const treeTraits = {
     })
     const { children } = schema
     if (children) {
-      // Change the schema in place, as the route tree, uids and data model are
-      // keyed by schema identity:
+      // Change the schema in place, as setup and the data walk are keyed by
+      // schema identity:
       children.type = 'tree-list'
     }
     await Promise.all([

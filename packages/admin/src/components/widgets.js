@@ -44,19 +44,19 @@ const getOptionsSchema = (type, property) => {
 }
 
 const numberProps = {
-  step: { type: [Number, String], default: undefined }
+  step: { type: [Number, String, Function], default: undefined }
 }
 
 const optionsProps = {
-  options: { type: [Array, Object], default: undefined },
+  options: { type: [Array, Object, Function], default: undefined },
   // Options are edited in the forms of their items in `view`:
   editable: { type: [Boolean, Function], default: undefined },
   view: { type: String, default: undefined }
 }
 
 const linesProps = {
-  lines: { type: Number, default: undefined },
-  resizable: { type: Boolean, default: undefined }
+  lines: { type: [Number, Function], default: undefined },
+  resizable: { type: [Boolean, Function], default: undefined }
 }
 
 const layoutProps = {
@@ -80,8 +80,8 @@ export const DitoTextareaField = defineWidget('DitoTextareaField', {
 export const DitoCodeField = defineWidget('DitoCodeField', {
   props: {
     ...linesProps,
-    language: { type: String, default: undefined },
-    indentSize: { type: Number, default: undefined }
+    language: { type: [String, Function], default: undefined },
+    indentSize: { type: [Number, Function], default: undefined }
   },
   getSchema: property => getTextSchema('code', property)
 })
@@ -89,8 +89,8 @@ export const DitoCodeField = defineWidget('DitoCodeField', {
 export const DitoMarkupField = defineWidget('DitoMarkupField', {
   props: {
     ...linesProps,
-    whitespace: { type: [String, Boolean], default: undefined },
-    enableRules: { type: [Object, Boolean], default: undefined },
+    whitespace: { type: [String, Boolean, Function], default: undefined },
+    enableRules: { type: [Object, Boolean, Function], default: undefined },
     hardBreak: { type: Boolean, default: undefined },
     marks: { type: Object, default: undefined },
     nodes: { type: Object, default: undefined },
@@ -111,7 +111,7 @@ export const DitoNumberField = defineWidget('DitoNumberField', {
 export const DitoSliderField = defineWidget('DitoSliderField', {
   props: {
     ...numberProps,
-    input: { type: Boolean, default: undefined }
+    input: { type: [Boolean, Function], default: undefined }
   },
   getSchema: property => getNumberSchema('slider', property)
 })
@@ -151,18 +151,18 @@ export const DitoMultiselectField = defineWidget('DitoMultiselectField', {
   props: {
     ...optionsProps,
     // Multiselects without a placeholder show none with `false`:
-    placeholder: { type: [String, Boolean], default: undefined },
-    searchable: { type: Boolean, default: undefined },
+    placeholder: { type: [String, Boolean, Function], default: undefined },
+    searchable: { type: [Boolean, Function], default: undefined },
     search: { type: [Function, Object], default: undefined },
-    stayOpen: { type: Boolean, default: undefined },
-    taggable: { type: [Boolean, Object], default: undefined }
+    stayOpen: { type: [Boolean, Function], default: undefined },
+    taggable: { type: [Boolean, Object, Function], default: undefined }
   },
   getSchema: property => getOptionsSchema('multiselect', property)
 })
 
 // The widget picks the picker, the property only validates the value:
 const dateProps = {
-  formats: { type: Object, default: undefined }
+  formats: { type: [Object, Function], default: undefined }
 }
 
 export const DitoDateField = defineWidget('DitoDateField', {
@@ -182,25 +182,28 @@ export const DitoDateTimeField = defineWidget('DitoDateTimeField', {
 
 export const DitoColorField = defineWidget('DitoColorField', {
   props: {
-    colorFormat: { type: String, default: undefined },
-    alpha: { type: Boolean, default: undefined },
-    inputs: { type: Boolean, default: undefined },
-    presets: { type: Array, default: undefined }
+    colorFormat: { type: [String, Function], default: undefined },
+    alpha: { type: [Boolean, Function], default: undefined },
+    inputs: { type: [Boolean, Function], default: undefined },
+    presets: { type: [Array, Function], default: undefined }
   },
   getSchema: () => ({ type: 'color' })
 })
 
 export const DitoUploadField = defineWidget('DitoUploadField', {
   props: {
-    accept: { type: [String, Array], default: undefined },
-    extensions: { type: [String, RegExp, Array], default: undefined },
-    maxSize: { type: [String, Number], default: undefined },
-    draggable: { type: Boolean, default: undefined },
-    deletable: { type: Boolean, default: undefined },
+    accept: { type: [String, Array, Function], default: undefined },
+    extensions: {
+      type: [String, RegExp, Array, Function],
+      default: undefined
+    },
+    maxSize: { type: [String, Number, Function], default: undefined },
+    draggable: { type: [Boolean, Function], default: undefined },
+    deletable: { type: [Boolean, Function], default: undefined },
     render: { type: Function, default: undefined },
-    thumbnails: { type: [Boolean, String], default: undefined },
-    thumbnailUrl: { type: String, default: undefined },
-    downloadUrl: { type: String, default: undefined }
+    thumbnails: { type: [Boolean, String, Function], default: undefined },
+    thumbnailUrl: { type: [String, Function], default: undefined },
+    downloadUrl: { type: [String, Function], default: undefined }
   },
   getSchema: ({ type }) => ({ type: 'upload', multiple: type === 'array' })
 })
@@ -230,17 +233,17 @@ export const DitoCustomField = defineWidget('DitoCustomField', {
 })
 
 const sourceProps = {
-  collapsible: { type: [Boolean, String], default: undefined },
-  collapsed: { type: Boolean, default: undefined },
-  creatable: { type: Boolean, default: undefined },
-  deletable: { type: Boolean, default: undefined }
+  collapsible: { type: [Boolean, String, Function], default: undefined },
+  collapsed: { type: [Boolean, Function], default: undefined },
+  creatable: { type: [Boolean, Object, Function], default: undefined },
+  deletable: { type: [Boolean, Function], default: undefined }
 }
 
 // Lists hold objects of their `items`, or of several `forms` by their `type`,
 // or values that their items wrap, which widgets without `name` edit:
 export const DitoListField = defineSourceWidget('DitoListField', {
   props: {
-    draggable: { type: Boolean, default: undefined },
+    draggable: { type: [Boolean, Function], default: undefined },
     itemLabel: { type: [String, Function, Object, Boolean], default: undefined }
   },
   getSchema: ({ items, forms, orderKey, idKey }) => {
@@ -267,9 +270,9 @@ export const DitoObjectField = defineSourceWidget('DitoObjectField', {
 
 const treeLevelProps = {
   itemLabel: { type: [String, Function, Object, Boolean], default: undefined },
-  collapsed: { type: Boolean, default: undefined },
-  deletable: { type: Boolean, default: undefined },
-  draggable: { type: Boolean, default: undefined }
+  collapsed: { type: [Boolean, Function], default: undefined },
+  deletable: { type: [Boolean, Function], default: undefined },
+  draggable: { type: [Boolean, Function], default: undefined }
 }
 
 // Trees show nested lists as levels, each with its own props: the tree, and

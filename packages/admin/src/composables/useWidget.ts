@@ -16,16 +16,16 @@ import type { Schema } from '../utils/types.ts'
 // keywords, e.g. `required` or `default`, are only the property's:
 export const widgetProps = {
   name: { type: String, default: null },
-  label: { type: [String, Boolean], default: undefined },
+  label: { type: [String, Boolean, Object], default: undefined },
   width: { type: [String, Number], default: undefined },
   align: { type: String, default: undefined },
   break: { type: String, default: undefined },
   // Declared, to reach the container also of widgets that render breaks:
-  class: { type: String, default: undefined },
-  info: { type: String, default: undefined },
+  class: { type: [String, Object], default: undefined },
+  info: { type: [String, Object], default: undefined },
   placeholder: { type: String, default: undefined },
-  prefix: { type: String, default: undefined },
-  suffix: { type: String, default: undefined },
+  prefix: { type: [String, Object, Array], default: undefined },
+  suffix: { type: [String, Object, Array], default: undefined },
   clearable: { type: Boolean, default: undefined },
   readonly: { type: Boolean, default: undefined },
   disabled: { type: Boolean, default: undefined },
@@ -167,7 +167,7 @@ export function useWidget(
 // The nodes of the properties, which widgets and sections ask:
 const nodesByProperty = new WeakMap<Schema, PropertyNode>()
 
-export function getPropertyNode(name: string, property: Schema) {
+function getPropertyNode(name: string, property: Schema) {
   let node = nodesByProperty.get(property)
   if (!node) {
     node = new PropertyNode(name, property)

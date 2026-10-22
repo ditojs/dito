@@ -171,7 +171,7 @@ export function hasComputedValueSource(schema) {
   return !!schema.computeValue || hasValueFromDataSchema(schema)
 }
 
-export function hasValueFromDataSchema(schema) {
+function hasValueFromDataSchema(schema) {
   return (
     !!getTypeDescriptor(schema)?.resolvesValue &&
     !!(schema.data || schema.dataPath)

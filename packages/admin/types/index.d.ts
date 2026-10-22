@@ -581,7 +581,7 @@ export interface FieldSchemaBase<$Item> extends SchemaBase<$Item> {
   placeholder?: SchemaValue<$Item, {}, string>
 
   /**
-   * Info displayed near the field label, as text or `{ html }`.
+   * Info displayed near the field label, as text or HTML.
    */
   info?: SchemaValue<$Item, {}, TextOrHtml>
 
@@ -3422,7 +3422,7 @@ type WidgetProps<$Props = {}> = $Props & {
    */
   name?: string
   /** The label, or `false` to show none. */
-  label?: string | false
+  label?: SchemaLabel | false
   /** The width as a fraction, e.g. `'1/2'`, a percentage or a CSS width. */
   width?: string | number
   /** The vertical position in its line, as for fields. */
@@ -3431,10 +3431,10 @@ type WidgetProps<$Props = {}> = $Props & {
   break?: 'before' | 'after' | 'both'
   /** CSS classes added to the widget's container. */
   class?: string | Record<string, boolean>
-  info?: string
+  info?: TextOrHtml
   placeholder?: string
-  prefix?: string
-  suffix?: string
+  prefix?: OrArrayOf<SchemaAffix>
+  suffix?: OrArrayOf<SchemaAffix>
   clearable?: boolean
   readonly?: boolean
   disabled?: boolean
@@ -3510,10 +3510,7 @@ export const DitoMarkupField: DefineComponent<
 
 /** Edits the number or integer property `name`, within its limits. */
 export const DitoNumberField: DefineComponent<
-  WidgetProps<{
-    /** The step of the number's spin buttons. */
-    step?: number
-  }>
+  WidgetProps<Pick<NumberSchema, 'step'>>
 >
 
 /** Edits the number property `name` with a slider, within its limits. */
@@ -3747,12 +3744,12 @@ export const DitoSection: DefineComponent<{
   name: string
   /** Whether the widgets in it edit the object property `name`. */
   nested?: boolean
-  label?: string | false
+  label?: SchemaLabel | false
   width?: string | number
   align?: 'top' | 'center' | 'bottom'
   break?: 'before' | 'after' | 'both'
   class?: string | Record<string, boolean>
-  info?: string
+  info?: TextOrHtml
   collapsible?: boolean
   collapsed?: boolean
 }>
