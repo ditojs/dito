@@ -747,6 +747,30 @@ describe('written properties', () => {
       ).toEqual({ format: 'lp', code: 'lp', title: null })
     })
 
+    it('replace `null` in lists and objects unless they are `nullable`', () => {
+      const awards = { type: 'array', items: { type: 'string' } }
+      const address = {
+        type: 'object',
+        properties: { city: { type: 'string' } }
+      }
+      expect(
+        initialize(
+          {
+            awards,
+            address,
+            prizes: { ...awards, nullable: true },
+            location: { ...address, nullable: true }
+          },
+          { awards: null, address: null, prizes: null, location: null }
+        )
+      ).toEqual({
+        awards: [],
+        address: { city: '' },
+        prizes: null,
+        location: null
+      })
+    })
+
     it('leave out passwords, which stay unchanged', () => {
       expect(
         initialize({ secret: { type: 'string', format: 'password' } })

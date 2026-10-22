@@ -150,8 +150,9 @@ export class PropertyNode {
   // Irrelevant values get no defaults, and unchanged passwords stay missing.
   // The data model writes computed values with their defaults:
   hasMissingValue(entry, { shouldSetDefaultsOfComponentsWithCompute } = {}) {
+    const { data, name } = entry
     return (
-      !(entry.name in entry.data) &&
+      (!(name in data) || data[name] === null && this.#holdsItems(entry)) &&
       !(
         shouldSetDefaultsOfComponentsWithCompute === false &&
         this.property.computeValue
@@ -159,6 +160,13 @@ export class PropertyNode {
       this.#get('format', entry) !== 'password' &&
       this.isRelevant(entry)
     )
+  }
+
+  // Lists and objects that aren't `nullable` hold their items also when they
+  // are loaded as `null`, like the lists and nested sections of fields:
+  #holdsItems(entry) {
+    const { type, properties } = this.property
+    return (type === 'array' || !!properties) && !this.#get('nullable', entry)
   }
 
   getDefaultValue(entry, options) {
