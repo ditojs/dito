@@ -1,5 +1,11 @@
 <template lang="pug">
-.dito-tree-list(ref="element")
+.dito-tree-list(
+  ref="element"
+  :class=`{
+    'dito-tree-list--has-errors': !!errorsElementId,
+    'dito-tree-list--disabled': disabled
+  }`
+)
   DitoScopes(
     v-if="scopes"
     :listQuery="listQuery"
@@ -134,6 +140,14 @@ export default DitoTreeListType
   $self: &;
 
   @extend %field;
+
+  &--has-errors {
+    @extend %field-has-errors;
+  }
+
+  &--disabled {
+    @extend %field-disabled;
+  }
 
   &__panel {
     display: flex;

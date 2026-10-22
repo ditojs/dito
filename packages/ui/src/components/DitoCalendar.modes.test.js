@@ -116,8 +116,10 @@ describe('DitoCalendar days', () => {
     wrapper = mountCalendar()
     const getClasses = label =>
       wrapper.find(`[aria-label="${label}"]`).classes()
-    expect(getClasses('February 25, 2024')).toContain('dito-calendar-item-gray')
-    expect(getClasses('March 5, 2024')).toContain('dito-calendar-item-active')
+    expect(getClasses('February 25, 2024')).toContain(
+      'dito-calendar__item--gray'
+    )
+    expect(getClasses('March 5, 2024')).toContain('dito-calendar__item--active')
     expect(getClasses('March 6, 2024')).toEqual(['dito-calendar__item'])
   })
 
@@ -125,7 +127,7 @@ describe('DitoCalendar days', () => {
     wrapper = mountCalendar()
     await click(wrapper, '.dito-calendar-step-next.dito-calendar-step-month')
     const cursor = wrapper.find('[aria-label="April 5, 2024"]')
-    expect(cursor.classes()).toContain('dito-calendar-item-current')
+    expect(cursor.classes()).toContain('dito-calendar__item--current')
     expect(cursor.attributes('aria-selected')).toBe('false')
   })
 
@@ -134,7 +136,7 @@ describe('DitoCalendar days', () => {
     wrapper = mountCalendar({ modelValue: null })
     const today = wrapper.find('[role="gridcell"][tabindex="0"]')
     expect(today.text()).toBe(String(now.getDate()))
-    expect(today.classes()).toContain('dito-calendar-item-today')
+    expect(today.classes()).toContain('dito-calendar__item--today')
   })
 
   it('starts on today without time when there is no value', () => {
@@ -241,8 +243,8 @@ describe('DitoCalendar month mode', () => {
     ])
     expect(months[2].classes()).toEqual(
       expect.arrayContaining([
-        'dito-calendar-item-active',
-        'dito-calendar-item-current'
+        'dito-calendar__item--active',
+        'dito-calendar__item--current'
       ])
     )
     expect(months[2].attributes('aria-pressed')).toBe('true')
@@ -256,7 +258,7 @@ describe('DitoCalendar month mode', () => {
     const march = wrapper.find('[aria-label="March"]')
     expect(march.classes()).toEqual([
       'dito-calendar__item',
-      'dito-calendar-item-current'
+      'dito-calendar__item--current'
     ])
     await click(wrapper, '.dito-calendar-step-prev')
     await click(wrapper, '.dito-calendar-step-prev')
@@ -320,8 +322,8 @@ describe('DitoCalendar year mode', () => {
     ])
     expect(years[4].classes()).toEqual(
       expect.arrayContaining([
-        'dito-calendar-item-active',
-        'dito-calendar-item-current'
+        'dito-calendar__item--active',
+        'dito-calendar__item--current'
       ])
     )
     expect(years[4].attributes('aria-pressed')).toBe('true')
@@ -331,9 +333,9 @@ describe('DitoCalendar year mode', () => {
     wrapper = mountCalendar({ mode: 'year' })
     await click(wrapper, '.dito-calendar-step-next')
     expect(getHeaderText(wrapper)).toBe('2030 – 2039')
-    const current = wrapper.find('.dito-calendar-item-current')
+    const current = wrapper.find('.dito-calendar__item--current')
     expect(current.text()).toBe('2034')
-    expect(wrapper.find('.dito-calendar-item-active').exists()).toBe(false)
+    expect(wrapper.find('.dito-calendar__item--active').exists()).toBe(false)
     await click(wrapper, '.dito-calendar-step-prev')
     await click(wrapper, '.dito-calendar-step-prev')
     expect(getHeaderText(wrapper)).toBe('2010 – 2019')

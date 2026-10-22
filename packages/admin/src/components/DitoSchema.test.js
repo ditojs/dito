@@ -675,6 +675,16 @@ describe('DitoSchema', () => {
       expect(input.attributes('aria-describedby')).toBeUndefined()
     })
 
+    it('marks the field that shows errors with a modifier', async () => {
+      const { input, findField } = await mountRequiredTitle()
+      const field = findField('title')
+      expect(field.classes()).not.toContain('dito-input--has-errors')
+      await clearTitle(input)
+      expect(field.classes()).toContain('dito-input--has-errors')
+      await input.setValue('Dune')
+      expect(field.classes()).not.toContain('dito-input--has-errors')
+    })
+
     it('displays the errors in the document, not in tooltips', async () => {
       const { input, getErrors } = await mountRequiredTitle()
       for (let i = 0; i < 3; i++) {

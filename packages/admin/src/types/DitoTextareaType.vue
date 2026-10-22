@@ -5,7 +5,10 @@ textarea.dito-textarea.dito-input(
   v-model="value"
   v-bind="attributes"
   :rows="lines"
-  :class="{ 'dito-textarea--resizable': resizable }"
+  :class=`{
+    'dito-input--has-errors': !!errorsElementId,
+    'dito-textarea--resizable': resizable
+  }`
 )
 </template>
 

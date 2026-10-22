@@ -65,7 +65,7 @@
                 type="button"
                 role="gridcell"
                 :tabindex="item.isCursor ? 0 : -1"
-                :class="item.state && `dito-calendar-item-${item.state}`"
+                :class="item.state && `dito-calendar__item--${item.state}`"
                 :aria-label="dateToString(item.date)"
                 :aria-selected="item.state === 'active' ? 'true' : 'false'"
                 @click="selectDay(item.date)"
@@ -271,15 +271,15 @@ export default {
 
     getMonthClass(month) {
       return {
-        'dito-calendar-item-active': this.isActiveMonth(month),
-        'dito-calendar-item-current': this.isCurrentMonth(month)
+        'dito-calendar__item--active': this.isActiveMonth(month),
+        'dito-calendar__item--current': this.isCurrentMonth(month)
       }
     },
 
     getYearClass(year) {
       return {
-        'dito-calendar-item-active': this.isActiveYear(year),
-        'dito-calendar-item-current': this.isCurrentYear(year)
+        'dito-calendar__item--active': this.isActiveYear(year),
+        'dito-calendar__item--current': this.isCurrentYear(year)
       }
     },
 
@@ -510,12 +510,12 @@ function getLocaleNames(locale) {
 .dito-calendar-body {
   padding: 0 0.5em;
 
-  .dito-calendar-item-today {
+  .dito-calendar__item--today {
     border: $border-width solid $color-active;
     color: $color-active;
   }
 
-  .dito-calendar-item-active {
+  .dito-calendar__item--active {
     &,
     &:hover {
       background: $color-active;
@@ -523,7 +523,7 @@ function getLocaleNames(locale) {
     }
   }
 
-  .dito-calendar-item-gray {
+  .dito-calendar__item--gray {
     color: #999999;
   }
 }
@@ -558,7 +558,7 @@ function getLocaleNames(locale) {
 }
 
 .dito-calendar__item:hover,
-.dito-calendar:not(:hover) .dito-calendar-item-current {
+.dito-calendar:not(:hover) .dito-calendar__item--current {
   background: $color-highlight;
 }
 

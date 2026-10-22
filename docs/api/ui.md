@@ -712,7 +712,9 @@ Use with `@extend`:
 | Placeholder | Description |
 | ----------- | ----------- |
 | `%field` | Border, padding and background of fields. |
+| `%field-has-errors`, `%field-disabled` | The looks of fields with errors and of disabled fields, for the block's own `--has-errors` and `--disabled` modifiers. |
 | `%input` | `%field` with placeholder and focus styles of text inputs. |
+| `%input-has-errors` | `%field-has-errors` that also shows while the input has focus. |
 | `%input-borderless` | Height and alignment of inputs without border, e.g. checkboxes, to line up with bordered ones. |
 | `%button-disabled` | The disabled look of buttons. |
 | `%icon-{name}` | One of the [icons](#icons), as a mask in `currentColor`, e.g. in a `::before`. |

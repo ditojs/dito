@@ -72,6 +72,17 @@ describe('DitoInput', () => {
     expect(wrapper.classes()).toContain('dito-input--focus')
   })
 
+  it('reflects errors and `disabled` as modifier classes', async () => {
+    wrapper = mountInput()
+    expect(wrapper.classes()).toEqual(['dito-input'])
+    await wrapper.setProps({ disabled: true })
+    expect(wrapper.classes()).toContain('dito-input--disabled')
+    wrapper.unmount()
+    wrapper = mountInput({}, { attrs: { 'aria-invalid': true } })
+    expect(wrapper.classes()).toContain('dito-input--has-errors')
+    expect(wrapper.find('input').attributes('aria-invalid')).toBe('true')
+  })
+
   it('renders the prefix and suffix slots around the input', () => {
     wrapper = mountInput(
       {},

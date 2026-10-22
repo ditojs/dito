@@ -90,6 +90,19 @@ template of `@ditojs/utils`, which escapes the values that it includes, see
 - Validation logs an `if` that throws and treats its field as shown, instead
   of stopping.
 
+## UI
+
+| 5.x                                                    | 6.x                                                 |
+| ------------------------------------------------------ | --------------------------------------------------- |
+| `dito-calendar-item-today`, `-active`, `-current`, `-gray` | `dito-calendar__item--today`, `--active`, `--current`, `--gray` |
+
+Fields show errors and their disabled state by modifiers of their own block,
+not by the classes of their container: blocks that extend `%field` or `%input`
+set `--has-errors` and `--disabled` modifiers and extend `%field-has-errors`
+or `%input-has-errors` and `%field-disabled` in them, see
+[Placeholders](api/ui.md#placeholders). Errors of a container no longer mark
+the fields inside it.
+
 ## Server
 
 | 5.x                                                    | 6.x                                                 |

@@ -2,6 +2,10 @@
 .dito-code(
   :id="componentPath"
   ref="element"
+  :class=`{
+    'dito-code--has-errors': !!errorsElementId,
+    'dito-code--disabled': disabled
+  }`
   :style="style"
 )
   .dito-code__editor(ref="editor")
@@ -141,6 +145,14 @@ export default DitoCodeType
     var(--lines) * 1em * var(--line-height) + 2 * #{$input-padding-ver}
   );
   min-height: calc(1em * var(--line-height) + 2 * $input-padding-ver);
+
+  &--has-errors {
+    @extend %input-has-errors;
+  }
+
+  &--disabled {
+    @extend %field-disabled;
+  }
 
   .codeflask {
     background: none;
