@@ -1536,7 +1536,7 @@ describe('DitoForm', () => {
         chapters: [{ title: 'Prologue' }]
       })
       const form = await openNestedForm(admin, '/items/1/chapters/0')
-      expect(form.routeContext.state.isTransient).toBe(true)
+      expect(form.routeContext.isTransient).toBe(true)
       expect(form.data).toEqual({ title: 'Prologue' })
       await submitNestedForm(form, 'Opening')
       expect(data.chapters).toEqual([{ title: 'Opening' }])
@@ -2024,7 +2024,7 @@ describe('DitoForm', () => {
     await admin.navigate('/books/create/chapters/0')
     const chapterForm = admin.getRouteComponent(isForm)
     await settle(chapterForm)
-    expect(chapterForm.routeContext.state.isTransient).toBe(true)
+    expect(chapterForm.routeContext.isTransient).toBe(true)
     expect(chapterForm.data).toEqual({ title: 'Prologue' })
     expect(admin.request).not.toHaveBeenCalledWith(
       expect.objectContaining({ url: '/books/chapters/0' })
@@ -2309,6 +2309,66 @@ describe('DitoForm', () => {
         'is too high'
       )
       expect(document.activeElement).toBe(input)
+    })
+  })
+
+  describe('nested forms of sources in hidden content', () => {
+    const notes = {
+      type: 'list',
+      editable: true,
+      form: { type: 'form', fields: { text: { type: 'text' } } }
+    }
+    const data = { notes: [{ text: 'Late' }] }
+
+    it.each([
+      {
+        content: 'collapsed sections',
+        schema: {
+          fields: {
+            details: {
+              type: 'section',
+              collapsible: true,
+              collapsed: true,
+              fields: { notes }
+            }
+          }
+        },
+        path: '/items/1/details/notes/0'
+      },
+      {
+        content: 'panels',
+        schema: {
+          fields: { title: { type: 'text' } },
+          panels: { side: { type: 'panel', fields: { notes } } }
+        },
+        path: '/items/1/side/notes/0'
+      }
+    ])('open from $content on reload', async ({ schema, path }) => {
+      const { admin, routeComponent: form } = await mountForm({
+        schema,
+        data,
+        path
+      })
+      expect(form.routeContext.path).toBe(path)
+      expect(form.data).toEqual({ text: 'Late' })
+      // The section stays collapsed once the form closes:
+      await form.routeContext.close()
+      await flushPromises()
+      expect(admin.wrapper.find('.dito-list').isVisible()).toBe(
+        !schema.fields.details
+      )
+    })
+
+    it('lead paths that no source claims back to the form', async () => {
+      const { admin, routeComponent: form } = await mountForm({
+        schema: { fields: { notes } },
+        data,
+        path: '/items/1/drafts/0#notes'
+      })
+      expect(admin.router.currentRoute.value.fullPath).toBe('/items/1#notes')
+      expect(form.routeContext.path).toBe('/items/1')
+      expect(admin.getRouteComponents(isForm)).toEqual([form])
+      expect(new DOMWrapper(form.$el).find('.dito-list').isVisible()).toBe(true)
     })
   })
 

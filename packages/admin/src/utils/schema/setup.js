@@ -189,6 +189,7 @@ export function setupSchemaComponents(api, schema) {
 
 export async function setupSchemaComponent(api, schema, name) {
   applySchemaDefaults(api, schema, name)
+  schema.name ??= name
   await setupNestedSchemas(api, schema)
   await Promise.all([
     mapConcurrently(
@@ -319,13 +320,23 @@ export async function setupPanel(api, schema) {
 export async function setupNestedSchemas(api, schema) {
   const { tabs, panels } = schema
   if (tabs) {
-    schema.tabs = await resolveSchemas(tabs, tab => setupTab(api, tab))
-  }
-  if (panels) {
-    schema.panels = await resolveSchemas(panels, panel =>
-      setupPanel(api, panel)
+    schema.tabs = nameSchemas(
+      await resolveSchemas(tabs, tab => setupTab(api, tab))
     )
   }
+  if (panels) {
+    schema.panels = nameSchemas(
+      await resolveSchemas(panels, panel => setupPanel(api, panel))
+    )
+  }
+}
+
+// Name the schemas by their keys, like components, unless they have a name:
+function nameSchemas(schemas) {
+  for (const [name, schema] of Object.entries(schemas)) {
+    schema.name ??= name
+  }
+  return schemas
 }
 
 function assertSupportedSchemaKeys(schema, name) {

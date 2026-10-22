@@ -126,8 +126,6 @@ const findPage = (admin, name) => admin.wrapper.find(`.page-${name}`)
 const findFormInput = admin =>
   new DOMWrapper(admin.getRouteComponent(isForm).$el).find('input')
 
-const getRoutePaths = admin => admin.router.getRoutes().map(({ path }) => path)
-
 async function clickEdit(admin, selector, index = 0) {
   const buttons = findPage(admin, 'upload').findAll(
     `${selector} .dito-button--edit`
@@ -230,72 +228,27 @@ describe('useDitoForm() with routed forms in pages', () => {
     expect(getPath(admin)).toBe('/upload')
   })
 
-  it('removes the routes when leaving the page, and adds them again', async () => {
+  it('opens the forms of the page again after leaving it', async () => {
     const admin = await mountPages()
-    const paths = getRoutePaths(admin)
-    const page = admin.context.routeTree.nodes.find(
-      ({ name }) => name === 'upload'
-    )
     await navigate(admin, '/upload')
-    const pathsWithForms = getRoutePaths(admin)
-    expect(pathsWithForms).toContain('/upload/notes/:id1')
     await navigate(admin, '/books')
-    expect(getRoutePaths(admin)).toEqual(paths)
-    expect(page.sources).toEqual([])
     await navigate(admin, '/upload/sets/1')
-    expect(getRoutePaths(admin)).toEqual(pathsWithForms)
     expect(findFormInput(admin).element.value).toBe('Serif')
   })
 
   it('lets users leave pages while their forms are set up', async () => {
     const admin = await mountPages()
-    const paths = getRoutePaths(admin)
     await admin.router.push('/upload')
     await nextTick()
     expect(findPage(admin, 'upload').exists()).toBe(true)
     await navigate(admin, '/books')
     expect(getPath(admin)).toBe('/books')
-    expect(getRoutePaths(admin)).toEqual(paths)
   })
 
-  it('adds no routes for pages that are left before their forms are set up', async () => {
-    let resolveForm
-    const DeferredPage = {
-      setup() {
-        useDitoForm({
-          fields: {
-            notes: {
-              ...nameList,
-              // Like `() => import('./NoteForm.js')`:
-              form: () => new Promise(resolve => (resolveForm = resolve))
-            }
-          }
-        })
-        return () => h(DitoSchemaForm)
-      }
-    }
-    const admin = await mountAdmin({
-      views: {
-        books: { type: 'view', label: 'Books', fields: {} },
-        deferred: { type: 'page', path: 'deferred', component: DeferredPage }
-      }
-    })
-    const paths = getRoutePaths(admin)
-    await navigate(admin, '/deferred')
-    await navigate(admin, '/books')
-    resolveForm(nameForm)
-    await settleAll()
-    expect(getPath(admin)).toBe('/books')
-    expect(getRoutePaths(admin)).toEqual(paths)
-  })
-
-  it('keeps the routes of pages with the same forms apart', async () => {
+  it('keeps the forms of pages with the same forms apart', async () => {
     const admin = await mountPages({ path: '/generator/sets/0/cuts/0' })
     await navigate(admin, '/upload/sets/0/cuts/0')
     expect(findFormInput(admin).element.value).toBe('Regular')
-    expect(
-      getRoutePaths(admin).filter(path => path.includes('cuts'))
-    ).toEqual(['/upload/sets/:id1/cuts/:id2', '/upload/sets/:id1/cuts'])
   })
 
   it('rejects lists with routed forms in dialogs and forms', async () => {

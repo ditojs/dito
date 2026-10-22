@@ -963,16 +963,18 @@ describe('DitoTreeListType', () => {
         expect(pageFormComponent?.data.title).toBe('Contact')
       })
 
-      it(`don't add their own child routes to the routes of children`, async () => {
-        const { admin } = await mountSchema({
+      it(`don't route their own children below the forms of children`, async () => {
+        const { admin, settle } = await mountSchema({
           schema: { fields: { site: siteWithFormSchema } },
           data: siteData
         })
-        const paths = admin.router
-          .getRoutes()
-          .map(route => route.path.replace(/:\w+/g, ':id'))
-        expect(paths).toContain('/test/site/pages/:id')
-        expect(paths).not.toContain('/test/site/pages/:id/pages')
+        await admin.navigate('/test/site/pages/1')
+        await settle()
+        const pageFormComponent = admin.getRouteComponent(isForm)
+        expect(pageFormComponent.data.title).toBe('Contact')
+        await admin.navigate('/test/site/pages/1/pages/0')
+        await settle()
+        expect(admin.getRouteComponent(isForm)).toBe(pageFormComponent)
       })
     })
 

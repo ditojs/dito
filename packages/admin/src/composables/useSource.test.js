@@ -1143,48 +1143,27 @@ describe('useSource()', () => {
       expect(admin.wrapper.find('.dito-list').text()).toContain('Late')
     })
 
-    it('adds the nested routes of forms shared by several lists', async () => {
+    it('opens the nested forms of forms shared by several lists', async () => {
       const bookForm = {
         type: 'form',
         fields: { chapters: createChaptersSchema() }
       }
-      const admin = await mountAdmin({
-        views: {
-          books: {
-            type: 'view',
-            field: {
-              type: 'list',
-              resource: { path: 'books' },
-              form: bookForm
-            }
-          },
-          drafts: {
-            type: 'view',
-            field: {
-              type: 'list',
-              resource: { path: 'drafts' },
-              form: bookForm
-            }
-          }
-        }
+      const createView = path => ({
+        type: 'view',
+        field: { type: 'list', resource: { path }, form: bookForm }
       })
-      const getRoutePaths = view =>
-        admin.router
-          .getRoutes()
-          .map(route => route.path)
-          .filter(path => path.startsWith(`/${view}/`))
-          .map(path => path.replace(/:\w+/g, ':id'))
-          .sort()
-      expect(getRoutePaths('books')).toEqual([
-        '/books/:id',
-        '/books/:id/chapters',
-        '/books/:id/chapters/:id'
-      ])
-      expect(getRoutePaths('drafts')).toEqual([
-        '/drafts/:id',
-        '/drafts/:id/chapters',
-        '/drafts/:id/chapters/:id'
-      ])
+      const admin = await mountAdmin({
+        views: { books: createView('books'), drafts: createView('drafts') },
+        request: ({ url }) => ({
+          data: { id: 1, chapters: [{ title: url }] }
+        })
+      })
+      expect(await getFormData(admin, '/books/1/chapters/0')).toEqual({
+        title: '/books/1'
+      })
+      expect(await getFormData(admin, '/drafts/1/chapters/0')).toEqual({
+        title: '/drafts/1'
+      })
     })
 
     it('opens the forms of items of lists with a `path`', async () => {

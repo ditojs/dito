@@ -120,12 +120,7 @@ export default {
       data,
       isPage: isPageView,
       // The embedded forms of trees in pages render inside the page:
-      isActiveRoute: computed(
-        () => (
-          routeContext.isLastRoute ||
-          isPageView.value && routeContext.isLastUnnestedRoute
-        )
-      ),
+      isActiveRoute: computed(() => routeContext.isActive),
       shouldRenderSchema
     }
   }

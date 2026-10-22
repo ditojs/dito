@@ -215,10 +215,10 @@ export function createDataContext({
           : null
       if (!failure) {
         await nextTick()
-        const level = router.currentRoute.value.matched.length - 1
-        displayedDataPaths.push(
-          ...(await ui.routes[level].dataContext.revealErrors())
-        )
+        const route = ui.routes.find(route => route.path === formRoute.path)
+        if (route) {
+          displayedDataPaths.push(...(await route.dataContext.revealErrors()))
+        }
       }
     }
     // The errors that the components of this data display:

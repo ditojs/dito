@@ -45,9 +45,10 @@ describe('page views', () => {
     expect(admin.wrapper.find('.dito-view p').text()).toBe('Purge')
   })
 
-  it('render their component for the paths below them', async () => {
+  it('lead the paths below them back to them', async () => {
     const admin = await mountAdmin({ views })
     await admin.navigate('/tools/cache-purge/unknown')
+    expect(admin.router.currentRoute.value.path).toBe('/tools/cache-purge')
     expect(admin.wrapper.find('.dito-view p').text()).toBe('Purge')
     expect(admin.wrapper.find('.dito-view').isVisible()).toBe(true)
   })

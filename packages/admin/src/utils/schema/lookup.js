@@ -173,7 +173,9 @@ export function getNamedSchemas(schemas, defaults) {
           Object.entries(schemas),
           ([name, value]) =>
             isObject(value)
-              ? { name, ...value }
+              ? value.name === name
+                ? value
+                : { name, ...value }
               : isString(value)
                 ? { name, label: value }
                 : null

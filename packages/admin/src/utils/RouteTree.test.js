@@ -1,36 +1,38 @@
-import { RouteTree } from './RouteTree.ts'
-import { mountAdmin } from '../test/mount.js'
+import { mountAdmin, isForm } from '../test/mount.js'
 import { DitoView, DitoForm, DitoFormEmbedded } from '../components/index.js'
 
-const createForm = (
-  fields: Record<string, any> = {}
-): { type: 'form'; fields: Record<string, any> } => ({
+const createForm = (fields = {}) => ({
   type: 'form',
   fields: { title: { type: 'text' }, ...fields }
 })
 
-const createList = (options: Record<string, any> = {}) => ({
+const createList = (options = {}) => ({
   type: 'list',
   editable: true,
   form: createForm(),
   ...options
 })
 
-const createListView = (path: string, options: Record<string, any> = {}) => ({
+const createListView = (path, options = {}) => ({
   type: 'view',
   field: createList({ resource: { path }, ...options })
 })
 
-// Returns the route components that render `path`, or `redirect` for records
-// that redirect, or `null` if no route matches.
-async function getRouteComponents(views: Record<string, any>, path: string) {
-  const admin = await mountAdmin({ views })
-  const { matched } = admin.router.resolve(path)
-  return matched[0]?.name === 'catch-all'
-    ? null
-    : matched.map(record =>
-        record.redirect ? 'redirect' : record.components?.default
-      )
+// Returns the route components that render `path`, with `items` as the data
+// of the items that forms load by their path, e.g. `/books/1`.
+async function getRouteComponents(
+  views,
+  path,
+  items = {}
+) {
+  const admin = await mountAdmin({
+    views,
+    request: ({ url }) => ({
+      data: items[url] ?? (/\/\d+$/.test(url) ? { id: 1 } : [])
+    })
+  })
+  await admin.navigate(path)
+  return admin.getRouteComponents().map(component => component.$.type)
 }
 
 describe('RouteTree', () => {
@@ -51,10 +53,10 @@ describe('RouteTree', () => {
       DitoView,
       DitoForm
     ])
-    expect(await getRouteComponents(views, '/shelf/books')).toEqual([
-      DitoView,
-      'redirect'
-    ])
+    // Paths of lists without an item redirect:
+    const admin = await mountAdmin({ views })
+    const { matched } = admin.router.resolve('/shelf/books')
+    expect(matched.at(-1)?.redirect).toBe('.')
   })
 
   it('routes views in menus under the path of the menu', async () => {
@@ -116,12 +118,14 @@ describe('RouteTree', () => {
         })
       })
     }
+    // Objects render their components once they have their data:
+    const items = { '/books/1': { id: 1, meta: {} } }
     for (const path of [
       '/books/1/contents/notes/2',
       '/books/1/more/quotes/2',
       '/books/1/meta/sources/2'
     ]) {
-      expect(await getRouteComponents(views, path)).toEqual([
+      expect(await getRouteComponents(views, path, items)).toEqual([
         DitoView,
         DitoForm,
         DitoForm
@@ -140,7 +144,9 @@ describe('RouteTree', () => {
       DitoForm,
       DitoForm
     ])
-    expect(await getRouteComponents(views, '/books/1/appendices/2')).toBe(null)
+    expect(
+      await getRouteComponents(views, '/books/1/appendices/2')
+    ).toEqual([DitoView, DitoForm])
   })
 
   it('routes the sources of tabs under the names of their tabs', async () => {
@@ -162,23 +168,27 @@ describe('RouteTree', () => {
         DitoForm
       ])
     }
-    expect(await getRouteComponents(views, '/books/1/notes/2')).toBe(null)
+    expect(await getRouteComponents(views, '/books/1/notes/2')).toEqual([
+      DitoView,
+      DitoForm
+    ])
   })
 
-  it('rejects the sources of a form with the same route path', async () => {
-    const views = {
-      books: createListView('books', {
-        form: createForm({
-          appendices: createList({ path: 'extras' }),
-          extras: createList()
+  it('opens the form of the first source with the same route path', async () => {
+    const admin = await mountAdmin({
+      views: {
+        books: createListView('books', {
+          form: createForm({
+            appendices: createList({ path: 'extras' }),
+            extras: createList()
+          })
         })
-      })
-    }
-    const { context } = await mountAdmin({ views: {} })
-    expect(() => new RouteTree(views, context.api)).toThrow(
-      `Invalid route path 'extras' of the sources 'appendices' and 'extras': ` +
-      'Give one of them a different `path`.'
-    )
+      },
+      request: () => ({ data: { id: 1, appendices: [{}], extras: [{}] } })
+    })
+    await admin.navigate('/books/1/extras/0')
+    const form = admin.getRouteComponent(isForm)
+    expect(form.routeContext.claim.location.dataPath).toBe('appendices/0')
   })
 
   it('routes the nested lists of forms shared by several views', async () => {
@@ -196,40 +206,48 @@ describe('RouteTree', () => {
     }
   })
 
-  it('routes forms that contain themselves up to `maxDepth` times', async () => {
-    const categoryForm = createForm()
-    categoryForm.fields.subcategories = createList({
-      form: categoryForm,
-      maxDepth: 2
-    })
-    const views = {
-      categories: createListView('categories', { form: categoryForm })
+  it.each([
+    { place: 'in their fields', tab: null },
+    { place: 'in a tab', tab: 'more' }
+  ])(
+    'routes forms that contain themselves up to `maxDepth` times $place',
+    async ({ tab }) => {
+      const categoryForm = createForm()
+      const subcategories = createList({ form: categoryForm, maxDepth: 2 })
+      if (tab) {
+        categoryForm.tabs = {
+          [tab]: { type: 'tab', fields: { subcategories } }
+        }
+      } else {
+        categoryForm.fields.subcategories = subcategories
+      }
+      const views = {
+        categories: createListView('categories', { form: categoryForm })
+      }
+      // Forms render their sources once they have their item:
+      const category = { subcategories: [{ subcategories: [{}] }] }
+      const items = { '/categories/1': { id: 1, subcategories: [category] } }
+      const segment = tab ? `${tab}/subcategories/0` : 'subcategories/0'
+      const getComponents = depth =>
+        getRouteComponents(
+          views,
+          `/categories/1/${Array(depth).fill(segment).join('/')}`,
+          items
+        )
+      expect(await getComponents(1)).toHaveLength(3)
+      expect(await getComponents(2)).toHaveLength(4)
+      expect(await getComponents(3)).toHaveLength(4)
     }
-    expect(
-      await getRouteComponents(views, '/categories/1/subcategories/2')
-    ).toHaveLength(3)
-    expect(
-      await getRouteComponents(
-        views,
-        '/categories/1/subcategories/2/subcategories/3'
-      )
-    ).toHaveLength(4)
-    expect(
-      await getRouteComponents(
-        views,
-        '/categories/1/subcategories/2/subcategories/3/subcategories/4'
-      )
-    ).toBe(null)
-  })
+  )
 
   describe('inlined content', () => {
     // Content items of several types with inlined style objects, each with
     // nested content that uses the same forms again, like the blocks of
     // articles. `createItemComponents()` adds components to each item form.
     function createArticlesView(
-      createItemComponents: () => Record<string, any> = () => ({})
+      createItemComponents = () => ({})
     ) {
-      const contentForms: Record<string, any> = {}
+      const contentForms = {}
       const createContent = () => ({
         type: 'list',
         inlined: true,
@@ -255,33 +273,24 @@ describe('RouteTree', () => {
       })
     }
 
-    async function countNodes(views: Record<string, any>) {
-      const admin = await mountAdmin({ views })
-      // `mountAdmin()` waits for the views, so they have their route tree:
-      const routeTree = admin.context.routeTree!
-      let count = 0
-      const countNode = (node: { children: any[] }) => {
-        count++
-        node.children.forEach(countNode)
-      }
-      routeTree.nodes.forEach(countNode)
-      return count
-    }
-
-    it('adds no nodes for inlined sources without routes below', async () => {
-      // The view, its list and its form:
-      expect(await countNodes({ articles: createArticlesView() })).toBe(3)
-    })
-
     it('routes the lists with forms inside inlined content', async () => {
       const views = {
         articles: createArticlesView(() => ({ links: createList() }))
       }
-      expect(await countNodes(views)).toBeLessThan(500)
+      const article = {
+        id: 1,
+        content: [
+          {
+            type: 'text',
+            textContent: [{ type: 'image' }, { type: 'quote', links: [{}] }]
+          }
+        ]
+      }
       expect(
         await getRouteComponents(
           views,
-          '/articles/1/content/0/textContent/1/links/2'
+          '/articles/1/content/0/textContent/1/links/0',
+          { '/articles/1': article }
         )
       ).toEqual([DitoView, DitoForm, DitoForm])
     })
@@ -352,18 +361,12 @@ describe('RouteTree', () => {
     ])
   })
 
-  it('gives the routes of forms unique names that resolve them', async () => {
+  it('gives the routes of the forms of views names that resolve them', async () => {
     const admin = await mountAdmin({
-      views: {
-        books: createListView('books', {
-          form: createForm({ chapters: createList() })
-        })
-      }
+      views: { books: createListView('books') }
     })
-    const { name, params } = admin.router.resolve('/books/1/chapters/2')
+    const { name, params } = admin.router.resolve('/books/1')
     expect(typeof name).toBe('symbol')
-    expect(admin.router.resolve({ name: name!, params }).path).toBe(
-      '/books/1/chapters/2'
-    )
+    expect(admin.router.resolve({ name, params }).path).toBe('/books/1')
   })
 })

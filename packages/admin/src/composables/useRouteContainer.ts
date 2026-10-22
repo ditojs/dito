@@ -2,6 +2,7 @@ import {
   computed,
   inject,
   markRaw,
+  nextTick,
   onUnmounted,
   reactive,
   shallowReactive,
@@ -9,20 +10,19 @@ import {
   watch
 } from 'vue'
 import { useRouter, type RouteRecordNormalized } from 'vue-router'
-import { getRelativeDataPath } from '../utils/data.js'
-import { navigate } from '../utils/route.js'
+import { isPathWithin, navigate } from '../utils/route.js'
 import { getSchemaPath, isPage } from '../utils/schema/structure.js'
 import { adminContextKey, routeContextKey } from '../utils/keys.ts'
 import { LoadingTracker } from '../utils/LoadingTracker.ts'
 import {
-  FormNode,
-  type FormRoute,
-  type Route,
+  claimSourceRoute,
+  MenuNode,
+  SourceNode,
   type ViewNode
 } from '../utils/RouteTree.ts'
 import { useContainer, type ContainerOptions } from './useContainer.ts'
 import { useLeaveGuard } from './useLeaveGuard.ts'
-import type { RouteContext } from '../utils/RouteContext.ts'
+import type { RouteClaim, RouteContext } from '../utils/RouteContext.ts'
 import type { ResourceContext } from '../utils/ResourceContext.ts'
 
 export interface RouteContainerOptions
@@ -41,14 +41,15 @@ export interface RouteContainerOptions
 
 export type RouteRecord = ReturnType<typeof useRouteRecord>
 
-// The route record that the view or form at the next level is rendered for,
-// with its node and parameters.
+// The route that the view or form at the next level is rendered for: the
+// record of views, or the claim of the route above for forms.
 export function useRouteRecord() {
   const router = useRouter()
   const parent = inject(routeContextKey, null)
   const level = parent ? parent.level + 1 : 0
   const record = shallowRef<RouteRecordNormalized | null>(null)
   const params = shallowRef<Record<string, any>>({})
+  const claim = shallowRef<RouteClaim | null>(null)
   watch(
     router.currentRoute,
     ({ matched, params: routeParams }) => {
@@ -58,7 +59,8 @@ export function useRouteRecord() {
       // e.g. when the routes are set up again:
       const matchedRecord = matched[level]
       if (
-        matchedRecord &&
+        matchedRecord?.meta.node &&
+        !(matchedRecord.meta.node instanceof SourceNode) &&
         (!record.value || matchedRecord.path === record.value.path)
       ) {
         record.value = matchedRecord
@@ -68,12 +70,25 @@ export function useRouteRecord() {
     // Update synchronously, so the record changes with the route:
     { immediate: true, flush: 'sync' }
   )
+  // Forms keep their claim while they're left in the same way:
+  watch(
+    () => (record.value ? null : parent!.childClaim),
+    newClaim => {
+      if (newClaim && (!claim.value || newClaim.key === claim.value.key)) {
+        claim.value = newClaim
+      }
+    },
+    { immediate: true, flush: 'sync' }
+  )
   return {
     parent,
     level,
     record,
     params,
-    node: computed(() => record.value!.meta.node!)
+    claim,
+    node: computed(
+      () => (record.value?.meta.node as MenuNode | ViewNode | undefined) ?? null
+    )
   }
 }
 
@@ -91,45 +106,42 @@ export function useRouteContainer({
   const adminContext = inject(adminContextKey)!
   const router = useRouter()
   const { parent, level, record: routeRecord, params: routeParams } = route
-  const getMatched = () => router.currentRoute.value.matched
-  const getNode = () => route.node.value
+  const getCurrentPath = () => router.currentRoute.value.path
 
   const path = computed(() => {
+    if (route.claim.value) {
+      return route.claim.value.path
+    }
     const { name } = routeRecord.value!
     // The routes are replaced when the views are resolved again, e.g. after
     // logging in, while the components of the previous ones still exist:
     return router.hasRoute(name!)
       ? router.resolve({
           name,
-          params: getNode().getParams(routeParams.value)
+          params: route.node.value!.getParams(routeParams.value)
         }).path
-      : router.currentRoute.value.path
+      : getCurrentPath()
   })
 
-  // Resolve the routes of the component path in the components of the route,
-  // which only views and forms render, menus don't:
-  const resolveRoute = (
-    componentPath: string,
-    getRoute: (
-      node: ViewNode | FormNode,
-      path: string
-    ) => (Route & Partial<FormRoute>) | null
-  ) => {
-    const path = getRelativeDataPath(
-      componentPath,
-      routeContext.dataContext.componentPath
-    )
-    const route = (
-      path !== null &&
-      getRoute(getNode() as ViewNode | FormNode, path)
-    )
-    return route
-      ? {
-          path: router.resolve(route).path,
-          componentPath: route.componentPath ?? ''
-        }
-      : null
+  // Views claim the paths of the forms of their sources by their records, as
+  // they don't render their components meanwhile. The components of forms and
+  // pages claim the paths below them:
+  const getSourceNode = () => {
+    const node = router.currentRoute.value.matched[level + 1]?.meta.node
+    return node instanceof SourceNode ? node : null
   }
+  const childClaim = computed(() => {
+    const node = getSourceNode()
+    return routeContext.isLastRoute || routeContext.isLeaving
+      ? null
+      : node
+        ? claimSourceRoute(
+            node.getSourceRoute(routeContext.dataContext.data, path.value),
+            getCurrentPath(),
+            adminContext.api
+          )
+        : adminContext.ui.claimRoute(routeContext.dataContext, getCurrentPath())
+  })
 
   const routeContext: RouteContext = shallowReactive({
     parent,
@@ -148,44 +160,43 @@ export function useRouteContainer({
     },
 
     get node() {
-      return getNode()
+      return route.node.value
     },
 
-    get childNode() {
-      return getMatched()[level + 1]?.meta.node ?? null
+    get claim() {
+      return route.claim.value
+    },
+
+    get childClaim() {
+      return childClaim.value
     },
 
     get isForm() {
-      return getNode() instanceof FormNode
+      return !!route.claim.value
     },
 
-    get state() {
-      return {
-        data: routeContext.dataContext.data,
-        routeParams: routeParams.value,
-        isTransient: isTransient() || routeContext.dataContext.isCreating
-      }
+    get isTransient() {
+      return isTransient() || routeContext.dataContext.isCreating
     },
 
     get path() {
       return path.value
     },
 
+    // Object forms of single-component views share the path of their view:
     get isLastRoute() {
-      return routeRecord.value === getMatched().at(-1)
+      return getCurrentPath() === path.value && !getSourceNode()
     },
 
-    get isLastUnnestedRoute() {
-      const record = getMatched().findLast(
-        ({ meta: { node } }) => (
-          node && !(node instanceof FormNode && node.isEmbeddedForm)
-        )
-      )
-      return routeRecord.value === record
+    get isActive() {
+      const claim = childClaim.value
+      return claim
+        ? claim.isEmbedded && !!claim.source
+        : routeContext.isLastRoute
     },
 
     get isLeaving() {
-      return getMatched()[level]?.path !== routeRecord.value?.path
+      return !isPathWithin(getCurrentPath(), path.value)
     },
 
     get isDirty() {
@@ -213,8 +224,9 @@ export function useRouteContainer({
     ),
 
     getFormRoute(componentPath: string) {
-      return resolveRoute(componentPath, (node, path) =>
-        node.getFormRoute(path, routeContext.state)
+      return adminContext.ui.getFormRoute(
+        routeContext.dataContext,
+        componentPath
       )
     },
 
@@ -223,25 +235,13 @@ export function useRouteContainer({
       return route && !route.componentPath ? route.path : null
     },
 
-    getCreatePath(componentPath: string) {
-      return (
-        resolveRoute(componentPath, (node, path) =>
-          node.getCreateRoute(path, routeContext.state)
-        )?.path ?? null
-      )
-    },
-
     close() {
       if (!parent) {
         throw new Error('Unable to close the route: Views cannot be closed.')
       }
       // Object forms of single-component views share the path of their view,
       // so we leave the view for the admin's root:
-      const { source } = getNode() as FormNode
-      return navigate(
-        router,
-        source.isViewComponent && !source.isList ? '/' : parent.path
-      )
+      return navigate(router, path.value === parent.path ? '/' : parent.path)
     }
   })
   const container = useContainer({ ...options, routeContext })
@@ -256,7 +256,32 @@ export function useRouteContainer({
     }
   })
 
-  const { navigateWithin } = useLeaveGuard(routeContext, {
+  // Paths that no component claims lead back to the route, once it renders its
+  // components with its data. Menus render their views below them instead:
+  const isUnclaimed = () => (
+    !childClaim.value &&
+    !routeContext.isLastRoute &&
+    !routeContext.isLeaving &&
+    !(route.node.value instanceof MenuNode) &&
+    routeContext.dataContext.hasData
+  )
+  watch(
+    isUnclaimed,
+    async isUnclaimedPath => {
+      if (isUnclaimedPath) {
+        await nextTick()
+        if (isUnclaimed()) {
+          router.replace({
+            path: path.value,
+            hash: router.currentRoute.value.hash
+          })
+        }
+      }
+    },
+    { immediate: true, flush: 'post' }
+  )
+
+  const { navigateWithin, replaceWithin } = useLeaveGuard(routeContext, {
     adminContext,
     isMutating
   })
@@ -265,6 +290,7 @@ export function useRouteContainer({
     ...container,
     routeContext,
     navigateWithin,
+    replaceWithin,
     // The state that outlives the components, e.g. the query of lists:
     store: reactive({}),
 

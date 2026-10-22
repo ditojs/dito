@@ -1,28 +1,62 @@
 import type { DataContext } from './DataContext.ts'
 import type { LoadingTracker } from './LoadingTracker.ts'
 import type { ResourceContext } from './ResourceContext.ts'
-import type {
-  FormNode,
-  MenuNode,
-  RouteState,
-  ViewNode
-} from './RouteTree.ts'
+import type { SourceContext } from './SourceContext.ts'
+import type { MenuNode, ViewNode } from './RouteTree.ts'
+import type { Schema } from './types.ts'
+
+// Where the item of a form is in the data of its parent route. `key` is `null`
+// for new items of lists:
+export interface ItemLocation {
+  dataPath: string
+  componentPath: string
+  data: any
+  key: string | number | null
+}
+
+// The form that a route opens for an item of a source. Views route the forms
+// of their sources themselves, the components of forms and pages claim the
+// paths below them.
+export interface RouteClaim {
+  // The source of the item, e.g. the children of a tree:
+  readonly schema: Schema
+  // The path of the form, and the path of its source, which the forms of the
+  // other items continue with their keys:
+  readonly path: string
+  readonly sourcePath: string
+  // The id or index of the item, `create`, or `null` for objects:
+  readonly param: string | null
+  readonly location: ItemLocation
+  // `null` in the routes of views, which don't render their sources meanwhile:
+  readonly source: SourceContext | null
+  // Trees render the forms of their items inside of them, unless they aren't
+  // rendered themselves, as in views:
+  readonly isEmbedded: boolean
+  // The forms of the items of the same source share their component:
+  readonly key: string
+  // The claim of the form of `item`, which may have moved in the data:
+  claimItem(item: object): RouteClaim | null
+}
 
 // The route of a view or form, which `useRouteContainer()` provides.
 export interface RouteContext {
   readonly parent: RouteContext | null
   readonly dataContext: DataContext
-  // Menus render the routes of their views through a view without data:
-  readonly node: MenuNode | ViewNode | FormNode
-  // The node of the route below, e.g. of a form that a tree renders:
-  readonly childNode: MenuNode | ViewNode | FormNode | null
+  // The node of views and menus, which render the routes of their views
+  // through a view without data:
+  readonly node: MenuNode | ViewNode | null
+  // The claim that opened the form:
+  readonly claim: RouteClaim | null
+  // The claim of the form below:
+  readonly childClaim: RouteClaim | null
   readonly level: number
   readonly isForm: boolean
-  readonly state: RouteState
+  readonly isTransient: boolean
   readonly path: string
   readonly isLastRoute: boolean
-  // The last route that isn't an embedded form, which renders in its parent:
-  readonly isLastUnnestedRoute: boolean
+  // The route shows its components while it's the last route, or while the
+  // form below is embedded in them:
+  readonly isActive: boolean
   readonly isLeaving: boolean
   readonly isDirty: boolean
   readonly breadcrumb: string
@@ -41,11 +75,11 @@ export interface RouteContext {
   readonly loadingTracker: LoadingTracker
   // Forms without a resource of their own continue the one of their parent:
   readonly resourceContext: ResourceContext | null
-  // The routes of the sources at component paths, which their URLs contain:
+  // The routes of the forms that the components at component paths open,
+  // which the sources that render them build:
   getFormRoute(
     componentPath: string
   ): { path: string; componentPath: string } | null
   getFormPath(componentPath: string): string | null
-  getCreatePath(componentPath: string): string | null
   close(): Promise<boolean>
 }

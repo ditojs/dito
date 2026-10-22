@@ -1,7 +1,7 @@
 import { nextTick, shallowReactive, watch } from 'vue'
 import { parseDataPath } from '@ditojs/utils'
 import type { DataContext } from './DataContext.ts'
-import type { RouteContext } from './RouteContext.ts'
+import type { RouteClaim, RouteContext } from './RouteContext.ts'
 
 export interface UiHandle {
   readonly dataContext: DataContext | null
@@ -13,18 +13,30 @@ export interface UiHandle {
   // `dataPath`, if it can, e.g. its own, or the one of a field in the form of
   // an item of a routed source:
   getErrorComponentPath?(dataPath: string): string | null
+  // The form that the route's `path` opens, if this component claims it, e.g.
+  // a source for the form of one of its items:
+  claimRoute?(path: string): RouteClaim | null
+  // The route of the form that shows the component at `componentPath` inside
+  // this one, with the component path within the form:
+  getFormRoute?(
+    componentPath: string
+  ): { path: string; componentPath: string } | null
 }
 
 export class UiRegistry {
   // The routes by level. Routes that are being left stay until they're
   // unmounted, or replaced by the ones of the new route:
   readonly routes = shallowReactive<RouteContext[]>([])
-  readonly #handles = new Map<string, Set<UiHandle>>()
+  // Reactive, as routes follow the components that claim them:
+  readonly #handles = shallowReactive(new Map<string, Set<UiHandle>>())
 
   // Follow the changes of the component path, e.g. when list items move:
   register(getComponentPath: () => string, handle: UiHandle): () => void {
     const add = (componentPath: string) => {
-      const handles = this.#handles.get(componentPath) ?? new Set()
+      const handles = (
+        this.#handles.get(componentPath) ??
+        shallowReactive(new Set<UiHandle>())
+      )
       this.#handles.set(componentPath, handles.add(handle))
       return componentPath
     }
@@ -69,6 +81,34 @@ export class UiRegistry {
       }
     }
     return [...componentPaths]
+  }
+
+  // The first component that claims the route's `path`, in the order the
+  // components were created, like the ones that display errors:
+  claimRoute(dataContext: DataContext, path: string): RouteClaim | null {
+    for (const handles of this.#handles.values()) {
+      for (const handle of handles) {
+        const claim =
+          handle.dataContext === dataContext
+            ? (handle.claimRoute?.(path) ?? null)
+            : null
+        if (claim) return claim
+      }
+    }
+    return null
+  }
+
+  // Ask the components on the way from the outside in:
+  getFormRoute(dataContext: DataContext, componentPath: string) {
+    const parts = parseDataPath(componentPath)
+    for (let index = 0; index <= parts.length; index++) {
+      const path = parts.slice(0, index).join('/')
+      for (const handle of this.getHandles(path, dataContext)) {
+        const route = handle.getFormRoute?.(componentPath)
+        if (route) return route
+      }
+    }
+    return null
   }
 
   // Ask the components on the way from the outside in:

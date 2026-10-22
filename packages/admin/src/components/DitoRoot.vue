@@ -98,7 +98,7 @@ import {
   applySchemaDefaults,
   setupSchemaComponents
 } from '../utils/schema/setup.js'
-import { RouteTree } from '../utils/RouteTree.ts'
+import { hasRoutedForms } from '../utils/RouteTree.ts'
 import { FileDropTargets } from '../utils/FileDropTargets.js'
 import { adminContextKey, fileDropTargetsKey } from '../utils/keys.ts'
 
@@ -146,7 +146,7 @@ export default {
       const { api } = adminContext
       applySchemaDefaults(api, schema)
       await setupSchemaComponents(api, schema)
-      if (new RouteTree({ dialog: schema }, api).hasRoutedForms()) {
+      if (hasRoutedForms(schema)) {
         throw new Error('Dialogs do not support components that produce routes')
       }
       return new Promise(resolve => {
