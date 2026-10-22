@@ -663,11 +663,15 @@ describe('getFormProperties()', () => {
           maxLength: () => 10,
           default: () => 'Untitled'
         },
-        price: { type: 'number', range: () => [0, 10] }
+        price: { type: 'number', range: () => [0, 10] },
+        tint: { type: 'color', colorFormat: () => 'rgb' },
+        size: { type: 'select', options: ['s', 'm'], taggable: () => true }
       })
     ).toEqual({
       title: { type: 'string', nullable: true },
-      price: { type: 'number', nullable: true }
+      price: { type: 'number', nullable: true },
+      tint: { type: 'color', nullable: true },
+      size: { type: 'string', nullable: true }
     })
   })
 

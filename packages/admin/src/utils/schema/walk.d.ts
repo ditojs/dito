@@ -6,7 +6,7 @@ interface ValueError {
 }
 
 interface DefaultValueOptions {
-  shouldSetDefaultsOfComponentsWithCompute?: boolean
+  shouldSetDefaultsOfComputedValues?: boolean
 }
 
 // The source of the items in a value:
@@ -17,6 +17,7 @@ export interface DataSource {
   orderKey: string | null
   hasItemTypes: boolean
   hasResource: boolean
+  hasSubmitButton: boolean
   itemAdapter: {
     name: string
     wrap: (value: any) => Data
@@ -35,15 +36,20 @@ export interface DataNode {
   name: string
   source: DataSource | null
   relation: DataRelation | null
+  getRelevantNode(entry: DataEntry): DataNode | null
   getValidationErrors(entry: DataEntry): ValueError[]
-  hasMissingValue(entry: DataEntry, options?: DefaultValueOptions): boolean
+  shouldSetDefaultValue(
+    entry: DataEntry,
+    options?: DefaultValueOptions
+  ): boolean
   getDefaultValue(entry: DataEntry, options?: DefaultValueOptions): any
+  getValueOrDefault(entry: DataEntry): any
   deserialize(value: any, entry: DataEntry): any
   serialize(value: any, entry: DataEntry): any
   isExcluded(entry: DataEntry): boolean
   getUploadLimits(entry: DataEntry): UploadLimits | null
   getDisplayValue(entry: DataEntry): any
-  getRecordedValue(): { schema: Schema; form: Schema } | null
+  getRecordedSchema(): { schema: Schema; form: Schema } | null
 }
 
 export function getSchemaSource(schema: Schema): DataSource
@@ -66,19 +72,17 @@ export interface DataEntry {
 // A field of the value of an entry:
 export type FieldEntry = Omit<DataEntry, 'node'> & { schema: Schema }
 
-// The fields and containers that `walkData()` walks. Tabs and panels have no
-// name:
-export type WalkedDataEntry = Omit<FieldEntry, 'name'> & { name: string | null }
-
 export function walkData(
   schema: Schema,
   data: Data,
   options: {
     dataPath?: string | null
+    // The source of `data`, when the walk starts at one of its items:
+    sourceSchema?: Schema | null
     services?: object | null
     rootData?: Data | null
     serializedData?: Data | null
-    shouldWalk?: (entry: WalkedDataEntry) => boolean
+    shouldWalk?: (entry: DataEntry) => boolean
     shouldVisit?: (entry: DataEntry) => boolean
     shouldSkipSourcesWithResource?: boolean
     shouldSkipIrrelevant?: boolean

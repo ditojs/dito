@@ -35,8 +35,8 @@ export const nestableTraits = {
   treatsNullAsMissing: ({ schema }: Context) => !!schema.nested,
   defaultNested: false,
   // Only nested ones have a property, the others share the data of their form:
-  getProperty: (schema: Schema, context: Context, field: Schema) => (
-    getItemProperty(field, context) ?? { type: 'object' }
+  getProperty: (schema: Schema, context: Context) => (
+    getItemProperty(context.schema, context) ?? { type: 'object' }
   )
 }
 
@@ -49,11 +49,11 @@ export const sourceTraits = {
 
   // The items of sources with their own resource aren't part of the data,
   // also when a callback returns the resource:
-  getProperty(schema: Schema, context: Context, field: Schema) {
-    if (field.resource) {
+  getProperty(schema: Schema, context: Context) {
+    if (context.schema.resource) {
       return null
     } else {
-      const item = getItemProperty(field, context)
+      const item = getItemProperty(context.schema, context)
       return isListSource(schema)
         ? { type: 'array', ...(item && { items: item }) }
         : (item ?? { type: 'object' })
@@ -117,18 +117,15 @@ export const optionsTraits = {
 
   // Related values are objects. Static options give the type of the values,
   // and their `enum`:
-  getProperty(schema: Schema, context: Context, field: Schema) {
+  getProperty(schema: Schema, context: Context) {
     const { options } = schema
     const { data, value } = isArray(options)
       ? { data: options }
       : (options ?? {})
     // Searches, tags and `equals` let other values in, also as callbacks, which
     // `schema` lacks:
-    const hasOtherValues = !!(
-      field.search ||
-      field.taggable ||
-      field.options?.equals
-    )
+    const { search, taggable } = context.schema
+    const hasOtherValues = !!(search || taggable || options?.equals)
     let property = {}
     if (getRelateKey(schema)) {
       property = { type: 'object' }

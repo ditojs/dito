@@ -21,10 +21,12 @@ import {
   hasMultipleFormSchemas,
   getFormSchemas,
   getItemFormSchema,
-  getItemFormSchemaFromForms
+  getItemFormSchemaFromForms,
+  hasSubmitButton
 } from './lookup.js'
 import {
   shouldRenderSchema,
+  callOrLog,
   getEditedValue,
   getDefaultValue,
   shouldSetDefaultValue,
@@ -35,12 +37,8 @@ import {
 import { getValidations, getValueValidationErrors } from './validation.js'
 import { createPropertyNodes } from './properties.js'
 
-// A value in the data of a form, with all the fields that edit it in form
-// order, e.g. from several tabs. Each field comes with the unnested sections,
-// tabs, panels and fields that contain it, which decide whether it's walked
-// too. In the entries that the walk visits, the node holds the walked fields
-// and answers for the value. Each aspect of it comes from the first field that
-// defines it itself, else from the first one:
+// A value of a form's data with the fields that edit it, in form order. Each
+// aspect comes from the first field that defines it, else from the first one:
 export class FieldNode {
   constructor(name, fields) {
     this.name = name
@@ -60,21 +58,19 @@ export class FieldNode {
       : null
   }
 
-  // The node of the fields that the walk accepts, with their containers:
-  getWalkedNode(entry, { isWalked, shouldSkipSourcesWithResource }) {
-    const fields = this.fields.filter(
-      field => (
-        field.containers.every(isWalked) &&
-        isWalked(field) &&
-        !(shouldSkipSourcesWithResource && isSourceWithResource(field.schema))
-      )
-    )
-    return fields.length > 0 ? new FieldNode(this.name, fields) : null
+  // The node of the value with only its relevant fields, `null` without any:
+  getRelevantNode(entry) {
+    const fields = this.fields.filter(field => isRelevantField(field, entry))
+    return fields.length === this.fields.length
+      ? this
+      : fields.length > 0
+        ? new FieldNode(this.name, fields)
+        : null
   }
 
   // Of several fields of the same value, the first with a computed value or
   // options gets the record of the data model:
-  getRecordedValue() {
+  getRecordedSchema() {
     const field = this.fields.find(
       ({ schema }) => (
         hasComputedValueSource(schema) || getOptionsDataSchema(schema)
@@ -116,7 +112,7 @@ export class FieldNode {
     return errors
   }
 
-  hasMissingValue(entry, options) {
+  shouldSetDefaultValue(entry, options) {
     return !!this.#getDefaultingField(entry, options)
   }
 
@@ -127,6 +123,12 @@ export class FieldNode {
     return field
       ? getDefaultValue(field.schema, () => createContext(field.schema, entry))
       : undefined
+  }
+
+  getValueOrDefault(entry) {
+    return this.shouldSetDefaultValue(entry)
+      ? this.getDefaultValue(entry)
+      : entry.data[entry.name]
   }
 
   #getDefaultingField(entry, options) {
@@ -150,7 +152,7 @@ export class FieldNode {
   deserialize(value, entry) {
     const { schema } = getFieldDefining(this.fields, 'deserializeValue')
     return convertValue(schema, 'deserializeValue', value, value =>
-      createValueContext(schema, value, entry)
+      createValueContext(schema, entry, { value })
     )
   }
 
@@ -158,13 +160,8 @@ export class FieldNode {
   // Convert before `exclude`, so `serializeValue()` can write other values
   // into `serializedItem`:
   serialize(value, entry) {
-    // For `serializedItem` and `serializedRootItem`:
-    const { serializedData, serializedRootData } = entry
     const createContext = (schema, value) =>
-      createValueContext(schema, value, entry, {
-        serializedData,
-        serializedRootData
-      })
+      createValueContext(schema, entry, { value })
     const { schema } = getFieldDefining(this.fields, 'serializeValue')
     const serialized = convertValue(schema, 'serializeValue', value, value =>
       createContext(schema, value)
@@ -208,21 +205,16 @@ export class FieldNode {
 // with written `properties` have a node per property:
 const nodesBySchema = new WeakMap()
 
-// Walk `data` along the nodes of `schema`, the forms of the items and their
-// child sources. `visit()` receives an entry for each node with the fields that
-// `shouldWalk()` accepts, if `shouldVisit()` accepts it, before the items of
-// its value are walked, and `after()` after them. Only `shouldWalk()` also
-// decides for the fields that a field contains, e.g. of its panels, and it's
-// only asked for fields. With `shouldSkipIrrelevant`, irrelevant values are
-// left out, and `shouldWalk()` is only asked for relevant fields and
-// containers.
-// NOTE: Items with an item adapter are walked wrapped, and the wrapped value
-// keeps the item's data path. The walk writes changed values back, unless it
-// builds a copy in `serializedData`: then it walks the values that `visit()`
-// sets in the copy, with their items already wrapped, and replaces them with
-// copies of their items.
+// Walk `data` along the nodes of `schema` and of the forms of the items, and
+// visit each node that `shouldVisit()` accepts, before the items that
+// `shouldWalk()` lets in, with `after()` after them. With
+// `shouldSkipIrrelevant`, visited nodes hold only their relevant fields.
+// NOTE: Items with an item adapter are walked wrapped, also an item of
+// `sourceSchema` that the walk starts at. Walks that build a copy in
+// `serializedData` walk the values that `visit()` sets in it.
 export function walkData(schema, data, {
   dataPath = null,
+  sourceSchema = null,
   services = null,
   rootData = data,
   serializedData = null,
@@ -235,8 +227,6 @@ export function walkData(schema, data, {
 }) {
   // The copy of the root data, if the walk builds one:
   const serializedRootData = serializedData
-  const getDataPath = (dataPath, token) =>
-    dataPath != null ? appendDataPath(dataPath, token) : null
 
   const walkNodes = (
     nodes,
@@ -245,46 +235,33 @@ export function walkData(schema, data, {
     serializedData,
     wrappedValueName = null
   ) => {
-    const createEntry = (name, isNested) => ({
-      data,
-      name,
-      dataPath:
-        isNested && name !== wrappedValueName
-          ? getDataPath(dataPath, name)
-          : dataPath,
-      // The data path of `data`, which wrapped values keep:
-      itemDataPath: dataPath,
-      serializedData,
-      serializedRootData,
-      services,
-      rootData
-    })
-    // Ask once per field and container, as fields contain the fields of their
-    // panels:
-    const isWalkedByField = new Map()
-    const isWalked = field => {
-      if (!isWalkedByField.has(field)) {
-        const { schema, name } = field
-        const entry = { schema, ...createEntry(name, hasNestedData(schema)) }
-        isWalkedByField.set(
-          field,
-          (!shouldSkipIrrelevant || isRelevant(entry)) && shouldWalk(entry)
-        )
-      }
-      return isWalkedByField.get(field)
-    }
     for (const node of nodes.values()) {
-      const location = createEntry(node.name, true)
-      const walkedNode = node.getWalkedNode(location, {
-        isWalked,
-        shouldSkipIrrelevant,
-        shouldSkipSourcesWithResource
-      })
-      if (walkedNode) {
-        const entry = { node: walkedNode, ...location }
-        if (shouldVisit(entry)) {
+      const { name } = node
+      const entry = {
+        node,
+        data,
+        name,
+        dataPath:
+          name !== wrappedValueName ? getDataPath(dataPath, name) : dataPath,
+        // The data path of `data`, which wrapped values keep:
+        itemDataPath: dataPath,
+        serializedData,
+        serializedRootData,
+        services,
+        rootData
+      }
+      if (
+        !(shouldSkipSourcesWithResource && node.source?.hasResource) &&
+        shouldVisit(entry)
+      ) {
+        if (shouldSkipIrrelevant) {
+          entry.node = node.getRelevantNode(entry)
+        }
+        if (entry.node) {
           visit(entry)
-          walkItems(entry)
+          if (shouldWalk(entry)) {
+            walkItems(entry)
+          }
           after?.(entry)
         }
       }
@@ -425,7 +402,8 @@ export function walkData(schema, data, {
     getFieldNodes(schema, data, dataPath),
     data,
     dataPath,
-    serializedData
+    serializedData,
+    getItemAdapter(sourceSchema)?.name
   )
   return data
 }
@@ -475,13 +453,19 @@ function createFieldNodes(schema, getFields) {
 // A field is relevant unless it or a section, tab or panel that contains it is
 // hidden, like when rendered, also nested sections whose fields are all hidden.
 // An `if` that fails counts as shown:
-function isRelevant(entry) {
-  try {
-    return shouldRenderSchema(entry.schema, createContext(entry.schema, entry))
-  } catch (error) {
-    console.error(error)
-    return true
-  }
+function isRelevantField(field, entry) {
+  return [...field.containers, field].every(({ schema, name }) => {
+    // Fields with panels contain the fields of their panels, at their own data
+    // path:
+    const dataPath =
+      name === entry.name
+        ? entry.dataPath
+        : hasNestedData(schema)
+          ? getDataPath(entry.itemDataPath, name)
+          : entry.itemDataPath
+    const context = createContext(schema, { ...entry, name, dataPath })
+    return callOrLog(() => shouldRenderSchema(schema, context), true)
+  })
 }
 
 // The same contexts as the rendered components get:
@@ -489,20 +473,39 @@ function createContext(schema, entry) {
   return SchemaContext.createForSchema(entry.services, { ...entry, schema })
 }
 
-// The contexts of the hooks that convert the value:
-function createValueContext(schema, value, entry, values = null) {
-  const { data, name, dataPath, itemDataPath, rootData, services } = entry
+// The contexts of the value, also of the hooks that convert it:
+export function createValueContext(schema, entry, values = null) {
+  const {
+    data,
+    name,
+    dataPath,
+    itemDataPath,
+    rootData,
+    serializedData,
+    serializedRootData,
+    services
+  } = entry
   return new SchemaContext(services, {
     schema,
-    value,
     name,
     nested: true,
     data,
     dataPath,
     itemDataPath,
     rootData,
-    ...values
+    // The copies that walks build, while they build them:
+    ...(serializedData && { serializedData, serializedRootData }),
+    ...(values ?? {
+      get value() {
+        return data[name]
+      }
+    })
   })
+}
+
+// Walks without data paths have none in the data either:
+function getDataPath(dataPath, token) {
+  return dataPath != null ? appendDataPath(dataPath, token) : null
 }
 
 function getFieldDefining(fields, key) {
@@ -527,6 +530,8 @@ export function getSchemaSource(schema) {
     // Items of several forms hold the name of their form in `type`:
     hasItemTypes: hasMultipleFormSchemas(schema),
     hasResource: isSourceWithResource(schema),
+    // Sources with a resource and a submit button save their edits on submit:
+    hasSubmitButton: hasSubmitButton(schema.buttons),
     itemAdapter: getItemAdapter(schema)
   }
 }

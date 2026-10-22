@@ -86,6 +86,7 @@ export function shouldExcludeValue(
   schema: Schema,
   context: Context | (() => Context)
 ): boolean
+export function callOrLog<T>(callback: () => T, fallback: T): T
 export function isDataPathExcluded(
   schema: Schema,
   data: Data,

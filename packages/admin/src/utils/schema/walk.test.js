@@ -310,18 +310,24 @@ const serializedCatalogue = {
 }
 
 describe('walkData()', () => {
-  it('asks once whether a field is walked, also for its panels', async () => {
+  it('walks the items of the values that `shouldWalk()` accepts', async () => {
     const form = await createForm(catalogueForm)
-    const shouldWalk = vi.fn(() => true)
+    const dataPaths = []
     walkData(form, createCatalogue(), {
       dataPath: '',
       services,
-      shouldWalk,
-      visit: () => {}
+      shouldWalk: ({ dataPath }) => dataPath !== 'collections',
+      visit: ({ dataPath }) => dataPaths.push(dataPath)
     })
-    const dataPaths = shouldWalk.mock.calls.map(([{ dataPath }]) => dataPath)
-    expect(dataPaths.filter(dataPath => dataPath === 'collections')).toEqual([
-      'collections'
+    expect(dataPaths).toEqual([
+      'title',
+      'showPrices',
+      'secret',
+      'collections',
+      'summaryNote',
+      'vendors',
+      'vendors/0/name',
+      'notes'
     ])
   })
 })
@@ -391,6 +397,21 @@ describe('getDataValidationErrors()', () => {
     expect(getDataValidationErrors(form, { name: '' }, { services })).toBe(
       null
     )
+  })
+
+  it('runs the checks of invisible fields of the same value', async () => {
+    const form = await createForm({
+      tabs: {
+        first: {
+          type: 'tab',
+          fields: { name: { type: 'text', required: true, visible: false } }
+        },
+        second: { type: 'tab', fields: { name: { type: 'text' } } }
+      }
+    })
+    expect(getDataValidationErrors(form, { name: '' }, { services })).toEqual({
+      name: [{ message: 'is required' }]
+    })
   })
 
   it('skips nested sections whose fields are all hidden', async () => {
@@ -534,6 +555,38 @@ describe('initializeData()', () => {
       }
     })
     expect(initializeData(form, {}, services)).toEqual({ format: 'lp' })
+  })
+
+  it('stores the empty values of options with `nullable: false`', async () => {
+    const form = await createForm({
+      fields: {
+        format: { type: 'select', options: ['lp', 'cd'], nullable: false }
+      }
+    })
+    expect(initializeData(form, {}, services)).toEqual({ format: '' })
+  })
+})
+
+describe('initializeData() of several fields of the same value', () => {
+  const createStatusForm = settings =>
+    createForm({
+      tabs: {
+        first: {
+          type: 'tab',
+          fields: { status: { type: 'text', default: 'draft', ...settings } }
+        },
+        second: { type: 'tab', fields: { status: { type: 'text' } } }
+      }
+    })
+
+  it('sets only the defaults of shown fields', async () => {
+    const form = await createStatusForm({ if: false })
+    expect(initializeData(form, {}, services)).toEqual({ status: null })
+  })
+
+  it('sets the defaults of invisible fields', async () => {
+    const form = await createStatusForm({ visible: false })
+    expect(initializeData(form, {}, services)).toEqual({ status: 'draft' })
   })
 })
 
@@ -805,6 +858,45 @@ describe('serializeData()', () => {
     expect(
       serializeData(form, null, createCatalogue(), '', { services })
     ).toEqual(serializedCatalogue)
+  })
+
+  it('leaves out the values of hidden fields', async () => {
+    const form = await createForm(catalogueForm)
+    const data = { ...createCatalogue(), showPrices: false }
+    const [books, records] = serializeData(form, null, data, '', {
+      services
+    }).collections
+    expect(books).not.toHaveProperty('discount')
+    expect(books).not.toHaveProperty('currency')
+    expect(books.items[0]).not.toHaveProperty('price')
+    expect(records).not.toHaveProperty('discount')
+    expect(books.name).toBe('Books')
+  })
+
+  it('serializes with the shown fields of the same value', async () => {
+    const createStatusForm = settings =>
+      createForm({
+        tabs: {
+          first: {
+            type: 'tab',
+            fields: {
+              status: {
+                type: 'text',
+                serializeValue: ({ value }) => value.toUpperCase(),
+                ...settings
+              }
+            }
+          },
+          second: { type: 'tab', fields: { status: { type: 'text' } } }
+        }
+      })
+    const data = { status: 'draft' }
+    const serialize = async settings =>
+      serializeData(await createStatusForm(settings), null, data, '', {
+        services
+      })
+    expect(await serialize({ if: false })).toEqual({ status: 'draft' })
+    expect(await serialize({ visible: false })).toEqual({ status: 'DRAFT' })
   })
 
   it('serializes the values after the values of their items', async () => {
@@ -1224,6 +1316,63 @@ describe('getItemDisplayValue()', () => {
     ).toEqual(['Team', 'LIVE'])
   })
 
+  it('displays only the values of the item itself', async () => {
+    const form = await createForm({
+      fields: {
+        entries: {
+          type: 'list',
+          form: {
+            type: 'form',
+            fields: {
+              meta: {
+                type: 'section',
+                nested: true,
+                fields: { status }
+              },
+              status: { type: 'text' }
+            }
+          }
+        }
+      }
+    })
+    expect(
+      getDisplayValues(
+        form.fields.entries,
+        { meta: { status: 'live' }, status: 'draft' },
+        ['status']
+      )
+    ).toEqual(['draft'])
+  })
+
+  it('displays with the first shown field of the same value', async () => {
+    const createEntries = async settings => {
+      const form = await createForm({
+        fields: {
+          entries: {
+            type: 'list',
+            form: {
+              type: 'form',
+              tabs: {
+                first: {
+                  type: 'tab',
+                  fields: { status: { ...status, ...settings } }
+                },
+                second: { type: 'tab', fields: { status: { type: 'text' } } }
+              }
+            }
+          }
+        }
+      })
+      return form.fields.entries
+    }
+    const getDisplayValue = async settings =>
+      getDisplayValues(await createEntries(settings), { status: 'live' }, [
+        'status'
+      ])
+    expect(await getDisplayValue({ if: false })).toEqual(['live'])
+    expect(await getDisplayValue({ visible: false })).toEqual(['LIVE'])
+  })
+
   it('displays with the first field of the same value', async () => {
     const form = await createForm({
       fields: {
@@ -1252,6 +1401,43 @@ describe('getItemDisplayValue()', () => {
         ['status']
       )
     ).toEqual(['live'])
+  })
+
+  it('displays wrapped primitives at the data path of the item', async () => {
+    const dataPaths = []
+    const form = await createForm({
+      fields: {
+        tags: {
+          type: 'list',
+          wrapPrimitives: 'tag',
+          form: {
+            type: 'form',
+            fields: {
+              tag: {
+                type: 'text',
+                if: ({ dataPath }) => dataPaths.push(dataPath) > 0
+              }
+            }
+          }
+        }
+      }
+    })
+    const { tags } = form.fields
+    const item = { tag: 'new' }
+    const context = new SchemaContext(services, {
+      schema: tags,
+      data: item,
+      dataPath: 'tags/0',
+      rootData: item
+    })
+    expect(
+      getItemDisplayValue(tags, item, 'tag', {
+        services,
+        dataPath: 'tags/0',
+        context
+      })
+    ).toBe('new')
+    expect(dataPaths).toEqual(['tags/0'])
   })
 })
 

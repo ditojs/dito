@@ -17,6 +17,7 @@ export async function toClipboard(
     dataPath,
     services,
     rootData,
+    shouldSkipIrrelevant: true,
     visit: entry => {
       const { relation } = entry.node
       if (relation?.hasOptions) {
