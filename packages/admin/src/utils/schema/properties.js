@@ -1,4 +1,3 @@
-import SchemaContext from '../../SchemaContext.js'
 import {
   isArray,
   isFunction,
@@ -25,8 +24,10 @@ import {
   getDefaultValue,
   getEmptyValue,
   shouldIgnoreMissingValue,
-  resolveValue
+  resolveValue,
+  callOrLog
 } from './data.js'
+import { createValueContext } from './walk.js'
 import { getValueValidationErrors } from './validation.js'
 import { getRelateKey } from './options.ts'
 
@@ -87,23 +88,22 @@ export class PropertyNode {
     this.#itemForms = getItemForms(property)
   }
 
-  getWalkedNode(entry, { shouldSkipIrrelevant }) {
-    return !shouldSkipIrrelevant || this.isRelevant(entry) ? this : null
-  }
-
   // Like for fields, an `if` that fails counts as relevant:
   isRelevant(entry) {
-    try {
-      return getSchemaValue('if', {
-        type: Boolean,
-        schema: this.property,
-        context: this.#createContext(entry),
-        default: true
-      })
-    } catch (error) {
-      console.error(error)
-      return true
-    }
+    return callOrLog(
+      () =>
+        getSchemaValue('if', {
+          type: Boolean,
+          schema: this.property,
+          context: this.#createContext(entry),
+          default: true
+        }),
+      true
+    )
+  }
+
+  getRelevantNode(entry) {
+    return this.isRelevant(entry) ? this : null
   }
 
   getItemForms() {
@@ -142,24 +142,22 @@ export class PropertyNode {
   }
 
   // The data model records the value for its computes:
-  getRecordedValue() {
+  getRecordedSchema() {
     const { name, property } = this
     return property.computeValue
       ? { schema: property, form: { properties: { [name]: property } } }
       : null
   }
 
-  // Irrelevant values get no defaults, and unchanged passwords stay missing.
-  // The data model writes computed values with their defaults:
-  hasMissingValue(entry, { shouldSetDefaultsOfComponentsWithCompute } = {}) {
+  // Unchanged passwords stay missing. The data model writes computed values
+  // with their defaults:
+  shouldSetDefaultValue(entry, {
+    shouldSetDefaultsOfComputedValues = true
+  } = {}) {
     return (
       this.#isMissing(entry) &&
-      !(
-        shouldSetDefaultsOfComponentsWithCompute === false &&
-        this.property.computeValue
-      ) &&
-      this.#get('format', entry) !== 'password' &&
-      this.isRelevant(entry)
+      (shouldSetDefaultsOfComputedValues || !this.property.computeValue) &&
+      this.#get('format', entry) !== 'password'
     )
   }
 
@@ -174,11 +172,17 @@ export class PropertyNode {
 
   getDefaultValue(entry, options) {
     const { default: def } = this.property
-    return !this.hasMissingValue(entry, options)
+    return !this.shouldSetDefaultValue(entry, options)
       ? undefined
       : def !== undefined
         ? resolveValue(def, () => this.#createContext(entry))
         : getPropertyEmptyValue(this.property, this.#get('nullable', entry))
+  }
+
+  getValueOrDefault(entry) {
+    return this.shouldSetDefaultValue(entry)
+      ? this.getDefaultValue(entry)
+      : entry.data[entry.name]
   }
 
   deserialize(value, entry) {
@@ -194,23 +198,14 @@ export class PropertyNode {
       : value
   }
 
-  // Irrelevant and excluded values aren't sent:
+  // Excluded values aren't sent:
   serialize(value, entry) {
     const { property } = this
-    if (this.isRelevant(entry)) {
-      const { serializedData, serializedRootData } = entry
-      const createContext = value =>
-        this.#createContext(entry, {
-          value,
-          serializedData,
-          serializedRootData
-        })
-      value = this.#convertValue(value, entry)
-      if (property.serializeValue) {
-        value = property.serializeValue(createContext(value))
-      }
-      return value === undefined || this.isExcluded(entry) ? undefined : value
+    value = this.#convertValue(value, entry)
+    if (property.serializeValue) {
+      value = property.serializeValue(this.#createContext(entry, { value }))
     }
+    return value === undefined || this.isExcluded(entry) ? undefined : value
   }
 
   // Computed properties are stored by the server, which doesn't accept them:
@@ -273,21 +268,7 @@ export class PropertyNode {
   }
 
   #createContext(entry, values = null) {
-    const { data, name, dataPath, itemDataPath, rootData, services } = entry
-    return new SchemaContext(services, {
-      schema: this.property,
-      name,
-      nested: true,
-      data,
-      dataPath,
-      itemDataPath,
-      rootData,
-      ...(values ?? {
-        get value() {
-          return data[name]
-        }
-      })
-    })
+    return createValueContext(this.property, entry, values)
   }
 }
 
@@ -437,8 +418,8 @@ function getFieldProperty(field, name, formContext) {
     const schema = Object.fromEntries(
       Object.entries(field).filter(([, value]) => !isFunction(value))
     )
-    const context = formContext.createChildContext(schema, name)
-    const property = descriptor.getProperty(schema, context, field)
+    const context = formContext.createChildContext(field, name)
+    const property = descriptor.getProperty(schema, context)
     if (property) {
       Object.assign(property, getDataKeywords(schema, context))
       // Properties without a type accept `null` already:
@@ -474,6 +455,7 @@ function getPropertySource(property) {
         orderKey: orderKey ?? null,
         hasItemTypes: Object.keys(forms ?? {}).length > 1,
         hasResource: false,
+        hasSubmitButton: false,
         // Lists of primitives are walked with their items wrapped:
         itemAdapter: items && !items.properties ? primitiveItemAdapter : null
       }

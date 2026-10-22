@@ -54,8 +54,12 @@ export default class SchemaContext {
     data,
     dataPath,
     itemDataPath,
-    rootData
+    rootData,
+    // Most contexts have no copies, and only a rest keeps them optional in the
+    // inferred types:
+    ...copies
   }) {
+    const { serializedData, serializedRootData } = copies
     // Read `value` only when it's used, so watchers only depend on it then:
     return new SchemaContext(services, () => ({
       schema,
@@ -65,6 +69,8 @@ export default class SchemaContext {
       dataPath,
       itemDataPath,
       rootData,
+      // The copies that walks build, while they build them:
+      ...(serializedData && { serializedData, serializedRootData }),
       get value() {
         return name != null ? data?.[name] : undefined
       }

@@ -40,12 +40,12 @@ import {
   isEmptySchema,
   hasSubmitButton
 } from './schema/lookup.js'
-import { isListSource, isSourceWithResource } from './schema/structure.js'
+import { isListSource } from './schema/structure.js'
 import { getOptionsDataSchema } from './schema/types.ts'
 import {
   initializeData,
   isDataPathExcluded,
-  shouldExcludeValue,
+  callOrLog,
   getComputedValue,
   hasComputedValueSource,
   serializeData,
@@ -60,7 +60,7 @@ import {
   walkData,
   getSchemaSource,
   type DataEntry,
-  type WalkedDataEntry
+  type DataSource
 } from './schema/walk.js'
 import { getOptionsSettings, getReplacedValue } from './schema/options.ts'
 import type { Services } from './services.ts'
@@ -146,9 +146,9 @@ type RecordedEntry = DataEntry & { schema: Schema; form: Schema }
 interface DataEntries {
   recordedEntries: EntryMap<RecordedEntry>
   entriesWithMissingValues: DataEntry[]
-  // Not walked, but they save the changes of the lists that they hold, unless
-  // they're sent with the data:
-  sourceEntriesWithResource: WalkedDataEntry[]
+  // Their items aren't walked, but they save the changes of the lists that
+  // they hold, unless they're sent with the data:
+  sourceEntriesWithResource: DataEntry[]
 }
 
 // The state of the data that a form, view, dialog or panel edits, derived from
@@ -159,8 +159,8 @@ export class DataModel {
   readonly #pendingSubmits = new Set<Promise<unknown>>()
   // The owners of edits by data path: '' for the container, else the data
   // paths of sources with their own resource, which can't be inlined, with
-  // their schemas:
-  readonly #editedOwners = shallowReactive(new Map<string, Schema | null>())
+  // their sources:
+  readonly #editedOwners = shallowReactive(new Map<string, DataSource | null>())
   readonly #errors = shallowRef(new WeakEntryMap<ValueErrors>())
   readonly #fieldErrors = shallowRef(new WeakEntryMap<string[]>())
   #computedValueWriteCounts: Map<string | null, number> | null = null
@@ -259,10 +259,8 @@ export class DataModel {
   }
 
   get isDirty(): boolean {
-    return [...this.#editedOwners.values()].some(sourceSchema =>
-      sourceSchema
-        ? hasSubmitButton(sourceSchema.buttons)
-        : this.#options.canSave()
+    return [...this.#editedOwners.values()].some(source =>
+      source ? source.hasSubmitButton : this.#options.canSave()
     )
   }
 
@@ -282,7 +280,7 @@ export class DataModel {
     )
     this.#editedOwners.set(
       sourceEntry?.dataPath ?? '',
-      sourceEntry?.schema ?? null
+      sourceEntry?.node.source ?? null
     )
   }
 
@@ -296,15 +294,14 @@ export class DataModel {
 
   // Like an `if` that fails, an `exclude()` that fails counts as included.
   #isDataPathExcluded(dataPath: string): boolean {
-    try {
-      return isDataPathExcluded(this.schema!, this.data!, dataPath, {
-        ...this.#walkOptions,
-        dataPath: this.dataPath
-      })
-    } catch (error) {
-      console.error(error)
-      return false
-    }
+    return callOrLog(
+      () =>
+        isDataPathExcluded(this.schema!, this.data!, dataPath, {
+          ...this.#walkOptions,
+          dataPath: this.dataPath
+        }),
+      false
+    )
   }
 
   // Clean the edits of the source at `dataPath`, or of all owners:
@@ -906,7 +903,7 @@ export class DataModel {
         // New data starts with all defaults for `computeValue()` to rely on,
         // else the model writes the values of components with `computeValue()`
         // including their defaults:
-        shouldSetDefaultsOfComponentsWithCompute: isNew
+        shouldSetDefaultsOfComputedValues: isNew
       })
     }
   }
@@ -953,29 +950,29 @@ export class DataModel {
     const { schema, data } = this
     const recordedEntries = new EntryMap<RecordedEntry>()
     const entriesWithMissingValues: DataEntry[] = []
-    const sourceEntriesWithResource: WalkedDataEntry[] = []
+    const sourceEntriesWithResource: DataEntry[] = []
     if (data && !isEmptySchema(schema)) {
       walkData(schema!, data, {
         ...this.#walkOptions,
         dataPath: this.dataPath,
         shouldSkipIrrelevant: true,
-        shouldWalk: entry => {
-          if (
-            isSourceWithResource(entry.schema) &&
-            this.#shouldExcludeEntry(entry)
-          ) {
-            sourceEntriesWithResource.push(entry)
-          }
-          return true
-        },
-        shouldSkipSourcesWithResource: true,
+        shouldWalk: ({ node }) => !node.source?.hasResource,
         visit: entry => {
-          const recordedValue = entry.node.getRecordedValue()
-          if (recordedValue) {
-            recordedEntries.set(entry, { ...entry, ...recordedValue })
-          }
-          if (this.#hasMissingValue(entry)) {
-            entriesWithMissingValues.push(entry)
+          const { node } = entry
+          if (node.source?.hasResource) {
+            // Like an `if` that fails, an `exclude()` that fails counts as
+            // included:
+            if (callOrLog(() => node.isExcluded(entry), false)) {
+              sourceEntriesWithResource.push(entry)
+            }
+          } else {
+            const recordedSchema = node.getRecordedSchema()
+            if (recordedSchema) {
+              recordedEntries.set(entry, { ...entry, ...recordedSchema })
+            }
+            if (this.#shouldSetDefaultValue(entry)) {
+              entriesWithMissingValues.push(entry)
+            }
           }
         }
       })
@@ -987,30 +984,18 @@ export class DataModel {
     }
   }
 
-  // Like an `if` that fails, an `exclude()` that fails counts as included.
-  #shouldExcludeEntry(entry: WalkedDataEntry): boolean {
-    try {
-      return shouldExcludeValue(entry.schema, () =>
-        this.#createEntryContext(entry)
-      )
-    } catch (error) {
-      console.error(error)
-      return false
-    }
-  }
-
   // The model writes the values of components with `computeValue()` including
   // their defaults:
-  #hasMissingValue(entry: DataEntry): boolean {
-    return entry.node.hasMissingValue(entry, {
-      shouldSetDefaultsOfComponentsWithCompute: false
+  #shouldSetDefaultValue(entry: DataEntry): boolean {
+    return entry.node.shouldSetDefaultValue(entry, {
+      shouldSetDefaultsOfComputedValues: false
     })
   }
 
   // Types without values, e.g. buttons, get no key:
   #setDefaultValue(entry: DataEntry) {
     const value = entry.node.getDefaultValue(entry, {
-      shouldSetDefaultsOfComponentsWithCompute: false
+      shouldSetDefaultsOfComputedValues: false
     })
     if (value !== undefined) {
       entry.data[entry.name] = value
@@ -1123,12 +1108,7 @@ export class DataModel {
       )
       // Values that aren't computed stay, or get their defaults when missing:
       return {
-        value:
-          value !== undefined
-            ? value
-            : node.hasMissingValue(entry)
-              ? node.getDefaultValue(entry)
-              : data[name]
+        value: value !== undefined ? value : node.getValueOrDefault(entry)
       }
     } catch (error) {
       if (error === optionsNotLoaded) {
@@ -1256,7 +1236,7 @@ export class DataModel {
     }
     const dataWithMissingValues = new Set<object>()
     this.#walkNestedEntries(entry, value, nestedEntry => {
-      if (this.#hasMissingValue(nestedEntry)) {
+      if (this.#shouldSetDefaultValue(nestedEntry)) {
         dataWithMissingValues.add(nestedEntry.data)
       }
     })
@@ -1323,7 +1303,7 @@ export class DataModel {
     name,
     dataPath,
     itemDataPath
-  }: WalkedDataEntry | FieldEntry) {
+  }: FieldEntry) {
     return SchemaContext.createForSchema(this.#options.services, {
       schema,
       name,

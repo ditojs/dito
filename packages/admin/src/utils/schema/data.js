@@ -189,10 +189,10 @@ export function getMultipleValue(schema, context) {
 }
 
 export function shouldSetDefaultValue(schema, data, name, context, {
-  shouldSetDefaultsOfComponentsWithCompute = true
+  shouldSetDefaultsOfComputedValues = true
 } = {}) {
   return (
-    (shouldSetDefaultsOfComponentsWithCompute || !schema.computeValue) &&
+    (shouldSetDefaultsOfComputedValues || !schema.computeValue) &&
     isMissingValue(schema, data, name, context) &&
     !shouldIgnoreMissingValue(schema, context)
   )
@@ -206,12 +206,12 @@ export function initializeData(schema, data = {}, services, {
   shouldSkipSourcesWithResource = false,
   // New data starts with all defaults for `computeValue()` to rely on, but in
   // loaded data, `computeValue()` may derive missing values instead:
-  shouldSetDefaultsOfComponentsWithCompute = true
+  shouldSetDefaultsOfComputedValues = true
 } = {}) {
   const visit = entry => {
     const { node, data, name } = entry
     const value = node.getDefaultValue(entry, {
-      shouldSetDefaultsOfComponentsWithCompute
+      shouldSetDefaultsOfComputedValues
     })
     // Types without values, e.g. buttons, get no key, like in the data of
     // items that `computeValue()` returns:
@@ -228,6 +228,7 @@ export function initializeData(schema, data = {}, services, {
     dataPath,
     services,
     rootData,
+    shouldSkipIrrelevant: true,
     shouldSkipSourcesWithResource,
     visit
   })
@@ -289,11 +290,9 @@ export function getComputedValue(schema, data, name, dataPath, {
 }
 
 export function getValueOrDefault(schema, data, name, context) {
-  const shouldUseDefault = (
-    isMissingValue(schema, data, name, context) &&
-    !shouldIgnoreMissingValue(schema, context)
-  )
-  return shouldUseDefault ? getDefaultValue(schema, context) : data[name]
+  return shouldSetDefaultValue(schema, data, name, context)
+    ? getDefaultValue(schema, context)
+    : data[name]
 }
 
 // The value as the component edits it, after `formatValue()`. The components
@@ -321,10 +320,8 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
   const graph = new SchemaGraph(dataPath)
 
   const visit = entry => {
-    const { node, data, name, serializedData } = entry
-    const value = node.hasMissingValue(entry)
-      ? node.getDefaultValue(entry)
-      : data[name]
+    const { node, name, serializedData } = entry
+    const value = node.getValueOrDefault(entry)
     // The forms of the items expect them wrapped by the item adapter of the
     // source, so wrap before and unwrap after. Always shallow-clone arrays:
     const itemAdapter = node.source?.itemAdapter
@@ -384,6 +381,8 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     services,
     rootData,
     serializedData: serializedRootData,
+    // Hidden values aren't sent:
+    shouldSkipIrrelevant: true,
     visit,
     after
   })
@@ -468,10 +467,12 @@ export function getItemDisplayValue(sourceSchema, item, name, {
   let valueEntry = null
   walkData(getItemFormSchema(sourceSchema, item, context), item, {
     dataPath,
+    sourceSchema,
     services,
     rootData: context.rootItem,
-    // Leave out the items of nested sources:
-    shouldWalk: entry => !getSourceType(entry.schema),
+    shouldSkipIrrelevant: true,
+    // Only the values of the item itself:
+    shouldWalk: () => false,
     visit: entry => {
       if (entry.name === name) {
         valueEntry ??= entry
@@ -532,6 +533,17 @@ export function convertValue(schema, hookName, value, createContext) {
     }
   }
   return value
+}
+
+// Callbacks that fail are logged and count as `fallback`, e.g. a failing `if`
+// as shown:
+export function callOrLog(callback, fallback) {
+  try {
+    return callback()
+  } catch (error) {
+    console.error(error)
+    return fallback
+  }
 }
 
 // Flags of type descriptors are booleans, or callbacks that return them:

@@ -486,7 +486,7 @@ describe('initializeData()', () => {
     const schema = { type: 'form', fields: { pricing } }
     const data = { customFactor: 10 }
     initializeData(schema, data, null, {
-      shouldSetDefaultsOfComponentsWithCompute: false
+      shouldSetDefaultsOfComputedValues: false
     })
     expect(data).toEqual({ customFactor: 10 })
     // New data starts with all defaults:

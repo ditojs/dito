@@ -25,6 +25,7 @@ export function getUploadEntries(
     dataPath,
     services,
     rootData,
+    shouldSkipIrrelevant: true,
     visit: entry => {
       const limits = entry.node.getUploadLimits(entry)
       if (limits) {
