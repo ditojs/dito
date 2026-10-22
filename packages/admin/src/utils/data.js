@@ -135,7 +135,11 @@ export function isReference(data, idKey = 'id') {
   return data?.[idKey] != null && Object.keys(data).length === 1
 }
 
-// Send related objects as shallow copies with only their ids:
+// Send related objects as shallow copies with only their ids, also in lists:
 export function createReference(data, idKey = 'id') {
-  return data ? { [idKey]: data[idKey] } : data
+  return isArray(data)
+    ? data.map(item => createReference(item, idKey))
+    : data
+      ? { [idKey]: data[idKey] }
+      : data
 }

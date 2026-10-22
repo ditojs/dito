@@ -148,17 +148,9 @@ export const optionsTraits = {
       : property
   },
 
-  serializeValue(context: Context) {
-    const { schema, value } = context
+  serializeValue({ schema, value }: Context) {
     const relateKey = getRelateKey(schema)
-    if (relateKey) {
-      // Selected options can be both objects & arrays, e.g. 'checkboxes':
-      return getMultipleValue(schema, context) && isArray(value)
-        ? value.map(item => createReference(item, relateKey))
-        : createReference(value, relateKey)
-    } else {
-      return value
-    }
+    return relateKey ? createReference(value, relateKey) : value
   }
 } satisfies Partial<TypeDescriptor>
 

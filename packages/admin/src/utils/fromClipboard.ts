@@ -37,9 +37,9 @@ export async function fromClipboard(
     }
   }
 
-  // Use the same id keys as `SchemaGraph.serialize()`:
   const labeledEntries: FieldEntry[] = []
   const walkOptions = { services, rootData: rootData ?? data }
+  // Replace the ids under the keys that `SchemaGraph.serialize()` uses:
   walkData(schema, data, {
     dataPath,
     ...walkOptions,

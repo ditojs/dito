@@ -565,6 +565,21 @@ describe('initializeData()', () => {
     })
     expect(initializeData(form, {}, services)).toEqual({ format: '' })
   })
+
+  it('starts objects with `nullable: false` empty', async () => {
+    const form = await createForm({
+      fields: {
+        address: {
+          type: 'object',
+          nullable: false,
+          form: { type: 'form', fields: { city: { type: 'text' } } }
+        }
+      }
+    })
+    expect(initializeData(form, {}, services)).toEqual({
+      address: { city: null }
+    })
+  })
 })
 
 describe('initializeData() of several fields of the same value', () => {

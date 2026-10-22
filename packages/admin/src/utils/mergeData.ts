@@ -37,9 +37,8 @@ export function mergeData(
   }
   addMerge(source, target)
 
-  // 1. Match the objects of `source` with the ones of `target` and merge the
-  // lists in place. The walk visits the fields before it walks the items:
-  // New items have no target:
+  // 1. Match the objects of `source` with those of `target`, and merge lists in
+  // place before the walk enters their items, which have no target if new:
   const mergeEntry = ({ node: { source }, data, name }: DataEntry) => {
     const merge = mergesBySource.get(data)
     if (merge && source) {
