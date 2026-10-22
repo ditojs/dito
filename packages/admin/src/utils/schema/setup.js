@@ -34,8 +34,8 @@ const resolvedSchemas = new WeakMap()
 // Lists and objects don't toggle, the inlined forms of their items do:
 const onToggle = `'onToggle()', or 'form: { onToggle() }' in lists and objects,`
 
-// The schema keys of earlier versions that were renamed or removed, which would
-// otherwise be ignored silently:
+// The schema keys that 4.0 renamed or removed, which would otherwise be ignored
+// silently:
 const removedSchemaKeys = {
   format: `'formatValue()'`,
   parse: `'parseValue()'`,
@@ -48,10 +48,7 @@ const removedSchemaKeys = {
   data: 'state in the module of the schema',
   relateBy: `'relate: <key>'`,
   groupBy: `'options.group'`,
-  onOpen: onToggle,
-  events: `the 'on…' handlers, e.g. 'onChange()',`,
-  components: `'fields'`,
-  rules: `the limits of fields, their types and 'validate()'`
+  onOpen: onToggle
 }
 
 // The events of forms that `onSuccess()` replaces:
@@ -59,11 +56,6 @@ const onSuccess = `'onSuccess()' with 'context.isCreating'`
 const removedFormKeys = {
   onCreate: onSuccess,
   onSubmit: onSuccess
-}
-
-// Views hold their single field in `field`, not `component`:
-const removedViewKeys = {
-  component: `'field'`
 }
 
 export async function resolveSchema(value, unwrapModule = false) {
@@ -340,13 +332,15 @@ export async function setupNestedSchemas(api, schema) {
 function assertSupportedSchemaKeys(schema, name) {
   const descriptor = getTypeDescriptor(schema)
   assertRemovedSchemaKeys(schema, name, removedSchemaKeys, {
-    format: !!descriptor?.hasFormat,
+    // The value hooks of 3.x are callbacks, other values aren't checked:
+    format: !isFunction(schema.format),
+    parse: !isFunction(schema.parse),
+    compute: !isFunction(schema.compute),
+    process: !isFunction(schema.process),
     data: isPanel(schema) || !!descriptor?.resolvesValue
   })
   if (isForm(schema)) {
     assertRemovedSchemaKeys(schema, name, removedFormKeys)
-  } else if (isView(schema)) {
-    assertRemovedSchemaKeys(schema, name, removedViewKeys)
   }
   // Other types ignore `search`, so we only warn about it:
   if (schema.search !== undefined && !descriptor?.hasSearch) {

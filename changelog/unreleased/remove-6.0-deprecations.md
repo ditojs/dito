@@ -1,6 +1,5 @@
 ### Behaviour changes
 
-- **admin:** The schema keys removed below throw when their schema is set up, naming their replacement, see [Upgrading to 6.x](docs/upgrading-to-6.x.md).
 - **admin:** `components` of schemas, filters and `showDialog()` is removed: use `fields`. Views take their field in `field` instead of `component`.
 - **admin:** `min` and `max` of `number`, `integer`, `slider` and `progress` are removed: use `minimum` and `maximum`.
 - **admin:** `rules` of fields are removed: use the limits of fields, e.g. `minLength`, their types and `validate()`.
