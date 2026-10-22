@@ -87,6 +87,8 @@ template of `@ditojs/utils`, which escapes the values that it includes, see
 - A nested section whose fields are all hidden counts as hidden for the data
   of the form too, together with its own value: errors of its value go to the
   validation errors notification instead of the hidden section.
+- Options given as an array no longer reject values that aren't among them:
+  the `enum` of the server's model property decides.
 - Validation logs an `if` that throws and treats its field as shown, instead
   of stopping.
 

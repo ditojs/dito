@@ -87,14 +87,13 @@ export const widgets = createWidgetView<Widget>(
           searchTerm.length === 1 ? 600 : 50
         )
     },
-    // Stored values may have no option, e.g. options that were removed, which
-    // loaded options keep, unlike arrays:
+    // Stored values may have no option, e.g. options that were removed.
     codes: {
       type: 'multiselect',
       label: 'Codes',
       multiple: true,
       options: {
-        data: () => [
+        data: [
           { label: 'Alpha', value: 'a' },
           { label: 'Beta', value: 'b' }
         ],

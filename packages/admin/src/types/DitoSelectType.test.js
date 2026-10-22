@@ -248,7 +248,7 @@ describe('DitoSelectType', () => {
       )
     })
 
-    it('keeps values missing from loaded options when saving other values', async () => {
+    it('keeps values missing from the options when saving other values', async () => {
       const { findField, data, routeComponent, settle, submit } =
         await mountForm({
           schema: {
@@ -257,7 +257,7 @@ describe('DitoSelectType', () => {
               author: {
                 type: 'select',
                 options: {
-                  data: async () => [{ id: 1, name: 'Jane' }],
+                  data: [{ id: 1, name: 'Jane' }],
                   label: 'name',
                   value: 'id'
                 }
@@ -275,60 +275,6 @@ describe('DitoSelectType', () => {
         id: 1,
         title: 'Persuasion',
         author: 2
-      })
-    })
-
-    it('rejects values missing from static options on submit', async () => {
-      const { getErrors, submit } = await mountForm({
-        schema: {
-          fields: {
-            format: { type: 'select', options: ['hardcover', 'paperback'] },
-            genre: { type: 'select', options: { data: genres } }
-          }
-        },
-        data: { format: 'scroll', genre: 'opera' },
-        request: ({ data }) => ({ data })
-      })
-      const error = 'field must be one of the options.'
-      expect(await submit()).toBe(null)
-      expect(getErrors('format')).toEqual([`The Format ${error}`])
-      expect(getErrors('genre')).toEqual([`The Genre ${error}`])
-    })
-
-    it('matches values to static options like the selects do', async () => {
-      const { submit } = await mountForm({
-        schema: {
-          fields: {
-            country: {
-              type: 'select',
-              options: {
-                data: [
-                  { value: 'ch', label: 'Switzerland' },
-                  { value: 'fr', label: 'France' }
-                ],
-                equals: ({ value, option }) => (
-                  value?.toLowerCase() === option.value
-                )
-              }
-            },
-            author: {
-              type: 'select',
-              relate: true,
-              options: { data: [{ id: 1, name: 'Jane' }], label: 'name' }
-            },
-            count: { type: 'select', options: [0, 1, 2] },
-            format: { type: 'select', options: ['hardcover'] }
-          }
-        },
-        data: { country: 'FR', author: { id: 1 }, count: 0, format: null },
-        request: ({ data }) => ({ data })
-      })
-      expect(await submit()).toEqual({
-        id: 1,
-        country: 'FR',
-        author: { id: 1 },
-        count: 0,
-        format: null
       })
     })
 
