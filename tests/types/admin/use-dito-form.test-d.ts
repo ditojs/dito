@@ -106,7 +106,8 @@ describe('widgets', () => {
 
   it('lay out the items of lists and objects in their slots', () => {
     type Slot = InstanceType<typeof DitoListField>['$slots']['default']
-    expectTypeOf<Parameters<Slot>[0]['index']>().toEqualTypeOf<number>()
+    // The slots receive the context of the item:
+    expectTypeOf<Parameters<Slot>[0]>().toEqualTypeOf<SchemaContext>()
     h(DitoListField, { name: 'awards', creatable: true, draggable: true })
     h(DitoListField, { name: 'awards', itemLabel: ({ item }) => item.title })
     h(DitoListField, { name: 'awards', itemLabel: 'title' })

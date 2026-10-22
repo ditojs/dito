@@ -275,8 +275,8 @@ export const DitoObjectField = defineSourceWidget('DitoObjectField', {
 })
 
 // Lists and objects lay out the form of their items in their default slot,
-// with the slot props `{ item, index }`. The forms of the items provide the
-// scopes of the widgets in them:
+// which receives the context of the item itself, e.g. `v-slot="context"`. The
+// forms of the items provide the scopes of the widgets in them:
 function defineSourceWidget(widgetName, { props = {}, getSchema }) {
   return {
     name: widgetName,
@@ -291,9 +291,7 @@ function defineSourceWidget(widgetName, { props = {}, getSchema }) {
         inlined: true,
         onChange: context => emit('change', context)
       }
-      const valueName = schema.wrapPrimitives
-      const renderItem = ({ item, index = null }) =>
-        slots.default({ item: valueName ? item[valueName] : item, index })
+      const renderItem = ({ context }) => slots.default(context)
       return () =>
         isRelevant()
           ? h(

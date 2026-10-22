@@ -67,6 +67,10 @@ const item = {
   publisher: null
 }
 
+// The contexts that the slots of the awards and prices received, by index:
+const awardContexts = []
+const priceContexts = []
+
 let form = null
 
 // A page that lays out the items of its lists and objects in their slots:
@@ -88,20 +92,28 @@ const DesignerPage = {
               itemLabel: ({ item }) => html`<b>${item.title}</b>`
             },
             {
-              default: ({ index }) => [
-                h(DitoTextField, { name: 'title', width: '3/4' }),
-                h(DitoNumberField, {
-                  name: 'year',
-                  width: '1/4',
-                  placeholder: `Year ${index + 1}`
-                })
-              ]
+              default: context => {
+                awardContexts[context.itemIndex] = context
+                return [
+                  h(DitoTextField, { name: 'title', width: '3/4' }),
+                  h(DitoNumberField, {
+                    name: 'year',
+                    width: '1/4',
+                    placeholder: `Year ${context.itemIndex + 1}`
+                  })
+                ]
+              }
             }
           ),
           h(
             DitoListField,
             { name: 'prices', creatable: true },
-            { default: () => h(DitoNumberField, { label: 'Price', step: 5 }) }
+            {
+              default: context => {
+                priceContexts[context.itemIndex] = context
+                return h(DitoNumberField, { label: 'Price', step: 5 })
+              }
+            }
           ),
           h(
             DitoListField,
@@ -202,6 +214,20 @@ describe('DitoListField', () => {
     expect(year.attributes('placeholder')).toBe('Year 2')
     await enterValue(getRows(wrapper, 'awards')[1].find('input'), 'Bronze')
     expect(form.item.awards[1].title).toBe('Bronze')
+  })
+
+  it('passes the context of each item to its slot', async () => {
+    awardContexts.length = 0
+    const { wrapper } = await mountDesignerPage()
+    await openItems(wrapper, 'awards')
+    const [first, second] = awardContexts
+    expect(second.item).toBe(form.item.awards[1])
+    expect(second.itemIndex).toBe(1)
+    expect(second.dataPath).toBe('awards/1')
+    expect(first.parentItem).toBe(form.item)
+    expect(first.rootItem).toBe(form.item)
+    // Values are wrapped in their items:
+    expect(priceContexts[1].item.value).toBe(20)
   })
 
   it('labels its items with `itemLabel`', async () => {

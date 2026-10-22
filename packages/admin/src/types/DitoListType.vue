@@ -124,12 +124,9 @@
               )
                 template(
                   v-if="$slots.default"
-                  #default
+                  #default="{ context }"
                 )
-                  slot(
-                    :item="item"
-                    :index="index"
-                  )
+                  slot(:context="context")
           td.dito-table__buttons(
             v-if="hasCellEditButtons"
           )

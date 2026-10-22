@@ -16,7 +16,7 @@ DitoSchemaForm
   DitoSwitchField(name="isFeatured" label="Featured")
   DitoSection(label="Ranking" collapsible collapsed)
     DitoNumberField(name="rank")
-  DitoListField(name="awards" collapsible creatable deletable v-slot="{ item }")
+  DitoListField(name="awards" collapsible creatable deletable)
     DitoTextField(name="title" width="3/4")
     DitoNumberField(name="year" width="1/4")
   DitoSection(name="address" label="Address")
@@ -151,12 +151,14 @@ template with a `v-if`.
 ## Lists and objects
 
 `DitoListField` and `DitoObjectField` lay out the form of their items in their
-default slot, which receives `{ item, index }`, or `{ item }` for objects.
+default slot, which receives the [context](./context.md) of the item, e.g.
+`v-slot="context"` with `context.item`, `context.itemIndex`,
+`context.parentItem` and `context.dataPath`.
 The widgets in the slot edit the properties of the item:
 
 ```pug
-DitoListField(name="awards" creatable deletable draggable v-slot="{ index }")
-  DitoTextField(name="title" :placeholder="`Award ${index + 1}`")
+DitoListField(name="awards" creatable deletable draggable v-slot="context")
+  DitoTextField(name="title" :placeholder="`Award ${context.itemIndex + 1}`")
 ```
 
 The lists create, delete and reorder their items like inlined lists, and new

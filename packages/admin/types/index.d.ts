@@ -3607,8 +3607,8 @@ export const DitoUploadField: DefineComponent<
 >
 
 /**
- * Edits the items of the array property `name`, laid out in its default slot
- * with the slot props `{ item, index }`, in which widgets edit the item's
+ * Edits the items of the array property `name`, laid out in its default slot,
+ * which receives the context of each item, in which widgets edit the item's
  * properties. Items of several `forms` are laid out by their `type`.
  */
 export const DitoListField: DefineSetupFnComponent<
@@ -3625,13 +3625,14 @@ export const DitoListField: DefineSetupFnComponent<
   >,
   {},
   SlotsType<{
-    default(props: { item: any; index: number }): any
+    default(context: SchemaContext): any
   }>
 >
 
 /**
- * Edits the object property `name`, laid out in its default slot with the slot
- * prop `{ item }`. Objects that are `nullable` can be created and deleted.
+ * Edits the object property `name`, laid out in its default slot, which
+ * receives the context of the object. Objects that are `nullable` can be
+ * created and deleted.
  */
 export const DitoObjectField: DefineSetupFnComponent<
   WidgetProps<
@@ -3642,7 +3643,7 @@ export const DitoObjectField: DefineSetupFnComponent<
   >,
   {},
   SlotsType<{
-    default(props: { item: Record<string, any> }): any
+    default(context: SchemaContext): any
   }>
 >
 
