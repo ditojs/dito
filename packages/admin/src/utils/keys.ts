@@ -21,7 +21,10 @@ export interface LabelToggle {
 // The panes of layout sections provide their components to `DitoSchemaField`
 // and `DitoPane`:
 export interface Layout {
-  readonly props: Record<string, any>
+  readonly props: {
+    readonly store: Record<string, any>
+    readonly [key: string]: any
+  }
   readonly componentPath: Ref<string>
   readonly entries: Ref<Record<string, any>[]>
   getEntry(name: string): Record<string, any>
