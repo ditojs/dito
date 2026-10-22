@@ -2,7 +2,9 @@ import SchemaContext from '../../SchemaContext.js'
 import { computed, toRaw } from 'vue'
 import { isArray, isObject, isFunction } from '@ditojs/utils'
 import { appendDataPath } from '../data.js'
+import { getUploadLimits } from '../upload.ts'
 import {
+  getTypeDescriptor,
   getSourceType,
   getItemAdapter,
   getChildSourceSchemas,
@@ -44,11 +46,18 @@ export class FieldNode {
     this.name = name
     this.fields = fields
     // Fields of the same value agree on its shape, the first one with items
-    // tells it:
+    // tells it, and the first one with `relate` its relation:
     const sourceField = fields.find(
       ({ schema }) => getSourceType(schema) || hasFormSchema(schema)
     )
     this.source = sourceField ? getSchemaSource(sourceField.schema) : null
+    const relationField = fields.find(({ schema }) => schema.relate)
+    this.relation = relationField
+      ? {
+          schema: relationField.schema,
+          hasOptions: !!getOptionsDataSchema(relationField.schema)
+        }
+      : null
   }
 
   // The node of the fields that the walk accepts, with their containers:
@@ -174,6 +183,23 @@ export class FieldNode {
   isExcluded(entry) {
     const { schema } = getFieldDefining(this.fields, 'exclude')
     return shouldExcludeValue(schema, () => createContext(schema, entry))
+  }
+
+  // The limits of the files in the value, `null` if it holds no files:
+  getUploadLimits(entry) {
+    const field = this.fields.find(({ schema }) => schema.type === 'upload')
+    return field
+      ? getUploadLimits(field.schema, createContext(field.schema, entry))
+      : null
+  }
+
+  // Of several fields of the value, the first one displays it:
+  getDisplayValue(entry) {
+    const { schema } = this.fields[0]
+    const getDisplayValue = getTypeDescriptor(schema)?.getDisplayValue
+    return getDisplayValue
+      ? getDisplayValue(createContext(schema, entry))
+      : entry.data[entry.name]
   }
 }
 
@@ -492,8 +518,6 @@ function addFieldNode(nodes, field) {
 // The source of the items of a schema, in the shape that nodes describe it:
 export function getSchemaSource(schema) {
   return {
-    // Nested sections hold their items without being sources:
-    isSource: !!getSourceType(schema),
     isList: isListSource(schema),
     // Sources of views have no forms of their own, and their items aren't
     // walked:

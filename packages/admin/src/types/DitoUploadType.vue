@@ -453,10 +453,10 @@ const DitoUploadType = {
         getData: () => ({ files: getStoredFiles(value.value) }),
         getUploadEntries: data => [
           {
-            schema: props.schema,
             data,
             name: 'files',
-            dataPath: props.dataPath
+            dataPath: props.dataPath,
+            limits: uploadLimits.value
           }
         ],
         createContext,

@@ -79,9 +79,11 @@ export class PropertyNode {
   constructor(name, property) {
     this.name = name
     this.property = property
-    // Properties hold no fields, which only fields have for structure:
-    this.fields = []
     this.source = getPropertySource(property)
+    // Properties have no options, so copies keep the ids of their relations:
+    this.relation = property.relate
+      ? { schema: property, hasOptions: false }
+      : null
     this.#itemForms = getItemForms(property)
   }
 
@@ -214,6 +216,27 @@ export class PropertyNode {
   // Computed properties are stored by the server, which doesn't accept them:
   isExcluded(entry) {
     return !!(this.#get('exclude', entry) || this.#get('computed', entry))
+  }
+
+  // Assets have no limits of their own, their widgets check them:
+  getUploadLimits() {
+    const { type, items } = this.property
+    return type === 'asset' || items?.type === 'asset'
+      ? { extensions: undefined, maxSize: undefined }
+      : null
+  }
+
+  // Show dates and times in the formats of the admin, like their widgets:
+  getDisplayValue(entry) {
+    const { type } = this.property
+    const value = entry.data[entry.name]
+    const isTime = this.#get('format', entry) === 'iso-time'
+    return isDate(value) && (dateTypes.has(type) || isTime)
+      ? this.#createContext(entry).format(value, {
+          date: !isTime,
+          time: type !== 'date'
+        })
+      : value
   }
 
   // Convert values by their type, like the types of fields do:
@@ -445,7 +468,6 @@ function getPropertySource(property) {
   const { type, properties, items, forms, idKey, orderKey, relate } = property
   return !relate && (type === 'array' || properties)
     ? {
-        isSource: true,
         isList: type === 'array',
         hasForms: true,
         idKey: idKey || 'id',

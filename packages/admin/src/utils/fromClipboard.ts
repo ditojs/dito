@@ -39,28 +39,22 @@ export async function fromClipboard(
 
   // Use the same id keys as `SchemaGraph.serialize()`:
   const labeledEntries: FieldEntry[] = []
-  const handleEntry = (entry: FieldEntry) => {
-    const { schema, data, name } = entry
-    if (schema.relate) {
-      replaceTemporaryIds(data[name], getRelateKey(schema)!)
-      if (asArray(data[name]).some(isLabel)) {
-        labeledEntries.push(entry)
-      }
-    }
-  }
   const walkOptions = { services, rootData: rootData ?? data }
   walkData(schema, data, {
     dataPath,
     ...walkOptions,
     visit: entry => {
       const { node, data, name } = entry
-      if (node.source?.hasResource) {
+      const { source, relation } = node
+      if (source?.hasResource) {
         delete data[name]
-      } else if (node.source?.isSource) {
-        replaceTemporaryIds(data[name], node.source.idKey)
-      } else {
-        for (const { schema } of node.fields) {
-          handleEntry({ ...entry, schema })
+      } else if (source) {
+        replaceTemporaryIds(data[name], source.idKey)
+      } else if (relation) {
+        const { schema } = relation
+        replaceTemporaryIds(data[name], getRelateKey(schema)!)
+        if (asArray(data[name]).some(isLabel)) {
+          labeledEntries.push({ ...entry, schema })
         }
       }
     }
