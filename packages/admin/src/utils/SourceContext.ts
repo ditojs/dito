@@ -12,6 +12,10 @@ export interface SourceContext {
   readonly isDisabled: boolean
   // The transient verbs of sources in nested data, e.g. `remove`:
   readonly verbs: Record<string, string>
+  // The path of the source in the URL, and of its items, which the paths of
+  // the forms below them continue:
+  readonly routePath: string | null
+  getItemRoutePath(index: string | number | null): string | null
   // The paths of the forms that create and edit the items:
   readonly createPath: string | null
   readonly objectPath: string | null

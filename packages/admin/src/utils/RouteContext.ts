@@ -14,9 +14,8 @@ export interface ItemLocation {
   key: string | number | null
 }
 
-// The form that a route opens for an item of a source. Views route the forms
-// of their sources themselves, the components of forms and pages claim the
-// paths below them.
+// The form that a route opens for an item of a source, which the source claims
+// in the path below the route.
 export interface RouteClaim {
   // The source of the item, e.g. the children of a tree:
   readonly schema: Schema
@@ -27,10 +26,8 @@ export interface RouteClaim {
   // The id or index of the item, `create`, or `null` for objects:
   readonly param: string | null
   readonly location: ItemLocation
-  // `null` in the routes of views, which don't render their sources meanwhile:
-  readonly source: SourceContext | null
-  // Trees render the forms of their items inside of them, unless they aren't
-  // rendered themselves, as in views:
+  readonly source: SourceContext
+  // Trees render the forms of their items inside of them:
   readonly isEmbedded: boolean
   // The forms of the items of the same source share their component:
   readonly key: string
@@ -43,7 +40,7 @@ export interface RouteContext {
   readonly parent: RouteContext | null
   readonly dataContext: DataContext
   // The node of views and menus, which render the routes of their views
-  // through a view without data:
+  // through a view without data, `null` in forms:
   readonly node: MenuNode | ViewNode | null
   // The claim that opened the form:
   readonly claim: RouteClaim | null

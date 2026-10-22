@@ -4,8 +4,11 @@ import {
   onUnmounted,
   provide,
   reactive,
-  toRef
+  toRef,
+  unref,
+  watch
 } from 'vue'
+import { parseDataPath } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { ItemStores } from '../utils/ItemStores.js'
 import {
@@ -66,6 +69,8 @@ export function useSource(
 ) {
   const adminContext = inject(adminContextKey)!
   const routeContext = inject(routeContextKey, null)
+  // The source whose items render this one, e.g. an inlined list:
+  const parentSource = inject(sourceContextKey, null)
   // Sources emit their `load` event through the schema that renders them:
   const schemaEvents = inject(schemaEventsKey)!
   // Sources link to views or load their data through their resource, the
@@ -108,6 +113,9 @@ export function useSource(
   const hasInlinedItems = () => isInlined(props.schema)
   const isList = () => isListSource(props.schema)
   const paginate = computed(() => getSchemaValue('paginate', { type: Number }))
+  // Sources are hidden while the forms of their items show, e.g. the lists of
+  // views, but stay mounted to claim the routes of the forms:
+  const isShown = () => !routeContext || routeContext.isActive
 
   const {
     listQuery,
@@ -119,7 +127,7 @@ export function useSource(
     getPaginate: () => paginate.value,
     // Lists outside of routes, e.g. in dialogs, keep the query to themselves:
     isInRoute: () => !!routeContext,
-    isRouted: () => providesData.value && !!routeContext,
+    isRouted: () => providesData.value && !!routeContext && isShown(),
     onChange: () => loadData()
   })
 
@@ -176,12 +184,21 @@ export function useSource(
         })
   }
   // Sources in data that isn't stored yet, e.g. of forms that create their
-  // item, have nothing to load:
+  // item, have nothing to load. Hidden sources load once they're shown:
+  let isLoadDeferred = false
   const loadData = () => {
     if (!isTransient.value) {
-      return requestData()
+      isLoadDeferred = !isShown()
+      if (!isLoadDeferred) {
+        return requestData()
+      }
     }
   }
+  watch(isShown, isShown => {
+    if (isShown && isLoadDeferred) {
+      loadData()
+    }
+  })
 
   const { getItemId, getItemLabel, getItemDataPath } = useSourceItems({
     services,
@@ -219,13 +236,11 @@ export function useSource(
   )
 
   // The form of the view addresses the items by their ids:
-  const getViewItemPath = (key: string | undefined) => {
-    const route = (
-      key != null &&
-      adminContext.routeTree?.getViewItemRoute(props.schema.view, key)
-    )
-    return route ? adminContext.router.resolve(route).path : null
-  }
+  const getViewItemPath = (key: string | undefined) =>
+    key != null
+      ? (adminContext.routeTree?.getViewItemPath(props.schema.view, key) ??
+        null)
+      : null
 
   const getItemStore = (item: Data) =>
     itemStores.getStore(getItemUid(props.schema, item))
@@ -394,17 +409,22 @@ export function useSource(
     return depth > (props.schema.maxDepth ?? 1)
   })
 
-  // The path of the forms of the items within the source's route, after the
-  // names of the tabs, sections and panels around it, e.g. `pricing/families`.
-  // Trees route the forms of their children below the ones of their items:
+  // The path of the source within its route, after the names of the tabs,
+  // sections and panels around it, e.g. `pricing/families`, or after the path
+  // of the item of the inlined source whose item renders it, e.g. `books/3`:
   const routePath = computed(() => {
-    const isRouted = (
-      !!routeContext &&
-      !linksToView.value &&
-      !hasInlinedItems() &&
-      !isBeyondMaxDepth.value
-    )
-    const path = isRouted
+    const parent = unref(parentSource)
+    const parentPath = parent?.routePath
+      ? getRelativeDataPath(componentPath.value, parent.componentPath)
+      : null
+    if (parentPath) {
+      const segments = parseDataPath(parentPath)
+      const index = isListSource(parent!.schema) ? segments.shift()! : null
+      return `${parent!.getItemRoutePath(index)}/${
+        getSourcePath(props.schema, segments.join('/'), adminContext.api)
+      }`
+    }
+    const path = routeContext
       ? getRelativeDataPath(
           componentPath.value,
           routeContext.dataContext.componentPath
@@ -424,9 +444,15 @@ export function useSource(
     return null
   })
 
-  // The source and where its value and routes are, for the forms of its items:
+  // The source and where its value and routes are, for the forms of its items.
+  // Inlined sources render the forms of their items themselves:
   const sourceRoute = computed<SourceRoute | null>(() =>
-    routePath.value
+    (
+      routePath.value &&
+      !hasInlinedItems() &&
+      !linksToView.value &&
+      !isBeyondMaxDepth.value
+    )
       ? {
           schema: props.schema,
           location: {
@@ -444,8 +470,22 @@ export function useSource(
 
   // Sources link to the forms of their items, if they have one:
   const formPath = computed(() =>
-    hasFormSchema(props.schema) ? routePath.value : null
+    sourceRoute.value && hasFormSchema(props.schema) ? routePath.value : null
   )
+
+  // The path of the item at `index` in the routes of the forms below it, also
+  // of the items of inlined sources, or the source's own path for objects:
+  const getItemRoutePath = (index: string | number | null) =>
+    index !== null
+      ? `${routePath.value}/${
+          getItemKey(
+            props.schema,
+            listData.value[+index],
+            index,
+            isTransient.value
+          )
+        }`
+      : routePath.value
 
   const sourceContext: SourceContext = reactive({
     schema: toRef(props, 'schema'),
@@ -505,18 +545,13 @@ export function useSource(
         : formPath.value
     ),
 
+    routePath,
+    getItemRoutePath,
+
     getItemPath(index: number) {
       return linksToView.value
         ? getViewItemPath(getItemId(props.schema, listData.value[index], index))
-        : formPath.value &&
-          `${formPath.value}/${
-            getItemKey(
-              props.schema,
-              listData.value[index],
-              index,
-              isTransient.value
-            )
-          }`
+        : formPath.value && getItemRoutePath(index)
     }
   })
 

@@ -53,10 +53,10 @@ describe('RouteTree', () => {
       DitoView,
       DitoForm
     ])
-    // Paths of lists without an item redirect:
-    const admin = await mountAdmin({ views })
-    const { matched } = admin.router.resolve('/shelf/books')
-    expect(matched.at(-1)?.redirect).toBe('.')
+    // Paths of lists without an item lead back to their view:
+    const admin = await mountAdmin({ views, request: () => ({ data: [] }) })
+    await admin.navigate('/shelf/books')
+    expect(admin.router.currentRoute.value.path).toBe('/shelf')
   })
 
   it('routes views in menus under the path of the menu', async () => {

@@ -15,7 +15,6 @@ DitoEditButtons.dito-options-edit-buttons(
 
 <script>
 import { computed, inject } from 'vue'
-import { useRouter } from 'vue-router'
 import DitoEditButtons from './DitoEditButtons.vue'
 import { adminContextKey } from '../utils/keys.ts'
 
@@ -32,18 +31,15 @@ export default {
 
   setup(props) {
     const adminContext = inject(adminContextKey)
-    const router = useRouter()
     return {
       editPath: computed(() => {
         const { schema, optionValue } = props
-        const route = (
-          optionValue != null &&
-          adminContext.routeTree?.getViewItemRoute(
-            schema.view,
-            String(optionValue)
-          )
-        )
-        return route ? router.resolve(route).path : null
+        return optionValue != null
+          ? (adminContext.routeTree?.getViewItemPath(
+              schema.view,
+              String(optionValue)
+            ) ?? null)
+          : null
       })
     }
   }

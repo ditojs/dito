@@ -1,6 +1,6 @@
 import { toRaw, type Component } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
-import { getValueAtDataPath, parseDataPath } from '@ditojs/utils'
+import { parseDataPath } from '@ditojs/utils'
 import {
   getFormSchemas,
   getNamedSchemas,
@@ -11,8 +11,6 @@ import {
   isInlined,
   isListSource,
   isMenu,
-  isPage,
-  hasNestedData,
   iterateSchemaComponents
 } from './schema/structure.js'
 import { getItemId } from './schema/data.js'
@@ -22,12 +20,7 @@ import {
   getTypeDescriptor,
   getChildSourceSchemas
 } from './schema/types.ts'
-import {
-  appendDataPath,
-  getLastDataPathName,
-  getParentDataPath,
-  getRelativeDataPath
-} from './data.js'
+import { appendDataPath, getRelativeDataPath } from './data.js'
 import type { ItemLocation, RouteClaim } from './RouteContext.ts'
 import type { SourceContext } from './SourceContext.ts'
 import type { Api, Schema } from './types.ts'
@@ -43,13 +36,12 @@ export interface SourceRoute {
   readonly location: ItemLocation
   readonly path: string
   readonly isTransient: boolean
-  // `null` for the sources of views, which don't render while their forms do:
-  readonly source: SourceContext | null
+  readonly source: SourceContext
 }
 
 declare module 'vue-router' {
   interface RouteMeta {
-    node?: MenuNode | ViewNode | SourceNode
+    node?: MenuNode | ViewNode
   }
 }
 
@@ -61,20 +53,16 @@ export interface Route {
 }
 
 abstract class RouteNode {
-  constructor(readonly parent: RouteNode | null) {}
+  // The parameters in the path of the route, e.g. `id` in `products/:id`:
+  readonly params: string[] = []
+
+  constructor(readonly parent: MenuNode | null) {}
 
   getParams(routeParams: Record<string, any>): Params {
     const params: Params = {}
-    const addParam = (name: string) => {
+    for (const name of this.params) {
       if (routeParams[name] != null) {
         params[name] = routeParams[name]
-      }
-    }
-    for (let node: RouteNode | null = this; node; node = node.parent) {
-      if (node instanceof SourceNode) {
-        addParam(node.param)
-      } else if (node instanceof ViewNode) {
-        node.params.forEach(addParam)
       }
     }
     return params
@@ -88,7 +76,8 @@ export class MenuNode extends RouteNode {
   constructor(
     readonly schema: Schema,
     parent: MenuNode | null,
-    readonly name: string
+    readonly name: string,
+    readonly path: string
   ) {
     super(parent)
     parent?.items.push(this)
@@ -110,18 +99,17 @@ export class MenuNode extends RouteNode {
 
 export class ViewNode extends RouteNode {
   readonly routeName: symbol
-  // The parameters in the path of the view, e.g. `id` in `products/:id`:
-  readonly params: string[] = []
   // Views with required parameters can't be linked to from the menu:
   readonly hasMenuItem: boolean = true
-  // The sources with forms, which the view routes itself, as it doesn't render
-  // its components while their forms are open:
-  readonly sources: SourceNode[] = []
 
   constructor(
     readonly schema: Schema,
     parent: MenuNode | null,
-    readonly name: string
+    readonly name: string,
+    readonly path: string,
+    // The path of the forms of the items of the view's first source with
+    // forms, e.g. `books` in multi-component views, or `''`:
+    readonly itemPath: string | null
   ) {
     super(parent)
     parent?.items.push(this)
@@ -140,48 +128,6 @@ export class ViewNode extends RouteNode {
 
   get linkRouteName(): symbol {
     return this.routeName
-  }
-}
-
-// A source of a view with forms, at its `path` within the view:
-export class SourceNode extends RouteNode {
-  readonly routeName: symbol
-  // The item of list forms, or `create` in object forms:
-  readonly param = 'id1'
-
-  constructor(
-    readonly schema: Schema,
-    parent: ViewNode,
-    readonly path: string,
-    // Where the view holds the source's value:
-    readonly dataPath: string,
-    readonly componentPath: string
-  ) {
-    super(parent)
-    parent.sources.push(this)
-    this.routeName = Symbol(`${parent.name}/${path}`)
-  }
-
-  // Views claim the forms of their sources from their data, as they don't
-  // render the sources while the forms are open:
-  getSourceRoute(viewData: any, viewPath: string): SourceRoute {
-    const { schema, path, dataPath, componentPath } = this
-    return {
-      schema,
-      location: {
-        data: getValueAtDataPath(
-          viewData,
-          getParentDataPath(dataPath),
-          () => null
-        ),
-        key: getLastDataPathName(dataPath),
-        dataPath,
-        componentPath
-      },
-      path: path ? `${viewPath}/${path}` : viewPath,
-      isTransient: false,
-      source: null
-    }
   }
 }
 
@@ -208,10 +154,10 @@ export class RouteTree {
   }
 
   // Lists and options linked to views edit their items in the view's form:
-  getViewItemRoute(name: string, key: string): Route | null {
-    const source = this.#viewsByName.get(name)?.sources[0]
-    return source
-      ? { name: source.routeName, params: { [source.param]: key } }
+  getViewItemPath(name: string, key: string): string | null {
+    const view = this.#viewsByName.get(name)
+    return view && view.itemPath !== null
+      ? joinPaths(view.path, view.itemPath, key)
       : null
   }
 
@@ -222,7 +168,7 @@ export class RouteTree {
 
   createRouteRecords(components: RouteComponents): RouteRecordRaw[] {
     return [...this.nodes, ...this.#hiddenNodes].map(node =>
-      this.#createViewRecord(node, components)
+      createViewRecord(node, components)
     )
   }
 
@@ -231,83 +177,67 @@ export class RouteTree {
     name: string,
     parent: MenuNode | null
   ): MenuNode | ViewNode {
+    const path = `${parent?.path ?? ''}/${
+      getSchemaPath(schema, name, this.#api)
+    }`
     if (isMenu(schema)) {
-      const menu = new MenuNode(schema, parent, name)
+      const menu = new MenuNode(schema, parent, name, path)
       for (const [itemName, item] of Object.entries(schema.items as Schema)) {
         this.#createViewNode(item, itemName, menu)
       }
       return menu
     } else {
-      const view = new ViewNode(schema, parent, name)
+      const view = new ViewNode(
+        schema,
+        parent,
+        name,
+        path,
+        this.#getItemPath(schema)
+      )
       this.#viewsByName.set(name, view)
-      forEachSource(schema, (source, dataPath, componentPath) => {
-        if (hasRoutedForm(source)) {
-          new SourceNode(
-            source,
-            view,
-            // Single-component views route the forms of their component under
-            // their own path:
-            source === schema.field
-              ? ''
-              : getSourcePath(source, componentPath, this.#api),
-            dataPath,
-            componentPath
-          )
-        }
-      })
       return view
     }
   }
 
-  #createViewRecord(
-    node: MenuNode | ViewNode,
-    components: RouteComponents,
-    basePath = ''
-  ): RouteRecordRaw {
-    const { schema, name } = node
-    const path = `${basePath}/${getSchemaPath(schema, name, this.#api)}`
-    return {
-      path,
-      name: node.routeName,
-      component: components.view,
-      meta: { node },
-      children:
-        node instanceof MenuNode
-          ? node.items.map(item =>
-              this.#createViewRecord(item, components, path)
-            )
-          : isPage(schema)
-            ? [createClaimedRecord(name)]
-            : node.sources.flatMap(source => this.#createSourceRecords(source))
-    }
+  // Single-component views route the forms of their component under their own
+  // path:
+  #getItemPath(schema: Schema): string | null {
+    let itemPath: string | null = null
+    forEachSource(schema, (source, componentPath) => {
+      if (itemPath === null && hasFormSchema(source) && !isInlined(source)) {
+        itemPath =
+          source === schema.field
+            ? ''
+            : getSourcePath(source, componentPath, this.#api)
+      }
+    })
+    return itemPath
   }
+}
 
-  // The view renders the forms that it claims for the paths of its sources:
-  #createSourceRecords(source: SourceNode): RouteRecordRaw[] {
-    const { schema, path, param, routeName: name } = source
-    const meta = { node: source }
-    const isList = isListSource(schema)
-    return [
-      isList || hasFormSchema(schema)
-        ? {
-            // Object forms take `create` as their optional parameter:
-            path: joinPaths(path, `:${param}${isList ? '' : '(create)?'}`),
-            name,
-            components: {},
-            meta,
-            children: [createClaimedRecord(name.description!)]
-          }
-        : {
-            // Objects without forms, like tree objects, only route the forms
-            // of their children:
-            path: joinPaths(path, ':_(.*)+'),
-            name,
-            components: {},
-            meta
-          },
-      // Lead the paths of lists without an item back to their view:
-      ...(isList && path ? [{ path, redirect: '.' }] : [])
-    ]
+// The components of views claim the paths below them, which route the forms of
+// their sources. Menus render the routes of their views through a view without
+// data:
+function createViewRecord(
+  node: MenuNode | ViewNode,
+  components: RouteComponents
+): RouteRecordRaw {
+  return {
+    path: node.path,
+    name: node.routeName,
+    component: components.view,
+    meta: { node },
+    children:
+      node instanceof MenuNode
+        ? node.items.map(item => createViewRecord(item, components))
+        : // Records without components need a name to match:
+          [
+            {
+              path: ':_(.*)*',
+              name: Symbol(`${node.name}/*`),
+              components: {}
+            }
+          ]
   }
 }
 
@@ -370,18 +300,11 @@ function routesChildren(schema: Schema): boolean {
   return hasFormSchema(schema) || !isListSource(schema)
 }
 
-// The paths below pages and forms are claimed by their components, which route
-// the forms of their sources. Records without components need a name to match:
-function createClaimedRecord(name: string): RouteRecordRaw {
-  return { path: ':_(.*)*', name: Symbol(`${name}/*`), components: {} }
-}
-
 // Also find the sources in tabs, panels and sections, whose names their
 // component paths contain, as the rendered components do:
 function forEachSource(
   schema: Schema,
-  callback: (source: Schema, dataPath: string, componentPath: string) => void,
-  dataPath = '',
+  callback: (source: Schema, componentPath: string) => void,
   componentPath = ''
 ) {
   const forEachPanelSource = (schema: Schema, componentPath: string) => {
@@ -389,28 +312,17 @@ function forEachSource(
       forEachSource(
         panel as Schema,
         callback,
-        dataPath,
         appendDataPath(componentPath, name)
       )
     }
   }
   const forEachComponentSource = (schema: Schema, componentPath: string) => {
     iterateSchemaComponents([schema], (component: Schema, name: string) => {
-      const componentDataPath = appendDataPath(dataPath, name)
       const path = appendDataPath(componentPath, name)
-      const isSource = !!getSourceType(component)
-      if (isSource) {
-        callback(component, componentDataPath, path)
-      }
-      // Sections and inlined objects hold their components in their place.
-      // Only nested sections and objects hold their data:
-      if (component.fields && !isListSource(component)) {
-        forEachSource(
-          component,
-          callback,
-          isSource || hasNestedData(component) ? componentDataPath : dataPath,
-          path
-        )
+      if (getSourceType(component)) {
+        callback(component, path)
+      } else if (component.fields) {
+        forEachSource(component, callback, path)
       }
       forEachPanelSource(component, path)
     })
