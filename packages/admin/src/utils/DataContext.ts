@@ -61,7 +61,7 @@ export interface DataContext {
   getErrors(match?: Match): Errors | null
   clearErrors(match?: Match): void
   showValidationErrors(errors: Errors, dataPath?: string): Promise<void>
-  revealErrors(): Promise<void>
+  revealErrors(): Promise<string[]>
   markEdited(): void
   resetItem(data: any): any
   mergeItem(data: any): any
@@ -126,7 +126,7 @@ export function createDataContext({
     })
   }
 
-  // Notify the errors that no field displays:
+  // Notify the errors that no mounted component displays once they're revealed:
   const showErrors = async (
     errors: Errors,
     {
@@ -135,25 +135,14 @@ export function createDataContext({
       match
     }: { dataPath?: string; server?: boolean; match?: Match } = {}
   ) => {
-    const unmatchedErrors = context.model.replaceErrors(errors, {
+    const fieldDataPaths = context.model.replaceErrors(errors, {
       dataPath,
       server,
       isMatchingDataPath: match ? getDataPathMatcher(match) : null
-    }) ?? {}
-    // In the layouts of written properties, the errors that no mounted widget
-    // or section shows are unmatched too, e.g. under a `v-if`:
-    if (context.schema.properties) {
-      const { ui } = services.adminContext
-      for (const [dataPath, errs] of Object.entries(errors)) {
-        const path = getValueComponentPath(dataPath)
-        if (ui.getHandles(path, context).length === 0) {
-          unmatchedErrors[dataPath] ??= errs
-        }
-      }
-    }
-    await revealErrorDataPaths(
-      Object.keys(errors).filter(dataPath => !unmatchedErrors[dataPath])
-    )
+    })
+    const displayedDataPaths = await revealErrorDataPaths([
+      ...new Set(Object.values(fieldDataPaths))
+    ])
     if (!isEmpty(errors)) {
       // The label of the data's schema, also for the errors of its sources:
       const { schema, data } = context
@@ -168,13 +157,15 @@ export function createDataContext({
           })
         )
       )
-      const messages = Object.entries(unmatchedErrors).flatMap(
-        ([dataPath, errs]) => {
+      const messages = Object.entries(errors)
+        .filter(
+          ([dataPath]) => !displayedDataPaths.includes(fieldDataPaths[dataPath])
+        )
+        .flatMap(([dataPath, errs]) => {
           const field = labelize(parseDataPath(dataPath).pop())
           const prefix = field ? `The field ${field}` : `The ${label}`
           return errs.map(({ message }) => `${prefix} ${message}`)
-        }
-      )
+        })
       services.adminContext.notify({
         type: 'error',
         title: 'Validation Errors',
@@ -183,18 +174,21 @@ export function createDataContext({
     }
   }
 
-  // Fields in the forms of nested routes open the form, which reveals the
-  // errors that it takes over from its item:
+  // Reveal the errors of the fields at `dataPaths`, and return the data paths
+  // of the ones that mounted components display then. Fields in the forms of
+  // nested routes open the form, which reveals the errors that it takes over
+  // from its item:
   const revealErrorDataPaths = async (dataPaths: string[]) => {
     const { adminContext, routeContext } = services
+    const { router, ui } = adminContext
     const [firstDataPath] = dataPaths
     // Dialogs and panels with their own data aren't part of routes:
     const formRoute =
       firstDataPath && routeContext?.dataContext === context
         ? routeContext.getFormRoute(firstDataPath)
         : null
+    const displayedDataPaths: string[] = []
     if (formRoute) {
-      const { router, ui } = adminContext
       // The form may be open already, e.g. a nested form:
       const failure =
         router.currentRoute.value.path !== formRoute.path
@@ -203,16 +197,22 @@ export function createDataContext({
       if (!failure) {
         await nextTick()
         const level = router.currentRoute.value.matched.length - 1
-        await ui.routes[level].dataContext.revealErrors()
+        displayedDataPaths.push(
+          ...(await ui.routes[level].dataContext.revealErrors())
+        )
       }
     } else {
-      for (const errorDataPath of dataPaths) {
-        const path = getValueComponentPath(errorDataPath)
-        await adminContext.ui.reveal(context, path, {
-          focus: errorDataPath === firstDataPath
+      for (const dataPath of dataPaths) {
+        await ui.reveal(context, getValueComponentPath(dataPath), {
+          focus: dataPath === firstDataPath
         })
       }
     }
+    await nextTick()
+    return [
+      ...displayedDataPaths,
+      ...dataPaths.filter(dataPath => ui.isDisplayingErrors(context, dataPath))
+    ]
   }
 
   const context: DataContext = shallowReactive({

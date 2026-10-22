@@ -24,8 +24,9 @@ const properties = {
   }
 }
 
-// The form of the page, and whether its template shows the email:
+// The form of the page, and whether its template shows the name and email:
 let form = null
+const showsName = ref(true)
 const showsEmail = ref(true)
 
 // A designer-like page, which lays out its properties with widgets:
@@ -35,7 +36,9 @@ const DesignerPage = {
     return () =>
       h(DitoSchemaForm, null, {
         default: () => [
-          h(DitoTextField, { name: 'name', width: '1/2' }),
+          showsName.value
+            ? h(DitoTextField, { name: 'name', width: '1/2' })
+            : null,
           showsEmail.value
             ? h(DitoTextField, { name: 'email', width: '1/2' })
             : null,
@@ -130,6 +133,7 @@ const getContainer = (wrapper, label) =>
 describe('widgets', () => {
   afterEach(() => {
     form = null
+    showsName.value = true
     showsEmail.value = true
   })
 
@@ -273,6 +277,50 @@ describe('widgets', () => {
       expect.objectContaining({
         title: 'Validation Errors',
         text: 'The field Email must be a valid email'
+      })
+    )
+  })
+
+  it('notify the errors of values that are irrelevant', async () => {
+    const { notify, request } = await mountDesignerPage()
+    form.item.isFeatured = false
+    await nextTick()
+    request.mockImplementation(() => {
+      throw Object.assign(new Error('Validation failed'), {
+        response: {
+          status: 400,
+          data: {
+            type: 'ValidationError',
+            errors: { rank: [{ message: 'is too low' }] }
+          }
+        }
+      })
+    })
+    expect(await form.submit()).toBe(false)
+    await settle()
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Validation Errors',
+        text: 'The field Rank is too low'
+      })
+    )
+  })
+
+  it('show errors in the other widget of the same name', async () => {
+    const { wrapper, notify } = await mountDesignerPage()
+    showsName.value = false
+    form.item.name = ''
+    await nextTick()
+    expect(await form.submit()).toBe(false)
+    await settle()
+    await settle()
+    expect(
+      getContainer(wrapper, 'Display Name').find('.dito-errors').text()
+    ).toBe('The Display Name field is required.')
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Validation Errors',
+        text: 'Please correct the highlighted errors.'
       })
     )
   })

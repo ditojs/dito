@@ -21,7 +21,6 @@ import {
   isPlainObject,
   isFunction,
   isString,
-  isEmpty,
   equals,
   parseDataPath,
   getValueAtDataPath
@@ -659,7 +658,8 @@ export class DataModel {
   // Errors inside values that no deeper field displays go to the field of the
   // value, with their path in it, e.g. of objects edited as code. With
   // `isMatchingDataPath()`, only the errors of the matching fields are
-  // replaced. Return the errors that no field displays, or `null`.
+  // replaced. Return the data paths of the fields that hold the errors, by the
+  // data paths of the errors, without the ones that no field holds.
   replaceErrors(
     errors: Record<string, ValueError[]>,
     {
@@ -671,11 +671,11 @@ export class DataModel {
       server?: boolean
       isMatchingDataPath?: ((dataPath: string) => boolean) | null
     } = {}
-  ): Record<string, ValueError[]> | null {
+  ): Record<string, string> {
     const entries: DataEntry[] = []
     this.#walkFieldEntries(dataPath, entry => entries.push(entry))
     const errorsByDataPath: Record<string, ValueError[]> = {}
-    const unmatchedErrors: Record<string, ValueError[]> = {}
+    const fieldDataPaths: Record<string, string> = {}
     for (const [errorDataPath, valueErrors] of Object.entries(errors)) {
       // The deepest field that displays the value or contains it:
       let field: { dataPath: string; path: string } | null = null
@@ -694,8 +694,7 @@ export class DataModel {
           ...(errorsByDataPath[dataPath] ?? []),
           ...valueErrors.map(error => (path ? { ...error, path } : error))
         ]
-      } else {
-        unmatchedErrors[errorDataPath] = valueErrors
+        fieldDataPaths[errorDataPath] = dataPath
       }
     }
     for (const { dataPath } of entries) {
@@ -708,7 +707,7 @@ export class DataModel {
         )
       }
     }
-    return isEmpty(unmatchedErrors) ? null : unmatchedErrors
+    return fieldDataPaths
   }
 
   // The errors of the fields stay until their sources remove them.

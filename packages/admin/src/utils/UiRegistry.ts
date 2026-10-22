@@ -9,6 +9,8 @@ export interface UiHandle {
   // open a collapsed schema and render its tab, which `focus` also selects:
   reveal?(componentPath: string, options: { focus: boolean }): Promise<void>
   focus?(): void
+  // The data path of the value whose errors the component displays:
+  readonly errorDataPath?: string | null
 }
 
 export class UiRegistry {
@@ -58,6 +60,17 @@ export class UiRegistry {
     return dataContext === undefined
       ? handles
       : handles.filter(handle => handle.dataContext === dataContext)
+  }
+
+  isDisplayingErrors(dataContext: DataContext, dataPath: string): boolean {
+    return [...this.#handles.values()].some(handles =>
+      [...handles].some(
+        handle => (
+          handle.dataContext === dataContext &&
+          handle.errorDataPath === dataPath
+        )
+      )
+    )
   }
 
   // Ask the components on the way from the outside in:

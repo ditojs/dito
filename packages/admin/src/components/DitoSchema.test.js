@@ -330,7 +330,7 @@ describe('DitoSchema', () => {
     })
 
     it('reveals the errors of tabs that were not selected', async () => {
-      const { submit, getErrors, schemaComponent } = await mountForm({
+      const { admin, submit, getErrors, schemaComponent } = await mountForm({
         schema: {
           tabs: {
             details: { type: 'tab', fields: { title: { type: 'text' } } },
@@ -342,11 +342,18 @@ describe('DitoSchema', () => {
         },
         data: { title: 'Emma', rating: null }
       })
+      const notify = vi.spyOn(admin.context, 'notify')
       expect(schemaComponent.selectedTab).toBe('details')
       expect(await submit()).toBe(null)
       expect(schemaComponent.selectedTab).toBe('reviews')
       expect(getErrors('rating')).toEqual(['The Rating field is required.'])
       expect(document.activeElement.name).toBe('rating')
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: 'Please correct the highlighted errors.'
+        })
+      )
+      notify.mockRestore()
     })
   })
 
@@ -883,6 +890,7 @@ describe('DitoSchema', () => {
           'title': [{ message: 'is taken' }]
         })
       })
+      const notify = vi.spyOn(admin.context, 'notify')
       await submit()
       await flushPromises()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/0')
@@ -896,6 +904,37 @@ describe('DitoSchema', () => {
       expect(container('pages').textContent).toContain('is too few')
       // The parent keeps its own errors for when the nested form closes:
       expect(getErrors('title')).toEqual(['The Title field is taken.'])
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: 'Please correct the highlighted errors.'
+        })
+      )
+    })
+
+    it('notifies the errors that the nested forms do not show', async () => {
+      const { admin, submit } = await mountForm({
+        schema: {
+          fields: {
+            chapters: {
+              type: 'list',
+              editable: true,
+              form: { type: 'form', fields: { title: { type: 'text' } } }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }, { title: 'Two' }] },
+        request: respondWithErrors({
+          'chapters/0/title': [{ message: 'is too short' }],
+          'chapters/1/title': [{ message: 'is taken' }]
+        })
+      })
+      const notify = vi.spyOn(admin.context, 'notify')
+      await submit()
+      await flushPromises()
+      // Only the form of the first item is opened:
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'The field Title is taken' })
+      )
     })
   })
 
