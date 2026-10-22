@@ -222,8 +222,10 @@ export const DitoCustomField = defineWidget('DitoCustomField', {
       setup(props, { emit }) {
         const { dataContext } = useServices()
         const field = shallowReactive({
+          // Read the value from the context, not the `modelValue` prop, which
+          // only receives written values with the next render:
           get value() {
-            return props.modelValue
+            return props.context.value
           },
           set value(value) {
             emit('update:modelValue', value)
