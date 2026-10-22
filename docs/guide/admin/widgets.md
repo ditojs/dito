@@ -210,7 +210,48 @@ DitoListField(name="cuts" creatable v-slot="{ item }")
 ```
 
 The items of lists in forms with properties are always edited in their slot.
-They have no forms with routes of their own.
+They have no forms with routes of their own, except in trees.
+
+## Trees
+
+`DitoTreeListField` shows an array of objects as a tree, with the arrays of its
+items as their children, e.g. sets and their cuts. Each level has a slot named
+after its array, which receives the [context](./context.md) of the item like
+the slots of lists, and lays out the form of the selected item:
+
+```js
+shopSets: {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', required: true },
+      cuts: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { name: { type: 'string', required: true } }
+        }
+      }
+    }
+  }
+}
+```
+
+```pug
+DitoTreeListField(name="shopSets" itemLabel="name" draggable)
+  template(#shopSets="context")
+    DitoTextField(name="name" label="Set")
+  template(#cuts="context")
+    DitoTextField(name="name" label="Cut")
+```
+
+Only the arrays with a slot are levels of the tree, and each level has at most
+one. Selecting an item opens its form beside the tree, which edits the item in
+place. The form has its own route in the page, which follows the item's place
+in the data, e.g. `/fonts/1/shop-sets/0/cuts/1`, so reloads, the browser's
+history and shared links open it again. Errors in items open the forms that
+show them. The props of the tree apply to all its levels.
 
 ## Custom fields
 

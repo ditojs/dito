@@ -1,5 +1,6 @@
 import designerPage from './components/designer-page.js'
 import shopSetPage from './components/shop-set-page.js'
+import collectionPage from './components/collection-page.js'
 
 export const designer = {
   type: 'page',
@@ -13,4 +14,11 @@ export const shopSet = {
   label: 'Shop Set',
   path: 'shop-sets/:id?',
   component: shopSetPage
+} as const
+
+export const collection = {
+  type: 'page',
+  label: 'Collection',
+  path: 'collections/:id?',
+  component: collectionPage
 } as const

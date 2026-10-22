@@ -40,6 +40,7 @@ export {
   DitoUploadField,
   DitoListField,
   DitoObjectField,
+  DitoTreeListField,
   DitoCustomField
 } from './widgets.js'
 export { default as DitoSection } from './DitoSection.vue'

@@ -242,17 +242,23 @@ const sourceProps = {
   deletable: { type: Boolean, default: undefined }
 }
 
+const itemLabelProps = {
+  itemLabel: { type: [String, Function, Object, Boolean], default: undefined }
+}
+
 // Lists hold objects of their `items`, or of several `forms` by their `type`,
 // or values that their items wrap, which widgets without `name` edit:
 export const DitoListField = defineSourceWidget('DitoListField', {
   props: {
-    draggable: { type: Boolean, default: undefined },
-    itemLabel: { type: [String, Function, Object, Boolean], default: undefined }
+    ...sourceProps,
+    ...itemLabelProps,
+    draggable: { type: Boolean, default: undefined }
   },
   getSchema: ({ items, forms, orderKey, idKey }) => {
     const { form, itemAdapter } = forms ? {} : getArrayItemForm(items)
     return {
       type: 'list',
+      inlined: true,
       ...(forms ? { forms } : { form }),
       wrapPrimitives: itemAdapter?.name,
       orderKey,
@@ -263,29 +269,84 @@ export const DitoListField = defineSourceWidget('DitoListField', {
 
 // Objects that are `nullable` can be created and deleted:
 export const DitoObjectField = defineSourceWidget('DitoObjectField', {
+  props: sourceProps,
   getSchema: property => ({
     type: 'object',
+    inlined: true,
     form: property,
     creatable: !!property.nullable,
     deletable: !!property.nullable
   })
 })
 
-// Lists and objects lay out the form of their items in their default slot,
-// which receives the context of the item itself, e.g. `v-slot="context"`. The
-// forms of the items provide the scopes of the widgets in them:
+// Trees show nested lists as levels: the items of each level hold the next one
+// in their list that has a slot of its name. The slot of each level, e.g.
+// `#cuts`, lays out the form of the selected item, which edits it in place
+// beside the tree, in its own route:
+export const DitoTreeListField = defineSourceWidget('DitoTreeListField', {
+  props: {
+    ...itemLabelProps,
+    collapsed: { type: Boolean, default: undefined },
+    deletable: { type: Boolean, default: undefined },
+    draggable: { type: Boolean, default: undefined }
+  },
+  getSchema: (property, slots, props) => {
+    const { itemLabel, collapsed, deletable, draggable } = props
+    const getLevelSchema = (name, { items, orderKey, idKey }) => {
+      const children = Object.entries(items.properties).filter(
+        ([key, { type }]) => type === 'array' && slots[key]
+      )
+      if (children.length > 1) {
+        throw new Error(
+          `Unsupported tree level with several child lists: '${
+            children.map(([key]) => key).join(`', '`)
+          }'.`
+        )
+      }
+      const [child] = children
+      return {
+        type: 'tree-list',
+        name,
+        form: {
+          ...items,
+          component: markRaw({
+            name: 'DitoTreeListItemForm',
+            props: {
+              schema: { type: Object, required: true },
+              context: { type: Object, required: true }
+            },
+            setup: props => () => slots[name]?.(props.context)
+          })
+        },
+        ...(child && { children: getLevelSchema(...child) }),
+        orderKey,
+        idKey,
+        itemLabel,
+        collapsed,
+        deletable,
+        draggable,
+        editable: !!slots[name],
+        mutate: true
+      }
+    }
+    return getLevelSchema(props.name, property)
+  }
+})
+
+// Sources lay out the forms of their items in their slots, which receive the
+// context of the item itself, e.g. `v-slot="context"`. The forms of the items
+// provide the scopes of the widgets in them:
 function defineSourceWidget(widgetName, { props = {}, getSchema }) {
   return {
     name: widgetName,
-    props: { ...widgetProps, ...sourceProps, ...props },
+    props: { ...widgetProps, ...props },
     emits: ['change'],
 
     setup(props, { emit, slots }) {
       const { name, property, isRelevant, getContainerProps } = useWidget(props)
       const schema = {
-        ...getSchema(property),
+        ...getSchema(property, slots, props),
         name,
-        inlined: true,
         onChange: context => emit('change', context)
       }
       const renderItem = ({ context }) => slots.default(context)

@@ -3652,6 +3652,25 @@ export const DitoObjectField: DefineSetupFnComponent<
 >
 
 /**
+ * Shows the array property `name` as a tree, with the lists of its items that
+ * have a slot of their name as their children. The slot named after each list,
+ * e.g. `#cuts`, lays out the form of the selected item beside the tree, with
+ * the context of the item.
+ */
+export const DitoTreeListField: DefineSetupFnComponent<
+  WidgetProps<
+    { name: string } & Pick<
+      TreeListSchema,
+      'collapsed' | 'deletable' | 'draggable' | 'itemLabel'
+    >
+  >,
+  {},
+  SlotsType<{
+    [name: string]: (context: SchemaContext) => any
+  }>
+>
+
+/**
  * Edits the property `name` with the content of its default slot, which
  * receives the field as one reactive object: `v-slot="field"` with
  * `v-model="field.value"`. Destructured, its values are read-only.
