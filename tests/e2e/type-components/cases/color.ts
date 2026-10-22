@@ -37,7 +37,7 @@ const cases: TypeCase[] = [
   },
   {
     title: 'stores an rgb object with format rgb',
-    schema: { format: 'rgb' },
+    schema: { colorFormat: 'rgb' },
     property: { type: 'object' },
     value: { pick: '#ed1c24' },
     stored: { r: 237, g: 28, b: 36, a: 1 },
@@ -45,14 +45,14 @@ const cases: TypeCase[] = [
   },
   {
     title: 'shows a stored rgb object as hex',
-    schema: { format: 'rgb' },
+    schema: { colorFormat: 'rgb' },
     property: { type: 'object' },
     seed: { r: 0, g: 162, b: 232, a: 1 },
     shown: '00a2e8'
   },
   {
     title: 'stores an hsl object with format hsl',
-    schema: { format: 'hsl' },
+    schema: { colorFormat: 'hsl' },
     property: { type: 'object' },
     value: { pick: '#ffffff' },
     stored: { h: 0, s: 0, l: 1, a: 1 },
@@ -60,7 +60,7 @@ const cases: TypeCase[] = [
   },
   {
     title: 'shows a stored hsl object as hex',
-    schema: { format: 'hsl' },
+    schema: { colorFormat: 'hsl' },
     property: { type: 'object' },
     seed: { h: 0, s: 0, l: 1, a: 1 },
     shown: 'ffffff'
