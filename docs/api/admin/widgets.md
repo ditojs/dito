@@ -16,7 +16,7 @@ import { DitoTextField, DitoListField } from '@ditojs/admin'
 
 | Prop | Type | Description |
 | ---- | ---- | ----------- |
-| `name` | `string` | The key of the property in the scope of the widget: the form, the object of a `DitoSection` with `name`, or the item of a list or object. Widgets without `name` edit the items of arrays of values. |
+| `name` | `string` | The key of the property in the scope of the widget: the form, the object of a nested `DitoSection`, or the item of a list or object. Widgets without `name` edit the items of arrays of values. |
 | `label` | `string \| false` | The label, by default the labelized `name`, or `false` for none. |
 | `width` | `string \| number` | The width, as for [fields](./schemas.md#layout-options). |
 | `info` | `string` | The info of the label. |
@@ -55,7 +55,7 @@ props are the options of that type, with the same meaning.
 | `DitoUploadField` | [upload](./schemas.md#upload) | `accept`, `extensions`, `maxSize`, `draggable`, `deletable`, `render`, `thumbnails`, `thumbnailUrl`, `downloadUrl` | `multiple` of arrays of assets |
 | `DitoListField` | [list](./schemas.md#list) | `collapsible`, `collapsed`, `creatable`, `deletable`, `draggable`, `itemLabel` | The items of `items`, or of `forms` by their `type`, `orderKey`, `idKey` |
 | `DitoObjectField` | [object](./schemas.md#object) | `collapsible`, `collapsed`, `creatable`, `deletable` | Create and delete buttons for `nullable` objects |
-| `DitoSection` | [section](./schemas.md#section) | `collapsible`, `collapsed` | |
+| `DitoSection` | [section](./schemas.md#section) | `name` (required), `nested`, `collapsible`, `collapsed` | |
 | `DitoCustomField` | | | |
 
 The label of all widgets shows the required mark of `required` properties, and
@@ -67,7 +67,7 @@ all widgets hide while their property's `if` is false.
 | ------ | ---------- | ----------- |
 | `DitoListField` | `context` | The form of each item, in which widgets edit the item's properties. The slot receives the [context](./context.md) of the item itself, e.g. `v-slot="context"` with `context.item` and `context.itemIndex`. In arrays of values, `item` wraps the value as `item.value`. |
 | `DitoObjectField` | `context` | The form of the object, with the [context](./context.md) of the object as for lists. |
-| `DitoSection` | | The widgets of the section, of the object of its `name` if it has one. `DitoSection` takes only `label`, `width` and `info` of the props of all widgets. |
+| `DitoSection` | | The widgets of the section, of the object of its `name` if it's `nested`. `DitoSection` takes only `label`, `width` and `info` of the props of all widgets. |
 | `DitoCustomField` | `field` | The content that edits the value, with the field as one reactive object, see below. |
 
 ### The field of `DitoCustomField`

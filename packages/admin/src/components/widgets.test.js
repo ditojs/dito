@@ -47,24 +47,38 @@ const DesignerPage = {
           showsEmail.value
             ? h(DitoTextField, { name: 'email', type: 'email', width: '1/2' })
             : null,
-          h(DitoSection, null, {
-            default: () =>
-              h(DitoSwitchField, { name: 'isFeatured', label: 'Featured' })
-          }),
           h(
             DitoSection,
-            { label: 'Award' },
+            { name: 'featured' },
+            {
+              default: () =>
+                h(DitoSwitchField, { name: 'isFeatured', label: 'Featured' })
+            }
+          ),
+          h(
+            DitoSection,
+            { name: 'honors', label: 'Award' },
             { default: () => h(DitoTextField, { name: 'award' }) }
           ),
           h(
             DitoSection,
-            { label: 'Ranking', collapsible: true, collapsed: true },
+            {
+              name: 'ranking',
+              label: 'Ranking',
+              collapsible: true,
+              collapsed: true
+            },
             {
               default: () => [
                 h(RankFields),
                 h(
                   DitoSection,
-                  { label: 'More', collapsible: true, collapsed: true },
+                  {
+                    name: 'more',
+                    label: 'More',
+                    collapsible: true,
+                    collapsed: true
+                  },
                   {
                     default: () =>
                       h(DitoTextField, { name: 'name', label: 'Display Name' })
@@ -75,7 +89,7 @@ const DesignerPage = {
           ),
           h(
             DitoSection,
-            { name: 'address', label: 'Address' },
+            { name: 'address', label: 'Address', nested: true },
             { default: () => [h(DitoTextField, { name: 'city' })] }
           )
         ]
@@ -231,11 +245,11 @@ describe('widgets', () => {
     expect(document.activeElement).toBe(input)
   })
 
-  it('label sections only with their label', async () => {
+  it('label sections with their label or name', async () => {
     const { wrapper } = await mountDesignerPage()
     const sections = wrapper.findAll('.dito-section')
     expect(sections.map(section => section.attributes('aria-label'))).toEqual(
-      [undefined, 'Award', 'Ranking', 'Address']
+      ['Featured', 'Award', 'Ranking', 'Address']
     )
   })
 
@@ -357,14 +371,25 @@ describe('widgets', () => {
             default: () =>
               h(
                 DitoSection,
-                { label: 'Location', collapsible: true },
+                { name: 'location', label: 'Location', collapsible: true },
                 {
-                  default: () =>
+                  default: () => [
                     h(
                       DitoSection,
-                      { name: 'address', label: 'Address', collapsible: true },
+                      { name: 'contact', label: 'Contact', collapsible: true },
+                      { default: () => h(DitoTextField, { name: 'email' }) }
+                    ),
+                    h(
+                      DitoSection,
+                      {
+                        name: 'address',
+                        label: 'Address',
+                        nested: true,
+                        collapsible: true
+                      },
                       { default: () => h(DitoTextField, { name: 'city' }) }
                     )
+                  ]
                 }
               )
           })
@@ -376,12 +401,48 @@ describe('widgets', () => {
         .trigger('click')
       await settle()
     }
+    await toggle('Contact')
     await toggle('Address')
+    expect(getContainer(wrapper, 'Email')).toBeUndefined()
     expect(getContainer(wrapper, 'City')).toBeUndefined()
     await toggle('Location')
     await toggle('Location')
+    expect(getContainer(wrapper, 'Contact')).toBeDefined()
+    expect(getContainer(wrapper, 'Email')).toBeUndefined()
     expect(getContainer(wrapper, 'Address')).toBeDefined()
     expect(getContainer(wrapper, 'City')).toBeUndefined()
+  })
+
+  it('nest sections only with `nested`', async () => {
+    const { wrapper } = await mountDesignerPage({
+      setup() {
+        form = useDitoForm({ resource: 'designers', id: 7, properties })
+        return () =>
+          h(DitoSchemaForm, null, {
+            default: () => [
+              h(
+                DitoSection,
+                { name: 'address', label: 'Contact' },
+                { default: () => h(DitoTextField, { name: 'email' }) }
+              ),
+              h(
+                DitoSection,
+                { name: 'address', label: 'Address', nested: true },
+                { default: () => h(DitoTextField, { name: 'city' }) }
+              )
+            ]
+          })
+      }
+    })
+    const email = getContainer(wrapper, 'Email').find('input')
+    await enterValue(email, 'ada@example.com')
+    await enterValue(getContainer(wrapper, 'City').find('input'), 'Paris')
+    expect(form.item).toMatchObject({
+      email: 'ada@example.com',
+      address: { city: 'Paris' }
+    })
+    // Their names add to the component paths, as in schema views:
+    expect(email.attributes('id')).toBe('address/email')
   })
 
   it('throw for names without a property', async () => {
