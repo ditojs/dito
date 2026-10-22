@@ -37,6 +37,7 @@ export {
   DitoListField,
   DitoObjectField,
   DitoTreeListField,
+  DitoTreeLevel,
   DitoCustomField
 } from './components/widgets.js'
 export { default as DitoSection } from './components/DitoSection.vue'

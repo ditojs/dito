@@ -55,7 +55,8 @@ props are the options of that type, with the same meaning.
 | `DitoUploadField` | [upload](./schemas.md#upload) | `accept`, `extensions`, `maxSize`, `draggable`, `deletable`, `render`, `thumbnails`, `thumbnailUrl`, `downloadUrl` | `multiple` of arrays of assets |
 | `DitoListField` | [list](./schemas.md#list) | `collapsible`, `collapsed`, `creatable`, `deletable`, `draggable`, `itemLabel` | The items of `items`, or of `forms` by their `type`, `orderKey`, `idKey` |
 | `DitoObjectField` | [object](./schemas.md#object) | `collapsible`, `collapsed`, `creatable`, `deletable` | Create and delete buttons for `nullable` objects |
-| `DitoTreeListField` | [tree-list](./schemas.md#tree-list-tree-object) | `collapsed`, `deletable`, `draggable`, `itemLabel`, for all levels | The levels of the arrays of `items` with slots, `orderKey`, `idKey` |
+| `DitoTreeListField` | [tree-list](./schemas.md#tree-list-tree-object) | `collapsed`, `deletable`, `draggable`, `itemLabel` of its level | `orderKey`, `idKey` of each level |
+| `DitoTreeLevel` | `children` of [tree-list](./schemas.md#tree-list-tree-object) | `name` (required), `collapsed`, `deletable`, `draggable`, `itemLabel` of its level | |
 | `DitoSection` | [section](./schemas.md#section) | `name` (required), `nested`, `collapsible`, `collapsed` | |
 | `DitoCustomField` | | | |
 
@@ -68,7 +69,7 @@ all widgets hide while their property's `if` is false.
 | ------ | ---------- | ----------- |
 | `DitoListField` | `context` | The form of each item, in which widgets edit the item's properties. The slot receives the [context](./context.md) of the item itself, e.g. `v-slot="context"` with `context.item` and `context.itemIndex`. In arrays of values, `item` wraps the value as `item.value`. |
 | `DitoObjectField` | `context` | The form of the object, with the [context](./context.md) of the object as for lists. |
-| `DitoTreeListField` | `context` | One slot per level, named after its array, e.g. `#shopSets` and `#cuts`: the form of the selected item, routed beside the tree, with the [context](./context.md) of the item as for lists. |
+| `DitoTreeListField`, `DitoTreeLevel` | `context` | `#form`: the form of the selected item of the level, routed beside the tree, with the [context](./context.md) of the item as for lists. The default slot holds the `DitoTreeLevel` of the next level, the array of its `name` in the items. |
 | `DitoSection` | | The widgets of the section, of the object of its `name` if it's `nested`. `DitoSection` takes only `label`, `width` and `info` of the props of all widgets. |
 | `DitoCustomField` | `field` | The content that edits the value, with the field as one reactive object, see below. |
 
