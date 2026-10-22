@@ -65,8 +65,8 @@ all widgets hide while their property's `if` is false.
 
 | Widget | Slot props | Description |
 | ------ | ---------- | ----------- |
-| `DitoListField` | `{ item, index }` | The form of each item, in which widgets edit the item's properties. The `item` of arrays of values is the value. |
-| `DitoObjectField` | `{ item }` | The form of the object. |
+| `DitoListField` | `context` | The form of each item, in which widgets edit the item's properties. The slot receives the [context](./context.md) of the item itself, e.g. `v-slot="context"` with `context.item` and `context.itemIndex`. In arrays of values, `item` wraps the value as `item.value`. |
+| `DitoObjectField` | `context` | The form of the object, with the [context](./context.md) of the object as for lists. |
 | `DitoSection` | | The widgets of the section, of the object of its `name` if it has one. `DitoSection` takes only `label`, `width` and `info` of the props of all widgets. |
 | `DitoCustomField` | `field` | The content that edits the value, with the field as one reactive object, see below. |
 

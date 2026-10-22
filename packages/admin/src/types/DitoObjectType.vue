@@ -22,9 +22,9 @@
     )
       template(
         v-if="$slots.default"
-        #default
+        #default="{ context }"
       )
-        slot(:item="objectData")
+        slot(:context="context")
   //- NOTE: Inlined objects only get the create button here, the other edit
   //- buttons are in `DitoSchemaInlined`.
   DitoEditButtons(

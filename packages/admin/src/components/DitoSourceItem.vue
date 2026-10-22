@@ -30,12 +30,13 @@ DitoSchemaInlined(
       :schema="formSchema"
       :context="formContext"
     )
-  //- The widgets of `DitoListField` and `DitoObjectField`:
+  //- The widgets of `DitoListField` and `DitoObjectField`, with the context
+  //- of the item:
   template(
     v-else-if="$slots.default"
     #default
   )
-    slot
+    slot(:context="context")
 component(
   v-else-if="schema.component"
   :is="schema.component"
@@ -92,12 +93,9 @@ export default {
       services.sourceContext.getSourceItemLabel(props.data, props.index)
     )
     return {
-      // For the custom components that render the items:
-      context: createContext({
-        get index() {
-          return props.index
-        }
-      }),
+      // For the custom components that render the items, and the slots of
+      // `DitoListField` and `DitoObjectField`:
+      context: createContext(),
       // For the components that lay out the forms of inlined items:
       formContext: createContext({
         get schema() {
