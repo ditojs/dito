@@ -296,18 +296,18 @@ describe('DitoSchemaPane', () => {
 
     it('are selected when their components are focused', async () => {
       const admin = await mountTabs()
-      await admin.navigate('/books#notes')
+      await admin.navigate('/books/notes')
       const title = admin.getComponent(admin.getRouteComponent(), 'title')
       await admin.context.ui.reveal(title.container, title.componentPath, {
         focus: true
       })
       await flushPromises()
-      expect(admin.router.currentRoute.value.hash).toBe('#details')
+      expect(admin.router.currentRoute.value.path).toBe('/books/details')
     })
 
     it('render nothing without components', async () => {
       const admin = await mountTabs()
-      await admin.navigate('/books#notes')
+      await admin.navigate('/books/notes')
       const notes = admin.wrapper
         .findAllComponents(DitoSchemaPane)
         .find(({ vm }) => vm.tab === 'notes')

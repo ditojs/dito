@@ -2242,13 +2242,13 @@ describe('DitoForm', () => {
       'link to their own forms from the %s tab',
       async tab => {
         const { admin, wrapper } = await mountForm({ schema, data })
-        await admin.navigate('/items/1#pricing')
+        await admin.navigate('/items/1/pricing')
         const links = wrapper.findAll('a.dito-button--edit')
         expect(links.map(link => link.attributes('href'))).toEqual([
           '/items/1/info/families/0',
           '/items/1/pricing/families/0'
         ])
-        await admin.navigate(`/items/1#${tab}`)
+        await admin.navigate(`/items/1/${tab}`)
         await links[tab === 'info' ? 0 : 1].trigger('click')
         await flushPromises()
         expect(admin.router.currentRoute.value.path).toBe(
@@ -2270,7 +2270,7 @@ describe('DitoForm', () => {
         const [itemForm] = admin.getRouteComponents(isForm)
         await form.routeContext.close()
         await flushPromises()
-        expect(admin.router.currentRoute.value.path).toBe('/items/1')
+        expect(admin.router.currentRoute.value.path).toBe(`/items/1/${tab}`)
         expect(admin.getSchemaComponent(itemForm).selectedTab).toBe(tab)
       }
     )
@@ -2365,9 +2365,9 @@ describe('DitoForm', () => {
       const { admin, routeComponent: form } = await mountForm({
         schema: { fields: { notes } },
         data,
-        path: '/items/1/drafts/0#notes'
+        path: '/items/1/drafts/0'
       })
-      expect(admin.router.currentRoute.value.fullPath).toBe('/items/1#notes')
+      expect(admin.router.currentRoute.value.path).toBe('/items/1')
       expect(form.routeContext.path).toBe('/items/1')
       expect(admin.getRouteComponents(isForm)).toEqual([form])
       expect(new DOMWrapper(form.$el).find('.dito-list').isVisible()).toBe(true)

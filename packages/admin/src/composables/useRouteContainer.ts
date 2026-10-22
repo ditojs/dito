@@ -116,11 +116,15 @@ export function useRouteContainer({
   })
 
   // The components of the route claim the paths below it, and the forms of
-  // single-component views that share the path of their view:
-  const childClaim = computed(() =>
+  // single-component views that share the path of their view. The schema of
+  // the route claims the names of its tabs, which open no form:
+  const pathClaim = computed(() =>
     routeContext.isLeaving
       ? null
       : adminContext.ui.claimRoute(routeContext.dataContext, getCurrentPath())
+  )
+  const childClaim = computed(() =>
+    pathClaim.value && !('tab' in pathClaim.value) ? pathClaim.value : null
   )
 
   const routeContext: RouteContext = shallowReactive({
@@ -151,6 +155,12 @@ export function useRouteContainer({
       return childClaim.value
     },
 
+    get routeTab() {
+      return pathClaim.value && 'tab' in pathClaim.value
+        ? pathClaim.value.tab
+        : null
+    },
+
     get isForm() {
       return !!route.claim.value
     },
@@ -164,7 +174,10 @@ export function useRouteContainer({
     },
 
     get isLastRoute() {
-      return !childClaim.value && getCurrentPath() === path.value
+      return (
+        !!routeContext.routeTab ||
+        !childClaim.value && getCurrentPath() === path.value
+      )
     },
 
     get isActive() {
@@ -249,10 +262,7 @@ export function useRouteContainer({
       if (isUnclaimedPath) {
         await nextTick()
         if (isUnclaimed()) {
-          router.replace({
-            path: path.value,
-            hash: router.currentRoute.value.hash
-          })
+          router.replace(path.value)
         }
       }
     },

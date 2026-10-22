@@ -1339,6 +1339,11 @@ a form or view without `tabs` and `type`, plus:
 | `label` | `string` | the labelized name | The label of the tab. |
 | `defaultTab` | `SchemaValue<boolean>` | the first tab | Selects this tab initially. |
 
+The selected tab is named in the URL after its view or form, e.g.
+`/admin/books/1/metadata`, and the forms of the sources in a tab open below it.
+Tabs share these names with the `path` of the sources of their form: give a
+source with the name of a tab another `path`.
+
 ```js
 tabs: {
   content: {

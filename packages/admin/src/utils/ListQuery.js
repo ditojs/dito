@@ -38,11 +38,7 @@ export class ListQuery {
       changedQuery.page = 0
     }
     if (this.isInRoute()) {
-      const promise = this.router.push({
-        query: changedQuery,
-        // Preserve the hash for tabs:
-        hash: this.getRoute().hash
-      })
+      const promise = this.router.push({ query: changedQuery })
       const navigation = { query: changedQuery, promise }
       this.pendingNavigation = navigation
       const settle = () => {
@@ -84,7 +80,7 @@ export class ListQuery {
     })
     this.getSourceStore().query = query
     if (!isSameQuery(query, route.query)) {
-      this.router.replace({ query, hash: route.hash }).catch(console.error)
+      this.router.replace({ query }).catch(console.error)
     }
   }
 

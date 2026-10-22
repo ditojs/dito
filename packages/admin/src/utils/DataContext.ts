@@ -208,14 +208,15 @@ export function createDataContext({
         : null
     const displayedDataPaths: string[] = []
     if (formRoute) {
-      // The form may be open already, e.g. a nested form:
-      const failure =
-        router.currentRoute.value.path !== formRoute.path
-          ? await router.push({ path: formRoute.path })
-          : null
+      const findRoute = () =>
+        ui.routes.find(route => route.path === formRoute.path)
+      // The form may be open already, e.g. a nested form in one of its tabs:
+      const failure = findRoute()?.isLastRoute
+        ? null
+        : await router.push({ path: formRoute.path })
       if (!failure) {
         await nextTick()
-        const route = ui.routes.find(route => route.path === formRoute.path)
+        const route = findRoute()
         if (route) {
           displayedDataPaths.push(...(await route.dataContext.revealErrors()))
         }

@@ -65,7 +65,7 @@ test.describe('routes of nested forms', () => {
     await getForm(page)
       .getByRole('button', { name: 'Close', exact: true })
       .click()
-    await expect(page).toHaveURL(new RegExp(`/tabbed-books/${id}$`))
+    await expect(page).toHaveURL(new RegExp(`/tabbed-books/${id}/content$`))
     await expect(
       page.getByRole('tab', { name: 'Content', exact: true })
     ).toHaveAttribute('aria-selected', 'true')

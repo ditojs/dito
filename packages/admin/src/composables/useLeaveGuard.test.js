@@ -253,12 +253,14 @@ describe('useLeaveGuard()', () => {
 
     describe('leaving while submitting', () => {
       // Mounts a create form whose submit request resolves or rejects once the
-      // test settles it through the returned `response`:
-      const mountSubmittingForm = async () => {
+      // test settles it through the returned `response`, with `tabs` to stay
+      // in the form while navigating:
+      const mountSubmittingForm = async ({ tabs } = {}) => {
         const response = Promise.withResolvers()
         const result = await mountForm({
           schema: {
             fields: { title: { type: 'text' } },
+            tabs,
             // Stay in the form, to be redirected to the created item:
             buttons: { submit: { closeForm: false } }
           },
@@ -278,6 +280,11 @@ describe('useLeaveGuard()', () => {
         await flushPromises()
         expect(routeComponent.routeContext.isDirty).toBe(true)
         return { ...result, response }
+      }
+
+      const tabs = {
+        details: { type: 'tab', fields: { author: { type: 'text' } } },
+        notes: { type: 'tab', fields: { notes: { type: 'text' } } }
       }
 
       it(`leaves without asking once the submit succeeded`, async () => {
@@ -320,34 +327,32 @@ describe('useLeaveGuard()', () => {
       })
 
       it('opens the created item when the navigation is superseded', async () => {
-        const { admin, routeComponent, response } = await mountSubmittingForm()
+        const { admin, routeComponent, response } = await mountSubmittingForm({
+          tabs
+        })
         const navigation = admin.router.push('/items')
         await flushPromises()
-        // A navigation that stays in the form, e.g. to a tab:
-        await admin.router.push('/items/create#details')
+        // A navigation that stays in the form, to a tab:
+        await admin.router.push('/items/create/notes')
         response.resolve({ data: { id: 1, title: 'Dune' } })
         await navigation
         await flushPromises()
-        expect(admin.router.currentRoute.value.fullPath).toBe(
-          '/items/1#details'
-        )
+        expect(admin.router.currentRoute.value.path).toBe('/items/1/notes')
         expect(routeComponent.dataContext.isCreating).toBe(false)
       })
 
       it('opens the created item when the navigation is redirected', async () => {
-        const { admin, response } = await mountSubmittingForm()
-        // Redirect to a location that stays in the form, e.g. a tab:
+        const { admin, response } = await mountSubmittingForm({ tabs })
+        // Redirect to a location that stays in the form, a tab:
         admin.router.beforeEach(to =>
-          to.path === '/items'
-            ? { path: '/items/create', hash: '#notes' }
-            : true
+          to.path === '/items' ? '/items/create/notes' : true
         )
         const navigation = admin.router.push('/items')
         await flushPromises()
         response.resolve({ data: { id: 1, title: 'Dune' } })
         await navigation
         await flushPromises()
-        expect(admin.router.currentRoute.value.fullPath).toBe('/items/1#notes')
+        expect(admin.router.currentRoute.value.path).toBe('/items/1/notes')
       })
 
       it('waits for the submit without a time limit', async () => {
@@ -418,7 +423,9 @@ describe('useLeaveGuard()', () => {
       })
 
       it('opens the created item after a guard threw', async () => {
-        const { admin, routeComponent, response } = await mountSubmittingForm()
+        const { admin, routeComponent, response } = await mountSubmittingForm({
+          tabs
+        })
         admin.router.beforeEach(to => {
           if (to.path === '/items') {
             throw new Error('Unable to leave')
@@ -429,13 +436,15 @@ describe('useLeaveGuard()', () => {
         response.resolve({ data: { id: 1, title: 'Dune' } })
         expect(await navigation).toEqual(new Error('Unable to leave'))
         // The next navigation that stays in the form opens the created item:
-        await admin.navigate('/items/create#notes')
-        expect(admin.router.currentRoute.value.fullPath).toBe('/items/1#notes')
+        await admin.navigate('/items/create/notes')
+        expect(admin.router.currentRoute.value.path).toBe('/items/1/notes')
         expect(routeComponent.dataContext.isCreating).toBe(false)
       })
 
       it('opens the created item after endless redirects', async () => {
-        const { admin, routeComponent, response } = await mountSubmittingForm()
+        const { admin, routeComponent, response } = await mountSubmittingForm({
+          tabs
+        })
         vi.spyOn(console, 'warn').mockImplementation(() => {})
         admin.router.beforeEach(to => (to.path === '/items' ? '/items' : true))
         const navigation = admin.router.push('/items').catch(error => error)
@@ -444,8 +453,8 @@ describe('useLeaveGuard()', () => {
         expect(await navigation).toEqual(
           new Error('Infinite redirect in navigation guard')
         )
-        await admin.navigate('/items/create#notes')
-        expect(admin.router.currentRoute.value.fullPath).toBe('/items/1#notes')
+        await admin.navigate('/items/create/notes')
+        expect(admin.router.currentRoute.value.path).toBe('/items/1/notes')
         expect(routeComponent.dataContext.isCreating).toBe(false)
       })
     })

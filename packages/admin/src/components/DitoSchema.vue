@@ -301,12 +301,11 @@ export default {
       return first
     })
 
-    const routeTab = computed(
-      () => router.currentRoute.value.hash?.slice(1) || null
-    )
+    // The tab that the path names below the route, which the tabs claim:
+    const routeTab = computed(() => routeContext?.routeTab ?? null)
 
-    // The route's hash belongs to the tabs of the last route only, so forms
-    // keep their tab while the forms of their items are open:
+    // The last route follows the tab in its path, and names its selected tab
+    // there. Forms keep their tab while the forms of their items are open:
     const shouldFollowRouteTab = computed(
       () => (
         hasTabs.value &&
@@ -342,14 +341,14 @@ export default {
       shouldFollowDefaultTab = !hasData.value
     }
 
-    // Routes without a hash, e.g. after closing a form, keep the tab:
+    // Paths without a tab, e.g. after closing a form, keep the tab and name it:
     const followRouteTab = () => {
-      if (
-        shouldFollowRouteTab.value &&
-        routeTab.value &&
-        routeTab.value !== selectedTab.value
-      ) {
-        selectTab(routeTab.value)
+      if (shouldFollowRouteTab.value) {
+        if (!routeTab.value) {
+          replaceRouteTab(selectedTab.value)
+        } else if (routeTab.value !== selectedTab.value) {
+          selectTab(routeTab.value)
+        }
       }
     }
 
@@ -358,9 +357,10 @@ export default {
       const tabInRoute =
         !tab || tab in renderedTabs.value ? tab : defaultTab.value
       if (tabInRoute !== routeTab.value) {
+        const { path } = routeContext
         router.replace({
-          query: router.currentRoute.value.query,
-          hash: tabInRoute ? `#${tabInRoute}` : null
+          path: tabInRoute ? `${path}/${tabInRoute}` : path,
+          query: router.currentRoute.value.query
         })
       }
     }
@@ -382,7 +382,7 @@ export default {
       flush: 'post'
     })
 
-    // Returning from a nested form, the route may carry a different tab:
+    // Returning from a nested form, the route may name a different tab:
     watch(shouldFollowRouteTab, shouldFollow => {
       if (shouldFollow) {
         followRouteTab()
@@ -422,6 +422,14 @@ export default {
 
     const unregisterUi = adminContext.ui.register(() => componentPath.value, {
       dataContext: services.dataContext,
+      // The tabs of the route's schema claim their names below its path:
+      claimRoute(path) {
+        const tab =
+          isTopLevelSchema.value && routeContext
+            ? getRelativeDataPath(path, routeContext.path)
+            : null
+        return tab && renderedTabs.value?.[tab] ? { tab } : null
+      },
       async reveal(path, { focus }) {
         const [tab] = parseDataPath(
           getRelativeDataPath(path, componentPath.value)

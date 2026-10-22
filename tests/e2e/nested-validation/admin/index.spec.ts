@@ -179,7 +179,7 @@ test.describe('nested validation', () => {
     await getForm(page).getByLabel('Title', { exact: true }).fill('lower')
     await getForm(page).getByLabel('Summary', { exact: true }).fill('Text')
     await clickFormButton(page, 'Add')
-    await expect(page).toHaveURL(new RegExp(`/books/${book.id}$`))
+    await expect(page).toHaveURL(new RegExp(`/books/${book.id}/main$`))
     await saveInvalid(page)
     await expect(page).toHaveURL(/\/chapters\/1$/)
     await expect(getErrors(getForm(page), 'Title')).toContainText(message)
@@ -196,7 +196,7 @@ test.describe('nested validation', () => {
     await saveInvalid(page)
     // The form of the invalid item opens to display the error, in the tab of
     // the tree list.
-    await expect(page).toHaveURL(/\/volumes\/1(#main)?$/)
+    await expect(page).toHaveURL(/\/volumes\/1$/)
     await expect(getErrors(getForm(page), 'Volume Title')).toContainText(
       message
     )
@@ -213,7 +213,7 @@ test.describe('nested validation', () => {
     })
     await openBook(page, url, book)
     await saveInvalid(page)
-    await expect(page).toHaveURL(/\/volumes\/0\/parts\/1(#main)?$/)
+    await expect(page).toHaveURL(/\/volumes\/0\/parts\/1$/)
     await expect(getErrors(getForm(page), 'Part Title')).toContainText(message)
   })
 
@@ -221,7 +221,7 @@ test.describe('nested validation', () => {
     const book = await seedBook({ volumes: [{ title: null }] })
     await openBook(page, url, book)
     await page.getByRole('button', { name: 'Save', exact: true }).click()
-    await expect(page).toHaveURL(/\/volumes\/0(#main)?$/)
+    await expect(page).toHaveURL(/\/volumes\/0$/)
     await expect(getErrors(getForm(page), 'Volume Title')).toContainText(
       /required/
     )
@@ -316,10 +316,10 @@ test.describe('nested validation', () => {
     // Applying closes the nested form without asking for confirmation, as
     // its changes were applied to the parent's data, which makes the parent
     // form dirty: Leaving it asks for confirmation.
-    await expect(page).toHaveURL(new RegExp(`/books/${book.id}$`))
+    await expect(page).toHaveURL(new RegExp(`/books/${book.id}/main$`))
     await clickFormButton(page, 'Cancel')
     await dismissConfirmDialog(page, 'You have unsaved changes')
-    await expect(page).toHaveURL(new RegExp(`/books/${book.id}$`))
+    await expect(page).toHaveURL(new RegExp(`/books/${book.id}/main$`))
   })
 
   test.describe('two lists of the same data in two tabs', () => {
@@ -349,7 +349,7 @@ test.describe('nested validation', () => {
       await openBookOutline(page, url, book)
       await saveInvalid(page)
       // The Content tab is selected to display the error.
-      await expect(page).toHaveURL(/#content$/)
+      await expect(page).toHaveURL(/\/content$/)
       const content = getTabPanel(page, 'Content')
       await expect(getErrors(content, 'Title')).toContainText(message)
       await getTab(page, 'Outline').click()
@@ -367,7 +367,7 @@ test.describe('nested validation', () => {
       await getTab(page, 'Content').click()
       await page.getByRole('button', { name: 'Save', exact: true }).click()
       // The Outline tab comes first, so it's selected to display the error.
-      await expect(page).toHaveURL(/#outline$/)
+      await expect(page).toHaveURL(/\/outline$/)
       await expect(getErrors(getTabPanel(page, 'Outline'), 'Summary'))
         .toContainText(/required/)
       await getTab(page, 'Content').click()

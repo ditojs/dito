@@ -94,6 +94,11 @@ template of `@ditojs/utils`, which escapes the values that it includes, see
   need updating, and renaming a tab changes them. Of the sources of a form with
   the same URL path, the first one opens its forms: give the others another
   `path`.
+- The selected tab of a view or form is a segment of its URL path instead of
+  the location hash: `/admin/books/1/pricing` instead of
+  `/admin/books/1#pricing`. Links and bookmarks with `#` tabs need updating.
+  Tabs share the URL with the sources of their form: give a source with the
+  name of a tab another `path`.
 
 ## UI
 

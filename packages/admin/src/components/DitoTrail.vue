@@ -28,14 +28,13 @@ nav.dito-trail(aria-label="Breadcrumb")
 
 <script>
 import { computed, inject, nextTick, useTemplateRef, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useScrollMask } from '../composables/useScrollMask.ts'
 import { adminContextKey } from '../utils/keys.ts'
 
 export default {
   setup() {
     const adminContext = inject(adminContextKey)
-    const currentRoute = useRoute()
     const router = useRouter()
     // Leave out the routes that are being left, until they're unmounted.
     const trail = computed(() =>
@@ -79,7 +78,7 @@ export default {
       },
 
       isCurrentRoute(route) {
-        return route.path === currentRoute.path
+        return route.isLastRoute
       }
     }
   }
