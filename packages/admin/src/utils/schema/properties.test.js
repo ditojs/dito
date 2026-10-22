@@ -137,11 +137,11 @@ describe('getFormProperties()', () => {
       })
     })
 
-    it('leaves out `decimals`, which the server lacks', async () => {
+    it('adds `decimals`', async () => {
       expect(
         await getProperties({ price: { type: 'number', decimals: 2 } })
       ).toEqual({
-        price: { type: 'number', nullable: true }
+        price: { type: 'number', decimals: 2, nullable: true }
       })
     })
   })

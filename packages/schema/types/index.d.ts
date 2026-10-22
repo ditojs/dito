@@ -2,22 +2,22 @@
 // Project: <https://github.com/ditojs/dito/>
 
 /**
- * A format definition: validates values without a setting.
- */
-export interface Format {
-  validate(value: unknown): boolean
-  message: string
-  /** Validate empty values too, which the admin skips for other formats. */
-  validatesEmptyValues?: boolean
-}
-
-/**
  * A keyword definition: validates values against the keyword's setting, and
  * describes the setting in its message.
  */
 export interface Keyword<Setting = unknown> {
   validate(value: unknown, setting: Setting): boolean
   message: string | ((setting: Setting) => string)
+  /** Validate empty values too, which the admin skips for other definitions. */
+  validatesEmptyValues?: boolean
+}
+
+/**
+ * A format definition: a keyword without a setting.
+ */
+export interface Format extends Keyword<undefined> {
+  validate(value: unknown): boolean
+  message: string
 }
 
 /** The formats of Dito.js schemas. */
@@ -33,11 +33,11 @@ export const formats: {
  */
 export const keywords: {
   type: Keyword<string | string[]>
-  _enum: Keyword<unknown[]>
+  _enum: Pick<Keyword<unknown[]>, 'message'>
   minimum: Keyword<number>
   maximum: Keyword<number>
   range: Keyword<[number, number]>
-  multipleOf: Keyword<number>
+  multipleOf: Pick<Keyword<number>, 'message'>
   decimals: Keyword<number | '*' | undefined>
   minLength: Keyword<number>
   maxLength: Keyword<number>

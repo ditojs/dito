@@ -47,7 +47,8 @@ describe('keywords', () => {
 
     describe.each(entries)(
       'with %o',
-      ({ setting, valid, invalid, message }) => {
+      // `enum` and `multipleOf` only carry their messages:
+      ({ setting, valid = [], invalid = [], message }) => {
         it.for(valid)('accepts %o', value => {
           expect(keyword.validate(value, setting)).toBe(true)
         })

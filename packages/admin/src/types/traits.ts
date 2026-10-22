@@ -217,9 +217,9 @@ export const numberTraits = {
   },
 
   // The limits as written, without rounding them for integers:
-  getProperty: ({ type, minimum, maximum, range }: Schema) => ({
+  getProperty: ({ type, minimum, maximum, range, decimals }: Schema) => ({
     type: type === 'integer' ? 'integer' : 'number',
-    ...pickBy({ minimum, maximum, range }, value => value != null)
+    ...pickBy({ minimum, maximum, range, decimals }, value => value != null)
   }),
 
   // Number inputs edit strings, and an empty one means no value:

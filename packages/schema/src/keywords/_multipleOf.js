@@ -1,9 +1,4 @@
-import { isNumber } from '@ditojs/utils'
-
+// Only the message, for the errors of the server:
 export const multipleOf = {
-  // Divide as Ajv does without `multipleOfPrecision`, float errors included:
-  validate: (value, multipleOf) => (
-    !isNumber(value) || Number.isInteger(value / multipleOf)
-  ),
   message: multipleOf => `must be a multiple of ${multipleOf}`
 }

@@ -1,6 +1,4 @@
-import { equals } from '@ditojs/utils'
-
+// Only the message, for the errors of the server:
 export const _enum = {
-  validate: (value, values) => values.some(entry => equals(entry, value)),
   message: 'must be one of the allowed values'
 }
