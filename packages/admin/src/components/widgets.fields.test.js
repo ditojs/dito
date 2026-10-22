@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
+import { html } from '@ditojs/utils'
 import { mountAdmin, enterValue } from '../test/mount.js'
 import CustomFieldPage from '../test/CustomFieldPage.vue'
 import {
@@ -211,6 +212,57 @@ describe('widgets of values', () => {
       getContainer(wrapper, label).find('input').attributes('type')
     expect(getInputType('Website')).toBe('url')
     expect(getInputType('Contact')).toBe('text')
+  })
+
+  it('take callbacks for the options of fields that take them', async () => {
+    const warn = vi.spyOn(console, 'warn')
+    const SliderPage = {
+      setup() {
+        form = useDitoForm({ resource: 'books', id: 1, properties })
+        return () =>
+          h(DitoSchemaForm, null, {
+            default: () =>
+              h(DitoSliderField, {
+                name: 'rating',
+                step: ({ item }) => (item.isPublic ? 0.5 : 1)
+              })
+          })
+      }
+    }
+    const { wrapper } = await mountPage(SliderPage, 'books', item)
+    expect(
+      getContainer(wrapper, 'Rating').find('input').attributes('step')
+    ).toBe('0.5')
+    const warnings = warn.mock.calls.flat().join()
+    warn.mockRestore()
+    expect(warnings).not.toContain('Invalid prop')
+  })
+
+  it('render `html` in labels, info and affixes, as fields do', async () => {
+    const warn = vi.spyOn(console, 'warn')
+    const WebsitePage = {
+      setup() {
+        form = useDitoForm({ resource: 'books', id: 1, properties })
+        return () =>
+          h(DitoSchemaForm, null, {
+            default: () =>
+              h(DitoTextField, {
+                name: 'website',
+                label: html`<b>Site</b>`,
+                info: html`<i>Public</i>`,
+                prefix: html`<em>https</em>`
+              })
+          })
+      }
+    }
+    const { wrapper } = await mountPage(WebsitePage, 'books', item)
+    const markup = wrapper.html()
+    expect(markup).toContain('<b>Site</b>')
+    expect(markup).toContain('<i>Public</i>')
+    expect(markup).toContain('<em>https</em>')
+    const warnings = warn.mock.calls.flat().join()
+    warn.mockRestore()
+    expect(warnings).not.toContain('Invalid prop')
   })
 
   it('store colors in the format of `colorFormat`', async () => {

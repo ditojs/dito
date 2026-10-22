@@ -47,7 +47,7 @@ defineType({
   deserializeValue: ({ value }) => value / 100,
   serializeValue: ({ value }) => Math.round(value * 100)
 })
-defineType({ type: 'hidden', defaultExclude: true })
+defineType({ type: 'label', defaultExclude: true })
 // Flags of type descriptors can be plain booleans:
 defineType({
   type: 'secret',
@@ -680,8 +680,8 @@ describe('shouldExcludeValue()', () => {
   })
 
   it('falls back on the `defaultExclude` of the type', () => {
-    expect(shouldExcludeValue({ type: 'hidden' }, {})).toBe(true)
-    expect(shouldExcludeValue({ type: 'hidden', exclude: false }, {})).toBe(
+    expect(shouldExcludeValue({ type: 'label' }, {})).toBe(true)
+    expect(shouldExcludeValue({ type: 'label', exclude: false }, {})).toBe(
       false
     )
     expect(shouldExcludeValue({ type: 'text' }, {})).toBe(false)

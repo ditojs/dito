@@ -85,7 +85,7 @@ export default {
       },
 
       // Manual activation: Arrow keys, Home and End only move the focus, Enter
-      // and Space select, to not switch the panels and hash on each key press.
+      // and Space select, to not switch the panels and URL on each key press.
       onKeyDown(event, key) {
         const keys = Object.keys(props.tabs)
         const index = keys.indexOf(key)
