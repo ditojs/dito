@@ -33,9 +33,6 @@ export function defineViteConfig({
     plugins: vue
       ? [createVuePlugin()]
       : null,
-    esbuild: build
-      ? { minify }
-      : null,
     build: build
       ? {
           minify,
