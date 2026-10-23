@@ -160,17 +160,15 @@ export class FieldNode {
   // Convert before `exclude`, so `serializeValue()` can write other values
   // into `serializedItem`:
   serialize(value, entry) {
-    const createContext = (schema, value) =>
-      createValueContext(schema, entry, { value })
     const { schema } = getFieldDefining(this.fields, 'serializeValue')
     const serialized = convertValue(schema, 'serializeValue', value, value =>
-      createContext(schema, value)
+      createValueContext(schema, entry, { value })
     )
     const { schema: excludeSchema } = getFieldDefining(this.fields, 'exclude')
     return (
       serialized === undefined ||
       shouldExcludeValue(excludeSchema, () =>
-        createContext(excludeSchema, serialized)
+        createValueContext(excludeSchema, entry, { value: serialized })
       )
     )
       ? undefined

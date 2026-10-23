@@ -1051,6 +1051,27 @@ describe('serializeData()', () => {
     })
   })
 
+  it('passes the serialized value to `exclude()`', async () => {
+    const form = await createForm({
+      fields: {
+        title: {
+          type: 'text',
+          serializeValue: ({ value }) => value.trim(),
+          exclude: ({ value }) => value === ''
+        },
+        name: {
+          type: 'text',
+          serializeValue: ({ value }) => value.trim(),
+          exclude: ({ value }) => value === ''
+        }
+      }
+    })
+    const data = { title: ' ', name: ' Name ' }
+    expect(serializeData(form, null, data, '', { services })).toEqual({
+      name: 'Name'
+    })
+  })
+
   it('excludes with the first field of the same value', async () => {
     const form = await createForm({
       tabs: {
