@@ -34,14 +34,14 @@ export default {
 
 `url` is the absolute URL at which the files are public, ending in `/`;
 file objects get a `url` built from it. Without it, disk files have no URL,
-and S3 files the URL that S3 returns. `path` is the folder of a disk storage,
+and S3 files the URL of the bucket. `path` is the folder of a disk storage,
 relative to the app's `basePath`. The
 [`StorageConfig`](../../api/server/storage.md#storageconfig) lists all
 options.
 
 To keep the sample pages in Amazon S3 instead, give the storage the bucket,
 and the configuration of the S3 client in `s3`. S3 storages need the
-optional peer dependencies `@aws-sdk/client-s3` and `@aws-sdk/lib-storage`:
+optional peer dependencies `@aws-lite/client` and `@aws-lite/s3`:
 
 ```js
 samplePages: {

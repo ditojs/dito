@@ -11,9 +11,8 @@ controller [`assets`](controllers.md#assets), and available as
 `app.getStorage(name)`. See [Storages and
 assets](../../guide/server/storages.md).
 
-The disk and S3 storages are built in. `@aws-sdk/client-s3` and
-`@aws-sdk/lib-storage` are optional peer dependencies, imported when an S3
-storage uses them.
+The disk and S3 storages are built in. `@aws-lite/client` and `@aws-lite/s3`
+are optional peer dependencies, imported when an S3 storage uses them.
 
 ## StorageConfig
 
@@ -36,24 +35,52 @@ Common options:
 
 ### S3StorageConfig
 
-| Key       | Type             | Description                                                                  |
-| --------- | ---------------- | ---------------------------------------------------------------------------- |
-| `type`    | `'s3'`           |                                                                              |
-| `bucket`  | `string`         | The bucket. Required.                                                        |
-| `acl`     | `string`         | Canned ACL of uploaded objects, e.g. `'public-read'`.                        |
-| `s3`      | `S3ClientConfig` | Configuration of the `S3` client.                                            |
-| *other*   |                  | Passed on to `multer-s3`, except `s3`, `key`, `contentType` and `metadata`. |
+| Key                    | Type     | Description                                                 |
+| ---------------------- | -------- | ----------------------------------------------------------- |
+| `type`                 | `'s3'`   |                                                             |
+| `bucket`               | `string` | The bucket. Required.                                       |
+| `s3`                   | `object` | Configuration of the S3 client, see below. Required.        |
+| `acl`                  | `string` | Canned ACL of stored objects, e.g. `'public-read'`.         |
+| `cacheControl`         | `string` | `Cache-Control` of stored objects.                          |
+| `contentDisposition`   | `string` | `Content-Disposition` of stored objects.                    |
+| `contentEncoding`      | `string` | `Content-Encoding` of stored objects.                       |
+| `storageClass`         | `string` | Storage class of stored objects, e.g. `'STANDARD_IA'`.      |
+| `serverSideEncryption` | `string` | Server-side encryption of stored objects, e.g. `'aws:kms'`. |
+| `sseKmsKeyId`          | `string` | KMS key of the server-side encryption.                      |
+
+The object options apply to uploads and to the files that the server stores
+itself, e.g. imported ones. Without them, the defaults of the bucket apply.
+
+The S3 client is [aws-lite](https://aws-lite.org), configured only through
+`s3`, never through environment variables or `~/.aws`:
+
+| Key           | Type     | Description                                                         |
+| ------------- | -------- | ------------------------------------------------------------------- |
+| `endpoint`    | `string` | URL of the S3 service. Default `https://s3.<region>.amazonaws.com`. |
+| `region`      | `string` | The region. Required.                                               |
+| `credentials` | `object` | `{ accessKeyId, secretAccessKey, sessionToken? }`. Required.        |
+
+Other options of the AWS SDK's `S3ClientConfig` aren't supported, e.g.
+`forcePathStyle`, `maxAttempts`, `requestHandler` or `credentials` as a
+provider function. aws-lite addresses buckets in path-style for `localhost`, IP
+addresses and bucket names with dots, else virtual-hosted.
 
 The content type of uploads is taken from the request, else detected from the
 data. With `readDimensions`, the image and video dimensions are stored as
-object metadata too.
+object metadata too. Streamed uploads are sent in parts of 8 MB.
 
 ```js
 covers: {
   type: 's3',
   bucket: 'bookshop-covers',
   acl: 'public-read',
-  s3: { region: 'eu-central-1' },
+  s3: {
+    region: 'eu-central-1',
+    credentials: {
+      accessKeyId: process.env.S3_KEY,
+      secretAccessKey: process.env.S3_SECRET
+    }
+  },
   url: 'https://bookshop-covers.s3.eu-central-1.amazonaws.com/'
 }
 ```
@@ -204,8 +231,7 @@ const url = storage.getFileUrl(file)
 
 Returns the public URL of the file, resolved against `config.url`. Returns
 `string | undefined`: without `config.url`, `undefined` for disk storages, and
-for S3 the file's own `url`, else the S3 `location` that `multer-s3` sets on
-uploaded files.
+for S3 the URL of the file in the bucket at the `s3.endpoint`.
 
 ### getUniqueKey()
 
