@@ -261,6 +261,14 @@ describe('Router', () => {
     }
   })
 
+  it('throws on several params in one segment', () => {
+    for (const path of ['/a/:x-:y', '/a/:x:y/b']) {
+      expect(() => router.add('GET', path, handler)).toThrow(
+        `Unsupported params in path: '${path}'.`
+      )
+    }
+  })
+
   it('throws on params inside segments after match-any nodes', () => {
     expect(() =>
       router.add('GET', '/files/**/tech-doc-:format', handler)

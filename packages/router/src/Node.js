@@ -62,16 +62,20 @@ export default class Node {
   }
 
   add(path, handler) {
-    if (
-      path.split('/').some(
-        token => !isWildcard(token) && token.includes('*')
-      )
-    ) {
-      throw new Error(
-        `Unsupported wildcard in path: '${
-          path
-        }'. Use '*' and '**' only as whole segments.`
-      )
+    for (const token of path.split('/')) {
+      if (!isWildcard(token) && token.includes('*')) {
+        throw new Error(
+          `Unsupported wildcard in path: '${
+            path
+          }'. Use '*' and '**' only as whole segments.`
+        )
+      } else if (/:.*:/.test(token)) {
+        throw new Error(
+          `Unsupported params in path: '${
+            path
+          }'. Use only one param per segment.`
+        )
+      }
     }
     const parameters = new Parameters()
     for (let pos = 0, length = path.length; pos < length; pos++) {
