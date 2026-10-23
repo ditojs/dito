@@ -124,12 +124,12 @@ class Cooking extends Controller {
   override actions: any = {
     async 'post boil'(ctx: any) {
       const trx = ctx.transaction
-      trx.on('commit', () => events.push('commit'))
+      trx.executionPromise.then(() => events.push('commit'))
       return { transacted: !!trx }
     },
 
     async 'post burn'(ctx: any) {
-      ctx.transaction.on('rollback', (error: Error) =>
+      ctx.transaction.executionPromise.catch((error: Error) =>
         events.push(`rollback ${error.message}`)
       )
       throw new Error('Burnt')
@@ -326,7 +326,7 @@ describe('Controller setup', () => {
       expect(events).toEqual(['commit'])
     })
 
-    it('rolls back transactions and emits `rollback` on errors', async () => {
+    it('rolls back transactions with the error', async () => {
       const response = await getJson('/cooking/burn', { method: 'POST' })
       expect(response.status).toBe(500)
       expect(events).toEqual(['rollback Burnt'])

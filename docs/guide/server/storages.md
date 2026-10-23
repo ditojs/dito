@@ -239,6 +239,11 @@ await book.$patch({ cover })
 
 `data` can be a `Buffer`, a string or a data URI. This needs the asset model.
 
+When a transaction rolls back with an error, the files that were stored or
+imported in it are removed again. Rollbacks without an error keep them in the
+storage. Failed writes outside of transactions keep them too, with counts that
+`pnpm db:recount_assets` corrects.
+
 ### Importing files
 
 File objects with a `url` and a key that has no asset record yet, e.g. files

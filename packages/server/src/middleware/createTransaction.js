@@ -1,5 +1,4 @@
 import { transaction, wrapError } from 'objection'
-import { emitAsync } from '../utils/emitter.js'
 
 export function createTransaction() {
   return async (ctx, next) => {
@@ -10,17 +9,6 @@ export function createTransaction() {
         ctx.app.knex
       )
       ctx.transaction = trx
-      // Knex resolves `executionPromise` when handlers roll back without an
-      // error, so we need to record rollbacks to tell them from commits:
-      let isRolledBack = false
-      const { rollback } = trx
-      trx.rollback = error => {
-        isRolledBack = true
-        return rollback(error)
-      }
-      // Knex doesn't offer a mechanism for code dealing with transactions to
-      // be notified when the transaction is rolled back. So add support for
-      // 'commit' and 'rollback' events here:
       try {
         await next()
         // Handlers may complete the transaction themselves, e.g. by rolling it
@@ -32,16 +20,13 @@ export function createTransaction() {
       } catch (err) {
         // Failed commits complete the transaction too.
         if (!trx.isCompleted()) {
-          await trx.rollback()
+          // Roll back with the error, so `executionPromise` rejects with it.
+          await trx.rollback(err)
         }
-        await emitAsync(trx, 'rollback', err)
         throw err
       } finally {
         delete ctx.transaction
       }
-      // Emit outside of the `try` block, so that errors in the listeners
-      // don't trigger the rollback events of a committed transaction.
-      await emitAsync(trx, isRolledBack ? 'rollback' : 'commit')
     } else {
       // TODO: Consider setting `ctx.transaction = ctx.app.knex`, just like
       // Objection does in static hooks so `transaction is alway set.
