@@ -469,10 +469,10 @@ export function getItemDisplayValue(sourceSchema, item, name, {
     shouldSkipIrrelevant: true,
     // Only the values of the item itself:
     shouldWalk: () => false,
+    // Tables display many items, so check only the fields of `name`:
+    shouldVisit: entry => entry.name === name,
     visit: entry => {
-      if (entry.name === name) {
-        valueEntry ??= entry
-      }
+      valueEntry = entry
     }
   })
   return valueEntry ? valueEntry.node.getDisplayValue(valueEntry) : item[name]

@@ -1462,6 +1462,36 @@ describe('getItemDisplayValue()', () => {
     ).toEqual(['live'])
   })
 
+  it('checks only the fields of the value and their containers', async () => {
+    const calls = []
+    const createIf = (name, value) => () => {
+      calls.push(name)
+      return value
+    }
+    const form = await createForm({
+      fields: {
+        entries: {
+          type: 'list',
+          form: {
+            type: 'form',
+            fields: {
+              details: {
+                type: 'section',
+                if: createIf('details', false),
+                fields: { status }
+              },
+              title: { type: 'text', if: createIf('title', true) }
+            }
+          }
+        }
+      }
+    })
+    expect(
+      getDisplayValues(form.fields.entries, { status: 'live' }, ['status'])
+    ).toEqual(['live'])
+    expect(calls).toEqual(['details'])
+  })
+
   it('displays wrapped primitives at the data path of the item', async () => {
     const dataPaths = []
     const form = await createForm({
