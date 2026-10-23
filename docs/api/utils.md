@@ -18,7 +18,7 @@ entry point, `@ditojs/utils`, an ES module with TypeScript types.
 | [Strings](#strings) | `camelize()`, `capitalize()`, `decamelize()`, `hyphenate()`, `underscore()`, `labelize()`, `deindent()`, `escapeRegExp()`, `getCommonPrefix()`, `getCommonOffset()`, `isAbsoluteUrl()`, `isUrl()`, `isDomain()`, `isHostname()`, `isEmail()`, `isCreditCard()` |
 | [Dates and numbers](#dates-and-numbers) | `format()`, `formatDate()`, `defaultFormats`, `formatPlainDate()`, `parsePlainDate()` |
 | [Data paths](#data-paths) | `parseDataPath()`, `normalizeDataPath()`, `resolveDataPath()`, `getValueAtDataPath()`, `getEntriesAtDataPath()`, `setValueAtDataPath()`, `setEntriesAtDataPath()` |
-| [HTML](#html) | `html`, `isHtml()`, `escapeHtml()`, `stripHtml()` |
+| [HTML](#html) | `html`, `isHtml()`, `asHtml()`, `escapeHtml()`, `stripHtml()` |
 | [Functions](#functions) | `deprecate()`, `toAsync()`, `toCallback()`, `toPromiseCallback()` |
 | [Timers](#timers) | `debounce()`, `debounceAsync()` |
 | [Promises](#promises) | `mapConcurrently()`, `mapSequentially()` |
@@ -693,7 +693,7 @@ setEntriesAtDataPath(order, quantities)
 ## HTML
 
 ```js
-import { html, isHtml, escapeHtml, stripHtml } from '@ditojs/utils'
+import { html, isHtml, asHtml, escapeHtml, stripHtml } from '@ditojs/utils'
 ```
 
 ### html
@@ -728,6 +728,20 @@ isHtml(value)
 Returns `true` if the value was created by `html`. The check uses the brand
 `Symbol.for('dito.html')`, so it recognizes `Html` values of other copies of
 `@ditojs/utils` too.
+
+### asHtml()
+
+```js
+asHtml(value)
+```
+
+Returns the HTML of an `Html` value, and escapes any other value as text with
+`escapeHtml()`, so that content that can be either is inserted as HTML.
+
+```js
+asHtml(html`<b>${'Tom & Jerry'}</b>`) // '<b>Tom &amp; Jerry</b>'
+asHtml('<b>Tom & Jerry</b>') // '&lt;b&gt;Tom &amp; Jerry&lt;/b&gt;'
+```
 
 ### escapeHtml()
 

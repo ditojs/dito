@@ -1,4 +1,4 @@
-import { html, isHtml } from './html.js'
+import { html, isHtml, asHtml } from './html.js'
 
 describe('html()', () => {
   it('should escape interpolated values', () => {
@@ -50,5 +50,17 @@ describe('isHtml()', () => {
     expect(isHtml({ html: '<b>bold</b>' })).toBe(false)
     expect(isHtml(null)).toBe(false)
     expect(isHtml(undefined)).toBe(false)
+  })
+})
+
+describe('asHtml()', () => {
+  it('should return the HTML of html values', () => {
+    expect(asHtml(html`<b>${'Q & A'}</b>`)).toBe('<b>Q &amp; A</b>')
+  })
+
+  it('should escape other values as text', () => {
+    expect(asHtml('<b>Q & A</b>')).toBe('&lt;b&gt;Q &amp; A&lt;/b&gt;')
+    expect(asHtml(1.5)).toBe('1.5')
+    expect(asHtml(null)).toBe('')
   })
 })

@@ -4,6 +4,7 @@ exports[`index > exports all symbols 1`] = `
 {
   "asArray": [Function],
   "asFunction": [Function],
+  "asHtml": [Function],
   "asObject": [Function],
   "assignDeeply": [Function],
   "camelize": [Function],
