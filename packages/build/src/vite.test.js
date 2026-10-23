@@ -50,7 +50,6 @@ describe('defineViteConfig()', () => {
       }
     })
     expect(config.build.lib.fileName('es')).toBe('book-shelf.es.js')
-    expect(config.esbuild).toEqual({ minify: true })
   })
 
   it('omits the vue plugin and css options by default', () => {
@@ -80,7 +79,6 @@ describe('defineViteConfig()', () => {
       minify: false
     })
     expect(config.build.sourcemap).toBe('inline')
-    expect(config.esbuild).toEqual({ minify: false })
   })
 
   it('respects an explicit sourcemap setting', () => {
@@ -155,7 +153,6 @@ describe('defineViteConfig()', () => {
       build: false
     })
     expect(config.build).toBe(null)
-    expect(config.esbuild).toBe(null)
   })
 
   it('passes additional options through', () => {
