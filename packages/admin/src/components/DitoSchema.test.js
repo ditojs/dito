@@ -297,6 +297,16 @@ describe('DitoSchema', () => {
         expect(schemaComponent.selectedTab).toBe('details')
       })
 
+      it('selects the tab of the route before the form is mounted', async () => {
+        const logError = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { schemaComponent, loadItem } =
+          await mountLoadingForm('/items/1/details')
+        await loadItem()
+        expect(schemaComponent.selectedTab).toBe('details')
+        expect(logError).not.toHaveBeenCalled()
+        logError.mockRestore()
+      })
+
       it('validates nothing before the item is loaded', async () => {
         const { routeComponent, schemaComponent, loadItem } =
           await mountLoadingForm('/items/1')
