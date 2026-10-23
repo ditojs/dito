@@ -23,7 +23,7 @@
       :draggable="draggable"
       :open="true"
       :aria-label="labelText || labelize(schema.name)"
-      @change-children="changeChildren"
+      @change="onChange"
     )
     .dito-tree-list__form-container(
       v-if="isEditingItem"
@@ -51,7 +51,7 @@ const DitoTreeListType = {
 
   setup(props) {
     const source = useSource(props)
-    const { services, value, isListSource, onChange } = source
+    const { services, value, isListSource } = source
     const { routeContext } = services
     return {
       ...source,
@@ -82,13 +82,7 @@ const DitoTreeListType = {
         isListSource.value
           ? { children: { name: props.schema.name, ...props.schema } }
           : props.schema
-      ),
-
-      // The only writer of the tree, see `DitoTreeItem`:
-      changeChildren({ entry, children }) {
-        services.dataContext.model.replaceItems(entry, children)
-        onChange()
-      }
+      )
     }
   }
 }

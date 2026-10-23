@@ -559,10 +559,6 @@ export class DataModel {
     this.#changeList(entry, list => list.splice(to, 0, ...list.splice(from, 1)))
   }
 
-  replaceItems(entry: ListEntry, items: any[]) {
-    this.#changeList(entry, list => list.splice(0, list.length, ...items))
-  }
-
   // Number the items from the order of the first one, which keeps the offset
   // of loaded pages.
   #changeList(
