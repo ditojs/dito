@@ -250,7 +250,7 @@ export default {
         services.dataContext.model.hasErrorsWithin(props.data)
       ),
       numEntries: computed(
-        () => (properties.value?.length || 0) + numChildren.value
+        () => Object.keys(properties.value || {}).length + numChildren.value
       ),
       ariaLabel: computed(() => getText(props.label)),
       details: computed(() => {
