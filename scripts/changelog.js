@@ -17,7 +17,7 @@ const folder = 'changelog/unreleased'
 // The kinds of changes in the order of the sections, and the packages in the
 // order of their entries in each section, the others follow:
 const kinds = ['Behaviour changes', 'Deprecations', 'New', 'Fixes', 'Internal']
-const packages = ['server', 'admin', 'ui', 'router', 'utils', 'build']
+const packages = ['server', 'admin', 'ui', 'router', 'schema', 'utils', 'build']
 
 const { version } = JSON.parse(fs.readFileSync('lerna.json', 'utf8'))
 const files = fs
@@ -59,7 +59,8 @@ if (entries.size === 0) {
 
 const rank = (list, value) =>
   list.includes(value) ? list.indexOf(value) : list.length
-const getPackage = item => item.match(/^- \*\*([^:*]+):\*\*/)?.[1]
+// Entries for several packages, like `**server, admin:**`, sort by the first:
+const getPackage = item => item.match(/^- \*\*([a-z]+)/)?.[1]
 const sections = [...entries]
   .sort(([a], [b]) => rank(kinds, a) - rank(kinds, b))
   .map(([heading, items]) => {
