@@ -273,6 +273,8 @@ export default {
               query
             })
           } else if (hasDataChanged && isListSource(sourceSchema.value)) {
+            // The removal was confirmed, so the draft goes without asking:
+            model.markClean()
             close()
           } else {
             original.value = item ?? null
