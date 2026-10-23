@@ -836,9 +836,9 @@ describe('written properties', () => {
       }
     }
 
-    it('leaves out irrelevant values in validation, defaults and data', () => {
+    it('leaves out irrelevant values in validation and data', () => {
       const data = initialize(properties, { isFeatured: false })
-      expect(data).toEqual({ isFeatured: false })
+      expect(data).toEqual({ isFeatured: false, rank: 1 })
       expect(validate(properties, { ...data, rank: null })).toBe(null)
       expect(serialize(properties, { ...data, rank: 3 })).toEqual({
         isFeatured: false

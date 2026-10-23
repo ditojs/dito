@@ -227,7 +227,6 @@ export function initializeData(schema, data = {}, services, {
     dataPath,
     services,
     rootData,
-    shouldSkipIrrelevant: true,
     shouldSkipSourcesWithResource,
     visit
   })
