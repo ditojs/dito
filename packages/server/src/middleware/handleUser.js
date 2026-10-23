@@ -41,7 +41,7 @@ export function handleUser() {
     // Attach a logger instance with the user to the context.
     ctx.logger = ctx.logger?.child({ user: ctx.state.user }) || null
 
-    ctx.login = ctx.logIn = async (user, options = {}) => {
+    ctx.login = async (user, options = {}) => {
       const { session } = ctx
       const { name, sessionQuery } = user.constructor
       const shouldUseSession = options.session !== false
@@ -70,7 +70,7 @@ export function handleUser() {
       }
     }
 
-    ctx.logout = ctx.logOut = async (options = {}) => {
+    ctx.logout = async (options = {}) => {
       const { user } = ctx.state
       await user?.$emit('before:logout', options)
       ctx.state.user = null

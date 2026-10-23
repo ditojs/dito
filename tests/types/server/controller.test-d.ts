@@ -450,11 +450,11 @@ describe('KoaContext', () => {
     const ctx = {} as KoaContext
     const user = ctx.state.user
     expectTypeOf(ctx.login(user)).toEqualTypeOf<Promise<void>>()
-    expectTypeOf(ctx.logIn(user, { session: false })).toEqualTypeOf<
+    expectTypeOf(ctx.login(user, { session: false })).toEqualTypeOf<
       Promise<void>
     >()
     expectTypeOf(ctx.logout()).toEqualTypeOf<Promise<void>>()
-    expectTypeOf(ctx.logOut({ reason: 'expired' })).toEqualTypeOf<
+    expectTypeOf(ctx.logout({ reason: 'expired' })).toEqualTypeOf<
       Promise<void>
     >()
     expectTypeOf(ctx.isAuthenticated()).toBeBoolean()

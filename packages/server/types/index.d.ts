@@ -4811,16 +4811,11 @@ export type KoaContext<$State = KoaContextState> = Koa.ParameterizedContext<
       user: InstanceType<typeof UserModel>,
       options?: { session?: boolean; [key: string]: unknown }
     ): Promise<void>
-    logIn(
-      user: InstanceType<typeof UserModel>,
-      options?: { session?: boolean; [key: string]: unknown }
-    ): Promise<void>
     /**
      * Logs out the user and clears the whole session, passing `options` on to
      * the logout events of the user's model class.
      */
     logout(options?: Record<string, unknown>): Promise<void>
-    logOut(options?: Record<string, unknown>): Promise<void>
     isAuthenticated(): boolean
     isUnauthenticated(): boolean
   }
