@@ -270,7 +270,7 @@ slot. The slot receives the field as one reactive object:
 
 ```pug
 DitoCustomField(name="code" label="Code" v-slot="field")
-  input(v-model="field.value" @blur="field.validate()")
+  input(v-model="field.value")
   span(v-if="field.errors") {{ field.errors[0].message }}
 ```
 
@@ -282,6 +282,9 @@ DitoCustomField(name="code" label="Code" v-slot="field")
   returns whether it's valid.
 
 Destructured, e.g. `v-slot="{ value }"`, the values are read-only.
+
+Like the other widgets, the field emits `change` and validates the value when
+the focus leaves it after an edit, also when the slot holds several inputs.
 
 Without `name`, `DitoCustomField` displays its content in the layout of the
 form, with a `label`, `width` and `info` like the other widgets, but without a

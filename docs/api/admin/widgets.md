@@ -85,6 +85,8 @@ properties, which `DitoCheckboxesField` and `DitoMultiselectField` edit.
 | `field.value` | `any` | The value, which writes through the form's data, e.g. with `v-model="field.value"`. |
 | `field.errors` | `{ message }[] \| null` | The errors of the value. |
 | `field.property` | `object` | The property of the value. |
-| `field.validate()` | `() => boolean` | Validates the value like the widgets do on blur, e.g. with `@blur="field.validate()"`, and returns whether it's valid. |
+| `field.validate()` | `() => boolean` | Validates the value like the widgets do on blur, and returns whether it's valid. |
 
 Destructured, e.g. with `v-slot="{ value }"`, the members are read-only.
+
+The focus of the elements in the slot is the focus of the field: moving it between them is one edit. When the focus leaves the field after the value changed, it emits `change` and validates the value, like the other widgets. Writes without focus in the field emit `change` right away.

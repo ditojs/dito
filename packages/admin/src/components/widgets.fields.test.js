@@ -574,4 +574,105 @@ describe('DitoCustomField', () => {
     await enterValue(input, 'second')
     expect(notesForm.item.tags).toEqual(['second'])
   })
+
+  describe('edits', () => {
+    // A page whose custom field edits the code with one input beside another,
+    // and with a button:
+    const onCodeChange = vi.fn()
+    const EditPage = {
+      setup() {
+        useDitoForm({
+          resource: 'codes',
+          id: 1,
+          properties: { code: { type: 'string', maxLength: 8 } }
+        })
+        return () =>
+          h(DitoSchemaForm, null, {
+            default: () =>
+              h(
+                DitoCustomField,
+                { name: 'code', label: 'Code', onChange: onCodeChange },
+                {
+                  default: field => [
+                    h('input', {
+                      class: 'custom-code',
+                      value: field.value,
+                      onInput: event => (field.value = event.target.value)
+                    }),
+                    h('input', { class: 'custom-other' }),
+                    h('button', {
+                      class: 'custom-clear',
+                      type: 'button',
+                      onClick: () => (field.value = '')
+                    })
+                  ]
+                }
+              )
+          })
+      }
+    }
+
+    const mountEditPage = () =>
+      mountPage(EditPage, 'codes', { id: 1, code: 'ABC' })
+
+    const typeValue = async (input, value) => {
+      for (let i = 1; i <= value.length; i++) {
+        input.element.value = value.slice(0, i)
+        await input.trigger('input')
+      }
+    }
+
+    afterEach(() => onCodeChange.mockClear())
+
+    it('emits `change` once the focus leaves it', async () => {
+      const { wrapper } = await mountEditPage()
+      const input = wrapper.find('input.custom-code')
+      input.element.focus()
+      await typeValue(input, 'XYZ')
+      expect(onCodeChange).not.toHaveBeenCalled()
+      // Moving the focus inside the field doesn't end the edit:
+      wrapper.find('input.custom-other').element.focus()
+      await flushPromises()
+      expect(onCodeChange).not.toHaveBeenCalled()
+      document.activeElement.blur()
+      await flushPromises()
+      expect(onCodeChange).toHaveBeenCalledOnce()
+      expect(onCodeChange.mock.calls[0][0].value).toBe('XYZ')
+    })
+
+    it(`doesn't emit \`change\` when the value is the same`, async () => {
+      const { wrapper } = await mountEditPage()
+      const input = wrapper.find('input.custom-code')
+      input.element.focus()
+      await typeValue(input, 'ABCD')
+      input.element.value = 'ABC'
+      await input.trigger('input')
+      input.element.blur()
+      await flushPromises()
+      expect(onCodeChange).not.toHaveBeenCalled()
+    })
+
+    it('emits `change` right away for writes without focus', async () => {
+      const { wrapper } = await mountEditPage()
+      await wrapper.find('button.custom-clear').trigger('click')
+      expect(onCodeChange).toHaveBeenCalledOnce()
+      expect(onCodeChange.mock.calls[0][0].value).toBe('')
+    })
+
+    it('validates its value when the focus leaves it after edits', async () => {
+      const { wrapper } = await mountEditPage()
+      const container = getContainer(wrapper, 'Code')
+      const input = wrapper.find('input.custom-code')
+      input.element.focus()
+      await typeValue(input, 'TOO-LONG-CODE')
+      wrapper.find('input.custom-other').element.focus()
+      await flushPromises()
+      expect(container.find('.dito-errors').exists()).toBe(false)
+      document.activeElement.blur()
+      await flushPromises()
+      expect(container.find('.dito-errors').text()).toBe(
+        'The Code field must be at most 8 characters long.'
+      )
+    })
+  })
 })
