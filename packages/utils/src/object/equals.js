@@ -7,8 +7,9 @@ export function equals(arg1, arg2) {
     return true
   }
   if (arg1 != null && arg2 != null) {
-    arg1 = arg1.valueOf()
-    arg2 = arg2.valueOf()
+    // Objects without prototype have no `valueOf()` to unwrap them with:
+    arg1 = arg1.valueOf ? arg1.valueOf() : arg1
+    arg2 = arg2.valueOf ? arg2.valueOf() : arg2
     if (is(arg1, arg2)) {
       return true
     }
@@ -29,7 +30,7 @@ export function equals(arg1, arg2) {
       const keys = Object.keys(arg1)
       if (keys.length === Object.keys(arg2).length) {
         for (const key of keys) {
-          if (!(arg2.hasOwnProperty(key) && equals(arg1[key], arg2[key]))) {
+          if (!(Object.hasOwn(arg2, key) && equals(arg1[key], arg2[key]))) {
             return false
           }
         }
