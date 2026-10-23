@@ -2,6 +2,8 @@ import type { ListSchema } from '@ditojs/admin'
 import { html } from '@ditojs/utils'
 import type { Project } from './models/Project.js'
 import { createWidgetView } from '../../utils/views.js'
+import planPage from './components/plan-page.js'
+import guidePage from './components/guide-page.js'
 
 const statusOptions = ['Planned', 'Active', 'Done']
 
@@ -408,4 +410,20 @@ export const account = {
       password: { type: 'password', label: 'New Password' }
     }
   }
+} as const
+
+// Pages of a project. Their required id keeps them out of the menu, which the
+// other screenshots show:
+export const plan = {
+  type: 'page',
+  label: 'Plan',
+  path: 'project-plans/:id',
+  component: planPage
+} as const
+
+export const guide = {
+  type: 'page',
+  label: 'Guide',
+  path: 'project-guides/:id',
+  component: guidePage
 } as const
