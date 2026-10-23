@@ -38,6 +38,44 @@ describe('DitoSelectType', () => {
       expect(data.format).toBe('hardcover')
     })
 
+    it('selects falsy plain option values like `0`', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          fields: { rating: { type: 'select', options: [0, 1, 2] } }
+        },
+        data: { rating: 0 }
+      })
+      const field = findField('rating')
+      expect(getOptions(field)).toEqual([
+        ['0', '0'],
+        ['1', '1'],
+        ['2', '2']
+      ])
+      expect(field.find('select').element.value).toBe('0')
+    })
+
+    it('selects falsy plain option values like `0` in groups', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          fields: {
+            rating: {
+              type: 'select',
+              options: {
+                data: [0, 1, 2],
+                group: ({ option }) => (option > 1 ? 'High' : 'Low')
+              }
+            }
+          }
+        },
+        data: { rating: 0 }
+      })
+      const field = findField('rating')
+      expect(field.findAll('option').map(option => option.text())).toEqual(
+        ['0', '1', '2']
+      )
+      expect(field.find('select').element.value).toBe('0')
+    })
+
     it('uses the `value` and `label` keys of option objects', async () => {
       const { findField, data } = await mountSchema({
         schema: {

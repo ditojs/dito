@@ -105,7 +105,7 @@ const DitoSelectType = {
           selected != null &&
           typeof selected !== 'object' &&
           hasOptions.value &&
-          !findOptionForValue(selected)
+          findOptionForValue(selected) === undefined
         )
       })
     }

@@ -171,7 +171,7 @@ export function findOptionForValue(
     for (const option of options) {
       if (isGrouped) {
         const found = findOption(option.options, false)
-        if (found) {
+        if (found !== undefined) {
           return found
         }
       } else if (
@@ -196,7 +196,7 @@ export function getSelectedValue(
   const convertValue = (value: any) => {
     const val = relateKey ? getValueForOption(settings, value) : value
     return hasOptions
-      ? (optionValue ? findOption(val) : val)
+      ? !optionValue || findOption(val) !== undefined
         ? val
         : null
       : value
