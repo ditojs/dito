@@ -48,6 +48,45 @@ class Library extends Model {
         { type: 'object', properties: { year: { type: 'integer' } } }
       ]
     },
+    // References in `anyOf` and `oneOf`, closed on their own:
+    pet: {
+      anyOf: [{ type: 'null' }, { $ref: '#Cat' }],
+      definitions: {
+        '#Cat': { type: 'object', properties: { meow: { type: 'string' } } },
+        '#Dog': { type: 'object', properties: { woof: { type: 'string' } } }
+      }
+    },
+    animal: { oneOf: [{ $ref: '#Cat' }, { $ref: '#Dog' }] },
+    // References next to properties that they don't evaluate, closed at the
+    // outer level:
+    tagged: {
+      type: 'object',
+      properties: { id: { type: 'string' } },
+      anyOf: [{ $ref: '#Cat' }, { $ref: '#Dog' }]
+    },
+    // References as variants of a discriminator, which Ajv only follows
+    // without other keywords:
+    figure: {
+      type: 'object',
+      discriminator: { propertyName: 'type' },
+      oneOf: [{ $ref: '#Image' }, { $ref: '#Text' }],
+      definitions: {
+        '#Image': {
+          type: 'object',
+          properties: { type: { const: 'image' }, url: { type: 'string' } }
+        },
+        '#Text': {
+          type: 'object',
+          properties: { type: { const: 'text' }, text: { type: 'string' } }
+        }
+      }
+    },
+    caption: {
+      type: 'object',
+      properties: { label: { type: 'string' } },
+      discriminator: { propertyName: 'type' },
+      oneOf: [{ $ref: '#Image' }, { $ref: '#Text' }]
+    },
     // Variants that combine a base with their own properties through `allOf`,
     // without a discriminator:
     sections: {
@@ -165,6 +204,55 @@ describe('Definitions in model properties', () => {
     ).toEqual({
       edition: [expect.objectContaining({ keyword: 'unevaluatedProperties' })]
     })
+  })
+
+  // Alternatives also report the errors of the other alternatives:
+  async function expectUnevaluated(json: object) {
+    const [key] = Object.keys(json)
+    expect(await getErrors(Library.query().insert(json as any))).toEqual({
+      [key]: expect.arrayContaining([
+        expect.objectContaining({ keyword: 'unevaluatedProperties' })
+      ])
+    })
+  }
+
+  it('closes nullable references', async () => {
+    for (const pet of [null, { meow: 'Purr' }]) {
+      expect(
+        await getErrors(Library.query().insert({ pet } as any))
+      ).toBeUndefined()
+    }
+    await expectUnevaluated({ pet: { meow: 'Purr', woof: 'Wuff' } })
+  })
+
+  it('closes references in `oneOf`', async () => {
+    for (const animal of [{ meow: 'Purr' }, { woof: 'Wuff' }]) {
+      expect(
+        await getErrors(Library.query().insert({ animal } as any))
+      ).toBeUndefined()
+    }
+    await expectUnevaluated({ animal: { meow: 'Purr', woof: 'Wuff' } })
+  })
+
+  it('closes references next to properties at the outer level', async () => {
+    const tagged = { id: 'a', meow: 'Purr' }
+    const library: any = await Library.query().insertAndFetch({
+      tagged
+    } as any)
+    expect(library.tagged).toEqual(tagged)
+    await expectUnevaluated({ tagged: { ...tagged, legs: 4 } })
+  })
+
+  it('validates references as variants of a discriminator', async () => {
+    const figure = { type: 'image', url: 'https://example.com/a.png' }
+    const caption = { label: 'One', type: 'text', text: 'Hello' }
+    const library: any = await Library.query().insertAndFetch({
+      figure,
+      caption
+    } as any)
+    expect(library).toMatchObject({ figure, caption })
+    await expectUnevaluated({ figure: { ...figure, text: 'Hello' } })
+    await expectUnevaluated({ caption: { ...caption, url: 'a.png' } })
   })
 
   it('validates variants that combine a base through `allOf`', async () => {
