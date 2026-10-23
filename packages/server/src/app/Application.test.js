@@ -95,8 +95,8 @@ class Kitchen extends Controller {
     },
 
     'get login'(ctx) {
-      // `handleUser()` adds `ctx.logIn()` as an alias of `ctx.login()`.
-      return { hasLogin: !!ctx.logIn && ctx.logIn === ctx.login }
+      // `handleUser()` adds `ctx.login()`:
+      return { hasLogin: !!ctx.login }
     },
 
     'get large'() {
