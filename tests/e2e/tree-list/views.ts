@@ -31,11 +31,11 @@ export const libraries = createWidgetView<Library>('name', 'libraries', {
       }
     }
   },
-  // The object shows its properties, and its sections as children.
+  // The object shows its details, and its sections as children.
   catalog: {
     type: 'tree-object',
     label: 'Catalog',
-    properties: {
+    details: {
       title: { label: 'Catalog Title' }
     },
     children: {

@@ -1952,26 +1952,24 @@ export interface ColorSchema<$Item = any>
   presets?: SchemaValue<$Item, {}, string[]>
 }
 
-export type ColumnSchema<$Item = any, $Value = any> = {
+/**
+ * How a value of an item is displayed, read-only: in the cells of the columns
+ * of lists, and in the details of tree items.
+ */
+export type DisplaySchema<$Item = any, $Value = any> = {
   /**
-   * The label of the column.
-   * @defaultValue The labelized column key.
+   * The label of the value, the header of columns.
+   * @defaultValue The labelized key.
    */
   label?: TextOrHtml
   /**
-   * Use a Vue component to render the cell. The component is specified
+   * Use a Vue component to render the value. The component is specified
    * like this: import(...).
    */
   component?: Resolvable<VueComponent>
   /**
-   * Whether the column should be sortable.
-   */
-  sortable?: boolean
-  /**
    * A function of the value and the item returning the displayed name, as
    * text, or as HTML created with the `html` template of `@ditojs/utils`.
-   * If the column is sortable, the column is sorted by value and not by
-   * rendered name.
    */
   render?: SchemaValueCallback<
     $Item,
@@ -1979,22 +1977,33 @@ export type ColumnSchema<$Item = any, $Value = any> = {
     string | Html | null | undefined
   >
   /**
-   * The provided string is applied to the class property of the column
-   * cell html elements.
+   * The provided string is applied to the class property of the html
+   * elements of the value.
    */
   class?: string
   /**
-   * The provided string is applied to the style property of the column
-   * cell html elements.
+   * The provided string is applied to the style property of the html
+   * elements of the value.
    */
   style?: string | Partial<CSSStyleDeclaration>
+  /** Whether to display the value. */
+  if?: SchemaValue<$Item, {}, boolean>
+}
+
+export type ColumnSchema<$Item = any, $Value = any> = DisplaySchema<
+  $Item,
+  $Value
+> & {
+  /**
+   * Whether the column should be sortable. Sortable columns are sorted by
+   * value and not by rendered name.
+   */
+  sortable?: boolean
   /**
    * Sort the colum in ascending or descending order, `true` for ascending.
    * Columns are ordered by the first column to specify `defaultSort`.
    */
   defaultSort?: true | 'asc' | 'desc'
-  /** Whether to display the column. */
-  if?: SchemaValue<$Item, {}, boolean>
 }
 
 /**
@@ -2781,10 +2790,10 @@ interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
     name: string
   }
   /**
-   * The properties shown for tree nodes, displayed like the columns of
-   * lists.
+   * The values shown for tree nodes, as `label: value` rows under the item,
+   * opened with its toggle.
    */
-  properties?: Columns<$Item>
+  details?: Details<$Item>
   /**
    * Whether the items are collapsed initially, hiding their children.
    *
@@ -3050,6 +3059,14 @@ export type Columns<$Item = any> = 0 extends 1 & $Item
       [K in keyof $Item]?: ColumnSchema<$Item, $Item[K]>
     } & {
       [key: string]: ColumnSchema<$Item> | undefined
+    }
+
+export type Details<$Item = any> = 0 extends 1 & $Item
+  ? { [key: string]: DisplaySchema | undefined }
+  : {
+      [K in keyof $Item]?: DisplaySchema<$Item, $Item[K]>
+    } & {
+      [key: string]: DisplaySchema<$Item> | undefined
     }
 
 export type Buttons<$Item> = Record<

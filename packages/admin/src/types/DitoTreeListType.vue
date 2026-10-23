@@ -106,7 +106,8 @@ const treeTraits = {
   async setupSchema({ schema, api, name }) {
     assertRemovedSchemaKeys(schema, name, {
       open: `'collapsed'`,
-      expanded: `'collapsed: false'`
+      expanded: `'collapsed: false'`,
+      properties: `'details'`
     })
     const { children } = schema
     if (children) {
@@ -115,7 +116,7 @@ const treeTraits = {
       children.type = 'tree-list'
     }
     await Promise.all([
-      resolveSchemaComponents(schema.properties),
+      resolveSchemaComponents(schema.details),
       sourceTraits.setupSchema({ schema, api, name }),
       children && setupSchemaComponent(api, children, children.name)
     ])
