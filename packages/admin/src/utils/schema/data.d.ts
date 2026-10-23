@@ -38,6 +38,7 @@ export function shouldSetDefaultValue(
   options?: Options
 ): boolean
 export function hasComputedValueSource(schema: Schema): boolean
+export function hasValueFromDataSchema(schema: Schema): boolean
 export function getMultipleValue(schema: Schema, context: Context): boolean
 export function initializeData(
   schema: Schema,

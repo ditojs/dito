@@ -971,6 +971,29 @@ describe('clipboard', () => {
       'cover'
     ])
   })
+
+  it('finds the limits of the files, also of callbacks', async () => {
+    const form = await createForm({
+      fields: {
+        image: { type: 'upload', extensions: 'png,jpg', maxSize: 1000 },
+        files: {
+          type: 'upload',
+          multiple: true,
+          maxSize: ({ item }) => item.maxSize
+        }
+      }
+    })
+    const data = { image: null, files: [], maxSize: '2kB' }
+    const entries = getUploadEntries(form, data, {
+      dataPath: '',
+      services,
+      rootData: data
+    })
+    expect(entries.map(({ limits }) => limits)).toEqual([
+      { extensions: 'png,jpg', maxSize: 1000 },
+      { extensions: undefined, maxSize: 2000 }
+    ])
+  })
 })
 
 describe('isDataPathExcluded()', () => {

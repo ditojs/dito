@@ -30,7 +30,7 @@ import {
   getDefaultValue,
   shouldSetDefaultValue,
   shouldExcludeValue,
-  hasComputedValueSource,
+  hasValueFromDataSchema,
   convertValue
 } from './data.js'
 import {
@@ -97,20 +97,24 @@ export class FieldNode {
     }
   }
 
-  // Of several fields of the same value, the first with a computed value or
-  // options gets the record of the data model:
-  getRecordedSchema() {
+  // The property's record of the data model for `computeValue()`, else of the
+  // first field with a value from data or options:
+  getRecordedSchema(entry) {
     const field = this.fields.find(
       ({ schema }) => (
-        hasComputedValueSource(schema) || getOptionsDataSchema(schema)
+        hasValueFromDataSchema(schema) || getOptionsDataSchema(schema)
       )
     )
-    return field
-      ? {
-          schema: field.schema,
-          form: { fields: { [this.name]: field.schema } }
-        }
-      : null
+    return (
+      this.getPropertyNode(entry)?.getRecordedSchema() ?? (
+        field
+          ? {
+              schema: field.schema,
+              form: { fields: { [this.name]: field.schema } }
+            }
+          : null
+      )
+    )
   }
 
   // The forms of the items in the value, of each field that holds them:

@@ -161,7 +161,7 @@ export function hasComputedValueSource(schema) {
   return !!schema.computeValue || hasValueFromDataSchema(schema)
 }
 
-function hasValueFromDataSchema(schema) {
+export function hasValueFromDataSchema(schema) {
   return (
     !!getTypeDescriptor(schema)?.resolvesValue &&
     !!(schema.data || schema.dataPath)
@@ -398,7 +398,9 @@ export function isDataPathExcluded(schema, data, dataPath, {
     ),
     visit: entry => entries.push(entry)
   })
-  const excludedEntry = entries.findLast(entry => entry.node.isExcluded(entry))
+  const excludedEntry = entries.findLast(
+    entry => entry.node.getPropertyNode(entry)?.isExcluded(entry)
+  )
   if (excludedEntry) {
     // Sources with their own resource send their data themselves:
     return !excludedEntry.node.source?.hasResource
@@ -427,8 +429,9 @@ export function deserializeData(schema, data, {
 } = {}) {
   const visit = entry => {
     const { node, data, name } = entry
-    if (name in data) {
-      const value = node.deserialize(data[name], entry)
+    const propertyNode = node.getPropertyNode(entry)
+    if (propertyNode && name in data) {
+      const value = propertyNode.deserialize(data[name], entry)
       if (value !== data[name]) {
         data[name] = value
       }

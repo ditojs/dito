@@ -964,11 +964,16 @@ export class DataModel {
           if (node.source?.hasResource) {
             // Like an `if` that fails, an `exclude()` that fails counts as
             // included:
-            if (callOrLog(() => node.isExcluded(entry), false)) {
+            if (
+              callOrLog(
+                () => node.getPropertyNode(entry)?.isExcluded(entry),
+                false
+              )
+            ) {
               sourceEntriesWithResource.push(entry)
             }
           } else {
-            const recordedSchema = node.getRecordedSchema()
+            const recordedSchema = node.getRecordedSchema(entry)
             if (recordedSchema) {
               recordedEntries.set(entry, { ...entry, ...recordedSchema })
             }

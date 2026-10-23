@@ -10,7 +10,7 @@ import { computed, toRaw } from 'vue'
 import SchemaContext from '../../SchemaContext.js'
 import { convertToDate, convertTimeToDate, formatTime } from '../date.js'
 import { createReference } from '../data.js'
-import { getStoredFiles } from '../upload.ts'
+import { getStoredFiles, getUploadLimits } from '../upload.ts'
 import {
   getTypeDescriptor,
   getChildSourceSchemas,
@@ -210,12 +210,16 @@ export class PropertyNode {
     )
   }
 
-  // The data model records the value for its computes:
+  // The data model records the value for its computes, derived properties by
+  // the field of `computeValue()`:
   getRecordedSchema() {
     const { name, property } = this
-    return property.computeValue
-      ? { schema: property, form: { properties: { [name]: property } } }
-      : null
+    const field = this.fieldsByKey?.computeValue
+    return field
+      ? { schema: field, form: { fields: { [name]: field } } }
+      : property.computeValue
+        ? { schema: property, form: { properties: { [name]: property } } }
+        : null
   }
 
   // Unchanged passwords stay missing. The data model writes computed values
@@ -295,11 +299,15 @@ export class PropertyNode {
     return !!(this.#get('exclude', entry) || this.#get('computed', entry))
   }
 
-  // Assets have no limits of their own, their widgets check them:
-  getUploadLimits() {
+  // Written assets have no limits, their widgets check them. Upload fields
+  // hold their own:
+  getUploadLimits(entry) {
     const { type, items } = this.property
+    const field = this.fieldsByKey?.[typeKey]
     return type === 'asset' || items?.type === 'asset'
-      ? { extensions: undefined, maxSize: undefined }
+      ? field
+        ? getUploadLimits(field, this.#createContext(entry, typeKey))
+        : { extensions: undefined, maxSize: undefined }
       : null
   }
 

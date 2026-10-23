@@ -9,37 +9,13 @@ import {
 } from 'vue'
 import { isPlainObject } from '@ditojs/utils'
 import { defineType } from './schema/types.ts'
-import { optionsTraits, sourceTraits } from '../types/traits.ts'
+// Importing the types defines them, so the model sees their descriptors:
+import '../types/index.js'
 import { DataModel } from './DataModel.ts'
 import { cloneWithUids } from './uid.js'
 
 // `setupForm()` needs the admin's API, see `getFormSchemas()`:
 vi.mock('./schema/setup.js', () => ({ setupForm: async form => form }))
-
-// Define minimal types, as the actual type components can't be
-// imported without a Vue SFC compiler:
-defineType({ type: 'text' })
-defineType({ ...optionsTraits, type: 'select' })
-defineType({
-  type: 'value',
-  defaultValue: undefined,
-  resolvesValue: true
-})
-defineType({ type: 'section', defaultNested: false })
-defineType({ type: 'panel', defaultNested: false })
-defineType({
-  type: 'list',
-  defaultValue: () => [],
-  defaultExclude: sourceTraits.defaultExclude,
-  sourceType: 'list'
-})
-defineType({ type: 'object', sourceType: 'object' })
-defineType({ type: 'submit', submitsData: true })
-// Like `DitoUploadType`, which leaves out files that aren't uploaded yet:
-defineType({
-  type: 'upload',
-  serializeValue: ({ value }) => (value?.isUploaded ? value.name : null)
-})
 
 function createDataModel(schema, data, options) {
   const dataModel = new DataModel({
@@ -75,7 +51,7 @@ describe('DataModel', () => {
     const { dataModel, data } = createDataModel(schema, {
       tags: null
     })
-    expect(data).toEqual({ title: 'Untitled', tags: null })
+    expect(data).toEqual({ title: 'Untitled', tags: [] })
     dataModel.stop()
     dataModel.replace(reactive({}))
     expect(dataModel.data).toEqual({})
