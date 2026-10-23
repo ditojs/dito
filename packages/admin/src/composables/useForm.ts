@@ -191,15 +191,6 @@ export function useForm({
     model.replaceWithNewData(type ? { type } : {})
   }
 
-  const getSubmitVerb = (present = true) =>
-    dataContext.isCreating
-      ? present
-        ? 'create'
-        : 'created'
-      : present
-        ? 'submit'
-        : 'submitted'
-
   // Validate, resolve the resource, submit and notify, without navigating.
   // Resolve to whether it succeeded, and whether it applied a draft:
   const submitData = async (
@@ -222,9 +213,8 @@ export function useForm({
     resource = buttonResource || resource
     method = resource?.method || method
 
-    const getVerb = (present: boolean) => verbs.value[getSubmitVerb(present)]
     const notifySubmitError = (error: any, message: string | null = null) => {
-      const verb = getVerb(true)
+      const verb = verbs.value.submit
       adminContext.notify({
         type: 'error',
         error,
@@ -266,7 +256,7 @@ export function useForm({
       success = await submitTransient(button, {
         ...callbacks,
         notifySuccess: () => {
-          const verb = getVerb(false)
+          const verb = verbs.value.submitted
           adminContext.notify({
             type: 'info',
             title: dataContext.isCreating
@@ -298,7 +288,7 @@ export function useForm({
           },
           onError: callbacks.onError,
           notifySuccess: () => {
-            const verb = getVerb(false)
+            const verb = verbs.value.submitted
             adminContext.notify({
               type: 'success',
               title: `Successfully ${capitalize(verb)}`,
