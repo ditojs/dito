@@ -83,6 +83,14 @@ describe('DitoInput', () => {
     expect(wrapper.find('input').attributes('aria-invalid')).toBe('true')
   })
 
+  it(`doesn't reflect errors for \`aria-invalid="false"\``, () => {
+    wrapper = mountInput({}, { attrs: { 'aria-invalid': 'false' } })
+    expect(wrapper.classes()).not.toContain('dito-input--has-errors')
+    wrapper.unmount()
+    wrapper = mountInput({}, { attrs: { 'aria-invalid': 'grammar' } })
+    expect(wrapper.classes()).toContain('dito-input--has-errors')
+  })
+
   it('renders the prefix and suffix slots around the input', () => {
     wrapper = mountInput(
       {},
