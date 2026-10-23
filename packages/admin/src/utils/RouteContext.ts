@@ -66,6 +66,9 @@ export interface RouteContext {
   readonly breadcrumb: string
   // The tab of the route's schema:
   selectedTab: string | null
+  // Whether the route's schema is `wide`, which makes the page wide while the
+  // route is active:
+  isWide: boolean
   // The form of `useDitoForm()` in the route's components, whose changes and
   // item are the route's:
   componentForm: {

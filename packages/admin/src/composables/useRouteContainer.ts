@@ -131,6 +131,7 @@ export function useRouteContainer({
     parent,
     level,
     selectedTab: null,
+    isWide: false,
     componentForm: null,
     resourceContext: resourceContext ?? parent?.resourceContext ?? null,
 
