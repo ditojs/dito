@@ -673,6 +673,32 @@ describe('DitoTreeListType', () => {
       expect(admin.router.currentRoute.value.path).toBe('/items/1')
     })
 
+    it.each([
+      { title: 'Team', index: 0, remaining: 'History' },
+      { title: 'History', index: 1, remaining: 'Team' }
+    ])(
+      'closes the edited form of the removed child $title without asking',
+      async ({ title, index, remaining }) => {
+        const confirm = stubConfirm()
+        const { admin, findField, data, settle } = await mountForm({
+          schema: createDraggableSiteSchema(),
+          data: site
+        })
+        await admin.navigate(`/items/1/pages/0/subpages/${index}`)
+        await enterValue(
+          admin.wrapper.find(`input[name="pages/0/subpages/${index}/title"]`),
+          'Archive'
+        )
+        await findButton(findField('pages'), title, '.dito-button--remove')
+          .trigger('click')
+        await settle()
+        // Only the removal is confirmed, its draft is discarded:
+        expect(confirm).toHaveBeenCalledTimes(1)
+        expect(admin.router.currentRoute.value.path).toBe('/items/1')
+        expect(data.pages[0].subpages).toEqual([{ title: remaining }])
+      }
+    )
+
     it('reorders the children of tree objects in the object', async () => {
       const { admin, findField, data, routeComponent } = await mountForm({
         schema: {
