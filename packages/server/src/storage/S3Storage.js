@@ -126,13 +126,18 @@ export class S3Storage extends Storage {
 
   // @override
   async _addFile(file, data) {
-    const result = await this.s3.putObject({
-      Bucket: this.bucket,
-      ACL: this.acl,
-      Key: file.key,
-      ContentType: file.type,
-      Body: data
-    })
+    // Upload like multer-s3 does, as `putObject()` returns no `Location`:
+    const { Upload } = await importPeer(this, '@aws-sdk/lib-storage')
+    const result = await new Upload({
+      client: this.s3,
+      params: {
+        Bucket: this.bucket,
+        ACL: this.acl,
+        Key: file.key,
+        ContentType: file.type,
+        Body: data
+      }
+    }).done()
     // In `Storage.addFile()` this will get overridden with the result of
     // `_getUrl()` if it exists, but is used as a fallback otherwise,
     // see `_getFileUrl()`.

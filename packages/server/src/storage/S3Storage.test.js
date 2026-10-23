@@ -18,11 +18,6 @@ vi.mock('@aws-sdk/client-s3', () => ({
       s3Clients.push(this)
     }
 
-    async putObject(params) {
-      this.objects.set(params.Key, params)
-      return { Location: `https://bucket.s3.example.com/${params.Key}` }
-    }
-
     async deleteObject(params) {
       this.objects.delete(params.Key)
       return {}
@@ -36,6 +31,26 @@ vi.mock('@aws-sdk/client-s3', () => ({
     async listObjectsV2(params) {
       const page = this.pages[params.ContinuationToken ?? 'first']
       return { ...page, params: { ...params } }
+    }
+  }
+}))
+
+// `Upload` sends its commands through `client.send()`, which the S3 stub above
+// doesn't implement, so we stub it at the module boundary as well:
+vi.mock('@aws-sdk/lib-storage', () => ({
+  Upload: class Upload {
+    constructor({ client, params }) {
+      this.client = client
+      this.params = params
+    }
+
+    async done() {
+      const { client, params } = this
+      client.objects.set(params.Key, params)
+      return {
+        Key: params.Key,
+        Location: `https://bucket.s3.example.com/${params.Key}`
+      }
     }
   }
 }))

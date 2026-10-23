@@ -89,8 +89,9 @@ Knex supports PostgreSQL (`pg`), MySQL (`mysql2`), SQLite (`sqlite3` or
 developed against PostgreSQL; a few features are PostgreSQL only, e.g.
 `knex.typeParsers` in the [configuration](configuration.md).
 
-`@aws-sdk/client-s3` is an optional peer dependency. Install it if you store
-files in S3, see [Storages and assets](storages.md).
+`@aws-sdk/client-s3` and `@aws-sdk/lib-storage` are optional peer
+dependencies. Install them if you store files in S3, see
+[Storages and assets](storages.md).
 
 `@ditojs/build`, `vite` and `@vitejs/plugin-vue` are optional peer
 dependencies too, needed only to build the admin or serve it in development.
