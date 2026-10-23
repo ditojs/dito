@@ -2012,6 +2012,57 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
+    it('skips the walk of data while there are no errors', () => {
+      let readCount = 0
+      const { dataModel, data } = createDataModel(schema, {
+        title: 'Emma',
+        chapters: [{ title: 'One' }],
+        // Data outside the schema, which counts its reads:
+        notes: {
+          edits: 0,
+          get text() {
+            readCount++
+            return ''
+          }
+        }
+      })
+      let evaluationCount = 0
+      const hasErrors = computed(() => {
+        evaluationCount++
+        return dataModel.hasErrorsWithin(data)
+      })
+      readCount = 0
+      expect(hasErrors.value).toBe(false)
+      expect(readCount).toBe(0)
+      // Changes deep inside the data don't re-evaluate it:
+      data.notes.edits++
+      expect(hasErrors.value).toBe(false)
+      expect(evaluationCount).toBe(1)
+      // The first error anywhere does:
+      dataModel.setErrors('chapters/0/title', tooShort)
+      expect(hasErrors.value).toBe(true)
+      dataModel.setErrors('chapters/0/title', null)
+      dataModel.addError('title', 'Unable to load')
+      expect(hasErrors.value).toBe(true)
+      dataModel.removeError('title', 'Unable to load')
+      dataModel.replaceErrors({ title: tooShort }, { server: true })
+      expect(hasErrors.value).toBe(true)
+      dataModel.clearErrors()
+      readCount = 0
+      expect(hasErrors.value).toBe(false)
+      expect(readCount).toBe(0)
+      // Also after replaced data took its errors along:
+      dataModel.setErrors('title', tooShort)
+      dataModel.replace(reactive({ ...data, title: 'Persuasion' }))
+      readCount = 0
+      expect(dataModel.hasErrorsWithin(dataModel.data)).toBe(false)
+      expect(readCount).toBe(0)
+      const { componentRecords } = dataModel
+      expect(componentRecords.size).toBe([...componentRecords.values()].length)
+      dataModel.stop()
+      expect(componentRecords.size).toBe(0)
+    })
+
     it('finds and copies the errors within data that holds its ancestors', async () => {
       const schema = {
         type: 'form',

@@ -731,6 +731,11 @@ export class DataModel {
   // Return whether `data` or the data nested in it hold fields with errors,
   // also where they aren't displayed, e.g. in the items of nested forms.
   hasErrorsWithin(data: any): boolean {
+    // Optimization: Skip the deep walk, and with it the tracking of all nested
+    // values, while there are no errors at all:
+    if (this.#errors.value.size === 0 && this.#fieldErrors.value.size === 0) {
+      return false
+    }
     // Computed values can hold their ancestors, e.g. `parentItem`:
     const visited = new Set()
     const hasErrors = (data: any): boolean => {
@@ -1378,6 +1383,10 @@ class WeakEntryMap<T> {
     | WeakMap<object, ValuesByName<T>>
     | Map<object, ValuesByName<T>> = new WeakMap()
 
+  // NOTE: Data that is collected without its entries being deleted keeps them
+  // counted, which only costs the optimizations that rely on `size`.
+  size = 0
+
   get({ data, name }: FieldKey): T | undefined {
     return this.valuesByData.get(toRaw(data))?.get(name)
   }
@@ -1389,6 +1398,9 @@ class WeakEntryMap<T> {
       valuesByName = new Map()
       this.valuesByData.set(rawData, valuesByName)
     }
+    if (!valuesByName.has(name)) {
+      this.size++
+    }
     valuesByName.set(name, value)
   }
 
@@ -1396,8 +1408,11 @@ class WeakEntryMap<T> {
     const rawData = toRaw(data)
     const valuesByName = this.valuesByData.get(rawData)
     const isDeleted = !!valuesByName?.delete(name)
-    if (isDeleted && valuesByName!.size === 0) {
-      this.valuesByData.delete(rawData)
+    if (isDeleted) {
+      this.size--
+      if (valuesByName!.size === 0) {
+        this.valuesByData.delete(rawData)
+      }
     }
     return isDeleted
   }
@@ -1417,6 +1432,7 @@ class EntryMap<T> extends WeakEntryMap<T> {
 
   clear() {
     this.valuesByData.clear()
+    this.size = 0
   }
 
   *values(): Generator<T> {
