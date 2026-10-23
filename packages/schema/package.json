@@ -18,7 +18,8 @@
   "files": [
     "src/",
     "types/",
-    "!src/**/*.test.js"
+    "!src/**/*.test.js",
+    "!src/cases.js"
   ],
   "publishConfig": {
     "access": "public"
