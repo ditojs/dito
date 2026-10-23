@@ -41,7 +41,9 @@ describe('TransitionHeight', () => {
       vi.useFakeTimers()
       // happy-dom doesn't clear styles that are set to null like browsers do,
       // so record the styles on a plain object instead.
-      element = { style: {} }
+      const { classList } = document.createElement('div')
+      classList.add('dito-height-enter-active')
+      element = { style: {}, classList }
       computedHeight = '120px'
       vi.spyOn(window, 'getComputedStyle').mockImplementation(() => ({
         width: '300px',
@@ -71,6 +73,16 @@ describe('TransitionHeight', () => {
       })
       vi.advanceTimersToNextTimer()
       expect(element.style.height).toBe('120px')
+    })
+
+    it('releases the height when entered before it was measured', () => {
+      const { onEnter, onAfterEnter } = getTransitionProps()
+      onEnter(element)
+      // A busy browser can end the transition before the timeouts run:
+      element.classList.remove('dito-height-enter-active')
+      onAfterEnter(element)
+      vi.runAllTimers()
+      expect(element.style.height).toBe(null)
     })
 
     it('releases the height once entered', () => {

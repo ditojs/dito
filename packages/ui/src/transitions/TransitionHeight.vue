@@ -45,14 +45,19 @@ const props = {
     })
     nextTimeout(() => {
       const { height } = getComputedStyle(element)
+      // A busy browser can end the transition before we measure, so only
+      // animate the height while still entering:
+      const isEntering = element.classList.contains('dito-height-enter-active')
       setStyle(element, {
         width: null,
         position: null,
         visibility: null,
-        height: 0
+        height: isEntering ? 0 : null
       })
-      forceRepaint(element)
-      nextTimeout(() => setStyle(element, { height }))
+      if (isEntering) {
+        forceRepaint(element)
+        nextTimeout(() => setStyle(element, { height }))
+      }
     })
   },
 
