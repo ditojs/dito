@@ -50,8 +50,10 @@ path ending in `/**` doesn't match the path before it: `/covers/**` doesn't
 match `/covers`.
 
 `*` and `**` only work as whole segments, and so do params after `**`: routes
-like `/files/*.json` or `/files/**/:name.json` throw an error when added. Params
-can't use the names of wildcards, e.g. `$` or `$0`.
+like `/files/*.json` or `/files/**/:name.json` throw an error when added. A
+param runs to the end of its segment, so a segment holds at most one: `/a/:x-:y`
+throws, and `/files/:name.json` names its param `name.json`. Params can't use
+the names of wildcards, e.g. `$` or `$0`.
 
 ```js
 router.get('/books/*/chapters/*', handler)
