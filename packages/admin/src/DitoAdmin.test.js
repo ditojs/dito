@@ -78,7 +78,7 @@ describe('DitoAdmin', () => {
   it('renders the page class of the admin context', async () => {
     const admin = await mountAdmin({ views: {} })
     expect(admin.context.pageClass).toBe(null)
-    admin.context.pageClass = 'dito-page--wide'
+    admin.context.setWideSchema({}, true)
     await admin.navigate('/')
     expect(admin.wrapper.find('.dito-page--wide').exists()).toBe(true)
   })

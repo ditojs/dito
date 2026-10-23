@@ -456,7 +456,13 @@ export default {
       getSchemaValue('wide', { type: Boolean, default: false })
     )
     if (isWidePage) {
-      adminContext.pageClass = 'dito-page--wide'
+      // Views stay mounted while the forms of their items show, so they only
+      // make the page wide while they're active:
+      watch(
+        () => props.active,
+        active => adminContext.setWideSchema(context, active),
+        { immediate: true }
+      )
     }
 
     onMounted(() => {
@@ -476,7 +482,7 @@ export default {
       emitEvent('destroy')
       unregisterUi()
       if (isWidePage) {
-        adminContext.pageClass = null
+        adminContext.setWideSchema(context, false)
       }
     })
 

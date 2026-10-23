@@ -672,6 +672,39 @@ describe('DitoSchema', () => {
     expect(page().classList.contains('dito-page--wide')).toBe(false)
   })
 
+  it.each([
+    ['narrow', false, null],
+    ['wide', true, 'dito-page--wide']
+  ])(
+    'makes the page of an item of a `wide` view %s by its form',
+    async (_, wide, pageClass) => {
+      const item = { id: 1, title: 'Emma' }
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            wide: true,
+            field: {
+              type: 'list',
+              resource: { path: 'books' },
+              form: { type: 'form', wide, fields: { title: { type: 'text' } } }
+            }
+          }
+        },
+        request({ method = 'get', url }) {
+          if (method === 'get' && url === '/books') return { data: [item] }
+          if (method === 'get' && url === '/books/1') return { data: item }
+        }
+      })
+      await admin.navigate('/books')
+      expect(admin.context.pageClass).toBe('dito-page--wide')
+      await admin.navigate('/books/1')
+      expect(admin.context.pageClass).toBe(pageClass)
+      await admin.navigate('/books')
+      expect(admin.context.pageClass).toBe('dito-page--wide')
+    }
+  )
+
   describe('revealing components', () => {
     async function mountCollapsedSection() {
       const result = await mountSchema({
