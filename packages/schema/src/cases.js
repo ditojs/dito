@@ -110,8 +110,14 @@ export const keywords = {
     {
       setting: 2,
       valid: ['1.25', 1.25, '-1.5', '+1', '.5'],
-      invalid: ['1.255', '1.', '1,5', 'a'],
+      invalid: ['1.255', '1.', '1,5', 'a', '-', '+', '.'],
       message: 'must be a number with at most 2 decimal places'
+    },
+    {
+      setting: 8,
+      valid: [1e-7, -1e-7],
+      invalid: [1e-9],
+      message: 'must be a number with at most 8 decimal places'
     },
     {
       setting: 1,
@@ -127,8 +133,8 @@ export const keywords = {
     },
     {
       setting: '*',
-      valid: ['1.123456789', 1.125],
-      invalid: ['1.'],
+      valid: ['1.123456789', 1.125, 1e-7, 1e21],
+      invalid: ['1.', '.'],
       message: 'must be a number'
     }
   ],
