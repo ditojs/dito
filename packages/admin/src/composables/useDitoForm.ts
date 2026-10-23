@@ -56,6 +56,7 @@ export function useDitoForm({
   // the page's route claims the paths below it:
   const node = routeContext?.node
   const isInPage = node instanceof ViewNode && isPage(node.schema)
+  // Forms that fail to set up are logged, and load no item:
   const formSetup = setupForm(adminContext.api, schema)
     .then(() => {
       if (!isInPage && hasRoutedForms(schema)) {
@@ -64,8 +65,12 @@ export function useDitoForm({
           'routes in pages'
         )
       }
+      return true
     })
-    .catch(console.error)
+    .catch(error => {
+      console.error(error)
+      return false
+    })
   const sourceSchema = { resource, form: schema } as Schema
 
   // Created items are saved with the id that their response merged. Read it
@@ -131,11 +136,12 @@ export function useDitoForm({
   watch(
     () => toValue(id),
     async id => {
-      await formSetup
-      if (id == null) {
-        form.createData()
-      } else if (String(id) !== getDataId()) {
-        form.loadData()
+      if (await formSetup) {
+        if (id == null) {
+          form.createData()
+        } else if (String(id) !== getDataId()) {
+          form.loadData()
+        }
       }
     },
     { immediate: true }
