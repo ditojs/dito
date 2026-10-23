@@ -55,7 +55,10 @@ export default {
         this.$attrs.class,
         {
           'dito-input--focus': this.focused,
-          'dito-input--has-errors': !!this.$attrs['aria-invalid'],
+          // Like ARIA, treat all values but `false` and empty ones as invalid:
+          'dito-input--has-errors': ![null, false, 'false', ''].includes(
+            this.$attrs['aria-invalid'] ?? null
+          ),
           'dito-input--disabled': this.disabled
         }
       ]
