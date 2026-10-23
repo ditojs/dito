@@ -35,11 +35,18 @@ import {
   convertValue
 } from './data.js'
 import { getValidations, getValueValidationErrors } from './validation.js'
-import { createPropertyNodes } from './properties.js'
+import {
+  createPropertyNodes,
+  getFieldPropertyNode,
+  isPropertyPerEntry,
+  mergePropertyNodes
+} from './properties.js'
 
 // A value of a form's data with the fields that edit it, in form order. Each
 // aspect comes from the first field that defines it, else from the first one:
 export class FieldNode {
+  #propertyNode = null
+
   constructor(name, fields) {
     this.name = name
     this.fields = fields
@@ -66,6 +73,30 @@ export class FieldNode {
       : fields.length > 0
         ? new FieldNode(this.name, fields)
         : null
+  }
+
+  // The node of the value's property, merged from its fields, `null` if they
+  // hold no value. Nodes with only their relevant fields merge per entry:
+  getPropertyNode(entry) {
+    const getNode = entry =>
+      mergePropertyNodes(
+        this.name,
+        this.fields.map(({ schema }) =>
+          getFieldPropertyNode(schema, this.name, entry)
+        )
+      )
+    const { services } = entry
+    if (
+      this.fields.some(({ schema }) =>
+        isPropertyPerEntry(schema, this.name, services)
+      )
+    ) {
+      return getNode(entry)
+    } else {
+      // The cached properties of fields only depend on the services:
+      this.#propertyNode ??= computed(() => getNode({ services }))
+      return this.#propertyNode.value
+    }
   }
 
   // Of several fields of the same value, the first with a computed value or

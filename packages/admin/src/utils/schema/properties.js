@@ -3,8 +3,11 @@ import {
   isFunction,
   isDate,
   isString,
+  pickBy,
   formatPlainDate
 } from '@ditojs/utils'
+import { computed, toRaw } from 'vue'
+import SchemaContext from '../../SchemaContext.js'
 import { convertToDate, convertTimeToDate, formatTime } from '../date.js'
 import { createReference } from '../data.js'
 import { getStoredFiles } from '../upload.ts'
@@ -72,14 +75,38 @@ const validatorsByFormat = {
 // Not supported yet:
 const unsupportedKeys = ['definitions', '$ref']
 
+// The keywords that fields may hold as callbacks, which the properties of their
+// nodes keep, to be resolved per entry:
+const callbackKeys = [
+  ...validatedKeys,
+  'nullable',
+  'default',
+  'exclude',
+  'trim'
+]
+
+// The key in `fieldsByKey` of the field whose type's hooks a derived property
+// runs, without a name in properties:
+const typeKey = Symbol('type')
+
+// The nodes of written properties and of the properties of fields by schema,
+// computed so that fields get new ones once `setupForm()` changes them. Fields
+// whose types read callbacks to derive their property derive it per entry:
+const nodesBySchema = new WeakMap()
+
 // Written properties: a value of a form's data and its keywords, which may be
-// functions of the entry's context, e.g. `required`, `if` or `default`:
+// functions of the entry's context, e.g. `required`, `if` or `default`.
+// Properties derived from fields resolve each keyword with the context of the
+// field in `fieldsByKey` that it came from:
 export class PropertyNode {
   #itemForms
+  #type
 
-  constructor(name, property) {
+  constructor(name, property, fieldsByKey = null) {
     this.name = name
     this.property = property
+    this.fieldsByKey = fieldsByKey
+    this.#type = getTypeDescriptor(fieldsByKey?.[typeKey])
     this.source = getPropertySource(property)
     // Properties have no options, so copies keep the ids of their relations:
     this.relation = property.relate
@@ -107,7 +134,7 @@ export class PropertyNode {
         getSchemaValue('if', {
           type: Boolean,
           schema: this.property,
-          context: this.#createContext(entry),
+          context: this.#createContext(entry, 'if'),
           default: true
         }),
       true
@@ -124,9 +151,11 @@ export class PropertyNode {
 
   getValidationErrors(entry) {
     const { property } = this
-    const context = this.#createContext(entry)
-    const get = key => getSchemaValue(key, { schema: property, context })
-    const validations = {}
+    const get = key => this.#get(key, entry)
+    // The validations of the field's type come first, as for fields:
+    const validations = {
+      ...this.#type?.getValidations?.(this.#createContext(entry, typeKey))
+    }
     for (const key of validatedKeys) {
       const setting = get(key)
       if (setting != null && setting !== false) {
@@ -151,6 +180,7 @@ export class PropertyNode {
       validations.enum = value => values.includes(value)
     }
     if (property.validate) {
+      const context = this.#createContext(entry, 'validate')
       validations.validate = value =>
         property.validate(context.extend({ value }))
     }
@@ -191,7 +221,7 @@ export class PropertyNode {
     return !this.shouldSetDefaultValue(entry, options)
       ? undefined
       : def !== undefined
-        ? resolveValue(def, () => this.#createContext(entry))
+        ? resolveValue(def, () => this.#createContext(entry, 'default'))
         : this.#get('nullable', entry)
           ? null
           : getPropertyEmptyValue(this.property)
@@ -211,18 +241,16 @@ export class PropertyNode {
       // `DitoTimeField` edits times as `Date` objects too:
       value = convertTimeToDate(value)
     }
-    return property.deserializeValue
-      ? property.deserializeValue(this.#createContext(entry, { value }))
-      : value
+    return this.#callValueHooks('deserializeValue', value, entry)
   }
 
   // Excluded values aren't sent:
   serialize(value, entry) {
-    const { property } = this
-    value = this.#convertValue(value, entry)
-    if (property.serializeValue) {
-      value = property.serializeValue(this.#createContext(entry, { value }))
-    }
+    value = this.#callValueHooks(
+      'serializeValue',
+      this.#convertValue(value, entry),
+      entry
+    )
     return value === undefined || this.isExcluded(entry) ? undefined : value
   }
 
@@ -239,17 +267,34 @@ export class PropertyNode {
       : null
   }
 
-  // Show dates and times in the formats of the admin, like their widgets:
+  // Show dates and times in the formats of the admin, like their widgets, and
+  // the values of fields as their types display them:
   getDisplayValue(entry) {
     const { type } = this.property
     const value = entry.data[entry.name]
     const isTime = this.#get('format', entry) === 'iso-time'
-    return isDate(value) && (dateTypes.has(type) || isTime)
-      ? this.#createContext(entry).format(value, {
-          date: !isTime,
-          time: type !== 'date'
-        })
-      : value
+    return this.#type?.getDisplayValue
+      ? this.#type.getDisplayValue(this.#createContext(entry, typeKey))
+      : isDate(value) && (dateTypes.has(type) || isTime)
+        ? this.#createContext(entry).format(value, {
+            date: !isTime,
+            time: type !== 'date'
+          })
+        : value
+  }
+
+  // The hooks of the field's type run before the property's own, as for
+  // fields:
+  #callValueHooks(key, value, entry) {
+    for (const [hookKey, convert] of [
+      [typeKey, this.#type?.[key]],
+      [key, this.property[key]]
+    ]) {
+      if (convert) {
+        value = convert(this.#createContext(entry, hookKey, { value }))
+      }
+    }
+    return value
   }
 
   // Convert values by their type, like the types of fields do:
@@ -275,14 +320,19 @@ export class PropertyNode {
   }
 
   #get(key, entry) {
+    const { property } = this
     return getSchemaValue(key, {
-      schema: this.property,
-      context: this.#createContext(entry)
+      schema: property,
+      // Only callbacks need a context:
+      context: isFunction(property[key])
+        ? this.#createContext(entry, key)
+        : null
     })
   }
 
-  #createContext(entry, values = null) {
-    return createValueContext(this.property, entry, values)
+  #createContext(entry, key = null, values = null) {
+    const schema = this.fieldsByKey?.[key] ?? this.property
+    return createValueContext(schema, entry, values)
   }
 }
 
@@ -290,9 +340,83 @@ export function createPropertyNodes(properties) {
   return new Map(
     Object.entries(properties).map(([name, property]) => [
       name,
-      new PropertyNode(name, property)
+      getPropertyNode(name, property)
     ])
   )
+}
+
+export function getPropertyNode(name, property) {
+  return getCachedNode(property, () => ({
+    node: new PropertyNode(name, property),
+    isPerEntry: false
+  })).node
+}
+
+// The node of the property of a field, `null` for types without a value:
+export function getFieldPropertyNode(field, name, entry) {
+  const { node, isPerEntry } = getStaticFieldNode(field, name, entry.services)
+  if (isPerEntry) {
+    const context = createValueContext(field, entry)
+    const property = getTypeProperty(field, context, callback =>
+      callback(context)
+    )
+    return createFieldPropertyNode(field, name, property, context)
+  } else {
+    return node
+  }
+}
+
+export function isPropertyPerEntry(field, name, services) {
+  return getStaticFieldNode(field, name, services).isPerEntry
+}
+
+// Derive the property once per field, without the entry's data. If its type
+// reads callbacks, the property depends on the entry:
+function getStaticFieldNode(field, name, services) {
+  return getCachedNode(field, () => {
+    const context = SchemaContext.createForSchema(services, {
+      schema: field,
+      name
+    })
+    let isPerEntry = false
+    const property = getTypeProperty(field, context, () => {
+      isPerEntry = true
+    })
+    return {
+      node: isPerEntry
+        ? null
+        : createFieldPropertyNode(field, name, property, context),
+      isPerEntry
+    }
+  })
+}
+
+// Merge the properties of several fields of a value: each keyword comes from
+// the first field that defines it, in form order, else from the first one that
+// derives it:
+export function mergePropertyNodes(name, nodes) {
+  nodes = nodes.filter(node => node)
+  if (nodes.length > 1) {
+    const property = {}
+    const fieldsByKey = {}
+    const keys = new Set(
+      nodes.flatMap(({ fieldsByKey }) => Reflect.ownKeys(fieldsByKey))
+    )
+    for (const key of keys) {
+      const nodesWithKey = nodes.filter(({ fieldsByKey }) => key in fieldsByKey)
+      const isDefining = ({ fieldsByKey }) => (
+        fieldsByKey[key][key] !== undefined
+      )
+      const node = nodesWithKey.find(isDefining) ?? nodesWithKey[0]
+      if (key in node.property) {
+        property[key] = node.property[key]
+      }
+      fieldsByKey[key] = node.fieldsByKey[key]
+    }
+    return new PropertyNode(name, property, fieldsByKey)
+  } else {
+    return nodes[0] ?? null
+  }
 }
 
 // Forms describe their data with either `fields` or `properties`:
@@ -426,35 +550,107 @@ export function getDataKeywords(schema, context) {
 }
 
 function getFieldProperty(field, name, formContext) {
-  const descriptor = getTypeDescriptor(field)
-  if (descriptor?.getProperty) {
-    // Leave out callbacks, which depend on the entry:
-    const schema = Object.fromEntries(
-      Object.entries(field).filter(([, value]) => !isFunction(value))
-    )
+  if (getTypeDescriptor(field)?.getProperty) {
     const context = formContext.createChildContext(field, name)
-    const property = descriptor.getProperty(schema, context)
-    if (property) {
-      Object.assign(property, getDataKeywords(schema, context))
-      // Properties without a type accept `null` already:
-      if (
-        !property.required &&
-        property.type &&
-        getEmptyValue(schema, context) === null
-      ) {
-        property.nullable = true
-      }
-      // Default callbacks depend on the entry too, and `null` is no value:
-      const value =
-        isFunction(field.default) || shouldIgnoreMissingValue(schema, context)
-          ? null
-          : getDefaultValue(schema, context)
-      if (value != null) {
-        property.default = value
+    return completeProperty(field, getTypeProperty(field, context), context)
+  }
+}
+
+// The property that the field's type derives, `null` for types without a
+// value, e.g. buttons, and `{}` for types without `getProperty()`, which hold
+// any value. Callbacks depend on the entry, so `getProperty()` reads them
+// through `readCallback()`:
+function getTypeProperty(field, context, readCallback = () => undefined) {
+  const descriptor = getTypeDescriptor(field)
+  const getValue = (target, key) => {
+    const value = target[key]
+    return isFunction(value) ? readCallback(value) : value
+  }
+  return descriptor?.getProperty
+    ? descriptor.getProperty(
+        new Proxy(field, {
+          get: getValue,
+          has: (target, key) => getValue(target, key) !== undefined
+        }),
+        context
+      )
+    : descriptor?.defaultValue !== undefined
+      ? {}
+      : null
+}
+
+// Complete the property of the field's type with what nodes of fields resolve
+// per entry: callbacks, value hooks and the type's own hooks:
+function createFieldPropertyNode(field, name, property, context) {
+  property = completeProperty(field, property, context)
+  if (property) {
+    const {
+      trim,
+      relate,
+      exclude = getTypeDescriptor(field).defaultExclude
+    } = getStaticSchema(field)
+    const { validate, computeValue, serializeValue, deserializeValue } = field
+    Object.assign(
+      property,
+      pickBy(
+        {
+          trim,
+          relate,
+          exclude,
+          validate,
+          computeValue,
+          serializeValue,
+          deserializeValue
+        },
+        value => value !== undefined
+      )
+    )
+    for (const key of callbackKeys) {
+      if (isFunction(field[key])) {
+        property[key] = field[key]
       }
     }
-    return property
+    return new PropertyNode(
+      name,
+      property,
+      Object.fromEntries(
+        [...Object.keys(property), typeKey].map(key => [key, field])
+      )
+    )
+  } else {
+    return null
   }
+}
+
+// Add the field's data keywords and its default, without its callbacks:
+function completeProperty(field, property, context) {
+  if (property) {
+    const schema = getStaticSchema(field)
+    Object.assign(property, getDataKeywords(schema, context))
+    // Properties without a type accept `null` already:
+    if (
+      !property.required &&
+      property.type &&
+      getEmptyValue(schema, context) === null
+    ) {
+      property.nullable = true
+    }
+    // Default callbacks depend on the entry too, and `null` is no value:
+    const value =
+      isFunction(field.default) || shouldIgnoreMissingValue(schema, context)
+        ? null
+        : getDefaultValue(schema, context)
+    if (value != null) {
+      property.default = value
+    }
+  }
+  return property
+}
+
+function getStaticSchema(field) {
+  return Object.fromEntries(
+    Object.entries(field).filter(([, value]) => !isFunction(value))
+  )
 }
 
 // Values that hold items, of arrays or objects with properties. Relations hold
@@ -498,4 +694,13 @@ export function getPropertyEmptyValue({ type, properties }) {
     { string: '', boolean: false, array: [] }[type] ??
     (properties ? {} : null)
   )
+}
+
+function getCachedNode(schema, createNode) {
+  let node = nodesBySchema.get(toRaw(schema))
+  if (!node) {
+    node = computed(createNode)
+    nodesBySchema.set(toRaw(schema), node)
+  }
+  return node.value
 }

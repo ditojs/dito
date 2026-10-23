@@ -1,7 +1,7 @@
 import { h, inject, onUnmounted, type VNode } from 'vue'
 import { appendDataPath } from '../utils/data.js'
 import { getRootData } from '../utils/services.ts'
-import { PropertyNode } from '../utils/schema/properties.js'
+import { getPropertyNode } from '../utils/schema/properties.js'
 import { layoutKey, propertyScopeKey } from '../utils/keys.ts'
 import {
   useComponentPath,
@@ -162,18 +162,6 @@ export function useWidget(
       ]
     }
   }
-}
-
-// The nodes of the properties, which widgets and sections ask:
-const nodesByProperty = new WeakMap<Schema, PropertyNode>()
-
-function getPropertyNode(name: string, property: Schema) {
-  let node = nodesByProperty.get(property)
-  if (!node) {
-    node = new PropertyNode(name, property)
-    nodesByProperty.set(property, node)
-  }
-  return node
 }
 
 // The occurrences of the widgets of each name, by its path in their scopes:

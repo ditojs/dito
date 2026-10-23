@@ -1,7 +1,11 @@
+import { vi } from 'vitest'
 import { hyphenate } from '@ditojs/utils'
+import { reactive } from 'vue'
 import '../../types/index.js'
 import SchemaContext from '../../SchemaContext.js'
 import { setupForm } from './setup.js'
+import { defineType } from './types.ts'
+import { walkData } from './walk.js'
 import { getFormProperties, checkProperties } from './properties.js'
 import {
   initializeData,
@@ -1285,6 +1289,485 @@ describe('written properties', () => {
           tags: { type: 'array', relate: true, items: { type: 'object' } }
         })
       ).not.toThrow()
+    })
+  })
+})
+
+describe('properties of fields', () => {
+  const api = { defaults: {}, normalizePath: hyphenate }
+  const services = { adminContext: { api } }
+
+  // The entries of the walk by data path, with the nodes of all their fields:
+  function getEntries(form, data = {}) {
+    const entries = {}
+    walkData(form, data, {
+      dataPath: '',
+      services,
+      visit: entry => {
+        entries[entry.dataPath] = entry
+      }
+    })
+    return entries
+  }
+
+  async function getPropertyNodes(fields, data = {}) {
+    const form = await setupForm(api, { type: 'form', fields })
+    return Object.fromEntries(
+      Object.entries(getEntries(form, data)).map(([dataPath, entry]) => [
+        dataPath,
+        entry.node.getPropertyNode(entry)
+      ])
+    )
+  }
+
+  async function getFieldProperties(fields, data) {
+    return Object.fromEntries(
+      Object.entries(await getPropertyNodes(fields, data)).map(
+        ([dataPath, node]) => [dataPath, node?.property ?? null]
+      )
+    )
+  }
+
+  describe('derivation by type', () => {
+    it('derives text, number and boolean types', async () => {
+      expect(
+        await getFieldProperties({
+          title: { type: 'text', trim: true, maxLength: 20 },
+          email: { type: 'email' },
+          body: { type: 'markup' },
+          source: { type: 'code' },
+          price: { type: 'number', range: [0, 100], decimals: 2 },
+          pages: { type: 'integer', minimum: 1 },
+          isPublic: { type: 'checkbox' },
+          onSale: { type: 'switch' }
+        })
+      ).toEqual({
+        title: { type: 'string', nullable: true, trim: true, maxLength: 20 },
+        email: { type: 'string', format: 'email', nullable: true },
+        body: { type: 'string', nullable: true },
+        source: { type: 'string', nullable: true },
+        price: { type: 'number', range: [0, 100], decimals: 2, nullable: true },
+        pages: { type: 'integer', minimum: 1, nullable: true },
+        isPublic: { type: 'boolean', nullable: true },
+        onSale: { type: 'boolean', default: false }
+      })
+    })
+
+    it('derives options types', async () => {
+      const options = [{ id: 1 }, { id: 2 }]
+      expect(
+        await getFieldProperties({
+          format: { type: 'select', options: ['lp', 'cd'] },
+          genres: { type: 'checkboxes', options: ['jazz'], required: true },
+          tags: { type: 'multiselect', multiple: true, options: ['a', 'b'] },
+          label: { type: 'select', relate: true, options },
+          artists: { type: 'checkboxes', relate: true, options }
+        })
+      ).toEqual({
+        format: { type: 'string', enum: ['lp', 'cd'], nullable: true },
+        genres: {
+          type: 'array',
+          items: { type: 'string', enum: ['jazz'] },
+          required: true,
+          minItems: 1,
+          default: []
+        },
+        tags: {
+          type: 'array',
+          items: { type: 'string', enum: ['a', 'b'] },
+          default: []
+        },
+        label: { type: 'object', relate: true, nullable: true },
+        artists: {
+          type: 'array',
+          items: { type: 'object' },
+          relate: true,
+          default: []
+        }
+      })
+    })
+
+    it('derives date, upload and color types', async () => {
+      expect(
+        await getFieldProperties({
+          released: { type: 'date' },
+          updated: { type: 'datetime' },
+          cover: { type: 'upload' },
+          scans: { type: 'upload', multiple: true },
+          color: { type: 'color' },
+          tint: { type: 'color', colorFormat: 'rgb' }
+        })
+      ).toEqual({
+        released: { type: 'date', nullable: true },
+        updated: { type: 'datetime', nullable: true },
+        cover: { type: 'asset', nullable: true },
+        scans: { type: 'array', items: { type: 'asset' }, default: [] },
+        color: { type: 'color', nullable: true },
+        tint: { type: 'object', nullable: true }
+      })
+    })
+
+    it('derives sources and nested sections, not unnested ones', async () => {
+      const name = { type: 'text', required: true }
+      // Sources keep the type's `exclude` callback for sources with resources:
+      const exclude = expect.any(Function)
+      expect(
+        await getFieldProperties({
+          tracks: {
+            type: 'list',
+            inlined: true,
+            form: { type: 'form', fields: { name } }
+          },
+          label: {
+            type: 'object',
+            inlined: true,
+            form: { type: 'form', fields: { name } }
+          },
+          vendors: {
+            type: 'list',
+            resource: 'vendors',
+            form: { type: 'form', fields: { name } }
+          },
+          address: { type: 'section', nested: true, fields: { name } },
+          details: { type: 'section', fields: { notes: { type: 'text' } } }
+        })
+      ).toEqual({
+        tracks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { name: { type: 'string', required: true } }
+          },
+          default: [],
+          exclude
+        },
+        label: {
+          type: 'object',
+          properties: { name: { type: 'string', required: true } },
+          nullable: true,
+          exclude
+        },
+        vendors: null,
+        address: {
+          type: 'object',
+          properties: { name: { type: 'string', required: true } },
+          default: {}
+        },
+        notes: { type: 'string', nullable: true }
+      })
+    })
+  })
+
+  describe('callbacks', () => {
+    it('keeps callbacks of keywords and resolves them per entry', async () => {
+      const contexts = []
+      const required = context => {
+        contexts.push(context)
+        return context.item.isPublic
+      }
+      const field = { type: 'text', required, maxLength: () => 3 }
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: { isPublic: { type: 'switch' }, title: field }
+      })
+      const getErrors = data => {
+        const entry = getEntries(form, data).title
+        return entry.node.getPropertyNode(entry).getValidationErrors(entry)
+      }
+      expect(getErrors({ isPublic: false, title: null })).toEqual([])
+      expect(getErrors({ isPublic: true, title: null })).toEqual([
+        { message: 'is required' }
+      ])
+      expect(getErrors({ isPublic: false, title: 'Long' })).toEqual([
+        { message: 'must be at most 3 characters long' }
+      ])
+      // Callbacks get the context of their field, as when rendered:
+      expect(contexts[0].schema).toBe(form.fields.title)
+      expect(contexts[0].dataPath).toBe('title')
+      expect(contexts[0].value).toBe(null)
+    })
+
+    it('derives the shape per entry when callbacks decide it', async () => {
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: {
+          many: { type: 'switch' },
+          formats: {
+            type: 'select',
+            options: ['lp', 'cd'],
+            multiple: ({ item }) => item.many
+          }
+        }
+      })
+      const getNode = data => {
+        const entry = getEntries(form, data).formats
+        return entry.node.getPropertyNode(entry)
+      }
+      expect(getNode({ many: false }).property).toEqual({
+        type: 'string',
+        enum: ['lp', 'cd'],
+        nullable: true
+      })
+      expect(getNode({ many: true }).property).toEqual({
+        type: 'array',
+        items: { type: 'string', enum: ['lp', 'cd'] },
+        default: []
+      })
+      expect(getNode({ many: true })).not.toBe(getNode({ many: true }))
+    })
+    it('detects the callbacks that types read to derive it', async () => {
+      defineType({
+        type: 'test-measure',
+        component: {},
+        getProperty: ({ unit }) => ({
+          type: unit === 'pieces' ? 'integer' : 'number'
+        })
+      })
+      const unit = vi.fn(({ item }) => item.unit)
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: {
+          unit: { type: 'text' },
+          amount: { type: 'test-measure', unit }
+        }
+      })
+      const getProperty = data => {
+        const entry = getEntries(form, data).amount
+        return entry.node.getPropertyNode(entry).property
+      }
+      expect(getProperty({ unit: 'pieces' })).toEqual({
+        type: 'integer',
+        nullable: true
+      })
+      expect(getProperty({ unit: 'kg' })).toEqual({
+        type: 'number',
+        nullable: true
+      })
+      // The callback is only called with the contexts of entries:
+      expect(unit.mock.calls.map(([{ item }]) => item.unit)).toEqual([
+        'pieces',
+        'kg'
+      ])
+    })
+  })
+
+  describe('types', () => {
+    it('adds the validations of the type per entry', async () => {
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: {
+          site: { type: 'domain' },
+          count: { type: 'number', step: 1 }
+        }
+      })
+      const entries = getEntries(form, { site: 'example', count: 1.5 })
+      const getErrors = name => {
+        const entry = entries[name]
+        return entry.node.getPropertyNode(entry).getValidationErrors(entry)
+      }
+      // Properties have no keywords for these:
+      expect(getErrors('site')).toEqual([{ message: 'is not a domain' }])
+      expect(getErrors('count')).toEqual([
+        { message: 'must be a whole number' }
+      ])
+    })
+
+    it('converts values with the data type and the hooks', async () => {
+      const serializeValue = vi.fn(({ value }) => value)
+      const fields = {
+        released: { type: 'date' },
+        title: { type: 'text', trim: true, required: true },
+        label: { type: 'select', relate: true, options: [], serializeValue },
+        cover: { type: 'upload' },
+        scans: { type: 'upload', multiple: true }
+      }
+      const data = {
+        released: new Date(2026, 9, 23),
+        title: '  ',
+        label: { id: 1, name: 'Blue Note' },
+        cover: { name: 'a', upload: { success: true } },
+        scans: [{ name: 'b' }, { name: 'c', upload: { success: false } }]
+      }
+      const form = await setupForm(api, { type: 'form', fields })
+      const entries = getEntries(form, data)
+      const serialize = name => {
+        const entry = entries[name]
+        return entry.node
+          .getPropertyNode(entry)
+          .serialize(entry.data[name], entry)
+      }
+      expect(serialize('released')).toBe('2026-10-23')
+      // Empty text that's required is sent as `null`, like the fields do:
+      expect(serialize('title')).toBe(null)
+      expect(serialize('label')).toEqual({ id: 1 })
+      // The field's hook runs after the type's conversion:
+      expect(serializeValue.mock.calls[0][0].value).toEqual({ id: 1 })
+      expect(serializeValue.mock.calls[0][0].schema).toBe(form.fields.label)
+      expect(serialize('cover')).toEqual({ name: 'a' })
+      expect(serialize('scans')).toEqual([{ name: 'b' }])
+      const entry = entries.released
+      expect(
+        entry.node.getPropertyNode(entry).deserialize('2026-10-23', entry)
+      ).toEqual(new Date(2026, 9, 23))
+    })
+
+    it('derives the hooks of types without their own property', async () => {
+      defineType({
+        type: 'test-rating',
+        component: {},
+        defaultValue: 0,
+        getValidations: () => ({ integer: true }),
+        serializeValue: ({ value }) => value * 2,
+        deserializeValue: ({ value }) => value / 2,
+        getDisplayValue: ({ value }) => `${value} stars`
+      })
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: { rating: { type: 'test-rating', required: true } }
+      })
+      const entry = getEntries(form, { rating: 1.5 }).rating
+      const node = entry.node.getPropertyNode(entry)
+      expect(node.property).toEqual({ required: true, default: 0 })
+      expect(node.getValidationErrors(entry)).toEqual([
+        { message: 'must be a whole number' }
+      ])
+      expect(node.serialize(2, entry)).toBe(4)
+      expect(node.deserialize(4, entry)).toBe(2)
+      expect(node.getDisplayValue(entry)).toBe('1.5 stars')
+    })
+
+    it('derives no property for types without a value', async () => {
+      expect(
+        await getFieldProperties({
+          save: { type: 'button' },
+          gap: { type: 'spacer' },
+          preview: { type: 'component' },
+          note: { type: 'label' }
+        })
+      ).toEqual({
+        save: null,
+        gap: null,
+        preview: null,
+        // Labels hold `null`, which isn't sent:
+        note: { exclude: true }
+      })
+    })
+  })
+
+  describe('fields of the same name', () => {
+    it('merges the keywords of the first field that defines each', async () => {
+      const serializeValue = ({ value }) => value
+      const minLength = () => 2
+      const nodes = await getPropertyNodes({
+        name: { type: 'text', maxLength: 10 },
+        details: {
+          type: 'section',
+          fields: {
+            name: { type: 'text', minLength, maxLength: 5, serializeValue }
+          }
+        }
+      })
+      expect(nodes.name.property).toEqual({
+        type: 'string',
+        nullable: true,
+        maxLength: 10,
+        minLength,
+        serializeValue
+      })
+    })
+
+    it('resolves callbacks with the field that they came from', async () => {
+      const minLength = vi.fn(() => 2)
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: {
+          name: { type: 'text', maxLength: 10 },
+          details: {
+            type: 'section',
+            fields: { name: { type: 'text', minLength } }
+          }
+        }
+      })
+      const entry = getEntries(form, { name: 'a' }).name
+      expect(
+        entry.node.getPropertyNode(entry).getValidationErrors(entry)
+      ).toEqual([{ message: 'must be at least 2 characters long' }])
+      expect(minLength.mock.calls[0][0].schema).toBe(
+        form.fields.details.fields.name
+      )
+    })
+
+    it('merges only the relevant fields when relevance varies', async () => {
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: {
+          isLong: { type: 'switch' },
+          name: { type: 'text', maxLength: 10 },
+          details: {
+            type: 'section',
+            if: ({ item }) => item.isLong,
+            fields: { name: { type: 'text', minLength: 5 } }
+          }
+        }
+      })
+      const getProperty = data => {
+        const entry = getEntries(form, data).name
+        return entry.node.getRelevantNode(entry).getPropertyNode(entry).property
+      }
+      expect(getProperty({ isLong: true })).toEqual({
+        type: 'string',
+        nullable: true,
+        maxLength: 10,
+        minLength: 5
+      })
+      expect(getProperty({ isLong: false })).toEqual({
+        type: 'string',
+        nullable: true,
+        maxLength: 10
+      })
+    })
+  })
+
+  describe('cache', () => {
+    it('reuses the nodes of fields and of merged fields', async () => {
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: {
+          title: { type: 'text' },
+          name: { type: 'text' },
+          details: { type: 'section', fields: { name: { type: 'text' } } }
+        }
+      })
+      const getNodes = data => {
+        const { title, name } = getEntries(form, data)
+        return [
+          title.node.getPropertyNode(title),
+          name.node.getPropertyNode(name)
+        ]
+      }
+      const [title, name] = getNodes({ title: 'a' })
+      expect(getNodes({ title: 'b' })).toEqual([title, name])
+      expect(getNodes({ title: 'b' })[0]).toBe(title)
+      expect(getNodes({ title: 'b' })[1]).toBe(name)
+    })
+
+    it('derives the properties again once setup changes the fields', async () => {
+      const api = { defaults: { text: { maxLength: 5 } } }
+      const form = reactive({
+        type: 'form',
+        fields: { title: { type: 'text' } }
+      })
+      const getProperty = () => {
+        const { title } = getEntries(form)
+        return title.node.getPropertyNode(title).property
+      }
+      expect(getProperty()).toEqual({ type: 'string', nullable: true })
+      await setupForm(api, form)
+      expect(getProperty()).toEqual({
+        type: 'string',
+        nullable: true,
+        maxLength: 5
+      })
     })
   })
 })
