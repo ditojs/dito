@@ -981,6 +981,12 @@ export function html(
  */
 export function isHtml(arg: unknown): arg is Html
 
+/**
+ * Returns the HTML of `Html` values, and escapes other values as text with
+ * `escapeHtml()`.
+ */
+export function asHtml(arg: unknown): string
+
 /* -------------------------- typescript utilities -------------------------- */
 export interface ArrayLike<T> {
   readonly length: number

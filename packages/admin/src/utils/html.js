@@ -1,4 +1,4 @@
-import { isPlainObject, isHtml, escapeHtml } from '@ditojs/utils'
+import { isPlainObject, isHtml, asHtml } from '@ditojs/utils'
 
 // Content is text unless it's marked with `html`. Labels and affixes hold it as
 // `text`:
@@ -8,11 +8,7 @@ export function getContent(content) {
 
 export function getHtml(content) {
   content = getContent(content)
-  return isHtml(content)
-    ? content.value
-    : content != null
-      ? escapeHtml(content)
-      : null
+  return content != null ? asHtml(content) : null
 }
 
 export function getText(content) {

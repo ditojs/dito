@@ -31,12 +31,15 @@ export function isHtml(arg) {
   return !!arg?.[SYMBOL_HTML]
 }
 
+// The HTML of `Html` values, and of anything else as escaped text:
+export function asHtml(arg) {
+  return isHtml(arg) ? arg.value : escapeHtml(arg)
+}
+
 function toHtml(value) {
-  return isHtml(value)
-    ? value.value
-    : isArray(value)
-      ? value.map(toHtml).join('')
-      : value == null || value === false
-        ? ''
-        : escapeHtml(value)
+  return isArray(value)
+    ? value.map(toHtml).join('')
+    : value === false
+      ? ''
+      : asHtml(value)
 }
