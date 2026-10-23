@@ -91,13 +91,7 @@ const DitoMultiselectType = {
       // emits change events, not the native ones of the search input:
       getEvents: ({ onFocus }) => ({ onFocus, onBlur }),
       focusElement: () => element.value.activate(),
-      blurElement: () => element.value.deactivate(),
-      // The contexts of the field hold its options:
-      members: {
-        get options() {
-          return optionsField.options.value
-        }
-      }
+      blurElement: () => element.value.deactivate()
     })
     const { element, value, focused, autofocus, services, getSchemaValue } =
       field

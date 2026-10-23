@@ -1,5 +1,6 @@
 import {
   computed,
+  onBeforeUnmount,
   type ComputedRef,
   type Ref,
   type WritableComputedRef
@@ -107,6 +108,15 @@ export function useOptions(
         : []
     return added.length > 0 ? [...options, ...added] : options
   })
+
+  // The contexts of the field hold its options:
+  const members = {
+    get options() {
+      return options.value
+    }
+  }
+  props.field.members.add(members)
+  onBeforeUnmount(() => props.field.members.delete(members))
 
   const activeOptions = computed(() => searchedOptions?.value || options.value)
   const hasOptions = computed(() => activeOptions.value.length > 0)

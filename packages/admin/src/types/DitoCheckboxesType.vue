@@ -43,15 +43,7 @@ const DitoCheckboxesType = {
   props: fieldProps,
 
   setup(props) {
-    const field = useField(props, {
-      nativeField: true,
-      // The contexts of the field hold its options:
-      members: {
-        get options() {
-          return optionsField.options.value
-        }
-      }
-    })
+    const field = useField(props, { nativeField: true })
     const optionsField = useOptions(props, field)
     const { multiple, selectedValue } = optionsField
     return {
