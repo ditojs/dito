@@ -185,9 +185,5 @@
     margin-bottom: calc(-1 * var(--pane-padding, 0px));
     box-shadow: 0 (-$content-padding) $content-padding (-$content-padding)
       $color-shadow;
-
-    &:empty {
-      display: none;
-    }
   }
 }

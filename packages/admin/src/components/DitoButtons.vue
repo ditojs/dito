@@ -1,21 +1,18 @@
 <template lang="pug">
 .dito-buttons(
-  v-if="buttonSchemas || hasSlotContent($slots.default)"
+  v-if="hasButtons || hasSlotContent($slots.default)"
 )
-  template(
+  DitoContainer.dito-buttons__container(
     v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
+    :key="buttonDataPath"
+    :schema="buttonSchema"
+    :dataPath="buttonDataPath"
+    :data="data"
+    :itemDataPath="itemDataPath"
+    :nested="nested"
+    :store="getChildStore(buttonSchema.name)"
+    :disabled="disabled"
   )
-    DitoContainer.dito-buttons__container(
-      v-if="shouldRenderButton(buttonSchema, buttonDataPath)"
-      :key="buttonDataPath"
-      :schema="buttonSchema"
-      :dataPath="buttonDataPath"
-      :data="data"
-      :itemDataPath="itemDataPath"
-      :nested="nested"
-      :store="getChildStore(buttonSchema.name)"
-      :disabled="disabled"
-    )
   template(
     v-for="vnode of $slots.default?.()"
   )
@@ -69,39 +66,38 @@ export default {
         )
     )
     const services = useServices()
+
+    // Evaluate the `if` of each button with its own context, as rendered:
+    const shouldRenderButton = (schema, dataPath) =>
+      shouldRenderSchema(
+        schema,
+        SchemaContext.createForSchema(services, {
+          schema,
+          name: schema.name,
+          nested: props.nested,
+          data: props.data,
+          dataPath,
+          itemDataPath: props.itemDataPath,
+          rootData: getRootData(services)
+        })
+      )
+
+    // The rendered buttons by their data paths:
+    const buttonSchemas = computed(() =>
+      Object.fromEntries(
+        Object.values(props.buttons ?? {})
+          .map(button => [appendDataPath(props.dataPath, button.name), button])
+          .filter(([dataPath, button]) => shouldRenderButton(button, dataPath))
+      )
+    )
+
     return {
       ...useStore(props),
       hasSlotContent,
       hasVNodeContent,
-
-      // Evaluate the `if` of each button with its own context, as rendered:
-      shouldRenderButton(schema, dataPath) {
-        return shouldRenderSchema(
-          schema,
-          SchemaContext.createForSchema(services, {
-            schema,
-            name: schema.name,
-            nested: props.nested,
-            data: props.data,
-            dataPath,
-            itemDataPath: props.itemDataPath,
-            rootData: getRootData(services)
-          })
-        )
-      },
-
-      // The buttons by their data paths:
-      buttonSchemas: computed(() => {
-        const { dataPath, buttons } = props
-        return buttons
-          ? Object.fromEntries(
-              Object.values(buttons).map(button => [
-                appendDataPath(dataPath, button.name),
-                button
-              ])
-            )
-          : null
-      })
+      buttonSchemas,
+      // Without buttons to show, the buttons take no space, e.g. in dialogs:
+      hasButtons: computed(() => Object.keys(buttonSchemas.value).length > 0)
     }
   }
 }
