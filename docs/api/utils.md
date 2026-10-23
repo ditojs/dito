@@ -719,6 +719,10 @@ Trusted HTML from elsewhere, e.g. the value of a `markup` field, passes as an
 array of strings, like the strings of a template, and isn't escaped:
 `html([item.description])`.
 
+Escaping makes values safe as text and as attribute values in quotes, but not
+as URLs: `` html`<a href="${url}">` `` still runs a `javascript:` URL when the
+link is clicked, so check the scheme of URLs that users enter.
+
 ### isHtml()
 
 ```js
