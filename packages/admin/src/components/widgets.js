@@ -225,9 +225,16 @@ export const DitoCustomField = defineWidget('DitoCustomField', {
           label: false,
           component: markRaw({
             name: 'DitoCustomFieldContent',
-            // Display content has no input that the container's id is for:
+            // Display content has no input that the container's id is for,
+            // but fills the container like other components, with their
+            // classes:
             inheritAttrs: false,
-            render: () => slots.default?.()
+            setup(props, { attrs }) {
+              return () => {
+                const { id, ...rest } = attrs
+                return h('div', rest, slots.default?.())
+              }
+            }
           })
         }
 })
