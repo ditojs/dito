@@ -4,7 +4,6 @@
   :id="componentPath"
   :role="level > 0 ? 'treeitem' : 'tree'"
   :class=`{
-    'dito-tree-item--dragging': isDragging,
     'dito-tree-item--active': active,
     'dito-tree-item--error': hasErrors
   }`
@@ -85,7 +84,6 @@
     :options="getDraggableOptions(true)"
     :draggable="childrenDraggable"
     :modelValue="childrenList || []"
-    @update:modelValue="changeChildren"
   )
     DitoTreeItem(
       v-for="(item, index) in childrenItems"
@@ -103,8 +101,8 @@
       })`
       :level="level + 1"
       @delete="deleteChild(item.data)"
-      @move="delta => moveChild(item.data, delta)"
-      @change-children="change => $emit('changeChildren', change)"
+      @move="delta => moveItem(index, delta)"
+      @change="$emit('change')"
     )
 </template>
 
@@ -126,14 +124,13 @@ import {
 } from '../utils/schema/lookup.js'
 import { getItemUid } from '../utils/schema/data.js'
 import { getText } from '../utils/html.js'
-import { getListWithMovedItem } from '../utils/list.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
 import { isPathWithin } from '../utils/route.js'
 
-// Items don't write the tree: They emit `changeChildren` for the tree list.
+// Items report the changes of their children to the tree list as `change`.
 export default {
   components: { DitoEditButtons },
-  emits: ['delete', 'move', 'changeChildren'],
+  emits: ['delete', 'move', 'change'],
 
   props: {
     schema: { type: Object, required: true },
@@ -210,17 +207,13 @@ export default {
       getSchemaValue('deletable', { type: Boolean, default: false })
     )
 
-    const changeChildren = children => {
-      emit('changeChildren', {
-        // The list entry for the change API of the data model:
-        entry: {
-          schema: childrenSchema.value,
-          list: childrenList.value,
-          dataPath: getItemDataPath(childrenSchema.value)
-        },
-        children
-      })
-    }
+    // The list entry for the change API of the data model:
+    const childrenEntry = computed(() => ({
+      schema: childrenSchema.value,
+      list: childrenList.value,
+      dataPath: getItemDataPath(childrenSchema.value)
+    }))
+    const onChange = () => emit('change')
 
     return {
       getItemUid,
@@ -229,7 +222,7 @@ export default {
       getItemLabel,
       context,
       componentPath,
-      ...useSortable(),
+      ...useSortable({ getListEntry: () => childrenEntry.value, onChange }),
       getLabel,
       opened,
       details,
@@ -237,7 +230,6 @@ export default {
       childrenList,
       editable,
       deletable,
-      changeChildren,
 
       toggle() {
         opened.value = !opened.value
@@ -291,13 +283,6 @@ export default {
         return []
       }),
 
-      moveChild(child, delta) {
-        const children = getListWithMovedItem(childrenList.value, child, delta)
-        if (children) {
-          changeChildren(children)
-        }
-      },
-
       // The removal is transient, as the tree is part of its form's data:
       async deleteChild(child) {
         await confirmAndRemove(services, {
@@ -308,12 +293,13 @@ export default {
           isTransient: true,
           remove: () => {
             // The children may have changed while the dialog was open:
-            const list = childrenList.value
-            const children = list.filter(it => it !== child)
-            if (children.length === list.length) {
+            const index = childrenList.value.indexOf(child)
+            if (index >= 0) {
+              services.dataContext.model.remove(childrenEntry.value, index)
+              onChange()
+            } else {
               return false
             }
-            changeChildren(children)
           }
         })
       }
@@ -428,7 +414,7 @@ export default {
   }
 
   // Hide buttons during dragging
-  &--dragging {
+  &:has(> .dito-draggable--dragging) {
     #{$self}__header {
       > #{$self}__buttons {
         visibility: hidden;

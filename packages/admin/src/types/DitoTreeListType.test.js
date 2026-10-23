@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import Sortable from 'sortablejs'
 import { getValueAtDataPath, hyphenate } from '@ditojs/utils'
 import { setupView } from '../utils/schema/setup.js'
 import {
@@ -9,7 +10,6 @@ import {
   enterValue,
   isForm
 } from '../test/mount.js'
-import DitoDraggable from '../components/DitoDraggable.vue'
 
 const pageForm = {
   type: 'form',
@@ -713,8 +713,12 @@ describe('DitoTreeListType', () => {
       }
     )
 
-    it('reorders the children of tree objects in the object', async () => {
-      const { admin, findField, data, routeComponent } = await mountForm({
+    function getTitles(pages) {
+      return pages.map(page => page.title)
+    }
+
+    function mountSiteObject(options) {
+      return mountForm({
         schema: {
           fields: {
             site: {
@@ -725,7 +729,8 @@ describe('DitoTreeListType', () => {
                 itemLabel: 'title',
                 form: pageForm,
                 draggable: true
-              }
+              },
+              ...options
             }
           }
         },
@@ -736,10 +741,38 @@ describe('DitoTreeListType', () => {
           }
         }
       })
-      // Drag the children into reverse order:
-      admin.wrapper
-        .findComponent(DitoDraggable)
-        .vm.$emit('update:modelValue', [...data.site.pages].reverse())
+    }
+
+    it('reports changes only for children dropped at new positions', async () => {
+      const onChange = vi.fn()
+      const { findField, data, routeComponent } = await mountSiteObject({
+        onChange
+      })
+      const sortable = Sortable.get(
+        findField('site').find('.dito-draggable').element
+      )
+      // Dropping a child where it was picked up changes nothing:
+      sortable.option('onStart')({ oldIndex: 0 })
+      sortable.option('onEnd')({ oldIndex: 0, newIndex: 0 })
+      await flushPromises()
+      expect(onChange).not.toHaveBeenCalled()
+      expect(routeComponent.routeContext.isDirty).toBe(false)
+      expect(getTitles(data.site.pages)).toEqual(['About', 'Contact'])
+      sortable.option('onStart')({ oldIndex: 0 })
+      sortable.option('onEnd')({ oldIndex: 0, newIndex: 1 })
+      await flushPromises()
+      expect(onChange).toHaveBeenCalledOnce()
+      expect(routeComponent.routeContext.isDirty).toBe(true)
+      expect(getTitles(data.site.pages)).toEqual(['Contact', 'About'])
+    })
+
+    it('reorders the children of tree objects in the object', async () => {
+      const { findField, data, routeComponent } = await mountSiteObject()
+      const sortable = Sortable.get(
+        findField('site').find('.dito-draggable').element
+      )
+      // Drag the first child to the end:
+      sortable.option('onEnd')({ oldIndex: 0, newIndex: 1 })
       await flushPromises()
       expect(data.site).toEqual({
         title: 'Home',

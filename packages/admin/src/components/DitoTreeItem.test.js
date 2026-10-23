@@ -242,21 +242,22 @@ describe('DitoTreeItem', () => {
       expect(getTitles()).toEqual(['Overview', 'Welcome'])
     })
 
-    it('marks the item while its children are dragged', async () => {
+    it('marks the children of the item while they are dragged', async () => {
       const { wrapper } = await mountChaptersForm([
         {
           title: 'Intro',
           sections: [{ title: 'Welcome' }, { title: 'Overview' }]
         }
       ])
-      const intro = findItem(wrapper, 'Intro')
-      const sortable = Sortable.get(intro.find('.dito-draggable').element)
+      const children = findItem(wrapper, 'Intro').find('.dito-draggable')
+      const sortable = Sortable.get(children.element)
       sortable.option('onStart')()
       await flushPromises()
-      expect(intro.classes()).toContain('dito-tree-item--dragging')
+      expect(children.classes()).toContain('dito-draggable--dragging')
       sortable.option('onEnd')({ oldIndex: 0, newIndex: 0 })
+      document.dispatchEvent(new MouseEvent('mousemove'))
       await flushPromises()
-      expect(intro.classes()).not.toContain('dito-tree-item--dragging')
+      expect(children.classes()).not.toContain('dito-draggable--dragging')
     })
 
     it(`doesn't notify the removal of children removed meanwhile`, async () => {

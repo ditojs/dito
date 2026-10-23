@@ -1018,17 +1018,6 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
-    it('replaces the children of lists in place', () => {
-      const { dataModel, data, getListEntry } = createBookModel()
-      const list = data.chapters
-      dataModel.replaceItems(getListEntry('chapters'), [list[2], list[0]])
-      expect(data.chapters).toBe(list)
-      expect(getTitles(list)).toEqual(['Three', 'One'])
-      expect(getPositions(list)).toEqual([0, 1])
-      expect(dataModel.isDirty).toBe(true)
-      dataModel.stop()
-    })
-
     it('keeps the offset of the order of lists loaded from later pages', () => {
       // E.g. the second page of a list with its own resource, which the model
       // doesn't walk otherwise, see `useSourceData()`:
