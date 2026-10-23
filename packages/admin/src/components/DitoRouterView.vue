@@ -3,7 +3,6 @@ import { h, inject } from 'vue'
 import { RouterView } from 'vue-router'
 import { routeContextKey } from '../utils/keys.ts'
 import DitoForm from './DitoForm.vue'
-import DitoFormEmbedded from './DitoFormEmbedded.vue'
 
 // Render the form that the components of the route claimed, or else the
 // component of the route's record. Key them by their source or record, which
@@ -13,7 +12,7 @@ import DitoFormEmbedded from './DitoFormEmbedded.vue'
 function DitoRouterView({ routeLevel }) {
   const claim = inject(routeContextKey, null)?.childClaim
   return claim
-    ? h(claim.isEmbedded ? DitoFormEmbedded : DitoForm, { key: claim.key })
+    ? h(DitoForm, { key: claim.key })
     : h(RouterView, null, {
         default: ({ Component, route }) =>
           Component

@@ -1,5 +1,5 @@
 import { mountAdmin, isForm } from '../test/mount.js'
-import { DitoView, DitoForm, DitoFormEmbedded } from '../components/index.js'
+import { DitoView, DitoForm } from '../components/index.js'
 
 const createForm = (fields = {}) => ({
   type: 'form',
@@ -18,6 +18,9 @@ const createListView = (path, options = {}) => ({
   field: createList({ resource: { path }, ...options })
 })
 
+// Forms that trees render inside their source:
+const embeddedForm = 'embedded form'
+
 // Returns the route components that render `path`, with `items` as the data
 // of the items that forms load by their path, e.g. `/books/1`.
 async function getRouteComponents(
@@ -32,7 +35,11 @@ async function getRouteComponents(
     })
   })
   await admin.navigate(path)
-  return admin.getRouteComponents().map(component => component.$.type)
+  return admin
+    .getRouteComponents()
+    .map(component =>
+      component.isEmbeddedRoute ? embeddedForm : component.$.type
+    )
 }
 
 describe('RouteTree', () => {
@@ -317,7 +324,7 @@ describe('RouteTree', () => {
     }
     expect(
       await getRouteComponents(views, '/pages/1/sections/2/paragraphs/3')
-    ).toEqual([DitoView, DitoFormEmbedded])
+    ).toEqual([DitoView, embeddedForm])
   })
 
   it('routes the forms of tree children next to the form of their item', async () => {
@@ -335,11 +342,11 @@ describe('RouteTree', () => {
     }
     expect(await getRouteComponents(views, '/pages/1')).toEqual([
       DitoView,
-      DitoFormEmbedded
+      embeddedForm
     ])
     expect(await getRouteComponents(views, '/pages/1/subpages/2')).toEqual([
       DitoView,
-      DitoFormEmbedded
+      embeddedForm
     ])
   })
 
@@ -357,7 +364,7 @@ describe('RouteTree', () => {
     expect(await getRouteComponents(views, '/sites/1/site/pages/2')).toEqual([
       DitoView,
       DitoForm,
-      DitoFormEmbedded
+      embeddedForm
     ])
   })
 
