@@ -61,6 +61,16 @@ describe('page views', () => {
     expect(admin.wrapper.find('.product').text()).toBe('Product 8')
   })
 
+  it('scroll their component without a form', async () => {
+    const admin = await mountAdmin({ views })
+    await admin.navigate('/products/7')
+    const page = admin.wrapper.find('.dito-view__page')
+    expect(page.classes()).toEqual(
+      expect.arrayContaining(['dito-view__page--content', 'dito-scroll'])
+    )
+    expect(page.find('.product').exists()).toBe(true)
+  })
+
   it('pass no attributes to their component', async () => {
     const admin = await mountAdmin({ views })
     await admin.navigate('/products/7')

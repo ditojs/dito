@@ -12,7 +12,15 @@ template(
     v-show="isActiveRoute"
     :data-resource="schemaPath"
   )
+    //- The component of pages, in the place of the view's schema. The form of
+    //- `useDitoForm()` renders as the page's schema, see `DitoSchemaForm`:
+    .dito-view__page(
+      v-if="isPage"
+      :class="pageClasses"
+    )
+      component(:is="sourceSchema.component")
     DitoSchema(
+      v-else
       :key="name"
       :schema="schema"
       :data="data"
@@ -22,16 +30,10 @@ template(
       scrollable
       single
     )
-      //- The component of pages, in the place of the view's components:
-      template(
-        v-if="isPage"
-        #default
-      )
-        component(:is="sourceSchema.component")
 </template>
 
 <script>
-import { computed, inject, onMounted, reactive } from 'vue'
+import { computed, inject, onMounted, provide, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   useRouteContainer,
@@ -42,7 +44,7 @@ import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { useStore } from '../composables/useStore.ts'
 import defaultVerbs from '../verbs.js'
-import { adminContextKey } from '../utils/keys.ts'
+import { adminContextKey, schemaContextKey } from '../utils/keys.ts'
 import {
   isPage,
   isSingleFieldView
@@ -100,6 +102,8 @@ export default {
       { services }
     )
     const { getLabelText, shouldRenderSchema } = useSchemaValue(context)
+    // Pages render without the view's schema, whose context they read:
+    provide(schemaContextKey, context)
 
     onMounted(() => {
       // Prevent bypassing of `if` by direct URL access:
@@ -119,9 +123,23 @@ export default {
       name,
       data,
       isPage: isPageView,
+      // Without a form, the page scrolls its content itself:
+      pageClasses: computed(() =>
+        routeContext.componentForm
+          ? 'dito-scroll-parent'
+          : 'dito-view__page--content dito-scroll'
+      ),
       isActiveRoute: computed(() => routeContext.isActive),
       shouldRenderSchema
     }
   }
 }
 </script>
+
+<style lang="scss">
+@import '../styles/_imports';
+
+.dito-view__page--content {
+  padding: $content-padding;
+}
+</style>

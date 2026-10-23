@@ -361,6 +361,24 @@ describe('useDitoForm()', () => {
     expect(layout.find('input[name="name"]').element.value).toBe('Chair')
   })
 
+  // Like the forms of views, which fill the view and keep their buttons at its
+  // bottom:
+  it('renders as the schema of its page, with sticky buttons', async () => {
+    const { admin } = await mountProductPage({ path: '/layout' })
+    const view = admin.wrapper.find('.dito-view')
+    expect(view.findAll('.dito-schema')).toHaveLength(1)
+    expect(view.find('.dito-view__page').classes()).toContain(
+      'dito-scroll-parent'
+    )
+    expect(view.find('.dito-schema').classes()).toContain('dito-scroll-parent')
+    expect(view.find('.dito-schema-content').classes()).toContain(
+      'dito-scroll'
+    )
+    expect(view.find('.dito-buttons--main').classes()).toContain(
+      'dito-buttons--sticky'
+    )
+  })
+
   it('works in dialogs, without a guard', async () => {
     const confirm = stubConfirm(false)
     // Without declared props, the field's `schema` and `context` fall through
@@ -381,6 +399,9 @@ describe('useDitoForm()', () => {
     })
     await settleForm()
     const dialog = admin.wrapper.find('.dito-dialog')
+    expect(dialog.find('.dito-buttons--main').classes()).not.toContain(
+      'dito-buttons--sticky'
+    )
     const input = dialog.find('input[name="name"]')
     expect(input.element.value).toBe('Chair')
     expect(dialog.find('.dito-button--cancel').exists()).toBe(true)

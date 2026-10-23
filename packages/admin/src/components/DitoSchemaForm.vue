@@ -6,6 +6,8 @@ DitoSchema(
   :style="$attrs.style"
   :schema="form.dataContext.schema"
   :data="form.dataContext.data"
+  :padding="form.isPageForm ? 'root' : null"
+  :scrollable="form.isPageForm"
   generateLabels
   @keydown.enter="onEnter"
 )
@@ -18,6 +20,7 @@ DitoSchema(
   template(#buttons)
     //- The buttons submit the form, not the `<form>` of dialogs around it:
     DitoButtons.dito-buttons--round.dito-buttons--large.dito-buttons--main(
+      :class="{ 'dito-buttons--sticky': form.isPageForm }"
       :buttons="form.buttonSchemas.value"
       :data="form.dataContext.data"
       @click="preventSubmit"

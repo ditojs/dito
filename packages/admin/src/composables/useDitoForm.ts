@@ -164,6 +164,10 @@ export function useDitoForm({
     })
   }
 
-  provide(schemaFormKey, { dataContext, buttonSchemas: form.buttonSchemas })
+  provide(schemaFormKey, {
+    dataContext,
+    buttonSchemas: form.buttonSchemas,
+    isPageForm: isInPage && !isInDialog
+  })
   return form.context
 }
