@@ -11,7 +11,6 @@ import { clone } from '@ditojs/utils'
 import DitoAdmin from '../DitoAdmin.js'
 import DitoView from '../components/DitoView.vue'
 import DitoForm from '../components/DitoForm.vue'
-import DitoFormEmbedded from '../components/DitoFormEmbedded.vue'
 import DitoContainer from '../components/DitoContainer.vue'
 import DitoSchema from '../components/DitoSchema.vue'
 import { appendDataPath } from '../utils/data.js'
@@ -181,7 +180,7 @@ export async function mountAdmin({
 
     // Returns the route components by route level that match `filter()`.
     getRouteComponents(filter = () => true) {
-      const components = [DitoView, DitoForm, DitoFormEmbedded].flatMap(
+      const components = [DitoView, DitoForm].flatMap(
         component =>
           wrapper.findAllComponents(component).map(({ vm }) => vm.$.proxy)
       )
