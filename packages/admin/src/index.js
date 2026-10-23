@@ -53,7 +53,6 @@ const descriptorKeys = new Set([
   'defaultWidth',
   'defaultExclude',
   'ignoresMissingValue',
-  'treatsNullAsMissing',
   'resolvesValue',
   'generatesLabel',
   'hasLabel',
@@ -65,6 +64,7 @@ const descriptorKeys = new Set([
   'getOptionsDataSchema',
   'getDisplayValue',
   'getValidations',
+  'getProperty',
   'setupSchema',
   'deserializeValue',
   'serializeValue'
@@ -75,7 +75,6 @@ const replacedDescriptorKeys = {
   excludeValue: 'defaultExclude',
   generateLabel: 'generatesLabel',
   ignoreMissingValue: 'ignoresMissingValue',
-  treatNullAsMissing: 'treatsNullAsMissing',
   omitSpacing: 'omitsSpacing',
   valueFromDataSchema: 'resolvesValue',
   rendersOwnLabel: 'hasLabel',

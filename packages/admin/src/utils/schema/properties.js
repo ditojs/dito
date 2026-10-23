@@ -19,14 +19,14 @@ import {
 import {
   iterateNestedSchemaComponents,
   hasNestedData,
-  isPanelWithOwnData
+  isPanelWithOwnData,
+  isSourceWithResource
 } from './structure.js'
 import { getFormSchemas, getViewFormSchema } from './lookup.js'
 import {
   getSchemaValue,
   getDefaultValue,
   getEmptyValue,
-  shouldIgnoreMissingValue,
   resolveValue,
   callOrLog
 } from './data.js'
@@ -145,6 +145,10 @@ export class PropertyNode {
     return this.isRelevant(entry) ? this : null
   }
 
+  getPropertyNode() {
+    return this
+  }
+
   getItemForms() {
     return this.#itemForms
   }
@@ -203,16 +207,29 @@ export class PropertyNode {
     return (
       this.#isMissing(entry) &&
       (shouldSetDefaultsOfComputedValues || !this.property.computeValue) &&
-      this.#get('format', entry) !== 'password'
+      this.#get('format', entry) !== 'password' &&
+      !this.#ignoresMissingValue(entry)
     )
   }
 
-  // Values are missing without their key, and as `null` unless `nullable`:
+  // Types of fields may leave missing values out, per entry:
+  #ignoresMissingValue(entry) {
+    const ignoresMissingValue = this.#type?.ignoresMissingValue
+    return isFunction(ignoresMissingValue)
+      ? ignoresMissingValue(this.#createContext(entry, typeKey))
+      : !!ignoresMissingValue
+  }
+
+  // Values are missing without their key, and as `null` in typed properties
+  // unless `nullable`:
   #isMissing(entry) {
     const { data, name } = entry
     return (
-      !(name in data) ||
-      data[name] === null && !this.#get('nullable', entry)
+      !(name in data) || (
+        data[name] === null &&
+        !!this.property.type &&
+        !this.#get('nullable', entry)
+      )
     )
   }
 
@@ -472,7 +489,10 @@ export function getFormProperties(schema, context) {
   const properties = {}
   const addProperty = (field, name) => {
     if (hasNestedData(field)) {
-      const property = getFieldProperty(field, name, context)
+      // Sources with their own resource hold no data of the form:
+      const property = isSourceWithResource(field)
+        ? null
+        : getFieldProperty(field, name, context)
       if (property) {
         properties[name] = property
       }
@@ -492,7 +512,9 @@ export function getFormProperties(schema, context) {
 }
 
 // Describe the items of sources and nested sections. The fields of `fields()`
-// callbacks depend on the entry, so their items remain undescribed:
+// callbacks depend on the entry, so their items remain undescribed. Forms may
+// contain themselves, e.g. in lists of blocks, so describe their properties
+// only when read:
 export function getItemProperty(schema, context) {
   const forms = getFormSchemas(getViewFormSchema(schema, context) ?? schema)
   const entries = Object.entries(forms)
@@ -516,12 +538,19 @@ export function getItemProperty(schema, context) {
     return entries.length === 1 && forms.default
       ? itemAdapter
         ? (getProperties(forms.default)[itemAdapter.name] ?? null)
-        : { type: 'object', properties: getProperties(forms.default) }
+        : {
+            type: 'object',
+            get properties() {
+              return getProperties(forms.default)
+            }
+          }
       : {
           type: 'object',
           discriminator: { propertyName: 'type' },
           oneOf: entries.map(([type, form]) => ({
-            properties: { ...getProperties(form), type: { const: type } }
+            get properties() {
+              return { ...getProperties(form), type: { const: type } }
+            }
           }))
         }
   } else {
@@ -628,18 +657,13 @@ function completeProperty(field, property, context) {
     const schema = getStaticSchema(field)
     Object.assign(property, getDataKeywords(schema, context))
     // Properties without a type accept `null` already:
-    if (
-      !property.required &&
-      property.type &&
-      getEmptyValue(schema, context) === null
-    ) {
+    if (property.type && getEmptyValue(schema, context) === null) {
       property.nullable = true
     }
     // Default callbacks depend on the entry too, and `null` is no value:
-    const value =
-      isFunction(field.default) || shouldIgnoreMissingValue(schema, context)
-        ? null
-        : getDefaultValue(schema, context)
+    const value = isFunction(field.default)
+      ? null
+      : getDefaultValue(schema, context)
     if (value != null) {
       property.default = value
     }
@@ -688,12 +712,14 @@ const primitiveItemAdapter = {
   unwrap: item => item.value
 }
 
-// The empty values of the server's types, for values that aren't `nullable`:
+// The empty values of the server's types, for values that aren't `nullable`.
+// Values without a type have none, and stay missing:
 export function getPropertyEmptyValue({ type, properties }) {
-  return (
-    { string: '', boolean: false, array: [] }[type] ??
-    (properties ? {} : null)
-  )
+  return properties
+    ? {}
+    : type
+      ? ({ string: '', boolean: false, array: [] }[type] ?? null)
+      : undefined
 }
 
 function getCachedNode(schema, createNode) {

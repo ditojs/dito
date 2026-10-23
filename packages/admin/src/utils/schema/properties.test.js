@@ -104,7 +104,8 @@ describe('getFormProperties()', () => {
           required: true,
           minLength: 2,
           maxLength: 8,
-          pattern: '^[A-Z]+$'
+          pattern: '^[A-Z]+$',
+          nullable: true
         }
       })
     })
@@ -179,7 +180,7 @@ describe('getFormProperties()', () => {
           opensAtTime: { type: 'time', formats: { time: 'short' } }
         })
       ).toEqual({
-        day: { type: 'date', required: true },
+        day: { type: 'date', required: true, nullable: true },
         opensAt: { type: 'datetime', nullable: true },
         opensAtTime: { type: 'datetime', nullable: true }
       })
@@ -225,7 +226,12 @@ describe('getFormProperties()', () => {
           enum: ['hardcover', 'paperback'],
           nullable: true
         },
-        genre: { type: 'string', enum: ['jazz', 'rock'], required: true },
+        genre: {
+          type: 'string',
+          enum: ['jazz', 'rock'],
+          required: true,
+          nullable: true
+        },
         count: { type: 'object', nullable: true },
         size: { type: 'string', enum: ['s', 'l'], nullable: true }
       })
@@ -429,7 +435,7 @@ describe('getFormProperties()', () => {
     const item = {
       type: 'object',
       properties: {
-        title: { type: 'string', required: true }
+        title: { type: 'string', required: true, nullable: true }
       }
     }
 
@@ -441,7 +447,7 @@ describe('getFormProperties()', () => {
         })
       ).toEqual({
         publisher: { ...item, nullable: true },
-        author: { ...item, required: true }
+        author: { ...item, required: true, nullable: true }
       })
     })
 
@@ -1436,24 +1442,81 @@ describe('properties of fields', () => {
           type: 'array',
           items: {
             type: 'object',
-            properties: { name: { type: 'string', required: true } }
+            properties: {
+              name: { type: 'string', required: true, nullable: true }
+            }
           },
           default: [],
           exclude
         },
         label: {
           type: 'object',
-          properties: { name: { type: 'string', required: true } },
+          properties: {
+            name: { type: 'string', required: true, nullable: true }
+          },
           nullable: true,
           exclude
         },
-        vendors: null,
+        vendors: { type: 'array', default: [], exclude },
         address: {
           type: 'object',
-          properties: { name: { type: 'string', required: true } },
+          properties: {
+            name: { type: 'string', required: true, nullable: true }
+          },
           default: {}
         },
         notes: { type: 'string', nullable: true }
+      })
+    })
+  })
+
+  describe('defaults', () => {
+    it('leaves `value` fields without `default` missing', async () => {
+      // Like loaded values that the server rejects as `null`, e.g. timestamps
+      // that it checks for concurrent edits:
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: {
+          updatedAt: { type: 'value' },
+          version: { type: 'value', default: 1 }
+        }
+      })
+      expect(initializeData(form, {})).toEqual({ version: 1 })
+    })
+
+    it('leaves values of types without `getProperty()` missing', async () => {
+      defineType({ type: 'untyped' })
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: {
+          note: { type: 'untyped' },
+          count: { type: 'untyped', default: 0 },
+          label: { type: 'untyped' }
+        }
+      })
+      // Values without a type accept `null`:
+      expect(initializeData(form, { label: null })).toEqual({
+        count: 0,
+        label: null
+      })
+    })
+  })
+
+  describe('forms that contain themselves', () => {
+    it('derives the items of lists in their own forms', async () => {
+      // Like nested blocks of articles, which hold articles of blocks again:
+      const nested = {
+        type: 'form',
+        fields: { title: { type: 'text', default: 'Nested' }, blocks: null }
+      }
+      const text = { type: 'form', fields: { text: { type: 'text' } } }
+      const blocks = { type: 'list', forms: { nested, text } }
+      nested.fields.blocks = blocks
+      const form = await setupForm(api, { type: 'form', fields: { blocks } })
+      expect(
+        initializeData(form, { blocks: [{ type: 'nested', blocks: null }] })
+      ).toEqual({
+        blocks: [{ type: 'nested', title: 'Nested', blocks: [] }]
       })
     })
   })

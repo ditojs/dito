@@ -150,7 +150,6 @@ describe('defineType()', () => {
       component: {},
       hasLabel: ({ schema }) => !schema.label,
       ignoresMissingValue: true,
-      treatsNullAsMissing: ({ schema }) => !!schema.nested,
       rendersLabel: true,
       resolvesValue: true,
       submitsData: false,
@@ -161,6 +160,18 @@ describe('defineType()', () => {
   it('requires the type and the component', () => {
     // @ts-expect-error - `component` is missing.
     defineType({ type: 'rating' })
+  })
+
+  it('accepts the data type of the values', () => {
+    defineType({
+      type: 'rating',
+      component: {},
+      getProperty: (schema, context) => {
+        expectTypeOf(schema).toEqualTypeOf<Record<string, any>>()
+        expectTypeOf(context.schema).toEqualTypeOf<Record<string, any>>()
+        return schema.multiple ? { type: 'array' } : { type: 'number' }
+      }
+    })
   })
 
   it('accepts types that load options', () => {

@@ -131,10 +131,8 @@ describe('initializeData()', () => {
     })
   })
 
-  it('keeps `null` in text with `nullable: false`', () => {
-    // Changes with the one data mechanism, see plan: properties that aren't
-    // `nullable` treat `null` as missing.
-    expect(initializeData(form, createData(), services).nickname).toBe(null)
+  it('replaces `null` in text with `nullable: false`', () => {
+    expect(initializeData(form, createData(), services).nickname).toBe('')
   })
 
   it('sets the defaults of new items of each form', () => {
@@ -202,7 +200,7 @@ describe('serializeData()', () => {
       // Computed values that the data model hasn't written yet stay:
       slug: null,
       published: '2026-10-23',
-      nickname: null,
+      nickname: '',
       rating: 8,
       code: 'TOO LONG',
       // Changes with the one data mechanism, see plan: `trim` of the second
