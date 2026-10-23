@@ -22,7 +22,8 @@ class Html {
 export function html(strings, ...values) {
   return new Html(
     strings.reduce(
-      (result, string, index) => result + toHtml(values[index - 1]) + string
+      (result, string, index) => result + string + toHtml(values[index]),
+      ''
     )
   )
 }

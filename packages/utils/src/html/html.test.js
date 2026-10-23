@@ -34,6 +34,10 @@ describe('html()', () => {
   it('should take trusted HTML as an array of strings', () => {
     expect(html(['<b>bold</b>']).value).toBe('<b>bold</b>')
   })
+
+  it('should return empty html for an empty array of strings', () => {
+    expect(html([]).value).toBe('')
+  })
 })
 
 describe('isHtml()', () => {
