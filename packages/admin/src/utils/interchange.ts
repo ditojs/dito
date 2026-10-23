@@ -27,7 +27,7 @@ export function getUploadEntries(
     rootData,
     shouldSkipIrrelevant: true,
     visit: entry => {
-      const limits = entry.node.getUploadLimits(entry)
+      const limits = entry.node.getPropertyNode(entry)?.getUploadLimits(entry)
       if (limits) {
         entries.push({ ...entry, limits })
       }

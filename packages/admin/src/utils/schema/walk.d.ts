@@ -51,7 +51,7 @@ export interface DataNode {
   isExcluded(entry: DataEntry): boolean
   getUploadLimits(entry: DataEntry): UploadLimits | null
   getDisplayValue(entry: DataEntry): any
-  getRecordedSchema(): { schema: Schema; form: Schema } | null
+  getRecordedSchema(entry: DataEntry): { schema: Schema; form: Schema } | null
 }
 
 export function getSchemaSource(schema: Schema): DataSource
