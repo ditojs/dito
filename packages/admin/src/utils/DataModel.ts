@@ -228,7 +228,8 @@ export class DataModel {
         entries => this.#updateComponentRecords(entries),
         modelSetupWatchOptions
       )
-      // Values that go missing later, e.g. in added items, get defaults too:
+      // Values that go missing later, e.g. of fields that `fields()` creates,
+      // get defaults too. Only created and loaded data has its `null` replaced:
       watch(
         () => this.#dataEntries.value.entriesWithMissingValues,
         entries => entries.forEach(entry => this.#setDefaultValue(entry)),
@@ -970,7 +971,10 @@ export class DataModel {
             if (recordedSchema) {
               recordedEntries.set(entry, { ...entry, ...recordedSchema })
             }
-            if (this.#shouldSetDefaultValue(entry)) {
+            if (
+              !(entry.name in entry.data) &&
+              this.#shouldSetDefaultValue(entry)
+            ) {
               entriesWithMissingValues.push(entry)
             }
           }
