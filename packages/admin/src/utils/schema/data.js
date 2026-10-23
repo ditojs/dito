@@ -157,16 +157,6 @@ export function shouldIgnoreMissingValue(schema, context) {
   return getDescriptorFlag(schema, 'ignoresMissingValue', context)
 }
 
-function isMissingValue(schema, data, name, context) {
-  // Read the value only if needed, or tracked walks would depend on all values:
-  return (
-    !(name in data) || (
-      getDescriptorFlag(schema, 'treatsNullAsMissing', context) &&
-      data[name] === null
-    )
-  )
-}
-
 export function hasComputedValueSource(schema) {
   return !!schema.computeValue || hasValueFromDataSchema(schema)
 }
@@ -192,7 +182,7 @@ export function shouldSetDefaultValue(schema, data, name, context, {
 } = {}) {
   return (
     (shouldSetDefaultsOfComputedValues || !schema.computeValue) &&
-    isMissingValue(schema, data, name, context) &&
+    !(name in data) &&
     !shouldIgnoreMissingValue(schema, context)
   )
 }
@@ -209,7 +199,7 @@ export function initializeData(schema, data = {}, services, {
 } = {}) {
   const visit = entry => {
     const { node, data, name } = entry
-    const value = node.getDefaultValue(entry, {
+    const value = node.getPropertyNode(entry)?.getDefaultValue(entry, {
       shouldSetDefaultsOfComputedValues
     })
     // Types without values, e.g. buttons, get no key, like in the data of

@@ -2,6 +2,7 @@ import { h } from 'vue'
 import DefaultExport, * as exports from './index.js'
 import DitoAdmin from './DitoAdmin.js'
 import { mountSchema } from './test/mount.js'
+import { initializeData } from './utils/schema/data.js'
 import {
   defineType as defineTypeDescriptor,
   getTypeDescriptor
@@ -89,6 +90,32 @@ describe('@ditojs/admin exports', () => {
       ).toThrow(
         `Unable to redefine built-in type 'text' without 'override: true'.`
       )
+    })
+
+    it('gives values the empty value of the data type of `getProperty()`', () => {
+      exports.defineType({
+        type: 'isbn',
+        component,
+        getProperty: () => ({ type: 'string' })
+      })
+      exports.defineType({
+        type: 'isbns',
+        component,
+        defaultValue: () => [],
+        getProperty: () => ({ type: 'array' })
+      })
+      const schema = {
+        type: 'form',
+        fields: {
+          isbn: { type: 'isbn', nullable: false },
+          isbns: { type: 'isbns' },
+          // Values of the type are `nullable`, as its empty value is `null`:
+          note: { type: 'isbn' }
+        }
+      }
+      expect(
+        initializeData(schema, { isbn: null, isbns: null, note: null }, {})
+      ).toEqual({ isbn: '', isbns: [], note: null })
     })
 
     it('replaces built-in types with `override: true`', async () => {

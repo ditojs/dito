@@ -992,14 +992,14 @@ export class DataModel {
   // The model writes the values of components with `computeValue()` including
   // their defaults:
   #shouldSetDefaultValue(entry: DataEntry): boolean {
-    return entry.node.shouldSetDefaultValue(entry, {
+    return !!entry.node.getPropertyNode(entry)?.shouldSetDefaultValue(entry, {
       shouldSetDefaultsOfComputedValues: false
     })
   }
 
   // Types without values, e.g. buttons, get no key:
   #setDefaultValue(entry: DataEntry) {
-    const value = entry.node.getDefaultValue(entry, {
+    const value = entry.node.getPropertyNode(entry)?.getDefaultValue(entry, {
       shouldSetDefaultsOfComputedValues: false
     })
     if (value !== undefined) {

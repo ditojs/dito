@@ -31,8 +31,6 @@ export const nestableTraits = {
   ignoresMissingValue: ({ schema }: Context) => (
     !schema.nested && !('default' in schema)
   ),
-  // Unlike for `object` types, `null` doesn't mean there's no object:
-  treatsNullAsMissing: ({ schema }: Context) => !!schema.nested,
   defaultNested: false,
   // Only nested ones have a property, the others share the data of their form:
   getProperty: (schema: Schema, context: Context) => (
@@ -42,22 +40,18 @@ export const nestableTraits = {
 
 export const sourceTraits = {
   defaultValue: ({ schema }: Context) => (isListSource(schema) ? [] : null),
-  // Lists are never `null`, but `null` means there's no object:
-  treatsNullAsMissing: ({ schema }: Context) => isListSource(schema),
   // Exclude all sources that have their own resource handling the data.
   defaultExclude: ({ schema }: Context) => !!schema.resource,
 
   // The items of sources with their own resource aren't part of the data,
   // also when a callback returns the resource:
   getProperty(schema: Schema, context: Context) {
-    if (context.schema.resource) {
-      return null
-    } else {
-      const item = getItemProperty(context.schema, context)
-      return isListSource(schema)
-        ? { type: 'array', ...(item && { items: item }) }
-        : (item ?? { type: 'object' })
-    }
+    const item = context.schema.resource
+      ? null
+      : getItemProperty(context.schema, context)
+    return isListSource(schema)
+      ? { type: 'array', ...(item && { items: item }) }
+      : (item ?? { type: 'object' })
   },
 
   // Wrap primitive values in objects under the key `wrapPrimitives`:
@@ -110,9 +104,6 @@ export const sourceTraits = {
 export const optionsTraits = {
   defaultValue: (context: Context) =>
     getMultipleValue(context.schema, context) ? [] : null,
-  // Multiple values are never `null`:
-  treatsNullAsMissing: (context: Context) =>
-    getMultipleValue(context.schema, context),
   getOptionsDataSchema: schema => schema.options,
 
   // Related values are objects. Static options give the type of the values,

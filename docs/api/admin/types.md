@@ -300,16 +300,6 @@ ignoresMissingValue?: boolean | ((context: SchemaContext) => boolean)
 Values that are missing don't get their defaults, e.g. passwords, which the
 server doesn't return.
 
-#### treatsNullAsMissing
-
-```ts
-treatsNullAsMissing?: boolean | ((context: SchemaContext) => boolean)
-```
-
-Values that are `null` get their defaults like missing ones. Dito's own types
-set it for lists, nested sections and panels, and `checkboxes` and
-`multiselect` with `multiple`. Objects and single values keep `null`.
-
 #### resolvesValue
 
 ```ts
@@ -419,6 +409,25 @@ getValidations?(context: SchemaContext): Record<string, any>
 *Hook.* Returns the validations of the value, keyed by validator name, e.g.
 `{ email: true }` or `{ range: [0, 10] }`. `required`, the limits of strings
 and arrays and `validate()` are added to them.
+
+#### getProperty()
+
+```ts
+getProperty?(schema: object, context: SchemaContext): object | null
+```
+
+*Hook.* Returns the data type of the values in the format of the server's
+`properties`, or `null` for types without a value. It decides their empty
+value, e.g. `''` for strings with `nullable: false`, and whether a loaded
+`null` counts as missing: values of a type that aren't `nullable` get their
+default instead. Values of types without it have no empty value: they stay
+missing unless they have a `default`, and keep `null`.
+
+##### Example
+
+```js
+getProperty: () => ({ type: 'number' })
+```
 
 #### setupSchema()
 

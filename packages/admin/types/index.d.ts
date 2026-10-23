@@ -3299,9 +3299,6 @@ export interface TypeDescriptor {
   /** Don't give values that are missing their defaults, e.g. passwords. */
   readonly ignoresMissingValue?:
     boolean | ((context: TypeDescriptorContext) => boolean)
-  /** Give values that are `null` their defaults, e.g. lists. */
-  readonly treatsNullAsMissing?:
-    boolean | ((context: TypeDescriptorContext) => boolean)
   /** The value resolves from `schema.data` or `schema.dataPath`. */
   readonly resolvesValue?: boolean
   /** Generate a label from the name for fields without `label`. */
@@ -3343,6 +3340,15 @@ export interface TypeDescriptor {
   getDisplayValue?(context: TypeDescriptorContext): string
   /** The validations of the value, with the schema in `context.schema`. */
   getValidations?(context: TypeDescriptorContext): Record<string, any>
+  /**
+   * The data type of the values, in the format of the server's `properties`,
+   * e.g. `{ type: 'number' }`, or `null` for types without a value. It
+   * decides their empty value and whether a loaded `null` counts as missing.
+   */
+  getProperty?(
+    schema: Record<string, any>,
+    context: TypeDescriptorContext
+  ): Record<string, any> | null
   /** Sets up the schema, e.g. resolves the schemas that it contains. */
   setupSchema?(options: {
     schema: Record<string, any>

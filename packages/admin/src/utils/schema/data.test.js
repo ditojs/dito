@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import SchemaContext from '../../SchemaContext.js'
 import { defineType } from './types.ts'
 import {
+  nestableTraits,
   sourceTraits,
   numberTraits,
   colorTraits
@@ -26,12 +27,7 @@ import {
 // Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
 defineType({ type: 'text' })
-defineType({
-  type: 'section',
-  defaultNested: false,
-  defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
-  treatsNullAsMissing: ({ schema }) => !!schema.nested
-})
+defineType({ ...nestableTraits, type: 'section' })
 defineType({ type: 'panel', defaultNested: false })
 defineType({
   type: 'reference',
@@ -54,11 +50,7 @@ defineType({
   defaultValue: 'none',
   ignoresMissingValue: true
 })
-defineType({
-  type: 'choice',
-  defaultValue: 'none',
-  treatsNullAsMissing: true
-})
+defineType({ type: 'choice', defaultValue: 'none' })
 
 describe('getComputedValue()', () => {
   const schema = {
@@ -470,7 +462,7 @@ describe('initializeData()', () => {
       type: 'form',
       fields: { secret: { type: 'secret' }, choice: { type: 'choice' } }
     }
-    expect(initializeData(schema, { choice: null })).toEqual({
+    expect(initializeData(schema, {})).toEqual({
       choice: 'none'
     })
   })

@@ -37,6 +37,8 @@ export interface DataNode {
   source: DataSource | null
   relation: DataRelation | null
   getRelevantNode(entry: DataEntry): DataNode | null
+  // The node of the value's property, `null` for types without a value:
+  getPropertyNode(entry: DataEntry): DataNode | null
   getValidationErrors(entry: DataEntry): ValueError[]
   shouldSetDefaultValue(
     entry: DataEntry,
