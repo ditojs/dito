@@ -10,12 +10,14 @@ describe('DitoNumberType', () => {
     expect(input.element.value).toBe('12.5')
     await input.setValue('7.25')
     expect(data.price).toBe(7.25)
+    await input.setValue('1e3')
+    expect(data.price).toBe(1000)
     await input.setValue('')
     expect(data.price).toBe(null)
     expect(input.element.value).toBe('')
   })
 
-  it('parses the input of the integer type with `Number()`', async () => {
+  it('parses the input of the integer type to numbers', async () => {
     const { findField, data } = await mountSchema({
       schema: { fields: { pages: { type: 'integer' } } }
     })

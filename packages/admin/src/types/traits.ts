@@ -162,14 +162,8 @@ export const numberTraits = {
   }),
 
   // Number inputs edit strings, and an empty one means no value:
-  parseValue({ schema, value }: Context) {
-    return value === ''
-      ? null
-      : isString(value)
-        ? schema.type === 'integer'
-          ? Number(value)
-          : parseFloat(`${value}`)
-        : value
+  parseValue({ value }: Context) {
+    return value === '' ? null : isString(value) ? Number(value) : value
   },
 
   getValidations(context: Context) {
