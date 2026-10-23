@@ -13,6 +13,7 @@ export interface Milestone {
 
 export interface Phase {
   name: string
+  lead?: string | null
   tasks?: { name: string }[]
 }
 
@@ -51,6 +52,7 @@ export interface Project {
   // `never`.
   openDialog?: never
   owner?: never
+  editSettings?: never
 }
 
 export class Project extends Model {
