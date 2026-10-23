@@ -16,56 +16,31 @@ export default TransitionHeight
 
 const setStyle = (element, style) => Object.assign(element.style, style)
 
-const nextTimeout = callback => setTimeout(callback, 0)
-
 // Force repaint to make sure the animation is triggered correctly.
 const forceRepaint = element => getComputedStyle(element).height
 
+// Measure and animate in the same task, so no frame shows the element before
+// it is measured, and the hooks can't run out of order:
 const props = {
   name: 'dito-height',
 
-  onAfterEnter(element) {
-    // A timeout before setting style is only really needed after calls to
-    // `forceRepaint()`, but using one here too preserves execution sequence so
-    // that the call from `enter()` can never outrun the one from `afterEnter()`
-    nextTimeout(() => setStyle(element, { height: null }))
+  onEnter(element) {
+    setStyle(element, { height: 'auto' })
+    const { height } = getComputedStyle(element)
+    setStyle(element, { height: 0 })
+    forceRepaint(element)
+    setStyle(element, { height })
   },
 
-  onEnter(element) {
-    // For some reason we're getting two `onEnter()` calls per transition,
-    // so we need to ignore the second one. This might be linked to the use
-    // of `nextTimeout()`, which is required to get the correct value for
-    // `height`, based on `&--label-vertical` calculations.
-    const { width } = getComputedStyle(element)
-    setStyle(element, {
-      width,
-      position: 'absolute',
-      visibility: 'hidden',
-      height: 'auto'
-    })
-    nextTimeout(() => {
-      const { height } = getComputedStyle(element)
-      // A busy browser can end the transition before we measure, so only
-      // animate the height while still entering:
-      const isEntering = element.classList.contains('dito-height-enter-active')
-      setStyle(element, {
-        width: null,
-        position: null,
-        visibility: null,
-        height: isEntering ? 0 : null
-      })
-      if (isEntering) {
-        forceRepaint(element)
-        nextTimeout(() => setStyle(element, { height }))
-      }
-    })
+  onAfterEnter(element) {
+    setStyle(element, { height: null })
   },
 
   onLeave(element) {
     const { height } = getComputedStyle(element)
     setStyle(element, { height })
     forceRepaint(element)
-    nextTimeout(() => setStyle(element, { height: 0 }))
+    setStyle(element, { height: 0 })
   }
 }
 </script>

@@ -441,14 +441,8 @@ export default {
             selectTab(tab)
           }
         }
-        const isOpening = !opened.value
         opened.value = true
         await nextTick()
-        if (focus && isOpening) {
-          // `TransitionHeight` hides the content while it measures it, until
-          // its next timeout, and hidden fields can't be focused:
-          await new Promise(resolve => setTimeout(resolve))
-        }
       }
     })
     const isWidePage = (

@@ -35,62 +35,42 @@ describe('TransitionHeight', () => {
 
   describe('hooks', () => {
     let element
+    let heights
     let computedHeight
 
     beforeEach(() => {
-      vi.useFakeTimers()
-      // happy-dom doesn't clear styles that are set to null like browsers do,
-      // so record the styles on a plain object instead.
-      const { classList } = document.createElement('div')
-      classList.add('dito-height-enter-active')
-      element = { style: {}, classList }
+      // Record the heights that the hooks set, in order:
+      heights = []
+      element = {
+        style: {
+          get height() {
+            return heights.at(-1)
+          },
+          set height(height) {
+            heights.push(height)
+          }
+        }
+      }
       computedHeight = '120px'
       vi.spyOn(window, 'getComputedStyle').mockImplementation(() => ({
-        width: '300px',
         height: computedHeight
       }))
     })
 
     afterEach(() => {
-      vi.useRealTimers()
       vi.restoreAllMocks()
     })
 
-    it('measures and grows the height of entering elements', () => {
+    it('grows entering elements from zero to their measured height', () => {
       const { onEnter } = getTransitionProps()
       onEnter(element)
-      // Measured at full width, invisibly:
-      expect(element.style.width).toBe('300px')
-      expect(element.style.position).toBe('absolute')
-      expect(element.style.visibility).toBe('hidden')
-      expect(element.style.height).toBe('auto')
-      vi.advanceTimersToNextTimer()
-      expect(element.style).toEqual({
-        width: null,
-        position: null,
-        visibility: null,
-        height: 0
-      })
-      vi.advanceTimersToNextTimer()
-      expect(element.style.height).toBe('120px')
-    })
-
-    it('releases the height when entered before it was measured', () => {
-      const { onEnter, onAfterEnter } = getTransitionProps()
-      onEnter(element)
-      // A busy browser can end the transition before the timeouts run:
-      element.classList.remove('dito-height-enter-active')
-      onAfterEnter(element)
-      vi.runAllTimers()
-      expect(element.style.height).toBe(null)
+      expect(heights).toEqual(['auto', 0, '120px'])
     })
 
     it('releases the height once entered', () => {
       const { onAfterEnter } = getTransitionProps()
       element.style.height = '120px'
       onAfterEnter(element)
-      expect(element.style.height).toBe('120px')
-      vi.runAllTimers()
       expect(element.style.height).toBe(null)
     })
 
@@ -98,9 +78,7 @@ describe('TransitionHeight', () => {
       const { onLeave } = getTransitionProps()
       computedHeight = '80px'
       onLeave(element)
-      expect(element.style.height).toBe('80px')
-      vi.runAllTimers()
-      expect(element.style.height).toBe(0)
+      expect(heights).toEqual(['80px', 0])
     })
   })
 })

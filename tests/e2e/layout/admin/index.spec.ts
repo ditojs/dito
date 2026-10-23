@@ -76,6 +76,58 @@ test.describe('layout', () => {
     await expect(form.getField('Color')).toBeVisible()
   })
 
+  test('releases the height of sections opened by a busy browser', async ({
+    page,
+    url
+  }) => {
+    await Widget.query().insert({ name: 'Widget A', settings: {} })
+    const list = new DitoListView(page, url, 'Widget')
+    const form = new DitoForm(page)
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    await form.selectTab('Details')
+    const label = page.getByRole('button', { name: 'Settings', exact: true })
+    await label.click()
+    await expect(form.getField('Color')).toBeHidden()
+    // End transitions at once, as e2e tests of apps do, and run timeouts after
+    // the next frames, as a busy browser does, so that the transition ends
+    // before its height is measured. The browser's scheduling can't be reached
+    // otherwise, so the page delays its own timeouts and counts them:
+    await page.addStyleTag({
+      content: `*, ::before, ::after {
+        transition-duration: 0s !important;
+        animation-duration: 0s !important;
+      }`
+    })
+    await page.evaluate(() => {
+      const { setTimeout } = window
+      const counter = window as { pendingTimeouts?: number }
+      counter.pendingTimeouts = 0
+      window.setTimeout = ((callback: () => void, delay = 0) => {
+        counter.pendingTimeouts!++
+        return setTimeout(
+          () => {
+            counter.pendingTimeouts!--
+            callback()
+          },
+          Math.max(delay, 100)
+        )
+      }) as typeof window.setTimeout
+    })
+    await label.click()
+    await expect(form.getField('Color')).toBeVisible()
+    const content = page
+      .locator('.dito-schema-content')
+      .filter({ has: form.getField('Color') })
+      .last()
+    // Once the transition and all delayed timeouts are done:
+    await expect(content).not.toContainClass('dito-height-enter-active')
+    await page.waitForFunction(
+      () => (window as { pendingTimeouts?: number }).pendingTimeouts === 0
+    )
+    expect(await content.evaluate(element => element.style.height)).toBe('')
+  })
+
   test('clips long suffixes of collapsible item labels', async ({
     page,
     url
