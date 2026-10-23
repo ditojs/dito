@@ -46,7 +46,7 @@ import {
   setupSchemaComponents
 } from '../utils/schema/setup.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
-import { isCompact } from '../utils/schema/structure.js'
+import { isCompact, hasNestedData } from '../utils/schema/structure.js'
 
 // @vue/component
 const DitoSectionType = {
@@ -97,7 +97,7 @@ defineType({
     isCompact(
       getItemFormSchema(
         context.schema,
-        context.nested ? context.value : context.item,
+        hasNestedData(context.schema) ? context.value : context.item,
         context
       )
     )

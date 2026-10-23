@@ -99,18 +99,13 @@ export default class SchemaContext {
     return Object.setPrototypeOf(values, this)
   }
 
-  // Whether the context describes the value at `dataPath`, under its name:
-  get nested() {
-    return get(this, 'nested', false)
-  }
-
   get schema() {
     return get(this, 'schema', null)
   }
 
   get value() {
     const object = toObject(this)
-    const { nested } = this
+    const nested = isNested(this)
     // Type components hold their value, also while it's `undefined`, e.g. a
     // computed value that isn't written yet. Others read it from the root:
     const value =
@@ -149,7 +144,7 @@ export default class SchemaContext {
   get itemDataPath() {
     return (
       get(this, 'itemDataPath', null) ??
-      getItemDataPath(this.dataPath, this.nested)
+      getItemDataPath(this.dataPath, isNested(this))
     )
   }
 
@@ -456,6 +451,11 @@ export default class SchemaContext {
       closeDialog(value)
     }
   }
+}
+
+// Whether the context describes the value at `dataPath`, under its name:
+function isNested(context) {
+  return get(context, 'nested', false)
 }
 
 // The data of the context, which its getters hand out editable:

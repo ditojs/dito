@@ -209,10 +209,9 @@ describe('SchemaContext', () => {
       expect(context.valueIndex).toBe(0)
     })
 
-    it('defaults to an empty data path, unnested and without a schema', () => {
+    it('defaults to an empty data path and no schema', () => {
       const context = new SchemaContext(null, {})
       expect(context.dataPath).toBe('')
-      expect(context.nested).toBe(false)
       expect(context.schema).toBe(null)
     })
   })
@@ -507,7 +506,6 @@ describe('SchemaContext', () => {
         rootData
       })
       expect(context.schema).toBe(schema)
-      expect(context.nested).toBe(true)
       expect(context.item).toBe(book)
       expect(context.value).toBe('First')
       book.title = 'Changed'
@@ -523,7 +521,6 @@ describe('SchemaContext', () => {
         dataPath: '',
         rootData: book
       })
-      expect(context.nested).toBe(false)
       expect(context.item).toBe(book)
       expect(context.value).toBe(undefined)
     })
@@ -537,7 +534,6 @@ describe('SchemaContext', () => {
         dataPath: '',
         rootData: book
       })
-      expect(context.nested).toBe(true)
       expect(context.value).toBe(undefined)
     })
   })
