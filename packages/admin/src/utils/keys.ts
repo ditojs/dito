@@ -34,6 +34,8 @@ export interface Layout {
 export interface SchemaForm {
   readonly dataContext: DataContext
   readonly buttonSchemas: Ref<Record<string, Schema> | null>
+  // The form of a page renders as the page's schema, see `DitoView`:
+  readonly isPageForm: boolean
 }
 
 // The data that widgets edit by the `name` of its written properties: of the
