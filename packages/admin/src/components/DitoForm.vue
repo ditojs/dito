@@ -302,7 +302,7 @@ export default {
           isObjectSource(sourceSchema.value)
         ) {
           // Objects without data redirect to their create route:
-          router.push({ path: `${path}/create` })
+          router.replace({ path: `${path}/create` })
         }
       }
     }
