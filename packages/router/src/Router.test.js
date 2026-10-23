@@ -81,6 +81,25 @@ describe('Router', () => {
     expect(router.normalizePath('/users/')).toBe('/bla//users/')
   })
 
+  it('normalizes the paths of allowed methods like find()', () => {
+    router = new Router({ prefix: '/api' })
+    router.add('GET', '/users/:id', handler)
+    router.add('PUT', '/users/:id', handler)
+    expect(router.getAllowedMethods('/users/1')).toStrictEqual([
+      'GET',
+      'PUT',
+      'HEAD'
+    ])
+    expect(router.getAllowedMethods('users/1/')).toStrictEqual([
+      'GET',
+      'PUT',
+      'HEAD'
+    ])
+    result = router.find('OPTIONS', '/users/1/')
+    expect(result.status).toBe(200)
+    expect(result.allowed).toStrictEqual(['GET', 'PUT', 'HEAD'])
+  })
+
   it('does not normalize paths in strict mode', () => {
     router = new Router({ strict: true })
     expect(router.normalizePath('/')).toBe('/')

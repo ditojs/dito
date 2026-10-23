@@ -26,17 +26,19 @@ export default class Router {
 
   find(method, path) {
     method = method.toUpperCase()
-    path = this.normalizePath(path)
+    const normalizedPath = this.normalizePath(path)
     const { trees } = this
     return (
-      trees[method]?.find(path) ||
+      trees[method]?.find(normalizedPath) ||
       // HEAD requests fall back on GET routes:
-      method === 'HEAD' && trees.GET?.find(path) ||
+      method === 'HEAD' && trees.GET?.find(normalizedPath) ||
+      // `getAllowedMethods()` normalizes the path itself:
       new Result(this, method, path)
     )
   }
 
   getAllowedMethods(path = null, exclude = null) {
+    path &&= this.normalizePath(path)
     exclude = exclude?.toUpperCase()
     const allowed = Object.keys(this.trees).filter(
       method => (
