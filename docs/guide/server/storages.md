@@ -34,7 +34,7 @@ export default {
 
 `url` is the absolute URL at which the files are public, ending in `/`;
 file objects get a `url` built from it. Without it, disk files have no URL,
-and S3 files the URL that S3 returns. `path` is the folder of a disk storage,
+and S3 files the URL of the bucket. `path` is the folder of a disk storage,
 relative to the app's `basePath`. The
 [`StorageConfig`](../../api/server/storage.md#storageconfig) lists all
 options.

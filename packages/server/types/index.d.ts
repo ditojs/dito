@@ -5,7 +5,6 @@
 
 // Export the entire Dito.js namespace.
 
-import { ObjectCannedACL, S3ClientConfig } from '@aws-sdk/client-s3'
 import { DateFormat, NumberFormat, TimeFormat } from '@ditojs/utils'
 import { Options as KoaCorsOptions } from '@koa/cors'
 import * as Ajv from 'ajv/dist/2020.js'
@@ -20,7 +19,6 @@ import koaMount from 'koa-mount'
 import koaResponseTime from 'koa-response-time'
 import { CreateSessionOptions as KoaSessionOptions } from 'koa-session'
 import multer from '@koa/multer'
-import multerS3 from 'multer-s3'
 import * as objection from 'objection'
 import { Logger as PinoLogger, LoggerOptions as PinoLoggerOptions } from 'pino'
 import { PrettyOptions } from 'pino-pretty'
@@ -295,19 +293,6 @@ export interface ApplicationConfig {
   }
 }
 
-export type MulterS3File = {
-  bucket: string
-  key: string
-  acl: string
-  contentType: string
-  contentDisposition: null
-  storageClass: string
-  serverSideEncryption: null
-  metadata: Record<string, string>
-  location: string
-  etag: string
-}
-
 export type StorageConfigs = { [key: string]: StorageConfig }
 
 interface CommonStorageConfig {
@@ -324,16 +309,33 @@ interface CommonStorageConfig {
   allowedImports?: string[]
 }
 
-export type S3StorageConfig = CommonStorageConfig & {
+export interface S3StorageConfig extends CommonStorageConfig {
   type: 's3'
   bucket: string
-  acl?: ObjectCannedACL | string
-  /** The configuration of the S3 client, e.g. its `region`. */
-  s3?: S3ClientConfig
-} & Omit<
-    Parameters<typeof multerS3>[0],
-    's3' | 'key' | 'contentType' | 'metadata'
-  >
+  /** The configuration of the aws-lite S3 client. */
+  s3: {
+    /**
+     * The URL of the S3 service.
+     *
+     * @defaultValue `https://s3.${region}.amazonaws.com`
+     */
+    endpoint?: string
+    region: string
+    credentials: {
+      accessKeyId: string
+      secretAccessKey: string
+      sessionToken?: string
+    }
+  }
+  /** The canned ACL of stored objects, e.g. `'public-read'`. */
+  acl?: string
+  cacheControl?: string
+  contentDisposition?: string
+  contentEncoding?: string
+  storageClass?: string
+  serverSideEncryption?: string
+  sseKmsKeyId?: string
+}
 
 export interface DiskStorageConfig extends CommonStorageConfig {
   type: 'disk'
