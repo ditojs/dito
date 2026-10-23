@@ -137,7 +137,7 @@ export default {
         // back to the focused or first tabbable element:
         initialFocus: () => (
           dialog.value.querySelector('[autofocus]') || (
-            !dialog.value.contains(document.activeElement) &&
+            !dialog.value.matches(':focus-within') &&
             dialog.value.querySelector(
               '.dito-dialog__buttons :is([type="submit"], .dito-button--primary)'
             )

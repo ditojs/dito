@@ -1,0 +1,15 @@
+diff --git a/lib/query-selector/SelectorItem.js b/lib/query-selector/SelectorItem.js
+index c0e807b928b0425e9052e43cd680d68ffe361cce..099834407ac4ff3275b6884b42aa07fddf37936f 100644
+--- a/lib/query-selector/SelectorItem.js
++++ b/lib/query-selector/SelectorItem.js
+@@ -367,6 +367,10 @@ export default class SelectorItem {
+                 return element[PropertySymbol.ownerDocument].activeElement === element
+                     ? { priorityWeight: 10 }
+                     : null;
++            case 'focus-within':
++                return element.contains(element[PropertySymbol.ownerDocument].activeElement)
++                    ? { priorityWeight: 10 }
++                    : null;
+             case 'scope':
+                 return scope && scope === element ? { priorityWeight: 10 } : null;
+             default:

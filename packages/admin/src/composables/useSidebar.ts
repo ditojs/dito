@@ -65,7 +65,7 @@ export function useSidebar({
       isOpen.value = false
       overlayEvents!.remove()
       // Return the focus to the button, unless it already moved elsewhere:
-      if (region.value!.contains(document.activeElement)) {
+      if (region.value!.matches(':focus-within')) {
         button.value!.focus()
       }
     }

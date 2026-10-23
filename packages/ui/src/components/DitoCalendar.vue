@@ -406,7 +406,7 @@ export default {
     },
 
     focusCursorItemIfFocused() {
-      if (this.$el?.contains(document.activeElement)) {
+      if (this.$el?.matches(':focus-within')) {
         // Wait for the items of the current mode to be rendered.
         this.$nextTick(() => asArray(this.$refs.cursorItem)[0]?.focus())
       }
