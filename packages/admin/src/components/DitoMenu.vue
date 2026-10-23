@@ -1,9 +1,9 @@
 <template lang="pug">
 ul.dito-menu
-  li.dito-menu__item(
+  template(
     v-for="node in nodes"
   )
-    template(
+    li.dito-menu__item(
       v-if="shouldShowNode(node)"
     )
       RouterLink(
