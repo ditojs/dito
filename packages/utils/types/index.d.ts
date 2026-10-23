@@ -167,7 +167,10 @@ export function clone<T>(value: T, options?: {
  * Determines whether the supplied values can be considered equal through
  * recursive comparison of object properties and array elements, including
  * typed arrays. Non-objects and non-arrays are compared using the SameValue
- * algorithm. Values of different types are never equal.
+ * algorithm. Objects and typed arrays are only equal to values with the same
+ * constructor or the same `Object.prototype.toString()` tag, so instances of
+ * different classes with the same properties are equal, and so are a `Buffer`
+ * and a `Uint8Array` with the same bytes.
  */
 export function equals(arg1: any, arg2: any): boolean
 
