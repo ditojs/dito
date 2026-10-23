@@ -12,6 +12,7 @@ import {
   shallowRef,
   toRefs
 } from 'vue'
+import { equals } from '@ditojs/utils'
 import DitoContainer from './DitoContainer.vue'
 import { useServices } from '../composables/useSchemaContext.ts'
 import { useWidget, widgetProps } from '../composables/useWidget.ts'
@@ -477,7 +478,8 @@ function createTreeLevelSchema(name, { items, orderKey, idKey }, level) {
 }
 
 // The component of custom fields with a value, which passes the field to the
-// slot, in an element that receives the container's attributes:
+// slot, in an element that receives the container's attributes. Edits are done
+// when the focus leaves the element, writes without focus right away:
 function createCustomFieldComponent(property, slots) {
   return {
     name: 'DitoCustomFieldContent',
@@ -486,10 +488,12 @@ function createCustomFieldComponent(property, slots) {
       context: { type: Object, required: true },
       modelValue: { type: null, default: undefined }
     },
-    emits: ['update:modelValue', 'change'],
+    emits: ['update:modelValue', 'change', 'focus', 'blur'],
 
     setup(props, { emit }) {
       const { dataContext } = useServices()
+      let isFocused = false
+      let focusedValue
       const field = shallowReactive({
         // Read the value from the context, not the `modelValue` prop, which
         // only receives written values with the next render:
@@ -498,7 +502,9 @@ function createCustomFieldComponent(property, slots) {
         },
         set value(value) {
           emit('update:modelValue', value)
-          emit('change')
+          if (!isFocused) {
+            emit('change')
+          }
         },
         get errors() {
           const { dataPath } = props.context
@@ -506,13 +512,31 @@ function createCustomFieldComponent(property, slots) {
         },
         property,
 
-        // Validate the value like widgets do on blur, e.g. with
-        // `@blur="field.validate()"`, and return whether it's valid:
+        // Validate the value like widgets do on blur, and return whether it's
+        // valid:
         validate() {
           return dataContext.model.validate(props.context.dataPath)
         }
       })
-      return () => h('div', slots.default?.(field))
+      // `focusin` and `focusout` bubble from the elements in the slot, unlike
+      // `focus` and `blur`. Moving the focus between them is one edit:
+      const onFocusin = () => {
+        if (!isFocused) {
+          isFocused = true
+          focusedValue = props.context.value
+          emit('focus')
+        }
+      }
+      const onFocusout = event => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          isFocused = false
+          if (!equals(props.context.value, focusedValue)) {
+            emit('change')
+          }
+          emit('blur')
+        }
+      }
+      return () => h('div', { onFocusin, onFocusout }, slots.default?.(field))
     }
   }
 }
