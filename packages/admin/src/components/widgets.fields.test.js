@@ -490,6 +490,10 @@ describe('DitoCustomField', () => {
     const container = getContainer(wrapper, 'Note')
     expect(container.find('.custom-note').text()).toBe('ABC')
     expect(container.find('.custom-note').attributes('id')).toBeUndefined()
+    // It fills the container like the components of other fields:
+    expect(container.find('.dito-component--fill .custom-note').exists()).toBe(
+      true
+    )
     expect(container.attributes('style')).toContain('--basis: 50%')
     expect(container.find('.dito-info').exists()).toBe(true)
     // Content without `label` shows none:
