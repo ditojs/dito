@@ -47,7 +47,7 @@ props are the options of that type, with the same meaning.
 | `DitoProgressField` | [progress](./schemas.md#progress) | | `minimum`, `maximum`, `range` |
 | `DitoSwitchField` | [switch](./schemas.md#switch) | `labels` | |
 | `DitoCheckboxField` | [checkbox](./schemas.md#checkbox) | | `nullable` |
-| `DitoSelectField` | [select](./schemas.md#select) | `options`, `editable`, `view` | Options of `enum`, `multiple` of arrays, `relate` |
+| `DitoSelectField` | [select](./schemas.md#select) | `options`, `editable`, `view` | Options of `enum`, `relate` |
 | `DitoRadioField` | [radio](./schemas.md#radio) | `options`, `editable`, `view`, `layout` | Options of `enum`, `relate` |
 | `DitoCheckboxesField` | [checkboxes](./schemas.md#checkboxes) | `options`, `editable`, `view`, `layout` | Options of `items.enum`, `relate` |
 | `DitoMultiselectField` | [multiselect](./schemas.md#multiselect) | `options`, `editable`, `view`, `placeholder` (also `false`), `searchable`, `search`, `stayOpen`, `taggable` | Options of `enum`, `multiple` of arrays, `relate` |
@@ -65,6 +65,8 @@ props are the options of that type, with the same meaning.
 
 The label of all widgets shows the required mark of `required` properties, and
 all widgets hide while their property's `if` is false.
+`DitoSelectField` and `DitoRadioField` hold one value and throw for array
+properties, which `DitoCheckboxesField` and `DitoMultiselectField` edit.
 
 ### Slots
 

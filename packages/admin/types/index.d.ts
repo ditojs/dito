@@ -3534,12 +3534,16 @@ export const DitoCheckboxField: DefineComponent<WidgetProps>
 /**
  * Selects the value of the property `name` among the `options`, or among the
  * values of its `enum`. Properties with `relate` hold the related objects.
+ * Array properties aren't supported.
  */
 export const DitoSelectField: DefineComponent<
   WidgetProps<Pick<SelectSchema, 'options' | 'editable' | 'view'>>
 >
 
-/** Selects the value of the property `name` with radio buttons. */
+/**
+ * Selects the value of the property `name` with radio buttons. Array
+ * properties aren't supported.
+ */
 export const DitoRadioField: DefineComponent<
   WidgetProps<Pick<RadioSchema, 'options' | 'layout' | 'editable' | 'view'>>
 >
