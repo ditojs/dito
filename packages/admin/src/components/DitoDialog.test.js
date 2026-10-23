@@ -351,6 +351,30 @@ describe('DitoDialog', () => {
     expect(await result.promise).toEqual({ title: 'Emma' })
   })
 
+  it('submits once with Enter in its inputs', async () => {
+    const { admin, dialog } = await showDialog({
+      fields: { title: { type: 'text', required: true } },
+      buttons: { apply: { type: 'submit' } }
+    })
+    const notify = vi.spyOn(admin.context, 'notify')
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true
+    })
+    dialog.find('input').element.dispatchEvent(event)
+    // happy-dom doesn't submit implicitly, as browsers do unless prevented:
+    if (!event.defaultPrevented) {
+      await dialog.find('form').trigger('submit')
+    }
+    await flushPromises()
+    expect(notify).toHaveBeenCalledExactlyOnceWith({
+      type: 'error',
+      title: 'Validation Errors',
+      text: 'Please correct the highlighted errors.'
+    })
+  })
+
   it(`doesn't close on overlay clicks without \`clickToClose\``, async () => {
     const result = await showDialog({ fields, buttons: { cancel: {} } })
     await result.dialog.trigger('mouseup')

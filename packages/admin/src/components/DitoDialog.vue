@@ -153,8 +153,10 @@ export default {
 
       onEnter(event) {
         // Submit on Enter in inputs, also for password managers that simulate
-        // an untrusted Enter keypress, which browsers ignore:
+        // an untrusted Enter keypress, which browsers ignore. Prevent the
+        // implicit submission of trusted ones, which would submit again:
         if (event.target instanceof HTMLInputElement) {
+          event.preventDefault()
           submit()
         }
       },
