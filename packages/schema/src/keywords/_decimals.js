@@ -1,3 +1,12 @@
+import { isNumber } from '@ditojs/utils'
+
+// Format numbers with all their decimals and without exponent, as
+// `String(1e-7)` is `'1e-7'`:
+const numberFormat = new Intl.NumberFormat('en', {
+  maximumFractionDigits: 100,
+  useGrouping: false
+})
+
 function hasUnlimitedDecimals(decimals) {
   return decimals == null || decimals === '*'
 }
@@ -10,7 +19,10 @@ export const decimals = {
       : decimals > 0
         ? `(\\.\\d{1,${decimals}})?`
         : ''
-    return new RegExp(`^[-+]?\\d*${fraction}$`).test(value)
+    // Require at least one digit, before or after the decimal point:
+    return new RegExp(`^[-+]?(?=\\.?\\d)\\d*${fraction}$`).test(
+      isNumber(value) ? numberFormat.format(value) : value
+    )
   },
 
   message: decimals =>
