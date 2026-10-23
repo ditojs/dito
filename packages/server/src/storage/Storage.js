@@ -89,25 +89,26 @@ export class Storage {
   }
 
   convertAssetFile(file, { trusted = false } = {}) {
-    if (
-      !trusted &&
-      !(file instanceof AssetFile) &&
-      !this.verifyAssetFile(file)
-    ) {
-      if (!this.isImportSourceAllowed(file.url)) {
-        throw new AssetError(
-          `Invalid asset signature for file '${
-            file.name ?? file.key
-          }'`
-        )
+    if (!trusted && !(file instanceof AssetFile)) {
+      if (!this.verifyAssetFile(file)) {
+        if (!this.isImportSourceAllowed(file.url)) {
+          throw new AssetError(
+            `Invalid asset signature for file '${
+              file.name ?? file.key
+            }'`
+          )
+        }
+        // Nothing vouches for the keys of unsigned imports, so only accept
+        // generated ones:
+        if (!(isString(file.key) && importKeyRegExp.test(file.key))) {
+          throw new AssetError(
+            `Invalid asset key for file '${file.name ?? file.key}'`
+          )
+        }
       }
-      // Nothing vouches for the keys of unsigned imports, so only accept
-      // generated ones:
-      if (!(isString(file.key) && importKeyRegExp.test(file.key))) {
-        throw new AssetError(
-          `Invalid asset key for file '${file.name ?? file.key}'`
-        )
-      }
+      // Signatures only vouch for keys, and imports load their data from
+      // `url`, so never take file data from clients:
+      delete file.data
     }
     // Remove signature once the data made it to here.
     delete file.signature

@@ -1309,6 +1309,19 @@ describe('asset references', () => {
     expect(loaded.photos![0]).not.toHaveProperty('signature')
   })
 
+  it('ignores the data of signed files sent by clients', async () => {
+    const other = await Album.query().insertAndFetch({
+      cover: await upload('foreign.jpg')
+    })
+    const album = await Album.query().insertAndFetch({ cover: null })
+    const { cover } = copy(other.toJSON())
+    await Album.query().patchById(album.id, { cover: copy(cover) })
+    await Album.query().patchById(album.id, {
+      cover: { ...cover!, data: Buffer.from('overwritten') } as AssetFile
+    })
+    expect(storage.dataByKey.get(cover!.key)?.toString()).toBe('foreign.jpg')
+  })
+
   it('loads and signs the files of wildcard data paths', async () => {
     const file = await upload('signed-nested.jpg')
     const page = await Page.query().insertAndFetch({
