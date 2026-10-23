@@ -65,7 +65,9 @@ export default {
 
     & + .dito-button {
       margin-left: -1px;
-    } // Don't cover the focused border of buttons:
+    }
+
+    // Don't cover the focused border of buttons:
     &:focus {
       z-index: 1;
     }

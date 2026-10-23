@@ -102,9 +102,9 @@
 
       padding: $padding 0 $padding $padding;
     }
-    // Variants of list styles: separators and alternate colors.
   }
 
+  // Variants of list styles: separators and alternate colors.
   &--separators {
     > tbody > tr + tr,
     > tbody:not(:empty) + tfoot > tr {
@@ -129,18 +129,18 @@
       > tr > td {
         background: $color-white;
       }
-      // Add top/top-left/top-right borders to the thead cells, using the special
-      // convention that they're added to the first element inside them instead of
-      // the cell itself, so buttons can keep the border themselves and display
-      // focus nicely.
     }
   }
 
+  // Add top/top-left/top-right borders to the thead cells, using the special
+  // convention that they're added to the first element inside them instead of
+  // the cell itself, so buttons can keep the border themselves and display
+  // focus nicely.
   > thead > tr > th {
-    // Use `:not(:focus)` to avoid overriding button focus border styling.
     > * {
       box-sizing: content-box;
 
+      // Use `:not(:focus)` to avoid overriding button focus border styling.
       &:not(:focus) {
         @include table-border;
       }
@@ -165,10 +165,10 @@
       &:focus {
         z-index: 1;
       }
-      // Add left/right borders to the normal tbody cells.
     }
   }
 
+  // Add left/right borders to the normal tbody cells.
   > tbody > tr > td {
     border: 0;
     @include table-border;
@@ -180,10 +180,10 @@
     &:last-child {
       @include table-border-right;
     }
-    // If there is no thead, add top/top-left/top-right borders borders to the
-    // first row of the tbody cells.
   }
 
+  // If there is no thead, add top/top-left/top-right borders to the first row
+  // of the tbody cells.
   > tbody:first-child > tr:first-child > td,
   /* Use :first-child to exclude situation where there's a thead and empty tbody*/
   > tbody:first-child:empty + tfoot > tr > td {
@@ -196,10 +196,10 @@
     &:last-child {
       @include table-border-top-right;
     }
-    // If there is no toot, add top/top-left/top-right borders borders to the
-    // first row of the tbody cells.
   }
 
+  // If there is no tfoot, add bottom/bottom-left/bottom-right borders to the
+  // last row of the tbody cells.
   > tbody:last-child > tr:last-child > td {
     @include table-border-bottom;
 
@@ -210,9 +210,9 @@
     &:last-child {
       @include table-border-bottom-right;
     }
-    // Add bottom/bottom-left/bottom-right borders to the thead cells.
   }
 
+  // Add bottom/bottom-left/bottom-right borders to the tfoot cells.
   > tfoot > tr > td {
     border-width: 0;
     @include table-border;
