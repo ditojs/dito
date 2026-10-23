@@ -78,7 +78,7 @@ import { useOptions } from '../composables/useOptions.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 import VueMultiselect from 'vue-multiselect'
-import { isArray, isBoolean, isObject, isString } from '@ditojs/utils'
+import { isArray, isBoolean, isObject } from '@ditojs/utils'
 
 // @vue/component
 const DitoMultiselectType = {
@@ -132,10 +132,10 @@ const DitoMultiselectType = {
       optionValue,
       searchFilter,
       selectedValue,
-      selectedOption,
       isSelected,
       getValueForOption,
-      getOptionForValue
+      getOptionForValue,
+      getFallbackOption
     } = optionsField
     // `search` turns on searching, unless `searchable` is set:
     const searchable = computed(() =>
@@ -151,39 +151,27 @@ const DitoMultiselectType = {
       }
     }
 
-    // Values without options, like from searches, get an option that holds
-    // them as value and label. Related objects are their own options:
-    const getFallbackOption = value =>
-      isObject(value) || !isString(optionValue.value)
-        ? value
-        : {
-            [optionValue.value]: value,
-            ...(isString(optionLabel.value) && {
-              [optionLabel.value]: `${value}`
-            })
-          }
-
     const selectedOptions = computed({
       get() {
-        // Keep values without options visible. Taggable multiselects may have
-        // no options besides their values.
+        // Keep values without options visible, like ones from searches, once
+        // the options are loaded. Taggable multiselects may have no options
+        // besides their values.
         const values = value.value
+        const isShowingValues = (
+          hasOptions.value ||
+          taggable.value && !isLoadingOptions.value
+        )
+        const getOption = value => (
+          getOptionForValue(relate.value ? getValueForOption(value) : value) ||
+          getFallbackOption(value)
+        )
         return multiple.value
-          ? (
-              isArray(values) && (
-                hasOptions.value ||
-                taggable.value && !isLoadingOptions.value
-              )
-            )
-            ? values.map(
-                value => (
-                  getOptionForValue(
-                    relate.value ? getValueForOption(value) : value
-                  ) || getFallbackOption(value)
-                )
-              )
+          ? isShowingValues && isArray(values)
+            ? values.map(getOption)
             : []
-          : selectedOption.value
+          : isShowingValues && values != null
+            ? getOption(values)
+            : null
       },
 
       set(option) {

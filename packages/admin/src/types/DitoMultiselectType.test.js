@@ -209,6 +209,41 @@ describe('DitoMultiselectType', () => {
         findField('genre').find('.dito-options-edit-buttons').exists()
       ).toBe(false)
     })
+
+    it('displays single values without option', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          fields: { genre: { type: 'multiselect', options: genres } }
+        },
+        data: { genre: 'opera' }
+      })
+      expect(findField('genre').find('.multiselect__single').text()).toBe(
+        'opera'
+      )
+      expect(data.genre).toBe('opera')
+    })
+
+    it('displays single related values without option', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          fields: {
+            author: {
+              type: 'multiselect',
+              relate: true,
+              options: {
+                data: [{ id: 1, name: 'Jane Austen' }],
+                label: 'name'
+              }
+            }
+          }
+        },
+        data: { author: { id: 3, name: 'Bram Stoker' } }
+      })
+      expect(findField('author').find('.multiselect__single').text()).toBe(
+        'Bram Stoker'
+      )
+      expect(data.author).toEqual({ id: 3, name: 'Bram Stoker' })
+    })
   })
 
   describe('multiple values', () => {
@@ -559,7 +594,7 @@ describe('DitoMultiselectType', () => {
             type: 'multiselect',
             label: 'Author',
             relate: true,
-            // Single values are only displayed when they're among the options:
+            // Values are only displayed once there are options:
             options: {
               data: ({ item }) => (item.author ? [item.author] : []),
               label: 'name'

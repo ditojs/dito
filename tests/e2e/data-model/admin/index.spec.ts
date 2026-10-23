@@ -374,14 +374,18 @@ test.describe('data model', () => {
     url
   }) => {
     // `status` keeps the value without option, which its compute leaves as
-    // is, and selects no option:
+    // is, and shows it as unavailable:
     const article = await Article.query().insert({
       title: 'Old',
       status: 'archived'
     })
     await openArticle(page, url, article)
     await waitForDelayedOptions(page)
-    await expect(page.getByLabel('Status', { exact: true })).toHaveValue('')
+    const status = page.getByLabel('Status', { exact: true })
+    await expect(status).toHaveValue('archived')
+    await expect(status.locator('option:checked')).toHaveText(
+      'archived (unavailable)'
+    )
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(page).toHaveURL(/\/articles$/)
     await expect(getConfirmDialog(page)).toHaveCount(0)

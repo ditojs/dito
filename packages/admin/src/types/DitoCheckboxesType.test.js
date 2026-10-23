@@ -81,6 +81,17 @@ describe('DitoCheckboxesType', () => {
     expect(checked).toEqual([false, true, false])
   })
 
+  it('keeps values without option when checking others', async () => {
+    const { findField, data } = await mountSchema({
+      schema: {
+        fields: { genres: { type: 'checkboxes', options: genres } }
+      },
+      data: { genres: ['poetry', 'opera'] }
+    })
+    await findField('genres').findAll('input')[2].setValue(true)
+    expect(data.genres).toEqual(['poetry', 'opera', 'drama'])
+  })
+
   it('checks the checkboxes of the selected values', async () => {
     const { findField } = await mountSchema({
       schema: {

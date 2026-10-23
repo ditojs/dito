@@ -186,23 +186,13 @@ export function findOptionForValue(
   return findOption(options, isGrouped)
 }
 
-// Values without an option select `null`, unless there are no options yet:
-export function getSelectedValue(
-  settings: OptionsSettings,
-  value: any,
-  { hasOptions, findOption }: SelectedValueOptions
-) {
-  const { relateKey, optionValue } = settings
-  const convertValue = (value: any) => {
-    const val = relateKey ? getValueForOption(settings, value) : value
-    return hasOptions
-      ? !optionValue || findOption(val) !== undefined
-        ? val
-        : null
-      : value
-  }
+// Values without an option stay selected, for components to show them:
+export function getSelectedValue(settings: OptionsSettings, value: any) {
+  const { relateKey } = settings
+  const convertValue = (value: any) =>
+    relateKey ? getValueForOption(settings, value) : value
   return settings.multiple && isArray(value)
-    ? value.map(convertValue).filter(value => value !== null)
+    ? value.map(convertValue)
     : convertValue(value)
 }
 
@@ -210,7 +200,7 @@ export function getValueForSelectedValue(
   settings: OptionsSettings,
   selectedValue: any,
   value: any,
-  { findOption }: Pick<SelectedValueOptions, 'findOption'>
+  { findOption }: { findOption(value: any): any }
 ) {
   const { relateKey } = settings
   const convertValue = (selected: any) => {
@@ -250,11 +240,6 @@ export function getReplacedValue(
     findOptionForValue(settings, options, getValueForOption(settings, value))
   )
   return option ? { value: option } : null
-}
-
-interface SelectedValueOptions {
-  hasOptions: boolean
-  findOption(value: any): any
 }
 
 function getLabelSettings(schema: Schema, options: any[], context: Context) {
