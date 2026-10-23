@@ -341,6 +341,27 @@ describe('useDitoForm()', () => {
     expect(form.itemLabel).toBe('Stool')
   })
 
+  it('marks views with its component dirty and asks before leaving them', async () => {
+    const confirm = stubConfirm(false)
+    const { admin } = await mountProductPage({
+      path: '/catalog',
+      views: {
+        catalog: {
+          type: 'view',
+          label: 'Catalog',
+          fields: { product: { type: 'component', component: ProductPage } }
+        }
+      }
+    })
+    const page = admin.wrapper.find('.product-page')
+    const getTrailText = () => admin.wrapper.find('.dito-trail__text')
+    await enterValue(page.find('input[name="name"]'), 'Stool')
+    expect(getTrailText().classes()).toContain('dito-trail__text--dirty')
+    await admin.navigate('/books')
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(admin.router.currentRoute.value.path).toBe('/catalog')
+  })
+
   it('warns before unloading the page with unsaved changes', async () => {
     const { page } = await mountProductPage()
     expect(isUnloadPrevented()).toBe(false)

@@ -136,7 +136,7 @@ export function useRouteContainer({
     resourceContext: resourceContext ?? parent?.resourceContext ?? null,
 
     // Pages have no data of their own, their routes edit the data of the form
-    // of their component:
+    // of their component. Other routes only take its changes and item:
     get dataContext() {
       const { componentForm } = routeContext
       return componentForm && isPage(options.sourceSchema())
