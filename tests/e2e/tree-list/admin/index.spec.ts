@@ -175,7 +175,7 @@ test.describe('tree list', () => {
     await expect(page).toHaveURL(/\/0$/)
   })
 
-  test('shows the properties and children of objects', async ({
+  test('shows the details and children of objects', async ({
     page,
     url
   }) => {
@@ -186,7 +186,9 @@ test.describe('tree list', () => {
     const catalog = page.locator('.dito-tree-list').filter({
       has: page.locator('.dito-tree-item__label', { hasText: 'History' })
     })
-    await expect(catalog.locator('.dito-properties')).toContainText('Main')
+    await expect(
+      catalog.locator('.dito-tree-item__details')
+    ).toContainText('Main')
     await expect(getTreeHeader(page, 'History')).toBeVisible()
   })
 })

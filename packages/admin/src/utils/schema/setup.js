@@ -378,7 +378,7 @@ function assertSupportedSchemaKeys(schema, name) {
   }
 }
 
-// Types also check the keys of 3.x that only they removed:
+// Types also check the keys that only they removed:
 export function assertRemovedSchemaKeys(
   schema,
   name,

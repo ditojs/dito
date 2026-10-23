@@ -30,8 +30,8 @@
           :context="context"
         )
         .dito-tree-item__info(
-          v-if="details"
-        ) {{ details }}
+          v-if="info"
+        ) {{ info }}
     .dito-tree-item__leaf(
       v-else
     )
@@ -56,21 +56,21 @@
       @delete="$emit('delete')"
       @move="delta => $emit('move', delta)"
     )
-  table.dito-properties(
-    v-if="properties"
+  table.dito-tree-item__details(
+    v-if="details"
     v-show="opened"
   )
     tr(
-      v-for="property in properties"
+      v-for="detail in details"
     )
       td
         DitoLabel(
-          v-if="property.label !== false"
-          :label="getLabel(property)"
+          v-if="detail.label !== false"
+          :label="getLabel(detail)"
           :context="context"
         )
       DitoTableCell(
-        :cell="property"
+        :cell="detail"
         :schema="schema"
         :dataPath="dataPath"
         :data="data"
@@ -198,7 +198,7 @@ export default {
       const name = childrenSchema.value?.name
       return name && props.data[name]
     })
-    const properties = computed(() => getNamedSchemas(props.schema.properties))
+    const details = computed(() => getNamedSchemas(props.schema.details))
     const numChildren = computed(() => childrenList.value?.length || 0)
     const editable = computed(
       () => (
@@ -232,7 +232,7 @@ export default {
       ...useSortable(),
       getLabel,
       opened,
-      properties,
+      details,
       childrenSchema,
       childrenList,
       editable,
@@ -250,10 +250,10 @@ export default {
         services.dataContext.model.hasErrorsWithin(props.data)
       ),
       numEntries: computed(
-        () => Object.keys(properties.value || {}).length + numChildren.value
+        () => Object.keys(details.value || {}).length + numChildren.value
       ),
       ariaLabel: computed(() => getText(props.label)),
-      details: computed(() => {
+      info: computed(() => {
         const count = numChildren.value
         return count && `${count} ${count === 1 ? 'item' : 'items'}`
       }),
@@ -466,7 +466,7 @@ export default {
     }
   }
 
-  .dito-properties {
+  #{$self}__details {
     display: block;
     margin-left: $chevron-indent;
 

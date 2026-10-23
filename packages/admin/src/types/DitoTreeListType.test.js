@@ -158,6 +158,13 @@ describe('DitoTreeListType', () => {
       'subpages',
       'collapsed: false',
       schema => schema.fields.pages.children
+    ],
+    [
+      'properties',
+      'their children',
+      'subpages',
+      'details',
+      schema => schema.fields.pages.children
     ]
   ])('rejects `%s` in %s', async (key, _, name, replacement, getTree) => {
     const schema = { type: 'view', ...createSiteSchema() }
@@ -181,30 +188,30 @@ describe('DitoTreeListType', () => {
     ).rejects.toThrow(`Unsupported schema key 'data' in 'order'`)
   })
 
-  it('shows the `properties` of items without children', async () => {
+  it('shows the `details` of items without children', async () => {
     const schema = createSiteSchema()
-    schema.fields.pages.children.properties = {
+    schema.fields.pages.children.details = {
       slug: {
         label: 'Slug',
         render: ({ item }) => item.title.toLowerCase()
       }
     }
     const { findField } = await mountForm({ schema, data: site })
-    const getProperties = () =>
+    const getDetails = () =>
       findField('pages')
-        .findAll('.dito-properties')
+        .findAll('.dito-tree-item__details')
         .filter(table => table.isVisible())
         .map(table => table.text())
     const findBranch = label =>
       findButton(findField('pages'), label, '.dito-tree-item__branch')
     await findBranch('About').trigger('click')
     await flushPromises()
-    expect(getProperties()).toEqual([])
+    expect(getDetails()).toEqual([])
     const team = findBranch('Team')
     expect(team.attributes('aria-expanded')).toBe('false')
     await team.trigger('click')
     await flushPromises()
-    expect(getProperties()).toEqual([expect.stringContaining('team')])
+    expect(getDetails()).toEqual([expect.stringContaining('team')])
   })
 
   it('renders the prefix and suffix of item labels', async () => {
@@ -439,28 +446,28 @@ describe('DitoTreeListType', () => {
     expect(hasForm('pages')).toBe(false)
   })
 
-  it('passes the data path of the value to `render()` of properties', async () => {
+  it('passes the data path of the value to `render()` of details', async () => {
     const schema = createSiteSchema()
-    schema.fields.pages.children.properties = {
+    schema.fields.pages.children.details = {
       slug: { render: ({ dataPath }) => dataPath }
     }
     schema.fields.pages.children.collapsed = false
     const { findField } = await mountForm({ schema, data: site })
     expect(
       findField('pages')
-        .findAll('.dito-properties td:last-child')
+        .findAll('.dito-tree-item__details td:last-child')
         .map(cell => cell.text())
     ).toEqual(['pages/0/subpages/0/slug', 'pages/0/subpages/1/slug'])
   })
 
-  it('shows loaded dates in properties as their type formats them', async () => {
+  it('shows loaded dates in details as their type formats them', async () => {
     const schema = createSiteSchema()
     Object.assign(schema.fields.pages.children, {
       form: {
         ...pageForm,
         fields: { ...pageForm.fields, published: { type: 'date' } }
       },
-      properties: { published: {} },
+      details: { published: {} },
       collapsed: false
     })
     const { findField } = await mountForm({
@@ -475,7 +482,7 @@ describe('DitoTreeListType', () => {
       }
     })
     expect(
-      findField('pages').find('.dito-properties td:last-child').text()
+      findField('pages').find('.dito-tree-item__details td:last-child').text()
     ).toBe('June 1, 2026')
   })
 

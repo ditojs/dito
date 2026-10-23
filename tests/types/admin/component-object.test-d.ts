@@ -83,4 +83,24 @@ describe('TreeListSchema', () => {
       expanded: true
     })
   })
+
+  it('accepts details with typed values, but without sorting', () => {
+    assertType<TreeListSchema<Entry>>({
+      type: 'tree-list',
+      details: {
+        title: {
+          label: 'Title',
+          render({ value }) {
+            expectTypeOf(value).toBeString()
+            return value
+          }
+        }
+      }
+    })
+    assertType<TreeListSchema<Entry>>({
+      type: 'tree-list',
+      // @ts-expect-error: Details aren't sortable.
+      details: { title: { sortable: true } }
+    })
+  })
 })

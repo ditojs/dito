@@ -1052,21 +1052,31 @@ chapters: {
 
 #### Columns
 
-`columns` maps keys of the items to `ColumnSchema`s, or lists the keys.
+`columns` maps keys of the items to `ColumnSchema`s, or lists the keys. A
+`ColumnSchema` is a [`DisplaySchema`](#displayschema) with the options to sort:
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
-| `label` | `TextOrHtml` | the labelized key | The column header. |
 | `sortable` | `boolean` | `false` | Makes the column sortable, by the value. |
 | `defaultSort` | `true \| 'asc' \| 'desc'` | | Sorts by this column by default, `true` meaning `'asc'`. The first column with it wins. |
-| `render` | `SchemaValueCallback<TextOrHtml \| null>` | | Returns the text or `html` of the cell, see [Text and HTML](#text-and-html). Receives `value` in the context. |
-| `component` | `Resolvable<VueComponent>` | | A Vue component that renders the cell. |
-| `class` | `string` | | CSS classes of the cells. |
-| `style` | `string \| object` | | Styles of the cells. |
-| `if` | `SchemaValue<boolean>` | `true` | Shows the column only if `true`. |
 
 Cells and headers get the classes `dito-cell--{name}` and
 `dito-column--{name}`, with the name hyphenated.
+
+#### DisplaySchema
+
+`DisplaySchema` describes how a value of an item is displayed, read-only: in
+the cells of the [columns](#columns) of lists, and in the `details` of
+[tree items](#tree-list-tree-object).
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `label` | `TextOrHtml` | the labelized key | The label of the value, the header of columns. |
+| `render` | `SchemaValueCallback<TextOrHtml \| null>` | | Returns the text or `html` of the value, see [Text and HTML](#text-and-html). Receives `value` in the context. |
+| `component` | `Resolvable<VueComponent>` | | A Vue component that renders the value. |
+| `class` | `string` | | CSS classes of the value's cell. |
+| `style` | `string \| object` | | Styles of the value's cell. |
+| `if` | `SchemaValue<boolean>` | `true` | Shows the value only if `true`. |
 
 #### Filters
 
@@ -1137,13 +1147,13 @@ or `buttons`. They add:
 | ------ | ---- | ------- | ----------- |
 | `type` | `'tree-list' \| 'tree-object'` | | Required. |
 | `children` | `TreeListSchema & { name: string }` | | The schema of each item's children; `name` is the key of the children array. It nests to any depth. |
-| `properties` | `Columns` | | Values shown for each item, like the columns of lists. |
-| `collapsed` | `SchemaValue<boolean>` | `true` | Whether items hide their children and properties initially. A callback is called for each item. Items on the way to the open form are always expanded. |
+| `details` | `Details` | | Values shown under each item as `label: value` rows, opened with its toggle: keys of the item mapped to [`DisplaySchema`](#displayschema)s. |
+| `collapsed` | `SchemaValue<boolean>` | `true` | Whether items hide their children and details initially. A callback is called for each item. Items on the way to the open form are always expanded. |
 | `onToggle` | `ToggleEventHandler` | | Called when an item is collapsed or expanded, with `context.collapsed`. The tree's handler fires for its root items; set it on `children` for the items of the level below. |
 
-`open` and `expanded` throw, naming `collapsed`. `draggable`, `editable`,
-`deletable`, `itemLabel` and `form` apply per level, on the tree and on
-`children`.
+`open` and `expanded` throw, naming `collapsed`, and `properties` throws,
+naming `details`. `draggable`, `editable`, `deletable`, `itemLabel` and `form`
+apply per level, on the tree and on `children`.
 
 ```js
 genres: {
