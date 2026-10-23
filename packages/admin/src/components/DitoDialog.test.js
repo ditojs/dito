@@ -150,6 +150,14 @@ describe('DitoDialog', () => {
     }
   })
 
+  it('shows no buttons without any that render', async () => {
+    const hidden = { type: 'button', text: 'Hidden', if: () => false }
+    for (const buttons of [{}, { hidden }]) {
+      const { dialog } = await showDialog({ fields, buttons })
+      expect(dialog.find('.dito-dialog__buttons').exists()).toBe(false)
+    }
+  })
+
   it('shows dialogs without components', async () => {
     const { dialog, promise } = await showDialog({ buttons: { cancel: {} } })
     await dialog.find('.dito-button').trigger('click')
