@@ -338,6 +338,63 @@ describe('DitoUploadType', () => {
     )
   })
 
+  it('keeps the stored file when a single upload fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { getComponent, data } = await mountForm({
+      schema: { fields: { file: { type: 'upload', extensions: ['pdf'] } } },
+      data: { file: scan }
+    })
+    const upload = getComponent('file')
+    const uploadFile = createUploadFile(cover)
+    upload.onInputFile(uploadFile, null)
+    expect(data.file).toMatchObject({ name: 'cover.png' })
+    upload.onInputFile({ ...uploadFile, error: 'extension' }, uploadFile)
+    await flushPromises()
+    expect(data.file).toEqual(scan)
+  })
+
+  it('keeps the stored file when a single upload that replaces another fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { getComponent, data } = await mountForm({
+      schema: { fields: { file: { type: 'upload' } } },
+      data: { file: scan }
+    })
+    const upload = getComponent('file')
+    const firstFile = createUploadFile(cover)
+    const secondFile = createUploadFile(cover, 'upload-2')
+    upload.onInputFile(firstFile, null)
+    // The upload component removes the running upload of single files:
+    upload.onInputFile(undefined, firstFile)
+    upload.onInputFile(secondFile, null)
+    upload.onInputFile({ ...secondFile, error: 'network' }, secondFile)
+    await flushPromises()
+    expect(data.file).toEqual(scan)
+  })
+
+  it('passes the uploaded file to `onChange()`', async () => {
+    const onChange = vi.fn()
+    const { getComponent } = await mountForm({
+      schema: { fields: { file: { type: 'upload', onChange } } },
+      data: { file: scan }
+    })
+    const upload = getComponent('file')
+    const uploadFile = createUploadFile(cover)
+    upload.onInputFile(uploadFile, null)
+    upload.onInputFile(
+      {
+        ...uploadFile,
+        success: true,
+        response: [{ id: 'stored-1', ...cover }]
+      },
+      uploadFile
+    )
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
+    expect(onChange.mock.calls[0][0].value).toMatchObject({
+      id: 'stored-1',
+      ...cover
+    })
+  })
+
   describe('submitting while files upload', () => {
     // Clicks the submit button while a file uploads, without waiting for the
     // form to settle, as it waits for the upload.
