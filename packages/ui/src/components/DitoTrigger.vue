@@ -214,7 +214,7 @@ export default {
     },
 
     isPopupFocused() {
-      return !!this.$refs.popup?.contains(document.activeElement)
+      return !!this.$refs.popup?.matches(':focus-within')
     },
 
     // Returns whether `element` is part of the trigger, its target or the
