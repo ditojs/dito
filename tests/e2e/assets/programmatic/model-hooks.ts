@@ -4,6 +4,7 @@ import {
   uploadViaApi,
   Asset
 } from '../fixtures.js'
+import type { AssetFile, AssetFileObject } from '@ditojs/server'
 import { AssetWidget } from '../models/AssetWidget.js'
 
 test.describe('model hooks', () => {
@@ -46,19 +47,14 @@ test.describe('model hooks', () => {
     const storage = AssetWidget.app!.getStorage('test')
     const originalData = await storage.readFile(fileObj)
 
-    // Re-fetch the widget to get a signed file
-    // object ($formatJson adds signatures when
-    // serializing for API/JSON output).
+    // Server code modifies the loaded files, as the data of files sent by
+    // clients is ignored (as data URI, so it is parsed by AssetFile set data):
     const fetched = await AssetWidget.query().findById(id)
-    const signedFiles = fetched!.$toJson().files
-
-    // Patch with modified file data (as data URI
-    // so it is parsed by AssetFile set data)
-    const newContent = 'modified content'
-    const newData = Buffer.from(newContent)
-    const dataUri = `data:text/plain;base64,${newData.toString('base64')}`
-    const modifiedFile = { ...signedFiles[0], data: dataUri }
-    await AssetWidget.query().patchAndFetchById(id, { files: [modifiedFile] })
+    // Loaded files are `AssetFile` instances:
+    const file = fetched!.files[0] as AssetFileObject & AssetFile
+    const newData = Buffer.from('modified content')
+    file.data = `data:text/plain;base64,${newData.toString('base64')}`
+    await AssetWidget.query().patchAndFetchById(id, { files: [file] })
 
     // Read updated file from storage
     const updatedData = await storage.readFile(fileObj)

@@ -4490,6 +4490,8 @@ export class AssetFile {
   url?: string
   /** The file data buffer. */
   get data(): Buffer | null
+  /** Sets the data from a buffer, a string or a data URI. */
+  set data(data: string | Buffer)
   /** The storage instance this file belongs to. */
   get storage(): Storage | null
   /** The file system path, if stored on disk. */
