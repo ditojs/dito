@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { mixin, asArray, isString } from '@ditojs/utils'
-import { AuthenticationError } from '../errors/index.js'
+import { AuthenticationError, ValidationError } from '../errors/index.js'
 import {
   getPasswordFingerprint,
   getUserIdentifier
@@ -102,6 +102,23 @@ export const UserMixin = mixin(
             passport.passwordFingerprint = getPasswordFingerprint(hash)
           }
         }
+      }
+
+      // @override
+      $parseJson(json, options = {}) {
+        const { trusted = false } = options
+        // Hashes are only set through the password property, or come from the
+        // database:
+        if (!trusted && json.hash !== undefined) {
+          const { passwordProperty } = this.constructor.definition.options
+          throw new ValidationError({
+            type: 'BodyValidation',
+            message: `Unable to change 'hash', change '${
+              passwordProperty
+            }' instead.`
+          })
+        }
+        return super.$parseJson(json, options)
       }
 
       // @override

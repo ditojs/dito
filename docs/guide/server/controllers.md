@@ -868,6 +868,10 @@ username, as password resets go to it, while `post` creates users with a
 password without it. The admin asks to confirm the access whenever an action
 answers `confirmationRequired`, and then repeats the action.
 
+Only users controllers check this: other controllers, e.g. relation
+controllers of user relations, and graphs of other models that contain users
+set passwords without confirmed access, so don't let them accept passwords.
+
 Protect other changes the same way with
 [`checkConfirmedAccess(ctx)`](../../api/server/controllers.md#checkconfirmedaccess),
 e.g. for the `email` that the app sends the password resets to, or in the

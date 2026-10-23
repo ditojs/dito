@@ -15,6 +15,7 @@ import {
 class Shelf extends TimestampedModel {
   declare id: number
   declare label: string
+  declare curatorId: number | null
   declare createdAt: Date
   declare updatedAt: Date
 
@@ -22,6 +23,18 @@ class Shelf extends TimestampedModel {
     label: {
       type: 'string',
       required: true
+    },
+    curatorId: {
+      type: 'integer',
+      nullable: true
+    }
+  }
+
+  static override relations = {
+    curator: {
+      relation: 'belongsTo' as const,
+      from: 'Shelf.curatorId',
+      to: 'Librarian.id'
     }
   }
 }
@@ -194,6 +207,44 @@ describe('UserMixin', () => {
         alice.$query().patch({ password: '' } as any)
       ).rejects.toThrow(ValidationError)
       expect(await alice.$verifyPassword('open sesame')).toBe(true)
+    })
+
+    it('rejects hashes in the input of users', async () => {
+      // A real hash, of the password 'changed':
+      const { hash } = createLibrarian({
+        email: 'c@example.com',
+        password: 'changed'
+      })
+      const message = `Unable to change 'hash', change 'password' instead.`
+      expect(() => createLibrarian({ email: 'c@example.com', hash })).toThrow(
+        message
+      )
+      // Also in the graphs and relations of other models:
+      const shelf = await Shelf.query().insertAndFetch({
+        label: 'Poetry',
+        curatorId: alice.id
+      })
+      for (const write of [
+        async () =>
+          Shelf.query().insertGraph({
+            label: 'Prose',
+            curator: { email: 'c@example.com', hash }
+          } as any),
+        async () =>
+          Shelf.query().patchDitoGraph({
+            id: shelf.id,
+            curator: { id: alice.id, hash }
+          } as any),
+        async () => shelf.$relatedQuery('curator').patch({ hash } as any)
+      ]) {
+        await expect(write()).rejects.toThrow(message)
+      }
+      const stored = (await Librarian.query().findById(alice.id))!
+      expect(await stored.$verifyPassword('open sesame')).toBe(true)
+      expect(
+        await Librarian.query().findOne('email', 'c@example.com')
+      ).toBeUndefined()
+      await Shelf.query().delete()
     })
 
     it('creates a new hash when setting a new password', () => {
