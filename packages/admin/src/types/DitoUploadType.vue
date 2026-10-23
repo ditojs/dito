@@ -218,6 +218,8 @@ const DitoUploadType = {
     const upload = useTemplateRef('upload')
     const uploads = ref([])
     let removeDropTarget = null
+    // The file that single uploads replace, restored when they fail:
+    let replacedFile = null
     // Settle the data model's pending loads of running uploads:
     const settleUploadById = new Map()
 
@@ -512,6 +514,10 @@ const DitoUploadType = {
       onInputFile(newFile, oldFile) {
         if (newFile && !oldFile) {
           const { id, name, size } = newFile
+          // Uploads that replace a running upload restore the same file:
+          if (!multiple.value && value.value?.upload?.success !== false) {
+            replacedFile = value.value
+          }
           addFile({ id, name, size, upload: { id, success: false } })
           // Submitting waits for the upload, which writes the stored file:
           const { promise, resolve } = Promise.withResolvers()
@@ -520,7 +526,6 @@ const DitoUploadType = {
         } else if (newFile && oldFile) {
           const { success, error } = newFile
           if (success) {
-            onChange()
             const file = newFile.response[0]
             if (file) {
               file.upload = { id: newFile.id, success: true }
@@ -528,9 +533,10 @@ const DitoUploadType = {
             } else {
               removeFile(newFile)
             }
+            onChange()
             settleUpload(newFile.id)
           } else if (error) {
-            removeFile(newFile)
+            replaceFile(newFile, multiple.value ? null : replacedFile)
             settleUpload(newFile.id)
             const text = (
               {
