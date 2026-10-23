@@ -455,14 +455,8 @@ export default {
       props.scrollable &&
       getSchemaValue('wide', { type: Boolean, default: false })
     )
-    if (isWidePage) {
-      // Views stay mounted while the forms of their items show, so they only
-      // make the page wide while they're active:
-      watch(
-        () => props.active,
-        active => adminContext.setWideSchema(context, active),
-        { immediate: true }
-      )
+    if (isWidePage && routeContext) {
+      routeContext.isWide = true
     }
 
     onMounted(() => {
@@ -481,9 +475,6 @@ export default {
     onUnmounted(() => {
       emitEvent('destroy')
       unregisterUi()
-      if (isWidePage) {
-        adminContext.setWideSchema(context, false)
-      }
     })
 
     return {

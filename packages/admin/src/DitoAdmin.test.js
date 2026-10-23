@@ -75,14 +75,6 @@ describe('DitoAdmin', () => {
     expect(admin.context.views).toEqual({})
   })
 
-  it('renders the page class of the admin context', async () => {
-    const admin = await mountAdmin({ views: {} })
-    expect(admin.context.pageClass).toBe(null)
-    admin.context.setWideSchema({}, true)
-    await admin.navigate('/')
-    expect(admin.wrapper.find('.dito-page--wide').exists()).toBe(true)
-  })
-
   it('shows confirmations, prompts and alerts through its context', async () => {
     const { context, wrapper } = await mountAdmin({ views: {} })
     // Removed dialogs stay until their transitions end, so use the last one:
