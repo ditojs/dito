@@ -269,7 +269,9 @@ describe('useOptions()', () => {
       await settle()
       // New options get temporary ids to be referenced by:
       expect(newAuthor.id).toMatch(/^@\d+$/)
-      expect(mainAuthor.selectedOption).toBe(newAuthor)
+      expect(mainAuthor.getOptionForValue(mainAuthor.selectedValue)).toBe(
+        newAuthor
+      )
       const { serializedItem } = schemaComponent.context
       // The relation references the new author by the id of the reference:
       const reference = serializedItem.mainAuthor['#ref']

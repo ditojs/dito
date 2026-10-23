@@ -8,6 +8,7 @@ import {
   debounceAsync,
   isArray,
   isFunction,
+  isObject,
   isString
 } from '@ditojs/utils'
 import { getMultipleValue } from '../utils/schema/data.js'
@@ -124,12 +125,23 @@ export function useOptions(
   const getOptionForValue = (value: any) =>
     settings.value.optionValue ? findOption(value) : value
 
+  // Values without options get an option that holds them as value and label.
+  // Related objects are their own options:
+  const getFallbackOption = (value: any) => {
+    const { optionValue } = settings.value
+    return isObject(value) || !isString(optionValue)
+      ? value
+      : {
+          [optionValue]: value,
+          ...(isString(optionLabel.value) && {
+            [optionLabel.value]: `${value}`
+          })
+        }
+  }
+
   const selectedValue = computed({
     get() {
-      return getSelectedValue(settings.value, value.value, {
-        hasOptions: hasOptions.value,
-        findOption
-      })
+      return getSelectedValue(settings.value, value.value)
     },
 
     set(selectedValue) {
@@ -194,13 +206,13 @@ export function useOptions(
 
     selectedValue,
     isSelected,
-    selectedOption: computed(() => getOptionForValue(selectedValue.value)),
 
     getValueForOption(option: any) {
       return getValueForOption(settings.value, option)
     },
 
     getOptionForValue,
+    getFallbackOption,
     findOptionForValue: findOption,
 
     getLabelForOption(option: any) {

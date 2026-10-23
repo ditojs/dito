@@ -243,8 +243,11 @@ describe('DitoSelectType', () => {
       expect(getOptions(findField('city'))).toEqual([['bsl', 'Basel']])
       await findField('country').find('select').setValue('fr')
       await settle()
-      expect(getOptions(findField('city'))).toEqual([['lyo', 'Lyon']])
       // The city of the previous country isn't an option anymore, but stays:
+      expect(getOptions(findField('city'))).toEqual([
+        ['bsl', 'bsl (unavailable)'],
+        ['lyo', 'Lyon']
+      ])
       expect(data.city).toBe('bsl')
       expect(loadCities).toHaveBeenCalledTimes(2)
     })
@@ -284,6 +287,66 @@ describe('DitoSelectType', () => {
       expect(select.options[select.selectedIndex].text).toBe(
         'Basel (unavailable)'
       )
+    })
+
+    it('keeps values without option of option objects and shows them as unavailable', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          fields: {
+            format: {
+              type: 'select',
+              options: [
+                { label: 'Hardcover', value: 'hardcover' },
+                { label: 'Paperback', value: 'paperback' }
+              ]
+            }
+          }
+        },
+        data: { format: 'ebook' }
+      })
+      const field = findField('format')
+      expect(
+        field
+          .findAll('option')
+          .map(option => [option.text(), option.element.disabled])
+      ).toEqual([
+        ['ebook (unavailable)', true],
+        ['Hardcover', false],
+        ['Paperback', false]
+      ])
+      const select = field.find('select').element
+      expect(select.options[select.selectedIndex].text).toBe(
+        'ebook (unavailable)'
+      )
+      expect(data.format).toBe('ebook')
+    })
+
+    it('keeps related values without option and shows them as unavailable', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          fields: {
+            author: {
+              type: 'select',
+              relate: true,
+              options: {
+                data: [{ id: 1, name: 'Jane Austen' }],
+                label: 'name'
+              }
+            }
+          }
+        },
+        data: { author: { id: 3, name: 'Bram Stoker' } }
+      })
+      const field = findField('author')
+      expect(field.findAll('option').map(option => option.text())).toEqual([
+        'Bram Stoker (unavailable)',
+        'Jane Austen'
+      ])
+      const select = field.find('select').element
+      expect(select.options[select.selectedIndex].text).toBe(
+        'Bram Stoker (unavailable)'
+      )
+      expect(data.author).toEqual({ id: 3, name: 'Bram Stoker' })
     })
 
     it('keeps values missing from the options when saving other values', async () => {

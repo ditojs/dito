@@ -25,13 +25,13 @@
         disabled
         hidden
       ) {{ placeholder }}
-      //- Plain values whose option disappeared are kept and shown as
-      //- unavailable, rather than cleared without the user noticing:
+      //- Values whose option disappeared are kept and shown as unavailable,
+      //- rather than cleared without the user noticing:
       option(
         v-if="shouldShowUnavailableValue"
         :value="selectedValue"
         disabled
-      ) {{ getLabelForOption(selectedValue) }} (unavailable)
+      ) {{ getLabelForOption(getFallbackOption(value)) }} (unavailable)
       template(
         v-for="option in options"
       )
@@ -97,8 +97,7 @@ const DitoSelectType = {
         () => !!field.placeholder.value && selectedValue.value == null
       ),
 
-      // Only plain values stay when their option disappears, see
-      // `getReplacedValue()`. The select matches objects by deep equality.
+      // The select matches object values by deep equality, not by option:
       shouldShowUnavailableValue: computed(() => {
         const selected = selectedValue.value
         return (
