@@ -397,6 +397,23 @@ describe('DitoCustomField', () => {
     expect(form.item.code).toBe('XYZ')
   })
 
+  it('renders its slot in an element with the attributes of the field', async () => {
+    const { wrapper } = await mountCustomFieldPage()
+    const container = getContainer(wrapper, 'Code')
+    const component = container.find('.dito-component--fill')
+    expect(component.find('input.custom-code').exists()).toBe(true)
+    // The label points to the element of the field:
+    expect(component.attributes('id')).toBe(
+      container.find('label').attributes('for')
+    )
+    await enterValue(component.find('input'), 'TOO-LONG-CODE')
+    await component.find('input').trigger('blur')
+    expect(component.attributes('aria-invalid')).toBe('true')
+    expect(component.attributes('aria-describedby')).toBe(
+      container.find('.dito-errors').attributes('id')
+    )
+  })
+
   it('reads back the values that its slot writes right away', async () => {
     const { wrapper } = await mountCustomFieldPage()
     const { form } = wrapper.findComponent(CustomFieldPage).vm
