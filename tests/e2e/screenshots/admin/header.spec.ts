@@ -46,10 +46,10 @@ test.describe('header', () => {
       const panel = page.getByText('Owner: Ada')
       await trackAccountEdges(page)
       await toggle.click()
-      await expect(page.locator('.dito-root--sliding-sidebar')).toHaveCount(0)
+      await expect(page.locator('.dito-page--sliding-sidebar')).toHaveCount(0)
       await expect(panel).toBeVisible({ visible: width < 1200 })
       await toggle.click()
-      await expect(page.locator('.dito-root--sliding-sidebar')).toHaveCount(0)
+      await expect(page.locator('.dito-page--sliding-sidebar')).toHaveCount(0)
       await expect(panel).toBeVisible({ visible: width >= 1200 })
       // A view without panels keeps the room of the hidden toggle:
       await page.getByRole('button', { name: 'test', exact: true }).click()

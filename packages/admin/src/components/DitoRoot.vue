@@ -1,7 +1,6 @@
 <template lang="pug">
 .dito-root(
   ref="root"
-  :class="rootClasses"
   :data-agent-browser="appState.agent.browser"
   :data-agent-platform="appState.agent.platform"
   :data-agent-version="appState.agent.versionNumber"
@@ -223,10 +222,6 @@ export default {
       // Everything behind the topmost dialog is inert, so that it can't be
       // selected, focused or clicked:
       topDialogKey: computed(() => Object.keys(dialogs).at(-1) ?? null),
-      rootClasses: computed(() => ({
-        'dito-root--overlay-sidebar': sidebar.isOverlay,
-        'dito-root--sliding-sidebar': sidebar.isSliding
-      })),
       pageClasses: computed(() => ({
         'dito-page--overlay-sidebar': sidebar.isOverlay,
         'dito-page--sliding-sidebar': sidebar.isSliding
