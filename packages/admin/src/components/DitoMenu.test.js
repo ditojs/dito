@@ -27,6 +27,18 @@ describe('DitoMenu', () => {
     await admin.navigate('/books-archive')
     expect(getActiveLabels(admin)).toEqual(['Archive'])
   })
+
+  it(`doesn't render items for hidden views`, async () => {
+    const admin = await mountAdmin({
+      views: {
+        ...views,
+        hidden: { type: 'view', label: 'Hidden', if: false, fields: {} }
+      }
+    })
+    await admin.navigate('/books')
+    const items = admin.wrapper.findAll('.dito-menu__item')
+    expect(items.map(item => item.text())).toEqual(['Books', 'Archive'])
+  })
 })
 
 describe('DitoMenu links', () => {
