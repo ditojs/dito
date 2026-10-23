@@ -466,7 +466,7 @@ function createTreeLevelSchema(name, { items, orderKey, idKey }, level) {
 }
 
 // The component of custom fields with a value, which passes the field to the
-// slot:
+// slot, in an element that receives the container's attributes:
 function createCustomFieldComponent(property, slots) {
   return {
     name: 'DitoCustomFieldContent',
@@ -501,7 +501,7 @@ function createCustomFieldComponent(property, slots) {
           return dataContext.model.validate(props.context.dataPath)
         }
       })
-      return () => slots.default?.(field)
+      return () => h('div', slots.default?.(field))
     }
   }
 }
