@@ -407,8 +407,9 @@ export default {
       if (newTab) {
         mountedTabs[newTab] = true
       }
-      if (props.scrollable) {
-        const element = content.value
+      // The route selects the tab before the content is mounted:
+      const element = props.scrollable ? content.value : null
+      if (element) {
         scrollPositions[oldTab] = element.scrollTop
         nextTick(() => {
           element.scrollTop = scrollPositions[newTab] ?? 0
