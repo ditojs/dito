@@ -12,7 +12,7 @@ function getSchemaCache(options, role) {
 
 // `role` is 'definition' for the top level of definitions, 'part' for the
 // items of `allOf`, which aren't closed on their own, and 'alternative' for the
-// items of `anyOf` and `oneOf`.
+// items of `anyOf` and `oneOf` whose references are closed at the outer level.
 export function convertSchema(
   schema,
   options = {},
@@ -180,7 +180,15 @@ function convertNestedSchemas(schema, jsonType, options, entry, role) {
   schema.prefixItems &&= convertSchema(schema.prefixItems, options, entry)
   schema.items &&= convertSchema(schema.items, options, entry)
 
-  // Handle nested allOf, anyOf, oneOf & co. fields
+  // Handle nested allOf, anyOf, oneOf & co. fields. References in `anyOf` and
+  // `oneOf` are closed on their own, except next to properties that they don't
+  // evaluate, or next to a discriminator, as Ajv only finds its tag in plain
+  // references:
+  const isClosedOutside = !!(
+    schema.discriminator ||
+    schema.properties ||
+    schema.$ref
+  )
   for (const key of ['allOf', 'anyOf', 'oneOf', 'not']) {
     if (key in schema) {
       schema[key] = convertSchema(
@@ -189,7 +197,7 @@ function convertNestedSchemas(schema, jsonType, options, entry, role) {
         entry,
         key === 'allOf'
           ? 'part'
-          : compositionKeys.includes(key)
+          : compositionKeys.includes(key) && isClosedOutside
             ? 'alternative'
             : null
       )
