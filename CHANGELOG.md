@@ -442,7 +442,7 @@ version, see the upgrade guides in `docs/`.
 
 ### Deprecations
 
-- **server:** Hook keys that name custom actions by their keys, e.g. `'before:member:get tech-doc-:format'`, keep working until 5.0 with a deprecation warning that names the new key.
+- **server:** Hook keys that name custom actions by their keys, e.g. `'before:member:get tech-doc-:format'`, keep working until 6.0 with a deprecation warning that names the new key.
 
 ## 4.4.0 (2026-10-14)
 
@@ -477,7 +477,7 @@ version, see the upgrade guides in `docs/`.
 ### Deprecations
 
 - **admin:** `context.nested` is internal: `value` is `undefined` when a context describes an item.
-- **admin:** `type: 'value'` replaces `type: 'computed'`, `'data'` and `'hidden'`, which keep working until 5.0 with a deprecation warning, and `ValueSchema` replaces `ComputedSchema`, `DataSchema` and `HiddenSchema`, which stay as deprecated aliases.
+- **admin:** `type: 'value'` replaces `type: 'computed'`, `'data'` and `'hidden'`, which keep working until 6.0 with a deprecation warning, and `ValueSchema` replaces `ComputedSchema`, `DataSchema` and `HiddenSchema`, which stay as deprecated aliases.
 
 ## 4.2.0 (2026-10-14)
 
@@ -518,7 +518,7 @@ version, see the upgrade guides in `docs/`.
 
 #### Events
 
-- **admin:** Declare handlers as `on…` properties, e.g. `onClick()`. `events: {}` still works with a deprecation warning until 5.0, but an `on…` handler of the same event in the same schema wins over it instead of both running. In development, dito warns about the ignored `events` entries.
+- **admin:** Declare handlers as `on…` properties, e.g. `onClick()`. `events: {}` still works with a deprecation warning until 6.0, but an `on…` handler of the same event in the same schema wins over it instead of both running. In development, dito warns about the ignored `events` entries.
 - **admin:** `events: { click() {} }` on the submit and cancel buttons of forms and the cancel button of dialogs replaced their default handler in 3.5, and is ignored now with a warning: move it to `onClick()`.
 - **admin:** An `onClick()` on the submit or cancel button of a form, or on the cancel button of a dialog, replaces the default handler instead of running next to it: call `context.submit()`, `context.closeForm()` or `context.closeDialog()` from it.
 - **admin:** Forms fire `onSuccess()` after saving, with `context.isCreating` telling new items apart, instead of `create` and `submit`. Nested forms fire `onApply()` when they apply their draft, where 3.5 fired `create` and `submit` too: move their `onSubmit()` to `onApply()`. `onCreate()`, `onSubmit()` and `create` or `submit` in `events` throw.

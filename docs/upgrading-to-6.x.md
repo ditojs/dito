@@ -4,10 +4,12 @@ This guide describes how to upgrade an app from Dito.js 5.x to 6.x.
 [`CHANGELOG.md`](../CHANGELOG.md) lists all changes.
 
 6.0 removes the names and forms that 4.x and 5.x deprecated, without aliases
-or warnings. Upgrade to the latest 5.x first and fix its deprecation warnings,
-which name each replacement. Three changes have no 5.x warning: `{ html }`,
-which 5.x supported without one, and the renames of `format` of colors to
-`colorFormat` and of dates to `formats`, whose old keys 6.0 ignores silently.
+or warnings. Upgrade to the latest 5.x first, with the changes of its
+[minor releases](upgrading-to-5.x.md#minor-releases), and fix its deprecation
+warnings, which name each replacement. Three changes have no 5.x warning:
+`{ html }`, which 5.x supported without one, and the renames of `format` of
+colors to `colorFormat` and of dates to `formats`, whose old keys 6.0 ignores
+silently.
 
 ## Admin
 
@@ -27,9 +29,12 @@ which 5.x supported without one, and the renames of `format` of colors to
 | `{ type: 'date', format: { date } }`                   | `{ type: 'date', formats: { date } }`               |
 
 - Custom types that return `min` or `max` from `getValidations()` need to
-  return `minimum` and `maximum`.
-- Setup no longer renames `components` and `component`: schemas need `fields`
-  and `field`, and the old keys are ignored silently.
+  return `minimum` and `maximum`, else they're ignored with a warning.
+- Setup no longer renames or reads the removed keys, and ignores them
+  silently: `components`, `component` of views, `min`, `max`, `rules` and
+  `events`.
+- `type: 'computed'`, `'data'` and `'hidden'` are unknown types, which throw
+  when they're rendered, or at setup with a `data` setting.
 
 ### HTML
 

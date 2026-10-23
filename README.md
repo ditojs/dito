@@ -102,11 +102,10 @@ Releases are versioned locally and published to npm by GitHub Actions:
 pnpm release patch # or minor, major
 ```
 
-This runs `lerna version`, which bumps the versions of the packages that
-changed since the last release, commits them as `vX.Y.Z`, tags the commit and
-pushes both. The pushed tag starts the
+This runs `lerna version`, which bumps the versions of all packages, commits
+them as `vX.Y.Z`, tags the commit and pushes both. The pushed tag starts the
 [Publish workflow](.github/workflows/publish.yml), which builds the packages and
-publishes the bumped ones through npm's trusted publishing, without npm tokens or
+publishes them through npm's trusted publishing, without npm tokens or
 logins. Only repository admins can create `v*` tags. It publishes only the
 versions that aren't on npm yet, so a release that failed partway is finished by
 rerunning it, or with `gh workflow run publish.yml -f tag=vX.Y.Z`. It then

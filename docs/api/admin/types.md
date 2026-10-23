@@ -119,7 +119,7 @@ See [Schemas](./schemas.md).
 | `SelectionSettings<$Item, $Option>` | The options of fields with options: `options`, `relate`, `search`. |
 | `SchemaOptions<$Item, $Option>` | The `options` option. |
 | `SchemaOptionsOption<$Value>` | One option: a value, or `{ label, value }`. |
-| `NumberSettings<$Item>` | The options of numbers, sliders and progress bars: `min`, `max`, `step`, … |
+| `NumberSettings<$Item>` | The options of numbers, sliders and progress bars: `minimum`, `maximum`, `step`, … |
 | `TextSettings<$Item>` | The `trim` option of text inputs and textareas. |
 | `AffixSettings<$Item>` | The `prefix` and `suffix` options. |
 | `SchemaAffix` | One prefix or suffix, see [Affixes](./schemas.md#affixes). |
@@ -193,7 +193,7 @@ defineType({
   defaultWidth: 'auto',
 
   getValidations({ schema }) {
-    return { range: [0, schema.max ?? 5] }
+    return { range: [0, schema.maximum ?? 5] }
   },
 
   getDisplayValue({ value }) {
@@ -204,7 +204,7 @@ defineType({
 
 ```js
 // In a schema:
-rating: { type: 'rating', max: 10, label: 'Rating' }
+rating: { type: 'rating', maximum: 10, label: 'Rating' }
 ```
 
 ### Members
