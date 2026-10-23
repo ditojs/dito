@@ -14,9 +14,9 @@
 <script>
 import { inject } from 'vue'
 import { notify as showNotification } from '@kyvg/vue3-notification'
-import { asArray, isString, escapeHtml } from '@ditojs/utils'
+import { asArray, isString, isHtml, escapeHtml } from '@ditojs/utils'
 import { adminContextKey } from '../utils/keys.ts'
-import { getHtml, getText } from '../utils/html.js'
+import { getText } from '../utils/html.js'
 
 // Detect opening tags of formatted text passed as plain strings:
 function isLikelyMarkup(paragraph) {
@@ -50,9 +50,16 @@ export default {
             'the `html` template of @ditojs/utils for formatted text.'
           )
         }
+        // Only line breaks of text become `<br>`, not those in HTML markup:
         const content = `<p>${
-          paragraphs.map(getHtml).join('</p> <p>')
-        }</p>`.replace(/\n|\r\n|\r/g, '<br>')
+          paragraphs
+            .map(paragraph =>
+              isHtml(paragraph)
+                ? paragraph.value
+                : escapeHtml(paragraph).replace(/\r\n|\r|\n/g, '<br>')
+            )
+            .join('</p> <p>')
+        }</p>`
         const log = (
           {
             warning: 'warn',

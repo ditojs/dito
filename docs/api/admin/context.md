@@ -979,7 +979,7 @@ of button and form events, calling it suppresses dito's own notification.
 | ---- | ---- | ----------- |
 | `options.type` | `'info' \| 'success' \| 'warning' \| 'error'` | Defaults to `'info'`. |
 | `options.title` | `string` | The heading. Defaults to a label for `type`. |
-| `options.text` | `TextOrHtml \| (TextOrHtml \| false \| null)[]` | Text or `html`, see [Text and HTML](./schemas.md#text-and-html). Each entry is a paragraph, newlines become `<br>`, `false` and `null` are skipped. |
+| `options.text` | `TextOrHtml \| (TextOrHtml \| false \| null)[]` | Text or `html`, see [Text and HTML](./schemas.md#text-and-html). Each entry is a paragraph, newlines in text become `<br>`, `false` and `null` are skipped. |
 | `options.error` | `unknown` | The original error, logged to the console for `type: 'error'`. |
 | `options.duration` | `number` | Milliseconds to show it, `0` for sticky. Defaults to a duration from the length of the content, see [`api.notifications`](./admin.md#apiconfig). |
 
