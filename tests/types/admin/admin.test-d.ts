@@ -148,7 +148,7 @@ describe('defineType()', () => {
     defineType({
       type: 'heading',
       component: {},
-      hasLabel: ({ nested }) => !nested,
+      hasLabel: ({ schema }) => !schema.label,
       ignoresMissingValue: true,
       treatsNullAsMissing: ({ schema }) => !!schema.nested,
       rendersLabel: true,

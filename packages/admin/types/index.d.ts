@@ -2102,13 +2102,6 @@ export interface AdminUser {
 
 export type SchemaContext<$Item = any> = {
   /**
-   * `true` when the data-path points to a value inside
-   * an item, `false` when it points to the item itself.
-   * @deprecated Internal. `value` is `undefined` when the
-   * context describes an item.
-   */
-  readonly nested: boolean
-  /**
    * The current value of the field, `undefined` in contexts of items,
    * e.g. in the events of forms and sections.
    */

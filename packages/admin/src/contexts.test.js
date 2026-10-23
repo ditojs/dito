@@ -43,8 +43,7 @@ function describeContext(context, items) {
     itemIndex: context.itemIndex,
     parentItem: getName(context.parentItem),
     parentItemDataPath: context.parentItemDataPath,
-    rootItem: getName(context.rootItem),
-    nested: context.nested
+    rootItem: getName(context.rootItem)
   }
 }
 
@@ -56,7 +55,6 @@ function describeContexts(keys, items) {
 
 // The context of a value in the root item, and of the item itself:
 const inRoot = { itemDataPath: '', itemIndex: null, parentItem: null }
-const ofRoot = { ...inRoot, nested: false }
 const atRoot = { parentItemDataPath: null, rootItem: 'root' }
 
 // The context of a value in an item of a list in the root item, or of it:
@@ -206,30 +204,24 @@ describe('the contexts of components', () => {
         items
       )
     ).toEqual({
-      field: { item: 'root', ...inRoot, ...atRoot, nested: true },
-      button: { item: 'root', ...inRoot, ...atRoot, nested: true },
-      listButtonIf: { item: 'root', ...inRoot, ...atRoot, nested: true },
-      listButton: { item: 'root', ...inRoot, ...atRoot, nested: true },
+      field: { item: 'root', ...inRoot, ...atRoot },
+      button: { item: 'root', ...inRoot, ...atRoot },
+      listButtonIf: { item: 'root', ...inRoot, ...atRoot },
+      listButton: { item: 'root', ...inRoot, ...atRoot },
       // Of the last inlined item:
-      inlinedFormEvent: {
-        ...inItem('chapter1', 'chapters/1', 1),
-        nested: false
-      },
-      fieldInItem: { ...inItem('chapter1', 'chapters/1', 1), nested: true },
-      nestedListButton: {
-        ...inItem('chapter1', 'chapters/1', 1),
-        nested: true
-      },
-      sectionEvent: { item: 'root', ...ofRoot, ...atRoot },
-      nestedSectionEvent: { ...inItem('meta', 'meta'), nested: false },
-      fieldInSection: { ...inItem('meta', 'meta'), nested: true },
-      objectFormEvent: { ...inItem('author', 'author'), nested: false },
-      objectButton: { ...inItem('author', 'author'), nested: false },
-      cell: { ...inItem('note0', 'notes/0', 0), nested: true },
-      cellEditButtons: { ...inItem('note0', 'notes/0', 0), nested: false },
-      listRender: { ...inItem('ref0', 'refs/0', 0), nested: false },
+      inlinedFormEvent: inItem('chapter1', 'chapters/1', 1),
+      fieldInItem: inItem('chapter1', 'chapters/1', 1),
+      nestedListButton: inItem('chapter1', 'chapters/1', 1),
+      sectionEvent: { item: 'root', ...inRoot, ...atRoot },
+      nestedSectionEvent: inItem('meta', 'meta'),
+      fieldInSection: inItem('meta', 'meta'),
+      objectFormEvent: inItem('author', 'author'),
+      objectButton: inItem('author', 'author'),
+      cell: inItem('note0', 'notes/0', 0),
+      cellEditButtons: inItem('note0', 'notes/0', 0),
+      listRender: inItem('ref0', 'refs/0', 0),
       // The wrapper of the primitive isn't in the root data:
-      wrappedValue: { ...inItem('unknown', 'tags/0', 0), nested: true }
+      wrappedValue: inItem('unknown', 'tags/0', 0)
     })
     expect(contexts.wrappedValue.item).toEqual({ value: 'classic' })
     // Events of schemas describe their item, not a value:
@@ -270,10 +262,7 @@ describe('the contexts of components', () => {
       describeContext(context, items)
     )
     expect(new Set(descriptions.map(it => JSON.stringify(it))).size).toBe(1)
-    expect(descriptions[0]).toEqual({
-      ...inItem('address', 'address'),
-      nested: false
-    })
+    expect(descriptions[0]).toEqual(inItem('address', 'address'))
   })
 
   it('describe the item of nested sections when they toggle', async () => {
@@ -297,10 +286,9 @@ describe('the contexts of components', () => {
       .trigger('click')
     await flushPromises()
     const items = { root: data, meta: data.meta }
-    expect(describeContext(contexts.toggle, items)).toEqual({
-      ...inItem('meta', 'meta'),
-      nested: false
-    })
+    expect(describeContext(contexts.toggle, items)).toEqual(
+      inItem('meta', 'meta')
+    )
     expect(contexts.toggle.value).toBe(undefined)
     expect(contexts.toggle.collapsed).toBe(true)
   })
@@ -340,10 +328,10 @@ describe('the contexts of components', () => {
       )
     const inChapter = inItem('chapter', 'chapters/0', 0)
     expect(describeCalls(getComponents)).toEqual(
-      new Set([JSON.stringify({ ...inChapter, nested: false })])
+      new Set([JSON.stringify(inChapter)])
     )
     expect(describeCalls(getDefault)).toEqual(
-      new Set([JSON.stringify({ ...inChapter, nested: true })])
+      new Set([JSON.stringify(inChapter)])
     )
     expect(data.chapters).toEqual([{ heading: 'New' }])
   })
@@ -453,11 +441,11 @@ describe('the contexts of components', () => {
           items
         )
       ).toEqual({
-        formEvent: { ...inDraft, nested: false },
+        formEvent: inDraft,
         // The change of the applied item:
-        formChange: { ...inDraft, nested: false },
-        formButtonIf: { ...inDraft, nested: true },
-        formButton: { ...inDraft, nested: true }
+        formChange: inDraft,
+        formButtonIf: inDraft,
+        formButton: inDraft
       })
       expect(contexts.formEvent.value).toBe(undefined)
     })
@@ -472,7 +460,7 @@ describe('the contexts of components', () => {
           root: data,
           draft: form.data
         })
-      ).toEqual({ ...inItem('draft', 'meta'), nested: false })
+      ).toEqual(inItem('draft', 'meta'))
     })
 
     it('keep the root of the draft of reused forms current', async () => {
@@ -544,7 +532,7 @@ describe('the contexts of components', () => {
       await flushPromises()
     }
     const items = { root: data }
-    const clicked = { item: 'root', ...inRoot, ...atRoot, nested: true }
+    const clicked = { item: 'root', ...inRoot, ...atRoot }
     expect(describeContexts(['click', 'success', 'error'], items)).toEqual({
       click: clicked,
       success: clicked,
@@ -662,12 +650,12 @@ describe('the contexts of components', () => {
           items
         )
       ).toEqual({
-        panelField: { item: 'root', ...inRoot, ...atRoot, nested: true },
-        panelButton: { item: 'root', ...inRoot, ...atRoot, nested: true },
-        nestedPanelValue: { ...inItem('details', 'details'), nested: true },
-        nestedPanelField: { ...inItem('info', 'info'), nested: true },
-        ownPanelEvent: { ...inItem('search', 'search'), nested: false },
-        ownPanelField: { ...inItem('search', 'search'), nested: true }
+        panelField: { item: 'root', ...inRoot, ...atRoot },
+        panelButton: { item: 'root', ...inRoot, ...atRoot },
+        nestedPanelValue: inItem('details', 'details'),
+        nestedPanelField: inItem('info', 'info'),
+        ownPanelEvent: inItem('search', 'search'),
+        ownPanelField: inItem('search', 'search')
       })
       expect(contexts.ownPanelField.item).toEqual({ query: 'Persuasion' })
       // Nested panels edit the values under their name:
@@ -807,8 +795,7 @@ describe('the contexts of components', () => {
         itemIndex: null,
         parentItem: 'chapter0',
         parentItemDataPath: 'chapters/0',
-        rootItem: 'root',
-        nested: true
+        rootItem: 'root'
       })
     })
   })
@@ -828,8 +815,8 @@ describe('the contexts of components', () => {
     await flushPromises()
     const items = { root: contexts.dialogField.rootItem }
     expect(describeContexts(['dialogField', 'dialogButton'], items)).toEqual({
-      dialogField: { item: 'root', ...inRoot, ...atRoot, nested: true },
-      dialogButton: { item: 'root', ...inRoot, ...atRoot, nested: true }
+      dialogField: { item: 'root', ...inRoot, ...atRoot },
+      dialogButton: { item: 'root', ...inRoot, ...atRoot }
     })
   })
 })
