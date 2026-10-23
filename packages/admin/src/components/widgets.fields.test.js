@@ -290,6 +290,47 @@ describe('widgets of values', () => {
     expect(form.item.genres).toEqual(['rock', 'jazz'])
   })
 
+  it('select several options of arrays in multiselects', async () => {
+    const GenresPage = {
+      setup() {
+        form = useDitoForm({ resource: 'books', id: 1, properties })
+        return () =>
+          h(DitoSchemaForm, null, {
+            default: () => h(DitoMultiselectField, { name: 'genres' })
+          })
+      }
+    }
+    const { wrapper } = await mountPage(GenresPage, 'books', item)
+    const tags = getContainer(wrapper, 'Genres').findAll('.multiselect__tag')
+    expect(tags.map(tag => tag.text())).toEqual(['Rock'])
+  })
+
+  it.each([
+    ['DitoSelectField', DitoSelectField, 'select'],
+    ['DitoRadioField', DitoRadioField, 'radio']
+  ])('throw for array properties in %s', async (_, widget, type) => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const GenresPage = {
+      setup() {
+        useDitoForm({ resource: 'books', id: 1, properties })
+        return () =>
+          h(DitoSchemaForm, null, {
+            default: () => h(widget, { name: 'genres' })
+          })
+      }
+    }
+    await mountPage(GenresPage, 'books', item)
+    expect([...error.mock.calls, ...warn.mock.calls].flat()).toContainEqual(
+      expect.objectContaining({
+        message: (
+          `Unsupported array property in '${type}' widgets, use ` +
+          '`DitoCheckboxesField` or `DitoMultiselectField`.'
+        )
+      })
+    )
+  })
+
   it('edit related values with loaded options, and emit changes', async () => {
     const { wrapper, request } = await mountPage(BookPage, 'books', item)
     const author = getContainer(wrapper, 'Author').find('select')

@@ -43,6 +43,17 @@ const getOptionsSchema = (type, property) => {
   }
 }
 
+// Selects and radio buttons hold one value, unlike checkboxes and multiselects:
+const getSingleOptionsSchema = (type, property) => {
+  if (property.type === 'array') {
+    throw new Error(
+      `Unsupported array property in '${type}' widgets, use ` +
+      '`DitoCheckboxesField` or `DitoMultiselectField`.'
+    )
+  }
+  return getOptionsSchema(type, property)
+}
+
 const numberProps = {
   step: { type: [Number, String, Function], default: undefined }
 }
@@ -134,12 +145,12 @@ export const DitoCheckboxField = defineWidget('DitoCheckboxField', {
 
 export const DitoSelectField = defineWidget('DitoSelectField', {
   props: optionsProps,
-  getSchema: property => getOptionsSchema('select', property)
+  getSchema: property => getSingleOptionsSchema('select', property)
 })
 
 export const DitoRadioField = defineWidget('DitoRadioField', {
   props: { ...optionsProps, ...layoutProps },
-  getSchema: property => getOptionsSchema('radio', property)
+  getSchema: property => getSingleOptionsSchema('radio', property)
 })
 
 export const DitoCheckboxesField = defineWidget('DitoCheckboxesField', {
