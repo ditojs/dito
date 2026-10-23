@@ -36,8 +36,6 @@ test.describe('page screenshots', () => {
     await expectScreenshot(page, 'page-narrow.png')
   })
 
-  // NOTE: The main buttons draw their top border right below the bottom
-  // border of the section that ends the form, a known bug to be fixed next.
   test('page with the form of a tree item', async ({ page, url }) => {
     await openPlan(page, url, '/phases/0')
     await expect(page.getByLabel('Phase Name')).toHaveValue('Research')
@@ -52,8 +50,6 @@ test.describe('page screenshots', () => {
     await expectScreenshot(page, 'page-without-form-end.png')
   })
 
-  // NOTE: The main buttons draw their top border right below the bottom
-  // border of the section that ends the form, a known bug to be fixed next.
   test('form in a dialog', async ({ page, url }) => {
     await openPlan(page, url)
     await page.getByRole('button', { name: 'Edit Settings' }).click()
