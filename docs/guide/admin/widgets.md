@@ -93,7 +93,7 @@ The admin's own keywords go into the same objects:
 
 | Keyword | Meaning |
 | ------- | ------- |
-| `if` | Whether the value is relevant. Irrelevant values aren't validated, get no defaults and aren't sent, and their widgets hide. |
+| `if` | Whether the value is relevant. Irrelevant values aren't validated and aren't sent, and their widgets hide. |
 | `exclude` | The value loads, but isn't sent. |
 | `computed` | The server computes the value, so it isn't sent. |
 | `computeValue()` | Computes the value from the item, like the `computeValue()` of fields. |

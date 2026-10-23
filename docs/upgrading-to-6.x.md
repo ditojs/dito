@@ -111,8 +111,8 @@ template of `@ditojs/utils`, which escapes the values that it includes, see
   only if the form saved an item.
 - Hidden values aren't sent: fields whose `if` is false, or that are in hidden
   sections, tabs or panels, leave out their values when the data is saved or
-  copied. Hidden fields set no defaults and run no `serializeValue()`, and
-  item labels and table cells only display the values of the item itself.
+  copied. Hidden fields run no `serializeValue()`, and item labels and table
+  cells only display the values of the item itself.
 - Emptied text fields (`text` and its variants, `textarea`, `code` and
   `markup`) save their empty value, `null`, or `''` with `nullable: false`,
   instead of their `default`.

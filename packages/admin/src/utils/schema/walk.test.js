@@ -544,6 +544,32 @@ describe('initializeData()', () => {
     expect(data.collections[0].items[2]).toEqual({ type: 'unknown' })
   })
 
+  it('sets the defaults before `if` callbacks read them', async () => {
+    const form = await createForm({
+      fields: {
+        note: {
+          type: 'text',
+          default: 'new',
+          if: ({ item }) => item.status === 'draft'
+        },
+        downloads: {
+          type: 'list',
+          if: ({ item }) => item.downloads.length > 0,
+          form: { type: 'form', fields: { url: { type: 'text' } } }
+        },
+        status: { type: 'text', default: 'draft' }
+      }
+    })
+    const logError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(initializeData(form, {}, services)).toEqual({
+      note: 'new',
+      downloads: [],
+      status: 'draft'
+    })
+    expect(logError).not.toHaveBeenCalled()
+    logError.mockRestore()
+  })
+
   it('takes the default of the first field of the same value', async () => {
     const form = await createForm({
       tabs: {
@@ -594,14 +620,11 @@ describe('initializeData() of several fields of the same value', () => {
       }
     })
 
-  it('sets only the defaults of shown fields', async () => {
-    const form = await createStatusForm({ if: false })
-    expect(initializeData(form, {}, services)).toEqual({ status: null })
-  })
-
-  it('sets the defaults of invisible fields', async () => {
-    const form = await createStatusForm({ visible: false })
-    expect(initializeData(form, {}, services)).toEqual({ status: 'draft' })
+  it('sets the defaults of hidden and invisible fields', async () => {
+    for (const settings of [{ if: false }, { visible: false }]) {
+      const form = await createStatusForm(settings)
+      expect(initializeData(form, {}, services)).toEqual({ status: 'draft' })
+    }
   })
 })
 
