@@ -290,4 +290,33 @@ describe('useDitoForm() with routed forms in pages', () => {
       expect.objectContaining({ message })
     )
   })
+
+  it(`doesn't load the items of rejected forms`, async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const request = vi.fn(() => ({ data: { id: 1, items: [] } }))
+    const admin = await mountAdmin({
+      views: { books: { type: 'view', label: 'Books', fields: {} } },
+      request
+    })
+    admin.context.showDialog({
+      fields: {
+        list: {
+          type: 'component',
+          component: {
+            setup() {
+              useDitoForm({
+                resource: { path: 'books' },
+                id: 1,
+                fields: { items: nameList }
+              })
+              return () => h(DitoSchemaForm)
+            }
+          }
+        }
+      }
+    })
+    await settleAll()
+    expect(error).toHaveBeenCalledTimes(1)
+    expect(request).not.toHaveBeenCalled()
+  })
 })
