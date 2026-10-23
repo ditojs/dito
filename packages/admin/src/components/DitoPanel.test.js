@@ -27,6 +27,28 @@ describe('DitoPanel', () => {
     expect(data).toEqual({ title: 'Dune' })
   })
 
+  it(`doesn't write the edits of its own data into the schema`, async () => {
+    const data = { query: 'Emma' }
+    const { wrapper } = await mountSchema({
+      schema: {
+        fields: { title: { type: 'text' } },
+        panels: {
+          search: {
+            type: 'panel',
+            label: 'Search',
+            data,
+            fields: { query: { type: 'text' } }
+          }
+        }
+      },
+      data: { title: 'Dune' }
+    })
+    const input = wrapper.find('.dito-panel input')
+    await enterValue(input, 'Jane')
+    expect(input.element.value).toBe('Jane')
+    expect(data).toEqual({ query: 'Emma' })
+  })
+
   it('passes its context to `data()`', async () => {
     const createData = vi.fn(() => ({ query: 'Emma' }))
     const { wrapper } = await mountSchema({

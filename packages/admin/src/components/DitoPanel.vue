@@ -42,7 +42,7 @@ component.dito-panel(
 
 <script>
 import { computed, inject, reactive, toRefs } from 'vue'
-import { isFunction } from '@ditojs/utils'
+import { isFunction, clone } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { useContainer } from '../composables/useContainer.ts'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
@@ -102,7 +102,7 @@ export default {
     const container = data
       ? useContainer({
           schema: () => props.schema,
-          data: isFunction(data) ? toModelData(data(context)) : data,
+          data: isFunction(data) ? toModelData(data(context)) : clone(data),
           dataPath: () => panelDataPath.value,
           rootData: () => getRootData(services),
           componentPath: () => props.panelComponentPath,
