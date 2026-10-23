@@ -11,7 +11,7 @@
 //   provide, e.g. `@floating-ui/dom` for `@tiptap/vue-3`.
 // - The server uses regular `dependencies`, except for the packages whose
 //   instances it has to share with the app, `knex` and `objection`, and the
-//   ones only some apps need, e.g. the AWS SDK of its S3 storage.
+//   ones only some apps need, e.g. the S3 client of its S3 storage.
 // - Peers are mirrored in `devDependencies` for building and testing here,
 //   except optional peers, which keep the range their code needs, so apps that
 //   don't use them aren't pushed to the versions tested here.
