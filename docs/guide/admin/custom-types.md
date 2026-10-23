@@ -26,7 +26,7 @@ A star rating, which writes each click as a finished change:
 <template>
   <div class="star-rating">
     <button
-      v-for="star in max"
+      v-for="star in maximum"
       :key="star"
       type="button"
       :class="{ 'star-rating__star--active': star <= (modelValue ?? 0) }"
@@ -48,8 +48,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'change'])
 
 // Read schema options through the context, which calls callbacks:
-const max = computed(() =>
-  props.context.getSchemaValue('max', { type: Number, default: 5 })
+const maximum = computed(() =>
+  props.context.getSchemaValue('maximum', { type: Number, default: 5 })
 )
 
 function rate(star) {
@@ -79,7 +79,7 @@ rating: {
   type: 'component',
   component: () => import('../components/StarRating.vue'),
   label: 'Rating',
-  max: 10,
+  maximum: 10,
   default: 0
 }
 ```
@@ -117,7 +117,7 @@ defineType({
   defaultWidth: 'auto',
 
   getValidations({ schema }) {
-    return { range: [0, schema.max ?? 5] }
+    return { range: [0, schema.maximum ?? 5] }
   },
 
   // What list cells and item labels show for the value:
@@ -144,7 +144,7 @@ new DitoAdmin('#dito-admin', {
 Schemas then use the type like any other:
 
 ```js
-rating: { type: 'rating', max: 10 }
+rating: { type: 'rating', maximum: 10 }
 ```
 
 The descriptor also sets the defaults of `width`, `visible` and `exclude`,

@@ -192,3 +192,68 @@ offers each one when the users controller at `api.users` in the server's
 
 `PasskeyService` and `TotpService` list the configuration that they need, e.g.
 sessions stored on the server.
+
+## Minor releases
+
+5.1 to 5.4 change these without deprecation warnings:
+
+### 5.1
+
+- Errors that aren't `ResponseError`s, e.g. a plain `Error` thrown in an
+  action, and `DatabaseError`s with status 500 or higher respond with "An
+  error has occurred." instead of their message, unless they have
+  `expose: true` or a status below 500, or `config.env` is `'development'`.
+  Throw `ResponseError`s for messages meant for clients, see
+  [Plain errors](guide/server/errors.md#plain-errors).
+- Actions and queries no longer wrap other errors in `ResponseError`s: plain
+  errors with a status below 500 respond with only their `message`, and
+  `'error'` listeners receive the raw error, which often has no `status`.
+  Errors below 500 are logged at level `info`.
+- Logins that fail with other errors than `ResponseError`s below 500, e.g. in
+  a `before:login` hook, respond with their own status or 500 instead of 401.
+- Uploads beyond multer's `limits` respond with 413 for `fileSize` and 400 for
+  the others, instead of 500.
+- Escape also cancels dialogs with only one button, resolving them to
+  `undefined`.
+
+### 5.2
+
+- The components of the types register globally as `Dito<Name>Type`, e.g.
+  `DitoTextType`, instead of `DitoType<Name>`, without aliases.
+- A form with `component` but no `fields` throws at setup, where `component`
+  on forms was ignored.
+- Elements are named after their blocks:
+
+| 5.1                                                                  | 5.2                                                                  |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `dito-tree-header`, `-branch`, `-leaf`, `-label`, `-info`            | `dito-tree-item__header`, `__branch`, `__leaf`, `__label`, `__info`  |
+| `dito-tree-branch__content`                                          | `dito-tree-item__branch-content`                                     |
+| `dito-tree-panel`, `dito-tree-form-container`                        | `dito-tree-list__panel`, `__form-container`                          |
+| `dito-object-content`                                                | `dito-object__content`                                               |
+| `dito-pagination-total`                                              | `dito-pagination__total`                                             |
+
+### 5.4
+
+- The server's validation errors carry the messages that the admin shows
+  instead of Ajv's, e.g. "must be 5 or more" instead of "must be >= 5", while
+  their `keyword` and `params` stay the same: clients that match message texts
+  match `keyword` and `params` instead. In the admin, `integer` says "must be
+  a whole number", and `decimals` e.g. "must be a number with at most 2
+  decimal places".
+- The admin validates `maxLength`, counted in characters, not only as the
+  `maxlength` of inputs: saving fails where code wrote longer values.
+- `url` fields require a scheme: `example.com` fails, `https://example.com`
+  passes.
+- `date`, `datetime` and `time` fields validate their values: invalid `Date`
+  objects and strings that aren't dates, e.g. `'14:30'`, fail with "must be a
+  valid date".
+- `markup` stores an empty editor as `null` instead of e.g. `<p></p>`, and
+  `code` sends `null` instead of `''` when emptied.
+- `upload` with `multiple` holds `[]` instead of `null` while it has no value.
+- `required` accepts empty arrays, as the server does, except on the types
+  whose empty value is an array, e.g. lists, `checkboxes`, multiselects and
+  uploads with `multiple`, which still need one item. Other fields with array
+  values, e.g. of `component` or custom types, accept `[]`.
+- Several fields of the same value, e.g. in two tabs, take each aspect, e.g.
+  `default` or `serializeValue()`, from the first field in form order that
+  defines it, and all of them validate the value.

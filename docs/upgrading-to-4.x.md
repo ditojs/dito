@@ -24,6 +24,13 @@ code changes in most apps.
   `escapeRegexp()` is `escapeRegExp()`.
 - `isEmpty()` of `@ditojs/utils` checks the size of `Map` and `Set` objects
   and never treats dates as empty, where 3.5 returned `true` for all of them.
+- Since 4.8, `equals()` of `@ditojs/utils` never treats values of different
+  types as equal, e.g. a `Uint8Array` and an array, and `capitalize()` doesn't
+  start new words after digits: `capitalize('one2three')` is `'One2three'`.
+- Since 4.8, `*` in `getValueAtDataPath()` keeps values that are arrays
+  instead of merging them, `normalizeDataPath()` and `resolveDataPath()` throw
+  for a `..` above the root, `escapeHtml()` escapes `'`, and `debounceAsync()`
+  resolves each call with the result of its own run.
 - Since 4.5, `@ditojs/server` loads `@ditojs/build`, `vite` and
   `@vitejs/plugin-vue` only to build the admin or serve it in development, as
   optional peer dependencies: install them as dev dependencies of the app,
@@ -100,6 +107,15 @@ key in `config.storages`, as `config.name` isn't read anymore.
 color strings, e.g. `'rgb(0, 0, 0)'`, and `type: 'object'` for the `rgb`,
 `prgb`, `hsl` and `hsv` formats of the admin's color type.
 
+Since 4.7, the validator runs Ajv with `strictSchema`, `strictNumbers` and
+`strictTuples`: model schemas with an unknown keyword, e.g. `item` instead of
+`items`, or with a `default` that Ajv can't apply, throw on startup, where 3.5
+ignored them. Fix the schemas, or turn it off with
+`options: { strictSchema: false }` of the
+[`Validator`](api/server/validator.md#constructor). Also since 4.7, `nullable`
+properties with a model type or a `$ref` get their own `default` and the
+defaults of the referenced schema, which Ajv ignored.
+
 The validator applies `discriminator` keywords: a `oneOf` with
 `discriminator: { propertyName: 'type' }` validates only the variant that
 `type` selects. Each variant needs a fixed `type`, with `const` or `enum`,
@@ -165,9 +181,10 @@ The hooks that convert values are named after what they convert:
 | `process()` | `serializeValue()`   | the edited value to the stored one  |
 | –           | `deserializeValue()` | the stored value to the edited one  |
 
-Schemas that still use the 3.5 names throw when they're set up. The date and
-color types read `format` as their format setting, so a 3.5 `format()` can't be
-told apart there: rename it to `formatValue()` by hand.
+Schemas that still use the 3.5 names throw when they're set up. In 4.x and
+5.x, the date and color types read `format` as their format setting, so a 3.5
+`format()` isn't reported there: rename it to `formatValue()` by hand. 6.0
+throws for it there too.
 
 `serializeValue()` returning `undefined` leaves out the value's key. Virtual
 fields, which convert to other values of the item, write these into
@@ -192,7 +209,8 @@ counterpart of `serializeValue()`, which runs when saving and copying.
 
 ### Dates
 
-`formats` of the date types is `format`. The date types convert the date
+`formats` of the date types is `format`, until 6.0 renames it back, see
+[Schema options](#schema-options). The date types convert the date
 strings of loaded data to `Date` objects, and back when it's saved: code that
 compared the date strings of loaded data works with `Date` objects instead.
 Date strings from defaults, computed values or code are displayed as dates and
@@ -211,7 +229,8 @@ the component as `this`:
 - `watch` on data: `onChange()` of the form or of a component above the changed
   values, which receives the `dataPath` of the changed value.
 - `data`: state in module scope, e.g. a `WeakMap` keyed by the item. The `data`
-  setting of panels and of the `computed`, `data` and `hidden` types stays.
+  setting of panels and of the `value` type stays, which replaces the
+  `computed`, `data` and `hidden` types, see [Schema options](#schema-options).
 - `this.submit()` in buttons: `context.submit()`.
 
 ```js
@@ -260,6 +279,10 @@ writes of code, `onChange()` only fires for the edits of the user.
 - `relateBy`, `groupBy` and `format: 'name'` of color types throw, and so does
   `open` on trees. `collapsed` works on the tree and on its `children` schema,
   and can be a callback, called for each item.
+- 6.0 renames `format` of the color types to `colorFormat` and `format` of the
+  date types back to `formats`, and ignores the old keys silently, so
+  `format: 'name'` no longer throws there, only `colorFormat: 'name'` does, see
+  [Upgrading to 6.x](upgrading-to-6.x.md#schemas).
 - `options.group` is the key of the options' group, or a callback that returns
   the group of the `option` in its context.
 - `nested` only works on sections and panels, and throws on other types, which
@@ -278,13 +301,14 @@ writes of code, `onChange()` only fires for the edits of the user.
   where 3.5 dropped it silently.
 - Since 4.3, the `computed`, `data` and `hidden` types are one type named
   `value`, and `ValueSchema` is its schema type. The old names keep working
-  until 5.0, with a deprecation warning, and `ComputedSchema`, `DataSchema` and
+  until 6.0, with a deprecation warning, and `ComputedSchema`, `DataSchema` and
   `HiddenSchema` are deprecated aliases of `ValueSchema`.
 - Since 4.5, labels, the results of `itemLabel()` and `info` are text unless
-  they're given as `{ html }`, see
-  [Text and HTML](./api/admin/schemas.md#text-and-html). Labels and callbacks
-  that return HTML strings return `{ html }` instead, and callbacks that only
-  escaped values with `escapeHtml()` return the plain text.
+  they're given as `{ html }`. Labels and callbacks that return HTML strings
+  return `{ html }` instead, and callbacks that only escaped values with
+  `escapeHtml()` return the plain text. 6.0 replaces `{ html }` with the
+  `html` template, without a 5.x warning, see
+  [Upgrading to 6.x](upgrading-to-6.x.md#html).
 - Since 4.5, `context.itemLabel` is the text of the item's label, like
   `context.formLabel`: pass it to `notify()` as `text`, not `html`.
   `context.itemLabelText` is removed: use `context.itemLabel`.
@@ -292,7 +316,7 @@ writes of code, `onChange()` only fires for the edits of the user.
 ## Event handlers
 
 Declare handlers as `on…` properties of the schema. `events: {}` still works
-and logs a deprecation warning, until 5.0, but an `on…` handler of the same
+and logs a deprecation warning, until 6.0, but an `on…` handler of the same
 event in the same schema wins over it instead of both running. In development,
 dito warns about the ignored `events` entries, naming the schema and the event.
 On the submit and cancel buttons of forms and the cancel button of dialogs,
@@ -563,13 +587,13 @@ defineType({
 
 ## TypeScript types
 
-| 3.5                                  | 4.x                                  |
-| ------------------------------------ | ------------------------------------ |
-| `SchemaOpen`, `OpenEventHandler`     | `SchemaToggle`, `ToggleEventHandler` |
-| `SchemaDitoMixin`, `SchemaTypeMixin` | Part of `ComponentSchemaBase`        |
-| `HTTPVerb`                           | `HttpMethod`                         |
+| 3.5                                  | 4.x                                                     |
+| ------------------------------------ | ------------------------------------------------------- |
+| `SchemaOpen`, `OpenEventHandler`     | `SchemaToggle`, `ToggleEventHandler`                    |
+| `SchemaDitoMixin`, `SchemaTypeMixin` | Part of `ComponentSchemaBase`, `FieldSchemaBase` in 6.x |
+| `HTTPVerb`                           | `HttpMethod`                                            |
 
-- These keep working as deprecated aliases: `SchemaFields` and
+- These keep working as deprecated aliases until 6.0: `SchemaFields` and
   `SchemaSetupMixin` (`SchemaBase`), `BaseSchema` (`ComponentSchemaBase`),
   `SchemaRoute` and `SchemaRouteMixin` (`RouteSchemaBase`), `Form`
   (`FormSchema`), `OrItemAccessor` (`SchemaValue`), `ItemAccessor`
@@ -757,8 +781,8 @@ defineType({
   labels instead of the ids.
 - Since 4.5, `clipboard` on lists copies and pastes the list as a whole,
   instead of adding copy and paste buttons to the items. Give the items a
-  clipboard through `form: { components, clipboard }`, or a form with its own
-  `clipboard`.
+  clipboard through `form: { components, clipboard }`, `fields` since 5.2, or a
+  form with its own `clipboard`.
 
 ### Data paths
 
@@ -774,7 +798,7 @@ defineType({
   colons, e.g. `'before:member:get-tech-doc-format'` for
   `'get tech-doc-:format'`, see
   [Hooks](./api/server/controllers.md#hooks). Keys with the action's key keep
-  working until 5.0, with a deprecation warning. Two actions of the same type
+  working until 6.0, with a deprecation warning. Two actions of the same type
   with the same identifier throw: change the route of one of them. Wildcard
   hooks like `'before:*:*'` also run for actions with route parameters.
 - `authorize: false` on an action or a controller denies access, where 3.5
@@ -783,7 +807,35 @@ defineType({
 - As in 3.5, the messages of all errors thrown in actions reach the client, also
   of errors that aren't `ResponseError`s. Throw a `ResponseError` (or a
   subclass) for messages meant for clients, and catch other errors whose
-  messages shouldn't leave the server.
+  messages shouldn't leave the server. 5.1 hides the messages of other errors,
+  see [Minor releases](upgrading-to-5.x.md#minor-releases).
+- Since 4.7, relation controllers authorize their parent member after the
+  parameters are validated, and `handleRequestAuthorization()`,
+  `authorizeMember()` and `getActionAuthorize()` are removed: overrides of
+  them aren't called. Overrides of `member.get` that `allow` doesn't route no
+  longer decide which member `getMember()` returns.
+- Since 4.7, asset files count one reference for each place in the data that
+  stores them, e.g. twice for the same image twice in a list. Run
+  [`db:recount_assets`](api/server/application.md#commands) once after
+  upgrading, to count the references of existing data this way.
+- Since 4.7, unused assets are released after `assets.cleanupTimeThreshold`,
+  and uploads that were never saved after `danglingTimeThreshold`, instead of
+  after the sum of both. With `cleanupTimeThreshold: 0`, unused assets are
+  released right away: setups that used `0` to keep files, e.g. of storages
+  shared between installations, set a long threshold, e.g. `'100y'`. 5.0
+  renames both options and keeps assets with `false`, see
+  [Assets](upgrading-to-5.x.md#assets).
+- Since 4.8, the router answers 404 for paths that no method routes, also for
+  `OPTIONS` and methods other than `GET`, where 3.5 answered 200, 405 or 501.
+  405 and 501 remain for paths that other methods route, see
+  [`find()`](api/router.md#find). HEAD requests run the GET route of their
+  path: GET handlers with side effects check `ctx.method`. Routes with `*` or
+  `**` inside a segment, e.g. `/files/*.json`, throw when added.
+- Since 4.8, the generated join tables of many-to-many relations name their
+  columns with the new `capitalize()`, so key properties with a digit before a
+  letter get other column names, e.g. `bookIsbn13code` instead of
+  `bookIsbn13Code`: set `through` to keep the old ones, see
+  [Join models and tables](guide/server/relations.md#join-models-and-tables).
 
 ## New features
 
