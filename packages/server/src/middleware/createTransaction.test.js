@@ -49,33 +49,25 @@ describe('createTransaction()', { timeout: 30_000 }, () => {
   const insertChild = (ctx, parentId) =>
     ctx.transaction('child').insert({ parent_id: parentId })
 
-  it('commits and emits the commit event', async () => {
+  it('commits the transaction', async () => {
     const ctx = createContext()
-    const events = []
     await middleware(ctx, async () => {
       const [{ id }] = await ctx
         .transaction('parent')
         .insert({})
         .returning('id')
       await insertChild(ctx, id)
-      ctx.transaction.on('commit', () => events.push('commit'))
-      ctx.transaction.on('rollback', () => events.push('rollback'))
     })
-    expect(events).toEqual(['commit'])
     expect(await knex('child').count('* as count')).toEqual([{ count: 1 }])
   })
 
-  it('throws and emits the rollback event when the commit fails', async () => {
+  it('throws when the commit fails', async () => {
     const ctx = createContext()
-    const events = []
     await expect(
       middleware(ctx, async () => {
         await insertChild(ctx, 1234)
-        ctx.transaction.on('commit', () => events.push('commit'))
-        ctx.transaction.on('rollback', () => events.push('rollback'))
       })
     ).rejects.toThrow(/foreign key constraint/i)
-    expect(events).toEqual(['rollback'])
     expect(await knex('child').count('* as count')).toEqual([{ count: 0 }])
   })
 
@@ -108,36 +100,27 @@ describe('createTransaction()', { timeout: 30_000 }, () => {
 
   it('fails when the handler rolls back the transaction itself', async () => {
     const ctx = createContext()
-    const events = []
     const error = new Error('Rolled back')
     await expect(
       middleware(ctx, async () => {
         await insertChild(ctx, null)
-        ctx.transaction.on('commit', () => events.push('commit'))
-        ctx.transaction.on('rollback', () => events.push('rollback'))
         await ctx.transaction.rollback(error)
       })
     ).rejects.toBe(error)
-    expect(events).toEqual(['rollback'])
     expect(await knex('child').count('* as count')).toEqual([{ count: 0 }])
   })
 
   it('succeeds when the handler rolls back the transaction without an error', async () => {
     const ctx = createContext()
-    const events = []
     await middleware(ctx, async () => {
       await insertChild(ctx, null)
-      ctx.transaction.on('commit', () => events.push('commit'))
-      ctx.transaction.on('rollback', error => events.push(['rollback', error]))
       await ctx.transaction.rollback()
     })
-    expect(events).toEqual([['rollback', undefined]])
     expect(await knex('child').count('* as count')).toEqual([{ count: 0 }])
   })
 
   it('rolls back when the handler throws', async () => {
     const ctx = createContext()
-    const events = []
     const error = new Error('Handler failed')
     await expect(
       middleware(ctx, async () => {
@@ -146,33 +129,22 @@ describe('createTransaction()', { timeout: 30_000 }, () => {
           .insert({})
           .returning('id')
         await insertChild(ctx, id)
-        ctx.transaction.on('commit', () => events.push('commit'))
-        ctx.transaction.on('rollback', () => events.push('rollback'))
         throw error
       })
     ).rejects.toBe(error)
-    expect(events).toEqual(['rollback'])
     expect(await knex('child').count('* as count')).toEqual([{ count: 0 }])
   })
 
-  it(`doesn't roll back when a commit listener throws`, async () => {
+  it('rejects `executionPromise` with the error of the handler', async () => {
     const ctx = createContext()
-    const events = []
-    const error = new Error('Listener failed')
+    const error = new Error('Handler failed')
+    let executionPromise
     await expect(
       middleware(ctx, async () => {
-        const [{ id }] = await ctx
-          .transaction('parent')
-          .insert({})
-          .returning('id')
-        await insertChild(ctx, id)
-        ctx.transaction.on('commit', () => {
-          throw error
-        })
-        ctx.transaction.on('rollback', () => events.push('rollback'))
+        executionPromise = ctx.transaction.executionPromise
+        throw error
       })
     ).rejects.toBe(error)
-    expect(events).toEqual([])
-    expect(await knex('child').count('* as count')).toEqual([{ count: 1 }])
+    await expect(executionPromise).rejects.toBe(error)
   })
 })

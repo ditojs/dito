@@ -2,12 +2,20 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import type { ModelProperties, StorageConfig } from '@ditojs/server'
-import { Model, AssetMixin, AssetFile, Storage } from '@ditojs/server'
+import {
+  Model,
+  ModelController,
+  AssetMixin,
+  AssetFile,
+  ResponseError,
+  Storage
+} from '@ditojs/server'
 import {
   createTestApp,
   createTestDatabase,
   destroyTestApp
 } from './setup.js'
+import { createTestApp as createServerApp, getAppUrl } from '../utils/app.js'
 
 // Storage configs are typed per built-in storage type only, so we cast them:
 class MemoryStorage extends Storage {
@@ -166,16 +174,13 @@ describe('asset handling with an Asset model', () => {
     try {
       const trx = await Document.startTransaction()
       await Document.query(trx).patchById(document.id, { file: modifiedFile })
-      await trx.rollback()
-      // The 'rollback' event is emitted by the `createTransaction()`
-      // middleware, which is not involved here, so call the listeners directly.
-      const error = new Error('Rolled back')
-      await Promise.all(
-        trx.listeners('rollback').map(listener => listener(error))
-      )
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `Unable to restore these already modified files: 'original.txt'`
+      await trx.rollback(new Error('Rolled back'))
+      // Nobody awaits the handling of rollbacks, so we wait for its warning:
+      await vi.waitFor(() =>
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining(
+            `Unable to restore these already modified files: 'original.txt'`
+          )
         )
       )
     } finally {
@@ -475,13 +480,9 @@ describe('Asset handling', () => {
         })
         const { key } = document.file!
         expect(storage.dataByKey.has(key)).toBe(true)
-        await trx.rollback()
-        // Emitted by the `createTransaction()` middleware, see above.
-        const error = new Error('Rolled back')
-        await Promise.all(
-          trx.listeners('rollback').map(listener => listener(error))
-        )
-        expect(storage.dataByKey.has(key)).toBe(false)
+        await trx.rollback(new Error('Rolled back'))
+        // Nobody awaits the removal, so we wait for it:
+        await vi.waitFor(() => expect(storage.dataByKey.has(key)).toBe(false))
         expect(info).toHaveBeenCalledWith(
           `Received 'Error: Rolled back', removing imported files again: ` +
           `'draft.txt'`
@@ -490,6 +491,104 @@ describe('Asset handling', () => {
         info.mockRestore()
       }
     })
+
+    it('removes imported files again when a transaction handler throws', async () => {
+      const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+      let key: string
+      try {
+        await expect(
+          Document.transaction(async trx => {
+            const document = await Document.query(trx).insertAndFetch({
+              file: AssetFile.create({ name: 'failed.txt', data: 'failed' })
+            })
+            key = document.file!.key
+            expect(storage.dataByKey.has(key)).toBe(true)
+            throw new Error('Handler failed')
+          })
+        ).rejects.toThrow('Handler failed')
+        await vi.waitFor(() => expect(storage.dataByKey.has(key)).toBe(false))
+      } finally {
+        info.mockRestore()
+      }
+    })
+
+    it('emits errors of imported files that cannot be removed', async () => {
+      const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+      const error = new Error('Storage is read-only')
+      const removeFile = vi
+        .spyOn(storage, 'removeFile')
+        .mockRejectedValue(error)
+      const onError = vi.fn()
+      app.on('error', onError)
+      try {
+        const trx = await Document.startTransaction()
+        await Document.query(trx).insert({
+          file: AssetFile.create({ name: 'stuck.txt', data: 'stuck' })
+        })
+        await trx.rollback(new Error('Rolled back'))
+        await vi.waitFor(() => expect(onError).toHaveBeenCalledWith(error))
+      } finally {
+        app.off('error', onError)
+        removeFile.mockRestore()
+        info.mockRestore()
+      }
+    })
+  })
+})
+
+describe('asset handling in transacted requests', () => {
+  const Document = createDocumentClass()
+  class Asset extends AssetMixin(Model) {}
+
+  let key: string
+
+  class Documents extends ModelController<any> {
+    override modelClass = Document
+
+    override collection: any = {
+      'post fail': {
+        transacted: true,
+        async handler(ctx: any) {
+          const document = await Document.query(ctx.transaction).insertAndFetch(
+            { file: AssetFile.create({ name: 'failed.txt', data: 'failed' }) }
+          )
+          key = document.file!.key
+          throw new ResponseError('Failed', { status: 409 })
+        }
+      }
+    }
+  }
+
+  const app = createServerApp({
+    models: { Document, Asset },
+    controllers: { Documents }
+  })
+  const storage = new MemoryStorage(app, 'memory', {} as StorageConfig)
+  app.addStorage(storage)
+
+  beforeAll(async () => {
+    await createTestDatabase(app)
+    await app.start()
+  })
+
+  afterAll(async () => {
+    await app.stop()
+    await app.knex.destroy()
+  })
+
+  it('removes imported files again when the handler fails', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    try {
+      const response = await fetch(`${getAppUrl(app)}/documents/fail`, {
+        method: 'POST',
+        headers: { accept: 'application/json' }
+      })
+      expect(response.status).toBe(409)
+      expect(key).toBeDefined()
+      await vi.waitFor(() => expect(storage.dataByKey.has(key)).toBe(false))
+    } finally {
+      info.mockRestore()
+    }
   })
 })
 
