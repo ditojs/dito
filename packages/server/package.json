@@ -61,7 +61,6 @@
     "leather": "^3.0.3",
     "mime-types": "^3.0.2",
     "multer": "^2.4.0",
-    "multer-s3": "github:ditojs/multer-s3#dito",
     "nanoid": "^6.0.2",
     "parse-duration": "^2.1.9",
     "passthrough-counter": "^1.0.0",
@@ -75,8 +74,8 @@
     "uuid": "^14.0.2"
   },
   "peerDependencies": {
-    "@aws-sdk/client-s3": "^3.0.0",
-    "@aws-sdk/lib-storage": "^3.46.0",
+    "@aws-lite/client": "^0.24.0",
+    "@aws-lite/s3": "^0.2.7",
     "@ditojs/build": "workspace:^",
     "@simplewebauthn/server": "^14.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
@@ -87,10 +86,10 @@
     "vite": "^8.0.0"
   },
   "peerDependenciesMeta": {
-    "@aws-sdk/client-s3": {
+    "@aws-lite/client": {
       "optional": true
     },
-    "@aws-sdk/lib-storage": {
+    "@aws-lite/s3": {
       "optional": true
     },
     "@ditojs/build": {
@@ -113,8 +112,8 @@
     }
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.1147.0",
-    "@aws-sdk/lib-storage": "^3.1147.0",
+    "@aws-lite/client": "^0.24.1",
+    "@aws-lite/s3": "^0.2.7",
     "@simplewebauthn/server": "^14.0.3",
     "@types/koa-bodyparser": "^4.3.13",
     "@types/koa-compress": "^4.0.7",
@@ -123,7 +122,6 @@
     "@types/koa-static": "^4.0.4",
     "@types/koa__cors": "^5.0.1",
     "@types/koa__multer": "^2.0.8",
-    "@types/multer-s3": "^3.0.3",
     "@types/node": "^26.6.4",
     "aaguids": "^0.0.71",
     "knex": "^3.3.0",

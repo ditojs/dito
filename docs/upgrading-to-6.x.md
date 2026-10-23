@@ -205,7 +205,10 @@ name, see [Hooks](api/server/controllers.md#hooks).
   `'rollback'` events.
 - `UserMixin` rejects `hash` in all input that isn't trusted, with a 400
   response.
-- S3 storages need `@aws-sdk/lib-storage` next to `@aws-sdk/client-s3`.
+- S3 storages store their files through aws-lite: install `@aws-lite/client`
+  and `@aws-lite/s3` instead of `@aws-sdk/client-s3`, and give `s3` its
+  `region` and `credentials`, which no longer come from environment variables
+  or `~/.aws`, see [S3StorageConfig](api/server/storage.md#s3storageconfig).
 - Routes with several params in one segment, e.g. `/a/:x-:y`, throw when
   they're added, and `getAllowedMethods(path)` of the router adds the
   `prefix` to `path`, as `find()` does.
