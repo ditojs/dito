@@ -181,7 +181,7 @@ describe('DitoTreeListType', () => {
     ).rejects.toThrow(`Unsupported schema key 'data' in 'order'`)
   })
 
-  it('renders the `properties` of the items', async () => {
+  it('shows the `properties` of items without children', async () => {
     const schema = createSiteSchema()
     schema.fields.pages.children.properties = {
       slug: {
@@ -189,15 +189,22 @@ describe('DitoTreeListType', () => {
         render: ({ item }) => item.title.toLowerCase()
       }
     }
-    schema.fields.pages.children.collapsed = false
     const { findField } = await mountForm({ schema, data: site })
-    const properties = findField('pages')
-      .findAll('.dito-properties')
-      .map(table => table.text())
-    expect(properties).toEqual([
-      expect.stringContaining('team'),
-      expect.stringContaining('history')
-    ])
+    const getProperties = () =>
+      findField('pages')
+        .findAll('.dito-properties')
+        .filter(table => table.isVisible())
+        .map(table => table.text())
+    const findBranch = label =>
+      findButton(findField('pages'), label, '.dito-tree-item__branch')
+    await findBranch('About').trigger('click')
+    await flushPromises()
+    expect(getProperties()).toEqual([])
+    const team = findBranch('Team')
+    expect(team.attributes('aria-expanded')).toBe('false')
+    await team.trigger('click')
+    await flushPromises()
+    expect(getProperties()).toEqual([expect.stringContaining('team')])
   })
 
   it('renders the prefix and suffix of item labels', async () => {
