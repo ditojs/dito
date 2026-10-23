@@ -197,6 +197,19 @@ describe('equals()', () => {
     expect(equals(object1, object2)).toBe(false)
   })
 
+  it('should compare objects without prototype like plain objects', () => {
+    const object = Object.assign(Object.create(null), { a: 1, b: { c: 2 } })
+
+    expect(equals(object, { a: 1, b: { c: 2 } })).toBe(true)
+    expect(equals({ a: 1, b: { c: 2 } }, object)).toBe(true)
+    expect(equals(object, { a: 1, b: { c: 3 } })).toBe(false)
+    expect(equals({ a: 1, b: { c: 3 } }, object)).toBe(false)
+    expect(equals(object, { a: 1, d: { c: 2 } })).toBe(false)
+    expect(equals({ a: 1, d: { c: 2 } }, object)).toBe(false)
+    expect(equals(Object.create(null), {})).toBe(true)
+    expect(equals({}, Object.create(null))).toBe(true)
+  })
+
   it('should compare typed arrays', () => {
     expect(equals(new Float32Array([1.5]), new Float32Array([1.5]))).toBe(true)
     expect(equals(new Float32Array([1.5]), new Float32Array([2.5]))).toBe(false)
