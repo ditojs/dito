@@ -2592,8 +2592,8 @@ export type SchemaContext<$Item = any> = {
       /**
        * Body text, escaped, or HTML created with the
        * `html` template of `@ditojs/utils`. Each entry
-       * is a paragraph, newlines become `<br>`, and
-       * `false` and `null` entries are skipped.
+       * is a paragraph, newlines in text become `<br>`,
+       * and `false` and `null` entries are skipped.
        */
       text: OrArrayOf<string | Html | false | null>
     }

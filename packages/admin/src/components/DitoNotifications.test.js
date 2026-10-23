@@ -60,6 +60,22 @@ describe('DitoNotifications', () => {
     expect(console.error).toHaveBeenCalledWith('Emma was saved.\nLine\nbreak')
   })
 
+  it(`doesn't add line breaks to the markup of \`html\``, async () => {
+    const notifications = await mountNotifications()
+    notifications.notify({
+      text: html`<ul>
+        <li>${'Emma'}</li>
+        <li>Tom</li>
+      </ul>`
+    })
+    await flushPromises()
+    const [notification] = findNotifications()
+    expect(notification.querySelector('br')).toBe(null)
+    expect(
+      [...notification.querySelectorAll('li')].map(li => li.textContent)
+    ).toEqual(['Emma', 'Tom'])
+  })
+
   it('warns when `text` seems to contain HTML markup', async () => {
     const notifications = await mountNotifications()
     notifications.notify({ text: '<a href="/books/1">Book created</a>' })
