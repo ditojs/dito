@@ -1,4 +1,4 @@
-import { computed, shallowRef } from 'vue'
+import { computed, shallowReactive, shallowRef } from 'vue'
 import type { Html } from '@ditojs/utils'
 import type { Router } from 'vue-router'
 import { LoadingTracker } from './LoadingTracker.ts'
@@ -63,8 +63,8 @@ export class AdminContext {
   readonly ui = new UiRegistry()
   readonly #viewRegistry: ViewRegistry
   readonly #flattenedViews = computed(() => flattenViews(this.views))
-  // Set by the schemas of wide views and forms:
-  readonly #pageClass = shallowRef<string | null>(null)
+  // The schemas of wide views and forms that are shown:
+  readonly #wideSchemas = shallowReactive(new Set<object>())
   #dialogsAndNotifications: DialogsAndNotifications | null = null
 
   constructor({
@@ -100,11 +100,15 @@ export class AdminContext {
   }
 
   get pageClass(): string | null {
-    return this.#pageClass.value
+    return this.#wideSchemas.size > 0 ? 'dito-page--wide' : null
   }
 
-  set pageClass(pageClass: string | null) {
-    this.#pageClass.value = pageClass
+  setWideSchema(schema: object, wide: boolean): void {
+    if (wide) {
+      this.#wideSchemas.add(schema)
+    } else {
+      this.#wideSchemas.delete(schema)
+    }
   }
 
   get routeTree(): RouteTree | null {
