@@ -27,10 +27,6 @@
       :scopes="scopes"
       :context="context"
     )
-    //- Pagination without scopes needs a spacer for the layout:
-    .dito-spacer(
-      v-else-if="hasPagination"
-    )
     DitoLabelButtons(
       v-if="hasClipboard"
       :labelId="labelId"
