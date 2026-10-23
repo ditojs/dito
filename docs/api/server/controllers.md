@@ -838,7 +838,8 @@ handlers check it, and the login for `'post confirm-access'`, `'get passkeys'`
 and `'get totp'`, also with an `authorize` that opens the actions, and answer
 401 without a login of a user of the controller's `modelClass`, like
 [`checkConfirmedAccess()`](#checkconfirmedaccess).
-The `patch`, `put` and `post` actions answer 400 for bodies with the `hash`.
+Bodies with the `hash` answer 400, as [`UserMixin`](./model.md#usermixin)
+rejects it in all input.
 With `relate`, `post` treats users with ids like updates.
 
 With [`PasskeyService`](./service.md#passkeyservice) registered, users log in

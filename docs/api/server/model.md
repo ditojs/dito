@@ -975,7 +975,7 @@ Set as `static options` on the model:
 | -------------------- | ----------------------------------------------------------------------------------- |
 | `[usernameProperty]` | `string`, required.                                                                 |
 | `[passwordProperty]` | `string`, computed: not stored. Once the application is set up, setting it stores its bcrypt hash in `hash`; reading it returns `undefined`. |
-| `hash`               | `string`, hidden: never sent to clients.                                            |
+| `hash`               | `string`, hidden: never sent to clients. Input that isn't [`trusted`](#parsejson) can't set it and throws a `ValidationError` with status 400: set `[passwordProperty]` instead. |
 | `lastLogin`          | `timestamp`, nullable. `UsersController` sets it on each login.                     |
 
 #### `static` authenticate()

@@ -696,20 +696,12 @@ function checkTotpService(controller, ctx, message) {
 }
 
 // Setting passwords and changing usernames needs confirmed access, the latter
-// as password resets go to them. Hashes are never set directly. `users` are
-// `[id, user]` entries:
+// as password resets go to them. `UserMixin` rejects hashes in all input.
+// `users` are `[id, user]` entries:
 async function checkUserChanges(controller, ctx, action, users) {
   const { modelClass } = controller
   const { usernameProperty, passwordProperty } = modelClass.definition.options
   for (const [id, user] of users) {
-    if (user?.hash !== undefined) {
-      throw new ValidationError({
-        type: 'BodyValidation',
-        message: `Unable to change 'hash', change '${
-          passwordProperty
-        }' instead.`
-      })
-    }
     // Relating users with ids updates them:
     const isUpdate = action !== 'insert' && (action !== 'relate' || id != null)
     if (isUpdate) {
