@@ -1729,6 +1729,14 @@ describe('DitoForm', () => {
       expect(admin.router.currentRoute.value.path).toBe('/items/1')
     })
 
+    it('replaces the route of missing objects with their create route', async () => {
+      const { admin } = await mountBookForm({ author: null })
+      await openNestedForm(admin, '/items/1/author')
+      admin.router.back()
+      await settle(admin.getRouteComponent(isForm))
+      expect(admin.router.currentRoute.value.path).toBe('/items/1')
+    })
+
     it('edits the objects that it created at their own route', async () => {
       const { admin } = await mountForm({
         schema: {
