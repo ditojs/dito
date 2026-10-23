@@ -213,6 +213,31 @@ describe('widgets', () => {
     )
   })
 
+  it('keep cleared values, which are required unless `nullable`', async () => {
+    const CopiesPage = {
+      setup() {
+        form = useDitoForm({
+          resource: 'designers',
+          id: 7,
+          properties: { ...properties, copies: { type: 'integer', default: 1 } }
+        })
+        return () =>
+          h(DitoSchemaForm, null, {
+            default: () => h(DitoNumberField, { name: 'copies' })
+          })
+      }
+    }
+    const { wrapper } = await mountDesignerPage(CopiesPage)
+    expect(form.item.copies).toBe(1)
+    const input = getContainer(wrapper, 'Copies').find('input')
+    await enterValue(input, '')
+    await settle()
+    expect(form.item.copies).toBe(null)
+    expect(input.element.value).toBe('')
+    expect(form.validate()).toBe(false)
+    expect(form.getErrors()).toEqual({ copies: [{ message: 'is required' }] })
+  })
+
   it('show the errors of submits, also widgets of the same name', async () => {
     const { wrapper, notify } = await mountDesignerPage()
     form.item.name = ''

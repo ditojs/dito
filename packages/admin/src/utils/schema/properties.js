@@ -133,6 +133,10 @@ export class PropertyNode {
         validations[key] = setting
       }
     }
+    // The server rejects `null` in typed values that aren't `nullable`:
+    if (property.type && entry.data[entry.name] === null && !get('nullable')) {
+      validations.required = true
+    }
     if (property.type === 'integer') {
       validations.integer = true
     } else if (dateTypes.has(property.type)) {

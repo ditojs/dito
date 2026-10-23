@@ -108,6 +108,41 @@ describe('DataModel', () => {
     dataModel.stop()
   })
 
+  it('replaces `null` with defaults only in loaded and added data', async () => {
+    const schema = {
+      type: 'form',
+      properties: {
+        count: { type: 'number', default: 5 },
+        chapters: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { rank: { type: 'integer', default: 1 } }
+          }
+        }
+      }
+    }
+    const { dataModel, data } = createDataModel(schema, {
+      count: null,
+      chapters: [{ rank: null }]
+    })
+    expect(data).toEqual({ count: 5, chapters: [{ rank: 1 }] })
+    // Values that aren't `nullable` keep the `null` that is written later, e.g.
+    // when the user clears them to type another value, as do lists:
+    data.count = null
+    data.chapters[0].rank = null
+    data.chapters.push({})
+    await nextTick()
+    expect(data).toEqual({
+      count: null,
+      chapters: [{ rank: null }, { rank: 1 }]
+    })
+    data.chapters = null
+    await nextTick()
+    expect(data.chapters).toBe(null)
+    dataModel.stop()
+  })
+
   it('sets the defaults of replaced data', async () => {
     const schema = {
       type: 'form',

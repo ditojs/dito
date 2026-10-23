@@ -102,7 +102,7 @@ inputs and selects, `clearable` to inputs that can be cleared.
 | `label` | `SchemaValue<TextOrHtml \| boolean \| { text?, prefix?, suffix? }>` | the labelized name | The label, see [Text and HTML](#text-and-html). `false` hides it. The object form adds [affixes](#affixes). Buttons, labels, panels, sections and spacers don't generate one. |
 | `if` | `SchemaValue<boolean>` | `true` | Renders the field only if `true`. Values of fields that aren't rendered aren't computed. |
 | `visible` | `SchemaValue<boolean>` | `true`, `false` for `value` | Shows or hides the field. Hidden fields keep their value. |
-| `default` | `SchemaValue` | the type's default | The value used when the item lacks the key, e.g. in new items. Lists, `checkboxes` and multiselects with `multiple` also use it for `null`. |
+| `default` | `SchemaValue` | the type's default | The value used when the item lacks the key, e.g. in new items. Lists, `checkboxes` and multiselects with `multiple` also use it for `null` in loaded or added items, not for a `null` written later. |
 | `computeValue` | `SchemaValueCallback` | | Computes the value reactively into the data, also when the field isn't shown, unless `if` is `false`. Returning `undefined` keeps the current value. |
 | `formatValue` | `SchemaValueCallback` | | Converts the value for display. |
 | `parseValue` | `SchemaValueCallback` | | Converts the edited value before it's written into the data. |
