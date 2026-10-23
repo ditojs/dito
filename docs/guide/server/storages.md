@@ -41,7 +41,7 @@ options.
 
 To keep the sample pages in Amazon S3 instead, give the storage the bucket,
 and the configuration of the S3 client in `s3`. S3 storages need the
-optional peer dependency `@aws-sdk/client-s3`:
+optional peer dependencies `@aws-sdk/client-s3` and `@aws-sdk/lib-storage`:
 
 ```js
 samplePages: {

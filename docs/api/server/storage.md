@@ -11,8 +11,9 @@ controller [`assets`](controllers.md#assets), and available as
 `app.getStorage(name)`. See [Storages and
 assets](../../guide/server/storages.md).
 
-The disk and S3 storages are built in. `@aws-sdk/client-s3` is an optional
-peer dependency, imported when an S3 storage is set up.
+The disk and S3 storages are built in. `@aws-sdk/client-s3` and
+`@aws-sdk/lib-storage` are optional peer dependencies, imported when an S3
+storage uses them.
 
 ## StorageConfig
 
