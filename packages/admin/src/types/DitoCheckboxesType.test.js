@@ -104,6 +104,19 @@ describe('DitoCheckboxesType', () => {
     expect(data.ratings).toEqual([0, 2])
   })
 
+  it('keeps falsy plain option values like `0` selected', async () => {
+    const { findField, data } = await mountSchema({
+      schema: {
+        fields: { ratings: { type: 'checkboxes', options: [0, 1, 2] } }
+      },
+      data: { ratings: [0, 2] }
+    })
+    const field = findField('ratings')
+    expect(getCheckedStates(field)).toEqual([true, false, true])
+    await field.findAll('input[type="checkbox"]')[1].setValue(true)
+    expect(data.ratings).toEqual([0, 2, 1])
+  })
+
   it('focuses the first checkbox', async () => {
     const { focusField, findField } = await mountSchema({
       schema: {
