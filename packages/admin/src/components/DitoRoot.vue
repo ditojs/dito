@@ -33,7 +33,7 @@
       @click="menu.toggle()"
     )
   main.dito-page.dito-scroll-parent(
-    :class="[adminContext.pageClass, pageClasses]"
+    :class="pageClasses"
     :inert="!!topDialogKey"
   )
     DitoHeader(
@@ -223,6 +223,7 @@ export default {
       // selected, focused or clicked:
       topDialogKey: computed(() => Object.keys(dialogs).at(-1) ?? null),
       pageClasses: computed(() => ({
+        'dito-page--wide': adminContext.isWidePage,
         'dito-page--overlay-sidebar': sidebar.isOverlay,
         'dito-page--sliding-sidebar': sidebar.isSliding
       })),

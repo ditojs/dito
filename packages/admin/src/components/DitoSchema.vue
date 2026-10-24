@@ -445,12 +445,19 @@ export default {
         await nextTick()
       }
     })
-    const isWidePage = (
-      props.scrollable &&
-      getSchemaValue('wide', { type: Boolean, default: false })
-    )
-    if (isWidePage && routeContext) {
-      routeContext.isWide = true
+    // The scrollable schema of a route makes its page wide while it's mounted,
+    // also when the type of the item changes its form:
+    if (props.scrollable && routeContext) {
+      watch(
+        () => getSchemaValue('wide', { type: Boolean, default: false }),
+        isWide => {
+          routeContext.isWide = isWide
+        },
+        { immediate: true }
+      )
+      onUnmounted(() => {
+        routeContext.isWide = false
+      })
     }
 
     onMounted(() => {

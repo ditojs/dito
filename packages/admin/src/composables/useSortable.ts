@@ -4,7 +4,7 @@ import { adminContextKey, dataContextKey } from '../utils/keys.ts'
 
 export interface SortableOptions {
   getListEntry: () => ListEntry
-  onChange?: () => void
+  onChange: () => void
 }
 
 export function useSortable({ getListEntry, onChange }: SortableOptions) {
@@ -16,7 +16,7 @@ export function useSortable({ getListEntry, onChange }: SortableOptions) {
     const { length } = listEntry.list
     if (from >= 0 && from !== to && to >= 0 && to < length) {
       dataContext!.model.move(listEntry, from, to)
-      onChange?.()
+      onChange()
     }
   }
 
