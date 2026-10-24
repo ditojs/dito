@@ -279,6 +279,8 @@ export default {
 @import '../styles/_imports';
 
 .dito-picker-input {
+  $self: &;
+
   .dito-input {
     font-variant-numeric: tabular-nums;
     width: 100%;
@@ -290,8 +292,12 @@ export default {
     border: 0;
     border-radius: $border-radius;
     font: inherit;
-    color: inherit;
+    color: $color-grey;
     background: none;
+
+    @at-root #{$self}:focus-within & {
+      color: $color-active;
+    }
 
     &:disabled {
       cursor: default;

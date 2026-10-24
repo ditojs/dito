@@ -48,20 +48,10 @@ export default {
   position: relative;
   width: 1em;
   height: 1em;
+  font-style: normal;
 
-  @at-root .dito-input & {
-    font-style: normal;
-    border-radius: $border-radius;
-    color: $color-grey;
-    background: $color-white;
-
-    &.dito-icon--disabled {
-      color: $color-light;
-    }
-  }
-
-  @at-root .dito-input:focus-within & {
-    color: $color-active;
+  &--disabled {
+    color: $color-light;
   }
 }
 </style>

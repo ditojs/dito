@@ -213,3 +213,13 @@ name, see [Hooks](api/server/controllers.md#hooks).
 | `dito-root--overlay-sidebar`, `--sliding-sidebar` on `.dito-root` | `dito-page--overlay-sidebar`, `--sliding-sidebar` on `.dito-page` |
 | `dito-tree-item--dragging`                                        | `dito-draggable--dragging` on its `.dito-draggable`               |
 | `dito-properties` of trees                                        | `dito-tree-item__details`                                         |
+
+- Sass placeholders, see [Placeholders](api/ui.md#placeholders):
+
+| 6.0                                    | 6.1                                      |
+| -------------------------------------- | ---------------------------------------- |
+| `%field-has-errors`, `%field-disabled` | `%field--has-errors`, `%field--disabled` |
+| `%input-has-errors`                    | `%input--has-errors`                     |
+| `%input-borderless`                    | `%input--borderless`                     |
+| `%button-disabled`                     | `%button--disabled`                      |
+| `%icon-{name}`                         | `%icon--{name}`                          |
