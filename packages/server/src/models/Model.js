@@ -1211,34 +1211,32 @@ export class Model extends objection.Model {
         // Remove imported files again if the transaction is rolled back, also
         // when a later data path fails. Knex only rejects `executionPromise`
         // for rollbacks with an error, so rollbacks without one keep them.
-        if (transaction?.rollback) {
-          transaction.executionPromise
-            .catch(async error => {
-              if (importedFiles.length > 0) {
-                console.info(
-                  `Received '${error}', removing imported files again: ${
-                    importedFiles.map(file => `'${file.name}'`)
-                  }`
-                )
-                await mapConcurrently(
-                  importedFiles,
-                  file => file.storage.removeFile(file)
-                )
-              }
-              if (modifiedFiles.length > 0) {
-                // TODO: `modifiedFiles` should be restored as well, but that's
-                // far from trivial since no backup is kept in
-                // `handleModifiedAssets()`
-                console.warn(
-                  `Unable to restore these already modified files: ${
-                    modifiedFiles.map(file => `'${file.name}'`)
-                  }`
-                )
-              }
-            })
-            // Nobody awaits the removal, so report its errors to the app:
-            .catch(error => this.app.emit('error', error))
-        }
+        transaction?.executionPromise
+          ?.catch(async error => {
+            if (importedFiles.length > 0) {
+              console.info(
+                `Received '${error}', removing imported files again: ${
+                  importedFiles.map(file => `'${file.name}'`)
+                }`
+              )
+              await mapConcurrently(
+                importedFiles,
+                file => file.storage.removeFile(file)
+              )
+            }
+            if (modifiedFiles.length > 0) {
+              // TODO: `modifiedFiles` should be restored as well, but that's
+              // far from trivial since no backup is kept in
+              // `handleModifiedAssets()`
+              console.warn(
+                `Unable to restore these already modified files: ${
+                  modifiedFiles.map(file => `'${file.name}'`)
+                }`
+              )
+            }
+          })
+          // Nobody awaits the removal, so report its errors to the app:
+          .catch(error => this.app.emit('error', error))
 
         for (const dataPath of dataPaths) {
           const storage = this.app.getStorage(assets[dataPath].storage)
