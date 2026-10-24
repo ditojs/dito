@@ -2237,6 +2237,32 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
+    it('sets them under each name that shares a field', async () => {
+      const emptyAddress = Object.freeze({ street: '' })
+      const address = {
+        type: 'object',
+        computeValue: () => emptyAddress,
+        form: {
+          type: 'form',
+          fields: {
+            street: { type: 'text' },
+            country: { type: 'text', default: 'Nowhere' }
+          }
+        }
+      }
+      const schema = {
+        type: 'form',
+        fields: { billing: address, shipping: address }
+      }
+      const { dataModel, data } = createDataModel(schema, {})
+      await nextTick()
+      expect(data).toEqual({
+        billing: { street: '', country: 'Nowhere' },
+        shipping: { street: '', country: 'Nowhere' }
+      })
+      dataModel.stop()
+    })
+
     it('only copies the items that miss defaults', async () => {
       const firstChapter = Object.freeze({ title: 'One', status: 'draft' })
       const secondChapter = Object.freeze({ title: 'Two' })

@@ -963,6 +963,17 @@ describe('written properties', () => {
     })
   })
 
+  it('handle each name that shares a property object', () => {
+    const name = { type: 'string', required: true }
+    const properties = { firstName: name, lastName: name }
+    expect(initialize(properties)).toEqual({ firstName: '', lastName: '' })
+    expect(validate(properties, { firstName: 'Ada', lastName: '' })).toEqual({
+      lastName: [{ message: 'is required' }]
+    })
+    expect(serialize(properties, { firstName: 'Ada', lastName: 'Lovelace' }))
+      .toEqual({ firstName: 'Ada', lastName: 'Lovelace' })
+  })
+
   describe('data', () => {
     it('converts dates', () => {
       const properties = {
