@@ -308,7 +308,7 @@ describe('DitoForm resources', () => {
       expect(getErrors('name')).toHaveLength(1)
       respond = (method, data) => ({ data })
       await submit()
-      expect(dataModel.getErrors('name')).toBe(null)
+      expect(dataModel.errors.get('name')).toBe(null)
       expect(getErrors('name')).toEqual([])
     })
   })

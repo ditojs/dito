@@ -38,7 +38,7 @@ const DitoComponentType = {
         get options() {
           const { schema, data, dataPath } = props
           return (
-            services.dataContext.model.getOptionsResolver({
+            services.dataContext.model.fields.getOptionsResolver({
               schema,
               data,
               name: schema.name,

@@ -179,7 +179,8 @@ export function useField(
 
   // Replace the validation errors of the value, with the checks of all fields
   // that edit it:
-  const validate = () => services.dataContext!.model.validate(props.dataPath)
+  const validate = () =>
+    services.dataContext!.model.errors.validate(props.dataPath)
 
   const { emitEvent } = useSchemaEvents(() => props.schema, field)
   const focused = ref(false)

@@ -14,7 +14,8 @@ import {
   getDataValidationErrors,
   getMatchingValidationErrors
 } from './schema/validation.js'
-import type { DataModel, ValueError } from './DataModel.ts'
+import type { DataModel } from './DataModel.ts'
+import type { ValueError } from './DataErrors.ts'
 import type { SubmitButton, SubmitOptions } from './ResourceContext.ts'
 import type { Services } from './services.ts'
 import type { SourceContext } from './SourceContext.ts'
@@ -121,7 +122,7 @@ export function createDataContext({
       match
     }: { dataPath?: string; server?: boolean; match?: Match } = {}
   ) => {
-    const fieldDataPaths = context.model.replaceErrors(errors, {
+    const fieldDataPaths = context.model.errors.replace(errors, {
       dataPath,
       server,
       isMatchingDataPath: match ? getDataPathMatcher(match) : null
@@ -309,11 +310,11 @@ export function createDataContext({
       const addError = (dataPath: string, error: ValueError) => {
         errors[dataPath] = [...(errors[dataPath] ?? []), error]
       }
-      for (const dataPath of model.getErrorDataPaths(getDataPath())) {
-        for (const { path, ...error } of model.getErrors(dataPath) ?? []) {
+      for (const dataPath of model.errors.getDataPaths(getDataPath())) {
+        for (const { path, ...error } of model.errors.get(dataPath) ?? []) {
           addError(path ? appendDataPath(dataPath, path) : dataPath, error)
         }
-        for (const message of model.getFieldErrors(dataPath) ?? []) {
+        for (const message of model.errors.getFieldMessages(dataPath) ?? []) {
           addError(dataPath, { message })
         }
       }
@@ -335,13 +336,13 @@ export function createDataContext({
             isMatchingDataPath(normalizeDataPath(path.slice(0, index + 1)))
           )
         }
-        for (const dataPath of model.getErrorDataPaths(getDataPath())) {
+        for (const dataPath of model.errors.getDataPaths(getDataPath())) {
           if (isWithinMatch(dataPath)) {
-            model.clearErrors(dataPath)
+            model.errors.clear(dataPath)
           }
         }
       } else {
-        model.clearErrors(getDataPath())
+        model.errors.clear(getDataPath())
       }
     },
 
@@ -363,7 +364,7 @@ export function createDataContext({
     // already, e.g. when their parent shows its errors:
     revealErrors() {
       copyErrors?.()
-      return revealErrorDataPaths(getModel().getErrorDataPaths(getDataPath()))
+      return revealErrorDataPaths(getModel().errors.getDataPaths(getDataPath()))
     },
 
     markEdited() {

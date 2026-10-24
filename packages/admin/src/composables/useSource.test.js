@@ -391,7 +391,7 @@ describe('useSource()', () => {
       expect(chapterForm).not.toBe(routeComponent)
       expect(chapterForm.data).toEqual({ title: 'Caladan' })
       const { model } = chapterForm.dataContext
-      expect(model.getErrors('chapters/1/title')).toEqual([
+      expect(model.errors.get('chapters/1/title')).toEqual([
         { message: 'is taken' }
       ])
     })

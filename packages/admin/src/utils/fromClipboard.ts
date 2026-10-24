@@ -65,7 +65,7 @@ export async function fromClipboard(
     const { schema, data, name } = entry
     // The options of the pasted values, loaded like the ones of fields:
     const options = (await services!
-      .dataContext!.model.getOptionsResolver(entry)
+      .dataContext!.model.fields.getOptionsResolver(entry)
       .waitForValue()) ?? []
     const context = SchemaContext.createForSchema(services, {
       ...entry,

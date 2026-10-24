@@ -251,7 +251,7 @@ export default {
     const opened = useStore(props).getStoreRef('opened', () => !props.collapsed)
     // Collapsed content and tabs with errors render hidden, so that errors are
     // revealed in the components that display them:
-    const hasErrors = computed(() => getModel().hasErrorsWithin(props.data))
+    const hasErrors = computed(() => getModel().errors.hasWithin(props.data))
     // So does the content at `path` while the route continues below its form,
     // so that its components can claim it, and the one that claimed it stays:
     const isClaimingRoute = (path = componentPath.value) => {

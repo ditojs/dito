@@ -330,9 +330,9 @@ describe('useSchemaContext()', () => {
       expect(chapterContext.isValid('/title')).toBe(true)
       expect(chapterContext.isValid('../*/title')).toBe(false)
       await flushPromises()
-      expect(dataModel.getErrorDataPaths()).toEqual(['chapters/0/title'])
+      expect(dataModel.errors.getDataPaths()).toEqual(['chapters/0/title'])
       chapterContext.clearErrors('title')
-      expect(dataModel.getErrorDataPaths()).toEqual([])
+      expect(dataModel.errors.getDataPaths()).toEqual([])
       expect(() => context.isValid('../title')).toThrow(
         `Invalid data path: '../title' leads above the root.`
       )

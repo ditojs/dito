@@ -2,31 +2,22 @@ import {
   effectScope,
   computed,
   watch,
-  watchEffect,
   nextTick,
   ref,
-  shallowRef,
   shallowReactive,
   toRaw,
   isProxy,
   isReadonly,
-  triggerRef,
   type ComputedRef,
-  type EffectScope,
-  type Ref,
-  type ShallowRef
+  type Ref
 } from 'vue'
 import {
   isArray,
   isPlainObject,
   isFunction,
   isString,
-  equals,
-  parseDataPath,
-  getValueAtDataPath
+  equals
 } from '@ditojs/utils'
-import SchemaContext from '../SchemaContext.js'
-import { DataSchemaResolver } from './DataSchemaResolver.js'
 import {
   editableDataTargets,
   toModelData,
@@ -35,26 +26,19 @@ import {
   getRelativeDataPath
 } from './data.js'
 import { mergeData, mergeValues } from './mergeData.ts'
-import { getOriginal } from './uid.js'
 import {
   isEmptySchema,
   hasSubmitButton
 } from './schema/lookup.js'
 import { isListSource } from './schema/structure.js'
-import { getOptionsDataSchema } from './schema/types.ts'
 import {
   initializeData,
   isDataPathExcluded,
   callOrLog,
-  getComputedValue,
-  hasComputedValueSource,
   serializeData,
   deserializeData,
   hasItemsNumberedByOrderKey,
-  updateOrder,
-  getMultipleValue,
-  getEditedValue,
-  parseEditedValue
+  updateOrder
 } from './schema/data.js'
 import {
   walkData,
@@ -62,11 +46,16 @@ import {
   type DataEntry,
   type DataSource
 } from './schema/walk.js'
-import { getOptionsSettings, getReplacedValue } from './schema/options.ts'
+import { EntryMap, type FieldKey } from './EntryMap.ts'
+import { DataErrors } from './DataErrors.ts'
+import {
+  FieldRecords,
+  shouldSetDefaultValue,
+  setDefaultValue,
+  type RecordedEntry
+} from './FieldRecords.ts'
 import type { Services } from './services.ts'
 import type { Data, Schema } from './types.ts'
-
-type Key = string | number
 
 export interface DataModelOptions {
   schema: () => Schema | null
@@ -88,13 +77,6 @@ export interface DataModelOptions {
   services?: Services | null
 }
 
-// The data that holds a value at `name`, which errors and records are keyed by,
-// as it stays with list items that move, unlike data paths:
-interface FieldKey {
-  data: Data
-  name: Key
-}
-
 // Changes of lists in sources with their own resource belong to these sources,
 // which their data path tells:
 export interface ListEntry {
@@ -102,46 +84,6 @@ export interface ListEntry {
   list: any[]
   dataPath: string
 }
-
-export interface ValueError {
-  message: string
-  // Server errors also tell their keyword and its parameters:
-  keyword?: string
-  params?: Record<string, any>
-  // The path of the error inside the value, if no deeper field displays it:
-  path?: string
-}
-
-interface ValueErrors {
-  validation: ValueError[]
-  server: ValueError[]
-  // Any change of the value clears its errors for good:
-  stopWatching?: () => void
-}
-
-// The records of components with computed values or options:
-interface ComponentRecord {
-  entry: FieldEntry
-  // Reactive, as items that move keep their records:
-  dataPath: ShallowRef<string>
-  itemDataPath: ShallowRef<string | null>
-  computedValueScope: EffectScope | null
-  writeComputedValue: (() => void) | null
-  optionsResolver: DataSchemaResolver | null
-  optionsSchema: Schema | null
-  optionsScope: EffectScope | null
-}
-
-// Only the walked entries bring along the `itemDataPath`, which differs from
-// the derived one for wrapped values:
-type FieldEntry = Pick<DataEntry, 'data' | 'name' | 'dataPath'> & {
-  schema: Schema
-  itemDataPath?: string | null
-}
-
-// The walked entries of the values with records, with the schema that records
-// them, and a form of its own for the defaults of its computed values:
-type RecordedEntry = DataEntry & { schema: Schema; form: Schema }
 
 interface DataEntries {
   recordedEntries: EntryMap<RecordedEntry>
@@ -154,16 +96,14 @@ interface DataEntries {
 // The state of the data that a form, view, dialog or panel edits, derived from
 // its schema and data independently of what is rendered.
 export class DataModel {
-  componentRecords = new EntryMap<ComponentRecord>()
+  readonly errors = new DataErrors(this)
+  readonly fields = new FieldRecords(this)
   readonly #pendingLoads = new Set<Promise<unknown>>()
   readonly #pendingSubmits = new Set<Promise<unknown>>()
   // The owners of edits by data path: '' for the container, else the data
   // paths of sources with their own resource, which can't be inlined, with
   // their sources:
   readonly #editedOwners = shallowReactive(new Map<string, DataSource | null>())
-  readonly #errors = shallowRef(new WeakEntryMap<ValueErrors>())
-  readonly #fieldErrors = shallowRef(new WeakEntryMap<string[]>())
-  #computedValueWriteCounts: Map<string | null, number> | null = null
   // Data from the server, whose values are deserialized when it is set up:
   readonly #dataToDeserialize = new WeakSet<Data>()
   // New data, which gets all defaults when it is set up:
@@ -175,10 +115,8 @@ export class DataModel {
   readonly #editableDataPaths = new WeakMap<object, () => string>()
   readonly #data: Ref<Data | null>
   readonly #options: Required<Omit<DataModelOptions, 'data'>>
-  readonly #scope = effectScope(true)
-  // The watchers that clear the errors of values, which the data holds:
-  #errorScope!: EffectScope
-  #dataEntries!: ComputedRef<DataEntries>
+  readonly scope = effectScope(true)
+  dataEntries!: ComputedRef<DataEntries>
   #rootData!: ComputedRef<Data | null>
   serializedData!: ComputedRef<Data | null>
   serializedRootData!: ComputedRef<Data | null>
@@ -195,11 +133,11 @@ export class DataModel {
       services: null,
       ...options
     }
-    this.#scope.run(() => {
+    this.scope.run(() => {
       // Computed, as the root data of drafts is created:
       this.#rootData = computed(() => this.#options.rootData(this.data))
       // Computed, so watchers can check synchronously if records are current:
-      this.#dataEntries = computed(() => this.#getDataEntries())
+      this.dataEntries = computed(() => this.#getDataEntries())
       // Built only when read, e.g. by `context.serializedItem`:
       this.serializedData = computed(() => this.#getSerializedData())
       this.serializedRootData = computed(() =>
@@ -216,7 +154,7 @@ export class DataModel {
           this.#initializeData(schema, data, {
             isNew: !!data && this.#newData.delete(toRaw(data))
           })
-          this.#writeComputedValues()
+          this.fields.writeComputedValues()
           if (data !== previousValues?.[1]) {
             this.#resetState()
           }
@@ -224,15 +162,15 @@ export class DataModel {
         { immediate: true, flush: 'sync' }
       )
       watch(
-        () => this.#dataEntries.value.recordedEntries,
-        entries => this.#updateComponentRecords(entries),
+        () => this.dataEntries.value.recordedEntries,
+        entries => this.fields.update(entries),
         modelSetupWatchOptions
       )
       // Values that go missing later, e.g. of fields that `fields()` creates,
       // get defaults too. Only created and loaded data has its `null` replaced:
       watch(
-        () => this.#dataEntries.value.entriesWithMissingValues,
-        entries => entries.forEach(entry => this.#setDefaultValue(entry)),
+        () => this.dataEntries.value.entriesWithMissingValues,
+        entries => entries.forEach(setDefaultValue),
         modelSetupWatchOptions
       )
     })
@@ -276,7 +214,7 @@ export class DataModel {
   // Edits of data in sources with their own resource belong to these sources,
   // e.g. a tree whose children change, all other edits to the container:
   #markEdited(dataPath: string) {
-    const sourceEntry = this.#dataEntries.value.sourceEntriesWithResource.find(
+    const sourceEntry = this.dataEntries.value.sourceEntriesWithResource.find(
       entry => getRelativeDataPath(dataPath, entry.dataPath) !== null
     )
     this.#editedOwners.set(
@@ -298,7 +236,7 @@ export class DataModel {
     return callOrLog(
       () =>
         isDataPathExcluded(this.schema!, this.data!, dataPath, {
-          ...this.#walkOptions,
+          ...this.walkOptions,
           dataPath: this.dataPath
         }),
       false
@@ -355,7 +293,7 @@ export class DataModel {
       const getSchema = () => this.#options.schema()!
       if (isPartial) {
         mergeValues(getSchema(), target, data, {
-          ...this.#walkOptions,
+          ...this.walkOptions,
           dataPath: this.dataPath
         })
       } else {
@@ -367,15 +305,15 @@ export class DataModel {
       }
       this.#initializeData(getSchema(), target)
       if (!item) {
-        this.#writeComputedValues()
+        this.fields.writeComputedValues()
       }
       const model = item ? this.parent! : this
       if (isPartial) {
         for (const key of Object.keys(data)) {
-          model.clearErrors(appendDataPath(this.dataPath, key))
+          model.errors.clear(appendDataPath(this.dataPath, key))
         }
       } else if (item) {
-        model.clearErrors(this.dataPath)
+        model.errors.clear(this.dataPath)
       } else if (isReset) {
         this.#resetState()
       } else {
@@ -392,9 +330,7 @@ export class DataModel {
   // its errors go with it:
   #resetState() {
     this.markClean()
-    this.#errorScope?.stop()
-    this.#errorScope = effectScope(true)
-    this.#errors.value = new WeakEntryMap()
+    this.errors.reset()
   }
 
   // Set the value that a source loaded or deleted through its own resource,
@@ -414,18 +350,9 @@ export class DataModel {
     data[name] = deserializeData(
       { fields: { [name]: schema } },
       { [name]: value },
-      { ...this.#walkOptions, dataPath: getParentDataPath(dataPath) }
+      { ...this.walkOptions, dataPath: getParentDataPath(dataPath) }
     )[name]
     this.markClean({ dataPath })
-  }
-
-  // Write the computed values of the current data right away, also of records
-  // that the update of the data entries hasn't created yet.
-  #writeComputedValues() {
-    this.#updateComponentRecords(this.#dataEntries.value.recordedEntries)
-    for (const record of this.componentRecords.values()) {
-      record.writeComputedValue?.()
-    }
   }
 
   set({ data, name, dataPath }: FieldKey & { dataPath: string }, value: any) {
@@ -537,7 +464,7 @@ export class DataModel {
       data[name] = isListItem ? merged[0] : merged
       // The item takes over the computed values of the draft, which may hold
       // references to the draft:
-      this.#writeComputedValues()
+      this.fields.writeComputedValues()
     }
   }
 
@@ -577,280 +504,10 @@ export class DataModel {
     }
   }
 
-  #getFieldKey(dataPath: string): FieldKey {
-    const path = parseDataPath(getRelativeDataPath(dataPath, this.dataPath)!)
-    const name = path.pop()!
-    return { data: getValueAtDataPath(this.data, path, () => null), name }
-  }
-
-  getErrors(dataPath: string): ValueError[] | null {
-    const { data, name } = this.#getFieldKey(dataPath)
-    const errors = this.#errors.value.get({ data, name })
-    return errors ? [...errors.validation, ...errors.server] : null
-  }
-
-  // The errors of the field itself, e.g. of options that failed to load:
-  getFieldErrors(dataPath: string): string[] | null {
-    return this.#fieldErrors.value.get(this.#getFieldKey(dataPath)) ?? null
-  }
-
-  setErrors(dataPath: string, errors: ValueError[] | null) {
-    this.#setErrors(this.#getFieldKey(dataPath), 'validation', errors)
-  }
-
-  // Replace the validation errors of the value at `dataPath` with the ones of
-  // its node, e.g. when its component is blurred, also in the items of sources
-  // with a resource. Return whether it's valid:
-  validate(dataPath: string): boolean {
-    const { schema, data } = this
-    let errors: ValueError[] = []
-    if (data && !isEmptySchema(schema)) {
-      walkData(schema!, data, {
-        ...this.#walkOptions,
-        dataPath: this.dataPath,
-        shouldSkipIrrelevant: true,
-        // Only walk the values that contain the value:
-        shouldVisit: entry => (
-          getRelativeDataPath(dataPath, entry.dataPath) !== null
-        ),
-        visit: entry => {
-          if (entry.dataPath === dataPath) {
-            const propertyNode = entry.node.getPropertyNode(entry)
-            errors = propertyNode?.getValidationErrors(entry) ?? []
-          }
-        }
-      })
-    }
-    this.setErrors(dataPath, errors.length > 0 ? errors : null)
-    return errors.length === 0
-  }
-
-  addError(dataPath: string, message: string) {
-    const key = this.#getFieldKey(dataPath)
-    const messages = this.#fieldErrors.value.get(key) ?? []
-    if (!messages.includes(message)) {
-      this.#fieldErrors.value.set(key, [...messages, message])
-      triggerRef(this.#fieldErrors)
-    }
-  }
-
-  removeError(dataPath: string, message: string) {
-    const key = this.#getFieldKey(dataPath)
-    const messages = this.#fieldErrors.value.get(key) ?? []
-    if (messages.includes(message)) {
-      if (messages.length > 1) {
-        this.#fieldErrors.value.set(
-          key,
-          messages.filter(error => error !== message)
-        )
-      } else {
-        this.#fieldErrors.value.delete(key)
-      }
-      triggerRef(this.#fieldErrors)
-    }
-  }
-
-  // Errors inside values that no deeper field displays go to the field of the
-  // value, with their path in it, e.g. of objects edited as code. With
-  // `isMatchingDataPath()`, only the errors of the matching fields are
-  // replaced. Return the data paths of the fields that hold the errors, by the
-  // data paths of the errors, without the ones that no field holds.
-  replaceErrors(
-    errors: Record<string, ValueError[]>,
-    {
-      dataPath = this.dataPath,
-      server = false,
-      isMatchingDataPath = null
-    }: {
-      dataPath?: string
-      server?: boolean
-      isMatchingDataPath?: ((dataPath: string) => boolean) | null
-    } = {}
-  ): Record<string, string> {
-    const entries: DataEntry[] = []
-    this.#walkFieldEntries(dataPath, entry => entries.push(entry))
-    const errorsByDataPath: Record<string, ValueError[]> = {}
-    const fieldDataPaths: Record<string, string> = {}
-    for (const [errorDataPath, valueErrors] of Object.entries(errors)) {
-      // The deepest field that displays the value or contains it:
-      let field: { dataPath: string; path: string } | null = null
-      for (const { dataPath } of entries) {
-        const path = getRelativeDataPath(errorDataPath, dataPath)
-        if (
-          path !== null &&
-          dataPath!.length > (field?.dataPath.length ?? -1)
-        ) {
-          field = { dataPath: dataPath!, path }
-        }
-      }
-      if (field) {
-        const { dataPath, path } = field
-        errorsByDataPath[dataPath] = [
-          ...(errorsByDataPath[dataPath] ?? []),
-          ...valueErrors.map(error => (path ? { ...error, path } : error))
-        ]
-        fieldDataPaths[errorDataPath] = dataPath
-      }
-    }
-    for (const { dataPath } of entries) {
-      const errors = errorsByDataPath[dataPath!] ?? null
-      if (errors || !isMatchingDataPath || isMatchingDataPath(dataPath!)) {
-        this.#setErrors(
-          this.#getFieldKey(dataPath!),
-          server ? 'server' : 'validation',
-          errors
-        )
-      }
-    }
-    return fieldDataPaths
-  }
-
-  // The errors of the fields stay until their sources remove them.
-  clearErrors(dataPath = this.dataPath) {
-    this.#walkFieldEntries(dataPath, entry => {
-      this.#setValueErrors(this.#getFieldKey(entry.dataPath!), null)
-    })
-  }
-
-  getErrorDataPaths(dataPath = this.dataPath): string[] {
-    const dataPaths: string[] = []
-    this.#walkFieldEntries(dataPath, entry => {
-      if (
-        this.getErrors(entry.dataPath!) ||
-        this.getFieldErrors(entry.dataPath!)
-      ) {
-        dataPaths.push(entry.dataPath!)
-      }
-    })
-    return dataPaths
-  }
-
-  // Return whether `data` or the data nested in it hold fields with errors,
-  // also where they aren't displayed, e.g. in the items of nested forms.
-  hasErrorsWithin(data: any): boolean {
-    // Optimization: Skip the deep walk, and with it the tracking of all nested
-    // values, while there are no errors at all:
-    if (this.#errors.value.size === 0 && this.#fieldErrors.value.size === 0) {
-      return false
-    }
-    // Computed values can hold their ancestors, e.g. `parentItem`:
-    const visited = new Set()
-    const hasErrors = (data: any): boolean => {
-      if ((isPlainObject(data) || isArray(data)) && !visited.has(data)) {
-        visited.add(data)
-        return (
-          this.#errors.value.hasEntriesOf(data) ||
-          this.#fieldErrors.value.hasEntriesOf(data) ||
-          Object.values(data).some(hasErrors)
-        )
-      }
-      return false
-    }
-    return hasErrors(data)
-  }
-
-  // Copy the errors of the originals of `data` and of the data nested in it,
-  // e.g. from the parent's model to the draft of a nested form.
-  copyErrors(model: DataModel, data: any) {
-    const visited = new Set()
-    const copy = (data: any) => {
-      if ((isPlainObject(data) || isArray(data)) && !visited.has(data)) {
-        visited.add(data)
-        const original = getOriginal(data)
-        for (const [name, errors] of model.#errors.value.entriesOf(original)) {
-          const { validation, server } = errors
-          this.#setValueErrors({ data, name }, { validation, server })
-        }
-        Object.values(data).forEach(copy)
-      }
-    }
-    copy(data)
-  }
-
-  // Take over the errors of the value at `dataPath` in `model` as the ones of
-  // `key`, e.g. of a primitive that a draft wraps:
-  copyValueErrors(model: DataModel, dataPath: string, key: FieldKey) {
-    const errors = model.#errors.value.get(model.#getFieldKey(dataPath))
-    if (errors) {
-      const { validation, server } = errors
-      this.#setValueErrors(key, { validation, server })
-    }
-  }
-
-  #setErrors(
-    key: FieldKey,
-    kind: 'validation' | 'server',
-    errors: ValueError[] | null
-  ) {
-    const valueErrors = {
-      ...(this.#errors.value.get(key) ?? { validation: [], server: [] }),
-      [kind]: errors ?? []
-    }
-    this.#setValueErrors(
-      key,
-      valueErrors.validation.length > 0 || valueErrors.server.length > 0
-        ? valueErrors
-        : null
-    )
-  }
-
-  #setValueErrors(key: FieldKey, errors: ValueErrors | null) {
-    const { data, name } = key
-    const currentErrors = this.#errors.value.get(key)
-    if (errors) {
-      // Watch synchronously and deeply, as values also change in place and
-      // through direct writes, e.g. of `change` handlers:
-      errors.stopWatching = (
-        currentErrors?.stopWatching ??
-        this.#errorScope.run(() =>
-          watch(
-            () => data[name],
-            () => this.#setValueErrors(key, null),
-            { deep: true, flush: 'sync' }
-          )
-        )
-      )
-      this.#errors.value.set(key, errors)
-    } else if (currentErrors) {
-      currentErrors.stopWatching?.()
-      this.#errors.value.delete(key)
-    }
-    triggerRef(this.#errors)
-  }
-
-  #walkFieldEntries(
-    dataPath: string,
-    handleEntry: (entry: DataEntry) => void
-  ) {
-    const { schema, data } = this
-    const isWithin = (entry: DataEntry) => (
-      getRelativeDataPath(entry.dataPath, dataPath) !== null
-    )
-    if (data && !isEmptySchema(schema)) {
-      walkData(schema!, data, {
-        ...this.#walkOptions,
-        dataPath: this.dataPath,
-        shouldSkipIrrelevant: true,
-        // Visit the values within `dataPath`, and the ones that contain it. The
-        // fields of their panels edit the data around them:
-        shouldVisit: entry => (
-          isWithin(entry) ||
-          getRelativeDataPath(dataPath, entry.dataPath) !== null
-        ),
-        shouldSkipSourcesWithResource: true,
-        visit: entry => {
-          if (isWithin(entry)) {
-            handleEntry(entry)
-          }
-        }
-      })
-    }
-  }
-
   stop() {
-    this.#scope.stop()
-    this.#errorScope.stop()
-    this.componentRecords.clear()
+    this.scope.stop()
+    this.errors.stop()
+    this.fields.records.clear()
     this.#pendingLoads.clear()
     this.#pendingSubmits.clear()
   }
@@ -889,7 +546,7 @@ export class DataModel {
     return promise
   }
 
-  get #walkOptions() {
+  get walkOptions() {
     return { services: this.#options.services, rootData: this.rootData }
   }
 
@@ -914,7 +571,7 @@ export class DataModel {
   #deserializeData(schema: Schema | null, data: Data) {
     if (!isEmptySchema(schema)) {
       deserializeData(schema!, data, {
-        ...this.#walkOptions,
+        ...this.walkOptions,
         dataPath: this.dataPath
       })
     }
@@ -956,7 +613,7 @@ export class DataModel {
     const sourceEntriesWithResource: DataEntry[] = []
     if (data && !isEmptySchema(schema)) {
       walkData(schema!, data, {
-        ...this.#walkOptions,
+        ...this.walkOptions,
         dataPath: this.dataPath,
         shouldSkipIrrelevant: true,
         shouldWalk: ({ node }) => !node.source?.hasResource,
@@ -980,7 +637,7 @@ export class DataModel {
             }
             if (
               !(entry.name in entry.data) &&
-              this.#shouldSetDefaultValue(entry)
+              shouldSetDefaultValue(entry)
             ) {
               entriesWithMissingValues.push(entry)
             }
@@ -994,462 +651,10 @@ export class DataModel {
       sourceEntriesWithResource
     }
   }
-
-  // The model writes the values of components with `computeValue()` including
-  // their defaults:
-  #shouldSetDefaultValue(entry: DataEntry): boolean {
-    return !!entry.node.getPropertyNode(entry)?.shouldSetDefaultValue(entry, {
-      shouldSetDefaultsOfComputedValues: false
-    })
-  }
-
-  #setDefaultValue(entry: DataEntry) {
-    entry.node.getPropertyNode(entry)?.setDefaultValue(entry, {
-      shouldSetDefaultsOfComputedValues: false
-    })
-  }
-
-  #updateComponentRecords(entries: EntryMap<RecordedEntry>) {
-    const previousRecords = this.componentRecords
-    this.componentRecords = new EntryMap()
-    for (const entry of entries.values()) {
-      const record = previousRecords.get(entry) ?? createComponentRecord(entry)
-      previousRecords.delete(entry)
-      if (record.entry.schema !== entry.schema) {
-        record.computedValueScope?.stop()
-        record.computedValueScope = null
-        record.writeComputedValue = null
-      }
-      record.entry = entry
-      record.dataPath.value = entry.dataPath!
-      record.itemDataPath.value = entry.itemDataPath
-      // Add the record first, as its watchers may read its options right away:
-      this.componentRecords.set(entry, record)
-      if (hasComputedValueSource(entry.schema)) {
-        record.computedValueScope ??= this.#createComputedValueScope(record)
-      }
-    }
-    for (const {
-      computedValueScope,
-      optionsScope
-    } of previousRecords.values()) {
-      computedValueScope?.stop()
-      optionsScope?.stop()
-    }
-  }
-
-  #getComponentRecord(entry: FieldEntry): ComponentRecord {
-    let record = this.componentRecords.get(entry)
-    if (!record) {
-      record = createComponentRecord(entry)
-      this.componentRecords.set(entry, record)
-    }
-    return record
-  }
-
-  // Records stop being current before their scope is stopped, as watchers
-  // outside of components run in the order in which they're triggered.
-  #createComputedValueScope(record: ComponentRecord): EffectScope {
-    const { schema } = record.entry
-    const scope = this.#scope.run(() => effectScope())!
-    scope.run(() => {
-      const isRecordCurrent = computed(() =>
-        this.#isRecordCurrent(record, schema)
-      )
-      const dataSchemaResolver = schema.computeValue
-        ? null
-        : this.#createDataSchemaResolver(schema, record)
-      // Return a new object each time, so that the value is also written when
-      // only the value in the data changed, e.g. through user input:
-      const currentResult = computed(() =>
-        !isRecordCurrent.value
-          ? null
-          : schema.computeValue
-            ? this.#getComputedValueResult(record)
-            : dataSchemaResolver!.isLoading
-              ? null
-              : { value: dataSchemaResolver!.value }
-      )
-      const write = (result: { value: any } | null) => {
-        if (result) {
-          this.#writeComputedValue(
-            record.entry as RecordedEntry,
-            result.value
-          )
-        }
-      }
-      record.writeComputedValue = () => write(currentResult.value)
-      watch(currentResult, write, modelWatchOptions)
-      record.writeComputedValue()
-    })
-    return scope
-  }
-
-  #isRecordCurrent(record: ComponentRecord, schema: Schema): boolean {
-    const currentEntry = this.#dataEntries.value.recordedEntries.get(
-      record.entry
-    )
-    return currentEntry?.schema === schema
-  }
-
-  // Return `null` while `computeValue()` reads options that aren't loaded yet,
-  // to keep the current value until they are.
-  #getComputedValueResult(record: ComponentRecord): { value: any } | null {
-    const entry = record.entry as RecordedEntry
-    const { node, schema, data, name } = entry
-    try {
-      const value = getComputedValue(
-        schema,
-        data,
-        name,
-        // Read the data paths through the record, so that only computes that
-        // read their position run again when their items move:
-        () => record.dataPath.value,
-        {
-          ...this.#walkOptions,
-          itemDataPath: () => record.itemDataPath.value,
-          getOptions: getOptionsDataSchema(schema)
-            ? () => this.#getLoadedOptions(entry)
-            : null
-        }
-      )
-      // Values that aren't computed stay, or get their defaults when missing:
-      if (value !== undefined) {
-        return { value }
-      } else {
-        const propertyNode = node.getPropertyNode(entry)
-        return {
-          value: propertyNode
-            ? propertyNode.getValueOrDefault(entry)
-            : data[name]
-        }
-      }
-    } catch (error) {
-      if (error === optionsNotLoaded) {
-        return null
-      }
-      throw error
-    }
-  }
-
-  // Options that resolve to `undefined` aren't loading, e.g. failed loads.
-  #getLoadedOptions(entry: FieldEntry) {
-    const resolver = this.getOptionsResolver(entry)
-    if (resolver.isLoading) {
-      throw optionsNotLoaded
-    }
-    return resolver.value
-  }
-
-  // Computes and components share the resolver, so they get the same options.
-  getOptionsResolver(entry: FieldEntry): DataSchemaResolver {
-    const record = this.#getComponentRecord(entry)
-    const options = getOptionsDataSchema(entry.schema)
-    if (!record.optionsResolver || record.optionsSchema !== options) {
-      record.optionsScope?.stop()
-      record.optionsSchema = options
-      record.optionsResolver = this.#createDataSchemaResolver(options, record)
-      record.optionsScope = this.#createOptionsScope(record)
-    }
-    return record.optionsResolver
-  }
-
-  // Show the errors of the loads of the options, and replace the value once
-  // they're loaded, see `getReplacedValue()`. The replaced value is derived
-  // from the options, not an edit, so it's written directly.
-  #createOptionsScope(record: ComponentRecord): EffectScope {
-    const resolver = record.optionsResolver!
-    const scope = this.#scope.run(() => effectScope())!
-    scope.run(() => {
-      // The error of the last load replaces the one of the previous load, e.g.
-      // when the options load again after the data is replaced:
-      watch(
-        () => resolver.lastLoadError,
-        (error, previousError) => {
-          const dataPath = record.dataPath.value
-          if (previousError) {
-            this.removeError(dataPath, getErrorMessage(previousError))
-          }
-          if (error) {
-            this.addError(dataPath, getErrorMessage(error))
-          }
-        }
-      )
-      // The options are requested while rendering, so write after it:
-      watchEffect(() => {
-        const options = resolver.value
-        if (isArray(options)) {
-          const { entry } = record
-          const { schema, data, name } = entry
-          const context = this.#createEntryContext(entry)
-          // Replace the value that the component displays, like it would:
-          const settings = getOptionsSettings(schema, options, {
-            multiple: getMultipleValue(schema, context),
-            isGrouped: false,
-            createContext: values => context.extend({ options, ...values })
-          })
-          const replaced = getReplacedValue(
-            settings,
-            options,
-            getEditedValue(schema, data[name], context)
-          )
-          if (replaced) {
-            data[name] = toModelData(
-              parseEditedValue(schema, replaced.value, value =>
-                context.extend({ value })
-              )
-            )
-          }
-        }
-      }, modelWatchOptions)
-    })
-    return scope
-  }
-
-  #createDataSchemaResolver(
-    dataSchema: Schema,
-    record: ComponentRecord
-  ): DataSchemaResolver {
-    return new DataSchemaResolver(dataSchema, {
-      createContext: () => this.#createEntryContext(record.entry),
-      onLoadStart: (promise: Promise<unknown>) => this.trackPendingLoad(promise)
-    })
-  }
-
-  #writeComputedValue(entry: RecordedEntry, computedValue: any) {
-    const { data, name } = entry
-    const value = this.#getValueWithNestedDefaultValues(entry, computedValue)
-    const dataPath = getRelativeDataPath(entry.dataPath, this.dataPath)
-    if (
-      // Values from the reactive data are references, e.g. `parentItem`, which
-      // may equal stale copies like applied drafts. Values that
-      // `computeValue()` creates anew each time are compared by content:
-      (
-        isProxy(value)
-          ? toRaw(value) !== toRaw(data[name])
-          : !equals(value, data[name])
-      ) &&
-      !this.#isWriteLoop(dataPath)
-    ) {
-      // Write `data[name]` directly, without calling `parseValue()`:
-      data[name] = toModelData(value)
-    }
-  }
-
-  // Add the defaults that `setDefaultValues()` would add once it's written, or
-  // the two keep replacing each other's writes. We copy only what holds missing
-  // values, as the value may be shared, e.g. a constant.
-  #getValueWithNestedDefaultValues(entry: RecordedEntry, value: any) {
-    const { data, name } = entry
-    if (
-      !isPlainObject(value) && !isArray(value) ||
-      // The current value gets its defaults from `setDefaultValues()`:
-      toRaw(value) === toRaw(data[name])
-    ) {
-      return value
-    }
-    const dataWithMissingValues = new Set<object>()
-    this.#walkNestedEntries(entry, value, nestedEntry => {
-      if (this.#shouldSetDefaultValue(nestedEntry)) {
-        dataWithMissingValues.add(nestedEntry.data)
-      }
-    })
-    if (dataWithMissingValues.size === 0) {
-      return value
-    }
-    const valueWithDefaults = copyContainersHolding(
-      value,
-      dataWithMissingValues
-    )
-    // Defaults may hold values with defaults of their own, which the walk
-    // visits after setting them:
-    this.#walkNestedEntries(entry, valueWithDefaults, nestedEntry =>
-      this.#setDefaultValue(nestedEntry)
-    )
-    return valueWithDefaults
-  }
-
-  #walkNestedEntries(
-    entry: RecordedEntry,
-    value: any,
-    handleNestedEntry: (entry: DataEntry) => void
-  ) {
-    const { form, data, name, dataPath } = entry
-    const valueData = { ...data, [name]: value }
-    walkData(form, valueData, {
-      ...this.#walkOptions,
-      dataPath: getParentDataPath(dataPath),
-      shouldSkipIrrelevant: true,
-      shouldSkipSourcesWithResource: true,
-      visit: nestedEntry => {
-        if (nestedEntry.data !== valueData) {
-          handleNestedEntry(nestedEntry)
-        }
-      }
-    })
-  }
-
-  // Sources of a value may keep disagreeing on it, e.g. two computes, so we
-  // report it once instead of letting the writes loop endlessly.
-  #isWriteLoop(dataPath: string | null): boolean {
-    if (!this.#computedValueWriteCounts) {
-      this.#computedValueWriteCounts = new Map()
-      queueMicrotask(() => {
-        this.#computedValueWriteCounts = null
-      })
-    }
-    const count = (this.#computedValueWriteCounts.get(dataPath) ?? 0) + 1
-    this.#computedValueWriteCounts.set(dataPath, count)
-    if (count === maxComputedValueWrites + 1) {
-      console.error(
-        new Error(
-          `The computed value at '${dataPath}' keeps changing, as its ` +
-          `sources disagree on it. It isn't written anymore in this update.`
-        )
-      )
-    }
-    return count > maxComputedValueWrites
-  }
-
-  #createEntryContext({
-    schema,
-    data,
-    name,
-    dataPath,
-    itemDataPath
-  }: FieldEntry) {
-    return SchemaContext.createForSchema(this.#options.services, {
-      schema,
-      name,
-      data,
-      dataPath,
-      itemDataPath,
-      rootData: this.rootData
-    })
-  }
-}
-
-// Copy the objects and arrays that are or hold one of `objects` shallowly, at
-// each occurrence, so that defaults set in copies never reach the originals.
-function copyContainersHolding(
-  value: any,
-  objects: Set<object>,
-  ancestorValues = new Set<object>()
-): any {
-  if (
-    !isPlainObject(value) && !isArray(value) ||
-    ancestorValues.has(value)
-  ) {
-    return value
-  }
-  ancestorValues.add(value)
-  const copyValue = () => (isArray(value) ? [...value] : { ...value })
-  let copy: any = objects.has(value) ? copyValue() : null
-  for (const [key, entry] of Object.entries(value)) {
-    const entryCopy = copyContainersHolding(entry, objects, ancestorValues)
-    if (entryCopy !== entry) {
-      copy ??= copyValue()
-      copy[key] = entryCopy
-    }
-  }
-  ancestorValues.delete(value)
-  return copy ?? value
 }
 
 // Set up before rendering, so new data renders with its defaults right away:
 const modelSetupWatchOptions = { immediate: true, flush: 'pre' } as const
-
-// Write derived values after mounting, or the `mounted` hooks of `v-model`
-// restore the values that inputs had then (vuejs/core#15774):
-const modelWatchOptions = { flush: 'post' } as const
-
-const optionsNotLoaded = Symbol('optionsNotLoaded')
-
-const maxComputedValueWrites = 10
-
-function createComponentRecord(entry: FieldEntry): ComponentRecord {
-  return {
-    entry,
-    dataPath: shallowRef(entry.dataPath!),
-    itemDataPath: shallowRef(entry.itemDataPath ?? null),
-    computedValueScope: null,
-    writeComputedValue: null,
-    optionsResolver: null,
-    optionsSchema: null,
-    optionsScope: null
-  }
-}
-
-// Compare data by its raw object, as it may come through reactive proxies.
-type ValuesByName<T> = Map<Key, T>
-
-class WeakEntryMap<T> {
-  protected valuesByData:
-    | WeakMap<object, ValuesByName<T>>
-    | Map<object, ValuesByName<T>> = new WeakMap()
-
-  // NOTE: Data that is collected without its entries being deleted keeps them
-  // counted, which only costs the optimizations that rely on `size`.
-  size = 0
-
-  get({ data, name }: FieldKey): T | undefined {
-    return this.valuesByData.get(toRaw(data))?.get(name)
-  }
-
-  set({ data, name }: FieldKey, value: T) {
-    const rawData = toRaw(data)
-    let valuesByName = this.valuesByData.get(rawData)
-    if (!valuesByName) {
-      valuesByName = new Map()
-      this.valuesByData.set(rawData, valuesByName)
-    }
-    if (!valuesByName.has(name)) {
-      this.size++
-    }
-    valuesByName.set(name, value)
-  }
-
-  delete({ data, name }: FieldKey): boolean {
-    const rawData = toRaw(data)
-    const valuesByName = this.valuesByData.get(rawData)
-    const isDeleted = !!valuesByName?.delete(name)
-    if (isDeleted) {
-      this.size--
-      if (valuesByName!.size === 0) {
-        this.valuesByData.delete(rawData)
-      }
-    }
-    return isDeleted
-  }
-
-  hasEntriesOf(data: object): boolean {
-    return this.valuesByData.has(toRaw(data))
-  }
-
-  entriesOf(data: object): Iterable<[Key, T]> {
-    return this.valuesByData.get(toRaw(data))?.entries() ?? []
-  }
-}
-
-// Entry maps can be iterated and cleared, but keep their data alive.
-class EntryMap<T> extends WeakEntryMap<T> {
-  protected override valuesByData = new Map<object, ValuesByName<T>>()
-
-  clear() {
-    this.valuesByData.clear()
-    this.size = 0
-  }
-
-  *values(): Generator<T> {
-    for (const valuesByName of this.valuesByData.values()) {
-      yield* valuesByName.values()
-    }
-  }
-}
-
-function getErrorMessage(error: any): string {
-  return error.message || error
-}
 
 // Collect the data paths at which `value` and `other` differ, down to values
 // that aren't objects, or arrays of the same length:

@@ -322,7 +322,7 @@ describe('DitoTreeListType', () => {
       schema,
       data: site
     })
-    dataModel.replaceErrors(
+    dataModel.errors.replace(
       { 'pages/0/subpages/1/title': [{ message: 'is taken' }] },
       { server: true }
     )
@@ -335,7 +335,7 @@ describe('DitoTreeListType', () => {
     data.pages[0].subpages[1].title = 'Heritage'
     await flushPromises()
     expect(getMarkedLabels()).toEqual([])
-    dataModel.setErrors('pages/0/title', [{ message: 'is taken' }])
+    dataModel.errors.set('pages/0/title', [{ message: 'is taken' }])
     await flushPromises()
     expect(getMarkedLabels()).toEqual(['About'])
   })

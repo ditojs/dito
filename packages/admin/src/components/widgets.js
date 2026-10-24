@@ -515,7 +515,7 @@ function createCustomFieldComponent(property, slots) {
         // Validate the value like widgets do on blur, and return whether it's
         // valid:
         validate() {
-          return dataContext.model.validate(props.context.dataPath)
+          return dataContext.model.errors.validate(props.context.dataPath)
         }
       })
       // `focusin` and `focusout` bubble from the elements in the slot, unlike

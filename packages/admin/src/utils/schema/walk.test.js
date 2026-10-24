@@ -1321,10 +1321,9 @@ describe('DataModel', () => {
 
   // The data paths of the records, and the fields that they're for:
   const getRecords = dataModel =>
-    [...dataModel.componentRecords.values()].map(({ dataPath, entry }) => [
-      dataPath.value,
-      entry.schema
-    ])
+    [...dataModel.fields.records.values()].map(
+      ({ dataPath, entry }) => [dataPath.value, entry.schema]
+    )
 
   it('records the fields with options', async () => {
     const { dataModel, data } = await createDataModel(
@@ -1501,7 +1500,7 @@ describe('DataModel', () => {
         dataModel.data,
         { services, dataPath: '' }
       )
-      const fieldDataPaths = dataModel.replaceErrors({
+      const fieldDataPaths = dataModel.errors.replace({
         ...errors,
         'collections/0/items/0/chapters/0/title/x': [{ message: 'deep' }],
         'unknown': [{ message: 'unknown' }]
@@ -1511,7 +1510,7 @@ describe('DataModel', () => {
           'collections/0/items/0/chapters/0/title'
       })
       expect(fieldDataPaths).not.toHaveProperty('unknown')
-      expect(dataModel.getErrorDataPaths()).toEqual([
+      expect(dataModel.errors.getDataPaths()).toEqual([
         'title',
         'collections/0/code',
         'collections/0/discount',
@@ -1529,13 +1528,13 @@ describe('DataModel', () => {
         'notes'
       ])
       expect(
-        dataModel.getErrors('collections/0/items/0/chapters/0/title')
+        dataModel.errors.get('collections/0/items/0/chapters/0/title')
       ).toEqual([
         { message: 'must be at most 20 characters long' },
         { message: 'deep', path: 'x' }
       ])
-      dataModel.clearErrors('collections/0')
-      expect(dataModel.getErrorDataPaths()).toEqual([
+      dataModel.errors.clear('collections/0')
+      expect(dataModel.errors.getDataPaths()).toEqual([
         'title',
         'collections/1/name',
         'collections/1/items/0/email',
@@ -1563,10 +1562,10 @@ describe('DataModel', () => {
         },
         { pages: [{ title: 'About', subpages: [{ title: '' }] }] }
       )
-      dataModel.replaceErrors({
+      dataModel.errors.replace({
         'pages/0/subpages/0/title': [{ message: 'is required' }]
       })
-      expect(dataModel.getErrorDataPaths()).toEqual([
+      expect(dataModel.errors.getDataPaths()).toEqual([
         'pages/0/subpages/0/title'
       ])
       dataModel.stop()
@@ -1586,8 +1585,8 @@ describe('DataModel', () => {
         { address: { street: '' } }
       )
       const errors = { address: [{ message: 'is invalid' }] }
-      expect(dataModel.replaceErrors(errors)).toEqual({})
-      expect(dataModel.getErrorDataPaths()).toEqual([])
+      expect(dataModel.errors.replace(errors)).toEqual({})
+      expect(dataModel.errors.getDataPaths()).toEqual([])
       dataModel.stop()
     })
 
@@ -1601,11 +1600,11 @@ describe('DataModel', () => {
         },
         { name: '' }
       )
-      dataModel.replaceErrors({ name: [{ message: 'is required' }] })
-      expect(dataModel.getErrorDataPaths()).toEqual(['name'])
-      expect(dataModel.getErrors('name')).toEqual([{ message: 'is required' }])
-      dataModel.clearErrors()
-      expect(dataModel.getErrorDataPaths()).toEqual([])
+      dataModel.errors.replace({ name: [{ message: 'is required' }] })
+      expect(dataModel.errors.getDataPaths()).toEqual(['name'])
+      expect(dataModel.errors.get('name')).toEqual([{ message: 'is required' }])
+      dataModel.errors.clear()
+      expect(dataModel.errors.getDataPaths()).toEqual([])
       dataModel.stop()
     })
   })

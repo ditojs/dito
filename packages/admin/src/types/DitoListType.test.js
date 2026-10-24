@@ -1040,10 +1040,10 @@ describe('DitoListType', () => {
         data: { tags: ['classic', 'novel'] }
       })
       const errors = [{ message: 'is unknown' }]
-      dataModel.replaceErrors({ 'tags/0': errors }, { server: true })
+      dataModel.errors.replace({ 'tags/0': errors }, { server: true })
       await enterValue(findField('tags').findAll('input')[1], 'romance')
       expect(data.tags).toEqual(['classic', 'romance'])
-      expect(dataModel.getErrors('tags/0')).toEqual(errors)
+      expect(dataModel.errors.get('tags/0')).toEqual(errors)
     })
 
     it('creates the first primitive value of lists that are `null`', async () => {
@@ -1168,11 +1168,11 @@ describe('DitoListType', () => {
         data: { tags: ['classic'] }
       })
       const errors = [{ message: 'is unknown' }]
-      dataModel.replaceErrors({ 'tags/0': errors }, { server: true })
+      dataModel.errors.replace({ 'tags/0': errors }, { server: true })
       await admin.navigate('/items/1/tags/0')
       const form = admin.getRouteComponent(isForm)
       await settle(form)
-      expect(form.dataContext.model.getErrors('tags/0/tag')).toEqual(errors)
+      expect(form.dataContext.model.errors.get('tags/0/tag')).toEqual(errors)
       expect(new DOMWrapper(form.$el).find('.dito-errors').text()).toContain(
         'is unknown'
       )

@@ -161,7 +161,7 @@ export function useSource(
           query: getRequestQuery(),
           async onLoad(data) {
             if (routeContext?.isForm) {
-              getModel().removeError(props.dataPath, unauthorizedError)
+              getModel().errors.remove(props.dataPath, unauthorizedError)
             }
             sourceData.setData(data)
             await schemaEvents.emitEvent('load')
@@ -175,7 +175,7 @@ export function useSource(
             } else if (status === 401 && routeContext?.isForm) {
               // Sources in forms show that the user may not access their
               // resource:
-              getModel().addError(props.dataPath, unauthorizedError)
+              getModel().errors.add(props.dataPath, unauthorizedError)
               return true
             }
             return false
@@ -387,7 +387,7 @@ export function useSource(
       if (isSuccessful) {
         // Saving the source's own changes clears their errors, as in forms:
         model.markClean({ dataPath: props.dataPath })
-        model.clearErrors(props.dataPath)
+        model.errors.clear(props.dataPath)
       }
       return isSuccessful
     }

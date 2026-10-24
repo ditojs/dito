@@ -89,7 +89,7 @@ describe('useField()', () => {
     it('keeps the errors of the field on blur', async () => {
       const { findField, getErrors, dataModel, settle } =
         await mountRequiredTitle('Emma')
-      dataModel.addError('title', 'Unable to load the titles.')
+      dataModel.errors.add('title', 'Unable to load the titles.')
       await edit(findField('title').find('input'), '')
       await settle()
       expect(getErrors('title')).toEqual([
