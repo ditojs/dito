@@ -134,8 +134,9 @@ router.getAllowedMethods(path = null, exclude = null)
 ```
 
 Returns the methods that have a route for `path`, leaving out `exclude`, in
-any case. Without `path`, returns all methods that have routes. `HEAD` is
-included wherever `GET` is.
+any case. `path` is normalized like in `find()`, see
+[`normalizePath()`](#normalizepath). Without `path`, returns all methods that
+have routes. `HEAD` is included wherever `GET` is.
 
 ### normalizePath()
 
