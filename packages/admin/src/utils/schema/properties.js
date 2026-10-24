@@ -280,19 +280,24 @@ export class PropertyNode {
     return this.#callValueHooks('deserializeValue', value, entry)
   }
 
-  // Excluded values aren't sent:
+  // Excluded values aren't sent, and `exclude()` sees the serialized value:
   serialize(value, entry) {
     value = this.#callValueHooks(
       'serializeValue',
       this.#convertValue(value, entry),
       entry
     )
-    return value === undefined || this.isExcluded(entry) ? undefined : value
+    return value === undefined || this.isExcluded(entry, { value })
+      ? undefined
+      : value
   }
 
   // Computed properties are stored by the server, which doesn't accept them:
-  isExcluded(entry) {
-    return !!(this.#get('exclude', entry) || this.#get('computed', entry))
+  isExcluded(entry, values = null) {
+    return !!(
+      this.#get('exclude', entry, values) ||
+      this.#get('computed', entry, values)
+    )
   }
 
   // Assets have no limits of their own, their widgets check them:
@@ -355,13 +360,13 @@ export class PropertyNode {
     return value
   }
 
-  #get(key, entry) {
+  #get(key, entry, values = null) {
     const { property } = this
     return getSchemaValue(key, {
       schema: property,
       // Only callbacks need a context:
       context: isFunction(property[key])
-        ? this.#createContext(entry, key)
+        ? this.#createContext(entry, key, values)
         : null
     })
   }

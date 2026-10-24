@@ -356,7 +356,7 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     }
     // Values that are excluded or that `serializeValue()` returns nothing for,
     // e.g. of virtual fields, leave out their key:
-    value = node.serialize(value, entry)
+    value = node.getPropertyNode(entry)?.serialize(value, entry)
     if (value === undefined) {
       delete serializedData[name]
     } else {
