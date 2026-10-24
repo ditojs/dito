@@ -27,14 +27,12 @@ import {
 import {
   shouldRenderSchema,
   callOrLog,
-  getEditedValue,
   getDefaultValue,
   shouldSetDefaultValue,
   shouldExcludeValue,
   hasComputedValueSource,
   convertValue
 } from './data.js'
-import { getValidations, getValueValidationErrors } from './validation.js'
 import {
   createPropertyNodes,
   getFieldPropertyNode,
@@ -125,22 +123,9 @@ export class FieldNode {
       }))
   }
 
-  // Run the checks of all fields, each message once:
+  // Validate the value once against the property merged from its fields:
   getValidationErrors(entry) {
-    const errors = []
-    for (const { schema } of this.fields) {
-      const context = createContext(schema, entry)
-      // Validate the value as displayed, like the components do:
-      const value = getEditedValue(schema, entry.data[entry.name], context)
-      const valueErrors = getValueValidationErrors(
-        value,
-        getValidations(context)
-      )
-      const isNewError = ({ message }) =>
-        !errors.some(error => error.message === message)
-      errors.push(...valueErrors.filter(isNewError))
-    }
-    return errors
+    return this.getPropertyNode(entry)?.getValidationErrors(entry) ?? []
   }
 
   shouldSetDefaultValue(entry, options) {

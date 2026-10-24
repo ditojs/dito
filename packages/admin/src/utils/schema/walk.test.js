@@ -132,8 +132,8 @@ describe('getDataValidationErrors()', () => {
     // Messages of several fields appear once:
     expect(getDataValidationErrors(form, { name: '' }, { services })).toEqual({
       name: [
-        { message: 'must be at least 5 characters long' },
-        { message: 'is required' }
+        { message: 'is required' },
+        { message: 'must be at least 5 characters long' }
       ]
     })
   })

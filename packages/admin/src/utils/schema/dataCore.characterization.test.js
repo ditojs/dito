@@ -169,16 +169,17 @@ describe('getDataValidationErrors()', () => {
     ).toEqual({
       ...catalogueErrors,
       code: [{ message: 'must be at most 4 characters long' }],
-      // Changes with the one data mechanism, see plan: one check against the
-      // merged property drops `minLength: 2` of the second field.
+      // One check against the property merged from both fields, with the
+      // `minLength` of the first one:
       label: [
         { message: 'must be at least 5 characters long' },
-        { message: 'must be at least 2 characters long' },
         { message: 'must match pattern "^[a-z]+$"' }
-      ]
-      // Changes with the one data mechanism, see plan: `rating` validates as
-      // edited (4), not as stored (8), and `address` holds only hidden fields,
-      // so its `validate()` doesn't run.
+      ],
+      // Typed values that aren't `nullable` reject `null`, here before
+      // `initializeData()` replaces it:
+      nickname: [{ message: 'is required' }]
+      // `rating` validates as edited (4), not as stored (8), and `address`
+      // holds only hidden fields, so its `validate()` doesn't run.
     })
   })
 
