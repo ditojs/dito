@@ -41,14 +41,14 @@ component.dito-panel(
 </template>
 
 <script>
-import { computed, inject, reactive, toRefs } from 'vue'
+import { computed, inject, provide, reactive, toRefs } from 'vue'
 import { isFunction, clone } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { useContainer } from '../composables/useContainer.ts'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
-import { schemaContextKey } from '../utils/keys.ts'
+import { schemaContextKey, visibleKey } from '../utils/keys.ts'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { shouldRenderComponents } from '../utils/schema/data.js'
 import { hasNestedData } from '../utils/schema/structure.js'
@@ -118,6 +118,12 @@ export default {
           : props.data
     )
     const panelServices = container?.services ?? services
+    // The sidebar shows panels independently of the visibility of their
+    // components:
+    const visible = computed(() =>
+      getSchemaValue('visible', { type: Boolean, default: true })
+    )
+    provide(visibleKey, visible)
 
     return {
       getLabelText,
@@ -151,9 +157,7 @@ export default {
         getButtonSchemas(props.schema.panelButtons)
       ),
 
-      visible: computed(() =>
-        getSchemaValue('visible', { type: Boolean, default: true })
-      ),
+      visible,
 
       sticky: computed(() =>
         getSchemaValue('sticky', { type: Boolean, default: false })
