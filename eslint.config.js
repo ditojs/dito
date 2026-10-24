@@ -159,6 +159,8 @@ export default [
       // rule looks up in the JavaScript exports.
       'import/namespace': 'off',
       'no-dupe-class-members': 'off',
+      // TypeScript checks these, also for types, which these rules don't know.
+      'no-undef': 'off',
       'no-redeclare': 'off',
       'no-unused-vars': 'off',
       'no-use-before-define': 'off'

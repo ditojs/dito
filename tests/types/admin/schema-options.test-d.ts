@@ -2,6 +2,7 @@ import { expectTypeOf, assertType, describe, it } from 'vitest'
 import { html } from '@ditojs/utils'
 import type {
   ApiConfig,
+  ApiResource,
   Fields,
   FormSchema,
   ListSchema,
@@ -104,6 +105,17 @@ describe('field options', () => {
     })
   })
 
+  it('accepts the standard values of `autocomplete`', () => {
+    assertType<Fields<Entry>>({
+      title: { type: 'text', autocomplete: 'username' },
+      id: { type: 'text', autocomplete: 'shipping street-address' }
+    })
+    assertType<Fields<Entry>>({
+      // @ts-expect-error - only standard values fill in fields
+      title: { type: 'text', autocomplete: 'usrname' }
+    })
+  })
+
   it('types the data of data schemas as values or loaders', () => {
     assertType<Fields<Entry>>({
       title: {
@@ -157,6 +169,10 @@ describe('lists and forms', () => {
 
   it('accepts resources as functions', () => {
     assertType<Resource>(({ method }) => ({ path: 'items', method }))
+  })
+
+  it('accepts resources without `type`', () => {
+    assertType<ApiResource>({ path: 'self', method: 'get' })
   })
 
   it('accepts the widths of filters', () => {

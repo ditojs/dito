@@ -139,11 +139,12 @@ export type RequestMethodResponse<T> = Response & { data: T }
  */
 export interface ApiResource {
   /**
-   * Determines how the resource path is constructed.
+   * Determines how the resource path is constructed. Without it, the path is
+   * built as for `'collection'`.
    *
    * @see {@link ApiResource} for the path-building rules per type.
    */
-  type: LiteralUnion<'collection' | 'member' | 'upload'>
+  type?: LiteralUnion<'collection' | 'member' | 'upload'>
   /**
    * URL path segment for this resource. If it starts with `/`, it is
    * treated as absolute and parent nesting is skipped. Otherwise it
@@ -615,9 +616,10 @@ export interface FieldSchemaBase<$Item> extends SchemaBase<$Item> {
   maxItems?: SchemaValue<$Item, {}, number>
 
   /**
-   * Whether the input field should have autocomplete enabled.
+   * The `autocomplete` attribute of the input field: `'off'` to disable it,
+   * or a standard value like `'username'` or `'shipping street-address'`.
    */
-  autocomplete?: SchemaValue<$Item, {}, 'on' | 'off'>
+  autocomplete?: SchemaValue<$Item, {}, AutoFill>
 
   /**
    * Specifies a function which transforms the edited
