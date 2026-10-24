@@ -18,4 +18,4 @@ minimumReleaseAgeExclude:
   - objection@4.2.0
 patchedDependencies:
   # `:focus-within`, until capricorn86/happy-dom#2543 is released:
-  happy-dom@20.14.5: patches/happy-dom@20.14.5.patch
+  happy-dom@21.0.4: patches/happy-dom@21.0.4.patch
