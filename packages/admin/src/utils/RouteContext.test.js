@@ -1,3 +1,6 @@
+import { vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
+import { UiRegistry } from './UiRegistry.ts'
 import {
   mountForm,
   mountSchema,
@@ -83,6 +86,43 @@ describe('RouteContext', () => {
     expect(claim.param).toBe('0')
     expect(claim.source).toBe(getComponent('chapters').sourceContext)
     expect(chapterForm.routeContext.claim).toBe(claim)
+  })
+
+  it('resolves claims once per schema while components mount', async () => {
+    const { wrapper, findContainer, findField } = await mountForm({
+      schema: {
+        fields: {
+          details: {
+            type: 'section',
+            collapsible: true,
+            collapsed: true,
+            fields: {
+              chapters: {
+                type: 'list',
+                inlined: true,
+                fields: { title: { type: 'text' } }
+              }
+            }
+          }
+        }
+      },
+      data: {
+        chapters: Array.from({ length: 50 }, (_, index) => ({
+          title: `Chapter ${index + 1}`
+        }))
+      }
+    })
+    // Count the claims, as their cost only shows in their number:
+    const claimRoute = vi.spyOn(UiRegistry.prototype, 'claimRoute')
+    await findContainer('details')
+      .find('.dito-schema-header .dito-label')
+      .trigger('click')
+    await flushPromises()
+    expect(findField('details').findAll('input')).toHaveLength(50)
+    expect(claimRoute.mock.calls.length).toBeLessThanOrEqual(
+      wrapper.findAll('.dito-schema').length
+    )
+    claimRoute.mockRestore()
   })
 
   it('resolves the form of the item at the component path', async () => {
