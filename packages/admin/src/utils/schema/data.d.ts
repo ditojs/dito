@@ -26,17 +26,6 @@ export function resolveValue(
 ): any
 export function getDefaultValue(schema: Schema, context: Context): any
 export function getEmptyValue(schema: Schema, context: Context): any
-export function shouldIgnoreMissingValue(
-  schema: Schema,
-  context: Context
-): boolean
-export function shouldSetDefaultValue(
-  schema: Schema,
-  data: Data,
-  name: string,
-  context: Context | (() => Context),
-  options?: Options
-): boolean
 export function hasComputedValueSource(schema: Schema): boolean
 export function hasValueFromDataSchema(schema: Schema): boolean
 export function getMultipleValue(schema: Schema, context: Context): boolean
@@ -53,22 +42,10 @@ export function getComputedValue(
   dataPath: string | (() => string),
   options?: Options
 ): any
-export function getValueOrDefault(
-  schema: Schema,
-  data: Data,
-  name: string,
-  context: Context | (() => Context)
-): any
 export function getEditedValue(
   schema: Schema,
   value: any,
   context: Context | (() => Context)
-): any
-export function convertValue(
-  schema: Schema,
-  hookName: string,
-  value: any,
-  createContext: (value: any) => Context
 ): any
 export function parseEditedValue(
   schema: Schema,
@@ -82,10 +59,6 @@ export function serializeData(
   dataPath: string,
   options?: Options
 ): Data
-export function shouldExcludeValue(
-  schema: Schema,
-  context: Context | (() => Context)
-): boolean
 export function callOrLog<T>(callback: () => T, fallback: T): T
 export function isDataPathExcluded(
   schema: Schema,

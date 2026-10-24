@@ -1,9 +1,8 @@
 import { computed, shallowRef } from 'vue'
-import {
-  getValueOrDefault,
-  getEditedValue,
-  parseEditedValue
-} from '../utils/schema/data.js'
+import { getRootData } from '../utils/services.ts'
+import { hasNestedData } from '../utils/schema/structure.js'
+import { getFieldPropertyNode } from '../utils/schema/properties.js'
+import { getEditedValue, parseEditedValue } from '../utils/schema/data.js'
 import type {
   SchemaContextSetup,
   SchemaContextProps
@@ -13,15 +12,30 @@ export function useValue(
   props: SchemaContextProps,
   { createContext, services }: Omit<SchemaContextSetup, 'context'>
 ) {
+  const getDefaultValue = () => {
+    const { schema, data, dataPath, itemDataPath } = props
+    const { name } = schema
+    const entry = {
+      data,
+      name,
+      dataPath,
+      itemDataPath,
+      rootData: getRootData(services),
+      services
+    }
+    return getFieldPropertyNode(schema, name, entry)?.getDefaultValue(entry)
+  }
   // The last value that was written, after `parseValue()`:
   const parsedValue = shallowRef<any>(undefined)
   const value = computed<any>({
     get() {
       const { schema, data } = props
       const { name } = schema
-      const value = getValueOrDefault(schema, data, name, () =>
-        createContext({ value: data[name] })
-      )
+      // Like the nodes of fields, show the values that are there, also `null`,
+      // and the default of the field's property for missing ones. Unnested
+      // components hold no value of their own:
+      const value =
+        name in data || !hasNestedData(schema) ? data[name] : getDefaultValue()
       return getEditedValue(schema, value, () => createContext({ value }))
     },
 

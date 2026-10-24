@@ -16,7 +16,6 @@ import {
   getCreatableForms,
   getSchemaValue,
   getDefaultValue,
-  shouldExcludeValue,
   getMultipleValue,
   parseEditedValue,
   getItemId,
@@ -657,26 +656,6 @@ describe('getDefaultValue()', () => {
     const value = getDefaultValue({ type: 'text', default: tags }, {})
     expect(value).toEqual(tags)
     expect(value).not.toBe(tags)
-  })
-})
-
-describe('shouldExcludeValue()', () => {
-  it('calls `exclude()` with the context', () => {
-    const exclude = vi.fn(({ item }) => item.isDraft)
-    const schema = { type: 'text', exclude }
-    expect(shouldExcludeValue(schema, () => ({ item: { isDraft: true } })))
-      .toBe(true)
-    expect(shouldExcludeValue(schema, { item: { isDraft: false } })).toBe(
-      false
-    )
-  })
-
-  it('falls back on the `defaultExclude` of the type', () => {
-    expect(shouldExcludeValue({ type: 'label' }, {})).toBe(true)
-    expect(shouldExcludeValue({ type: 'label', exclude: false }, {})).toBe(
-      false
-    )
-    expect(shouldExcludeValue({ type: 'text' }, {})).toBe(false)
   })
 })
 
