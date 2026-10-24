@@ -16,6 +16,7 @@
   "files": [
     "src/",
     "!src/**/*.test.js",
+    "!src/**/*.test.ts",
     "!src/**/__snapshots__/"
   ],
   "engines": {

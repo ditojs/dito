@@ -23,6 +23,8 @@
     "dist/",
     "types/",
     "!src/**/*.test.js",
+    "!src/**/*.test.ts",
+    "!src/**/*.fixture.js",
     "!src/**/__snapshots__/",
     "!src/test/",
     "!src/**/node_modules/"
