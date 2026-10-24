@@ -362,6 +362,33 @@ describe('widgets of values', () => {
     })
   })
 
+  it('send empty strings of their `enum` as values', async () => {
+    const EditionPage = {
+      setup() {
+        form = useDitoForm({
+          resource: 'books',
+          id: 1,
+          properties: {
+            edition: { type: 'string', enum: ['', 'first'], nullable: true }
+          }
+        })
+        return () =>
+          h(DitoSchemaForm, null, {
+            default: () => h(DitoSelectField, { name: 'edition' })
+          })
+      }
+    }
+    const { wrapper, request } = await mountPage(EditionPage, 'books', {
+      id: 1,
+      edition: 'first'
+    })
+    await getContainer(wrapper, 'Edition').find('select').setValue('')
+    expect(await form.submit()).toBe(true)
+    expect(getSentData(request)).toEqual([
+      expect.objectContaining({ edition: '' })
+    ])
+  })
+
   it('edit options in their view with `editable`', async () => {
     const genres = {
       type: 'view',
