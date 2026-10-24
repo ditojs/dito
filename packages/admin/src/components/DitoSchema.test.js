@@ -829,6 +829,24 @@ describe('DitoSchema', () => {
       )
       expect(getErrors('author')).toEqual(['The Author field is required.'])
     })
+
+    it('notifies the errors of fields that are not visible', async () => {
+      const { admin, submit } = await mountForm({
+        schema: {
+          fields: {
+            title: { type: 'text' },
+            updatedAt: { type: 'value', required: true }
+          }
+        },
+        data: { title: 'Dune', updatedAt: null }
+      })
+      const notify = vi.spyOn(admin.context, 'notify')
+      expect(await submit()).toBe(null)
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'The field Updated At is required' })
+      )
+      vi.restoreAllMocks()
+    })
   })
 
   describe('revealing components of the same data', () => {
@@ -931,6 +949,19 @@ describe('DitoSchema', () => {
         expect.objectContaining({
           type: 'error',
           text: 'The field Isbn is invalid\nThe Book is incomplete'
+        })
+      )
+    })
+
+    it('notifies the errors of fields that are not visible', async () => {
+      const { submit, notify } = await mountBookForm(
+        { updatedAt: [{ message: 'must be a string' }] },
+        { updatedAt: { type: 'value' } }
+      )
+      await submit()
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: 'The field Updated At must be a string'
         })
       )
     })
