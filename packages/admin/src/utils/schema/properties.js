@@ -27,6 +27,7 @@ import {
   getSchemaValue,
   getDefaultValue,
   getEmptyValue,
+  getEditedValue,
   resolveValue,
   callOrLog
 } from './data.js'
@@ -156,13 +157,18 @@ export class PropertyNode {
   getValidationErrors(entry) {
     const { property } = this
     const get = key => this.#get(key, entry)
-    // The validations of the field's type come first, as for fields:
+    // The validations of the field's type come first, as for fields, and win
+    // over the keywords. Its range holds both limits:
     const validations = {
       ...this.#type?.getValidations?.(this.#createContext(entry, typeKey))
     }
+    const isValidatedByType = key => (
+      key in validations ||
+      !!validations.range && (key === 'minimum' || key === 'maximum')
+    )
     for (const key of validatedKeys) {
       const setting = get(key)
-      if (setting != null && setting !== false) {
+      if (setting != null && setting !== false && !isValidatedByType(key)) {
         validations[key] = setting
       }
     }
@@ -179,7 +185,9 @@ export class PropertyNode {
     if (format) {
       validations[validatorsByFormat[format]] = true
     }
-    const values = get('enum')
+    // Fields keep values that have no option, so only written properties
+    // validate `enum`:
+    const values = !this.fieldsByKey && get('enum')
     if (values) {
       validations.enum = value => values.includes(value)
     }
@@ -188,7 +196,18 @@ export class PropertyNode {
       validations.validate = value =>
         property.validate(context.extend({ value }))
     }
-    return getValueValidationErrors(entry.data[entry.name], validations)
+    // Fields validate the value as they edit it, written properties the stored
+    // one, as the server does:
+    const value = entry.data[entry.name]
+    const field = this.fieldsByKey?.[typeKey]
+    return getValueValidationErrors(
+      field
+        ? getEditedValue(field, value, () =>
+            this.#createContext(entry, typeKey)
+          )
+        : value,
+      validations
+    )
   }
 
   // The data model records the value for its computes:
@@ -586,16 +605,16 @@ function getFieldProperty(field, name, formContext) {
 }
 
 // The property that the field's type derives, `null` for types without a
-// value, e.g. buttons, and `{}` for types without `getProperty()`, which hold
-// any value. Callbacks depend on the entry, so `getProperty()` reads them
-// through `readCallback()`:
+// value, e.g. buttons, unless the field declares validation, and `{}` for types
+// without `getProperty()`, which hold any value. Callbacks depend on the entry,
+// so `getProperty()` reads them through `readCallback()`:
 function getTypeProperty(field, context, readCallback = () => undefined) {
   const descriptor = getTypeDescriptor(field)
   const getValue = (target, key) => {
     const value = target[key]
     return isFunction(value) ? readCallback(value) : value
   }
-  return descriptor?.getProperty
+  const property = descriptor?.getProperty
     ? descriptor.getProperty(
         new Proxy(field, {
           get: getValue,
@@ -606,6 +625,11 @@ function getTypeProperty(field, context, readCallback = () => undefined) {
     : descriptor?.defaultValue !== undefined
       ? {}
       : null
+  const isValidated = (
+    !!descriptor &&
+    [...validatedKeys, 'validate'].some(key => field[key] != null)
+  )
+  return property ?? (isValidated ? {} : null)
 }
 
 // Complete the property of the field's type with what nodes of fields resolve
@@ -638,6 +662,15 @@ function createFieldPropertyNode(field, name, property, context) {
       if (isFunction(field[key])) {
         property[key] = field[key]
       }
+    }
+    // Required arrays need one item, as in `getDataKeywords()`, also per entry:
+    const { required } = field
+    if (
+      isFunction(required) &&
+      property.type === 'array' &&
+      property.minItems === undefined
+    ) {
+      property.minItems = context => (required(context) ? 1 : null)
     }
     return new PropertyNode(
       name,
