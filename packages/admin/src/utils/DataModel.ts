@@ -34,12 +34,12 @@ import { isListSource } from './schema/structure.js'
 import {
   initializeData,
   isDataPathExcluded,
-  callOrLog,
   serializeData,
   deserializeData,
   hasItemsNumberedByOrderKey,
   updateOrder
 } from './schema/data.js'
+import { callOrLog } from './schema/value.js'
 import {
   walkData,
   getSchemaSource,

@@ -25,7 +25,7 @@ import { asArray, isString, isHtml } from '@ditojs/utils'
 import { hasSlotContent } from '@ditojs/ui/src'
 import DitoAffix from './DitoAffix.vue'
 import DitoInfo from './DitoInfo.vue'
-import { shouldRenderSchema } from '../utils/schema/data.js'
+import { shouldRenderSchema } from '../utils/schema/value.js'
 
 export default {
   components: { DitoAffix, DitoInfo },

@@ -27,7 +27,7 @@
 <script>
 import { computed } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
-import { getSchemaValue } from '../utils/schema/data.js'
+import { getSchemaValue } from '../utils/schema/value.js'
 import { fieldProps, useField } from '../composables/useField.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import {

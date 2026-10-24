@@ -3,7 +3,7 @@ import {
   getLabel,
   shouldRenderSchema,
   type Label
-} from '../utils/schema/data.js'
+} from '../utils/schema/value.js'
 import { getText } from '../utils/html.js'
 import type { Context } from '../utils/schema/types.ts'
 import type { Schema } from '../utils/types.ts'

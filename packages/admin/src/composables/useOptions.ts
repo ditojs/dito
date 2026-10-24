@@ -11,7 +11,7 @@ import {
   isObject,
   isString
 } from '@ditojs/utils'
-import { getMultipleValue } from '../utils/schema/data.js'
+import { getMultipleValue } from '../utils/schema/value.js'
 import { hasViewSchema } from '../utils/schema/lookup.js'
 import {
   findOptionForValue,

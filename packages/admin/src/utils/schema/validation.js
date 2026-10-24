@@ -7,7 +7,15 @@ import {
   normalizeDataPath,
   parseDataPath
 } from '@ditojs/utils'
-import { walkData } from './walk.js'
+
+// The validators of the server's formats, `uri` with the scheme it requires:
+export const validatorsByFormat = {
+  'email': 'email',
+  'hostname': 'hostname',
+  'password': 'password',
+  'uri': 'url',
+  'iso-time': 'isoTime'
+}
 
 // Return errors in the format of server errors, `[{ message }]`:
 export function getValueValidationErrors(value, validations) {
@@ -47,39 +55,6 @@ function getValidator(name) {
     console.warn(`Unknown validator '${name}' is ignored.`)
   }
   return validator
-}
-
-// Return errors like the server, `{ [dataPath]: [{ message }] }`:
-/**
- * @param {Record<string, any>} schema
- * @param {Record<string, any>} data
- * @param {Record<string, any>} [options]
- */
-export function getDataValidationErrors(schema, data, {
-  dataPath = '',
-  services = null,
-  rootData = data
-} = {}) {
-  let errors = null
-  walkData(schema, data, {
-    dataPath,
-    services,
-    rootData,
-    // NOTE: Like rendering, this skips nested sections and panels whose fields
-    // are all hidden, together with their own validations:
-    shouldSkipIrrelevant: true,
-    shouldSkipSourcesWithResource: true,
-    visit: entry => {
-      const valueErrors = (
-        entry.node.getPropertyNode(entry)?.getValidationErrors(entry) ?? []
-      )
-      if (valueErrors.length > 0) {
-        errors ||= {}
-        errors[entry.dataPath] = valueErrors
-      }
-    }
-  })
-  return errors
 }
 
 export function getMatchingValidationErrors(errors, match) {

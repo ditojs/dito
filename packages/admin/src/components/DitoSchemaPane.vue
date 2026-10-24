@@ -34,7 +34,7 @@ import {
   hasNestedData,
   isInlined
 } from '../utils/schema/structure.js'
-import { shouldRenderSchema } from '../utils/schema/data.js'
+import { shouldRenderSchema } from '../utils/schema/value.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { getItemAdapter } from '../utils/schema/types.ts'
 import {

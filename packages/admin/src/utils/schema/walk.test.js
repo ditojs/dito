@@ -12,9 +12,9 @@ import {
   deserializeData,
   serializeData,
   isDataPathExcluded,
-  getItemDisplayValue
+  getItemDisplayValue,
+  getDataValidationErrors
 } from './data.js'
-import { getDataValidationErrors } from './validation.js'
 import { walkData } from './walk.js'
 import { DataModel } from '../DataModel.ts'
 import { mergeData } from '../mergeData.ts'

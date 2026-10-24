@@ -7,7 +7,7 @@ import {
   isString,
   labelize
 } from '@ditojs/utils'
-import { getSchemaValue } from './data.js'
+import { getSchemaValue } from './value.js'
 import { createTemporaryId, isReference } from '../data.js'
 import type { Context } from './types.ts'
 import type { Schema } from '../types.ts'

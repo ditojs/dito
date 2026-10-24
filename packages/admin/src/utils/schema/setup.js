@@ -25,8 +25,7 @@ import {
   getSchemaIdentifier,
   getPanelSchemas
 } from './structure.js'
-import { getFormSchemas } from './lookup.js'
-import { checkFormProperties } from './properties.js'
+import { validatorsByFormat } from './validation.js'
 import { getText } from '../html.js'
 
 const resolvedSchemas = new WeakMap()
@@ -56,6 +55,23 @@ const removedFormKeys = {
   onCreate: onSuccess,
   onSubmit: onSuccess
 }
+
+// The types that written properties support:
+const supportedTypes = new Set([
+  'string',
+  'number',
+  'integer',
+  'boolean',
+  'date',
+  'datetime',
+  'timestamp',
+  'asset',
+  'object',
+  'array'
+])
+
+// The keywords of written properties that aren't supported yet:
+const unsupportedKeys = ['definitions', '$ref']
 
 export async function resolveSchema(value, unwrapModule = false) {
   if (resolvedSchemas.has(value)) {
@@ -256,17 +272,6 @@ export function applySchemaDefaults(api, schema, name = schema.name) {
   }
 }
 
-export function applyNestedSchemaDefaults(api, schema) {
-  // A sync version of the defaults of `setupSchemaComponents()`, for filters:
-  iterateNestedSchemaComponents(schema, (component, name) => {
-    applySchemaDefaults(api, component, name)
-    const forms = getFormSchemas(component)
-    for (const form of Object.values(forms)) {
-      applyNestedSchemaDefaults(api, form)
-    }
-  })
-}
-
 export async function setupForms(api, schema) {
   const { form, forms, fields } = schema
   if (forms) {
@@ -395,6 +400,54 @@ export function assertRemovedSchemaKeys(
           name ?? schema.type
         }': Use ${replacement} instead.`
       )
+    }
+  }
+}
+
+// Forms describe their data with either `fields` or `properties`:
+export function checkFormProperties(schema) {
+  const { fields, properties } = schema
+  if (properties) {
+    if (fields) {
+      throw new Error(
+        'Unable to set up the form: It has both `fields` and `properties`.'
+      )
+    }
+    checkProperties(properties)
+  }
+}
+
+// Fail early on what written properties don't support yet:
+export function checkProperties(properties) {
+  Object.values(properties).forEach(checkProperty)
+}
+
+function checkProperty(property) {
+  const { type, format, items, forms, relate } = property
+  const key = unsupportedKeys.find(key => key in property)
+  if (key) {
+    throw new Error(`Unsupported property keyword: '${key}'.`)
+  }
+  if (!supportedTypes.has(type)) {
+    throw new Error(`Unsupported property type: '${type}'.`)
+  }
+  if (format && !isFunction(format) && !validatorsByFormat[format]) {
+    throw new Error(`Unsupported property format: '${format}'.`)
+  }
+  if (type === 'array' && !forms && !items) {
+    throw new Error(`Unsupported property: 'array' without 'items'.`)
+  }
+  // Relations hold references to objects, alone or in lists:
+  const related = type === 'array' ? items : property
+  if (relate && (related?.type !== 'object' || related.properties)) {
+    throw new Error(`Unsupported property: 'relate' on '${type}'.`)
+  }
+  if (items) {
+    checkProperty(items)
+  }
+  for (const { properties } of [property, ...Object.values(forms ?? {})]) {
+    if (properties) {
+      checkProperties(properties)
     }
   }
 }

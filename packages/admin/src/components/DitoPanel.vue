@@ -50,7 +50,7 @@ import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { schemaContextKey, visibleKey } from '../utils/keys.ts'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
-import { shouldRenderComponents } from '../utils/schema/data.js'
+import { shouldRenderComponents } from '../utils/schema/value.js'
 import { hasNestedData } from '../utils/schema/structure.js'
 import {
   appendDataPath,

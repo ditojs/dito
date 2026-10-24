@@ -15,7 +15,7 @@ import {
 } from '../utils/schema/structure.js'
 import { hasFormSchema } from '../utils/schema/lookup.js'
 import { setupForms } from '../utils/schema/setup.js'
-import { getMultipleValue, getSchemaValue } from '../utils/schema/data.js'
+import { getMultipleValue, getSchemaValue } from '../utils/schema/value.js'
 import { getItemProperty } from '../utils/schema/properties.js'
 import { createReference } from '../utils/data.js'
 import { getOptionKey, getRelateKey } from '../utils/schema/options.ts'

@@ -28,9 +28,11 @@ import {
   getEditedValue,
   resolveValue,
   callOrLog
-} from './data.js'
-import { createValueContext } from './walk.js'
-import { getValueValidationErrors } from './validation.js'
+} from './value.js'
+import {
+  getValueValidationErrors,
+  validatorsByFormat
+} from './validation.js'
 import { getRelateKey } from './options.ts'
 
 // The limits of strings and arrays, named and applied as on the server:
@@ -47,32 +49,7 @@ const validatedKeys = [
   'decimals'
 ]
 
-const supportedTypes = new Set([
-  'string',
-  'number',
-  'integer',
-  'boolean',
-  'date',
-  'datetime',
-  'timestamp',
-  'asset',
-  'object',
-  'array'
-])
-
 const dateTypes = new Set(['date', 'datetime', 'timestamp'])
-
-// The validators of the server's formats, `uri` with the scheme it requires:
-const validatorsByFormat = {
-  'email': 'email',
-  'hostname': 'hostname',
-  'password': 'password',
-  'uri': 'url',
-  'iso-time': 'isoTime'
-}
-
-// Not supported yet:
-const unsupportedKeys = ['definitions', '$ref']
 
 // The keywords that fields may hold as callbacks, which the properties of their
 // nodes keep, to be resolved per entry:
@@ -506,54 +483,6 @@ export function mergePropertyNodes(name, propertyNodes) {
   }
 }
 
-// Forms describe their data with either `fields` or `properties`:
-export function checkFormProperties(schema) {
-  const { fields, properties } = schema
-  if (properties) {
-    if (fields) {
-      throw new Error(
-        'Unable to set up the form: It has both `fields` and `properties`.'
-      )
-    }
-    checkProperties(properties)
-  }
-}
-
-// Fail early on what written properties don't support yet:
-export function checkProperties(properties) {
-  Object.values(properties).forEach(checkProperty)
-}
-
-function checkProperty(property) {
-  const { type, format, items, forms, relate } = property
-  const key = unsupportedKeys.find(key => key in property)
-  if (key) {
-    throw new Error(`Unsupported property keyword: '${key}'.`)
-  }
-  if (!supportedTypes.has(type)) {
-    throw new Error(`Unsupported property type: '${type}'.`)
-  }
-  if (format && !isFunction(format) && !validatorsByFormat[format]) {
-    throw new Error(`Unsupported property format: '${format}'.`)
-  }
-  if (type === 'array' && !forms && !items) {
-    throw new Error(`Unsupported property: 'array' without 'items'.`)
-  }
-  // Relations hold references to objects, alone or in lists:
-  const related = type === 'array' ? items : property
-  if (relate && (related?.type !== 'object' || related.properties)) {
-    throw new Error(`Unsupported property: 'relate' on '${type}'.`)
-  }
-  if (items) {
-    checkProperty(items)
-  }
-  for (const { properties } of [property, ...Object.values(forms ?? {})]) {
-    if (properties) {
-      checkProperties(properties)
-    }
-  }
-}
-
 // Describe the data of the form's fields as the `properties` of server models:
 export function getFormProperties(schema, context) {
   const properties = {}
@@ -834,4 +763,34 @@ function getCachedNode(schema, name, createNode) {
     nodesByName.set(name, node)
   }
   return node.value
+}
+
+// The contexts of the value, also of the hooks that convert it:
+function createValueContext(schema, entry, values = null) {
+  const {
+    data,
+    name,
+    dataPath,
+    itemDataPath,
+    rootData,
+    serializedData,
+    serializedRootData,
+    services
+  } = entry
+  return new SchemaContext(services, {
+    schema,
+    name,
+    nested: true,
+    data,
+    dataPath,
+    itemDataPath,
+    rootData,
+    // The copies that walks build, while they build them:
+    ...(serializedData && { serializedData, serializedRootData }),
+    ...(values ?? {
+      get value() {
+        return data[name]
+      }
+    })
+  })
 }

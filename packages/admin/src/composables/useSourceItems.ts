@@ -1,10 +1,7 @@
 import SchemaContext from '../SchemaContext.js'
 import { appendDataPath } from '../utils/data.js'
-import {
-  getLabel,
-  getItemDisplayValue,
-  type Label
-} from '../utils/schema/data.js'
+import { getItemDisplayValue } from '../utils/schema/data.js'
+import { getLabel, type Label } from '../utils/schema/value.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { getItemIdOrIndex, getItemLabel } from '../utils/schema/item.js'
 import { getText } from '../utils/html.js'

@@ -1,32 +1,10 @@
 import type { Context } from './types.ts'
 import type { Data, Schema } from '../types.ts'
 import type { DataEntry, DataSource } from './walk.js'
+import type { ValueError } from '../DataErrors.ts'
 
 type Options = Record<string, any>
 
-export function getSchemaValue(
-  keyOrDataPath: string | string[],
-  options?: Options
-): any
-export type Label =
-  | string
-  | { text?: string; html?: string; prefix?: any; suffix?: any }
-export function getLabel(
-  schema: Schema | null,
-  context: Context,
-  name?: string
-): Label
-export function shouldRenderSchema(
-  schema: Schema | null,
-  context: Context
-): boolean
-export function resolveValue(
-  value: any,
-  context: Context | (() => Context)
-): any
-export function hasComputedValueSource(schema: Schema): boolean
-export function hasValueFromDataSchema(schema: Schema): boolean
-export function getMultipleValue(schema: Schema, context: Context): boolean
 export function initializeData(
   schema: Schema,
   data?: Data,
@@ -40,16 +18,6 @@ export function getComputedValue(
   dataPath: string | (() => string),
   options?: Options
 ): any
-export function getEditedValue(
-  schema: Schema,
-  value: any,
-  context: Context | (() => Context)
-): any
-export function parseEditedValue(
-  schema: Schema,
-  value: any,
-  createContext: (value: any) => Context
-): any
 export function serializeData(
   schema: Schema | null,
   sourceSchema: Schema | null,
@@ -57,7 +25,6 @@ export function serializeData(
   dataPath: string,
   options?: Options
 ): Data
-export function callOrLog<T>(callback: () => T, fallback: T): T
 export function isDataPathExcluded(
   schema: Schema,
   data: Data,
@@ -74,6 +41,11 @@ export function deserializeData(
     shouldVisit?: (entry: DataEntry) => boolean
   }
 ): Data
+export function getDataValidationErrors(
+  schema: Schema,
+  data: Data,
+  options?: Options
+): Record<string, ValueError[]> | null
 export function getItemDisplayValue(
   sourceSchema: Schema,
   item: Data,

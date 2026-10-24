@@ -177,7 +177,7 @@ import {
   getStoredFiles
 } from '../utils/upload.ts'
 import { appendDataPath } from '../utils/data.js'
-import { getMultipleValue } from '../utils/schema/data.js'
+import { getMultipleValue } from '../utils/schema/value.js'
 import { downloadBlob, getResourceUrl, getVerbs } from '../utils/services.ts'
 import {
   fetchBlob,

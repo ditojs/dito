@@ -2,7 +2,7 @@ import { computed, shallowRef } from 'vue'
 import { getRootData } from '../utils/services.ts'
 import { hasNestedData } from '../utils/schema/structure.js'
 import { getFieldPropertyNode } from '../utils/schema/properties.js'
-import { getEditedValue, parseEditedValue } from '../utils/schema/data.js'
+import { getEditedValue, parseEditedValue } from '../utils/schema/value.js'
 import type {
   SchemaContextSetup,
   SchemaContextProps

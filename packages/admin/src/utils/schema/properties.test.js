@@ -3,23 +3,22 @@ import { hyphenate } from '@ditojs/utils'
 import { reactive } from 'vue'
 import '../../types/index.js'
 import SchemaContext from '../../SchemaContext.js'
-import { setupForm } from './setup.js'
+import { setupForm, checkProperties } from './setup.js'
 import { defineType } from './types.ts'
 import { walkData } from './walk.js'
 import {
   PropertyNode,
   WrittenPropertyNode,
-  getFormProperties,
-  checkProperties
+  getFormProperties
 } from './properties.js'
 import {
   initializeData,
   serializeData,
   deserializeData,
   isDataPathExcluded,
-  getItemDisplayValue
+  getItemDisplayValue,
+  getDataValidationErrors
 } from './data.js'
-import { getDataValidationErrors } from './validation.js'
 import { mergeData } from '../mergeData.ts'
 import { toClipboard } from '../toClipboard.ts'
 import { fromClipboard } from '../fromClipboard.ts'
