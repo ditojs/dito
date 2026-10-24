@@ -196,7 +196,7 @@ export default {
     &--prev,
     &--next {
       &::before {
-        @extend %icon-arrow;
+        @extend %icon--arrow;
       }
     }
 
@@ -213,11 +213,11 @@ export default {
       color: $color-text;
 
       &::before {
-        @extend %icon-ellipsis;
+        @extend %icon--ellipsis;
       }
 
       &:hover::before {
-        @extend %icon-chevrons;
+        @extend %icon--chevrons;
       }
 
       &:focus {

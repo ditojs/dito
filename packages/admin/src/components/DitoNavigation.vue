@@ -116,7 +116,7 @@ export default {
     background: none;
 
     &::before {
-      @extend %icon-clear;
+      @extend %icon--clear;
     }
 
     &:hover {

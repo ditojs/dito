@@ -12,7 +12,7 @@
   color: $color-active;
 
   &::before {
-    @extend %icon-info;
+    @extend %icon--info;
 
     width: var(--size);
   }

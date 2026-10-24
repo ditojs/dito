@@ -147,11 +147,11 @@ export default DitoCodeType
   min-height: calc(1em * var(--line-height) + 2 * $input-padding-ver);
 
   &--has-errors {
-    @extend %input-has-errors;
+    @extend %input--has-errors;
   }
 
   &--disabled {
-    @extend %field-disabled;
+    @extend %field--disabled;
   }
 
   .codeflask {

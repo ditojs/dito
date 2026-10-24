@@ -88,7 +88,7 @@ export default DitoCheckboxesType
 
 .dito-checkboxes {
   label {
-    @extend %input-borderless;
+    @extend %input--borderless;
   }
 
   input {

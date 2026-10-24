@@ -135,11 +135,11 @@ export default {
   @extend %input;
 
   &--has-errors {
-    @extend %input-has-errors;
+    @extend %input--has-errors;
   }
 
   &--disabled {
-    @extend %field-disabled;
+    @extend %field--disabled;
   }
 
   input {

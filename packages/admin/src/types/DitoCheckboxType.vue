@@ -32,6 +32,6 @@ export default DitoCheckboxType
 @import '../styles/_imports';
 
 .dito-checkbox {
-  @extend %input-borderless;
+  @extend %input--borderless;
 }
 </style>
