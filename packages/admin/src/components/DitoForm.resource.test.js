@@ -171,6 +171,27 @@ describe('DitoForm resources', () => {
       expect(routeComponent.routeContext.isDirty).toBe(false)
     })
 
+    it('passes the method of forms to the resources of buttons', async () => {
+      // A new item is created with 'post', an existing one saved with 'patch':
+      for (const [data, method] of [[null, 'post'], [undefined, 'patch']]) {
+        const resource = vi.fn(() => 'publish')
+        const { wrapper, settle } = await mountBookForm({
+          data,
+          schema: {
+            buttons: {
+              publish: { type: 'submit', label: 'Publish', resource }
+            }
+          }
+        })
+        await enterValue(wrapper.find('input[name="name"]'), 'Persuasion')
+        await wrapper.find('button[id$="publish"]').trigger('click')
+        await settle()
+        expect(resource).toHaveBeenCalledWith(
+          expect.objectContaining({ method })
+        )
+      }
+    })
+
     it('keeps the form open and dirty when the save fails', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       const { admin, wrapper, data, routeComponent, submit } =

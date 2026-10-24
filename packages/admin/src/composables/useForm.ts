@@ -208,6 +208,7 @@ export function useForm({
     let method: HttpMethod = dataContext.isCreating ? 'post' : 'patch'
     let resource = requests.getResource({ method })
     const buttonResource = getResource(button.schema.resource, {
+      method,
       parent: resource
     })
     resource = buttonResource || resource
