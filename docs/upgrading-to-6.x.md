@@ -213,6 +213,7 @@ name, see [Hooks](api/server/controllers.md#hooks).
 | `dito-root--overlay-sidebar`, `--sliding-sidebar` on `.dito-root` | `dito-page--overlay-sidebar`, `--sliding-sidebar` on `.dito-page` |
 | `dito-tree-item--dragging`                                        | `dito-draggable--dragging` on its `.dito-draggable`               |
 | `dito-properties` of trees                                        | `dito-tree-item__details`                                         |
+| `dito-affixes__clear`                                             | `dito-affix--hover`, a button with the title "Clear"              |
 
 - Sass placeholders, see [Placeholders](api/ui.md#placeholders):
 
