@@ -476,7 +476,8 @@ export function getItemUid(sourceSchema, item) {
 // Copies refer to the related records outside of them by the labels of their
 // options, which `toClipboard()` loads first:
 function getRelatedLabels(entry, value, { services, rootData }) {
-  const options = services.dataContext.model.getOptionsResolver(entry).value
+  const options =
+    services.dataContext.model.fields.getOptionsResolver(entry).value
   const context = SchemaContext.createForSchema(services, {
     ...entry,
     rootData

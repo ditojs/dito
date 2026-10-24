@@ -182,14 +182,14 @@ const DitoMultiselectType = {
     const loadSearchedOptions = async searchTerm => {
       // The error of a search replaces the one of the previous search:
       const { model } = services.dataContext
-      model.removeError(props.dataPath, searchError)
+      model.errors.remove(props.dataPath, searchError)
       searchError = null
       try {
         await optionsResolver.value.waitForValue()
         return await searchFilter.value(searchTerm)
       } catch (error) {
         searchError = error.message || error
-        model.addError(props.dataPath, searchError)
+        model.errors.add(props.dataPath, searchError)
         return null
       }
     }

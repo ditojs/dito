@@ -1092,7 +1092,7 @@ describe('DitoSchema', () => {
       )
       await submit()
       expect(schemaComponent.selectedTab).toBe('main')
-      expect(dataModel.getErrors('summary')).toEqual([
+      expect(dataModel.errors.get('summary')).toEqual([
         { message: 'is too short' }
       ])
       schemaComponent.selectTab('notes')

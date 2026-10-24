@@ -23,7 +23,7 @@ export async function toClipboard(
       if (relation?.hasOptions) {
         loads.push(
           services
-            .dataContext!.model.getOptionsResolver({
+            .dataContext!.model.fields.getOptionsResolver({
               ...entry,
               schema: relation.schema
             })

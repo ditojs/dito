@@ -242,12 +242,13 @@ export default {
       if (draft) {
         if (itemAdapter.value) {
           // The list holds the errors of its primitives:
-          model.copyValueErrors(parentDataContext.model, dataPath.value, {
-            data: draft,
-            name: itemAdapter.value.name
-          })
+          model.errors.copyValue(
+            parentDataContext.model.errors,
+            dataPath.value,
+            { data: draft, name: itemAdapter.value.name }
+          )
         } else {
-          model.copyErrors(parentDataContext.model, draft)
+          model.errors.copy(parentDataContext.model.errors, draft)
         }
       }
     }

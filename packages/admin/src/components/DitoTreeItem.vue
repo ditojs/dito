@@ -244,7 +244,7 @@ export default {
       store: computed(() => sourceContext.store),
       disabled: computed(() => sourceContext.isDisabled),
       hasErrors: computed(() =>
-        services.dataContext.model.hasErrorsWithin(props.data)
+        services.dataContext.model.errors.hasWithin(props.data)
       ),
       numEntries: computed(() => details.value.length + numChildren.value),
       ariaLabel: computed(() => getText(props.label)),

@@ -165,7 +165,7 @@ describe('nested forms with properties', () => {
     await input.trigger('focus')
     await enterValue(input, '')
     await input.trigger('blur')
-    expect(dataModel.getErrors('sensors/0/label')).toEqual([
+    expect(dataModel.errors.get('sensors/0/label')).toEqual([
       { message: 'is required' }
     ])
     expect(findField('sensors').find('.dito-errors').text()).toBe(

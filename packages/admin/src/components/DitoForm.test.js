@@ -1321,17 +1321,17 @@ describe('DitoForm', () => {
         })
       routeComponent.dataContext.validate()
       await settle()
-      expect(dataModel.getErrors('exportStatus')).toHaveLength(1)
+      expect(dataModel.errors.get('exportStatus')).toHaveLength(1)
       getComponent('title').context.mergeItem({ exportStatus: 'done' })
       await settle()
-      expect(dataModel.getErrors('exportStatus')).toBe(null)
-      expect(dataModel.getErrors('title')).toHaveLength(1)
+      expect(dataModel.errors.get('exportStatus')).toBe(null)
+      expect(dataModel.errors.get('title')).toHaveLength(1)
     })
 
     it('clears the errors of the merged values also when they stay the same', async () => {
       const { dataModel, context, settle } = await mountBookForm()
       const errors = [{ message: 'is invalid' }]
-      dataModel.replaceErrors(
+      dataModel.errors.replace(
         {
           'title': errors,
           'exportStatus': errors,
@@ -1347,9 +1347,9 @@ describe('DitoForm', () => {
         ]
       })
       await settle()
-      expect(dataModel.getErrors('exportStatus')).toBe(null)
-      expect(dataModel.getErrors('chapters/0/title')).toBe(null)
-      expect(dataModel.getErrors('title')).toEqual(errors)
+      expect(dataModel.errors.get('exportStatus')).toBe(null)
+      expect(dataModel.errors.get('chapters/0/title')).toBe(null)
+      expect(dataModel.errors.get('title')).toEqual(errors)
     })
 
     it('clears the errors of the merged values in the item of nested forms with `mutate`', async () => {
@@ -1358,14 +1358,14 @@ describe('DitoForm', () => {
       const form = admin.getRouteComponent(isForm)
       await settle(form)
       const errors = [{ message: 'is invalid' }]
-      dataModel.replaceErrors(
+      dataModel.errors.replace(
         { 'chapters/0/title': errors, 'chapters/0/pages': errors },
         { server: true }
       )
       form.dataContext.mergeItem({ pages: 3 })
       await settle(form)
-      expect(dataModel.getErrors('chapters/0/pages')).toBe(null)
-      expect(dataModel.getErrors('chapters/0/title')).toEqual(errors)
+      expect(dataModel.errors.get('chapters/0/pages')).toBe(null)
+      expect(dataModel.errors.get('chapters/0/title')).toEqual(errors)
     })
 
     it('merges the values that components poll until they unmount', async () => {
@@ -2640,7 +2640,7 @@ describe('DitoForm', () => {
         data: { title: 'Emma', chapters: [{ title: 'Prologue' }] }
       })
       const errors = [{ message: 'is taken' }]
-      dataModel.replaceErrors(
+      dataModel.errors.replace(
         { 'title': errors, 'chapters/0/title': errors },
         { server: true }
       )
@@ -2651,8 +2651,8 @@ describe('DitoForm', () => {
         .find('.dito-buttons--main button[type="submit"]')
         .trigger('click')
       await settle(form)
-      expect(dataModel.getErrors('chapters/0/title')).toBe(null)
-      expect(dataModel.getErrors('title')).toEqual(errors)
+      expect(dataModel.errors.get('chapters/0/title')).toBe(null)
+      expect(dataModel.errors.get('title')).toEqual(errors)
     })
 
     it('reset their item in place like loaded data', async () => {
@@ -2682,7 +2682,7 @@ describe('DitoForm', () => {
       const form = admin.getRouteComponent(isForm)
       await settle(form)
       const [chapter] = data.chapters
-      dataModel.replaceErrors(
+      dataModel.errors.replace(
         { 'chapters/0/title': [{ message: 'is taken' }] },
         { server: true }
       )
@@ -2695,7 +2695,7 @@ describe('DitoForm', () => {
         title: 'Untitled',
         pages: 5
       })
-      expect(dataModel.getErrors('chapters/0/title')).toBe(null)
+      expect(dataModel.errors.get('chapters/0/title')).toBe(null)
       expect(form.routeContext.isDirty).toBe(false)
     })
 

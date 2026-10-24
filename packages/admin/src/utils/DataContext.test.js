@@ -154,8 +154,8 @@ describe('DataContext', () => {
       expect(routeComponent.dataContext.validate()).toBe(false)
       await flushPromises()
       expect(getErrors('title')).toEqual(['The title field is required.'])
-      expect(dataModel.getErrorDataPaths()).toEqual(['title'])
-      dataModel.clearErrors()
+      expect(dataModel.errors.getDataPaths()).toEqual(['title'])
+      dataModel.errors.clear()
       await flushPromises()
       expect(getErrors('title')).toEqual([])
     })
@@ -174,7 +174,7 @@ describe('DataContext', () => {
       await flushPromises()
       expect(getErrors('title')).toEqual([])
       expect(routeComponent.dataContext.validate()).toBe(true)
-      expect(dataModel.getErrorDataPaths()).toEqual([])
+      expect(dataModel.errors.getDataPaths()).toEqual([])
     })
 
     it('replaces only the errors of matching fields', async () => {
@@ -258,20 +258,20 @@ describe('DataContext', () => {
 
     it('clears all errors without a match', async () => {
       const { context, dataModel } = await mountInvalidSchema()
-      expect(dataModel.getErrorDataPaths()).toHaveLength(5)
+      expect(dataModel.errors.getDataPaths()).toHaveLength(5)
       context.clearErrors()
-      expect(dataModel.getErrorDataPaths()).toEqual([])
+      expect(dataModel.errors.getDataPaths()).toEqual([])
     })
 
     it('clears the errors at matching data paths and beneath', async () => {
       const { context, dataModel } = await mountInvalidSchema()
       context.clearErrors(['title', 'address'])
-      expect(dataModel.getErrorDataPaths()).toEqual([
+      expect(dataModel.errors.getDataPaths()).toEqual([
         'chapters/0/title',
         'chapters/1/title'
       ])
       context.clearErrors(/^chapters\/1$/)
-      expect(dataModel.getErrorDataPaths()).toEqual(['chapters/0/title'])
+      expect(dataModel.errors.getDataPaths()).toEqual(['chapters/0/title'])
     })
 
     it('matches data paths with wildcards', async () => {
@@ -280,7 +280,7 @@ describe('DataContext', () => {
       expect(context.isValid('*.title')).toBe(true)
       context.clearErrors('chapters/*/title')
       context.clearErrors('address/**')
-      expect(dataModel.getErrorDataPaths()).toEqual(['title'])
+      expect(dataModel.errors.getDataPaths()).toEqual(['title'])
     })
   })
 

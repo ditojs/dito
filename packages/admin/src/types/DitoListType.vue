@@ -75,7 +75,9 @@
           v-for="(item, index) in listData"
           :id="getComponentPath(index)"
           :key="getItemUid(schema, item)"
-          :class="{ 'dito-table__row--error': dataModel.hasErrorsWithin(item) }"
+          :class=`{
+            'dito-table__row--error': dataModel.errors.hasWithin(item)
+          }`
         )
           template(
             v-if="columns"

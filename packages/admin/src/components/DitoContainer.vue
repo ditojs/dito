@@ -186,12 +186,12 @@ export default {
           props.schema.name
         )
         const errors = [
-          ...(model.getErrors(dataPath) ?? []).map(({ message, path }) =>
+          ...(model.errors.get(dataPath) ?? []).map(({ message, path }) =>
             path
               ? `The ${fieldLabel} field's ${path} ${message}.`
               : `The ${fieldLabel} field ${message}.`
           ),
-          ...(model.getFieldErrors(dataPath) ?? [])
+          ...(model.errors.getFieldMessages(dataPath) ?? [])
         ]
         return errors.length > 0 ? errors : null
       }

@@ -238,7 +238,7 @@ export function useForm({
     const callbacks = {
       onSuccess: async () => {
         if (isSubmittedData()) {
-          dataContext.model.clearErrors(dataContext.dataPath)
+          dataContext.model.errors.clear(dataContext.dataPath)
           // The responses of buttons with resources in drafts stay dirty:
           if (!isTransient.value || !buttonResource) {
             model.markClean({ dataPath: '' })

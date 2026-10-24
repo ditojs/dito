@@ -758,7 +758,7 @@ describe('DataModel', () => {
       }
       const { dataModel, data } = createDataModel(schema, {})
       await dataModel.waitUntilSettled()
-      const options = dataModel.getOptionsResolver({
+      const options = dataModel.fields.getOptionsResolver({
         schema: schema.fields.size,
         data,
         name: 'size',
@@ -1498,7 +1498,7 @@ describe('DataModel', () => {
       const { chapters, reviews } = data
       const [chapter] = chapters
       dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
-      dataModel.setErrors('chapters/0/title', [{ message: 'is too short' }])
+      dataModel.errors.set('chapters/0/title', [{ message: 'is too short' }])
       expect(dataModel.isDirty).toBe(true)
       const mergedData = dataModel.mergeFromServer({
         id: 1,
@@ -1519,7 +1519,7 @@ describe('DataModel', () => {
       })
       expect(dataModel.isDirty).toBe(false)
       // The errors stay with the item, as long as its value is the same:
-      expect(dataModel.getErrors('chapters/0/title')).toEqual([
+      expect(dataModel.errors.get('chapters/0/title')).toEqual([
         { message: 'is too short' }
       ])
     })
@@ -1722,120 +1722,120 @@ describe('DataModel', () => {
 
     it('copies the errors of the originals of copies', () => {
       const { dataModel } = createBook()
-      dataModel.setErrors('chapters/1/title', tooShort)
+      dataModel.errors.set('chapters/1/title', tooShort)
       const draft = cloneWithUids(dataModel.data)
       draft.chapters.reverse()
       const { dataModel: draftModel } = createDataModel(schema, draft)
-      draftModel.copyErrors(dataModel, draftModel.data)
-      expect(draftModel.getErrors('chapters/0/title')).toEqual(tooShort)
-      expect(draftModel.getErrors('chapters/1/title')).toBe(null)
+      draftModel.errors.copy(dataModel.errors, draftModel.data)
+      expect(draftModel.errors.get('chapters/0/title')).toEqual(tooShort)
+      expect(draftModel.errors.get('chapters/1/title')).toBe(null)
       dataModel.stop()
       draftModel.stop()
     })
 
     it('keeps the errors of list items when they move', () => {
       const { dataModel, getListEntry } = createBook()
-      dataModel.setErrors('chapters/1/title', tooShort)
+      dataModel.errors.set('chapters/1/title', tooShort)
       dataModel.insert(getListEntry('chapters'), 0, { title: 'Zero' })
-      expect(dataModel.getErrors('chapters/1/title')).toBe(null)
-      expect(dataModel.getErrors('chapters/2/title')).toEqual(tooShort)
+      expect(dataModel.errors.get('chapters/1/title')).toBe(null)
+      expect(dataModel.errors.get('chapters/2/title')).toEqual(tooShort)
       dataModel.move(getListEntry('chapters'), 2, 0)
-      expect(dataModel.getErrors('chapters/0/title')).toEqual(tooShort)
+      expect(dataModel.errors.get('chapters/0/title')).toEqual(tooShort)
       dataModel.stop()
     })
 
     it('hides only the errors of the field whose value changes', () => {
       const { dataModel, data } = createBook()
-      dataModel.setErrors('title', tooShort)
-      dataModel.setErrors('details/subtitle', tooShort)
-      dataModel.setErrors('chapters/0/title', tooShort)
+      dataModel.errors.set('title', tooShort)
+      dataModel.errors.set('details/subtitle', tooShort)
+      dataModel.errors.set('chapters/0/title', tooShort)
       dataModel.set(
         { data: data.chapters[0], name: 'title', dataPath: 'chapters/0/title' },
         'Prologue'
       )
-      expect(dataModel.getErrors('chapters/0/title')).toBe(null)
-      expect(dataModel.getErrors('title')).toEqual(tooShort)
-      expect(dataModel.getErrors('details/subtitle')).toEqual(tooShort)
+      expect(dataModel.errors.get('chapters/0/title')).toBe(null)
+      expect(dataModel.errors.get('title')).toEqual(tooShort)
+      expect(dataModel.errors.get('details/subtitle')).toEqual(tooShort)
       dataModel.stop()
     })
 
     it('applies the errors only to the values that they were set for', () => {
       const { dataModel, data } = createBook()
-      dataModel.setErrors('details/subtitle', tooShort)
+      dataModel.errors.set('details/subtitle', tooShort)
       // E.g. `change` handlers write data directly:
       data.details.subtitle = 'Volume'
-      expect(dataModel.getErrors('details/subtitle')).toBe(null)
-      expect(dataModel.getErrorDataPaths()).toEqual([])
+      expect(dataModel.errors.get('details/subtitle')).toBe(null)
+      expect(dataModel.errors.getDataPaths()).toEqual([])
       dataModel.stop()
     })
 
     it('hides the errors of lists once they change in place', () => {
       const { dataModel, getListEntry } = createBook()
-      dataModel.setErrors('chapters', tooShort)
+      dataModel.errors.set('chapters', tooShort)
       dataModel.insert(getListEntry('chapters'), 2, { title: 'Three' })
-      expect(dataModel.getErrors('chapters')).toBe(null)
+      expect(dataModel.errors.get('chapters')).toBe(null)
       dataModel.stop()
     })
 
     it('keeps the errors when the value is written unchanged', () => {
       // E.g. server errors of values that the user enters again:
       const { dataModel, data } = createBook()
-      dataModel.setErrors('title', tooShort)
+      dataModel.errors.set('title', tooShort)
       dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
-      expect(dataModel.getErrors('title')).toEqual(tooShort)
+      expect(dataModel.errors.get('title')).toEqual(tooShort)
       dataModel.stop()
     })
 
     it('keys the values of lists of primitives by their lists', () => {
       const { dataModel, data, getListEntry } = createBook()
       dataModel.insert(getListEntry('tags'), 1, 'novel')
-      dataModel.setErrors('tags/0', tooShort)
-      dataModel.setErrors('tags/1', tooShort)
+      dataModel.errors.set('tags/0', tooShort)
+      dataModel.errors.set('tags/1', tooShort)
       // Edits of the values write into their lists, see `useSourceData()`:
       dataModel.set({ data: data.tags, name: 1, dataPath: 'tags/1' }, 'romance')
-      expect(dataModel.getErrors('tags/0')).toEqual(tooShort)
-      expect(dataModel.getErrors('tags/1')).toBe(null)
+      expect(dataModel.errors.get('tags/0')).toEqual(tooShort)
+      expect(dataModel.errors.get('tags/1')).toBe(null)
       // Replaced lists don't hold the errors of their values anymore:
       dataModel.set({ data, name: 'tags', dataPath: 'tags' }, [
         'classic', 'novel'
       ])
-      expect(dataModel.getErrors('tags/0')).toBe(null)
+      expect(dataModel.errors.get('tags/0')).toBe(null)
       dataModel.stop()
     })
 
     it('keeps the server errors when the value is validated again', () => {
       const { dataModel } = createBook()
       const taken = [{ message: 'is taken' }]
-      dataModel.replaceErrors({ title: taken }, { server: true })
-      dataModel.setErrors('title', tooShort)
-      expect(dataModel.getErrors('title')).toEqual([...tooShort, ...taken])
+      dataModel.errors.replace({ title: taken }, { server: true })
+      dataModel.errors.set('title', tooShort)
+      expect(dataModel.errors.get('title')).toEqual([...tooShort, ...taken])
       // E.g. `validate()` on blur, without validation errors:
-      dataModel.setErrors('title', null)
-      expect(dataModel.getErrors('title')).toEqual(taken)
+      dataModel.errors.set('title', null)
+      expect(dataModel.errors.get('title')).toEqual(taken)
       dataModel.stop()
     })
 
     it('clears the errors for good once the value changes', () => {
       const { dataModel, data } = createBook()
       const taken = [{ message: 'is taken' }]
-      dataModel.replaceErrors(
+      dataModel.errors.replace(
         { 'title': taken, 'details/subtitle': taken },
         { server: true }
       )
       dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
       dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
-      expect(dataModel.getErrors('title')).toBe(null)
+      expect(dataModel.errors.get('title')).toBe(null)
       // Also when code writes the values directly:
       data.details.subtitle = 'Volume'
       data.details.subtitle = ''
-      expect(dataModel.getErrors('details/subtitle')).toBe(null)
-      expect(dataModel.hasErrorsWithin(data)).toBe(false)
+      expect(dataModel.errors.get('details/subtitle')).toBe(null)
+      expect(dataModel.errors.hasWithin(data)).toBe(false)
       dataModel.stop()
     })
 
     it('stops watching the values of replaced data', () => {
       const { dataModel, data } = createBook()
-      dataModel.replaceErrors(
+      dataModel.errors.replace(
         { title: [{ message: 'is taken' }] },
         { server: true }
       )
@@ -1843,7 +1843,7 @@ describe('DataModel', () => {
       let evaluationCount = 0
       const errors = computed(() => {
         evaluationCount++
-        return dataModel.getErrors('title')
+        return dataModel.errors.get('title')
       })
       expect(errors.value).toBe(null)
       // A change of the replaced data doesn't affect the model:
@@ -1855,54 +1855,56 @@ describe('DataModel', () => {
 
     it('drops the errors of other values when the value is validated', () => {
       const { dataModel, data } = createBook()
-      dataModel.replaceErrors(
+      dataModel.errors.replace(
         { title: [{ message: 'is taken' }] },
         { server: true }
       )
       dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
-      dataModel.setErrors('title', null)
+      dataModel.errors.set('title', null)
       dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
-      expect(dataModel.getErrors('title')).toBe(null)
+      expect(dataModel.errors.get('title')).toBe(null)
       dataModel.stop()
     })
 
     it('keeps the errors of fields while their values change', () => {
       const { dataModel, data } = createBook()
-      dataModel.addError('title', 'Unable to load')
+      dataModel.errors.add('title', 'Unable to load')
       dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
-      expect(dataModel.getFieldErrors('title')).toEqual(['Unable to load'])
-      expect(dataModel.getErrors('title')).toBe(null)
-      expect(dataModel.getErrorDataPaths()).toEqual(['title'])
-      expect(dataModel.hasErrorsWithin(data)).toBe(true)
+      expect(dataModel.errors.getFieldMessages('title')).toEqual([
+        'Unable to load'
+      ])
+      expect(dataModel.errors.get('title')).toBe(null)
+      expect(dataModel.errors.getDataPaths()).toEqual(['title'])
+      expect(dataModel.errors.hasWithin(data)).toBe(true)
       // Their sources remove them, also while the value differs:
-      dataModel.removeError('title', 'Unable to load')
+      dataModel.errors.remove('title', 'Unable to load')
       dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
-      expect(dataModel.getFieldErrors('title')).toBe(null)
-      expect(dataModel.hasErrorsWithin(data)).toBe(false)
+      expect(dataModel.errors.getFieldMessages('title')).toBe(null)
+      expect(dataModel.errors.hasWithin(data)).toBe(false)
       dataModel.stop()
     })
 
     it('adds errors once, and removes them by message', () => {
       const { dataModel } = createBook()
-      dataModel.addError('title', 'Unable to load')
-      dataModel.addError('title', 'Unable to load')
-      dataModel.addError('title', 'Offline')
-      expect(dataModel.getFieldErrors('title')).toEqual([
+      dataModel.errors.add('title', 'Unable to load')
+      dataModel.errors.add('title', 'Unable to load')
+      dataModel.errors.add('title', 'Offline')
+      expect(dataModel.errors.getFieldMessages('title')).toEqual([
         'Unable to load', 'Offline'
       ])
-      dataModel.removeError('title', 'Unable to load')
-      dataModel.removeError('title', 'Missing')
-      expect(dataModel.getFieldErrors('title')).toEqual(['Offline'])
-      dataModel.removeError('title', 'Offline')
-      expect(dataModel.getFieldErrors('title')).toBe(null)
+      dataModel.errors.remove('title', 'Unable to load')
+      dataModel.errors.remove('title', 'Missing')
+      expect(dataModel.errors.getFieldMessages('title')).toEqual(['Offline'])
+      dataModel.errors.remove('title', 'Offline')
+      expect(dataModel.errors.getFieldMessages('title')).toBe(null)
       dataModel.stop()
     })
 
     it('replaces the errors within a data path, returning their fields', () => {
       const { dataModel } = createBook()
-      dataModel.setErrors('title', tooShort)
-      dataModel.setErrors('chapters/0/title', tooShort)
-      const fieldDataPaths = dataModel.replaceErrors(
+      dataModel.errors.set('title', tooShort)
+      dataModel.errors.set('chapters/0/title', tooShort)
+      const fieldDataPaths = dataModel.errors.replace(
         {
           'chapters/1/title': tooShort,
           'title': tooShort
@@ -1910,18 +1912,18 @@ describe('DataModel', () => {
         { dataPath: 'chapters' }
       )
       expect(fieldDataPaths).toEqual({ 'chapters/1/title': 'chapters/1/title' })
-      expect(dataModel.getErrors('chapters/0/title')).toBe(null)
-      expect(dataModel.getErrors('chapters/1/title')).toEqual(tooShort)
+      expect(dataModel.errors.get('chapters/0/title')).toBe(null)
+      expect(dataModel.errors.get('chapters/1/title')).toEqual(tooShort)
       // Errors outside of the data path are kept:
-      expect(dataModel.getErrors('title')).toEqual(tooShort)
-      expect(dataModel.getErrorDataPaths()).toEqual([
+      expect(dataModel.errors.get('title')).toEqual(tooShort)
+      expect(dataModel.errors.getDataPaths()).toEqual([
         'title',
         'chapters/1/title'
       ])
-      expect(dataModel.replaceErrors({ 'details/subtitle': tooShort })).toEqual(
-        { 'details/subtitle': 'details/subtitle' }
-      )
-      expect(dataModel.getErrorDataPaths()).toEqual(['details/subtitle'])
+      expect(
+        dataModel.errors.replace({ 'details/subtitle': tooShort })
+      ).toEqual({ 'details/subtitle': 'details/subtitle' })
+      expect(dataModel.errors.getDataPaths()).toEqual(['details/subtitle'])
       dataModel.stop()
     })
 
@@ -1929,7 +1931,7 @@ describe('DataModel', () => {
       // E.g. of objects that a code field edits as JSON:
       const { dataModel } = createBook()
       const isRequired = [{ message: 'is required' }]
-      const fieldDataPaths = dataModel.replaceErrors(
+      const fieldDataPaths = dataModel.errors.replace(
         {
           'details/subtitle': tooShort,
           'details/author/name': isRequired,
@@ -1943,14 +1945,14 @@ describe('DataModel', () => {
         'details/author/name': 'details',
         'chapters/1/isbn': 'chapters'
       })
-      expect(dataModel.getErrors('details/subtitle')).toEqual(tooShort)
-      expect(dataModel.getErrors('details')).toEqual([
+      expect(dataModel.errors.get('details/subtitle')).toEqual(tooShort)
+      expect(dataModel.errors.get('details')).toEqual([
         { message: 'is required', path: 'author/name' }
       ])
-      expect(dataModel.getErrors('chapters')).toEqual([
+      expect(dataModel.errors.get('chapters')).toEqual([
         { message: 'is required', path: '1/isbn' }
       ])
-      expect(dataModel.getErrorDataPaths()).toEqual([
+      expect(dataModel.errors.getDataPaths()).toEqual([
         'details',
         'details/subtitle',
         'chapters'
@@ -1960,35 +1962,35 @@ describe('DataModel', () => {
 
     it('clears the errors of the values within a data path', () => {
       const { dataModel } = createBook()
-      dataModel.setErrors('title', tooShort)
-      dataModel.replaceErrors(
+      dataModel.errors.set('title', tooShort)
+      dataModel.errors.replace(
         { 'chapters/0/title': tooShort },
         { dataPath: 'chapters', server: true }
       )
-      dataModel.addError('chapters/0/title', 'Unable to load')
-      dataModel.clearErrors('chapters/0')
-      expect(dataModel.getErrors('chapters/0/title')).toBe(null)
-      expect(dataModel.getFieldErrors('chapters/0/title')).toEqual([
+      dataModel.errors.add('chapters/0/title', 'Unable to load')
+      dataModel.errors.clear('chapters/0')
+      expect(dataModel.errors.get('chapters/0/title')).toBe(null)
+      expect(dataModel.errors.getFieldMessages('chapters/0/title')).toEqual([
         'Unable to load'
       ])
-      expect(dataModel.getErrors('title')).toEqual(tooShort)
-      dataModel.clearErrors()
-      expect(dataModel.getErrors('title')).toBe(null)
+      expect(dataModel.errors.get('title')).toEqual(tooShort)
+      dataModel.errors.clear()
+      expect(dataModel.errors.get('title')).toBe(null)
       dataModel.stop()
     })
 
     it('finds the errors within data', () => {
       const { dataModel, data } = createBook()
-      dataModel.setErrors('chapters/1/title', tooShort)
-      expect(dataModel.hasErrorsWithin(data)).toBe(true)
-      expect(dataModel.hasErrorsWithin(data.chapters)).toBe(true)
-      expect(dataModel.hasErrorsWithin(data.chapters[0])).toBe(false)
-      expect(dataModel.hasErrorsWithin(data.details)).toBe(false)
+      dataModel.errors.set('chapters/1/title', tooShort)
+      expect(dataModel.errors.hasWithin(data)).toBe(true)
+      expect(dataModel.errors.hasWithin(data.chapters)).toBe(true)
+      expect(dataModel.errors.hasWithin(data.chapters[0])).toBe(false)
+      expect(dataModel.errors.hasWithin(data.details)).toBe(false)
       dataModel.set(
         { data: data.chapters[1], name: 'title', dataPath: 'chapters/1/title' },
         'Second'
       )
-      expect(dataModel.hasErrorsWithin(data)).toBe(false)
+      expect(dataModel.errors.hasWithin(data)).toBe(false)
       dataModel.stop()
     })
 
@@ -2009,7 +2011,7 @@ describe('DataModel', () => {
       let evaluationCount = 0
       const hasErrors = computed(() => {
         evaluationCount++
-        return dataModel.hasErrorsWithin(data)
+        return dataModel.errors.hasWithin(data)
       })
       readCount = 0
       expect(hasErrors.value).toBe(false)
@@ -2019,28 +2021,28 @@ describe('DataModel', () => {
       expect(hasErrors.value).toBe(false)
       expect(evaluationCount).toBe(1)
       // The first error anywhere does:
-      dataModel.setErrors('chapters/0/title', tooShort)
+      dataModel.errors.set('chapters/0/title', tooShort)
       expect(hasErrors.value).toBe(true)
-      dataModel.setErrors('chapters/0/title', null)
-      dataModel.addError('title', 'Unable to load')
+      dataModel.errors.set('chapters/0/title', null)
+      dataModel.errors.add('title', 'Unable to load')
       expect(hasErrors.value).toBe(true)
-      dataModel.removeError('title', 'Unable to load')
-      dataModel.replaceErrors({ title: tooShort }, { server: true })
+      dataModel.errors.remove('title', 'Unable to load')
+      dataModel.errors.replace({ title: tooShort }, { server: true })
       expect(hasErrors.value).toBe(true)
-      dataModel.clearErrors()
+      dataModel.errors.clear()
       readCount = 0
       expect(hasErrors.value).toBe(false)
       expect(readCount).toBe(0)
       // Also after replaced data took its errors along:
-      dataModel.setErrors('title', tooShort)
+      dataModel.errors.set('title', tooShort)
       dataModel.replace(reactive({ ...data, title: 'Persuasion' }))
       readCount = 0
-      expect(dataModel.hasErrorsWithin(dataModel.data)).toBe(false)
+      expect(dataModel.errors.hasWithin(dataModel.data)).toBe(false)
       expect(readCount).toBe(0)
-      const { componentRecords } = dataModel
-      expect(componentRecords.size).toBe([...componentRecords.values()].length)
+      const { records } = dataModel.fields
+      expect(records.size).toBe([...records.values()].length)
       dataModel.stop()
-      expect(componentRecords.size).toBe(0)
+      expect(records.size).toBe(0)
     })
 
     it('finds and copies the errors within data that holds its ancestors', async () => {
@@ -2066,15 +2068,15 @@ describe('DataModel', () => {
       })
       await nextTick()
       expect(toRaw(data.details.book)).toBe(toRaw(data))
-      expect(dataModel.hasErrorsWithin(data)).toBe(false)
-      dataModel.setErrors('title', tooShort)
-      expect(dataModel.hasErrorsWithin(data.details)).toBe(true)
+      expect(dataModel.errors.hasWithin(data)).toBe(false)
+      dataModel.errors.set('title', tooShort)
+      expect(dataModel.errors.hasWithin(data.details)).toBe(true)
       const { dataModel: draftModel } = createDataModel(
         schema,
         cloneWithUids(dataModel.data)
       )
-      draftModel.copyErrors(dataModel, draftModel.data)
-      expect(draftModel.getErrors('title')).toEqual(tooShort)
+      draftModel.errors.copy(dataModel.errors, draftModel.data)
+      expect(draftModel.errors.get('title')).toEqual(tooShort)
       dataModel.stop()
       draftModel.stop()
     })
@@ -2111,7 +2113,7 @@ describe('DataModel', () => {
       options.includes(value) ? value : options[0]
 
     const countOptionsResolvers = dataModel =>
-      [...dataModel.componentRecords.values()].filter(
+      [...dataModel.fields.records.values()].filter(
         record => record.optionsResolver
       ).length
 
@@ -2541,9 +2543,10 @@ describe('DataModel', () => {
         dataPath: 'genre',
         componentPath: 'genre'
       }
-      expect(dataModel.getOptionsResolver(entry).value).toBe(undefined)
+      const { fields } = dataModel
+      expect(fields.getOptionsResolver(entry).value).toBe(undefined)
       await dataModel.waitUntilSettled()
-      expect(dataModel.getOptionsResolver(entry).value).toEqual([
+      expect(fields.getOptionsResolver(entry).value).toEqual([
         'novel',
         'poetry'
       ])
