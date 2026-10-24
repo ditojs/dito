@@ -280,8 +280,11 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
   const graph = new SchemaGraph(dataPath)
 
   const visit = entry => {
-    const { node, name, serializedData } = entry
-    const value = node.getValueOrDefault(entry)
+    const { node, data, name, serializedData } = entry
+    // Save missing values, and `null` in values that aren't `nullable`, with
+    // the default of their property:
+    const property = node.getPropertyNode(entry)
+    const value = property ? property.getValueOrDefault(entry) : data[name]
     // The forms of the items expect them wrapped by the item adapter of the
     // source, so wrap before and unwrap after. Always shallow-clone arrays:
     const itemAdapter = node.source?.itemAdapter

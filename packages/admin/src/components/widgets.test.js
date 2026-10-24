@@ -213,7 +213,7 @@ describe('widgets', () => {
     )
   })
 
-  it('keep cleared values, which are required unless `nullable`', async () => {
+  it('keep cleared values, and save them as their default', async () => {
     const CopiesPage = {
       setup() {
         form = useDitoForm({
@@ -227,15 +227,20 @@ describe('widgets', () => {
           })
       }
     }
-    const { wrapper } = await mountDesignerPage(CopiesPage)
+    const { wrapper, request } = await mountDesignerPage(CopiesPage)
     expect(form.item.copies).toBe(1)
     const input = getContainer(wrapper, 'Copies').find('input')
     await enterValue(input, '')
     await settle()
     expect(form.item.copies).toBe(null)
     expect(input.element.value).toBe('')
-    expect(form.validate()).toBe(false)
-    expect(form.getErrors()).toEqual({ copies: [{ message: 'is required' }] })
+    expect(await form.submit()).toBe(true)
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'patch',
+        data: expect.objectContaining({ copies: 1 })
+      })
+    )
   })
 
   it('show the errors of submits, also widgets of the same name', async () => {

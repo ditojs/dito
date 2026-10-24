@@ -50,6 +50,33 @@ describe('DitoTextType', () => {
     })
   })
 
+  it('saves `null` with `nullable: false` as the default or empty string', async () => {
+    const { data, submit } = await mountForm({
+      schema: {
+        fields: {
+          title: { type: 'text' },
+          slug: {
+            type: 'text',
+            nullable: false,
+            computeValue: ({ item }) => item.title?.toLowerCase() ?? null
+          },
+          code: { type: 'text', nullable: false, default: 'none' }
+        }
+      },
+      data: { title: 'Emma', slug: 'emma', code: 'emma' },
+      request: ({ data }) => ({ data })
+    })
+    data.title = null
+    data.code = null
+    await vi.waitFor(() => expect(data.slug).toBe(null))
+    expect(data.code).toBe(null)
+    expect(await submit()).toMatchObject({
+      title: null,
+      slug: '',
+      code: 'none'
+    })
+  })
+
   it('displays the value through `formatValue()` and stores it through `parseValue()`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
@@ -102,6 +129,24 @@ describe('DitoTextType', () => {
     })
     await findField('title').find('.dito-affixes__clear').trigger('click')
     expect(data.title).toBe(null)
+  })
+
+  it('clears values with `nullable: false` to their default', async () => {
+    const { findField, data } = await mountSchema({
+      schema: {
+        fields: {
+          title: {
+            type: 'text',
+            nullable: false,
+            clearable: true,
+            default: 'Untitled'
+          }
+        }
+      },
+      data: { title: 'Dune' }
+    })
+    await findField('title').find('.dito-affixes__clear').trigger('click')
+    expect(data.title).toBe('Untitled')
   })
 
   it(`doesn't show the clear button for readonly fields`, async () => {
