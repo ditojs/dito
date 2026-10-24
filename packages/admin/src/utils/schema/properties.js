@@ -253,22 +253,26 @@ export class PropertyNode {
     )
   }
 
-  getDefaultValue(entry, options) {
+  getDefaultValue(entry) {
     const { default: def } = this.property
-    return !this.shouldSetDefaultValue(entry, options)
-      ? undefined
-      : def !== undefined
-        ? resolveValue(def, () => this.#createContext(entry, 'default'))
-        : this.#get('nullable', entry)
-          ? null
-          : getPropertyEmptyValue(this.property)
+    return def !== undefined
+      ? resolveValue(def, () => this.#createContext(entry, 'default'))
+      : this.getEmptyValue(entry)
+  }
+
+  getEmptyValue(entry) {
+    return this.#get('nullable', entry)
+      ? null
+      : getPropertyEmptyValue(this.property)
   }
 
   // Keep the values that are there, also `null`, and give missing values their
   // default:
   getValueOrDefault(entry) {
     const { data, name } = entry
-    return name in data ? data[name] : this.getDefaultValue(entry)
+    return name in data || !this.shouldSetDefaultValue(entry)
+      ? data[name]
+      : this.getDefaultValue(entry)
   }
 
   deserialize(value, entry) {

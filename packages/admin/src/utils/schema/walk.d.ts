@@ -50,7 +50,8 @@ export interface PropertyNode extends DataNode {
     entry: DataEntry,
     options?: DefaultValueOptions
   ): boolean
-  getDefaultValue(entry: DataEntry, options?: DefaultValueOptions): any
+  getDefaultValue(entry: DataEntry): any
+  getEmptyValue(entry: DataEntry): any
   deserialize(value: any, entry: DataEntry): any
   serialize(value: any, entry: DataEntry): any
   isExcluded(entry: DataEntry): boolean
