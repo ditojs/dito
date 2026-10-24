@@ -20,7 +20,7 @@ describe('icons template', () => {
     const scss = renderIcons(icons)
     for (const { name, url } of icons) {
       expect(scss).toContain(
-        `%icon-${name} {\n  @extend %icon;\n\n  mask-image: ${url};\n}`
+        `%icon--${name} {\n  @extend %icon;\n\n  mask-image: ${url};\n}`
       )
     }
   })

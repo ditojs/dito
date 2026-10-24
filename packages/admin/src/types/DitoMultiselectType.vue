@@ -539,7 +539,7 @@ $tag-line-height: 1em;
       margin: 0;
 
       &::after {
-        @extend %icon-clear;
+        @extend %icon--clear;
 
         font-size: 0.9em;
         color: $color-text-inverted;

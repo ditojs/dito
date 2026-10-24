@@ -132,11 +132,11 @@ export default DitoTreeListType
   @extend %field;
 
   &--has-errors {
-    @extend %field-has-errors;
+    @extend %field--has-errors;
   }
 
   &--disabled {
-    @extend %field-disabled;
+    @extend %field--disabled;
   }
 
   &__panel {

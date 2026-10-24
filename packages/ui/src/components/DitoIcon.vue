@@ -37,7 +37,7 @@ export default {
 @each $name in $icons {
   .dito-icon--#{$name} {
     &::after {
-      @extend %icon-#{$name};
+      @extend %icon--#{$name};
 
       position: absolute;
     }

@@ -5,14 +5,14 @@
   color: $color-dark;
 
   &::before {
-    @extend %icon-chevron;
+    @extend %icon--chevron;
 
     right: auto;
     transition: transform 0.1s ease;
   }
 
   &--double::before {
-    @extend %icon-chevrons;
+    @extend %icon--chevrons;
   }
 
   &--open::before {

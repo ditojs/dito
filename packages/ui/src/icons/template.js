@@ -14,7 +14,7 @@ ${icons.map(renderIcon).join('')}`
 
 const renderIcon = ({ name, url }) =>
   `
-%icon-${name} {
+%icon--${name} {
   @extend %icon;
 
   mask-image: ${url};

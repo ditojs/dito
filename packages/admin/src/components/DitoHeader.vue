@@ -68,7 +68,7 @@ export default {
     background: none;
 
     &::before {
-      @extend %icon-sidebar;
+      @extend %icon--sidebar;
     }
 
     &:hover {

@@ -105,6 +105,10 @@ export default {
     'scss/operator-no-newline-after': null,
     'scss/operator-no-newline-before': true,
     'scss/operator-no-unspaced': true,
+    // Placeholders are named like BEM blocks with modifiers, e.g.
+    // `%field--disabled`:
+    'scss/percent-placeholder-pattern':
+      /^[a-z0-9]+(-[a-z0-9]+)*(--[a-z0-9-]+)?$/,
     'scss/selector-no-redundant-nesting-selector': null,
     // Allow SCSS and CSS module keywords beginning with `@`
     'at-rule-no-unknown': null,

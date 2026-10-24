@@ -151,7 +151,7 @@ export default DitoSelectType
   }
 
   &--has-errors select {
-    @extend %input-has-errors;
+    @extend %input--has-errors;
   }
 
   &--disabled &__inner::before {

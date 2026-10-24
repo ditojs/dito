@@ -62,7 +62,7 @@ export default DitoRadioType
 
 .dito-radio-buttons {
   label {
-    @extend %input-borderless;
+    @extend %input--borderless;
   }
 
   .dito-radio-button {

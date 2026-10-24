@@ -7,20 +7,20 @@
   background: $color-white;
 
   &:disabled {
-    @extend %field-disabled;
+    @extend %field--disabled;
   }
-}
 
-%field-has-errors {
-  border-color: $color-error;
-}
+  &--has-errors {
+    border-color: $color-error;
+  }
 
-%field-disabled {
-  color: $color-disabled;
-  pointer-events: none;
-  cursor: text;
+  &--disabled {
+    color: $color-disabled;
+    pointer-events: none;
+    cursor: text;
 
-  button {
-    @extend %button-disabled;
+    button {
+      @extend %button--disabled;
+    }
   }
 }

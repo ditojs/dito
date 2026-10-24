@@ -188,7 +188,7 @@ export default {
   }
 
   &--disabled {
-    @extend %button-disabled;
+    @extend %button--disabled;
   }
 
   input:focus-visible + #{$self}__button {

@@ -320,7 +320,7 @@ function getFileName(label) {
     }
 
     &--interchange:empty::before {
-      @extend %icon-chevron;
+      @extend %icon--chevron;
 
       transform: rotate(90deg);
     }
