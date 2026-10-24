@@ -28,120 +28,120 @@ export const bookForm: FormSchema<Book> = {
 
 ## Admin and configuration
 
-| Type | Description |
-| ---- | ----------- |
-| `DitoAdmin` | The admin class, see [DitoAdmin](./admin.md). |
-| `GlobalConfig` | The global `dito` object: `base`, `api`, `settings`. |
-| `ApiConfig` | The configuration of the admin's API layer. |
-| `ApiResource` | A resource of the server API, with `type`, `path`, `method`, `id`, `parent` and `query`. |
-| `Resource` | The `resource` option of schemas: a path, or an object with `path`, `method`, `data` and `query`. |
-| `RequestMethod` | The signature of `api.request()`. |
-| `RequestMethodResponse<T>` | A `Response` with the parsed `data`. |
-| `HttpMethod` | `'get'`, `'post'`, `'put'`, `'patch'`, `'delete'`, … in lower case. |
+| Type                       | Description                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------- |
+| `DitoAdmin`                | The admin class, see [DitoAdmin](./admin.md).                                                     |
+| `GlobalConfig`             | The global `dito` object: `base`, `api`, `settings`.                                              |
+| `ApiConfig`                | The configuration of the admin's API layer.                                                       |
+| `ApiResource`              | A resource of the server API, with `type`, `path`, `method`, `id`, `parent` and `query`.          |
+| `Resource`                 | The `resource` option of schemas: a path, or an object with `path`, `method`, `data` and `query`. |
+| `RequestMethod`            | The signature of `api.request()`.                                                                 |
+| `RequestMethodResponse<T>` | A `Response` with the parsed `data`.                                                              |
+| `HttpMethod`               | `'get'`, `'post'`, `'put'`, `'patch'`, `'delete'`, … in lower case.                               |
 
 ## Contexts
 
-| Type | Description |
-| ---- | ----------- |
-| `AdminContext` | `admin.context`, see [AdminContext](./admin.md#admincontext). |
+| Type                   | Description                                                                            |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| `AdminContext`         | `admin.context`, see [AdminContext](./admin.md#admincontext).                          |
 | `SchemaContext<$Item>` | The context of schema callbacks and event handlers, see [SchemaContext](./context.md). |
-| `AdminUser` | The logged-in user, with `roles` and `hasRole()`. |
+| `AdminUser`            | The logged-in user, with `roles` and `hasRole()`.                                      |
 
 ## Schema values and events
 
-| Type | Description |
-| ---- | ----------- |
-| `SchemaValue<$Item, $Params, $ReturnValue>` | A schema option that takes a value or a `SchemaValueCallback` returning it. |
-| `SchemaValueCallback<$Item, $Params, $ReturnValue>` | A callback that receives the `SchemaContext`, merged with `$Params`. |
-| `ItemEventHandler<$Item>` | An event handler that receives the `SchemaContext`. |
-| `ErrorEventHandler<$Item>` | An event handler whose context has the `error`. |
-| `ToggleEventHandler<$Item>` | The `onToggle` handler of sections, inlined forms and trees, with `collapsed` in its context. |
-| `SchemaToggle<$Item>` | The `onToggle` option of collapsible schemas. |
+| Type                                                | Description                                                                                   |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `SchemaValue<$Item, $Params, $ReturnValue>`         | A schema option that takes a value or a `SchemaValueCallback` returning it.                   |
+| `SchemaValueCallback<$Item, $Params, $ReturnValue>` | A callback that receives the `SchemaContext`, merged with `$Params`.                          |
+| `ItemEventHandler<$Item>`                           | An event handler that receives the `SchemaContext`.                                           |
+| `ErrorEventHandler<$Item>`                          | An event handler whose context has the `error`.                                               |
+| `ToggleEventHandler<$Item>`                         | The `onToggle` handler of sections, inlined forms and trees, with `collapsed` in its context. |
+| `SchemaToggle<$Item>`                               | The `onToggle` option of collapsible schemas.                                                 |
 
 See [Events](./events.md).
 
 ## Schemas
 
-| Type | Description |
-| ---- | ----------- |
-| `View<$Item>` | A top-level view: `ViewSchema` or `MenuSchema`. |
-| `ViewSchema<$Item>` | `type: 'view'`. |
-| `MenuSchema<$Item>` | `type: 'menu'`, a group of views in the navigation. |
-| `FormSchema<$Item>` | `type: 'form'`. |
-| `ResolvableForm<$Item>` | A form, a record of forms, or a promise or function returning them. |
-| `Field<$Item>` | The union of all field schemas. |
-| `Fields<$Item>` | A record of field schemas, keyed by the names of their values. |
-| `SourceField<$Item>` | The union of the schemas that hold items: lists, objects and trees. |
-| `SchemaByType<$Item>` | Maps each type name to its schema type. |
-| `ButtonSchema<$Item>` | `type: 'button' \| 'submit'`. |
-| `Buttons<$Item>` | A record of button schemas, whose `type` is optional. |
-| `CheckboxSchema<$Item>` | `type: 'checkbox'`. |
-| `CheckboxesSchema<$Item>` | `type: 'checkboxes'`. |
-| `CodeSchema<$Item>` | `type: 'code'`. |
-| `ColorSchema<$Item>` | `type: 'color'`. |
-| `ColorFormat` | The `colorFormat` option of colors: `'hex'`, `'rgb'`, `'hsl'`, … |
-| `ComponentSchema<$Item>` | `type: 'component'`, with a custom Vue component. |
-| `DateSchema<$Item>` | `type: 'date' \| 'datetime' \| 'time'`. |
-| `InputSchema<$Item>` | The text inputs: `'text'`, `'email'`, `'url'`, `'password'`, `'tel'`, `'hostname'`, `'domain'`, `'creditcard'`. |
-| `LabelSchema<$Item>` | `type: 'label'`. |
-| `ListSchema<$Item>` | `type: 'list'`. |
-| `ColumnSchema<$Item, $Value>` | A column of a list. |
-| `Columns<$Item>` | A record of column schemas. |
-| `MarkupSchema<$Item>` | `type: 'markup'`. |
-| `MultiselectSchema<$Item, $Option>` | `type: 'multiselect'`. |
-| `NumberSchema<$Item>` | `type: 'number' \| 'integer'`. |
-| `ObjectSchema<$Item>` | `type: 'object'`. |
-| `PanelSchema<$Item>` | `type: 'panel'`. |
-| `ProgressSchema<$Item>` | `type: 'progress'`. |
-| `RadioSchema<$Item>` | `type: 'radio'`. |
-| `SectionSchema<$Item>` | `type: 'section'`. |
-| `SelectSchema<$Item>` | `type: 'select'`. |
-| `SliderSchema<$Item>` | `type: 'slider'`. |
-| `SpacerSchema<$Item>` | `type: 'spacer'`. |
-| `SwitchSchema<$Item>` | `type: 'switch'`. |
-| `TextareaSchema<$Item>` | `type: 'textarea'`. |
-| `TreeListSchema<$Item>` | `type: 'tree-list'`. |
-| `TreeObjectSchema<$Item>` | `type: 'tree-object'`. |
-| `UploadSchema<$Item>` | `type: 'upload'`. |
-| `ValueSchema<$Item>` | `type: 'value'`. |
-| `ClipboardConfig` | The `clipboard` option of forms: `true`, or `copy()` and `paste()` callbacks. |
+| Type                                | Description                                                                                                     |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `View<$Item>`                       | A top-level view: `ViewSchema` or `MenuSchema`.                                                                 |
+| `ViewSchema<$Item>`                 | `type: 'view'`.                                                                                                 |
+| `MenuSchema<$Item>`                 | `type: 'menu'`, a group of views in the navigation.                                                             |
+| `FormSchema<$Item>`                 | `type: 'form'`.                                                                                                 |
+| `ResolvableForm<$Item>`             | A form, a record of forms, or a promise or function returning them.                                             |
+| `Field<$Item>`                      | The union of all field schemas.                                                                                 |
+| `Fields<$Item>`                     | A record of field schemas, keyed by the names of their values.                                                  |
+| `SourceField<$Item>`                | The union of the schemas that hold items: lists, objects and trees.                                             |
+| `SchemaByType<$Item>`               | Maps each type name to its schema type.                                                                         |
+| `ButtonSchema<$Item>`               | `type: 'button' \| 'submit'`.                                                                                   |
+| `Buttons<$Item>`                    | A record of button schemas, whose `type` is optional.                                                           |
+| `CheckboxSchema<$Item>`             | `type: 'checkbox'`.                                                                                             |
+| `CheckboxesSchema<$Item>`           | `type: 'checkboxes'`.                                                                                           |
+| `CodeSchema<$Item>`                 | `type: 'code'`.                                                                                                 |
+| `ColorSchema<$Item>`                | `type: 'color'`.                                                                                                |
+| `ColorFormat`                       | The `colorFormat` option of colors: `'hex'`, `'rgb'`, `'hsl'`, …                                                |
+| `ComponentSchema<$Item>`            | `type: 'component'`, with a custom Vue component.                                                               |
+| `DateSchema<$Item>`                 | `type: 'date' \| 'datetime' \| 'time'`.                                                                         |
+| `InputSchema<$Item>`                | The text inputs: `'text'`, `'email'`, `'url'`, `'password'`, `'tel'`, `'hostname'`, `'domain'`, `'creditcard'`. |
+| `LabelSchema<$Item>`                | `type: 'label'`.                                                                                                |
+| `ListSchema<$Item>`                 | `type: 'list'`.                                                                                                 |
+| `ColumnSchema<$Item, $Value>`       | A column of a list.                                                                                             |
+| `Columns<$Item>`                    | A record of column schemas.                                                                                     |
+| `MarkupSchema<$Item>`               | `type: 'markup'`.                                                                                               |
+| `MultiselectSchema<$Item, $Option>` | `type: 'multiselect'`.                                                                                          |
+| `NumberSchema<$Item>`               | `type: 'number' \| 'integer'`.                                                                                  |
+| `ObjectSchema<$Item>`               | `type: 'object'`.                                                                                               |
+| `PanelSchema<$Item>`                | `type: 'panel'`.                                                                                                |
+| `ProgressSchema<$Item>`             | `type: 'progress'`.                                                                                             |
+| `RadioSchema<$Item>`                | `type: 'radio'`.                                                                                                |
+| `SectionSchema<$Item>`              | `type: 'section'`.                                                                                              |
+| `SelectSchema<$Item>`               | `type: 'select'`.                                                                                               |
+| `SliderSchema<$Item>`               | `type: 'slider'`.                                                                                               |
+| `SpacerSchema<$Item>`               | `type: 'spacer'`.                                                                                               |
+| `SwitchSchema<$Item>`               | `type: 'switch'`.                                                                                               |
+| `TextareaSchema<$Item>`             | `type: 'textarea'`.                                                                                             |
+| `TreeListSchema<$Item>`             | `type: 'tree-list'`.                                                                                            |
+| `TreeObjectSchema<$Item>`           | `type: 'tree-object'`.                                                                                          |
+| `UploadSchema<$Item>`               | `type: 'upload'`.                                                                                               |
+| `ValueSchema<$Item>`                | `type: 'value'`.                                                                                                |
+| `ClipboardConfig`                   | The `clipboard` option of forms: `true`, or `copy()` and `paste()` callbacks.                                   |
 
 See [Schemas](./schemas.md).
 
 ## Shared schema settings
 
-| Type | Description |
-| ---- | ----------- |
-| `SchemaBase<$Item>` | The options of all schemas: `panels` and the `on…` lifecycle handlers. |
-| `FieldSchemaBase<$Item>` | The options of all fields: `label`, `visible`, `default`, `validate`, … |
-| `RouteSchemaBase<$Item>` | The options of views and forms, also of inlined forms and dialogs. |
-| `SourceSettings<$Item>` | The options of lists, objects and trees: `form`, `columns`, `creatable`, … |
-| `SelectionSettings<$Item, $Option>` | The options of fields with options: `options`, `relate`, `search`. |
-| `SchemaOptions<$Item, $Option>` | The `options` option. |
-| `SchemaOptionsOption<$Value>` | One option: a value, or `{ label, value }`. |
-| `NumberSettings<$Item>` | The options of numbers, sliders and progress bars: `minimum`, `maximum`, `step`, … |
-| `TextSettings<$Item>` | The `trim` option of text inputs and textareas. |
-| `AffixSettings<$Item>` | The `prefix` and `suffix` options. |
-| `SchemaAffix` | One prefix or suffix, see [Affixes](./schemas.md#affixes). |
-| `DataSettings<$Item>` | The `data` and `dataPath` options of `value`. |
+| Type                                | Description                                                                        |
+| ----------------------------------- | ---------------------------------------------------------------------------------- |
+| `SchemaBase<$Item>`                 | The options of all schemas: `panels` and the `on…` lifecycle handlers.             |
+| `FieldSchemaBase<$Item>`            | The options of all fields: `label`, `visible`, `default`, `validate`, …            |
+| `RouteSchemaBase<$Item>`            | The options of views and forms, also of inlined forms and dialogs.                 |
+| `SourceSettings<$Item>`             | The options of lists, objects and trees: `form`, `columns`, `creatable`, …         |
+| `SelectionSettings<$Item, $Option>` | The options of fields with options: `options`, `relate`, `search`.                 |
+| `SchemaOptions<$Item, $Option>`     | The `options` option.                                                              |
+| `SchemaOptionsOption<$Value>`       | One option: a value, or `{ label, value }`.                                        |
+| `NumberSettings<$Item>`             | The options of numbers, sliders and progress bars: `minimum`, `maximum`, `step`, … |
+| `TextSettings<$Item>`               | The `trim` option of text inputs and textareas.                                    |
+| `AffixSettings<$Item>`              | The `prefix` and `suffix` options.                                                 |
+| `SchemaAffix`                       | One prefix or suffix, see [Affixes](./schemas.md#affixes).                         |
+| `DataSettings<$Item>`               | The `data` and `dataPath` options of `value`.                                      |
 
 ## Custom components and types
 
-| Type | Description |
-| ---- | ----------- |
+| Type                                  | Description                                                                           |
+| ------------------------------------- | ------------------------------------------------------------------------------------- |
 | `CustomComponentProps<$Item, $Value>` | The props of custom components: `schema`, `context`, `modelValue`, `errorsElementId`. |
-| `CustomComponentEmits<$Value>` | The events of custom components: `update:modelValue`, `change`, `focus`, `blur`. |
-| `TypeDescriptor` | The descriptor of a field type, see [TypeDescriptor](#typedescriptor). |
+| `CustomComponentEmits<$Value>`        | The events of custom components: `update:modelValue`, `change`, `focus`, `blur`.      |
+| `TypeDescriptor`                      | The descriptor of a field type, see [TypeDescriptor](#typedescriptor).                |
 
 ## Utility types
 
-| Type | Description |
-| ---- | ----------- |
-| `OrArrayOf<T>` | `T \| T[]` |
-| `OrPromiseOf<T>` | `T \| Promise<T>` |
-| `OrRecordOf<T>` | `T \| Record<string, T>` |
-| `OrFunctionReturning<T>` | `T \| (() => T)` |
-| `Resolvable<T>` | A value, record, promise or function, resolved to `T` or a record of it. |
+| Type                     | Description                                                              |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `OrArrayOf<T>`           | `T \| T[]`                                                               |
+| `OrPromiseOf<T>`         | `T \| Promise<T>`                                                        |
+| `OrRecordOf<T>`          | `T \| Record<string, T>`                                                 |
+| `OrFunctionReturning<T>` | `T \| (() => T)`                                                         |
+| `Resolvable<T>`          | A value, record, promise or function, resolved to `T` or a record of it. |
 
 ## TypeDescriptor
 
@@ -149,7 +149,7 @@ A type descriptor defines a type of fields: the Vue component that
 renders it, and how the admin handles its schemas and values, also where they
 aren't rendered, e.g. when items are created, serialized or validated. Its
 flags are statements about the type; the defaults of schema options start with
-`default`. Members marked *Hook* are functions that the admin calls.
+`default`. Members marked _Hook_ are functions that the admin calls.
 
 ### defineType()
 
@@ -172,8 +172,8 @@ them.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name         | Type             | Description                            |
+| ------------ | ---------------- | -------------------------------------- |
 | `descriptor` | `TypeDescriptor` | The descriptor, see the members below. |
 
 #### Return value
@@ -380,7 +380,7 @@ view of their source, instead of in routes of their own, as in trees.
 getOptionsDataSchema?(schema: object): any
 ```
 
-*Hook.* Returns the data schema of the options that the admin loads for the
+_Hook._ Returns the data schema of the options that the admin loads for the
 field, e.g. `schema => schema.options`. Only types with it load options.
 
 #### getDisplayValue()
@@ -389,7 +389,7 @@ field, e.g. `schema => schema.options`. Only types with it load options.
 getDisplayValue?(context: SchemaContext): string
 ```
 
-*Hook.* Returns the text that list cells without `render()` and item labels
+_Hook._ Returns the text that list cells without `render()` and item labels
 show for the value, e.g. formatted dates. Without it, they show the value.
 
 ##### Example
@@ -406,7 +406,7 @@ getDisplayValue({ value }) {
 getValidations?(context: SchemaContext): Record<string, any>
 ```
 
-*Hook.* Returns the validations of the value, keyed by validator name, e.g.
+_Hook._ Returns the validations of the value, keyed by validator name, e.g.
 `{ email: true }` or `{ range: [0, 10] }`. `required`, the limits of strings
 and arrays and `validate()` are added to them.
 
@@ -416,7 +416,7 @@ and arrays and `validate()` are added to them.
 getProperty?(schema: object, context: SchemaContext): object | null
 ```
 
-*Hook.* Returns the data type of the values in the format of the server's
+_Hook._ Returns the data type of the values in the format of the server's
 `properties`, or `null` for types without a value. It decides their empty
 value, e.g. `''` for strings with `nullable: false`, and whether a loaded
 `null` counts as missing: values of a type that aren't `nullable` get their
@@ -439,7 +439,7 @@ setupSchema?(options: {
 }): Promise<any> | void
 ```
 
-*Hook.* Sets up each schema of the type when the views are resolved (for
+_Hook._ Sets up each schema of the type when the views are resolved (for
 each login), after `api.defaults` are applied, e.g. resolves schemas or
 modules that it contains. The admin awaits it.
 
@@ -460,7 +460,7 @@ async setupSchema({ schema }) {
 deserializeValue?(context: SchemaContext): any
 ```
 
-*Hook.* Converts a loaded value to the value that the component edits, e.g.
+_Hook._ Converts a loaded value to the value that the component edits, e.g.
 date strings to `Date` objects. Runs before the schema's own
 `deserializeValue()`, which receives its result.
 
@@ -470,7 +470,7 @@ date strings to `Date` objects. Runs before the schema's own
 serializeValue?(context: SchemaContext): any
 ```
 
-*Hook.* Converts the edited value for storage, before the schema's own
+_Hook._ Converts the edited value for storage, before the schema's own
 `serializeValue()`, which receives its result. When the final result is
 `undefined`, the key is left out of the serialized data.
 

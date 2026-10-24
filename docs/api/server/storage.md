@@ -19,30 +19,30 @@ storage uses them.
 
 Common options:
 
-| Key              | Type       | Description                                                                                                                                                       |
-| ---------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`           | `string`   | `'disk'`, `'s3'` or the type of a [registered](#static-register) storage class.                                                                                   |
-| `url`            | `string`   | Absolute base URL of the stored files, ending in `/`: file URLs are resolved against it, so `…/covers` without the slash drops `covers`.                          |
-| `concurrency`    | `number`   | Concurrency of storage operations, e.g. importing assets. Default `8`.                                                                                            |
+| Key              | Type       | Description                                                                                                                                                     |
+| ---------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`           | `string`   | `'disk'`, `'s3'` or the type of a [registered](#static-register) storage class.                                                                                 |
+| `url`            | `string`   | Absolute base URL of the stored files, ending in `/`: file URLs are resolved against it, so `…/covers` without the slash drops `covers`.                        |
+| `concurrency`    | `number`   | Concurrency of storage operations, e.g. importing assets. Default `8`.                                                                                          |
 | `allowedImports` | `string[]` | Glob patterns of URLs from which unsigned asset files may be imported, e.g. `['https://images.example.com/**']`; `file://` URLs are resolved to absolute paths. |
 
 ### DiskStorageConfig
 
-| Key             | Type      | Description                                                                                                                      |
-| --------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `type`          | `'disk'`  |                                                                                                                                  |
-| `path`          | `string`  | Directory of the files, relative to the app's `basePath`. Required.                                                              |
+| Key             | Type      | Description                                                                                                                    |
+| --------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `type`          | `'disk'`  |                                                                                                                                |
+| `path`          | `string`  | Directory of the files, relative to the app's `basePath`. Required.                                                            |
 | `nestedFolders` | `boolean` | Stores files in two levels of folders named after the first two characters of their key, e.g. `3/f/3f2a….png`. Default `true`. |
 
 ### S3StorageConfig
 
-| Key       | Type             | Description                                                                  |
-| --------- | ---------------- | ---------------------------------------------------------------------------- |
-| `type`    | `'s3'`           |                                                                              |
-| `bucket`  | `string`         | The bucket. Required.                                                        |
-| `acl`     | `string`         | Canned ACL of uploaded objects, e.g. `'public-read'`.                        |
-| `s3`      | `S3ClientConfig` | Configuration of the `S3` client.                                            |
-| *other*   |                  | Passed on to `multer-s3`, except `s3`, `key`, `contentType` and `metadata`. |
+| Key      | Type             | Description                                                                 |
+| -------- | ---------------- | --------------------------------------------------------------------------- |
+| `type`   | `'s3'`           |                                                                             |
+| `bucket` | `string`         | The bucket. Required.                                                       |
+| `acl`    | `string`         | Canned ACL of uploaded objects, e.g. `'public-read'`.                       |
+| `s3`     | `S3ClientConfig` | Configuration of the `S3` client.                                           |
+| _other_  |                  | Passed on to `multer-s3`, except `s3`, `key`, `contentType` and `metadata`. |
 
 The content type of uploads is taken from the request, else detected from the
 data. With `readDimensions`, the image and video dimensions are stored as
@@ -71,11 +71,11 @@ initializes them in [`app.setupStorages()`](application.md#setupstorages).
 
 #### Parameters
 
-| Name     | Type                              | Description                    |
-| -------- | --------------------------------- | ------------------------------ |
-| `app`    | [`Application`](application.md)   | The application.               |
+| Name     | Type                              | Description                   |
+| -------- | --------------------------------- | ----------------------------- |
+| `app`    | [`Application`](application.md)   | The application.              |
 | `name`   | `string`                          | The key in `config.storages`. |
-| `config` | [`StorageConfig`](#storageconfig) | The configuration.             |
+| `config` | [`StorageConfig`](#storageconfig) | The configuration.            |
 
 #### Example
 
@@ -89,16 +89,16 @@ const storage = new DiskStorage(app, 'covers', {
 
 ## Properties
 
-| Name            | Type                              | Description                                                         |
-| --------------- | --------------------------------- | ------------------------------------------------------------------- |
-| `app`           | [`Application`](application.md)   | The application.                                                    |
-| `name`          | `string`                          | The storage name.                                                   |
-| `config`        | `StorageConfig`                   | The configuration.                                                  |
-| `url`           | `string \| undefined`             | `config.url`.                                                       |
-| `path`          | `string \| undefined`             | `config.path`.                                                      |
-| `concurrency`   | `number`                          | `config.concurrency`, default `8`.                                  |
-| `isInitialized` | `boolean`                         | Set to `true` by `app.setupStorages()`.                             |
-| `storage`       | `multer.StorageEngine \| null`    | The multer storage engine for uploads, created by `setup()`.      |
+| Name            | Type                            | Description                                                  |
+| --------------- | ------------------------------- | ------------------------------------------------------------ |
+| `app`           | [`Application`](application.md) | The application.                                             |
+| `name`          | `string`                        | The storage name.                                            |
+| `config`        | `StorageConfig`                 | The configuration.                                           |
+| `url`           | `string \| undefined`           | `config.url`.                                                |
+| `path`          | `string \| undefined`           | `config.path`.                                               |
+| `concurrency`   | `number`                        | `config.concurrency`, default `8`.                           |
+| `isInitialized` | `boolean`                       | Set to `true` by `app.setupStorages()`.                      |
+| `storage`       | `multer.StorageEngine \| null`  | The multer storage engine for uploads, created by `setup()`. |
 
 ## Methods
 
@@ -126,7 +126,7 @@ await storage.initialize()
 ```
 
 Asynchronous initialization, after `setup()`. Does nothing by default, so
-overrides need no `super` call. *Hook.* Returns `Promise<void>`.
+overrides need no `super` call. _Hook._ Returns `Promise<void>`.
 
 ### addFile()
 
@@ -140,10 +140,10 @@ storage, in place.
 
 #### Parameters
 
-| Name   | Type                                         | Description          |
-| ------ | -------------------------------------------- | -------------------- |
-| `file` | [`AssetFile`](#assetfile) `\| { key, type }` | The file to store.   |
-| `data` | `Buffer`                                     | The contents.        |
+| Name   | Type                                         | Description        |
+| ------ | -------------------------------------------- | ------------------ |
+| `file` | [`AssetFile`](#assetfile) `\| { key, type }` | The file to store. |
+| `data` | `Buffer`                                     | The contents.      |
 
 Returns `Promise<AssetFile>`: the file.
 
@@ -315,16 +315,16 @@ Returns `Class<Storage> | null`: the class registered for the type.
 
 ### Backend hooks
 
-*Hooks.* The public methods delegate to these:
+_Hooks._ The public methods delegate to these:
 
-| Hook                   | Called by                              |
-| ---------------------- | -------------------------------------- |
-| `_addFile(file, data)` | `addFile()`                            |
-| `_removeFile(file)`    | `removeFile()`                         |
-| `_readFile(file)`      | `readFile()`                           |
-| `_listKeys()`          | `listKeys()`                           |
-| `_getFilePath(file)`   | `getFilePath()`                        |
-| `_getFileUrl(file)`    | `getFileUrl()`, `addFile()`, uploads   |
+| Hook                   | Called by                            |
+| ---------------------- | ------------------------------------ |
+| `_addFile(file, data)` | `addFile()`                          |
+| `_removeFile(file)`    | `removeFile()`                       |
+| `_readFile(file)`      | `readFile()`                         |
+| `_listKeys()`          | `listKeys()`                         |
+| `_getFilePath(file)`   | `getFilePath()`                      |
+| `_getFileUrl(file)`    | `getFileUrl()`, `addFile()`, uploads |
 
 Uploads need a multer storage engine in `this.storage`, created in
 `initialize()`. `_getUrl(...parts)` and `_getPath(...parts)` resolve parts
@@ -353,17 +353,17 @@ buffers. Same as `new AssetFile(options)`. Returns `AssetFile`.
 
 ### Properties
 
-| Name              | Type                  | Description                                                     |
-| ----------------- | --------------------- | --------------------------------------------------------------- |
-| `key`             | `string`              | Unique key, see `AssetFile.getUniqueKey(name)`.                 |
-| `name`            | `string`              | The original file name.                                         |
-| `type`            | `string`              | The MIME type.                                                  |
-| `size`            | `number`              | Size in bytes.                                                  |
-| `url`             | `string`              | Public URL, once stored.                                        |
-| `width`, `height` | `number`              | Media dimensions, if read.                                      |
-| `data`            | `Buffer \| null`      | The data of a created file (not enumerable).                    |
-| `storage`         | `Storage \| null`     | The storage of a converted file (not enumerable).               |
-| `path`            | `string \| undefined` | `storage.getFilePath(file)`.                                    |
+| Name              | Type                  | Description                                       |
+| ----------------- | --------------------- | ------------------------------------------------- |
+| `key`             | `string`              | Unique key, see `AssetFile.getUniqueKey(name)`.   |
+| `name`            | `string`              | The original file name.                           |
+| `type`            | `string`              | The MIME type.                                    |
+| `size`            | `number`              | Size in bytes.                                    |
+| `url`             | `string`              | Public URL, once stored.                          |
+| `width`, `height` | `number`              | Media dimensions, if read.                        |
+| `data`            | `Buffer \| null`      | The data of a created file (not enumerable).      |
+| `storage`         | `Storage \| null`     | The storage of a converted file (not enumerable). |
+| `path`            | `string \| undefined` | `storage.getFilePath(file)`.                      |
 
 ### read()
 

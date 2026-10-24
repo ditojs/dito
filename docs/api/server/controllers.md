@@ -3,14 +3,14 @@
 Controllers map HTTP routes to actions. Dito.js provides these classes, all
 exported by `@ditojs/server`:
 
-| Class                                     | Description |
-| ----------------------------------------- | ----------------------------------------------------- |
-| [`Controller`](#controller)               | Base class: plain actions, asset uploads, hooks, authorization. |
-| [`CollectionController`](#collectioncontroller) | Base class of model and relation controllers. Not extended directly. |
-| [`ModelController`](#modelcontroller)     | CRUD routes for a model's collection and members, plus its relations. |
-| [`RelationController`](#relationcontroller) | Routes for a relation of a model controller. Created from `relations`, never extended. |
-| [`UsersController`](#userscontroller)     | A model controller with login, logout, session, passkey, TOTP and password reset actions. |
-| [`AdminController`](#admincontroller)     | Serves Dito.js Admin. |
+| Class                                           | Description                                                                               |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [`Controller`](#controller)                     | Base class: plain actions, asset uploads, hooks, authorization.                           |
+| [`CollectionController`](#collectioncontroller) | Base class of model and relation controllers. Not extended directly.                      |
+| [`ModelController`](#modelcontroller)           | CRUD routes for a model's collection and members, plus its relations.                     |
+| [`RelationController`](#relationcontroller)     | Routes for a relation of a model controller. Created from `relations`, never extended.    |
+| [`UsersController`](#userscontroller)           | A model controller with login, logout, session, passkey, TOTP and password reset actions. |
+| [`AdminController`](#admincontroller)           | Serves Dito.js Admin.                                                                     |
 
 Controllers are registered through the `controllers` option of the
 [`Application`](application.md#addcontrollers); nested objects become
@@ -43,18 +43,18 @@ value other than `undefined` becomes the response body.
 
 ### Action options
 
-| Option        | Type                                    | Description |
-| ------------- | --------------------------------------- | ------------------------------------------------ |
-| `handler`     | `function(ctx, ...args)`                | The action. Required. |
-| `before`      | `function(ctx, ...args)`                | A `before:` [hook](#hooks) of this action only. |
-| `after`       | `function(ctx, result)`                 | An `after:` [hook](#hooks) of this action only. |
-| `parameters`  | `object` \| `array` \| `[schema, options]` | Validated parameters, see [Parameters](#parameters). |
-| `response`    | `Schema & { name? }` \| `[schema, options]` | Schema of the returned value. With `name`, the value is sent wrapped as `{ [name]: value }`. |
-| `authorize`   | [`Authorize`](#authorize)               | Authorization of this action. It ranks above the `authorize` of the actions object it's written in and of the controller, but below the actions objects of subclasses, see [Authorize](#authorize). |
-| `transacted`  | `boolean`                               | Runs the action in a transaction, available as `ctx.transaction`. Default: the controller's `transacted`; without either, the default write actions of controllers with `graph` or `assets` are transacted. |
-| `scope`       | `string \| string[]`                    | Scopes applied to the member query of `from: 'member'` parameters. |
-| `path`        | `string`                                | Overrides the path taken from the action name. |
-| `options`     | `{ parameters?, response? }`            | Validation options for parameters and response (Ajv options, see [Validator](./validator.md#validation-options)). |
+| Option       | Type                                        | Description                                                                                                                                                                                                 |
+| ------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `handler`    | `function(ctx, ...args)`                    | The action. Required.                                                                                                                                                                                       |
+| `before`     | `function(ctx, ...args)`                    | A `before:` [hook](#hooks) of this action only.                                                                                                                                                             |
+| `after`      | `function(ctx, result)`                     | An `after:` [hook](#hooks) of this action only.                                                                                                                                                             |
+| `parameters` | `object` \| `array` \| `[schema, options]`  | Validated parameters, see [Parameters](#parameters).                                                                                                                                                        |
+| `response`   | `Schema & { name? }` \| `[schema, options]` | Schema of the returned value. With `name`, the value is sent wrapped as `{ [name]: value }`.                                                                                                                |
+| `authorize`  | [`Authorize`](#authorize)                   | Authorization of this action. It ranks above the `authorize` of the actions object it's written in and of the controller, but below the actions objects of subclasses, see [Authorize](#authorize).         |
+| `transacted` | `boolean`                                   | Runs the action in a transaction, available as `ctx.transaction`. Default: the controller's `transacted`; without either, the default write actions of controllers with `graph` or `assets` are transacted. |
+| `scope`      | `string \| string[]`                        | Scopes applied to the member query of `from: 'member'` parameters.                                                                                                                                          |
+| `path`       | `string`                                    | Overrides the path taken from the action name.                                                                                                                                                              |
+| `options`    | `{ parameters?, response? }`                | Validation options for parameters and response (Ajv options, see [Validator](./validator.md#validation-options)).                                                                                           |
 
 Any other property, e.g. `cached: true`, is copied to the action object
 (`ctx.action`), for application middleware to read.
@@ -79,9 +79,9 @@ validation responds with a [`ValidationError`](./errors.md#validationerror).
 
 Each schema is a [`Schema`](./validator.md#schema-extensions) plus:
 
-| Property | Type | Description |
-| -------- | ---- | ----------- |
-| `type`   | `string` | Also accepts `'date'`/`'datetime'`/`'timestamp'` (coerced to `Date`) and the names of models (coerced to model instances). |
+| Property | Type                                                | Description                                                                                                                                                                               |
+| -------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`   | `string`                                            | Also accepts `'date'`/`'datetime'`/`'timestamp'` (coerced to `Date`) and the names of models (coerced to model instances).                                                                |
 | `from`   | `'path' \| 'query' \| 'body' \| 'root' \| 'member'` | Where the value comes from instead of the default source: route parameters, the query, the body, the whole parameters object (`'root'`), or the requested member (`'member'`, see below). |
 
 `from: 'member'` parameters of member actions receive the member model, fetched
@@ -90,11 +90,11 @@ respond with a 404 error when it isn't found. In `relation` actions of
 one-to-one relations they receive the single related model. They take these
 options:
 
-| Option      | Type                    | Description |
-| ----------- | ----------------------- | --------------------------------------------- |
-| `query`     | `object`                | Query parameters to fetch the member with, e.g. `{ scope: 'published' }`. The request's own query parameters don't apply. |
-| `forUpdate` | `boolean`               | Locks the member row until the end of the transaction. Requires `transacted: true`. |
-| `modify`    | `(query) => void`       | Modifies the member query. |
+| Option      | Type              | Description                                                                                                               |
+| ----------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `query`     | `object`          | Query parameters to fetch the member with, e.g. `{ scope: 'published' }`. The request's own query parameters don't apply. |
+| `forUpdate` | `boolean`         | Locks the member row until the end of the transaction. Requires `transacted: true`.                                       |
+| `modify`    | `(query) => void` | Modifies the member query.                                                                                                |
 
 ```js
 member = {
@@ -120,17 +120,17 @@ The query parameters that `parameters` don't consume are available as
 
 Requests of actions have these members on the Koa context:
 
-| Property              | Description |
-| --------------------- | -------------------------------------------------- |
-| `ctx.action`          | The action object, with `name` (its key), `identifier` (its part of [hook](#hooks) keys), `type`, `method`, `path`, `authorize`, `transacted` and any extra options. |
-| `ctx.controller`      | The controller. |
-| `ctx.params`          | The route parameters, e.g. `{ id: '1' }`. |
-| `ctx.route`           | The route, see [`addRoute()`](./application.md#addroute). |
-| `ctx.logger`          | The logger of the request, with its request id and user. |
-| `ctx.memberId`        | The validated member id, in member actions. |
-| `ctx.filteredQuery`   | The query parameters not consumed by `parameters`. |
-| `ctx.transaction`     | The transaction of transacted actions. |
-| `ctx.state.user`      | The authenticated user, if any. |
+| Property            | Description                                                                                                                                                          |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ctx.action`        | The action object, with `name` (its key), `identifier` (its part of [hook](#hooks) keys), `type`, `method`, `path`, `authorize`, `transacted` and any extra options. |
+| `ctx.controller`    | The controller.                                                                                                                                                      |
+| `ctx.params`        | The route parameters, e.g. `{ id: '1' }`.                                                                                                                            |
+| `ctx.route`         | The route, see [`addRoute()`](./application.md#addroute).                                                                                                            |
+| `ctx.logger`        | The logger of the request, with its request id and user.                                                                                                             |
+| `ctx.memberId`      | The validated member id, in member actions.                                                                                                                          |
+| `ctx.filteredQuery` | The query parameters not consumed by `parameters`.                                                                                                                   |
+| `ctx.transaction`   | The transaction of transacted actions.                                                                                                                               |
+| `ctx.state.user`    | The authenticated user, if any.                                                                                                                                      |
 
 ### `allow`
 
@@ -175,15 +175,15 @@ type Authorize =
 type ControllerAuthorize = Authorize | Record<string, Authorize>
 ```
 
-| Value      | Authorized when |
-| ---------- | ---------------------------------------------------------------- |
-| unset      | Always (public). |
-| `true`     | Always. It doesn't check for a user; use a role for that. |
-| `false`    | Never. |
-| `'$self'`  | The member is the authenticated user (users controllers). |
-| `'$owner'` | `member.$hasOwner(user)` returns a truthy value, see [`$hasOwner()`](./model.md#hasowner). |
-| any string | `user.$hasRole(role)` returns a truthy value, see [`UserMixin`](./model.md#usermixin). |
-| array      | Any of its entries authorizes. |
+| Value      | Authorized when                                                                                                                                                                                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| unset      | Always (public).                                                                                                                                                                                                                                                                      |
+| `true`     | Always. It doesn't check for a user; use a role for that.                                                                                                                                                                                                                             |
+| `false`    | Never.                                                                                                                                                                                                                                                                                |
+| `'$self'`  | The member is the authenticated user (users controllers).                                                                                                                                                                                                                             |
+| `'$owner'` | `member.$hasOwner(user)` returns a truthy value, see [`$hasOwner()`](./model.md#hasowner).                                                                                                                                                                                            |
+| any string | `user.$hasRole(role)` returns a truthy value, see [`UserMixin`](./model.md#usermixin).                                                                                                                                                                                                |
+| array      | Any of its entries authorizes.                                                                                                                                                                                                                                                        |
 | function   | Called with `(ctx, member)` and the controller as `this`, in [relations](#relationcontroller) their `RelationController`, with the declaring controller as `this.parent`; its result is checked like a setting. Returning `undefined` denies, returning `null` authorizes like unset. |
 
 Strings and arrays deny requests without an authenticated user
@@ -273,22 +273,22 @@ The base class of all controllers, for plain [actions](#actions), see
 
 ### Instance fields
 
-| Field        | Type                       | Description |
-| ------------ | -------------------------- | -------------------------------------------------- |
-| `app`        | [`Application`](./application.md) | The application. |
-| `name`       | `string`                   | Default: the class name without a `Controller` suffix. |
-| `path`       | `string`                   | Route path relative to the namespace. Default: the name (`Books`), hyphenated with `config.app.normalizePaths` (`books`, `sales-reports`). |
-| `namespace`  | `string`                   | The namespace path, see [Namespaces](../../guide/server/application.md#namespaces). |
-| `url`        | `string`                   | The resolved route, `/<namespace>/<path>`. Set by `configure()`. |
-| `actions`    | `object`                   | The actions, see [Actions](#actions). |
-| `assets`     | `object`                   | Asset upload routes, see [Assets](#assets). |
-| `hooks`      | `object`                   | Hooks by key, see [Hooks](#hooks). |
-| `authorize`  | [`ControllerAuthorize`](#authorize) | Fallback authorization of all actions and uploads, or by action name. |
-| `transacted` | `boolean`                  | Default `transacted` for all actions. |
-| `isInitialized` | `boolean`               | Whether `setupControllers()` set the controller up. |
-| `level`      | `number`                   | `0`, and the nesting depth for relation controllers. |
-| `logRoutes`  | `boolean`                  | Whether routes are logged during setup, from `config.log.routes`. |
-| `logger`     | `pino.Logger`              | Getter: `getLogger()` without a request context. |
+| Field           | Type                                | Description                                                                                                                                |
+| --------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `app`           | [`Application`](./application.md)   | The application.                                                                                                                           |
+| `name`          | `string`                            | Default: the class name without a `Controller` suffix.                                                                                     |
+| `path`          | `string`                            | Route path relative to the namespace. Default: the name (`Books`), hyphenated with `config.app.normalizePaths` (`books`, `sales-reports`). |
+| `namespace`     | `string`                            | The namespace path, see [Namespaces](../../guide/server/application.md#namespaces).                                                        |
+| `url`           | `string`                            | The resolved route, `/<namespace>/<path>`. Set by `configure()`.                                                                           |
+| `actions`       | `object`                            | The actions, see [Actions](#actions).                                                                                                      |
+| `assets`        | `object`                            | Asset upload routes, see [Assets](#assets).                                                                                                |
+| `hooks`         | `object`                            | Hooks by key, see [Hooks](#hooks).                                                                                                         |
+| `authorize`     | [`ControllerAuthorize`](#authorize) | Fallback authorization of all actions and uploads, or by action name.                                                                      |
+| `transacted`    | `boolean`                           | Default `transacted` for all actions.                                                                                                      |
+| `isInitialized` | `boolean`                           | Whether `setupControllers()` set the controller up.                                                                                        |
+| `level`         | `number`                            | `0`, and the nesting depth for relation controllers.                                                                                       |
+| `logRoutes`     | `boolean`                           | Whether routes are logged during setup, from `config.log.routes`.                                                                          |
+| `logger`        | `pino.Logger`                       | Getter: `getLogger()` without a request context.                                                                                           |
 
 ### configure()
 
@@ -298,7 +298,7 @@ controller.configure()
 
 Called right after the constructor, when the controller is added to the
 application. Sets up `hooks`, `name`, `path` and `url`. Call
-`super.configure()`. *Hook.*
+`super.configure()`. _Hook._
 
 ### setup()
 
@@ -307,7 +307,7 @@ controller.setup()
 ```
 
 Sets up the routes of the actions and asset uploads. Call `super.setup()`.
-*Hook.*
+_Hook._
 
 ### initialize()
 
@@ -315,7 +315,7 @@ Sets up the routes of the actions and asset uploads. Call `super.setup()`.
 await controller.initialize()
 ```
 
-Asynchronous initialization, after `setup()`. Does nothing by default. *Hook.*
+Asynchronous initialization, after `setup()`. Does nothing by default. _Hook._
 Returns `Promise<void>`.
 
 ### compose()
@@ -325,7 +325,7 @@ const middleware = controller.compose()
 ```
 
 Returns a Koa application or middleware to mount at the controller's `url` with
-koa-mount, or nothing. Used by `AdminController`. *Hook.* Returns `Koa |
+koa-mount, or nothing. Used by `AdminController`. _Hook._ Returns `Koa |
 Koa.Middleware | undefined`.
 
 ### getLogger()
@@ -368,7 +368,7 @@ await controller.handleAuthorization(authorization, ctx, member?)
 Calls an authorization function from `processAuthorize()` and throws an
 [`AuthorizationError`](./errors.md#authorizationerror) unless it returns `true`.
 Actions and asset uploads authorize through it, so overrides can add checks:
-`RelationController` also authorizes the parent member here. *Hook.* Returns
+`RelationController` also authorizes the parent member here. _Hook._ Returns
 `Promise<void>`.
 
 ### emitHook()
@@ -390,7 +390,7 @@ const path = controller.getPath(type, path)
 
 Returns the route path of an action of `type` (`'actions'`, `'collection'`,
 `'member'` or `'controller'`), relative to the controller. Collection
-controllers prefix member paths with `:id`. *Hook.* Returns `string`.
+controllers prefix member paths with `:id`. _Hook._ Returns `string`.
 
 ### getUrl()
 
@@ -407,7 +407,7 @@ itself for the path `.`. Returns `string`.
 controller.logController()
 ```
 
-Logs the controller during setup, if `config.log.routes` is set. *Hook.*
+Logs the controller during setup, if `config.log.routes` is set. _Hook._
 
 ### Internal members
 
@@ -438,12 +438,12 @@ models when the application has one (see
 actions objects. Uploads run no hooks. See
 [Uploads](../../guide/server/storages.md#uploads).
 
-| Option           | Type      | Description |
-| ---------------- | --------- | ------------------------------------------- |
-| `storage`        | `string`  | The storage name. Required. |
-| `readDimensions` | `boolean` | Reads `width` and `height` of images and videos. |
-| `transacted`     | `boolean` | Runs the upload in a transaction. |
-| *other*          |           | Passed on to multer, e.g. `limits`. Exceeding `limits.fileSize` responds with 413, other limits with 400. |
+| Option           | Type      | Description                                                                                               |
+| ---------------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| `storage`        | `string`  | The storage name. Required.                                                                               |
+| `readDimensions` | `boolean` | Reads `width` and `height` of images and videos.                                                          |
+| `transacted`     | `boolean` | Runs the upload in a transaction.                                                                         |
+| _other_          |           | Passed on to multer, e.g. `limits`. Exceeding `limits.fileSize` responds with 413, other limits with 400. |
 
 In model controllers, `assets: true` uses the model's
 [`assets`](./model.md#static-assets) definitions, and an object is merged over
@@ -460,36 +460,36 @@ available on both. Extend `ModelController` rather than this class.
 
 ### Instance fields
 
-| Field         | Type                         | Description |
-| ------------- | ---------------------------- | ----------------------------------------- |
-| `modelClass`  | `typeof Model`               | The model class. |
-| `collection`  | `object`                     | Collection actions, see [Default actions](#default-actions). |
-| `member`      | `object`                     | Member actions. |
-| `graph`       | `boolean`                    | Write through the graph methods (`insertDitoGraphAndFetch()` …). Default `false`. |
-| `scope`       | `string \| string[]`         | Scopes applied to the queries of the controller. The default `delete` actions leave them out. |
-| `allowParam`  | `string \| string[]`         | Query parameters the default actions accept, see [`QueryParameterOptions`](./query-builder.md). Default: all. |
-| `allowScope`  | `boolean \| string \| string[]` | Scopes the `scope` query parameter may request. Default: all. |
-| `allowFilter` | `boolean \| string \| string[]` | Filters the `filter` query parameter may request. Default: all. |
-| `relate`      | `boolean`                    | `post` relates existing models instead of inserting. |
-| `unrelate`    | `boolean`                    | `delete` unrelates instead of deleting. |
-| `isOneToOne`  | `boolean`                    | Whether the controller addresses a single related model. |
-| `idParam`     | `string`                     | The route parameter of member ids: `id`, `id1`, … per level. |
+| Field         | Type                            | Description                                                                                                   |
+| ------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `modelClass`  | `typeof Model`                  | The model class.                                                                                              |
+| `collection`  | `object`                        | Collection actions, see [Default actions](#default-actions).                                                  |
+| `member`      | `object`                        | Member actions.                                                                                               |
+| `graph`       | `boolean`                       | Write through the graph methods (`insertDitoGraphAndFetch()` …). Default `false`.                             |
+| `scope`       | `string \| string[]`            | Scopes applied to the queries of the controller. The default `delete` actions leave them out.                 |
+| `allowParam`  | `string \| string[]`            | Query parameters the default actions accept, see [`QueryParameterOptions`](./query-builder.md). Default: all. |
+| `allowScope`  | `boolean \| string \| string[]` | Scopes the `scope` query parameter may request. Default: all.                                                 |
+| `allowFilter` | `boolean \| string \| string[]` | Filters the `filter` query parameter may request. Default: all.                                               |
+| `relate`      | `boolean`                       | `post` relates existing models instead of inserting.                                                          |
+| `unrelate`    | `boolean`                       | `delete` unrelates instead of deleting.                                                                       |
+| `isOneToOne`  | `boolean`                       | Whether the controller addresses a single related model.                                                      |
+| `idParam`     | `string`                        | The route parameter of member ids: `id`, `id1`, … per level.                                                  |
 
 ### Default actions
 
 Routed only when listed in `allow`.
 
-| Action              | Route                | Query method |
-| ------------------- | -------------------- | ------------------------------------------ |
-| `collection.get`    | `GET <url>`          | `find(ctx.filteredQuery)`; a `range` query parameter returns a page `{ results, total }`. |
-| `collection.post`   | `POST <url>`         | `insertAndFetch()` / `insertDitoGraphAndFetch()`, or relates with `relate`. Responds `201` with a `Location` header. |
-| `collection.put`    | `PUT <url>`          | `updateAndFetch()` / `updateDitoGraphAndFetch()` |
-| `collection.patch`  | `PATCH <url>`        | `patchAndFetch()` / `patchDitoGraphAndFetch()` |
-| `collection.delete` | `DELETE <url>`       | `delete()`, or `unrelate()`; returns `{ count }`. |
-| `member.get`        | `GET <url>/:id`      | `findById()` |
-| `member.put`        | `PUT <url>/:id`      | `updateAndFetchById()` / `updateDitoGraphAndFetchById()` |
-| `member.patch`      | `PATCH <url>/:id`    | `patchAndFetchById()` / `patchDitoGraphAndFetchById()` |
-| `member.delete`     | `DELETE <url>/:id`   | `findById().delete()`, or `unrelate()`; returns `{ count }`. |
+| Action              | Route              | Query method                                                                                                         |
+| ------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `collection.get`    | `GET <url>`        | `find(ctx.filteredQuery)`; a `range` query parameter returns a page `{ results, total }`.                            |
+| `collection.post`   | `POST <url>`       | `insertAndFetch()` / `insertDitoGraphAndFetch()`, or relates with `relate`. Responds `201` with a `Location` header. |
+| `collection.put`    | `PUT <url>`        | `updateAndFetch()` / `updateDitoGraphAndFetch()`                                                                     |
+| `collection.patch`  | `PATCH <url>`      | `patchAndFetch()` / `patchDitoGraphAndFetch()`                                                                       |
+| `collection.delete` | `DELETE <url>`     | `delete()`, or `unrelate()`; returns `{ count }`.                                                                    |
+| `member.get`        | `GET <url>/:id`    | `findById()`                                                                                                         |
+| `member.put`        | `PUT <url>/:id`    | `updateAndFetchById()` / `updateDitoGraphAndFetchById()`                                                             |
+| `member.patch`      | `PATCH <url>/:id`  | `patchAndFetchById()` / `patchDitoGraphAndFetchById()`                                                               |
+| `member.delete`     | `DELETE <url>/:id` | `findById().delete()`, or `unrelate()`; returns `{ count }`.                                                         |
 
 Collection `PUT` and `PATCH` update existing models only: every model in the
 body needs its id, also with `graph: true`; otherwise they respond with a
@@ -543,9 +543,9 @@ Returns a query builder for `modelClass`, with the controller's `scope`,
 
 #### Parameters
 
-| Name  | Type          | Description               |
-| ----- | ------------- | ------------------------- |
-| `trx` | `Transaction` | The transaction to use.   |
+| Name  | Type          | Description             |
+| ----- | ------------- | ----------------------- |
+| `trx` | `Transaction` | The transaction to use. |
 
 Returns [`QueryBuilder`](./query-builder.md).
 
@@ -580,13 +580,13 @@ it, otherwise through [`fetchMember()`](#fetchmember).
 
 #### Parameters
 
-| Name                | Type              | Description                                                                  |
-| ------------------- | ----------------- | ---------------------------------------------------------------------------- |
-| `ctx`               | `KoaContext`      | The request context, with `ctx.memberId`.                                    |
-| `base`              | `object`          | The controller or action whose `scope` applies. Default: the controller.     |
-| `options.query`     | `object`          | Query parameters, used instead of the request's.                             |
-| `options.modify`    | `(query) => void` | Modifies the query.                                                          |
-| `options.forUpdate` | `boolean`         | Locks the row; requires a transaction.                                       |
+| Name                | Type              | Description                                                              |
+| ------------------- | ----------------- | ------------------------------------------------------------------------ |
+| `ctx`               | `KoaContext`      | The request context, with `ctx.memberId`.                                |
+| `base`              | `object`          | The controller or action whose `scope` applies. Default: the controller. |
+| `options.query`     | `object`          | Query parameters, used instead of the request's.                         |
+| `options.modify`    | `(query) => void` | Modifies the query.                                                      |
+| `options.forUpdate` | `boolean`         | Locks the row; requires a transaction.                                   |
 
 Returns `Promise<Model>`. The default `member.get` responds with a 404 error
 when the member isn't found.
@@ -632,7 +632,7 @@ const result = await controller.relateAndFetch(ctx, modify?)
 
 Used by `collection.post` with `relate`. Inserts the body and relates the
 existing models of its graph; `RelationController` relates the models in the
-body by id. *Hook.* Returns `Promise<Model | Model[]>`.
+body by id. _Hook._ Returns `Promise<Model | Model[]>`.
 
 ### getMemberId()
 
@@ -721,11 +721,11 @@ Extends [`CollectionController`](#collectioncontroller).
 
 ### Instance fields
 
-| Field       | Type                        | Description |
-| ----------- | --------------------------- | ------------------------------------------ |
-| `modelClass` | `typeof Model`             | Default: `resolveModelClass()`. |
-| `assets`    | `boolean \| object`         | See [Assets](#assets). |
-| `relations` | `object`                    | Relation routes by relation name, see [`RelationController`](#relationcontroller). After setup, each entry is its `RelationController`. |
+| Field        | Type                | Description                                                                                                                             |
+| ------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `modelClass` | `typeof Model`      | Default: `resolveModelClass()`.                                                                                                         |
+| `assets`     | `boolean \| object` | See [Assets](#assets).                                                                                                                  |
+| `relations`  | `object`            | Relation routes by relation name, see [`RelationController`](#relationcontroller). After setup, each entry is its `RelationController`. |
 
 ### resolveModelClass()
 
@@ -736,7 +736,7 @@ const modelClass = controller.resolveModelClass()
 Called when no `modelClass` is set. Looks up the singularized, camel-cased
 controller name with `app.getModel()` (`Books` → `Book` or `BookModel`). Without
 a result, `configure()` throws a
-[`ControllerError`](./errors.md#controllererror). *Hook.* Returns `Class<Model>
+[`ControllerError`](./errors.md#controllererror). _Hook._ Returns `Class<Model>
 | null`.
 
 ### Internal members
@@ -749,11 +749,11 @@ types.
 Created by `ModelController` for each entry of `relations`, at
 `<url>/:id/<relation path>`. A relation object takes:
 
-| Key          | Description |
-| ------------ | ------------------------------------------------------- |
-| `relation`   | The collection actions of the relation (the related models). |
-| `member`     | The member actions, at `<relation url>/:id1`. Not routed for one-to-one relations. |
-| `hooks`      | Hooks of the relation's actions. |
+| Key                                                                                                      | Description                                                                        |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `relation`                                                                                               | The collection actions of the relation (the related models).                       |
+| `member`                                                                                                 | The member actions, at `<relation url>/:id1`. Not routed for one-to-one relations. |
+| `hooks`                                                                                                  | Hooks of the relation's actions.                                                   |
 | `path`, `graph`, `transacted`, `scope`, `allowParam`, `allowScope`, `allowFilter`, `authorize`, `assets` | As on controllers; `graph`, `transacted` and graph scopes default to the parent's. |
 
 For relations without `owner: true`, `relate` and `unrelate` are set:
@@ -788,12 +788,12 @@ export class Books extends ModelController {
 
 ### Instance fields
 
-| Field                | Type                    | Description |
-| -------------------- | ----------------------- | ------------------------------ |
-| `parent`             | `ModelController`       | The parent controller. |
-| `object`             | `object`                | The relation object from `relations`. |
-| `relationInstance`   | `objection.Relation`    | The Objection relation. |
-| `relationDefinition` | `object`                | The model's relation definition. |
+| Field                | Type                 | Description                           |
+| -------------------- | -------------------- | ------------------------------------- |
+| `parent`             | `ModelController`    | The parent controller.                |
+| `object`             | `object`             | The relation object from `relations`. |
+| `relationInstance`   | `objection.Relation` | The Objection relation.               |
+| `relationDefinition` | `object`             | The model's relation definition.      |
 
 It overrides [`handleAuthorization()`](#handleauthorization),
 [`execute()`](#execute) and [`relateAndFetch()`](#relateandfetch).
@@ -817,13 +817,13 @@ password. The static `actionNames` lists the actions of the features by
 `patch`, `put`, `post` with `relate`, `'post password'` and the passkey and TOTP
 actions that change them, else their setup throws.
 
-| Action               | Response |
-| -------------------- | ------------------------------------------------------- |
-| `'post login'`       | Logs in the user of [`modelClass.authenticate(ctx)`](./model.md#static-authenticate) and sets `lastLogin`: `{ success, authenticated, user, error }`. A login rejected with a `ResponseError` below 500, e.g. an `AuthenticationError` with 401, responds with its status and emits it as `'error'` on the app. Other errors respond like those of other actions. |
-| `'post logout'`      | `{ success, authenticated }` |
-| `'get session'`      | `{ authenticated, user }` |
-| `'get self'`         | The authenticated user through `member.get`, or `null`. |
-| `'post password'`    | Changes the password of the authenticated user to `password` in the body: `{ success }`. The new password is validated by the user model, e.g. its `minLength`. Doesn't need a routed `patch`, which would let users change all their properties. |
+| Action                  | Response                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'post login'`          | Logs in the user of [`modelClass.authenticate(ctx)`](./model.md#static-authenticate) and sets `lastLogin`: `{ success, authenticated, user, error }`. A login rejected with a `ResponseError` below 500, e.g. an `AuthenticationError` with 401, responds with its status and emits it as `'error'` on the app. Other errors respond like those of other actions.                       |
+| `'post logout'`         | `{ success, authenticated }`                                                                                                                                                                                                                                                                                                                                                            |
+| `'get session'`         | `{ authenticated, user }`                                                                                                                                                                                                                                                                                                                                                               |
+| `'get self'`            | The authenticated user through `member.get`, or `null`.                                                                                                                                                                                                                                                                                                                                 |
+| `'post password'`       | Changes the password of the authenticated user to `password` in the body: `{ success }`. The new password is validated by the user model, e.g. its `minLength`. Doesn't need a routed `patch`, which would let users change all their properties.                                                                                                                                       |
 | `'post confirm-access'` | Confirms the access of the authenticated user with `{ password }`, plus `code` for users with TOTP, or with `{ passkey }`, the response of `startAuthentication()` for the options of `'post passkey-login-options'`: `{ success }`, `{ success: false, codeRequired: true }` without a code, or 401 with `'Password is incorrect'`, `'Code is incorrect'` or `'Passkey is incorrect'`. |
 
 Logins and `'post confirm-access'` confirm the access of the session for
@@ -846,14 +846,14 @@ With [`PasskeyService`](./service.md#passkeyservice) registered, users log in
 with passkeys and manage their own ones through these collection actions,
 which aren't routed without it:
 
-| Action                         | Response |
-| ------------------------------ | ------------------------------------------------------- |
-| `'post passkey-login-options'` | The options of a passkey login for `startAuthentication()` of `@simplewebauthn/browser`, without a username. |
-| `'post passkey-login'`         | Logs in with the response of `startAuthentication()` in the body, like `'post login'`: `{ success, authenticated, user, error }`. |
-| `'get passkeys'`               | The passkeys of the authenticated user: `[{ id, name, createdAt, lastUsedAt }]`. |
-| `'post passkey-options'`       | The options of a new passkey for `startRegistration()`, which excludes the user's passkeys. |
+| Action                         | Response                                                                                                                                                                                                                                        |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'post passkey-login-options'` | The options of a passkey login for `startAuthentication()` of `@simplewebauthn/browser`, without a username.                                                                                                                                    |
+| `'post passkey-login'`         | Logs in with the response of `startAuthentication()` in the body, like `'post login'`: `{ success, authenticated, user, error }`.                                                                                                               |
+| `'get passkeys'`               | The passkeys of the authenticated user: `[{ id, name, createdAt, lastUsedAt }]`.                                                                                                                                                                |
+| `'post passkey-options'`       | The options of a new passkey for `startRegistration()`, which excludes the user's passkeys.                                                                                                                                                     |
 | `'post passkeys'`              | Stores the passkey of the response of `startRegistration()` in the body, named after its provider, e.g. `'1Password'`, or `'Passkey'` for unknown ones: `{ id, name, createdAt, lastUsedAt }`, or 409 for passkeys that are already registered. |
-| `'delete passkeys/:id'`        | Deletes a passkey of the authenticated user: `{ success }`, or 404 for other passkeys. |
+| `'delete passkeys/:id'`        | Deletes a passkey of the authenticated user: `{ success }`, or 404 for other passkeys.                                                                                                                                                          |
 
 The challenges of the options are kept in the session, and can be answered once
 within 5 minutes. Failed passkey logins answer `'Passkey is incorrect'`, and
@@ -867,13 +867,13 @@ With [`TotpService`](./service.md#totpservice) registered, users with TOTP enter
 a code after their password, and set up and turn off their TOTP through these
 collection actions, which aren't routed without it:
 
-| Action                 | Response |
-| ---------------------- | ------------------------------------------------------- |
-| `'post login-code'`    | Logs in the user of the pending login with `{ code }`, a TOTP code or a backup code, like `'post login'`: `{ success, authenticated, user, error }`. |
-| `'get totp'`           | `{ enabled, backupCodes }`, with the number of the remaining backup codes. |
-| `'post totp'`          | A new secret, kept in the session until it is confirmed: `{ uri, secret }`, the `otpauth://` URI for the QR code of authenticator apps, and the secret in base32 to enter by hand. 409 if TOTP is already set up. |
-| `'post totp-confirm'`  | Stores the secret with `{ code }`, a code of the new secret, and creates 10 backup codes: `{ backupCodes }`, only shown in this response. |
-| `'delete totp'`        | Turns TOTP off and deletes the backup codes: `{ success }`. Needs confirmed access. |
+| Action                | Response                                                                                                                                                                                                          |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'post login-code'`   | Logs in the user of the pending login with `{ code }`, a TOTP code or a backup code, like `'post login'`: `{ success, authenticated, user, error }`.                                                              |
+| `'get totp'`          | `{ enabled, backupCodes }`, with the number of the remaining backup codes.                                                                                                                                        |
+| `'post totp'`         | A new secret, kept in the session until it is confirmed: `{ uri, secret }`, the `otpauth://` URI for the QR code of authenticator apps, and the secret in base32 to enter by hand. 409 if TOTP is already set up. |
+| `'post totp-confirm'` | Stores the secret with `{ code }`, a code of the new secret, and creates 10 backup codes: `{ backupCodes }`, only shown in this response.                                                                         |
+| `'delete totp'`       | Turns TOTP off and deletes the backup codes: `{ success }`. Needs confirmed access.                                                                                                                               |
 
 For users with TOTP, `'post login'` with the right password doesn't log in, but
 responds with status 200 and `{ success: false, codeRequired: true,
@@ -898,10 +898,10 @@ With
 users who forgot their password set a new one through a link that the app
 emails them, with these collection actions, which aren't routed without it:
 
-| Action                           | Response |
-| -------------------------------- | ------------------------------------------------------- |
-| `'post password-reset'`          | Emails a link to the user of the username in the body, under the model's `usernameProperty`, through [`sendPasswordReset()`](#sendpasswordreset): `{ success: true }`, also for unknown usernames, or 400 without a username or with one that isn't a string. |
-| `'post password-reset-confirm'`  | Sets the password of the link's user to `{ token, password }`, validated by the user model: `{ success }`, or 400 with `'Invalid or expired token'`. Doesn't log in. |
+| Action                          | Response                                                                                                                                                                                                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'post password-reset'`         | Emails a link to the user of the username in the body, under the model's `usernameProperty`, through [`sendPasswordReset()`](#sendpasswordreset): `{ success: true }`, also for unknown usernames, or 400 without a username or with one that isn't a string. |
+| `'post password-reset-confirm'` | Sets the password of the link's user to `{ token, password }`, validated by the user model: `{ success }`, or 400 with `'Invalid or expired token'`. Doesn't log in.                                                                                          |
 
 `'post password-reset'` answers with the same response and status whether the
 user exists or not, but the time it takes can still differ, as it only signs a
@@ -1050,12 +1050,12 @@ views (URLs containing `/views`). Configured through
 
 ### Instance fields
 
-| Field      | Type                           | Description |
-| ---------- | ------------------------------ | ------------------------------------- |
-| `config`   | `AdminConfig`                  | The application's `config.admin`. |
+| Field      | Type                            | Description                                                                                                    |
+| ---------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `config`   | `AdminConfig`                   | The application's `config.admin`.                                                                              |
 | `mode`     | `'development' \| 'production'` | `config.admin.mode`, else `'development'` when the app's `config.env` is `'development'`, else `'production'`. |
-| `isClosed` | `boolean`                      | `true` once the dev server is closing; requests then respond with 408. |
-| `koa`      | `Koa`                          | The composed Koa application. |
+| `isClosed` | `boolean`                       | `true` once the dev server is closing; requests then respond with 408.                                         |
+| `koa`      | `Koa`                           | The composed Koa application.                                                                                  |
 
 ### getGlobalConfig()
 
@@ -1069,7 +1069,7 @@ Returns the configuration that the admin receives in the browser as
 (`config.admin.settings`) and `authentication`, the
 [`getAuthenticationFeatures()`](#getauthenticationfeatures) of the
 `UsersController` at `api.users` inside `api.url`, all `false` without one.
-*Hook.* Returns `{ base: string, api: ApiConfig, settings:
+_Hook._ Returns `{ base: string, api: ApiConfig, settings:
 object, authentication: { hasPasskeys: boolean, hasTotp: boolean,
 hasPasswordChange: boolean, hasPasswordReset: boolean } }`.
 

@@ -156,7 +156,7 @@ Dito.js adds some properties by itself:
 - `id`, `{ type: 'integer', primary: true }`, unless a property is marked
   `primary`.
 - The foreign keys of relations, `{ type: 'integer', unsigned: true,
-  foreign: true, index: true }`, unless they are defined. A `belongsTo`
+foreign: true, index: true }`, unless they are defined. A `belongsTo`
   relation with `nullable: true` makes its foreign key nullable, see
   [Relations](relations.md#belongsto-and-hasmany).
 

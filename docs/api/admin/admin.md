@@ -37,16 +37,16 @@ new DitoAdmin(element, options)
 
 ### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| `element` | `Element \| string` | The element to mount the admin to, or a selector for it. |
-| `options.views` | `Record<string, View> \| Promise \| () => …` | The top-level views and menus, keyed by name. Also a promise or a function returning them, e.g. a module namespace or a dynamic `import()`, or an array of modules that each export one named view. Resolved anew for each login. Default `{}`. See [Views](./schemas.md#view). |
-| `options.api` | [`ApiConfig`](#apiconfig) | The API configuration, deep-merged over `dito.api`. |
-| `options.dito` | [`GlobalConfig`](#globalconfig) | The global configuration. Defaults to `globalThis.dito`, which `AdminController` provides. |
-| `options.login.additionalFields` | `Fields` | Fields added to the login dialog after `username` and `password`. Their values are sent with the credentials. |
-| `options.login.redirectAfterLogin` | `string` | A URL to load after a successful login, instead of resolving the views in place. |
-| `options.spinner` | `{ size?: string, color?: string } \| null` | Size and color of the loading spinner in the header. `null` hides it. |
-| `options.account.settings` | `Form \| Promise \| () => …` | The form of the account settings, which the account menu opens at `/account/settings`, to edit the logged-in user through [`api.users.self`](#users). Also a promise or a function returning it, e.g. a dynamic `import()`. Its `label` is the view's label, default `'Settings'`. See [Account settings](../../guide/admin/views.md#account-settings). |
+| Name                               | Type                                         | Description                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `element`                          | `Element \| string`                          | The element to mount the admin to, or a selector for it.                                                                                                                                                                                                                                                                                                |
+| `options.views`                    | `Record<string, View> \| Promise \| () => …` | The top-level views and menus, keyed by name. Also a promise or a function returning them, e.g. a module namespace or a dynamic `import()`, or an array of modules that each export one named view. Resolved anew for each login. Default `{}`. See [Views](./schemas.md#view).                                                                         |
+| `options.api`                      | [`ApiConfig`](#apiconfig)                    | The API configuration, deep-merged over `dito.api`.                                                                                                                                                                                                                                                                                                     |
+| `options.dito`                     | [`GlobalConfig`](#globalconfig)              | The global configuration. Defaults to `globalThis.dito`, which `AdminController` provides.                                                                                                                                                                                                                                                              |
+| `options.login.additionalFields`   | `Fields`                                     | Fields added to the login dialog after `username` and `password`. Their values are sent with the credentials.                                                                                                                                                                                                                                           |
+| `options.login.redirectAfterLogin` | `string`                                     | A URL to load after a successful login, instead of resolving the views in place.                                                                                                                                                                                                                                                                        |
+| `options.spinner`                  | `{ size?: string, color?: string } \| null`  | Size and color of the loading spinner in the header. `null` hides it.                                                                                                                                                                                                                                                                                   |
+| `options.account.settings`         | `Form \| Promise \| () => …`                 | The form of the account settings, which the account menu opens at `/account/settings`, to edit the logged-in user through [`api.users.self`](#users). Also a promise or a function returning it, e.g. a dynamic `import()`. Its `label` is the view's label, default `'Settings'`. See [Account settings](../../guide/admin/views.md#account-settings). |
 
 `login`, `spinner` and `account` are kept in [`admin.options`](#options).
 Unknown options log a warning.
@@ -120,24 +120,24 @@ The configuration of the admin's API layer, passed as `options.api` and merged
 deeply over `dito.api`. Only data reaches the browser through `dito.api`, so
 the function members are set in `options.api`.
 
-| Property | Type | Default | Description |
-| -------- | ---- | ------- | ----------- |
-| `url` | `string` | | The base URL of all API requests. Relative request URLs are combined with it. |
-| `locale` | `string` | `'en-US'` | The locale of date, time and number formatting. |
-| `formats` | `{ number?, date?, time? }` | `defaultFormats` of `@ditojs/utils` | Default formats, merged over the defaults. Schemas override them per field. |
-| `timeout` | `number \| null` | `null` | Milliseconds after which requests are aborted. Requests can set their own. |
-| `notifications` | `boolean \| { durationFactor: number }` | `true` | `false` disables the notification toasts. `durationFactor` sets the display duration in milliseconds per character of the title and the rendered content, plus 40 characters, default `20`. |
-| `cors.credentials` | `boolean` | | Sends credentials with cross-site requests to the API (`credentials: 'include'`). |
-| `headers` | `Record<string, string>` | `{ 'Content-Type': 'application/json' }` | Headers of all API requests, merged over the default. Requests can override them. |
-| `normalizePaths` | `boolean` | `config.app.normalizePaths`, else `false` | Sets `normalizePath` to `hyphenate()` and `denormalizePath` to `camelize()`. |
-| `normalizePath` | `(path: string) => string` | identity | Converts a camel-cased path segment to its URL form, for schema routes and upload paths. |
-| `denormalizePath` | `(path: string) => string` | identity | Converts a URL path segment back to its camel-cased form. |
-| `users` | `object` | | The authentication resources, see [`users`](#users). |
-| `resources` | `Record<string, (resource) => string>` | | Handlers that resolve resource paths, merged over the built-in `any`, `default`, `collection`, `member` and `upload`. |
-| `defaults` | `Record<string, object \| (schema) => object \| void>` | `{}` | Default schema options per schema type, see [`defaults`](#defaults). |
-| `request` | `RequestMethod` | `fetch()` wrapper | Performs requests, see [`request()`](#request). |
-| `getApiUrl` | `({ url, query }) => string` | | Returns the full URL of a request: `url` prefixed with `api.url` unless it's absolute or already starts with it, and `query` appended. |
-| `isApiUrl` | `(url: string) => boolean` | | Whether a URL goes to the API: relative URLs, and absolute ones inside `api.url`. Only API requests receive `headers` and `cors.credentials`. |
+| Property           | Type                                                   | Default                                   | Description                                                                                                                                                                                 |
+| ------------------ | ------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`              | `string`                                               |                                           | The base URL of all API requests. Relative request URLs are combined with it.                                                                                                               |
+| `locale`           | `string`                                               | `'en-US'`                                 | The locale of date, time and number formatting.                                                                                                                                             |
+| `formats`          | `{ number?, date?, time? }`                            | `defaultFormats` of `@ditojs/utils`       | Default formats, merged over the defaults. Schemas override them per field.                                                                                                                 |
+| `timeout`          | `number \| null`                                       | `null`                                    | Milliseconds after which requests are aborted. Requests can set their own.                                                                                                                  |
+| `notifications`    | `boolean \| { durationFactor: number }`                | `true`                                    | `false` disables the notification toasts. `durationFactor` sets the display duration in milliseconds per character of the title and the rendered content, plus 40 characters, default `20`. |
+| `cors.credentials` | `boolean`                                              |                                           | Sends credentials with cross-site requests to the API (`credentials: 'include'`).                                                                                                           |
+| `headers`          | `Record<string, string>`                               | `{ 'Content-Type': 'application/json' }`  | Headers of all API requests, merged over the default. Requests can override them.                                                                                                           |
+| `normalizePaths`   | `boolean`                                              | `config.app.normalizePaths`, else `false` | Sets `normalizePath` to `hyphenate()` and `denormalizePath` to `camelize()`.                                                                                                                |
+| `normalizePath`    | `(path: string) => string`                             | identity                                  | Converts a camel-cased path segment to its URL form, for schema routes and upload paths.                                                                                                    |
+| `denormalizePath`  | `(path: string) => string`                             | identity                                  | Converts a URL path segment back to its camel-cased form.                                                                                                                                   |
+| `users`            | `object`                                               |                                           | The authentication resources, see [`users`](#users).                                                                                                                                        |
+| `resources`        | `Record<string, (resource) => string>`                 |                                           | Handlers that resolve resource paths, merged over the built-in `any`, `default`, `collection`, `member` and `upload`.                                                                       |
+| `defaults`         | `Record<string, object \| (schema) => object \| void>` | `{}`                                      | Default schema options per schema type, see [`defaults`](#defaults).                                                                                                                        |
+| `request`          | `RequestMethod`                                        | `fetch()` wrapper                         | Performs requests, see [`request()`](#request).                                                                                                                                             |
+| `getApiUrl`        | `({ url, query }) => string`                           |                                           | Returns the full URL of a request: `url` prefixed with `api.url` unless it's absolute or already starts with it, and `query` appended.                                                      |
+| `isApiUrl`         | `(url: string) => boolean`                             |                                           | Whether a URL goes to the API: relative URLs, and absolute ones inside `api.url`. Only API requests receive `headers` and `cors.credentials`.                                               |
 
 ### users
 
@@ -222,15 +222,15 @@ Performs an HTTP request. The default is a `fetch()` wrapper that applies
 `response` holds the response. Replace it to route all requests of the admin
 through another client.
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| `options.url` | `string` | The URL, relative to `api.url` or absolute. |
-| `options.method` | [`HttpMethod`](./types.md) | Default `'get'`. |
-| `options.data` | `unknown` | The body, sent as JSON. |
-| `options.query` | `Record<string, …> \| [string, …][] \| null` | Query parameters. |
-| `options.headers` | `Record<string, string> \| null` | Headers, merged over `api.headers` for API URLs. |
-| `options.signal` | `AbortSignal \| null` | Aborts the request. |
-| `options.timeout` | `number \| null` | Default `api.timeout`. |
+| Name              | Type                                         | Description                                      |
+| ----------------- | -------------------------------------------- | ------------------------------------------------ |
+| `options.url`     | `string`                                     | The URL, relative to `api.url` or absolute.      |
+| `options.method`  | [`HttpMethod`](./types.md)                   | Default `'get'`.                                 |
+| `options.data`    | `unknown`                                    | The body, sent as JSON.                          |
+| `options.query`   | `Record<string, …> \| [string, …][] \| null` | Query parameters.                                |
+| `options.headers` | `Record<string, string> \| null`             | Headers, merged over `api.headers` for API URLs. |
+| `options.signal`  | `AbortSignal \| null`                        | Aborts the request.                              |
+| `options.timeout` | `number \| null`                             | Default `api.timeout`.                           |
 
 #### Return value
 
@@ -292,9 +292,9 @@ admin.context.settings: object
 The admin's global settings, from `dito.settings` (see
 [GlobalConfig](#globalconfig)), or `{}`. Read-only.
 
-| Property | Type | Description |
-| -------- | ---- | ----------- |
-| `rootClass` | `string` | A class added to the admin's root element. |
+| Property            | Type      | Description                                                                  |
+| ------------------- | --------- | ---------------------------------------------------------------------------- |
+| `rootClass`         | `string`  | A class added to the admin's root element.                                   |
 | `forceDragFallback` | `boolean` | Sort items with the drag library's fallback instead of native drag and drop. |
 
 `dito` is the constructor's option of that name, which defaults to
@@ -476,15 +476,15 @@ The global `dito` object, served by `AdminController` from
 admin reads the configuration from that option, and keeps its `settings` in
 [`admin.context.settings`](#settings).
 
-| Property | Type | Description |
-| -------- | ---- | ----------- |
-| `base` | `string` | The base path of the admin's routes. |
-| `api` | `ApiConfig` | The API configuration. `AdminController` sets `normalizePaths` from `config.app.normalizePaths` unless `config.admin.api` sets it. |
-| `settings` | `object` | The admin's global settings, see [`admin.context.settings`](#settings). |
-| `authentication.hasPasswordChange` | `boolean` | Set when the users controller at [`api.users`](#users) routes `'post password'`. Changes the user's password in the Security dialog of the account menu. The account menu only offers the Security dialog with `hasPasswordChange`, `hasPasskeys` or `hasTotp`. |
-| `authentication.hasPasskeys` | `boolean` | Set when the users controller at `api.users` routes the passkey actions, with [`PasskeyService`](../../guide/server/controllers.md#passkeys). Adds a Sign In with Passkey button to the login dialog, and lists, adds and removes the user's passkeys, named after their providers, in the Security dialog of the account menu. Needs the peer dependency `@simplewebauthn/browser`. |
-| `authentication.hasTotp` | `boolean` | Set when the users controller at `api.users` routes the TOTP actions, with [`TotpService`](../../guide/server/controllers.md#two-factor-authentication). Sets up two-factor authentication with TOTP in the Security dialog of the account menu, with a QR code for the authenticator app and the backup codes, and turns it off again. Needs the peer dependency `lean-qr`. The login dialog asks for the code whenever the server requires one. |
-| `authentication.hasPasswordReset` | `boolean` | Set when the users controller at `api.users` routes the password reset actions, with [`config.app.authentication.passwordReset`](../../guide/server/controllers.md#password-reset). Adds a Forgot password? button to the login dialog, which asks for the username and posts it to `'post password-reset'`, for the server to email a link. The link opens the admin with `#password-reset=` and the token, which asks for the new password, posts it with the token to `'post password-reset-confirm'`, asking again with the server's validation errors, and removes the token from the URL, before asking to log in. |
+| Property                           | Type        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `base`                             | `string`    | The base path of the admin's routes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `api`                              | `ApiConfig` | The API configuration. `AdminController` sets `normalizePaths` from `config.app.normalizePaths` unless `config.admin.api` sets it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `settings`                         | `object`    | The admin's global settings, see [`admin.context.settings`](#settings).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `authentication.hasPasswordChange` | `boolean`   | Set when the users controller at [`api.users`](#users) routes `'post password'`. Changes the user's password in the Security dialog of the account menu. The account menu only offers the Security dialog with `hasPasswordChange`, `hasPasskeys` or `hasTotp`.                                                                                                                                                                                                                                                                                                                                                          |
+| `authentication.hasPasskeys`       | `boolean`   | Set when the users controller at `api.users` routes the passkey actions, with [`PasskeyService`](../../guide/server/controllers.md#passkeys). Adds a Sign In with Passkey button to the login dialog, and lists, adds and removes the user's passkeys, named after their providers, in the Security dialog of the account menu. Needs the peer dependency `@simplewebauthn/browser`.                                                                                                                                                                                                                                     |
+| `authentication.hasTotp`           | `boolean`   | Set when the users controller at `api.users` routes the TOTP actions, with [`TotpService`](../../guide/server/controllers.md#two-factor-authentication). Sets up two-factor authentication with TOTP in the Security dialog of the account menu, with a QR code for the authenticator app and the backup codes, and turns it off again. Needs the peer dependency `lean-qr`. The login dialog asks for the code whenever the server requires one.                                                                                                                                                                        |
+| `authentication.hasPasswordReset`  | `boolean`   | Set when the users controller at `api.users` routes the password reset actions, with [`config.app.authentication.passwordReset`](../../guide/server/controllers.md#password-reset). Adds a Forgot password? button to the login dialog, which asks for the username and posts it to `'post password-reset'`, for the server to email a link. The link opens the admin with `#password-reset=` and the token, which asks for the new password, posts it with the token to `'post password-reset-confirm'`, asking again with the server's validation errors, and removes the token from the URL, before asking to log in. |
 
 The server reads `api.users` from its `config.admin.api` to find the users
 controller, so apps that only pass `api` to `new DitoAdmin()` set `api.users`

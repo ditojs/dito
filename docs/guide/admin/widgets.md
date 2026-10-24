@@ -91,18 +91,18 @@ properties with them throw when the form is set up.
 
 The admin's own keywords go into the same objects:
 
-| Keyword | Meaning |
-| ------- | ------- |
-| `if` | Whether the value is relevant. Irrelevant values aren't validated and aren't sent, and their widgets hide. |
-| `exclude` | The value loads, but isn't sent. |
-| `computed` | The server computes the value, so it isn't sent. |
-| `computeValue()` | Computes the value from the item, like the `computeValue()` of fields. |
-| `serializeValue()`, `deserializeValue()` | Convert the value when it's sent and loaded. |
-| `trim` | Trims strings when they're sent. |
-| `relate` | The value holds related objects, which are sent as references. |
-| `validate()` | Validates the value with a function of its own. |
-| `orderKey`, `idKey` | The order and id keys of the items of arrays, as in lists. |
-| `forms` | The forms of the items of arrays of several kinds, by their `type`, see [Lists and objects](#lists-and-objects). |
+| Keyword                                  | Meaning                                                                                                          |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `if`                                     | Whether the value is relevant. Irrelevant values aren't validated and aren't sent, and their widgets hide.       |
+| `exclude`                                | The value loads, but isn't sent.                                                                                 |
+| `computed`                               | The server computes the value, so it isn't sent.                                                                 |
+| `computeValue()`                         | Computes the value from the item, like the `computeValue()` of fields.                                           |
+| `serializeValue()`, `deserializeValue()` | Convert the value when it's sent and loaded.                                                                     |
+| `trim`                                   | Trims strings when they're sent.                                                                                 |
+| `relate`                                 | The value holds related objects, which are sent as references.                                                   |
+| `validate()`                             | Validates the value with a function of its own.                                                                  |
+| `orderKey`, `idKey`                      | The order and id keys of the items of arrays, as in lists.                                                       |
+| `forms`                                  | The forms of the items of arrays of several kinds, by their `type`, see [Lists and objects](#lists-and-objects). |
 
 Every keyword may be a function of the [context](./context.md), e.g.
 `required: ({ item }) => item.isPublished`.

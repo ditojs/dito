@@ -110,14 +110,14 @@ dito hands a callback an item, it also hands over the item's path,
 In a book with an inlined list `chapters` and a section `metadata` with
 `nested: true`:
 
-| Callback | `item` | `itemDataPath` | `parentItem` |
-| -------- | ------ | -------------- | ------------ |
-| A field of the book | the book | `''` | `null` |
-| A field of a chapter | the chapter | `'chapters/1'` | the book |
-| An event of a chapter's form, e.g. `onInitialize()` | the chapter | `'chapters/1'` | the book |
-| A field of `metadata` | the metadata | `'metadata'` | the book |
-| An event of `metadata`, e.g. `onInitialize()` | the metadata | `'metadata'` | the book |
-| The `buttons` of the list `chapters` | the book | `''` | `null` |
+| Callback                                            | `item`       | `itemDataPath` | `parentItem` |
+| --------------------------------------------------- | ------------ | -------------- | ------------ |
+| A field of the book                                 | the book     | `''`           | `null`       |
+| A field of a chapter                                | the chapter  | `'chapters/1'` | the book     |
+| An event of a chapter's form, e.g. `onInitialize()` | the chapter  | `'chapters/1'` | the book     |
+| A field of `metadata`                               | the metadata | `'metadata'`   | the book     |
+| An event of `metadata`, e.g. `onInitialize()`       | the metadata | `'metadata'`   | the book     |
+| The `buttons` of the list `chapters`                | the book     | `''`           | `null`       |
 
 - The own events of forms and sections describe their item, not a value:
   `value` is `undefined`. Read `item`. Events that

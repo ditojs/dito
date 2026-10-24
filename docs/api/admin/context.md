@@ -44,7 +44,7 @@ Data paths are slash-separated paths into the root data, e.g.
 `'chapters/0/title'`. The paths that the context hands out have no leading
 slash.
 
-Paths that are passed *in* to the context, e.g. to
+Paths that are passed _in_ to the context, e.g. to
 [`getValueAt()`](#getvalueat), [`validate()`](#validate),
 [`isValid()`](#isvalid), [`getErrors()`](#geterrors) and
 [`clearErrors()`](#clearerrors), are relative to
@@ -331,21 +331,21 @@ All views, including the ones inside menus, by name.
 A book, edited in a form with its own resource: `chapters` is a list with
 inlined forms, `metadata` a nested section, `author` an inlined object:
 
-| Place | `item` | `itemDataPath` | `itemIndex` | `parentItem` | `value` |
-| ----- | ------ | -------------- | ----------- | ------------ | ------- |
-| Field or button of the book | book | `''` | `null` | `null` | the field's |
-| Field in a chapter's inlined form | chapter | `'chapters/1'` | `1` | book | the field's |
-| Event of a chapter's inlined form | chapter | `'chapters/1'` | `1` | book | `undefined` |
-| Event of a section without `nested` | book | `''` | `null` | `null` | `undefined` |
-| Event of the nested section `metadata` | metadata | `'metadata'` | `null` | book | `undefined` |
-| Event of the inlined object `author` | author | `'author'` | `null` | book | `undefined` |
-| Buttons of the list `chapters` | book | `''` | `null` | `null` | the field's |
-| `render()` of a cell of `chapters` | chapter | `'chapters/1'` | `1` | book | the cell's |
-| `render()` of the items of `chapters` | chapter | `'chapters/1'` | `1` | book | `undefined` |
-| Event of a routed chapter form | the draft | `'chapters/1'` | `1` | the draft root | `undefined` |
-| Field of a panel with its own data `search` | panel data | `'search'` | `null` | book | the field's |
-| Field of a panel with `nested: true`, `details` | details | `'details'` | `null` | book | the field's |
-| Field or button of a dialog | dialog data | `''` | `null` | `null` | the field's |
+| Place                                           | `item`      | `itemDataPath` | `itemIndex` | `parentItem`   | `value`     |
+| ----------------------------------------------- | ----------- | -------------- | ----------- | -------------- | ----------- |
+| Field or button of the book                     | book        | `''`           | `null`      | `null`         | the field's |
+| Field in a chapter's inlined form               | chapter     | `'chapters/1'` | `1`         | book           | the field's |
+| Event of a chapter's inlined form               | chapter     | `'chapters/1'` | `1`         | book           | `undefined` |
+| Event of a section without `nested`             | book        | `''`           | `null`      | `null`         | `undefined` |
+| Event of the nested section `metadata`          | metadata    | `'metadata'`   | `null`      | book           | `undefined` |
+| Event of the inlined object `author`            | author      | `'author'`     | `null`      | book           | `undefined` |
+| Buttons of the list `chapters`                  | book        | `''`           | `null`      | `null`         | the field's |
+| `render()` of a cell of `chapters`              | chapter     | `'chapters/1'` | `1`         | book           | the cell's  |
+| `render()` of the items of `chapters`           | chapter     | `'chapters/1'` | `1`         | book           | `undefined` |
+| Event of a routed chapter form                  | the draft   | `'chapters/1'` | `1`         | the draft root | `undefined` |
+| Field of a panel with its own data `search`     | panel data  | `'search'`     | `null`      | book           | the field's |
+| Field of a panel with `nested: true`, `details` | details     | `'details'`    | `null`      | book           | the field's |
+| Field or button of a dialog                     | dialog data | `''`           | `null`      | `null`         | the field's |
 
 Lists with `wrapPrimitives` give the fields of their items the wrapper object
 as `item`. The buttons of lists describe the item that holds the list; in the
@@ -359,15 +359,15 @@ array of files and `itemIndex` is `null`.
 
 These properties are only set in the contexts of specific callbacks and events.
 
-| Property | Type | Set in |
-| -------- | ---- | ------ |
-| `option` | `any` | The callbacks of `options`: the option being labelled, grouped, compared or valued |
-| `options` | `any` | The callbacks of fields with options, e.g. selects, also `computeValue()`, where reading them loads them |
-| `isSelected` | `boolean` | `options.label()`: whether the labelled option is selected |
-| `searchTerm` | `string \| undefined` | The `search` callback of multiselects: the entered search term |
-| `collapsed` | `boolean` | `onToggle()` of sections, inlined forms and trees |
-| `error` | `unknown` | `onError()` of buttons and forms |
-| `wasNotified` | `boolean` | Whether the handler already called `notify()`, which suppresses dito's notification in the events of buttons and forms |
+| Property      | Type                  | Set in                                                                                                                 |
+| ------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `option`      | `any`                 | The callbacks of `options`: the option being labelled, grouped, compared or valued                                     |
+| `options`     | `any`                 | The callbacks of fields with options, e.g. selects, also `computeValue()`, where reading them loads them               |
+| `isSelected`  | `boolean`             | `options.label()`: whether the labelled option is selected                                                             |
+| `searchTerm`  | `string \| undefined` | The `search` callback of multiselects: the entered search term                                                         |
+| `collapsed`   | `boolean`             | `onToggle()` of sections, inlined forms and trees                                                                      |
+| `error`       | `unknown`             | `onError()` of buttons and forms                                                                                       |
+| `wasNotified` | `boolean`             | Whether the handler already called `notify()`, which suppresses dito's notification in the events of buttons and forms |
 
 ## Methods
 
@@ -382,11 +382,11 @@ if it's a function. Custom types use it to read their own schema options.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| `key` | `string \| string[]` | The schema key, or an array of keys that reads a nested value, e.g. `['options', 'label']`. |
-| `options.type` | `Function \| Function[]` | The expected types, e.g. `Number` or `[String, Object]`: values of other types are converted to the first type that they convert to. |
-| `options.default` | `T \| (context) => T` | The value when the schema lacks `key`, called with the context if it's a function and `type` doesn't include `Function`. |
+| Name              | Type                     | Description                                                                                                                          |
+| ----------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `key`             | `string \| string[]`     | The schema key, or an array of keys that reads a nested value, e.g. `['options', 'label']`.                                          |
+| `options.type`    | `Function \| Function[]` | The expected types, e.g. `Number` or `[String, Object]`: values of other types are converted to the first type that they convert to. |
+| `options.default` | `T \| (context) => T`    | The value when the schema lacks `key`, called with the context if it's a function and `type` doesn't include `Function`.             |
 
 #### Return value
 
@@ -410,8 +410,8 @@ again when the value changes.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name       | Type     | Description                                      |
+| ---------- | -------- | ------------------------------------------------ |
 | `dataPath` | `string` | The data path of the value, e.g. `'../../font'`. |
 
 #### Return value
@@ -437,8 +437,8 @@ added or overridden, e.g. to call another schema callback with a different
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name     | Type     | Description                     |
+| -------- | -------- | ------------------------------- |
 | `values` | `object` | The members to add or override. |
 
 #### Return value
@@ -469,16 +469,16 @@ the API check the session first.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| `options.url` | `string` | The URL, relative to the API root. Either `url` or `resource` is required. |
-| `options.resource` | `Resource` | A resource, resolved relative to the nearest form or list with a resource. |
-| `options.method` | `HttpMethod` | Defaults to `'get'`, or the `method` of `resource`. |
-| `options.query` | `Record<string, any> \| [string, any][]` | The query parameters. |
-| `options.data` | `unknown` | The request body. |
-| `options.signal` | `AbortSignal` | Aborts the request. |
-| `options.abortOnUnmount` | `boolean` | Ends the request when the component unmounts: its promise doesn't settle then, so the code that awaits it doesn't run on. Not with `cache`, as other components share cached requests. |
-| `options.cache` | `'local' \| 'global'` | Caches the response: `'global'` for the session, until the user changes; `'local'` while the route of the form or view, or the dialog, is shown. |
+| Name                     | Type                                     | Description                                                                                                                                                                            |
+| ------------------------ | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `options.url`            | `string`                                 | The URL, relative to the API root. Either `url` or `resource` is required.                                                                                                             |
+| `options.resource`       | `Resource`                               | A resource, resolved relative to the nearest form or list with a resource.                                                                                                             |
+| `options.method`         | `HttpMethod`                             | Defaults to `'get'`, or the `method` of `resource`.                                                                                                                                    |
+| `options.query`          | `Record<string, any> \| [string, any][]` | The query parameters.                                                                                                                                                                  |
+| `options.data`           | `unknown`                                | The request body.                                                                                                                                                                      |
+| `options.signal`         | `AbortSignal`                            | Aborts the request.                                                                                                                                                                    |
+| `options.abortOnUnmount` | `boolean`                                | Ends the request when the component unmounts: its promise doesn't settle then, so the code that awaits it doesn't run on. Not with `cache`, as other components share cached requests. |
+| `options.cache`          | `'local' \| 'global'`                    | Caches the response: `'global'` for the session, until the user changes; `'local'` while the route of the form or view, or the dialog, is shown.                                       |
 
 #### Return value
 
@@ -524,8 +524,8 @@ Navigates to a route.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name       | Type                      | Description                    |
+| ---------- | ------------------------- | ------------------------------ |
 | `location` | `string \| RouteLocation` | A path or Vue Router location. |
 
 #### Return value
@@ -561,11 +561,11 @@ resolve against `api.url`, absolute and `blob:` URLs are used as they are.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| `url` | `string` | The URL of the file. |
-| `filename` | `string` | The name to save the file as. Optional. |
-| `query` | `Record<string, any>` | Query parameters appended to the URL. |
+| Name       | Type                  | Description                             |
+| ---------- | --------------------- | --------------------------------------- |
+| `url`      | `string`              | The URL of the file.                    |
+| `filename` | `string`              | The name to save the file as. Optional. |
+| `query`    | `Record<string, any>` | Query parameters appended to the URL.   |
 
 #### Example
 
@@ -600,8 +600,8 @@ whose data paths match.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name    | Type                                                    | Description                                                                                                                                                                                                                                                                                                                    |
+| ------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `match` | `string \| string[] \| RegExp \| (dataPath) => boolean` | Data paths relative to `itemDataPath`, or absolute with a leading `/`. `*` matches one level; `**` in the middle matches zero or more levels (`a/**/c` matches `a/c`), at the end everything inside (`a/**` matches `a/b`, not `a`). Regular expressions and functions receive the absolute data paths, without leading slash. |
 
 #### Return value
@@ -693,8 +693,8 @@ to its defaults.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name           | Type     | Description                     |
+| -------------- | -------- | ------------------------------- |
 | `options.data` | `object` | The new data. Defaults to `{}`. |
 
 #### Return value
@@ -727,8 +727,8 @@ edits of them and clear their errors, see
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name   | Type     | Description          |
+| ------ | -------- | -------------------- |
 | `data` | `object` | The values to merge. |
 
 #### Return value
@@ -761,9 +761,9 @@ sources.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| `options.validate` | `boolean` | Validates first. Defaults to `true`. |
+| Name                | Type      | Description                                                                                                         |
+| ------------------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `options.validate`  | `boolean` | Validates first. Defaults to `true`.                                                                                |
 | `options.closeForm` | `boolean` | Closes the form after a successful submit. Defaults to the button's `closeForm`, and to `false` outside of buttons. |
 
 #### Return value
@@ -821,16 +821,16 @@ Also available outside of schemas as `admin.context.showDialog()`, see
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| `options.fields` | `Fields` | The fields of the dialog. Fields that produce routes, e.g. lists with routed forms, throw. |
-| `options.buttons` | `Buttons` | The buttons. A `submit` button resolves the dialog with its data, a button named `cancel` cancels it unless it has its own `onClick()`. |
-| `options.data` | `Record<string, any>` | The initial data. |
-| `options.settings.label` | `string` | The accessible label of the dialog. Defaults to `'Dialog'`. |
-| `options.settings.width` | `number \| string` | The maximum width of the dialog's content, without its padding: a number in pixels, or a CSS length. Defaults to `'35em'`. |
-| `options.settings.minWidth` | `number \| string` | The minimum width of the dialog's content, without its padding: a number in pixels, or a CSS length. Narrow windows can make it smaller. |
-| `options.settings.clickToClose` | `boolean` | Whether clicking outside of the dialog cancels it. Defaults to `false`. |
-| `options.settings.minDuration` | `number` | The time in milliseconds that the dialog stays visible at least, when it's submitted right after it opened, e.g. by a password manager. Defaults to `0`. |
+| Name                            | Type                  | Description                                                                                                                                              |
+| ------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `options.fields`                | `Fields`              | The fields of the dialog. Fields that produce routes, e.g. lists with routed forms, throw.                                                               |
+| `options.buttons`               | `Buttons`             | The buttons. A `submit` button resolves the dialog with its data, a button named `cancel` cancels it unless it has its own `onClick()`.                  |
+| `options.data`                  | `Record<string, any>` | The initial data.                                                                                                                                        |
+| `options.settings.label`        | `string`              | The accessible label of the dialog. Defaults to `'Dialog'`.                                                                                              |
+| `options.settings.width`        | `number \| string`    | The maximum width of the dialog's content, without its padding: a number in pixels, or a CSS length. Defaults to `'35em'`.                               |
+| `options.settings.minWidth`     | `number \| string`    | The minimum width of the dialog's content, without its padding: a number in pixels, or a CSS length. Narrow windows can make it smaller.                 |
+| `options.settings.clickToClose` | `boolean`             | Whether clicking outside of the dialog cancels it. Defaults to `false`.                                                                                  |
+| `options.settings.minDuration`  | `number`              | The time in milliseconds that the dialog stays visible at least, when it's submitted right after it opened, e.g. by a password manager. Defaults to `0`. |
 
 Submitting validates the data first, like forms do. Escape cancels dialogs
 that have a `cancel` button or no buttons.
@@ -875,10 +875,10 @@ button to confirm.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| `message` | `TextOrHtml` | Text, whose line breaks are kept, or `html`, see [Text and HTML](./schemas.md#text-and-html). Its text is the accessible label of the dialog. |
-| `options.action` | `string` | The text of the button to confirm. Defaults to `'OK'`. |
+| Name             | Type         | Description                                                                                                                                   |
+| ---------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `message`        | `TextOrHtml` | Text, whose line breaks are kept, or `html`, see [Text and HTML](./schemas.md#text-and-html). Its text is the accessible label of the dialog. |
+| `options.action` | `string`     | The text of the button to confirm. Defaults to `'OK'`.                                                                                        |
 
 #### Return value
 
@@ -907,12 +907,12 @@ it isn't required.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| `message` | `TextOrHtml` | Text, whose line breaks are kept, or `html`, see [Text and HTML](./schemas.md#text-and-html). Its text is the accessible label of the dialog and the field. |
-| `options.action` | `string` | The text of the button to submit. Defaults to `'OK'`. |
-| `options.value` | `any` | The initial value of the field. |
-| `options.type` | `string` | The type of the field, any type of field that holds a value, e.g. `'email'`, `'number'` or `'textarea'`. Defaults to `'text'`. |
+| Name             | Type         | Description                                                                                                                                                 |
+| ---------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `message`        | `TextOrHtml` | Text, whose line breaks are kept, or `html`, see [Text and HTML](./schemas.md#text-and-html). Its text is the accessible label of the dialog and the field. |
+| `options.action` | `string`     | The text of the button to submit. Defaults to `'OK'`.                                                                                                       |
+| `options.value`  | `any`        | The initial value of the field.                                                                                                                             |
+| `options.type`   | `string`     | The type of the field, any type of field that holds a value, e.g. `'email'`, `'number'` or `'textarea'`. Defaults to `'text'`.                              |
 
 #### Return value
 
@@ -944,10 +944,10 @@ Shows the message in a dialog with a single button.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| `message` | `TextOrHtml` | Text, whose line breaks are kept, or `html`, see [Text and HTML](./schemas.md#text-and-html). Its text is the accessible label of the dialog. |
-| `options.action` | `string` | The text of the button. Defaults to `'OK'`. |
+| Name             | Type         | Description                                                                                                                                   |
+| ---------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `message`        | `TextOrHtml` | Text, whose line breaks are kept, or `html`, see [Text and HTML](./schemas.md#text-and-html). Its text is the accessible label of the dialog. |
+| `options.action` | `string`     | The text of the button. Defaults to `'OK'`.                                                                                                   |
 
 #### Return value
 
@@ -975,13 +975,13 @@ of button and form events, calling it suppresses dito's own notification.
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| `options.type` | `'info' \| 'success' \| 'warning' \| 'error'` | Defaults to `'info'`. |
-| `options.title` | `string` | The heading. Defaults to a label for `type`. |
-| `options.text` | `TextOrHtml \| (TextOrHtml \| false \| null)[]` | Text or `html`, see [Text and HTML](./schemas.md#text-and-html). Each entry is a paragraph, newlines in text become `<br>`, `false` and `null` are skipped. |
-| `options.error` | `unknown` | The original error, logged to the console for `type: 'error'`. |
-| `options.duration` | `number` | Milliseconds to show it, `0` for sticky. Defaults to a duration from the length of the content, see [`api.notifications`](./admin.md#apiconfig). |
+| Name               | Type                                            | Description                                                                                                                                                 |
+| ------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `options.type`     | `'info' \| 'success' \| 'warning' \| 'error'`   | Defaults to `'info'`.                                                                                                                                       |
+| `options.title`    | `string`                                        | The heading. Defaults to a label for `type`.                                                                                                                |
+| `options.text`     | `TextOrHtml \| (TextOrHtml \| false \| null)[]` | Text or `html`, see [Text and HTML](./schemas.md#text-and-html). Each entry is a paragraph, newlines in text become `<br>`, `false` and `null` are skipped. |
+| `options.error`    | `unknown`                                       | The original error, logged to the console for `type: 'error'`.                                                                                              |
+| `options.duration` | `number`                                        | Milliseconds to show it, `0` for sticky. Defaults to a duration from the length of the content, see [`api.notifications`](./admin.md#apiconfig).            |
 
 #### Example
 

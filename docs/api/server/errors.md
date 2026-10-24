@@ -33,21 +33,21 @@ for clients, and keep internals out of plain errors. All errors are emitted as
 `'error'` events on the application. See [Errors](../../guide/server/errors.md)
 for how to throw and handle them.
 
-| Class                                         | Status        | Default message                        |
-| --------------------------------------------- | ------------- | -------------------------------------- |
-| [`ResponseError`](#responseerror)             | 500           | `'Response error'`                     |
-| [`AssetError`](#asseterror)                   | 400           | `'Asset error'`                        |
-| [`AuthenticationError`](#authenticationerror) | 401           | `'Authentication error'`               |
-| [`AuthorizationError`](#authorizationerror)   | 401           | `'Unauthorized Access'`                |
-| [`ControllerError`](#controllererror)         | 400           | `'Controller <name>: <error>'`         |
-| [`DatabaseError`](#databaseerror)             | 400, 409, 500 | The wrapped error's message            |
-| [`GraphError`](#grapherror)                   | 400           | `'Graph error'`                        |
-| [`ModelError`](#modelerror)                   | 400           | `"Model '<name>': <error>"`            |
-| [`NotFoundError`](#notfounderror)             | 404           | `'Not-found error'`                    |
-| [`NotImplementedError`](#notimplementederror) | 501           | `'Method not implemented'`             |
-| [`QueryBuilderError`](#querybuildererror)     | 400           | `'Query-builder error'`                |
-| [`RelationError`](#relationerror)             | 400           | `'Relation error'`                     |
-| [`ValidationError`](#validationerror)         | 400           | `'Validation error'`                   |
+| Class                                         | Status        | Default message                |
+| --------------------------------------------- | ------------- | ------------------------------ |
+| [`ResponseError`](#responseerror)             | 500           | `'Response error'`             |
+| [`AssetError`](#asseterror)                   | 400           | `'Asset error'`                |
+| [`AuthenticationError`](#authenticationerror) | 401           | `'Authentication error'`       |
+| [`AuthorizationError`](#authorizationerror)   | 401           | `'Unauthorized Access'`        |
+| [`ControllerError`](#controllererror)         | 400           | `'Controller <name>: <error>'` |
+| [`DatabaseError`](#databaseerror)             | 400, 409, 500 | The wrapped error's message    |
+| [`GraphError`](#grapherror)                   | 400           | `'Graph error'`                |
+| [`ModelError`](#modelerror)                   | 400           | `"Model '<name>': <error>"`    |
+| [`NotFoundError`](#notfounderror)             | 404           | `'Not-found error'`            |
+| [`NotImplementedError`](#notimplementederror) | 501           | `'Method not implemented'`     |
+| [`QueryBuilderError`](#querybuildererror)     | 400           | `'Query-builder error'`        |
+| [`RelationError`](#relationerror)             | 400           | `'Relation error'`             |
+| [`ValidationError`](#validationerror)         | 400           | `'Validation error'`           |
 
 ## ResponseError
 
@@ -59,11 +59,11 @@ The base class of all errors sent as responses.
 
 #### Parameters
 
-| Name        | Type                        | Description                                                                                                  |
-| ----------- | --------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `error`     | `string \| object \| Error` | A message, an object with `message`, `status`, `cause` and further data, or an error to wrap.                |
+| Name        | Type                        | Description                                                                                                                 |
+| ----------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `error`     | `string \| object \| Error` | A message, an object with `message`, `status`, `cause` and further data, or an error to wrap.                               |
 | `defaults`  | `{ message?, status?, … }`  | Values that `error` doesn't provide. Default: `{ message: 'Response error', status: 500 }`, replaced as a whole when given. |
-| `overrides` | `object`                    | Values that replace those of `error`, e.g. `message` or `stack`.                                             |
+| `overrides` | `object`                    | Values that replace those of `error`, e.g. `message` or `stack`.                                                            |
 
 `error`, `defaults` and `overrides` are merged in this order:
 
@@ -75,13 +75,13 @@ The base class of all errors sent as responses.
 
 #### Properties
 
-| Name       | Type                  | Description                                                      |
-| ---------- | --------------------- | ---------------------------------------------------------------- |
-| `message`  | `string`              | The message.                                                     |
-| `status`   | `number`              | The HTTP status.                                                 |
-| `expose`   | `boolean \| undefined` | `false` keeps the message and data out of the response, see [Plain errors](../../guide/server/errors.md#plain-errors). |
-| `data`     | `object \| undefined` | Additional data sent with the response, e.g. `code` or `errors`. |
-| `cause`    | `unknown`             | The wrapped error.                                               |
+| Name      | Type                   | Description                                                                                                            |
+| --------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `message` | `string`               | The message.                                                                                                           |
+| `status`  | `number`               | The HTTP status.                                                                                                       |
+| `expose`  | `boolean \| undefined` | `false` keeps the message and data out of the response, see [Plain errors](../../guide/server/errors.md#plain-errors). |
+| `data`    | `object \| undefined`  | Additional data sent with the response, e.g. `code` or `errors`.                                                       |
+| `cause`   | `unknown`              | The wrapped error.                                                                                                     |
 
 ### toJSON()
 
@@ -125,7 +125,7 @@ new AssetError(error?)
 ```
 
 400. Invalid asset files, e.g. unsigned files from sources not in
-`allowedImports`, see [`convertAssetFile()`](storage.md#convertassetfile).
+     `allowedImports`, see [`convertAssetFile()`](storage.md#convertassetfile).
 
 ## AuthenticationError
 
@@ -150,7 +150,7 @@ new ControllerError(controller, error)
 ```
 
 400. Errors in the configuration of a controller. The message is prefixed
-with the class name.
+     with the class name.
 
 #### Parameters
 
@@ -176,18 +176,18 @@ Wraps Objection database errors, with their message. `data.type` is the
 class name of the wrapped error, `cause` its native driver error. Errors with
 status 500 or higher set `expose: false`: their message is only logged.
 
-| Wrapped error                                                                          | Status |
-| -------------------------------------------------------------------------------------- | ------ |
-| `CheckViolationError`, `NotNullViolationError`, `DataError`                            | 400    |
-| `ConstraintViolationError` (incl. `UniqueViolationError`, `ForeignKeyViolationError`)  | 409    |
-| other `DBError`                                                                        | 500    |
-| any other error                                                                        | 400    |
+| Wrapped error                                                                         | Status |
+| ------------------------------------------------------------------------------------- | ------ |
+| `CheckViolationError`, `NotNullViolationError`, `DataError`                           | 400    |
+| `ConstraintViolationError` (incl. `UniqueViolationError`, `ForeignKeyViolationError`) | 409    |
+| other `DBError`                                                                       | 500    |
+| any other error                                                                       | 400    |
 
 #### Parameters
 
-| Name        | Type      | Description            |
-| ----------- | --------- | ---------------------- |
-| `error`     | `DBError` | The Objection error.   |
+| Name        | Type      | Description                 |
+| ----------- | --------- | --------------------------- |
+| `error`     | `DBError` | The Objection error.        |
 | `overrides` | `object`  | E.g. `{ message, status }`. |
 
 Models convert database errors of their queries with
@@ -202,7 +202,7 @@ new GraphError(error?)
 ```
 
 400. Invalid graphs, e.g. Objection's `InvalidGraph` errors or unsupported
-graph control properties in the data.
+     graph control properties in the data.
 
 ## ModelError
 
@@ -211,7 +211,7 @@ new ModelError(model, error)
 ```
 
 400. Errors in the definition of a model. The message is prefixed with the
-model's class name.
+     model's class name.
 
 #### Parameters
 
@@ -249,7 +249,7 @@ new QueryBuilderError(error?)
 ```
 
 400. Invalid queries, e.g. invalid `range`, `order` or `filter` query
-parameters, or scopes, filters and parameters that aren't allowed.
+     parameters, or scopes, filters and parameters that aren't allowed.
 
 ## RelationError
 
@@ -258,7 +258,7 @@ new RelationError(error?)
 ```
 
 400. Invalid relation definitions and relation expressions. Mentions of
-`relationMappings` in wrapped Objection errors are replaced with `relations`.
+     `relationMappings` in wrapped Objection errors are replaced with `relations`.
 
 ## ValidationError
 
@@ -267,15 +267,15 @@ new ValidationError(error?)
 ```
 
 400. Failed validation of models, parameters, filters, responses or request
-bodies. Mostly created by
-[`app.createValidationError()`](application.md#createvalidationerror), with
-`data`:
+     bodies. Mostly created by
+     [`app.createValidationError()`](application.md#createvalidationerror), with
+     `data`:
 
-| Property | Description                                                                                             |
-| -------- | ------------------------------------------------------------------------------------------------------- |
+| Property | Description                                                                                                     |
+| -------- | --------------------------------------------------------------------------------------------------------------- |
 | `type`   | `'ModelValidation'`, `'ParameterValidation'`, `'FilterValidation'`, `'ResultValidation'` or `'BodyValidation'`. |
-| `errors` | Errors by data path (not for `'BodyValidation'`), see [`parseErrors()`](validator.md#parseerrors).                                   |
-| `json`   | The validated data, when `config.log.errors.json` is set.                                               |
+| `errors` | Errors by data path (not for `'BodyValidation'`), see [`parseErrors()`](validator.md#parseerrors).              |
+| `json`   | The validated data, when `config.log.errors.json` is set.                                                       |
 
 #### Example
 

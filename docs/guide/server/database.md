@@ -88,20 +88,20 @@ is a starting point: read it, and adjust it where needed.
 
 The columns are built from these keywords:
 
-| Keyword        | Column
-| -------------- | ----------------------------------------------------------
-| `type`         | `string`, `text`, `integer`, `boolean`, `date`, `datetime` and `timestamp` use the Knex method of the same name; `number` becomes `double`, `object`, `array`, `asset` and model types like `'Author'` become `json`; `color` becomes `string`.
-| `$ref`         | Without `type`, the type of the referenced [definition](models.md#reusable-schemas), following its own `$ref`; definitions without a `type` become `json`.
-| `specificType` | The column type, instead of the one derived from `type`.
-| `primary`      | The primary key. Integer keys auto-increment (`increments()`), others use their type, e.g. `string('id').primary()`.
-| `required`     | `notNullable()`.
-| `nullable`     | `nullable()`.
-| `default`      | `defaultTo()`; `'now()'` becomes `CURRENT_TIMESTAMP`.
-| `unique`       | `unique()`, or one unique constraint for all properties with the same string.
-| `index`        | `index()`.
-| `unsigned`     | `unsigned()`.
-| `foreign`      | A reference to the related table of the `belongsTo` relation that uses the property, with `onDelete('CASCADE')` unless the relation is an `owner`.
-| `description`  | A comment above the column.
+| Keyword        | Column                                                                                                                                                                                                                                          |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`         | `string`, `text`, `integer`, `boolean`, `date`, `datetime` and `timestamp` use the Knex method of the same name; `number` becomes `double`, `object`, `array`, `asset` and model types like `'Author'` become `json`; `color` becomes `string`. |
+| `$ref`         | Without `type`, the type of the referenced [definition](models.md#reusable-schemas), following its own `$ref`; definitions without a `type` become `json`.                                                                                      |
+| `specificType` | The column type, instead of the one derived from `type`.                                                                                                                                                                                        |
+| `primary`      | The primary key. Integer keys auto-increment (`increments()`), others use their type, e.g. `string('id').primary()`.                                                                                                                            |
+| `required`     | `notNullable()`.                                                                                                                                                                                                                                |
+| `nullable`     | `nullable()`.                                                                                                                                                                                                                                   |
+| `default`      | `defaultTo()`; `'now()'` becomes `CURRENT_TIMESTAMP`.                                                                                                                                                                                           |
+| `unique`       | `unique()`, or one unique constraint for all properties with the same string.                                                                                                                                                                   |
+| `index`        | `index()`.                                                                                                                                                                                                                                      |
+| `unsigned`     | `unsigned()`.                                                                                                                                                                                                                                   |
+| `foreign`      | A reference to the related table of the `belongsTo` relation that uses the property, with `onDelete('CASCADE')` unless the relation is an `owner`.                                                                                              |
+| `description`  | A comment above the column.                                                                                                                                                                                                                     |
 
 Computed properties get no column. The command only creates tables. Changes
 to existing tables, e.g. new columns, are written by hand with Knex' schema

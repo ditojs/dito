@@ -24,12 +24,12 @@ application creates a `new Validator()`. All options are optional.
 
 #### Parameters
 
-| Name       | Type                      | Description                                                                         |
-| ---------- | ------------------------- | ----------------------------------------------------------------------------------- |
-| `options`  | `object`                  | Ajv options for all Ajv instances, merged over the defaults below.                  |
-| `keywords` | `Record<string, Keyword>` | Custom [keywords](#keyword), merged over the [built-in ones](#built-in-keywords).   |
-| `formats`  | `Record<string, Format>`  | Custom [formats](#format), merged over the [built-in ones](#built-in-formats).      |
-| `types`    | `Record<string, Schema>`  | Custom [types](#types), merged over the [built-in ones](#built-in-types).           |
+| Name       | Type                      | Description                                                                       |
+| ---------- | ------------------------- | --------------------------------------------------------------------------------- |
+| `options`  | `object`                  | Ajv options for all Ajv instances, merged over the defaults below.                |
+| `keywords` | `Record<string, Keyword>` | Custom [keywords](#keyword), merged over the [built-in ones](#built-in-keywords). |
+| `formats`  | `Record<string, Format>`  | Custom [formats](#format), merged over the [built-in ones](#built-in-formats).    |
+| `types`    | `Record<string, Schema>`  | Custom [types](#types), merged over the [built-in ones](#built-in-types).         |
 
 Names may start with `_` to avoid clashes with reserved words
 (`_instanceof`); Ajv receives them without it.
@@ -73,20 +73,20 @@ const app = new Application({
 `compile()` and model validation take these options. Each combination gets
 its own cached Ajv instance; other options don't select one.
 
-| Option                | Default | Description                                                                                                            |
-| --------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Option                | Default | Description                                                                                                                     |
+| --------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `async`               | `false` | Asynchronous validation, needed for async `validate` functions and async keywords; those are removed in synchronous validation. |
-| `patch`               | `false` | Ignores `required` and the `required` format, and applies no defaults.                                                 |
-| `$data`               | `false` | Ajv option.                                                                                                            |
-| `$comment`            | `false` | Ajv option.                                                                                                            |
-| `coerceTypes`         | `false` | Ajv option. Action parameters use `'array'`.                                                                           |
-| `discriminator`       | `true`  | Ajv option.                                                                                                            |
-| `multipleOfPrecision` | `false` | Ajv option.                                                                                                            |
-| `ownProperties`       | `true`  | Ajv option.                                                                                                            |
-| `removeAdditional`    | `false` | Ajv option.                                                                                                            |
-| `uniqueItems`         | `true`  | Ajv option.                                                                                                            |
-| `useDefaults`         | `true`  | Ajv option.                                                                                                            |
-| `verbose`             | `false` | Ajv option.                                                                                                            |
+| `patch`               | `false` | Ignores `required` and the `required` format, and applies no defaults.                                                          |
+| `$data`               | `false` | Ajv option.                                                                                                                     |
+| `$comment`            | `false` | Ajv option.                                                                                                                     |
+| `coerceTypes`         | `false` | Ajv option. Action parameters use `'array'`.                                                                                    |
+| `discriminator`       | `true`  | Ajv option.                                                                                                                     |
+| `multipleOfPrecision` | `false` | Ajv option.                                                                                                                     |
+| `ownProperties`       | `true`  | Ajv option.                                                                                                                     |
+| `removeAdditional`    | `false` | Ajv option.                                                                                                                     |
+| `uniqueItems`         | `true`  | Ajv option.                                                                                                                     |
+| `useDefaults`         | `true`  | Ajv option.                                                                                                                     |
+| `verbose`             | `false` | Ajv option.                                                                                                                     |
 
 ## Methods
 
@@ -104,10 +104,10 @@ the context with `validate.call({ app, validator, options }, data)`.
 
 #### Parameters
 
-| Name            | Type      | Description                                                                                                              |
-| --------------- | --------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `schema`        | `Schema`  | A JSON schema, after [`convertSchema()`](#convertschema).                                                                |
-| `options`       | `object`  | [Validation options](#validation-options), plus `throw`.                                                                 |
+| Name            | Type      | Description                                                                                                                                   |
+| --------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schema`        | `Schema`  | A JSON schema, after [`convertSchema()`](#convertschema).                                                                                     |
+| `options`       | `object`  | [Validation options](#validation-options), plus `throw`.                                                                                      |
 | `options.throw` | `boolean` | Default `true`: failures throw an `Ajv.ValidationError` with `errors`. With `false`, the function returns `false` and sets `validate.errors`. |
 
 Returns `(data) => boolean`, or `(data) => Promise<boolean>` with `async`.
@@ -153,7 +153,7 @@ const ajv = validator.createAjv(options)
 ```
 
 Creates an Ajv instance with the keywords, formats, types and schemas added so
-far. *Hook.* Returns `Ajv`.
+far. _Hook._ Returns `Ajv`.
 
 ### processSchema()
 
@@ -256,22 +256,22 @@ name as `type`: `{ type: 'price' }` becomes a `$ref` to the type's schema.
 
 ## Built-in keywords
 
-| Keyword         | Value                         | Description                                                                                                                       |
-| --------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `validate`      | `function(params)`            | Custom validation, see [below](#validate).                                                                                        |
-| `validateAsync` | `async function(params)`      | Asynchronous custom validation; async `validate` functions are moved here.                                                        |
-| `instanceof`    | `string \| function \| array` | The value is an instance of one of the types: names of JS constructors (`'Date'`, `'Buffer'`, …), model names or constructors.    |
-| `range`         | `[min, max]`                  | The value lies between `min` and `max`, both included.                                                                           |
-| `decimals`      | `number \| '*'`               | The number has at most that many decimal places, any with `'*'`.                                                                  |
-| `primary`       | `boolean`                     | Metadata: primary key column.                                                                                                     |
-| `foreign`       | `boolean`                     | Metadata: foreign key column.                                                                                                     |
-| `unique`        | `boolean \| string`           | Metadata: unique constraint; properties with the same string form a composite one.                                                |
-| `index`         | `boolean`                     | Metadata: indexed column.                                                                                                         |
-| `unsigned`      | `boolean`                     | Metadata: unsigned number column.                                                                                                 |
-| `specificType`  | `string`                      | Metadata: database column type.                                                                                                   |
-| `computed`      | `boolean`                     | Metadata: computed property, not stored.                                                                                          |
-| `hidden`        | `boolean`                     | Metadata: left out of the JSON data.                                                                                              |
-| `relate`        | `string`                      | Internal: validates relation references (`{ id }`) of the named model.                                                            |
+| Keyword         | Value                         | Description                                                                                                                    |
+| --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `validate`      | `function(params)`            | Custom validation, see [below](#validate).                                                                                     |
+| `validateAsync` | `async function(params)`      | Asynchronous custom validation; async `validate` functions are moved here.                                                     |
+| `instanceof`    | `string \| function \| array` | The value is an instance of one of the types: names of JS constructors (`'Date'`, `'Buffer'`, …), model names or constructors. |
+| `range`         | `[min, max]`                  | The value lies between `min` and `max`, both included.                                                                         |
+| `decimals`      | `number \| '*'`               | The number has at most that many decimal places, any with `'*'`.                                                               |
+| `primary`       | `boolean`                     | Metadata: primary key column.                                                                                                  |
+| `foreign`       | `boolean`                     | Metadata: foreign key column.                                                                                                  |
+| `unique`        | `boolean \| string`           | Metadata: unique constraint; properties with the same string form a composite one.                                             |
+| `index`         | `boolean`                     | Metadata: indexed column.                                                                                                      |
+| `unsigned`      | `boolean`                     | Metadata: unsigned number column.                                                                                              |
+| `specificType`  | `string`                      | Metadata: database column type.                                                                                                |
+| `computed`      | `boolean`                     | Metadata: computed property, not stored.                                                                                       |
+| `hidden`        | `boolean`                     | Metadata: left out of the JSON data.                                                                                           |
+| `relate`        | `string`                      | Internal: validates relation references (`{ id }`) of the named model.                                                         |
 
 Metadata keywords don't validate; models and migrations read them, see
 [`Model`](model.md).
@@ -293,17 +293,17 @@ properties: {
 
 The function receives one object:
 
-| Property                    | Description                                                        |
-| --------------------------- | ------------------------------------------------------------------ |
-| `data`                      | The value.                                                         |
-| `parentData`                | The object or array holding the value.                             |
-| `rootData`                  | The root data.                                                     |
-| `instancePath`              | JSON pointer of the value, e.g. `/items/0/name`.                   |
-| `parentKey` / `parentIndex` | The key in an object, or the index in an array, of the value.      |
-| `app`                       | The application.                                                   |
-| `validator`                 | The validator.                                                     |
-| `options`                   | The validation options, e.g. `graph` in `$validateGraph()`.        |
-| `ctx`                       | The validation context.                                            |
+| Property                    | Description                                                   |
+| --------------------------- | ------------------------------------------------------------- |
+| `data`                      | The value.                                                    |
+| `parentData`                | The object or array holding the value.                        |
+| `rootData`                  | The root data.                                                |
+| `instancePath`              | JSON pointer of the value, e.g. `/items/0/name`.              |
+| `parentKey` / `parentIndex` | The key in an object, or the index in an array, of the value. |
+| `app`                       | The application.                                              |
+| `validator`                 | The validator.                                                |
+| `options`                   | The validation options, e.g. `graph` in `$validateGraph()`.   |
+| `ctx`                       | The validation context.                                       |
 
 Returning `false` fails validation; returning nothing or `true` passes.
 Throwing fails with the error's message, or with its `errors` if it holds Ajv
@@ -313,11 +313,11 @@ synchronous validation skips them.
 
 ## Built-in formats
 
-| Format     | Validates                                                                    |
-| ---------- | ---------------------------------------------------------------------------- |
-| `color`    | Hex colors: `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`.                       |
-| `required` | Neither `null`, `undefined` nor `''`. Used for `required: true` properties.  |
-| `empty`    | A falsy value.                                                               |
+| Format     | Validates                                                                   |
+| ---------- | --------------------------------------------------------------------------- |
+| `color`    | Hex colors: `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`.                      |
+| `required` | Neither `null`, `undefined` nor `''`. Used for `required: true` properties. |
+| `empty`    | A falsy value.                                                              |
 
 Plus the formats of `ajv-formats` in full mode (`date-time`, `email`, `uri`,
 `uuid`, …).
@@ -346,29 +346,29 @@ exported with a leading `_`, e.g. `_enum`.
 
 ## Built-in types
 
-| Type    | Schema                                                                                                                                       |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `color` | `{ type: 'string', format: 'color' }`: hex colors only, no color names. Colors in object formats (`rgb`, `hsl`, …) need `type: 'object'`.  |
-| `asset` | An asset file object: `key`, `name`, `type`, `size` (required), `url`, `width`, `height`.                                                     |
+| Type    | Schema                                                                                                                                    |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `color` | `{ type: 'string', format: 'color' }`: hex colors only, no color names. Colors in object formats (`rgb`, `hsl`, …) need `type: 'object'`. |
+| `asset` | An asset file object: `key`, `name`, `type`, `size` (required), `url`, `width`, `height`.                                                 |
 
 ## Schema extensions
 
 Dito.js schemas are JSON schemas with additions that
 [`convertSchema()`](#convertschema) translates:
 
-| Addition                                       | Translation                                                                                                     |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `required: true` on a property                 | The `required` format plus an entry in the parent's `required` array, added to the entries the parent lists itself. A JSON Schema `required` array doesn't make the property itself required. |
-| `type: 'text'`                                 | `type: 'string'`.                                                                                               |
-| `type: 'date' \| 'datetime' \| 'timestamp'`    | `type: ['string', 'object']` with the `date-time` format; accepts `Date` objects.                               |
-| `type: '<Model>'` or a type name               | `$ref` to the model or [type](#types).                                                                          |
-| `nullable: true`                               | Also accepts `null`, also with `$ref` and `enum`.                                                               |
-| `default: 'now()'`                             | Removed for validation; a database default.                                                                     |
-| `properties`, `additionalProperties` or `patternProperties` | `unevaluatedProperties: false`: objects reject unknown properties, unless the schema sets `unevaluatedProperties: true`. |
-| `type: 'object'` with `allOf`, `anyOf` or `oneOf` | `unevaluatedProperties: false` at this outer level, where it sees the properties of all parts. Parts without a `type` aren't closed on their own. |
-| `definitions` with names starting with `#`     | Collected at the root schema; reference them as `{ $ref: '#Price' }`. Definitions don't close themselves, so they can serve as bases. Object definitions without properties, e.g. `{ type: 'object' }`, get `unevaluatedProperties: true` and stay open wherever they're used. |
-| `$ref` to a definition                         | `unevaluatedProperties: false`: closed where it's used, unless the schema sets `unevaluatedProperties` itself or is a direct part of `allOf`, `anyOf` or `oneOf`. Non-object values aren't affected. |
-| `discriminator`                                | `unevaluatedProperties: false`, with `discriminator` and `oneOf` moved into an `allOf` part, as Ajv applies the discriminator after `unevaluatedProperties`. The tag is required, also in patches. Without a `type`, the schema gets `type: 'object'`. See [Validation](../../guide/server/validation.md#variants). |
+| Addition                                                    | Translation                                                                                                                                                                                                                                                                                                         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `required: true` on a property                              | The `required` format plus an entry in the parent's `required` array, added to the entries the parent lists itself. A JSON Schema `required` array doesn't make the property itself required.                                                                                                                       |
+| `type: 'text'`                                              | `type: 'string'`.                                                                                                                                                                                                                                                                                                   |
+| `type: 'date' \| 'datetime' \| 'timestamp'`                 | `type: ['string', 'object']` with the `date-time` format; accepts `Date` objects.                                                                                                                                                                                                                                   |
+| `type: '<Model>'` or a type name                            | `$ref` to the model or [type](#types).                                                                                                                                                                                                                                                                              |
+| `nullable: true`                                            | Also accepts `null`, also with `$ref` and `enum`.                                                                                                                                                                                                                                                                   |
+| `default: 'now()'`                                          | Removed for validation; a database default.                                                                                                                                                                                                                                                                         |
+| `properties`, `additionalProperties` or `patternProperties` | `unevaluatedProperties: false`: objects reject unknown properties, unless the schema sets `unevaluatedProperties: true`.                                                                                                                                                                                            |
+| `type: 'object'` with `allOf`, `anyOf` or `oneOf`           | `unevaluatedProperties: false` at this outer level, where it sees the properties of all parts. Parts without a `type` aren't closed on their own.                                                                                                                                                                   |
+| `definitions` with names starting with `#`                  | Collected at the root schema; reference them as `{ $ref: '#Price' }`. Definitions don't close themselves, so they can serve as bases. Object definitions without properties, e.g. `{ type: 'object' }`, get `unevaluatedProperties: true` and stay open wherever they're used.                                      |
+| `$ref` to a definition                                      | `unevaluatedProperties: false`: closed where it's used, unless the schema sets `unevaluatedProperties` itself or is a direct part of `allOf`, `anyOf` or `oneOf`. Non-object values aren't affected.                                                                                                                |
+| `discriminator`                                             | `unevaluatedProperties: false`, with `discriminator` and `oneOf` moved into an `allOf` part, as Ajv applies the discriminator after `unevaluatedProperties`. The tag is required, also in patches. Without a `type`, the schema gets `type: 'object'`. See [Validation](../../guide/server/validation.md#variants). |
 
 ## Functions
 

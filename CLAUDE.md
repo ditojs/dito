@@ -9,7 +9,7 @@ Dito.js is a declarative web framework with two main components: **Dito.js Serve
 ## Package Structure
 
 - **packages/server/**: Server framework with models, controllers, middleware, and CLI
-- **packages/admin/**: Vue.js admin interface with forms, types, and schema components  
+- **packages/admin/**: Vue.js admin interface with forms, types, and schema components
 - **packages/ui/**: Shared Vue.js UI components and styles
 - **packages/utils/**: Utility functions for arrays, objects, strings, dates, etc.
 - **packages/router/**: Lightweight routing library
@@ -18,6 +18,7 @@ Dito.js is a declarative web framework with two main components: **Dito.js Serve
 ## Common Commands
 
 ### Development
+
 ```bash
 # Install dependencies and build all packages
 pnpm install
@@ -32,6 +33,7 @@ cd packages/ui && pnpm run build
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 pnpm test
@@ -53,6 +55,7 @@ pnpm -C tests serve account --port 8080
 ```
 
 ### Linting & Code Quality
+
 ```bash
 # Run linters, types and type tests in parallel, as a quick local check. The
 # full suites (coverage, e2e, screenshots) run on CI.
@@ -71,6 +74,7 @@ pnpm run prettier   # Prettier with prettier-plugin-penere
 ```
 
 ### Package Management
+
 ```bash
 # Run command across all packages
 pnpm -r run <command>
@@ -105,12 +109,15 @@ pnpm run clean
 Dito Admin and UI packages use strict BEM methodology:
 
 ### Naming Convention
+
 - **Blocks**: `.dito-[block]` (e.g., `.dito-button`, `.dito-table`)
 - **Elements**: `.dito-[block]__[element]` (e.g., `.dito-label__prefix`)
 - **Modifiers**: `.dito-[block]--[modifier]` (e.g., `.dito-buttons--large`)
 
 ### State Representation
+
 State is always represented through block-specific modifiers:
+
 - `.dito-menu__link--active` (not `.dito-active`)
 - `.dito-pulldown--open` (not `.dito-open`)
 - `.dito-container--disabled` (not `.dito-disabled`)
@@ -118,11 +125,14 @@ State is always represented through block-specific modifiers:
 - `.dito-button--selected` (not `.dito-selected`)
 
 ### Utilities (Exceptions to BEM)
+
 Only these classes remain as utilities:
+
 - `.dito-scroll`, `.dito-scroll-parent` - Scroll container infrastructure
 - `.dito-layout--vertical`, `.dito-layout--horizontal` - Layout direction
 
 **Why these remain as utilities:**
+
 - Same behavior everywhere (no per-block overrides or variations)
 - Well-defined contracts (infrastructure patterns)
 - Single responsibility (manage specific cross-cutting concerns)
@@ -131,13 +141,17 @@ Only these classes remain as utilities:
 All other styling uses strict BEM. No shared utilities with overrides.
 
 ### Schema-Driven Classes
+
 Schema values map to CSS modifiers programmatically:
+
 - `layout: 'horizontal'` → `.dito-layout--horizontal`
 - `padding: 'nested'` → `.dito-pane--padding-nested`
 - Column names → `.dito-column--{name}`, `.dito-cell--{name}`
 
 ### Component Width Modifiers
+
 Width/flex behavior is block-specific:
+
 - `.dito-component--fill`, `.dito-component--grow`, `.dito-component--shrink`
 - `.dito-label--fill`, `.dito-label--grow`, `.dito-label--shrink`
 - `.dito-select--fill`
@@ -147,6 +161,7 @@ Managed via `getLayoutClasses(prefix)` helper method in DitoContainer.
 ## Application Structure (for Dito.js projects)
 
 When building applications with this framework:
+
 ```
 src/
 ├── server/           # Server application

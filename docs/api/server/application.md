@@ -35,17 +35,17 @@ controllers. Nothing is initialized until [`setup()`](#setup) or
 
 #### Parameters
 
-| Name          | Type                                       | Description                                                                                                                                                                     |
-| ------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `basePath`    | `string`                                   | The project directory: disk storage paths are resolved against it, [`db:seed`](#dbseed) and [`db:create_migration`](#dbcreate_migration) use its `seeds` and `migrations` folders, and [`loadAdminViteConfig()`](#loadadminviteconfig) looks for `admin.vite.config.*` in it. Default: `process.cwd()`. |
-| `config`      | [`ApplicationConfig`](#applicationconfig)  | The configuration.                                                                                                                                                              |
-| `validator`   | [`Validator`](validator.md)                | A custom validator. Default: `new Validator()`.                                                                                                                                 |
-| `router`      | `object`                                   | A custom router. The app calls its `add(method, path, route)` with the upper-case method and a route object, and `find(method, path)`, which returns `{ status, handler, params, allowed }` with the route object as `handler`. Default: a `@ditojs/router` instance. |
-| `events`      | `Record<string, Function \| Function[]>`   | Event listeners, keyed by event name. Several comma-separated names may share one key. See [Events](#events).                                                                   |
-| `middleware`  | `Koa.Middleware`                           | Application-level middleware, installed after the route lookup and before the body parser, transactions, session and user handling. Combine several with [koa-compose](https://github.com/koajs/compose). |
-| `services`    | `Record<string, Service \| Class<Service>>` | Services to add, see [`addServices()`](#addservices).                                                                                                                          |
-| `models`      | `Record<string, Class<Model>>`             | Models to add, see [`addModels()`](#addmodels).                                                                                                                                 |
-| `controllers` | `ApplicationControllers`                   | Controllers to add, see [`addControllers()`](#addcontrollers).                                                                                                                  |
+| Name          | Type                                        | Description                                                                                                                                                                                                                                                                                             |
+| ------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `basePath`    | `string`                                    | The project directory: disk storage paths are resolved against it, [`db:seed`](#dbseed) and [`db:create_migration`](#dbcreate_migration) use its `seeds` and `migrations` folders, and [`loadAdminViteConfig()`](#loadadminviteconfig) looks for `admin.vite.config.*` in it. Default: `process.cwd()`. |
+| `config`      | [`ApplicationConfig`](#applicationconfig)   | The configuration.                                                                                                                                                                                                                                                                                      |
+| `validator`   | [`Validator`](validator.md)                 | A custom validator. Default: `new Validator()`.                                                                                                                                                                                                                                                         |
+| `router`      | `object`                                    | A custom router. The app calls its `add(method, path, route)` with the upper-case method and a route object, and `find(method, path)`, which returns `{ status, handler, params, allowed }` with the route object as `handler`. Default: a `@ditojs/router` instance.                                   |
+| `events`      | `Record<string, Function \| Function[]>`    | Event listeners, keyed by event name. Several comma-separated names may share one key. See [Events](#events).                                                                                                                                                                                           |
+| `middleware`  | `Koa.Middleware`                            | Application-level middleware, installed after the route lookup and before the body parser, transactions, session and user handling. Combine several with [koa-compose](https://github.com/koajs/compose).                                                                                               |
+| `services`    | `Record<string, Service \| Class<Service>>` | Services to add, see [`addServices()`](#addservices).                                                                                                                                                                                                                                                   |
+| `models`      | `Record<string, Class<Model>>`              | Models to add, see [`addModels()`](#addmodels).                                                                                                                                                                                                                                                         |
+| `controllers` | `ApplicationControllers`                    | Controllers to add, see [`addControllers()`](#addcontrollers).                                                                                                                                                                                                                                          |
 
 #### Example
 
@@ -63,51 +63,51 @@ The `config` object passed to the constructor, see
 [Configuration](../../guide/server/configuration.md). Extend it through module
 augmentation of `ApplicationConfig` for project-specific settings.
 
-| Key                       | Type                                             | Default         | Description                                                                                                                              |
-| ------------------------- | ------------------------------------------------ | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `env`                     | `'production' \| 'development' \| string`        |                 | The environment. The admin's `mode` defaults to `'development'` when this is `'development'`, else to `'production'`. In `'development'`, responses carry the messages of all errors, see [Plain errors](../../guide/server/errors.md#plain-errors). |
-| `server`                  | `object`                                         |                 | Options for Node's `server.listen()`, e.g. `{ host, port }`.                                                                             |
-| `log`                     | `object \| false`                                | `{}`            | Logging options, see [`config.log`](#configlog). `false`, `log.silent` or the env variable `DITO_SILENT` clear all of them, which also hides the start message. Errors emitted on the app are still logged then. |
-| `logger`                  | `object`                                         | see below       | [Pino](https://getpino.io/) options, plus `prettyPrint` with [pino-pretty](https://github.com/pinojs/pino-pretty) options. Default level `'info'`, pretty printing on. |
-| `app`                     | `object`                                         |                 | Koa and middleware options, see [`config.app`](#configapp).                                                                             |
-| `admin`                   | `AdminConfig`                                    |                 | The settings of `AdminController`, see [`config.admin`](#configadmin).                                                                  |
-| `knex`                    | `object`                                         |                 | The [Knex configuration](https://knexjs.org/guide/#configuration-options), plus `normalizeDbNames` and `typeParsers`. Knex is only set up when `knex.client` is set. |
-| `knex.normalizeDbNames`   | `boolean \| object`                              | `false`         | Maps camelCase property names to snake_case columns through Objection's `knexSnakeCaseMappers()`; an object passes options to it.         |
-| `knex.typeParsers`        | `Record<number, (value) => any>`                 |                 | PostgreSQL type parsers by type OID, applied when `knex.client` is `'postgresql'`. Parsers for `numeric` (1700) and `int8` (20) also install the matching array parsers. |
-| `storages`                | `Record<string, StorageConfig>`                  |                 | Storage configurations by name, see [Storage](storage.md).                                                                              |
-| `services`                | `Record<string, object \| boolean>`              |                 | Service configurations by service name. `true` uses the defaults of the service, `false` removes it. Each added service needs an entry.  |
-| `assets.deleteUnusedAfter`  | `string \| number \| false`                 | `'24h'`         | Minimum age of unused assets without changes before they are deleted, at the next run of [`deleteExpiredRecords()`](#deleteexpiredrecords). `false` keeps them. Strings are parsed by [parse-duration](https://www.npmjs.com/package/parse-duration). |
-| `assets.deleteUnsavedAfter` | `string \| number \| false`                 | `'24h'`         | Minimum age of uploaded but never saved assets before they are deleted, like `deleteUnusedAfter`. Must not be `0`. |
+| Key                         | Type                                      | Default   | Description                                                                                                                                                                                                                                           |
+| --------------------------- | ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `env`                       | `'production' \| 'development' \| string` |           | The environment. The admin's `mode` defaults to `'development'` when this is `'development'`, else to `'production'`. In `'development'`, responses carry the messages of all errors, see [Plain errors](../../guide/server/errors.md#plain-errors).  |
+| `server`                    | `object`                                  |           | Options for Node's `server.listen()`, e.g. `{ host, port }`.                                                                                                                                                                                          |
+| `log`                       | `object \| false`                         | `{}`      | Logging options, see [`config.log`](#configlog). `false`, `log.silent` or the env variable `DITO_SILENT` clear all of them, which also hides the start message. Errors emitted on the app are still logged then.                                      |
+| `logger`                    | `object`                                  | see below | [Pino](https://getpino.io/) options, plus `prettyPrint` with [pino-pretty](https://github.com/pinojs/pino-pretty) options. Default level `'info'`, pretty printing on.                                                                                |
+| `app`                       | `object`                                  |           | Koa and middleware options, see [`config.app`](#configapp).                                                                                                                                                                                           |
+| `admin`                     | `AdminConfig`                             |           | The settings of `AdminController`, see [`config.admin`](#configadmin).                                                                                                                                                                                |
+| `knex`                      | `object`                                  |           | The [Knex configuration](https://knexjs.org/guide/#configuration-options), plus `normalizeDbNames` and `typeParsers`. Knex is only set up when `knex.client` is set.                                                                                  |
+| `knex.normalizeDbNames`     | `boolean \| object`                       | `false`   | Maps camelCase property names to snake_case columns through Objection's `knexSnakeCaseMappers()`; an object passes options to it.                                                                                                                     |
+| `knex.typeParsers`          | `Record<number, (value) => any>`          |           | PostgreSQL type parsers by type OID, applied when `knex.client` is `'postgresql'`. Parsers for `numeric` (1700) and `int8` (20) also install the matching array parsers.                                                                              |
+| `storages`                  | `Record<string, StorageConfig>`           |           | Storage configurations by name, see [Storage](storage.md).                                                                                                                                                                                            |
+| `services`                  | `Record<string, object \| boolean>`       |           | Service configurations by service name. `true` uses the defaults of the service, `false` removes it. Each added service needs an entry.                                                                                                               |
+| `assets.deleteUnusedAfter`  | `string \| number \| false`               | `'24h'`   | Minimum age of unused assets without changes before they are deleted, at the next run of [`deleteExpiredRecords()`](#deleteexpiredrecords). `false` keeps them. Strings are parsed by [parse-duration](https://www.npmjs.com/package/parse-duration). |
+| `assets.deleteUnsavedAfter` | `string \| number \| false`               | `'24h'`   | Minimum age of uploaded but never saved assets before they are deleted, like `deleteUnusedAfter`. Must not be `0`.                                                                                                                                    |
 
 ### config.log
 
-| Key        | Type                                               | Default | Description                                                                              |
-| ---------- | -------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------- |
-| `requests` | `boolean \| 'console' \| 'file'`                   | `false` | Logs responses at level `info` (`warn` on errors), and requests at level `trace`. `'console'` and `'file'` act like `true`. |
-| `routes`   | `boolean`                                          | `false` | Logs the routes of the controllers when they are set up.                                 |
-| `schema`   | `boolean \| string \| string[]`                    | `false` | Logs the JSON schemas of all models (`true`), or of the named models.                    |
-| `relations`| `boolean \| string \| string[]`                    | `false` | Logs the relation mappings of all models (`true`), or of the named models.               |
-| `sql`      | `boolean`                                          | `false` | Logs SQL queries with bindings and durations.                                            |
-| `silent`   | `boolean`                                          | `false` | Clears all `log` options, like `log: false`.                                             |
-| `errors`   | `boolean \| { sql?, stack?, json? }`               | `true`  | `false` stops logging the errors emitted on the app. `sql`: keep the SQL query in database errors. `stack: false`: omit stack traces. `json`: keep the invalid data in validation errors. |
+| Key         | Type                                 | Default | Description                                                                                                                                                                               |
+| ----------- | ------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `requests`  | `boolean \| 'console' \| 'file'`     | `false` | Logs responses at level `info` (`warn` on errors), and requests at level `trace`. `'console'` and `'file'` act like `true`.                                                               |
+| `routes`    | `boolean`                            | `false` | Logs the routes of the controllers when they are set up.                                                                                                                                  |
+| `schema`    | `boolean \| string \| string[]`      | `false` | Logs the JSON schemas of all models (`true`), or of the named models.                                                                                                                     |
+| `relations` | `boolean \| string \| string[]`      | `false` | Logs the relation mappings of all models (`true`), or of the named models.                                                                                                                |
+| `sql`       | `boolean`                            | `false` | Logs SQL queries with bindings and durations.                                                                                                                                             |
+| `silent`    | `boolean`                            | `false` | Clears all `log` options, like `log: false`.                                                                                                                                              |
+| `errors`    | `boolean \| { sql?, stack?, json? }` | `true`  | `false` stops logging the errors emitted on the app. `sql`: keep the SQL query in database errors. `stack: false`: omit stack traces. `json`: keep the invalid data in validation errors. |
 
 ### config.app
 
-| Key              | Type                                             | Default | Description                                                                                                  |
-| ---------------- | ------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------ |
-| `name`           | `string`                                         |         | The name of the app, shown by passkey managers and authenticator apps. Required by [`PasskeyService`](service.md#passkeyservice) and [`TotpService`](service.md#totpservice). |
-| `normalizePaths` | `boolean`                                        | `false` | Hyphenates camelCase route paths (`relatedBooks` → `related-books`). Passed on to the admin.                 |
-| `proxy`          | `boolean`                                        | `false` | Trusts proxy header fields (Koa's `app.proxy`).                                                              |
-| `keys`           | `string[]`                                       |         | Signed cookie keys (Koa's `app.keys`), which also sign the links of `authentication.passwordReset`: the first key signs, all keys verify, so keys can rotate. Removed from `app.config`. |
-| `responseTime`   | `boolean \| object`                              | `true`  | Adds the `X-Response-Time` header, options of koa-response-time.                                             |
-| `helmet`         | `boolean \| object`                              | `true`  | Security headers, options of [helmet](https://helmetjs.github.io/).                                          |
-| `cors`           | `boolean \| object`                              | `true`  | CORS, options of [@koa/cors](https://github.com/koajs/cors#corsoptions).                                     |
-| `compress`       | `boolean \| object`                              | `true`  | Response compression, options of [koa-compress](https://github.com/koajs/compress#options). Brotli quality defaults to 4. |
-| `etag`           | `boolean`                                        | `true`  | Conditional GET and ETag headers.                                                                            |
-| `bodyParser`     | `object`                                         |         | Options of [koa-bodyparser](https://github.com/koajs/bodyparser#options).                                    |
-| `deleteExpiredRecordsEvery` | `string \| number \| false`          | `'1h'`  | How often [`deleteExpiredRecords()`](#deleteexpiredrecords) runs, only in apps that call [`start()`](#start), first one interval after it, at most 24 days (Node's timers can't wait longer). `false` never runs it. Apps that don't start the server, e.g. with their own HTTP server through `app.callback()` or in short-lived processes, call `deleteExpiredRecords()` themselves or run [`db:delete_expired_records`](#commands) on a schedule. |
-| `session`        | `boolean \| object`                              | `false` | Sessions through [koa-session](https://github.com/koajs/session), with `sameSite: 'lax'` as the default for the cookie: admins on another site than the server need `'none'`, which requires `secure`, and behind a TLS proxy also `app.proxy: true`. `modelClass` (a name or a model class) stores them in a model, e.g. one using [`SessionMixin`](model.md#sessionmixin). `autoCommit` (default `true`) commits the session after each request, on transacted routes only when the request succeeds. |
-| `authentication` | `object`                                       |         | Authentication beyond passwords, see [`config.app.authentication`](#configappauthentication).                |
+| Key                         | Type                        | Default | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------- | --------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                      | `string`                    |         | The name of the app, shown by passkey managers and authenticator apps. Required by [`PasskeyService`](service.md#passkeyservice) and [`TotpService`](service.md#totpservice).                                                                                                                                                                                                                                                                                                                           |
+| `normalizePaths`            | `boolean`                   | `false` | Hyphenates camelCase route paths (`relatedBooks` → `related-books`). Passed on to the admin.                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `proxy`                     | `boolean`                   | `false` | Trusts proxy header fields (Koa's `app.proxy`).                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `keys`                      | `string[]`                  |         | Signed cookie keys (Koa's `app.keys`), which also sign the links of `authentication.passwordReset`: the first key signs, all keys verify, so keys can rotate. Removed from `app.config`.                                                                                                                                                                                                                                                                                                                |
+| `responseTime`              | `boolean \| object`         | `true`  | Adds the `X-Response-Time` header, options of koa-response-time.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `helmet`                    | `boolean \| object`         | `true`  | Security headers, options of [helmet](https://helmetjs.github.io/).                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `cors`                      | `boolean \| object`         | `true`  | CORS, options of [@koa/cors](https://github.com/koajs/cors#corsoptions).                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `compress`                  | `boolean \| object`         | `true`  | Response compression, options of [koa-compress](https://github.com/koajs/compress#options). Brotli quality defaults to 4.                                                                                                                                                                                                                                                                                                                                                                               |
+| `etag`                      | `boolean`                   | `true`  | Conditional GET and ETag headers.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `bodyParser`                | `object`                    |         | Options of [koa-bodyparser](https://github.com/koajs/bodyparser#options).                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `deleteExpiredRecordsEvery` | `string \| number \| false` | `'1h'`  | How often [`deleteExpiredRecords()`](#deleteexpiredrecords) runs, only in apps that call [`start()`](#start), first one interval after it, at most 24 days (Node's timers can't wait longer). `false` never runs it. Apps that don't start the server, e.g. with their own HTTP server through `app.callback()` or in short-lived processes, call `deleteExpiredRecords()` themselves or run [`db:delete_expired_records`](#commands) on a schedule.                                                    |
+| `session`                   | `boolean \| object`         | `false` | Sessions through [koa-session](https://github.com/koajs/session), with `sameSite: 'lax'` as the default for the cookie: admins on another site than the server need `'none'`, which requires `secure`, and behind a TLS proxy also `app.proxy: true`. `modelClass` (a name or a model class) stores them in a model, e.g. one using [`SessionMixin`](model.md#sessionmixin). `autoCommit` (default `true`) commits the session after each request, on transacted routes only when the request succeeds. |
+| `authentication`            | `object`                    |         | Authentication beyond passwords, see [`config.app.authentication`](#configappauthentication).                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ### config.app.authentication
 
@@ -123,23 +123,23 @@ app: {
 }
 ```
 
-| Key                      | Type                       | Description                                                                                      |
-| ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------ |
-| `credentials.modelClass` | `string \| Class<Model>`   | The model that stores the credentials of all user models, using [`CredentialMixin`](model.md#credentialmixin). Needed by [`PasskeyService`](service.md#passkeyservice) and [`TotpService`](service.md#totpservice). |
-| `passwordReset`          | `object`                   | Enables password resets by email in [`UsersController`](controllers.md#userscontroller), which sends the emails through [`sendPasswordReset()`](controllers.md#sendpasswordreset). Needs `keys`, else the setup fails. |
-| `passwordReset.confirmUrl` | `string`                 | The URL of the page that the emails link to, with a `{token}` placeholder for the token, best in the fragment, e.g. `'https://example.com/admin/#password-reset={token}'` for the admin's [password reset](../admin/admin.md#globalconfig). One URL for the whole app: all users controllers send links to it. |
-| `passwordReset.expiresAfter` | `number \| string`     | How long the links are valid, in milliseconds or as a duration string, e.g. `'30m'`. Default `'1h'`. |
-| `reconfirmAccessAfter`   | `number \| string`         | How long logins and `'post confirm-access'` confirm the access for the security changes of [`UsersController`](controllers.md#userscontroller), in milliseconds or as a duration string. Default `'10m'`. |
+| Key                          | Type                     | Description                                                                                                                                                                                                                                                                                                    |
+| ---------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `credentials.modelClass`     | `string \| Class<Model>` | The model that stores the credentials of all user models, using [`CredentialMixin`](model.md#credentialmixin). Needed by [`PasskeyService`](service.md#passkeyservice) and [`TotpService`](service.md#totpservice).                                                                                            |
+| `passwordReset`              | `object`                 | Enables password resets by email in [`UsersController`](controllers.md#userscontroller), which sends the emails through [`sendPasswordReset()`](controllers.md#sendpasswordreset). Needs `keys`, else the setup fails.                                                                                         |
+| `passwordReset.confirmUrl`   | `string`                 | The URL of the page that the emails link to, with a `{token}` placeholder for the token, best in the fragment, e.g. `'https://example.com/admin/#password-reset={token}'` for the admin's [password reset](../admin/admin.md#globalconfig). One URL for the whole app: all users controllers send links to it. |
+| `passwordReset.expiresAfter` | `number \| string`       | How long the links are valid, in milliseconds or as a duration string, e.g. `'30m'`. Default `'1h'`.                                                                                                                                                                                                           |
+| `reconfirmAccessAfter`       | `number \| string`       | How long logins and `'post confirm-access'` confirm the access for the security changes of [`UsersController`](controllers.md#userscontroller), in milliseconds or as a duration string. Default `'10m'`.                                                                                                      |
 
 ### config.admin
 
-| Key        | Type                            | Default                                       | Description                                                                         |
-| ---------- | ------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `root`     | `string`                        |                                               | Path to the admin's source directory, relative to the working directory. Required in development mode and by `defineAdminViteConfig()`. |
-| `dist`     | `string`                        |                                               | Path to the built admin, relative to the working directory. Required in production mode. |
-| `mode`     | `'production' \| 'development'` | `'development'` if `env` is, else `'production'` | Development serves the sources through Vite with hot reloading. In it, apps that link Dito.js from a checkout load its admin and UI from their sources, also for their own imports. |
-| `api`      | `ApiConfig`                     |                                               | The admin's API settings (`url`, `locale`, `formats`, `notifications`, `timeout`, `cors`, `normalizePaths`, `users`, `headers`), passed to the browser. `normalizePaths` defaults to `app.normalizePaths`. |
-| `settings` | `object`                        |                                               | The admin's global settings, sent to the browser with `window.dito` and read there as `admin.context.settings`, e.g. `rootClass` and `forceDragFallback`. |
+| Key        | Type                            | Default                                          | Description                                                                                                                                                                                                |
+| ---------- | ------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `root`     | `string`                        |                                                  | Path to the admin's source directory, relative to the working directory. Required in development mode and by `defineAdminViteConfig()`.                                                                    |
+| `dist`     | `string`                        |                                                  | Path to the built admin, relative to the working directory. Required in production mode.                                                                                                                   |
+| `mode`     | `'production' \| 'development'` | `'development'` if `env` is, else `'production'` | Development serves the sources through Vite with hot reloading. In it, apps that link Dito.js from a checkout load its admin and UI from their sources, also for their own imports.                        |
+| `api`      | `ApiConfig`                     |                                                  | The admin's API settings (`url`, `locale`, `formats`, `notifications`, `timeout`, `cors`, `normalizePaths`, `users`, `headers`), passed to the browser. `normalizePaths` defaults to `app.normalizePaths`. |
+| `settings` | `object`                        |                                                  | The admin's global settings, sent to the browser with `window.dito` and read there as `admin.context.settings`, e.g. `rootClass` and `forceDragFallback`.                                                  |
 
 The admin settings are read by
 [`AdminController`](controllers.md#admincontroller). A complete example is in
@@ -147,22 +147,22 @@ The admin settings are read by
 
 ## Properties
 
-| Name             | Type                                     | Description                                                                                         |
-| ---------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `basePath`       | `string`                                 | The project directory, see the [constructor](#constructor).                                         |
-| `config`         | `ApplicationConfig`                      | The configuration, with the defaults of `logger` and `assets` merged in and `app.keys` removed.     |
-| `knex`           | `Knex`                                   | The Knex instance.                                                                                  |
-| `server`         | `http.Server \| null`                    | The HTTP server while running.                                                                      |
-| `isRunning`      | `boolean`                                | Whether the server is running.                                                                      |
-| `validator`      | [`Validator`](validator.md)              | The shared validator of all models and actions.                                                     |
-| `router`         | `object`                                 | The router that holds the routes of the controllers.                                                |
-| `storages`       | `Record<string, Storage>`                | Storages by name. Augment `ApplicationStorages` for typed access.                                    |
-| `services`       | `Record<string, Service>`                | Services by name. Augment `ApplicationServices` for typed access.                                    |
-| `models`         | `Record<string, Class<Model>>`           | Model classes by class name.                                                                        |
-| `controllers`    | `Record<string, Controller>`             | Controllers by URL.                                                                                 |
-| `logger`         | `pino.Logger`                            | The logger of the current request (with its request id) inside a request, else the app's logger.   |
-| `requestStorage` | `AsyncLocalStorage`                      | The async local storage that carries the request locals through each request.                        |
-| `requestLocals`  | `{ transaction?, logger?, session? }`    | The locals of the current request: its transaction (on transacted routes), logger and session. `{}` outside of requests. |
+| Name             | Type                                  | Description                                                                                                              |
+| ---------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `basePath`       | `string`                              | The project directory, see the [constructor](#constructor).                                                              |
+| `config`         | `ApplicationConfig`                   | The configuration, with the defaults of `logger` and `assets` merged in and `app.keys` removed.                          |
+| `knex`           | `Knex`                                | The Knex instance.                                                                                                       |
+| `server`         | `http.Server \| null`                 | The HTTP server while running.                                                                                           |
+| `isRunning`      | `boolean`                             | Whether the server is running.                                                                                           |
+| `validator`      | [`Validator`](validator.md)           | The shared validator of all models and actions.                                                                          |
+| `router`         | `object`                              | The router that holds the routes of the controllers.                                                                     |
+| `storages`       | `Record<string, Storage>`             | Storages by name. Augment `ApplicationStorages` for typed access.                                                        |
+| `services`       | `Record<string, Service>`             | Services by name. Augment `ApplicationServices` for typed access.                                                        |
+| `models`         | `Record<string, Class<Model>>`        | Model classes by class name.                                                                                             |
+| `controllers`    | `Record<string, Controller>`          | Controllers by URL.                                                                                                      |
+| `logger`         | `pino.Logger`                         | The logger of the current request (with its request id) inside a request, else the app's logger.                         |
+| `requestStorage` | `AsyncLocalStorage`                   | The async local storage that carries the request locals through each request.                                            |
+| `requestLocals`  | `{ transaction?, logger?, session? }` | The locals of the current request: its transaction (on transacted routes), logger and session. `{}` outside of requests. |
 
 #### Example
 
@@ -234,19 +234,19 @@ model, each on its own, so that one failing doesn't stop the others, and then
 throws their errors together in an `AggregateError`. Runs every
 `config.app.deleteExpiredRecordsEvery` while the server is started, which
 emits the errors as `'error'` events, and can be called directly, e.g. from a
-script. Returns `Promise<void>`. *Hook.*
+script. Returns `Promise<void>`. _Hook._
 
 ## Events
 
 Listen through the `events` constructor option, or `app.on()`. Listeners may
 be async; `emit()` awaits them.
 
-| Event            | Arguments | Emitted                                                     |
-| ---------------- | --------- | ----------------------------------------------------------- |
-| `'before:start'` |           | In `start()`, after `setup()`, before the server listens.   |
-| `'after:start'`  |           | In `start()`, once the server listens.                      |
-| `'before:stop'`  |           | In `stop()`, before the server closes.                      |
-| `'after:stop'`   |           | In `stop()`, once the server is closed.                     |
+| Event            | Arguments     | Emitted                                                                                                                                                                                                                                        |
+| ---------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'before:start'` |               | In `start()`, after `setup()`, before the server listens.                                                                                                                                                                                      |
+| `'after:start'`  |               | In `start()`, once the server listens.                                                                                                                                                                                                         |
+| `'before:stop'`  |               | In `stop()`, before the server closes.                                                                                                                                                                                                         |
+| `'after:stop'`   |               | In `stop()`, once the server is closed.                                                                                                                                                                                                        |
 | `'error'`        | `error, ctx?` | On errors: failed requests (with their `ctx`; errors thrown in controller actions arrive wrapped in a `ResponseError`), failed logins, failed asset removals, and uploaded images whose size can't be read (with a message string as `error`). |
 
 ```js
@@ -335,10 +335,10 @@ without a name. Values that are neither are ignored, returning `null`.
 
 #### Parameters
 
-| Name      | Type                       | Description                                      |
-| --------- | -------------------------- | ------------------------------------------------ |
-| `config`  | `StorageConfig \| Storage` | A configuration (`{ type: 'disk' \| 's3', … }`) or an instance. |
-| `name`    | `string`                   | The storage's name.                              |
+| Name     | Type                       | Description                                                     |
+| -------- | -------------------------- | --------------------------------------------------------------- |
+| `config` | `StorageConfig \| Storage` | A configuration (`{ type: 'disk' \| 's3', … }`) or an instance. |
+| `name`   | `string`                   | The storage's name.                                             |
 
 Returns [`Storage`](storage.md) `| null`.
 
@@ -384,10 +384,10 @@ created with, `name` is ignored. Throws for anything else.
 
 #### Parameters
 
-| Name      | Type                         | Description                     |
-| --------- | ---------------------------- | ------------------------------- |
-| `service` | `Service \| Class<Service>`  | The service class or instance.  |
-| `name`    | `string`                     | The name of a service class.    |
+| Name      | Type                        | Description                    |
+| --------- | --------------------------- | ------------------------------ |
+| `service` | `Service \| Class<Service>` | The service class or instance. |
+| `name`    | `string`                    | The name of a service class.   |
 
 ### addServices()
 
@@ -456,8 +456,8 @@ the order of the models. Logs schemas and relations as set in
 
 #### Parameters
 
-| Name     | Type                                            | Description                     |
-| -------- | ----------------------------------------------- | ------------------------------- |
+| Name     | Type                                             | Description                                 |
+| -------- | ------------------------------------------------ | ------------------------------------------- |
 | `models` | `Record<string, Class<Model>> \| Class<Model>[]` | The model classes, e.g. a module namespace. |
 
 ### setupModels()
@@ -502,10 +502,10 @@ is registered under its `url`. See [Controllers](controllers.md).
 
 #### Parameters
 
-| Name         | Type                              | Description                                   |
-| ------------ | --------------------------------- | --------------------------------------------- |
-| `controller` | `Controller \| Class<Controller>` | The controller class or instance.             |
-| `namespace`  | `string`                          | Path namespace, e.g. `'admin'`.               |
+| Name         | Type                              | Description                       |
+| ------------ | --------------------------------- | --------------------------------- |
+| `controller` | `Controller \| Class<Controller>` | The controller class or instance. |
+| `namespace`  | `string`                          | Path namespace, e.g. `'admin'`.   |
 
 ### addControllers()
 
@@ -603,14 +603,14 @@ for unsupported HTTP methods.
 
 #### Parameters
 
-| Name          | Type                         | Description                                                  |
-| ------------- | ---------------------------- | ------------------------------------------------------------ |
-| `method`      | `HttpMethod`                 | `'get'`, `'post'`, `'put'`, `'patch'`, `'delete'`, …         |
-| `path`        | `string`                     | The route path.                                              |
-| `transacted`  | `boolean`                    | Whether requests run in a transaction (`ctx.transaction`).   |
-| `middlewares` | `Middleware \| Middleware[]` | The handlers, composed when several.                         |
-| `controller`  | `Controller \| null`         | The owning controller, exposed as `ctx.controller`.          |
-| `action`      | `object \| null`             | The action, exposed as `ctx.action`.                         |
+| Name          | Type                         | Description                                                |
+| ------------- | ---------------------------- | ---------------------------------------------------------- |
+| `method`      | `HttpMethod`                 | `'get'`, `'post'`, `'put'`, `'patch'`, `'delete'`, …       |
+| `path`        | `string`                     | The route path.                                            |
+| `transacted`  | `boolean`                    | Whether requests run in a transaction (`ctx.transaction`). |
+| `middlewares` | `Middleware \| Middleware[]` | The handlers, composed when several.                       |
+| `controller`  | `Controller \| null`         | The owning controller, exposed as `ctx.controller`.        |
+| `action`      | `object \| null`             | The action, exposed as `ctx.action`.                       |
 
 Matched requests get `ctx.route`, the route object `{ method, path,
 transacted, middleware, controller, action }`, and `ctx.params`.
@@ -685,7 +685,7 @@ throw app.createValidationError({ type, message, errors, options, json })
 ```
 
 Creates a [`ValidationError`](errors.md) from Ajv errors. `json` is only kept
-with `log.errors.json`. *Hook.* Returns [`ValidationError`](errors.md).
+with `log.errors.json`. _Hook._ Returns [`ValidationError`](errors.md).
 
 ### createDatabaseError()
 
@@ -694,7 +694,7 @@ const error = app.createDatabaseError(dbError)
 ```
 
 Wraps an Objection `DBError` in a [`DatabaseError`](errors.md), moving the SQL
-query out of the message (kept with `log.errors.sql`). *Hook.* Returns
+query out of the message (kept with `log.errors.sql`). _Hook._ Returns
 [`DatabaseError`](errors.md).
 
 ## Errors and logging
@@ -708,7 +708,7 @@ app.logError(error, ctx?)
 Logs an error, unless Koa's `app.silent` is set: errors with a status below
 500 at level `info`, others at `error`, through the request's logger if `ctx`
 is given. The app calls it for its `'error'` events, unless `log.errors` is
-`false`. *Hook.*
+`false`. _Hook._
 
 ### formatError()
 
@@ -718,7 +718,7 @@ const formatted = app.formatError(error)
 
 Prepares an error for logging: drops CORS headers, and the stack and cause with
 `log.errors.stack === false`; formats it with `util.inspect()` when pretty
-printing. *Hook.* Returns `unknown`: the error copy, or a string when pretty
+printing. _Hook._ Returns `unknown`: the error copy, or a string when pretty
 printing.
 
 ## Assets
@@ -746,11 +746,11 @@ calls it from [`deleteExpiredRecords()`](#deleteexpiredrecords).
 
 #### Parameters
 
-| Name            | Type                  | Description                                           |
-| --------------- | --------------------- | ----------------------------------------------------- |
-| `olderThan`     | `string \| number \| false` | Overrides `deleteUnusedAfter` and `deleteUnsavedAfter`. `false` keeps the assets. Invalid durations throw. |
-| `transaction`   | `Transaction`         | Transaction to run in.                                |
-| `concurrency`   | `number`              | Concurrent file removals. Default `8`.                |
+| Name          | Type                        | Description                                                                                                |
+| ------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `olderThan`   | `string \| number \| false` | Overrides `deleteUnusedAfter` and `deleteUnsavedAfter`. `false` keeps the assets. Invalid durations throw. |
+| `transaction` | `Transaction`               | Transaction to run in.                                                                                     |
+| `concurrency` | `number`                    | Concurrent file removals. Default `8`.                                                                     |
 
 Returns `Promise<Model[]>`: the released asset records. Files that failed to be
 removed carry the `error`, which is also emitted as `'error'`.
@@ -771,12 +771,12 @@ occurrence, as the reference counts count them.
 
 #### Parameters
 
-| Name          | Type          | Description                                     |
-| ------------- | ------------- | ----------------------------------------------- |
-| `models`      | `string[]`    | Names of the models to search. Default: all.    |
-| `storage`     | `string`      | Only find files of this storage.                |
-| `keys`        | `string[]`    | Only find files with these keys.                |
-| `transaction` | `Transaction` | Transaction to run in.                          |
+| Name          | Type          | Description                                  |
+| ------------- | ------------- | -------------------------------------------- |
+| `models`      | `string[]`    | Names of the models to search. Default: all. |
+| `storage`     | `string`      | Only find files of this storage.             |
+| `keys`        | `string[]`    | Only find files with these keys.             |
+| `transaction` | `Transaction` | Transaction to run in.                       |
 
 Returns `Promise<object[]>`: a reference for each occurrence, with the file's
 `key`, the `file` itself, the `model` name, the record's `id`, the `dataPath` of
@@ -804,10 +804,10 @@ command runs it.
 
 #### Parameters
 
-| Name          | Type          | Description                                 |
-| ------------- | ------------- | ------------------------------------------- |
-| `dryRun`      | `boolean`     | Only return what it would change.           |
-| `transaction` | `Transaction` | Transaction to run in.                      |
+| Name          | Type          | Description                       |
+| ------------- | ------------- | --------------------------------- |
+| `dryRun`      | `boolean`     | Only return what it would change. |
+| `transaction` | `Transaction` | Transaction to run in.            |
 
 Returns `Promise<{ changed, missing, lost }>`: `changed` holds `{ asset, count }` for
 each asset whose count differs, with the asset as it was and the counted
@@ -886,7 +886,7 @@ app.setupLogger()
 ```
 
 Creates the Pino logger from `config.logger`, pretty printed through pino-pretty
-when `prettyPrint` is set. *Hook.*
+when `prettyPrint` is set. _Hook._
 
 ### setupKnex()
 
@@ -895,7 +895,7 @@ app.setupKnex()
 ```
 
 Creates the Knex instance from `config.knex` when `knex.client` is set, with the
-snake case mappers and type parsers, and SQL logging with `log.sql`. *Hook.*
+snake case mappers and type parsers, and SQL logging with `log.sql`. _Hook._
 
 ### setupMiddleware()
 
@@ -908,7 +908,7 @@ context extensions, helmet, CORS, compression, ETag, request storage, route
 lookup, the passed `middleware`, body parser, transactions, session, the user
 handling, and the route handler. Middleware added later through
 Koa's `app.use()` sees the requests that the route handler passes on, e.g. those
-without a route. *Hook.*
+without a route. _Hook._
 
 ## Internal members
 
@@ -957,18 +957,18 @@ when the command succeeds, and `1` with the error printed otherwise.
 
 ### Commands
 
-| Command                | Module        | Description |
-| ---------------------- | ------------- | ----------- |
-| `db:migrate`           | configuration | Runs all pending migrations, as Knex's `migrate.latest()`. |
-| `db:rollback`          | configuration | Rolls back the last batch of migrations. |
-| `db:reset`             | configuration | Rolls back all batches, then runs all migrations again. |
-| `db:unlock`            | configuration | Frees the lock of the migrations table after an aborted migration. |
-| `db:seed`              | application   | Runs the seeds in the `seeds` folder. |
-| `db:create_migration`  | application   | Creates a migration for the tables of models. |
-| `db:list_asset_config` | application   | Prints the asset configuration of models. |
-| `db:recount_assets`    | application   | Recounts the references of all assets, see [`recountAssets()`](#recountassets). `--dry-run` only prints what it would change. |
-| `db:delete_expired_records` | application | Sets up the application and runs [`deleteExpiredRecords()`](#deleteexpiredrecords) once. Fails when a model's deletion fails. |
-| `console`              | application   | Starts the application with an interactive console. |
+| Command                     | Module        | Description                                                                                                                   |
+| --------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `db:migrate`                | configuration | Runs all pending migrations, as Knex's `migrate.latest()`.                                                                    |
+| `db:rollback`               | configuration | Rolls back the last batch of migrations.                                                                                      |
+| `db:reset`                  | configuration | Rolls back all batches, then runs all migrations again.                                                                       |
+| `db:unlock`                 | configuration | Frees the lock of the migrations table after an aborted migration.                                                            |
+| `db:seed`                   | application   | Runs the seeds in the `seeds` folder.                                                                                         |
+| `db:create_migration`       | application   | Creates a migration for the tables of models.                                                                                 |
+| `db:list_asset_config`      | application   | Prints the asset configuration of models.                                                                                     |
+| `db:recount_assets`         | application   | Recounts the references of all assets, see [`recountAssets()`](#recountassets). `--dry-run` only prints what it would change. |
+| `db:delete_expired_records` | application   | Sets up the application and runs [`deleteExpiredRecords()`](#deleteexpiredrecords) once. Fails when a model's deletion fails. |
+| `console`                   | application   | Starts the application with an interactive console.                                                                           |
 
 Migrations are read from the directory set in the `knex.migrations`
 configuration, see [Knex](https://knexjs.org/guide/migrations.html).

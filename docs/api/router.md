@@ -28,19 +28,19 @@ const { handler, params } = router.find('GET', '/books/12/chapters/3')
 new Router({ prefix, strict } = {})
 ```
 
-| Option | Default | Description |
-| ------ | ------- | ----------- |
-| `prefix` | – | A path prepended to all paths, of routes and of lookups alike. Unless `strict`, a trailing slash is removed from it. |
+| Option   | Default | Description                                                                                                             |
+| -------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `prefix` | –       | A path prepended to all paths, of routes and of lookups alike. Unless `strict`, a trailing slash is removed from it.    |
 | `strict` | `false` | Uses paths as they are. Otherwise a trailing slash is removed, except from `'/'`, and a leading slash added if missing. |
 
 ## Route paths
 
-| Segment | Matches | Param |
-| ------- | ------- | ----- |
-| `books` | The text itself. | – |
-| `:id` | One segment, up to the next `/`. | `id` |
-| `*` | One segment. | `$`, or `$0`, `$1`, … with several |
-| `**` | One or more segments, also in the middle of a path: `/covers/**/large`. | `$$`, or `$$0`, `$$1`, … with several |
+| Segment | Matches                                                                 | Param                                 |
+| ------- | ----------------------------------------------------------------------- | ------------------------------------- |
+| `books` | The text itself.                                                        | –                                     |
+| `:id`   | One segment, up to the next `/`.                                        | `id`                                  |
+| `*`     | One segment.                                                            | `$`, or `$0`, `$1`, … with several    |
+| `**`    | One or more segments, also in the middle of a path: `/covers/**/large`. | `$$`, or `$$0`, `$$1`, … with several |
 
 Static segments take precedence over params, and params over `**`. Of several
 `**` routes that match at the same position, the one with more segments wins,
@@ -105,13 +105,13 @@ Looks up the route of `method` and `path`. When one is found, it returns
 other methods with a route for `path`. `HEAD` requests without a `HEAD` route
 are found through the `GET` route, and `HEAD` is allowed wherever `GET` is.
 
-| Case | `status` |
-| ---- | -------- |
-| No method has a route for `path` | `404` |
-| `GET` and `HEAD` | `404` |
-| `OPTIONS` | `200` |
-| Other methods with routes, but not for `path` | `405` |
-| Methods without any routes | `501` |
+| Case                                          | `status` |
+| --------------------------------------------- | -------- |
+| No method has a route for `path`              | `404`    |
+| `GET` and `HEAD`                              | `404`    |
+| `OPTIONS`                                     | `200`    |
+| Other methods with routes, but not for `path` | `405`    |
+| Methods without any routes                    | `501`    |
 
 ```js
 app.use(async (ctx, next) => {

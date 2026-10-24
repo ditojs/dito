@@ -15,14 +15,14 @@ title: {
 
 ## Which events fire where
 
-| Schemas | Events |
-| ------- | ------ |
-| All schemas | `onChange()`, `onInput()` |
+| Schemas                                          | Events                                                                         |
+| ------------------------------------------------ | ------------------------------------------------------------------------------ |
+| All schemas                                      | `onChange()`, `onInput()`                                                      |
 | Views, forms, sections, panels and inlined forms | `onInitialize()`, `onDestroy()`, `onLoad()`, `onClick()` of the buttons inside |
-| Fields | `onFocus()`, `onBlur()` |
-| Buttons | `onClick()`, `onSuccess()`, `onError()` |
-| Forms | `onSuccess()`, `onError()`, `onApply()`, `onCancel()` |
-| Sections, inlined forms and trees | `onToggle()`, with `collapsed` |
+| Fields                                           | `onFocus()`, `onBlur()`                                                        |
+| Buttons                                          | `onClick()`, `onSuccess()`, `onError()`                                        |
+| Forms                                            | `onSuccess()`, `onError()`, `onApply()`, `onCancel()`                          |
+| Sections, inlined forms and trees                | `onToggle()`, with `collapsed`                                                 |
 
 - `onInput()` fires for each edit, e.g. per keystroke. `onChange()` fires once
   the edit is done, e.g. when the field loses focus, after the values that

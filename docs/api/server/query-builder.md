@@ -44,10 +44,10 @@ Adds scopes to apply when the query executes. Falsy names are skipped.
 
 #### Parameters
 
-| Name                 | Type        | Description                                                                                       |
-| -------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
-| `scopes`             | `string[]`  | Scope names, `^name` for graph scopes.                                                            |
-| `checkAllowedScopes` | `boolean`   | A trailing boolean: whether to check the scopes against [`allowScope()`](#allowscope). Default `true`. |
+| Name                 | Type       | Description                                                                                            |
+| -------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
+| `scopes`             | `string[]` | Scope names, `^name` for graph scopes.                                                                 |
+| `checkAllowedScopes` | `boolean`  | A trailing boolean: whether to check the scopes against [`allowScope()`](#allowscope). Default `true`. |
 
 Returns `this`. Throws a [`QueryBuilderError`](errors.md) for scopes that aren't
 allowed.
@@ -134,10 +134,10 @@ arguments reject the query with a [`ValidationError`](errors.md).
 
 #### Parameters
 
-| Name   | Type                          | Description                                    |
-| ------ | ----------------------------- | ---------------------------------------------- |
+| Name   | Type                          | Description                                               |
+| ------ | ----------------------------- | --------------------------------------------------------- |
 | `name` | `string \| { [name]: any[] }` | The filter name, or several filters with their arguments. |
-| `args` | `any[]`                       | The filter's arguments.                        |
+| `args` | `any[]`                       | The filter's arguments.                                   |
 
 Returns `this`. Throws a [`QueryBuilderError`](errors.md) for unknown filters
 and filters that aren't allowed.
@@ -169,21 +169,21 @@ in `[]` are handled like their name without it. Each parameter is handled by
 the handler registered under its name in [`QueryParameters`](#queryparameters).
 Does nothing without `params`.
 
-| Parameter | Value                                         | Effect                                                                                      |
-| --------- | --------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `scope`   | `string \| string[]`                          | [`applyScope()`](#applyscope).                                                              |
-| `filter`  | `string \| string[]`                          | [`applyFilter()`](#applyfilter), each as `name:args`, with the arguments as JSON (`title:"contains","dune"`). |
-| `range`   | `[from, to] \| 'from,to'`                     | Objection.js' `range(from, to)`, resolving to `{ total, results }`.                          |
-| `limit`   | `number`                                      | `limit()`.                                                                                  |
-| `offset`  | `number`                                      | `offset()`.                                                                                 |
-| `order`   | `string \| string[]`                          | `orderBy()`, each as `'property [asc\|desc] [first\|last]'`.                                |
+| Parameter | Value                     | Effect                                                                                                        |
+| --------- | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `scope`   | `string \| string[]`      | [`applyScope()`](#applyscope).                                                                                |
+| `filter`  | `string \| string[]`      | [`applyFilter()`](#applyfilter), each as `name:args`, with the arguments as JSON (`title:"contains","dune"`). |
+| `range`   | `[from, to] \| 'from,to'` | Objection.js' `range(from, to)`, resolving to `{ total, results }`.                                           |
+| `limit`   | `number`                  | `limit()`.                                                                                                    |
+| `offset`  | `number`                  | `offset()`.                                                                                                   |
+| `order`   | `string \| string[]`      | `orderBy()`, each as `'property [asc\|desc] [first\|last]'`.                                                  |
 
 #### Parameters
 
-| Name         | Type                                   | Description                                                             |
-| ------------ | -------------------------------------- | ----------------------------------------------------------------------- |
-| `params`     | `object \| null`                       | The parameters.                                                         |
-| `allowParam` | `string[] \| { [name]: boolean }`      | The parameters to allow. Default: all registered ones.                  |
+| Name         | Type                              | Description                                            |
+| ------------ | --------------------------------- | ------------------------------------------------------ |
+| `params`     | `object \| null`                  | The parameters.                                        |
+| `allowParam` | `string[] \| { [name]: boolean }` | The parameters to allow. Default: all registered ones. |
 
 Returns `this`. Throws a [`QueryBuilderError`](errors.md) for parameters that
 aren't allowed or registered, and for invalid values.
@@ -233,10 +233,10 @@ path goes beyond a property that isn't of type `object` or `array`.
 
 #### Parameters
 
-| Name       | Type                  | Description                                  |
-| ---------- | --------------------- | -------------------------------------------- |
-| `dataPath` | `string \| string[]`  | The data path, e.g. `'chapters/*/title'`.    |
-| `options`  | `WithGraphOptions`    | Options for [`withGraph()`](#withgraph).     |
+| Name       | Type                 | Description                               |
+| ---------- | -------------------- | ----------------------------------------- |
+| `dataPath` | `string \| string[]` | The data path, e.g. `'chapters/*/title'`. |
+| `options`  | `WithGraphOptions`   | Options for [`withGraph()`](#withgraph).  |
 
 Returns `this`.
 
@@ -369,9 +369,9 @@ has `where()` conditions.
 
 #### Parameters
 
-| Name   | Type                 | Description          |
-| ------ | -------------------- | -------------------- |
-| `data` | `object \| object[]` | The model(s).        |
+| Name   | Type                 | Description   |
+| ------ | -------------------- | ------------- |
+| `data` | `object \| object[]` | The model(s). |
 
 Returns `QueryBuilder` resolving to the model(s).
 
@@ -442,32 +442,32 @@ Objection.js' `insertGraph()` / `upsertGraph()`:
   [`NotFoundError`](errors.md).
 - `…AndFetch…()` methods refetch the graph.
 
-| Method          | Default options                                                                                                   |
-| --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `insert…`       | `relate: true`, `allowRefs: true`                                                                                 |
-| `upsert…`       | `insert…` plus `fetchStrategy: 'OnlyNeeded'`, `insertMissing: true`, `unrelate: true`                             |
-| `patch…`        | `upsert…` with `insertMissing: false`                                                                             |
-| `update…`       | `patch…` plus `update: true`                                                                                      |
+| Method    | Default options                                                                       |
+| --------- | ------------------------------------------------------------------------------------- |
+| `insert…` | `relate: true`, `allowRefs: true`                                                     |
+| `upsert…` | `insert…` plus `fetchStrategy: 'OnlyNeeded'`, `insertMissing: true`, `unrelate: true` |
+| `patch…`  | `upsert…` with `insertMissing: false`                                                 |
+| `update…` | `patch…` plus `update: true`                                                          |
 
 #### Parameters
 
-| Name      | Type                | Description                                                     |
-| --------- | ------------------- | --------------------------------------------------------------- |
-| `id`      | `Id \| Id[]`        | The root model's id, an array for composite ids (`…ById()` only). |
-| `data`    | `object \| object[]` | The graph(s).                                                  |
-| `options` | `DitoGraphOptions`  | Overrides of the defaults, see below.                           |
+| Name      | Type                 | Description                                                       |
+| --------- | -------------------- | ----------------------------------------------------------------- |
+| `id`      | `Id \| Id[]`         | The root model's id, an array for composite ids (`…ById()` only). |
+| `data`    | `object \| object[]` | The graph(s).                                                     |
+| `options` | `DitoGraphOptions`   | Overrides of the defaults, see below.                             |
 
 `DitoGraphOptions`:
 
-| Key             | Type                                                 | Description                                                         |
-| --------------- | ---------------------------------------------------- | ------------------------------------------------------------------- |
-| `fetchStrategy` | `'OnlyNeeded' \| 'OnlyIdentifiers' \| 'Everything'`  | What upserts fetch to find the changes.                             |
-| `relate`        | `boolean`                                            | Relate references instead of inserting them.                        |
-| `allowRefs`     | `boolean`                                            | Allow `#ref` references.                                            |
-| `insertMissing` | `boolean`                                            | Insert models with ids that don't exist yet.                        |
-| `unrelate`      | `boolean`                                            | Unrelate models missing from the graph instead of deleting them.    |
-| `update`        | `boolean`                                            | Update instead of patch.                                            |
-| `noInsert`, `noUpdate`, `noDelete`, `noRelate`, `noUnrelate` | `boolean \| string[]` | Disable these operations, for the whole graph or the given relation paths. |
+| Key                                                          | Type                                                | Description                                                                |
+| ------------------------------------------------------------ | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| `fetchStrategy`                                              | `'OnlyNeeded' \| 'OnlyIdentifiers' \| 'Everything'` | What upserts fetch to find the changes.                                    |
+| `relate`                                                     | `boolean`                                           | Relate references instead of inserting them.                               |
+| `allowRefs`                                                  | `boolean`                                           | Allow `#ref` references.                                                   |
+| `insertMissing`                                              | `boolean`                                           | Insert models with ids that don't exist yet.                               |
+| `unrelate`                                                   | `boolean`                                           | Unrelate models missing from the graph instead of deleting them.           |
+| `update`                                                     | `boolean`                                           | Update instead of patch.                                                   |
+| `noInsert`, `noUpdate`, `noDelete`, `noRelate`, `noUnrelate` | `boolean \| string[]`                               | Disable these operations, for the whole graph or the given relation paths. |
 
 Returns `QueryBuilder` resolving to the model(s).
 
@@ -529,13 +529,13 @@ import { QueryParameters } from '@ditojs/server'
 
 The registry of the parameter handlers of [`find()`](#find).
 
-| Method                          | Description                                                     |
-| ------------------------------- | --------------------------------------------------------------- |
-| `register(name, handler)`       | Registers a handler `(query, key, value) => void`.              |
-| `register({ [name]: handler })` | Registers several.                                              |
-| `get(name)`                     | The handler, or `undefined`.                                    |
-| `has(name)`                     | Whether a handler is registered.                                |
-| `getAllowed()`                  | `{ [name]: true }` for all registered parameters.               |
+| Method                          | Description                                        |
+| ------------------------------- | -------------------------------------------------- |
+| `register(name, handler)`       | Registers a handler `(query, key, value) => void`. |
+| `register({ [name]: handler })` | Registers several.                                 |
+| `get(name)`                     | The handler, or `undefined`.                       |
+| `has(name)`                     | Whether a handler is registered.                   |
+| `getAllowed()`                  | `{ [name]: true }` for all registered parameters.  |
 
 ```js
 QueryParameters.register('author', (query, key, value) => {
@@ -560,10 +560,10 @@ the `QueryFilterTypes` interface for TypeScript.
 
 Built-in filter types:
 
-| Type           | Arguments           | Effect                                                                                                         |
-| -------------- | ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Type           | Arguments           | Effect                                                                                                                                                                     |
+| -------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `'text'`       | `(operator?, text)` | Case-insensitive match: `'contains'`, `'equals'`, `'starts-with'` or `'ends-with'`. A missing, `null` or empty operator matches like `'contains'`. Empty text matches all. |
-| `'date-range'` | `(from, to)`        | Dates between `from` and `to`, either of them `null` for an open range.                                        |
+| `'date-range'` | `(from, to)`        | Dates between `from` and `to`, either of them `null` for an open range.                                                                                                    |
 
 ```js
 QueryFilters.register('prefix', {

@@ -22,11 +22,11 @@ create one yourself, e.g. in tests, pass its configuration as `config`:
 
 #### Parameters
 
-| Name   | Type                            | Description                                                                                                                                       |
-| ------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app`  | [`Application`](application.md) | The application.                                                                                                                                  |
-| `name` | `string`                        | The name. Default: the class name. A `Service` suffix is removed and the result camel-cased: `'MailService'` → `'mail'`, `'search-index'` → `'searchIndex'`. |
-| `config` | `object`                      | The configuration. Default: `null`; the application passes none and sets it through the internal `configure()` once the service exists, as class fields can override `name`. |
+| Name     | Type                            | Description                                                                                                                                                                  |
+| -------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app`    | [`Application`](application.md) | The application.                                                                                                                                                             |
+| `name`   | `string`                        | The name. Default: the class name. A `Service` suffix is removed and the result camel-cased: `'MailService'` → `'mail'`, `'search-index'` → `'searchIndex'`.                 |
+| `config` | `object`                        | The configuration. Default: `null`; the application passes none and sets it through the internal `configure()` once the service exists, as class fields can override `name`. |
 
 The application passes the key under which the service class was given as
 `name`, and registers the service under `service.name` after construction. A
@@ -43,12 +43,12 @@ The logger keeps the name passed to the constructor.
 
 ## Properties
 
-| Name            | Type                            | Description                                                                  |
-| --------------- | ------------------------------- | ---------------------------------------------------------------------------- |
-| `app`           | [`Application`](application.md) | The application.                                                             |
-| `name`          | `string`                        | The name under which `app.services` holds the service.                       |
-| `config`        | `object \| null`                | The configuration, set before [`initialize()`](#initialize).                 |
-| `isInitialized` | `boolean`                       | Set to `true` by `app.setupServices()`.                                      |
+| Name            | Type                            | Description                                                                                    |
+| --------------- | ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `app`           | [`Application`](application.md) | The application.                                                                               |
+| `name`          | `string`                        | The name under which `app.services` holds the service.                                         |
+| `config`        | `object \| null`                | The configuration, set before [`initialize()`](#initialize).                                   |
+| `isInitialized` | `boolean`                       | Set to `true` by `app.setupServices()`.                                                        |
 | `logger`        | `pino.Logger`                   | A child of [`app.logger`](application.md#properties), named after the hyphenated service name. |
 
 ## Methods
@@ -69,7 +69,7 @@ by [`app.setupServices()`](application.md#setupservices): override
 await service.initialize()
 ```
 
-Asynchronous setup, after `config` is set. Does nothing by default. *Hook.*
+Asynchronous setup, after `config` is set. Does nothing by default. _Hook._
 Returns `Promise<void>`.
 
 ### start()
@@ -79,7 +79,7 @@ await service.start()
 ```
 
 Called on the application's `'before:start'` event. Does nothing by default.
-*Hook.* Returns `Promise<void>`.
+_Hook._ Returns `Promise<void>`.
 
 ### stop()
 
@@ -88,7 +88,7 @@ await service.stop()
 ```
 
 Called on the application's `'after:stop'` event. Does nothing by default.
-*Hook.* Returns `Promise<void>`.
+_Hook._ Returns `Promise<void>`.
 
 ## PasskeyService
 
@@ -106,10 +106,10 @@ Registered under any name, it adds the passkey actions of
 `ContextStore`, and imports the optional peer dependencies
 `@simplewebauthn/server` and `aaguids`, else the setup fails.
 
-| Key       | Type       | Default | Description |
-| --------- | ---------- | ------- | ----------- |
-| `domain`  | `string`   | The domain of the request | The domain that the passkeys belong to, the WebAuthn relying party id, e.g. `'example.com'` for an API on `api.example.com` whose passkeys are shared with the pages of `example.com` and its other subdomains. |
-| `origins` | `string[]` | The pages of `domain` and its subdomains | The origins of the pages that may use the passkeys, e.g. to exclude untrusted subdomains. By default, the pages need https, or `localhost`. |
+| Key       | Type       | Default                                  | Description                                                                                                                                                                                                     |
+| --------- | ---------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain`  | `string`   | The domain of the request                | The domain that the passkeys belong to, the WebAuthn relying party id, e.g. `'example.com'` for an API on `api.example.com` whose passkeys are shared with the pages of `example.com` and its other subdomains. |
+| `origins` | `string[]` | The pages of `domain` and its subdomains | The origins of the pages that may use the passkeys, e.g. to exclude untrusted subdomains. By default, the pages need https, or `localhost`.                                                                     |
 
 Passkeys are bound to the exact domain they were registered on: without
 `domain`, those of `www.example.com` don't work on `example.com` and the other
@@ -132,8 +132,8 @@ Registered under any name, it adds two-factor authentication with TOTP to
 It needs the same configuration as [`PasskeyService`](#passkeyservice), and
 imports the optional peer dependency `otpauth`, else the setup fails.
 
-| Key      | Type     | Description |
-| -------- | -------- | ----------- |
+| Key      | Type     | Description                                                                                                                 |
+| -------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `secret` | `string` | Required. A long random string that encrypts the TOTP secrets and hashes the backup codes: changing it makes them unusable. |
 
 ## Typed services

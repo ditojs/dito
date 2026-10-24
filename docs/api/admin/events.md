@@ -37,12 +37,12 @@ const form = {
 
 ## Return values
 
-| Event | Return value |
-| ----- | ------------ |
-| `input`, `change`, `click` | `false` stops the event from bubbling |
-| `click` of buttons | Any value other than `undefined` prevents the default, e.g. buttons with a `resource` submitting it |
+| Event                                   | Return value                                                                                        |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `input`, `change`, `click`              | `false` stops the event from bubbling                                                               |
+| `click` of buttons                      | Any value other than `undefined` prevents the default, e.g. buttons with a `resource` submitting it |
 | `success`, `error` of buttons and forms | Any value other than `undefined` suppresses dito's notification, as does calling `context.notify()` |
-| All others | Ignored |
+| All others                              | Ignored                                                                                             |
 
 ## Bubbling
 

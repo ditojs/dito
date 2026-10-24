@@ -32,20 +32,20 @@ The model's properties as JSON schemas, extended by these keywords. The `id`
 property (`type: 'integer', primary: true`), the foreign keys of relations, and
 Objection's `#id` / `#ref` properties are added automatically.
 
-| Key        | Type                | Description                                                                                                                       |
-| ---------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `type`     | `SchemaType`        | `'string'`, `'text'`, `'number'`, `'integer'`, `'boolean'`, `'object'`, `'array'`, `'null'`, `'date'`, `'datetime'`, `'timestamp'`, `'color'` (hex colors: `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`), `'asset'` (an [asset file](storage.md#assetfileobject)), another [registered type](validator.md#types), or the name of a model, validated as that model's data. |
-| `required` | `boolean`           | Requires a non-empty value: neither `null`, `undefined` nor `''`.                                                                 |
-| `default`  | `any`               | The default value. `'now()'` is only used by migrations, not by validation.                                                       |
-| `nullable` | `boolean`           | Allows `null`, and makes the column nullable in migrations.                                                                       |
-| `primary`  | `boolean`           | Marks the primary key. Several primary properties form a composite key.                                                           |
-| `foreign`  | `boolean`           | Marks a foreign key; migrations add a reference to the related table.                                                             |
-| `index`    | `boolean`           | Adds an index in migrations.                                                                                                      |
-| `unique`   | `boolean \| string` | Adds a unique constraint in migrations. Properties with the same string share one constraint.                                    |
-| `unsigned` | `boolean`           | Makes an integer column unsigned in migrations.                                                                                   |
-| `computed` | `boolean`           | A value that has no column, set by a getter or a `select … as`. Removed before writing to the database.                          |
-| `hidden`   | `boolean`           | Removed when converting to JSON, e.g. for secrets.                                                                                |
-| `specificType` | `string`        | A database-specific column type for migrations.                                                                                   |
+| Key            | Type                | Description                                                                                                                                                                                                                                                                                                                                                          |
+| -------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`         | `SchemaType`        | `'string'`, `'text'`, `'number'`, `'integer'`, `'boolean'`, `'object'`, `'array'`, `'null'`, `'date'`, `'datetime'`, `'timestamp'`, `'color'` (hex colors: `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`), `'asset'` (an [asset file](storage.md#assetfileobject)), another [registered type](validator.md#types), or the name of a model, validated as that model's data. |
+| `required`     | `boolean`           | Requires a non-empty value: neither `null`, `undefined` nor `''`.                                                                                                                                                                                                                                                                                                    |
+| `default`      | `any`               | The default value. `'now()'` is only used by migrations, not by validation.                                                                                                                                                                                                                                                                                          |
+| `nullable`     | `boolean`           | Allows `null`, and makes the column nullable in migrations.                                                                                                                                                                                                                                                                                                          |
+| `primary`      | `boolean`           | Marks the primary key. Several primary properties form a composite key.                                                                                                                                                                                                                                                                                              |
+| `foreign`      | `boolean`           | Marks a foreign key; migrations add a reference to the related table.                                                                                                                                                                                                                                                                                                |
+| `index`        | `boolean`           | Adds an index in migrations.                                                                                                                                                                                                                                                                                                                                         |
+| `unique`       | `boolean \| string` | Adds a unique constraint in migrations. Properties with the same string share one constraint.                                                                                                                                                                                                                                                                        |
+| `unsigned`     | `boolean`           | Makes an integer column unsigned in migrations.                                                                                                                                                                                                                                                                                                                      |
+| `computed`     | `boolean`           | A value that has no column, set by a getter or a `select … as`. Removed before writing to the database.                                                                                                                                                                                                                                                              |
+| `hidden`       | `boolean`           | Removed when converting to JSON, e.g. for secrets.                                                                                                                                                                                                                                                                                                                   |
+| `specificType` | `string`            | A database-specific column type for migrations.                                                                                                                                                                                                                                                                                                                      |
 
 The keywords of the [validator](validator.md), e.g. `validate`,
 `validateAsync`, `instanceof`, `range` and `relate`, are available as well.
@@ -73,20 +73,20 @@ static relations = {
 The model's relations to other models, see
 [Relations](../../guide/server/relations.md).
 
-| Key          | Type                                                                        | Description                                                                                                         |
-| ------------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `relation`   | `'belongsTo' \| 'hasOne' \| 'hasMany' \| 'manyToMany' \| 'hasOneThrough'`   | The relation type.                                                                                                  |
-| `from`       | `string`                                                                    | `'Model.property'` on this side.                                                                                    |
-| `to`         | `string`                                                                    | `'Model.property'` on the related side.                                                                             |
-| `through`    | `{ from, to, extra? }`                                                      | The join of `manyToMany` / `hasOneThrough`: `from` / `to` name the columns of a join table (`'BookGenre.bookId'`), or the properties of a join model, which is then used for the join. `extra` lists join columns to add to the related models. Omitted: a join table named after both models, `BookGenre` with `bookId` and `genreId` for `Book.id` → `Genre.id` (`book_genre` with `normalizeDbNames`); it needs no model of its own. See [Join models and tables](../../guide/server/relations.md#join-models-and-tables). |
-| `inverse`    | `boolean`                                                                   | Marks the inverse side of a relation without `through`, so that it uses the same join table as the other side: `Genre.books` with `inverse: true` also uses `BookGenre`. |
-| `modelClass` | `string \| Class<Model>`                                                    | Overrides the related model taken from `to`.                                                                        |
-| `scope`      | `string \| string[]`                                                        | Scopes of the related model applied when loading the relation.                                                      |
-| `filter`     | `string \| { [name]: args[] } \| Function`                                  | Filters of the related model applied when loading. A function is an alias of `modify`.                              |
-| `modify`     | `(query) => void \| object`                                                 | Modifies the relation's query. An object is applied through [`find()`](query-builder.md#find).                     |
-| `nullable`   | `boolean`                                                                   | Makes the automatically added foreign key of a `belongsTo` relation nullable.                                       |
-| `owner`      | `boolean`                                                                   | The relation owns its models: Dito.js graph methods insert and delete them instead of relating and unrelating.     |
-| `graphOptions` | `DitoGraphOptions`                                                        | Overrides the options of the Dito.js graph methods for this relation. Without it, `owner: true` implies `{ relate: false, unrelate: false }`. |
+| Key            | Type                                                                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| -------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `relation`     | `'belongsTo' \| 'hasOne' \| 'hasMany' \| 'manyToMany' \| 'hasOneThrough'` | The relation type.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `from`         | `string`                                                                  | `'Model.property'` on this side.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `to`           | `string`                                                                  | `'Model.property'` on the related side.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `through`      | `{ from, to, extra? }`                                                    | The join of `manyToMany` / `hasOneThrough`: `from` / `to` name the columns of a join table (`'BookGenre.bookId'`), or the properties of a join model, which is then used for the join. `extra` lists join columns to add to the related models. Omitted: a join table named after both models, `BookGenre` with `bookId` and `genreId` for `Book.id` → `Genre.id` (`book_genre` with `normalizeDbNames`); it needs no model of its own. See [Join models and tables](../../guide/server/relations.md#join-models-and-tables). |
+| `inverse`      | `boolean`                                                                 | Marks the inverse side of a relation without `through`, so that it uses the same join table as the other side: `Genre.books` with `inverse: true` also uses `BookGenre`.                                                                                                                                                                                                                                                                                                                                                      |
+| `modelClass`   | `string \| Class<Model>`                                                  | Overrides the related model taken from `to`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `scope`        | `string \| string[]`                                                      | Scopes of the related model applied when loading the relation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `filter`       | `string \| { [name]: args[] } \| Function`                                | Filters of the related model applied when loading. A function is an alias of `modify`.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `modify`       | `(query) => void \| object`                                               | Modifies the relation's query. An object is applied through [`find()`](query-builder.md#find).                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `nullable`     | `boolean`                                                                 | Makes the automatically added foreign key of a `belongsTo` relation nullable.                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `owner`        | `boolean`                                                                 | The relation owns its models: Dito.js graph methods insert and delete them instead of relating and unrelating.                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `graphOptions` | `DitoGraphOptions`                                                        | Overrides the options of the Dito.js graph methods for this relation. Without it, `owner: true` implies `{ relate: false, unrelate: false }`.                                                                                                                                                                                                                                                                                                                                                                                 |
 
 A relation whose `relation` is an Objection.js relation class and that has a
 `join` is passed to Objection.js unchanged. Other keys are passed on to
@@ -318,24 +318,24 @@ the inherited one.
 
 ## Static properties
 
-| Name                       | Type                     | Description                                                                                  |
-| -------------------------- | ------------------------ | -------------------------------------------------------------------------------------------- |
-| `app`                      | `Application`            | The application the model is added to.                                                       |
-| `isInitialized`            | `boolean`                | Whether the application has initialized the model.                                           |
-| `QueryBuilder`             | `Class<QueryBuilder>`    | Dito.js' [`QueryBuilder`](query-builder.md), used by all queries of the model.              |
-| `tableName`                | `string`                 | The class name without a `Model` suffix (`BookModel` → `Book`).                              |
-| `idColumn`                 | `string \| string[]`     | The `primary` properties, else `'id'`.                                                       |
-| `jsonSchema`               | `object`                 | The JSON schema built from the definitions, with `$id` set to the class name.               |
-| `relationMappings`         | `object`                 | The Objection.js relation mappings built from `relations`.                                   |
-| `jsonAttributes`           | `string[]`               | Properties of type `object` / `array` that aren't computed and have no `specificType`.       |
-| `booleanAttributes`        | `string[]`               | Boolean properties, converted from and to integers on SQLite.                                |
-| `dateAttributes`           | `string[]`               | `date` properties, stored and returned as plain dates (`'2026-05-14'`), parsed as local midnight. |
-| `datetimeAttributes`       | `string[]`               | `datetime` and `timestamp` properties.                                                       |
-| `computedAttributes`       | `string[]`               | Computed properties. `virtualAttributes` returns the same.                                    |
-| `hiddenAttributes`         | `string[]`               | Hidden properties.                                                                           |
-| `cloneObjectAttributes`    | `boolean`                | Objection.js option, `false`.                                                                |
-| `pickJsonSchemaProperties` | `boolean`                | Objection.js option, `true`: only schema properties are written to the database.             |
-| `useLimitInFirst`          | `boolean`                | Objection.js option, `true`.                                                                 |
+| Name                       | Type                  | Description                                                                                       |
+| -------------------------- | --------------------- | ------------------------------------------------------------------------------------------------- |
+| `app`                      | `Application`         | The application the model is added to.                                                            |
+| `isInitialized`            | `boolean`             | Whether the application has initialized the model.                                                |
+| `QueryBuilder`             | `Class<QueryBuilder>` | Dito.js' [`QueryBuilder`](query-builder.md), used by all queries of the model.                    |
+| `tableName`                | `string`              | The class name without a `Model` suffix (`BookModel` → `Book`).                                   |
+| `idColumn`                 | `string \| string[]`  | The `primary` properties, else `'id'`.                                                            |
+| `jsonSchema`               | `object`              | The JSON schema built from the definitions, with `$id` set to the class name.                     |
+| `relationMappings`         | `object`              | The Objection.js relation mappings built from `relations`.                                        |
+| `jsonAttributes`           | `string[]`            | Properties of type `object` / `array` that aren't computed and have no `specificType`.            |
+| `booleanAttributes`        | `string[]`            | Boolean properties, converted from and to integers on SQLite.                                     |
+| `dateAttributes`           | `string[]`            | `date` properties, stored and returned as plain dates (`'2026-05-14'`), parsed as local midnight. |
+| `datetimeAttributes`       | `string[]`            | `datetime` and `timestamp` properties.                                                            |
+| `computedAttributes`       | `string[]`            | Computed properties. `virtualAttributes` returns the same.                                        |
+| `hiddenAttributes`         | `string[]`            | Hidden properties.                                                                                |
+| `cloneObjectAttributes`    | `boolean`             | Objection.js option, `false`.                                                                     |
+| `pickJsonSchemaProperties` | `boolean`             | Objection.js option, `true`: only schema properties are written to the database.                  |
+| `useLimitInFirst`          | `boolean`             | Objection.js option, `true`.                                                                      |
 
 ## Constructor
 
@@ -417,7 +417,7 @@ export class Visit extends Model {
 Deletes the model's expired records. Does nothing on `Model`; `SessionMixin`
 deletes expired sessions and `AssetMixin` releases unused assets.
 [`app.deleteExpiredRecords()`](application.md#deleteexpiredrecords) calls it on
-every model, every hour by default. Returns `Promise<void>`. *Hook.*
+every model, every hour by default. Returns `Promise<void>`. _Hook._
 
 ### `static` fromJson()
 
@@ -431,9 +431,9 @@ Objection.js' `fromJson()`. With `async: true`, asynchronous validation
 
 #### Parameters
 
-| Name      | Type           | Description                                                                 |
-| --------- | -------------- | --------------------------------------------------------------------------- |
-| `json`    | `object`       | The data.                                                                   |
+| Name      | Type           | Description                                                                                |
+| --------- | -------------- | ------------------------------------------------------------------------------------------ |
+| `json`    | `object`       | The data.                                                                                  |
 | `options` | `ModelOptions` | Objection.js' model options, plus `async`, `graph` (validate relations too) and `mutable`. |
 
 Returns `Model | Promise<Model>`.
@@ -534,15 +534,15 @@ a `ModelError`.
 
 #### Return value
 
-| Key              | Type                     | Description                                                  |
-| ---------------- | ------------------------ | ------------------------------------------------------------ |
-| `property`       | `ModelProperty \| null`  | The property reached.                                        |
-| `relation`       | `Relation \| null`       | The last relation passed.                                    |
-| `wildcard`       | `'*' \| '**' \| null`    | A root wildcard.                                             |
-| `dataPath`       | `string \| null`         | The matched part of the path.                                |
-| `nestedDataPath` | `string \| null`         | The rest, inside the property's JSON.                        |
-| `name`           | `string`                 | The property or relation name, `'*'` for wildcards.          |
-| `expression`     | `string \| null`         | A relation expression that loads the data path.              |
+| Key              | Type                    | Description                                         |
+| ---------------- | ----------------------- | --------------------------------------------------- |
+| `property`       | `ModelProperty \| null` | The property reached.                               |
+| `relation`       | `Relation \| null`      | The last relation passed.                           |
+| `wildcard`       | `'*' \| '**' \| null`   | A root wildcard.                                    |
+| `dataPath`       | `string \| null`        | The matched part of the path.                       |
+| `nestedDataPath` | `string \| null`        | The rest, inside the property's JSON.               |
+| `name`           | `string`                | The property or relation name, `'*'` for wildcards. |
+| `expression`     | `string \| null`        | A relation expression that loads the data path.     |
 
 ### `static` filterGraph()
 
@@ -614,7 +614,7 @@ static async initialize()
 
 Called once by [`app.setupModels()`](application.md#setupmodels), after
 `setup()`, and awaited. For asynchronous setup; no need to call
-`super.initialize()`. *Hook.*
+`super.initialize()`. _Hook._
 
 ```js
 export class Genre extends Model {
@@ -633,7 +633,7 @@ static async beforeInsert(args)
 `beforeFind()`, `afterFind()`, `beforeInsert()`, `afterInsert()`,
 `beforeUpdate()`, `afterUpdate()`, `beforeDelete()` and `afterDelete()` are
 Objection.js' static hooks, which emit the [`hooks`](#static-hooks) of the same
-name. Prefer `hooks`; when overriding these, call `super` to keep them. *Hook.*
+name. Prefer `hooks`; when overriding these, call `super` to keep them. _Hook._
 
 ### `static` createNotFoundError()
 
@@ -642,7 +642,7 @@ static createNotFoundError(ctx, error?)
 ```
 
 Creates the [`NotFoundError`](errors.md) of `findById()`, `…ById()` and
-`throwIfNotFound()`, reporting the id when known. *Hook.*
+`throwIfNotFound()`, reporting the id when known. _Hook._
 
 ### `static` createValidationError()
 
@@ -652,7 +652,7 @@ static createValidationError({ type, message, errors, options, json })
 
 Creates the errors of validation (`ValidationError`, through
 [`app.createValidationError()`](application.md#createvalidationerror)), relation
-expressions (`RelationError`) and invalid graphs (`GraphError`). *Hook.*
+expressions (`RelationError`) and invalid graphs (`GraphError`). _Hook._
 
 ### `static` createValidator()
 
@@ -685,9 +685,9 @@ Return their argument: name conversion happens in Knex, see
 
 ## Instance properties
 
-| Name     | Type          | Description                       |
-| -------- | ------------- | --------------------------------- |
-| `$app`   | `Application` | The model class's application.    |
+| Name   | Type          | Description                    |
+| ------ | ------------- | ------------------------------ |
+| `$app` | `Application` | The model class's application. |
 
 ### Relation accessors
 
@@ -702,12 +702,12 @@ const all = await Book.$chapters.query().for([1, 2])
 Each relation `name` adds a `$name` accessor to the class and its instances,
 with:
 
-| Member             | Description                                                                                   |
-| ------------------ | --------------------------------------------------------------------------------------------- |
-| `query(trx?)`      | `Model.relatedQuery(name)` on the class, `model.$relatedQuery(name)` on instances.            |
-| `load(…)`          | `Model.fetchGraph(models, name, …)` on the class, `model.$fetchGraph(name, …)` on instances.  |
-| `joinModelClass`   | The join model class of `through` relations, with the query short-cuts.                      |
-| query short-cuts   | The methods of [Query short-cuts](#query-short-cuts), on the related query.                   |
+| Member           | Description                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------- |
+| `query(trx?)`    | `Model.relatedQuery(name)` on the class, `model.$relatedQuery(name)` on instances.           |
+| `load(…)`        | `Model.fetchGraph(models, name, …)` on the class, `model.$fetchGraph(name, …)` on instances. |
+| `joinModelClass` | The join model class of `through` relations, with the query short-cuts.                      |
+| query short-cuts | The methods of [Query short-cuts](#query-short-cuts), on the related query.                  |
 
 Defining a property `$name` that clashes with an accessor throws a
 `RelationError`.
@@ -722,7 +722,7 @@ $initialize()
 
 Called by `$setJson()`, e.g. through `fromJson()`, after the data is set and
 before it's validated, e.g. to derive values. Not called for patches and
-references. *Hook.*
+references. _Hook._
 
 ```js
 export class Book extends Model {
@@ -815,8 +815,8 @@ $formatDatabaseJson(json)
 ```
 
 Converts data for the database: datetimes to ISO strings, dates to plain dates,
-booleans to integers on SQLite; removes computed properties. *Hook, call
-`super`.*
+booleans to integers on SQLite; removes computed properties. _Hook, call
+`super`._
 
 ### $parseDatabaseJson()
 
@@ -824,8 +824,8 @@ booleans to integers on SQLite; removes computed properties. *Hook, call
 $parseDatabaseJson(json)
 ```
 
-Converts data from the database: booleans on SQLite, then `$parseJson()`. *Hook,
-call `super`.*
+Converts data from the database: booleans on SQLite, then `$parseJson()`. _Hook,
+call `super`._
 
 ### $parseJson()
 
@@ -836,7 +836,7 @@ $parseJson(json, { trusted = false } = {})
 Converts date strings to `Date` objects (plain dates as local midnight), and
 asset files to `AssetFile` objects. Unless `trusted`, asset files need a valid
 signature or an allowed import source, else an `AssetError` is thrown, see
-[`convertAssetFile()`](storage.md#convertassetfile). *Hook, call `super`.*
+[`convertAssetFile()`](storage.md#convertassetfile). _Hook, call `super`._
 
 ### $formatJson()
 
@@ -845,7 +845,7 @@ $formatJson(json)
 ```
 
 Converts data for JSON: removes hidden properties, returns dates as plain dates,
-and signs asset files. *Hook, call `super`.*
+and signs asset files. _Hook, call `super`._
 
 ## Relation helpers
 
@@ -863,12 +863,12 @@ The functions that turn [`relations`](#static-relations) into Objection.js
 relation mappings and schemas. Models call them; they're exported for tools
 that work with relation definitions directly.
 
-| Function                                               | Description                                                                                                  |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `convertRelations(ownerModelClass, relations, models)` | Converts all relation definitions of a model to relation mappings, keyed by name. Errors are thrown as `RelationError`s naming the relation. |
-| `convertRelation(relation, models)`                    | Converts one relation definition. `models` maps model names to classes, to resolve `from`, `to`, `through` and `modelClass`. |
-| `getRelationClass(relation)`                           | The Objection.js relation class of a relation type name (`'hasMany'`) or class name (`'HasManyRelation'`), or the relation class itself. `undefined` for unknown names, `null` for other values. |
-| `isThroughRelationClass(relationClass)`                | Whether the class is `ManyToManyRelation` or `HasOneThroughRelation` (returns the class, or `undefined`).   |
+| Function                                               | Description                                                                                                                                                                                             |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `convertRelations(ownerModelClass, relations, models)` | Converts all relation definitions of a model to relation mappings, keyed by name. Errors are thrown as `RelationError`s naming the relation.                                                            |
+| `convertRelation(relation, models)`                    | Converts one relation definition. `models` maps model names to classes, to resolve `from`, `to`, `through` and `modelClass`.                                                                            |
+| `getRelationClass(relation)`                           | The Objection.js relation class of a relation type name (`'hasMany'`) or class name (`'HasManyRelation'`), or the relation class itself. `undefined` for unknown names, `null` for other values.        |
+| `isThroughRelationClass(relationClass)`                | Whether the class is `ManyToManyRelation` or `HasOneThroughRelation` (returns the class, or `undefined`).                                                                                               |
 | `addRelationSchemas(modelClass, properties)`           | Adds a schema property for each relation of the model to `properties` and returns it: an array for many-relations, `null` allowed for one-relations, references allowed unless the relation is `owner`. |
 
 ```js
@@ -925,10 +925,10 @@ export class Book extends TimestampedModel {
 
 Adds two properties, both `type: 'timestamp'` with `default: 'now()'`:
 
-| Property    | Set                                       |
-| ----------- | ----------------------------------------- |
-| `createdAt` | On insert.                                |
-| `updatedAt` | On insert, update and patch.              |
+| Property    | Set                          |
+| ----------- | ---------------------------- |
+| `createdAt` | On insert.                   |
+| `updatedAt` | On insert, update and patch. |
 
 The values are set by `before:insert` and `before:update`
 [hooks](#static-hooks). The mixin also adds the scope `timestamped`,
@@ -963,20 +963,20 @@ Users that log in with a username and password. Enable `app.session` in the
 
 Set as `static options` on the model:
 
-| Option             | Type                 | Default      | Description                                            |
-| ------------------ | -------------------- | ------------ | ------------------------------------------------------ |
-| `usernameProperty` | `string`             | `'username'` | The property users log in with.                        |
-| `passwordProperty` | `string`             | `'password'` | The property that receives the password.               |
+| Option             | Type                 | Default      | Description                                                                                                                                                    |
+| ------------------ | -------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `usernameProperty` | `string`             | `'username'` | The property users log in with.                                                                                                                                |
+| `passwordProperty` | `string`             | `'password'` | The property that receives the password.                                                                                                                       |
 | `sessionScope`     | `string \| string[]` |              | Scopes applied when loading the user of a session or a login. A scope that narrows the selected columns has to include `hash`, or passwords can't be verified. |
 
 #### Properties
 
-| Property             | Description                                                                         |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| `[usernameProperty]` | `string`, required.                                                                 |
-| `[passwordProperty]` | `string`, computed: not stored. Once the application is set up, setting it stores its bcrypt hash in `hash`; reading it returns `undefined`. |
+| Property             | Description                                                                                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[usernameProperty]` | `string`, required.                                                                                                                                                              |
+| `[passwordProperty]` | `string`, computed: not stored. Once the application is set up, setting it stores its bcrypt hash in `hash`; reading it returns `undefined`.                                     |
 | `hash`               | `string`, hidden: never sent to clients. Input that isn't [`trusted`](#parsejson) can't set it and throws a `ValidationError` with status 400: set `[passwordProperty]` instead. |
-| `lastLogin`          | `timestamp`, nullable. `UsersController` sets it on each login.                     |
+| `lastLogin`          | `timestamp`, nullable. `UsersController` sets it on each login.                                                                                                                  |
 
 #### `static` authenticate()
 
@@ -1017,7 +1017,7 @@ user.$hasRole('admin', 'editor') // 'editor'
 ```
 
 String values of [`authorize`](controllers.md#authorize) other than `$self` and
-`$owner` call it, so override it to store roles differently. *Hook.* Returns
+`$owner` call it, so override it to store roles differently. _Hook._ Returns
 `string | false`: the first entry of the user's `roles` array that is one of
 `roles`, or `false`.
 
@@ -1124,16 +1124,16 @@ credentials of all user models. Use it with
 `app.authentication.credentials.modelClass`, the model's name or class, see
 [`config.app`](application.md#configapp).
 
-| Property     | Description                                                                 |
-| ------------ | --------------------------------------------------------------------------- |
-| `type`       | `string`, required: `'passkey'`, or `'totp'`, one per user.                |
-| `userModel`  | `string`, required: the name of the user's model class.                     |
-| `userId`     | `string`, required: the id of the user, also of integer ids.                |
-| `key`        | `string`, nullable, unique per `userModel`: the credential id of passkeys. |
-| `name`       | `string`, nullable: the name of the provider of passkeys, e.g. `'1Password'`. |
+| Property     | Description                                                                                                                                                                                                 |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`       | `string`, required: `'passkey'`, or `'totp'`, one per user.                                                                                                                                                 |
+| `userModel`  | `string`, required: the name of the user's model class.                                                                                                                                                     |
+| `userId`     | `string`, required: the id of the user, also of integer ids.                                                                                                                                                |
+| `key`        | `string`, nullable, unique per `userModel`: the credential id of passkeys.                                                                                                                                  |
+| `name`       | `string`, nullable: the name of the provider of passkeys, e.g. `'1Password'`.                                                                                                                               |
 | `data`       | `object`, hidden: the public key, signature counter and transports of passkeys, the encrypted secret and the time step of the last accepted code of TOTP, along with the hashes of its unused backup codes. |
-| `createdAt`  | `timestamp`, set on insert.                                                 |
-| `lastUsedAt` | `timestamp`, nullable: the time of the last login with the credential.     |
+| `createdAt`  | `timestamp`, set on insert.                                                                                                                                                                                 |
+| `lastUsedAt` | `timestamp`, nullable: the time of the last login with the credential.                                                                                                                                      |
 
 Credentials refer to their users without foreign keys, so deleting users
 through their model deletes their credentials too.
@@ -1154,12 +1154,12 @@ and leaves asset records out when there's no such model.
 
 It includes `TimestampedMixin` and adds:
 
-| Property  | Description                                                                 |
-| --------- | --------------------------------------------------------------------------- |
-| `key`     | `string`, required, unique, indexed: the file's key in its storage.         |
+| Property  | Description                                                                      |
+| --------- | -------------------------------------------------------------------------------- |
+| `key`     | `string`, required, unique, indexed: the file's key in its storage.              |
 | `file`    | `object`: the file's data, an [`AssetFile`](storage.md#assetfile) after parsing. |
-| `storage` | `string`, required: the name of the storage.                                |
-| `count`   | `integer`, unsigned, default `0`: the number of references to the file.     |
+| `storage` | `string`, required: the name of the storage.                                     |
+| `count`   | `integer`, unsigned, default `0`: the number of references to the file.          |
 
 See [`app.releaseUnusedAssets()`](application.md#releaseunusedassets) for how
 unused files are removed, through

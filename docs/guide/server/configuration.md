@@ -105,6 +105,7 @@ export default {
 
   The middleware that is on by default (`helmet`, `cors`, `compress`, `etag`,
   `responseTime`) is turned off with `false`, or configured with an object.
+
 - `admin`: the settings of the [admin controller](controllers.md#admin): the
   folders of the admin's sources and build, and `api` and `settings`, which
   the admin receives in the browser. See
