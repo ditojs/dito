@@ -109,12 +109,12 @@ Every keyword may be a function of the [context](./context.md), e.g.
 
 Values without a `default` start with the empty value of their type: `''`
 for strings, `false` for booleans, `[]` for arrays, `{}` with the defaults of
-its properties for objects, and `null` for everything else and for all
-`nullable` values. Values that aren't `nullable` get their `default` or their
-empty value also when they're loaded, added or saved as `null`. A `null` that
-is written while editing stays in the data, e.g. when a number is cleared to
-type another one. Types without an empty value, e.g. numbers and dates, save
-it as `null` without a `default`, and the server decides.
+its properties for objects, and `null` for everything else, e.g. numbers and
+dates, and for all `nullable` values. Values that aren't `nullable` get their
+`default` or their empty value also when they're loaded, added or saved as
+`null`. A `null` that is written while editing stays in the data, e.g. when a
+number is cleared to type another one. Numbers and dates without a `default`
+thus save `null`, and the server's validation decides.
 
 Times of day are strings with `format: 'iso-time'`, e.g. `'14:30:00'`, which
 `DitoTimeField` edits.

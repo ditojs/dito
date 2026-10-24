@@ -174,3 +174,42 @@ name, see [Hooks](api/server/controllers.md#hooks).
 `keywords._enum` and `keywords.multipleOf` of `@ditojs/schema` lose
 `validate()` and only carry the messages that the server reports, and the
 `empty` format loses `validatesEmptyValues`.
+
+## Minor releases
+
+6.1 changes these without deprecation warnings:
+
+### 6.1
+
+- Trees take `details` instead of `properties`, also in their `children`,
+  where `properties` throws. Their TypeScript type is `Details`.
+- `DitoFormEmbedded` is removed: `DitoForm` renders embedded forms too.
+- `context.nested` is removed: `context.value` is `undefined` in contexts of
+  items.
+- Values that aren't `nullable` keep a `null` that is written while editing,
+  e.g. by `computeValue()`, and saving and copying send it as their `default`,
+  else as the empty value of their type. The clear button of fields with
+  `nullable: false` sets their `default`, see
+  [Empty values](api/admin/schemas.md#empty-values).
+- Custom types declare their data type with `getProperty()`, see
+  [Types](api/admin/types.md#getproperty). `defineType()` throws for
+  `treatsNullAsMissing`.
+- Several fields of the same value validate it once, with each rule taken
+  from the first field that sets it.
+- `ctx.logIn()` and `ctx.logOut()` are removed: use `ctx.login()` and
+  `ctx.logout()`.
+- `ctx.transaction` of transacted requests emits no `'commit'` and
+  `'rollback'` events.
+- `UserMixin` rejects `hash` in all input that isn't trusted, with a 400
+  response.
+- S3 storages need `@aws-sdk/lib-storage` next to `@aws-sdk/client-s3`.
+- Routes with several params in one segment, e.g. `/a/:x-:y`, throw when
+  they're added, and `getAllowedMethods(path)` of the router adds the
+  `prefix` to `path`, as `find()` does.
+- Classes:
+
+| 6.0                                                               | 6.1                                                               |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `dito-root--overlay-sidebar`, `--sliding-sidebar` on `.dito-root` | `dito-page--overlay-sidebar`, `--sliding-sidebar` on `.dito-page` |
+| `dito-tree-item--dragging`                                        | `dito-draggable--dragging` on its `.dito-draggable`               |
+| `dito-properties` of trees                                        | `dito-tree-item__details`                                         |
