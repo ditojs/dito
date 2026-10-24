@@ -24,10 +24,7 @@
   }
 
   &--borderless {
-    // This silent class is to be used on types that don't have borders around
-    // them that would naturally size them correctly, and need modification of
-    // their height + vertical alignment so that they align on the same
-    // baseline as all the other inputs: 'radio', 'checkbox', 'checkboxes'.
+    // Align borderless inputs (radio, checkbox) with the bordered ones:
     display: inline-flex;
     align-items: center;
     height: $input-height;
