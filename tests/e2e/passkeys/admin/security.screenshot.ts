@@ -95,7 +95,7 @@ test.describe('screenshots', () => {
 
   test('password reset dialog', async ({ page, url }) => {
     await page.goto(`${url}/admin/`)
-    await page.getByRole('button', { name: 'Forgot password?' }).click()
+    await page.getByRole('button', { name: 'Forgot?' }).click()
     const dialog = page.getByRole('dialog', { name: 'Reset Password' })
     await expect(dialog.getByLabel('Username')).toBeFocused()
     await expectScreenshot(page, 'password-reset.png')
@@ -246,7 +246,7 @@ test.describe('phone screenshots', () => {
 
   test('password reset dialog', async ({ page, url }) => {
     await page.goto(`${url}/admin/`)
-    await page.getByRole('button', { name: 'Forgot password?' }).click()
+    await page.getByRole('button', { name: 'Forgot?' }).click()
     const dialog = page.getByRole('dialog', { name: 'Reset Password' })
     await expect(dialog.getByLabel('Username')).toBeFocused()
     await expectScreenshot(page, 'phone-password-reset.png')

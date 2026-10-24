@@ -574,7 +574,7 @@ describe('DitoSelectType', () => {
       expect(field.classes()).toContain('dito-select--placeholder')
       await field.find('select').setValue('drama')
       expect(field.classes()).not.toContain('dito-select--placeholder')
-      await field.find('.dito-affixes__clear').trigger('click')
+      await field.find('button[title="Clear"]').trigger('click')
       expect(data.genre).toBe(null)
       expect(select.selectedIndex).toBe(0)
       expect(field.classes()).toContain('dito-select--placeholder')
@@ -589,7 +589,7 @@ describe('DitoSelectType', () => {
         },
         data: { genre: 'drama' }
       })
-      await findField('genre').find('.dito-affixes__clear').trigger('click')
+      await findField('genre').find('button[title="Clear"]').trigger('click')
       expect(data.genre).toBe(null)
     })
     it('sends and copies empty string option values', async () => {

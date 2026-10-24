@@ -281,17 +281,19 @@ Text inputs, numbers, dates, colors, selects, multiselects and buttons accept
 `prefix` and `suffix` (`AffixSettings`): one affix or an array of them, shown
 before or after the input.
 
-| Affix                                      | Description                                                  |
-| ------------------------------------------ | ------------------------------------------------------------ |
-| `'text'`, `` html`…` ``                    | Text or HTML, see [Text and HTML](#text-and-html).           |
-| `{ text, as? }`                            | Text or HTML, in an element of the tag `as` (default `div`). |
-| `{ type: 'icon', name }`                   | An icon of [@ditojs/ui](../ui.md).                           |
-| `{ type: 'spinner', size?, color? }`       | A loading spinner.                                           |
-| `{ type: 'component', component, props? }` | A Vue component.                                             |
+| Affix                                                           | Description                                                                                 |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `'text'`, `` html`…` ``                                         | Text or HTML, see [Text and HTML](#text-and-html).                                          |
+| `{ text, as? }`                                                 | Text or HTML, in an element of the tag `as` (default `div`).                                |
+| `{ type: 'icon', name }`                                        | An icon of [@ditojs/ui](../ui.md).                                                          |
+| `{ type: 'spinner', size?, color? }`                            | A loading spinner.                                                                          |
+| `{ type: 'component', component, props? }`                      | A Vue component.                                                                            |
+| `{ type: 'button', text \| icon, title?, disabled?, onClick? }` | A button showing the text or the icon, whose `onClick()` receives the context of the field. |
 
 Each affix can have `if: SchemaValue<boolean>`, `class` and `style`. Objects
-with `text` don't need a `type`. Clearable fields show their clear
-button in the suffix.
+with `text` don't need a `type`. With `hover: true`, an affix only shows while
+the input is hovered, in place of the other affixes of its side, which keep
+their space. Clearable fields show their clear button this way in the suffix.
 
 ```js
 price: {

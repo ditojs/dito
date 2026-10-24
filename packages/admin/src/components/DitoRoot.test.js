@@ -312,10 +312,7 @@ describe('DitoRoot', () => {
       const { admin, request, dialog } = await mountLoggedOut({
         hasPasswordReset: true
       })
-      const button = dialog
-        .findAll('button')
-        .find(button => button.text() === 'Forgot password?')
-      await button.trigger('click')
+      await dialog.find('button[title="Forgot password?"]').trigger('click')
       await flushPromises()
       // The login dialog may still be leaving:
       const reset = admin.wrapper.findAll('.dito-dialog').at(-1)
@@ -339,7 +336,9 @@ describe('DitoRoot', () => {
 
     it('offers password resets only when the server enables them', async () => {
       const { dialog } = await mountLoggedOut({})
-      expect(dialog.text()).not.toContain('Forgot password?')
+      expect(dialog.find('button[title="Forgot password?"]').exists()).toBe(
+        false
+      )
     })
   })
 

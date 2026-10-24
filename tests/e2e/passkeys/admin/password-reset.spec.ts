@@ -28,7 +28,7 @@ test.describe('password reset', () => {
   }) => {
     // Request the email from the login dialog:
     await page.goto(`${url}/admin/`)
-    await page.getByRole('button', { name: 'Forgot password?' }).click()
+    await page.getByRole('button', { name: 'Forgot?' }).click()
     const request = page.getByRole('dialog', { name: 'Reset Password' })
     await request.getByLabel('Username').fill('ada')
     await request.getByRole('button', { name: 'Send Email' }).click()

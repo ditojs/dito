@@ -165,7 +165,7 @@ describe('DitoMultiselectType', () => {
         },
         data: { genre: 'poetry' }
       })
-      await findField('genre').find('.dito-affixes__clear').trigger('click')
+      await findField('genre').find('button[title="Clear"]').trigger('click')
       expect(data.genre).toBe(null)
     })
 
@@ -285,7 +285,7 @@ describe('DitoMultiselectType', () => {
         },
         data: { genres: ['poetry'] }
       })
-      await findField('genres').find('.dito-affixes__clear').trigger('click')
+      await findField('genres').find('button[title="Clear"]').trigger('click')
       await settle()
       // Empty arrays aren't missing values that get the `default` again:
       expect(data.genres).toEqual([])

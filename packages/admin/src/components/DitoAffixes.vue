@@ -10,14 +10,7 @@
     :class="getItemClasses(item)"
     :style="item.style"
     :item="item"
-  )
-  button.dito-affixes__clear(
-    v-if="shouldShowClearButton"
-    type="button"
-    title="Clear"
-    :disabled="disabled"
-    @click.stop="$emit('clear')"
-    @mousedown.stop
+    :context="parentContext"
   )
   slot(name="append")
   DitoInfo(
@@ -52,9 +45,9 @@ export default {
     parentContext: { type: Object, required: true }
   },
 
-  setup(props, { slots }) {
-    const visibleItems = computed(() =>
-      asArray(props.items)
+  setup(props, { slots, emit }) {
+    const visibleItems = computed(() => [
+      ...asArray(props.items)
         .filter(Boolean)
         .map(item =>
           isString(item) || isHtml(item)
@@ -65,16 +58,25 @@ export default {
                 ? { type: 'text', ...item }
                 : item
         )
-        .filter(item => shouldRenderSchema(item, props.parentContext))
-    )
-
-    const shouldShowClearButton = computed(
-      () => props.clearable && props.hasValue
-    )
+        .filter(item => shouldRenderSchema(item, props.parentContext)),
+      ...(
+        props.clearable && props.hasValue
+          ? [
+              {
+                type: 'button',
+                icon: 'clear',
+                title: 'Clear',
+                hover: true,
+                disabled: props.disabled,
+                onClick: () => emit('clear')
+              }
+            ]
+          : []
+      )
+    ])
 
     return {
       visibleItems,
-      shouldShowClearButton,
 
       classes: computed(() => {
         const prefix = 'dito-affixes'
@@ -89,7 +91,6 @@ export default {
       hasContent() {
         return (
           visibleItems.value.length > 0 ||
-          shouldShowClearButton.value ||
           !!props.inlineInfo ||
           hasSlotContent(slots.prepend) ||
           hasSlotContent(slots.append)
@@ -101,6 +102,7 @@ export default {
         return [
           {
             [`${prefix}--${item.type}`]: item.type,
+            [`${prefix}--hover`]: item.hover,
             [`${prefix}--ellipsis`]: (
               props.mode === 'ellipsis' &&
               item.type === 'text'
@@ -162,45 +164,31 @@ export default {
     }
   }
 
-  &__clear {
-    --size: #{calc($input-height - 4 * $border-width)};
+  // Hover affixes only show while the component is hovered, in place of the
+  // other affixes of their side, overlaying them and the input's padding
+  // instead of widening the input:
+  > .dito-affix--hover {
+    --size: #{calc($input-height - 6 * $border-width)};
 
     display: none;
-    // Overlay the other affixes and the input's padding instead of widening
-    // the input:
     position: absolute;
     right: 0;
-    cursor: pointer;
-    width: var(--size);
+    align-items: center;
+    justify-content: center;
+    min-width: var(--size);
     height: var(--size);
-    border-radius: $border-radius;
-    margin: (-$input-padding-ver + $border-width)
-      (-$input-padding-hor + $border-width);
     padding: 0;
-    border: 0;
 
-    // Only show when hovering the component itself, not its open popup, e.g.
-    // the color picker.
+    // Not when hovering an open popup of the component, e.g. a color picker:
     @at-root .dito-component:not(:has(.dito-component, .dito-popup:hover)):hover
         & {
-      display: block;
-    }
-
-    &::before {
-      @extend %icon-clear;
-
-      color: $color-grey;
-    }
-
-    &:hover::before {
-      color: $color-black;
+      display: flex;
     }
   }
 
-  // Hide other affixes when clear button is shown, but keep their space:
   // prettier-ignore
   @at-root .dito-component:hover:not(:has(.dito-component, .dito-popup:hover))
-        #{$self}:has(#{$self}__clear) > *:not(#{$self}__clear) {
+        #{$self}:has(> .dito-affix--hover) > :not(.dito-affix--hover) {
       visibility: hidden;
     }
 }
