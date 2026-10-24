@@ -205,7 +205,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  happy-dom@20.14.5: 39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668
+  happy-dom@21.0.4: 39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668
 
 importers:
 
@@ -272,8 +272,8 @@ importers:
         specifier: ^1.6.0
         version: 1.6.0
       happy-dom:
-        specifier: ^20.14.5
-        version: 20.14.5(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668)
+        specifier: ^21.0.4
+        version: 21.0.4(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668)
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -315,7 +315,7 @@ importers:
         version: 7.3.0(stylelint@17.16.0(supports-color@7.2.0)(typescript@6.0.3))
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@20.14.5(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668))(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))
+        version: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@21.0.4(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668))(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))
       vue-eslint-parser:
         specifier: ^10.4.1
         version: 10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)
@@ -781,7 +781,7 @@ importers:
         version: 9.5.2
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@20.14.5(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668))(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))
+        version: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@21.0.4(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668))(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))
 
 packages:
 
@@ -3668,8 +3668,8 @@ packages:
     engines: {node: '>=0.4.7'}
     hasBin: true
 
-  happy-dom@20.14.5:
-    resolution: {integrity: sha512-x/RzkpWO40bTjIoT30iQtt64FLLmH/iRcUCN2X//bLx7H3ifkdfPXyqsro/OYtqzIAhiLMMA7mmiOR9C3NOKjQ==}
+  happy-dom@21.0.4:
+    resolution: {integrity: sha512-tFm+GaLBgo6o0awHnvHaNoraVo27qJ+2tZEtZ+cIa08hXbeitrxAJajLI05hsUy/2/YTKcUjQYzHe5mCcraLBw==}
     engines: {node: '>=20.0.0'}
 
   has-bigints@1.1.0:
@@ -7916,7 +7916,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@20.14.5(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668))(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))
+      vitest: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@21.0.4(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668))(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 
@@ -9361,7 +9361,7 @@ snapshots:
     optionalDependencies:
       uglify-js: 3.19.3
 
-  happy-dom@20.14.5(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668):
+  happy-dom@21.0.4(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668):
     dependencies:
       '@types/node': 26.6.4
       '@types/whatwg-mimetype': 3.0.2
@@ -11987,7 +11987,7 @@ snapshots:
       sass: 1.105.1
       yaml: 2.9.1
 
-  vitest@5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@20.14.5(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668))(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1)):
+  vitest@5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@21.0.4(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668))(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/mocker': 5.0.3(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))
@@ -12006,7 +12006,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 26.6.4
       '@vitest/coverage-v8': 5.0.3(vitest@5.0.3)
-      happy-dom: 20.14.5(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668)
+      happy-dom: 21.0.4(patch_hash=39e9b66e1cbef0a96e81fb5da1a4fe37f1952de564367fadb4c253141d103668)
     transitivePeerDependencies:
       - msw
 

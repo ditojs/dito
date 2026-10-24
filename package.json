@@ -74,7 +74,7 @@
     "eslint-plugin-vue": "~10.11.1",
     "eslint-plugin-vue-pug": "1.0.0-alpha.6",
     "full-icu": "^1.6.0",
-    "happy-dom": "^20.14.5",
+    "happy-dom": "^21.0.4",
     "husky": "^9.1.7",
     "knex": "^3.3.0",
     "lerna": "^10.0.1",
