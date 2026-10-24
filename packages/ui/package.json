@@ -20,6 +20,7 @@
     "src/",
     "dist/",
     "!src/**/*.test.js",
+    "!src/**/*.test.ts",
     "!src/**/__snapshots__/",
     "!src/test/",
     "!src/**/node_modules/"
