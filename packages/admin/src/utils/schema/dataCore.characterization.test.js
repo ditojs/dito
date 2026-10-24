@@ -204,9 +204,8 @@ describe('serializeData()', () => {
       nickname: '',
       rating: 8,
       code: 'TOO LONG',
-      // Changes with the one data mechanism, see plan: `trim` of the second
-      // field applies to the merged property.
-      label: ' Label '
+      // The merged property trims, with `trim` of the second field:
+      label: 'Label'
       // Changes with the one data mechanism, see plan: `address` holds only
       // hidden fields, so it isn't sent.
     })
