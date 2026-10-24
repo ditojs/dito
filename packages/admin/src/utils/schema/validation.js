@@ -70,7 +70,9 @@ export function getDataValidationErrors(schema, data, {
     shouldSkipIrrelevant: true,
     shouldSkipSourcesWithResource: true,
     visit: entry => {
-      const valueErrors = entry.node.getValidationErrors(entry)
+      const valueErrors = (
+        entry.node.getPropertyNode(entry)?.getValidationErrors(entry) ?? []
+      )
       if (valueErrors.length > 0) {
         errors ||= {}
         errors[entry.dataPath] = valueErrors

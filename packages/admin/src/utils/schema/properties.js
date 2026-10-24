@@ -178,15 +178,17 @@ export class PropertyNode {
     } else if (dateTypes.has(property.type)) {
       validations.date = true
     }
-    const format = get('format')
-    if (format) {
-      validations[validatorsByFormat[format]] = true
-    }
-    // Fields keep values that have no option, so only written properties
-    // validate `enum`:
-    const values = !this.fieldsByKey && get('enum')
-    if (values) {
-      validations.enum = value => values.includes(value)
+    // The types of fields validate their formats, and fields keep values that
+    // have no option, so only written properties validate `format` and `enum`:
+    if (!this.fieldsByKey) {
+      const format = get('format')
+      if (format) {
+        validations[validatorsByFormat[format]] = true
+      }
+      const values = get('enum')
+      if (values) {
+        validations.enum = value => values.includes(value)
+      }
     }
     if (property.validate) {
       const context = this.#createContext(entry, 'validate')
@@ -251,6 +253,17 @@ export class PropertyNode {
         !this.#get('nullable', entry)
       )
     )
+  }
+
+  // Types without values, e.g. buttons, get no key, like in the data of items
+  // that `computeValue()` returns:
+  setDefaultValue(entry, options) {
+    if (this.shouldSetDefaultValue(entry, options)) {
+      const value = this.getDefaultValue(entry)
+      if (value !== undefined) {
+        entry.data[entry.name] = value
+      }
+    }
   }
 
   getDefaultValue(entry) {
@@ -405,14 +418,18 @@ export function createPropertyNodes(properties) {
 
 export function getPropertyNode(name, property) {
   return getCachedNode(property, name, () => ({
-    node: new PropertyNode(name, property),
+    propertyNode: new PropertyNode(name, property),
     isPerEntry: false
-  })).node
+  })).propertyNode
 }
 
 // The node of the property of a field, `null` for types without a value:
 export function getFieldPropertyNode(field, name, entry) {
-  const { node, isPerEntry } = getStaticFieldNode(field, name, entry.services)
+  const { propertyNode, isPerEntry } = getStaticFieldNode(
+    field,
+    name,
+    entry.services
+  )
   if (isPerEntry) {
     const context = createValueContext(field, entry)
     const property = getTypeProperty(field, context, callback =>
@@ -420,7 +437,7 @@ export function getFieldPropertyNode(field, name, entry) {
     )
     return createFieldPropertyNode(field, name, property, context)
   } else {
-    return node
+    return propertyNode
   }
 }
 
@@ -441,7 +458,7 @@ function getStaticFieldNode(field, name, services) {
       isPerEntry = true
     })
     return {
-      node: isPerEntry
+      propertyNode: isPerEntry
         ? null
         : createFieldPropertyNode(field, name, property, context),
       isPerEntry
@@ -452,31 +469,33 @@ function getStaticFieldNode(field, name, services) {
 // Merge the properties of several fields of a value: each keyword comes from
 // the first field that sets it, in form order, also to a value that leaves it
 // out, e.g. `nullable: false`, else from the first one that derives it:
-export function mergePropertyNodes(name, nodes) {
-  nodes = nodes.filter(node => node)
-  if (nodes.length > 1) {
+export function mergePropertyNodes(name, propertyNodes) {
+  propertyNodes = propertyNodes.filter(propertyNode => propertyNode)
+  if (propertyNodes.length > 1) {
     const property = {}
     const fieldsByKey = {}
     const keys = new Set(
-      nodes.flatMap(({ fieldsByKey }) => Reflect.ownKeys(fieldsByKey))
+      propertyNodes.flatMap(({ fieldsByKey }) => Reflect.ownKeys(fieldsByKey))
     )
     const findSettingNode = key =>
-      nodes.find(({ fieldsByKey }) => fieldsByKey[typeKey][key] !== undefined)
+      propertyNodes.find(
+        ({ fieldsByKey }) => fieldsByKey[typeKey][key] !== undefined
+      )
     for (const key of keys) {
-      const node = (
+      const propertyNode = (
         findSettingNode(key) ??
         // Required arrays derive `minItems`, see `getDataKeywords()`:
         (key === 'minItems' ? findSettingNode('required') : null) ??
-        nodes.find(({ fieldsByKey }) => key in fieldsByKey)
+        propertyNodes.find(({ fieldsByKey }) => key in fieldsByKey)
       )
-      if (key in node.property) {
-        property[key] = node.property[key]
+      if (key in propertyNode.property) {
+        property[key] = propertyNode.property[key]
       }
-      fieldsByKey[key] = node.fieldsByKey[key]
+      fieldsByKey[key] = propertyNode.fieldsByKey[key]
     }
     return new PropertyNode(name, property, fieldsByKey)
   } else {
-    return nodes[0] ?? null
+    return propertyNodes[0] ?? null
   }
 }
 

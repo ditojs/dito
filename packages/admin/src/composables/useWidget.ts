@@ -100,7 +100,7 @@ export function useWidget(
     name != null
       ? layoutStore.getChildStore(`${name}${segment ?? ''}`)
       : layoutStore
-  const node = property ? getPropertyNode(name!, property) : null
+  const propertyNode = property ? getPropertyNode(name!, property) : null
 
   return {
     scope,
@@ -110,8 +110,8 @@ export function useWidget(
     // Widgets of irrelevant properties hide themselves:
     isRelevant() {
       return (
-        !node ||
-        node.isRelevant({
+        !propertyNode ||
+        propertyNode.isRelevant({
           data: scope.data,
           name,
           dataPath: getValueDataPath(),

@@ -615,7 +615,8 @@ export class DataModel {
         ),
         visit: entry => {
           if (entry.dataPath === dataPath) {
-            errors = entry.node.getValidationErrors(entry)
+            const propertyNode = entry.node.getPropertyNode(entry)
+            errors = propertyNode?.getValidationErrors(entry) ?? []
           }
         }
       })
@@ -1002,14 +1003,10 @@ export class DataModel {
     })
   }
 
-  // Types without values, e.g. buttons, get no key:
   #setDefaultValue(entry: DataEntry) {
-    if (this.#shouldSetDefaultValue(entry)) {
-      const value = entry.node.getPropertyNode(entry)!.getDefaultValue(entry)
-      if (value !== undefined) {
-        entry.data[entry.name] = value
-      }
-    }
+    entry.node.getPropertyNode(entry)?.setDefaultValue(entry, {
+      shouldSetDefaultsOfComputedValues: false
+    })
   }
 
   #updateComponentRecords(entries: EntryMap<RecordedEntry>) {
@@ -1117,8 +1114,15 @@ export class DataModel {
         }
       )
       // Values that aren't computed stay, or get their defaults when missing:
-      return {
-        value: value !== undefined ? value : node.getValueOrDefault(entry)
+      if (value !== undefined) {
+        return { value }
+      } else {
+        const propertyNode = node.getPropertyNode(entry)
+        return {
+          value: propertyNode
+            ? propertyNode.getValueOrDefault(entry)
+            : data[name]
+        }
       }
     } catch (error) {
       if (error === optionsNotLoaded) {

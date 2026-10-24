@@ -127,22 +127,12 @@ export class FieldNode {
         childSourceSchemas: getChildSourceSchemas(schema)
       }))
   }
-
-  // Validate the value once against the property merged from its fields:
-  getValidationErrors(entry) {
-    return this.getPropertyNode(entry)?.getValidationErrors(entry) ?? []
-  }
-
-  getValueOrDefault(entry) {
-    const property = this.getPropertyNode(entry)
-    return property ? property.getValueOrDefault(entry) : entry.data[entry.name]
-  }
 }
 
-// The nodes of the schemas without `fields()` callbacks, computed so that the
+// The nodes of the forms without `fields()` callbacks, computed so that the
 // forms that these callbacks create get new nodes once they're set up. Forms
 // with written `properties` have a node per property:
-const nodesBySchema = new WeakMap()
+const nodesByForm = new WeakMap()
 
 // Walk `data` along the nodes of `schema` and of the forms of the items, and
 // visit each node that `shouldVisit()` accepts, before the items that
@@ -317,7 +307,7 @@ export function walkData(schema, data, {
       : schema.fields
 
   const getFieldNodes = (schema, data, dataPath) => {
-    let nodes = nodesBySchema.get(toRaw(schema))
+    let nodes = nodesByForm.get(toRaw(schema))
     if (!nodes) {
       nodes = computed(() => {
         if (schema.properties) {
@@ -330,7 +320,7 @@ export function walkData(schema, data, {
         })
         return hasFieldsCallbacks ? null : nodes
       })
-      nodesBySchema.set(toRaw(schema), nodes)
+      nodesByForm.set(toRaw(schema), nodes)
     }
     return (
       nodes.value ??
