@@ -56,7 +56,7 @@
       @move="delta => $emit('move', delta)"
     )
   table.dito-tree-item__details(
-    v-if="details"
+    v-if="details.length > 0"
     v-show="opened"
   )
     tr(
@@ -153,7 +153,8 @@ export default {
       createContext
     })
     const { sourceContext } = services
-    const { getSchemaValue, getLabel } = useSchemaValue(context)
+    const { getSchemaValue, getLabel, shouldRenderSchema } =
+      useSchemaValue(context)
     // Continue the path of the tree list, whose name the data path of the root
     // item doesn't contain:
     const getComponentPath = dataPath => {
@@ -195,7 +196,11 @@ export default {
       const name = childrenSchema.value?.name
       return name && props.data[name]
     })
-    const details = computed(() => getNamedSchemas(props.schema.details))
+    const details = computed(() =>
+      Object.values(getNamedSchemas(props.schema.details) || {}).filter(
+        shouldRenderSchema
+      )
+    )
     const numChildren = computed(() => childrenList.value?.length || 0)
     const editable = computed(
       () => (
@@ -241,9 +246,7 @@ export default {
       hasErrors: computed(() =>
         services.dataContext.model.hasErrorsWithin(props.data)
       ),
-      numEntries: computed(
-        () => Object.keys(details.value || {}).length + numChildren.value
-      ),
+      numEntries: computed(() => details.value.length + numChildren.value),
       ariaLabel: computed(() => getText(props.label)),
       info: computed(() => {
         const count = numChildren.value

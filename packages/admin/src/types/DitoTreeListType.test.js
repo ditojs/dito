@@ -446,6 +446,27 @@ describe('DitoTreeListType', () => {
     expect(hasForm('pages')).toBe(false)
   })
 
+  it('shows only the `details` whose `if` is true for the item', async () => {
+    const schema = createSiteSchema()
+    schema.fields.pages.children.details = {
+      slug: {
+        label: 'Slug',
+        if: ({ item }) => item.title === 'Team',
+        render: ({ item }) => item.title.toLowerCase()
+      }
+    }
+    schema.fields.pages.children.collapsed = false
+    const { findField } = await mountForm({ schema, data: site })
+    const field = findField('pages')
+    expect(
+      field.findAll('.dito-tree-item__details').map(table => table.text())
+    ).toEqual(['Slugteam'])
+    expect(findButton(field, 'Team', '.dito-tree-item__branch').exists())
+      .toBe(true)
+    expect(findButton(field, 'History', '.dito-tree-item__branch').exists())
+      .toBe(false)
+  })
+
   it('passes the data path of the value to `render()` of details', async () => {
     const schema = createSiteSchema()
     schema.fields.pages.children.details = {
