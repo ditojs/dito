@@ -160,6 +160,20 @@ describe('services', () => {
       expect(request).toHaveBeenCalledTimes(2)
     })
 
+    it('sends the method and query of resources given as functions', async () => {
+      const request = vi.fn(() => ({ data: null }))
+      const { schemaComponent } = await mountSchema({
+        schema: { fields: { title: { type: 'text' } } },
+        request
+      })
+      await schemaComponent.context.request({
+        resource: () => ({ path: 'books', method: 'post', query: { a: 1 } })
+      })
+      expect(request).toHaveBeenLastCalledWith(
+        expect.objectContaining({ method: 'post', url: '/books?a=1' })
+      )
+    })
+
     it('converts errors of responses with data', async () => {
       const error = new Error('Request failed')
       error.response = {
@@ -402,6 +416,15 @@ describe('services', () => {
       expect(getResourceUrl(services, null)).toBe(null)
       expect(getResourceUrl(services, { path: 'books', query: { a: 1 } }))
         .toBe('/books?a=1')
+    })
+
+    it('reads the query of resources given as functions', async () => {
+      const { admin } = await mountSchema({
+        schema: { fields: { title: { type: 'text' } } }
+      })
+      const services = { adminContext: admin.context, resourceContext: null }
+      const resource = () => ({ path: 'books', query: { a: 1 } })
+      expect(getResourceUrl(services, resource)).toBe('/books?a=1')
     })
 
     it('resolves resources in views with resources', async () => {
