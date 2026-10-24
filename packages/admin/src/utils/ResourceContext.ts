@@ -1,10 +1,8 @@
 import type { Context } from './schema/types.ts'
 import type { Resource, Schema } from './types.ts'
+import type { ApiResource, SchemaContext } from '../../types/index.d.ts'
 
-export interface SubmitOptions {
-  validate?: boolean
-  closeForm?: boolean
-}
+export type SubmitOptions = NonNullable<Parameters<SchemaContext['submit']>[0]>
 
 export interface ResourceOptions {
   method?: string
@@ -23,5 +21,5 @@ export interface SubmitButton {
 // Forms and sources with a resource provide it to their components, forms also
 // their parent's, as the resource of the route:
 export interface ResourceContext {
-  getResource(options?: ResourceOptions): Resource | null
+  getResource(options?: ResourceOptions): ApiResource | null
 }

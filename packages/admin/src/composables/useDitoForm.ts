@@ -5,8 +5,7 @@ import {
   provide,
   reactive,
   toValue,
-  watch,
-  type MaybeRefOrGetter
+  watch
 } from 'vue'
 import { setupForm } from '../utils/schema/setup.js'
 import { checkFormProperties } from '../utils/schema/properties.js'
@@ -25,13 +24,8 @@ import { useContainer } from './useContainer.ts'
 import { useResource } from './useResource.ts'
 import { useForm } from './useForm.ts'
 import type { SubmitButton, SubmitOptions } from '../utils/ResourceContext.ts'
-import type { Resource, Schema } from '../utils/types.ts'
-
-export interface DitoFormOptions extends Partial<Schema> {
-  resource?: Resource
-  // The id of the item to load and save, or `null` to create one:
-  id?: MaybeRefOrGetter<string | number | null>
-}
+import type { Schema } from '../utils/types.ts'
+import type { useDitoForm as publicUseDitoForm } from '../../types/index.d.ts'
 
 // Set up a form in the calling component, which loads, edits and submits the
 // item of its resource, for `DitoSchemaForm` to render.
@@ -40,7 +34,7 @@ export function useDitoForm({
   id = null,
   buttons,
   ...formSchema
-}: DitoFormOptions) {
+}: Parameters<typeof publicUseDitoForm>[0]) {
   checkFormProperties(formSchema)
   const adminContext = inject(adminContextKey)!
   const routeContext = inject(routeContextKey, null)

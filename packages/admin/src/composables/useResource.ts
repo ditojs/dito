@@ -16,12 +16,12 @@ import type {
   SubmitButton
 } from '../utils/ResourceContext.ts'
 import type { RouteContext } from '../utils/RouteContext.ts'
-import type { Resource, Schema } from '../utils/types.ts'
-import type { HttpMethod } from '../../types/index.d.ts'
+import type { Schema } from '../utils/types.ts'
+import type { ApiResource, HttpMethod } from '../../types/index.d.ts'
 
 export interface RequestHandlerOptions {
   method: HttpMethod
-  resource?: Resource | null
+  resource?: ApiResource | null
   query?: Record<string, any>
   data?: any
   isDataLoad?: boolean
@@ -229,7 +229,7 @@ export function useResource({
     // Resolve to whether the request succeeded:
     async submitResource(
       button: SubmitButton,
-      resource: Resource,
+      resource: ApiResource,
       method: HttpMethod,
       payload: any,
       {
