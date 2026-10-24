@@ -174,6 +174,18 @@ describe('services', () => {
       )
     })
 
+    it('passes the method of requests to resources given as functions', async () => {
+      const resource = vi.fn(() => 'books')
+      const { schemaComponent } = await mountSchema({
+        schema: { fields: { title: { type: 'text' } } },
+        request: () => ({ data: null })
+      })
+      await schemaComponent.context.request({ resource, method: 'post' })
+      expect(resource).toHaveBeenCalledWith(
+        expect.objectContaining({ method: 'post' })
+      )
+    })
+
     it('converts errors of responses with data', async () => {
       const error = new Error('Request failed')
       error.response = {
