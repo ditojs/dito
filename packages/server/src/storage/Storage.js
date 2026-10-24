@@ -106,8 +106,8 @@ export class Storage {
           )
         }
       }
-      // Signatures only vouch for keys, and imports load their data from
-      // `url`, so never take file data from clients:
+      // Signatures don't cover data, and imports load their data from `url`,
+      // so never take file data from clients:
       delete file.data
     }
     // Remove signature once the data made it to here.
@@ -117,7 +117,7 @@ export class Storage {
 
   convertStorageFile(storageFile) {
     // Convert multer file object to our own file object format:
-    return {
+    const file = {
       key: storageFile.key,
       name: storageFile.originalname,
       type: storageFile.mimetype,
@@ -125,9 +125,10 @@ export class Storage {
       url: this._getFileUrl(storageFile),
       // In case `config.readDimensions` is set:
       width: storageFile.width,
-      height: storageFile.height,
-      signature: this._signAssetKey(storageFile.key)
+      height: storageFile.height
     }
+    this.signAssetFile(file)
+    return file
   }
 
   convertStorageFiles(storageFiles) {
@@ -165,13 +166,13 @@ export class Storage {
   }
 
   signAssetFile(file) {
-    file.signature = this._signAssetKey(file.key)
+    file.signature = this._signAssetFile(file)
   }
 
   verifyAssetFile(file) {
     // Files without a string key can't carry a valid signature.
     if (isString(file?.key)) {
-      const expected = this._signAssetKey(file.key)
+      const expected = this._signAssetFile(file)
       try {
         return crypto.timingSafeEqual(
           Buffer.from(expected, 'hex'),
@@ -185,14 +186,16 @@ export class Storage {
     return false
   }
 
-  _signAssetKey(key) {
+  _signAssetFile(file) {
     const secret = (
       this.app.keys?.[0] ??
       (Storage._fallbackSecret ??= this._createFallbackSecret())
     )
+    const { key, name, type, size, url, width, height } = file
+    // `JSON.stringify()` turns missing values into `null`:
     return crypto
       .createHmac('sha256', secret)
-      .update(key)
+      .update(JSON.stringify([key, name, type, size, url, width, height]))
       .digest('hex')
   }
 

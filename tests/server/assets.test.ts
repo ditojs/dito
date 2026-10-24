@@ -1149,9 +1149,9 @@ describe('asset references', () => {
     const file = await upload('exact.jpg')
     // The name contains the key, which the text search finds:
     const other = await upload('other.jpg')
-    await Track.query().insert({
-      artwork: { ...copy(other), name: file.key } as AssetFile
-    })
+    const artwork = { ...copy(other), name: file.key } as AssetFile
+    storage.signAssetFile(artwork)
+    await Track.query().insert({ artwork })
     expect(await app.getAssetReferences({ keys: [file.key] })).toEqual([])
   })
 
