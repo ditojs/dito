@@ -18,7 +18,7 @@ import {
   getLastDataPathIndex,
   getRelativeDataPath
 } from './utils/data.js'
-import { getSchemaValue } from './utils/schema/data.js'
+import { getSchemaValue } from './utils/schema/value.js'
 import { hasNestedData } from './utils/schema/structure.js'
 import { navigate } from './utils/route.js'
 import {

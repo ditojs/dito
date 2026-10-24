@@ -4,7 +4,7 @@ import '../../packages/admin/src/types/index.js'
 import SchemaContext from '../../packages/admin/src/SchemaContext.js'
 import { setupForm } from '../../packages/admin/src/utils/schema/setup.js'
 import { getFormProperties } from '../../packages/admin/src/utils/schema/properties.js'
-import { getDataValidationErrors } from '../../packages/admin/src/utils/schema/validation.js'
+import { getDataValidationErrors } from '../../packages/admin/src/utils/schema/data.js'
 import { createTestApp } from '../utils/app.ts'
 
 // The properties that the admin derives from the fields of every type with a

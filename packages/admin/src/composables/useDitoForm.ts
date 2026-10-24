@@ -7,8 +7,7 @@ import {
   toValue,
   watch
 } from 'vue'
-import { setupForm } from '../utils/schema/setup.js'
-import { checkFormProperties } from '../utils/schema/properties.js'
+import { setupForm, checkFormProperties } from '../utils/schema/setup.js'
 import { getItemId } from '../utils/schema/data.js'
 import { hasSubmitButton } from '../utils/schema/lookup.js'
 import { hasRoutedForms, ViewNode } from '../utils/RouteTree.ts'

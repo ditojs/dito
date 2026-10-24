@@ -8,12 +8,12 @@ import {
 import SchemaContext from '../SchemaContext.js'
 import { appendDataPath, getRelativeDataPath } from './data.js'
 import { getText } from './html.js'
-import { getLabel } from './schema/data.js'
+import { getLabel } from './schema/value.js'
 import {
   getDataPathMatcher,
-  getDataValidationErrors,
   getMatchingValidationErrors
 } from './schema/validation.js'
+import { getDataValidationErrors } from './schema/data.js'
 import type { DataModel } from './DataModel.ts'
 import type { ValueError } from './DataErrors.ts'
 import type { SubmitButton, SubmitOptions } from './ResourceContext.ts'

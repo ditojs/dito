@@ -8,8 +8,9 @@ import {
   parseDataPath
 } from '@ditojs/utils'
 import { getText } from './html.js'
-import { getNamedSchemas } from './schema/lookup.js'
-import { applyNestedSchemaDefaults } from './schema/setup.js'
+import { iterateNestedSchemaComponents } from './schema/structure.js'
+import { getNamedSchemas, getFormSchemas } from './schema/lookup.js'
+import { applySchemaDefaults } from './schema/setup.js'
 import { deserializeData } from './schema/data.js'
 
 export const filterComponents = {
@@ -114,6 +115,17 @@ export function createFiltersPanel(api, filters, dataPath, query) {
   }
   applyNestedSchemaDefaults(api, panel)
   return panel
+}
+
+export function applyNestedSchemaDefaults(api, schema) {
+  // A sync version of the defaults of `setupSchemaComponents()`, for filters:
+  iterateNestedSchemaComponents(schema, (component, name) => {
+    applySchemaDefaults(api, component, name)
+    const forms = getFormSchemas(component)
+    for (const form of Object.values(forms)) {
+      applyNestedSchemaDefaults(api, form)
+    }
+  })
 }
 
 function getDataName(filterName) {

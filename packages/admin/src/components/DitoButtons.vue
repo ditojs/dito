@@ -34,7 +34,7 @@ import {
   useComponentPath
 } from '../composables/useComponentPath.ts'
 import { appendDataPath } from '../utils/data.js'
-import { shouldRenderSchema } from '../utils/schema/data.js'
+import { shouldRenderSchema } from '../utils/schema/value.js'
 import { getRootData } from '../utils/services.ts'
 import { panelTabKey } from '../utils/keys.ts'
 

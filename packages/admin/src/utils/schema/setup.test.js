@@ -13,7 +13,6 @@ import {
   setupSchemaComponents,
   setupView,
   applySchemaDefaults,
-  applyNestedSchemaDefaults,
   setupForms,
   setupForm,
   setupTab,
@@ -543,45 +542,6 @@ describe('the schema keys of 5.x', () => {
         'books'
       )
     ).resolves.toBe(undefined)
-  })
-})
-
-describe('applyNestedSchemaDefaults()', () => {
-  it('applies defaults to components in sections, tabs and forms', () => {
-    const api = createApi({ text: { trim: true } })
-    const schema = {
-      type: 'form',
-      fields: {
-        title: { type: 'text' },
-        details: {
-          type: 'section',
-          fields: { subtitle: { type: 'text' } }
-        },
-        chapters: {
-          type: 'list',
-          form: { type: 'form', fields: { heading: { type: 'text' } } }
-        }
-      },
-      tabs: {
-        notes: { type: 'tab', fields: { remark: { type: 'text' } } }
-      }
-    }
-    applyNestedSchemaDefaults(api, schema)
-    const { fields, tabs } = schema
-    expect(fields.title.trim).toBe(true)
-    expect(fields.details.fields.subtitle.trim).toBe(true)
-    expect(fields.chapters.form.fields.heading.trim).toBe(true)
-    expect(tabs.notes.fields.remark.trim).toBe(true)
-  })
-
-  it('skips components created by `fields()` callbacks', () => {
-    const api = createApi({ text: { trim: true } })
-    const fields = vi.fn(() => ({ title: { type: 'text' } }))
-    applyNestedSchemaDefaults(api, {
-      type: 'form',
-      fields: { fields: { type: 'section', fields } }
-    })
-    expect(fields).not.toHaveBeenCalled()
   })
 })
 

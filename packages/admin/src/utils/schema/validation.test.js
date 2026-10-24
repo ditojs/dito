@@ -6,9 +6,9 @@ import {
 import { defineType } from './types.ts'
 import {
   getValueValidationErrors,
-  getDataValidationErrors,
   getMatchingValidationErrors
 } from './validation.js'
+import { getDataValidationErrors } from './data.js'
 
 // `setupForm()` needs the admin's API, see `getFormSchemas()`:
 vi.mock('./setup.js', () => ({ setupForm: async form => form }))

@@ -27,7 +27,7 @@ import {
   shouldRenderSchema,
   callOrLog,
   hasValueFromDataSchema
-} from './data.js'
+} from './value.js'
 import {
   createPropertyNodes,
   getFieldPropertyNode,
@@ -410,36 +410,6 @@ function hasCondition(schema) {
 // The same contexts as the rendered components get:
 function createContext(schema, entry) {
   return SchemaContext.createForSchema(entry.services, { ...entry, schema })
-}
-
-// The contexts of the value, also of the hooks that convert it:
-export function createValueContext(schema, entry, values = null) {
-  const {
-    data,
-    name,
-    dataPath,
-    itemDataPath,
-    rootData,
-    serializedData,
-    serializedRootData,
-    services
-  } = entry
-  return new SchemaContext(services, {
-    schema,
-    name,
-    nested: true,
-    data,
-    dataPath,
-    itemDataPath,
-    rootData,
-    // The copies that walks build, while they build them:
-    ...(serializedData && { serializedData, serializedRootData }),
-    ...(values ?? {
-      get value() {
-        return data[name]
-      }
-    })
-  })
 }
 
 // Walks without data paths have none in the data either:

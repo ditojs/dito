@@ -14,13 +14,13 @@ import SchemaContext from '../SchemaContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
 import { toModelData, getParentDataPath, getRelativeDataPath } from './data.js'
 import { getOptionsDataSchema } from './schema/types.ts'
+import { getComputedValue } from './schema/data.js'
 import {
-  getComputedValue,
   hasComputedValueSource,
   getMultipleValue,
   getEditedValue,
   parseEditedValue
-} from './schema/data.js'
+} from './schema/value.js'
 import { walkData, type DataEntry } from './schema/walk.js'
 import { getOptionsSettings, getReplacedValue } from './schema/options.ts'
 import { EntryMap } from './EntryMap.ts'
