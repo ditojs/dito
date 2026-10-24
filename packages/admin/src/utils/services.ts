@@ -74,21 +74,10 @@ export async function waitUntilDataModelSettled({
 }
 
 export function getResourceUrl(
-  { adminContext, resourceContext }: RequestServices,
+  services: RequestServices,
   resource: Resource
 ): string | null {
-  // Resources without a parent continue the nearest form's or source's:
-  const url = adminContext.api.resources.any(
-    getResource(resource, {
-      parent: resourceContext?.getResource({
-        method: resource.method,
-        child: resource
-      }) ?? null
-    })
-  )
-  return url
-    ? adminContext.api.getApiUrl({ url, query: resource.query })
-    : null
+  return getResourceRequest(services, resource).url
 }
 
 export async function sendRequest(
@@ -97,11 +86,12 @@ export async function sendRequest(
 ) {
   const { adminContext } = services
   const { api, session } = adminContext
-  url ||= (resource && getResourceUrl(services, resource)) || undefined
+  const resourceRequest = resource && getResourceRequest(services, resource)
+  url ||= resourceRequest?.url || undefined
   if (!url) {
     throw new Error('Unable to send request: There is no URL or resource.')
   }
-  method ||= resource?.method
+  method ||= resourceRequest?.method
   const checkUser = !internal && api.isApiUrl(url)
   if (checkUser) {
     await session.ensureUser()
@@ -155,13 +145,13 @@ export function request(
         : null
   // Requests to resources are told apart by the URLs that they resolve to:
   const { resource } = options
+  const resourceRequest =
+    loadCache && resource ? getResourceRequest(services, resource) : null
   const cacheKey = loadCache
     ? getRequestCacheKey({
         ...options,
-        method: options.method || resource?.method,
-        url: (
-          options.url || (resource ? getResourceUrl(services, resource) : null)
-        )
+        method: options.method || resourceRequest?.method,
+        url: options.url || resourceRequest?.url
       })
     : ''
   if (loadCache && cacheKey in loadCache) {
@@ -237,5 +227,25 @@ export function downloadBlob(services: Services, blob: Blob, filename: string) {
   } finally {
     // Some browsers don't start the download synchronously:
     setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+}
+
+// Resolve resources before reading their method and query, as functions return
+// them. Resources without a parent continue the nearest form's or source's:
+function getResourceRequest(
+  { adminContext, resourceContext }: RequestServices,
+  resource: Resource
+): { method?: HttpMethod; url: string | null } {
+  const { api } = adminContext
+  const resolved = getResource(resource, {
+    parent: resourceContext?.getResource({
+      method: resource.method,
+      child: resource
+    }) ?? null
+  })
+  const url = api.resources.any(resolved)
+  return {
+    method: resolved?.method,
+    url: url ? api.getApiUrl({ url, query: resolved.query }) : null
   }
 }
