@@ -1,4 +1,8 @@
-import { mountSchema, mountAdminWithGenresView } from '../test/mount.js'
+import {
+  mountSchema,
+  mountForm,
+  mountAdminWithGenresView
+} from '../test/mount.js'
 
 const genres = [
   { value: 'fiction', label: 'Fiction' },
@@ -41,6 +45,23 @@ describe('DitoRadioType', () => {
     ])
     await radios[2].setValue(true)
     expect(data.genre).toBe('drama')
+  })
+
+  it('sends empty string option values', async () => {
+    const { findField, submit } = await mountForm({
+      schema: {
+        fields: {
+          genre: {
+            type: 'radio',
+            options: [{ label: 'None', value: '' }, ...genres]
+          }
+        }
+      },
+      data: { genre: 'drama' },
+      request: ({ data }) => ({ data })
+    })
+    await getRadioButtons(findField('genre'))[0].setValue(true)
+    expect(await submit()).toMatchObject({ genre: '' })
   })
 
   it('focuses the first radio button', async () => {

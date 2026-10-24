@@ -360,7 +360,14 @@ export class PropertyNode {
       return getStoredFiles(value)[0] || null
     } else if (type === 'string' && isString(value)) {
       value = this.#get('trim', entry) ? value.trim() : value
-      return value === '' && this.#get('nullable', entry) ? null : value
+      // Empty strings can be the values of options:
+      const hasOptions = !!(
+        this.property.enum ||
+        this.#type?.getOptionsDataSchema
+      )
+      return value === '' && !hasOptions && this.#get('nullable', entry)
+        ? null
+        : value
     }
     return value
   }

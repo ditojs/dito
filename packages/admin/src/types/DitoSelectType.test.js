@@ -1,4 +1,6 @@
 import { vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
+import { getClipboardData } from '../utils/clipboard.js'
 import {
   mountSchema,
   mountForm,
@@ -589,6 +591,40 @@ describe('DitoSelectType', () => {
       })
       await findField('genre').find('.dito-affixes__clear').trigger('click')
       expect(data.genre).toBe(null)
+    })
+    it('sends and copies empty string option values', async () => {
+      const { findField, wrapper, submit } = await mountForm({
+        schema: {
+          clipboard: true,
+          fields: {
+            genre: {
+              type: 'select',
+              options: [{ label: 'None', value: '' }, ...genres]
+            },
+            // Options with `equals` derive no `enum`:
+            country: {
+              type: 'select',
+              options: {
+                data: [
+                  { label: 'None', value: '' },
+                  { label: 'France', value: 'fr' }
+                ],
+                equals: ({ value, option }) => value === option.value
+              }
+            }
+          }
+        },
+        data: { genre: 'drama', country: 'fr' },
+        request: ({ data }) => ({ data })
+      })
+      await findField('genre').find('select').setValue('')
+      await findField('country').find('select').setValue('')
+      await wrapper
+        .find('.dito-clipboard .dito-button--copy')
+        .trigger('click')
+      await flushPromises()
+      expect(getClipboardData()).toMatchObject({ genre: '', country: '' })
+      expect(await submit()).toMatchObject({ genre: '', country: '' })
     })
   })
 
