@@ -15,11 +15,7 @@ import {
 } from '../utils/schema/structure.js'
 import { hasFormSchema } from '../utils/schema/lookup.js'
 import { setupForms } from '../utils/schema/setup.js'
-import {
-  getEmptyValue,
-  getMultipleValue,
-  getSchemaValue
-} from '../utils/schema/data.js'
+import { getMultipleValue, getSchemaValue } from '../utils/schema/data.js'
 import { getItemProperty } from '../utils/schema/properties.js'
 import { createReference } from '../utils/data.js'
 import { getOptionKey, getRelateKey } from '../utils/schema/options.ts'
@@ -247,20 +243,7 @@ export const colorTraits = {
 } satisfies Partial<TypeDescriptor>
 
 export const textTraits = {
-  getProperty: () => ({ type: 'string' }),
-
-  serializeValue(context: Context) {
-    let { schema, value } = context
-    if (schema.trim && value != null && isString(value)) {
-      // Text fields don't necessarily have a `String` value when
-      // `formatValue()` without `parseValue()` is used.
-      value = value.trim()
-    }
-    if (value === '') {
-      value = getEmptyValue(schema, context)
-    }
-    return value
-  }
+  getProperty: () => ({ type: 'string' })
 } satisfies Partial<TypeDescriptor>
 
 function copyItems(value: any) {
