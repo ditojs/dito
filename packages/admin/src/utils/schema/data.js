@@ -24,7 +24,6 @@ import {
 } from './structure.js'
 import { getLabelForRelated } from './options.ts'
 import { walkData, cloneItem, getSchemaSource } from './walk.js'
-import { getPropertyEmptyValue } from './properties.js'
 import { getFormSchemas, getItemFormSchema } from './lookup.js'
 
 export function getSchemaValue(
@@ -123,26 +122,6 @@ export function resolveValue(value, context) {
   return isFunction(value)
     ? toModelData(value(getContext(context)))
     : clone(value)
-}
-
-export function getDefaultValue(schema, context) {
-  return schema.default !== undefined
-    ? resolveValue(schema.default, context)
-    : getEmptyValue(schema, context)
-}
-
-export function getEmptyValue(schema, context) {
-  // NOTE: Components may not be instantiated when items are created, e.g. in
-  // nested forms, so the type descriptors define `defaultValue`:
-  const descriptor = getTypeDescriptor(schema)
-  const value = resolveValue(descriptor?.defaultValue, context)
-  // Fields with `nullable: false` store the empty value of their property's
-  // type instead of `null`, e.g. `''` for strings:
-  return value === null && schema.nullable === false
-    ? getPropertyEmptyValue(
-        descriptor.getProperty?.(schema, getContext(context)) ?? {}
-      )
-    : value
 }
 
 export function hasComputedValueSource(schema) {

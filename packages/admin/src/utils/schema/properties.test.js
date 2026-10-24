@@ -6,7 +6,12 @@ import SchemaContext from '../../SchemaContext.js'
 import { setupForm } from './setup.js'
 import { defineType } from './types.ts'
 import { walkData } from './walk.js'
-import { getFormProperties, checkProperties } from './properties.js'
+import {
+  PropertyNode,
+  WrittenPropertyNode,
+  getFormProperties,
+  checkProperties
+} from './properties.js'
 import {
   initializeData,
   serializeData,
@@ -1877,6 +1882,56 @@ describe('properties of fields', () => {
         nullable: true,
         maxLength: 10
       })
+    })
+  })
+
+  describe('nodes', () => {
+    it('gives only written properties the members of data nodes', async () => {
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: {
+          title: { type: 'text' },
+          tags: {
+            type: 'list',
+            form: { type: 'form', fields: { name: { type: 'text' } } }
+          },
+          details: { type: 'section', fields: { title: { type: 'text' } } },
+          meta: {
+            type: 'object',
+            form: {
+              type: 'form',
+              properties: {
+                tags: { type: 'array', items: { type: 'string' } }
+              }
+            }
+          }
+        }
+      })
+      // The section shares the form's data, so `title` merges two fields:
+      const {
+        title,
+        tags,
+        meta,
+        'meta/tags': written
+      } = getEntries(form, { meta: {} })
+      const writtenNode = written.node.getPropertyNode(written)
+      expect(writtenNode).toBeInstanceOf(WrittenPropertyNode)
+      expect(writtenNode.source).toMatchObject({ isList: true })
+      for (const entry of [title, tags, meta]) {
+        const propertyNode = entry.node.getPropertyNode(entry)
+        expect(propertyNode).toBeInstanceOf(PropertyNode)
+        expect(propertyNode).not.toBeInstanceOf(WrittenPropertyNode)
+        for (const key of [
+          'source',
+          'relation',
+          'getItemForms',
+          'isRelevant',
+          'getRelevantNode',
+          'getPropertyNode'
+        ]) {
+          expect(propertyNode).not.toHaveProperty(key)
+        }
+      }
     })
   })
 

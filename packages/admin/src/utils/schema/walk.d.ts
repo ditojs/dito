@@ -47,8 +47,9 @@ export interface DataNode {
 }
 
 // The node of a value's property, which describes its data:
-export interface PropertyNode extends DataNode {
-  isRelevant(entry: DataEntry): boolean
+export interface PropertyNode {
+  name: string
+  getRecordedSchema(entry: DataEntry): { schema: Schema; form: Schema } | null
   getValidationErrors(entry: DataEntry): ValueError[]
   shouldSetDefaultValue(
     entry: DataEntry,
@@ -63,6 +64,11 @@ export interface PropertyNode extends DataNode {
   isExcluded(entry: DataEntry, values?: Record<string, any> | null): boolean
   getUploadLimits(entry: DataEntry): UploadLimits | null
   getDisplayValue(entry: DataEntry): any
+}
+
+// The node of a written property, which walks visit as a value of the data:
+export interface WrittenPropertyNode extends PropertyNode, DataNode {
+  isRelevant(entry: DataEntry): boolean
 }
 
 export function getSchemaSource(schema: Schema): DataSource
