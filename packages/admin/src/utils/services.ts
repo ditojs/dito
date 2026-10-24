@@ -86,7 +86,10 @@ export async function sendRequest(
 ) {
   const { adminContext } = services
   const { api, session } = adminContext
-  const resourceRequest = resource && getResourceRequest(services, resource)
+  const resourceRequest = (
+    resource &&
+    getResourceRequest(services, resource, method)
+  )
   url ||= resourceRequest?.url || undefined
   if (!url) {
     throw new Error('Unable to send request: There is no URL or resource.')
@@ -146,7 +149,9 @@ export function request(
   // Requests to resources are told apart by the URLs that they resolve to:
   const { resource } = options
   const resourceRequest =
-    loadCache && resource ? getResourceRequest(services, resource) : null
+    loadCache && resource
+      ? getResourceRequest(services, resource, options.method)
+      : null
   const cacheKey = loadCache
     ? getRequestCacheKey({
         ...options,
@@ -234,10 +239,12 @@ export function downloadBlob(services: Services, blob: Blob, filename: string) {
 // them. Resources without a parent continue the nearest form's or source's:
 function getResourceRequest(
   { adminContext, resourceContext }: RequestServices,
-  resource: Resource
+  resource: Resource,
+  method?: HttpMethod
 ): { method?: HttpMethod; url: string | null } {
   const { api } = adminContext
   const resolved = getResource(resource, {
+    method,
     parent: resourceContext?.getResource({
       method: resource.method,
       child: resource
