@@ -910,22 +910,18 @@ describe('written properties', () => {
       })
     })
 
-    it('requires values that are `null` unless they are `nullable`', () => {
+    it('requires values that are `null` only with `required`', () => {
       expect(
         validate(
           {
             title: { type: 'string' },
             rank: { type: 'integer' },
-            day: { type: 'date' },
-            price: { type: 'number', nullable: true },
-            isFeatured: { type: 'boolean', nullable: true }
+            day: { type: 'date', required: true },
+            price: { type: 'number', nullable: true }
           },
-          { title: '', rank: null, day: null, price: null, isFeatured: null }
+          { title: null, rank: null, day: null, price: null }
         )
-      ).toEqual({
-        rank: [{ message: 'is required' }],
-        day: [{ message: 'is required' }]
-      })
+      ).toEqual({ day: [{ message: 'is required' }] })
     })
 
     it('calls `validate()` with the value', () => {

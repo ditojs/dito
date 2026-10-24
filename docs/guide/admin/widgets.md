@@ -111,9 +111,10 @@ Values without a `default` start with the empty value of their type: `''`
 for strings, `false` for booleans, `[]` for arrays, `{}` with the defaults of
 its properties for objects, and `null` for everything else and for all
 `nullable` values. Values that aren't `nullable` get their `default` or their
-empty value also when they're loaded or added as `null`. A `null` that is
-written later stays, e.g. when a number is cleared to type another one, and
-fails validation with "is required", as the server rejects it.
+empty value also when they're loaded, added or saved as `null`. A `null` that
+is written while editing stays in the data, e.g. when a number is cleared to
+type another one. Types without an empty value, e.g. numbers and dates, save
+it as `null` without a `default`, and the server decides.
 
 Times of day are strings with `format: 'iso-time'`, e.g. `'14:30:00'`, which
 `DitoTimeField` edits.

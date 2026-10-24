@@ -174,10 +174,7 @@ describe('getDataValidationErrors()', () => {
       label: [
         { message: 'must be at least 5 characters long' },
         { message: 'must match pattern "^[a-z]+$"' }
-      ],
-      // Typed values that aren't `nullable` reject `null`, here before
-      // `initializeData()` replaces it:
-      nickname: [{ message: 'is required' }]
+      ]
       // `rating` validates as edited (4), not as stored (8), and `address`
       // holds only hidden fields, so its `validate()` doesn't run.
     })

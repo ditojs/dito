@@ -102,7 +102,7 @@ inputs and selects, `clearable` to inputs that can be cleared.
 | `label` | `SchemaValue<TextOrHtml \| boolean \| { text?, prefix?, suffix? }>` | the labelized name | The label, see [Text and HTML](#text-and-html). `false` hides it. The object form adds [affixes](#affixes). Buttons, labels, panels, sections and spacers don't generate one. |
 | `if` | `SchemaValue<boolean>` | `true` | Renders the field only if `true`. Values of fields that aren't rendered aren't computed. |
 | `visible` | `SchemaValue<boolean>` | `true`, `false` for `value` | Shows or hides the field. Hidden fields keep their value. |
-| `default` | `SchemaValue` | the type's default | The value used when the item lacks the key, e.g. in new items. Lists, `checkboxes` and multiselects with `multiple` also use it for `null` in loaded or added items, not for a `null` written later. |
+| `default` | `SchemaValue` | the type's default | The value used when the item lacks the key, e.g. in new items. Values that aren't `nullable` also use it for `null`, see [Empty values](#empty-values). |
 | `computeValue` | `SchemaValueCallback` | | Computes the value reactively into the data, also when the field isn't shown, unless `if` is `false`. Returning `undefined` keeps the current value. |
 | `formatValue` | `SchemaValueCallback` | | Converts the value for display. |
 | `parseValue` | `SchemaValueCallback` | | Converts the edited value before it's written into the data. |
@@ -115,7 +115,7 @@ inputs and selects, `clearable` to inputs that can be cleared.
 | `disabled` | `SchemaValue<boolean>` | `false` | Disables the field. Disabled sections and panels disable all fields inside them, also nested ones. Loading forms and views don't disable their fields. |
 | `autofocus` | `SchemaValue<boolean>` | `false` | Focuses the input when rendered. |
 | `labelledBy` | `SchemaValue<string>` | | The id of the element that labels the field, for fields without their own label, set as `aria-labelledby` of the input. |
-| `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value to the [empty value](#empty-values) of the type, e.g. `null`, or `[]` with `multiple`. Ignored while `readonly`. |
+| `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value to the [empty value](#empty-values) of the type, e.g. `null`, or `[]` with `multiple`, or to the `default` with [`nullable: false`](#empty-values). Ignored while `readonly`. |
 | `placeholder` | `SchemaValue<string>` | | The hint shown in empty inputs, and in selects while no option is selected. Multiselects also take `false`, see [`multiselect`](#multiselect). |
 | `info` | `SchemaValue<TextOrHtml>` | | Info shown in a tooltip next to the label, see [Text and HTML](#text-and-html). Line breaks in text show. |
 | `minLength` | `SchemaValue<number>` | | The minimum length of text values, in characters. `1` rejects `''`, but not `null`, which only `required` rejects. |
@@ -269,6 +269,11 @@ answered yet, while `false` is an answer.
 subtitle: { type: 'text', nullable: false },
 isArchived: { type: 'checkbox', nullable: false }
 ```
+
+Fields with `nullable: false`, and fields whose empty value isn't `null`, e.g.
+lists and switches, replace `null` with their `default`, else with their empty
+value, when the data is loaded, added or saved. A `null` that is written while
+editing, e.g. by `computeValue()`, stays in the data until then.
 
 ### Affixes
 
