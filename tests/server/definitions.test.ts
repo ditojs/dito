@@ -64,6 +64,33 @@ class Library extends Model {
       properties: { id: { type: 'string' } },
       anyOf: [{ $ref: '#Cat' }, { $ref: '#Dog' }]
     },
+    // ...also next to the properties of other `allOf` parts or of patterns, and
+    // in definitions, closed where they're used:
+    combined: {
+      type: 'object',
+      allOf: [
+        { anyOf: [{ $ref: '#Cat' }, { $ref: '#Dog' }] },
+        { type: 'object', properties: { id: { type: 'string' } } }
+      ]
+    },
+    patterned: {
+      type: 'object',
+      patternProperties: { '^x-': { type: 'string' } },
+      anyOf: [{ $ref: '#Cat' }, { $ref: '#Dog' }]
+    },
+    extended: {
+      type: 'object',
+      additionalProperties: { type: 'string' },
+      anyOf: [{ $ref: '#Cat' }, { $ref: '#Dog' }]
+    },
+    labeled: {
+      type: 'object',
+      properties: { id: { type: 'string' } },
+      allOf: [{ $ref: '#Pet' }],
+      definitions: {
+        '#Pet': { anyOf: [{ $ref: '#Cat' }, { $ref: '#Dog' }] }
+      }
+    },
     // References as variants of a discriminator, which Ajv only follows
     // without other keywords:
     figure: {
@@ -241,6 +268,24 @@ describe('Definitions in model properties', () => {
     } as any)
     expect(library.tagged).toEqual(tagged)
     await expectUnevaluated({ tagged: { ...tagged, legs: 4 } })
+  })
+
+  it('closes references next to other evaluated properties', async () => {
+    const combined = { id: 'a', meow: 'Purr' }
+    const patterned = { 'x-id': 'a', 'meow': 'Purr' }
+    const labeled = { id: 'a', woof: 'Wuff' }
+    // Additional properties are valid next to the alternatives:
+    const extended = { meow: 'Purr', note: 'Shy' }
+    const library: any = await Library.query().insertAndFetch({
+      combined,
+      patterned,
+      labeled,
+      extended
+    } as any)
+    expect(library).toMatchObject({ combined, patterned, labeled, extended })
+    await expectUnevaluated({ combined: { ...combined, legs: 4 } })
+    await expectUnevaluated({ patterned: { ...patterned, legs: 4 } })
+    await expectUnevaluated({ labeled: { ...labeled, legs: 4 } })
   })
 
   it('validates references as variants of a discriminator', async () => {
