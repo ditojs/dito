@@ -14,6 +14,7 @@ describe('html()', () => {
   })
 
   it('should join arrays, escaping their items unless they are html', () => {
+    // prettier-ignore
     expect(html`<p>${['<a>', html`<br>`, 'b']}</p>`.value).toBe(
       '<p>&lt;a&gt;<br>b</p>'
     )
