@@ -133,13 +133,9 @@ export class FieldNode {
     return this.getPropertyNode(entry)?.getValidationErrors(entry) ?? []
   }
 
-  // Fields keep the values that they hold, also `null`, and missing values get
-  // the default of their property:
   getValueOrDefault(entry) {
-    const { data, name } = entry
-    return name in data
-      ? data[name]
-      : this.getPropertyNode(entry)?.getDefaultValue(entry)
+    const property = this.getPropertyNode(entry)
+    return property ? property.getValueOrDefault(entry) : entry.data[entry.name]
   }
 }
 

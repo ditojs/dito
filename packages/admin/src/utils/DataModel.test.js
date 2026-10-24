@@ -252,6 +252,21 @@ describe('DataModel', () => {
     dataModel.stop()
   })
 
+  it('keeps cleared computed values of written properties until saved', async () => {
+    const schema = {
+      type: 'form',
+      properties: {
+        rank: { type: 'integer', default: 1, computeValue: () => undefined }
+      }
+    }
+    const { dataModel, data } = createDataModel(schema, { rank: 2 })
+    data.rank = null
+    await nextTick()
+    expect(data.rank).toBe(null)
+    expect(dataModel.serializedData.value).toEqual({ rank: 1 })
+    dataModel.stop()
+  })
+
   it('writes computed values that are new objects only once', async () => {
     const computeValue = vi.fn(({ value }) =>
       value.map(entry => ({ ...entry, upper: entry.name.toUpperCase() }))
