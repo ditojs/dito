@@ -264,10 +264,11 @@ export class PropertyNode {
           : getPropertyEmptyValue(this.property)
   }
 
+  // Keep the values that are there, also `null`, and give missing values their
+  // default:
   getValueOrDefault(entry) {
-    return this.shouldSetDefaultValue(entry)
-      ? this.getDefaultValue(entry)
-      : entry.data[entry.name]
+    const { data, name } = entry
+    return name in data ? data[name] : this.getDefaultValue(entry)
   }
 
   deserialize(value, entry) {
