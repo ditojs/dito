@@ -175,9 +175,9 @@ assets = {
 
 Upload responses and the file objects that models send to clients carry a
 `signature`, made with the first of `config.app.keys`. When files come back in
-the data of a request, the signature proves that they came from this server;
-files without a valid signature are rejected with an
-[`AssetError`](errors.md). The signature isn't stored.
+the data of a request, the signature proves that they came from this server
+with their key and metadata unchanged; files without a valid signature are
+rejected with an [`AssetError`](errors.md). The signature isn't stored.
 
 Configure `app.keys`: without them, a random key is used, and signatures
 don't survive restarts of the server.

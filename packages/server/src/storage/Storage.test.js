@@ -106,8 +106,12 @@ describe('Storage: asset key signature verification', () => {
 
   it('accepts signed files with keys of other formats', () => {
     const storage = createImportStorage()
-    const uploaded = simulateUpload(storage, 'legacy/key.png', 'photo.png')
-    const fromClient = { ...uploaded, url: 'https://example.com/a.png' }
+    const fromClient = {
+      key: 'legacy/key.png',
+      name: 'photo.png',
+      url: 'https://example.com/a.png'
+    }
+    storage.signAssetFile(fromClient)
     storage.convertAssetFile(fromClient, { trusted: false })
     expect(fromClient.key).toBe('legacy/key.png')
   })
@@ -426,6 +430,45 @@ describe('Storage: signatures', () => {
     storage.signAssetFile(file)
     expect(file.signature).toMatch(/^[0-9a-f]{64}$/)
     expect(storage.verifyAssetFile(file)).toBe(true)
+  })
+
+  it('accepts signed files sent back unchanged', () => {
+    const storage = createMemoryStorage({ url: 'https://cdn.example.com/' })
+    const uploaded = storage.convertStorageFile({
+      key: 'abc.png',
+      originalname: 'cover.png',
+      mimetype: 'image/png',
+      size: 100,
+      width: 320,
+      height: 200
+    })
+    const fromClient = JSON.parse(JSON.stringify(uploaded))
+    storage.convertAssetFile(fromClient)
+    expect(fromClient).toBeInstanceOf(AssetFile)
+  })
+
+  it('rejects signed files with changed metadata', () => {
+    const storage = createMemoryStorage({ url: 'https://cdn.example.com/' })
+    const uploaded = storage.convertStorageFile({
+      key: 'abc.png',
+      originalname: 'cover.png',
+      mimetype: 'image/png',
+      size: 100,
+      width: 320,
+      height: 200
+    })
+    for (const [key, value] of Object.entries({
+      url: 'javascript:alert(1)',
+      name: 'invoice.pdf',
+      type: 'text/html',
+      size: 101,
+      width: 321,
+      height: 201
+    })) {
+      expect(() =>
+        storage.convertAssetFile({ ...uploaded, [key]: value })
+      ).toThrow('Invalid asset signature')
+    }
   })
 
   it('rejects signatures created with other keys', () => {

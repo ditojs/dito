@@ -4431,13 +4431,13 @@ export class Storage {
 
   /**
    * Signs an asset file by setting its `signature` property
-   * to an HMAC derived from its storage key.
+   * to an HMAC derived from its storage key and metadata.
    */
   signAssetFile(file: AssetFile): void
 
   /**
    * Verifies that an asset file's signature matches its
-   * storage key. Returns false if the signature is missing
+   * storage key and metadata. Returns false if the signature is missing
    * or invalid.
    */
   verifyAssetFile(file: AssetFile): boolean

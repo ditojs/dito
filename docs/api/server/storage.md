@@ -222,9 +222,9 @@ Returns a unique key: a UUID v4 with the name's lowercase extension. Returns
 storage.signAssetFile(file)
 ```
 
-Sets `file.signature` to an HMAC of its key, made with the first of
-`config.app.keys`. Without keys, a random secret is used, and signatures
-don't survive restarts.
+Sets `file.signature` to an HMAC of its `key`, `name`, `type`, `size`, `url`,
+`width` and `height`, made with the first of `config.app.keys`. Without keys, a
+random secret is used, and signatures don't survive restarts.
 
 ### verifyAssetFile()
 
@@ -232,7 +232,8 @@ don't survive restarts.
 const isValid = storage.verifyAssetFile(file)
 ```
 
-Returns `boolean`: whether `file.signature` is valid for `file.key`.
+Returns `boolean`: whether `file.signature` is valid for the file's key and
+metadata.
 
 ### convertAssetFile()
 
