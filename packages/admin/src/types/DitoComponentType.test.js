@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { h } from 'vue'
 import { defineType } from '../index.js'
-import { mountSchema } from '../test/mount.js'
+import { mountForm, mountSchema } from '../test/mount.js'
 
 // A custom component, which displays and changes its value through
 // `modelValue` and `update:modelValue`, and emits `change` once it's done:
@@ -119,6 +119,26 @@ describe('DitoComponentType', () => {
       }
     })
     expect('rating' in data).toBe(false)
+  })
+
+  it('validates and submits values without `default`', async () => {
+    const { findField, getErrors, submit } = await mountForm({
+      schema: {
+        fields: {
+          rating: {
+            type: 'component',
+            component: RatingStars,
+            validate: ({ value }) => value > 1 || 'needs two stars'
+          }
+        }
+      },
+      data: { rating: 1 },
+      request: ({ data }) => ({ data })
+    })
+    expect(await submit()).toBe(null)
+    expect(getErrors('rating')).toEqual(['The Rating field needs two stars.'])
+    await findField('rating').trigger('click')
+    expect(await submit()).toMatchObject({ rating: 2 })
   })
 
   it('passes the events and attributes of the field through', async () => {

@@ -72,9 +72,10 @@ const DitoComponentType = {
 defineType({
   type: 'component',
   component: DitoComponentType,
-  // Custom components get no data unless their schema has a `default`:
+  // Custom components hold any value, but get none unless their schema has a
+  // `default`:
   defaultValue: undefined,
-  getProperty: schema => ('default' in schema ? {} : null),
+  getProperty: () => ({}),
 
   async setupSchema({ schema }) {
     await resolveSchemaComponent(schema)
