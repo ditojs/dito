@@ -185,7 +185,7 @@ function convertNestedSchemas(schema, jsonType, options, entry, role) {
   // evaluate, or next to a discriminator, as Ajv only finds its tag in plain
   // references. Parts, alternatives and definitions are closed outside too,
   // where their siblings or users may evaluate other properties:
-  const isClosedOutside = !!(
+  const isClosedOutside = (
     role ||
     schema.discriminator ||
     schema.properties ||

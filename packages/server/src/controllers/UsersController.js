@@ -696,8 +696,7 @@ function checkTotpService(controller, ctx, message) {
 }
 
 // Setting passwords and changing usernames needs confirmed access, the latter
-// as password resets go to them. `UserMixin` rejects hashes in all input.
-// `users` are `[id, user]` entries:
+// as password resets go to them. `users` are `[id, user]` entries:
 async function checkUserChanges(controller, ctx, action, users) {
   const { modelClass } = controller
   const { usernameProperty, passwordProperty } = modelClass.definition.options
