@@ -177,13 +177,18 @@ export function initializeData(schema, data = {}, services, {
 } = {}) {
   const visit = entry => {
     const { node, data, name } = entry
-    const value = node.getPropertyNode(entry)?.getDefaultValue(entry, {
-      shouldSetDefaultsOfComputedValues
-    })
-    // Types without values, e.g. buttons, get no key, like in the data of
-    // items that `computeValue()` returns:
-    if (value !== undefined) {
-      data[name] = value
+    const property = node.getPropertyNode(entry)
+    if (
+      property?.shouldSetDefaultValue(entry, {
+        shouldSetDefaultsOfComputedValues
+      })
+    ) {
+      // Types without values, e.g. buttons, get no key, like in the data of
+      // items that `computeValue()` returns:
+      const value = property.getDefaultValue(entry)
+      if (value !== undefined) {
+        data[name] = value
+      }
     }
     const { source } = node
     if (source && hasItemsNumberedByOrderKey(source) && isArray(data[name])) {

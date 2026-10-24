@@ -12,7 +12,7 @@ export function useValue(
   props: SchemaContextProps,
   { createContext, services }: Omit<SchemaContextSetup, 'context'>
 ) {
-  const getDefaultValue = () => {
+  const getValueOrDefault = () => {
     const { schema, data, dataPath, itemDataPath } = props
     const { name } = schema
     const entry = {
@@ -23,7 +23,7 @@ export function useValue(
       rootData: getRootData(services),
       services
     }
-    return getFieldPropertyNode(schema, name, entry)?.getDefaultValue(entry)
+    return getFieldPropertyNode(schema, name, entry)?.getValueOrDefault(entry)
   }
   // The last value that was written, after `parseValue()`:
   const parsedValue = shallowRef<any>(undefined)
@@ -35,7 +35,9 @@ export function useValue(
       // and the default of the field's property for missing ones. Unnested
       // components hold no value of their own:
       const value =
-        name in data || !hasNestedData(schema) ? data[name] : getDefaultValue()
+        name in data || !hasNestedData(schema)
+          ? data[name]
+          : getValueOrDefault()
       return getEditedValue(schema, value, () => createContext({ value }))
     },
 

@@ -819,6 +819,43 @@ describe('written properties', () => {
       ).toEqual({})
     })
 
+    it('are given by the nodes, also where they are not set', () => {
+      const properties = {
+        title: { type: 'string', default: 'Untitled' },
+        subtitle: { type: 'string', nullable: true },
+        isFeatured: { type: 'boolean' },
+        rank: { type: 'integer' },
+        awards: { type: 'array', items: { type: 'string' } },
+        address: { type: 'object', properties: {} },
+        secret: { type: 'string', format: 'password' }
+      }
+      const values = {}
+      walkData(
+        createForm(properties),
+        { title: 'Notes' },
+        {
+          dataPath: '',
+          services,
+          visit: entry => {
+            const node = entry.node.getPropertyNode(entry)
+            values[entry.name] = {
+              empty: node.getEmptyValue(entry),
+              default: node.getDefaultValue(entry)
+            }
+          }
+        }
+      )
+      expect(values).toEqual({
+        title: { empty: '', default: 'Untitled' },
+        subtitle: { empty: null, default: null },
+        isFeatured: { empty: false, default: false },
+        rank: { empty: null, default: null },
+        awards: { empty: [], default: [] },
+        address: { empty: {}, default: {} },
+        secret: { empty: '', default: '' }
+      })
+    })
+
     it('number the items by `orderKey`', () => {
       expect(
         initialize(

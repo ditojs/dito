@@ -1004,11 +1004,11 @@ export class DataModel {
 
   // Types without values, e.g. buttons, get no key:
   #setDefaultValue(entry: DataEntry) {
-    const value = entry.node.getPropertyNode(entry)?.getDefaultValue(entry, {
-      shouldSetDefaultsOfComputedValues: false
-    })
-    if (value !== undefined) {
-      entry.data[entry.name] = value
+    if (this.#shouldSetDefaultValue(entry)) {
+      const value = entry.node.getPropertyNode(entry)!.getDefaultValue(entry)
+      if (value !== undefined) {
+        entry.data[entry.name] = value
+      }
     }
   }
 
