@@ -40,7 +40,7 @@ describe('DitoTextType', () => {
       request: ({ data }) => ({ data })
     })
     expect(data.title).toBe('')
-    await findField('subtitle').find('.dito-affixes__clear').trigger('click')
+    await findField('subtitle').find('button[title="Clear"]').trigger('click')
     expect(data.subtitle).toBe('')
     await findField('email').find('input').setValue('')
     expect(await submit()).toMatchObject({
@@ -110,9 +110,9 @@ describe('DitoTextType', () => {
       },
       data: { title: 'Dune' }
     })
-    await findField('title').find('.dito-affixes__clear').trigger('click')
+    await findField('title').find('button[title="Clear"]').trigger('click')
     expect(data.title).toBe(null)
-    expect(findField('title').find('.dito-affixes__clear').exists()).toBe(
+    expect(findField('title').find('button[title="Clear"]').exists()).toBe(
       false
     )
     await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
@@ -127,7 +127,7 @@ describe('DitoTextType', () => {
         }
       }
     })
-    await findField('title').find('.dito-affixes__clear').trigger('click')
+    await findField('title').find('button[title="Clear"]').trigger('click')
     expect(data.title).toBe(null)
   })
 
@@ -145,7 +145,7 @@ describe('DitoTextType', () => {
       },
       data: { title: 'Dune' }
     })
-    await findField('title').find('.dito-affixes__clear').trigger('click')
+    await findField('title').find('button[title="Clear"]').trigger('click')
     expect(data.title).toBe('Untitled')
   })
 
@@ -161,7 +161,7 @@ describe('DitoTextType', () => {
     const input = findField('title').find('input')
     expect(input.attributes('readonly')).toBeDefined()
     expect(input.attributes('disabled')).toBeUndefined()
-    expect(findField('title').find('.dito-affixes__clear').exists()).toBe(
+    expect(findField('title').find('button[title="Clear"]').exists()).toBe(
       false
     )
   })

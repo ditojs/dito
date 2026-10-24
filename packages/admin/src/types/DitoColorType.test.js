@@ -148,7 +148,7 @@ describe('DitoColorType', () => {
       },
       data: { background: '#ff8000' }
     })
-    await findField('background').find('.dito-affixes__clear').trigger('click')
+    await findField('background').find('button[title="Clear"]').trigger('click')
     expect(data.background).toBe(null)
     await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
   })

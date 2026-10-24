@@ -21,11 +21,21 @@ export function createLoginDialog(authentication, additionalFields = {}) {
       username: {
         type: 'text',
         autocomplete: 'username',
-        autofocus: true
+        autofocus: true,
+        prefix: { type: 'icon', name: 'at-sign' }
       },
       password: {
         type: 'password',
-        autocomplete: 'current-password'
+        autocomplete: 'current-password',
+        prefix: { type: 'icon', name: 'lock' },
+        ...(authentication.hasPasswordReset && {
+          suffix: {
+            type: 'button',
+            text: 'Forgot?',
+            title: 'Forgot password?',
+            onClick: ({ closeDialog }) => closeDialog('passwordReset')
+          }
+        })
       },
       ...additionalFields
     },
@@ -38,14 +48,6 @@ export function createLoginDialog(authentication, additionalFields = {}) {
       },
 
       ...createPasskeyButtons(authentication, 'Sign In with Passkey'),
-
-      ...(authentication.hasPasswordReset && {
-        passwordReset: {
-          type: 'button',
-          text: 'Forgot password?',
-          onClick: ({ closeDialog }) => closeDialog('passwordReset')
-        }
-      }),
 
       // `DitoDialog` adds the click event of the cancel button:
       cancel: {

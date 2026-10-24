@@ -66,7 +66,7 @@ describe('DitoNumberType', () => {
     })
     const price = findField('price')
     expect(price.find('.dito-affixes--prefix').text()).toBe('EUR')
-    await price.find('.dito-affixes__clear').trigger('click')
+    await price.find('button[title="Clear"]').trigger('click')
     expect(data.price).toBe(null)
     expect(price.find('input').element.value).toBe('')
   })

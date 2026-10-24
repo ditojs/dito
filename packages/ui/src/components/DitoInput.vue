@@ -129,6 +129,8 @@ export default {
 .dito-input {
   display: inline-flex;
   align-items: center;
+  // Space the affixes from the text:
+  gap: $input-padding-hor;
 
   @extend %input;
 

@@ -173,7 +173,7 @@ describe('Session', () => {
     it('requests a password reset, and then asks to log in', async () => {
       const admin = await mount()
       const notify = vi.spyOn(admin.context, 'notify')
-      await answerDialog(admin, 'Forgot password?')
+      await answerDialog(admin, 'Forgot?')
       await answerDialog(admin, 'Send Email', { username: 'ada' })
       await waitForNotification(notify, {
         type: 'info',
@@ -187,7 +187,7 @@ describe('Session', () => {
     it('asks to log in when the password reset is cancelled', async () => {
       const admin = await mount()
       const notify = vi.spyOn(admin.context, 'notify')
-      await answerDialog(admin, 'Forgot password?')
+      await answerDialog(admin, 'Forgot?')
       await answerDialog(admin, 'Cancel')
       await logInWithDialog(admin)
       await waitForUser(admin)

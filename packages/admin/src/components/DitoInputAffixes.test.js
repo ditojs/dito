@@ -27,14 +27,14 @@ describe('DitoInputAffixes', () => {
       clearable: true,
       hasValue: true
     })
-    wrapper.find('.dito-affixes__clear').trigger('click')
+    wrapper.find('button[title="Clear"]').trigger('click')
     expect(wrapper.emitted('clear')).toHaveLength(1)
   })
 
   it('only shows the clear button of clearable values that are set', () => {
     const hasClearButton = props =>
       mountInputAffixes({ position: 'suffix', ...props })
-        .find('.dito-affixes__clear')
+        .find('button[title="Clear"]')
         .exists()
     expect(hasClearButton({ clearable: true, hasValue: true })).toBe(true)
     expect(hasClearButton({ clearable: true, hasValue: false })).toBe(false)

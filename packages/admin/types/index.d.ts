@@ -68,10 +68,10 @@ export interface GlobalConfig {
     hasPasswordChange?: boolean
     /**
      * Set with the password reset actions, through
-     * `config.app.authentication.passwordReset`. Adds a "Forgot password?"
-     * button to the login dialog, which asks the server to email a link that
-     * opens the admin with `#password-reset=` and the token, to set a new
-     * password.
+     * `config.app.authentication.passwordReset`. Adds a "Forgot?"
+     * button to the password field of the login dialog, which asks the server
+     * to email a link that opens the admin with `#password-reset=` and the
+     * token, to set a new password.
      */
     hasPasswordReset?: boolean
   }
@@ -1054,6 +1054,11 @@ export type SchemaAffix =
       if?: SchemaValue<any, {}, boolean>
       /** Classes added to the affix. */
       class?: string
+      /**
+       * Only show the affix while the input is hovered, in place of the other
+       * affixes of its side, e.g. the clear button.
+       */
+      hover?: boolean
     } & (
       | {
           type?: 'text'
@@ -1080,6 +1085,18 @@ export type SchemaAffix =
           component: VueComponent
           /** The props passed to the component. */
           props?: Record<string, any>
+        }
+      | {
+          type: 'button'
+          /** The text of the button, unless it shows an icon. */
+          text?: string
+          /** The name of an icon of `@ditojs/ui`, shown instead of the text. */
+          icon?: string
+          /** The tooltip of the button. */
+          title?: string
+          disabled?: boolean
+          /** Called with the context of the field. */
+          onClick?: ItemEventHandler
         }
     ))
 
