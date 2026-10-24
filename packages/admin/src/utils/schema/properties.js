@@ -90,9 +90,10 @@ const callbackKeys = [
 // runs, without a name in properties:
 const typeKey = Symbol('type')
 
-// The nodes of written properties and of the properties of fields by schema,
-// computed so that fields get new ones once `setupForm()` changes them. Fields
-// whose types read callbacks to derive their property derive it per entry:
+// The nodes of written properties and of the properties of fields by schema
+// and name, as several names may share a schema, computed so that fields get
+// new ones once `setupForm()` changes them. Fields whose types read callbacks
+// to derive their property derive it per entry:
 const nodesBySchema = new WeakMap()
 
 // Written properties: a value of a form's data and its keywords, which may be
@@ -391,7 +392,7 @@ export function createPropertyNodes(properties) {
 }
 
 export function getPropertyNode(name, property) {
-  return getCachedNode(property, () => ({
+  return getCachedNode(property, name, () => ({
     node: new PropertyNode(name, property),
     isPerEntry: false
   })).node
@@ -418,7 +419,7 @@ export function isPropertyPerEntry(field, name, services) {
 // Derive the property once per field, without the entry's data. If its type
 // reads callbacks, the property depends on the entry:
 function getStaticFieldNode(field, name, services) {
-  return getCachedNode(field, () => {
+  return getCachedNode(field, name, () => {
     const context = SchemaContext.createForSchema(services, {
       schema: field,
       name
@@ -764,11 +765,16 @@ export function getPropertyEmptyValue({ type, properties }) {
       : undefined
 }
 
-function getCachedNode(schema, createNode) {
-  let node = nodesBySchema.get(toRaw(schema))
+function getCachedNode(schema, name, createNode) {
+  let nodesByName = nodesBySchema.get(toRaw(schema))
+  if (!nodesByName) {
+    nodesByName = new Map()
+    nodesBySchema.set(toRaw(schema), nodesByName)
+  }
+  let node = nodesByName.get(name)
   if (!node) {
     node = computed(createNode)
-    nodesBySchema.set(toRaw(schema), node)
+    nodesByName.set(name, node)
   }
   return node.value
 }
