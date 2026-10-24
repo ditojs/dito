@@ -224,13 +224,13 @@ sessions stored on the server.
   on forms was ignored.
 - Elements are named after their blocks:
 
-| 5.1                                                                  | 5.2                                                                  |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `dito-tree-header`, `-branch`, `-leaf`, `-label`, `-info`            | `dito-tree-item__header`, `__branch`, `__leaf`, `__label`, `__info`  |
-| `dito-tree-branch__content`                                          | `dito-tree-item__branch-content`                                     |
-| `dito-tree-panel`, `dito-tree-form-container`                        | `dito-tree-list__panel`, `__form-container`                          |
-| `dito-object-content`                                                | `dito-object__content`                                               |
-| `dito-pagination-total`                                              | `dito-pagination__total`                                             |
+| 5.1                                                       | 5.2                                                                 |
+| --------------------------------------------------------- | ------------------------------------------------------------------- |
+| `dito-tree-header`, `-branch`, `-leaf`, `-label`, `-info` | `dito-tree-item__header`, `__branch`, `__leaf`, `__label`, `__info` |
+| `dito-tree-branch__content`                               | `dito-tree-item__branch-content`                                    |
+| `dito-tree-panel`, `dito-tree-form-container`             | `dito-tree-list__panel`, `__form-container`                         |
+| `dito-object-content`                                     | `dito-object__content`                                              |
+| `dito-pagination-total`                                   | `dito-pagination__total`                                            |
 
 ### 5.4
 

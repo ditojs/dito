@@ -791,8 +791,6 @@ These changes close security holes or fix data loss, but existing apps may notic
 - Development uses objection 3.5.0; the peer dependency stays `^3.3.0`.
 - Tests cover known bugs of nested forms, routing and options.
 
-
-
 ## 3.4.0 (2026-10-09)
 
 ### Behavior changes
@@ -819,8 +817,6 @@ These changes close security holes or fix data loss, but existing apps may notic
 - Test coverage is at 99.9% of lines and 99% of branches; Dito's own tests no longer depend on the e2e tests of applications.
 - Code that is unreachable through Dito's own control flow is removed.
 
-
-
 ## 3.3.1 (2026-10-09)
 
 Requires Objection.js **3.3.0**, which now handles mixed graph algorithms and cyclic `#ref` graphs itself.
@@ -844,11 +840,9 @@ Requires Objection.js **3.3.0**, which now handles mixed graph algorithms and cy
 - Dito's own workaround for cyclic `#ref` graphs is removed.
 - All packages are now released together, to keep their versions in sync.
 
-
-
 ## 3.3.0 (2026-10-09)
 
-Changes since v3.2.7. No public API was removed: these are fixes, security hardening and accessibility work, with a few behaviour changes that apps may need to act on, listed under *Upgrade notes*.
+Changes since v3.2.7. No public API was removed: these are fixes, security hardening and accessibility work, with a few behaviour changes that apps may need to act on, listed under _Upgrade notes_.
 
 > **Known issue:** with Objection.js 3.2.0, queries that mix `withGraphJoined()` and `withGraphFetched()` fail. This is fixed in **v3.3.1**, which requires Objection.js 3.3.0. Please upgrade to v3.3.1.
 
@@ -1152,5 +1146,3 @@ Apps that style or select these classes (including e2e locators) must update:
   server; shared components `DitoSourceItem`, `DitoDragHandle`,
   `DitoInputAffixes`, `DitoResizeHandle`, `DitoPickerInput`, `DitoTimePanel`.
 - DOM handlers removed via abort signals; release docs in the README.
-
-

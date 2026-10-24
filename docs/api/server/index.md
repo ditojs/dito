@@ -10,8 +10,8 @@ controllers derived from them, services, file storages and JSON schema
 validation. The package has one entry point, `@ditojs/server`, with its
 TypeScript types; deep imports aren't supported.
 
-Everything not listed here is internal. Members marked *Hook* are meant to be
-overridden in subclasses; *Hook, call `super`* means that overrides have to
+Everything not listed here is internal. Members marked _Hook_ are meant to be
+overridden in subclasses; _Hook, call `super`_ means that overrides have to
 call the inherited method. The [server guide](../../guide/server/index.md)
 explains the concepts; these pages list the members.
 
@@ -31,43 +31,43 @@ explains the concepts; these pages list the members.
 
 ## Classes
 
-| Export                                          | Description                                                        |
-| ----------------------------------------------- | ------------------------------------------------------------------ |
-| [`Application`](application.md)                 | The server application and its configuration.                      |
-| [`Model`](model.md)                             | The base class of models.                                          |
-| [`QueryBuilder`](query-builder.md)              | The query builder of models.                                       |
-| [`Controller`](controllers.md)                  | The base class of controllers.                                     |
-| [`CollectionController`](controllers.md#collectioncontroller) | The base of model and relation controllers.          |
-| [`ModelController`](controllers.md#modelcontroller) | REST controller of a model's collection, members and relations. |
-| [`RelationController`](controllers.md#relationcontroller) | The controllers of a model controller's relations.                 |
-| [`UsersController`](controllers.md#userscontroller) | Model controller with login, logout, session, passkey, TOTP and password reset actions. |
-| [`AdminController`](controllers.md#admincontroller) | Serves the Dito.js Admin.                                          |
-| [`Service`](service.md)                         | The base class of services.                                        |
-| [`PasskeyService`](service.md#passkeyservice), [`TotpService`](service.md#totpservice) | The services of passkeys and TOTP for `UsersController`. |
-| [`Storage`](storage.md), [`AssetFile`](storage.md#assetfile) | File storages and their files.                                  |
-| [`Validator`](validator.md)                     | The JSON schema validator.                                         |
+| Export                                                                                 | Description                                                                             |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [`Application`](application.md)                                                        | The server application and its configuration.                                           |
+| [`Model`](model.md)                                                                    | The base class of models.                                                               |
+| [`QueryBuilder`](query-builder.md)                                                     | The query builder of models.                                                            |
+| [`Controller`](controllers.md)                                                         | The base class of controllers.                                                          |
+| [`CollectionController`](controllers.md#collectioncontroller)                          | The base of model and relation controllers.                                             |
+| [`ModelController`](controllers.md#modelcontroller)                                    | REST controller of a model's collection, members and relations.                         |
+| [`RelationController`](controllers.md#relationcontroller)                              | The controllers of a model controller's relations.                                      |
+| [`UsersController`](controllers.md#userscontroller)                                    | Model controller with login, logout, session, passkey, TOTP and password reset actions. |
+| [`AdminController`](controllers.md#admincontroller)                                    | Serves the Dito.js Admin.                                                               |
+| [`Service`](service.md)                                                                | The base class of services.                                                             |
+| [`PasskeyService`](service.md#passkeyservice), [`TotpService`](service.md#totpservice) | The services of passkeys and TOTP for `UsersController`.                                |
+| [`Storage`](storage.md), [`AssetFile`](storage.md#assetfile)                           | File storages and their files.                                                          |
+| [`Validator`](validator.md)                                                            | The JSON schema validator.                                                              |
 
 ## Mixins and models
 
-| Export                                                          | Description                                    |
-| --------------------------------------------------------------- | ---------------------------------------------- |
-| [`TimestampedMixin`, `TimestampedModel`](model.md#timestampedmixin) | `createdAt` and `updatedAt`.               |
-| [`UserMixin`, `UserModel`](model.md#usermixin)                  | Users that log in with a password.             |
-| [`SessionMixin`, `SessionModel`](model.md#sessionmixin)         | Session storage.                               |
-| [`CredentialMixin`, `CredentialModel`](model.md#credentialmixin) | The passkeys and TOTP of users.               |
-| [`AssetMixin`, `AssetModel`](model.md#assetmixin)               | Asset records.                                 |
+| Export                                                              | Description                        |
+| ------------------------------------------------------------------- | ---------------------------------- |
+| [`TimestampedMixin`, `TimestampedModel`](model.md#timestampedmixin) | `createdAt` and `updatedAt`.       |
+| [`UserMixin`, `UserModel`](model.md#usermixin)                      | Users that log in with a password. |
+| [`SessionMixin`, `SessionModel`](model.md#sessionmixin)             | Session storage.                   |
+| [`CredentialMixin`, `CredentialModel`](model.md#credentialmixin)    | The passkeys and TOTP of users.    |
+| [`AssetMixin`, `AssetModel`](model.md#assetmixin)                   | Asset records.                     |
 
 ## Registries and schema
 
-| Export                                                   | Description                                                          |
-| -------------------------------------------------------- | -------------------------------------------------------------------- |
-| [`QueryParameters`](query-builder.md#queryparameters)    | Handlers of the query parameters of `find()`.                        |
-| [`QueryFilters`](query-builder.md#queryfilters)          | Filter types for model filters.                                      |
-| [`keywords`, `formats`, `types`](validator.md)           | The built-in schema keywords, formats and types.                     |
-| [`convertSchema()`](validator.md#convertschema)         | Converts a Dito.js schema to a JSON schema.                          |
-| [`convertRelations()`, `convertRelation()`](model.md#relation-helpers) | Convert relation definitions to Objection.js relation mappings.      |
-| [`getRelationClass()`, `isThroughRelationClass()`](model.md#relation-helpers) | Map relation type names to Objection.js relation classes.            |
-| [`addRelationSchemas()`](model.md#relation-helpers)     | Adds the schemas of a model's relations to its properties.           |
+| Export                                                                        | Description                                                     |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [`QueryParameters`](query-builder.md#queryparameters)                         | Handlers of the query parameters of `find()`.                   |
+| [`QueryFilters`](query-builder.md#queryfilters)                               | Filter types for model filters.                                 |
+| [`keywords`, `formats`, `types`](validator.md)                                | The built-in schema keywords, formats and types.                |
+| [`convertSchema()`](validator.md#convertschema)                               | Converts a Dito.js schema to a JSON schema.                     |
+| [`convertRelations()`, `convertRelation()`](model.md#relation-helpers)        | Convert relation definitions to Objection.js relation mappings. |
+| [`getRelationClass()`, `isThroughRelationClass()`](model.md#relation-helpers) | Map relation type names to Objection.js relation classes.       |
+| [`addRelationSchemas()`](model.md#relation-helpers)                           | Adds the schemas of a model's relations to its properties.      |
 
 ## Command line
 
@@ -86,17 +86,17 @@ migrations from models, and starts an interactive console.
 
 Main TypeScript types, besides the classes above:
 
-| Type                                                          | Description                                                  |
-| ------------------------------------------------------------- | ------------------------------------------------------------ |
-| `ApplicationConfig`, `AdminConfig`, `ApiConfig`               | [Configuration](application.md#applicationconfig).           |
-| `ApplicationServices`, `ApplicationStorages`, `KoaContextState` | Interfaces to augment for typed `app.services`, `app.storages` and `ctx.state`. |
-| `ModelProperty`, `ModelProperties`, `ModelRelation`, `ModelRelations`, `ModelScope(s)`, `ModelFilter(s)`, `ModelModifier(s)`, `ModelHooks`, `ModelAsset(s)` | [Model definitions](model.md#definitions). |
-| `QueryFilterTypes`                                            | Interface to augment with custom filter types.               |
-| `DitoGraphOptions`, `QueryParameterOptions`                   | [Query builder](query-builder.md) options.                   |
-| `ControllerAction(s)`, `ModelControllerAction(s)`, `Authorize`, `ControllerAsset(s)` | [Controller](controllers.md) definitions.  |
-| `StorageConfig`, `DiskStorageConfig`, `S3StorageConfig`       | [Storage](storage.md) configurations.                        |
-| `Schema`, `ParameterSchema`, `Keyword`, `Format`              | [Schemas](validator.md).                                     |
-| `KoaContext`, `KoaSession`                                    | The Koa context of requests.                                 |
-| `HttpMethod`                                                  | `'get' \| 'head' \| 'post' \| 'put' \| 'delete' \| 'patch' \| 'options' \| 'trace' \| 'connect'` |
-| `Id`, `Page`, `SerializedModel`                               | Ids, `range` results, and the JSON of models.                |
-| `FromModel`                                                   | [Instance types derived from definitions](../../guide/server/models.md#deriving-types). |
+| Type                                                                                                                                                        | Description                                                                                      |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `ApplicationConfig`, `AdminConfig`, `ApiConfig`                                                                                                             | [Configuration](application.md#applicationconfig).                                               |
+| `ApplicationServices`, `ApplicationStorages`, `KoaContextState`                                                                                             | Interfaces to augment for typed `app.services`, `app.storages` and `ctx.state`.                  |
+| `ModelProperty`, `ModelProperties`, `ModelRelation`, `ModelRelations`, `ModelScope(s)`, `ModelFilter(s)`, `ModelModifier(s)`, `ModelHooks`, `ModelAsset(s)` | [Model definitions](model.md#definitions).                                                       |
+| `QueryFilterTypes`                                                                                                                                          | Interface to augment with custom filter types.                                                   |
+| `DitoGraphOptions`, `QueryParameterOptions`                                                                                                                 | [Query builder](query-builder.md) options.                                                       |
+| `ControllerAction(s)`, `ModelControllerAction(s)`, `Authorize`, `ControllerAsset(s)`                                                                        | [Controller](controllers.md) definitions.                                                        |
+| `StorageConfig`, `DiskStorageConfig`, `S3StorageConfig`                                                                                                     | [Storage](storage.md) configurations.                                                            |
+| `Schema`, `ParameterSchema`, `Keyword`, `Format`                                                                                                            | [Schemas](validator.md).                                                                         |
+| `KoaContext`, `KoaSession`                                                                                                                                  | The Koa context of requests.                                                                     |
+| `HttpMethod`                                                                                                                                                | `'get' \| 'head' \| 'post' \| 'put' \| 'delete' \| 'patch' \| 'options' \| 'trace' \| 'connect'` |
+| `Id`, `Page`, `SerializedModel`                                                                                                                             | Ids, `range` results, and the JSON of models.                                                    |
+| `FromModel`                                                                                                                                                 | [Instance types derived from definitions](../../guide/server/models.md#deriving-types).          |

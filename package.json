@@ -21,8 +21,8 @@
     "eslint:fix": "pnpm run eslint --fix",
     "stylelint": "stylelint packages/*/src/**/*.{vue,scss}",
     "stylelint:fix": "pnpm run stylelint --fix",
-    "prettier": "prettier 'packages/*/src/**/*.{js,ts,vue}' 'packages/*/types/**/*.ts' 'tests/**/*.ts' --check",
-    "prettier:fix": "prettier 'packages/*/src/**/*.{js,ts,vue}' 'packages/*/types/**/*.ts' 'tests/**/*.ts' --write",
+    "prettier": "prettier 'packages/*/src/**/*.{js,ts,vue}' 'packages/*/types/**/*.ts' 'tests/**/*.ts' '**/*.md' --check",
+    "prettier:fix": "prettier 'packages/*/src/**/*.{js,ts,vue}' 'packages/*/types/**/*.ts' 'tests/**/*.ts' '**/*.md' --write",
     "lint": "concurrently pnpm:eslint pnpm:prettier pnpm:stylelint pnpm:peers:check",
     "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix && pnpm run stylelint:fix",
     "update": "pnpm update -r --depth 0 --interactive --latest && pnpm run peers:sync",
@@ -45,6 +45,9 @@
     ],
     "packages/**/src/**/*.scss": [
       "stylelint"
+    ],
+    "*.md": [
+      "prettier --check"
     ]
   },
   "engines": {

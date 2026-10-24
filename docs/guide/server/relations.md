@@ -35,13 +35,13 @@ relations of instances from these definitions.
 
 ## Relation types
 
-| Type              | The model…                                   | Loads
-| ----------------- | -------------------------------------------- | ------------
-| `'belongsTo'`     | holds the foreign key of one related model.  | One model.
-| `'hasOne'`        | is referenced by the foreign key of one model. | One model.
-| `'hasMany'`       | is referenced by the foreign keys of many models. | An array.
-| `'manyToMany'`    | is related to many models through a join table. | An array.
-| `'hasOneThrough'` | is related to one model through a join table. | One model.
+| Type              | The model…                                        | Loads      |
+| ----------------- | ------------------------------------------------- | ---------- |
+| `'belongsTo'`     | holds the foreign key of one related model.       | One model. |
+| `'hasOne'`        | is referenced by the foreign key of one model.    | One model. |
+| `'hasMany'`       | is referenced by the foreign keys of many models. | An array.  |
+| `'manyToMany'`    | is related to many models through a join table.   | An array.  |
+| `'hasOneThrough'` | is related to one model through a join table.     | One model. |
 
 `from` always names the property on the own model, `to` the property on the
 related model.

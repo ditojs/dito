@@ -18,5 +18,13 @@ export default {
   pugAttributeSeparator: 'none',
   pugCommentPreserveSpaces: 'trim-all',
   pugWrapAttributesThreshold: 1,
-  pugWrapAttributesPattern: '^(@|v-)'
+  pugWrapAttributesPattern: '^(@|v-)',
+  overrides: [
+    {
+      // Keep the code examples of the docs as they're laid out, often as
+      // fragments that aren't valid code on their own:
+      files: '*.md',
+      options: { embeddedLanguageFormatting: 'off' }
+    }
+  ]
 }

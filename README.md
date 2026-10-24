@@ -13,10 +13,10 @@ declarative descriptions not only of the data structures themselves (the
 models), but also of the way they are remotely interacted with (the
 controllers), as well as the way they are edited (the admin views and forms).
 
-This is then also the reason for the name *Dito.js* itself:
+This is then also the reason for the name _Dito.js_ itself:
 
-> *Ditto* originally comes from the Latin word *dictus*, "having been said," the
-> past participle of the verb *dīcere*, "to say."
+> _Ditto_ originally comes from the Latin word _dictus_, "having been said," the
+> past participle of the verb _dīcere_, "to say."
 > https://www.thefreedictionary.com/ditto
 
 Dito.js was developed at [Lineto](https://lineto.com/) by [Jürg
@@ -35,8 +35,8 @@ dividing it into the following folder structure:
 
 - `src/server`: This folder contains the admin Dito.js Server app, along with all
   models and controllers in sub-folders:
-    - `src/server/models`: The place where for the model classes.
-    - `src/server/controllers`: The place for the controller classes.
+  - `src/server/models`: The place where for the model classes.
+  - `src/server/controllers`: The place for the controller classes.
 - `src/admin`: This folder contains a declarations of all admin views and forms
 - `src/config`: The application configuration files.
 - `migrations`: The folder holding all migration files.
@@ -85,14 +85,14 @@ Here a brief description of each script's purpose:
 - `pnpm run db:seed`: Seeds the configured database with the data provided in
   `seeds`. See [Seeds](docs/guide/server/database.md#seeds) for more information.
 - `pnpm run db:create_migration`: Creates migration files for the specified models.
-   See [Migrations](docs/guide/server/database.md) for more information.
+  See [Migrations](docs/guide/server/database.md) for more information.
 - `pnpm run db:migrate`: Migrates to the latest state of migrations.
-   See [Migrations](docs/guide/server/database.md) for more information.
+  See [Migrations](docs/guide/server/database.md) for more information.
 - `pnpm run db:rollback`: Rolls back the last batch of applied migrations.
-   See [Migrations](docs/guide/server/database.md) for more information.
+  See [Migrations](docs/guide/server/database.md) for more information.
 - `pnpm run db:reset`: Resets the database by rolling back all applied migrations,
-   and then reapplying all available migrations.
-   See [Migrations](docs/guide/server/database.md) for more information.
+  and then reapplying all available migrations.
+  See [Migrations](docs/guide/server/database.md) for more information.
 
 ## Releasing Dito.js
 

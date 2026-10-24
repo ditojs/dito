@@ -10,19 +10,19 @@ entry point, `@ditojs/utils`, an ES module with TypeScript types.
 
 ## Contents
 
-| Section | Exports |
-| ------- | ------- |
+| Section                                       | Exports                                                                                                                                                                                                                                                                                                         |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Base and type checks](#base-and-type-checks) | `is()`, `isArray()`, `isPlainObject()`, `isPlainArray()`, `isObject()`, `isFunction()`, `isNumber()`, `isString()`, `isBoolean()`, `isModule()`, `isDate()`, `isRegExp()`, `isTypedArray()`, `isPromise()`, `isInteger()`, `isAsync()`, `isArrayLike()`, `isEmpty()`, `asObject()`, `asArray()`, `asFunction()` |
-| [Arrays](#arrays) | `flatten()`, `shuffle()` |
-| [Objects](#objects) | `clone()`, `equals()`, `groupBy()`, `mapKeys()`, `mapValues()`, `mergeDeeply()`, `assignDeeply()`, `pick()`, `pickBy()` |
-| [Strings](#strings) | `camelize()`, `capitalize()`, `decamelize()`, `hyphenate()`, `underscore()`, `labelize()`, `deindent()`, `escapeRegExp()`, `getCommonPrefix()`, `getCommonOffset()`, `isAbsoluteUrl()`, `isUrl()`, `isDomain()`, `isHostname()`, `isEmail()`, `isCreditCard()` |
-| [Dates and numbers](#dates-and-numbers) | `format()`, `formatDate()`, `defaultFormats`, `formatPlainDate()`, `parsePlainDate()` |
-| [Data paths](#data-paths) | `parseDataPath()`, `normalizeDataPath()`, `resolveDataPath()`, `getValueAtDataPath()`, `getEntriesAtDataPath()`, `setValueAtDataPath()`, `setEntriesAtDataPath()` |
-| [HTML](#html) | `html`, `isHtml()`, `asHtml()`, `escapeHtml()`, `stripHtml()` |
-| [Functions](#functions) | `deprecate()`, `toAsync()`, `toCallback()`, `toPromiseCallback()` |
-| [Timers](#timers) | `debounce()`, `debounceAsync()` |
-| [Promises](#promises) | `mapConcurrently()`, `mapSequentially()` |
-| [Classes](#classes) | `mixin()` |
+| [Arrays](#arrays)                             | `flatten()`, `shuffle()`                                                                                                                                                                                                                                                                                        |
+| [Objects](#objects)                           | `clone()`, `equals()`, `groupBy()`, `mapKeys()`, `mapValues()`, `mergeDeeply()`, `assignDeeply()`, `pick()`, `pickBy()`                                                                                                                                                                                         |
+| [Strings](#strings)                           | `camelize()`, `capitalize()`, `decamelize()`, `hyphenate()`, `underscore()`, `labelize()`, `deindent()`, `escapeRegExp()`, `getCommonPrefix()`, `getCommonOffset()`, `isAbsoluteUrl()`, `isUrl()`, `isDomain()`, `isHostname()`, `isEmail()`, `isCreditCard()`                                                  |
+| [Dates and numbers](#dates-and-numbers)       | `format()`, `formatDate()`, `defaultFormats`, `formatPlainDate()`, `parsePlainDate()`                                                                                                                                                                                                                           |
+| [Data paths](#data-paths)                     | `parseDataPath()`, `normalizeDataPath()`, `resolveDataPath()`, `getValueAtDataPath()`, `getEntriesAtDataPath()`, `setValueAtDataPath()`, `setEntriesAtDataPath()`                                                                                                                                               |
+| [HTML](#html)                                 | `html`, `isHtml()`, `asHtml()`, `escapeHtml()`, `stripHtml()`                                                                                                                                                                                                                                                   |
+| [Functions](#functions)                       | `deprecate()`, `toAsync()`, `toCallback()`, `toPromiseCallback()`                                                                                                                                                                                                                                               |
+| [Timers](#timers)                             | `debounce()`, `debounceAsync()`                                                                                                                                                                                                                                                                                 |
+| [Promises](#promises)                         | `mapConcurrently()`, `mapSequentially()`                                                                                                                                                                                                                                                                        |
+| [Classes](#classes)                           | `mixin()`                                                                                                                                                                                                                                                                                                       |
 
 The types also export the helper types `ArrayLike<T>`, `Dictionary<T>` and
 `RecursiveArray<T>`, and the format option types `DateFormat`, `TimeFormat`
@@ -41,26 +41,26 @@ boolean; in TypeScript, most of them are type guards.
 
 ### Type checks
 
-| Function | Returns `true` for |
-| -------- | ------------------ |
-| `is(value1, value2)` | The same value by the SameValue algorithm (`Object.is()`): `is(NaN, NaN)` is `true`, `is(0, -0)` is `false`. |
-| `isArray(arg)` | Arrays (`Array.isArray()`). |
-| `isPlainArray(arg)` | Arrays created by `Array`, not by subclasses. Also arrays from other realms, e.g. another `vm` context. |
-| `isPlainObject(arg)` | Objects created by `Object`, object literals and `Object.create(null)`, also from other realms. Not class instances, arrays or ES module namespace objects. |
-| `isObject(arg)` | Any non-null object that isn't an array, including class instances and dates. |
-| `isFunction(arg)` | Functions, including classes and async functions. |
-| `isNumber(arg)` | Numbers and `Number` objects, including `NaN` and `Infinity`. |
-| `isString(arg)` | Strings and `String` objects. |
-| `isBoolean(arg)` | Booleans and `Boolean` objects. |
-| `isModule(arg)` | ES module namespace objects, e.g. from `import * as models`. |
-| `isDate(arg)` | `Date` objects, also from other realms. |
-| `isRegExp(arg)` | Regular expressions. |
-| `isTypedArray(arg)` | Typed arrays, e.g. `Uint8Array`, including Node.js buffers, but not `DataView`. |
-| `isPromise(arg)` | Objects with `then()` and `catch()` methods. |
-| `isInteger(arg)` | Integer numbers (`Number.isInteger()`). |
-| `isAsync(arg)` | Functions declared with `async`. Not regular functions that return promises. |
-| `isArrayLike(arg)` | Values with a numeric `length` between `0` and `Number.MAX_SAFE_INTEGER` that aren't functions: arrays, strings, `arguments`, node lists. |
-| `isEmpty(arg)` | `null`, `undefined`, array-likes with length `0` (including `''`), a `Map` or `Set` with size `0`, and other objects without own enumerable keys. A `Date`, `0` and `false` aren't empty. |
+| Function             | Returns `true` for                                                                                                                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `is(value1, value2)` | The same value by the SameValue algorithm (`Object.is()`): `is(NaN, NaN)` is `true`, `is(0, -0)` is `false`.                                                                              |
+| `isArray(arg)`       | Arrays (`Array.isArray()`).                                                                                                                                                               |
+| `isPlainArray(arg)`  | Arrays created by `Array`, not by subclasses. Also arrays from other realms, e.g. another `vm` context.                                                                                   |
+| `isPlainObject(arg)` | Objects created by `Object`, object literals and `Object.create(null)`, also from other realms. Not class instances, arrays or ES module namespace objects.                               |
+| `isObject(arg)`      | Any non-null object that isn't an array, including class instances and dates.                                                                                                             |
+| `isFunction(arg)`    | Functions, including classes and async functions.                                                                                                                                         |
+| `isNumber(arg)`      | Numbers and `Number` objects, including `NaN` and `Infinity`.                                                                                                                             |
+| `isString(arg)`      | Strings and `String` objects.                                                                                                                                                             |
+| `isBoolean(arg)`     | Booleans and `Boolean` objects.                                                                                                                                                           |
+| `isModule(arg)`      | ES module namespace objects, e.g. from `import * as models`.                                                                                                                              |
+| `isDate(arg)`        | `Date` objects, also from other realms.                                                                                                                                                   |
+| `isRegExp(arg)`      | Regular expressions.                                                                                                                                                                      |
+| `isTypedArray(arg)`  | Typed arrays, e.g. `Uint8Array`, including Node.js buffers, but not `DataView`.                                                                                                           |
+| `isPromise(arg)`     | Objects with `then()` and `catch()` methods.                                                                                                                                              |
+| `isInteger(arg)`     | Integer numbers (`Number.isInteger()`).                                                                                                                                                   |
+| `isAsync(arg)`       | Functions declared with `async`. Not regular functions that return promises.                                                                                                              |
+| `isArrayLike(arg)`   | Values with a numeric `length` between `0` and `Number.MAX_SAFE_INTEGER` that aren't functions: arrays, strings, `arguments`, node lists.                                                 |
+| `isEmpty(arg)`       | `null`, `undefined`, array-likes with length `0` (including `''`), a `Map` or `Set` with size `0`, and other objects without own enumerable keys. A `Date`, `0` and `false` aren't empty. |
 
 ```js
 isPlainObject({ title: 'Orlando' }) // true
@@ -169,13 +169,13 @@ prototype of objects without calling their constructor.
   work for objects that keep their data internally, like maps and sets.
 - Primitives and functions are returned as they are.
 
-| Option | Default | Description |
-| ------ | ------- | ----------- |
-| `shallow` | `false` | Copies only the top level; nested values are shared. |
-| `enumerable` | `true` | Copies only own enumerable string keys (`Object.keys()`). With `false`, all own keys, including non-enumerable and symbol keys. |
-| `descriptors` | `!enumerable` | Copies the property descriptors, so that getters, setters and read-only properties stay what they are. |
-| `transferables` | `null` | An array of values that are kept as references instead of being copied. |
-| `processValue` | `null` | `(copy) => value`, called with every copied value. A returned value other than `undefined` replaces the copy. |
+| Option          | Default       | Description                                                                                                                     |
+| --------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `shallow`       | `false`       | Copies only the top level; nested values are shared.                                                                            |
+| `enumerable`    | `true`        | Copies only own enumerable string keys (`Object.keys()`). With `false`, all own keys, including non-enumerable and symbol keys. |
+| `descriptors`   | `!enumerable` | Copies the property descriptors, so that getters, setters and read-only properties stay what they are.                          |
+| `transferables` | `null`        | An array of values that are kept as references instead of being copied.                                                         |
+| `processValue`  | `null`        | `(copy) => value`, called with every copied value. A returned value other than `undefined` replaces the copy.                   |
 
 ```js
 const draft = clone(book)
@@ -328,14 +328,14 @@ and the checks return `false` for them.
 
 ### Case conversion
 
-| Function | Description | Example |
-| -------- | ----------- | ------- |
-| `camelize(str, pascalCase = false)` | Converts words separated by spaces, hyphens or underscores to camel case, or to pascal case with `pascalCase`. | `camelize('page-count')` → `'pageCount'`, `camelize('page count', true)` → `'PageCount'` |
-| `decamelize(str, sep = ' ')` | Splits camel case into lower-case words, separated by `sep`. Also replaces whitespace between words with `sep`. | `decamelize('pageCount')` → `'page count'` |
-| `hyphenate(str)` | `decamelize(str, '-')` | `hyphenate('pageCount')` → `'page-count'` |
-| `underscore(str)` | `decamelize(str, '_')` | `underscore('pageCount')` → `'page_count'` |
-| `capitalize(str)` | Upper-cases the first letter of every word. | `capitalize('the waves')` → `'The Waves'` |
-| `labelize(str)` | Turns camel-cased, hyphenated and underscored names into title-cased labels. This is how dito derives labels from names. | `labelize('publishedAt')` → `'Published At'`, `labelize('isbn13')` → `'Isbn 13'` |
+| Function                            | Description                                                                                                              | Example                                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `camelize(str, pascalCase = false)` | Converts words separated by spaces, hyphens or underscores to camel case, or to pascal case with `pascalCase`.           | `camelize('page-count')` → `'pageCount'`, `camelize('page count', true)` → `'PageCount'` |
+| `decamelize(str, sep = ' ')`        | Splits camel case into lower-case words, separated by `sep`. Also replaces whitespace between words with `sep`.          | `decamelize('pageCount')` → `'page count'`                                               |
+| `hyphenate(str)`                    | `decamelize(str, '-')`                                                                                                   | `hyphenate('pageCount')` → `'page-count'`                                                |
+| `underscore(str)`                   | `decamelize(str, '_')`                                                                                                   | `underscore('pageCount')` → `'page_count'`                                               |
+| `capitalize(str)`                   | Upper-cases the first letter of every word.                                                                              | `capitalize('the waves')` → `'The Waves'`                                                |
+| `labelize(str)`                     | Turns camel-cased, hyphenated and underscored names into title-cased labels. This is how dito derives labels from names. | `labelize('publishedAt')` → `'Published At'`, `labelize('isbn13')` → `'Isbn 13'`         |
 
 ### deindent()
 
@@ -393,14 +393,14 @@ strings.
 
 ### Checks
 
-| Function | Returns `true` for |
-| -------- | ------------------ |
-| `isAbsoluteUrl(str)` | Strings starting with a scheme followed by `:`, e.g. `https:` or `mailto:`, or with `//` (protocol-relative). |
-| `isUrl(str)` | URLs with or without scheme, e.g. `'bookshop.example'` and `'https://bookshop.example/books?page=2'`. Schemes: `http`, `https`, `ftp`, `ftps`, `mailto`, `rtsp`, `mms`. |
-| `isDomain(str)` | Domain names, including internationalized ones, e.g. `'bücher.example'`. Not URLs, hosts with ports or paths. |
-| `isHostname(str)` | Host names as in RFC 1123, e.g. `'localhost'` or `'shop.example.com'`. |
-| `isEmail(str)` | Email addresses with a domain that has a top-level domain of two letters or more. |
-| `isCreditCard(str)` | Numbers of the common credit card schemes that pass the Luhn check. Spaces and hyphens are ignored. |
+| Function             | Returns `true` for                                                                                                                                                      |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `isAbsoluteUrl(str)` | Strings starting with a scheme followed by `:`, e.g. `https:` or `mailto:`, or with `//` (protocol-relative).                                                           |
+| `isUrl(str)`         | URLs with or without scheme, e.g. `'bookshop.example'` and `'https://bookshop.example/books?page=2'`. Schemes: `http`, `https`, `ftp`, `ftps`, `mailto`, `rtsp`, `mms`. |
+| `isDomain(str)`      | Domain names, including internationalized ones, e.g. `'bücher.example'`. Not URLs, hosts with ports or paths.                                                           |
+| `isHostname(str)`    | Host names as in RFC 1123, e.g. `'localhost'` or `'shop.example.com'`.                                                                                                  |
+| `isEmail(str)`       | Email addresses with a domain that has a top-level domain of two letters or more.                                                                                       |
+| `isCreditCard(str)`  | Numbers of the common credit card schemes that pass the Luhn check. Spaces and hyphens are ignored.                                                                     |
 
 Note that `isUrl()` accepts URLs without scheme, which `isAbsoluteUrl()`
 rejects.
@@ -541,12 +541,12 @@ getValueAtDataPath(order, 'items/1/book/title') // 'The Waves'
 All functions accept these forms, also mixed, except that `resolveDataPath()`
 takes strings only:
 
-| Form | Example |
-| ---- | ------- |
-| Slash-separated | `'items/1/book/title'` |
-| JSON pointer | `'/items/1/book/title'` |
+| Form            | Example                                             |
+| --------------- | --------------------------------------------------- |
+| Slash-separated | `'items/1/book/title'`                              |
+| JSON pointer    | `'/items/1/book/title'`                             |
 | Property access | `'items[1].book.title'`, `"items[1]['book'].title"` |
-| Array of keys | `['items', '1', 'book', 'title']` |
+| Array of keys   | `['items', '1', 'book', 'title']`                   |
 
 A leading `/` makes no difference to the functions that read and write values,
 which always start at the object they receive. Only `resolveDataPath()` treats

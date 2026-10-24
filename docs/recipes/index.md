@@ -12,24 +12,24 @@ controllers passed to `new Application()`.
 
 ## Admin
 
-| Recipe | Problem |
-| ------ | ------- |
-| [Computed values](./computed-values.md) | Show a value derived from others, e.g. an order total, without saving it. |
-| [Select from edited items](./select-from-edited-items.md) | Pick one of the items that the same form edits, including new ones. |
+| Recipe                                                    | Problem                                                                   |
+| --------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [Computed values](./computed-values.md)                   | Show a value derived from others, e.g. an order total, without saving it. |
+| [Select from edited items](./select-from-edited-items.md) | Pick one of the items that the same form edits, including new ones.       |
 
 ## Admin and server
 
-| Recipe | Problem |
-| ------ | ------- |
+| Recipe                                      | Problem                                                                           |
+| ------------------------------------------- | --------------------------------------------------------------------------------- |
 | [Dependent selects](./dependent-selects.md) | Filter books by genre and subgenre, with subgenres loaded for the selected genre. |
-| [Ordering by drag](./drag-ordering.md) | Let users reorder items and store the order. |
-| [Asking for input](./dialog-input.md) | Ask for input in a dialog and send it to a custom action. |
-| [Uploads with thumbnails](./uploads.md) | Upload cover images, store them and show thumbnails. |
-| [Roles](./roles.md) | Show views and actions only to users with certain roles. |
-| [Editing a graph](./edit-graph.md) | Load and save a book with its author and chapters in one form. |
+| [Ordering by drag](./drag-ordering.md)      | Let users reorder items and store the order.                                      |
+| [Asking for input](./dialog-input.md)       | Ask for input in a dialog and send it to a custom action.                         |
+| [Uploads with thumbnails](./uploads.md)     | Upload cover images, store them and show thumbnails.                              |
+| [Roles](./roles.md)                         | Show views and actions only to users with certain roles.                          |
+| [Editing a graph](./edit-graph.md)          | Load and save a book with its author and chapters in one form.                    |
 
 ## Server
 
-| Recipe | Problem |
-| ------ | ------- |
+| Recipe                                        | Problem                                                        |
+| --------------------------------------------- | -------------------------------------------------------------- |
 | [Timestamps and slugs](./timestamps-slugs.md) | Set `createdAt`, `updatedAt` and derived values automatically. |
