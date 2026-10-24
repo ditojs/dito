@@ -195,14 +195,20 @@ export default {
       }
       return null
     })
+    const componentVisible = computed(() =>
+      getSchemaValue('visible', {
+        type: Boolean,
+        default: () => typeDescriptor.value?.defaultVisible
+      })
+    )
     // Register the errors that the container displays, to notify the ones that
-    // no container displays:
+    // no visible container displays:
     const unregister = services.adminContext.ui.register(
       () => componentPath.value,
       {
         dataContext: services.dataContext,
         getErrorComponentPath: dataPath =>
-          props.nested && dataPath === props.dataPath
+          componentVisible.value && props.nested && dataPath === props.dataPath
             ? componentPath.value
             : null
       }
@@ -238,12 +244,7 @@ export default {
       errors,
       isReplacedWithLabel,
       typeComponent: computed(() => getTypeComponent(props.schema.type)),
-      componentVisible: computed(() =>
-        getSchemaValue('visible', {
-          type: Boolean,
-          default: () => typeDescriptor.value?.defaultVisible
-        })
-      ),
+      componentVisible,
 
       shouldRenderLabel,
       labelToggle,
