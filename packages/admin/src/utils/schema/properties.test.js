@@ -1733,6 +1733,53 @@ describe('properties of fields', () => {
       })
     })
 
+    it('merges the keywords that the settings of fields leave out', async () => {
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: {
+          title: { type: 'text' },
+          details: {
+            type: 'section',
+            fields: { title: { type: 'text', nullable: false } }
+          }
+        }
+      })
+      const { title } = getEntries(form)
+      expect(title.node.getPropertyNode(title).property).toEqual({
+        type: 'string',
+        default: ''
+      })
+      expect(initializeData(form, { title: null })).toEqual({ title: '' })
+    })
+
+    it('merges `minItems` with the `required` that derives it', async () => {
+      const options = ['a']
+      const nodes = await getPropertyNodes({
+        tags: { type: 'checkboxes', options, required: false },
+        details: {
+          type: 'section',
+          fields: { tags: { type: 'checkboxes', options, required: true } }
+        },
+        genres: { type: 'checkboxes', options, required: true },
+        more: {
+          type: 'section',
+          fields: { genres: { type: 'checkboxes', options, minItems: 2 } }
+        }
+      })
+      expect(nodes.tags.property).toEqual({
+        type: 'array',
+        items: { type: 'string', enum: ['a'] },
+        default: []
+      })
+      expect(nodes.genres.property).toEqual({
+        type: 'array',
+        items: { type: 'string', enum: ['a'] },
+        required: true,
+        minItems: 2,
+        default: []
+      })
+    })
+
     it('resolves callbacks with the field that they came from', async () => {
       const minLength = vi.fn(() => 2)
       const form = await setupForm(api, {

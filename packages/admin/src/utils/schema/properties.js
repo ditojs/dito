@@ -437,8 +437,8 @@ function getStaticFieldNode(field, name, services) {
 }
 
 // Merge the properties of several fields of a value: each keyword comes from
-// the first field that defines it, in form order, else from the first one that
-// derives it:
+// the first field that sets it, in form order, also to a value that leaves it
+// out, e.g. `nullable: false`, else from the first one that derives it:
 export function mergePropertyNodes(name, nodes) {
   nodes = nodes.filter(node => node)
   if (nodes.length > 1) {
@@ -447,12 +447,15 @@ export function mergePropertyNodes(name, nodes) {
     const keys = new Set(
       nodes.flatMap(({ fieldsByKey }) => Reflect.ownKeys(fieldsByKey))
     )
+    const findSettingNode = key =>
+      nodes.find(({ fieldsByKey }) => fieldsByKey[typeKey][key] !== undefined)
     for (const key of keys) {
-      const nodesWithKey = nodes.filter(({ fieldsByKey }) => key in fieldsByKey)
-      const isDefining = ({ fieldsByKey }) => (
-        fieldsByKey[key][key] !== undefined
+      const node = (
+        findSettingNode(key) ??
+        // Required arrays derive `minItems`, see `getDataKeywords()`:
+        (key === 'minItems' ? findSettingNode('required') : null) ??
+        nodes.find(({ fieldsByKey }) => key in fieldsByKey)
       )
-      const node = nodesWithKey.find(isDefining) ?? nodesWithKey[0]
       if (key in node.property) {
         property[key] = node.property[key]
       }
