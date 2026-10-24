@@ -403,6 +403,28 @@ describe('DitoTextType', () => {
         summary: ''
       })
     })
+
+    it('trims and empties values as `trim()` and `nullable()` callbacks return', async () => {
+      const { findField, submit } = await mountForm({
+        schema: {
+          fields: {
+            title: { type: 'text', trim: () => false },
+            subtitle: { type: 'text', trim: () => false },
+            note: { type: 'text', nullable: () => false }
+          }
+        },
+        data: { title: 'Dune', subtitle: 'Book', note: 'Read' },
+        request: ({ data }) => ({ data })
+      })
+      await findField('title').find('input').setValue(' Emma ')
+      await findField('subtitle').find('input').setValue('  ')
+      await findField('note').find('input').setValue('')
+      expect(await submit()).toMatchObject({
+        title: ' Emma ',
+        subtitle: '  ',
+        note: ''
+      })
+    })
   })
 
   describe('events', () => {

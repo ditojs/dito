@@ -68,22 +68,25 @@ describe('DitoCodeType', () => {
         fields: {
           snippet: { type: 'code' },
           script: { type: 'code', nullable: false },
-          style: { type: 'code', nullable: false }
+          style: { type: 'code', nullable: false },
+          query: { type: 'code', nullable: () => false }
         }
       },
-      data: { snippet: 'a', script: 'b' },
+      data: { snippet: 'a', script: 'b', query: 'c' },
       request: ({ data }) => ({ data })
     })
     await findField('snippet').find('textarea').setValue('')
     await findField('script').find('textarea').setValue('')
+    await findField('query').find('textarea').setValue('')
     // The editor reports its updates asynchronously:
     await vi.waitFor(() =>
-      expect(data).toMatchObject({ snippet: '', script: '' })
+      expect(data).toMatchObject({ snippet: '', script: '', query: '' })
     )
     expect(await submit()).toMatchObject({
       snippet: null,
       script: '',
-      style: ''
+      style: '',
+      query: ''
     })
   })
 
