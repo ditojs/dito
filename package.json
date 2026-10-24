@@ -19,7 +19,7 @@
     "dist:check": "pnpm -C packages/ui run build && pnpm -C packages/admin run build && node scripts/check-dist.js",
     "eslint": "NODE_ENV=production eslint packages/*/src packages/*/types tests",
     "eslint:fix": "pnpm run eslint --fix",
-    "stylelint": "stylelint packages/*/src/**/*.{vue,scss}",
+    "stylelint": "stylelint 'packages/*/src/**/*.{vue,scss}'",
     "stylelint:fix": "pnpm run stylelint --fix",
     "prettier": "prettier 'packages/*/src/**/*.{js,ts,vue}' 'packages/*/types/**/*.ts' 'tests/**/*.ts' '**/*.md' --check",
     "prettier:fix": "prettier 'packages/*/src/**/*.{js,ts,vue}' 'packages/*/types/**/*.ts' 'tests/**/*.ts' '**/*.md' --write",
