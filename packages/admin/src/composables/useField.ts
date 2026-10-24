@@ -12,7 +12,6 @@ import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { isLabelled } from '../utils/schema/structure.js'
 import { appendDataPath } from '../utils/data.js'
 import { getText } from '../utils/html.js'
-import { getDefaultValue, getEmptyValue } from '../utils/schema/data.js'
 import {
   useSchemaContext,
   useServices,
@@ -89,7 +88,10 @@ export function useContainerField(
     getValue: () => value.value
   })
   const { context } = schemaContext
-  const { value, parsedValue } = useValue(props, schemaContext)
+  const { value, parsedValue, getEmptyValue, getDefaultValue } = useValue(
+    props,
+    schemaContext
+  )
   const { getSchemaValue, getLabel } = useSchemaValue(context)
   const label = computed(() =>
     isLabelled(props.schema, props.generateLabels)
@@ -115,6 +117,8 @@ export function useContainerField(
     },
     value,
     parsedValue,
+    getEmptyValue,
+    getDefaultValue,
     componentPath,
     parentComponentPath,
     getSchemaValue,
@@ -164,7 +168,9 @@ export function useField(
     placeholder,
     readonly,
     disabled,
-    parsedValue
+    parsedValue,
+    getEmptyValue,
+    getDefaultValue
   } = field
 
   const autofocus = computed(() =>
@@ -322,12 +328,12 @@ export function useField(
     validate,
 
     clear() {
-      // Fields with `nullable: false` clear to their default:
-      const { schema } = props
+      // Fields with `nullable: false` clear to their default. Values without a
+      // type have no empty value:
       value.value =
-        schema.nullable === false
-          ? getDefaultValue(schema, context)
-          : getEmptyValue(schema, context)
+        props.schema.nullable === false
+          ? getDefaultValue()
+          : (getEmptyValue() ?? null)
       focus.blur()
       handlers.onChange()
     }

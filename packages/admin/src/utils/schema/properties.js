@@ -25,8 +25,6 @@ import {
 import { getFormSchemas, getViewFormSchema } from './lookup.js'
 import {
   getSchemaValue,
-  getDefaultValue,
-  getEmptyValue,
   getEditedValue,
   resolveValue,
   callOrLog
@@ -96,12 +94,11 @@ const typeKey = Symbol('type')
 // to derive their property derive it per entry:
 const nodesBySchema = new WeakMap()
 
-// Written properties: a value of a form's data and its keywords, which may be
-// functions of the entry's context, e.g. `required`, `if` or `default`.
-// Properties derived from fields resolve each keyword with the context of the
-// field in `fieldsByKey` that it came from:
+// The data of a value by its property, whose keywords may be functions of the
+// entry's context, e.g. `required` or `default`. Properties derived from fields
+// resolve each keyword with the context of the field in `fieldsByKey` that it
+// came from:
 export class PropertyNode {
-  #itemForms
   #type
 
   constructor(name, property, fieldsByKey = null) {
@@ -109,50 +106,6 @@ export class PropertyNode {
     this.property = property
     this.fieldsByKey = fieldsByKey
     this.#type = getTypeDescriptor(fieldsByKey?.[typeKey])
-    this.source = getPropertySource(property)
-    // Properties have no options, so copies keep the ids of their relations:
-    this.relation = property.relate
-      ? { schema: property, hasOptions: false }
-      : null
-    // The forms of the items by their `type`:
-    this.#itemForms = this.source
-      ? [
-          {
-            forms: property.forms ?? {
-              default: property.items
-                ? getArrayItemForm(property.items).form
-                : { properties: property.properties }
-            },
-            childSourceSchemas: []
-          }
-        ]
-      : []
-  }
-
-  // Like for fields, an `if` that fails counts as relevant:
-  isRelevant(entry) {
-    return callOrLog(
-      () =>
-        getSchemaValue('if', {
-          type: Boolean,
-          schema: this.property,
-          context: this.#createContext(entry, 'if'),
-          default: true
-        }),
-      true
-    )
-  }
-
-  getRelevantNode(entry) {
-    return this.isRelevant(entry) ? this : null
-  }
-
-  getPropertyNode() {
-    return this
-  }
-
-  getItemForms() {
-    return this.#itemForms
   }
 
   getValidationErrors(entry) {
@@ -407,6 +360,60 @@ export class PropertyNode {
   }
 }
 
+// Written properties, the nodes of a form's data that walks visit, with the
+// forms of the items that they hold:
+export class WrittenPropertyNode extends PropertyNode {
+  #itemForms
+
+  constructor(name, property) {
+    super(name, property)
+    this.source = getPropertySource(property)
+    // Properties have no options, so copies keep the ids of their relations:
+    this.relation = property.relate
+      ? { schema: property, hasOptions: false }
+      : null
+    // The forms of the items by their `type`:
+    this.#itemForms = this.source
+      ? [
+          {
+            forms: property.forms ?? {
+              default: property.items
+                ? getArrayItemForm(property.items).form
+                : { properties: property.properties }
+            },
+            childSourceSchemas: []
+          }
+        ]
+      : []
+  }
+
+  // Like for fields, an `if` that fails counts as relevant:
+  isRelevant(entry) {
+    return callOrLog(
+      () =>
+        getSchemaValue('if', {
+          type: Boolean,
+          schema: this.property,
+          context: createValueContext(this.property, entry),
+          default: true
+        }),
+      true
+    )
+  }
+
+  getRelevantNode(entry) {
+    return this.isRelevant(entry) ? this : null
+  }
+
+  getPropertyNode() {
+    return this
+  }
+
+  getItemForms() {
+    return this.#itemForms
+  }
+}
+
 export function createPropertyNodes(properties) {
   return new Map(
     Object.entries(properties).map(([name, property]) => [
@@ -418,7 +425,7 @@ export function createPropertyNodes(properties) {
 
 export function getPropertyNode(name, property) {
   return getCachedNode(property, name, () => ({
-    propertyNode: new PropertyNode(name, property),
+    propertyNode: new WrittenPropertyNode(name, property),
     isPerEntry: false
   })).propertyNode
 }
@@ -633,8 +640,9 @@ export function getDataKeywords(schema, context) {
   }
   if (getSchemaValue('required', { type: Boolean, schema, context })) {
     keywords.required = true
-    // Empty arrays are values, required fields that hold them need one item:
-    if (isArray(getEmptyValue(schema, context))) {
+    // Empty arrays are values, required fields of types that hold them need
+    // one item:
+    if (isArray(getTypeDefaultValue(schema, context))) {
       keywords.minItems ??= 1
     }
   }
@@ -733,19 +741,34 @@ function completeProperty(field, property, context) {
   if (property) {
     const schema = getStaticSchema(field)
     Object.assign(property, getDataKeywords(schema, context))
+    // Fields with `nullable: false` hold the empty value of their property's
+    // type instead of `null`, e.g. `''` for strings:
+    const typeDefaultValue = getTypeDefaultValue(schema, context)
+    const emptyValue =
+      typeDefaultValue === null && schema.nullable === false
+        ? getPropertyEmptyValue(property)
+        : typeDefaultValue
     // Properties without a type accept `null` already:
-    if (property.type && getEmptyValue(schema, context) === null) {
+    if (property.type && emptyValue === null) {
       property.nullable = true
     }
     // Default callbacks depend on the entry too, and `null` is no value:
     const value = isFunction(field.default)
       ? null
-      : getDefaultValue(schema, context)
+      : schema.default !== undefined
+        ? resolveValue(schema.default, context)
+        : emptyValue
     if (value != null) {
       property.default = value
     }
   }
   return property
+}
+
+// Types define the defaults of their values, as items can be created without
+// their components, e.g. in nested forms:
+function getTypeDefaultValue(schema, context) {
+  return resolveValue(getTypeDescriptor(schema)?.defaultValue, context)
 }
 
 function getStaticSchema(field) {
@@ -791,7 +814,7 @@ const primitiveItemAdapter = {
 
 // The empty values of the server's types, for values that aren't `nullable`.
 // Values without a type have none, and stay missing:
-export function getPropertyEmptyValue({ type, properties }) {
+function getPropertyEmptyValue({ type, properties }) {
   return properties
     ? {}
     : type

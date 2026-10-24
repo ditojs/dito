@@ -15,7 +15,7 @@ import {
   shouldRenderSchema,
   getCreatableForms,
   getSchemaValue,
-  getDefaultValue,
+  resolveValue,
   getMultipleValue,
   parseEditedValue,
   getItemId,
@@ -644,16 +644,15 @@ describe('getSchemaValue()', () => {
   })
 })
 
-describe('getDefaultValue()', () => {
-  it('calls `default()` with contexts that are passed directly', () => {
+describe('resolveValue()', () => {
+  it('calls functions with contexts that are passed directly', () => {
     const context = { item: { title: 'Emma' } }
-    const schema = { type: 'text', default: ({ item }) => item.title }
-    expect(getDefaultValue(schema, context)).toBe('Emma')
+    expect(resolveValue(({ item }) => item.title, context)).toBe('Emma')
   })
 
-  it('clones default values, so that they are not shared', () => {
+  it('clones values, so that they are not shared', () => {
     const tags = ['new']
-    const value = getDefaultValue({ type: 'text', default: tags }, {})
+    const value = resolveValue(tags, {})
     expect(value).toEqual(tags)
     expect(value).not.toBe(tags)
   })

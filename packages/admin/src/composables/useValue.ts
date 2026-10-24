@@ -12,7 +12,11 @@ export function useValue(
   props: SchemaContextProps,
   { createContext, services }: Omit<SchemaContextSetup, 'context'>
 ) {
-  const getValueOrDefault = () => {
+  // Ask the node of the field's own property about the value, `undefined` for
+  // types without a value:
+  const callPropertyNode = (
+    method: 'getValueOrDefault' | 'getEmptyValue' | 'getDefaultValue'
+  ) => {
     const { schema, data, dataPath, itemDataPath } = props
     const { name } = schema
     const entry = {
@@ -23,7 +27,7 @@ export function useValue(
       rootData: getRootData(services),
       services
     }
-    return getFieldPropertyNode(schema, name, entry)?.getValueOrDefault(entry)
+    return getFieldPropertyNode(schema, name, entry)?.[method](entry)
   }
   // The last value that was written, after `parseValue()`:
   const parsedValue = shallowRef<any>(undefined)
@@ -37,7 +41,7 @@ export function useValue(
       const value =
         name in data || !hasNestedData(schema)
           ? data[name]
-          : getValueOrDefault()
+          : callPropertyNode('getValueOrDefault')
       return getEditedValue(schema, value, () => createContext({ value }))
     },
 
@@ -51,7 +55,12 @@ export function useValue(
       )
     }
   })
-  return { value, parsedValue }
+  return {
+    value,
+    parsedValue,
+    getEmptyValue: () => callPropertyNode('getEmptyValue'),
+    getDefaultValue: () => callPropertyNode('getDefaultValue')
+  }
 }
 
 export type Value = ReturnType<typeof useValue>

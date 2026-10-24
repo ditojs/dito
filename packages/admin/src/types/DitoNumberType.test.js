@@ -1,4 +1,7 @@
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
+import { defineType } from '../utils/schema/types.ts'
+import { numberTraits } from './traits.ts'
+import DitoNumberType from './DitoNumberType.vue'
 
 describe('DitoNumberType', () => {
   it('parses the input to numbers and empty input to `null`', async () => {
@@ -69,6 +72,34 @@ describe('DitoNumberType', () => {
     await price.find('button[title="Clear"]').trigger('click')
     expect(data.price).toBe(null)
     expect(price.find('input').element.value).toBe('')
+  })
+
+  it('clears types with a `defaultValue` to `null`, or to their `default` with `nullable: false`', async () => {
+    defineType({
+      type: 'rating',
+      component: DitoNumberType,
+      ...numberTraits,
+      defaultValue: 0
+    })
+    const { findField, data } = await mountSchema({
+      schema: {
+        fields: {
+          score: { type: 'rating', clearable: true },
+          stars: { type: 'rating', clearable: true, nullable: false },
+          votes: {
+            type: 'rating',
+            clearable: true,
+            nullable: false,
+            default: 3
+          }
+        }
+      },
+      data: { score: 4, stars: 4, votes: 4 }
+    })
+    for (const name of ['score', 'stars', 'votes']) {
+      await findField(name).find('button[title="Clear"]').trigger('click')
+    }
+    expect(data).toMatchObject({ score: null, stars: 0, votes: 3 })
   })
 
   it('rounds `minimum`, `maximum` and `step` of integers to integers', async () => {

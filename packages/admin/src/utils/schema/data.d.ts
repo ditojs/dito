@@ -24,8 +24,6 @@ export function resolveValue(
   value: any,
   context: Context | (() => Context)
 ): any
-export function getDefaultValue(schema: Schema, context: Context): any
-export function getEmptyValue(schema: Schema, context: Context): any
 export function hasComputedValueSource(schema: Schema): boolean
 export function hasValueFromDataSchema(schema: Schema): boolean
 export function getMultipleValue(schema: Schema, context: Context): boolean
