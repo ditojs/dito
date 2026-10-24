@@ -183,10 +183,14 @@ function convertNestedSchemas(schema, jsonType, options, entry, role) {
   // Handle nested allOf, anyOf, oneOf & co. fields. References in `anyOf` and
   // `oneOf` are closed on their own, except next to properties that they don't
   // evaluate, or next to a discriminator, as Ajv only finds its tag in plain
-  // references:
+  // references. Parts, alternatives and definitions are closed outside too,
+  // where their siblings or users may evaluate other properties:
   const isClosedOutside = !!(
+    role ||
     schema.discriminator ||
     schema.properties ||
+    schema.additionalProperties ||
+    schema.patternProperties ||
     schema.$ref
   )
   for (const key of ['allOf', 'anyOf', 'oneOf', 'not']) {
