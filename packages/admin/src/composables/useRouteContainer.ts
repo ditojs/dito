@@ -64,7 +64,8 @@ export function useRouteRecord() {
     // Update synchronously, so the record changes with the route:
     { immediate: true, flush: 'sync' }
   )
-  // Forms keep their claim while they're left in the same way:
+  // Forms keep their claim while they're left in the same way. Not updated
+  // synchronously, as the claims change with every component that mounts:
   watch(
     () => (record.value ? null : parent!.childClaim),
     newClaim => {
@@ -72,7 +73,7 @@ export function useRouteRecord() {
         claim.value = newClaim
       }
     },
-    { immediate: true, flush: 'sync' }
+    { immediate: true }
   )
   return {
     parent,
