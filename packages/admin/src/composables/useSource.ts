@@ -86,6 +86,13 @@ export function useSource(
     )
   })
   const { resourceContext, isTransient, providesData } = requests
+  props.field.addMembers({
+    get sourceContext() {
+      return sourceContext
+    },
+
+    ...(resourceContext && { resourceContext })
+  })
   const {
     value,
     context,
@@ -97,15 +104,7 @@ export function useSource(
     onChange,
     getSchemaValue,
     componentPath
-  } = useField(props, {
-    members: {
-      get sourceContext() {
-        return sourceContext
-      },
-
-      ...(resourceContext && { resourceContext })
-    }
-  })
+  } = useField(props)
   const getModel = () => services.dataContext!.model
   const getBoolean = (key: string) =>
     getSchemaValue(key, { type: Boolean, default: false })

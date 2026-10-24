@@ -665,19 +665,19 @@ describe('DitoSchema', () => {
     })
     const page = () => admin.element.querySelector('main.dito-page')
     await admin.navigate('/books')
-    expect(admin.context.pageClass).toBe('dito-page--wide')
+    expect(admin.context.isWidePage).toBe(true)
     expect(page().classList.contains('dito-page--wide')).toBe(true)
     await admin.navigate('/authors')
-    expect(admin.context.pageClass).toBe(null)
+    expect(admin.context.isWidePage).toBe(false)
     expect(page().classList.contains('dito-page--wide')).toBe(false)
   })
 
   it.each([
-    ['narrow', false, null],
-    ['wide', true, 'dito-page--wide']
+    ['narrow', false],
+    ['wide', true]
   ])(
     'makes the page of an item of a `wide` view %s by its form',
-    async (_, wide, pageClass) => {
+    async (_, wide) => {
       const item = { id: 1, title: 'Emma' }
       const admin = await mountAdmin({
         views: {
@@ -697,13 +697,52 @@ describe('DitoSchema', () => {
         }
       })
       await admin.navigate('/books')
-      expect(admin.context.pageClass).toBe('dito-page--wide')
+      expect(admin.context.isWidePage).toBe(true)
       await admin.navigate('/books/1')
-      expect(admin.context.pageClass).toBe(pageClass)
+      expect(admin.context.isWidePage).toBe(wide)
       await admin.navigate('/books')
-      expect(admin.context.pageClass).toBe('dito-page--wide')
+      expect(admin.context.isWidePage).toBe(true)
     }
   )
+
+  it('makes the page of an item wide by the form of its type', async () => {
+    const items = [
+      { id: 1, type: 'chart', title: 'Sales' },
+      { id: 2, type: 'note', title: 'Memo' }
+    ]
+    const admin = await mountAdmin({
+      views: {
+        documents: {
+          type: 'view',
+          field: {
+            type: 'list',
+            resource: { path: 'documents' },
+            forms: {
+              chart: {
+                type: 'form',
+                wide: true,
+                fields: { title: { type: 'text' } }
+              },
+              note: { type: 'form', fields: { title: { type: 'text' } } }
+            }
+          }
+        }
+      },
+      request({ method = 'get', url }) {
+        if (method === 'get') {
+          if (url === '/documents') return { data: items }
+          const item = items.find(item => url === `/documents/${item.id}`)
+          if (item) return { data: item }
+        }
+      }
+    })
+    await admin.navigate('/documents/1')
+    expect(admin.context.isWidePage).toBe(true)
+    await admin.navigate('/documents/2')
+    expect(admin.context.isWidePage).toBe(false)
+    await admin.navigate('/documents/1')
+    expect(admin.context.isWidePage).toBe(true)
+  })
 
   describe('revealing components', () => {
     async function mountCollapsedSection() {

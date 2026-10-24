@@ -30,26 +30,24 @@ const DitoComponentType = {
   props: fieldProps,
 
   setup(props) {
+    const { context, componentPath, value, attributes, services } =
+      useField(props)
     // The contexts of custom types with options hold them, like selects:
-    const members = getOptionsDataSchema(props.schema)
-      ? {
-          get options() {
-            const { schema, data, dataPath } = props
-            return (
-              services.dataContext.model.getOptionsResolver({
-                schema,
-                data,
-                name: schema.name,
-                dataPath
-              }).value ?? []
-            )
-          }
+    if (getOptionsDataSchema(props.schema)) {
+      props.field.addMembers({
+        get options() {
+          const { schema, data, dataPath } = props
+          return (
+            services.dataContext.model.getOptionsResolver({
+              schema,
+              data,
+              name: schema.name,
+              dataPath
+            }).value ?? []
+          )
         }
-      : null
-    const { context, componentPath, value, attributes, services } = useField(
-      props,
-      { members }
-    )
+      })
+    }
     const customComponent = computed(() => props.schema.component)
     return {
       context,

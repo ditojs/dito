@@ -56,9 +56,6 @@ export interface FieldOptions extends FocusOptions {
   getEvents?: (
     handlers: FieldEventHandlers
   ) => Record<string, (...args: any[]) => any>
-  // The members that the component adds to the contexts of its field, e.g. the
-  // `options` of selects:
-  members?: object
   // Fields that render native inputs get their `name`, `title`, `readonly` and
   // `autofocus` attributes, text fields also `maxlength`, `placeholder` and
   // `autocomplete`. All others are disabled while they're `readonly`.
@@ -74,8 +71,9 @@ export function useContainerField(
     readonly generateLabels: boolean
   }
 ) {
-  // The members that the type component adds, see `useField()`. They override
-  // the services that the contexts inherit from:
+  // The members that the type component adds to the contexts of its field,
+  // like the `options` of selects. They override the services that the
+  // contexts inherit from:
   const members = shallowReactive(new Set<object>())
   const getOwner = (target: Services, key: PropertyKey) => (
     [...members].find(owner => key in owner) ?? target
@@ -110,7 +108,11 @@ export function useContainerField(
 
   return {
     ...schemaContext,
-    members,
+    // Add members while the type component that calls it is mounted:
+    addMembers(owner: object) {
+      members.add(owner)
+      onBeforeUnmount(() => members.delete(owner))
+    },
     value,
     parsedValue,
     componentPath,
@@ -143,7 +145,6 @@ export type ContainerField = ReturnType<typeof useContainerField>
 export function useField(
   props: FieldProps,
   {
-    members,
     nativeField = false,
     textField = false,
     getEvents,
@@ -152,10 +153,6 @@ export function useField(
   }: FieldOptions = {}
 ) {
   const { field } = props
-  if (members) {
-    field.members.add(members)
-    onBeforeUnmount(() => field.members.delete(members))
-  }
   const {
     context,
     services,

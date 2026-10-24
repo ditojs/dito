@@ -51,29 +51,29 @@ const DitoButtonType = {
   setup(props) {
     const isRunning = ref(false)
     const field = useField(props, {
-      members: {
-        // Handlers can end it early, like before opening a dialog:
-        get isRunning() {
-          return isRunning.value
-        },
-
-        set isRunning(value) {
-          isRunning.value = value
-        },
-
-        // Buttons of sources submit through them, the others to their form,
-        // which applies or saves its data:
-        get submit() {
-          const { sourceContext, dataContext } = services
-          const target = sourceContext ?? dataContext
-          return target?.submit
-            ? options => target.submit(button, options)
-            : null
-        }
-      },
       getEvents: ({ onFocus, onBlur }) => ({ onFocus, onBlur, onClick })
     })
     const { services, getSchemaValue, emitEvent } = field
+    props.field.addMembers({
+      // Handlers can end it early, like before opening a dialog:
+      get isRunning() {
+        return isRunning.value
+      },
+
+      set isRunning(value) {
+        isRunning.value = value
+      },
+
+      // Buttons of sources submit through them, the others to their form,
+      // which applies or saves its data:
+      get submit() {
+        const { sourceContext, dataContext } = services
+        const target = sourceContext ?? dataContext
+        return target?.submit
+          ? options => target.submit(button, options)
+          : null
+      }
+    })
     const closeForm = computed(() =>
       getSchemaValue('closeForm', { type: Boolean, default: false })
     )

@@ -97,10 +97,8 @@ export class AdminContext {
     return this.#user.value
   }
 
-  get pageClass(): string | null {
+  get isWidePage(): boolean {
     return this.ui.routes.some(route => route.isActive && route.isWide)
-      ? 'dito-page--wide'
-      : null
   }
 
   get routeTree(): RouteTree | null {

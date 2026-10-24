@@ -536,7 +536,7 @@ const DitoUploadType = {
             onChange()
             settleUpload(newFile.id)
           } else if (error) {
-            replaceFile(newFile, multiple.value ? null : replacedFile)
+            replaceFile(newFile, replacedFile)
             settleUpload(newFile.id)
             const text = (
               {
