@@ -85,14 +85,6 @@ export default {
       color: $color-text;
       background: $button-color;
     }
-
-    // Follow the button's color, instead of the background and the focus
-    // color of icons in inputs:
-    @at-root .dito-input #{&} .dito-icon,
-      .dito-input:focus-within #{&} .dito-icon {
-      color: inherit;
-      background: none;
-    }
   }
 
   &--ellipsis {
@@ -102,6 +94,28 @@ export default {
     display: block;
     min-width: 0;
     width: 0;
+  }
+
+  // Hover affixes only show while the component is hovered, overlaying the
+  // other affixes of their side and the input's padding instead of widening
+  // the input:
+  &--hover {
+    --size: #{calc($input-height - 6 * $border-width)};
+
+    display: none;
+    position: absolute;
+    right: 0;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--size);
+    height: var(--size);
+    padding: 0;
+
+    // Not when hovering an open popup of the component, e.g. a color picker:
+    @at-root .dito-component:not(:has(.dito-component, .dito-popup:hover)):hover
+        & {
+      display: flex;
+    }
   }
 }
 </style>

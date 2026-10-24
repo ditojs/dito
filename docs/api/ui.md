@@ -709,15 +709,15 @@ The variables of `_settings.scss`, with these groups:
 
 Use with `@extend`:
 
-| Placeholder                            | Description                                                                                                            |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `%field`                               | Border, padding and background of fields.                                                                              |
-| `%field-has-errors`, `%field-disabled` | The looks of fields with errors and of disabled fields, for the block's own `--has-errors` and `--disabled` modifiers. |
-| `%input`                               | `%field` with placeholder and focus styles of text inputs.                                                             |
-| `%input-has-errors`                    | `%field-has-errors` that also shows while the input has focus.                                                         |
-| `%input-borderless`                    | Height and alignment of inputs without border, e.g. checkboxes, to line up with bordered ones.                         |
-| `%button-disabled`                     | The disabled look of buttons.                                                                                          |
-| `%icon-{name}`                         | One of the [icons](#icons), as a mask in `currentColor`, e.g. in a `::before`.                                         |
+| Placeholder                              | Description                                                                                                            |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `%field`                                 | Border, padding and background of fields.                                                                              |
+| `%field--has-errors`, `%field--disabled` | The looks of fields with errors and of disabled fields, for the block's own `--has-errors` and `--disabled` modifiers. |
+| `%input`                                 | `%field` with placeholder and focus styles of text inputs.                                                             |
+| `%input--has-errors`                     | `%field--has-errors` that also shows while the input has focus.                                                        |
+| `%input--borderless`                     | Height and alignment of inputs without border, e.g. checkboxes, to line up with bordered ones.                         |
+| `%button--disabled`                      | The disabled look of buttons.                                                                                          |
+| `%icon--{name}`                          | One of the [icons](#icons), as a mask in `currentColor`, e.g. in a `::before`.                                         |
 
 ### Functions
 
@@ -732,7 +732,7 @@ Use with `@extend`:
 
 The icons are available as [`DitoIcon`](#ditoicon) with their
 `name`, as the CSS classes `.dito-icon--{name}`, and in SCSS as the
-placeholders `%icon-{name}` and the list `$icons`:
+placeholders `%icon--{name}` and the list `$icons`:
 
 `add`, `align-center`, `align-justify`, `align-left`, `align-right`,
 `alternate`, `archive-download`, `archive-upload`, `arrow`, `at-sign`,
@@ -740,16 +740,17 @@ placeholders `%icon-{name}` and the list `$icons`:
 `chevrons`, `clear`, `clock`, `code-block`, `code`, `command`, `copy`,
 `credit-card`, `crop`, `dollar-sign`, `drag`, `edit`, `ellipsis`, `footnotes`,
 `hash`, `heading-1`, `heading-2`, `heading-3`, `heart`, `home`,
-`horizontal-rule`, `image`, `info`, `italic`, `link`, `mail`, `menu`,
+`horizontal-rule`, `image`, `info`, `italic`, `link`, `lock`, `mail`, `menu`,
 `ordered-list`, `paperclip`, `paragraph`, `paste`, `percent`, `redo`, `refresh`,
-`remove`, `resize`, `search`, `settings`, `small`, `strike`, `subscript`,
-`superscript`, `tag`, `trash`, `type`, `underline`, `undo`, `upload`.
+`remove`, `resize`, `search`, `settings`, `sidebar`, `small`, `strike`,
+`subscript`, `superscript`, `tag`, `trash`, `type`, `underline`, `undo`,
+`upload`.
 
 ```scss
 @import '@ditojs/ui/imports.scss';
 
 .bookshop-wishlist-button::before {
-  @extend %icon-heart;
+  @extend %icon--heart;
 }
 ```
 

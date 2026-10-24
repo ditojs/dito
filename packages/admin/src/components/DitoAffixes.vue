@@ -155,37 +155,12 @@ export default {
   &--input {
     color: $color-grey;
 
-    .dito-icon--disabled {
-      color: $color-light;
-    }
-
     @at-root .dito-component:not(:has(.dito-component)):focus-within & {
       color: $color-active;
     }
   }
 
-  // Hover affixes only show while the component is hovered, in place of the
-  // other affixes of their side, overlaying them and the input's padding
-  // instead of widening the input:
-  > .dito-affix--hover {
-    --size: #{calc($input-height - 6 * $border-width)};
-
-    display: none;
-    position: absolute;
-    right: 0;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--size);
-    height: var(--size);
-    padding: 0;
-
-    // Not when hovering an open popup of the component, e.g. a color picker:
-    @at-root .dito-component:not(:has(.dito-component, .dito-popup:hover)):hover
-        & {
-      display: flex;
-    }
-  }
-
+  // Hide the other affixes of the side while its hover affix shows:
   // prettier-ignore
   @at-root .dito-component:hover:not(:has(.dito-component, .dito-popup:hover))
         #{$self}:has(> .dito-affix--hover) > :not(.dito-affix--hover) {
