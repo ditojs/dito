@@ -82,7 +82,8 @@ import { parseFraction } from '../utils/math.js'
 import {
   accumulatedBasisKey,
   labelToggleKey,
-  panelTabKey
+  panelTabKey,
+  visibleKey
 } from '../utils/keys.ts'
 
 const alignments = ['top', 'center', 'bottom']
@@ -118,6 +119,7 @@ export default {
     // A fraction of the width of the closest non-inlined schema:
     const accumulatedBasis = inject(accumulatedBasisKey, 1)
     const panelTab = inject(panelTabKey, null)
+    const isParentVisible = inject(visibleKey, true)
     const isMounted = ref(false)
     onMounted(() => {
       isMounted.value = true
@@ -201,6 +203,10 @@ export default {
         default: () => typeDescriptor.value?.defaultVisible
       })
     )
+    const isVisible = computed(
+      () => componentVisible.value && unref(isParentVisible)
+    )
+    provide(visibleKey, isVisible)
     // Register the errors that the container displays, to notify the ones that
     // no visible container displays:
     const unregister = services.adminContext.ui.register(
@@ -208,7 +214,7 @@ export default {
       {
         dataContext: services.dataContext,
         getErrorComponentPath: dataPath =>
-          componentVisible.value && props.nested && dataPath === props.dataPath
+          isVisible.value && props.nested && dataPath === props.dataPath
             ? componentPath.value
             : null
       }

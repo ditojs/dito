@@ -93,6 +93,8 @@ export const accumulatedBasisKey: Key<MaybeRef<number | null>> =
   Symbol(
     'accumulatedBasis'
   )
+// Whether the containers and panels around a component are visible:
+export const visibleKey: Key<MaybeRef<boolean>> = Symbol('visible')
 export const fileDropTargetsKey: Key<FileDropTargets> =
   Symbol(
     'fileDropTargets'

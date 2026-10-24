@@ -847,6 +847,50 @@ describe('DitoSchema', () => {
       )
       vi.restoreAllMocks()
     })
+
+    it('notifies the errors of fields in sections that are not visible', async () => {
+      const { admin, submit } = await mountForm({
+        schema: {
+          fields: {
+            title: { type: 'text' },
+            details: {
+              type: 'section',
+              visible: false,
+              fields: { subtitle: { type: 'text', required: true } }
+            }
+          }
+        },
+        data: { title: 'Dune', subtitle: '' }
+      })
+      const notify = vi.spyOn(admin.context, 'notify')
+      expect(await submit()).toBe(null)
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'The field Subtitle is required' })
+      )
+      vi.restoreAllMocks()
+    })
+
+    it('notifies the errors of fields in panels that are not visible', async () => {
+      const { admin, submit } = await mountForm({
+        schema: {
+          fields: { title: { type: 'text' } },
+          panels: {
+            side: {
+              type: 'panel',
+              visible: false,
+              fields: { notes: { type: 'text', required: true } }
+            }
+          }
+        },
+        data: { title: 'Dune', notes: '' }
+      })
+      const notify = vi.spyOn(admin.context, 'notify')
+      expect(await submit()).toBe(null)
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'The field Notes is required' })
+      )
+      vi.restoreAllMocks()
+    })
   })
 
   describe('revealing components of the same data', () => {
