@@ -177,19 +177,9 @@ export function initializeData(schema, data = {}, services, {
 } = {}) {
   const visit = entry => {
     const { node, data, name } = entry
-    const property = node.getPropertyNode(entry)
-    if (
-      property?.shouldSetDefaultValue(entry, {
-        shouldSetDefaultsOfComputedValues
-      })
-    ) {
-      // Types without values, e.g. buttons, get no key, like in the data of
-      // items that `computeValue()` returns:
-      const value = property.getDefaultValue(entry)
-      if (value !== undefined) {
-        data[name] = value
-      }
-    }
+    node.getPropertyNode(entry)?.setDefaultValue(entry, {
+      shouldSetDefaultsOfComputedValues
+    })
     const { source } = node
     if (source && hasItemsNumberedByOrderKey(source) && isArray(data[name])) {
       updateOrder(source, data[name])
@@ -283,14 +273,17 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     ? cloneItem(getSchemaSource(sourceSchema), data)
     : {}
   const graph = new SchemaGraph(dataPath)
+  // Resolve the property of each value once, for `visit()` and `after()`:
+  const propertyNodesByEntry = new WeakMap()
 
   const visit = entry => {
     const { node, data, name, serializedData } = entry
+    const propertyNode = node.getPropertyNode(entry)
+    propertyNodesByEntry.set(entry, propertyNode)
     // Save missing values, and `null` in values that aren't `nullable`, with
     // the default of their property:
-    const property = node.getPropertyNode(entry)
-    const value = property?.shouldSetDefaultValue(entry)
-      ? property.getDefaultValue(entry)
+    const value = propertyNode?.shouldSetDefaultValue(entry)
+      ? propertyNode.getDefaultValue(entry)
       : data[name]
     // The forms of the items expect them wrapped by the item adapter of the
     // source, so wrap before and unwrap after. Always shallow-clone arrays:
@@ -338,7 +331,7 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     }
     // Values that are excluded or that `serializeValue()` returns nothing for,
     // e.g. of virtual fields, leave out their key:
-    value = node.getPropertyNode(entry)?.serialize(value, entry)
+    value = propertyNodesByEntry.get(entry)?.serialize(value, entry)
     if (value === undefined) {
       delete serializedData[name]
     } else {
@@ -450,8 +443,8 @@ export function getItemDisplayValue(sourceSchema, item, name, {
       valueEntry = entry
     }
   })
-  const node = valueEntry?.node.getPropertyNode(valueEntry)
-  return node ? node.getDisplayValue(valueEntry) : item[name]
+  const propertyNode = valueEntry?.node.getPropertyNode(valueEntry)
+  return propertyNode ? propertyNode.getDisplayValue(valueEntry) : item[name]
 }
 
 export function getItemId(sourceSchema, item) {

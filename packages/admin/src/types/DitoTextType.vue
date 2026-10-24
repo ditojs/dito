@@ -79,7 +79,6 @@ defineType({
   ],
   component: DitoTextType,
   ...textTraits,
-  ignoresMissingValue: ({ schema }) => schema.type === 'password',
 
   getProperty({ type }) {
     // The formats of the server, which lacks `domain` and `creditcard`:

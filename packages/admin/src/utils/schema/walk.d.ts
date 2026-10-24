@@ -39,22 +39,28 @@ export interface DataNode {
   getRelevantNode(entry: DataEntry): DataNode | null
   // The node of the value's property, `null` for types without a value:
   getPropertyNode(entry: DataEntry): PropertyNode | null
-  getValidationErrors(entry: DataEntry): ValueError[]
-  getValueOrDefault(entry: DataEntry): any
   getRecordedSchema(entry: DataEntry): { schema: Schema; form: Schema } | null
+  getItemForms(entry: DataEntry): {
+    forms: Record<string, Schema>
+    childSourceSchemas: Schema[]
+  }[]
 }
 
 // The node of a value's property, which describes its data:
 export interface PropertyNode extends DataNode {
+  isRelevant(entry: DataEntry): boolean
+  getValidationErrors(entry: DataEntry): ValueError[]
   shouldSetDefaultValue(
     entry: DataEntry,
     options?: DefaultValueOptions
   ): boolean
+  setDefaultValue(entry: DataEntry, options?: DefaultValueOptions): void
   getDefaultValue(entry: DataEntry): any
   getEmptyValue(entry: DataEntry): any
+  getValueOrDefault(entry: DataEntry): any
   deserialize(value: any, entry: DataEntry): any
   serialize(value: any, entry: DataEntry): any
-  isExcluded(entry: DataEntry): boolean
+  isExcluded(entry: DataEntry, values?: Record<string, any> | null): boolean
   getUploadLimits(entry: DataEntry): UploadLimits | null
   getDisplayValue(entry: DataEntry): any
 }
