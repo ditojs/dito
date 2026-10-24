@@ -9,6 +9,7 @@ import type { RouteTree } from './RouteTree.ts'
 import { Session, type User, type LoginOptions } from './Session.ts'
 import type { ViewRegistry } from './ViewRegistry.js'
 import type { Api, Schema } from './types.ts'
+import type { AdminContext as PublicAdminContext } from '../../types/index.d.ts'
 
 export interface DialogOptions {
   fields?: Record<string, Schema>
@@ -23,13 +24,7 @@ export interface DialogOptions {
   }
 }
 
-export interface NotifyOptions {
-  type?: string
-  title?: string
-  text?: string | Html | (string | Html | false | null | undefined)[]
-  error?: unknown
-  duration?: number
-}
+export type NotifyOptions = Parameters<PublicAdminContext['notify']>[0]
 
 // The authentication features that the server enables:
 export interface Authentication {

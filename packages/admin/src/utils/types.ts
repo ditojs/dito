@@ -1,4 +1,4 @@
-import type { ApiConfig } from '../../types/index.d.ts'
+import type { ApiConfig, ApiResource } from '../../types/index.d.ts'
 
 // The schemas, data and resources that the admin's modules handle, which they
 // don't type further:
@@ -23,4 +23,4 @@ export type Api = Omit<ApiConfig, 'users'> &
       | 'headers'
       | 'defaults'
     >
-  > & { users: Record<string, Resource> }
+  > & { users: Record<string, ApiResource> }

@@ -60,6 +60,39 @@ const typeDefaults = {
   alignsBelowLabels: true
 }
 
+// The members of the public `TypeDescriptor` that custom types may define,
+// besides the ones that the public `defineType()` handles itself:
+export const publicDescriptorKeys = new Set(
+  Object.keys({
+    type: true,
+    defaultValue: true,
+    defaultNested: true,
+    defaultVisible: true,
+    defaultMultiple: true,
+    defaultWidth: true,
+    defaultExclude: true,
+    ignoresMissingValue: true,
+    resolvesValue: true,
+    generatesLabel: true,
+    hasLabel: true,
+    omitsSpacing: true,
+    rendersLabel: true,
+    alignsBelowLabels: true,
+    submitsData: true,
+    hasEmbeddedForms: true,
+    getOptionsDataSchema: true,
+    getDisplayValue: true,
+    getValidations: true,
+    getProperty: true,
+    setupSchema: true,
+    deserializeValue: true,
+    serializeValue: true
+  } satisfies Record<
+    Exclude<keyof PublicTypeDescriptor, 'component' | 'override'>,
+    true
+  >)
+)
+
 const descriptorsByType: Record<string, TypeDescriptor> = {}
 
 const unknownTypeReported: Record<string, boolean> = {}

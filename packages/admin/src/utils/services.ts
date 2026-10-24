@@ -8,7 +8,7 @@ import type { DataContext } from './DataContext.ts'
 import type { ResourceContext } from './ResourceContext.ts'
 import type { RouteContext } from './RouteContext.ts'
 import type { SourceContext } from './SourceContext.ts'
-import type { HttpMethod } from '../../types/index.d.ts'
+import type { HttpMethod, SchemaContext } from '../../types/index.d.ts'
 import type { Resource } from './types.ts'
 
 export interface Services {
@@ -39,11 +39,8 @@ export interface RequestOptions {
   abortOnUnmount?: boolean
 }
 
-export interface DownloadOptions {
-  url: string
-  filename?: string
-  query?: Record<string, any>
-}
+// The last overload of `download()` takes the options:
+export type DownloadOptions = Parameters<SchemaContext['download']>[0]
 
 export function getRootData({ dataContext }: Services) {
   return dataContext?.model.rootData ?? null

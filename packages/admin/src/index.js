@@ -2,7 +2,8 @@ import { asArray } from '@ditojs/utils'
 import DitoAdmin from './DitoAdmin.js'
 import {
   defineType as defineTypeDescriptor,
-  getTypes
+  getTypes,
+  publicDescriptorKeys
 } from './utils/schema/types.ts'
 import { wrapCustomComponent } from './types/DitoComponentType.vue'
 
@@ -43,33 +44,6 @@ export {
 export { default as DitoSection } from './components/DitoSection.vue'
 export default DitoAdmin
 
-// The members of the public `TypeDescriptor`:
-const descriptorKeys = new Set([
-  'type',
-  'defaultValue',
-  'defaultNested',
-  'defaultVisible',
-  'defaultMultiple',
-  'defaultWidth',
-  'defaultExclude',
-  'ignoresMissingValue',
-  'resolvesValue',
-  'generatesLabel',
-  'hasLabel',
-  'omitsSpacing',
-  'rendersLabel',
-  'alignsBelowLabels',
-  'submitsData',
-  'hasEmbeddedForms',
-  'getOptionsDataSchema',
-  'getDisplayValue',
-  'getValidations',
-  'getProperty',
-  'setupSchema',
-  'deserializeValue',
-  'serializeValue'
-])
-
 // The keys of 3.x and what replaces them:
 const replacedDescriptorKeys = {
   excludeValue: 'defaultExclude',
@@ -90,7 +64,7 @@ const builtInTypes = new Set(getTypes())
 // components of `type: 'component'`:
 export function defineType({ component, override, ...descriptor }) {
   for (const key of Object.keys(descriptor)) {
-    if (!descriptorKeys.has(key)) {
+    if (!publicDescriptorKeys.has(key)) {
       const replacement = replacedDescriptorKeys[key]
       throw new Error(
         replacement
