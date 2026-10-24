@@ -359,10 +359,10 @@ describe('getFormProperties()', () => {
       })
     })
 
-    it('skips components without a value', async () => {
+    it('describes components without `default` as any value too', async () => {
       expect(
         await getProperties({ rating: { type: 'component', component } })
-      ).toEqual({})
+      ).toEqual({ rating: {} })
     })
   })
 
@@ -1704,13 +1704,11 @@ describe('properties of fields', () => {
         await getFieldProperties({
           save: { type: 'button' },
           gap: { type: 'spacer' },
-          preview: { type: 'component' },
           note: { type: 'label' }
         })
       ).toEqual({
         save: null,
         gap: null,
-        preview: null,
         // Labels hold `null`, which isn't sent:
         note: { exclude: true }
       })
