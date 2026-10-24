@@ -2,15 +2,14 @@ import SchemaContext from '../../SchemaContext.js'
 import { computed, toRaw } from 'vue'
 import { isArray, isObject, isFunction } from '@ditojs/utils'
 import { appendDataPath } from '../data.js'
-import { getUploadLimits } from '../upload.ts'
 import {
-  getTypeDescriptor,
   getSourceType,
   getItemAdapter,
   getChildSourceSchemas,
   getOptionsDataSchema
 } from './types.ts'
 import {
+  someNestedSchemaComponent,
   hasNestedData,
   isPanelWithOwnData,
   isSourceWithResource,
@@ -27,11 +26,7 @@ import {
 import {
   shouldRenderSchema,
   callOrLog,
-  getDefaultValue,
-  shouldSetDefaultValue,
-  shouldExcludeValue,
-  hasValueFromDataSchema,
-  convertValue
+  hasValueFromDataSchema
 } from './data.js'
 import {
   createPropertyNodes,
@@ -40,10 +35,10 @@ import {
   mergePropertyNodes
 } from './properties.js'
 
-// A value of a form's data with the fields that edit it, in form order. Each
-// aspect comes from the first field that defines it, else from the first one:
+// A value of a form's data with the fields that edit it, in form order:
 export class FieldNode {
   #propertyNode = null
+  #hasConditions
 
   constructor(name, fields) {
     this.name = name
@@ -61,11 +56,17 @@ export class FieldNode {
           hasOptions: !!getOptionsDataSchema(relationField.schema)
         }
       : null
+    // Only an `if` in the fields or their containers can hide them:
+    this.#hasConditions = fields.some(({ schema, containers }) =>
+      [schema, ...containers.map(({ schema }) => schema)].some(hasCondition)
+    )
   }
 
   // The node of the value with only its relevant fields, `null` without any:
   getRelevantNode(entry) {
-    const fields = this.fields.filter(field => isRelevantField(field, entry))
+    const fields = this.#hasConditions
+      ? this.fields.filter(field => isRelevantField(field, entry))
+      : this.fields
     return fields.length === this.fields.length
       ? this
       : fields.length > 0
@@ -132,89 +133,13 @@ export class FieldNode {
     return this.getPropertyNode(entry)?.getValidationErrors(entry) ?? []
   }
 
-  shouldSetDefaultValue(entry, options) {
-    return !!this.#getDefaultingField(entry, options)
-  }
-
-  // The default of the value if it's missing, else `undefined`, also for types
-  // without values. The first field with its own default sets it:
-  getDefaultValue(entry, options) {
-    const field = this.#getDefaultingField(entry, options)
-    return field
-      ? getDefaultValue(field.schema, () => createContext(field.schema, entry))
-      : undefined
-  }
-
+  // Fields keep the values that they hold, also `null`, and missing values get
+  // the default of their property:
   getValueOrDefault(entry) {
-    return this.shouldSetDefaultValue(entry)
-      ? this.getDefaultValue(entry)
-      : entry.data[entry.name]
-  }
-
-  #getDefaultingField(entry, options) {
     const { data, name } = entry
-    const hasOwnDefault = ({ schema }) => schema.default !== undefined
-    return [
-      ...this.fields.filter(hasOwnDefault),
-      ...this.fields.filter(field => !hasOwnDefault(field))
-    ].find(({ schema }) =>
-      shouldSetDefaultValue(
-        schema,
-        data,
-        name,
-        () => createContext(schema, entry),
-        options
-      )
-    )
-  }
-
-  // Convert the stored value to the one that the components edit:
-  deserialize(value, entry) {
-    const { schema } = getFieldDefining(this.fields, 'deserializeValue')
-    return convertValue(schema, 'deserializeValue', value, value =>
-      createValueContext(schema, entry, { value })
-    )
-  }
-
-  // Convert the value to the one to send, or `undefined` to leave it out.
-  // Convert before `exclude`, so `serializeValue()` can write other values
-  // into `serializedItem`:
-  serialize(value, entry) {
-    const { schema } = getFieldDefining(this.fields, 'serializeValue')
-    const serialized = convertValue(schema, 'serializeValue', value, value =>
-      createValueContext(schema, entry, { value })
-    )
-    const { schema: excludeSchema } = getFieldDefining(this.fields, 'exclude')
-    return (
-      serialized === undefined ||
-      shouldExcludeValue(excludeSchema, () =>
-        createValueContext(excludeSchema, entry, { value: serialized })
-      )
-    )
-      ? undefined
-      : serialized
-  }
-
-  isExcluded(entry) {
-    const { schema } = getFieldDefining(this.fields, 'exclude')
-    return shouldExcludeValue(schema, () => createContext(schema, entry))
-  }
-
-  // The limits of the files in the value, `null` if it holds no files:
-  getUploadLimits(entry) {
-    const field = this.fields.find(({ schema }) => schema.type === 'upload')
-    return field
-      ? getUploadLimits(field.schema, createContext(field.schema, entry))
-      : null
-  }
-
-  // Of several fields of the value, the first one displays it:
-  getDisplayValue(entry) {
-    const { schema } = this.fields[0]
-    const getDisplayValue = getTypeDescriptor(schema)?.getDisplayValue
-    return getDisplayValue
-      ? getDisplayValue(createContext(schema, entry))
-      : entry.data[entry.name]
+    return name in data
+      ? data[name]
+      : this.getPropertyNode(entry)?.getDefaultValue(entry)
   }
 }
 
@@ -487,6 +412,15 @@ function isRelevantField(field, entry) {
   })
 }
 
+// Like in `shouldRenderSchema()`, only an `if` hides schemas, also one in their
+// components:
+function hasCondition(schema) {
+  return (
+    schema.if !== undefined ||
+    someNestedSchemaComponent(schema, hasCondition)
+  )
+}
+
 // The same contexts as the rendered components get:
 function createContext(schema, entry) {
   return SchemaContext.createForSchema(entry.services, { ...entry, schema })
@@ -525,10 +459,6 @@ export function createValueContext(schema, entry, values = null) {
 // Walks without data paths have none in the data either:
 function getDataPath(dataPath, token) {
   return dataPath != null ? appendDataPath(dataPath, token) : null
-}
-
-function getFieldDefining(fields, key) {
-  return fields.find(({ schema }) => schema[key] !== undefined) ?? fields[0]
 }
 
 // Nodes describe their fields once complete, so add fields with new nodes:

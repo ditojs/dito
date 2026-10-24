@@ -7,23 +7,7 @@ import {
   normalizeDataPath,
   parseDataPath
 } from '@ditojs/utils'
-import { getTypeDescriptor } from './types.ts'
-import { getDataKeywords } from './properties.js'
 import { walkData } from './walk.js'
-
-export function getValidations(context) {
-  const { schema } = context
-  const { validate } = schema
-  const validations = {
-    ...getTypeDescriptor(schema)?.getValidations?.(context),
-    ...getDataKeywords(schema, context)
-  }
-  if (validate) {
-    // Pass the validated value, after `formatValue()` like the components:
-    validations.validate = value => validate(context.extend({ value }))
-  }
-  return validations
-}
 
 // Return errors in the format of server errors, `[{ message }]`:
 export function getValueValidationErrors(value, validations) {

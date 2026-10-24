@@ -5,7 +5,6 @@ import {
 } from '../../types/traits.ts'
 import { defineType } from './types.ts'
 import {
-  getValidations,
   getValueValidationErrors,
   getDataValidationErrors,
   getMatchingValidationErrors
@@ -17,105 +16,11 @@ vi.mock('./setup.js', () => ({ setupForm: async form => form }))
 // Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
 defineType({ type: 'text' })
-defineType({ type: 'password', getValidations: () => ({ password: true }) })
-defineType({ type: 'number', ...numberTraits })
 defineType({ type: 'integer', ...numberTraits })
 defineType({ type: 'section', defaultNested: false })
 defineType({ type: 'panel', defaultNested: false })
 defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
 defineType({ type: 'object', sourceType: 'object' })
-
-describe('getValidations()', () => {
-  it('returns no validations for plain schemas', () => {
-    expect(getValidations({ schema: { type: 'text' } })).toEqual({})
-  })
-
-  it('supports `required` as value and callback', () => {
-    expect(
-      getValidations({ schema: { type: 'text', required: true } })
-    ).toEqual({
-      required: true
-    })
-    const schema = { type: 'text', required: ({ value }) => value === 1 }
-    expect(getValidations({ schema, value: 1 })).toEqual({
-      required: true
-    })
-    expect(getValidations({ schema, value: 2 })).toEqual({})
-  })
-
-  it('adds the validations of the type', () => {
-    expect(getValidations({ schema: { type: 'password' } })).toEqual({
-      password: true
-    })
-  })
-
-  it('adds the limits of strings and arrays, also as callbacks', () => {
-    expect(
-      getValidations({
-        schema: {
-          type: 'text',
-          minLength: 2,
-          maxLength: ({ limit }) => limit,
-          pattern: '^[a-z]+$'
-        },
-        limit: 10
-      })
-    ).toEqual({ minLength: 2, maxLength: 10, pattern: '^[a-z]+$' })
-    expect(
-      getValidations({ schema: { type: 'list', minItems: 2, maxItems: 5 } })
-    ).toEqual({ minItems: 2, maxItems: 5 })
-  })
-
-  it('requires one item of required fields that hold arrays', () => {
-    expect(
-      getValidations({ schema: { type: 'list', required: true } })
-    ).toEqual({ required: true, minItems: 1 })
-    expect(
-      getValidations({ schema: { type: 'list', required: true, minItems: 3 } })
-    ).toEqual({ required: true, minItems: 3 })
-    // Objects hold no arrays:
-    expect(
-      getValidations({ schema: { type: 'object', required: true } })
-    ).toEqual({ required: true })
-  })
-
-  it('ignores unknown types', () => {
-    expect(
-      getValidations({ schema: { type: 'unknown', required: true } })
-    ).toEqual({
-      required: true
-    })
-  })
-
-  describe('number types', () => {
-    it.each([
-      [{ type: 'number' }, {}],
-      [{ type: 'number', minimum: 1 }, { minimum: 1 }],
-      [{ type: 'number', maximum: 2 }, { maximum: 2 }],
-      [{ type: 'number', minimum: 1, maximum: 2 }, { range: [1, 2] }],
-      [{ type: 'number', range: [1, 2] }, { range: [1, 2] }],
-      [{ type: 'number', range: [1, 2], minimum: 0 }, { range: [0, 2] }],
-      [{ type: 'number', decimals: 2 }, { decimals: 2 }],
-      [{ type: 'number', step: 0.25 }, { decimals: 2 }],
-      [{ type: 'number', step: 5 }, { integer: true }],
-      [{ type: 'number', step: 0.5, decimals: 3 }, { decimals: 3 }],
-      [{ type: 'integer' }, { integer: true }],
-      [
-        { type: 'integer', range: [0.5, 1.5], step: 0.5 },
-        { range: [0, 2], integer: true }
-      ]
-    ])('%j', (schema, validations) => {
-      expect(getValidations({ schema })).toEqual(validations)
-    })
-
-    it('evaluates callbacks with the context', () => {
-      const schema = { type: 'number', maximum: ({ item }) => item.limit }
-      expect(getValidations({ schema, item: { limit: 3 } })).toEqual({
-        maximum: 3
-      })
-    })
-  })
-})
 
 describe('getValueValidationErrors()', () => {
   it('returns no errors for valid values', () => {

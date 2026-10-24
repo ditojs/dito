@@ -145,18 +145,6 @@ export function getEmptyValue(schema, context) {
     : value
 }
 
-export function shouldExcludeValue(schema, context) {
-  const exclude =
-    schema.exclude !== undefined
-      ? schema.exclude
-      : getTypeDescriptor(schema)?.defaultExclude
-  return isFunction(exclude) ? exclude(getContext(context)) : !!exclude
-}
-
-export function shouldIgnoreMissingValue(schema, context) {
-  return getDescriptorFlag(schema, 'ignoresMissingValue', context)
-}
-
 export function hasComputedValueSource(schema) {
   return !!schema.computeValue || hasValueFromDataSchema(schema)
 }
@@ -175,16 +163,6 @@ export function getMultipleValue(schema, context) {
     context,
     default: !!getTypeDescriptor(schema)?.defaultMultiple
   })
-}
-
-export function shouldSetDefaultValue(schema, data, name, context, {
-  shouldSetDefaultsOfComputedValues = true
-} = {}) {
-  return (
-    (shouldSetDefaultsOfComputedValues || !schema.computeValue) &&
-    !(name in data) &&
-    !shouldIgnoreMissingValue(schema, context)
-  )
 }
 
 // Set missing values to their defaults to watch them for changes, and number
@@ -275,12 +253,6 @@ export function getComputedValue(schema, data, name, dataPath, {
   ) {
     return computeValue(getContext(context))
   }
-}
-
-export function getValueOrDefault(schema, data, name, context) {
-  return shouldSetDefaultValue(schema, data, name, context)
-    ? getDefaultValue(schema, context)
-    : data[name]
 }
 
 // The value as the component edits it, after `formatValue()`. The components
@@ -468,7 +440,8 @@ export function getItemDisplayValue(sourceSchema, item, name, {
       valueEntry = entry
     }
   })
-  return valueEntry ? valueEntry.node.getDisplayValue(valueEntry) : item[name]
+  const node = valueEntry?.node.getPropertyNode(valueEntry)
+  return node ? node.getDisplayValue(valueEntry) : item[name]
 }
 
 export function getItemId(sourceSchema, item) {
@@ -512,7 +485,7 @@ function getRelatedLabels(entry, value, { services, rootData }) {
 }
 
 // Convert the value with the hook of its type first, then with the schema's:
-export function convertValue(schema, hookName, value, createContext) {
+function convertValue(schema, hookName, value, createContext) {
   for (const convert of [
     getTypeDescriptor(schema)?.[hookName],
     schema[hookName]
@@ -533,10 +506,4 @@ export function callOrLog(callback, fallback) {
     console.error(error)
     return fallback
   }
-}
-
-// Flags of type descriptors are booleans, or callbacks that return them:
-function getDescriptorFlag(schema, key, context) {
-  const flag = getTypeDescriptor(schema)?.[key]
-  return isFunction(flag) ? flag(getContext(context)) : !!flag
 }

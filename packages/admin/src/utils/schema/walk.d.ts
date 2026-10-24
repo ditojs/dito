@@ -38,20 +38,24 @@ export interface DataNode {
   relation: DataRelation | null
   getRelevantNode(entry: DataEntry): DataNode | null
   // The node of the value's property, `null` for types without a value:
-  getPropertyNode(entry: DataEntry): DataNode | null
+  getPropertyNode(entry: DataEntry): PropertyNode | null
   getValidationErrors(entry: DataEntry): ValueError[]
+  getValueOrDefault(entry: DataEntry): any
+  getRecordedSchema(entry: DataEntry): { schema: Schema; form: Schema } | null
+}
+
+// The node of a value's property, which describes its data:
+export interface PropertyNode extends DataNode {
   shouldSetDefaultValue(
     entry: DataEntry,
     options?: DefaultValueOptions
   ): boolean
   getDefaultValue(entry: DataEntry, options?: DefaultValueOptions): any
-  getValueOrDefault(entry: DataEntry): any
   deserialize(value: any, entry: DataEntry): any
   serialize(value: any, entry: DataEntry): any
   isExcluded(entry: DataEntry): boolean
   getUploadLimits(entry: DataEntry): UploadLimits | null
   getDisplayValue(entry: DataEntry): any
-  getRecordedSchema(entry: DataEntry): { schema: Schema; form: Schema } | null
 }
 
 export function getSchemaSource(schema: Schema): DataSource
