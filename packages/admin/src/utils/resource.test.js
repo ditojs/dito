@@ -120,11 +120,12 @@ describe('getMemberResource()', () => {
 })
 
 describe('hasResource()', () => {
-  it('checks schemas for valid resources', () => {
+  it('checks schemas for declared resources', () => {
     expect(hasResource({ resource: 'books' })).toBe(true)
     expect(hasResource({ resource: { path: 'books' } })).toBe(true)
     expect(hasResource({ resource: () => 'books' })).toBe(true)
-    expect(hasResource({ resource: () => null })).toBe(false)
+    // Resource functions aren't called without their context:
+    expect(hasResource({ resource: () => null })).toBe(true)
     expect(hasResource({})).toBe(false)
   })
 })
