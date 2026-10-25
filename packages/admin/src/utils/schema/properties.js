@@ -1,5 +1,4 @@
 import {
-  isArray,
   isFunction,
   isDate,
   isString,
@@ -102,6 +101,15 @@ export class PropertyNode {
       if (setting != null && setting !== false && !isValidatedByType(key)) {
         validations[key] = setting
       }
+    }
+    // Empty arrays are values, required arrays need one item, unless they set
+    // their own `minItems`:
+    if (
+      property.type === 'array' &&
+      property.minItems === undefined &&
+      get('required')
+    ) {
+      validations.minItems ??= 1
     }
     if (property.type === 'integer') {
       validations.integer = true
@@ -461,15 +469,11 @@ export function mergePropertyNodes(name, propertyNodes) {
     const keys = new Set(
       propertyNodes.flatMap(({ fieldsByKey }) => Reflect.ownKeys(fieldsByKey))
     )
-    const findSettingNode = key =>
-      propertyNodes.find(
-        ({ fieldsByKey }) => fieldsByKey[typeKey][key] !== undefined
-      )
     for (const key of keys) {
       const propertyNode = (
-        findSettingNode(key) ??
-        // Required arrays derive `minItems`, see `getDataKeywords()`:
-        (key === 'minItems' ? findSettingNode('required') : null) ??
+        propertyNodes.find(
+          ({ fieldsByKey }) => fieldsByKey[typeKey][key] !== undefined
+        ) ??
         propertyNodes.find(({ fieldsByKey }) => key in fieldsByKey)
       )
       if (key in propertyNode.property) {
@@ -569,11 +573,6 @@ export function getDataKeywords(schema, context) {
   }
   if (getSchemaValue('required', { type: Boolean, schema, context })) {
     keywords.required = true
-    // Empty arrays are values, required fields of types that hold them need
-    // one item:
-    if (isArray(getTypeDefaultValue(schema, context))) {
-      keywords.minItems ??= 1
-    }
   }
   return keywords
 }
@@ -643,15 +642,6 @@ function createFieldPropertyNode(field, name, property, context) {
       if (isFunction(field[key])) {
         property[key] = field[key]
       }
-    }
-    // Required arrays need one item, as in `getDataKeywords()`, also per entry:
-    const { required } = field
-    if (
-      isFunction(required) &&
-      property.type === 'array' &&
-      property.minItems === undefined
-    ) {
-      property.minItems = context => (required(context) ? 1 : null)
     }
     return new PropertyNode(
       name,

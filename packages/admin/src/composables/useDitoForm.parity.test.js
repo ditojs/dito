@@ -146,6 +146,16 @@ const cases = [
     values: [null, [], [{ name: 'a' }]]
   },
   {
+    title: 'required list',
+    field: { type: 'list', required: true, form: itemForm },
+    property: {
+      type: 'array',
+      required: true,
+      items: { type: 'object', properties: itemProperties }
+    },
+    values: [null, [], [{ name: 'a' }]]
+  },
+  {
     title: 'list with a default',
     field: { type: 'list', default: () => [{ name: 'a' }], form: itemForm },
     property: {
@@ -211,6 +221,21 @@ const cases = [
     title: 'multiselect',
     field: { type: 'multiselect', options: ['a', 'b'], multiple: true },
     property: { type: 'array', items: { type: 'string', enum: ['a', 'b'] } },
+    values: [null, [], ['a']]
+  },
+  {
+    title: 'required multiselect',
+    field: {
+      type: 'multiselect',
+      options: ['a', 'b'],
+      multiple: true,
+      required: true
+    },
+    property: {
+      type: 'array',
+      required: true,
+      items: { type: 'string', enum: ['a', 'b'] }
+    },
     values: [null, [], ['a']]
   }
 ]

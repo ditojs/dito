@@ -298,7 +298,6 @@ describe('getFormProperties()', () => {
           type: 'array',
           items: { type: 'string', enum: ['jazz', 'rock'] },
           required: true,
-          minItems: 1,
           default: []
         },
         formats: {
@@ -337,7 +336,6 @@ describe('getFormProperties()', () => {
           type: 'array',
           items: { type: 'asset' },
           required: true,
-          minItems: 1,
           default: []
         }
       })
@@ -468,7 +466,6 @@ describe('getFormProperties()', () => {
           type: 'array',
           items: item,
           required: true,
-          minItems: 1,
           maxItems: 5,
           default: []
         },
@@ -965,6 +962,24 @@ describe('written properties', () => {
       ).toEqual({ day: [{ message: 'is required' }] })
     })
 
+    it('requires one item in required arrays, unless they set `minItems`', () => {
+      const items = { type: 'string' }
+      expect(
+        validate(
+          {
+            tags: { type: 'array', required: true, items },
+            genres: { type: 'array', required: ({ item }) => !!item, items },
+            notes: { type: 'array', required: true, minItems: 0, items },
+            labels: { type: 'array', required: false, items }
+          },
+          { tags: [], genres: [], notes: [], labels: [] }
+        )
+      ).toEqual({
+        tags: [{ message: 'is required' }],
+        genres: [{ message: 'is required' }]
+      })
+    })
+
     it('calls `validate()` with the value', () => {
       expect(
         validate(
@@ -1423,7 +1438,6 @@ describe('properties of fields', () => {
           type: 'array',
           items: { type: 'string', enum: ['jazz'] },
           required: true,
-          minItems: 1,
           default: []
         },
         tags: {
@@ -1747,6 +1761,39 @@ describe('properties of fields', () => {
       expect(node.getDisplayValue(entry)).toBe('1.5 stars')
     })
 
+    it('requires one item in required arrays, unless they set `minItems`', async () => {
+      defineType({
+        type: 'test-palette',
+        component: {},
+        getProperty: () => ({ type: 'array' })
+      })
+      const form = await setupForm(api, {
+        type: 'form',
+        fields: {
+          colors: { type: 'test-palette', required: true },
+          accents: { type: 'test-palette', required: () => true },
+          shades: { type: 'test-palette', required: true, minItems: 0 },
+          allergies: {
+            type: 'checkboxes',
+            options: ['nuts'],
+            required: true,
+            minItems: 0
+          }
+        }
+      })
+      expect(
+        getDataValidationErrors(form, {
+          colors: [],
+          accents: [],
+          shades: [],
+          allergies: []
+        })
+      ).toEqual({
+        colors: [{ message: 'is required' }],
+        accents: [{ message: 'is required' }]
+      })
+    })
+
     it('derives no property for types without a value', async () => {
       expect(
         await getFieldProperties({
@@ -1804,7 +1851,7 @@ describe('properties of fields', () => {
       expect(initializeData(form, { title: null })).toEqual({ title: '' })
     })
 
-    it('merges `minItems` with the `required` that derives it', async () => {
+    it('takes `required` and `minItems` from the fields that set them', async () => {
       const options = ['a']
       const nodes = await getPropertyNodes({
         tags: { type: 'checkboxes', options, required: false },

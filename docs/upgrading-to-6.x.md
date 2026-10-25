@@ -196,6 +196,9 @@ name, see [Hooks](api/server/controllers.md#hooks).
   `treatsNullAsMissing`.
 - Several fields of the same value validate it once, with each rule taken
   from the first field that sets it.
+- `required` on any array value, also of custom types and written properties,
+  needs one item, unless `minItems` is set, see
+  [Types and limits of fields](guide/admin/validation.md#types-and-limits-of-fields).
 - `ctx.logIn()` and `ctx.logOut()` are removed: use `ctx.login()` and
   `ctx.logout()`.
 - `ctx.transaction` of transacted requests emits no `'commit'` and

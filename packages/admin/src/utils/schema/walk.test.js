@@ -1665,10 +1665,9 @@ describe('written properties', () => {
                   name: { ...text, required: true },
                   email: { ...text, format: 'email' },
                   format: { ...text, enum: ['lp', 'cd'], default: 'lp' },
-                  // Fields derive `minItems: 1` from `required`:
                   tracks: {
                     type: 'array',
-                    minItems: 1,
+                    required: true,
                     items: {
                       type: 'object',
                       properties: {
@@ -1702,7 +1701,6 @@ describe('written properties', () => {
     const {
       'collections/0/items/0/blurb': blurb,
       'collections/0/items/1/summary': summary,
-      'collections/1/items/0/tracks': tracks,
       ...errors
     } = catalogueErrors
     expect(
@@ -1710,10 +1708,7 @@ describe('written properties', () => {
     ).toEqual({
       ...errors,
       // Unlike static options, `enum` rejects other values:
-      'collections/0/currency': [{ message: 'must be one of the options' }],
-      'collections/1/items/0/tracks': [
-        { message: 'must contain at least one item' }
-      ]
+      'collections/0/currency': [{ message: 'must be one of the options' }]
     })
   })
 
