@@ -257,6 +257,14 @@ describe('getFormSchemas()', () => {
     ).toEqual({ default: { type: 'form', fields } })
   })
 
+  it('returns the same derived forms each time', () => {
+    // Items render again whenever their form changes:
+    const list = { type: 'list', fields: { title: { type: 'text' } } }
+    expect(getFormSchemas(list).default).toBe(getFormSchemas(list).default)
+    const object = { type: 'object', clipboard: true, form: novel }
+    expect(getFormSchemas(object).default).toBe(getFormSchemas(object).default)
+  })
+
   it('returns no forms for schemas without forms', () => {
     expect(getFormSchemas({ type: 'text' })).toEqual({})
   })
