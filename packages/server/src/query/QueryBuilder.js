@@ -800,15 +800,18 @@ function filterScopes(scopes, callback) {
 }
 
 // The defaults of insertGraph(), upsertGraph(), patchGraph() and
-// updateGraph(): their options, and the strict mode settings of relations
-// that own their models, and of the others, which relate theirs:
+// updateGraph(): the operation and options of their strict graph, and the
+// settings of relations that own their models, and of the others, which relate
+// theirs:
 const insertGraphDefaults = {
+  operation: 'insert',
   options: { allowRefs: true },
   owner: { added: 'insert', created: 'insert' },
   related: { added: 'relate', created: 'insert' }
 }
 
 const upsertGraphDefaults = {
+  operation: 'upsert',
   options: {
     allowRefs: true,
     // When working with large graphs, using the 'OnlyNeeded' fetch-strategy

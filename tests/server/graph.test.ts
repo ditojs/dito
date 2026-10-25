@@ -296,6 +296,7 @@ describe('Dito.js graph handling', () => {
 
   describe('GraphProcessor', () => {
     const upsertDefaults = {
+      operation: 'upsert',
       options: { allowRefs: true, root: { added: 'insert' } },
       owner: { removed: 'delete', added: 'insert' },
       related: { removed: 'unrelate', added: 'relate' }
@@ -319,12 +320,12 @@ describe('Dito.js graph handling', () => {
         strict: true,
         root: { added: 'insert' },
         relations: {
-          'author': { removed: 'unrelate', added: 'relate' },
+          '[author]': { removed: 'unrelate', added: 'relate' },
           // `shelf` overrides `added` through its `graphOptions`:
-          'shelf': { removed: 'unrelate', added: 'insert' },
-          'chapters': { removed: 'delete', added: 'insert' },
-          'chapters.book': { removed: 'unrelate', added: 'relate' },
-          'genres': { removed: 'unrelate', added: 'relate' }
+          '[shelf]': { removed: 'unrelate', added: 'insert' },
+          '[chapters]': { removed: 'delete', added: 'insert' },
+          '[chapters.book]': { removed: 'unrelate', added: 'relate' },
+          '[genres]': { removed: 'unrelate', added: 'relate' }
         }
       })
     })
@@ -338,8 +339,8 @@ describe('Dito.js graph handling', () => {
         upsertDefaults
       )
       expect(processor.getOptions().relations).toEqual({
-        author: { removed: 'unrelate', added: 'relate' },
-        chapters: { removed: 'delete', added: 'insert' }
+        '[author]': { removed: 'unrelate', added: 'relate' },
+        '[chapters]': { removed: 'delete', added: 'insert' }
       })
     })
 
@@ -364,11 +365,21 @@ describe('Dito.js graph handling', () => {
         strict: true,
         root: { added: 'insert', kept: 'update' },
         relations: {
-          ...relations,
-          'chapters': { removed: 'preserve', added: 'insert' },
-          'chapters.book': { removed: 'preserve', added: 'relate' },
-          'genres': { removed: 'preserve', added: 'insert' }
+          '[chapters]': { removed: 'delete', added: 'insert' },
+          '[chapters.book]': { removed: 'unrelate', added: 'relate' },
+          '[genres]': { removed: 'unrelate', added: 'relate' },
+          ...relations
         }
+      })
+      // The entries of the call override the generated settings in their
+      // order, also where they name the same relation as a broader entry:
+      expect(processor.getSettings(['genres'])).toMatchObject({
+        removed: 'preserve',
+        added: 'insert'
+      })
+      expect(processor.getSettings(['chapters', 'book'])).toMatchObject({
+        removed: 'preserve',
+        added: 'relate'
       })
       // Genres aren't related anymore, so they keep their data:
       expect({ ...processor.getData().genres[0] }).toEqual({
@@ -378,20 +389,27 @@ describe('Dito.js graph handling', () => {
     })
 
     it('leaves out the settings that insertGraph() does not take', () => {
-      const processor = new GraphProcessor(
-        Book,
-        { title: 'Dune', chapters: [{ title: 'One' }] },
-        { relations: { chapters: { removed: 'preserve', kept: 'patch' } } },
-        {
-          options: {},
-          owner: { added: 'insert' },
-          related: { added: 'relate' }
-        }
-      )
-      // Objection.js still rejects them in the entry of the call:
+      const insertDefaults = {
+        operation: 'insert',
+        options: {},
+        owner: { added: 'insert' },
+        related: { added: 'relate' }
+      }
+      const data = { title: 'Dune', chapters: [{ title: 'One' }] }
+      const processor = new GraphProcessor(Book, data, {}, insertDefaults)
       expect(processor.getOptions().relations).toEqual({
-        chapters: { added: 'insert' }
+        '[chapters]': { added: 'insert' }
       })
+      // Objection.js rejects them in the entries of the call:
+      expect(
+        () =>
+          new GraphProcessor(
+            Book,
+            data,
+            { relations: { chapters: { removed: 'preserve' } } },
+            insertDefaults
+          )
+      ).toThrow(/"removed" is not a setting/)
     })
 
     it('reduces related models to references, keeping owned data', () => {
