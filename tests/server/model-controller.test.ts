@@ -546,7 +546,16 @@ class GraphAuthors extends ModelController<any> {
   override graph = true
 
   override collection: any = {
-    allow: ['post', 'put', 'patch']
+    'allow': ['post', 'put', 'patch'],
+
+    'post import-and-fail': {
+      transacted: true,
+      async handler(ctx: any) {
+        await Author.query(ctx.transaction).insertDitoGraph(ctx.request.body)
+        const count = await Book.query(ctx.transaction).resultSize()
+        throw new ResponseError(`Rolled back ${count} books`, { status: 409 })
+      }
+    }
   }
 
   override member: any = {
@@ -1536,6 +1545,33 @@ describe('ModelController', () => {
       // Relation controllers inherit the graph setting of their parent.
       const controller: any = app.getController('/graph-authors')
       expect(controller.relations.books.graph).toBe(true)
+    })
+
+    it('rolls back graph inserts that fail in nested models', async () => {
+      const ada = await Author.query().insert({ name: 'Ada' })
+      const atlas = await Book.query().insert({
+        title: 'Atlas',
+        authorId: ada.id
+      })
+      // Owned books are inserted, so an existing one fails after the author:
+      const response = await request('/graph-authors', {
+        method: 'POST',
+        body: { name: 'Bo', books: [{ id: atlas.id, title: 'Atlas' }] }
+      })
+      expect(response.status).toBe(409)
+      expect(await Author.query()).toEqual([{ id: ada.id, name: 'Ada' }])
+    })
+
+    it('rolls back the graphs of transacted actions that throw', async () => {
+      const response = await request('/graph-authors/import-and-fail', {
+        method: 'POST',
+        body: { name: 'Ada', books: [{ title: 'Atlas' }, { title: 'Codex' }] }
+      })
+      expect(response.status).toBe(409)
+      // The action reads its own writes before throwing:
+      expect(response.data.message).toBe('Rolled back 2 books')
+      expect(await Author.query()).toEqual([])
+      expect(await Book.query()).toEqual([])
     })
 
     it('rejects root models without ids in graph collection saves', async () => {
