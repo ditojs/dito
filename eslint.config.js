@@ -63,6 +63,15 @@ export default [
     }
   },
   {
+    // Only in the admin, where cycles grew, as the rule doubles the time of
+    // linting everything. Type-only imports don't count, and neither do the
+    // imports inside Vue files, which the rule doesn't read:
+    files: ['packages/admin/src/**/*'],
+    rules: {
+      'import/no-cycle': 'error'
+    }
+  },
+  {
     files: ['packages/server/**/*'],
     languageOptions: {
       globals: globalsNode
