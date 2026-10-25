@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { h } from 'vue'
+import { h, Transition } from 'vue'
 import { html } from '@ditojs/utils'
 import { DOMWrapper, flushPromises } from '@vue/test-utils'
 import Sortable from 'sortablejs'
@@ -84,6 +84,18 @@ describe('DitoListType', () => {
       expect(getItemNames(field)).toEqual(['Flour', 'Salt'])
       await field.find('input[name="ingredients/1/amount"]').setValue('8')
       expect(data.ingredients[1].amount).toBe(8)
+    })
+
+    it('transitions the height of collapsible items only', async () => {
+      const data = { ingredients: [{ name: 'Flour' }, { name: 'Salt' }] }
+      const countTransitions = async schema => {
+        const { findField } = await mountSchema({ schema, data })
+        return findField('ingredients').findAllComponents(Transition).length
+      }
+      expect(await countTransitions(createRecipeSchema())).toBe(0)
+      expect(
+        await countTransitions(createRecipeSchema({ collapsible: true }))
+      ).toBe(2)
     })
 
     it('lays out the forms of the items with their component', async () => {

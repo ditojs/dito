@@ -65,7 +65,9 @@ slot(name="prepend")
         @paste="pasteData"
       )
       slot.dito-schema-header__buttons(name="edit-buttons")
-  TransitionHeight(:enabled="inlined")
+  //- Only collapsible schemas open and close their content, the others don't
+  //- need the components of a transition:
+  TransitionHeight(:enabled="inlined && collapsible")
     .dito-schema-content(
       v-if="opened || hasErrors || isClaimingRoute()"
       v-show="opened"
