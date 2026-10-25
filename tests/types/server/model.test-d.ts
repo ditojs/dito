@@ -126,6 +126,19 @@ describe('Model', () => {
     >()
   })
 
+  it('queries related models through the static relatedQuery()', () => {
+    class Book extends Model {
+      declare title: string
+    }
+    class Author extends Model {
+      declare books: Book[]
+    }
+    const query = Author.relatedQuery('books')
+    expectTypeOf(query).resolves.toEqualTypeOf<Book[]>()
+    // @ts-expect-error - the query finds books, not authors
+    expectTypeOf(query).resolves.toEqualTypeOf<Author[]>()
+  })
+
   it('accepts graph options on relations', () => {
     assertType<ModelRelation>({
       relation: 'hasMany',

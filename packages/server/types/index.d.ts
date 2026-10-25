@@ -1703,11 +1703,17 @@ export class Model extends ObjectionModel {
    * to the relation name.
    * @override
    */
-  static relatedQuery<M extends Model>(
+  static relatedQuery<M extends Model, K extends keyof M>(
     this: Constructor<M>,
+    relationName: K,
+    trx?: objection.Transaction
+  ): QueryBuilder<RelatedModel<M[K]>>
+
+  static relatedQuery<RM extends Model>(
+    this: Constructor<Model>,
     relationName: string,
     trx?: objection.Transaction
-  ): QueryBuilder<M>
+  ): QueryBuilder<RM>
 
   /**
    * Hook called before find queries.
