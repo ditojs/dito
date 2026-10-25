@@ -110,6 +110,11 @@
     }
   }
 
+  // Placeholders keep the space of buttons that aren't rendered:
+  &--placeholder {
+    visibility: hidden;
+  }
+
   .dito-buttons--large & {
     border-radius: 2em;
     padding: $button-round-padding;

@@ -2,32 +2,44 @@
 .dito-clipboard.dito-buttons.dito-buttons--round(
   v-if="clipboard"
 )
-  input(
-    v-if="interchange"
-    ref="input"
-    type="file"
-    accept=".zip"
-    hidden
-    @change="onSelectFile"
+  //- Idle clipboards keep only their space, with placeholders:
+  template(
+    v-if="idle"
   )
-  DitoButton.dito-button--copy(
-    title="Copy Data"
-    :disabled="!hasData"
-    @click="onCopy"
+    span.dito-button.dito-button--placeholder.dito-button--copy
+    span.dito-button.dito-button--placeholder.dito-button--paste
+    span.dito-button.dito-button--placeholder.dito-button--interchange(
+      v-if="interchange"
+    )
+  template(
+    v-else
   )
-  DitoButton.dito-button--paste(
-    title="Paste Data"
-    :disabled="!isPasteEnabled"
-    @click="onPaste"
-  )
-  DitoMenuButton.dito-button--interchange(
-    v-if="interchange"
-    title="Download or Upload Data"
-    :items="interchangeItems"
-    placement="bottom-right"
-    :cover="false"
-    @select="onSelectInterchangeItem"
-  )
+    input(
+      v-if="interchange"
+      ref="input"
+      type="file"
+      accept=".zip"
+      hidden
+      @change="onSelectFile"
+    )
+    DitoButton.dito-button--copy(
+      title="Copy Data"
+      :disabled="!hasData"
+      @click="onCopy"
+    )
+    DitoButton.dito-button--paste(
+      title="Paste Data"
+      :disabled="!isPasteEnabled"
+      @click="onPaste"
+    )
+    DitoMenuButton.dito-button--interchange(
+      v-if="interchange"
+      title="Download or Upload Data"
+      :items="interchangeItems"
+      placement="bottom-right"
+      :cover="false"
+      @select="onSelectInterchangeItem"
+    )
 </template>
 
 <script>
@@ -69,7 +81,9 @@ export default {
     getUploadEntries: { type: Function, required: true },
     // For the `copy()` and `paste()` callbacks of `clipboard`:
     createContext: { type: Function, required: true },
-    disabled: { type: Boolean, default: false }
+    disabled: { type: Boolean, default: false },
+    // Render the buttons as placeholders, in idle items:
+    idle: { type: Boolean, default: false }
   },
 
   setup(props, { emit }) {

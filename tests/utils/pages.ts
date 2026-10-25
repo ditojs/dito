@@ -305,9 +305,17 @@ export class DitoNestedList {
   }
 
   async dragRow(fromIndex: number, toIndex: number) {
-    const handle = (index: number) =>
-      this.rows.nth(index).locator('.dito-button[title="Drag"]')
-    await dragHandle(this.page, handle(fromIndex), handle(toIndex))
+    // Items render their drag handles on hover, and keep their space with
+    // placeholders otherwise:
+    const row = this.rows.nth(fromIndex)
+    const handle = row.locator('.dito-button[title="Drag"]')
+    await row.hover()
+    await expect(handle).toBeVisible()
+    await dragHandle(
+      this.page,
+      handle,
+      this.rows.nth(toIndex).locator('.dito-button--drag')
+    )
   }
 }
 

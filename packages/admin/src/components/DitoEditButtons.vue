@@ -11,10 +11,15 @@ DitoButtons.dito-edit-buttons(
   :disabled="disabled"
   @click.stop
 )
+  //- Idle buttons keep only their space, with placeholders:
   DitoDragHandle(
-    v-if="draggable"
+    v-if="draggable && !idle"
     :disabled="isDraggableDisabled"
     @move="delta => $emit('move', delta)"
+  )
+  span.dito-button.dito-button--placeholder(
+    v-else-if="draggable"
+    :class="`dito-button--${verbs.drag}`"
   )
   DitoButton(
     v-if="editable"
@@ -24,7 +29,7 @@ DitoButtons.dito-edit-buttons(
     :disabled="isEditableDisabled"
   )
   DitoCreateButton(
-    v-if="creatable"
+    v-if="creatable && !idle"
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
@@ -36,6 +41,10 @@ DitoButtons.dito-edit-buttons(
     :text="insertIndex != null ? null : createButtonText"
     :disabled="isCreatableDisabled"
     :insertIndex="insertIndex"
+  )
+  span.dito-button.dito-button--placeholder(
+    v-else-if="creatable"
+    :class="`dito-button--${verbs.create}`"
   )
   DitoButton(
     v-if="deletable"
@@ -81,6 +90,8 @@ export default {
     editQuery: { type: Object, default: null },
     createPath: { type: String, default: null },
     insertIndex: { type: Number, default: null },
+    // Render the drag and create buttons as placeholders, in idle items:
+    idle: { type: Boolean, default: false },
     // Round in lists and objects, square and compact in the rows of trees:
     round: { type: Boolean, default: true }
   },
