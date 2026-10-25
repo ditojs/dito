@@ -23,7 +23,6 @@ import { waitUntilDataModelSettled } from '../utils/services.ts'
 import { initializeData } from '../utils/schema/data.js'
 import { getButtonSchemas, hasFormSchema } from '../utils/schema/lookup.js'
 import { isInlined, isListSource } from '../utils/schema/structure.js'
-import { claimSourceRoute, getSourceFormRoute } from '../utils/RouteTree.ts'
 import { useField, type FieldProps } from './useField.ts'
 import { useResource } from './useResource.ts'
 import { useListQuery } from './useListQuery.ts'
@@ -464,29 +463,6 @@ export function useSource(
   const { sources } = services.dataContext!
   sources.add(sourceContext)
   onUnmounted(() => sources.delete(sourceContext))
-
-  // Routed forms display the errors of the fields that they render for their
-  // items, which their component paths lead to. The source opens them, for
-  // the route and for the errors alike:
-  const unregisterUi = adminContext.ui.register(() => componentPath.value, {
-    dataContext: services.dataContext,
-    // Sources with inlined items have no route, so they don't claim:
-    claimRoute: hasInlinedItems()
-      ? undefined
-      : path => {
-          const { sourceRoute } = node.value
-          return sourceRoute
-            ? claimSourceRoute(sourceRoute, path, adminContext.api)
-            : null
-        },
-    getFormRoute: path => {
-      const { sourceRoute } = node.value
-      return sourceRoute
-        ? getSourceFormRoute(sourceRoute, path, adminContext.api)
-        : null
-    }
-  })
-  onUnmounted(unregisterUi)
 
   if (providesData.value) {
     loadData()

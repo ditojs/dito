@@ -132,7 +132,7 @@ import {
   watch
 } from 'vue'
 import { useRouter } from 'vue-router'
-import { isFunction, parseDataPath } from '@ditojs/utils'
+import { isFunction } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui/src'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
@@ -259,7 +259,7 @@ export default {
     // revealed in the components that display them:
     const hasErrors = computed(() => getModel().errors.hasWithin(props.data))
     // So does the content at `path` while the route continues below its form,
-    // so that its components can claim it, and the one that claimed it stays:
+    // and the one that holds the source of the form below stays:
     const isClaimingRoute = (path = componentPath.value) => {
       const claim = routeContext?.childClaim
       return (
@@ -267,7 +267,7 @@ export default {
         !routeContext.isLastRoute &&
         !routeContext.isLeaving && (
           !claim ||
-          getRelativeDataPath(claim.source.componentPath, path) !== null
+          getRelativeDataPath(claim.location.componentPath, path) !== null
         )
       )
     }
@@ -319,20 +319,6 @@ export default {
         !!routeContext?.isLastRoute
       )
     )
-
-    // The tab that holds the source that claimed the nested route:
-    const nestedRouteTab = computed(() => {
-      const source = (
-        hasTabs.value &&
-        isTopLevelSchema.value &&
-        routeContext?.childClaim?.source
-      )
-      const path = source
-        ? getRelativeDataPath(source.componentPath, componentPath.value)
-        : null
-      const [tab] = parseDataPath(path ?? '')
-      return tab && tab in renderedTabs.value ? tab : null
-    })
 
     const isTabSelected = tab => selectedTab.value === tab
 
@@ -395,13 +381,6 @@ export default {
       }
     })
 
-    // Show the source of the nested form, to return to it when it closes:
-    watch(nestedRouteTab, tab => {
-      if (tab) {
-        selectTab(tab)
-      }
-    })
-
     // `defaultTab()` and the tabs' `if` may depend on data loaded later:
     watch(hasData, hasData => {
       if (hasData && shouldFollowDefaultTab) {
@@ -427,17 +406,6 @@ export default {
       }
     })
 
-    const unregisterUi = adminContext.ui.register(() => componentPath.value, {
-      dataContext: services.dataContext,
-      // The tabs of the route's schema claim their names below its path:
-      claimRoute:
-        isTopLevelSchema.value && routeContext
-          ? path => {
-              const tab = getRelativeDataPath(path, routeContext.path)
-              return tab && renderedTabs.value?.[tab] ? { tab } : null
-            }
-          : undefined
-    })
     // The scrollable schema of a route makes its page wide while it's mounted,
     // also when the type of the item changes its form:
     if (props.scrollable && routeContext) {
@@ -454,12 +422,12 @@ export default {
     }
 
     onMounted(() => {
-      // The tab of a nested route belongs to the nested form, which names the
-      // tab of its source in its route, e.g. after a reload. Inlined schemas
+      // The tab of a nested route belongs to the nested form, whose route
+      // reveals the tab of its source, e.g. after a reload. Inlined schemas
       // keep their tab in their store:
       const tab = shouldFollowRouteTab.value
         ? routeTab.value
-        : (nestedRouteTab.value ?? selectedTab.value)
+        : selectedTab.value
       if (tab && tab in renderedTabs.value) {
         selectTab(tab)
       } else {
@@ -467,10 +435,7 @@ export default {
       }
     })
 
-    onUnmounted(() => {
-      emitEvent('destroy')
-      unregisterUi()
-    })
+    onUnmounted(() => emitEvent('destroy'))
 
     return {
       context,

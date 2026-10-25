@@ -3,6 +3,7 @@ import {
   inject,
   markRaw,
   nextTick,
+  onMounted,
   onUnmounted,
   shallowReactive,
   shallowRef,
@@ -121,7 +122,10 @@ export function useRouteContainer({
   const pathClaim = computed(() =>
     routeContext.isLeaving
       ? null
-      : adminContext.ui.claimRoute(routeContext.dataContext, getCurrentPath())
+      : routeContext.dataContext.componentTree.claimRoute(
+          getCurrentPath(),
+          routeContext
+        )
   )
   const childClaim = computed(() =>
     pathClaim.value && !('tab' in pathClaim.value) ? pathClaim.value : null
@@ -216,10 +220,7 @@ export function useRouteContainer({
     ),
 
     getFormRoute(componentPath: string) {
-      return adminContext.ui.getFormRoute(
-        routeContext.dataContext,
-        componentPath
-      )
+      return routeContext.dataContext.componentTree.getFormRoute(componentPath)
     },
 
     getFormPath(componentPath: string) {
@@ -249,7 +250,8 @@ export function useRouteContainer({
   })
 
   // Paths that no component claims lead back to the route, once it renders its
-  // components with its data. Menus render their views below them instead:
+  // components with its data. Menus render their views below them instead.
+  // The claims come from the schema of the route, which is set up with it:
   const isUnclaimed = () => (
     !childClaim.value &&
     !routeContext.isLastRoute &&
@@ -257,18 +259,34 @@ export function useRouteContainer({
     !(route.node.value instanceof MenuNode) &&
     routeContext.dataContext.hasData
   )
-  watch(
-    isUnclaimed,
-    async isUnclaimedPath => {
-      if (isUnclaimedPath) {
-        await nextTick()
-        if (isUnclaimed()) {
-          router.replace(path.value)
+  onMounted(() => {
+    // Reveal the source of the form below, with the tabs and sections on the
+    // way, to return to it when the form closes, also after a reload:
+    watch(
+      childClaim,
+      claim => {
+        if (claim) {
+          routeContext.dataContext.componentTree.reveal(
+            claim.location.componentPath,
+            { focus: true }
+          )
         }
-      }
-    },
-    { immediate: true, flush: 'post' }
-  )
+      },
+      { immediate: true }
+    )
+    watch(
+      isUnclaimed,
+      async isUnclaimedPath => {
+        if (isUnclaimedPath) {
+          await nextTick()
+          if (isUnclaimed()) {
+            router.replace(path.value)
+          }
+        }
+      },
+      { immediate: true, flush: 'post' }
+    )
+  })
 
   const { navigateWithin, replaceWithin } = useLeaveGuard(routeContext, {
     adminContext,

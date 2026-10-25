@@ -2361,12 +2361,11 @@ describe('DitoForm', () => {
       })
       expect(form.routeContext.path).toBe(path)
       expect(form.data).toEqual({ text: 'Late' })
-      // The section stays collapsed once the form closes:
+      // The form opened the section on the way to it, which shows the list
+      // once the form closes:
       await form.routeContext.close()
       await flushPromises()
-      expect(admin.wrapper.find(`[id="${list}"]`).isVisible()).toBe(
-        !schema.fields.details
-      )
+      expect(admin.wrapper.find(`[id="${list}"]`).isVisible()).toBe(true)
     })
 
     it('lead paths that no source claims back to the form', async () => {
