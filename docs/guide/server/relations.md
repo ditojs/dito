@@ -155,6 +155,27 @@ otherwise `OrderLine` is taken as a table name. `extra` adds the join table's
 out. `through` on relations other than `manyToMany` and `hasOneThrough`
 throws a `RelationError`.
 
+### Join rows
+
+`relate()`, e.g. `book.$genres.query().relate(2)`, inserts a join row
+without checking for an existing one, and deleting a model leaves its join
+rows behind. Give join tables foreign keys with `onDelete('CASCADE')` and a
+unique constraint on the pair, so that the database keeps them consistent:
+
+```js
+await knex.schema.createTable('book_genre', table => {
+  table.increments('id').primary()
+  table.integer('book_id').unsigned().index()
+    .references('id').inTable('book').onDelete('CASCADE')
+  table.integer('genre_id').unsigned().index()
+    .references('id').inTable('genre').onDelete('CASCADE')
+  table.unique(['book_id', 'genre_id'])
+})
+```
+
+[`db:create_migration`](database.md#creating-migrations-from-models) adds the
+foreign keys to the join tables it creates, but not the unique constraint.
+
 ## Owners
 
 `owner: true` marks a relation that owns its models: the chapters of a book

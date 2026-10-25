@@ -178,6 +178,9 @@ Does nothing without `params`.
 | `offset`  | `number`                  | `offset()`.                                                                                                   |
 | `order`   | `string \| string[]`      | `orderBy()`, each as `'property [asc\|desc] [first\|last]'`.                                                  |
 
+`order` takes properties of the queried model only; ordering by columns of
+joined relations isn't supported.
+
 #### Parameters
 
 | Name         | Type                              | Description                                            |

@@ -152,6 +152,24 @@ In the graph above, the book is related to the existing author 2, chapter 7
 is patched, and the second chapter is inserted. As `chapters` is an owner
 relation, its chapters that are missing from the graph are deleted.
 
+References are reduced to their ids, plus the `extra` properties of
+[join tables](relations.md#join-models-and-tables), before the graph is
+written. Not all methods catch ids that don't exist:
+
+- `patchDitoGraph…()` and `updateDitoGraph…()` reject them with a
+  `NotFoundError`.
+- `upsertDitoGraph…()` inserts the reduced model, with only its id, which
+  fails when the model has required properties.
+- `insertDitoGraph…()` relates them without checking. Foreign keys make the
+  database reject them, see [Join rows](relations.md#join-rows).
+
+`updateDitoGraph…()`, which `PUT` requests of
+[graph controllers](controllers.md#settings) use, also updates the referenced
+models that are already related, with only their references as data:
+`genres: [{ id: 2, rank: 7 }]` fails the validation of the genre's required
+properties. To change the extra properties of references, use
+`patchDitoGraph…()`, as the admin does with `PATCH` requests.
+
 Graphs can reference models created in the same graph with Objection.js'
 `#id` and `#ref`:
 
@@ -417,6 +435,22 @@ Filters are applied immediately, unlike scopes, which are applied when the
 query runs. Applying a filter that isn't defined throws a
 [`QueryBuilderError`](errors.md). The admin uses filters for the filter panels
 of its lists, see the [admin guide](../admin/lists.md).
+
+Each filter runs inside a where group, so it can only add conditions: joins
+that it adds, e.g. with `joinRelated()`, are dropped. To filter by related
+models, use a `whereExists()` subquery of the relation. A filter of
+`Author`, applied as `filter=wrote:"Emma"`:
+
+```js
+wrote: {
+  parameters: {
+    title: { type: 'string' }
+  },
+  handler(query, { title }) {
+    query.whereExists(Author.$books.query().where('books.title', title))
+  }
+}
+```
 
 Model controllers accept all filters of their model by default; their
 `allowFilter` setting restricts them, and so does `allowFilter()` on queries.
