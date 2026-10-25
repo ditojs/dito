@@ -13,7 +13,7 @@ import {
 } from '@ditojs/utils'
 import { QueryParameters } from './QueryParameters.js'
 import { KnexHelper } from '../lib/index.js'
-import { DitoGraphProcessor, rejectGraphControlProps } from '../graph/index.js'
+import { GraphProcessor, rejectGraphControlProps } from '../graph/index.js'
 import { QueryBuilderError, RelationError } from '../errors/index.js'
 import { createLookup } from '../utils/object.js'
 import { getScope } from '../utils/scope.js'
@@ -560,96 +560,82 @@ export class QueryBuilder extends objection.QueryBuilder {
     ) {
       throw new QueryBuilderError(`Unable to ${action} models without ids.`)
     }
-    this.#transacted = true
     // Only save the models, not their relations, and fetch them regardless of
-    // the default scope, like `insertAndFetch()`:
-    return this.ignoreScope('default')[graphMethod](
+    // the default scope, like `insertAndFetch()`. Objection.js' strict graphs
+    // run in a transaction of their own, unless the query already is in one:
+    this.ignoreScope('default')
+    return super[graphMethod](
       omitRelations(modelClass, data),
       {
+        strict: true,
         fetchStrategy: 'OnlyNeeded',
-        insertMissing: isUpsert,
-        noInsert: !isUpsert,
-        noDelete: true,
-        update: action === 'update'
+        root: {
+          added: isUpsert ? 'insert' : 'throw',
+          kept: action === 'update' ? 'update' : 'patch'
+        }
       }
     )
   }
 
-  insertDitoGraph(data, options) {
-    return this.#handleDitoGraph(
-      'insertGraph',
-      data,
-      options,
-      insertDitoGraphOptions
-    )
+  // @override
+  insertGraph(data, options) {
+    return this.#writeGraph('insertGraph', data, options, insertGraphDefaults)
   }
 
-  insertDitoGraphAndFetch(data, options) {
-    return this.#handleDitoGraph(
+  // @override
+  insertGraphAndFetch(data, options) {
+    return this.#writeGraph(
       'insertGraphAndFetch',
       data,
       options,
-      insertDitoGraphOptions
+      insertGraphDefaults
     )
   }
 
-  upsertDitoGraph(data, options) {
-    return this.#handleDitoGraph(
-      'upsertGraph',
-      data,
-      options,
-      upsertDitoGraphOptions
-    )
+  // @override
+  upsertGraph(data, options) {
+    return this.#writeGraph('upsertGraph', data, options, upsertGraphDefaults)
   }
 
-  upsertDitoGraphAndFetch(data, options) {
-    return this.#handleDitoGraph(
+  // @override
+  upsertGraphAndFetch(data, options) {
+    return this.#writeGraph(
       'upsertGraphAndFetch',
       data,
       options,
-      upsertDitoGraphOptions
+      upsertGraphDefaults
     )
   }
 
-  patchDitoGraph(data, options) {
-    return this.#handleDitoGraph(
-      'upsertGraph',
-      data,
-      options,
-      patchDitoGraphOptions
-    )
+  patchGraph(data, options) {
+    return this.#writeGraph('upsertGraph', data, options, patchGraphDefaults)
   }
 
-  patchDitoGraphAndFetch(data, options) {
-    return this.#handleDitoGraph(
+  patchGraphAndFetch(data, options) {
+    return this.#writeGraph(
       'upsertGraphAndFetch',
       data,
       options,
-      patchDitoGraphOptions
+      patchGraphDefaults
     )
   }
 
-  updateDitoGraph(data, options) {
-    return this.#handleDitoGraph(
-      'upsertGraph',
-      data,
-      options,
-      updateDitoGraphOptions
-    )
+  updateGraph(data, options) {
+    return this.#writeGraph('upsertGraph', data, options, updateGraphDefaults)
   }
 
-  updateDitoGraphAndFetch(data, options) {
-    return this.#handleDitoGraph(
+  updateGraphAndFetch(data, options) {
+    return this.#writeGraph(
       'upsertGraphAndFetch',
       data,
       options,
-      updateDitoGraphOptions
+      updateGraphDefaults
     )
   }
 
-  upsertDitoGraphAndFetchById(id, data, options) {
+  upsertGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
-    return this.upsertDitoGraphAndFetch(
+    return this.upsertGraphAndFetch(
       {
         ...data,
         ...this.modelClass().getReference(id)
@@ -658,9 +644,9 @@ export class QueryBuilder extends objection.QueryBuilder {
     )
   }
 
-  patchDitoGraphAndFetchById(id, data, options) {
+  patchGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
-    return this.patchDitoGraphAndFetch(
+    return this.patchGraphAndFetch(
       {
         ...data,
         ...this.modelClass().getReference(id)
@@ -669,9 +655,9 @@ export class QueryBuilder extends objection.QueryBuilder {
     )
   }
 
-  updateDitoGraphAndFetchById(id, data, options) {
+  updateGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
-    return this.updateDitoGraphAndFetch(
+    return this.updateGraphAndFetch(
       {
         ...data,
         ...this.modelClass().getReference(id)
@@ -680,24 +666,17 @@ export class QueryBuilder extends objection.QueryBuilder {
     )
   }
 
-  #handleDitoGraph(method, data, options, defaultOptions) {
+  #writeGraph(method, data, options, defaults) {
     rejectGraphControlProps(this.modelClass(), data)
-    const graphProcessor = new DitoGraphProcessor(
+    const graphProcessor = new GraphProcessor(
       this.modelClass(),
       data,
-      {
-        ...defaultOptions,
-        ...options
-      },
-      {
-        processOverrides: true,
-        processRelates: true
-      }
+      options,
+      defaults
     )
-    // Graphs are written in several queries, so write them in one transaction:
-    this.#transacted = true
-    this[method](graphProcessor.getData(), graphProcessor.getOptions())
-    return this
+    // Strict graphs run in a transaction of their own, unless the query
+    // already is in one:
+    return super[method](graphProcessor.getData(), graphProcessor.getOptions())
   }
 
   static mixin(target) {
@@ -820,32 +799,54 @@ function filterScopes(scopes, callback) {
   )
 }
 
-// The default options for insertDitoGraph(), upsertDitoGraph(),
-// updateDitoGraph() and patchDitoGraph()
-const insertDitoGraphOptions = {
-  relate: true,
-  allowRefs: true
+// The defaults of insertGraph(), upsertGraph(), patchGraph() and
+// updateGraph(): their options, and the strict mode settings of relations
+// that own their models, and of the others, which relate theirs:
+const insertGraphDefaults = {
+  options: { allowRefs: true },
+  owner: { added: 'insert', created: 'insert' },
+  related: { added: 'relate', created: 'insert' }
 }
 
-const upsertDitoGraphOptions = {
-  ...insertDitoGraphOptions,
-  // When working with large graphs, using the 'OnlyNeeded' fetch-strategy
-  // will reduce the number of update queries from a lot to only those
-  // rows that have changes.
-  fetchStrategy: 'OnlyNeeded',
-  insertMissing: true,
-  unrelate: true
+const upsertGraphDefaults = {
+  options: {
+    allowRefs: true,
+    // When working with large graphs, using the 'OnlyNeeded' fetch-strategy
+    // will reduce the number of update queries from a lot to only those
+    // rows that have changes.
+    fetchStrategy: 'OnlyNeeded',
+    root: { added: 'insert', kept: 'patch' }
+  },
+  owner: {
+    removed: 'delete',
+    added: 'insert',
+    kept: 'patch',
+    created: 'insert'
+  },
+  related: {
+    removed: 'unrelate',
+    added: 'relate',
+    kept: 'patch',
+    created: 'insert'
+  }
 }
 
-const patchDitoGraphOptions = {
-  ...upsertDitoGraphOptions,
-  insertMissing: false
+const patchGraphDefaults = {
+  ...upsertGraphDefaults,
+  options: {
+    ...upsertGraphDefaults.options,
+    root: { added: 'throw', kept: 'patch' }
+  },
+  owner: { ...upsertGraphDefaults.owner, added: 'throw' }
 }
 
-const updateDitoGraphOptions = {
-  ...patchDitoGraphOptions,
-  insertMissing: false,
-  update: true
+const updateGraphDefaults = {
+  ...patchGraphDefaults,
+  options: {
+    ...patchGraphDefaults.options,
+    root: { added: 'throw', kept: 'update' }
+  },
+  owner: { ...patchGraphDefaults.owner, kept: 'update' }
 }
 
 function addGraphScope(modelClass, expr, scopes, modifiers, isRoot = false) {
@@ -941,18 +942,14 @@ const mixinMethods = [
   'insertGraphAndFetch',
   'upsertGraphAndFetch',
 
-  'insertDitoGraph',
-  'upsertDitoGraph',
-  'updateDitoGraph',
-  'patchDitoGraph',
-  'insertDitoGraphAndFetch',
-  'upsertDitoGraphAndFetch',
-  'updateDitoGraphAndFetch',
-  'patchDitoGraphAndFetch',
+  'updateGraph',
+  'patchGraph',
+  'updateGraphAndFetch',
+  'patchGraphAndFetch',
 
-  'upsertDitoGraphAndFetchById',
-  'updateDitoGraphAndFetchById',
-  'patchDitoGraphAndFetchById',
+  'upsertGraphAndFetchById',
+  'updateGraphAndFetchById',
+  'patchGraphAndFetchById',
 
   'where',
   'whereNot',

@@ -248,7 +248,7 @@ class Passwords extends Controller {
 
     async 'post graph'(ctx: any) {
       const { password } = ctx.request.body
-      await Member.query(ctx.transaction).patchDitoGraph({
+      await Member.query(ctx.transaction).patchGraph({
         id: ctx.state.user.id,
         password
       })

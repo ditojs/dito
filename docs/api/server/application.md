@@ -985,7 +985,8 @@ model, by its class name (`Book.js`) or by its name in plural or singular,
 camel, snake or kebab case (`books.json`, `order_lines.js`,
 `order-lines.json`), provides that model's data as an array of graphs: the
 model's table is truncated (with `cascade`, so on PostgreSQL also the tables
-that reference it), and the data inserted with `insertGraph()`. A `.js` file
+that reference it), and the data inserted with `insertGraph()`, related
+models with ids too. A `.js` file
 can instead export a function, which receives `app.models`, returns the
 created records, and truncates nothing. Seeds run in the order of their models
 in `app.models`, seeds without a model last. A failing seed is logged, the

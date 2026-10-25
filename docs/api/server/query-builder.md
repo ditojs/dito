@@ -20,8 +20,8 @@ Differences to Objection.js that apply to all queries:
   `deleteById()` and the `…ById()` graph methods report the id in their
   [`NotFoundError`](errors.md).
 - Graph writes (`upsert()`, `patchAndFetch()` / `updateAndFetch()` with arrays,
-  inserts of several models outside PostgreSQL, and the [Dito.js graph
-  methods](#ditojs-graph-methods)) reject Objection.js' graph control
+  inserts of several models outside PostgreSQL, and the [graph
+  methods](#graph-methods)) reject Objection.js' graph control
   properties `#dbRef`, `#unrelate` and `#delete` with a
   [`GraphError`](errors.md), thrown when the method is called, as such graphs
   often come from clients.
@@ -364,7 +364,7 @@ const books = await Book.query().upsertAndFetch([
 Saves models by their ids: patches the ones that exist and inserts those
 without ids or with ids that don't exist yet, in one transaction. Like
 `patch()`, they leave relations untouched; use
-[`upsertDitoGraph()`](#ditojs-graph-methods) for graphs. `upsert()` resolves
+[`upsertGraph()`](#graph-methods) for graphs. `upsert()` resolves
 to the models as passed, `upsertAndFetch()` refetches them; like other finds,
 the refetch applies the `default` scope, so models outside it are missing from
 the result. Models are found by their ids only: the query rejects when it also
@@ -414,43 +414,51 @@ await Review.query().truncate() // The next review gets id 1 again.
 
 Returns `QueryBuilder`.
 
-## Dito.js graph methods
+## Graph methods
 
 ```js
-query.insertDitoGraph(data, options?)
-query.insertDitoGraphAndFetch(data, options?)
-query.upsertDitoGraph(data, options?)
-query.upsertDitoGraphAndFetch(data, options?)
-query.upsertDitoGraphAndFetchById(id, data, options?)
-query.patchDitoGraph(data, options?)
-query.patchDitoGraphAndFetch(data, options?)
-query.patchDitoGraphAndFetchById(id, data, options?)
-query.updateDitoGraph(data, options?)
-query.updateDitoGraphAndFetch(data, options?)
-query.updateDitoGraphAndFetchById(id, data, options?)
+query.insertGraph(data, options?)
+query.insertGraphAndFetch(data, options?)
+query.upsertGraph(data, options?)
+query.upsertGraphAndFetch(data, options?)
+query.upsertGraphAndFetchById(id, data, options?)
+query.patchGraph(data, options?)
+query.patchGraphAndFetch(data, options?)
+query.patchGraphAndFetchById(id, data, options?)
+query.updateGraph(data, options?)
+query.updateGraphAndFetch(data, options?)
+query.updateGraphAndFetchById(id, data, options?)
 ```
 
-Write model graphs with defaults suited to data from clients, through
-Objection.js' `insertGraph()` / `upsertGraph()`:
+Objection.js' `insertGraph()` and `upsertGraph()`, with defaults suited to
+data from clients, and `patchGraph()` and `updateGraph()`, which write through
+`upsertGraph()` with their own defaults. All write graphs in Objection.js'
+[strict mode](https://ditojs.github.io/objection/guide/query-examples.html#strict-mode),
+which throws for graphs that it can't write as they say, and run in a
+transaction of their own, unless the query already is in one:
 
-- Related models with an id or a `#ref` are related as references
-  (`relate`): only their ids are written, the rest of their data is left
-  out. Models without ids are inserted. `#id` / `#ref` references are
-  allowed.
+- Related models with an id or a `#ref` are related as references: only
+  their ids are written, plus the `extra` properties of join tables, the rest
+  of their data is left out. Models without ids are inserted. `#id` / `#ref`
+  references are allowed.
 - Relations with [`owner: true`](model.md#static-relations) insert and delete
   their models instead of relating and unrelating them.
-- Relations can override the options through
-  [`graphOptions`](model.md#static-relations).
+- Relations can override the settings through
+  [`graphOptions`](model.md#static-relations), and calls through `options`.
 - `…ById()` methods take the id separately and report it in a
   [`NotFoundError`](errors.md).
 - `…AndFetch…()` methods refetch the graph.
 
-| Method    | Default options                                                                       |
-| --------- | ------------------------------------------------------------------------------------- |
-| `insert…` | `relate: true`, `allowRefs: true`                                                     |
-| `upsert…` | `insert…` plus `fetchStrategy: 'OnlyNeeded'`, `insertMissing: true`, `unrelate: true` |
-| `patch…`  | `upsert…` with `insertMissing: false`                                                 |
-| `update…` | `patch…` plus `update: true`                                                          |
+| Method    | Root models                        | `owner` relations                                       | Other relations                          |
+| --------- | ---------------------------------- | ------------------------------------------------------- | ---------------------------------------- |
+| `insert…` |                                    | `added: 'insert'`                                       | `added: 'relate'`                        |
+| `upsert…` | `added: 'insert'`                  | `removed: 'delete'`, `added: 'insert'`                  | `removed: 'unrelate'`, `added: 'relate'` |
+| `patch…`  | `added: 'throw'`                   | `removed: 'delete'`, `added: 'throw'`                   | `removed: 'unrelate'`, `added: 'relate'` |
+| `update…` | `added: 'throw'`, `kept: 'update'` | `removed: 'delete'`, `added: 'throw'`, `kept: 'update'` | `removed: 'unrelate'`, `added: 'relate'` |
+
+The other settings are `kept: 'patch'` and `created: 'insert'`. All methods
+pass `allowRefs: true`, and all but `insert…` pass
+`fetchStrategy: 'OnlyNeeded'`.
 
 #### Parameters
 
@@ -458,25 +466,28 @@ Objection.js' `insertGraph()` / `upsertGraph()`:
 | --------- | -------------------- | ----------------------------------------------------------------- |
 | `id`      | `Id \| Id[]`         | The root model's id, an array for composite ids (`…ById()` only). |
 | `data`    | `object \| object[]` | The graph(s).                                                     |
-| `options` | `DitoGraphOptions`   | Overrides of the defaults, see below.                             |
+| `options` | `GraphWriteOptions`  | Overrides of the defaults, see below.                             |
 
-`DitoGraphOptions`:
+`GraphWriteOptions`, the options of strict `upsertGraph()` calls. `insert…`
+takes the options of strict `insertGraph()` calls, without `fetchStrategy` and
+with only the `added` and `created` settings:
 
-| Key                                                          | Type                                                | Description                                                                |
-| ------------------------------------------------------------ | --------------------------------------------------- | -------------------------------------------------------------------------- |
-| `fetchStrategy`                                              | `'OnlyNeeded' \| 'OnlyIdentifiers' \| 'Everything'` | What upserts fetch to find the changes.                                    |
-| `relate`                                                     | `boolean`                                           | Relate references instead of inserting them.                               |
-| `allowRefs`                                                  | `boolean`                                           | Allow `#ref` references.                                                   |
-| `insertMissing`                                              | `boolean`                                           | Insert models with ids that don't exist yet.                               |
-| `unrelate`                                                   | `boolean`                                           | Unrelate models missing from the graph instead of deleting them.           |
-| `update`                                                     | `boolean`                                           | Update instead of patch.                                                   |
-| `noInsert`, `noUpdate`, `noDelete`, `noRelate`, `noUnrelate` | `boolean \| string[]`                               | Disable these operations, for the whole graph or the given relation paths. |
+| Key             | Type                                                | Description                                                                                                                                    |
+| --------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `root`          | `GraphRootSettings`                                 | Settings of the root models, merged into the defaults.                                                                                         |
+| `relations`     | `{ [expression]: GraphRelationSettings }`           | Settings by relation expression, e.g. `'*'` or `'chapters'`, applied in their order after the defaults and `graphOptions`, setting by setting. |
+| `fetchStrategy` | `'OnlyNeeded' \| 'OnlyIdentifiers' \| 'Everything'` | What upserts fetch to find the changes.                                                                                                        |
+| `allowRefs`     | `boolean`                                           | Allow `#ref` references.                                                                                                                       |
+
+The settings are `removed`, `added`, `kept` and `created`, see Objection.js'
+[strict mode](https://ditojs.github.io/objection/guide/query-examples.html#strict-mode).
+The options of non-strict graphs, like `relate` or `noDelete`, throw.
 
 Returns `QueryBuilder` resolving to the model(s).
 
 ```js
 // `chapters` is a relation with `owner: true`, `author` a normal one:
-const book = await Book.query().patchDitoGraphAndFetchById(1, {
+const book = await Book.query().patchGraphAndFetchById(1, {
   title: 'Dune',
   author: { id: 3 }, // Related by its id, its other data isn't written
   chapters: [
@@ -484,7 +495,21 @@ const book = await Book.query().patchDitoGraphAndFetchById(1, {
     { title: 'Epilogue' } // Inserted
   ] // The book's other chapters are deleted
 })
+
+// Keep the chapters that the graph leaves out:
+await Book.query().patchGraph(data, {
+  relations: { chapters: { removed: 'preserve' } }
+})
+
+// Insert related models with their ids, instead of relating them:
+await Book.query().insertGraph(data, {
+  relations: { '*': { added: 'insert' } }
+})
 ```
+
+Hooks of the models that run queries need to run them in
+`context.transaction`, see
+[strict mode](https://ditojs.github.io/objection/guide/query-examples.html#strict-mode).
 
 ## Overrides
 

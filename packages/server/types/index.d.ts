@@ -1121,11 +1121,11 @@ export interface ModelRelation<
     | ((query: QueryBuilder<Model>) => void)
     | Record<string, unknown>
   /**
-   * The options of the `*DitoGraph*()` methods for the models of this
-   * relation, e.g. `{ relate: true }`. Owner relations default to
-   * `{ relate: false, unrelate: false }`.
+   * The settings of strict graphs for the models of this relation in the
+   * graph methods, e.g. `{ removed: 'preserve' }`, which override
+   * the ones that Dito.js generates.
    */
-  graphOptions?: DitoGraphOptions
+  graphOptions?: objection.GraphRelationSettings
 }
 
 export type ModelProperty<T = any> = Schema<T> & {
@@ -1991,21 +1991,16 @@ export class Model extends ObjectionModel {
 
   static insertGraph: StaticQueryBuilderMethod<'insertGraph'>
   static upsertGraph: StaticQueryBuilderMethod<'upsertGraph'>
+  static updateGraph: StaticQueryBuilderMethod<'updateGraph'>
+  static patchGraph: StaticQueryBuilderMethod<'patchGraph'>
+
   static insertGraphAndFetch: StaticQueryBuilderMethod<'insertGraphAndFetch'>
   static upsertGraphAndFetch: StaticQueryBuilderMethod<'upsertGraphAndFetch'>
-
-  static insertDitoGraph: StaticQueryBuilderMethod<'insertDitoGraph'>
-  static upsertDitoGraph: StaticQueryBuilderMethod<'upsertDitoGraph'>
-  static updateDitoGraph: StaticQueryBuilderMethod<'updateDitoGraph'>
-  static patchDitoGraph: StaticQueryBuilderMethod<'patchDitoGraph'>
-
-  static insertDitoGraphAndFetch: StaticQueryBuilderMethod<'insertDitoGraphAndFetch'>
-  static upsertDitoGraphAndFetch: StaticQueryBuilderMethod<'upsertDitoGraphAndFetch'>
-  static updateDitoGraphAndFetch: StaticQueryBuilderMethod<'updateDitoGraphAndFetch'>
-  static patchDitoGraphAndFetch: StaticQueryBuilderMethod<'patchDitoGraphAndFetch'>
-  static upsertDitoGraphAndFetchById: StaticQueryBuilderMethod<'upsertDitoGraphAndFetchById'>
-  static updateDitoGraphAndFetchById: StaticQueryBuilderMethod<'updateDitoGraphAndFetchById'>
-  static patchDitoGraphAndFetchById: StaticQueryBuilderMethod<'patchDitoGraphAndFetchById'>
+  static updateGraphAndFetch: StaticQueryBuilderMethod<'updateGraphAndFetch'>
+  static patchGraphAndFetch: StaticQueryBuilderMethod<'patchGraphAndFetch'>
+  static upsertGraphAndFetchById: StaticQueryBuilderMethod<'upsertGraphAndFetchById'>
+  static updateGraphAndFetchById: StaticQueryBuilderMethod<'updateGraphAndFetchById'>
+  static patchGraphAndFetchById: StaticQueryBuilderMethod<'patchGraphAndFetchById'>
 
   static where: StaticQueryBuilderMethod<'where'>
   static whereNot: StaticQueryBuilderMethod<'whereNot'>
@@ -3217,7 +3212,7 @@ export class CollectionController<
 
   /**
    * Executes an insert/update/patch action and fetches
-   * the result. Supports both normal and DitoGraph modes.
+   * the result. Supports both normal and graph modes.
    */
   executeAndFetch(
     action: string,
@@ -3660,53 +3655,15 @@ export interface EventEmitter {
 }
 
 /**
- * Options for Dito.js graph operations (`insertDitoGraph`,
- * `upsertDitoGraph`, `updateDitoGraph`, `patchDitoGraph`).
- * Controls how nested relation graphs are persisted.
+ * Options of the graph methods `upsertGraph()`, `patchGraph()` and
+ * `updateGraph()`: Objection.js' options of strict `upsertGraph()` calls,
+ * whose `root` and `relations` settings override the ones that Dito.js
+ * generates.
  */
-export interface DitoGraphOptions {
-  /**
-   * Strategy for fetching existing data before upserting.
-   *
-   * - `'OnlyNeeded'`: Fetch only data needed to determine
-   *   changes.
-   * - `'OnlyIdentifiers'`: Fetch only IDs for comparison.
-   * - `'Everything'`: Fetch all existing graph data.
-   */
-  fetchStrategy?: 'OnlyNeeded' | 'OnlyIdentifiers' | 'Everything'
-  /**
-   * Whether to relate existing models found in the graph
-   * instead of inserting new ones.
-   */
-  relate?: boolean
-  /** Whether to allow `#ref` references in the graph. */
-  allowRefs?: boolean
-  /**
-   * Whether to insert models that don't exist in the
-   * database yet during an upsert.
-   */
-  insertMissing?: boolean
-  /**
-   * Whether to unrelate models removed from the graph
-   * (sets the foreign key to `null` instead of deleting).
-   */
-  unrelate?: boolean
-  /**
-   * Whether to update existing models found in the graph
-   * (as opposed to only inserting new ones).
-   */
-  update?: boolean
-  /**
-   * Objection.js' `upsertGraph()` options to disable inserts, updates,
-   * deletes, relates or unrelates, for the whole graph (`true`) or for the
-   * given relation paths.
-   */
-  noInsert?: boolean | string[]
-  noUpdate?: boolean | string[]
-  noDelete?: boolean | string[]
-  noRelate?: boolean | string[]
-  noUnrelate?: boolean | string[]
-}
+export type GraphWriteOptions = Omit<
+  objection.StrictUpsertGraphOptions,
+  'strict'
+>
 
 export type QueryParameterOptions = {
   scope?: OrArrayOf<string>
@@ -4071,105 +4028,119 @@ export class QueryBuilder<
     data: objection.PartialModelRow<M>
   ): objection.SingleQueryBuilder<this>
 
-  insertDitoGraph(
-    data: PartialDitoModelGraph<M>[],
-    options?: DitoGraphOptions
-  ): objection.ArrayQueryBuilder<this>
+  // Objection.js' graph methods, also taking the strict settings without
+  // `strict: true`, which Dito.js sets:
+  insertGraph: objection.InsertGraphMethod<M> & {
+    <QB extends objection.AnyQueryBuilder>(
+      this: QB,
+      data: PartialDitoModelGraph<M>[],
+      options?: Omit<objection.StrictInsertGraphOptions, 'strict'>
+    ): objection.ArrayQueryBuilder<QB>
+    <QB extends objection.AnyQueryBuilder>(
+      this: QB,
+      data: PartialDitoModelGraph<M>,
+      options?: Omit<objection.StrictInsertGraphOptions, 'strict'>
+    ): objection.SingleQueryBuilder<QB>
+  }
 
-  insertDitoGraph(
-    data: PartialDitoModelGraph<M>,
-    options?: DitoGraphOptions
-  ): objection.SingleQueryBuilder<this>
+  insertGraphAndFetch: objection.InsertGraphMethod<M> & {
+    <QB extends objection.AnyQueryBuilder>(
+      this: QB,
+      data: PartialDitoModelGraph<M>[],
+      options?: Omit<objection.StrictInsertGraphOptions, 'strict'>
+    ): objection.ArrayQueryBuilder<QB>
+    <QB extends objection.AnyQueryBuilder>(
+      this: QB,
+      data: PartialDitoModelGraph<M>,
+      options?: Omit<objection.StrictInsertGraphOptions, 'strict'>
+    ): objection.SingleQueryBuilder<QB>
+  }
 
-  insertDitoGraphAndFetch(
-    data: PartialDitoModelGraph<M>[],
-    options?: DitoGraphOptions
-  ): objection.ArrayQueryBuilder<this>
+  upsertGraph: objection.UpsertGraphMethod<M> & {
+    <QB extends objection.AnyQueryBuilder>(
+      this: QB,
+      data: PartialDitoModelGraph<M>[],
+      options?: Omit<objection.StrictUpsertGraphOptions, 'strict'>
+    ): objection.ArrayQueryBuilder<QB>
+    <QB extends objection.AnyQueryBuilder>(
+      this: QB,
+      data: PartialDitoModelGraph<M>,
+      options?: Omit<objection.StrictUpsertGraphOptions, 'strict'>
+    ): objection.SingleQueryBuilder<QB>
+  }
 
-  insertDitoGraphAndFetch(
-    data: PartialDitoModelGraph<M>,
-    options?: DitoGraphOptions
-  ): objection.SingleQueryBuilder<this>
+  upsertGraphAndFetch: objection.UpsertGraphMethod<M> & {
+    <QB extends objection.AnyQueryBuilder>(
+      this: QB,
+      data: PartialDitoModelGraph<M>[],
+      options?: Omit<objection.StrictUpsertGraphOptions, 'strict'>
+    ): objection.ArrayQueryBuilder<QB>
+    <QB extends objection.AnyQueryBuilder>(
+      this: QB,
+      data: PartialDitoModelGraph<M>,
+      options?: Omit<objection.StrictUpsertGraphOptions, 'strict'>
+    ): objection.SingleQueryBuilder<QB>
+  }
 
-  upsertDitoGraph(
-    data: PartialDitoModelGraph<M>[],
-    options?: DitoGraphOptions
-  ): objection.ArrayQueryBuilder<this>
-
-  upsertDitoGraph(
-    data: PartialDitoModelGraph<M>,
-    options?: DitoGraphOptions
-  ): objection.SingleQueryBuilder<this>
-
-  upsertDitoGraphAndFetch(
-    data: PartialDitoModelGraph<M>[],
-    options?: DitoGraphOptions
-  ): objection.ArrayQueryBuilder<this>
-
-  upsertDitoGraphAndFetch(
-    data: PartialDitoModelGraph<M>,
-    options?: DitoGraphOptions
-  ): objection.SingleQueryBuilder<this>
-
-  upsertDitoGraphAndFetchById(
+  upsertGraphAndFetchById(
     // Arrays for composite ids:
     id: OrArrayOf<Id>,
     data: PartialDitoModelGraph<M>,
-    options?: DitoGraphOptions
+    options?: GraphWriteOptions
   ): objection.SingleQueryBuilder<this>
 
-  updateDitoGraph(
+  updateGraph(
     data: PartialDitoModelGraph<M>[],
-    options?: DitoGraphOptions
+    options?: GraphWriteOptions
   ): objection.ArrayQueryBuilder<this>
 
-  updateDitoGraph(
+  updateGraph(
     data: PartialDitoModelGraph<M>,
-    options?: DitoGraphOptions
+    options?: GraphWriteOptions
   ): objection.SingleQueryBuilder<this>
 
-  updateDitoGraphAndFetch(
+  updateGraphAndFetch(
     data: PartialDitoModelGraph<M>[],
-    options?: DitoGraphOptions
+    options?: GraphWriteOptions
   ): objection.ArrayQueryBuilder<this>
 
-  updateDitoGraphAndFetch(
+  updateGraphAndFetch(
     data: PartialDitoModelGraph<M>,
-    options?: DitoGraphOptions
+    options?: GraphWriteOptions
   ): objection.SingleQueryBuilder<this>
 
-  updateDitoGraphAndFetchById(
+  updateGraphAndFetchById(
     // Arrays for composite ids:
     id: OrArrayOf<Id>,
     data: PartialDitoModelGraph<M>,
-    options?: DitoGraphOptions
+    options?: GraphWriteOptions
   ): objection.SingleQueryBuilder<this>
 
-  patchDitoGraph(
+  patchGraph(
     data: PartialDitoModelGraph<M>[],
-    options?: DitoGraphOptions
+    options?: GraphWriteOptions
   ): objection.ArrayQueryBuilder<this>
 
-  patchDitoGraph(
+  patchGraph(
     data: PartialDitoModelGraph<M>,
-    options?: DitoGraphOptions
+    options?: GraphWriteOptions
   ): objection.SingleQueryBuilder<this>
 
-  patchDitoGraphAndFetch(
+  patchGraphAndFetch(
     data: PartialDitoModelGraph<M>[],
-    options?: DitoGraphOptions
+    options?: GraphWriteOptions
   ): objection.ArrayQueryBuilder<this>
 
-  patchDitoGraphAndFetch(
+  patchGraphAndFetch(
     data: PartialDitoModelGraph<M>,
-    options?: DitoGraphOptions
+    options?: GraphWriteOptions
   ): objection.SingleQueryBuilder<this>
 
-  patchDitoGraphAndFetchById(
+  patchGraphAndFetchById(
     // Arrays for composite ids:
     id: OrArrayOf<Id>,
     data: PartialDitoModelGraph<M>,
-    options?: DitoGraphOptions
+    options?: GraphWriteOptions
   ): objection.SingleQueryBuilder<this>
 
   // Returns the query builder, which objection declares as `Promise<void>`.

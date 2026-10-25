@@ -119,7 +119,7 @@ relations too, use the graph methods.
 A graph is a model with its related models, nested in the data:
 
 ```js
-const book = await Book.upsertDitoGraphAndFetch({
+const book = await Book.upsertGraphAndFetch({
   id: 1,
   title: 'Emma',
   author: { id: 2 },
@@ -130,23 +130,38 @@ const book = await Book.upsertDitoGraphAndFetch({
 })
 ```
 
-Dito.js' graph methods save graphs through Objection.js' `insertGraph()` and
-`upsertGraph()`, with defaults suited to data that comes from clients:
+The graph methods save graphs through Objection.js' `insertGraph()` and
+`upsertGraph()` in
+[strict mode](https://ditojs.github.io/objection/guide/query-examples.html#strict-mode),
+with settings suited to data that comes from clients, in a transaction of
+their own unless the query already is in one. Hooks that run queries need to
+run them in `context.transaction`: queries through another connection wait for
+the transaction, and on SQLite they deadlock.
 
-- `insertDitoGraph…()` inserts the graph. Related models that hold only an id
-  are related, not inserted.
-- `upsertDitoGraph…()` saves the graph: it inserts new models, patches
+- `insertGraph…()` inserts the graph. Related models with ids are related,
+  not inserted: to insert full graphs with ids, as seeds do, pass
+  `{ relations: { '*': { added: 'insert' } } }`.
+- `upsertGraph…()` saves the graph: it inserts new models, patches
   existing ones, and unrelates or deletes related models that are missing
   from the graph.
-- `patchDitoGraph…()` is like upsert, but doesn't insert models with ids that
-  don't exist; `updateDitoGraph…()` is like patch, but replaces the models.
+- `patchGraph…()` is like upsert, but doesn't insert models with ids that
+  don't exist; `updateGraph…()` is like patch, but replaces the models.
 
 Each comes as `…Graph()`, `…GraphAndFetch()` and, except for insert,
 `…GraphAndFetchById(id, data)`. Whether related models are inserted and
 deleted, or related and unrelated, depends on the relation's
-[`owner`](relations.md#owners) setting. Options passed as second argument, or
-the relation's `graphOptions`, change this; see the
-[graph methods in the API](../../api/server/query-builder.md#ditojs-graph-methods).
+[`owner`](relations.md#owners) setting. The relation's `graphOptions`, and
+the strict settings passed as second argument, change this:
+
+```js
+await Book.patchGraph(data, {
+  // Keep the chapters that the graph leaves out:
+  relations: { chapters: { removed: 'preserve' } }
+})
+```
+
+See the
+[graph methods in the API](../../api/server/query-builder.md#graph-methods).
 
 In the graph above, the book is related to the existing author 2, chapter 7
 is patched, and the second chapter is inserted. As `chapters` is an owner
@@ -154,27 +169,24 @@ relation, its chapters that are missing from the graph are deleted.
 
 References are reduced to their ids, plus the `extra` properties of
 [join tables](relations.md#join-models-and-tables), before the graph is
-written. Not all methods catch ids that don't exist:
+written: the other data of related models is never written, and updates
+patch the `extra` properties of references, like `rank` in
+`genres: [{ id: 2, rank: 7 }]`. Ids that don't exist are rejected with a
+`NotFoundError`, except by `insertGraph…()`, which relates them without
+checking. Foreign keys make the database reject them, see
+[Join rows](relations.md#join-rows).
 
-- `patchDitoGraph…()` and `updateDitoGraph…()` reject them with a
-  `NotFoundError`.
-- `upsertDitoGraph…()` inserts the reduced model, with only its id, which
-  fails when the model has required properties.
-- `insertDitoGraph…()` relates them without checking. Foreign keys make the
-  database reject them, see [Join rows](relations.md#join-rows).
-
-`updateDitoGraph…()`, which `PUT` requests of
-[graph controllers](controllers.md#settings) use, also updates the referenced
-models that are already related, with only their references as data:
-`genres: [{ id: 2, rank: 7 }]` fails the validation of the genre's required
-properties. To change the extra properties of references, use
-`patchDitoGraph…()`, as the admin does with `PATCH` requests.
+Strict mode also rejects graphs that contradict themselves with a
+[`GraphError`](../../api/server/errors.md): keys that contradict their
+relation, like the `bookId` of a chapter in the graph of another book, and
+copies of a model with different values. Graphs fetched with
+`withGraphFetched()` can be sent back unchanged.
 
 Graphs can reference models created in the same graph with Objection.js'
 `#id` and `#ref`:
 
 ```js
-await Book.insertDitoGraph([
+await Book.insertGraph([
   { title: 'Emma', genres: [{ '#id': 'classic', name: 'Classic' }] },
   { title: 'Persuasion', genres: [{ '#ref': 'classic' }] }
 ])
@@ -182,8 +194,7 @@ await Book.insertDitoGraph([
 
 As graphs often come from clients, the control properties `#dbRef`,
 `#unrelate` and `#delete` are rejected with a
-[`GraphError`](errors.md). Code that needs them can call Objection.js'
-`insertGraph()` and `upsertGraph()` directly.
+[`GraphError`](errors.md).
 
 ## Transactions
 

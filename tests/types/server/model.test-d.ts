@@ -144,7 +144,7 @@ describe('Model', () => {
       relation: 'hasMany',
       from: 'Book.id',
       to: 'Chapter.bookId',
-      graphOptions: { relate: true }
+      graphOptions: { removed: 'preserve' }
     })
   })
 

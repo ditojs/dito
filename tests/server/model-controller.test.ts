@@ -551,7 +551,7 @@ class GraphAuthors extends ModelController<any> {
     'post import-and-fail': {
       transacted: true,
       async handler(ctx: any) {
-        await Author.query(ctx.transaction).insertDitoGraph(ctx.request.body)
+        await Author.query(ctx.transaction).insertGraph(ctx.request.body)
         const count = await Book.query(ctx.transaction).resultSize()
         throw new ResponseError(`Rolled back ${count} books`, { status: 409 })
       }

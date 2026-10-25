@@ -7,7 +7,8 @@ import {
   ValidationError
 } from '@ditojs/server'
 import {
-  DitoGraphProcessor,
+  GraphProcessor,
+  ensureModelArray,
   rejectGraphControlProps
   // @ts-expect-error -- The graph module is internal and not exported by the
   // package, so it comes without type declarations.
@@ -104,7 +105,7 @@ class Book extends Model {
       from: 'Book.shelfId',
       to: 'Shelf.id',
       nullable: true,
-      graphOptions: { relate: false }
+      graphOptions: { added: 'insert' }
     },
     chapters: {
       relation: 'hasMany',
@@ -274,7 +275,7 @@ describe('Dito.js graph handling', () => {
       { name: 'Fantasy' },
       { name: 'Drama' }
     ])
-    const book = await Book.query().insertDitoGraphAndFetch({
+    const book = await Book.query().insertGraphAndFetch({
       title: 'Earthsea',
       chapters: [
         { title: 'One', position: 1 },
@@ -293,81 +294,108 @@ describe('Dito.js graph handling', () => {
     return chapters.map(chapter => chapter.title)
   }
 
-  describe('DitoGraphProcessor', () => {
-    const upsertOptions = {
-      relate: true,
-      unrelate: true,
-      insertMissing: true
+  describe('GraphProcessor', () => {
+    const upsertDefaults = {
+      options: { allowRefs: true, root: { added: 'insert' } },
+      owner: { removed: 'delete', added: 'insert' },
+      related: { removed: 'unrelate', added: 'relate' }
     }
 
-    it('collects relation paths for options overridden by relations', () => {
-      const processor = new DitoGraphProcessor(
+    it('resolves the settings of each relation path in the graph', () => {
+      const processor = new GraphProcessor(
         Book,
         {
           title: 'Dune',
           author: { id: 1 },
           shelf: { name: 'Fiction' },
-          chapters: [{ title: 'One' }],
+          chapters: [{ title: 'One', book: { id: 2 } }],
           genres: [{ id: 2 }]
         },
-        upsertOptions,
-        { processOverrides: true }
+        {},
+        upsertDefaults
       )
       expect(processor.getOptions()).toEqual({
-        relate: ['author', 'genres'],
-        // `shelf` only overrides `relate`, so `unrelate` falls back to the
-        // global option there:
-        unrelate: ['author', 'shelf', 'genres'],
-        insertMissing: true
+        allowRefs: true,
+        strict: true,
+        root: { added: 'insert' },
+        relations: {
+          'author': { removed: 'unrelate', added: 'relate' },
+          // `shelf` overrides `added` through its `graphOptions`:
+          'shelf': { removed: 'unrelate', added: 'insert' },
+          'chapters': { removed: 'delete', added: 'insert' },
+          'chapters.book': { removed: 'unrelate', added: 'relate' },
+          'genres': { removed: 'unrelate', added: 'relate' }
+        }
       })
     })
 
-    it('only collects override paths for relations present in the data', () => {
-      const processor = new DitoGraphProcessor(
+    it('resolves settings for relations set to null or empty', () => {
+      // Strict upserts need `removed` for these too:
+      const processor = new GraphProcessor(
         Book,
-        { title: 'Dune', chapters: [] },
-        upsertOptions,
-        { processOverrides: true }
+        { title: 'Dune', author: null, chapters: [] },
+        {},
+        upsertDefaults
       )
-      expect(processor.getOptions()).toEqual({
-        relate: [],
-        unrelate: [],
-        insertMissing: true
+      expect(processor.getOptions().relations).toEqual({
+        author: { removed: 'unrelate', added: 'relate' },
+        chapters: { removed: 'delete', added: 'insert' }
       })
     })
 
-    it('leaves options untouched without `processOverrides`', () => {
-      const processor = new DitoGraphProcessor(
+    it('applies the root and relation settings of the call', () => {
+      const relations = {
+        '*': { removed: 'preserve' },
+        'genres': { added: 'insert' }
+      }
+      const processor = new GraphProcessor(
         Book,
-        { title: 'Dune', chapters: [{ title: 'One' }] },
-        upsertOptions
+        {
+          title: 'Dune',
+          chapters: [{ title: 'One', book: { id: 2 } }],
+          genres: [{ id: 2, name: 'Myth' }]
+        },
+        { root: { kept: 'update' }, relations, fetchStrategy: 'Everything' },
+        upsertDefaults
       )
-      expect(processor.getOptions()).toEqual(upsertOptions)
+      expect(processor.getOptions()).toEqual({
+        allowRefs: true,
+        fetchStrategy: 'Everything',
+        strict: true,
+        root: { added: 'insert', kept: 'update' },
+        relations: {
+          ...relations,
+          'chapters': { removed: 'preserve', added: 'insert' },
+          'chapters.book': { removed: 'preserve', added: 'relate' },
+          'genres': { removed: 'preserve', added: 'insert' }
+        }
+      })
+      // Genres aren't related anymore, so they keep their data:
+      expect({ ...processor.getData().genres[0] }).toEqual({
+        id: 2,
+        name: 'Myth'
+      })
     })
 
-    it('leaves options untouched when no relation overrides them', () => {
-      const processor = new DitoGraphProcessor(
-        Book,
-        { title: 'Dune' },
-        { insertMissing: true },
-        { processOverrides: true }
-      )
-      expect(processor.getOptions()).toEqual({ insertMissing: true })
-    })
-
-    it('stops scanning once every option has an override', () => {
-      const processor = new DitoGraphProcessor(
+    it('leaves out the settings that insertGraph() does not take', () => {
+      const processor = new GraphProcessor(
         Book,
         { title: 'Dune', chapters: [{ title: 'One' }] },
-        { relate: true },
-        { processOverrides: true }
+        { relations: { chapters: { removed: 'preserve', kept: 'patch' } } },
+        {
+          options: {},
+          owner: { added: 'insert' },
+          related: { added: 'relate' }
+        }
       )
-      expect(processor.numOverrides).toBe(1)
-      expect(processor.getOptions()).toEqual({ relate: [] })
+      // Objection.js still rejects them in the entry of the call:
+      expect(processor.getOptions().relations).toEqual({
+        chapters: { added: 'insert' }
+      })
     })
 
     it('reduces related models to references, keeping owned data', () => {
-      const processor = new DitoGraphProcessor(
+      const processor = new GraphProcessor(
         Book,
         {
           title: 'Dune',
@@ -376,8 +404,8 @@ describe('Dito.js graph handling', () => {
           chapters: [{ id: 4, title: 'One' }],
           genres: [{ id: 2, name: 'Renamed', rank: 1 }]
         },
-        upsertOptions,
-        { processOverrides: true, processRelates: true }
+        {},
+        upsertDefaults
       )
       const data = processor.getData()
       expect(data).toBeInstanceOf(Book)
@@ -391,36 +419,23 @@ describe('Dito.js graph handling', () => {
         .toEqual([{ id: 2, rank: 1 }])
     })
 
-    it('relates according to the global option without overrides', () => {
-      const processor = new DitoGraphProcessor(
+    it('keeps the data of new models in relating relations', () => {
+      const processor = new GraphProcessor(
         Book,
-        [{ title: 'Dune', author: { id: 1, name: 'Renamed' } }],
-        { relate: true },
-        { processRelates: true }
+        [{ title: 'Dune', author: { name: 'Frank' } }],
+        {},
+        upsertDefaults
       )
       const data = processor.getData()
       expect(data).toHaveLength(1)
-      expect({ ...data[0].author }).toEqual({ id: 1 })
-      expect(processor.shouldRelate('')).toBeUndefined()
-    })
-
-    it('keeps nested data when relating is disabled', () => {
-      const processor = new DitoGraphProcessor(
-        Book,
-        { title: 'Dune', author: { id: 1, name: 'Renamed' }, shelf: null },
-        { relate: false },
-        { processRelates: true }
-      )
-      const data = processor.getData()
-      expect({ ...data.author }).toEqual({ id: 1, name: 'Renamed' })
-      expect(data.shelf).toBeNull()
+      expect({ ...data[0].author }).toEqual({ name: 'Frank' })
     })
 
     it('converts plain relation data of model instances once', () => {
       const book = createBookGraph({ title: 'Dune' })
       const chapter = { title: 'One' }
       const graph = Object.assign(book, { chapters: [chapter, chapter] })
-      const data = new DitoGraphProcessor(Book, graph, {}).getData()
+      const [data] = ensureModelArray(Book, graph, { skipValidation: true })
       expect(data).toBe(book)
       expect(data.chapters[0]).toBeInstanceOf(Chapter)
       expect(data.chapters[1]).toBe(data.chapters[0])
@@ -432,16 +447,16 @@ describe('Dito.js graph handling', () => {
         chapters: [{ title: 'A' }]
       })
       const { chapters } = book
-      const data = new DitoGraphProcessor(Book, book, {}).getData()
+      const [data] = ensureModelArray(Book, book, { skipValidation: true })
       expect(data.chapters).toBe(chapters)
     })
 
     it('keeps empty entries in arrays', () => {
-      const processor = new DitoGraphProcessor(
+      const processor = new GraphProcessor(
         Book,
         [null, { title: 'Dune', author: { id: 1, name: 'Renamed' } }],
-        { relate: true },
-        { processOverrides: true, processRelates: true }
+        {},
+        upsertDefaults
       )
       const [empty, book] = processor.getData()
       expect(empty).toBeNull()
@@ -449,45 +464,24 @@ describe('Dito.js graph handling', () => {
     })
 
     it('handles empty data', () => {
-      const processor = new DitoGraphProcessor(Book, null, {})
+      const processor = new GraphProcessor(Book, null, {}, upsertDefaults)
       expect(processor.getData()).toBeUndefined()
-    })
-
-    it('collects override paths for relations set to null', () => {
-      // Upserts unrelate relations that are set to null, so they need to be
-      // part of the override paths even without any nested data:
-      const processor = new DitoGraphProcessor(
-        Book,
-        { title: 'Dune', author: null, shelf: null },
-        upsertOptions,
-        { processOverrides: true }
-      )
-      expect(processor.getOptions()).toEqual({
-        relate: ['author'],
-        unrelate: ['author', 'shelf'],
-        insertMissing: true
-      })
     })
 
     it('passes on relation values that are neither models nor arrays', () => {
       // Invalid relation values are left for validation to report:
       const book = createBookGraph({ title: 'Dune' })
       Object.assign(book, { author: 'Frank' })
-      const processor = new DitoGraphProcessor(
-        Book,
-        book,
-        { relate: true },
-        { processRelates: true }
-      )
+      const processor = new GraphProcessor(Book, book, {}, upsertDefaults)
       expect(processor.getData().author).toBe('Frank')
     })
   })
 
-  describe('insertDitoGraph()', () => {
+  describe('insertGraph()', () => {
     it('relates referenced models without modifying them', async () => {
       const author = await Author.query().insert({ name: 'Ursula' })
       const fantasy = await Genre.query().insert({ name: 'Fantasy' })
-      const book = await Book.query().insertDitoGraphAndFetch({
+      const book = await Book.query().insertGraphAndFetch({
         title: 'Earthsea',
         author: { id: author.id, name: 'Changed' },
         genres: [{ id: fantasy.id, name: 'Changed', rank: 2 }]
@@ -501,7 +495,7 @@ describe('Dito.js graph handling', () => {
     })
 
     it('inserts the data of owned and non-relating relations', async () => {
-      const book = await Book.query().insertDitoGraphAndFetch({
+      const book = await Book.query().insertGraphAndFetch({
         title: 'Earthsea',
         shelf: { name: 'Fantasy shelf' },
         chapters: [
@@ -520,15 +514,35 @@ describe('Dito.js graph handling', () => {
     })
 
     it('inserts new models in relating relations', async () => {
-      const book = await Book.query().insertDitoGraphAndFetch({
+      const book = await Book.query().insertGraphAndFetch({
         title: 'Earthsea',
         genres: [{ name: 'Fantasy' }]
       })
       expect(book.genres.map(genre => genre.name)).toEqual(['Fantasy'])
     })
 
+    it("inserts related models with ids with `added: 'insert'`", async () => {
+      // Seeds insert their full graphs this way:
+      const book = await Book.query().insertGraphAndFetch(
+        {
+          title: 'Earthsea',
+          author: { id: 1001, name: 'Ursula' },
+          genres: [{ id: 1002, name: 'Fantasy', rank: 1 }]
+        },
+        { relations: { '*': { added: 'insert' } } }
+      )
+      expect(book.authorId).toBe(1001)
+      expect(await Author.query()).toEqual([{ id: 1001, name: 'Ursula' }])
+      expect(await Genre.query()).toEqual([
+        { id: 1002, name: 'Fantasy', rank: null }
+      ])
+      expect(await getBookGenreRows(book.id)).toEqual([
+        { genreId: 1002, rank: 1 }
+      ])
+    })
+
     it('inserts multiple root models', async () => {
-      await Book.query().insertDitoGraph([
+      await Book.query().insertGraph([
         { title: 'First' },
         { title: 'Second' }
       ])
@@ -542,13 +556,13 @@ describe('Dito.js graph handling', () => {
         Book.transaction(async trx =>
           // Without relating, the existing genre is inserted again and fails
           // after the book and its chapter:
-          Book.query(trx).insertDitoGraph(
+          Book.query(trx).insertGraph(
             {
               title: 'Earthsea',
               chapters: [{ title: 'One' }],
               genres: [{ id: fantasy.id, name: 'Fantasy' }]
             },
-            { relate: false }
+            { relations: { genres: { added: 'insert' } } }
           )
         )
       ).rejects.toThrow(DatabaseError)
@@ -562,13 +576,13 @@ describe('Dito.js graph handling', () => {
     it('rolls back all models of the graph outside transactions', async () => {
       const fantasy = await Genre.query().insert({ name: 'Fantasy' })
       await expect(
-        Book.query().insertDitoGraph(
+        Book.query().insertGraph(
           {
             title: 'Earthsea',
             chapters: [{ title: 'One' }],
             genres: [{ id: fantasy.id, name: 'Fantasy' }]
           },
-          { relate: false }
+          { relations: { genres: { added: 'insert' } } }
         )
       ).rejects.toThrow(DatabaseError)
       expect(await Book.query()).toEqual([])
@@ -581,7 +595,7 @@ describe('Dito.js graph handling', () => {
     it('reports the data paths of invalid nested models', async () => {
       const getErrorPaths = async (data: any) => {
         const error = await Book.query()
-          .insertDitoGraph(data)
+          .insertGraph(data)
           .catch(error => error)
         expect(error).toBeInstanceOf(ValidationError)
         return Object.keys(error.data.errors)
@@ -600,11 +614,11 @@ describe('Dito.js graph handling', () => {
     })
   })
 
-  describe('upsertDitoGraph()', () => {
+  describe('upsertGraph()', () => {
     it('deletes removed owned models but only unrelates others', async () => {
       const { book, fantasy, drama } = await insertBook()
       const [one, two] = book.chapters
-      await Book.query().upsertDitoGraph({
+      await Book.query().upsertGraph({
         id: book.id,
         title: 'Earthsea',
         chapters: [{ id: two.id, title: 'Two (revised)' }],
@@ -622,7 +636,7 @@ describe('Dito.js graph handling', () => {
 
     it('leaves relations alone that are missing in the graph', async () => {
       const { book, fantasy, drama } = await insertBook()
-      await Book.query().upsertDitoGraph({ id: book.id, title: 'Tehanu' })
+      await Book.query().upsertGraph({ id: book.id, title: 'Tehanu' })
       expect(await getChapterTitles(book.id)).toEqual(['One', 'Two'])
       expect(await getBookGenreRows(book.id)).toEqual([
         { genreId: fantasy.id, rank: 1 },
@@ -632,11 +646,11 @@ describe('Dito.js graph handling', () => {
 
     it('unrelates to-one relations that are set to null', async () => {
       const author = await Author.query().insert({ name: 'Ursula' })
-      const book = await Book.query().insertDitoGraphAndFetch({
+      const book = await Book.query().insertGraphAndFetch({
         title: 'Earthsea',
         author: { id: author.id }
       })
-      await Book.query().upsertDitoGraph({
+      await Book.query().upsertGraph({
         id: book.id,
         title: 'Earthsea',
         author: null
@@ -649,11 +663,11 @@ describe('Dito.js graph handling', () => {
     })
 
     it('inserts replaced models of non-relating relations', async () => {
-      const book = await Book.query().insertDitoGraphAndFetch({
+      const book = await Book.query().insertGraphAndFetch({
         title: 'Earthsea',
         shelf: { name: 'Top' }
       })
-      await Book.query().upsertDitoGraph({
+      await Book.query().upsertGraph({
         id: book.id,
         title: 'Earthsea',
         shelf: { name: 'Bottom' }
@@ -665,16 +679,16 @@ describe('Dito.js graph handling', () => {
       )
     })
 
-    it('keeps removed owned models with `noDelete`', async () => {
+    it("keeps removed owned models with `removed: 'preserve'`", async () => {
       const { book } = await insertBook()
       const [, two] = book.chapters
-      await Book.query().upsertDitoGraph(
+      await Book.query().upsertGraph(
         {
           id: book.id,
           title: 'Earthsea',
           chapters: [{ id: two.id, title: 'Two (revised)' }, { title: 'Three' }]
         },
-        { noDelete: true }
+        { relations: { chapters: { removed: 'preserve' } } }
       )
       expect(await getChapterTitles(book.id)).toEqual([
         'One',
@@ -683,11 +697,11 @@ describe('Dito.js graph handling', () => {
       ])
     })
 
-    it('keeps removed related models with `noUnrelate`', async () => {
+    it("keeps removed related models with `removed: 'preserve'`", async () => {
       const { book, fantasy, drama } = await insertBook()
-      await Book.query().upsertDitoGraph(
+      await Book.query().upsertGraph(
         { id: book.id, title: 'Earthsea', genres: [{ id: drama.id, rank: 3 }] },
-        { noUnrelate: true }
+        { relations: { genres: { removed: 'preserve' } } }
       )
       expect(await getBookGenreRows(book.id)).toEqual([
         { genreId: fantasy.id, rank: 1 },
@@ -695,20 +709,20 @@ describe('Dito.js graph handling', () => {
       ])
     })
 
-    it('deletes removed related models with `unrelate: false`', async () => {
+    it("deletes removed related models with `removed: 'delete'`", async () => {
       const { book, drama } = await insertBook()
-      await Book.query().upsertDitoGraph(
+      await Book.query().upsertGraph(
         { id: book.id, title: 'Earthsea', genres: [{ id: drama.id, rank: 2 }] },
-        { unrelate: false }
+        { relations: { genres: { removed: 'delete' } } }
       )
       expect(await Genre.query()).toEqual([
         { id: drama.id, name: 'Drama', rank: null }
       ])
     })
 
-    it('inserts related models with unknown ids with `relate: false`', async () => {
+    it("inserts related models with unknown ids with `added: 'insert'`", async () => {
       const { book, fantasy, drama } = await insertBook()
-      await Book.query().upsertDitoGraph(
+      await Book.query().upsertGraph(
         {
           id: book.id,
           title: 'Earthsea',
@@ -717,7 +731,7 @@ describe('Dito.js graph handling', () => {
             { id: 1234, name: 'Myth', rank: 2 }
           ]
         },
-        { relate: false }
+        { relations: { genres: { added: 'insert' } } }
       )
       expect(await Genre.query().orderBy('id')).toEqual([
         { id: fantasy.id, name: 'Fantasy', rank: null },
@@ -730,16 +744,16 @@ describe('Dito.js graph handling', () => {
       ])
     })
 
-    it('rejects owned models with unknown ids with `insertMissing: false`', async () => {
+    it("rejects owned models with unknown ids with `added: 'throw'`", async () => {
       const { book } = await insertBook()
       await expect(
-        Book.query().upsertDitoGraph(
+        Book.query().upsertGraph(
           {
             id: book.id,
             title: 'Earthsea',
             chapters: [{ id: 1234, title: 'X' }]
           },
-          { insertMissing: false }
+          { relations: { chapters: { added: 'throw' } } }
         )
       ).rejects.toThrow(NotFoundError)
       expect(await getChapterTitles(book.id)).toEqual(['One', 'Two'])
@@ -749,7 +763,7 @@ describe('Dito.js graph handling', () => {
       const { book, fantasy, drama } = await insertBook()
       const myth = await Genre.query().insert({ name: 'Myth' })
       await expect(
-        Book.query().upsertDitoGraph(
+        Book.query().upsertGraph(
           {
             id: book.id,
             title: 'Earthsea',
@@ -758,7 +772,7 @@ describe('Dito.js graph handling', () => {
             // after the chapters are deleted and updated:
             genres: [{ id: myth.id, name: 'Myth' }]
           },
-          { relate: false }
+          { relations: { genres: { added: 'insert' } } }
         )
       ).rejects.toThrow(DatabaseError)
       expect(await getChapterTitles(book.id)).toEqual(['One', 'Two'])
@@ -774,7 +788,7 @@ describe('Dito.js graph handling', () => {
     })
 
     it('inserts missing root models with their ids', async () => {
-      await Book.query().upsertDitoGraph({ id: 1234, title: 'New' })
+      await Book.query().upsertGraph({ id: 1234, title: 'New' })
       expect(await Book.query()).toEqual([
         {
           id: 1234,
@@ -801,7 +815,10 @@ describe('Dito.js graph handling', () => {
           genres: [{ 'id': fantasy.id, '#unrelate': true }, { id: drama.id }]
         }
         expectToReject(
-          () => Book.query().patchDitoGraph(data, { noUnrelate: true }),
+          () =>
+            Book.query().patchGraph(data, {
+              relations: { genres: { removed: 'preserve' } }
+            }),
           `Unsupported graph control property '#unrelate' at 'genres/0'.`
         )
         expect(await getBookGenreRows(book.id)).toEqual([
@@ -818,14 +835,17 @@ describe('Dito.js graph handling', () => {
           chapters: [{ 'id': one.id, '#delete': true }, { id: two.id }]
         }
         expectToReject(
-          () => Book.query().patchDitoGraph(data, { noDelete: true }),
+          () =>
+            Book.query().patchGraph(data, {
+              relations: { chapters: { removed: 'preserve' } }
+            }),
           `Unsupported graph control property '#delete' at 'chapters/0'.`
         )
         expect(await Chapter.query().findById(one.id)).toBeDefined()
       })
 
       it('rejects #dbRef in relations', async () => {
-        const other = await Book.query().insertDitoGraphAndFetch({
+        const other = await Book.query().insertGraphAndFetch({
           title: 'Dune',
           chapters: [{ title: 'Prologue', position: 1 }]
         })
@@ -835,7 +855,7 @@ describe('Dito.js graph handling', () => {
           chapters: [{ '#dbRef': foreign.id }]
         }
         expectToReject(
-          () => Book.query().insertDitoGraph(data),
+          () => Book.query().insertGraph(data),
           `Unsupported graph control property '#dbRef' at 'chapters/0'.`
         )
         expect((await Chapter.query().findById(foreign.id))!.bookId).toBe(
@@ -857,7 +877,7 @@ describe('Dito.js graph handling', () => {
       })
 
       it('keeps #id and #ref references within the graph', async () => {
-        const [first, second] = await Book.query().insertDitoGraphAndFetch([
+        const [first, second] = await Book.query().insertGraphAndFetch([
           {
             title: 'Tehanu',
             genres: [{ '#id': 'fantasy', 'name': 'Fantasy' }]
@@ -870,13 +890,13 @@ describe('Dito.js graph handling', () => {
     })
 
     it('inserts missing root models', async () => {
-      await Book.query().upsertDitoGraph({ title: 'New' })
+      await Book.query().upsertGraph({ title: 'New' })
       expect((await Book.query()).map(book => book.title)).toEqual(['New'])
     })
 
-    it('upserts by id with upsertDitoGraphAndFetchById()', async () => {
+    it('upserts by id with upsertGraphAndFetchById()', async () => {
       const { book } = await insertBook()
-      const result = await Book.query().upsertDitoGraphAndFetchById(book.id, {
+      const result = await Book.query().upsertGraphAndFetchById(book.id, {
         title: 'Renamed',
         chapters: [{ title: 'Only' }]
       })
@@ -887,7 +907,7 @@ describe('Dito.js graph handling', () => {
     })
 
     it('resolves cyclic references within the graph', async () => {
-      const result = await Book.query().upsertDitoGraphAndFetch({
+      const result = await Book.query().upsertGraphAndFetch({
         title: 'Earthsea',
         chapters: [
           { '#id': 'first', 'title': 'One', 'position': 1 },
@@ -903,8 +923,8 @@ describe('Dito.js graph handling', () => {
       expect(await Chapter.query()).toHaveLength(2)
     })
 
-    it('resolves cyclic references with insertDitoGraph()', async () => {
-      const result = await Book.query().insertDitoGraphAndFetch({
+    it('resolves cyclic references with insertGraph()', async () => {
+      const result = await Book.query().insertGraphAndFetch({
         title: 'Earthsea',
         chapters: [{ '#id': 'first', 'title': 'One' }],
         featuredChapter: { '#ref': 'first' }
@@ -917,7 +937,7 @@ describe('Dito.js graph handling', () => {
 
     it('resolves cyclic references when upserting an existing root', async () => {
       const book = await Book.query().insert({ title: 'Earthsea' })
-      await Book.query().upsertDitoGraph({
+      await Book.query().upsertGraph({
         id: book.id,
         title: 'Earthsea',
         chapters: [{ '#id': 'first', 'title': 'One' }],
@@ -932,7 +952,7 @@ describe('Dito.js graph handling', () => {
 
     it('resolves references into other roots inside arrays', async () => {
       const fantasy = await Genre.query().insert({ name: 'Fantasy' })
-      const result = await Book.query().upsertDitoGraphAndFetch([
+      const result = await Book.query().upsertGraphAndFetch([
         {
           title: 'Earthsea',
           chapters: [{ '#id': 'shared', 'title': 'One' }],
@@ -953,7 +973,7 @@ describe('Dito.js graph handling', () => {
 
     it('rejects cycles that only go through property references', async () => {
       await expect(
-        Book.query().upsertDitoGraph({
+        Book.query().upsertGraph({
           // The book's title depends on the chapter, which depends on the book
           // through the `chapters` relation:
           title: '#ref{first.title}',
@@ -974,7 +994,7 @@ describe('Dito.js graph handling', () => {
       try {
         await expect(
           Book.transaction(async trx =>
-            Book.query(trx).upsertDitoGraph({
+            Book.query(trx).upsertGraph({
               title: 'Earthsea',
               chapters: [{ '#id': 'first', 'title': 'One' }],
               featuredChapter: { '#ref': 'first' }
@@ -1019,7 +1039,7 @@ describe('Dito.js graph handling', () => {
     }
 
     it('resolves references within and across lists on insert', async () => {
-      const library = await Library.query().insertDitoGraphAndFetch({
+      const library = await Library.query().insertGraphAndFetch({
         name: 'City',
         bookcases: [
           {
@@ -1086,7 +1106,7 @@ describe('Dito.js graph handling', () => {
     })
 
     it('upserts an existing graph with references across lists', async () => {
-      const existing = await Library.query().insertDitoGraphAndFetch({
+      const existing = await Library.query().insertGraphAndFetch({
         name: 'City',
         bookcases: [
           {
@@ -1117,7 +1137,7 @@ describe('Dito.js graph handling', () => {
 
       // Both the bookcases and the volumes are deliberately not sorted by
       // their position, to show that the input doesn't need pre-sorting:
-      const library = await Library.query().upsertDitoGraphAndFetch({
+      const library = await Library.query().upsertGraphAndFetch({
         id: existing.id,
         name: 'City',
         bookcases: [
@@ -1225,7 +1245,7 @@ describe('Dito.js graph handling', () => {
     })
 
     it('returns upserted lists in order of their scope', async () => {
-      const existing = await Library.query().insertDitoGraphAndFetch({
+      const existing = await Library.query().insertGraphAndFetch({
         name: 'City',
         bookcases: [
           {
@@ -1242,7 +1262,7 @@ describe('Dito.js graph handling', () => {
       const [a, b] = fiction.volumes
       // Move the existing volumes to the end and insert new ones in between,
       // with the input in reverse order of the new positions:
-      const library = await Library.query().upsertDitoGraphAndFetch({
+      const library = await Library.query().upsertGraphAndFetch({
         id: existing.id,
         name: 'City',
         bookcases: [
@@ -1269,14 +1289,14 @@ describe('Dito.js graph handling', () => {
     })
   })
 
-  describe('patchDitoGraph() and updateDitoGraph()', () => {
+  describe('patchGraph() and updateGraph()', () => {
     it('patches only the given properties', async () => {
       const author = await Author.query().insert({ name: 'Ursula' })
-      const book = await Book.query().insertDitoGraphAndFetch({
+      const book = await Book.query().insertGraphAndFetch({
         title: 'Earthsea',
         author: { id: author.id }
       })
-      await Book.query().patchDitoGraph({
+      await Book.query().patchGraph({
         id: book.id,
         chapters: [{ title: 'One' }]
       })
@@ -1286,9 +1306,9 @@ describe('Dito.js graph handling', () => {
       expect(await Chapter.query().where('bookId', book.id)).toHaveLength(1)
     })
 
-    it('patches by id with patchDitoGraphAndFetchById()', async () => {
+    it('patches by id with patchGraphAndFetchById()', async () => {
       const book = await Book.query().insert({ title: 'Earthsea' })
-      const result = await Book.query().patchDitoGraphAndFetchById(book.id, {
+      const result = await Book.query().patchGraphAndFetchById(book.id, {
         title: 'Tehanu'
       })
       expect(result.title).toBe('Tehanu')
@@ -1297,7 +1317,7 @@ describe('Dito.js graph handling', () => {
     it('deletes and unrelates removed models like upserts', async () => {
       const { book, drama } = await insertBook()
       const [, two] = book.chapters
-      await Book.query().patchDitoGraph({
+      await Book.query().patchGraph({
         id: book.id,
         chapters: [{ id: two.id }],
         genres: [{ id: drama.id, rank: 2 }]
@@ -1311,7 +1331,7 @@ describe('Dito.js graph handling', () => {
     it('rejects owned models with unknown ids instead of inserting', async () => {
       const { book } = await insertBook()
       await expect(
-        Book.query().patchDitoGraph({
+        Book.query().patchGraph({
           id: book.id,
           chapters: [{ id: 1234, title: 'X' }]
         })
@@ -1321,7 +1341,7 @@ describe('Dito.js graph handling', () => {
 
     it('rejects patches of missing models instead of inserting', async () => {
       await expect(
-        Book.query().patchDitoGraph({ id: 1234, title: 'Missing' })
+        Book.query().patchGraph({ id: 1234, title: 'Missing' })
       ).rejects.toThrow()
       expect(await Book.query()).toHaveLength(0)
     })
@@ -1330,30 +1350,132 @@ describe('Dito.js graph handling', () => {
       const book = await Book.query().insert({ title: 'Earthsea' })
       await expect(
         // @ts-expect-error -- Invalid data is the point of this test.
-        Book.query().updateDitoGraph({ id: book.id, title: 5 })
+        Book.query().updateGraph({ id: book.id, title: 5 })
       ).rejects.toThrow(/not valid/)
-      const result = await Book.query().updateDitoGraphAndFetchById(book.id, {
+      const result = await Book.query().updateGraphAndFetchById(book.id, {
         title: 'Tehanu'
       })
       expect(result.title).toBe('Tehanu')
     })
 
-    it('fetches the patched graph with patchDitoGraphAndFetch()', async () => {
+    it('patches the extra properties of references on updates', async () => {
+      const { book, fantasy, drama } = await insertBook()
+      await Book.query().updateGraph({
+        id: book.id,
+        title: 'Earthsea',
+        genres: [
+          { id: fantasy.id, rank: 7 },
+          { id: drama.id, rank: 2 }
+        ]
+      })
+      expect(await getBookGenreRows(book.id)).toEqual([
+        { genreId: fantasy.id, rank: 7 },
+        { genreId: drama.id, rank: 2 }
+      ])
+    })
+
+    it('fetches the patched graph with patchGraphAndFetch()', async () => {
       const book = await Book.query().insert({ title: 'Earthsea' })
-      const result = await Book.query().patchDitoGraphAndFetch({
+      const result = await Book.query().patchGraphAndFetch({
         id: book.id,
         chapters: [{ title: 'One' }]
       })
       expect(result.chapters.map(chapter => chapter.title)).toEqual(['One'])
     })
 
-    it('fetches the updated graph with updateDitoGraphAndFetch()', async () => {
+    it('fetches the updated graph with updateGraphAndFetch()', async () => {
       const book = await Book.query().insert({ title: 'Earthsea' })
-      const result = await Book.query().updateDitoGraphAndFetch({
+      const result = await Book.query().updateGraphAndFetch({
         id: book.id,
         title: 'Tehanu'
       })
       expect(result.title).toBe('Tehanu')
+    })
+  })
+
+  describe('strict graphs', () => {
+    it('rejects related models with unknown ids', async () => {
+      const { book, fantasy, drama } = await insertBook()
+      await expect(
+        Book.query().patchGraph({
+          id: book.id,
+          genres: [{ id: fantasy.id }, { id: 1234 }]
+        })
+      ).rejects.toThrow(NotFoundError)
+      await expect(
+        Book.query().upsertGraph({ id: book.id, author: { id: 1234 } })
+      ).rejects.toThrow(NotFoundError)
+      expect(await getBookGenreRows(book.id)).toEqual([
+        { genreId: fantasy.id, rank: 1 },
+        { genreId: drama.id, rank: 2 }
+      ])
+      expect((await Book.query().findById(book.id))!.authorId).toBeNull()
+    })
+
+    it('rejects keys that contradict their relation', async () => {
+      const { book } = await insertBook()
+      const other = await Book.query().insert({ title: 'Dune' })
+      // `GraphError` responds with 400:
+      await expect(
+        Book.query().patchGraph({
+          id: book.id,
+          chapters: [{ title: 'Three', bookId: other.id }]
+        })
+      ).rejects.toThrow(GraphError)
+      expect(await Chapter.query().where('bookId', other.id)).toEqual([])
+    })
+
+    it('writes fetched graphs back unchanged', async () => {
+      const { book } = await insertBook()
+      const author = await Author.query().insert({ name: 'Ursula' })
+      await Book.query().patchGraph({ id: book.id, author })
+      const fetch = () =>
+        Book.query()
+          .findById(book.id)
+          .withGraphFetched('[author, chapters, featuredChapter, genres]')
+      const fetched = await fetch()
+      await Book.query().upsertGraph(fetched!)
+      await Book.query().patchGraph(fetched!)
+      await Book.query().updateGraph(fetched!)
+      expect(await fetch()).toEqual(fetched)
+    })
+
+    it('takes the settings of relations from the call', async () => {
+      const { book, fantasy, drama } = await insertBook()
+      await Book.query().patchGraph(
+        { id: book.id, chapters: [], genres: [] },
+        { relations: { '*': { removed: 'preserve' } } }
+      )
+      expect(await getChapterTitles(book.id)).toEqual(['One', 'Two'])
+      expect(await getBookGenreRows(book.id)).toEqual([
+        { genreId: fantasy.id, rank: 1 },
+        { genreId: drama.id, rank: 2 }
+      ])
+    })
+
+    it('takes the settings of relations from their `graphOptions`', async () => {
+      // `shelf` inserts models with unknown ids, with their data:
+      const book = await Book.query().upsertGraphAndFetch({
+        title: 'Earthsea',
+        shelf: { id: 1234, name: 'Top' }
+      })
+      expect(book.shelfId).toBe(1234)
+      expect(await Shelf.query()).toEqual([{ id: 1234, name: 'Top' }])
+    })
+
+    it('rejects the options of non-strict graphs', async () => {
+      const { book } = await insertBook()
+      await expect(
+        Book.query().upsertGraph({ id: book.id }, { noDelete: true })
+      ).rejects.toThrow(
+        '"noDelete" is not an option of upsertGraph() in strict mode.'
+      )
+      await expect(
+        Book.query().insertGraph({ title: 'Dune' }, { relate: true })
+      ).rejects.toThrow(
+        '"relate" is not an option of insertGraph() in strict mode.'
+      )
+      expect(await getChapterTitles(book.id)).toEqual(['One', 'Two'])
     })
   })
 
@@ -1484,7 +1606,7 @@ describe('Dito.js graph handling', () => {
     })
 
     it('loads the rest of the path for non-leaf references', async () => {
-      const stored = await Book.query().insertDitoGraphAndFetch({
+      const stored = await Book.query().insertGraphAndFetch({
         title: 'Earthsea',
         chapters: [
           { title: 'Two', position: 2 },
@@ -1501,7 +1623,7 @@ describe('Dito.js graph handling', () => {
     })
 
     it('loads nested references through populated relations', async () => {
-      const book = await Book.query().insertDitoGraphAndFetch({
+      const book = await Book.query().insertGraphAndFetch({
         title: 'Earthsea',
         chapters: [{ title: 'One' }]
       })
@@ -1523,7 +1645,7 @@ describe('Dito.js graph handling', () => {
     })
 
     it('loads the rest of the path for nested references', async () => {
-      const book = await Book.query().insertDitoGraphAndFetch({
+      const book = await Book.query().insertGraphAndFetch({
         title: 'Earthsea',
         chapters: [{ title: 'One' }]
       })

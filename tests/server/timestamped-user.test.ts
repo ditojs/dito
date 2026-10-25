@@ -231,7 +231,7 @@ describe('UserMixin', () => {
             curator: { email: 'c@example.com', hash }
           } as any),
         async () =>
-          Shelf.query().patchDitoGraph({
+          Shelf.query().patchGraph({
             id: shelf.id,
             curator: { id: alice.id, hash }
           } as any),

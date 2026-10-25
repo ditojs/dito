@@ -22,7 +22,7 @@ class Pages extends ScenarioController {
         }
       },
       handler(_ctx: unknown, { data }: { data: Pick<Page, 'id' | 'order'>[] }) {
-        return Page.query().patchDitoGraph(data)
+        return Page.query().patchGraph(data)
       }
     }
   }

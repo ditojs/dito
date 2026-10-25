@@ -465,7 +465,7 @@ available on both. Extend `ModelController` rather than this class.
 | `modelClass`  | `typeof Model`                  | The model class.                                                                                              |
 | `collection`  | `object`                        | Collection actions, see [Default actions](#default-actions).                                                  |
 | `member`      | `object`                        | Member actions.                                                                                               |
-| `graph`       | `boolean`                       | Write through the graph methods (`insertDitoGraphAndFetch()` …). Default `false`.                             |
+| `graph`       | `boolean`                       | Write through the graph methods (`insertGraphAndFetch()` …). Default `false`.                                 |
 | `scope`       | `string \| string[]`            | Scopes applied to the queries of the controller. The default `delete` actions leave them out.                 |
 | `allowParam`  | `string \| string[]`            | Query parameters the default actions accept, see [`QueryParameterOptions`](./query-builder.md). Default: all. |
 | `allowScope`  | `boolean \| string \| string[]` | Scopes the `scope` query parameter may request. Default: all.                                                 |
@@ -479,17 +479,17 @@ available on both. Extend `ModelController` rather than this class.
 
 Routed only when listed in `allow`.
 
-| Action              | Route              | Query method                                                                                                         |
-| ------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `collection.get`    | `GET <url>`        | `find(ctx.filteredQuery)`; a `range` query parameter returns a page `{ results, total }`.                            |
-| `collection.post`   | `POST <url>`       | `insertAndFetch()` / `insertDitoGraphAndFetch()`, or relates with `relate`. Responds `201` with a `Location` header. |
-| `collection.put`    | `PUT <url>`        | `updateAndFetch()` / `updateDitoGraphAndFetch()`                                                                     |
-| `collection.patch`  | `PATCH <url>`      | `patchAndFetch()` / `patchDitoGraphAndFetch()`                                                                       |
-| `collection.delete` | `DELETE <url>`     | `delete()`, or `unrelate()`; returns `{ count }`.                                                                    |
-| `member.get`        | `GET <url>/:id`    | `findById()`                                                                                                         |
-| `member.put`        | `PUT <url>/:id`    | `updateAndFetchById()` / `updateDitoGraphAndFetchById()`                                                             |
-| `member.patch`      | `PATCH <url>/:id`  | `patchAndFetchById()` / `patchDitoGraphAndFetchById()`                                                               |
-| `member.delete`     | `DELETE <url>/:id` | `findById().delete()`, or `unrelate()`; returns `{ count }`.                                                         |
+| Action              | Route              | Query method                                                                                                     |
+| ------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `collection.get`    | `GET <url>`        | `find(ctx.filteredQuery)`; a `range` query parameter returns a page `{ results, total }`.                        |
+| `collection.post`   | `POST <url>`       | `insertAndFetch()` / `insertGraphAndFetch()`, or relates with `relate`. Responds `201` with a `Location` header. |
+| `collection.put`    | `PUT <url>`        | `updateAndFetch()` / `updateGraphAndFetch()`                                                                     |
+| `collection.patch`  | `PATCH <url>`      | `patchAndFetch()` / `patchGraphAndFetch()`                                                                       |
+| `collection.delete` | `DELETE <url>`     | `delete()`, or `unrelate()`; returns `{ count }`.                                                                |
+| `member.get`        | `GET <url>/:id`    | `findById()`                                                                                                     |
+| `member.put`        | `PUT <url>/:id`    | `updateAndFetchById()` / `updateGraphAndFetchById()`                                                             |
+| `member.patch`      | `PATCH <url>/:id`  | `patchAndFetchById()` / `patchGraphAndFetchById()`                                                               |
+| `member.delete`     | `DELETE <url>/:id` | `findById().delete()`, or `unrelate()`; returns `{ count }`.                                                     |
 
 Collection `PUT` and `PATCH` update existing models only: every model in the
 body needs its id, also with `graph: true`; otherwise they respond with a
@@ -610,7 +610,7 @@ without `id`. Responds with a 404 error when not found. Returns
 const result = await controller.executeAndFetch(action, ctx, modify?, body?)
 ```
 
-Calls `<action>AndFetch(body)` (`<action>DitoGraphAndFetch()` with `graph`),
+Calls `<action>AndFetch(body)` (`<action>GraphAndFetch()` with `graph`),
 e.g. `executeAndFetch('patch', ctx)`. `body` defaults to `ctx.request.body`.
 Returns `Promise<Model | Model[]>`.
 

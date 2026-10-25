@@ -66,7 +66,9 @@ async function handleSeed(app, base, seed, modelClass) {
       res = await seed(app.models)
     } else if (modelClass) {
       await modelClass.truncate({ cascade: true })
-      res = await modelClass.insertGraph(seed)
+      // Seeds give full graphs, so insert their related models with ids too,
+      // instead of relating them:
+      res = await modelClass.insertGraph(seed, seedGraphOptions)
     }
     if (isArray(res)) {
       console.info(
@@ -92,3 +94,5 @@ async function handleSeed(app, base, seed, modelClass) {
     return false
   }
 }
+
+const seedGraphOptions = { relations: { '*': { added: 'insert' } } }

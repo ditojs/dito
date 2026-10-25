@@ -116,7 +116,7 @@ export class Genres extends ModelController {
         }
       },
       handler(ctx, { genres }) {
-        return this.query().patchDitoGraph(genres)
+        return this.query().patchGraph(genres)
       }
     }
   }

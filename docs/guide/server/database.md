@@ -136,8 +136,9 @@ and run with `pnpm db:seed`, which imports the application.
 
 A file named after a model holds the model's data. The model's table is
 emptied first (on PostgreSQL, with the tables that reference it), then the
-data is inserted as a graph, with `insertGraph()`, so it can contain related
-models. `seeds/authors.json`:
+data is inserted as a graph, with `insertGraph()` and
+`{ relations: { '*': { added: 'insert' } } }`, so it can contain related
+models, also with their ids. `seeds/authors.json`:
 
 ```json
 [
