@@ -1,16 +1,35 @@
-import { computed, markRaw, nextTick, type ComputedRef } from 'vue'
+import {
+  computed,
+  markRaw,
+  nextTick,
+  shallowRef,
+  type ComputedRef
+} from 'vue'
 import { isArray, isObject, parseDataPath } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { getChildStore } from '../composables/useStore.ts'
 import { ItemStores } from './ItemStores.js'
 import { appendDataPath, getRelativeDataPath } from './data.js'
+import { hasResource } from './resource.js'
+import { getItemKey, getSourcePath, ViewNode } from './RouteTree.ts'
 import { getItemUid } from './schema/data.js'
 import {
   getFormSchemas,
-  getItemFormSchemaFromForms
+  getItemFormSchemaFromForms,
+  getViewSchema,
+  hasFormSchema
 } from './schema/lookup.js'
-import { isPanel } from './schema/structure.js'
-import { getChildSourceSchemas, getTypeDescriptor } from './schema/types.ts'
+import {
+  isInlined,
+  isListSource,
+  isPanel,
+  isSingleFieldView
+} from './schema/structure.js'
+import {
+  getChildSourceSchemas,
+  getSourceType,
+  getTypeDescriptor
+} from './schema/types.ts'
 import {
   callOrLog,
   getSchemaValue,
@@ -22,6 +41,8 @@ import {
   getSchemaSource
 } from './schema/walk.js'
 import type { DataContext } from './DataContext.ts'
+import type { SourceRoute } from './RouteTree.ts'
+import type { SourceContext } from './SourceContext.ts'
 import type { Data, Schema } from './types.ts'
 
 // The item whose values the components display, and where it is in the data:
@@ -50,10 +71,15 @@ interface NodeOptions {
   readonly name?: string | null
   // Tabs show their components in the schema of their parent:
   readonly isTab?: boolean
+  // The schema of fields that are sources, e.g. lists, under their key, as
+  // panes render them:
+  readonly sourceSchema?: Schema | null
   // The store of the component in the one of its parent, if it isn't the child
   // store by its key:
   getStore?(parentStore: Store): Store
   getSchema?(): Schema | null
+  // The item that holds the component's value, or the item of item nodes:
+  getData?(): Data | null
   getDataPath?(): string
   getItemDataPath?(): string
   isShown?(): boolean
@@ -62,6 +88,16 @@ interface NodeOptions {
     node: ComponentNode,
     indices: Map<ComponentNode, number>
   ): ComponentNode[]
+}
+
+// The route state of a source:
+interface Source {
+  readonly schema: Schema
+  readonly linksToView: boolean
+  readonly isTransient: boolean
+  readonly routePath: string | null
+  readonly isBeyondMaxDepth: boolean
+  readonly sourceRoute: SourceRoute | null
 }
 
 interface Children {
@@ -90,6 +126,7 @@ export class ComponentTree {
     }
     this.root = new ComponentNode(this, null, {
       getSchema: () => dataContext.schema,
+      getData: scope.getItem,
       getDataPath: scope.getDataPath,
       getItemDataPath: scope.getDataPath,
       getChildren: node =>
@@ -199,6 +236,8 @@ export class ComponentNode {
   // the path continues, if there is one, which the node mirrors. Values may
   // appear after the node is first asked for, e.g. with the form of a type:
   readonly #value: ComputedRef<ComponentNode | null> | null
+  #sourceContext = shallowRef<SourceContext | null>(null)
+  #source: ComputedRef<Source | null> | null = null
 
   constructor(
     tree: ComponentTree,
@@ -293,6 +332,175 @@ export class ComponentNode {
   // Irrelevant fields and hidden components display nothing, like rendered:
   isShown(): boolean {
     return this.#options.isShown?.() ?? true
+  }
+
+  get data(): Data | null {
+    return this.#options.getData?.() ?? null
+  }
+
+  // The mounted source component of the node, which provides its items:
+  get sourceContext(): SourceContext | null {
+    return this.#sourceContext.value
+  }
+
+  set sourceContext(sourceContext: SourceContext | null) {
+    this.#sourceContext.value = sourceContext
+  }
+
+  // The schema of the source at the node: of its field, or of the widget that
+  // lays out its property while it's mounted, as only the layout has it:
+  get sourceSchema(): Schema | null {
+    return (
+      this.#options.sourceSchema ??
+      this.sourceContext?.schema ??
+      null
+    )
+  }
+
+  // Sources link to views or load their data through their resource, the
+  // others are part of the data around them:
+  get linksToView(): boolean {
+    return !!this.#getSource()?.linksToView
+  }
+
+  get isTransient(): boolean {
+    return !!this.#getSource()?.isTransient
+  }
+
+  // The path of the source within its route, after the names of the tabs,
+  // sections and panels around it, e.g. `pricing/families`, or after the path
+  // of the item of the inlined source whose item holds it, e.g. `books/3`:
+  get routePath(): string | null {
+    return this.#getSource()?.routePath ?? null
+  }
+
+  // Forms that contain themselves stop routing their sources after `maxDepth`
+  // repetitions:
+  get isBeyondMaxDepth(): boolean {
+    return !!this.#getSource()?.isBeyondMaxDepth
+  }
+
+  // The source and where its value and routes are, for the forms of its items.
+  // Inlined sources render the forms of their items themselves:
+  get sourceRoute(): SourceRoute | null {
+    return this.#getSource()?.sourceRoute ?? null
+  }
+
+  // Sources link to the forms of their items, if they have one:
+  get formPath(): string | null {
+    const { sourceRoute } = this
+    return sourceRoute && hasFormSchema(sourceRoute.schema)
+      ? sourceRoute.path
+      : null
+  }
+
+  // The path of the item at `index` in the routes of the forms below it, also
+  // of the items of inlined sources, or the source's own path for objects:
+  getItemRoutePath(index: string | number | null): string | null {
+    const source = this.#getSource()
+    if (source && index !== null) {
+      const value = this.data?.[this.name!]
+      const items = isArray(value) ? value : (value?.results ?? [])
+      return `${source.routePath}/${
+        getItemKey(source.schema, items[+index], index, source.isTransient)
+      }`
+    }
+    return source?.routePath ?? null
+  }
+
+  #getSource() {
+    this.#source ??= computed(() => {
+      const schema = this.sourceSchema
+      return schema ? this.#createSource(schema) : null
+    })
+    return this.#source.value
+  }
+
+  #createSource(schema: Schema) {
+    const { componentPath, tree } = this
+    const { adminContext, routeContext } = tree.dataContext.services
+    const { api } = adminContext
+    const linksToView = !!getViewSchema(
+      schema,
+      tree.createContext(schema, {
+        name: this.name,
+        data: this.data,
+        dataPath: this.dataPath,
+        itemDataPath: this.itemDataPath
+      })
+    )
+    const isTransient = (
+      !hasResource(schema) && !linksToView ||
+      !!routeContext?.isTransient
+    )
+    // The source whose inlined items hold this one:
+    let parent = this.parent
+    while (parent && !parent.sourceSchema) {
+      parent = parent.parent
+    }
+    const getRoutePath = () => {
+      const parentPath = parent?.routePath
+        ? getRelativeDataPath(componentPath, parent.componentPath)
+        : null
+      if (parentPath) {
+        const segments = parseDataPath(parentPath)
+        const index = isListSource(parent!.sourceSchema)
+          ? segments.shift()!
+          : null
+        return `${parent!.getItemRoutePath(index)}/${
+          getSourcePath(schema, segments.join('/'), api)
+        }`
+      }
+      const path = routeContext
+        ? getRelativeDataPath(
+            componentPath,
+            routeContext.dataContext.componentPath
+          )
+        : null
+      if (path !== null) {
+        // Single-component views route their component under their own path:
+        const { node, path: basePath } = routeContext!
+        return (
+          node instanceof ViewNode &&
+          isSingleFieldView(node.schema) &&
+          path === node.schema.name
+        )
+          ? basePath
+          : `${basePath}/${getSourcePath(schema, path, api)}`
+      }
+      return null
+    }
+    let depth = 1
+    for (let route = routeContext; route; route = route.parent) {
+      if (route.claim?.schema === schema) depth++
+    }
+    const isBeyondMaxDepth = depth > (schema.maxDepth ?? 1)
+    const routePath = getRoutePath()
+    const node = this
+    return {
+      schema,
+      linksToView,
+      isTransient,
+      routePath,
+      isBeyondMaxDepth,
+      sourceRoute:
+        routePath && !isInlined(schema) && !linksToView && !isBeyondMaxDepth
+          ? {
+              schema,
+              location: {
+                data: this.data,
+                key: schema.name,
+                dataPath: this.dataPath!,
+                componentPath
+              },
+              path: routePath,
+              isTransient,
+              get source() {
+                return node.sourceContext!
+              }
+            }
+          : null
+    }
   }
 
   // The node at the component path `path` below this one. Paths that leave the
@@ -435,6 +643,12 @@ export class ComponentNode {
       key: component.key ?? component.name,
       name,
       isTab,
+      sourceSchema:
+        field && getSourceType(schema)
+          ? schema.name === name
+            ? schema
+            : { ...schema, name }
+          : null,
       // Tabs show their components in the schema of their parent, and panels
       // keep their state by their names:
       getStore: isTab
@@ -443,6 +657,7 @@ export class ComponentNode {
           ? store => getChildStore(store, schema.name)
           : undefined,
       getSchema: () => schema,
+      getData: scope.getItem,
       getDataPath,
       getItemDataPath: scope.getDataPath,
       isShown: () => isRelevant() && (!hasVisibility || isVisible()),
@@ -565,6 +780,7 @@ export class ComponentNode {
         ),
       getSchema: () =>
         getItemFormSchemaFromForms(getItemForms()[0].forms, getItem()),
+      getData: getItem,
       getDataPath,
       getItemDataPath: getDataPath,
       getChildren: node =>

@@ -99,7 +99,7 @@ export function useContainerField(
   )
   // Add the name, also of unnested components. The display content of widgets
   // has none:
-  const { componentPath, parentComponentPath } = useComponentPath(
+  const { node, componentPath, parentComponentPath } = useComponentPath(
     () => props.dataPath,
     parent => parent.node.getNode(props.schema.name ?? '')
   )
@@ -115,6 +115,7 @@ export function useContainerField(
     parsedValue,
     getEmptyValue,
     getDefaultValue,
+    node,
     componentPath,
     parentComponentPath,
     getSchemaValue,
@@ -156,6 +157,7 @@ export function useField(
   const {
     context,
     services,
+    node,
     componentPath,
     getSchemaValue,
     label,
@@ -319,6 +321,7 @@ export function useField(
     attributes,
     inputAffixesProps,
 
+    node,
     componentPath,
     getSchemaValue,
     validate,

@@ -5,13 +5,11 @@ import {
   provide,
   reactive,
   toRef,
-  unref,
   watch
 } from 'vue'
-import { parseDataPath } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { ItemStores } from '../utils/ItemStores.js'
-import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
+import { appendDataPath } from '../utils/data.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
 import {
   adminContextKey,
@@ -23,24 +21,9 @@ import {
 import { getResource, getMemberResource } from '../utils/resource.js'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 import { initializeData } from '../utils/schema/data.js'
-import {
-  getButtonSchemas,
-  getViewSchema,
-  hasFormSchema
-} from '../utils/schema/lookup.js'
-import {
-  isInlined,
-  isListSource,
-  isSingleFieldView
-} from '../utils/schema/structure.js'
-import {
-  claimSourceRoute,
-  getItemKey,
-  getSourceFormRoute,
-  getSourcePath,
-  ViewNode,
-  type SourceRoute
-} from '../utils/RouteTree.ts'
+import { getButtonSchemas, hasFormSchema } from '../utils/schema/lookup.js'
+import { isInlined, isListSource } from '../utils/schema/structure.js'
+import { claimSourceRoute, getSourceFormRoute } from '../utils/RouteTree.ts'
 import { useField, type FieldProps } from './useField.ts'
 import { useResource } from './useResource.ts'
 import { useListQuery } from './useListQuery.ts'
@@ -64,21 +47,17 @@ export function useSource(
 ) {
   const adminContext = inject(adminContextKey)!
   const routeContext = inject(routeContextKey, null)
-  // The source whose items render this one, e.g. an inlined list:
-  const parentSource = inject(sourceContextKey, null)
   // Sources emit their `load` event through the schema that renders them:
   const schemaEvents = inject(schemaEventsKey)!
-  // Sources link to views or load their data through their resource, the
-  // others are part of the data around them:
-  const linksToView = computed(() => !!getViewSchema(props.schema, context))
+  // The node holds the state of the routes of the source, e.g. whether it
+  // links to a view or loads its data through its resource, or is part of the
+  // data around it:
   const requests = useResource({
     adminContext,
     parentResourceContext: inject(resourceContextKey, null),
     parentRouteContext: routeContext,
     getSchema: () => props.schema,
-    isTransient: providesData => (
-      (!providesData && !linksToView.value) || !!routeContext?.isTransient
-    )
+    isTransient: () => node.value.isTransient
   })
   const { resourceContext, isTransient, providesData } = requests
   props.field.addMembers({
@@ -98,8 +77,10 @@ export function useSource(
     readonly,
     onChange,
     getSchemaValue,
+    node,
     componentPath
   } = useField(props)
+  const linksToView = computed(() => node.value.linksToView)
   const getModel = () => services.dataContext!.model
   const getBoolean = (key: string) =>
     getSchemaValue(key, { type: Boolean, default: false })
@@ -395,94 +376,6 @@ export function useSource(
     getSchemaValue('render', { type: Function, default: null })
   )
 
-  // Forms that contain themselves stop routing their sources after `maxDepth`
-  // repetitions:
-  const isBeyondMaxDepth = computed(() => {
-    let depth = 1
-    for (let route = routeContext; route; route = route.parent) {
-      if (route.claim?.schema === props.schema) depth++
-    }
-    return depth > (props.schema.maxDepth ?? 1)
-  })
-
-  // The path of the source within its route, after the names of the tabs,
-  // sections and panels around it, e.g. `pricing/families`, or after the path
-  // of the item of the inlined source whose item renders it, e.g. `books/3`:
-  const routePath = computed(() => {
-    const parent = unref(parentSource)
-    const parentPath = parent?.routePath
-      ? getRelativeDataPath(componentPath.value, parent.componentPath)
-      : null
-    if (parentPath) {
-      const segments = parseDataPath(parentPath)
-      const index = isListSource(parent!.schema) ? segments.shift()! : null
-      return `${parent!.getItemRoutePath(index)}/${
-        getSourcePath(props.schema, segments.join('/'), adminContext.api)
-      }`
-    }
-    const path = routeContext
-      ? getRelativeDataPath(
-          componentPath.value,
-          routeContext.dataContext.componentPath
-        )
-      : null
-    if (path !== null) {
-      // Single-component views route their component under their own path:
-      const { node, path: basePath } = routeContext!
-      return (
-        node instanceof ViewNode &&
-        isSingleFieldView(node.schema) &&
-        path === node.schema.name
-      )
-        ? basePath
-        : `${basePath}/${getSourcePath(props.schema, path, adminContext.api)}`
-    }
-    return null
-  })
-
-  // The source and where its value and routes are, for the forms of its items.
-  // Inlined sources render the forms of their items themselves:
-  const sourceRoute = computed<SourceRoute | null>(() =>
-    (
-      routePath.value &&
-      !hasInlinedItems() &&
-      !linksToView.value &&
-      !isBeyondMaxDepth.value
-    )
-      ? {
-          schema: props.schema,
-          location: {
-            data: props.data,
-            key: props.schema.name,
-            dataPath: props.dataPath,
-            componentPath: componentPath.value
-          },
-          path: routePath.value,
-          isTransient: isTransient.value,
-          source: sourceContext
-        }
-      : null
-  )
-
-  // Sources link to the forms of their items, if they have one:
-  const formPath = computed(() =>
-    sourceRoute.value && hasFormSchema(props.schema) ? routePath.value : null
-  )
-
-  // The path of the item at `index` in the routes of the forms below it, also
-  // of the items of inlined sources, or the source's own path for objects:
-  const getItemRoutePath = (index: string | number | null) =>
-    index !== null
-      ? `${routePath.value}/${
-          getItemKey(
-            props.schema,
-            listData.value[+index],
-            index,
-            isTransient.value
-          )
-        }`
-      : routePath.value
-
   const sourceContext: SourceContext = reactive({
     schema: toRef(props, 'schema'),
     listQuery,
@@ -529,7 +422,7 @@ export function useSource(
       creatable.value
         ? linksToView.value
           ? getViewItemPath('create')
-          : formPath.value && `${formPath.value}/create`
+          : node.value.formPath && `${node.value.formPath}/create`
         : null
     ),
 
@@ -538,16 +431,29 @@ export function useSource(
       linksToView.value
         ? objectData.value &&
           getViewItemPath(getItemId(props.schema, objectData.value))
-        : formPath.value
+        : node.value.formPath
     ),
-
-    routePath,
-    getItemRoutePath,
 
     getItemPath(index: number) {
       return linksToView.value
         ? getViewItemPath(getItemId(props.schema, listData.value[index], index))
-        : formPath.value && getItemRoutePath(index)
+        : node.value.formPath && node.value.getItemRoutePath(index)
+    }
+  })
+  // The node keeps the source while it's mounted, for the forms of its items:
+  watch(
+    node,
+    (node, oldNode) => {
+      if (oldNode?.sourceContext === sourceContext) {
+        oldNode.sourceContext = null
+      }
+      node.sourceContext = sourceContext
+    },
+    { immediate: true }
+  )
+  onUnmounted(() => {
+    if (node.value.sourceContext === sourceContext) {
+      node.value.sourceContext = null
     }
   })
 
@@ -567,14 +473,18 @@ export function useSource(
     // Sources with inlined items have no route, so they don't claim:
     claimRoute: hasInlinedItems()
       ? undefined
-      : path =>
-          sourceRoute.value
-            ? claimSourceRoute(sourceRoute.value, path, adminContext.api)
-            : null,
-    getFormRoute: path =>
-      sourceRoute.value
-        ? getSourceFormRoute(sourceRoute.value, path, adminContext.api)
+      : path => {
+          const { sourceRoute } = node.value
+          return sourceRoute
+            ? claimSourceRoute(sourceRoute, path, adminContext.api)
+            : null
+        },
+    getFormRoute: path => {
+      const { sourceRoute } = node.value
+      return sourceRoute
+        ? getSourceFormRoute(sourceRoute, path, adminContext.api)
         : null
+    }
   })
   onUnmounted(unregisterUi)
 
@@ -619,7 +529,7 @@ export function useSource(
     // for `computeValue()`:
     isReady: computed(
       () => (
-        (hasInlinedItems() || !isBeyondMaxDepth.value) &&
+        (hasInlinedItems() || !node.value.isBeyondMaxDepth) &&
         (sourceData.hasData.value || !providesData.value)
       )
     ),
