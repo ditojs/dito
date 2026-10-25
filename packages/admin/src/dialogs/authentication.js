@@ -1,3 +1,5 @@
+/** @import { DialogOptions } from '../utils/AdminContext.ts' */
+
 // The TOTP setup dialog fits the key:
 export const codeWidth = '25em'
 
@@ -15,6 +17,7 @@ export const usernameComponent = {
 
 // The login dialog resolves to the credentials, to `'passkey'` to log in with a
 // passkey, or to `'passwordReset'` to reset the password:
+/** @returns {DialogOptions} */
 export function createLoginDialog(authentication, additionalFields = {}) {
   return {
     fields: {
@@ -59,6 +62,7 @@ export function createLoginDialog(authentication, additionalFields = {}) {
 }
 
 // The code of users with TOTP, when logging in and when confirming the access:
+/** @returns {DialogOptions} */
 export function createCodeDialog() {
   return {
     fields: {
@@ -88,6 +92,7 @@ export function createCodeDialog() {
 }
 
 // The username to reset the password of:
+/** @returns {DialogOptions} */
 export function createPasswordResetDialog() {
   return {
     fields: {
@@ -114,6 +119,7 @@ export function createPasswordResetDialog() {
 }
 
 // The new password of a password reset:
+/** @returns {DialogOptions} */
 export function createNewPasswordDialog() {
   return {
     fields: createNewPasswordComponents({ autofocus: true }),
@@ -134,6 +140,7 @@ export function createNewPasswordDialog() {
 
 // The confirm access dialog resolves to the password, or to `'passkey'` to
 // confirm the access with a passkey:
+/** @returns {DialogOptions} */
 export function createConfirmAccessDialog(authentication, user) {
   return {
     fields: {
