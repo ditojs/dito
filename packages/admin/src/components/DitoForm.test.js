@@ -842,6 +842,8 @@ describe('DitoForm', () => {
       const field = findField('chapters')
       const expectDirtyAfter = async (selector, event = 'click', options) => {
         expect(routeComponent.routeContext.isDirty).toBe(false)
+        // The first item shows its drag and create buttons on hover:
+        await field.find('.dito-schema-inlined').trigger('mouseenter')
         await field.findAll(selector)[0].trigger(event, options)
         await settle()
         expect(routeComponent.routeContext.isDirty).toBe(true)

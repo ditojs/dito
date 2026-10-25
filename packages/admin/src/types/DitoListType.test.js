@@ -693,9 +693,9 @@ describe('DitoListType', () => {
         }
       })
       const field = findField('blocks')
-      await field
-        .findAll('.dito-schema-inlined button.dito-create-button')[1]
-        .trigger('click')
+      const item = field.findAll('.dito-schema-inlined')[1]
+      await item.trigger('mouseenter')
+      await item.find('button.dito-create-button').trigger('click')
       const items = field.findAll('[role="menuitem"]')
       expect(items.map(item => item.text())).toEqual(['Heading', 'Image'])
       await items[1].trigger('click')
@@ -1015,8 +1015,10 @@ describe('DitoListType', () => {
         },
         data: { tags: ['classic', 'novel'] }
       })
-      await findField('tags')
-        .findAll('.dito-button--drag')[0]
+      const item = findField('tags').find('.dito-schema-inlined')
+      await item.trigger('mouseenter')
+      await item
+        .find('.dito-button--drag')
         .trigger('keydown', { key: 'ArrowDown', altKey: true })
       await settle()
       expect(data.tags).toEqual(['novel', 'classic'])
@@ -1641,8 +1643,10 @@ describe('DitoListType', () => {
         },
         data: { books: [{ title: 'Emma' }, { title: 'Dune' }] }
       })
-      await findField('books')
-        .findAll('.dito-button--drag')[0]
+      const item = findField('books').find('.dito-schema-inlined')
+      await item.trigger('mouseenter')
+      await item
+        .find('.dito-button--drag')
         .trigger('keydown', { key: 'ArrowDown', altKey: true })
       await settle()
       expect(data.books.map(book => book.title)).toEqual(['Dune', 'Emma'])

@@ -55,6 +55,7 @@ slot(name="prepend")
       DitoClipboard.dito-schema-header__buttons(
         v-if="clipboard"
         :class="{ 'dito-clipboard--header': isTopLevelSchema }"
+        :idle="idle"
         :clipboard="clipboard"
         :schema="schema"
         :label="clipboardLabel"
@@ -64,7 +65,10 @@ slot(name="prepend")
         :createContext="createContext"
         @paste="pasteData"
       )
-      slot.dito-schema-header__buttons(name="edit-buttons")
+      slot.dito-schema-header__buttons(
+        name="edit-buttons"
+        :idle="idle"
+      )
   //- Only collapsible schemas open and close their content, the others don't
   //- need the components of a transition:
   TransitionHeight(:enabled="inlined && collapsible")
@@ -186,6 +190,9 @@ export default {
     scrollable: { type: Boolean, default: false },
     // Display the header above the content in a border:
     bordered: { type: Boolean, default: false },
+    // Inlined items that are neither hovered nor focused, whose header only
+    // keeps the space of the buttons other than edit and remove:
+    idle: { type: Boolean, default: false },
     hasOwnData: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false }
   },
