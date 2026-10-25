@@ -427,7 +427,7 @@ describe('useDitoForm()', () => {
     expect(input.element.value).toBe('Chair')
     expect(dialog.find('.dito-button--cancel').exists()).toBe(true)
     await enterValue(input, 'Bench')
-    expect(admin.context.ui.routes[0].isDirty).toBe(false)
+    expect(admin.context.routes[0].isDirty).toBe(false)
     expect(isUnloadPrevented()).toBe(false)
     await getSubmitButton(dialog).trigger('click')
     await settleForm()

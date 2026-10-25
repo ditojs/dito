@@ -195,7 +195,7 @@ export default {
       // `beforeunload` can't wait for them:
       domOn(window, {
         beforeunload: event => {
-          if (adminContext.ui.routes.some(route => route.isDirty)) {
+          if (adminContext.routes.some(route => route.isDirty)) {
             event.preventDefault()
             // Required by older browsers to show the warning:
             event.returnValue = ''

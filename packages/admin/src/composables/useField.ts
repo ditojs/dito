@@ -248,7 +248,7 @@ export function useField(
     }
     return events
   })
-  const focus = useFocus(services, componentPath, {
+  const focus = useFocus(services, node, {
     focusElement,
     blurElement
   })

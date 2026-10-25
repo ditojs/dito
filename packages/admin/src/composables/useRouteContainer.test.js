@@ -6,7 +6,7 @@ describe('useRouteContainer()', () => {
       schema: { fields: { title: { type: 'text' } } },
       data: { title: 'Dune' }
     })
-    const { routes } = admin.context.ui
+    const { routes } = admin.context
     const view = admin.getRouteComponent(isView)
     const form = admin.getRouteComponent(isForm)
     expect(routes).toEqual([view.routeContext, form.routeContext])
@@ -32,7 +32,7 @@ describe('useRouteContainer()', () => {
     expect(view.$.isUnmounted).toBe(true)
     const authorsView = admin.getRouteComponent(isView)
     expect(authorsView.name).toBe('authors')
-    expect(admin.context.ui.routes).toEqual([authorsView.routeContext])
+    expect(admin.context.routes).toEqual([authorsView.routeContext])
   })
 
   it('uses the breadcrumb of the schema', async () => {
@@ -44,6 +44,6 @@ describe('useRouteContainer()', () => {
       },
       data: { title: 'Emma' }
     })
-    expect(admin.context.ui.routes.at(-1).breadcrumb).toBe('Edit Book')
+    expect(admin.context.routes.at(-1).breadcrumb).toBe('Edit Book')
   })
 })

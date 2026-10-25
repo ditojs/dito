@@ -38,7 +38,7 @@ export default {
     const router = useRouter()
     // Leave out the routes that are being left, until they're unmounted.
     const trail = computed(() =>
-      adminContext.ui.routes.filter(route => !route.isLeaving)
+      adminContext.routes.filter(route => !route.isLeaving)
     )
 
     // The trail scrolls where the header is too narrow for it:

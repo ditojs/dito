@@ -23,6 +23,7 @@ import { waitUntilDataModelSettled } from '../utils/services.ts'
 import { initializeData } from '../utils/schema/data.js'
 import { getButtonSchemas, hasFormSchema } from '../utils/schema/lookup.js'
 import { isInlined, isListSource } from '../utils/schema/structure.js'
+import { provideToNode } from './useComponentPath.ts'
 import { useField, type FieldProps } from './useField.ts'
 import { useResource } from './useResource.ts'
 import { useListQuery } from './useListQuery.ts'
@@ -440,21 +441,7 @@ export function useSource(
     }
   })
   // The node keeps the source while it's mounted, for the forms of its items:
-  watch(
-    node,
-    (node, oldNode) => {
-      if (oldNode?.sourceContext === sourceContext) {
-        oldNode.sourceContext = null
-      }
-      node.sourceContext = sourceContext
-    },
-    { immediate: true }
-  )
-  onUnmounted(() => {
-    if (node.value.sourceContext === sourceContext) {
-      node.value.sourceContext = null
-    }
-  })
+  provideToNode(node, 'sourceContext', sourceContext)
 
   provide(sourceContextKey, sourceContext)
   if (resourceContext) {
@@ -472,6 +459,7 @@ export function useSource(
     value,
     context,
     createContext,
+    node,
     componentPath,
     labelText,
     disabled,

@@ -1,8 +1,8 @@
-import { computed, shallowRef } from 'vue'
+import { computed, shallowReactive, shallowRef } from 'vue'
 import type { Html } from '@ditojs/utils'
 import type { Router } from 'vue-router'
 import { LoadingTracker } from './LoadingTracker.ts'
-import { UiRegistry } from './UiRegistry.ts'
+import type { RouteContext } from './RouteContext.ts'
 import { flattenViews } from './schema/setup.js'
 import { confirm, prompt, alert } from './dialogs.js'
 import type { RouteTree } from './RouteTree.ts'
@@ -55,7 +55,9 @@ export class AdminContext {
   readonly title = document.title || 'Dito.js Admin'
   // The pending requests of the admin, for the header's spinner:
   readonly loadingTracker = new LoadingTracker()
-  readonly ui = new UiRegistry()
+  // The routes by level. Routes that are being left stay until they're
+  // unmounted, or replaced by the ones of the new route:
+  readonly routes = shallowReactive<RouteContext[]>([])
   readonly #viewRegistry: ViewRegistry
   readonly #flattenedViews = computed(() => flattenViews(this.views))
   #dialogsAndNotifications: DialogsAndNotifications | null = null
@@ -93,7 +95,7 @@ export class AdminContext {
   }
 
   get isWidePage(): boolean {
-    return this.ui.routes.some(route => route.isActive && route.isWide)
+    return this.routes.some(route => route.isActive && route.isWide)
   }
 
   get routeTree(): RouteTree | null {

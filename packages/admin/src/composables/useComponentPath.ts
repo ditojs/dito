@@ -1,7 +1,15 @@
-import { computed, inject, provide, reactive } from 'vue'
+import {
+  computed,
+  inject,
+  onUnmounted,
+  provide,
+  reactive,
+  watch,
+  type Ref
+} from 'vue'
 import { getRelativeDataPath } from '../utils/data.js'
 import { componentPathKey, dataContextKey } from '../utils/keys.ts'
-import type { ComponentNode } from '../utils/ComponentTree.ts'
+import type { ComponentNode, Mounted } from '../utils/ComponentTree.ts'
 
 export interface ComponentPath {
   readonly node: ComponentNode
@@ -34,6 +42,30 @@ export function useComponentPath(
     componentPath: computed(() => node.value.componentPath),
     parentComponentPath: computed(() => parent?.node.componentPath ?? '')
   }
+}
+
+// Provide `value` to the node of the component while it's mounted, also when
+// the component moves to another node, e.g. with its item:
+export function provideToNode<K extends keyof Mounted>(
+  node: Ref<ComponentNode>,
+  key: K,
+  value: NonNullable<Mounted[K]>
+) {
+  watch(
+    node,
+    (node, oldNode) => {
+      if (oldNode?.mounted[key] === value) {
+        oldNode.mounted[key] = null
+      }
+      node.mounted[key] = value
+    },
+    { immediate: true }
+  )
+  onUnmounted(() => {
+    if (node.value.mounted[key] === value) {
+      node.value.mounted[key] = null
+    }
+  })
 }
 
 // The node that `dataPath` leads to from the parent's:

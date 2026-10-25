@@ -41,20 +41,16 @@ component.dito-panel(
 </template>
 
 <script>
-import {
-  computed,
-  inject,
-  onUnmounted,
-  provide,
-  reactive,
-  toRefs
-} from 'vue'
+import { computed, inject, provide, reactive, toRefs } from 'vue'
 import { isFunction, clone } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { useContainer } from '../composables/useContainer.ts'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
-import { useComponentPath } from '../composables/useComponentPath.ts'
+import {
+  provideToNode,
+  useComponentPath
+} from '../composables/useComponentPath.ts'
 import { schemaContextKey, visibleKey } from '../utils/keys.ts'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { shouldRenderComponents } from '../utils/schema/value.js'
@@ -82,7 +78,7 @@ export default {
   setup(props) {
     // The panels of schemas and fields add their name to the path, the ones
     // that are fields share it:
-    useComponentPath(
+    const { node } = useComponentPath(
       () => props.dataPath,
       parent =>
         parent.node.getNode(
@@ -128,13 +124,9 @@ export default {
       : null
     const hasOwnData = !!container
     if (container) {
-      // Lists find the data of their filters panel by its path, to show the
-      // errors of the filters there:
-      onUnmounted(
-        services.adminContext.ui.register(() => props.panelComponentPath, {
-          dataContext: container.dataContext
-        })
-      )
+      // Lists find the data of their filters panel through its node, to show
+      // the errors of the filters there:
+      provideToNode(node, 'dataContext', container.dataContext)
     }
     const panelData = computed(() =>
       container
