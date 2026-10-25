@@ -18,6 +18,13 @@ function getLabel(page: Page, text: string) {
     .filter({ hasText: new RegExp(`^${text}$`) })
 }
 
+// The first item of the Links list, a link with a clipboard:
+function getLinkItem(page: Page) {
+  return page
+    .locator('.dito-schema-inlined')
+    .filter({ has: page.getByLabel('Link URL', { exact: true }) })
+}
+
 function getAccountButton(page: Page) {
   return page.getByRole('button', { name: 'test', exact: true })
 }
@@ -156,6 +163,30 @@ test.describe('component screenshots', () => {
     await focusByKeyboard(page, item.getByLabel('Drag', { exact: true }))
     await page.mouse.move(0, 0)
     await expectScreenshot(page, 'drag-handle-focus.png')
+  })
+
+  test('list item buttons on hover', async ({ page, url }) => {
+    await openProject(page, url, 'Extras')
+    const item = getLinkItem(page)
+    await item.scrollIntoViewIfNeeded()
+    // The clipboard, drag and insert buttons show on hover:
+    await item.locator('.dito-schema-header').hover()
+    await expect(
+      item.getByRole('button', { name: 'Copy Data' })
+    ).toBeVisible()
+    await expectScreenshot(page, 'list-item-hover.png')
+  })
+
+  test('list item buttons without hover', async ({ page, url }) => {
+    await openProject(page, url, 'Extras')
+    const item = getLinkItem(page)
+    await item.scrollIntoViewIfNeeded()
+    await page.mouse.move(0, 0)
+    // ...and keep their space otherwise:
+    await expect(
+      item.getByRole('button', { name: 'Copy Data' })
+    ).toBeHidden()
+    await expectScreenshot(page, 'list-item.png')
   })
 
   test('upload row hover', async ({ page, url }) => {

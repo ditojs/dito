@@ -63,10 +63,15 @@ test.describe('screenshots', () => {
     await expectScreenshot(page, 'tree-hover.png')
   })
 
+  // With a clipboard in the header, compact rows and an inlined object:
   test('nested form', async ({ page, url }) => {
     await page.goto(`${url}/admin/projects/1/planning/milestones/0`)
     await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
       'Design'
+    )
+    await expect(page.locator('.dito-clipboard--header')).toBeVisible()
+    await expect(page.getByLabel('Reviewer', { exact: true })).toHaveValue(
+      'Grace'
     )
     await expectScreenshot(page, 'form-nested.png')
   })
