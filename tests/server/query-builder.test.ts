@@ -529,10 +529,39 @@ describe('QueryBuilder', () => {
       expect(getNames(recipes)).toEqual(['Apple pie', 'Cherry tart'])
     })
 
+    it('applies date-range filter parameters with null arguments', async () => {
+      await Recipe.query().insert([
+        { name: 'Apple pie', createdAt: new Date('2026-01-10T00:00:00Z') },
+        { name: 'Plum crumble', createdAt: new Date('2026-03-10T00:00:00Z') }
+      ])
+      const recipes = await Recipe.query().find({
+        filter: 'created:"2026-02-01T00:00:00Z",null'
+      })
+      expect(getNames(recipes)).toEqual(['Plum crumble'])
+    })
+
     it('rejects malformed filter parameters', () => {
       expect(() => Recipe.query().find({ filter: 'name:"broken' })).toThrow(
         /^Invalid Query filter parameters: /
       )
+      expect(() => Recipe.query().find({ filter: 'name' })).toThrow(
+        /^Invalid Query filter parameters: /
+      )
+    })
+
+    it('rejects filter parameters that are not defined or allowed', () => {
+      expect(() => Recipe.query().find({ filter: 'spicy:' })).toThrow(
+        `Query filter 'spicy' is not defined.`
+      )
+      expect(() =>
+        Recipe.query().allowFilter('name').find({ filter: 'hearty:' })
+      ).toThrow(`Query filter 'hearty' is not allowed.`)
+    })
+
+    it('rejects scope parameters that are not allowed', () => {
+      expect(() =>
+        Recipe.query().allowScope('final').find({ scope: 'hearty' })
+      ).toThrow(`Query scope 'hearty' is not allowed.`)
     })
 
     it('rejects invalid date filter arguments as invalid', async () => {
@@ -578,6 +607,12 @@ describe('QueryBuilder', () => {
       )
     })
 
+    it('rejects invalid nulls orders', () => {
+      expect(() => Recipe.query().find({ order: 'name asc never' })).toThrow(
+        `Invalid nulls order: 'never'.`
+      )
+    })
+
     it('ignores empty order and range parameters', async () => {
       await insertRecipes()
       expect(await Recipe.query().find({ order: '', range: '' })).toHaveLength(
@@ -607,6 +642,15 @@ describe('QueryBuilder', () => {
     it('rejects ranges that end before they start', () => {
       expect(() => Recipe.query().find({ range: '5,2' })).toThrow(
         'Invalid range: [5, 2].'
+      )
+    })
+
+    it('rejects ranges that are not numbers', () => {
+      expect(() => Recipe.query().find({ range: 'first,last' })).toThrow(
+        /^Invalid range: /
+      )
+      expect(() => Recipe.query().find({ range: '5' })).toThrow(
+        /^Invalid range: /
       )
     })
 

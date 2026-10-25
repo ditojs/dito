@@ -368,6 +368,40 @@ describe('Model persistence', () => {
       }
       expect(await Member.count()).toBe(0)
     })
+
+    it('reads its own writes as separate instances', async () => {
+      const [first, second] = await Member.transaction(async trx => {
+        const { id } = await Member.query(trx).insert({ name: 'Ada' } as any)
+        await Member.query(trx).patch({ name: 'Grace' }).findById(id)
+        return Promise.all([
+          Member.query(trx).findById(id),
+          Member.query(trx).findById(id)
+        ])
+      })
+      expect(first).not.toBe(second)
+      expect(first).toEqual(second)
+      expect(first!.name).toBe('Grace')
+    })
+  })
+
+  describe('identity', () => {
+    it('loads the same row twice as separate instances', async () => {
+      const { id } = await Member.query().insert({ name: 'Ada' } as any)
+      const first = await Member.query().findById(id)
+      const second = await Member.query().findById(id)
+      expect(first).not.toBe(second)
+      first!.name = 'Grace'
+      expect(second!.name).toBe('Ada')
+    })
+
+    it('shares related instances in fetched graphs, not in joined ones', async () => {
+      await createTeam('Blue', ['Ada', 'Grace'])
+      const fetched = await Member.query().withGraphFetched('team')
+      expect(fetched[0].team).toBe(fetched[1].team)
+      const joined = await Member.query().withGraphJoined('team')
+      expect(joined[0].team).not.toBe(joined[1].team)
+      expect(joined[0].team).toEqual(joined[1].team)
+    })
   })
 
   describe('QueryBuilder#insert()', () => {
