@@ -694,6 +694,8 @@ export class QueryBuilder extends objection.QueryBuilder {
         processRelates: true
       }
     )
+    // Graphs are written in several queries, so write them in one transaction:
+    this.#isTransacted = true
     this[method](graphProcessor.getData(), graphProcessor.getOptions())
     return this
   }

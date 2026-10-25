@@ -559,6 +559,25 @@ describe('Dito.js graph handling', () => {
       ])
     })
 
+    it('rolls back all models of the graph outside transactions', async () => {
+      const fantasy = await Genre.query().insert({ name: 'Fantasy' })
+      await expect(
+        Book.query().insertDitoGraph(
+          {
+            title: 'Earthsea',
+            chapters: [{ title: 'One' }],
+            genres: [{ id: fantasy.id, name: 'Fantasy' }]
+          },
+          { relate: false }
+        )
+      ).rejects.toThrow(DatabaseError)
+      expect(await Book.query()).toEqual([])
+      expect(await Chapter.query()).toEqual([])
+      expect(await Genre.query()).toEqual([
+        { id: fantasy.id, name: 'Fantasy', rank: null }
+      ])
+    })
+
     it('reports the data paths of invalid nested models', async () => {
       const getErrorPaths = async (data: any) => {
         const error = await Book.query()
@@ -724,6 +743,34 @@ describe('Dito.js graph handling', () => {
         )
       ).rejects.toThrow(NotFoundError)
       expect(await getChapterTitles(book.id)).toEqual(['One', 'Two'])
+    })
+
+    it('rolls back all changes of the graph outside transactions', async () => {
+      const { book, fantasy, drama } = await insertBook()
+      const myth = await Genre.query().insert({ name: 'Myth' })
+      await expect(
+        Book.query().upsertDitoGraph(
+          {
+            id: book.id,
+            title: 'Earthsea',
+            chapters: [{ id: book.chapters[1].id, title: 'Two (revised)' }],
+            // Without relating, the existing genre is inserted again and fails
+            // after the chapters are deleted and updated:
+            genres: [{ id: myth.id, name: 'Myth' }]
+          },
+          { relate: false }
+        )
+      ).rejects.toThrow(DatabaseError)
+      expect(await getChapterTitles(book.id)).toEqual(['One', 'Two'])
+      expect(await Genre.query().orderBy('id')).toEqual([
+        { id: fantasy.id, name: 'Fantasy', rank: null },
+        { id: drama.id, name: 'Drama', rank: null },
+        { id: myth.id, name: 'Myth', rank: null }
+      ])
+      expect(await getBookGenreRows(book.id)).toEqual([
+        { genreId: fantasy.id, rank: 1 },
+        { genreId: drama.id, rank: 2 }
+      ])
     })
 
     it('inserts missing root models with their ids', async () => {
