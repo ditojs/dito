@@ -3,7 +3,6 @@ import {
   markRaw,
   nextTick,
   shallowReactive,
-  shallowRef,
   type ComputedRef
 } from 'vue'
 import { isArray, isObject, parseDataPath } from '@ditojs/utils'
@@ -71,6 +70,15 @@ interface Entry {
 // The components that widgets render for a property, while they're mounted:
 export interface Leaf {
   readonly componentPath: string
+}
+
+export interface Mounted {
+  // The source, which provides the items of its forms:
+  sourceContext: SourceContext | null
+  // The component that focuses its element when its node is revealed:
+  focusTarget: { focus(): void } | null
+  // The data of panels with their own data:
+  dataContext: DataContext | null
 }
 
 type Store = Record<string, any>
@@ -186,9 +194,16 @@ export class ComponentTree {
   }
 
   // Open the collapsed schemas and render the tabs that lead to the component
-  // at `componentPath`, which `focus` also selects, in the stores and routes
-  // that hold their state, and render them at once:
-  async reveal(componentPath: string, { focus = false } = {}) {
+  // at `componentPath`, which `select` also selects, in the stores and routes
+  // that hold their state, and render them at once. `focus` also focuses the
+  // component once it's rendered:
+  async reveal(
+    componentPath: string,
+    {
+      focus = false,
+      select = focus
+    }: { focus?: boolean; select?: boolean } = {}
+  ) {
     let node = this.root
     node.store.opened = true
     for (const key of parseDataPath(
@@ -200,7 +215,7 @@ export class ComponentTree {
       } else if (child.isShown()) {
         const { store } = node
         getChildStore(store, 'mountedTabs')[key] = true
-        if (focus) {
+        if (select) {
           const { routeContext } = this.dataContext.services
           if (node === this.root && routeContext && !isPanel(node.schema)) {
             routeContext.selectedTab = key
@@ -212,6 +227,24 @@ export class ComponentTree {
       node = child
     }
     await nextTick()
+    if (focus) {
+      // Paths inside values that no deeper component displays focus the
+      // component of the value:
+      for (; node !== this.root; node = node.parent!) {
+        const { focusTarget } = node.mounted
+        if (focusTarget) {
+          focusTarget.focus()
+          break
+        }
+      }
+    }
+  }
+
+  // The node at the component path `componentPath`:
+  getNode(componentPath: string): ComponentNode {
+    return this.root.getNode(
+      getRelativeDataPath(componentPath, this.root.componentPath) ?? ''
+    )
   }
 
   // The form or tab that the route's `path` opens below the route of this
@@ -286,6 +319,13 @@ export class ComponentNode {
   // The components that widgets render for the node's property, by the
   // component paths of their layouts, while they're mounted:
   readonly leaves = new Set<Leaf>()
+  // What the mounted components of the node provide while they're mounted:
+  readonly mounted = shallowReactive<Mounted>({
+    sourceContext: null,
+    focusTarget: null,
+    dataContext: null
+  })
+
   readonly #ownOptions: NodeOptions
   #children: ComputedRef<Children> | null = null
   #componentPath: ComputedRef<string> | null = null
@@ -300,7 +340,6 @@ export class ComponentNode {
   // the path continues, if there is one, which the node mirrors. Values may
   // appear after the node is first asked for, e.g. with the form of a type:
   readonly #value: ComputedRef<ComponentNode | null> | null
-  #sourceContext = shallowRef<SourceContext | null>(null)
   #source: ComputedRef<Source | null> | null = null
 
   constructor(
@@ -407,13 +446,11 @@ export class ComponentNode {
     return this.#options.getData?.() ?? null
   }
 
-  // The mounted source component of the node, which provides its items:
-  get sourceContext(): SourceContext | null {
-    return this.#sourceContext.value
-  }
-
-  set sourceContext(sourceContext: SourceContext | null) {
-    this.#sourceContext.value = sourceContext
+  // The node's component is mounted while it focuses its element or provides
+  // the items of its source:
+  get isMounted(): boolean {
+    const { focusTarget, sourceContext } = this.mounted
+    return !!(focusTarget || sourceContext)
   }
 
   // The schema of the source at the node: of its field, or of the widget that
@@ -421,7 +458,7 @@ export class ComponentNode {
   get sourceSchema(): Schema | null {
     return (
       this.#options.sourceSchema ??
-      this.sourceContext?.schema ??
+      this.mounted.sourceContext?.schema ??
       null
     )
   }
@@ -581,7 +618,7 @@ export class ComponentNode {
               path: routePath,
               isTransient,
               get source() {
-                return node.sourceContext
+                return node.mounted.sourceContext
               }
             }
           : null

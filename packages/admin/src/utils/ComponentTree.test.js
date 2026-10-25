@@ -483,6 +483,19 @@ describe('ComponentTree', () => {
   })
 
   describe('reveal()', () => {
+    it('focuses the component of the value of paths inside it', async () => {
+      const { routeComponent, findField } = await mountSchema({
+        schema: { fields: { title: { type: 'text' } } },
+        data: { title: 'Emma' }
+      })
+      const { componentTree } = routeComponent.dataContext
+      const input = findField('title').find('input').element
+      await componentTree.reveal('title/length')
+      expect(document.activeElement).not.toBe(input)
+      await componentTree.reveal('title/length', { focus: true })
+      expect(document.activeElement).toBe(input)
+    })
+
     it('opens collapsed items of wrapped values', async () => {
       const { routeComponent, wrapper } = await mountSchema({
         schema: {

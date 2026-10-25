@@ -102,7 +102,7 @@ describe('page views', () => {
   it('keep the path of their params while they are left', async () => {
     const admin = await mountAdmin({ views })
     await admin.navigate('/products/7')
-    const [route] = admin.context.ui.routes
+    const [route] = admin.context.routes
     const navigation = admin.router.push('/books')
     await vi.waitFor(() => expect(route.isLeaving).toBe(true))
     expect(route.path).toBe('/products/7')

@@ -173,7 +173,7 @@ export function createDataContext({
   // from its item:
   const revealErrorDataPaths = async (dataPaths: string[]) => {
     const { adminContext, routeContext } = services
-    const { router, ui } = adminContext
+    const { router, routes } = adminContext
     const [firstDataPath] = dataPaths
     // Collapsed schemas render their content with errors hidden, also the
     // widgets that lay out the properties of fields:
@@ -225,7 +225,7 @@ export function createDataContext({
     const displayedDataPaths: string[] = []
     if (formRoute) {
       const findRoute = () =>
-        ui.routes.find(route => route.path === formRoute.path)
+        routes.find(route => route.path === formRoute.path)
       // The form may be open already, e.g. a nested form in one of its tabs:
       const failure = findRoute()?.isLastRoute
         ? null
@@ -248,9 +248,8 @@ export function createDataContext({
           .map(({ componentPath }) => componentPath)
       ])
     )
-    const isMounted = (componentPath: string) => (
-      ui.getHandles(componentPath, context).length > 0
-    )
+    const isMounted = (componentPath: string) =>
+      componentTree.getNode(componentPath).isMounted
     if (!formRoute) {
       // Reveal them, and focus the first one that is mounted then:
       const componentPaths = [...componentPathsByDataPath.values()].flat()
@@ -260,7 +259,6 @@ export function createDataContext({
       const componentPath = componentPaths.find(isMounted)
       if (componentPath) {
         await componentTree.reveal(componentPath, { focus: true })
-        ui.focus(context, componentPath)
       }
     }
     return [

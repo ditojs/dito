@@ -1,5 +1,7 @@
-import { onBeforeMount, onUnmounted, useTemplateRef, type Ref } from 'vue'
+import { useTemplateRef, type Ref } from 'vue'
 import { asArray } from '@ditojs/utils'
+import { provideToNode } from './useComponentPath.ts'
+import type { ComponentNode } from '../utils/ComponentTree.ts'
 import type { Services } from '../utils/services.ts'
 
 export interface FocusOptions {
@@ -9,8 +11,8 @@ export interface FocusOptions {
 }
 
 export function useFocus(
-  { adminContext, dataContext }: Services,
-  componentPath: Ref<string>,
+  { dataContext }: Services,
+  node: Ref<ComponentNode>,
   { focusElement, blurElement }: FocusOptions = {}
 ) {
   // The element, or a component that focuses its own, like `DitoInput`:
@@ -24,30 +26,25 @@ export function useFocus(
   focusElement ??= () => getTarget()?.focus?.()
   blurElement ??= () => getTarget()?.blur?.()
 
-  let unregister: () => void
-  onBeforeMount(() => {
-    unregister = adminContext.ui.register(() => componentPath.value, {
-      dataContext,
-      focus() {
-        getElement()?.scrollIntoView?.({
-          behavior: 'smooth',
-          block: 'center'
-        })
-        focusElement()
-      }
-    })
+  // The tree focuses the element once it revealed the component:
+  provideToNode(node, 'focusTarget', {
+    focus() {
+      getElement()?.scrollIntoView?.({
+        behavior: 'smooth',
+        block: 'center'
+      })
+      focusElement()
+    }
   })
-  onUnmounted(() => unregister())
 
   return {
     // NOTE: The template ref `element` can only be used once per component.
     element,
 
-    async focus() {
-      await dataContext!.componentTree.reveal(componentPath.value, {
+    focus() {
+      return dataContext!.componentTree.reveal(node.value.componentPath, {
         focus: true
       })
-      adminContext.ui.focus(dataContext!, componentPath.value)
     },
 
     blur() {

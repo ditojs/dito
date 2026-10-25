@@ -241,11 +241,11 @@ export function useRouteContainer({
 
   // Components of new routes replace the ones of the previous routes at their
   // level, which are unmounted after:
-  adminContext.ui.routes[level] = routeContext
+  adminContext.routes[level] = routeContext
   onUnmounted(() => {
-    if (adminContext.ui.routes[level] === routeContext) {
+    if (adminContext.routes[level] === routeContext) {
       // Drop the deeper levels too, as their components unmount first:
-      adminContext.ui.routes.length = level
+      adminContext.routes.length = level
     }
   })
 
@@ -268,7 +268,7 @@ export function useRouteContainer({
         if (claim) {
           routeContext.dataContext.componentTree.reveal(
             claim.location.componentPath,
-            { focus: true }
+            { select: true }
           )
         }
       },

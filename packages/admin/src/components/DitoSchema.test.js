@@ -811,10 +811,8 @@ describe('DitoSchema', () => {
         .map(({ vm }) => vm)
         .find(vm => vm.$ !== result.schemaComponent.$)
       const { dataContext } = result.routeComponent
-      const reveal = async componentPath => {
-        await dataContext.componentTree.reveal(componentPath, { focus: true })
-        result.admin.context.ui.focus(dataContext, componentPath)
-      }
+      const reveal = componentPath =>
+        dataContext.componentTree.reveal(componentPath, { focus: true })
       return { ...result, section, reveal }
     }
 

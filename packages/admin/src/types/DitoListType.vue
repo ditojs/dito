@@ -205,12 +205,10 @@ const DitoListType = {
   setup(props) {
     const source = useSource(props, {
       onFilterErrors(errors) {
-        // The filters panel is its own container:
-        const [panel] = source.services.adminContext.ui.getHandles(
-          appendDataPath(source.componentPath.value, '$filters')
-        )
-        panel?.dataContext.showValidationErrors(getFiltersDataErrors(errors))
-        return !!panel
+        // The filters panel holds its own data:
+        const { dataContext } = source.node.value.getNode('$filters').mounted
+        dataContext?.showValidationErrors(getFiltersDataErrors(errors))
+        return !!dataContext
       }
     })
     const { getDraggableOptions, moveItem } = useSortable({

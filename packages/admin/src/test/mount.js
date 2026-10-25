@@ -184,7 +184,7 @@ export async function mountAdmin({
         component =>
           wrapper.findAllComponents(component).map(({ vm }) => vm.$.proxy)
       )
-      return context.ui.routes
+      return context.routes
         .map(route =>
           components.find(({ routeContext }) => routeContext === route)
         )
@@ -202,15 +202,12 @@ export async function mountAdmin({
     // `authors/0/name`. Unnested components, e.g. sections, are found by the
     // data path of their parent and their name, e.g. `authors/0/details`.
     getContainer(routeComponent, dataPath) {
-      // The components in the data of the route component are registered in
-      // the UI registry under its container:
       const containers = wrapper
         .findAllComponents(DitoContainer)
         .map(({ vm }) => vm)
         .filter(
-          ({ componentPath }) => (
-            context.ui.getHandles(componentPath, routeComponent.dataContext)
-              .length > 0
+          ({ field }) => (
+            field.services.dataContext === routeComponent.dataContext
           )
         )
       return (
@@ -349,12 +346,11 @@ function createMountResult(admin, routeComponent) {
 
   // Focuses the component at `dataPath`, revealing it first, as showing its
   // errors does.
-  const focusField = async dataPath => {
-    const { dataContext } = routeComponent
-    const { componentPath } = admin.getContainer(routeComponent, dataPath)
-    await dataContext.componentTree.reveal(componentPath, { focus: true })
-    admin.context.ui.focus(dataContext, componentPath)
-  }
+  const focusField = dataPath =>
+    routeComponent.dataContext.componentTree.reveal(
+      admin.getContainer(routeComponent, dataPath).componentPath,
+      { focus: true }
+    )
 
   // Returns a wrapper of `element`, or an empty one that doesn't exist:
   const wrapElement = element =>
