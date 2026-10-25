@@ -1,4 +1,6 @@
 import { vi } from 'vitest'
+import appState from '../appState.js'
+import { mountForm } from '../test/mount.js'
 import {
   getClipboardData,
   hasClipboardData,
@@ -138,6 +140,46 @@ describe('clipboard', () => {
       second.resolve(JSON.stringify({ $schema: 'book', title: 'Dune' }))
       await secondRead
       expect(getClipboardData('book')).toEqual({ title: 'Dune' })
+    })
+  })
+
+  describe('watchClipboardData()', () => {
+    const isChrome = appState.agent.chrome
+
+    afterEach(() => {
+      appState.agent.chrome = isChrome
+    })
+
+    it('reads the clipboard once for all clipboards', async () => {
+      // Only Chrome reads the clipboard without asking:
+      appState.agent.chrome = true
+      const readText = vi
+        .spyOn(navigator.clipboard, 'readText')
+        .mockResolvedValue('')
+      const { wrapper } = await mountForm({
+        schema: {
+          clipboard: true,
+          fields: {
+            books: {
+              type: 'list',
+              inlined: true,
+              form: {
+                type: 'form',
+                clipboard: true,
+                fields: { title: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { books: [{ title: 'Emma' }, { title: 'Dune' }] }
+      })
+      expect(wrapper.findAll('.dito-clipboard')).toHaveLength(3)
+      expect(readText).toHaveBeenCalledTimes(1)
+      // ...and again when it can change, with one listener each:
+      window.dispatchEvent(new Event('focus'))
+      expect(readText).toHaveBeenCalledTimes(2)
+      document.dispatchEvent(new Event('copy'))
+      expect(readText).toHaveBeenCalledTimes(3)
     })
   })
 })
