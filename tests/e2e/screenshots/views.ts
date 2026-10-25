@@ -204,12 +204,42 @@ export const projects = createWidgetView<Project>(
                 title: { label: 'Title' },
                 due: { label: 'Due' }
               },
+              // A form with a clipboard in the header, compact rows without
+              // headers and an inlined object, for their buttons:
               form: {
                 type: 'form',
                 label: 'Milestone',
+                clipboard: true,
                 fields: {
                   title: { type: 'text', label: 'Title', required: true },
-                  due: { type: 'date', label: 'Due' }
+                  due: { type: 'date', label: 'Due' },
+                  steps: {
+                    type: 'list',
+                    label: 'Steps',
+                    inlined: true,
+                    creatable: true,
+                    deletable: true,
+                    draggable: true,
+                    form: {
+                      type: 'form',
+                      compact: true,
+                      fields: {
+                        text: { type: 'text', label: 'Step' }
+                      }
+                    }
+                  },
+                  review: {
+                    type: 'object',
+                    label: 'Review',
+                    inlined: true,
+                    deletable: true,
+                    form: {
+                      type: 'form',
+                      fields: {
+                        reviewer: { type: 'text', label: 'Reviewer' }
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -292,6 +322,9 @@ export const projects = createWidgetView<Project>(
                 link: {
                   type: 'form',
                   label: 'Link',
+                  // Items with a clipboard, next to their drag and insert
+                  // buttons:
+                  clipboard: true,
                   fields: {
                     url: { type: 'url', label: 'Link URL' }
                   }

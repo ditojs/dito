@@ -29,7 +29,12 @@ const project: Partial<Project> = {
     { name: 'Grace Hopper', email: 'grace@example.com' }
   ],
   milestones: [
-    { title: 'Design', due: '2026-06-01' },
+    {
+      title: 'Design',
+      due: '2026-06-01',
+      steps: [{ text: 'Sketch' }, { text: 'Review' }],
+      review: { reviewer: 'Grace' }
+    },
     { title: 'Launch', due: '2026-09-01' }
   ],
   phases: [

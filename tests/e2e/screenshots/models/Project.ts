@@ -9,6 +9,8 @@ export interface Contact {
 export interface Milestone {
   title: string
   due?: string | null
+  steps?: { text?: string | null }[] | null
+  review?: { reviewer?: string | null } | null
 }
 
 export interface Phase {
