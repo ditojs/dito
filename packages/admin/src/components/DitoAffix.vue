@@ -111,9 +111,11 @@ export default {
     height: var(--size);
     padding: 0;
 
-    // Not when hovering an open popup of the component, e.g. a color picker:
-    @at-root .dito-component:not(:has(.dito-component, .dito-popup:hover)):hover
-        & {
+    // When hovering the input that holds the affixes, not the popups outside
+    // it, e.g. of a color picker. No `:has()` in rules that match many
+    // elements: the browser checks them again on all of them whenever elements
+    // are added, which made opening a list of 900 rows three times slower:
+    @at-root :hover > .dito-affixes > & {
       display: flex;
     }
   }

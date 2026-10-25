@@ -3,7 +3,10 @@
 //- children aren't remounted when `draggable` changes.
 UseSortable.dito-draggable(
   ref="sortable"
-  :class="{ 'dito-draggable--dragging': isDragging }"
+  :class=`{
+    'dito-draggable--chosen': isChosen,
+    'dito-draggable--dragging': isDragging
+  }`
   :as="as"
   :modelValue="modelValue"
   :options="sortableOptions"
@@ -31,6 +34,8 @@ export default {
 
   setup(props) {
     const { domOn } = useDomEvents()
+    // An item is pressed, before it's dragged:
+    const isChosen = ref(false)
     const isDragging = ref(false)
     // The document handlers that clear `isDragging` after dragging:
     let dragEndHandlers = null
@@ -50,6 +55,16 @@ export default {
     const sortableOptions = {
       ...props.options,
       disabled: !props.draggable,
+
+      onChoose(event) {
+        props.options.onChoose?.(event)
+        isChosen.value = true
+      },
+
+      onUnchoose(event) {
+        props.options.onUnchoose?.(event)
+        isChosen.value = false
+      },
 
       onStart(event) {
         props.options.onStart?.(event)
@@ -82,7 +97,7 @@ export default {
       }
     )
 
-    return { isDragging, sortableOptions }
+    return { isChosen, isDragging, sortableOptions }
   }
 }
 </script>
@@ -93,8 +108,9 @@ export default {
 .dito-draggable {
   // Overlay a hover catcher while we're dragging to prevent hover states from
   // getting stuck / confused. Safari struggles with this, so disable it there.
+  // Modifiers instead of `:has(&__chosen)`, see `dito-affix--hover`.
   @include browser-query(('chrome', 'firefox')) {
-    &:has(&__chosen),
+    &--chosen,
     &--dragging {
       > * {
         position: relative;
