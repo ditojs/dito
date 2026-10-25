@@ -1,5 +1,4 @@
 import { vi } from 'vitest'
-import { flushPromises } from '@vue/test-utils'
 import { ComponentNode } from './ComponentTree.ts'
 import {
   mountForm,
@@ -117,8 +116,10 @@ describe('RouteContext', () => {
     await findContainer('details')
       .find('.dito-schema-header .dito-label')
       .trigger('click')
-    await flushPromises()
-    expect(findField('details').findAll('input')).toHaveLength(50)
+    // The list renders its items over several frames:
+    await vi.waitFor(() =>
+      expect(findField('details').findAll('input')).toHaveLength(50)
+    )
     // Not once per mounted schema, as only the form's schema can claim:
     expect(wrapper.findAll('.dito-schema').length).toBeGreaterThan(50)
     expect(claimRoute.mock.calls.length).toBeLessThan(5)

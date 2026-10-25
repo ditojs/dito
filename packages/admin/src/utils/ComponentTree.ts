@@ -79,6 +79,8 @@ export interface Mounted {
   focusTarget: { focus(): void } | null
   // The data of panels with their own data:
   dataContext: DataContext | null
+  // Lists render their items over several frames:
+  renderItemsUpTo: ((index: number) => void) | null
 }
 
 type Store = Record<string, any>
@@ -193,10 +195,10 @@ export class ComponentTree {
     return nodes
   }
 
-  // Open the collapsed schemas and render the tabs that lead to the component
-  // at `componentPath`, which `select` also selects, in the stores and routes
-  // that hold their state, and render them at once. `focus` also focuses the
-  // component once it's rendered:
+  // Open the collapsed schemas and render the tabs and items that lead to the
+  // component at `componentPath`, which `select` also selects, in the stores
+  // and routes that hold their state, and render them at once. `focus` also
+  // focuses the component once it's rendered:
   async reveal(
     componentPath: string,
     {
@@ -210,6 +212,11 @@ export class ComponentTree {
       getRelativeDataPath(componentPath, node.componentPath) ?? ''
     )) {
       const child = node.getNode(key)
+      if (isListSource(node.sourceSchema)) {
+        // Lists render their items over several frames, once they're mounted:
+        if (!node.isMounted) await nextTick()
+        node.mounted.renderItemsUpTo?.(Number(key))
+      }
       if (!child.isTab) {
         child.store.opened = true
       } else if (child.isShown()) {
@@ -323,7 +330,8 @@ export class ComponentNode {
   readonly mounted = shallowReactive<Mounted>({
     sourceContext: null,
     focusTarget: null,
-    dataContext: null
+    dataContext: null,
+    renderItemsUpTo: null
   })
 
   readonly #ownOptions: NodeOptions
