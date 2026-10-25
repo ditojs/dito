@@ -4,10 +4,8 @@ import { computed, reactive, toRaw } from 'vue'
 // e.g. the query of a list while one of its items is edited:
 export function useStore(props: { store: Record<string, any> }) {
   return {
-    // Computed values create child stores while they evaluate, which shouldn't
-    // invalidate them:
     getChildStore(name: string): Record<string, any> {
-      return (toRaw(props.store)[name] ??= reactive({}))
+      return getChildStore(props.store, name)
     },
 
     getStoreRef<T>(key: string, getDefault: () => T) {
@@ -19,4 +17,13 @@ export function useStore(props: { store: Record<string, any> }) {
       })
     }
   }
+}
+
+// Computed values create child stores while they evaluate, which shouldn't
+// invalidate them:
+export function getChildStore(
+  store: Record<string, any>,
+  name: string
+): Record<string, any> {
+  return (toRaw(store)[name] ??= reactive({}))
 }

@@ -8,7 +8,6 @@ import {
   continueComponentNode
 } from './useComponentPath.ts'
 import { useServices } from './useSchemaContext.ts'
-import { useStore } from './useStore.ts'
 import type { DataContext } from '../utils/DataContext.ts'
 import type { Schema } from '../utils/types.ts'
 
@@ -86,30 +85,26 @@ export function useWidget(
       ? addOccurrence(dataContext!, appendDataPath(scope.dataPath, name))
       : 0
   const segment = occurrence > 0 ? `~${occurrence + 1}` : null
-  const { componentPath } = useComponentPath(
+  const { node } = useComponentPath(
     () => scope.dataPath,
     parent =>
       continueComponentNode(parent, scope.dataPath).getNode(segment ?? '')
   )
+  // Like the components of panes, the containers of widgets take their paths
+  // and their stores, which outlive them, from their nodes:
+  const getContainerNode = () => node.value.getNode(name ?? '')
   // The paths of widgets follow their layout, so their containers attach to
   // the node of their property while they're mounted, to display its errors:
   if (hasValue) {
-    const node = scope.node.getNode(name!)
+    const valueNode = scope.node.getNode(name!)
     const leaf = {
       get componentPath() {
-        return appendDataPath(componentPath.value, name!)
+        return getContainerNode().componentPath
       }
     }
-    onMounted(() => node.leaves.add(leaf))
-    onUnmounted(() => node.leaves.delete(leaf))
+    onMounted(() => valueNode.leaves.add(leaf))
+    onUnmounted(() => valueNode.leaves.delete(leaf))
   }
-  // Like the components of panes, widgets keep their state in the store of
-  // their layout, while they're unmounted:
-  const layoutStore = useStore(layout.props)
-  const store =
-    name != null
-      ? layoutStore.getChildStore(`${name}${segment ?? ''}`)
-      : layoutStore
   const propertyNode = property ? getPropertyNode(name!, property) : null
 
   return {
@@ -150,7 +145,7 @@ export function useWidget(
         dataPath: getValueDataPath(),
         data: scope.data,
         itemDataPath: scope.dataPath,
-        store,
+        store: getContainerNode().store,
         nested: hasValue,
         disabled,
         compact,

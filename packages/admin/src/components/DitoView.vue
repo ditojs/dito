@@ -24,7 +24,7 @@ template(
       :key="name"
       :schema="schema"
       :data="data"
-      :store="getChildStore(name)"
+      :store="store"
       padding="root"
       :active="isActiveRoute"
       scrollable
@@ -42,7 +42,6 @@ import {
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
-import { useStore } from '../composables/useStore.ts'
 import defaultVerbs from '../verbs.js'
 import { adminContextKey, schemaContextKey } from '../utils/keys.ts'
 import {
@@ -116,7 +115,7 @@ export default {
     })
 
     return {
-      ...useStore({ store }),
+      store,
       adminContext,
       routeContext,
       dataContext,

@@ -43,6 +43,7 @@ export type SchemaLayout = () => VNodeChild
 // The form of `useDitoForm()`, which `DitoSchemaForm` renders:
 export interface SchemaForm {
   readonly dataContext: DataContext
+  readonly store: Record<string, any>
   readonly buttonSchemas: Ref<Record<string, Schema> | null>
   // The form of a page renders as the page's schema, see `DitoView`:
   readonly isPageForm: boolean

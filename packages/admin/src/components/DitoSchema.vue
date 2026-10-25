@@ -126,8 +126,6 @@ import {
   onMounted,
   onUnmounted,
   provide,
-  reactive,
-  ref,
   toRef,
   unref,
   useTemplateRef,
@@ -241,19 +239,22 @@ export default {
     const isTopLevelSchema = computed(
       () => !isPanel(props.schema) && !props.inlined
     )
-    // The tab of the schema of a view or form is the one of its route:
+    // The view state lives in the store, where the component tree reveals the
+    // components inside. The tab of the schema of a view or form is the one of
+    // its route:
+    const { getStoreRef, getChildStore } = useStore(props)
     const { routeContext } = services
     const selectedTab =
       isTopLevelSchema.value && routeContext
         ? toRef(routeContext, 'selectedTab')
-        : ref(null)
+        : getStoreRef('selectedTab', () => null)
     // Selected or revealed tabs stay rendered:
-    const mountedTabs = reactive({})
+    const mountedTabs = computed(() => getChildStore('mountedTabs'))
     // Follow `defaultTab` until a tab is selected or there is data:
     let shouldFollowDefaultTab = true
     const scrollPositions = {}
 
-    const opened = useStore(props).getStoreRef('opened', () => !props.collapsed)
+    const opened = getStoreRef('opened', () => !props.collapsed)
     // Collapsed content and tabs with errors render hidden, so that errors are
     // revealed in the components that display them:
     const hasErrors = computed(() => getModel().errors.hasWithin(props.data))
@@ -410,7 +411,7 @@ export default {
 
     watch(selectedTab, (newTab, oldTab) => {
       if (newTab) {
-        mountedTabs[newTab] = true
+        mountedTabs.value[newTab] = true
       }
       // The route selects the tab before the content is mounted:
       const element = props.scrollable ? content.value : null
@@ -435,20 +436,7 @@ export default {
               const tab = getRelativeDataPath(path, routeContext.path)
               return tab && renderedTabs.value?.[tab] ? { tab } : null
             }
-          : undefined,
-      async reveal(path, { focus }) {
-        const [tab] = parseDataPath(
-          getRelativeDataPath(path, componentPath.value)
-        )
-        if (renderedTabs.value?.[tab]) {
-          mountedTabs[tab] = true
-          if (focus) {
-            selectTab(tab)
-          }
-        }
-        opened.value = true
-        await nextTick()
-      }
+          : undefined
     })
     // The scrollable schema of a route makes its page wide while it's mounted,
     // also when the type of the item changes its form:
@@ -467,10 +455,11 @@ export default {
 
     onMounted(() => {
       // The tab of a nested route belongs to the nested form, which names the
-      // tab of its source in its route, e.g. after a reload:
+      // tab of its source in its route, e.g. after a reload. Inlined schemas
+      // keep their tab in their store:
       const tab = shouldFollowRouteTab.value
         ? routeTab.value
-        : nestedRouteTab.value
+        : (nestedRouteTab.value ?? selectedTab.value)
       if (tab && tab in renderedTabs.value) {
         selectTab(tab)
       } else {
@@ -541,7 +530,7 @@ export default {
       shouldRenderTab(tab) {
         return (
           isTabSelected(tab) ||
-          !!mountedTabs[tab] ||
+          !!mountedTabs.value[tab] ||
           hasErrors.value ||
           isClaimingRoute(appendDataPath(componentPath.value, tab))
         )

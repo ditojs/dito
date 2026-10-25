@@ -6,6 +6,7 @@ DitoSchema(
   :style="$attrs.style"
   :schema="form.dataContext.schema"
   :data="form.dataContext.data"
+  :store="form.store"
   :padding="form.isPageForm ? 'root' : 'nested'"
   :scrollable="form.isPageForm"
   generateLabels

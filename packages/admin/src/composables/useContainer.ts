@@ -4,6 +4,7 @@ import {
   markRaw,
   onBeforeUnmount,
   provide,
+  reactive,
   unref,
   type MaybeRef
 } from 'vue'
@@ -54,6 +55,9 @@ export interface ContainerOptions {
   routeContext?: RouteContext
   // Views provide the source of their main component, forms none:
   sourceContext?: MaybeRef<SourceContext | null>
+  // The store of the schema that displays the data, e.g. of a panel with its
+  // own data, else a new one:
+  store?: Record<string, any>
 }
 
 // Set up the data of a view, form, dialog or panel with its own data: its model
@@ -78,7 +82,8 @@ export function useContainer({
   verbs,
   resourceContext,
   routeContext,
-  sourceContext
+  sourceContext,
+  store = reactive({})
 }: ContainerOptions) {
   const parentDataContext = inject(dataContextKey, null)
   const hasSourceContext = sourceContext !== undefined
@@ -151,7 +156,8 @@ export function useContainer({
       mergeItem ??
       (data => model.mergeFromServer(data, { isPartial: true }))
     ),
-    copyErrors
+    copyErrors,
+    store
   })
 
   provide(dataContextKey, dataContext)
@@ -165,5 +171,5 @@ export function useContainer({
   if (hasSourceContext) {
     provide(sourceContextKey, sourceContext)
   }
-  return { dataContext, model, services }
+  return { dataContext, model, services, store }
 }

@@ -4,7 +4,6 @@ import {
   markRaw,
   nextTick,
   onUnmounted,
-  reactive,
   shallowReactive,
   shallowRef,
   watch
@@ -281,8 +280,6 @@ export function useRouteContainer({
     routeContext,
     navigateWithin,
     replaceWithin,
-    // The state that outlives the components, e.g. the query of lists:
-    store: reactive({}),
 
     schemaPath: computed(() => {
       const sourceSchema = options.sourceSchema()!

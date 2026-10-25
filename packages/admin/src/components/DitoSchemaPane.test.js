@@ -297,8 +297,9 @@ describe('DitoSchemaPane', () => {
     it('are selected when their components are focused', async () => {
       const admin = await mountTabs()
       await admin.navigate('/books/notes')
-      const title = admin.getComponent(admin.getRouteComponent(), 'title')
-      await admin.context.ui.reveal(title.container, title.componentPath, {
+      const view = admin.getRouteComponent()
+      const title = admin.getComponent(view, 'title')
+      await view.dataContext.componentTree.reveal(title.componentPath, {
         focus: true
       })
       await flushPromises()

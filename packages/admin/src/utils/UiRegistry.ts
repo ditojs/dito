@@ -1,13 +1,10 @@
-import { nextTick, shallowReactive, watch } from 'vue'
+import { shallowReactive, watch } from 'vue'
 import { parseDataPath } from '@ditojs/utils'
 import type { DataContext } from './DataContext.ts'
 import type { RouteClaim, RouteContext, TabClaim } from './RouteContext.ts'
 
 export interface UiHandle {
   readonly dataContext: DataContext | null
-  // Render what leads to the component at `componentPath` inside this one, e.g.
-  // open a collapsed schema and render its tab, which `focus` also selects:
-  reveal?(componentPath: string, options: { focus: boolean }): Promise<void>
   focus?(): void
   // The form that the route's `path` opens, if this component claims it, e.g.
   // a source for the form of one of its items, or the tab that it names in a
@@ -93,38 +90,18 @@ export class UiRegistry {
     return null
   }
 
-  // Ask the components on the way from the outside in:
-  async reveal(
-    dataContext: DataContext | null,
-    componentPath: string,
-    { focus = false } = {}
-  ) {
+  // Focus the revealed component at `componentPath`. Paths inside values that
+  // no deeper component displays focus the component of the value:
+  focus(dataContext: DataContext, componentPath: string) {
     const parts = parseDataPath(componentPath)
-    for (let index = 0; index <= parts.length; index++) {
+    for (let index = parts.length; index > 0; index--) {
       const path = parts.slice(0, index).join('/')
-      // Also ask the components that the revealed ones mount at the same path,
-      // e.g. nested sections:
-      const asked = new Set<UiHandle>()
-      const getNextHandle = () =>
-        this.getHandles(path, dataContext).find(handle => !asked.has(handle))
-      for (let handle = getNextHandle(); handle; handle = getNextHandle()) {
-        asked.add(handle)
-        await handle.reveal?.(componentPath, { focus })
-      }
-    }
-    if (focus) {
-      await nextTick()
-      // Paths inside values that no deeper component displays focus the
-      // component of the value:
-      for (let index = parts.length; index > 0; index--) {
-        const path = parts.slice(0, index).join('/')
-        const handle = this.getHandles(path, dataContext).find(
-          handle => !!handle.focus
-        )
-        if (handle) {
-          handle.focus!()
-          break
-        }
+      const handle = this.getHandles(path, dataContext).find(
+        handle => !!handle.focus
+      )
+      if (handle) {
+        handle.focus!()
+        break
       }
     }
   }

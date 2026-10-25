@@ -1,6 +1,8 @@
-import { computed, markRaw, type ComputedRef } from 'vue'
+import { computed, markRaw, nextTick, type ComputedRef } from 'vue'
 import { isArray, isObject, parseDataPath } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
+import { getChildStore } from '../composables/useStore.ts'
+import { ItemStores } from './ItemStores.js'
 import { appendDataPath, getRelativeDataPath } from './data.js'
 import { getItemUid } from './schema/data.js'
 import {
@@ -9,7 +11,11 @@ import {
 } from './schema/lookup.js'
 import { isPanel } from './schema/structure.js'
 import { getChildSourceSchemas, getTypeDescriptor } from './schema/types.ts'
-import { callOrLog, getSchemaValue } from './schema/value.js'
+import {
+  callOrLog,
+  getSchemaValue,
+  shouldRenderSchema
+} from './schema/value.js'
 import {
   getFieldNodes,
   getItemNodes,
@@ -37,9 +43,16 @@ export interface Leaf {
   readonly componentPath: string
 }
 
+type Store = Record<string, any>
+
 interface NodeOptions {
   readonly key?: string
   readonly name?: string | null
+  // Tabs show their components in the schema of their parent:
+  readonly isTab?: boolean
+  // The store of the component in the one of its parent, if it isn't the child
+  // store by its key:
+  getStore?(parentStore: Store): Store
   getSchema?(): Schema | null
   getDataPath?(): string
   getItemDataPath?(): string
@@ -62,11 +75,14 @@ interface Children {
 // of fields, sections, tabs and panels, and the indices of items.
 export class ComponentTree {
   readonly dataContext: DataContext
+  // The store of the schema that displays the data:
+  readonly store: Store
   readonly root: ComponentNode
 
-  constructor(dataContext: DataContext) {
+  constructor(dataContext: DataContext, store: Store) {
     markRaw(this)
     this.dataContext = dataContext
+    this.store = store
     const scope: Scope = {
       getItem: () => dataContext.data,
       getDataPath: () => dataContext.dataPath,
@@ -122,6 +138,35 @@ export class ComponentTree {
     return nodes
   }
 
+  // Open the collapsed schemas and render the tabs that lead to the component
+  // at `componentPath`, which `focus` also selects, in the stores and routes
+  // that hold their state, and render them at once:
+  async reveal(componentPath: string, { focus = false } = {}) {
+    let node = this.root
+    node.store.opened = true
+    for (const key of parseDataPath(
+      getRelativeDataPath(componentPath, node.componentPath) ?? ''
+    )) {
+      const child = node.getNode(key)
+      if (!child.isTab) {
+        child.store.opened = true
+      } else if (child.isShown()) {
+        const { store } = node
+        getChildStore(store, 'mountedTabs')[key] = true
+        if (focus) {
+          const { routeContext } = this.dataContext.services
+          if (node === this.root && routeContext && !isPanel(node.schema)) {
+            routeContext.selectedTab = key
+          } else {
+            store.selectedTab = key
+          }
+        }
+      }
+      node = child
+    }
+    await nextTick()
+  }
+
   // The same contexts as the rendered components get:
   createContext(schema: Schema, values: Record<string, any>) {
     const { services, rootData } = this.walkOptions
@@ -134,14 +179,14 @@ export class ComponentTree {
 }
 
 // A component in the tree, or below it, e.g. a button or a widget of the same
-// value as another one, which only continues the path of its parent.
+// value as another one, which continues the path of its parent.
 export class ComponentNode {
   readonly tree: ComponentTree
   readonly parent: ComponentNode | null
   // The components that widgets render for the node's property, by the
   // component paths of their layouts, while they're mounted:
   readonly leaves = new Set<Leaf>()
-  readonly #options: NodeOptions
+  readonly #ownOptions: NodeOptions
   #children: ComputedRef<Children> | null = null
   #componentPath: ComputedRef<string> | null = null
   // The nodes of the children by the objects that they stand for, and of the
@@ -150,18 +195,42 @@ export class ComponentNode {
   #nodesByComponent = new WeakMap<object, ComponentNode>()
   #itemNodesByUid = new Map<string | number, ComponentNode>()
   #detachedNodes = new Map<string, ComponentNode>()
+  // Below the tree, the node of the value at the node's key in the data that
+  // the path continues, if there is one, which the node mirrors. Values may
+  // appear after the node is first asked for, e.g. with the form of a type:
+  readonly #value: ComputedRef<ComponentNode | null> | null
 
   constructor(
     tree: ComponentTree,
     parent: ComponentNode | null,
-    options: NodeOptions = {}
+    options: NodeOptions = {},
+    isDetached = false
   ) {
     // Nodes are provided to components in reactive objects, which mustn't
     // wrap them, as proxies have no private fields:
     markRaw(this)
     this.tree = tree
     this.parent = parent
-    this.#options = options
+    this.#ownOptions = options
+    this.#value = isDetached
+      ? computed(() => {
+          const value = parent!.#getDataNode().getChild(options.key!)
+          return value && !value.isTab ? value : null
+        })
+      : null
+  }
+
+  get #options(): NodeOptions {
+    const value = this.#value?.value
+    return value ? value.#options : this.#ownOptions
+  }
+
+  // The node whose data the node displays, the one of its parent if it only
+  // continues the path:
+  #getDataNode(): ComponentNode {
+    return this.#value && !this.#value.value
+      ? this.parent!.#getDataNode()
+      : this
   }
 
   // The name of the component in the path of its parent, or its item's index:
@@ -199,8 +268,26 @@ export class ComponentNode {
     return this.#options.getItemDataPath?.() ?? null
   }
 
+  // The store of the node's component, as the component gets it:
+  get store(): Store {
+    const { parent } = this
+    return parent
+      ? (this.#options.getStore?.(parent.store) ??
+        getChildStore(parent.store, this.key!))
+      : this.tree.store
+  }
+
+  get isTab(): boolean {
+    return !!this.#options.isTab
+  }
+
   get children(): ComponentNode[] {
     return this.#getChildren().nodes
+  }
+
+  // The child at `key`, `null` if it isn't in the tree:
+  getChild(key: string): ComponentNode | null {
+    return this.#getChildren().nodesByKey.get(key) ?? null
   }
 
   // Irrelevant fields and hidden components display nothing, like rendered:
@@ -213,10 +300,7 @@ export class ComponentNode {
   getNode(path: string): ComponentNode {
     let node: ComponentNode = this
     for (const key of parseDataPath(path)) {
-      node = (
-        node.#getChildren().nodesByKey.get(key) ??
-        node.#getDetachedNode(key)
-      )
+      node = node.getChild(key) ?? node.#getDetachedNode(key)
     }
     return node
   }
@@ -253,10 +337,13 @@ export class ComponentNode {
     return this.#children.value
   }
 
+  // Below the tree, values continue the data of the node that the path left,
+  // in nodes that mirror the nodes of the values, e.g. the ones of widgets in
+  // sections or of several widgets of the same value:
   #getDetachedNode(key: string) {
     let node = this.#detachedNodes.get(key)
     if (!node) {
-      node = new ComponentNode(this.tree, this, { key })
+      node = new ComponentNode(this.tree, this, { key }, true)
       this.#detachedNodes.set(key, node)
     }
     return node
@@ -316,26 +403,29 @@ export class ComponentNode {
       itemDataPath: scope.getDataPath(),
       ...tree.walkOptions
     })
+    const isTab = !fieldNode && component.name === null && !isPanel(schema)
+    const getContext = () =>
+      tree.createContext(schema, { ...getEntry(), name: component.name })
+    // Like when rendered, fields are relevant with their containers, and the
+    // containers by themselves:
+    const isRelevant = () => {
+      if (fieldNode) {
+        const relevantNode = fieldNode.getRelevantNode(getEntry())
+        return field ? !!relevantNode?.fields.includes(field) : !!relevantNode
+      } else {
+        return callOrLog(() => shouldRenderSchema(schema, getContext()), true)
+      }
+    }
     // Like when rendered, tabs have no visibility, and written properties are
     // displayed through the visibility of their widgets:
-    const hasVisibility = (
-      !!field ||
-      !fieldNode && (component.name !== null || isPanel(schema))
-    )
-    const isRelevant = () => {
-      const relevantNode = fieldNode.getRelevantNode(getEntry())
-      return field ? !!relevantNode?.fields.includes(field) : !!relevantNode
-    }
+    const hasVisibility = !!field || !fieldNode && !isTab
     const isVisible = () =>
       callOrLog(
         () =>
           getSchemaValue('visible', {
             type: Boolean,
             schema,
-            context: tree.createContext(schema, {
-              ...getEntry(),
-              name: component.name
-            }),
+            context: getContext(),
             default: () => getTypeDescriptor(schema)?.defaultVisible ?? true
           }),
         true
@@ -344,12 +434,18 @@ export class ComponentNode {
     return new ComponentNode(tree, this, {
       key: component.key ?? component.name,
       name,
+      isTab,
+      // Tabs show their components in the schema of their parent, and panels
+      // keep their state by their names:
+      getStore: isTab
+        ? store => store
+        : isPanel(schema)
+          ? store => getChildStore(store, schema.name)
+          : undefined,
       getSchema: () => schema,
       getDataPath,
       getItemDataPath: scope.getDataPath,
-      isShown: () => (
-        (!fieldNode || isRelevant()) && (!hasVisibility || isVisible())
-      ),
+      isShown: () => isRelevant() && (!hasVisibility || isVisible()),
       getChildren: (node, indices) => [
         ...(
           fieldNode
@@ -461,6 +557,12 @@ export class ComponentNode {
     const getItem = () => wrap(getList()?.[node.key as any])
     const getDataPath = () => appendDataPath(this.dataPath!, node.key)
     const node: ComponentNode = new ComponentNode(this.tree, this, {
+      getStore: store =>
+        ItemStores.getFromStore(store).getStore(
+          this.schema,
+          getItem(),
+          Number(node.key)
+        ),
       getSchema: () =>
         getItemFormSchemaFromForms(getItemForms()[0].forms, getItem()),
       getDataPath,

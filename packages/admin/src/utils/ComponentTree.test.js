@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { h } from 'vue'
+import { h, toRaw } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { mountAdmin, mountForm, mountSchema } from '../test/mount.js'
 import DitoContainer from '../components/DitoContainer.vue'
@@ -222,26 +222,29 @@ describe('ComponentTree', () => {
   })
 
   describe('in forms with properties', () => {
-    const Page = {
-      setup() {
-        useDitoForm({
-          resource: 'books',
-          id: 1,
-          properties: {
-            title: { type: 'string', required: true },
-            address: {
+    const useBookForm = () =>
+      useDitoForm({
+        resource: 'books',
+        id: 1,
+        properties: {
+          title: { type: 'string', required: true },
+          address: {
+            type: 'object',
+            properties: { city: { type: 'string' } }
+          },
+          tags: {
+            type: 'array',
+            items: {
               type: 'object',
-              properties: { city: { type: 'string' } }
-            },
-            tags: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: { label: { type: 'string', required: true } }
-              }
+              properties: { label: { type: 'string', required: true } }
             }
           }
-        })
+        }
+      })
+
+    const Page = {
+      setup() {
+        useBookForm()
         return () =>
           h(DitoSchemaForm, null, {
             default: () => [
@@ -266,17 +269,17 @@ describe('ComponentTree', () => {
       }
     }
 
-    async function mountPage() {
+    async function mountPage(component = Page) {
       const admin = await mountAdmin({
         views: {
-          book: { type: 'page', label: 'Book', path: 'book', component: Page }
+          book: { type: 'page', label: 'Book', path: 'book', component }
         },
         request: () => ({
           data: {
             id: 1,
             title: 'Emma',
             address: { city: 'Bath' },
-            tags: [{ label: 'Novel' }]
+            tags: [{ label: 'Novel' }, { label: 'Classic' }]
           }
         })
       })
@@ -296,6 +299,189 @@ describe('ComponentTree', () => {
       expect(getLeafPaths('title')).toEqual(['title', 'more/~2/title'])
       expect(getLeafPaths('address/city')).toEqual(['address/city'])
       expect(getLeafPaths('tags/0/label')).toEqual(['tags/0/label'])
+    })
+
+    it('reveal the items of lists in sections of widgets', async () => {
+      const SectionPage = {
+        setup() {
+          useBookForm()
+          return () =>
+            h(DitoSchemaForm, null, {
+              default: () =>
+                h(
+                  DitoSection,
+                  { name: 'more', collapsible: true, collapsed: true },
+                  {
+                    default: () =>
+                      h(
+                        DitoListField,
+                        { name: 'tags', collapsible: true, collapsed: true },
+                        { default: () => h(DitoTextField, { name: 'label' }) }
+                      )
+                  }
+                )
+            })
+        }
+      }
+      const { wrapper } = await mountPage(SectionPage)
+      const { componentTree } =
+        wrapper.findComponent(DitoSchemaForm).vm.form.dataContext
+      const getInput = value =>
+        wrapper.findAll('input').find(input => input.element.value === value)
+      expect(getInput('Classic')).toBe(undefined)
+      await componentTree.reveal('more/tags/1/label', { focus: true })
+      expect(getInput('Classic').isVisible()).toBe(true)
+      expect(getInput('Novel')).toBe(undefined)
+    })
+  })
+
+  it('mirrors values below the tree once they appear', async () => {
+    const { routeComponent } = await mountSchema({
+      schema: {
+        fields: {
+          items: {
+            type: 'list',
+            inlined: true,
+            forms: {
+              short: { type: 'form', fields: { title: { type: 'text' } } },
+              long: {
+                type: 'form',
+                fields: {
+                  title: { type: 'text' },
+                  details: {
+                    type: 'object',
+                    inlined: true,
+                    form: { type: 'form', fields: { text: { type: 'text' } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: { items: [{ type: 'short', title: 'One' }] }
+    })
+    const { data, dataContext } = routeComponent
+    // E.g. the node of a widget in an unnested section of the item's layout:
+    const node = dataContext.componentTree.root.getNode('items/0/more/details')
+    expect(node.dataPath).toBe(null)
+    data.items[0].type = 'long'
+    data.items[0].details = { text: 'Two' }
+    expect(node.dataPath).toBe('items/0/details')
+    expect(node.getChild('text').dataPath).toBe('items/0/details/text')
+  })
+
+  it('reaches the stores of the mounted components', async () => {
+    const { wrapper, routeComponent } = await mountSchema({
+      schema: bookSchema,
+      data: bookData
+    })
+    const { componentTree } = routeComponent.dataContext
+    const containers = wrapper
+      .findAllComponents(DitoContainer)
+      .map(({ vm }) => vm)
+      .filter(
+        vm => vm.field.services.dataContext === routeComponent.dataContext
+      )
+    expect(containers.length).toBeGreaterThan(10)
+    for (const { componentPath, $props } of containers) {
+      expect(
+        toRaw(componentTree.root.getNode(componentPath).store),
+        componentPath
+      ).toBe(toRaw($props.store))
+    }
+  })
+
+  describe('reveal()', () => {
+    it('opens collapsed items of wrapped values', async () => {
+      const { routeComponent, wrapper } = await mountSchema({
+        schema: {
+          fields: {
+            tags: {
+              type: 'list',
+              inlined: true,
+              collapsible: true,
+              collapsed: true,
+              wrapPrimitives: 'value',
+              form: { type: 'form', fields: { value: { type: 'text' } } }
+            }
+          }
+        },
+        data: { tags: ['Novel', 'Classic'] }
+      })
+      const getInput = value =>
+        wrapper.findAll('input').find(input => input.element.value === value)
+      expect(getInput('Classic')).toBe(undefined)
+      await routeComponent.dataContext.componentTree.reveal('tags/1/value', {
+        focus: true
+      })
+      expect(getInput('Classic').isVisible()).toBe(true)
+      expect(getInput('Novel')).toBe(undefined)
+    })
+
+    it('opens collapsed sections in tabs that are not selected', async () => {
+      const section = fields => ({
+        type: 'section',
+        collapsible: true,
+        collapsed: true,
+        fields
+      })
+      const { routeComponent, findField } = await mountSchema({
+        schema: {
+          tabs: {
+            main: { type: 'tab', fields: { title: { type: 'text' } } },
+            more: {
+              type: 'tab',
+              fields: {
+                outer: section({ inner: section({ notes: { type: 'text' } }) })
+              }
+            }
+          }
+        },
+        data: { title: 'Emma', notes: 'Classic' }
+      })
+      expect(findField('notes').exists()).toBe(false)
+      await routeComponent.dataContext.componentTree.reveal(
+        'more/outer/inner/notes'
+      )
+      expect(findField('notes').exists()).toBe(true)
+      // Without focus, the tab stays unselected:
+      expect(findField('notes').isVisible()).toBe(false)
+      expect(findField('title').isVisible()).toBe(true)
+    })
+
+    it('opens collapsed items of lists in collapsed sections', async () => {
+      const { routeComponent, findField } = await mountSchema({
+        schema: {
+          fields: {
+            details: {
+              type: 'section',
+              collapsible: true,
+              collapsed: true,
+              fields: {
+                chapters: {
+                  type: 'list',
+                  inlined: true,
+                  collapsible: true,
+                  collapsed: true,
+                  form: {
+                    type: 'form',
+                    fields: { title: { type: 'text' } }
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }, { title: 'Two' }] }
+      })
+      expect(findField('chapters/1/title').exists()).toBe(false)
+      await routeComponent.dataContext.componentTree.reveal(
+        'details/chapters/1/title',
+        { focus: true }
+      )
+      expect(findField('chapters/1/title').isVisible()).toBe(true)
+      expect(findField('chapters/0/title').exists()).toBe(false)
     })
   })
 

@@ -43,10 +43,11 @@ export function useFocus(
     // NOTE: The template ref `element` can only be used once per component.
     element,
 
-    focus() {
-      return adminContext.ui.reveal(dataContext, componentPath.value, {
+    async focus() {
+      await dataContext!.componentTree.reveal(componentPath.value, {
         focus: true
       })
+      adminContext.ui.focus(dataContext!, componentPath.value)
     },
 
     blur() {
