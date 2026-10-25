@@ -172,9 +172,7 @@ References are reduced to their ids, plus the `extra` properties of
 written: the other data of related models is never written, and updates
 patch the `extra` properties of references, like `rank` in
 `genres: [{ id: 2, rank: 7 }]`. Ids that don't exist are rejected with a
-`NotFoundError`, except by `insertGraph…()`, which relates them without
-checking. Foreign keys make the database reject them, see
-[Join rows](relations.md#join-rows).
+`NotFoundError`.
 
 Strict mode also rejects graphs that contradict themselves with a
 [`GraphError`](../../api/server/errors.md): keys that contradict their
