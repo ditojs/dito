@@ -5,8 +5,9 @@
 )
   //- Layout sections place the components themselves, with `DitoSchemaField`
   //- and `DitoPane`:
-  slot(
-    v-if="$slots.default"
+  DitoLayout(
+    v-if="layout"
+    :render="layout"
   )
   template(
     v-for=`{
@@ -49,15 +50,24 @@
 <script>
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
+// Renders a layout in a component of its own, so that the layout's reactive
+// reads only render it again, not the rows:
+const DitoLayout = props => props.render()
+DitoLayout.props = { render: { type: Function, required: true } }
+
 // The components of panes in rows that wrap, aligned to the labels in them:
 export default {
+  components: { DitoLayout },
+
   props: {
     entries: { type: Array, required: true },
     data: { type: Object, default: null },
     single: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     compact: { type: Boolean, default: false },
-    generateLabels: { type: Boolean, default: false }
+    generateLabels: { type: Boolean, default: false },
+    // Renders the components of layout sections, see `schemaLayoutKey`:
+    layout: { type: Function, default: null }
   },
 
   setup(props) {

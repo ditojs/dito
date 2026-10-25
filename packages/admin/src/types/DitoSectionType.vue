@@ -18,25 +18,10 @@
     :collapsed="collapsed"
     :collapsible="collapsible"
   )
-    template(
-      v-if="hasLayout"
-      #default
-    )
-      component(
-        :is="schema.component"
-        :schema="schema"
-        :context="context"
-      )
-    //- The widgets of `DitoSection`:
-    template(
-      v-else-if="$slots.default"
-      #default
-    )
-      slot
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, h, provide, unref } from 'vue'
 import { labelize } from '@ditojs/utils'
 import { defineType } from '../utils/schema/types.ts'
 import { nestableTraits } from './traits.ts'
@@ -47,12 +32,13 @@ import {
 } from '../utils/schema/setup.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { isCompact, hasNestedData } from '../utils/schema/structure.js'
+import { schemaLayoutKey } from '../utils/keys.ts'
 
 // @vue/component
 const DitoSectionType = {
   props: fieldProps,
 
-  setup(props) {
+  setup(props, { slots }) {
     const field = useField(props)
     const { value, context, getSchemaValue } = field
     // Nested sections hold their item in their value:
@@ -62,6 +48,21 @@ const DitoSectionType = {
     )
     // Layouts place the section's components, see `DitoSchemaField`:
     const hasLayout = computed(() => !!props.schema.component)
+    // The section's `component`, or the widgets of `DitoSection`:
+    provide(
+      schemaLayoutKey,
+      computed(() =>
+        hasLayout.value
+          ? () =>
+              h(props.schema.component, {
+                schema: props.schema,
+                context: unref(context)
+              })
+          : slots.default
+            ? () => slots.default()
+            : null
+      )
+    )
     return {
       ...field,
       labelize,
