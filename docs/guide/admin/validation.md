@@ -41,7 +41,14 @@ authors: { type: 'list', form, required: true } // Needs one item at least
 `minLength` applies to empty text too, `minLength: 1` rejects `''`, but not
 `null`, which only `required` rejects. Lists and fields with multiple values hold
 arrays, which `required` accepts when they have one item at least, as if
-`minItems: 1` was given.
+`minItems: 1` was given, unless they set their own `minItems`. This holds for
+all arrays, also of custom types and of [written properties](./widgets.md),
+while the server's `required` accepts `[]`. `minItems: 0` accepts none as an
+answer:
+
+```js
+allergies: { type: 'checkboxes', options, required: true, minItems: 0 }
+```
 
 `required` takes a callback:
 

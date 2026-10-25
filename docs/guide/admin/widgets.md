@@ -85,7 +85,9 @@ meaning: `type` (`string`, `number`, `integer`, `boolean`, `date`,
 `minLength`, `maxLength`, `pattern`, `minItems`, `maxItems`, `enum` and
 `format` (`email`, `hostname`, `password`, `uri` and `iso-time`). Objects
 hold `properties`, and arrays hold `items`. The admin validates them as the
-server does, so the same properties can describe the model and the form.
+server does, so the same properties can describe the model and the form,
+except that required arrays need one item, see
+[Types and limits of fields](./validation.md#types-and-limits-of-fields).
 Other types and formats, and `definitions` and `$ref`, aren't supported yet:
 properties with them throw when the form is set up.
 

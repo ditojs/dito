@@ -252,6 +252,14 @@ describe('The properties of fields on the server', async () => {
     expect(getAdminErrors(missing)).toEqual([])
   })
 
+  // `required` accepts empty arrays on the server, while the admin requires one
+  // item, unless `minItems` is set:
+  it('rejects empty required arrays only in the admin', () => {
+    const empty = { genres: [], chapters: [] }
+    expect(getServerErrors(empty)).toEqual([])
+    expect(getAdminErrors(empty)).toEqual(['chapters', 'genres'])
+  })
+
   it('rejects the same invalid values on both sides', () => {
     const invalid = {
       title: '',
@@ -261,7 +269,6 @@ describe('The properties of fields on the server', async () => {
       price: -1,
       pages: 1001,
       rating: 6,
-      genres: [],
       subtitle: 'A'.repeat(41),
       address: { street: '' },
       publisher: { name: 'Penguin', founded: 'long ago' },
