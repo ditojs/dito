@@ -1,7 +1,8 @@
 import { isFunction, isObject, isString, pickBy } from '@ditojs/utils'
 
+// Resource functions only resolve with their context, so check the declaration:
 export function hasResource(schema) {
-  return !!getResource(schema.resource)
+  return !!schema.resource
 }
 
 export function getResource(resource, defaults = {}) {

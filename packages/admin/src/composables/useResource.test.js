@@ -516,6 +516,28 @@ describe('useResource()', () => {
     })
   })
 
+  describe('resource functions', () => {
+    it('receive the resource of the parent', async () => {
+      const { request, getComponent } = await mountForm({
+        schema: {
+          fields: {
+            reviews: {
+              type: 'list',
+              resource: ({ parent }) => ({ path: `reviews-of-${parent.id}` }),
+              form: { type: 'form', fields: { text: { type: 'text' } } }
+            }
+          }
+        },
+        data: { title: 'Orlando' },
+        request: () => ({ data: [{ id: 1, text: 'Lovely' }] })
+      })
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({ url: '/items/1/reviews-of-1' })
+      )
+      expect(getComponent('reviews').value).toEqual([{ id: 1, text: 'Lovely' }])
+    })
+  })
+
   describe('showing server validation errors', () => {
     const authorSchema = {
       label: 'Author',
