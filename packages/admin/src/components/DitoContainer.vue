@@ -66,7 +66,6 @@ import {
   computed,
   inject,
   onMounted,
-  onUnmounted,
   provide,
   ref,
   shallowRef,
@@ -207,19 +206,6 @@ export default {
       () => componentVisible.value && unref(isParentVisible)
     )
     provide(visibleKey, isVisible)
-    // Register the errors that the container displays, to notify the ones that
-    // no visible container displays:
-    const unregister = services.adminContext.ui.register(
-      () => componentPath.value,
-      {
-        dataContext: services.dataContext,
-        getErrorComponentPath: dataPath =>
-          isVisible.value && props.nested && dataPath === props.dataPath
-            ? componentPath.value
-            : null
-      }
-    )
-    onUnmounted(unregister)
 
     const getLayoutClasses = prefix => ({
       [`${prefix}--fill`]: width.value === 'fill' || flexBasis.value !== 'auto',

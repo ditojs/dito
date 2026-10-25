@@ -40,7 +40,7 @@ const DitoSchemaField = {
     // Fields in the slots of other fields continue the path of the pane:
     useComponentPath(
       () => layout.props.dataPath,
-      () => layout.componentPath.value
+      () => layout.node.value
     )
     return {
       pane: layout.props,

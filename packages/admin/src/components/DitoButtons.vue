@@ -30,7 +30,7 @@ import SchemaContext from '../SchemaContext.js'
 import { useServices } from '../composables/useSchemaContext.ts'
 import { useStore } from '../composables/useStore.ts'
 import {
-  continueComponentPath,
+  continueComponentNode,
   useComponentPath
 } from '../composables/useComponentPath.ts'
 import { appendDataPath } from '../utils/data.js'
@@ -60,8 +60,7 @@ export default {
     useComponentPath(
       () => props.dataPath,
       parent =>
-        appendDataPath(
-          continueComponentPath(parent, props.dataPath),
+        continueComponentNode(parent, props.dataPath).getNode(
           `$${props.buttonsName}`
         )
     )

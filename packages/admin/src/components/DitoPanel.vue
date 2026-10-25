@@ -55,6 +55,7 @@ import { hasNestedData } from '../utils/schema/structure.js'
 import {
   appendDataPath,
   getLastDataPathName,
+  getRelativeDataPath,
   toModelData
 } from '../utils/data.js'
 import { getRootData } from '../utils/services.ts'
@@ -72,9 +73,17 @@ export default {
   },
 
   setup(props) {
+    // The panels of schemas and fields add their name to the path, the ones
+    // that are fields share it:
     useComponentPath(
       () => props.dataPath,
-      () => props.panelComponentPath
+      parent =>
+        parent.node.getNode(
+          getRelativeDataPath(
+            props.panelComponentPath,
+            parent.node.componentPath
+          ) ?? ''
+        )
     )
     // The panel decides about itself in the data around it, e.g. in `if` and
     // `data()`, while its components and buttons see the data it displays:

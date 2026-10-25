@@ -121,13 +121,6 @@ export default {
     const dataPath = computed(() =>
       isTransient.value ? sourceLocation.value.dataPath : ''
     )
-    // Forms of items in the data of their parent continue the component path
-    // of their source, e.g. `main/chapters/1`:
-    const { componentPath } = useComponentPath(
-      () => dataPath.value,
-      () => (isTransient.value ? sourceLocation.value.componentPath : '')
-    )
-
     const {
       routeContext,
       dataContext,
@@ -151,7 +144,10 @@ export default {
             : rootData
           : data
       },
-      componentPath: () => componentPath.value,
+      // Forms of items in the data of their parent continue the component path
+      // of their source, e.g. `main/chapters/1`:
+      componentPath: () =>
+        isTransient.value ? sourceLocation.value.componentPath : '',
       isCreating: () => isCreating.value,
       isTransient: () => isTransient.value,
       isMutating: () => isMutating.value,
@@ -179,6 +175,10 @@ export default {
       submit: (button, options) =>
         submit(button ?? form.getSubmitButton(), options)
     })
+    useComponentPath(
+      () => dataPath.value,
+      () => dataContext.componentTree.root
+    )
 
     // The data, and the schema that the type of the item or of the item to
     // create determines:

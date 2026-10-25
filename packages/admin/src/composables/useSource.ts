@@ -11,11 +11,7 @@ import {
 import { parseDataPath } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { ItemStores } from '../utils/ItemStores.js'
-import {
-  appendDataPath,
-  getParentDataPath,
-  getRelativeDataPath
-} from '../utils/data.js'
+import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
 import {
   adminContextKey,
@@ -27,7 +23,6 @@ import {
 import { getResource, getMemberResource } from '../utils/resource.js'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 import { initializeData, getItemUid } from '../utils/schema/data.js'
-import { walkData } from '../utils/schema/walk.js'
 import {
   getButtonSchemas,
   getViewSchema,
@@ -565,31 +560,8 @@ export function useSource(
   // Routed forms display the errors of the fields that they render for their
   // items, which their component paths lead to. The source opens them, for
   // the route and for the errors alike:
-  const errorSchema = computed(() => ({
-    fields: { [props.schema.name]: props.schema }
-  }))
   const unregisterUi = adminContext.ui.register(() => componentPath.value, {
     dataContext: services.dataContext,
-    getErrorComponentPath(dataPath) {
-      const path = getRelativeDataPath(dataPath, props.dataPath)
-      let isDisplayed = false
-      if (path && formPath.value) {
-        walkData(errorSchema.value, props.data, {
-          dataPath: getParentDataPath(props.dataPath),
-          services,
-          rootData: getModel().rootData,
-          shouldSkipIrrelevant: true,
-          // Visit the values that contain the field, to reach it:
-          shouldVisit: entry => (
-            getRelativeDataPath(dataPath, entry.dataPath) !== null
-          ),
-          visit: entry => {
-            isDisplayed ||= entry.dataPath === dataPath
-          }
-        })
-      }
-      return isDisplayed ? appendDataPath(componentPath.value, path!) : null
-    },
     // Sources with inlined items have no route, so they don't claim:
     claimRoute: hasInlinedItems()
       ? undefined

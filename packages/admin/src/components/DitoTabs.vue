@@ -41,7 +41,8 @@ export default {
   setup(props, { emit }) {
     // Identify tabs through the component path of their schema, like panes:
     const schemaComponentPath = inject(componentPathKey)
-    const getTabId = key => `${schemaComponentPath.path}-tab-${key}`
+    const getTabId = key =>
+      `${schemaComponentPath.node.componentPath}-tab-${key}`
 
     // The tabs scroll where the header is too narrow for them:
     const element = useTemplateRef('element')
@@ -81,7 +82,7 @@ export default {
       getLabelText: useSchemaValue(props.context).getLabelText,
 
       getTabPanelId(key) {
-        return `${schemaComponentPath.path}-tabpanel-${key}`
+        return `${schemaComponentPath.node.componentPath}-tabpanel-${key}`
       },
 
       // Manual activation: Arrow keys, Home and End only move the focus, Enter

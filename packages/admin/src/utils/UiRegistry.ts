@@ -9,10 +9,6 @@ export interface UiHandle {
   // open a collapsed schema and render its tab, which `focus` also selects:
   reveal?(componentPath: string, options: { focus: boolean }): Promise<void>
   focus?(): void
-  // The component path at which the component can display the errors at
-  // `dataPath`, if it can, e.g. its own, or the one of a field in the form of
-  // an item of a routed source:
-  getErrorComponentPath?(dataPath: string): string | null
   // The form that the route's `path` opens, if this component claims it, e.g.
   // a source for the form of one of its items, or the tab that it names in a
   // schema:
@@ -68,27 +64,6 @@ export class UiRegistry {
     return dataContext === undefined
       ? handles
       : handles.filter(handle => handle.dataContext === dataContext)
-  }
-
-  // The paths at which components can display the errors at `dataPath`, in
-  // the order the components were created:
-  getErrorComponentPaths(
-    dataContext: DataContext,
-    dataPath: string
-  ): string[] {
-    const componentPaths = new Set<string>()
-    for (const handles of this.#handles.values()) {
-      for (const handle of handles) {
-        const componentPath =
-          handle.dataContext === dataContext
-            ? (handle.getErrorComponentPath?.(dataPath) ?? null)
-            : null
-        if (componentPath !== null) {
-          componentPaths.add(componentPath)
-        }
-      }
-    }
-    return [...componentPaths]
   }
 
   // The first component that claims the route's `path`, in the order the

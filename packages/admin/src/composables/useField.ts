@@ -10,7 +10,6 @@ import { camelize } from '@ditojs/utils'
 import { getInputAffixesProps } from '../utils/affixes.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { isLabelled } from '../utils/schema/structure.js'
-import { appendDataPath } from '../utils/data.js'
 import { getText } from '../utils/html.js'
 import {
   useSchemaContext,
@@ -102,10 +101,7 @@ export function useContainerField(
   // has none:
   const { componentPath, parentComponentPath } = useComponentPath(
     () => props.dataPath,
-    parent => {
-      const { name } = props.schema
-      return name ? appendDataPath(parent.path, name) : parent.path
-    }
+    parent => parent.node.getNode(props.schema.name ?? '')
   )
 
   return {

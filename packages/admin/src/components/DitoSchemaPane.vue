@@ -22,7 +22,7 @@ import { useServices } from '../composables/useSchemaContext.ts'
 import { useStore } from '../composables/useStore.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { getRootData } from '../utils/services.ts'
-import { appendDataPath } from '../utils/data.js'
+import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import {
   isLabelled,
   isCompact,
@@ -61,10 +61,9 @@ export default {
     const { getChildStore } = useStore(props)
     const sourceSchema = inject(sourceSchemaKey, null)
     // Tabs add their name, as they don't appear in data paths:
-    const { componentPath, parentComponentPath } = useComponentPath(
+    const { node, parentComponentPath } = useComponentPath(
       () => props.dataPath,
-      parent =>
-        props.tab ? appendDataPath(parent.path, props.tab) : parent.path
+      parent => parent.node.getNode(props.tab ?? '')
     )
     if (props.tab) {
       provide(panelTabKey, {
@@ -166,7 +165,7 @@ export default {
       props.layout
         ? {
             props,
-            componentPath,
+            node,
             entries,
             getEntry(name) {
               const entry = entries.value.find(
@@ -181,11 +180,20 @@ export default {
         : null
     )
     // The widgets in the layouts of forms with written properties edit the
-    // form's data by the names of its properties:
+    // form's data by the names of its properties. Items in the scope of a
+    // widget continue its node, as the widget's own may be below the tree:
+    const parentScope = inject(propertyScopeKey, null)
     if (props.layout && props.schema?.properties) {
       provide(propertyScopeKey, {
         get properties() {
           return props.schema.properties
+        },
+        get node() {
+          return parentScope?.node.tree === node.value.tree
+            ? parentScope.node.getNode(
+                getRelativeDataPath(props.dataPath, parentScope.dataPath) ?? ''
+              )
+            : node.value
         },
         get data() {
           return props.data

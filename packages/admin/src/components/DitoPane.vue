@@ -30,7 +30,7 @@ export default {
     // Panes in the slots of fields continue the path of the layout's pane:
     useComponentPath(
       () => layout.props.dataPath,
-      () => layout.componentPath.value
+      () => layout.node.value
     )
     return {
       pane: layout.props,

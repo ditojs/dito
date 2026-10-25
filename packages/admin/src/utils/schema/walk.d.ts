@@ -73,6 +73,31 @@ export interface WrittenPropertyNode extends PropertyNode, DataNode {
 
 export function getSchemaSource(schema: Schema): DataSource
 
+// The forms of the items of a source, and its child sources:
+export interface ItemForms {
+  forms: Record<string, Schema>
+  childSourceSchemas: Schema[]
+}
+
+interface FieldNodesOptions {
+  services: object | null
+  rootData: Data | null
+}
+
+export function getFieldNodes(
+  schema: Schema,
+  data: Data,
+  dataPath: string | null,
+  options: FieldNodesOptions
+): Map<string, DataNode>
+
+export function getItemNodes(
+  sources: ItemForms[],
+  item: Data,
+  dataPath: string | null,
+  options: FieldNodesOptions
+): Map<string, DataNode> | null
+
 // The value at a node that `walkData()` visits, with the data that holds it:
 export interface DataEntry {
   node: DataNode

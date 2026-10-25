@@ -6,6 +6,7 @@ import type {
   VNodeChild
 } from 'vue'
 import type { AdminContext } from './AdminContext.ts'
+import type { ComponentNode } from './ComponentTree.ts'
 import type { DataContext } from './DataContext.ts'
 import type { ResourceContext } from './ResourceContext.ts'
 import type { RouteContext } from './RouteContext.ts'
@@ -31,7 +32,7 @@ export interface Layout {
     readonly store: Record<string, any>
     readonly [key: string]: any
   }
-  readonly componentPath: Ref<string>
+  readonly node: Ref<ComponentNode>
   readonly entries: Ref<Record<string, any>[]>
   getEntry(name: string): Record<string, any>
 }
@@ -51,6 +52,8 @@ export interface SchemaForm {
 // form, an object or a list item:
 export interface PropertyScope {
   readonly properties: Record<string, Schema>
+  // The node of the scope's data in the component tree:
+  readonly node: ComponentNode
   readonly data: Data
   readonly dataPath: string
   // The name of the scope's own value, e.g. of primitive list items:

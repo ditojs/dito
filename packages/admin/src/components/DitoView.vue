@@ -55,7 +55,6 @@ export default {
     const adminContext = inject(adminContextKey)
     const router = useRouter()
     const route = useRouteRecord()
-    useComponentPath(() => '')
     // The view displays its data as if it were an item of its source:
     const sourceSchema = computed(() => route.node.value.schema)
     const schema = computed(() => {
@@ -96,6 +95,10 @@ export default {
           )
         )
       })
+    useComponentPath(
+      () => '',
+      () => dataContext.componentTree.root
+    )
     const data = computed(() => dataContext.data)
     const { context } = useSchemaContext(
       reactive({ schema, data, dataPath: '' }),

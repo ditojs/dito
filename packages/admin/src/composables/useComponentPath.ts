@@ -1,39 +1,47 @@
 import { computed, inject, provide, reactive } from 'vue'
-import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
-import { componentPathKey } from '../utils/keys.ts'
+import { getRelativeDataPath } from '../utils/data.js'
+import { componentPathKey, dataContextKey } from '../utils/keys.ts'
+import type { ComponentNode } from '../utils/ComponentTree.ts'
 
 export interface ComponentPath {
-  readonly path: string
-  // The data path that `path` corresponds to, `null` above the views:
-  readonly dataPath: string | null
+  readonly node: ComponentNode
+  // The data path of the component, which its children continue:
+  readonly dataPath: string
 }
 
 // The names of components through views, tabs, panels and forms, with the item
 // indices of the data path, e.g. `main/chapters/0/title`, tell apart the
-// components that display the same data:
+// components that display the same data. Components take their path from their
+// node in the component tree of their data, which by default continues the
+// parent's node with the data path. The first component in the data of a
+// dialog, panel or form starts at the root of its tree:
 export function useComponentPath(
   getDataPath: () => string,
-  getPath: (parent: ComponentPath) => string = parent =>
-    continueComponentPath(parent, getDataPath())
+  getNode?: (parent: ComponentPath) => ComponentNode
 ) {
-  const parent = inject(componentPathKey, {
-    path: '',
-    dataPath: null
-  })
-  const componentPath = computed(() => getPath(parent))
-  provide(
-    componentPathKey,
-    reactive({ path: componentPath, dataPath: computed(getDataPath) })
+  const parent = inject(componentPathKey, null)
+  const tree = inject(dataContextKey, null)?.componentTree
+  const node = computed(() =>
+    getNode
+      ? getNode(parent!)
+      : parent?.node.tree === tree
+        ? continueComponentNode(parent!, getDataPath())
+        : tree!.root
   )
-  return { componentPath, parentComponentPath: computed(() => parent.path) }
+  provide(componentPathKey, reactive({ node, dataPath: computed(getDataPath) }))
+  return {
+    node,
+    componentPath: computed(() => node.value.componentPath),
+    parentComponentPath: computed(() => parent?.node.componentPath ?? '')
+  }
 }
 
-export function continueComponentPath(
+// The node that `dataPath` leads to from the parent's:
+export function continueComponentNode(
   parent: ComponentPath,
   dataPath: string
-): string {
-  const relativeDataPath = getRelativeDataPath(dataPath, parent.dataPath)
-  return relativeDataPath
-    ? appendDataPath(parent.path, relativeDataPath)
-    : parent.path
+): ComponentNode {
+  return parent.node.getNode(
+    getRelativeDataPath(dataPath, parent.dataPath) ?? ''
+  )
 }
