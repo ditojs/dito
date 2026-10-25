@@ -287,8 +287,8 @@ importers:
         specifier: ^17.6.0
         version: 17.6.0
       objection:
-        specifier: ^4.3.0
-        version: 4.3.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))(typescript@6.0.3)
+        specifier: ^4.4.0
+        version: 4.4.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))(typescript@6.0.3)
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -700,8 +700,8 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0)
       objection:
-        specifier: ^4.3.0
-        version: 4.3.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))(typescript@6.0.3)
+        specifier: ^4.4.0
+        version: 4.4.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))(typescript@6.0.3)
       otpauth:
         specifier: ^9.5.2
         version: 9.5.2
@@ -768,8 +768,8 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@10.2.2)
       objection:
-        specifier: ^4.3.0
-        version: 4.3.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@10.2.2))(typescript@6.0.3)
+        specifier: ^4.4.0
+        version: 4.4.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@10.2.2))(typescript@6.0.3)
       otpauth:
         specifier: ^9.5.2
         version: 9.5.2
@@ -4614,8 +4614,8 @@ packages:
     resolution: {integrity: sha512-gXah6aZrcUxjWg2zR2MwouP2eHlCBzdV4pygudehaKXSGW4v2AsRQUK+lwwXhii6KFZcunEnmSUoYp5CXibxtA==}
     engines: {node: '>= 0.4'}
 
-  objection@4.3.0:
-    resolution: {integrity: sha512-syXfcc1LlLgKKMi0fRaQNwv4UQKccHuXgEB6acLr5f/Q7Koho/swku2sahvZtBkaQkM6MCG6QXOcq9PBPwo02A==}
+  objection@4.4.0:
+    resolution: {integrity: sha512-zViVS8la34lvdtkpktatKyTdu0AqQkRSvmWMR02sbhmK0vU3mdUYtWUx40fGwBfvxp0JdyJcZN3pkKrGhdKtAg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       knex: ^3.3.0
@@ -10248,7 +10248,7 @@ snapshots:
       define-properties: 1.2.1
       es-object-atoms: 1.1.2
 
-  objection@4.3.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@10.2.2))(typescript@6.0.3):
+  objection@4.4.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@10.2.2))(typescript@6.0.3):
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1
@@ -10256,7 +10256,7 @@ snapshots:
     optionalDependencies:
       typescript: 6.0.3
 
-  objection@4.3.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))(typescript@6.0.3):
+  objection@4.4.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))(typescript@6.0.3):
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1

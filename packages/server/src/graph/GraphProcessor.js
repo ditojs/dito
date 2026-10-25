@@ -1,20 +1,15 @@
 import { isArray } from '@ditojs/utils'
-import { RelationExpression } from 'objection'
 import { ensureModelArray } from './graph.js'
 
 export class GraphProcessor {
   constructor(rootModelClass, data, options = {}, defaults) {
+    this.rootModelClass = rootModelClass
     this.options = options
     this.defaults = defaults
-    // The settings of `options.relations`, with their parsed expressions:
-    this.entries = Object.entries(options.relations ?? {}).map(
-      ([key, settings]) => ({
-        expression: RelationExpression.create(key),
-        settings
-      })
-    )
-    // The resolved settings and pivot table extras of each relation path:
+    // The generated settings, resolved settings and pivot table extras of each
+    // relation path:
     this.relations = {}
+    this.settings = {}
     this.extras = {}
     const models = this.processGraph(
       ensureModelArray(rootModelClass, data, { skipValidation: true })
@@ -33,26 +28,33 @@ export class GraphProcessor {
       ...options,
       strict: true,
       root: { ...this.defaults.options.root, ...root },
-      // The resolved settings of each relation path come last and win, while
-      // the entries of the call stay for Objection.js to check them:
-      relations: { ...relations, ...this.relations }
+      // The generated settings come first, so the entries of the call override
+      // them:
+      relations: { ...this.relations, ...relations }
     }
   }
 
-  getSettings(relation, relationPath) {
-    const defaults = relation.owner
-      ? this.defaults.owner
-      : this.defaults.related
-    const settings = { ...defaults, ...relation.graphOptions }
-    for (const { expression, settings: overrides } of this.entries) {
-      if (matchesExpression(expression, relationPath)) {
-        Object.assign(settings, overrides)
-      }
-    }
+  getRelationSettings(relation) {
+    const { operation, owner, related } = this.defaults
     // `graphOptions` serve all graph methods, but `insertGraph()` neither
     // removes nor keeps rows:
-    const { removed, kept, ...insertSettings } = settings
-    return 'removed' in defaults ? settings : insertSettings
+    const { removed, kept, ...insertOptions } = relation.graphOptions ?? {}
+    return {
+      ...(relation.owner ? owner : related),
+      ...(operation === 'insert' ? insertOptions : relation.graphOptions)
+    }
+  }
+
+  getSettings(relationPath) {
+    // Let Objection.js resolve the settings of the path from the generated
+    // ones and the call's `relations`, as it does when writing the graph:
+    const key = relationPath.join('.')
+    this.settings[key] ??= this.rootModelClass.getGraphSettings(
+      relationPath,
+      this.getOptions(),
+      this.defaults.operation
+    )
+    return this.settings[key]
   }
 
   // Resolve the settings of each relation path in the graph, and reduce the
@@ -64,7 +66,11 @@ export class GraphProcessor {
       if (data.$isObjectionModel) {
         const { constructor } = data
         const key = relationPath.join('.')
-        if (this.relations[key]?.added === 'relate' && isRelatable(data)) {
+        if (
+          relationPath.length > 0 &&
+          this.getSettings(relationPath).added === 'relate' &&
+          isRelatable(data)
+        ) {
           return constructor.getReference(data, this.extras[key])
         } else {
           // This isn't a relate, or a new model without id / #ref that needs
@@ -79,7 +85,9 @@ export class GraphProcessor {
               const path = [...relationPath, name]
               const key = path.join('.')
               const relation = relations[name]
-              this.relations[key] ??= this.getSettings(relation, path)
+              // Bracket the keys of the generated settings, e.g.
+              // `[chapters.book]`, so they don't clash with the call's keys:
+              this.relations[`[${key}]`] ??= this.getRelationSettings(relation)
               this.extras[key] ??= relation.through?.extra
               copy[name] = this.processGraph(data[name], path)
             }
@@ -99,20 +107,4 @@ function isRelatable(model) {
   // Only models with an id or an Objection.js #ref can be related, new models
   // need to keep their data to be inserted:
   return model.$hasId() || model[model.constructor.uidRefProp] !== undefined
-}
-
-// Match relation paths like Objection.js matches the keys of `relations`: a
-// path matches when it leads to a leaf of the expression, `'*'` matches all
-// relations below it, and recursive expressions every level.
-function matchesExpression(expression, relationPath) {
-  for (const name of relationPath) {
-    expression = expression?.childExpression(name)
-  }
-  return (
-    !!expression && (
-      expression.node.$allRecursive
-        ? expression.recursionDepth > 0
-        : expression.isEmpty
-    )
-  )
 }
