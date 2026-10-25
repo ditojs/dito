@@ -72,7 +72,7 @@
         :modelValue="listData"
       )
         tr.dito-table__row(
-          v-for="(item, index) in listData"
+          v-for="(item, index) in renderedItems"
           :id="getComponentPath(index)"
           :key="getItemUid(schema, item)"
           :class=`{
@@ -174,6 +174,8 @@ import { sourceTraits } from './traits.ts'
 import { fieldProps } from '../composables/useField.ts'
 import { useSource } from '../composables/useSource.ts'
 import { useSortable } from '../composables/useSortable.ts'
+import { useRenderedItems } from '../composables/useRenderedItems.ts'
+import { provideToNode } from '../composables/useComponentPath.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
 import DitoClipboard from '../components/DitoClipboard.vue'
@@ -218,6 +220,9 @@ const DitoListType = {
     const { listData, editable, deletable, draggable, creatable } = source
     const { services, context, getItemStore } = source
     const { getSchemaValue, shouldRenderSchema } = useSchemaValue(context)
+    const { renderedItems, renderItemsUpTo } = useRenderedItems(listData)
+    // The tree renders the items that it reveals:
+    provideToNode(source.node, 'renderItemsUpTo', renderItemsUpTo)
     const hasListButtons = computed(
       () => !!(source.buttonSchemas.value || creatable.value)
     )
@@ -268,6 +273,7 @@ const DitoListType = {
 
     return {
       ...source,
+      renderedItems,
       shouldRenderSchema,
       labelize,
       getItemUid,

@@ -1728,6 +1728,162 @@ describe('DitoListType', () => {
     })
   })
 
+  describe('long lists', () => {
+    // Hold the idle callbacks and frames in which long lists render their
+    // items, as the tests can't look at the list between them otherwise:
+    const frames = new Map()
+    let lastFrame = 0
+    const requestFrame = callback => {
+      frames.set(++lastFrame, callback)
+      return lastFrame
+    }
+    const cancelFrame = frame => frames.delete(frame)
+    beforeEach(() => {
+      frames.clear()
+      vi.stubGlobal('requestIdleCallback', requestFrame)
+      vi.stubGlobal('cancelIdleCallback', cancelFrame)
+      vi.stubGlobal('requestAnimationFrame', requestFrame)
+      vi.stubGlobal('cancelAnimationFrame', cancelFrame)
+    })
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    const runFrames = async () => {
+      for (const [frame, callback] of frames) {
+        frames.delete(frame)
+        callback(performance.now())
+        await flushPromises()
+      }
+    }
+
+    const createIngredients = count =>
+      Array.from({ length: count }, (_, index) => ({ name: `${index}` }))
+
+    it('renders the first items right away and the others in frames', async () => {
+      const { findField } = await mountSchema({
+        schema: createRecipeSchema(),
+        data: { ingredients: createIngredients(12) }
+      })
+      const field = findField('ingredients')
+      expect(getItemNames(field)).toEqual(['0', '1', '2', '3', '4'])
+      await runFrames()
+      expect(getItemNames(field)).toEqual(
+        createIngredients(12).map(({ name }) => name)
+      )
+    })
+
+    it('renders the others in animation frames without idle callbacks', async () => {
+      vi.stubGlobal('requestIdleCallback', undefined)
+      vi.stubGlobal('cancelIdleCallback', undefined)
+      const requestAnimationFrame = vi.fn(requestFrame)
+      vi.stubGlobal('requestAnimationFrame', requestAnimationFrame)
+      const { findField } = await mountSchema({
+        schema: createRecipeSchema(),
+        data: { ingredients: createIngredients(12) }
+      })
+      const field = findField('ingredients')
+      expect(getItemNames(field)).toHaveLength(5)
+      await runFrames()
+      expect(getItemNames(field)).toHaveLength(12)
+      expect(requestAnimationFrame).toHaveBeenCalled()
+    })
+
+    it('renders items added after the others right away', async () => {
+      const { findField } = await mountSchema({
+        schema: createRecipeSchema({ creatable: true }),
+        data: { ingredients: createIngredients(12) }
+      })
+      await runFrames()
+      const field = findField('ingredients')
+      await field.find('.dito-create-button button').trigger('click')
+      await flushPromises()
+      expect(getItemNames(field)).toHaveLength(13)
+      expect(frames.size).toBe(0)
+    })
+
+    it('shows and focuses errors in items that the list has yet to render', async () => {
+      const ingredients = createIngredients(12)
+      ingredients[10].name = ''
+      const { findField, submit, getErrors } = await mountForm({
+        schema: createRecipeSchema(),
+        data: { ingredients },
+        request: ({ data }) => ({ data })
+      })
+      expect(findField('ingredients/10/name').exists()).toBe(false)
+      expect(await submit()).toBe(null)
+      expect(getErrors('ingredients/10/name')).toEqual([
+        'The Name field is required.'
+      ])
+      expect(document.activeElement).toBe(
+        findField('ingredients/10/name').find('input').element
+      )
+    })
+
+    it('shows errors in lists of items that the list has yet to render', async () => {
+      const chapters = Array.from({ length: 12 }, () => ({
+        ingredients: createIngredients(12)
+      }))
+      chapters[10].ingredients[8].name = ''
+      const { findField, submit, getErrors } = await mountForm({
+        schema: {
+          fields: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              form: { type: 'form', ...createRecipeSchema() }
+            }
+          }
+        },
+        data: { chapters },
+        request: ({ data }) => ({ data })
+      })
+      expect(await submit()).toBe(null)
+      const dataPath = 'chapters/10/ingredients/8/name'
+      expect(getErrors(dataPath)).toEqual(['The Name field is required.'])
+      expect(document.activeElement).toBe(
+        findField(dataPath).find('input').element
+      )
+    })
+
+    it('opens the forms below items that the list has yet to render', async () => {
+      const { routeComponent } = await mountForm({
+        schema: {
+          fields: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              form: {
+                type: 'form',
+                fields: {
+                  notes: {
+                    type: 'list',
+                    editable: true,
+                    form: {
+                      type: 'form',
+                      fields: { text: { type: 'text' } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: {
+          chapters: Array.from({ length: 12 }, (_, index) => ({
+            notes: [{ text: `${index}` }]
+          }))
+        },
+        // Loaded directly, as on reload:
+        path: '/items/1/chapters/10/notes/0'
+      })
+      expect(routeComponent.routeContext.path).toBe(
+        '/items/1/chapters/10/notes/0'
+      )
+      expect(routeComponent.data.text).toBe('10')
+    })
+  })
+
   describe('query', () => {
     async function mountBooksView() {
       const admin = await mountAdmin({
