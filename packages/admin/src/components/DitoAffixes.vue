@@ -83,7 +83,8 @@ export default {
         return {
           [`${prefix}--${props.position}`]: props.position,
           [`${prefix}--${props.mode}`]: props.mode,
-          [`${prefix}--absolute`]: props.absolute
+          [`${prefix}--absolute`]: props.absolute,
+          [`${prefix}--hover`]: visibleItems.value.some(item => item.hover)
         }
       }),
 
@@ -155,16 +156,19 @@ export default {
   &--input {
     color: $color-grey;
 
-    @at-root .dito-component:not(:has(.dito-component)):focus-within & {
+    // While the input that holds the affixes has the focus. Not with `:has()`
+    // on the input, see `dito-affix--hover`:
+    @at-root :focus-within > & {
       color: $color-active;
     }
   }
 
-  // Hide the other affixes of the side while its hover affix shows:
-  // prettier-ignore
-  @at-root .dito-component:hover:not(:has(.dito-component, .dito-popup:hover))
-        #{$self}:has(> .dito-affix--hover) > :not(.dito-affix--hover) {
+  // Hide the other affixes of the side while its hover affix shows. A
+  // modifier instead of `:has(> .dito-affix--hover)`, see `dito-affix--hover`:
+  &--hover {
+    @at-root :hover > & > :not(.dito-affix--hover) {
       visibility: hidden;
     }
+  }
 }
 </style>

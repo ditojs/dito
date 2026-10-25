@@ -40,6 +40,24 @@ describe('DitoDraggable', () => {
     expect(Sortable.get(body).option('disabled')).toBe(true)
   })
 
+  it('marks itself while an item is chosen', async () => {
+    const { wrapper } = await mountForm({
+      schema: {
+        fields: {
+          attachments: { type: 'upload', multiple: true, draggable: true }
+        }
+      },
+      data: { attachments: [scan, cover] }
+    })
+    const draggable = wrapper.findComponent(DitoDraggable)
+    draggable.vm.sortableOptions.onChoose({})
+    await draggable.vm.$nextTick()
+    expect(draggable.classes()).toContain('dito-draggable--chosen')
+    draggable.vm.sortableOptions.onUnchoose({})
+    await draggable.vm.$nextTick()
+    expect(draggable.classes()).not.toContain('dito-draggable--chosen')
+  })
+
   it('clears `isDragging` on the first mouse event after the drag', async () => {
     const { wrapper } = await mountForm({
       schema: {

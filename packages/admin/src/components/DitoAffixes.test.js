@@ -98,6 +98,14 @@ describe('DitoAffixes', () => {
     expect(icon).not.toContain('dito-affix--ellipsis')
   })
 
+  it('marks the affixes with a hover affix, which hides the others', async () => {
+    const wrapper = mountAffixes({ items: ['EUR'], clearable: true })
+    expect(wrapper.classes()).not.toContain('dito-affixes--hover')
+    // The clear button is a hover affix:
+    await wrapper.setProps({ hasValue: true })
+    expect(wrapper.classes()).toContain('dito-affixes--hover')
+  })
+
   it('renders the content of its slots', () => {
     const wrapper = mount(DitoAffixes, {
       props: { parentContext: {} },
