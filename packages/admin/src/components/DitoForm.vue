@@ -377,8 +377,9 @@ export default {
           )
           if (success) {
             if (!isTransientSubmit) {
-              // The source that lists the item loads it again:
-              claim.value.source.reload()
+              // The source that lists the item loads it again, if it's mounted,
+              // or else once it mounts:
+              claim.value.source?.reload()
             }
             if (options.closeForm || button.closeForm) {
               navigateWithin(submittedPath, close)

@@ -41,7 +41,14 @@ component.dito-panel(
 </template>
 
 <script>
-import { computed, inject, provide, reactive, toRefs } from 'vue'
+import {
+  computed,
+  inject,
+  onUnmounted,
+  provide,
+  reactive,
+  toRefs
+} from 'vue'
 import { isFunction, clone } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { useContainer } from '../composables/useContainer.ts'
@@ -120,6 +127,15 @@ export default {
         })
       : null
     const hasOwnData = !!container
+    if (container) {
+      // Lists find the data of their filters panel by its path, to show the
+      // errors of the filters there:
+      onUnmounted(
+        services.adminContext.ui.register(() => props.panelComponentPath, {
+          dataContext: container.dataContext
+        })
+      )
+    }
     const panelData = computed(() =>
       container
         ? container.dataContext.data

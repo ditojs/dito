@@ -2,6 +2,7 @@ import {
   computed,
   markRaw,
   nextTick,
+  shallowReactive,
   shallowRef,
   type ComputedRef
 } from 'vue'
@@ -11,11 +12,18 @@ import { getChildStore } from '../composables/useStore.ts'
 import { ItemStores } from './ItemStores.js'
 import { appendDataPath, getRelativeDataPath } from './data.js'
 import { hasResource } from './resource.js'
-import { getItemKey, getSourcePath, ViewNode } from './RouteTree.ts'
+import {
+  claimSourceRoute,
+  getItemKey,
+  getSourceFormRoute,
+  getSourcePath,
+  ViewNode
+} from './RouteTree.ts'
 import { getItemUid } from './schema/data.js'
 import {
   getFormSchemas,
   getItemFormSchemaFromForms,
+  getNamedSchemas,
   getViewSchema,
   hasFormSchema
 } from './schema/lookup.js'
@@ -41,6 +49,7 @@ import {
   getSchemaSource
 } from './schema/walk.js'
 import type { DataContext } from './DataContext.ts'
+import type { RouteClaim, RouteContext, TabClaim } from './RouteContext.ts'
 import type { SourceRoute } from './RouteTree.ts'
 import type { SourceContext } from './SourceContext.ts'
 import type { Data, Schema } from './types.ts'
@@ -82,7 +91,8 @@ interface NodeOptions {
   getData?(): Data | null
   getDataPath?(): string
   getItemDataPath?(): string
-  isShown?(): boolean
+  isRelevant?(): boolean
+  isVisible?(): boolean
   // Item nodes are added to `indices`, with their index in their list:
   getChildren?(
     node: ComponentNode,
@@ -204,6 +214,59 @@ export class ComponentTree {
     await nextTick()
   }
 
+  // The form or tab that the route's `path` opens below the route of this
+  // data: the tabs of the route's schema claim their names, the sources the
+  // forms of their items, the first one in schema order:
+  claimRoute(
+    path: string,
+    routeContext: RouteContext
+  ): RouteClaim | TabClaim | null {
+    // Single-component views claim the forms of objects at their own path:
+    const rest = getRelativeDataPath(path, routeContext.path)
+    if (rest !== null) {
+      const { root } = this
+      const tab = rest && getNamedSchemas(root.schema?.tabs)?.[rest]
+      return (
+        tab && (
+          !root.data ||
+          shouldRenderSchema(
+            tab,
+            this.createContext(root.schema!, {
+              data: root.data,
+              dataPath: root.dataPath
+            })
+          )
+        )
+      )
+        ? { tab: rest }
+        : root.claimRoute(path)
+    }
+    return null
+  }
+
+  // The route of the form that shows the component at `componentPath`, of the
+  // first routed source on the way, with the component path within the form:
+  getFormRoute(
+    componentPath: string
+  ): { path: string; componentPath: string } | null {
+    let node = this.root
+    for (const key of parseDataPath(
+      getRelativeDataPath(componentPath, node.componentPath) ?? ''
+    )) {
+      node = node.getNode(key)
+      const { sourceRoute } = node
+      const route = sourceRoute
+        ? getSourceFormRoute(sourceRoute, componentPath, this.api)
+        : null
+      if (route) return route
+    }
+    return null
+  }
+
+  get api() {
+    return this.dataContext.services.adminContext.api
+  }
+
   // The same contexts as the rendered components get:
   createContext(schema: Schema, values: Record<string, any>) {
     const { services, rootData } = this.walkOptions
@@ -231,7 +294,8 @@ export class ComponentNode {
   // to them, while the children are computed again:
   #nodesByComponent = new WeakMap<object, ComponentNode>()
   #itemNodesByUid = new Map<string | number, ComponentNode>()
-  #detachedNodes = new Map<string, ComponentNode>()
+  // Reactive, as the sources of widgets below the tree claim routes too:
+  #detachedNodes = shallowReactive(new Map<string, ComponentNode>())
   // Below the tree, the node of the value at the node's key in the data that
   // the path continues, if there is one, which the node mirrors. Values may
   // appear after the node is first asked for, e.g. with the form of a type:
@@ -329,9 +393,14 @@ export class ComponentNode {
     return this.#getChildren().nodesByKey.get(key) ?? null
   }
 
-  // Irrelevant fields and hidden components display nothing, like rendered:
+  // Like when rendered, irrelevant components aren't rendered, and hidden ones
+  // display nothing:
+  isRelevant(): boolean {
+    return this.#options.isRelevant?.() ?? true
+  }
+
   isShown(): boolean {
-    return this.#options.isShown?.() ?? true
+    return this.isRelevant() && (this.#options.isVisible?.() ?? true)
   }
 
   get data(): Data | null {
@@ -392,6 +461,22 @@ export class ComponentNode {
     return sourceRoute && hasFormSchema(sourceRoute.schema)
       ? sourceRoute.path
       : null
+  }
+
+  // The claim of the form that `path` opens below the source at the node, or
+  // the sources below it, in schema order. Routed sources show their items in
+  // the forms of their routes, and widgets below the tree claim too:
+  claimRoute(path: string): RouteClaim | null {
+    const { sourceRoute, sourceSchema } = this
+    if (sourceRoute) {
+      return claimSourceRoute(sourceRoute, path, this.tree.api)
+    } else if (!sourceSchema || isInlined(sourceSchema)) {
+      for (const node of [...this.children, ...this.#detachedNodes.values()]) {
+        const claim = node.isRelevant() ? node.claimRoute(path) : null
+        if (claim) return claim
+      }
+    }
+    return null
   }
 
   // The path of the item at `index` in the routes of the forms below it, also
@@ -496,7 +581,7 @@ export class ComponentNode {
               path: routePath,
               isTransient,
               get source() {
-                return node.sourceContext!
+                return node.sourceContext
               }
             }
           : null
@@ -660,7 +745,8 @@ export class ComponentNode {
       getData: scope.getItem,
       getDataPath,
       getItemDataPath: scope.getDataPath,
-      isShown: () => isRelevant() && (!hasVisibility || isVisible()),
+      isRelevant,
+      isVisible: hasVisibility ? isVisible : undefined,
       getChildren: (node, indices) => [
         ...(
           fieldNode

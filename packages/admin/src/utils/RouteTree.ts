@@ -36,7 +36,8 @@ export interface SourceRoute {
   readonly location: ItemLocation
   readonly path: string
   readonly isTransient: boolean
-  readonly source: SourceContext
+  // The component of the source, while it's mounted:
+  readonly source: SourceContext | null
 }
 
 declare module 'vue-router' {
@@ -401,14 +402,15 @@ export function claimSourceRoute(
     }
     const formPath = param ? `${sourcePath}/${param}` : sourcePath
     if (hasFormSchema(schema)) {
-      const { source } = sourceRoute
       claim = {
         schema,
         path: formPath,
         sourcePath,
         param,
         location: itemLocation,
-        source,
+        get source() {
+          return sourceRoute.source
+        },
         isEmbedded: !!getTypeDescriptor(schema)?.hasEmbeddedForms,
         key: claimKey,
         claimItem: item => {

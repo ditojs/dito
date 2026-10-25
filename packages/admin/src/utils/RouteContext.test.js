@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { UiRegistry } from './UiRegistry.ts'
+import { ComponentNode } from './ComponentTree.ts'
 import {
   mountForm,
   mountSchema,
@@ -112,8 +112,8 @@ describe('RouteContext', () => {
         }))
       }
     })
-    // Count the claims, as their cost only shows in their number:
-    const claimRoute = vi.spyOn(UiRegistry.prototype, 'claimRoute')
+    // Count the claims of the nodes, as their cost only shows in their number:
+    const claimRoute = vi.spyOn(ComponentNode.prototype, 'claimRoute')
     await findContainer('details')
       .find('.dito-schema-header .dito-label')
       .trigger('click')

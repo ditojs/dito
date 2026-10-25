@@ -26,7 +26,8 @@ export interface RouteClaim {
   // The id or index of the item, `create`, or `null` for objects:
   readonly param: string | null
   readonly location: ItemLocation
-  readonly source: SourceContext
+  // The component of the source, while it's mounted:
+  readonly source: SourceContext | null
   // Trees render the forms of their items inside of them:
   readonly isEmbedded: boolean
   // The forms of the items of the same source share their component:

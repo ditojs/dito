@@ -392,6 +392,96 @@ describe('ComponentTree', () => {
     }
   })
 
+  it('claims the forms of sources that are not mounted', async () => {
+    const { routeComponent } = await mountForm({
+      schema: {
+        fields: {
+          details: {
+            type: 'section',
+            collapsible: true,
+            collapsed: true,
+            fields: {
+              chapters: {
+                type: 'list',
+                inlined: true,
+                collapsible: true,
+                collapsed: true,
+                form: {
+                  type: 'form',
+                  fields: {
+                    more: {
+                      type: 'section',
+                      collapsible: true,
+                      collapsed: true,
+                      fields: {
+                        notes: {
+                          type: 'list',
+                          form: {
+                            type: 'form',
+                            fields: { text: { type: 'text' } }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: { chapters: [{ notes: [{ text: 'One' }, { text: 'Two' }] }] },
+      // Loaded directly, as on reload:
+      path: '/items/1/details/chapters/0/more/notes/1'
+    })
+    expect(routeComponent.routeContext.path).toBe(
+      '/items/1/details/chapters/0/more/notes/1'
+    )
+    expect(routeComponent.data.text).toBe('Two')
+  })
+
+  it('reveals the sources of the forms that claims open', async () => {
+    const { admin, routeComponent: form } = await mountForm({
+      schema: {
+        fields: {
+          chapters: {
+            type: 'list',
+            inlined: true,
+            form: {
+              type: 'form',
+              tabs: {
+                main: { type: 'tab', fields: { title: { type: 'text' } } },
+                more: {
+                  type: 'tab',
+                  fields: {
+                    notes: {
+                      type: 'list',
+                      editable: true,
+                      form: {
+                        type: 'form',
+                        fields: { text: { type: 'text' } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: { chapters: [{ title: 'One', notes: [{ text: 'Late' }] }] },
+      // Loaded directly, as on reload:
+      path: '/items/1/chapters/0/more/notes/0'
+    })
+    expect(form.data).toEqual({ text: 'Late' })
+    // The chapter shows the tab of the source once the form closes:
+    await form.routeContext.close()
+    await flushPromises()
+    expect(
+      admin.wrapper.find('.dito-tabs--inlined .dito-tabs__link--active').text()
+    ).toBe('More')
+  })
+
   describe('reveal()', () => {
     it('opens collapsed items of wrapped values', async () => {
       const { routeComponent, wrapper } = await mountSchema({
