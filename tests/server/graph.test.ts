@@ -1430,6 +1430,16 @@ describe('Dito.js graph handling', () => {
       expect((await Book.query().findById(book.id))!.authorId).toBeNull()
     })
 
+    it('rejects related models with unknown ids in inserts', async () => {
+      await expect(
+        Book.query().insertGraph({ title: 'Earthsea', author: { id: 1234 } })
+      ).rejects.toThrow(NotFoundError)
+      await expect(
+        Book.query().insertGraph({ title: 'Earthsea', genres: [{ id: 1234 }] })
+      ).rejects.toThrow(NotFoundError)
+      expect(await Book.query()).toEqual([])
+    })
+
     it('rejects keys that contradict their relation', async () => {
       const { book } = await insertBook()
       const other = await Book.query().insert({ title: 'Dune' })
