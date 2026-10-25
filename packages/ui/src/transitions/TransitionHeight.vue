@@ -19,17 +19,27 @@ const setStyle = (element, style) => Object.assign(element.style, style)
 // Force repaint to make sure the animation is triggered correctly.
 const forceRepaint = element => getComputedStyle(element).height
 
-// Measure and animate in the same task, so no frame shows the element before
-// it is measured, and the hooks can't run out of order:
+// Measure and animate in the same task, so the hooks can't run out of order.
+// Entering elements stay at the height of `dito-height-enter-from` until the
+// frame after the next one, as their content may still change its layout once
+// its resize observers ran, e.g. the vertical labels of `DitoPaneRows`:
 const props = {
   name: 'dito-height',
 
   onEnter(element) {
-    setStyle(element, { height: 'auto' })
-    const { height } = getComputedStyle(element)
-    setStyle(element, { height: 0 })
-    forceRepaint(element)
-    setStyle(element, { height })
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        // A busy browser can end the transition before we measure, so only
+        // animate the height while still entering:
+        if (element.classList.contains('dito-height-enter-active')) {
+          setStyle(element, { height: 'auto' })
+          const { height } = getComputedStyle(element)
+          setStyle(element, { height: 0 })
+          forceRepaint(element)
+          setStyle(element, { height })
+        }
+      })
+    )
   },
 
   onAfterEnter(element) {

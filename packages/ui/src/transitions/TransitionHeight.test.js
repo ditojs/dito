@@ -37,11 +37,16 @@ describe('TransitionHeight', () => {
     let element
     let heights
     let computedHeight
+    let isEntering
 
     beforeEach(() => {
       // Record the heights that the hooks set, in order:
       heights = []
+      isEntering = true
       element = {
+        classList: {
+          contains: name => name === 'dito-height-enter-active' && isEntering
+        },
         style: {
           get height() {
             return heights.at(-1)
@@ -61,10 +66,27 @@ describe('TransitionHeight', () => {
       vi.restoreAllMocks()
     })
 
-    it('grows entering elements from zero to their measured height', () => {
+    const nextFrames = () =>
+      new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve))
+      )
+
+    it('grows entering elements to their height once laid out', async () => {
       const { onEnter } = getTransitionProps()
       onEnter(element)
-      expect(heights).toEqual(['auto', 0, '120px'])
+      expect(heights).toEqual([])
+      // Their content may still change its layout, e.g. its vertical labels:
+      computedHeight = '116px'
+      await nextFrames()
+      expect(heights).toEqual(['auto', 0, '116px'])
+    })
+
+    it(`doesn't grow elements that stopped entering before`, async () => {
+      const { onEnter } = getTransitionProps()
+      onEnter(element)
+      isEntering = false
+      await nextFrames()
+      expect(heights).toEqual([])
     })
 
     it('releases the height once entered', () => {
