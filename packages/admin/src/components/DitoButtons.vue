@@ -20,7 +20,7 @@
     .dito-container.dito-buttons__container(
       v-if="hasVNodeContent(vnode)"
     )
-      DitoVNode(:vnode="vnode")
+      component(:is="vnode")
 </template>
 
 <script>
