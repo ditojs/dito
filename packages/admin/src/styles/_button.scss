@@ -155,8 +155,6 @@
 }
 
 .dito-buttons {
-  $self: &;
-
   &--large {
     --button-margin: 3px;
 
@@ -165,7 +163,7 @@
     justify-content: center;
     padding-bottom: $content-padding;
 
-    #{$self}__container {
+    > * {
       // Do not specify this on .dito-buttons directly as it would break borders
       margin-top: $content-padding;
     }

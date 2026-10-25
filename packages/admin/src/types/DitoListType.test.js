@@ -130,7 +130,7 @@ describe('DitoListType', () => {
       })
       render.mockClear()
       const field = findField('ingredients')
-      await field.find('.dito-create-button button').trigger('click')
+      await field.find('button.dito-create-button').trigger('click')
       await flushPromises()
       expect(getItemNames(field)).toEqual(['Flour', 'Salt', ''])
       // Only the rows of the new item:
@@ -148,7 +148,7 @@ describe('DitoListType', () => {
         schema: createRecipeSchema({ creatable: true, onChange }),
         data: { ingredients: [] }
       })
-      const button = findField('ingredients').find('.dito-create-button button')
+      const button = findField('ingredients').find('button.dito-create-button')
       // Items of lists without resource are added to the data:
       expect(button.text()).toBe('Add Ingredient')
       await button.trigger('click')
@@ -177,7 +177,7 @@ describe('DitoListType', () => {
         data: { title: 'Bread', ingredients: [] }
       })
       await findField('ingredients')
-        .find('.dito-create-button button')
+        .find('button.dito-create-button')
         .trigger('click')
       await flushPromises()
       expect(data.ingredients).toEqual([{ name: 'Bread' }])
@@ -206,7 +206,7 @@ describe('DitoListType', () => {
         data: { ingredients: [] }
       })
       await findField('ingredients')
-        .find('.dito-create-button button')
+        .find('button.dito-create-button')
         .trigger('click')
       await settle()
       expect(data.ingredients).toEqual([{ kind: 'liquid', volume: 1 }])
@@ -225,7 +225,7 @@ describe('DitoListType', () => {
       expect(data.ingredients).toEqual([])
       expect(dataModel.isEdited).toBe(false)
       await findField('ingredients')
-        .find('.dito-create-button button')
+        .find('button.dito-create-button')
         .trigger('click')
       await flushPromises()
       expect(data.ingredients).toEqual([{ name: null, amount: 1 }])
@@ -237,7 +237,7 @@ describe('DitoListType', () => {
         schema: createRecipeSchema({ creatable: { label: 'New Ingredient' } })
       })
       expect(
-        findField('ingredients').find('.dito-create-button button').text()
+        findField('ingredients').find('button.dito-create-button').text()
       ).toBe('New Ingredient')
     })
 
@@ -248,7 +248,7 @@ describe('DitoListType', () => {
         })
       })
       expect(
-        findField('ingredients').find('.dito-create-button button').text()
+        findField('ingredients').find('button.dito-create-button').text()
       ).toBe('New Ingredient')
     })
 
@@ -259,7 +259,7 @@ describe('DitoListType', () => {
           form: { ...ingredientForm, disabled: true }
         })
       })
-      const button = findField('ingredients').find('.dito-create-button button')
+      const button = findField('ingredients').find('button.dito-create-button')
       expect(button.element.disabled).toBe(true)
     })
 
@@ -670,7 +670,7 @@ describe('DitoListType', () => {
         data: { blocks: [] }
       })
       const field = findField('blocks')
-      await field.find('.dito-create-button button').trigger('click')
+      await field.find('button.dito-create-button').trigger('click')
       const items = field.findAll('[role="menuitem"]')
       expect(items.map(item => item.text())).toEqual(['Heading', 'Image'])
       await items[1].trigger('click')
@@ -694,7 +694,7 @@ describe('DitoListType', () => {
       })
       const field = findField('blocks')
       await field
-        .findAll('.dito-schema-inlined .dito-create-button button')[1]
+        .findAll('.dito-schema-inlined button.dito-create-button')[1]
         .trigger('click')
       const items = field.findAll('[role="menuitem"]')
       expect(items.map(item => item.text())).toEqual(['Heading', 'Image'])
@@ -1094,7 +1094,7 @@ describe('DitoListType', () => {
         data: { tags: null }
       })
       await findField('tags')
-        .find('.dito-create-button button')
+        .find('button.dito-create-button')
         .trigger('click')
       await flushPromises()
       await enterValue(findField('tags').find('input'), 'classic')
@@ -1238,7 +1238,7 @@ describe('DitoListType', () => {
         data: { chapters: [] }
       })
       await findField('chapters')
-        .find('.dito-create-button button')
+        .find('button.dito-create-button')
         .trigger('click')
       await settle()
       expect(admin.router.currentRoute.value.path).toBe(
@@ -1808,7 +1808,7 @@ describe('DitoListType', () => {
       })
       await runFrames()
       const field = findField('ingredients')
-      await field.find('.dito-create-button button').trigger('click')
+      await field.find('button.dito-create-button').trigger('click')
       await flushPromises()
       expect(getItemNames(field)).toHaveLength(13)
       expect(frames.size).toBe(0)
