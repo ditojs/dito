@@ -217,7 +217,10 @@ export function walkData(schema, data, {
         if (isObject(item)) {
           const itemDataPath =
             index !== null ? getDataPath(dataPath, index) : dataPath
-          const nodes = getItemNodes(sources, item, itemDataPath)
+          const nodes = getItemNodes(sources, item, itemDataPath, {
+            services,
+            rootData
+          })
           if (nodes && serializedData) {
             const serializedItem = cloneItem(source, item)
             walkNodes(
@@ -263,79 +266,79 @@ export function walkData(schema, data, {
     }
   }
 
-  // The nodes of the item in the forms of all its sources, with their child
-  // sources as fields of the forms, unless they have fields or properties of
-  // their name:
-  const getItemNodes = (sources, item, dataPath) => {
-    const forms = new Set()
-    const childSourceSchemas = []
-    for (const source of sources) {
-      const form = getItemFormSchemaFromForms(source.forms, item)
-      if (form && !forms.has(form)) {
-        forms.add(form)
-        childSourceSchemas.push(
-          ...source.childSourceSchemas.filter(
-            ({ name }) => !(form.fields ?? form.properties)?.[name]
-          )
-        )
-      }
-    }
-    const nodesList = [...forms].map(form =>
-      getFieldNodes(form, item, dataPath)
-    )
-    return nodesList.length === 1 && childSourceSchemas.length === 0
-      ? nodesList[0]
-      : nodesList.length > 0
-        ? mergeFieldNodes(nodesList, childSourceSchemas)
-        : null
-  }
-
-  // The fields of `fields()` callbacks depend on the data, like when rendered:
-  const getFields = (schema, data, dataPath) =>
-    isFunction(schema.fields)
-      ? getItemFormSchema(
-          schema,
-          data,
-          new SchemaContext(services, {
-            schema,
-            nested: false,
-            data,
-            dataPath,
-            rootData
-          })
-        ).fields
-      : schema.fields
-
-  const getFieldNodes = (schema, data, dataPath) => {
-    let nodes = nodesByForm.get(toRaw(schema))
-    if (!nodes) {
-      nodes = computed(() => {
-        if (schema.properties) {
-          return createPropertyNodes(schema.properties)
-        }
-        let hasFieldsCallbacks = false
-        const nodes = createFieldNodes(schema, schema => {
-          hasFieldsCallbacks ||= isFunction(schema.fields)
-          return schema.fields
-        })
-        return hasFieldsCallbacks ? null : nodes
-      })
-      nodesByForm.set(toRaw(schema), nodes)
-    }
-    return (
-      nodes.value ??
-      createFieldNodes(schema, schema => getFields(schema, data, dataPath))
-    )
-  }
-
   walkNodes(
-    getFieldNodes(schema, data, dataPath),
+    getFieldNodes(schema, data, dataPath, { services, rootData }),
     data,
     dataPath,
     serializedData,
     getItemAdapter(sourceSchema)?.name
   )
   return data
+}
+
+// The nodes of the item in the forms of all its sources, with their child
+// sources as fields of the forms, unless they have fields or properties of
+// their name:
+export function getItemNodes(sources, item, dataPath, options) {
+  const forms = new Set()
+  const childSourceSchemas = []
+  for (const source of sources) {
+    const form = getItemFormSchemaFromForms(source.forms, item)
+    if (form && !forms.has(form)) {
+      forms.add(form)
+      childSourceSchemas.push(
+        ...source.childSourceSchemas.filter(
+          ({ name }) => !(form.fields ?? form.properties)?.[name]
+        )
+      )
+    }
+  }
+  const nodesList = [...forms].map(form =>
+    getFieldNodes(form, item, dataPath, options)
+  )
+  return nodesList.length === 1 && childSourceSchemas.length === 0
+    ? nodesList[0]
+    : nodesList.length > 0
+      ? mergeFieldNodes(nodesList, childSourceSchemas)
+      : null
+}
+
+// The nodes of the form `schema` for `data`. The fields of `fields()` callbacks
+// depend on the data, like when rendered:
+export function getFieldNodes(schema, data, dataPath, { services, rootData }) {
+  let nodes = nodesByForm.get(toRaw(schema))
+  if (!nodes) {
+    nodes = computed(() => {
+      if (schema.properties) {
+        return createPropertyNodes(schema.properties)
+      }
+      let hasFieldsCallbacks = false
+      const nodes = createFieldNodes(schema, schema => {
+        hasFieldsCallbacks ||= isFunction(schema.fields)
+        return schema.fields
+      })
+      return hasFieldsCallbacks ? null : nodes
+    })
+    nodesByForm.set(toRaw(schema), nodes)
+  }
+  return (
+    nodes.value ??
+    createFieldNodes(schema, schema =>
+      isFunction(schema.fields)
+        ? getItemFormSchema(
+            schema,
+            data,
+            new SchemaContext(services, {
+              schema,
+              nested: false,
+              data,
+              dataPath,
+              rootData
+            })
+          ).fields
+        : schema.fields
+    )
+  )
 }
 
 // Unnested sections contribute their fields to the nodes of their form, and so
@@ -360,12 +363,13 @@ function createFieldNodes(schema, getFields) {
   }
 
   const addTabsOrPanels = (schemas, containers) => {
-    for (const [name, schema] of Object.entries(schemas || {})) {
+    for (const [key, schema] of Object.entries(schemas || {})) {
       if (hasNestedData(schema)) {
-        addFields({ [name]: schema }, containers)
+        addFields({ [key]: schema }, containers)
       } else if (!isPanelWithOwnData(schema)) {
-        // Tabs and panels have no name in the data:
-        addFields(schema.fields, [...containers, { schema, name: null }])
+        // Tabs and panels have no name in the data, only a key in component
+        // paths:
+        addFields(schema.fields, [...containers, { schema, name: null, key }])
       }
     }
   }

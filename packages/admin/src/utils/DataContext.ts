@@ -1,4 +1,4 @@
-import { nextTick, shallowReactive } from 'vue'
+import { markRaw, nextTick, shallowReactive } from 'vue'
 import {
   isEmpty,
   labelize,
@@ -6,6 +6,7 @@ import {
   parseDataPath
 } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
+import { ComponentTree } from './ComponentTree.ts'
 import { appendDataPath, getRelativeDataPath } from './data.js'
 import { getText } from './html.js'
 import { getLabel } from './schema/value.js'
@@ -41,6 +42,8 @@ export interface DataContext {
   readonly data: Data | null
   readonly dataPath: string
   readonly componentPath: string
+  // The components of the data, mounted or not:
+  readonly componentTree: ComponentTree
   readonly isDirty: boolean
   readonly isCreating: boolean
   readonly hasData: boolean
@@ -169,8 +172,8 @@ export function createDataContext({
     const { adminContext, routeContext } = services
     const { router, ui } = adminContext
     const [firstDataPath] = dataPaths
-    // Collapsed schemas render their content with errors hidden, so we can
-    // find the components that display them:
+    // Collapsed schemas render their content with errors hidden, also the
+    // widgets that lay out the properties of fields:
     await nextTick()
     // Routed sources display errors in the forms of their items, which their
     // component paths lead to. Dialogs and panels with their own data aren't
@@ -191,13 +194,22 @@ export function createDataContext({
       }
       return null
     }
+    // The components that display the fields, mounted or not: the widgets
+    // that lay out their properties, or else their own:
     const entriesByDataPath = new Map(
       dataPaths.map(dataPath => [
         dataPath,
-        ui.getErrorComponentPaths(context, dataPath).map(componentPath => ({
-          componentPath,
-          formRoute: getFormRoute(componentPath)
-        }))
+        componentTree
+          .getFieldNodes(dataPath)
+          .flatMap(node =>
+            node.leaves.size > 0
+              ? [...node.leaves].map(leaf => leaf.componentPath)
+              : [node.componentPath]
+          )
+          .map(componentPath => ({
+            componentPath,
+            formRoute: getFormRoute(componentPath)
+          }))
       ])
     )
     // The first component that can display the first error wins:
@@ -223,7 +235,8 @@ export function createDataContext({
         }
       }
     }
-    // The errors that the components of this data display:
+    // The components of this data, which display the errors once they're
+    // revealed and mounted:
     const componentPathsByDataPath = new Map(
       [...entriesByDataPath].map(([dataPath, entries]) => [
         dataPath,
@@ -232,19 +245,24 @@ export function createDataContext({
           .map(({ componentPath }) => componentPath)
       ])
     )
+    const isMounted = (componentPath: string) => (
+      ui.getHandles(componentPath, context).length > 0
+    )
     if (!formRoute) {
-      // Reveal them, and focus the first one:
+      // Reveal them, and focus the first one that is mounted then:
       const componentPaths = [...componentPathsByDataPath.values()].flat()
       for (const componentPath of componentPaths) {
-        await ui.reveal(context, componentPath, {
-          focus: componentPath === componentPaths[0]
-        })
+        await ui.reveal(context, componentPath)
+      }
+      const componentPath = componentPaths.find(isMounted)
+      if (componentPath) {
+        await ui.reveal(context, componentPath, { focus: true })
       }
     }
     return [
       ...displayedDataPaths,
-      ...dataPaths.filter(
-        dataPath => componentPathsByDataPath.get(dataPath)!.length > 0
+      ...dataPaths.filter(dataPath =>
+        componentPathsByDataPath.get(dataPath)!.some(isMounted)
       )
     ]
   }
@@ -270,6 +288,10 @@ export function createDataContext({
 
     get componentPath() {
       return getComponentPath()
+    },
+
+    get componentTree() {
+      return componentTree
     },
 
     get isDirty() {
@@ -374,5 +396,6 @@ export function createDataContext({
     resetItem,
     mergeItem
   })
+  const componentTree = markRaw(new ComponentTree(context))
   return context
 }

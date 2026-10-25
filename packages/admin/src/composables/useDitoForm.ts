@@ -14,6 +14,7 @@ import { hasRoutedForms, ViewNode } from '../utils/RouteTree.ts'
 import { isPage } from '../utils/schema/structure.js'
 import {
   adminContextKey,
+  componentPathKey,
   dataContextKey,
   resourceContextKey,
   routeContextKey,
@@ -38,6 +39,7 @@ export function useDitoForm({
   const adminContext = inject(adminContextKey)!
   const routeContext = inject(routeContextKey, null)
   const isInDialog = !!inject(dataContextKey, null)?.closeDialog
+  const parent = inject(componentPathKey, null)
   // Like the forms of `fields()` callbacks, the form renders while it's set
   // up. Outside of dialogs, there is nothing to cancel:
   const schema = reactive({
@@ -88,6 +90,8 @@ export function useDitoForm({
   const { dataContext, model } = useContainer({
     schema: () => schema,
     sourceSchema: () => sourceSchema,
+    // The form continues the path of the component that sets it up:
+    componentPath: () => parent?.node.componentPath ?? '',
     isCreating: () => itemId.value === null,
     canSave: () => hasSubmitButton(form.buttonSchemas.value),
     // Buttons submit the form, not a source around it:

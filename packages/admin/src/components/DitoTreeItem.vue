@@ -116,7 +116,7 @@ import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { useSchemaEvents } from '../composables/useSchemaEvents.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
-import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
+import { getRelativeDataPath } from '../utils/data.js'
 import {
   getItemFormSchema,
   getNamedSchemas,
@@ -155,21 +155,14 @@ export default {
     const { sourceContext } = services
     const { getSchemaValue, getLabel, shouldRenderSchema } =
       useSchemaValue(context)
-    // Continue the path of the tree list, whose name the data path of the root
-    // item doesn't contain:
-    const getComponentPath = dataPath => {
-      const relativeDataPath = getRelativeDataPath(
-        dataPath,
-        sourceContext.dataPath
-      )
-      return relativeDataPath
-        ? appendDataPath(sourceContext.componentPath, relativeDataPath)
-        : sourceContext.componentPath
-    }
-    const { componentPath } = useComponentPath(
-      () => props.dataPath,
-      () => getComponentPath(props.dataPath)
-    )
+    // The root item of lists holds the list, and stands for the tree list,
+    // whose path its children continue:
+    const getDataPath = () =>
+      props.level > 0 ? props.dataPath : sourceContext.dataPath
+    const { node, componentPath } = useComponentPath(getDataPath)
+    const getComponentPath = dataPath =>
+      node.value.getNode(getRelativeDataPath(dataPath, getDataPath()))
+        .componentPath
     const { getItemDataPath, getItemLabel } = useSourceItems({
       services,
       getContext: () => context,

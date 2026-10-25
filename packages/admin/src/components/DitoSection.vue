@@ -41,6 +41,7 @@ export default {
       // The scope of the widgets in the slot:
       provide(propertyScopeKey, {
         properties: property.properties,
+        node: scope.node.getNode(name),
         get data() {
           return scope.data[name]
         },

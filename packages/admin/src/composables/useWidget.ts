@@ -1,11 +1,11 @@
-import { h, inject, onUnmounted, type VNode } from 'vue'
+import { h, inject, onMounted, onUnmounted, type VNode } from 'vue'
 import { appendDataPath } from '../utils/data.js'
 import { getRootData } from '../utils/services.ts'
 import { getPropertyNode } from '../utils/schema/properties.js'
 import { layoutKey, propertyScopeKey } from '../utils/keys.ts'
 import {
   useComponentPath,
-  continueComponentPath
+  continueComponentNode
 } from './useComponentPath.ts'
 import { useServices } from './useSchemaContext.ts'
 import { useStore } from './useStore.ts'
@@ -86,13 +86,23 @@ export function useWidget(
       ? addOccurrence(dataContext!, appendDataPath(scope.dataPath, name))
       : 0
   const segment = occurrence > 0 ? `~${occurrence + 1}` : null
-  useComponentPath(
+  const { componentPath } = useComponentPath(
     () => scope.dataPath,
-    parent => {
-      const path = continueComponentPath(parent, scope.dataPath)
-      return segment ? appendDataPath(path, segment) : path
-    }
+    parent =>
+      continueComponentNode(parent, scope.dataPath).getNode(segment ?? '')
   )
+  // The paths of widgets follow their layout, so their containers attach to
+  // the node of their property while they're mounted, to display its errors:
+  if (hasValue) {
+    const node = scope.node.getNode(name!)
+    const leaf = {
+      get componentPath() {
+        return appendDataPath(componentPath.value, name!)
+      }
+    }
+    onMounted(() => node.leaves.add(leaf))
+    onUnmounted(() => node.leaves.delete(leaf))
+  }
   // Like the components of panes, widgets keep their state in the store of
   // their layout, while they're unmounted:
   const layoutStore = useStore(layout.props)
