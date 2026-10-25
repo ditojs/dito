@@ -87,7 +87,7 @@ export function useDitoForm({
     isTransient: () => false
   })
 
-  const { dataContext, model } = useContainer({
+  const { dataContext, model, store } = useContainer({
     schema: () => schema,
     sourceSchema: () => sourceSchema,
     // The form continues the path of the component that sets it up:
@@ -169,6 +169,7 @@ export function useDitoForm({
 
   provide(schemaFormKey, {
     dataContext,
+    store,
     buttonSchemas: form.buttonSchemas,
     isPageForm: isInPage && !isInDialog
   })

@@ -115,7 +115,8 @@ export default {
           dataPath: () => panelDataPath.value,
           rootData: () => getRootData(services),
           componentPath: () => props.panelComponentPath,
-          parentModel: () => services.dataContext?.model ?? null
+          parentModel: () => services.dataContext?.model ?? null,
+          store: props.store
         })
       : null
     const hasOwnData = !!container

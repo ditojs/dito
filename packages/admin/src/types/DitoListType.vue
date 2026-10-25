@@ -107,7 +107,7 @@
                 :dataPath="getDataPath(index)"
                 :data="item"
                 :index="index"
-                :store="getItemStore(item)"
+                :store="getItemStore(item, index)"
                 :disabled="disabled || isLoading"
                 :collapsed="collapsed"
                 :collapsible="collapsible"
@@ -133,7 +133,7 @@
               :formSchema="getItemFormSchema(schema, item, context)"
               :dataPath="getDataPath(index)"
               :data="item"
-              :store="getItemStore(item)"
+              :store="getItemStore(item, index)"
               :disabled="disabled || isLoading"
               :deletable="deletable"
               :draggable="draggable"
@@ -235,7 +235,8 @@ const DitoListType = {
     // The inlined schemas of the items read their state from their stores:
     const hasCollapsedItems = computed(() =>
       listData.value.some(
-        item => !(getItemStore(item).opened ?? !source.collapsed.value)
+        (item, index) =>
+          !(getItemStore(item, index).opened ?? !source.collapsed.value)
       )
     )
     const hasToggleAll = computed(
@@ -251,9 +252,9 @@ const DitoListType = {
     // Only the loaded items, which fire their toggle events themselves:
     const toggleAll = () => {
       const opened = hasCollapsedItems.value
-      for (const item of listData.value) {
-        getItemStore(item).opened = opened
-      }
+      listData.value.forEach((item, index) => {
+        getItemStore(item, index).opened = opened
+      })
     }
     // The label of the container toggles all items, if there is one:
     const labelToggle = inject(labelToggleKey)

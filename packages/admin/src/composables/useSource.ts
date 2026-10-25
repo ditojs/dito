@@ -22,7 +22,7 @@ import {
 } from '../utils/keys.ts'
 import { getResource, getMemberResource } from '../utils/resource.js'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
-import { initializeData, getItemUid } from '../utils/schema/data.js'
+import { initializeData } from '../utils/schema/data.js'
 import {
   getButtonSchemas,
   getViewSchema,
@@ -236,8 +236,8 @@ export function useSource(
         null)
       : null
 
-  const getItemStore = (item: Data) =>
-    itemStores.getStore(getItemUid(props.schema, item))
+  const getItemStore = (item: Data, index: number) =>
+    itemStores.getStore(props.schema, item, index)
 
   // Insert `data` as an item with the form `schema` at `index`, or else at the
   // end, and initialize it in its place in the data:
@@ -275,7 +275,9 @@ export function useSource(
     const item = insertItem(schema, type ? { type } : {}, index)
     if (collapsible.value) {
       // Open the new item, which its inlined schema reads from its store:
-      const store = isObjectSource.value ? props.store : getItemStore(item)
+      const store = isObjectSource.value
+        ? props.store
+        : getItemStore(item, listData.value.indexOf(item))
       store.opened = true
     }
     onChange()
@@ -299,7 +301,7 @@ export function useSource(
         const currentIndex = getCurrentIndex()
         const isPresent = currentIndex !== -1
         if (isPresent) {
-          itemStores.removeStore(getItemUid(props.schema, item))
+          itemStores.removeStore(props.schema, item, currentIndex)
           // Sources with a resource delete the item through it, not as edit:
           if (currentIndex === null) {
             if (isTransientItem) {

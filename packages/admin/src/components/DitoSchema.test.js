@@ -744,6 +744,52 @@ describe('DitoSchema', () => {
     expect(admin.context.isWidePage).toBe(true)
   })
 
+  it('keeps the tabs of inlined schemas while their content is closed', async () => {
+    const { findContainer, wrapper } = await mountSchema({
+      schema: {
+        fields: {
+          details: {
+            type: 'section',
+            collapsible: true,
+            fields: {
+              author: {
+                type: 'object',
+                inlined: true,
+                form: {
+                  type: 'form',
+                  tabs: {
+                    main: { type: 'tab', fields: { name: { type: 'text' } } },
+                    more: { type: 'tab', fields: { bio: { type: 'text' } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: { author: { name: 'Jane', bio: 'Bath' } }
+    })
+    const getActiveTab = () =>
+      wrapper.find('.dito-tabs--inlined .dito-tabs__link--active').text()
+    const toggle = async () => {
+      await findContainer('details')
+        .find('.dito-schema-header .dito-label')
+        .trigger('click')
+      // Wait for the transition of the content:
+      await new Promise(resolve => setTimeout(resolve, 500))
+      await flushPromises()
+    }
+    await wrapper.findAll('.dito-tabs--inlined .dito-tabs__link')[1].trigger(
+      'click'
+    )
+    expect(getActiveTab()).toBe('More')
+    // Closed, the section unmounts its content, which mounts again:
+    await toggle()
+    expect(wrapper.find('.dito-tabs--inlined').exists()).toBe(false)
+    await toggle()
+    expect(getActiveTab()).toBe('More')
+  })
+
   describe('revealing components', () => {
     async function mountCollapsedSection() {
       const result = await mountSchema({
@@ -764,12 +810,11 @@ describe('DitoSchema', () => {
         .findAllComponents(DitoSchema)
         .map(({ vm }) => vm)
         .find(vm => vm.$ !== result.schemaComponent.$)
-      const reveal = componentPath =>
-        result.admin.context.ui.reveal(
-          result.routeComponent.dataContext,
-          componentPath,
-          { focus: true }
-        )
+      const { dataContext } = result.routeComponent
+      const reveal = async componentPath => {
+        await dataContext.componentTree.reveal(componentPath, { focus: true })
+        result.admin.context.ui.focus(dataContext, componentPath)
+      }
       return { ...result, section, reveal }
     }
 

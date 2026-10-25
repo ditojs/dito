@@ -1,4 +1,4 @@
-import { markRaw, nextTick, shallowReactive } from 'vue'
+import { nextTick, shallowReactive } from 'vue'
 import {
   isEmpty,
   labelize,
@@ -84,6 +84,8 @@ export interface DataContextOptions {
   mergeItem(data: any): any
   // Forms take over the errors of their item in the parent's data:
   copyErrors?: () => void
+  // The store of the schema that displays the data:
+  store: Record<string, any>
 }
 
 export function createDataContext({
@@ -100,7 +102,8 @@ export function createDataContext({
   getVerbs,
   resetItem,
   mergeItem,
-  copyErrors
+  copyErrors,
+  store
 }: DataContextOptions): DataContext {
   // Validate the data, not the mounted components, to include collapsed
   // schemas and closed nested forms:
@@ -252,11 +255,12 @@ export function createDataContext({
       // Reveal them, and focus the first one that is mounted then:
       const componentPaths = [...componentPathsByDataPath.values()].flat()
       for (const componentPath of componentPaths) {
-        await ui.reveal(context, componentPath)
+        await componentTree.reveal(componentPath)
       }
       const componentPath = componentPaths.find(isMounted)
       if (componentPath) {
-        await ui.reveal(context, componentPath, { focus: true })
+        await componentTree.reveal(componentPath, { focus: true })
+        ui.focus(context, componentPath)
       }
     }
     return [
@@ -396,6 +400,6 @@ export function createDataContext({
     resetItem,
     mergeItem
   })
-  const componentTree = markRaw(new ComponentTree(context))
+  const componentTree = new ComponentTree(context, store)
   return context
 }

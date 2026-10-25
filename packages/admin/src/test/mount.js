@@ -349,12 +349,12 @@ function createMountResult(admin, routeComponent) {
 
   // Focuses the component at `dataPath`, revealing it first, as showing its
   // errors does.
-  const focusField = dataPath =>
-    admin.context.ui.reveal(
-      routeComponent.dataContext,
-      admin.getContainer(routeComponent, dataPath).componentPath,
-      { focus: true }
-    )
+  const focusField = async dataPath => {
+    const { dataContext } = routeComponent
+    const { componentPath } = admin.getContainer(routeComponent, dataPath)
+    await dataContext.componentTree.reveal(componentPath, { focus: true })
+    admin.context.ui.focus(dataContext, componentPath)
+  }
 
   // Returns a wrapper of `element`, or an empty one that doesn't exist:
   const wrapElement = element =>

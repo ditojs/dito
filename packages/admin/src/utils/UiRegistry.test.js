@@ -45,42 +45,25 @@ describe('UiRegistry', () => {
     expect(registry.getHandles('title', dataContext)).toEqual([handle])
   })
 
-  it('reveals components from the outside in, and focuses them', async () => {
+  it('focuses the component of a data context at a path', () => {
     const registry = new UiRegistry()
-    const calls = []
-    const createSchema = name => ({
-      dataContext,
-      reveal: async (componentPath, { focus }) => {
-        calls.push([name, componentPath, focus])
-      }
-    })
-    registry.register(() => 'main/chapters/0', createSchema('item'))
-    registry.register(() => '', createSchema('root'))
-    // Handles of other containers aren't asked:
-    registry.register(() => 'main', { dataContext: {}, reveal: vi.fn() })
     const focus = vi.fn()
+    const otherFocus = vi.fn()
     registry.register(() => 'main/chapters/0/title', { dataContext, focus })
-    await registry.reveal(dataContext, 'main/chapters/0/title', { focus: true })
-    expect(calls).toEqual([
-      ['root', 'main/chapters/0/title', true],
-      ['item', 'main/chapters/0/title', true]
-    ])
+    registry.register(() => 'main/chapters/0/title', {
+      dataContext: {},
+      focus: otherFocus
+    })
+    registry.focus(dataContext, 'main/chapters/0/title')
     expect(focus).toHaveBeenCalledOnce()
+    expect(otherFocus).not.toHaveBeenCalled()
   })
 
-  it('focuses the component of the value of paths inside it', async () => {
+  it('focuses the component of the value of paths inside it', () => {
     const registry = new UiRegistry()
     const focus = vi.fn()
     registry.register(() => 'address', { dataContext, focus })
-    await registry.reveal(dataContext, 'address/street', { focus: true })
+    registry.focus(dataContext, 'address/street')
     expect(focus).toHaveBeenCalledOnce()
-  })
-
-  it(`doesn't focus components when only revealing them`, async () => {
-    const registry = new UiRegistry()
-    const focus = vi.fn()
-    registry.register(() => 'title', { dataContext, focus })
-    await registry.reveal(dataContext, 'title')
-    expect(focus).not.toHaveBeenCalled()
   })
 })

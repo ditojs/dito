@@ -234,7 +234,7 @@ export default {
         emitEvent('toggle', { context: { collapsed: !opened.value } })
       },
 
-      store: computed(() => sourceContext.store),
+      store: computed(() => node.value.store),
       disabled: computed(() => sourceContext.isDisabled),
       hasErrors: computed(() =>
         services.dataContext.model.errors.hasWithin(props.data)

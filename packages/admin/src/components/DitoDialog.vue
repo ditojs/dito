@@ -20,6 +20,7 @@
       DitoSchema(
         :schema="schema"
         :data="dialogData"
+        :store="store"
         padding="root"
         scrollable
         generateLabels
@@ -75,7 +76,7 @@ export default {
     }
 
     // Dialogs render in the root, outside of routes and sources:
-    const { dataContext, services } = useContainer({
+    const { dataContext, services, store } = useContainer({
       schema: () => schema.value,
       data: initialData,
       canSave: () => hasSubmitButton(buttonSchemas.value),
@@ -123,6 +124,7 @@ export default {
 
     return {
       schema,
+      store,
       dialogData,
       buttonSchemas,
       submit,
