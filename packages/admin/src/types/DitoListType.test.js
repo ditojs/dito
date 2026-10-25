@@ -16,6 +16,7 @@ import {
 import DitoSchema from '../components/DitoSchema.vue'
 import DitoSchemaInlined from '../components/DitoSchemaInlined.vue'
 import DitoSchemaField from '../components/DitoSchemaField.vue'
+import DitoPaneRows from '../components/DitoPaneRows.vue'
 
 const ingredientForm = {
   type: 'form',
@@ -106,6 +107,22 @@ describe('DitoListType', () => {
       expect(await submit()).toMatchObject({
         ingredients: [{ name: 'Flour', amount: 400 }]
       })
+    })
+
+    it(`doesn't render the fields of other items when adding one`, async () => {
+      // Spied on, as Vue doesn't count the renders of components:
+      const render = vi.spyOn(DitoPaneRows, 'render')
+      const { findField } = await mountSchema({
+        schema: createRecipeSchema({ creatable: true }),
+        data: { ingredients: [{ name: 'Flour' }, { name: 'Salt' }] }
+      })
+      render.mockClear()
+      const field = findField('ingredients')
+      await field.find('.dito-create-button button').trigger('click')
+      await flushPromises()
+      expect(getItemNames(field)).toEqual(['Flour', 'Salt', ''])
+      // Only the rows of the new item:
+      expect(render).toHaveBeenCalledOnce()
     })
 
     it('defaults to an empty list', async () => {

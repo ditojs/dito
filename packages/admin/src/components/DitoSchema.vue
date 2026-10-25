@@ -105,13 +105,8 @@ slot(name="prepend")
         :disabled="disabled"
         :compact="compact"
         :generateLabels="generateLabels"
+        :layout="layout"
       )
-        //- The component of sections that lay out their components:
-        template(
-          v-if="$slots.default"
-          #default
-        )
-          slot
       slot(
         v-if="!inlined && dataContext.hasData"
         name="buttons"
@@ -162,6 +157,7 @@ import {
   panelTabKey,
   schemaContextKey,
   schemaEventsKey,
+  schemaLayoutKey,
   sourceSchemaKey
 } from '../utils/keys.ts'
 
@@ -198,6 +194,15 @@ export default {
     const router = useRouter()
     const sourceSchema = inject(sourceSchemaKey, null)
     const panelTab = inject(panelTabKey, null)
+    // The layout of the main pane: the schema's own slot, or the layout that
+    // the component around it provides. The schemas inside get none:
+    const providedLayout = inject(schemaLayoutKey, null)
+    provide(schemaLayoutKey, null)
+    const layout = computed(() =>
+      slots.default
+        ? () => slots.default()
+        : (providedLayout?.value ?? null)
+    )
     const { componentPath } = useComponentPath(() => props.dataPath)
     const schemaContext = useSchemaContext(props)
     const { services } = schemaContext
@@ -522,11 +527,13 @@ export default {
         () => hasLabel.value || hasTabs.value || !!props.schema?.clipboard
       ),
 
+      layout,
+
       // Pages place their component without any fields:
       hasMainPane: computed(() => {
         const { fields } = props.schema
         return (
-          !!slots.default ||
+          !!layout.value ||
           !!fields && Object.keys(fields).length > 0
         )
       }),

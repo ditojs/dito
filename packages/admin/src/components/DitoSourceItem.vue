@@ -20,23 +20,6 @@ DitoSchemaInlined(
   @delete="$emit('delete')"
   @move="delta => $emit('move', delta)"
 )
-  //- The components of forms that lay out their fields:
-  template(
-    v-if="formSchema.component"
-    #default
-  )
-    component(
-      :is="formSchema.component"
-      :schema="formSchema"
-      :context="formContext"
-    )
-  //- The widgets of `DitoListField` and `DitoObjectField`, with the context
-  //- of the item:
-  template(
-    v-else-if="$slots.default"
-    #default
-  )
-    slot(:context="context")
 component(
   v-else-if="schema.component"
   :is="schema.component"
@@ -51,10 +34,10 @@ span(
 </template>
 
 <script>
-import { computed, provide } from 'vue'
+import { computed, h, provide } from 'vue'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { isInlined } from '../utils/schema/structure.js'
-import { sourceSchemaKey } from '../utils/keys.ts'
+import { schemaLayoutKey, sourceSchemaKey } from '../utils/keys.ts'
 import { getHtml } from '../utils/html.js'
 
 export default {
@@ -82,7 +65,7 @@ export default {
     insertIndex: { type: Number, default: null }
   },
 
-  setup(props) {
+  setup(props, { slots }) {
     // The form of the item displays an item of the source:
     provide(
       sourceSchemaKey,
@@ -92,16 +75,33 @@ export default {
     const label = computed(() =>
       services.sourceContext.getSourceItemLabel(props.data, props.index)
     )
+    // For the custom components that render the items, and the slots of
+    // `DitoListField` and `DitoObjectField`:
+    const context = createContext()
+    // For the components that lay out the forms of inlined items:
+    const formContext = createContext({
+      get schema() {
+        return props.formSchema
+      }
+    })
+    // The layout of inlined items: the component of their form, or the widgets
+    // of `DitoListField` and `DitoObjectField`, with the context of the item:
+    provide(
+      schemaLayoutKey,
+      computed(() =>
+        props.formSchema.component
+          ? () =>
+              h(props.formSchema.component, {
+                schema: props.formSchema,
+                context: formContext
+              })
+          : slots.default
+            ? () => slots.default({ context })
+            : null
+      )
+    )
     return {
-      // For the custom components that render the items, and the slots of
-      // `DitoListField` and `DitoObjectField`:
-      context: createContext(),
-      // For the components that lay out the forms of inlined items:
-      formContext: createContext({
-        get schema() {
-          return props.formSchema
-        }
-      }),
+      context,
       isInlined: computed(() => isInlined(props.schema)),
       label,
       labelHtml: computed(() => getHtml(label.value))

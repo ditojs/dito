@@ -1,4 +1,10 @@
-import type { InjectionKey, MaybeRef, Ref, ShallowRef } from 'vue'
+import type {
+  InjectionKey,
+  MaybeRef,
+  Ref,
+  ShallowRef,
+  VNodeChild
+} from 'vue'
 import type { AdminContext } from './AdminContext.ts'
 import type { DataContext } from './DataContext.ts'
 import type { ResourceContext } from './ResourceContext.ts'
@@ -29,6 +35,9 @@ export interface Layout {
   readonly entries: Ref<Record<string, any>[]>
   getEntry(name: string): Record<string, any>
 }
+
+// Renders the components of a layout, see `schemaLayoutKey`:
+export type SchemaLayout = () => VNodeChild
 
 // The form of `useDitoForm()`, which `DitoSchemaForm` renders:
 export interface SchemaForm {
@@ -86,6 +95,12 @@ export const labelToggleKey: Key<Ref<LabelToggle | null>> =
     'labelToggle'
   )
 export const layoutKey: Key<Layout | null> = Symbol('layout')
+// The layout that the next schema renders in its main pane instead of its
+// fields, e.g. the `component` of a section, or the slot of `DitoListField`
+// for each item. Provided instead of passed down as slots, as forwarded slots
+// render all components on their way again with each render of their origin:
+export const schemaLayoutKey: Key<Ref<SchemaLayout | null>> =
+  Symbol('schemaLayout')
 export const schemaFormKey: Key<SchemaForm> = Symbol('schemaForm')
 export const propertyScopeKey: Key<PropertyScope> = Symbol('propertyScope')
 export const panelTabKey: Key<PanelTab | null> = Symbol('panelTab')

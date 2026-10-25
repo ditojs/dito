@@ -1,6 +1,6 @@
 <template lang="pug">
 DitoPaneRows(
-  v-if="dataContext.hasData && (entries.length > 0 || $slots.default)"
+  v-if="dataContext.hasData && (entries.length > 0 || layout)"
   :id="tabPanelId"
   :role="tab ? 'tabpanel' : null"
   :aria-labelledby="tabId"
@@ -11,13 +11,8 @@ DitoPaneRows(
   :disabled="disabled"
   :compact="compact"
   :generateLabels="generateLabels"
+  :layout="layout"
 )
-  //- The component of sections that lay out their components:
-  template(
-    v-if="$slots.default"
-    #default
-  )
-    slot
 </template>
 
 <script>
@@ -56,10 +51,12 @@ export default {
     padding: { type: String, default: null },
     disabled: { type: Boolean, default: false },
     compact: { type: Boolean, default: false },
-    generateLabels: { type: Boolean, default: false }
+    generateLabels: { type: Boolean, default: false },
+    // Renders the components of layout sections, see `schemaLayoutKey`:
+    layout: { type: Function, default: null }
   },
 
-  setup(props, { slots }) {
+  setup(props) {
     const services = useServices()
     const { getChildStore } = useStore(props)
     const sourceSchema = inject(sourceSchemaKey, null)
@@ -166,7 +163,7 @@ export default {
     // and nested panes end the layout above them:
     provide(
       layoutKey,
-      slots.default
+      props.layout
         ? {
             props,
             componentPath,
@@ -185,7 +182,7 @@ export default {
     )
     // The widgets in the layouts of forms with written properties edit the
     // form's data by the names of its properties:
-    if (slots.default && props.schema?.properties) {
+    if (props.layout && props.schema?.properties) {
       provide(propertyScopeKey, {
         get properties() {
           return props.schema.properties
