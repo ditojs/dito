@@ -28,8 +28,11 @@ export class UiRegistry {
   // The routes by level. Routes that are being left stay until they're
   // unmounted, or replaced by the ones of the new route:
   readonly routes = shallowReactive<RouteContext[]>([])
-  // Reactive, as routes follow the components that claim them:
+  // Reactive, as form routes follow the components at their paths:
   readonly #handles = shallowReactive(new Map<string, Set<UiHandle>>())
+  // The handles that claim routes, apart, so that the many components that
+  // can't claim don't change the claims when they mount:
+  readonly #claimants = shallowReactive(new Set<UiHandle>())
 
   // Follow the changes of the component path, e.g. when list items move:
   register(getComponentPath: () => string, handle: UiHandle): () => void {
@@ -42,6 +45,9 @@ export class UiRegistry {
       return componentPath
     }
     let componentPath = add(getComponentPath())
+    if (handle.claimRoute) {
+      this.#claimants.add(handle)
+    }
     const stop = watch(getComponentPath, path => {
       this.#handles.get(componentPath)!.delete(handle)
       componentPath = add(path)
@@ -49,6 +55,7 @@ export class UiRegistry {
     return () => {
       stop()
       this.#handles.get(componentPath)!.delete(handle)
+      this.#claimants.delete(handle)
     }
   }
 
@@ -85,19 +92,15 @@ export class UiRegistry {
   }
 
   // The first component that claims the route's `path`, in the order the
-  // components were created, like the ones that display errors:
+  // components were created:
   claimRoute(
     dataContext: DataContext,
     path: string
   ): RouteClaim | TabClaim | null {
-    for (const handles of this.#handles.values()) {
-      for (const handle of handles) {
-        const claim =
-          handle.dataContext === dataContext
-            ? (handle.claimRoute?.(path) ?? null)
-            : null
-        if (claim) return claim
-      }
+    for (const handle of this.#claimants) {
+      const claim =
+        handle.dataContext === dataContext ? handle.claimRoute!(path) : null
+      if (claim) return claim
     }
     return null
   }

@@ -424,13 +424,13 @@ export default {
     const unregisterUi = adminContext.ui.register(() => componentPath.value, {
       dataContext: services.dataContext,
       // The tabs of the route's schema claim their names below its path:
-      claimRoute(path) {
-        const tab =
-          isTopLevelSchema.value && routeContext
-            ? getRelativeDataPath(path, routeContext.path)
-            : null
-        return tab && renderedTabs.value?.[tab] ? { tab } : null
-      },
+      claimRoute:
+        isTopLevelSchema.value && routeContext
+          ? path => {
+              const tab = getRelativeDataPath(path, routeContext.path)
+              return tab && renderedTabs.value?.[tab] ? { tab } : null
+            }
+          : undefined,
       async reveal(path, { focus }) {
         const [tab] = parseDataPath(
           getRelativeDataPath(path, componentPath.value)

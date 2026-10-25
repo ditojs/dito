@@ -88,7 +88,7 @@ describe('RouteContext', () => {
     expect(chapterForm.routeContext.claim).toBe(claim)
   })
 
-  it('resolves claims once per schema while components mount', async () => {
+  it('resolves claims only for the components that claim', async () => {
     const { wrapper, findContainer, findField } = await mountForm({
       schema: {
         fields: {
@@ -119,9 +119,9 @@ describe('RouteContext', () => {
       .trigger('click')
     await flushPromises()
     expect(findField('details').findAll('input')).toHaveLength(50)
-    expect(claimRoute.mock.calls.length).toBeLessThanOrEqual(
-      wrapper.findAll('.dito-schema').length
-    )
+    // Not once per mounted schema, as only the form's schema can claim:
+    expect(wrapper.findAll('.dito-schema').length).toBeGreaterThan(50)
+    expect(claimRoute.mock.calls.length).toBeLessThan(5)
     claimRoute.mockRestore()
   })
 
