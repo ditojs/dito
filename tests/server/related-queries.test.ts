@@ -300,11 +300,10 @@ describe('Related queries', () => {
   describe('relatedQuery()', () => {
     it('finds the related models of several owners', async () => {
       const { ada, grace } = await insertLibrary()
-      const titles = await Author.relatedQuery('books')
+      const books = await Author.relatedQuery('books')
         .for([ada.id, grace.id])
         .orderBy('title')
-        .pluck('title')
-      expect(titles).toEqual(['Atlas', 'Bestiary', 'Codex'])
+      expect(getTitles(books)).toEqual(['Atlas', 'Bestiary', 'Codex'])
     })
 
     it('aliases the related table with the relation name', async () => {
