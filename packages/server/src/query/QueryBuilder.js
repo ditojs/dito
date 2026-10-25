@@ -32,7 +32,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   #appliedScopes = {}
   #allowFilters = null
   #omits = []
-  #isTransacted = false
+  #transacted = false
 
   // @override
   clone() {
@@ -45,7 +45,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     copy.#scopes = { ...this.#scopes }
     copy.#allowScopes = this.#allowScopes ? { ...this.#allowScopes } : null
     copy.#ignoreScopes = { ...this.#ignoreScopes }
-    copy.#isTransacted = this.#isTransacted
+    copy.#transacted = this.#transacted
     return copy
   }
 
@@ -72,7 +72,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this.#applyScopes()
     // Execute a clone in the transaction, so that the query itself isn't bound
     // to it and can be executed again:
-    return this.#isTransacted && !this.knex().isTransaction
+    return this.#transacted && !this.knex().isTransaction
       ? this.knex().transaction(trx => this.clone().transacting(trx).execute())
       : super.execute()
   }
@@ -469,7 +469,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     // Objection may split arrays into several queries, so insert them in one
     // transaction:
     if (isArray(data) && data.length > 1) {
-      this.#isTransacted = true
+      this.#transacted = true
     }
     return super[method](data)
   }
@@ -560,7 +560,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     ) {
       throw new QueryBuilderError(`Unable to ${action} models without ids.`)
     }
-    this.#isTransacted = true
+    this.#transacted = true
     // Only save the models, not their relations, and fetch them regardless of
     // the default scope, like `insertAndFetch()`:
     return this.ignoreScope('default')[graphMethod](
@@ -695,7 +695,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       }
     )
     // Graphs are written in several queries, so write them in one transaction:
-    this.#isTransacted = true
+    this.#transacted = true
     this[method](graphProcessor.getData(), graphProcessor.getOptions())
     return this
   }
