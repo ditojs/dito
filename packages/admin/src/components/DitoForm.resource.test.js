@@ -192,6 +192,28 @@ describe('DitoForm resources', () => {
       }
     })
 
+    it('submits buttons with resources that build on their parent', async () => {
+      const { wrapper, request, settle } = await mountBookForm({
+        schema: {
+          buttons: {
+            publish: {
+              type: 'submit',
+              label: 'Publish',
+              resource: ({ parent }) => `/items/${parent.id}/publish`
+            }
+          }
+        }
+      })
+      await enterValue(wrapper.find('input[name="name"]'), 'Persuasion')
+      await wrapper.find('button[id$="publish"]').trigger('click')
+      await settle()
+      expect(getRequests(request)).toContainEqual([
+        'patch',
+        '/items/1/publish',
+        { id: 1, name: 'Persuasion', note: 'Classic' }
+      ])
+    })
+
     it('keeps the form open and dirty when the save fails', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       const { admin, wrapper, data, routeComponent, submit } =
