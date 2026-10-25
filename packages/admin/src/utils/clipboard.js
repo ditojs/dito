@@ -1,10 +1,13 @@
 import { reactive } from 'vue'
+import appState from '../appState.js'
 
 // Copied data also serves as fallback when the system clipboard can't be read:
 const clipboardState = reactive({ data: null })
 
 // Counts copies and reads, to ignore reads overtaken by newer ones:
 let clipboardVersion = 0
+
+let isWatchingClipboard = false
 
 // Mark the data with `$schema`, and with `$type` if it isn't the data of a
 // form, e.g. 'list' or 'upload':
@@ -55,5 +58,23 @@ export async function readClipboardData() {
   // Keep the state if the clipboard is empty:
   if (json && version === clipboardVersion) {
     clipboardState.data = JSON.parse(json)
+  }
+}
+
+// Read the system clipboard once for all clipboards, and again when it can
+// change, on copy and window focus:
+export function watchClipboardData() {
+  if (!isWatchingClipboard) {
+    isWatchingClipboard = true
+    updateClipboardData()
+    document.addEventListener('copy', updateClipboardData)
+    window.addEventListener('focus', updateClipboardData)
+  }
+}
+
+function updateClipboardData() {
+  // Only Chrome reads the clipboard without asking for permission:
+  if (appState.agent.chrome) {
+    readClipboardData().catch(() => {}) // Report errors only when pasting.
   }
 }

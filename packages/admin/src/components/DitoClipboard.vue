@@ -34,8 +34,6 @@
 import { computed, onMounted, useTemplateRef } from 'vue'
 import { isObject, isFunction, clone } from '@ditojs/utils'
 import { DitoButton, DitoMenuButton } from '@ditojs/ui/src'
-import appState from '../appState.js'
-import { useDomEvents } from '../composables/useDomEvents.ts'
 import { useServices } from '../composables/useSchemaContext.ts'
 import {
   createClipboardData,
@@ -43,7 +41,8 @@ import {
   getClipboardData,
   hasClipboardData,
   copyClipboardData,
-  readClipboardData
+  readClipboardData,
+  watchClipboardData
 } from '../utils/clipboard.js'
 import {
   createInterchangeZip,
@@ -76,15 +75,7 @@ export default {
   setup(props, { emit }) {
     const services = useServices()
     const { adminContext } = services
-    const { domOn } = useDomEvents()
     const input = useTemplateRef('input')
-
-    const updateClipboardData = () => {
-      // Only Chrome reads the clipboard without asking for permission:
-      if (appState.agent.chrome) {
-        readClipboardData().catch(() => {}) // Report errors only when pasting.
-      }
-    }
 
     // Notifications log their error too:
     const notifyError = (error, {
@@ -149,12 +140,7 @@ export default {
       }
     }
 
-    onMounted(() => {
-      // Read it now, and again when it can change, on copy and window focus:
-      updateClipboardData()
-      domOn(document, { copy: updateClipboardData })
-      domOn(window, { focus: updateClipboardData })
-    })
+    onMounted(watchClipboardData)
 
     return {
       interchange: computed(() => !!clipboardOptions.value.interchange),

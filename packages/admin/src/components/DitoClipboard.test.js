@@ -113,6 +113,8 @@ describe('DitoClipboard', () => {
       JSON.stringify({ title: 'Dune' })
     )
     const { pasteButton, findField } = await mountBookForm()
+    // The clipboards of earlier tests already read it, so gain focus:
+    window.dispatchEvent(new Event('focus'))
     await flushPromises()
     expect(pasteButton.attributes('disabled')).toBeUndefined()
     await pasteButton.trigger('click')
