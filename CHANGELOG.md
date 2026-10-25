@@ -3,6 +3,30 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 6.2.0 (2026-10-25)
+
+### Behaviour changes
+
+- **server:** The `*DitoGraph*()` methods are renamed to `insertGraph()`, `upsertGraph()`, `patchGraph()` and `updateGraph()` and their variants, without aliases: `insertGraph()` and `upsertGraph()` carry dito's defaults, so related models with ids are related, also in seeds of your own, which need `{ relations: { '*': { added: 'insert' } } }` to insert them.
+- **server:** The graph methods write all graphs in Objection.js' strict mode, which needs `objection` ^4.4.0, in a transaction of their own: related models with ids that don't exist, keys that contradict their relation and copies of a model with different values throw, and updates patch the `extra` properties of references instead of failing validation. Hooks that run queries need `context.transaction`. Their options and the `graphOptions` of relations take strict settings like `{ relations: { chapters: { removed: 'preserve' } } }`, and the old options like `relate` or `noDelete` throw, see the [upgrade guide](docs/upgrading-to-6.x.md#62).
+- **admin:** Inlined forms, e.g. of list items, objects and nested sections, remember their selected tab while their route is shown, also when their content closes and opens again.
+- **admin:** Opening a nested form, also on reload, selects the tabs and opens the sections on the way to its list, which shows it once the form closes.
+
+### Fixes
+
+- **server:** `releaseUnusedAssets()` measures `deleteUnusedAfter` and `deleteUnsavedAfter` correctly in the hour that repeats when clocks go back. Before, servers in timezones with daylight saving time released assets an hour late then.
+- **server:** The static `relatedQuery()` is typed with the related model's query builder.
+- **admin:** Large lists open faster:
+  - Items of lists and objects that declare their `fields` without a `form`, or that pass on their `clipboard`, no longer render again with each render of their list.
+  - Adding an item to a list no longer renders the fields of the other items again.
+  - The styles of inputs with affixes and of draggable lists no longer slow down the browser on pages with many inputs.
+- **admin:** Long lists show their first items right away, and render the others over the next frames.
+- **ui:** Opening collapsible sections no longer grows them a few pixels too far before they settle, which happened since 6.1.0 when their fields align vertical labels.
+
+### Internal
+
+- **admin:** The buttons that `DitoButtons` receives through its slot, e.g. the edit buttons of list items, render without a `.dito-buttons__container` wrapper; the buttons of `buttons` schemas keep it. `DitoCreateButton` renders its button without the `div.dito-create-button` wrapper, with the class `dito-create-button` on the button itself. Check app styles that target these wrappers.
+
 ## 6.1.0 (2026-10-25)
 
 See [Upgrading to 6.1](docs/upgrading-to-6.x.md#61) for what apps need to
