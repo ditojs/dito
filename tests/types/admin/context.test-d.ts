@@ -137,10 +137,8 @@ describe('SchemaContext', () => {
       // @ts-expect-error The data and settings are part of the options.
       context.showDialog({ fields: {}, buttons: {} }, { data: {} })
     )
-    assertType(
-      // @ts-expect-error Dialogs need their buttons.
-      context.showDialog({ fields: {} })
-    )
+    // Dialogs without buttons are cancelled with Escape:
+    assertType(context.showDialog({ fields: { title: { type: 'text' } } }))
   })
 
   it('asks for confirmations with the text of the action', () => {

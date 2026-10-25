@@ -2504,7 +2504,7 @@ export type SchemaContext<$Item = any> = {
    */
   showDialog<$Result = unknown>(options: {
     fields?: Fields
-    buttons: Buttons<any>
+    buttons?: Buttons<any>
     data?: Record<string, any>
     settings?: {
       /** The accessible label of the dialog. */

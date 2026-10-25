@@ -11,19 +11,7 @@ import type { ViewRegistry } from './ViewRegistry.js'
 import type { Api, Schema } from './types.ts'
 import type { AdminContext as PublicAdminContext } from '../../types/index.d.ts'
 
-export interface DialogOptions {
-  fields?: Record<string, Schema>
-  buttons?: Record<string, Schema>
-  data?: Record<string, any>
-  settings?: {
-    label?: string
-    width?: number | string
-    minWidth?: number | string
-    clickToClose?: boolean
-    minDuration?: number
-  }
-}
-
+export type DialogOptions = Parameters<PublicAdminContext['showDialog']>[0]
 export type NotifyOptions = Parameters<PublicAdminContext['notify']>[0]
 
 // The authentication features that the server enables:
