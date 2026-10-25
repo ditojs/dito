@@ -36,6 +36,13 @@ describe('addDuration()', () => {
     addDuration(date, '2h')
     expect(date.toISOString()).toBe('2027-01-01T01:00:00.000Z')
   })
+
+  it('keeps dates in the hour that repeats when clocks go back', () => {
+    // 02:15 CET, after 02:15 CEST, in the `TZ` of `vitest.config.js`:
+    const date = new Date('2026-10-25T01:15:00.000Z')
+    addDuration(date, 0)
+    expect(date.toISOString()).toBe('2026-10-25T01:15:00.000Z')
+  })
 })
 
 describe('subtractDuration()', () => {

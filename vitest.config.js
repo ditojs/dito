@@ -16,6 +16,8 @@ const excludedDirectories = [
 export default defineConfig({
   test: {
     globals: true,
+    // A timezone with daylight saving time, so that tests of dates cross it:
+    env: { TZ: 'Europe/Zurich' },
     exclude: excludedDirectories,
     projects: [
       {

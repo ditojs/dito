@@ -27,7 +27,8 @@ export function checkDuration(
 }
 
 export function addDuration(date, duration) {
-  date.setMilliseconds(date.getMilliseconds() + getDuration(duration))
+  // Add to the time itself, as local times are ambiguous when clocks go back:
+  date.setTime(date.getTime() + getDuration(duration))
   return date
 }
 
