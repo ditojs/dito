@@ -5,7 +5,7 @@ import {
   mapConcurrently,
   normalizeDataPath
 } from '@ditojs/utils'
-import { QueryBuilder } from '../query/index.js'
+import { QueryBuilder } from 'objection'
 import { collectExpressionPaths, expressionPathToString } from './expression.js'
 import { GraphError } from '../errors/index.js'
 
