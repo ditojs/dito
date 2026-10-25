@@ -1,23 +1,22 @@
 <template lang="pug">
-.dito-create-button
-  DitoButton(
-    v-if="creatableForm"
-    :type="isInlined ? 'button' : 'submit'"
-    :verb="verb"
-    :subject="formLabel"
-    :text="text"
-    :disabled="disabled || isDisabled(creatableForm)"
-    @click="createItem(creatableForm)"
-  )
-  DitoMenuButton(
-    v-else-if="hasCreatableForms"
-    :items="menuItems"
-    placement="bottom-right"
-    :disabled="disabled"
-    :verb="verb"
-    :text="text"
-    @select="onSelectMenuItem"
-  )
+DitoButton.dito-create-button(
+  v-if="creatableForm"
+  :type="isInlined ? 'button' : 'submit'"
+  :verb="verb"
+  :subject="formLabel"
+  :text="text"
+  :disabled="disabled || isDisabled(creatableForm)"
+  @click="createItem(creatableForm)"
+)
+DitoMenuButton.dito-create-button(
+  v-else-if="hasCreatableForms"
+  :items="menuItems"
+  placement="bottom-right"
+  :disabled="disabled"
+  :verb="verb"
+  :text="text"
+  @select="onSelectMenuItem"
+)
 </template>
 
 <script>

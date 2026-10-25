@@ -98,6 +98,8 @@
 
   display: flex;
   justify-content: flex-end;
+  // Keep the buttons at their own height in stretched rows:
+  align-items: flex-start;
   white-space: nowrap;
 
   &,

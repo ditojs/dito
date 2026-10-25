@@ -849,7 +849,7 @@ describe('DitoForm', () => {
       }
       const getTitles = () => data.chapters.map(chapter => chapter.title)
       // The first create button inserts before the first item:
-      await expectDirtyAfter('.dito-create-button button')
+      await expectDirtyAfter('button.dito-create-button')
       expect(getTitles()).toEqual([null, 'One', 'Two'])
       await expectDirtyAfter('.dito-button--drag', 'keydown', {
         key: 'ArrowDown',
@@ -1946,7 +1946,7 @@ describe('DitoForm', () => {
         )
         const featured = admin.getComponent(form, `${form.dataPath}/featured`)
         const sections = admin.getComponent(form, `${form.dataPath}/sections`)
-        sections.$el.querySelector('.dito-create-button button').click()
+        sections.$el.querySelector('button.dito-create-button').click()
         await settle(form)
         form.data.sections[1].name = 'Ending'
         await settle(form)

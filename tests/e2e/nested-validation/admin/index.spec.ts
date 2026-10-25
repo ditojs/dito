@@ -292,7 +292,7 @@ test.describe('nested validation', () => {
     await openBook(page, url, book)
     const button = getForm(page)
       .getByRole('region', { name: 'Tags', exact: true })
-      .locator('.dito-create-button button')
+      .locator('button.dito-create-button')
     // The accessible name matches the text, so that screen readers announce
     // what is displayed.
     await expect(button).toHaveText('Tag the Book')

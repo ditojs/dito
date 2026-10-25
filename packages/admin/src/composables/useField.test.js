@@ -385,7 +385,7 @@ describe('useField()', () => {
         { data: { chapters: [{ title: 'One' }] } }
       )
       const field = findField('chapters')
-      await field.find('.dito-create-button button').trigger('click')
+      await field.find('button.dito-create-button').trigger('click')
       await settle()
       stubConfirm(true)
       await field.find('.dito-button--remove').trigger('click')

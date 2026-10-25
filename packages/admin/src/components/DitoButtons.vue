@@ -13,19 +13,13 @@
     :store="getChildStore(buttonSchema.name)"
     :disabled="disabled"
   )
-  template(
-    v-for="vnode of $slots.default?.()"
-  )
-    //- Wrap each node of the default slot in a `.dito-container`:
-    .dito-container.dito-buttons__container(
-      v-if="hasVNodeContent(vnode)"
-    )
-      component(:is="vnode")
+  //- The buttons of the slot take no containers, as they hold no fields:
+  slot
 </template>
 
 <script>
 import { computed, provide } from 'vue'
-import { hasSlotContent, hasVNodeContent } from '@ditojs/ui/src'
+import { hasSlotContent } from '@ditojs/ui/src'
 import SchemaContext from '../SchemaContext.js'
 import { useServices } from '../composables/useSchemaContext.ts'
 import { useStore } from '../composables/useStore.ts'
@@ -93,7 +87,6 @@ export default {
     return {
       ...useStore(props),
       hasSlotContent,
-      hasVNodeContent,
       buttonSchemas,
       // Without buttons to show, the buttons take no space, e.g. in dialogs:
       hasButtons: computed(() => Object.keys(buttonSchemas.value).length > 0)

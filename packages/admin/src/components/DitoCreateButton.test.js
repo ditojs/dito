@@ -36,7 +36,7 @@ async function pressKey(wrapper, key) {
 }
 
 function findMenuButton(field) {
-  return field.find('.dito-create-button button[aria-haspopup="menu"]')
+  return field.find('button.dito-create-button[aria-haspopup="menu"]')
 }
 
 describe('DitoCreateButton', () => {
@@ -192,7 +192,7 @@ describe('DitoCreateButton', () => {
     })
     const field = findField('blocks')
     expect(findMenuButton(field).exists()).toBe(false)
-    await field.find('.dito-create-button button').trigger('click')
+    await field.find('button.dito-create-button').trigger('click')
     await flushPromises()
     expect(data.blocks).toEqual([{ text: null }])
   })
