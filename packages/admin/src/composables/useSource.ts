@@ -590,10 +590,13 @@ export function useSource(
       }
       return isDisplayed ? appendDataPath(componentPath.value, path!) : null
     },
-    claimRoute: path =>
-      sourceRoute.value
-        ? claimSourceRoute(sourceRoute.value, path, adminContext.api)
-        : null,
+    // Sources with inlined items have no route, so they don't claim:
+    claimRoute: hasInlinedItems()
+      ? undefined
+      : path =>
+          sourceRoute.value
+            ? claimSourceRoute(sourceRoute.value, path, adminContext.api)
+            : null,
     getFormRoute: path =>
       sourceRoute.value
         ? getSourceFormRoute(sourceRoute.value, path, adminContext.api)
