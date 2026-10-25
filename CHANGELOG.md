@@ -3,6 +3,88 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 6.1.0 (2026-10-25)
+
+### Behaviour changes
+
+- **server:** `UserMixin` rejects `hash` in all input that isn't trusted, with the 400 response that only `UsersController` answered before. Other controllers, e.g. relation controllers of user relations, and graphs of other models could set the hashes of users directly.
+- **server:** Transacted requests don't emit `'commit'` and `'rollback'` events on `ctx.transaction` anymore. Files stored or imported before a handler rolls back without an error stay in the storage.
+- **server:** The aliases `ctx.logIn()` and `ctx.logOut()` are removed: use `ctx.login()` and `ctx.logout()`.
+- **server:** S3 storages store their files through [aws-lite](https://aws-lite.org) instead of the AWS SDK and `multer-s3`: apps install the optional peer dependencies `@aws-lite/client` and `@aws-lite/s3` instead of `@aws-sdk/client-s3` and `@aws-sdk/lib-storage`. The `s3` config keeps its shape, but only supports `endpoint`, `region` and `credentials: { accessKeyId, secretAccessKey, sessionToken }`, and requires `region` and `credentials` instead of falling back to environment variables or `~/.aws`. Other `S3ClientConfig` options are ignored, e.g. `forcePathStyle`, `maxAttempts`, `requestHandler` or `credentials` as a provider function.
+- **server:** S3 storages support the object options `acl`, `cacheControl`, `contentDisposition`, `contentEncoding`, `storageClass`, `serverSideEncryption` and `sseKmsKeyId` as strings only, and throw on setup for callbacks. They now also apply to the files that the server stores itself, e.g. imported ones. Other `multer-s3` options aren't passed on anymore, and without `acl` and `storageClass`, the defaults of the bucket apply instead of `'private'` and `'STANDARD'`.
+- **server:** Without `url`, S3 files get the URL of the bucket at the `s3.endpoint` instead of the location that S3 returns for uploads. The `MulterS3File` type is removed.
+- **server:** Asset signatures cover the files' metadata, so admin pages that were open during the update need a reload before saving their files again.
+- **admin:** The login dialog shows an at-sign icon in the username and a lock icon in the password field, and with `authentication.hasPasswordReset`, a Forgot? button in the password field instead of the Forgot password? button below the fields.
+- **admin:** Values that aren't `nullable` replace `null` with their `default`, else with the empty value of their type, e.g. `''` in text fields with `nullable: false`, `false` in switches and `[]` in lists, only when the data is created, loaded or saved: in new forms, loaded items, added or pasted list items, and in the data that saving and copying send. A `null` that is written while editing, e.g. by clearing a number or by `computeValue()`, stays in the data until then, also in lists that code sets to `null`. Numbers and dates, whose empty value is `null`, send `null` without a `default`. Values that go missing later, e.g. in items that code adds or of fields that `fields()` callbacks create, still get their defaults.
+- **admin:** The clear button of `clearable` fields with `nullable: false` sets their `default`, instead of the empty value of their type.
+- **admin:** Values without a type, e.g. of custom types without `getProperty()`, have no empty value: they stay missing unless they have a `default`, instead of starting as `null`, and keep a stored `null` when loaded.
+- **admin:** Type descriptors lose `treatsNullAsMissing`, with no alias: only the data type of a value decides whether a loaded `null` gets its default, and `defineType()` throws for the key. Custom types declare `getProperty()` to get their data type's empty value.
+- **admin:** The component `DitoFormEmbedded` is removed: `DitoForm` renders embedded forms too, with `.dito-form--embedded`.
+- **admin:** `context.nested`, deprecated as internal, is removed: `context.value` is `undefined` in contexts of items.
+- **admin:** `.dito-root` no longer carries `dito-root--overlay-sidebar` and `dito-root--sliding-sidebar`. Use `dito-page--overlay-sidebar` and `dito-page--sliding-sidebar` on `.dito-page`.
+- **admin:** `required` needs one item in all array values, as in lists and fields with multiple values: also in written array properties and in fields of custom types whose property is `type: 'array'`. Before, they accepted `[]`, as the server does. `minItems` overrides it, e.g. `minItems: 0` accepts none as an answer. Fields no longer derive `minItems: 1` into the properties that `getFormProperties()` describes, so the server accepts `[]` for them.
+- **admin:** Several fields of the same value serialize it with each option, e.g. `trim`, `exclude` or `serializeValue()`, from the first field that defines it. Before, a value edited by a field without `trim` and a second field with `trim: true` was sent untrimmed.
+- **admin:** Tree items keep their buttons hidden after dropping a dragged child until the mouse moves, like the hover catcher of `DitoDraggable`. `.dito-tree-item` no longer carries `dito-tree-item--dragging`: its `.dito-draggable` carries `dito-draggable--dragging` instead.
+- **admin:** The `properties` of tree lists and tree objects are renamed to `details`, without an alias: `properties` on trees and their `children` throws, naming `details`. Their type is the new `Details`, of `DisplaySchema`s: the display options that `ColumnSchema` shares, without the ones to sort. The class `.dito-properties` of their table is renamed to `.dito-tree-item__details`.
+- **admin:** Fields of the same name validate their value once, against the rules merged from them, each taken from the first field that sets it, instead of running the rules of every field. A `minLength` of a later field no longer applies when an earlier one sets its own. Errors still go to every field of that name.
+- **admin:** "is required" comes before the messages of the limits, e.g. of `minLength`.
+- **ui:** `DitoInput` spaces its prefix and suffix from the text by the input's horizontal padding.
+- **ui:** The Sass placeholders are named as BEM modifiers: `%field--has-errors`, `%field--disabled`, `%input--has-errors`, `%input--borderless`, `%button--disabled` and `%icon--<name>`, e.g. `%icon--clear`. Styles that extend the old names need to follow.
+- **router:** `getAllowedMethods(path)` normalizes `path` like `find()` does, with the `prefix` and, unless `strict`, the slashes. It returned no methods for paths that `find()` matches. Callers that added the `prefix` themselves pass the path without it, as to `find()`.
+- **router:** Routes with several params in one segment, e.g. `/a/:x-:y`, throw an error when added, like wildcards inside segments. They created a single param named `x-:y` before.
+
+### New
+
+- **admin:** Affixes of inputs can be buttons, `{ type: 'button', text | icon, title?, disabled?, onClick? }`, whose `onClick()` receives the context of the field.
+- **admin:** Affixes with `hover: true` only show while the input is hovered, in place of the other affixes of their side, like the clear button, which is now built this way.
+- **admin:** Custom types declare the data type of their values with `getProperty()`, in the format of the server's `properties`, e.g. `getProperty: () => ({ type: 'number' })`.
+- **ui:** A `lock` icon.
+
+### Fixes
+
+- **server:** References in `anyOf` and `oneOf` reject unknown properties again, as in 3.5, also in nullable properties like `anyOf: [{ type: 'null' }, { $ref: '#Cat' }]`. Next to a discriminator or other properties, also in `allOf` parts and definitions, the outer object rejects them instead.
+- **server:** Files stored or imported in any transaction that rolls back with an error are removed again, also in transactions of `Model.transaction()` and of Objection.js, e.g. for array inserts. Before, only transacted requests removed them.
+- **server:** Files that an S3 storage without `url` writes itself, e.g. imported or copied ones, get the S3 url as uploaded files do.
+- **server:** Asset files sent by clients can't carry `data` anymore. Before, a client that had seen the signed file of another record could overwrite its stored content by sending it back with `data`.
+- **server:** Asset files sent by clients can't change their `url`, `name`, `type`, `size` or dimensions either: their signatures cover them.
+- **admin:** Pages that turned wide for a `wide` form turn narrow again when their route shows a form that isn't wide, e.g. after switching to an item of another type.
+- **admin:** Buttons with a `resource` submit on click, also when it is a function that builds on its `parent`, e.g. ``({ parent }) => `/items/${parent.id}/publish` ``. Before, the check whether they have a resource called the function without its context, which failed for functions that read it.
+- **admin:** Removing an item whose form is open with unsaved changes closes the form without asking to discard them. Before, cancelling that question kept the form open on the removed item, and applying it overwrote the next item with the draft, or added the removed last item again.
+- **admin:** `DitoCustomField` with `name` emits `change` once the focus leaves its content after an edit, instead of on every write, and validates the value then, like the other widgets. Writes without focus in the field still emit `change` right away.
+- **admin:** `DitoCustomField` with `name` renders its slot in an element of its own, which receives the container's id, classes and attributes, so its content fills the container like other fields and the label points to it.
+- **admin:** Pressing Enter in the inputs of dialogs submits them only once. The browser's implicit submission submitted them again, showing validation errors twice.
+- **admin:** Written `nullable` string properties send empty strings of their `enum` as they are, instead of as `null`.
+- **admin:** Clearing a value that has a `default` and isn't `nullable`, e.g. a number to type another one, no longer puts the default back right away.
+- **admin:** A failed upload in a single `upload` field keeps the file that was stored before, instead of clearing the field and removing the file on save. `onChange()` receives the uploaded file instead of its upload.
+- **admin:** Options that are falsy plain values, like `0`, `false` or `''`, are selected and kept like other options. Before, `checkboxes`, `radio`, `select` and `multiselect` didn't show them as selected, and dropped them from the value when other options were checked.
+- **admin:** Resources given as functions send the `method` and `query` they return. Before, requests ignored them and used `GET` without a query.
+- **admin:** The menu renders no empty items for views that are hidden or have no menu item.
+- **admin:** The validation notification lists the errors of fields that aren't visible, like `value` fields without `visible: true` and fields in sections or panels with `visible: false`, with their messages. Before, it only asked to correct the highlighted errors, with nothing highlighted.
+- **admin:** `notify()` turns only the newlines of text paragraphs into `<br>`, not those in the markup of `html` paragraphs, which put line breaks between the items of lists, for example.
+- **admin:** Objects without data replace their route with their create route, instead of adding it to the history, where Back returned to the object and redirected to its create route again.
+- **admin:** Panels with an object as `data` edit a copy of it, instead of writing their edits into the schema, where every form with the panel shared them.
+- **admin:** Resources given as functions receive the `method` of requests, as documented, e.g. `context.request({ resource, method: 'post' })`, and the resources of submit buttons the method of their form, `'post'` when creating and `'patch'` when saving. Before, they only received their `parent`.
+- **admin:** Opening sections and forms with many fields no longer resolves the route's claims again for every component that mounts, which made opening large inlined lists take seconds.
+- **admin:** `DitoSelectField` and `DitoRadioField` throw for array properties, pointing to `DitoCheckboxesField` and `DitoMultiselectField`. Since 6.0, they set `multiple` for arrays, which they can't show: the stored values were missing, and picking an option stored a single value instead of an array.
+- **admin:** Text fields, `textarea`, `code` and `markup` with `nullable` or `trim` as callbacks save what the callbacks return: `nullable: () => false` saves empty values as `''` instead of `null`, and `trim: () => false` no longer trims.
+- **admin:** The `details` of tree items respect their `if`. Before, they rendered regardless of it, and gave items a toggle for details that weren't meant to show.
+- **admin:** Tree items without children have a toggle to show their `details`. Before, they rendered without one, so their details could never be shown.
+- **admin:** Values without an option show as unavailable also with object options, `options.value` and `relate`. Before, `select` showed them as empty, and single-value `multiselect` didn't show them, while keeping them in the data. Multiple `checkboxes` keep them when checking others, instead of dropping them.
+- **admin:** Forms of `useDitoForm()` that fail to set up, like those with components that produce routes outside of pages, log the error and load or create no item.
+- **admin:** The forms of the items of `wide` views are only wide when they are `wide` themselves, as before 6.0. Since 6.0, the hidden view kept the page wide while the form of one of its items showed.
+- **admin:** The types accept resources without `type`, and every standard `autocomplete` value, e.g. `'username'` or `'one-time-code'`, instead of only `'on'` and `'off'`.
+- **ui:** `DitoInput` shows no errors for `aria-invalid="false"`.
+- **ui:** `TransitionHeight` measures and animates entering elements in the same task instead of across timeouts. Collapsible sections open smoothly again instead of showing only their border for a moment, and no longer keep a fixed height when a busy browser ends the transition early, which squashed opened sections over the ones below them.
+- **schema:** `decimals` counts the decimals of numbers that JavaScript prints in exponent form, so the server and the admin accept `0.0000001` for `decimals: 8`, and `1e21` for `decimals: '*'`. Strings without any digit, like `'-'` or `'+'`, aren't accepted as numbers anymore.
+- **utils:** `equals()` compares objects without prototype, e.g. from `Object.create(null)`, like plain objects, instead of throwing.
+- **utils:** The types and docs of `equals()` say which values it compares: objects and typed arrays with the same constructor or the same `Object.prototype.toString()` tag. They claimed that values of different types are never equal.
+- **utils:** `html([])` returns an empty `Html` value instead of throwing.
+
+### Internal
+
+- **admin:** The package no longer publishes its TypeScript tests and test fixtures.
+- **schema:** The package no longer publishes its test cases.
+
 ## 6.0.0 (2026-10-23)
 
 ### Behaviour changes
