@@ -40,7 +40,6 @@ import { getVerbs } from '../utils/services.ts'
 import DitoAffixes from '../components/DitoAffixes.vue'
 import DitoInfo from '../components/DitoInfo.vue'
 import { DitoButton } from '@ditojs/ui/src'
-import { hasResource } from '../utils/resource.js'
 import { asArray } from '@ditojs/utils'
 
 // @vue/component
@@ -103,7 +102,7 @@ const DitoButtonType = {
           // Have buttons that define resources submit by default:
           if (
             res === undefined && // Meaning: don't prevent default.
-            hasResource(props.schema)
+            props.schema.resource != null
           ) {
             await services.submit?.()
           }
