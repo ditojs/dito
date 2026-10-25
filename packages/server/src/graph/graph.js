@@ -25,13 +25,21 @@ export function ensureModelArray(modelClass, data, options) {
     : []
 }
 
-// Graphs often come from clients, who must not relate or delete through them:
-export function rejectGraphControlProps(modelClass, graph, dataPath = []) {
+// Graphs often come from clients, who must not relate or delete through them.
+// Fetched graphs repeat shared models in many places, so each model is checked
+// once, at its first data path:
+export function rejectGraphControlProps(
+  modelClass,
+  graph,
+  dataPath = [],
+  checked = new WeakSet()
+) {
   if (isArray(graph)) {
     graph.forEach((model, index) =>
-      rejectGraphControlProps(modelClass, model, [...dataPath, index])
+      rejectGraphControlProps(modelClass, model, [...dataPath, index], checked)
     )
-  } else if (isObject(graph)) {
+  } else if (isObject(graph) && !checked.has(graph)) {
+    checked.add(graph)
     for (const prop of [
       modelClass.dbRefProp,
       modelClass.graphUnrelateProp,
@@ -49,10 +57,12 @@ export function rejectGraphControlProps(modelClass, graph, dataPath = []) {
     for (const { name, relatedModelClass } of Object.values(
       modelClass.getRelations()
     )) {
-      rejectGraphControlProps(relatedModelClass, graph[name], [
-        ...dataPath,
-        name
-      ])
+      rejectGraphControlProps(
+        relatedModelClass,
+        graph[name],
+        [...dataPath, name],
+        checked
+      )
     }
   }
 }
