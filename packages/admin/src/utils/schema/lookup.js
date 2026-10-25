@@ -19,6 +19,10 @@ const emptySchema = {}
 
 // The forms that `fields()` callbacks create, by callback and by data:
 const formsByFieldsCallback = new WeakMap()
+// The forms that `getFormSchemas()` derives, created once, so that items keep
+// their form and don't render again whenever their source renders:
+const inlinedFormsBySchema = new WeakMap()
+const clipboardFormsByForm = new WeakMap()
 
 export function hasFormSchema(schema) {
   return (
@@ -71,13 +75,17 @@ export function getFormSchemas(schema, context, modifyForm) {
     if (fields || tabs) {
       // Convert inlined forms to stand-alone forms. Sections are their form,
       // so it handles their events:
-      form = {
-        type: 'form',
-        name,
-        compact,
-        tabs,
-        fields,
-        ...(type === 'section' && getSectionHandlers(schema))
+      form = inlinedFormsBySchema.get(toRaw(schema))
+      if (!form) {
+        form = {
+          type: 'form',
+          name,
+          compact,
+          tabs,
+          fields,
+          ...(type === 'section' && getSectionHandlers(schema))
+        }
+        inlinedFormsBySchema.set(toRaw(schema), form)
       }
     } else {
       return {}
@@ -89,7 +97,14 @@ export function getFormSchemas(schema, context, modifyForm) {
       // Copy the forms that take the source's clipboard, as other schemas may
       // share them:
       if (clipboard && form.clipboard === undefined) {
-        form = { ...form, clipboard }
+        const copy = clipboardFormsByForm.get(toRaw(form))
+        if (copy?.clipboard === clipboard) {
+          form = copy
+        } else {
+          const original = toRaw(form)
+          form = { ...form, clipboard }
+          clipboardFormsByForm.set(original, form)
+        }
       }
       if (context && isFunction(form.fields)) {
         form = getFormWithCreatedComponents(form, context)
