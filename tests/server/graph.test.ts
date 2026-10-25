@@ -1523,6 +1523,18 @@ describe('Dito.js graph handling', () => {
       expect(() => rejectGraphControlProps(Book, book)).toThrow(GraphError)
     })
 
+    it('checks models that the graph repeats once, at their first path', () => {
+      const chapter = { title: 'One', book: null as any }
+      const book = { title: 'Earthsea', chapters: [chapter, chapter] }
+      // A graph that refers back to itself, as fetched graphs can:
+      chapter.book = book
+      expect(() => rejectGraphControlProps(Book, book)).not.toThrow()
+      Object.assign(chapter, { '#delete': true })
+      expect(() => rejectGraphControlProps(Book, book)).toThrow(
+        `Unsupported graph control property '#delete' at 'chapters/0'.`
+      )
+    })
+
     it('accepts #id and #ref references', () => {
       expect(() =>
         rejectGraphControlProps(Book, {
