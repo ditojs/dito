@@ -5,162 +5,165 @@ version, see the upgrade guides in `docs/`.
 
 ## 6.1.0 (2026-10-25)
 
+See [Upgrading to 6.1](docs/upgrading-to-6.x.md#61) for what apps need to
+change.
+
 ### Behaviour changes
 
-- **server:** `UserMixin` rejects `hash` in all input that isn't trusted, with the 400 response that only `UsersController` answered before. Other controllers, e.g. relation controllers of user relations, and graphs of other models could set the hashes of users directly.
-- **server:** Transacted requests don't emit `'commit'` and `'rollback'` events on `ctx.transaction` anymore. Files stored or imported before a handler rolls back without an error stay in the storage.
-- **server:** The aliases `ctx.logIn()` and `ctx.logOut()` are removed: use `ctx.login()` and `ctx.logout()`.
-- **server:** S3 storages store their files through [aws-lite](https://aws-lite.org) instead of the AWS SDK and `multer-s3`: apps install the optional peer dependencies `@aws-lite/client` and `@aws-lite/s3` instead of `@aws-sdk/client-s3` and `@aws-sdk/lib-storage`. The `s3` config keeps its shape, but only supports `endpoint`, `region` and `credentials: { accessKeyId, secretAccessKey, sessionToken }`, and requires `region` and `credentials` instead of falling back to environment variables or `~/.aws`. Other `S3ClientConfig` options are ignored, e.g. `forcePathStyle`, `maxAttempts`, `requestHandler` or `credentials` as a provider function.
-- **server:** S3 storages support the object options `acl`, `cacheControl`, `contentDisposition`, `contentEncoding`, `storageClass`, `serverSideEncryption` and `sseKmsKeyId` as strings only, and throw on setup for callbacks. They now also apply to the files that the server stores itself, e.g. imported ones. Other `multer-s3` options aren't passed on anymore, and without `acl` and `storageClass`, the defaults of the bucket apply instead of `'private'` and `'STANDARD'`.
-- **server:** Without `url`, S3 files get the URL of the bucket at the `s3.endpoint` instead of the location that S3 returns for uploads. The `MulterS3File` type is removed.
-- **server:** Asset signatures cover the files' metadata, so admin pages that were open during the update need a reload before saving their files again.
-- **admin:** The login dialog shows an at-sign icon in the username and a lock icon in the password field, and with `authentication.hasPasswordReset`, a Forgot? button in the password field instead of the Forgot password? button below the fields.
-- **admin:** Values that aren't `nullable` replace `null` with their `default`, else with the empty value of their type, e.g. `''` in text fields with `nullable: false`, `false` in switches and `[]` in lists, only when the data is created, loaded or saved: in new forms, loaded items, added or pasted list items, and in the data that saving and copying send. A `null` that is written while editing, e.g. by clearing a number or by `computeValue()`, stays in the data until then, also in lists that code sets to `null`. Numbers and dates, whose empty value is `null`, send `null` without a `default`. Values that go missing later, e.g. in items that code adds or of fields that `fields()` callbacks create, still get their defaults.
-- **admin:** The clear button of `clearable` fields with `nullable: false` sets their `default`, instead of the empty value of their type.
-- **admin:** Values without a type, e.g. of custom types without `getProperty()`, have no empty value: they stay missing unless they have a `default`, instead of starting as `null`, and keep a stored `null` when loaded.
-- **admin:** Type descriptors lose `treatsNullAsMissing`, with no alias: only the data type of a value decides whether a loaded `null` gets its default, and `defineType()` throws for the key. Custom types declare `getProperty()` to get their data type's empty value.
-- **admin:** The component `DitoFormEmbedded` is removed: `DitoForm` renders embedded forms too, with `.dito-form--embedded`.
-- **admin:** `context.nested`, deprecated as internal, is removed: `context.value` is `undefined` in contexts of items.
-- **admin:** `.dito-root` no longer carries `dito-root--overlay-sidebar` and `dito-root--sliding-sidebar`. Use `dito-page--overlay-sidebar` and `dito-page--sliding-sidebar` on `.dito-page`.
-- **admin:** `required` needs one item in all array values, as in lists and fields with multiple values: also in written array properties and in fields of custom types whose property is `type: 'array'`. Before, they accepted `[]`, as the server does. `minItems` overrides it, e.g. `minItems: 0` accepts none as an answer. Fields no longer derive `minItems: 1` into the properties that `getFormProperties()` describes, so the server accepts `[]` for them.
-- **admin:** Several fields of the same value serialize it with each option, e.g. `trim`, `exclude` or `serializeValue()`, from the first field that defines it. Before, a value edited by a field without `trim` and a second field with `trim: true` was sent untrimmed.
-- **admin:** Tree items keep their buttons hidden after dropping a dragged child until the mouse moves, like the hover catcher of `DitoDraggable`. `.dito-tree-item` no longer carries `dito-tree-item--dragging`: its `.dito-draggable` carries `dito-draggable--dragging` instead.
-- **admin:** The `properties` of tree lists and tree objects are renamed to `details`, without an alias: `properties` on trees and their `children` throws, naming `details`. Their type is the new `Details`, of `DisplaySchema`s: the display options that `ColumnSchema` shares, without the ones to sort. The class `.dito-properties` of their table is renamed to `.dito-tree-item__details`.
-- **admin:** Fields of the same name validate their value once, against the rules merged from them, each taken from the first field that sets it, instead of running the rules of every field. A `minLength` of a later field no longer applies when an earlier one sets its own. Errors still go to every field of that name.
-- **admin:** "is required" comes before the messages of the limits, e.g. of `minLength`.
-- **ui:** `DitoInput` spaces its prefix and suffix from the text by the input's horizontal padding.
-- **ui:** The Sass placeholders are named as BEM modifiers: `%field--has-errors`, `%field--disabled`, `%input--has-errors`, `%input--borderless`, `%button--disabled` and `%icon--<name>`, e.g. `%icon--clear`. Styles that extend the old names need to follow.
-- **router:** `getAllowedMethods(path)` normalizes `path` like `find()` does, with the `prefix` and, unless `strict`, the slashes. It returned no methods for paths that `find()` matches. Callers that added the `prefix` themselves pass the path without it, as to `find()`.
-- **router:** Routes with several params in one segment, e.g. `/a/:x-:y`, throw an error when added, like wildcards inside segments. They created a single param named `x-:y` before.
+- **server:** S3 storages use [aws-lite](https://aws-lite.org) instead of the AWS SDK and `multer-s3`:
+  - Install `@aws-lite/client` and `@aws-lite/s3` instead of `@aws-sdk/client-s3` and `@aws-sdk/lib-storage`.
+  - `s3` needs `region` and `credentials`, which no longer come from environment variables or `~/.aws`, see [S3StorageConfig](docs/api/server/storage.md#s3storageconfig).
+  - Object options like `acl` or `cacheControl` take strings only, and apply to imported files too.
+  - Without `url`, files get the URL of the bucket. The `MulterS3File` type is removed.
+- **server:** `UserMixin` rejects `hash` in all untrusted input, not only in `UsersController`.
+- **server:** Asset signatures cover the files' metadata, so admin pages that were open during the update need a reload before saving files.
+- **server:** `ctx.transaction` no longer emits `'commit'` and `'rollback'`.
+- **server:** `ctx.logIn()` and `ctx.logOut()` are removed: use `ctx.login()` and `ctx.logout()`.
+- **admin:** Empty values and defaults, see [Empty values](docs/api/admin/schemas.md#empty-values):
+  - A `null` written while editing stays until saving, e.g. when clearing a number to type another one. Saving and copying replace it with the `default`, or the empty value of the type, in values that aren't `nullable`.
+  - The clear button of fields with `nullable: false` sets their `default`.
+  - Custom types declare their data type with `getProperty()`. `treatsNullAsMissing` is removed.
+- **admin:** `required` arrays need one item everywhere, also in written properties and custom types. `minItems: 0` accepts none, see [Types and limits of fields](docs/guide/admin/validation.md#types-and-limits-of-fields).
+- **admin:** Several fields of the same value take each rule and option, e.g. `minLength` or `trim`, from the first field that sets it, and validate the value once.
+- **admin:** Trees take `details` instead of `properties`, with the type `Details`.
+- **admin:** Removed: `DitoFormEmbedded` (use `DitoForm`) and `context.nested`.
+- **admin:** Renamed classes: `dito-root--overlay-sidebar` and `--sliding-sidebar` are on `.dito-page` as `dito-page--…`, `dito-tree-item--dragging` is `dito-draggable--dragging`, and `.dito-properties` of trees is `.dito-tree-item__details`.
+- **admin:** The login dialog shows icons in its fields, and its Forgot? button moves into the password field.
+- **admin:** "is required" shows before the other messages of a value.
+- **ui:** The Sass placeholders are BEM modifiers, e.g. `%field--has-errors` or `%icon--clear`.
+- **ui:** `DitoInput` spaces its prefix and suffix by its padding.
+- **router:** Routes with several params in one segment, e.g. `/a/:x-:y`, throw when added.
+- **router:** `getAllowedMethods(path)` adds the `prefix` itself, as `find()` does.
 
 ### New
 
-- **admin:** Affixes of inputs can be buttons, `{ type: 'button', text | icon, title?, disabled?, onClick? }`, whose `onClick()` receives the context of the field.
-- **admin:** Affixes with `hover: true` only show while the input is hovered, in place of the other affixes of their side, like the clear button, which is now built this way.
-- **admin:** Custom types declare the data type of their values with `getProperty()`, in the format of the server's `properties`, e.g. `getProperty: () => ({ type: 'number' })`.
+- **admin:** Input affixes can be buttons, and affixes with `hover: true` only show while hovering, as the clear button does now.
+- **admin:** `getProperty()` of custom types, e.g. `getProperty: () => ({ type: 'number' })`.
 - **ui:** A `lock` icon.
 
 ### Fixes
 
-- **server:** References in `anyOf` and `oneOf` reject unknown properties again, as in 3.5, also in nullable properties like `anyOf: [{ type: 'null' }, { $ref: '#Cat' }]`. Next to a discriminator or other properties, also in `allOf` parts and definitions, the outer object rejects them instead.
-- **server:** Files stored or imported in any transaction that rolls back with an error are removed again, also in transactions of `Model.transaction()` and of Objection.js, e.g. for array inserts. Before, only transacted requests removed them.
-- **server:** Files that an S3 storage without `url` writes itself, e.g. imported or copied ones, get the S3 url as uploaded files do.
-- **server:** Asset files sent by clients can't carry `data` anymore. Before, a client that had seen the signed file of another record could overwrite its stored content by sending it back with `data`.
-- **server:** Asset files sent by clients can't change their `url`, `name`, `type`, `size` or dimensions either: their signatures cover them.
-- **admin:** Pages that turned wide for a `wide` form turn narrow again when their route shows a form that isn't wide, e.g. after switching to an item of another type.
-- **admin:** Buttons with a `resource` submit on click, also when it is a function that builds on its `parent`, e.g. ``({ parent }) => `/items/${parent.id}/publish` ``. Before, the check whether they have a resource called the function without its context, which failed for functions that read it.
-- **admin:** Removing an item whose form is open with unsaved changes closes the form without asking to discard them. Before, cancelling that question kept the form open on the removed item, and applying it overwrote the next item with the draft, or added the removed last item again.
-- **admin:** `DitoCustomField` with `name` emits `change` once the focus leaves its content after an edit, instead of on every write, and validates the value then, like the other widgets. Writes without focus in the field still emit `change` right away.
-- **admin:** `DitoCustomField` with `name` renders its slot in an element of its own, which receives the container's id, classes and attributes, so its content fills the container like other fields and the label points to it.
-- **admin:** Pressing Enter in the inputs of dialogs submits them only once. The browser's implicit submission submitted them again, showing validation errors twice.
-- **admin:** Written `nullable` string properties send empty strings of their `enum` as they are, instead of as `null`.
-- **admin:** Clearing a value that has a `default` and isn't `nullable`, e.g. a number to type another one, no longer puts the default back right away.
-- **admin:** A failed upload in a single `upload` field keeps the file that was stored before, instead of clearing the field and removing the file on save. `onChange()` receives the uploaded file instead of its upload.
-- **admin:** Options that are falsy plain values, like `0`, `false` or `''`, are selected and kept like other options. Before, `checkboxes`, `radio`, `select` and `multiselect` didn't show them as selected, and dropped them from the value when other options were checked.
-- **admin:** Resources given as functions send the `method` and `query` they return. Before, requests ignored them and used `GET` without a query.
-- **admin:** The menu renders no empty items for views that are hidden or have no menu item.
-- **admin:** The validation notification lists the errors of fields that aren't visible, like `value` fields without `visible: true` and fields in sections or panels with `visible: false`, with their messages. Before, it only asked to correct the highlighted errors, with nothing highlighted.
-- **admin:** `notify()` turns only the newlines of text paragraphs into `<br>`, not those in the markup of `html` paragraphs, which put line breaks between the items of lists, for example.
-- **admin:** Objects without data replace their route with their create route, instead of adding it to the history, where Back returned to the object and redirected to its create route again.
-- **admin:** Panels with an object as `data` edit a copy of it, instead of writing their edits into the schema, where every form with the panel shared them.
-- **admin:** Resources given as functions receive the `method` of requests, as documented, e.g. `context.request({ resource, method: 'post' })`, and the resources of submit buttons the method of their form, `'post'` when creating and `'patch'` when saving. Before, they only received their `parent`.
-- **admin:** Opening sections and forms with many fields no longer resolves the route's claims again for every component that mounts, which made opening large inlined lists take seconds.
-- **admin:** `DitoSelectField` and `DitoRadioField` throw for array properties, pointing to `DitoCheckboxesField` and `DitoMultiselectField`. Since 6.0, they set `multiple` for arrays, which they can't show: the stored values were missing, and picking an option stored a single value instead of an array.
-- **admin:** Text fields, `textarea`, `code` and `markup` with `nullable` or `trim` as callbacks save what the callbacks return: `nullable: () => false` saves empty values as `''` instead of `null`, and `trim: () => false` no longer trims.
-- **admin:** The `details` of tree items respect their `if`. Before, they rendered regardless of it, and gave items a toggle for details that weren't meant to show.
-- **admin:** Tree items without children have a toggle to show their `details`. Before, they rendered without one, so their details could never be shown.
-- **admin:** Values without an option show as unavailable also with object options, `options.value` and `relate`. Before, `select` showed them as empty, and single-value `multiselect` didn't show them, while keeping them in the data. Multiple `checkboxes` keep them when checking others, instead of dropping them.
-- **admin:** Forms of `useDitoForm()` that fail to set up, like those with components that produce routes outside of pages, log the error and load or create no item.
-- **admin:** The forms of the items of `wide` views are only wide when they are `wide` themselves, as before 6.0. Since 6.0, the hidden view kept the page wide while the form of one of its items showed.
-- **admin:** The types accept resources without `type`, and every standard `autocomplete` value, e.g. `'username'` or `'one-time-code'`, instead of only `'on'` and `'off'`.
-- **ui:** `DitoInput` shows no errors for `aria-invalid="false"`.
-- **ui:** `TransitionHeight` measures and animates entering elements in the same task instead of across timeouts. Collapsible sections open smoothly again instead of showing only their border for a moment, and no longer keep a fixed height when a busy browser ends the transition early, which squashed opened sections over the ones below them.
-- **schema:** `decimals` counts the decimals of numbers that JavaScript prints in exponent form, so the server and the admin accept `0.0000001` for `decimals: 8`, and `1e21` for `decimals: '*'`. Strings without any digit, like `'-'` or `'+'`, aren't accepted as numbers anymore.
-- **utils:** `equals()` compares objects without prototype, e.g. from `Object.create(null)`, like plain objects, instead of throwing.
-- **utils:** The types and docs of `equals()` say which values it compares: objects and typed arrays with the same constructor or the same `Object.prototype.toString()` tag. They claimed that values of different types are never equal.
-- **utils:** `html([])` returns an empty `Html` value instead of throwing.
+- **server:**
+  - `$ref`s in `anyOf` and `oneOf` reject unknown properties again, as in 3.5.
+  - Files stored in a transaction that rolls back are removed again, in all transactions.
+  - Clients can't overwrite stored files by sending asset files back with `data`.
+  - S3 storages give imported and copied files a URL.
+- **admin, forms:**
+  - Removing an item whose form has unsaved changes closes the form, instead of keeping it on the removed item.
+  - The validation notification lists the errors of hidden fields.
+  - Enter submits dialogs only once.
+  - Forms of `useDitoForm()` that fail to set up log the error instead of loading.
+  - Panels with an object as `data` no longer write into the schema.
+  - `notify()` no longer breaks lists in `html` paragraphs apart.
+- **admin, fields:**
+  - Options that are `0`, `false` or `''` are selected like other options.
+  - Values without an option show as unavailable for all kinds of options.
+  - A failed upload keeps the file that was there before.
+  - `nullable` and `trim` callbacks of text fields are respected.
+  - Empty strings that are options stay `''`.
+  - `DitoSelectField` and `DitoRadioField` throw for arrays, pointing to the fields that support them.
+  - A named `DitoCustomField` emits `change` on blur, and its content fills the field.
+- **admin, resources:**
+  - Resource functions receive the `method` of the request and return their own `method` and `query`.
+  - Buttons whose resource function reads its `parent` submit again.
+- **admin, trees:** Items without children can show their `details`, and `details` respect their `if`.
+- **admin, layout:**
+  - Pages are wide only for `wide` forms again.
+  - The menu shows no empty items.
+  - Back from an object without data no longer loops.
+  - Large sections and lists open fast again.
+- **admin, types:** Resources without `type` and all standard `autocomplete` values type-check.
+- **ui:**
+  - Collapsible sections open smoothly again.
+  - `aria-invalid="false"` shows no error.
+- **schema:** `decimals` accepts numbers in exponent form, e.g. `1e-7`.
+- **utils:** `equals()` handles objects without prototype, and `html([])` returns an empty value.
 
 ### Internal
 
-- **admin:** The package no longer publishes its TypeScript tests and test fixtures.
-- **schema:** The package no longer publishes its test cases.
+- **admin, schema:** The packages no longer publish their tests.
 
 ## 6.0.0 (2026-10-23)
 
+See [Upgrading to 6.x](docs/upgrading-to-6.x.md) for what apps need to change.
+
 ### Behaviour changes
 
-- **server:** Patches check the values of `required` properties that they send, rejecting empty strings with 'is required'. Properties that patches leave out remain unchecked.
-- **server:** `UserMixin` rejects empty passwords with a validation error, instead of setting the hash of `''`. Models that declare the password property with their own `minLength` keep theirs.
-- **server:** `app.compileValidator()` is removed: use `app.compileJsonSchema()`.
-- **server:** Hook keys that name actions by their keys, e.g. `'before:member:get tech-doc-:format'`, no longer match: use their identifiers, e.g. `'before:member:get-tech-doc-format'`.
-- **server:** The type aliases `HTTPMethod`, `SelectModelProperties`, `SelectModelKeys`, `ExtractModelProperties` and `SelectModelPropertyKeys` are removed: use `HttpMethod`, `SerializedModel` and `keyof SerializedModel`.
-- **server:** Values outside `range` are reported as `range` errors with the message of the admin, "must be between 1 and 5", instead of `minimum` or `maximum` errors ("must be 5 or less").
-- **admin:** Hidden values aren't sent: fields whose `if` is false, or that are in hidden sections, tabs or panels, leave out their values when the data is saved or copied.
-- **admin:** Of several fields of the same value, only the shown ones count: hidden ones run no `serializeValue()` and don't display the value in item labels and table cells. Fields with `visible: false` count as shown. Hidden fields still set their defaults, so that `if` callbacks can read them.
-- **admin:** Item labels and table cells only display the values of the item itself, not values of the same name in its nested sections.
-- **admin:** The data of a form follows the rule of validation for which fields are shown, also for the records of computed values and options, the defaults of values that go missing later, and the errors that it gives to fields: a nested section whose fields are all hidden counts as hidden, together with its own value. Before, only the section's own `if` decided there, so errors of the section's value went to the hidden section instead of the validation errors notification.
-- **admin:** Validation logs an `if` that throws and treats its field as shown, as the data of a form already did. Before, the error stopped validation.
-- **admin:** `format` of `color` fields is renamed to `colorFormat`, and `format` of `date`, `datetime` and `time` fields to `formats`, the same shape as `api.formats` that it merges over, so that `format` only means the data format, as on the server. The old keys are ignored.
-- **admin:** `format`, `parse`, `compute` and `process` of schemas only throw as the value hooks of 3.x when they're callbacks; other values are ignored like other unknown keys.
-- **admin:** Collapsed schemas, e.g. sections and items of lists, render their content hidden while it holds errors, and reveal the errors in the components that display them. Collapsed schemas in schema views mark their label when their content holds errors.
-- **admin:** The strings that `render()` of columns, lists, objects and uploads returns, and the messages of `confirm()`, `prompt()` and `alert()`, show as text, escaped, so data in them can't inject HTML. Before, they were rendered as HTML. Callbacks that return HTML need to create it with `html` of `@ditojs/utils`, e.g. ``render: ({ value }) => html`<b>${value}</b>` ``.
-- **admin:** The Validation Errors notification lists the errors that no mounted component displays once they're revealed, in schema views, layouts of `useDitoForm()` and nested forms alike, e.g. of items whose nested forms aren't opened, which their lists only marked as containing errors before.
-- **admin:** `object` fields with `nullable: false` start as an object with the defaults of their form instead of `null`.
-- **admin:** Copies hold only the values that have a field, also in nested sections (`nested: true`): their ids now drop like those of objects and lists, so pasting creates new records instead of pointing to the copied ones.
-- **admin:** Fields validate on blur with the checks of all fields that edit the same value, as submits already do. Before, a field only ran its own checks, e.g. not the `required` of another field of the same name in another tab.
-- **admin:** `components` of schemas, filters and `showDialog()` is removed: use `fields`. Views take their field in `field` instead of `component`.
-- **admin:** `min` and `max` of `number`, `integer`, `slider` and `progress` are removed: use `minimum` and `maximum`.
-- **admin:** `rules` of fields are removed: use the limits of fields, e.g. `minLength`, their types and `validate()`.
-- **admin:** `events: {}` of schemas is removed: use the `on…` handlers, e.g. `onChange()`.
-- **admin:** `type: 'computed'`, `'data'` and `'hidden'` are removed: use `type: 'value'`.
-- **admin:** `{ html }` objects in labels, item labels, info, affixes and `render()` results, `type: 'html'` affixes and the `html` option of `notify()` are removed: use the `html` template of `@ditojs/utils`, also as `text` of label objects, affixes and `notify()`.
-- **admin:** `DitoField` is removed: use `DitoSchemaField`. `login.additionalComponents` of `DitoAdmin` is removed: use `login.additionalFields`.
-- **admin:** The deprecated type aliases are removed: `Component`, `Components`, `SourceComponent`, `ComponentSchemaBase`, `BaseSchema`, `SchemaFields`, `SchemaSetupMixin`, `SchemaRoute`, `SchemaRouteMixin`, `Form`, `ComputedSchema`, `DataSchema`, `HiddenSchema`, `OrItemAccessor`, `ItemAccessor`, `DitoContext`, `DitoGlobal`, `HTTPMethod` and the `Schema…Mixin` types, as well as `SchemaRules`, `SchemaEvents` and `BaseSchemaEvents`.
-- **admin:** The URLs of routed forms of sources in tabs, sections and panels contain their names, e.g. `/admin/books/1/pricing/editions/0` instead of `/admin/books/1/editions/0`, so that sources of the same data in different tabs open their own forms.
-- **admin:** `select`, `multiselect`, `radio` and `checkboxes` with options given as an array no longer reject values that aren't among them, with "must be one of the options": the `enum` of the server's model property decides, as for loaded options.
-- **admin:** The labels of `required` fields in schema views are marked with `*`, also when `required` is a callback.
-- **admin:** The forms of items below other forms and pages open through the sources that render them: the rendered sources of a view, form or page claim the paths below it, the first one that can. Collapsed sections, tabs and panels render their content hidden while the route continues into it, so deep links reach sources in them. Paths that no source claims lead back to the form or page, once it rendered its components with its data, instead of showing an empty page or the page under the unclaimed path.
-- **admin:** The forms of items of items open once their parent item exists, e.g. `/admin/books/1/chapters/0/notes/0` needs chapter `0`.
-- **admin:** The selected tab of a view or form is a segment of its URL path instead of the location hash, e.g. `/admin/books/1/pricing` instead of `/admin/books/1#pricing`, so the forms of sources in a tab open below it, `/admin/books/1/pricing/editions/0`. The tabs claim their names below the path of their view or form like its sources, the first one that can. Closing a form returns to the tab of the form below which it opened, and paths without a tab, e.g. after closing a form, name the selected tab.
-- **admin:** Emptied text fields (`text` and its variants, `textarea`, `code` and `markup`) save their empty value, `null`, or `''` with `nullable: false`, instead of their `default`.
-- **admin:** Uploads with `multiple` call `downloadUrl()` and `thumbnailUrl()` with the context of each file, with the file as `value` and its index as `valueIndex`. Before, they received the context of the field, so the links of multiple uploads couldn't tell their files apart.
-- **admin:** Views keep their components mounted, hidden, while the form of an item is open, as forms do for their nested forms, so their sources claim the routes of the forms like all other sources. Views route the forms of sources in the items of their inlined lists, e.g. `/admin/books/books/1/chapters/0`, and the forms of the items of trees in views render beside the tree.
-- **admin:** Hidden sources load their data once they're shown, so deep links into the form of an item don't load the list, which opens the item by its id. Lists don't load again when the forms of their items close, unless a form saved an item.
-- **admin:** Lists take their query back into the URL when the forms of their items close, e.g. `/admin/books?page=2`, in views and in forms.
-- **ui:** The states of calendar items are modifiers of `dito-calendar__item`, so styles and tests that select them need to follow: `dito-calendar-item-today`, `-active`, `-current` and `-gray` become `dito-calendar__item--today`, `--active`, `--current` and `--gray`.
-- **ui:** Fields show errors and their disabled state by `--has-errors` and `--disabled` modifiers of their own block, which extend the new `%field-has-errors`, `%input-has-errors` and `%field-disabled` placeholders, instead of by `.dito-container--has-errors` and `.dito-container--disabled` around them. Custom blocks that extend `%field` or `%input` need to set these modifiers, and errors of a container no longer mark the fields inside it.
-- **schema:** `keywords._enum` and `keywords.multipleOf` lose `validate()` and only carry the messages that the server reports. The `empty` format loses `validatesEmptyValues`, which the admin never applies it with.
+- **server:** Patches check the values of `required` properties that they send, rejecting empty strings with 'is required'.
+- **server:** `UserMixin` rejects empty passwords with a validation error, instead of setting the hash of `''`.
+- **server:** Values outside `range` are reported as `range` errors, "must be between 1 and 5", instead of `minimum` or `maximum` errors.
+- **server:** Removed, see [Server](docs/upgrading-to-6.x.md#server):
+  - `app.compileValidator()`: use `app.compileJsonSchema()`.
+  - Hook keys that name actions by their keys, e.g. `'before:member:get tech-doc-:format'`, no longer match: use their identifiers, e.g. `'before:member:get-tech-doc-format'`.
+  - The types `HTTPMethod`, `SelectModelProperties`, `SelectModelKeys`, `ExtractModelProperties` and `SelectModelPropertyKeys`: use `HttpMethod`, `SerializedModel` and `keyof SerializedModel`.
+- **admin:** Removed schema options, see [Schemas](docs/upgrading-to-6.x.md#schemas):
+  - `components` of schemas, filters and `showDialog()`: use `fields`, and `field` instead of `component` in views.
+  - `min` and `max`: use `minimum` and `maximum`.
+  - `rules`: use the limits of fields, their types and `validate()`.
+  - `events: {}`: use the `on…` handlers, e.g. `onChange()`.
+  - `type: 'computed'`, `'data'` and `'hidden'`: use `type: 'value'`.
+- **admin:** `format` of `color` fields is renamed to `colorFormat`, and of `date`, `datetime` and `time` fields to `formats`. The old keys are ignored. `format`, `parse`, `compute` and `process` only throw as 3.x value hooks when they're callbacks.
+- **admin:** HTML, see [HTML](docs/upgrading-to-6.x.md#html):
+  - Strings returned by `render()` of columns, lists, objects and uploads, and the messages of `confirm()`, `prompt()` and `alert()`, show as escaped text: create HTML with `html` of `@ditojs/utils`.
+  - `{ html }` objects, `type: 'html'` affixes and the `html` option of `notify()` are removed: use the `html` template.
+- **admin:** `DitoField` is removed: use `DitoSchemaField`. `login.additionalComponents` is removed: use `login.additionalFields`.
+- **admin:** The deprecated TypeScript type aliases are removed, see [TypeScript types](docs/upgrading-to-6.x.md#typescript-types).
+- **admin:** Hidden fields, see [Behaviour changes](docs/upgrading-to-6.x.md#behaviour-changes):
+  - Values of hidden fields (`if` false, or in hidden sections, tabs or panels) aren't saved or copied.
+  - Of several fields of the same value, only shown ones run `serializeValue()` and display the value in item labels and table cells. Hidden fields still set their defaults.
+  - A nested section whose fields are all hidden counts as hidden, together with its own value.
+  - An `if` that throws is logged and its field treated as shown, instead of stopping validation.
+- **admin:** Item labels and table cells only display the values of the item itself, not of its nested sections.
+- **admin:** Validation and errors:
+  - Fields validate on blur with the checks of all fields of the same value, as submits do.
+  - Collapsed schemas render their content hidden while it holds errors, and reveal the errors.
+  - The Validation Errors notification lists all errors that no mounted component displays, e.g. of nested forms that aren't open.
+  - Options given as an array no longer reject values that aren't among them: the server's `enum` decides.
+  - The labels of `required` fields are marked with `*`.
+- **admin:** Data and defaults:
+  - `object` fields with `nullable: false` start as an object with the defaults of their form instead of `null`.
+  - Copies hold only values that have a field, and drop the ids in nested sections, so pasting creates new records.
+  - Emptied text fields save their empty value, `null`, or `''` with `nullable: false`, instead of their `default`.
+  - Uploads with `multiple` call `downloadUrl()` and `thumbnailUrl()` with the context of each file, as `value` and `valueIndex`.
+- **admin:** Routes, see [Routes of forms](docs/api/admin/schemas.md#routes-of-forms) and [Tabs](docs/api/admin/schemas.md#tabs):
+  - The URLs of routed forms contain the names of their tabs, sections and panels, e.g. `/admin/books/1/pricing/editions/0`.
+  - The selected tab is a segment of the URL path instead of the hash, e.g. `/admin/books/1/pricing`.
+  - Forms open through the sources that render them, also in collapsed sections, tabs and panels. Paths that no source claims lead back to the form or page.
+  - The forms of items of items open once their parent item exists.
+  - Views keep their components mounted, hidden, while an item's form is open, and route the forms of inlined lists and trees.
+  - Hidden sources load their data once shown, lists take their query back into the URL when forms close, and reload only if a form saved an item.
+- **ui:** Calendar states are modifiers: `dito-calendar-item-today`, `-active`, `-current` and `-gray` become `dito-calendar__item--today`, `--active`, `--current` and `--gray`.
+- **ui:** Fields show errors and disabled state by `--has-errors` and `--disabled` modifiers of their own block instead of `.dito-container--…` classes. Custom blocks that extend `%field` or `%input` need to set them, see [UI](docs/upgrading-to-6.x.md#ui).
+- **schema:** `keywords._enum` and `keywords.multipleOf` lose `validate()`, and the `empty` format loses `validatesEmptyValues`.
 
 ### New
 
-- **server:** The `decimals` keyword limits the decimal places of numbers, as in the admin, e.g. `decimals: 2`, with the same message. Properties that the admin derives from fields with `decimals` include it.
-- **admin:** Labels, item labels, info, affixes, the results of `render()`, the messages of `confirm()`, `prompt()` and `alert()`, and the paragraphs of `notify()` take `html` values, also as `text` of label objects, affixes and `notify()`.
-- **admin:** Written properties support times as strings with `{ type: 'string', format: 'iso-time' }`, stored as `'HH:mm:ss'` and validated like the server's `iso-time` format. `DitoTimeField` edits them in its time picker.
-- **admin:** Nested forms in schema views, e.g. the `form` of objects and lists, can describe their data with `properties` instead of `fields` and lay it out with widgets in their `component`, so pages can move to written properties form by form. Their data is initialized, validated, serialized and its errors are shown and revealed in the widgets like the data of fields.
-- **admin:** Forms of `useDitoForm()` can describe their data with `properties` instead of `fields`, in the format of the server's model properties: `type`, `nullable`, `required`, `default`, the limits, `enum` and `format` mean and validate the same, and the admin's keywords go into the same objects: `if`, `exclude`, `computed`, `computeValue()`, `serializeValue()`, `deserializeValue()`, `trim`, `relate`, `validate()`, `orderKey`, `idKey` and `forms`. Every keyword may be a function of the context. Arrays hold objects, items of several `forms` by their `type`, or values. Values that aren't `nullable` start with their `default` or the empty value of their type, `''`, `false`, `[]`, or `{}` with the defaults of its properties, also when they're loaded as `null`. Types, formats and keywords that aren't supported yet, e.g. `$ref`, throw.
-- **admin:** Widgets lay out the `properties` of `useDitoForm()` in `DitoSchemaForm`, each editing the property of its `name` with the component of a field type: `DitoTextField`, `DitoTextareaField`, `DitoCodeField`, `DitoMarkupField`, `DitoNumberField`, `DitoSliderField`, `DitoProgressField`, `DitoSwitchField`, `DitoCheckboxField`, `DitoSelectField`, `DitoRadioField`, `DitoCheckboxesField`, `DitoMultiselectField`, `DitoDateField`, `DitoTimeField`, `DitoDateTimeField`, `DitoColorField` and `DitoUploadField`. Their props are the display options of these types, with the same values, e.g. `itemLabel`, `editable` and `view`, `colorFormat` of `DitoColorField` and `formats` of the date widgets, and all widgets take `label`, `width`, `info`, affixes, `break`, `align` and `class` like fields. `DitoTextField` takes the text type of its input as `type` (`text` by default, `email`, `url`, `hostname`, `domain`, `creditcard`, `password`): the `format` of the property only validates the value. Options come from the property's `enum`, or from the `options` prop, and properties with `relate` hold the related objects.
-- **admin:** Widgets mark the labels of required properties and hide when their property is irrelevant. They emit `change` when the user changed the value, with the context of the field, and keep their state, e.g. of collapsed items, in the store of their layout. Errors that no widget shows are notified.
-- **admin:** `DitoSection` lays out widgets in a section with a `name`, like sections in schema views, and with `nested` edits the object property of its `name`. Collapsed sections show that they contain errors and open to reveal them, also for widgets in the page's own components.
-- **admin:** `DitoListField` and `DitoObjectField` edit lists and objects, laid out in their default slot, which receives the context of the item, e.g. `v-slot="context"` with `context.item`, `context.itemIndex`, `context.parentItem` and `context.dataPath`, and in which widgets edit the properties of the item. Widgets without `name` edit the items of lists of values, and items of several `forms` are laid out by their `type`. The lists create, delete and reorder items like inlined lists, new items get the defaults of their properties, items show that they contain errors, and errors are revealed in collapsed items.
-- **admin:** `DitoTreeListField` shows arrays of objects as a tree, with a `DitoTreeLevel` in its default slot for the level below, nested like the data, and each level takes its own `itemLabel`, `collapsed`, `deletable` and `draggable`. Each level lays out the form of its selected item in its `#form` slot, which receives the context of the item and edits it in place beside the tree, in its own route.
-- **admin:** `DitoCustomField` edits the property of its `name` with the content of its slot, which receives the field as one reactive object: `v-slot="field"` with `v-model="field.value"`, `field.errors`, `field.property` and `field.validate()`, which validates the value like the widgets do on blur, e.g. `@blur="field.validate()"`. Without `name`, it displays its content in a field container, with a `label`, `width` and `info`, but without a value.
-- **utils:** `asHtml(value)` returns the HTML of `Html` values and escapes other values as text.
-- **utils:** The `html` tagged template creates HTML that the admin renders as HTML: it escapes the values that it includes, except other `html` values, joins arrays and skips `null`, `undefined` and `false`. `isHtml()` recognizes its values.
+- **server:** The `decimals` keyword limits the decimal places of numbers, as in the admin, e.g. `decimals: 2`.
+- **admin:** Labels, item labels, info, affixes, `render()` results, dialog messages and `notify()` paragraphs take `html` values, see [Text and HTML](docs/api/admin/schemas.md#text-and-html).
+- **admin:** Forms with properties and widgets, see [the guide](docs/guide/admin/widgets.md) and [Widgets](docs/api/admin/widgets.md):
+  - Forms of `useDitoForm()` can describe their data with `properties` in the format of the server's model properties, plus the admin's keywords such as `if`, `computed` or `validate()`.
+  - Widgets lay them out in `DitoSchemaForm`, one per field type, e.g. `DitoTextField` or `DitoSelectField`, with the display options of the type as props.
+  - `DitoSection`, `DitoListField`, `DitoObjectField` and `DitoTreeListField` with `DitoTreeLevel` lay out sections, lists, objects and trees.
+  - `DitoCustomField` edits a property with the content of its slot, e.g. `v-model="field.value"`.
+  - Nested forms in schema views can use `properties` instead of `fields`, see [Nested forms in schema views](docs/guide/admin/widgets.md#nested-forms-in-schema-views).
+  - Written properties support times with `{ type: 'string', format: 'iso-time' }`.
+- **utils:** The `html` tagged template creates HTML that the admin renders, escaping the values it includes. `isHtml()` recognizes it and `asHtml()` converts values, see [HTML](docs/api/utils.md#html).
 
 ### Fixes
 
-- **admin:** Options fields with `nullable: false`, e.g. selects, no longer fail when they get their empty value.
-- **admin:** `context.getErrors()` lists the errors of a value once, also when several fields edit it, e.g. in two tabs.
-- **admin:** Buttons that are all hidden, or none at all, take no space, e.g. no empty row with padding below the form of a dialog.
-- **admin:** Forms of `useDitoForm()` that create an item no longer fail with "Maximum call stack size exceeded" when items are added to their lists.
-- **admin:** The form of `useDitoForm()` in a page fills the view and keeps its buttons at its bottom, like the forms of schema views. Before, it took only the width of its content, and its buttons sat right below its last field.
-- **admin:** Nested forms of items in their parent's data take their component paths and field ids from their route, e.g. `pricing/editions/0/price`, also on reload, instead of from the first source of the same data. Errors in their items open the form of the first source whose form displays the field.
-- **admin:** `DitoSchemaForm` outside of pages, e.g. in dialogs, pads its content like the embedded forms of views, so a section at its end no longer touches the line above its buttons.
+- **admin, fields:**
+  - Options fields with `nullable: false` no longer fail on their empty value.
+  - `context.getErrors()` lists the errors of a value once, also when several fields edit it.
+  - Nested forms take their component paths and field ids from their route, also on reload.
+- **admin, forms:**
+  - Forms of `useDitoForm()` that create an item no longer fail with "Maximum call stack size exceeded" when items are added to their lists.
+  - The form of `useDitoForm()` in a page fills the view and keeps its buttons at its bottom.
+  - `DitoSchemaForm` outside of pages, e.g. in dialogs, pads its content like forms in views.
+  - Buttons that are all hidden take no space.
 
 ### Internal
 
-- **admin:** `RouteTree` only holds menus and views. The forms of `useDitoForm()` in pages no longer add routes.
-- **admin:** Setup names components, tabs and panels by their keys, so panes and tabs render the schemas themselves instead of copies with their names, and forms that contain themselves are recognized by their source schemas again.
+- **admin:** `RouteTree` only holds menus and views, and setup names components, tabs and panels by their keys.
 
 ## 5.4.1 (2026-10-21)
 
@@ -170,41 +173,44 @@ version, see the upgrade guides in `docs/`.
 
 ## 5.4.0 (2026-10-21)
 
+See [Upgrading to 5.4](docs/upgrading-to-5.x.md#54) for what apps need to
+change.
+
 ### Behaviour changes
 
-- **server:** Validation errors of standard keywords carry the messages of `@ditojs/schema`, the wording that the admin shows, instead of Ajv's: `minimum` "must be 5 or more" (was "must be >= 5"), `maximum` "must be 10 or less", `minLength` "must be at least 6 characters long" or "must not be empty" (was "must NOT have fewer than 6 characters"), `maxLength` "must be at most 3 characters long", `minItems` "must contain at least 2 items" or "must contain at least one item", `maxItems` "must contain at most 2 items", `type` "must be a string", "must be a whole number", "must be a list" for arrays, "must be a string or null" for several types (was "must be string", "must be integer", "must be array", "must be string,null"), `multipleOf` "must be a multiple of 5", `enum` "must be one of the allowed values". The formats `color` and `empty` say "must be a hex color" and "must be empty" (was "needs to be …"). This applies to `range` too, whose errors are those of `minimum` and `maximum`. The `keyword` and `params` of the errors stay the same, and so do the messages of errors thrown by `validate()` functions and of parameter coercion. Clients that match message texts need to match `keyword` and `params` instead.
-- **admin:** Several fields that edit the same value, e.g. in two tabs, follow one rule: each aspect of the value comes from the first field in form order that defines it itself (`default`, `deserializeValue()`, `serializeValue()`, `computeValue()`, a data schema or options, `exclude`), else from the first field through its type, and items are sent with the values of all their fields' forms. All these fields are validated, and their errors are collected, each message once. Before, depending on the aspect, the first or the last field decided or each field applied in turn, only the last field's form was sent, and the last field's errors replaced the others'.
-- **admin:** `maxLength` is validated, not only set as the `maxlength` of text inputs: saving fails where code wrote longer values, or where `maxLength` is set on other types with text values, e.g. `markup`. Lengths are counted in characters (code points), as on the server.
-- **admin:** `required` accepts empty arrays, as the server does. Lists, `tree-list`, `checkboxes`, multiselects and uploads with `multiple` still need one item, as `required` adds `minItems: 1` to the types whose empty value is an array, with the same message "is required". Other fields with array values, e.g. of `component` or custom types, accept `[]` when required.
-- **admin:** `markup` stores an empty editor as `null` instead of the HTML of its empty nodes, e.g. `<p></p>`, or `''` with `hardBreak`, and `code` sends `null` instead of `''` when emptied, like `text` and `textarea`: code that compares these values with `'<p></p>'` or `''` needs to check for `null`.
-- **admin:** The validators take their checks and messages from `@ditojs/schema`, the definitions that the server uses. Two messages change: `integer` says "must be a whole number" (was "must be whole number"), and `decimals` "must be a number with at most 2 decimal places" or "must be a number with at most one decimal place" (was "must be numeric and may contain 2 decimal points"), "must be a whole number" for `decimals: 0` (was "must be numeric and may not contain decimal points") and "must be a number" for `'*'` (was "must be numeric and may contain decimal points").
-- **admin:** `minimum`, `maximum` and `range` only apply to numbers, as on the server, so `rules` that set them on text values are ignored.
-- **admin:** `upload` with `multiple` holds `[]` instead of `null` when it has no value yet, as it already sends: code that checks new items for `null` needs to check for an empty array.
-- **admin:** `url` fields require a scheme, e.g. `https://`, as the server's `uri` format does: values like `example.com` no longer pass and need to be entered as `https://example.com`.
-- **admin:** `date`, `datetime` and `time` fields validate their values, with "must be a valid date": saving fails where code wrote invalid `Date` objects, e.g. `new Date('soon')`, or strings that aren't dates, e.g. times like `'14:30'`, which were sent unchanged and failed on the server for date properties.
-- **admin:** `select`, `multiselect`, `radio` and `checkboxes` with options given as an array, in `options` or `options.data`, validate that their values are among them, with "must be one of the options": saving fails where the data holds values missing from the options, e.g. stored before an option was removed, or written by code. Options loaded through callbacks or `dataPath`, and multiselects with `taggable` or `search`, keep accepting values without option.
+- **server:** Validation errors carry the messages of `@ditojs/schema` that the admin shows, instead of Ajv's, e.g. "must be 5 or more" instead of "must be >= 5". Their `keyword` and `params` stay the same: clients that match message texts need to match those instead.
+- **admin:** Several fields of the same value, e.g. in two tabs, take each aspect, e.g. `default` or `serializeValue()`, from the first field in form order that defines it. All of them validate the value, and items are sent with the values of all their forms.
+- **admin:** Validation follows the server, with the definitions of `@ditojs/schema`:
+  - `maxLength` is validated, counted in characters, not only set as the `maxlength` of inputs: saving fails where code wrote longer values.
+  - `required` accepts empty arrays, except on types whose empty value is an array, e.g. lists, `checkboxes`, multiselects and uploads with `multiple`.
+  - `minimum`, `maximum` and `range` only apply to numbers.
+  - `url` fields require a scheme: `example.com` fails, `https://example.com` passes.
+  - `date`, `datetime` and `time` fields reject invalid dates, e.g. `new Date('soon')` or `'14:30'`, with "must be a valid date".
+  - `select`, `multiselect`, `radio` and `checkboxes` with options given as an array reject values missing from them, with "must be one of the options". Options from callbacks or `dataPath`, and multiselects with `taggable` or `search`, still accept them.
+  - `integer` says "must be a whole number", and `decimals` e.g. "must be a number with at most 2 decimal places".
+- **admin:** Empty values: `markup` stores an empty editor as `null` instead of e.g. `<p></p>`, `code` sends `null` instead of `''` when emptied, and `upload` with `multiple` holds `[]` instead of `null` while it has no value.
 
 ### Deprecations
 
-- **server:** `app.compileValidator()` is deprecated in favour of `app.compileJsonSchema()`. It keeps working until 6.0 and logs a deprecation warning.
-- **admin:** The `rules` of fields are deprecated until 6.0 and log a deprecation warning. Limits are field keys, e.g. `minimum`, `maxLength` or `minItems`, and setup moves rules with their names to them. Type checks come from the type, e.g. `type: 'text'` instead of `type: 'url'` with `rules: { url: false }`, and everything else goes through `validate()`. Rules that turn validations off with `false` or `undefined` keep working until 6.0.
-- **admin:** `min` and `max` of number types and their `rules` are deprecated aliases of `minimum` and `maximum` until 6.0. They keep working and log a deprecation warning. Custom types that return `min` or `max` from `getValidations()` need to return `minimum` and `maximum`.
+- **server:** `app.compileValidator()` is deprecated in favour of `app.compileJsonSchema()`.
+- **admin:** The `rules` of fields are deprecated: use field keys for limits, e.g. `minimum` or `maxLength`, the type for type checks, and `validate()` for the rest, see [Types and limits of fields](docs/guide/admin/validation.md#types-and-limits-of-fields).
+- **admin:** `min` and `max` of number types are deprecated aliases of `minimum` and `maximum`. Custom types return `minimum` and `maximum` from `getValidations()`.
 
 ### New
 
-- **server:** `app.compileDitoSchema(schema, options?)` compiles a schema in Dito.js' format of model properties, with `required: true`, `type: 'date'` and model names as types, and `app.compileJsonSchema(jsonSchema, options?)` compiles plain JSON schemas.
-- **admin:** `context.getErrors(match?)` returns the errors that the data holds, from validation and from the server, by data path, e.g. to show them in the markup of `useDitoForm()` pages.
-- **admin:** Fields take `minLength`, `pattern`, `minItems` and `maxItems`, with the names and meanings of the server's model properties, validated in the browser like `required`.
-- **admin:** Number types (`number`, `integer`, `slider`, `progress`) take `minimum` and `maximum`, the names of the server's model properties.
-- **admin:** `nullable: false` on string fields (`text` and its variants, `textarea`, `code`, `markup`) and `checkbox` stores no value as `''` or `false` instead of `null`, for properties that aren't `nullable` on the server.
-- **schema:** New package `@ditojs/schema` with the validation definitions that the server and the admin share, without Ajv: the formats `color`, `empty` and `required`, the standard keywords `type`, `enum`, `minimum`, `maximum`, `multipleOf`, `minLength`, `maxLength`, `pattern`, `minItems` and `maxItems`, and dito's `range` and `decimals`, each as `{ validate(value, setting), message }`. The server takes its formats from it.
+- **server:** `app.compileDitoSchema()` compiles schemas in the format of model properties, and `app.compileJsonSchema()` plain JSON schemas, see [Validation](docs/api/server/application.md#validation).
+- **admin:** `context.getErrors(match?)` returns the errors of the data by data path, e.g. for the markup of `useDitoForm()` pages.
+- **admin:** Fields take `minLength`, `pattern`, `minItems` and `maxItems`, and number types `minimum` and `maximum`, as the server's model properties do.
+- **admin:** `nullable: false` on string fields and `checkbox` stores no value as `''` or `false` instead of `null`.
+- **schema:** New package `@ditojs/schema` with the formats and keywords that the server and the admin share.
 
 ### Fixes
 
-- **admin:** Leaving a form with unsaved changes asks "Do you want to discard them?" instead of "Do you really want to cancel?", which read ambiguously next to the dialog's Cancel button.
-- **admin:** Clear buttons don't show for `''`, e.g. after deleting the text of an input.
-- **admin:** Values merged into the data, e.g. with `context.mergeItem()`, replace the errors of fields in the panels of lists and other sources too.
-- **admin:** Edits of fields in the panels of lists and other sources mark the form as unsaved, like the edits of other fields.
+- **admin, forms:**
+  - Leaving a form with unsaved changes asks "Do you want to discard them?" instead of "Do you really want to cancel?".
+  - Edits of fields in the panels of lists and other sources mark the form as unsaved.
+  - Values merged into the data, e.g. with `context.mergeItem()`, replace the errors of fields in panels too.
+- **admin, fields:** Clear buttons don't show for `''`.
 
 ## 5.3.0 (2026-10-20)
 
@@ -424,45 +430,48 @@ version, see the upgrade guides in `docs/`.
 
 ### Behaviour changes
 
-- **server:** `self` stands for the logged-in user in the member routes of `UsersController`, so `PATCH users/self` runs `member.patch` with all its settings, e.g. `transacted`, `parameters` and hooks, which the `'patch self'` collection action of 4.6.0 skipped. `'patch self'` is removed: remove it from `collection.allow` and from overrides.
-- **server:** Relation controllers authorize their parent member in an override of `handleAuthorization()`, after the parameters are validated like all other authorization, instead of in `handleRequestAuthorization()` before anything else. Asset uploads on relations always need the parent's `patch` authorization. `handleRequestAuthorization()`, `authorizeMember()` and `getActionAuthorize()` are removed.
-- **server:** `getMember()` goes through `member.get` only where `allow` routes it, and otherwise fetches the member by id through `fetchMember()`. Overrides of `member.get` that aren't routed no longer control which members `from: 'member'` parameters, `'$owner'` checks and relation requests receive.
-- **server:** Values of `nullable` properties with a model type or a `$ref` get the defaults of the referenced schema, which Ajv ignored, e.g. `{ type: 'Author', nullable: true }` the defaults of `Author`, and these properties get their own `default`, e.g. `{ type: 'color', nullable: true, default: '#ffffff' }`.
-- **server:** `$validateGraph()` reports only the errors of related models for relations, without the "must be null" and "must match a schema in anyOf" errors at the relation itself, and it applies the defaults of related models, unless it validates a patch.
-- **server:** Validation errors of `if` keywords, "must match "else" schema", are left out, as the `then` or `else` schema reports its own. The "must be null" and "must match exactly one schema in oneOf" errors of a `oneOf` with a `null` type aren't left out anymore, which only `nullable` references produced.
-- **server:** The validator runs Ajv with `strictSchema`, `strictNumbers` and `strictTuples`, where it ran with `strict: false`: a schema with an unknown keyword, e.g. `item` instead of `items`, or with a `default` that Ajv can't apply, e.g. at the root of a definition that references itself, throws where Ajv ignored it. Model schemas are compiled when the app sets up its models, so they throw on startup. Fix the schema, or opt out with `new Validator({ options: { strictSchema: false } })`.
-- **server:** Asset files count one reference for each place that stores them, also several times in one record, e.g. the same image twice in a list, where such a record counted as one. `handleAddedAndRemovedAssets()` receives a file once for each reference that it gains or loses. Run `db:recount_assets` after upgrading, to count the references of existing data this way.
-- **server:** `releaseUnusedAssets()` removes unused assets after `assets.cleanupTimeThreshold` and never persisted ones after `assets.danglingTimeThreshold`, where both waited for the sum of the two, e.g. 48 hours instead of 24 by default. With `cleanupTimeThreshold: 0`, unused assets are removed right away, where they waited for `danglingTimeThreshold`, while uploads that aren't persisted yet are still kept for `danglingTimeThreshold`. Setups that used `0` to keep files, e.g. of storages shared between installations, need a long threshold instead, e.g. `'100y'`.
-- **server:** `releaseUnusedAssets()` keeps assets that data still references despite a count of 0, e.g. after writes that skip the model hooks, corrects their count and warns about them. Writes of asset data release unused assets once their transaction is completed, in a transaction of its own, so rollbacks can't lose files, instead of `handleAddedAndRemovedAssets()` doing so before the write in its transaction.
-- **server:** `handleAddedAndRemovedAssets()` throws an `AssetError` when an added file's asset was released in the meantime, e.g. by a concurrent release, instead of storing a reference to a removed file. The release locks the assets it removes.
+- **server:** `PATCH users/self` runs the `member.patch` action of `UsersController` with all its settings and hooks. The `'patch self'` collection action of 4.6.0 is removed: remove it from `collection.allow` and from overrides.
+- **server:** Relation controllers authorize their parent member after the parameters are validated, and asset uploads on relations always need the parent's `patch` authorization. `handleRequestAuthorization()`, `authorizeMember()` and `getActionAuthorize()` are removed.
+- **server:** `getMember()` uses `member.get` only where `allow` routes it, and otherwise fetches the member by id through `fetchMember()`.
+- **server:** Validation:
+  - The validator runs Ajv with `strictSchema`, `strictNumbers` and `strictTuples`, so schemas with unknown keywords, e.g. `item` instead of `items`, throw when the app sets up its models. Fix the schema, or pass `new Validator({ options: { strictSchema: false } })`, see [Validator](docs/api/server/validator.md#constructor).
+  - `nullable` properties with a model type or a `$ref` get the defaults of the referenced schema, and their own `default`.
+  - `$validateGraph()` reports only the errors of related models for relations, and applies their defaults, unless it validates a patch.
+  - The "must match "else" schema" errors of `if` keywords are left out.
+- **server:** Assets:
+  - Asset files count one reference for each place that stores them, also several in one record. Run `db:recount_assets` after upgrading.
+  - `releaseUnusedAssets()` removes unused assets after `assets.cleanupTimeThreshold` and unsaved uploads after `assets.danglingTimeThreshold`, instead of after the sum of both. With `cleanupTimeThreshold: 0`, unused assets are removed right away: to keep files, use a long threshold, e.g. `'100y'`.
+  - `releaseUnusedAssets()` keeps assets that data still references despite a count of 0, and corrects their count. Unused assets are released after the write's transaction completes, so rollbacks can't lose files.
+  - `handleAddedAndRemovedAssets()` throws an `AssetError` when an added file's asset was released in the meantime.
 
 ### New
 
-- **server:** `app.recountAssets()` and the `db:recount_assets` command set the counts of all assets to the number of their references, create the missing assets of referenced files that their storage still has, and report the referenced files that it lost. `--dry-run` only prints what they would change.
-- **server:** `app.getAssetReferences()` finds every place in the data that stores an asset file, optionally of certain models, storages or keys.
-- **admin:** `clipboard: { interchange: true }` joins the Copy and Paste buttons into one group with a menu to download the data with its files as a zip, and to upload such a zip again, e.g. into another installation. Uploading stores the files under new keys through the upload routes of their fields, and then pastes the data, see [Download and Upload](docs/guide/admin/forms.md#download-and-upload). The Copy and Paste buttons are joined also without it. Requires the new peer dependency `fflate`, which is only loaded on the first download or upload.
-- **ui:** The items of `DitoMenuButton` take an `icon`, shown instead of their label, which becomes their title, and the icon set has `archive-download` and `archive-upload`.
-- **ui:** `DitoMenuButton` with `cover: false` attaches its menu below the button, joined into one shape and as wide as the wider of the two.
+- **server:** `app.recountAssets()` and the `db:recount_assets` command correct the reference counts of all assets, and `app.getAssetReferences()` finds every place that stores an asset file, see [recountAssets()](docs/api/server/application.md#recountassets).
+- **admin:** `clipboard: { interchange: true }` adds a menu to the Copy and Paste buttons to download the data with its files as a zip, and to upload it again, e.g. into another installation, see [Download and Upload](docs/guide/admin/forms.md#download-and-upload). `interchange: { filename }` names the downloads. Requires the new peer dependency `fflate`.
+- **ui:** `DitoMenuButton`:
+  - Items take an `icon`, shown instead of their label, and the icon set has `archive-download` and `archive-upload`.
+  - `cover: false` attaches the menu below the button.
 
 ### Fixes
 
-- **server:** `Model.count()` counts rows on SQLite and MySQL, where it returned 0, and so does the `count` action of controllers.
-- **server:** `truncate()` no longer applies the default scope of the model, which knex rejects.
-- **server:** Relating several models to a many-to-many relation through its controller works on SQLite and MySQL, where it failed with a 500 error.
-- **server:** On SQLite with the `better-sqlite3` client, `Date` values in queries are bound as ISO strings, as dates are stored, so date-range filters, `releaseUnusedAssets()` and queries like `where('createdAt', '>', date)` match.
-- **server:** `log.sql` logs the rows of SQLite responses as arrays.
-- **server:** On SQLite with the `better-sqlite3` client, a transaction whose commit failed, e.g. on a deferred constraint, is rolled back before the connection is used again, instead of making every later transaction fail with "cannot start a transaction within a transaction".
-- **server:** Upserts and array saves that run in their own transaction use the knex passed to `query()`, instead of the model's.
-- **server:** Constraint violations that make a transaction's commit fail, e.g. of deferred foreign keys, respond with 409 like the same violations in queries, instead of 500.
-- **server:** Typed objects with properties in `allOf` aren't closed on their own anymore, so they no longer reject each other's properties. The object that combines them is closed instead.
-- **server:** Writes of several records, e.g. graph inserts on PostgreSQL and deletes and patches of several records, count the asset references of each record, where they counted one for all of them, so that deleting one record could release a file that others still store. Patches that match no record count no references.
-- **admin:** Upload fields break long file names without spaces, instead of widening their table and the lists and forms around it.
-- **ui:** Tab moves through the items of an open `DitoMenuButton` and closes the menu once the focus leaves them, instead of closing it right away.
-- **admin:** The trail of the header scrolls, fading out on the sides that it hides, where the header is too narrow for it, instead of running under the tabs and buttons of the form.
-- **admin:** The menu and the sidebar slide in and out without the layout of their content changing, also when the window crosses their breakpoints, and below the sidebar's breakpoint the page's content uses the room under the sidebar's header.
-- **admin:** The account opens its menu attached below the user name, which turns into a button.
-- **admin:** Cancelling or closing the object form of a view with a single `component`, e.g. the account settings, leaves the view for the admin's root, instead of doing nothing.
-- **admin:** Downloads of `clipboard: { interchange: true }` are named after the form and item label, e.g. `Page Home.zip`, instead of the schema name, which forms often don't have. `interchange: { filename }` names them through a string or a function.
+- **server, databases:**
+  - `Model.count()` and the `count` action count rows on SQLite and MySQL.
+  - `truncate()` no longer applies the default scope of the model.
+  - Relating several models to a many-to-many relation works on SQLite and MySQL.
+  - With `better-sqlite3`, `Date` values in queries match stored dates, and a failed commit no longer makes every later transaction fail.
+  - `log.sql` logs the rows of SQLite responses as arrays.
+  - Upserts and array saves use the knex passed to `query()`.
+  - Constraint violations at commit, e.g. of deferred foreign keys, respond with 409 instead of 500.
+- **server, validation:** Typed objects with properties in `allOf` no longer reject each other's properties.
+- **server, assets:** Writes of several records count the asset references of each record, so deleting one no longer releases files that others still store.
+- **admin:**
+  - Upload fields break long file names instead of widening their table.
+  - The trail of the header scrolls where the header is too narrow for it.
+  - The menu and the sidebar slide in and out without their content's layout changing.
+  - The account menu opens below the user name.
+  - Cancelling the object form of a view with a single `component`, e.g. the account settings, returns to the admin's root.
+  - Downloads of `clipboard: { interchange: true }` are named after the form and item label, e.g. `Page Home.zip`.
+- **ui:** Tab moves through the items of an open `DitoMenuButton` instead of closing it.
 
 ## 4.6.0 (2026-10-16)
 
@@ -581,237 +590,153 @@ version, see the upgrade guides in `docs/`.
 
 ## 4.1.0 (2026-10-13)
 
-4.1.0 is the first release of Dito.js 4. 4.0.0 was withdrawn shortly after its release, and its changes are part of 4.1.0: the notes below describe all changes since 3.5.0. Dito.js 4 rebuilds the admin around its data: each view, form, dialog and panel with its own data keeps its edits, dirty state and errors, also for fields that aren't rendered, nested forms edit drafts of their items, and callbacks receive typed contexts instead of components. See [`docs/upgrading-to-4.x.md`](docs/upgrading-to-4.x.md) for how to upgrade.
-
-### Breaking changes
-
-#### Schemas
-
-- **admin:** The value hooks are renamed: `format()` → `formatValue()`, `parse()` → `parseValue()`, `compute()` → `computeValue()` and `process()` → `serializeValue()`. Schemas that still use the old names throw when they're set up; on date and color types, `format` is the format setting, so rename a `format()` there by hand.
-- **admin:** Schemas can't define `methods`, `computed`, `watch` and `data` anymore, and handlers, e.g. `onClick()`, `itemLabel()`, `render()` and `clipboard.copy()`, are called with their context only, without the component as `this`. Use plain functions, `onChange()` instead of `watch`, and module state instead of `data`. The `data` setting of panels and of the `computed`, `data` and `hidden` types stays.
-- **admin:** `formats` of the date types is `format`. The date types convert the date strings of loaded data to `Date` objects. Date strings from defaults, computed values or code are displayed as dates and saved unchanged, until the user edits them.
-- **admin:** Trees open their items with `collapsed: false` instead of `open: true`, on the tree and on its `children` schema. `collapsed` is `true` by default and can be a callback, called for each item. `open` throws on trees.
-- **admin:** `relate` takes the key to relate options by, e.g. `relate: 'code'`, or `true` for `id`. `relateBy` throws.
-- **admin:** `groupBy` of options components is `options.group`, the key of the options' group or a callback that returns it. `groupBy` on the schema throws.
-- **admin:** `format: 'name'` of the color type is removed and throws, as the server's `type: 'color'` only accepts hex colors: use a hex format, e.g. `'hex'`.
-- **admin:** `nested` only works on sections and panels, and throws on other types, which ignored it.
-- **admin:** Options that were typed but never read are removed from the types: `defaultSort`, `defaultScope` and `nested` of sources, `idKey` of forms, `omitSpacing` of schemas, `options.groupBy`, and `dateFormat` and `locale` of date schemas.
-- **admin:** Relative paths in `options.dataPath` and in the `dataPath` of the `computed`, `data` and `hidden` types are relative to the item the component sits in (`context.itemDataPath`) instead of the field, so they need one `../` less: `'../authors'` becomes `'authors'`. A leading `/` makes them absolute, as it already did in `options.dataPath`, and `..` above the root throws, where 3.5 dropped it silently. The `match` of `validate()`, `isValid()` and `clearErrors()` resolves the same way.
-
-#### Events
-
-- **admin:** Declare handlers as `on…` properties, e.g. `onClick()`. `events: {}` still works with a deprecation warning until 6.0, but an `on…` handler of the same event in the same schema wins over it instead of both running. In development, dito warns about the ignored `events` entries.
-- **admin:** `events: { click() {} }` on the submit and cancel buttons of forms and the cancel button of dialogs replaced their default handler in 3.5, and is ignored now with a warning: move it to `onClick()`.
-- **admin:** An `onClick()` on the submit or cancel button of a form, or on the cancel button of a dialog, replaces the default handler instead of running next to it: call `context.submit()`, `context.closeForm()` or `context.closeDialog()` from it.
-- **admin:** Forms fire `onSuccess()` after saving, with `context.isCreating` telling new items apart, instead of `create` and `submit`. Nested forms fire `onApply()` when they apply their draft, where 3.5 fired `create` and `submit` too: move their `onSubmit()` to `onApply()`. `onCreate()`, `onSubmit()` and `create` or `submit` in `events` throw.
-- **admin:** `onToggle()` with `context.collapsed` replaces `onOpen()` with `context.open` on collapsible sections and inlined forms, which lists and objects set on their `form`. `onOpen()` and `open` in `events` throw.
-
-#### Contexts
-
-- **admin:** Contexts don't expose components anymore: `component`, `formComponent`, `schemaComponent`, `viewComponent`, `dialogComponent`, `panelComponent`, `resourceComponent` and `sourceComponent` are removed. What callbacks used them for are members of the context, see [New](#new).
-- **admin:** Context members are renamed: `query` → `routeQuery`, `index` → `valueIndex`, `processedItem` → `serializedItem` and `processedRootItem` → `serializedRootItem`. `sourceComponent.query` is `context.sourceQuery`, the query of the nearest list.
-- **admin:** `context.navigate(location)` resolves to `true` if the navigation happened, or `false` if not, e.g. when the user chose to stay instead of discarding unsaved changes, instead of to vue-router's navigation failure.
-- **admin:** `getResourceUrl()` without arguments throws when there is no form or list with a resource, instead of returning `null`.
-- **admin:** In dialogs, `dialogComponent.resolve(value)` is `context.closeDialog(value)`. `dialogComponent.reject()` is removed.
-- **admin:** `formComponent.setData(data)` and `schemaComponent.resetData()` are `context.resetItem(data)` and `context.resetItem()`, which reset the data like loaded data, without an edit, or to its defaults. `formComponent.applyCleanChanges()` is removed: write the values instead, which is an edit.
-- **admin:** `filterData()` and the validation members of components, e.g. `validateAll()` and `verifyAll()`, are removed: use `context.validate()`, `context.isValid()` and `context.clearErrors()`.
-- **admin:** `navigateToComponent()` and `navigateToRouteComponent()` are removed: validating reveals the first error and focuses it.
-- **admin:** Code outside of callbacks reaches the admin's services through `admin.context`: `api`, `settings`, `user`, `views`, `flattenedViews`, `session`, `notify()` and `showDialog()`. `settings` holds the settings of the `dito` object passed to `DitoAdmin`, which the admin reads its `rootClass` and `forceDragFallback` from, instead of `window.dito`. `session.login()` and `session.ensureUser()` resolve to the user, `session.logout()` to whether it worked.
-- **admin:** `closeNotifications()`, `rootComponent`, `registerLoading()` and `meta.api` and `meta.schema` of routes are removed. `api.base` is removed from the types and no longer defaults to `'/'`, as the admin doesn't read it: `dito.base` is the base of its routes.
-
-#### Custom components and types
-
-- **admin:** Custom components, of `type: 'component'` and of custom types, don't get `DitoMixin` and `TypeMixin` mixed in anymore. They receive `schema`, `context` and the value as `modelValue`, and emit `update:modelValue` to change the value and `change` once the change is done. The `component` of list items and columns receives the item or the cell's value as `modelValue`.
-- **admin:** The admin's components are internal, and so is `DitoComponent.component()`: only the components of `@ditojs/ui` are public. Their actions are members of the context, e.g. `request()`, `navigate()`, `download()` and `getSchemaValue()`. `sendRequest()`, `getQueryLink()`, `getLabel()`, `getStore()`, `setStore()`, `removeStore()`, `focus()`, `on()`, `off()`, `emit()`, `emitEvent()` and `emitChangeEvent()` are removed.
-- **admin:** Types are defined with `defineType(descriptor)` from `@ditojs/admin` instead of `admin.register(type, options)`. Renamed options: `excludeValue` → `defaultExclude`, `generateLabel` → `generatesLabel`, `ignoreMissingValue()` → `ignoresMissingValue()`, `treatNullAsMissing()` → `treatsNullAsMissing()`, `omitSpacing` → `omitsSpacing`, `valueFromDataSchema` → `resolvesValue` and `rendersOwnLabel()` → `hasLabel()`, inverted. `defaultExclude`, `ignoresMissingValue`, `treatsNullAsMissing` and `hasLabel` take a boolean or a callback that receives the context.
-- **admin:** `processSchema(api, schema, name, routes, level)` is `setupSchema({ schema, api, name })` and doesn't add routes. `processValue(context, graph)` is `serializeValue(context)`, and `getTypeValidations(schema, context)` is `getValidations(context)`, with the schema in `context.schema`. `getSourceType()`, `getPanelSchema()` and `getFormSchemasForProcessing()` of dito's list types are internal or removed.
-
-#### TypeScript types
-
-- **admin:** Renamed types: `SchemaOpen` → `SchemaToggle` and `OpenEventHandler` → `ToggleEventHandler`.
-- **admin:** Removed types: `SchemaDitoMixin` and `SchemaTypeMixin` (part of `ComponentSchemaBase`), `HTTPVerb` (use `HttpMethod`), `EmitterMixin`, `LoadingTracker`, and the types of component instances, e.g. `DitoComponentInstance` and `DitoFormInstance`.
-- **admin:** Renamed types that keep working as deprecated aliases: `SchemaFields` and `SchemaSetupMixin` → `SchemaBase`, `BaseSchema` → `ComponentSchemaBase`, `SchemaRoute` and `SchemaRouteMixin` → `RouteSchemaBase`, `Form` → `FormSchema`, `OrItemAccessor` → `SchemaValue`, `ItemAccessor` → `SchemaValueCallback`, `HTTPMethod` → `HttpMethod`, `DitoContext` → `SchemaContext`, `DitoGlobal` → `GlobalConfig`, and `SchemaSourceMixin`, `SchemaOptionsMixin`, `SchemaNumberMixin`, `SchemaTextMixin`, `SchemaAffixMixin` and `SchemaDataMixin` → `SourceSettings`, `SelectionSettings`, `NumberSettings`, `TextSettings`, `AffixSettings` and `DataSettings`.
-- **admin:** The types follow what the admin reads: context members are `readonly` except `isRunning`, and `searchTerm` can be `undefined`. `trim`, `inlined` and `disabled` of panels take plain values, as callbacks were always truthy. `placeholder` is a string, except in multiselects, the only type that reads `search`. `editable` and `deletable` of lists are booleans, and `compact` is typed on forms, sections and sources instead of views. `onInitialize()`, `onDestroy()` and `onLoad()` are typed where they fire: on forms, views, sections and panels. Lists and objects fire `onLoad()` on the schema around them, so it isn't typed on them. `error` of `ErrorEventHandler` is `unknown`. Views and forms have no `resource`, which they never read: forms load and save through their list or object. Affixes are typed by their `type`, `thumbnails` of uploads takes `true`, `'small'`, `'medium'` or `'large'`, and `showDialog()` requires `buttons`.
-- **admin:** Typed options that were missing: labels with `prefix` and `suffix`, the `>` and `<` widths and CSS units, `nested` of panels, `creatable`, `editable`, `deletable` and `draggable` of forms, `compact`, `clipboard` and `tabs` of sources with `components`, `onClick()` of forms, sections and views for the clicks of their buttons, view labels as callbacks, resources as functions, `width` of filters, `operators: true` of text filters, the user's properties on `AdminUser`, `settings.forceDragFallback` of `GlobalConfig`, views as arrays and the optional `views` of `DitoAdmin`, and `users` of `ApiConfig` without `path`, `disabled` of forms, `options` as a function, the short form of `{ data }`, and affixes as the `prefix` and `suffix` of `itemLabel`. `download()` takes `query`, `request()` takes `signal`, `getSchemaValue()` takes arrays of keys, `CustomComponentProps` takes the schema type of custom types, and the callbacks of `api.defaults` receive forms and views.
-- **server:** `HTTPMethod` is `HttpMethod`, and keeps working as a deprecated alias.
-- **server:** The params of custom `validate()` and `validateAsync()` keywords are typed with `instancePath` and `ctx`, which they receive, instead of `dataPath`. `upsert()` and `upsertAndFetch()` take `PartialModelObject`, as they leave relations untouched.
-- **server:** `ApiConfig` has no `dateFormat` and `resources` anymore: set `resources` on the admin's `api`.
-- **server:** The types follow what the server reads: controllers have no `allow`, which only actions objects read. `Authorize` doesn't take objects keyed by HTTP method: controllers and actions objects take settings by action name, e.g. `{ 'post import': 'admin' }`. Actions have no `method` option, as the method is part of their name. `ResponseError` has no `code`, which is in `data.code`. `ApplicationConfig` has no top-level `api` and no `app.logger`. `multipleOfPrecision` of the validator is a number. Models have the event emitter and knex helper methods on their static side only, `EventEmitter` is a type only, and `$hasRole()` returns the matched role or `false`, also on `UserMixin`. `through` of relations takes only objects, as `true` throws. `ControllerError` and `ModelError` require their message. The validator's `async` and `patch` are options of `compile()`, not of its constructor, and `discriminator` defaults to `true`.
-- **server:** Typed options that were missing: `hooks` and `assets` on all controllers, `path`, `authorize` and `hooks` of the relations of model controllers, `[schema, options]` and `options` of action parameters and responses, `log: false` and model names in `log.schema` and `log.relations`, model classes as `session.modelClass`, find-filter objects as scopes, hook arrays and comma-separated hook keys, `graphOptions` and objection mappings of relations, `options` of models, `convertAssetFile(file, { trusted })` and the overridable `_addFile()`, `_removeFile()`, `_readFile()`, `_listKeys()`, `_getFilePath()` and `_getFileUrl()` of storages, the `router` of applications, arrays in `events` and `addModels()`, `relate` and `unrelate` of the relations of model controllers, `ModelController` as the `parent` of relation controllers, `$parseJson(json, { trusted })`, the optional arguments of `$validateGraph()` and `sessionQuery()`, the results of `$transaction(handler)`, query filters as functions, composite ids in the `…ById()` graph methods, `app`, `options`, `keywords`, `formats` and `types` of validators, `storage` of storages, and S3 storages without `s3`.
-
-#### Styles
-
-- **admin:** `.dito-form-nested` is `.dito-form--embedded`, and the component `DitoFormNested` is `DitoFormEmbedded`, as the forms that trees render inside their source are embedded forms.
-- **admin:** The deprecated `$pulldown-radius`, `$pulldown-padding-ver`, `$pulldown-padding-hor` and `$pulldown-padding` SCSS variables are removed.
-- **ui:** The SCSS variable `$ease-put-quint` is `$ease-out-quint`, without the typo.
-- **ui:** The modifiers of `DitoTrigger` and its popups follow BEM: `.dito-trigger-disabled` is `.dito-trigger--disabled`, and `.dito-popup-{placement}`, e.g. `.dito-popup-bottom-left`, is `.dito-popup--{placement}`.
-
-#### UI
-
-- **ui:** `DitoDatePicker`, `DitoTimePicker` and `DitoDateTimePicker` emit `change` once the edit is done, when the popup closes, the input loses focus or Enter is pressed, and `update:modelValue` for each value, instead of `change` for each value.
-- **ui:** The `disabledDate` prop of `DitoCalendar` and `DitoDatePicker`, the `disabledHour`, `disabledMinute` and `disabledSecond` props of `DitoTimePicker` and `DitoTimePanel`, and `.dito-calendar-item-disabled` are removed.
-- **ui:** `DitoButton` with a `verb` and without `text` is labelled by its verb, also when its default slot displays text, and `getVerbButtonAttributes()` doesn't take `hasText` anymore.
-
-#### Builds
-
-- **build:** `@ditojs/admin` and `@ditojs/ui` are only published as ES modules: their UMD builds and `require` exports are removed, and `defineViteConfig()` of `@ditojs/build` doesn't read `rollupOutput` anymore.
-- **build:** All packages have `exports` maps with `import` only, which also expose their `package.json`: `@ditojs/utils`, `@ditojs/build` and `@ditojs/router` can't be loaded with `require()` anymore, and `@ditojs/server` only exposes its entry point, so imports of its internal files, e.g. `@ditojs/server/src/…`, fail.
-- **utils:** The deprecated `stripTags()` is removed: use `stripHtml()`.
-- **utils:** `setDataPathEntries()` is `setEntriesAtDataPath()`, and `escapeRegexp()` is `escapeRegExp()`.
-
-#### Server
-
-- **server:** `Service.setup(config)` is `configure(config)`, which services override to read their configuration. The application starts and stops its services itself, and an overridden `setup()` isn't called anymore.
-- **server:** Storages are created with `constructor(app, name, config)` and named by their key in `config.storages`, as `config.name` isn't read anymore. `app.addStorage(config, name)` needs the name. Their async `initialize()` replaces `setup()`.
-- **server:** `upsert(data)` saves models by the ids in the data like `upsertAndFetch()`, without fetching them: it patches the models that exist and inserts the others, instead of patching what the query matches. Its `update` and `fetch` options are removed.
-- **server:** Collection `PUT` and `PATCH` requests reject models without ids with a 400 error instead of inserting them: create them with `POST`. With `graph`, this applies to the root models, while nested models can still be new.
-- **server:** The array forms of `patchAndFetch()` and `updateAndFetch()` throw for models without ids instead of inserting them: insert these with `insertAndFetch()`.
-- **server:** The validator applies `discriminator` keywords: a `oneOf` with `discriminator: { propertyName: 'type' }` validates only the variant that `type` selects, which needs a fixed `type` in the `properties` of each variant. The tag stays required in patches. Before, the keyword was ignored and all variants were tried.
-- **server:** Schemas with `type: 'object'` that combine parts through `allOf`, `anyOf` or `oneOf` without their own `properties` reject unknown properties, as objects with `properties` do: they get the automatic `unevaluatedProperties: false`, and their parts aren't closed on their own unless they have a `type`. Set `unevaluatedProperties: true` to allow unknown properties.
-- **server:** Definitions, e.g. `'#Address'`, are closed where they're used instead of where they're defined: a `$ref` to one gets the automatic `unevaluatedProperties: false`, unless it's a part of `allOf`, `anyOf` or `oneOf`, so definitions can also serve as the base of other schemas. Definitions of objects without properties stay open, and so does a definition with `unevaluatedProperties: true`, wherever it's used. Parts that only `$ref` a definition inside an outer schema that isn't closed, e.g. one without `type`, accept unknown properties now.
-- **server:** Text filters without an operator search for the text anywhere, like `contains`, instead of not filtering.
-- **server:** `type: 'color'` only accepts hex colors, `#rgb`, `#rgba`, `#rrggbb` and `#rrggbbaa`, instead of any string. Use `type: 'string'` for other color strings, and `type: 'object'` for the object formats of the admin's color type, e.g. `format: 'rgb'`.
-- **server:** Removed deprecations: `AdminController.getPath(name)` (use `resolveConfigPath(name)`), `returns` of handlers and `options.returns` (use `response` and `options.response`, both throw), the scope prefixes `-` and `#` (use `!` and `@`) and the `cyclic` option of the `*DitoGraph*()` methods, which had no effect.
-- **server:** The `expression` of `getPropertyOrRelationAtDataPath()` selects properties with `(@name)` instead of `(#name)`, as the scope prefix `#` is removed.
-- **server:** `TimeStampedMixin` and `TimeStampedModel` are `TimestampedMixin` and `TimestampedModel`, and their scope `timeStamped` is `timestamped`.
-- **server:** `getDitoObject()` and `sendDitoObject()` of `AdminController` are `getGlobalConfig()` and `sendGlobalConfig()`, after the `GlobalConfig` type of the admin's `window.dito` that they create.
-- **server:** `initialized` of models, controllers, services and storages is `isInitialized`, and `closed` of `AdminController` is `isClosed`.
-- **server:** The admin's HMR is served through the app's server instead of a port of its own: remove `server.hmr.port` from the admin's Vite config.
+The first release of Dito.js 4, which includes the withdrawn 4.0.0, so these notes list all changes since 3.5.0. The admin is rebuilt around its data: forms, dialogs and panels keep their edits, dirty state and errors also for fields that aren't rendered, nested forms edit drafts, and callbacks receive typed contexts instead of components. See [Upgrading to 4.x](docs/upgrading-to-4.x.md) for what apps need to change.
 
 ### Behaviour changes
 
-#### Schemas
-
-- **admin:** Object defaults of `api.defaults` only fill in what schemas leave out, also inside nested objects, instead of overriding the values that schemas set themselves. The values that default functions return still override the schema's.
-- **admin:** The create menu of lists and objects offers their forms by `creatable` only, where 3.5 also left out forms by their `if`, the `if` of their components and `visible`. Move such conditions to `creatable`, whose callback gets the context of the list.
-
-#### Contexts
-
-- **admin:** Each context describes its `item`: `itemDataPath`, `itemIndex`, `parentItem`, `parentItemDataPath` and `serializedItem` belong to it. In the events of forms, sections and inlined and object forms, and in list buttons, 3.5 gave the values of the item one level up: `itemIndex` in `onChange()` of a chapter's form is the chapter's index now. List buttons and filters panels describe the item that holds the list, or the list itself in single-component views, and relative data paths in their `validate()` resolve against it.
-- **admin:** `context.value` is `undefined` in the events of forms and sections, which describe their item: read `item`.
-- **admin:** `onSuccess()` and `onError()` of submit buttons get the same context as their `onClick()`.
-
-#### Dirty state and saving
-
-- **admin:** Forms are dirty once their data is edited, until it's saved, applied or loaded again, instead of when it differs from the loaded data: reverting an edit leaves them dirty, while writes that don't change a value aren't edits.
-- **admin:** Writes count as edits when they change a value that a field shows and that is saved; helper values without a field don't. Changes of fields with `exclude`, or of values inside them, don't make the data dirty. Sources with their own resource are excluded by default: with `exclude: false`, changes of their lists, e.g. their order, make the form dirty.
-- **admin:** Only data that can be saved is dirty: views, dialogs and panels without a button of type `submit` are never dirty, and views without one don't ask about unsaved changes. Excluded sources with their own resource track the edits of their list, which their buttons clean when they submit them.
-- **admin:** Writes through the data of contexts, i.e. `item`, `parentItem`, `rootItem` and `value`, are edits. Code that changes values in place, e.g. a date through `setHours()`, calls `context.markDirty()`.
-- **admin:** Save responses and `context.resetItem(data)` merge into the form's data in place, so open nested forms keep their edits.
-- **admin:** Leaving a form while it saves waits for the save, which 3.5 didn't, and only asks about unsaved changes if the save fails. "Save & close" only navigates if the user is still in the form.
-- **admin:** Submitting waits for running uploads and loads of data and options without the 30 second limit of 3.5, as `api.timeout` bounds the requests.
-- **admin:** Saving the forms of the children of tree items doesn't reload the tree.
-- **server:** `upsert()`, `upsertAndFetch()`, the array forms of `patchAndFetch()` and `updateAndFetch()`, and array inserts outside of PostgreSQL run in a transaction: a failure rolls back the models saved before it.
-- **server:** Outside of PostgreSQL, arrays passed to `insert()` are inserted without their relations, as in PostgreSQL, instead of through `insertGraph()`: insert graphs with `insertDitoGraph()` or `insertGraph()`. `insertAndFetch()` accepts arrays there too, instead of throwing.
-
-#### Nested forms
-
-- **admin:** Nested forms without `mutate: true` edit a draft of their item: OK merges the draft into the item and makes the parent dirty if it changed, Cancel leaves the parent untouched. `serializeValue()` runs only when the parent is saved, and the data outside of the item is read-only in the draft.
-- **admin:** Open nested forms follow their item when it moves. The forms of list items close when their item is removed, instead of showing the next one.
-
-#### Errors
-
-- **admin:** Errors stay with their values when sections collapse, tabs switch and items move, and any change of a value clears its errors.
-- **admin:** Errors inside values that no deeper field displays, e.g. of objects edited as code, show on the field of the value, with their path.
-- **admin:** Rows of lists and tree items with errors in their items or children are marked with `.dito-table__row--error` and `.dito-tree-item--error`.
-- **admin:** Saving or applying a form successfully clears all errors of its data, also of fields that aren't shown.
-- **admin:** Errors thrown by event handlers, e.g. in `onClick()`, reach `onError()` and the code that awaits them as they are, instead of wrapped in an `AggregateError`: read `error.message` instead of `error.errors[0].message`.
-
-#### Fields and display
-
-- **admin:** Cells without `render()` and item labels show values as their types display them, e.g. 'June 1, 2026' for `type: 'date'` instead of the stored string.
-- **admin:** Date, datetime and time fields fire `change` once the edit is done, when the picker closes, the field loses focus or Enter is pressed.
-- **admin:** `input` fires for each edit in all types, and bubbles to the schemas above like `change`. Returning `false` from a handler of either event stops it from bubbling further.
-- **admin:** Selects and multiselects keep values that their options lack and show them as unavailable, instead of setting them to `null`.
-- **admin:** Tabs render once they're selected and stay rendered.
-- **admin:** In panels with their own data, e.g. filters, `item` is the panel's data and `rootItem` the data of the page. Writes through `rootItem` and `parentItem` there are edits of the page's data, like in forms with `mutate: true`. In dialogs, `rootItem` is the dialog's data.
-
-#### Routes, requests and the clipboard
-
-- **admin:** The URLs of the forms of lists in nested sections and inlined objects contain the name of their container, e.g. `/books/1/contents/notes/2`.
-- **admin:** The items of tree lists with a resource are addressed by their id in URLs instead of their index.
-- **admin:** `request({ cache: 'local' })` caches while the route of the form or view is shown, and dialogs have their own local cache while they're open.
-- **admin:** Pasting writes the copied values into the item, which keeps its id and position. The items of its lists are added as new items with new temporary ids, and lists with their own resource are left out. Copying gives related items new temporary ids, distinct for each id in each list, e.g. `@12` and `@13` for the id `7` and the temporary id `@7`, which both became `@7` before. Copying the item of a nested form leaves out the ids of its items.
-
-#### Data paths
-
-- **utils, server:** `**` in the middle of the data paths of `getValueAtDataPath()` and `getEntriesAtDataPath()`, and so of the `assets` of models, matches zero or more levels instead of one or more, like in `.gitignore`: `a/**/c` matches `a/c` too. At the end, `a/**` still matches everything inside `a`, but not `a`.
+- **admin:** The value hooks are renamed: `format()` → `formatValue()`, `parse()` → `parseValue()`, `compute()` → `computeValue()` and `process()` → `serializeValue()`. The old names throw, except `format()` on date and color types, where `format` is the format setting: rename these by hand, see [Value hooks](docs/upgrading-to-4.x.md#value-hooks).
+- **admin:** Schemas can't define `methods`, `computed`, `watch` and `data`, and handlers like `onClick()` or `itemLabel()` are called with their context only, without the component as `this`: use plain functions, `onChange()` and module state, see [Methods, computed, watch and data](docs/upgrading-to-4.x.md#methods-computed-watch-and-data).
+- **admin:** Schema options, see [Schema options](docs/upgrading-to-4.x.md#schema-options); the old options throw:
+  - `formats` of the date types is `format`, and the date strings of loaded data become `Date` objects.
+  - Trees open their items with `collapsed: false` instead of `open: true`. `collapsed` is `true` by default and can be a callback.
+  - `relate` takes the key to relate options by, e.g. `relate: 'code'`, instead of `relateBy`, and `groupBy` is `options.group`.
+  - `format: 'name'` of the color type is removed: use a hex format, e.g. `'hex'`.
+  - `nested` only works on sections and panels.
+  - Options that were never read are removed from the types, e.g. `defaultSort` and `defaultScope` of sources and `idKey` of forms.
+- **admin:** Relative paths in `options.dataPath` and in the `dataPath` of the `computed`, `data` and `hidden` types are relative to the item instead of the field, so they need one `../` less: `'../authors'` becomes `'authors'`. The `match` of `validate()` resolves the same way, and `..` above the root throws.
+- **admin:** Events, see [Event handlers](docs/upgrading-to-4.x.md#event-handlers):
+  - Declare handlers as `on…` properties, e.g. `onClick()`. `events: {}` is deprecated until 6.0, and an `on…` handler of the same event wins over it.
+  - An `onClick()` on the submit or cancel buttons of forms and dialogs replaces their default handler: call `context.submit()`, `context.closeForm()` or `context.closeDialog()` from it.
+  - Forms fire `onSuccess()` after saving, with `context.isCreating`, and nested forms `onApply()` when they apply their draft, instead of `create` and `submit`, which throw.
+  - `onToggle()` with `context.collapsed` replaces `onOpen()` with `context.open`.
+  - `input` fires for each edit in all types and bubbles like `change`. Returning `false` from a handler of either stops it from bubbling.
+  - Date, datetime and time fields fire `change` once the edit is done.
+  - Errors thrown by handlers reach `onError()` as they are, instead of wrapped in an `AggregateError`: read `error.message`.
+- **admin:** Contexts, see [Contexts](docs/upgrading-to-4.x.md#contexts):
+  - Contexts don't expose components anymore, e.g. `component` or `formComponent`: what callbacks used them for are context members, listed under New.
+  - Renamed members: `query` → `routeQuery`, `index` → `valueIndex`, `processedItem` → `serializedItem` and `processedRootItem` → `serializedRootItem`. `sourceComponent.query` is `context.sourceQuery`.
+  - `dialogComponent.resolve(value)` is `context.closeDialog(value)`, `formComponent.setData(data)` and `schemaComponent.resetData()` are `context.resetItem(data)` and `context.resetItem()`, and the validation members of components are `context.validate()`, `isValid()` and `clearErrors()`. `dialogComponent.reject()`, `applyCleanChanges()`, `filterData()`, `navigateToComponent()` and `navigateToRouteComponent()` are removed.
+  - `context.navigate()` resolves to whether the navigation happened, and `getResourceUrl()` without arguments throws when there is no resource.
+  - Each context describes its own `item`, with `itemDataPath`, `itemIndex` and `parentItem`: in the events of forms and sections and in list buttons, 3.5 gave those of the item one level up. `context.value` is `undefined` there.
+  - In panels with their own data, `item` is the panel's data and `rootItem` the page's. In dialogs, `rootItem` is the dialog's data.
+  - `onSuccess()` and `onError()` of submit buttons get the same context as their `onClick()`.
+- **admin:** Code outside of callbacks reaches the admin's services through `admin.context`, and its `settings` replace `window.dito`, see [Admin services](docs/upgrading-to-4.x.md#admin-services). `closeNotifications()`, `rootComponent`, `registerLoading()`, `meta.api` and `meta.schema` of routes, and `api.base` are removed: `dito.base` is the base of the routes.
+- **admin:** Custom components don't get `DitoMixin` and `TypeMixin` anymore: they receive `schema`, `context` and `modelValue`, and emit `update:modelValue` and `change`, see [Custom components](docs/upgrading-to-4.x.md#custom-components). The admin's own components are internal, and their actions, e.g. `request()` and `navigate()`, are context members.
+- **admin:** Types are defined with `defineType(descriptor)` instead of `admin.register()`, with renamed options, and `processSchema()`, `processValue()` and `getTypeValidations()` are `setupSchema()`, `serializeValue()` and `getValidations()`, see [Custom types](docs/upgrading-to-4.x.md#custom-types).
+- **admin:** TypeScript types, see [TypeScript types](docs/upgrading-to-4.x.md#typescript-types):
+  - `SchemaOpen` is `SchemaToggle` and `OpenEventHandler` is `ToggleEventHandler`. `HTTPVerb` (use `HttpMethod`), the mixin types and the types of component instances are removed.
+  - Many types are renamed and keep working as deprecated aliases, e.g. `DitoContext` → `SchemaContext`, `DitoGlobal` → `GlobalConfig` and `Form` → `FormSchema`.
+  - The types follow what the admin reads, and options that were missing are typed.
+- **server:** TypeScript types: `HTTPMethod` is `HttpMethod`, as a deprecated alias. `ApiConfig` has no `dateFormat` and `resources`: set `resources` on the admin's `api`. Custom keywords receive `instancePath` instead of `dataPath`. The types follow what the server reads, e.g. `Authorize` takes settings by action name, and options that were missing are typed.
+- **admin:** `.dito-form-nested` and `DitoFormNested` are `.dito-form--embedded` and `DitoFormEmbedded`, and the deprecated `$pulldown-*` SCSS variables are removed.
+- **ui:** `$ease-put-quint` is `$ease-out-quint`, `.dito-trigger-disabled` is `.dito-trigger--disabled`, and `.dito-popup-{placement}` is `.dito-popup--{placement}`.
+- **ui:** `DitoDatePicker`, `DitoTimePicker` and `DitoDateTimePicker` emit `change` once the edit is done, and `update:modelValue` for each value. The `disabledDate`, `disabledHour`, `disabledMinute` and `disabledSecond` props are removed, see [UI](docs/upgrading-to-4.x.md#ui).
+- **ui:** `DitoButton` with a `verb` and without `text` is labelled by its verb, and `getVerbButtonAttributes()` doesn't take `hasText` anymore.
+- **build:** `@ditojs/admin` and `@ditojs/ui` are only published as ES modules, and all packages have `exports` maps with `import` only: `require()` and imports of internal files, e.g. `@ditojs/server/src/…`, fail. `defineViteConfig()` doesn't read `rollupOutput` anymore, see [Packages and builds](docs/upgrading-to-4.x.md#packages-and-builds).
+- **utils:** `stripTags()` is removed: use `stripHtml()`. `setDataPathEntries()` is `setEntriesAtDataPath()`, and `escapeRegexp()` is `escapeRegExp()`.
+- **utils, server:** `**` in the middle of data paths, also in the `assets` of models, matches zero or more levels, like in `.gitignore`: `a/**/c` matches `a/c` too.
+- **server:** Services and storages, see [Services and storages](docs/upgrading-to-4.x.md#services-and-storages):
+  - `Service.setup(config)` is `configure(config)`, and the application starts and stops its services itself: an overridden `setup()` isn't called anymore.
+  - Storages are created with `constructor(app, name, config)` and named by their key in `config.storages`. `app.addStorage(config, name)` needs the name, and the async `initialize()` replaces `setup()`.
+- **server:** Queries, see [Queries](docs/upgrading-to-4.x.md#queries):
+  - `upsert(data)` saves models by the ids in the data, patching those that exist and inserting the others, instead of patching what the query matches. Its `update` and `fetch` options are removed.
+  - Collection `PUT` and `PATCH` requests reject models without ids with a 400 error, and the array forms of `patchAndFetch()` and `updateAndFetch()` throw for them: create them with `POST` or `insertAndFetch()`.
+  - These methods and array inserts outside of PostgreSQL run in a transaction, so a failure rolls back the models saved before it.
+  - Outside of PostgreSQL, arrays passed to `insert()` are inserted without their relations, as in PostgreSQL: use `insertDitoGraph()` or `insertGraph()` for graphs.
+  - Text filters without an operator search like `contains`, instead of not filtering.
+- **server:** Validation, see [Validation](docs/upgrading-to-4.x.md#validation):
+  - `discriminator` keywords are applied: each variant of the `oneOf` needs a fixed `type` in its `properties`.
+  - Objects that combine parts through `allOf`, `anyOf` or `oneOf` without their own `properties`, and `$ref`s to definitions like `'#Address'`, reject unknown properties. Set `unevaluatedProperties: true` to allow them.
+  - `type: 'color'` only accepts hex colors: use `type: 'string'` or `type: 'object'` for others.
+- **server:** Deprecations are removed, e.g. the scope prefixes `-` and `#` (use `!` and `@`), and `TimeStampedMixin`, `getDitoObject()`, `initialized` and others are renamed, see [Removed deprecations](docs/upgrading-to-4.x.md#removed-deprecations) and [Renames](docs/upgrading-to-4.x.md#renames).
+- **server:** The admin's HMR is served through the app's server: remove `server.hmr.port` from the admin's Vite config.
+- **admin:** Dirty state and saving, see [Dirty state and saving](docs/upgrading-to-4.x.md#dirty-state-and-saving):
+  - Forms are dirty once their data is edited, until it's saved, applied or loaded again: reverting an edit leaves them dirty.
+  - Only writes of values that a field shows and that are saved are edits, not those of `exclude` fields or of sources with their own resource. Writes through `item`, `parentItem`, `rootItem` and `value` are edits; code that changes values in place calls `context.markDirty()`.
+  - Views, dialogs and panels without a button of type `submit` are never dirty.
+  - Save responses and `context.resetItem(data)` merge into the data in place, so open nested forms keep their edits.
+  - Leaving a form while it saves waits for the save, and submitting waits for uploads and loads without the 30 second limit of 3.5.
+  - Saving the forms of tree items' children doesn't reload the tree.
+- **admin:** Nested forms without `mutate: true` edit a draft of their item, which OK merges into the parent and Cancel discards, see [Nested forms](docs/upgrading-to-4.x.md#nested-forms). Open forms follow their item when it moves, and close when it's removed.
+- **admin:** Errors stay with their values when sections collapse, tabs switch and items move, and any change of a value clears them. Errors of values without a field of their own show on the field around them, and rows and tree items with errors inside are marked, see [Errors](docs/upgrading-to-4.x.md#errors).
+- **admin:** Cells and item labels show values as their types display them, e.g. dates, and selects keep values that their options lack, showing them as unavailable. Tabs render once they're selected.
+- **admin:** Object defaults of `api.defaults` only fill in what schemas leave out, and the create menu of lists offers forms by `creatable` only, not by their `if` or `visible`.
+- **admin:** Routes, requests and the clipboard, see [Routes, requests and the clipboard](docs/upgrading-to-4.x.md#routes-requests-and-the-clipboard):
+  - The URLs of forms of lists in nested sections and inlined objects contain the container's name, e.g. `/books/1/contents/notes/2`, and tree items with a resource are addressed by id.
+  - `request({ cache: 'local' })` caches while the route is shown, and dialogs have their own local cache.
+  - Pasting writes the copied values into the item, which keeps its id and position, and copied related items get new temporary ids.
 
 ### New
 
-- **admin:** Context members for what callbacks used components for: `isDirty`, `isCreating`, `validate(match)`, `isValid(match)`, `clearErrors(match)`, `markDirty()`, `resetItem(data)`, `submit()`, `closeForm()`, `closeDialog(value)`, `showDialog()`, `getRouteUrl(location)`, `getSchemaValue(key, { type, default })`, `routeQuery`, `sourceQuery` and `selectedTab`.
-- **admin:** `context.closeForm()` resolves to `true` once the form closed, or `false` if it's still open, e.g. when the user chose to keep unsaved changes.
-- **admin:** `match` of `validate()`, `isValid()` and `clearErrors()` takes data paths with `*` for one level and `**` for zero or more levels, or for everything inside at the end, arrays of them, regular expressions or functions.
-- **admin:** `serializeValue()` returning `undefined` leaves out the value's key. Virtual fields write the actual values into `context.serializedItem` and return nothing, instead of using `exclude: true`, so their edits make the form dirty.
-- **admin:** Handlers of bubbled events receive `currentDataPath`, the data path of the component whose handler runs, next to the `dataPath` of the changed value.
-- **admin:** `serializedItem` and `serializedRootItem` are available in all callbacks, e.g. `if` and `computeValue()`, and in `serializeValue()` they're the data being built.
-- **admin:** `deserializeValue()` converts stored values to edited ones, for loaded data, save responses, `resetItem()`, pasted data and filters. Types can define `serializeValue()` and `deserializeValue()`, which run before the schema's.
-- **admin:** Forms fire `onCancel()` when their cancel button closes them. A value returned from `onSuccess()` or `onError()` of forms suppresses the notification, like on buttons.
-- **admin:** `itemLabel` and `itemLabelText` hold the label of the form's item in all callbacks inside a form, e.g. its events and the `if` and `label` of its components, computed when they're read. In `itemLabel()` itself, they're `null`.
-- **admin:** Trees fire `onToggle()`, set on the tree or on its `children` schema, with `context.collapsed` when their items collapse or expand.
-- **admin:** Option labels receive `context.isSelected`.
-- **admin:** Type descriptors can state `rendersLabel`, `submitsData` and `hasEmbeddedForms`, display values with `getDisplayValue()`, and load options with `getOptionsDataSchema()`, whose components read the loaded options as `context.options`. `type` takes an array of types that share the descriptor.
-- **admin:** `CustomComponentProps` and `CustomComponentEmits` type custom components, and dito warns in development about undeclared props and emits.
-- **admin:** Custom components can emit `focus` and `blur`, which fire the schema's events, and `blur` validates the value. They receive `errorsElementId`, the id of the element that shows their errors.
-- **admin:** New types: `AdminContext`, `AdminUser` and `TypeDescriptor`. `context.extend()` is typed, and the SCSS variable `$error-bar-width` sets the width of the marks of rows with errors.
-- **admin:** `multiple` of uploads, `lines` of textareas and markups, and `placeholder` of multiselects take callbacks.
-- **admin:** Lists with `wrapPrimitives` support routed forms.
-- **admin:** Panels with `nested: true` hold their values under their name, like nested sections, e.g. `item.details.title`. Panels with their own `data` can't be nested and throw.
-- **server:** The `ApiConfig` type has `formats` and `timeout`, and `ApiResource` has `method`, `id` and `query`, as the admin reads them.
-- **utils:** `resolveDataPath(dataPath, path)` resolves `path` relative to `dataPath`, or from the root with a leading `/`.
+- **admin:** Context members for what callbacks used components for, e.g. `isDirty`, `isCreating`, `validate(match)`, `isValid(match)`, `clearErrors(match)`, `markDirty()`, `resetItem(data)`, `submit()`, `closeForm()`, `closeDialog(value)`, `showDialog()` and `getSchemaValue()`, see [New features](docs/upgrading-to-4.x.md#new-features). `match` takes data paths with `*` and `**`, regular expressions or functions.
+- **admin:** Values:
+  - `deserializeValue()` converts stored values to edited ones, and `serializeValue()` returning `undefined` leaves out the key. Types can define both.
+  - `serializedItem` and `serializedRootItem` are available in all callbacks.
+- **admin:** Events:
+  - Handlers of bubbled events receive `currentDataPath`, the data path of the component whose handler runs.
+  - Forms fire `onCancel()`, and a value returned from their `onSuccess()` or `onError()` suppresses the notification.
+  - Trees fire `onToggle()` with `context.collapsed`.
+- **admin:** `itemLabel` and `itemLabelText` hold the label of the form's item in all callbacks inside a form, and option labels receive `context.isSelected`.
+- **admin:** Type descriptors can state `rendersLabel`, `submitsData` and `hasEmbeddedForms`, display values with `getDisplayValue()`, load options with `getOptionsDataSchema()`, and take an array as `type`.
+- **admin:** Custom components are typed with `CustomComponentProps` and `CustomComponentEmits`, can emit `focus` and `blur`, and receive `errorsElementId`.
+- **admin:** `multiple` of uploads, `lines` of textareas and markups, and `placeholder` of multiselects take callbacks, lists with `wrapPrimitives` support routed forms, and panels with `nested: true` hold their values under their name.
+- **admin:** The types `AdminContext`, `AdminUser` and `TypeDescriptor`, and the SCSS variable `$error-bar-width`.
+- **server:** `ApiConfig` has `formats` and `timeout`, and `ApiResource` has `method`, `id` and `query`.
+- **utils:** `resolveDataPath(dataPath, path)` resolves `path` relative to `dataPath`.
 
 ### Fixes
 
-- **admin:** Applying a nested form no longer drops values that the form doesn't cover, wipes `exclude` values, cuts related objects to `{ id }` or serializes values twice.
-- **admin:** Cancelling a nested form no longer leaves temporary ids in the parent, which later saves sent as `#ref` without `#id`.
-- **admin:** Removing an item before an open nested form's item no longer switches the form to the next item and drops its edits.
-- **admin:** Copying no longer carries other items' ids into pasted items.
-- **admin:** Lists in forms that are shared by several views or lists get their routes in each of them.
-- **admin:** Lists with their own `path`, lists in nested sections, and lists whose names don't survive normalizing their paths, e.g. `sourceURLs`, open their items' forms instead of empty ones.
-- **admin:** Lists linked to views with several components get correct edit links, and can create items there.
-- **admin:** Relative resources resolve against the nearest form or list with a resource: the forms of tree items no longer load `pages/pages/1` instead of `pages/1`, and lists in the items of inlined lists no longer resolve against the API root.
-- **admin:** `markup` edits that don't blur the editor, e.g. links applied through the dialog, are written right away, so saving immediately no longer sends the old value. After the link dialog, the focus returns to the editor.
-- **admin:** The `on…` handlers of sections, e.g. `onChange()`, `onInput()`, `onClick()`, `onInitialize()` and `onDestroy()`, fire for the section and the events of its components, which they never did.
-- **admin:** The `click` events of buttons bubble through all schemas above, e.g. to `onClick()` of a form around a section, instead of only to the schema right around the button.
-- **admin:** `onError()` of buttons that calls `context.notify()` replaces the default notification of the error that `onClick()` threw, like on forms and resource buttons.
-- **admin:** Saving with an error in a collapsed section or inlined form opens it and focuses the field, where the focus stayed on the Save button.
-- **admin:** `spinner: null` in the options of `DitoAdmin` hides the header's spinner, as its types describe, which it never did.
-- **admin:** `rules: { name: false }` removes the rule `name`, like `undefined`, where the rule kept validating, as validators ignore the setting `false`.
-- **admin:** `showDialog()` without `buttons` or with `buttons: {}` shows a dialog that Escape cancels, instead of throwing, and `components` can be left out.
-- **admin:** `creatable` callbacks that return `{ label, query }` label the create button and add the query to its route, which only worked for objects.
-- **admin:** The create button of sources with a single form is disabled when the form is `disabled`, like the forms in the create menu, instead of throwing "Not allowed to create item for given form" on click.
-- **admin:** Lists with `columns` as an array label their items with the value of the first column, where they had no label.
-- **admin:** The `if` of the components of panels with their own data only runs with that data, where validation and the panels in `components` also ran it with the data around the panel, which could hide the panel.
-- **admin:** Tree items with `null` children are sorted as an empty list, without a warning.
-- **admin:** `admin.el` holds the element that the admin mounts to, also when the constructor receives a selector.
-- **utils:** `isEmpty()` checks the size of `Map` and `Set` objects and never treats dates as empty, where it returned `true` for all of them.
-- **utils:** Errors of `setValueAtDataPath()` print the full path, separated by `/`, e.g. `Invalid path: items/7/title` instead of `items,7`.
-- **utils:** `isCreditCard()` anchors all its card patterns at both ends, so numbers that only start like a card number, e.g. a Visa prefix with 14 digits, no longer pass.
-- **utils:** `debounceAsync()` keeps working after `cancel()`, where later calls resolved to `undefined` right away, and with `immediate`, calls within the delay resolve to the result of the leading call instead of never settling.
-- **utils:** `getEntriesAtDataPath()` no longer keys the entries of trailing wildcards with a trailing slash, e.g. `a/b/` for `a/*`, which made models write the files of `assets` at such data paths to the wrong key.
-- **server:** `authorize: false` on an action or a controller denies access. Before, it was skipped: actions fell back to the settings of their actions object or controller, or were public without one.
-- **server:** `UserMixin` hashes passwords set through a `passwordProperty` other than `password`, which were never hashed, and its `setup()` calls the `setup()` of the model it extends.
-- **server:** The `assets` and `logger` options of an application no longer change the defaults of the applications created after it.
-- **server:** `allow: ['*']` on the `collection` and `member` of model controllers routes all their actions, instead of throwing "Missing handler in '$core' action".
-- **server:** `db:create_migration` creates `json` columns for `type: 'asset'` and model types, e.g. `type: 'Author'`, and `string` columns for `type: 'color'`, instead of calling `table.asset()`, `table.Author()` and `table.color()`, which knex doesn't have, and only uses `increments()` for integer primary keys.
-- **server:** `db:create_migration` takes the column types of properties with a `$ref` but no `type` from their definitions, and creates `json` columns for definitions without a `type`, instead of writing `table.undefined()`.
-- **server:** `db:create_migration` names the columns of join tables like the relations do, e.g. `bookId` instead of `BookId`, which broke `manyToMany` relations without `normalizeDbNames`.
-- **server:** The foreign keys that relations add to their related models, e.g. `Review.bookId` of `Book.reviews`, no longer go missing when the related model is registered first.
-- **server:** `upsertAndFetch()` and the array forms of `patchAndFetch()` and `updateAndFetch()` return all saved rows regardless of the `default` scope, like `insertAndFetch()`, where rows outside it were saved but missing from the result.
-- **server:** `hooks` of models and controllers accept arrays of handlers, as their types declare, instead of throwing "on only accepts instances of Function".
-- **server:** A JSON Schema `required` array on a property, e.g. `required: ['type']`, no longer makes the property itself required, and adds to the properties marked `required: true` instead of being replaced by them.
-- **server:** The `authorize` setting of a `UsersController` doesn't apply to its `login`, `logout` and `session` actions, which authenticate users, so users can log in. `self` still follows it.
-- **server:** Logins of users without a password hash fail with 401, instead of 500 with bcrypt's "Illegal arguments".
-- **server:** Files uploaded to S3 storages without `url` get the S3 url that multer-s3 returns, instead of no url.
-- **server:** `db:seed` exits with an error code when a seed fails, after running the other seeds.
-- **server:** `CollectionController` is exported, as its types declare.
-- **server:** `{ from: 'member' }` parameters are left out of the schema that the parameters of actions are validated against, as they're resolved separately.
-- **server:** Controllers that override `relations` of their base controller keep its relation and member actions.
-- **server:** `getPropertyOrRelationAtDataPath()` leaves array wildcards out of the relation expressions it returns, which objection read as all relations (#214).
+- **admin, nested forms:**
+  - Applying a nested form no longer drops or serializes values twice, and cancelling it leaves no temporary ids in the parent.
+  - Removing an item before an open nested form's item no longer switches the form and drops its edits.
+  - Copying no longer carries other items' ids into pasted items.
+- **admin, routes and resources:**
+  - Lists in forms shared by several views, lists with their own `path`, lists in nested sections, and lists with names like `sourceURLs` open the right forms.
+  - Lists linked to views with several components get correct edit links and can create items.
+  - Relative resources resolve against the nearest form or list with a resource, e.g. `pages/1` instead of `pages/pages/1` in trees.
+- **admin, events:**
+  - The `on…` handlers of sections fire, and `click` events of buttons bubble through all schemas above.
+  - `onError()` of buttons that calls `context.notify()` replaces the default notification.
+- **admin, fields:**
+  - `markup` edits that don't blur the editor, e.g. links, are written right away, and the focus returns to the editor after the link dialog.
+  - Saving with an error in a collapsed section or inlined form opens it and focuses the field.
+  - `rules: { name: false }` removes the rule.
+  - The `if` of components of panels with their own data only runs with that data.
+- **admin, other:**
+  - `spinner: null` hides the header's spinner, and `admin.el` holds the mounted element.
+  - `showDialog()` works without `buttons` or `components`.
+  - `creatable` callbacks that return `{ label, query }` work for lists, and the create button of sources with a single `disabled` form is disabled.
+  - Lists with `columns` as an array label their items by the first column.
+  - Tree items with `null` children sort as empty lists.
+- **utils:**
+  - `isEmpty()` checks the size of `Map` and `Set` and never treats dates as empty.
+  - `setValueAtDataPath()` errors print the path with `/`.
+  - `isCreditCard()` no longer accepts numbers that only start like a card number.
+  - `debounceAsync()` keeps working after `cancel()` and with `immediate`.
+  - `getEntriesAtDataPath()` no longer adds a trailing slash for trailing wildcards, which wrote `assets` to the wrong key.
+- **server, controllers:**
+  - `authorize: false` on an action or controller denies access, where it was skipped.
+  - The `authorize` of a `UsersController` doesn't apply to `login`, `logout` and `session`, and logins of users without a password hash fail with 401 instead of 500.
+  - `allow: ['*']` on `collection` and `member` routes all actions.
+  - `{ from: 'member' }` parameters are left out of parameter validation.
+  - Controllers that override `relations` keep the relation and member actions of their base.
+  - `CollectionController` is exported.
+- **server, models:**
+  - `UserMixin` hashes passwords of a custom `passwordProperty`, and calls the `setup()` of the model it extends.
+  - Foreign keys that relations add to related models no longer go missing when the related model is registered first.
+  - `upsertAndFetch()` and the array forms of `patchAndFetch()` and `updateAndFetch()` return all saved rows regardless of the `default` scope.
+  - `hooks` accept arrays of handlers.
+  - A JSON Schema `required` array on a property no longer makes the property itself required.
+  - `getPropertyOrRelationAtDataPath()` leaves array wildcards out of relation expressions (#214).
+- **server, other:**
+  - `db:create_migration` creates valid columns for `type: 'asset'`, model types, `type: 'color'` and `$ref` properties, uses `increments()` only for integer keys, and names join table columns like the relations do.
+  - `db:seed` exits with an error code when a seed fails.
+  - The `assets` and `logger` options of one application no longer change the defaults of later ones.
+  - Files uploaded to S3 storages without `url` get the S3 url.
 
 ### Internal
 
-- The admin is written in TypeScript where it was rebuilt, and its components are built with `setup()` and composables instead of mixins.
+- The admin is written in TypeScript where it was rebuilt, and its components use `setup()` and composables instead of mixins.
 
 ## 3.5.0 (2026-10-11)
 
