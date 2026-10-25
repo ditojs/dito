@@ -15,12 +15,15 @@ DitoTrigger.dito-menu-button(
   }`
 )
   template(#trigger)
+    //- Safari and Firefox don't focus buttons on click, focus it ourselves so
+    //- that the focus stays with the open menu, as in Chrome:
     DitoButton(
       ref="button"
       aria-haspopup="menu"
       :aria-expanded="isOpen ? 'true' : 'false'"
       :disabled="disabled"
       v-bind="$attrs"
+      @click="focusButton"
       @keydown="onButtonKeyDown"
       @keyup="onKeyUp"
     )

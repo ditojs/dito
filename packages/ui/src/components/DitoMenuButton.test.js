@@ -49,6 +49,14 @@ describe('DitoMenuButton', () => {
     expect(wrapper.classes()).toContain('dito-menu-button')
   })
 
+  it('focuses the button when a click opens the menu', async () => {
+    wrapper = mountMenuButton()
+    const button = findButton(wrapper)
+    await button.trigger('click')
+    expect(findMenuItems(wrapper)).toHaveLength(3)
+    expect(document.activeElement).toBe(button.element)
+  })
+
   it('opens the menu offset below the top of the button with `offset`', () => {
     wrapper = mountMenuButton()
     expect(wrapper.classes()).not.toContain('dito-menu-button--offset')
