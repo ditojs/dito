@@ -177,7 +177,7 @@ name, see [Hooks](api/server/controllers.md#hooks).
 
 ## Minor releases
 
-6.1 changes these without deprecation warnings:
+6.1 and 6.2 change these without deprecation warnings:
 
 ### 6.1
 
@@ -230,3 +230,50 @@ name, see [Hooks](api/server/controllers.md#hooks).
 | `%input-borderless`                    | `%input--borderless`                     |
 | `%button-disabled`                     | `%button--disabled`                      |
 | `%icon-{name}`                         | `%icon--{name}`                          |
+
+### 6.2
+
+- The `*DitoGraph*()` methods are renamed, without aliases.
+  `insertGraph()` and `upsertGraph()` now carry the defaults of
+  `insertDitoGraph()` and `upsertDitoGraph()`:
+
+| 6.1                                                  | 6.2                                      |
+| ---------------------------------------------------- | ---------------------------------------- |
+| `insertDitoGraph()`, `insertDitoGraphAndFetch()`     | `insertGraph()`, `insertGraphAndFetch()` |
+| `upsertDitoGraph()`, `upsertDitoGraphAndFetch()`     | `upsertGraph()`, `upsertGraphAndFetch()` |
+| `patchDitoGraph()`, `patchDitoGraphAndFetch()`       | `patchGraph()`, `patchGraphAndFetch()`   |
+| `updateDitoGraph()`, `updateDitoGraphAndFetch()`     | `updateGraph()`, `updateGraphAndFetch()` |
+| `upsertDitoGraphAndFetchById()` and the patch/update | `upsertGraphAndFetchById()` & co.        |
+
+- So `insertGraph()` relates the models with ids in relations without
+  `owner: true`, and only writes their ids: to insert full graphs with ids,
+  pass `{ relations: { '*': { added: 'insert' } } }`, as `db:seed` does.
+  `#dbRef`, `#unrelate` and `#delete` throw in all graph methods.
+- The graph methods write all graphs in Objection.js'
+  [strict mode](https://ditojs.github.io/objection/guide/query-examples.html#strict-mode),
+  which needs `objection` ^4.3.0, see
+  [Graphs](guide/server/queries.md#graphs). Strict graphs throw:
+  - for related models with ids that don't exist, with a `NotFoundError`.
+    Upserts inserted them with only their ids before.
+  - for keys that contradict their relation, like the `bookId` of a chapter in
+    the graph of another book, and for copies of a model with different
+    values, with a `GraphError`.
+- They run in a transaction of their own, unless the query already is in one:
+  model hooks that run queries need to run them in `context.transaction`, or
+  they wait for the transaction, and deadlock on SQLite.
+- Updates patch the related models that aren't owned, as patches and upserts
+  do, so they change the `extra` properties of join tables instead of failing
+  validation.
+- The options of the graph methods and the `graphOptions` of relations take
+  the settings of strict graphs, which override the generated ones. The old
+  options throw:
+
+| 6.1                                  | 6.2                                                          |
+| ------------------------------------ | ------------------------------------------------------------ |
+| `relate`, `insertMissing`            | `added: 'relate' \| 'insert' \| 'relateOrInsert' \| 'throw'` |
+| `unrelate`, `noUnrelate`, `noDelete` | `removed: 'unrelate' \| 'delete' \| 'preserve'`              |
+| `update`, `noUpdate`                 | `kept: 'update' \| 'patch' \| 'preserve'`                    |
+| `noInsert`                           | `created: 'throw'`                                           |
+| `noRelate`                           | No replacement                                               |
+| `{ noDelete: true }`                 | `{ relations: { '*': { removed: 'preserve' } } }`            |
+| `graphOptions: { relate: false }`    | `graphOptions: { added: 'insert' }`                          |

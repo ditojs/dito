@@ -87,7 +87,7 @@ export const bookForm = {
 
 The controller's scopes apply to all of its queries, so loading a book and
 the response of saving it include the author and the chapters. With
-`graph = true`, `POST` and `PATCH` save through the Dito.js graph methods:
+`graph = true`, `POST` and `PATCH` save through the graph methods:
 related models with an id, here the author, are only related, while the
 models of `owner: true` relations, here the chapters, are inserted, updated or
 deleted to match the data. The inlined list has no `resource`, so its chapters
@@ -97,6 +97,6 @@ The scopes also apply to the list of books, which then loads the authors and
 chapters as well: keep what it loads small.
 
 See also: [Relations](../guide/server/relations.md),
-[Dito.js graph methods](../api/server/query-builder.md#ditojs-graph-methods),
+[graph methods](../api/server/query-builder.md#graph-methods),
 [Nested forms](../guide/admin/nested-forms.md),
 [Ordering by drag](./drag-ordering.md).

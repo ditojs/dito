@@ -81,7 +81,7 @@
     "@vitejs/plugin-vue": "^6.0.0",
     "aaguids": "0.0.x",
     "knex": "^3.3.0",
-    "objection": "^4.2.0",
+    "objection": "^4.3.0",
     "otpauth": "^9.0.0",
     "vite": "^8.0.0"
   },
@@ -125,7 +125,7 @@
     "@types/node": "^26.6.4",
     "aaguids": "^0.0.71",
     "knex": "^3.3.0",
-    "objection": "^4.2.0",
+    "objection": "^4.3.0",
     "otpauth": "^9.5.2",
     "typescript": "^6.0.3"
   }

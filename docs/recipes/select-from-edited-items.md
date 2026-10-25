@@ -88,4 +88,4 @@ other, which a graph insert can only resolve with a nullable foreign key.
 See also:
 [The options object](../api/admin/schemas.md#the-options-object),
 [Editing a graph](./edit-graph.md),
-[Dito.js graph methods](../api/server/query-builder.md#ditojs-graph-methods).
+[graph methods](../api/server/query-builder.md#graph-methods).

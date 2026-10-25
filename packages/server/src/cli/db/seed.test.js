@@ -7,6 +7,9 @@ import { pathToFileURL } from 'url'
 import { promisify, stripVTControlCharacters } from 'util'
 import { seed } from './seed.js'
 
+// Seeds insert their related models with ids, instead of relating them:
+const graphOptions = { relations: { '*': { added: 'insert' } } }
+
 let basePath
 let output
 let calls
@@ -56,7 +59,10 @@ describe('seed()', () => {
     await writeSeed('Author.json', JSON.stringify([{ name: 'Ada' }]))
     expect(await seed(createApp({ Author }))).toBe(true)
     expect(Author.truncate).toHaveBeenCalledWith({ cascade: true })
-    expect(Author.insertGraph).toHaveBeenCalledWith([{ name: 'Ada' }])
+    expect(Author.insertGraph).toHaveBeenCalledWith(
+      [{ name: 'Ada' }],
+      graphOptions
+    )
     expect(output).toEqual(['Author.json: 1 seed records created.'])
   })
 
@@ -66,8 +72,11 @@ describe('seed()', () => {
     await writeSeed('books.json', JSON.stringify([{ title: 'A' }]))
     await writeSeed('book-reviews.json', JSON.stringify([{}, {}]))
     await seed(createApp({ Book, BookReview }))
-    expect(Book.insertGraph).toHaveBeenCalledWith([{ title: 'A' }])
-    expect(BookReview.insertGraph).toHaveBeenCalledWith([{}, {}])
+    expect(Book.insertGraph).toHaveBeenCalledWith(
+      [{ title: 'A' }],
+      graphOptions
+    )
+    expect(BookReview.insertGraph).toHaveBeenCalledWith([{}, {}], graphOptions)
   })
 
   it('seeds in the order of the app models', async () => {
@@ -113,7 +122,8 @@ describe('seed()', () => {
     await writeSeed('Author.js', `export const name = 'Ada'`)
     await seed(createApp({ Author }))
     expect(Author.insertGraph).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Ada' })
+      expect.objectContaining({ name: 'Ada' }),
+      graphOptions
     )
   })
 

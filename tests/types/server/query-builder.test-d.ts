@@ -138,33 +138,44 @@ describe('QueryBuilder', () => {
     )
   })
 
-  it('DitoGraph methods return query builders for their data', () => {
+  it('graph methods return query builders for their data', () => {
     const query = {} as QB
-    assertType<QB>(query.insertDitoGraph([{}]))
-    assertType<SingleQB>(query.insertDitoGraph({}))
-    assertType<QB>(query.insertDitoGraphAndFetch([{}]))
-    assertType<SingleQB>(query.insertDitoGraphAndFetch({}))
-    assertType<QB>(query.upsertDitoGraph([{}]))
-    assertType<SingleQB>(query.upsertDitoGraph({}))
-    assertType<QB>(query.upsertDitoGraphAndFetch([{}]))
-    assertType<SingleQB>(query.upsertDitoGraphAndFetch({}))
-    assertType<QB>(query.updateDitoGraph([{}]))
-    assertType<SingleQB>(query.updateDitoGraph({}))
-    assertType<QB>(query.updateDitoGraphAndFetch([{}]))
-    assertType<SingleQB>(query.updateDitoGraphAndFetch({}))
-    assertType<QB>(query.patchDitoGraph([{}]))
-    assertType<SingleQB>(query.patchDitoGraph({}))
-    assertType<QB>(query.patchDitoGraphAndFetch([{}]))
-    assertType<SingleQB>(query.patchDitoGraphAndFetch({}))
+    assertType<QB>(query.insertGraph([{}]))
+    assertType<SingleQB>(query.insertGraph({}))
+    assertType<QB>(query.insertGraphAndFetch([{}]))
+    assertType<SingleQB>(query.insertGraphAndFetch({}))
+    assertType<QB>(query.upsertGraph([{}]))
+    assertType<SingleQB>(query.upsertGraph({}))
+    assertType<QB>(query.upsertGraphAndFetch([{}]))
+    assertType<SingleQB>(query.upsertGraphAndFetch({}))
+    assertType<QB>(query.updateGraph([{}]))
+    assertType<SingleQB>(query.updateGraph({}))
+    assertType<QB>(query.updateGraphAndFetch([{}]))
+    assertType<SingleQB>(query.updateGraphAndFetch({}))
+    assertType<QB>(query.patchGraph([{}]))
+    assertType<SingleQB>(query.patchGraph({}))
+    assertType<QB>(query.patchGraphAndFetch([{}]))
+    assertType<SingleQB>(query.patchGraphAndFetch({}))
     assertType<SingleQB>(
-      query.upsertDitoGraphAndFetchById(1, {} as any)
+      query.upsertGraphAndFetchById(1, {} as any)
     )
     assertType<SingleQB>(
-      query.updateDitoGraphAndFetchById(1, {} as any)
+      query.updateGraphAndFetchById(1, {} as any)
     )
     assertType<SingleQB>(
-      query.patchDitoGraphAndFetchById(1, {} as any)
+      query.patchGraphAndFetchById(1, {} as any)
     )
+  })
+
+  it('graph methods take the settings of strict graphs', () => {
+    const query = {} as QB
+    query.upsertGraph({}, { relations: { '*': { removed: 'preserve' } } })
+    query.patchGraph({}, { root: { kept: 'preserve' } })
+    query.insertGraph({}, { relations: { genres: { added: 'insert' } } })
+    // @ts-expect-error - strict graphs don't take the old options
+    query.patchGraph({}, { noDelete: true })
+    // @ts-expect-error - inserts don't remove rows
+    query.insertGraph({}, { relations: { genres: { removed: 'delete' } } })
   })
 
   it('truncate accepts optional restart and cascade', () => {

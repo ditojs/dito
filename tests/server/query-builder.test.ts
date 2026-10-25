@@ -1286,10 +1286,11 @@ describe('QueryBuilder', () => {
     it('refetches upserted graphs with the default scope', async () => {
       const [ada] = await insertCooks()
       const recipes = await insertRecipes()
-      const upserted = await Cook.query().upsertGraphAndFetch(
-        { id: ada.id, recipes: recipes.map(({ id }) => ({ id })) },
-        { relate: true }
-      )
+      // `recipes` isn't an owner relation, so its models are related:
+      const upserted = await Cook.query().upsertGraphAndFetch({
+        id: ada.id,
+        recipes: recipes.map(({ id }) => ({ id }))
+      })
       // The archived recipe is related, but filtered out by the default scope:
       expect(getNames(upserted.recipes)).toEqual([
         'Apple pie',

@@ -89,14 +89,11 @@ test.describe('multiselect', () => {
   })
 
   test('keeps related values without options', async ({ page, url }) => {
-    const widget = await Widget.query().insertGraph(
-      {
-        name: 'Widget A',
-        size: 'Small',
-        tags: [{ name: 'tag-1' }, { name: 'hidden' }]
-      },
-      { relate: false }
-    )
+    const widget = await Widget.query().insertGraph({
+      name: 'Widget A',
+      size: 'Small',
+      tags: [{ name: 'tag-1' }, { name: 'hidden' }]
+    })
     const list = new DitoListView(page, url, 'Widget')
     await list.navigate('/widgets')
     await list.list.edit('Widget A')

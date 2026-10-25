@@ -212,14 +212,14 @@ export class CollectionController extends Controller {
   }
 
   async executeAndFetch(action, ctx, modify, body = ctx.request.body) {
-    const name = `${action}${this.graph ? 'DitoGraph' : ''}AndFetch`
+    const name = `${action}${this.graph ? 'Graph' : ''}AndFetch`
     return this.execute(ctx, (query, trx) =>
       query[name](body).modify(getModify(modify, trx))
     )
   }
 
   async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
-    const name = `${action}${this.graph ? 'DitoGraph' : ''}AndFetchById`
+    const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
     return this.execute(ctx, (query, trx) =>
       query[name](ctx.memberId, body)
         .throwIfNotFound()
@@ -228,12 +228,12 @@ export class CollectionController extends Controller {
   }
 
   async relateAndFetch(ctx, modify) {
-    // Use patchDitoGraphAndFetch() to insert the model and relate the existing
+    // Use patchGraphAndFetch() to insert the model and relate the existing
     // models in its graph. RelationController overrides this to relate models
     // through its relation instead.
     return this.execute(ctx, (query, trx) =>
       query
-        .patchDitoGraphAndFetch(ctx.request.body, { relate: true })
+        .patchGraphAndFetch(ctx.request.body)
         .modify(getModify(modify, trx))
     )
   }
