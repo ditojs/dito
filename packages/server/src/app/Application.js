@@ -167,6 +167,8 @@ export class Application extends Koa {
     if (controllers) {
       this.addControllers(controllers)
     }
+    hasMultipleApps = !!appInstance
+    appInstance = this
   }
 
   async setup() {
@@ -1369,6 +1371,21 @@ export class Application extends Koa {
   get logger() {
     return this.requestLocals.logger ?? this.#logger
   }
+}
+
+// The application of the process, for code that isn't part of a model,
+// controller or service, and so has no `app` of its own:
+let appInstance = null
+let hasMultipleApps = false
+
+export function useApp() {
+  if (!appInstance) {
+    throw new Error('Unable to use the application: none was created yet.')
+  }
+  if (hasMultipleApps) {
+    throw new Error('Unable to use the application: multiple were created.')
+  }
+  return appInstance
 }
 
 function getOptions(options) {
