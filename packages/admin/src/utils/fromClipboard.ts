@@ -4,8 +4,12 @@ import { createTemporaryId, isTemporaryId } from './data.js'
 import { getText } from './html.js'
 import { deserializeData } from './schema/data.js'
 import { getLabel } from './schema/value.js'
-import { findOptionsForLabel, getRelateKey } from './schema/options.ts'
-import { walkData, type FieldEntry } from './schema/walk.js'
+import { findValuesForLabel, getRelateKey } from './schema/options.ts'
+import {
+  walkData,
+  getReferenceSchema,
+  type FieldEntry
+} from './schema/walk.js'
 import type { Services } from './services.ts'
 import type { Data, Schema } from './types.ts'
 
@@ -13,16 +17,20 @@ import type { Data, Schema } from './types.ts'
 // replaced with temporary ones. We replace these with new ones, so pasting
 // twice doesn't repeat them. Sources with their own resource are left out, as
 // they save their items. Relations to records outside of the copy hold labels,
-// which resolve to the option that matches them, or else are left out.
+// and so do items that reference records by their id, which resolve to the
+// option that matches them, or else are left out.
 export async function fromClipboard(
   schema: Schema,
   clipboardData: Data,
   {
     dataPath = null,
+    sourceSchema = null,
     services = null,
     rootData = null
   }: {
     dataPath?: string | null
+    // The source of the data, if it is an item:
+    sourceSchema?: Schema | null
     services?: Services | null
     rootData?: Data | null
   } = {}
@@ -43,6 +51,7 @@ export async function fromClipboard(
   // Replace the ids under the keys that `SchemaGraph.serialize()` uses:
   walkData(schema, data, {
     dataPath,
+    sourceSchema,
     ...walkOptions,
     visit: entry => {
       const { node, data, name } = entry
@@ -55,6 +64,14 @@ export async function fromClipboard(
         const { schema } = relation
         replaceTemporaryIds(data[name], getRelateKey(schema)!)
         if (asArray(data[name]).some(isLabel)) {
+          labeledEntries.push({ ...entry, schema })
+        }
+      } else if (isLabel(data)) {
+        // Resolve the label of the referenced record to its id, like relations:
+        const schema = getReferenceSchema(entry)
+        if (schema) {
+          data[name] = { $label: data.$label }
+          delete data.$label
           labeledEntries.push({ ...entry, schema })
         }
       }
@@ -77,7 +94,7 @@ export async function fromClipboard(
     const resolve = (value: any) => {
       if (isLabel(value)) {
         const { $label: label } = value
-        const found = findOptionsForLabel(schema, options, label, context)
+        const found = findValuesForLabel(schema, options, label, context)
         if (found.length === 1) {
           return found[0]
         }

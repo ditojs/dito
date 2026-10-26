@@ -73,6 +73,8 @@ export interface WrittenPropertyNode extends PropertyNode, DataNode {
 
 export function getSchemaSource(schema: Schema): DataSource
 
+export function getReferenceSchema(entry: DataEntry): Schema | null
+
 // The forms of the items of a source, and its child sources:
 export interface ItemForms {
   forms: Record<string, Schema>
@@ -102,6 +104,8 @@ export function getItemNodes(
 export interface DataEntry {
   node: DataNode
   data: Data
+  // The source of `data`, if it is an item:
+  source: DataSource | null
   name: string
   dataPath: string | null
   // The data path of `data`, which wrapped values keep:
