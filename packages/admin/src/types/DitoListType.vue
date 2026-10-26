@@ -175,7 +175,7 @@ import { fieldProps } from '../composables/useField.ts'
 import { useSource } from '../composables/useSource.ts'
 import { useSortable } from '../composables/useSortable.ts'
 import { useRenderedItems } from '../composables/useRenderedItems.ts'
-import { useSteps } from '../composables/useSteps.ts'
+import { useSteps, countStepItems } from '../composables/useSteps.ts'
 import { provideToNode } from '../composables/useComponentPath.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
@@ -193,6 +193,7 @@ import {
   getItemFormSchemaFromForms
 } from '../utils/schema/lookup.js'
 import { isSourceWithResource } from '../utils/schema/structure.js'
+import { walkData } from '../utils/schema/walk.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
 import { getUploadEntries } from '../utils/interchange.ts'
@@ -221,7 +222,29 @@ const DitoListType = {
     const { listData, editable, deletable, draggable, creatable } = source
     const { services, context, getItemStore } = source
     const { getSchemaValue, shouldRenderSchema } = useSchemaValue(context)
-    const { renderedItems, renderItemsUpTo } = useRenderedItems(listData)
+    const isItemOpen = (item, index) => (
+      getItemStore(item, index).opened ?? !source.collapsed.value
+    )
+    // Steps render items by the fields of their forms. Collapsed items render
+    // only their header, and rows of tables count as one field:
+    const getItemWeight = (item, index, isOpen = isItemOpen(item, index)) => {
+      let weight = 1
+      if (source.isInlined.value && isOpen) {
+        walkData(getItemFormSchema(props.schema, item, context), item, {
+          dataPath: appendDataPath(props.dataPath, index),
+          sourceSchema: props.schema,
+          services,
+          rootData: context.rootItem,
+          shouldSkipIrrelevant: true,
+          visit: () => weight++
+        })
+      }
+      return weight
+    }
+    const { renderedItems, renderItemsUpTo } = useRenderedItems(
+      listData,
+      getItemWeight
+    )
     // The tree renders the items that it reveals:
     provideToNode(source.node, 'renderItemsUpTo', renderItemsUpTo)
     const hasListButtons = computed(
@@ -239,12 +262,18 @@ const DitoListType = {
     // Expand the items in steps, as opening them all at once blocks the page
     // for long, in the order in which `useRenderedItems()` renders them:
     let expandedCount = 0
-    const expandSteps = useSteps(step => {
-      const items = listData.value.slice(expandedCount, expandedCount + step)
+    const expandSteps = useSteps(fields => {
+      const count = countStepItems(
+        listData.value,
+        expandedCount,
+        fields,
+        (item, index) => getItemWeight(item, index, true)
+      )
+      const items = listData.value.slice(expandedCount, expandedCount + count)
       items.forEach((item, index) => {
         getItemStore(item, expandedCount + index).opened = true
       })
-      expandedCount += step
+      expandedCount += count
       if (expandedCount >= listData.value.length) {
         expandSteps.stop()
       }
@@ -254,10 +283,7 @@ const DitoListType = {
     const hasCollapsedItems = computed(
       () => (
         !expandSteps.isRunning.value &&
-        listData.value.some(
-          (item, index) =>
-            !(getItemStore(item, index).opened ?? !source.collapsed.value)
-        )
+        listData.value.some((item, index) => !isItemOpen(item, index))
       )
     )
     const hasToggleAll = computed(
