@@ -32,30 +32,27 @@
     :title="labelToggle?.title"
     @toggle="labelToggle.toggle()"
   )
+  //- Pass the default slot, with the content that layouts place in custom
+  //- components and the items of widgets, in a branch of its own: a slot
+  //- behind `v-if` would make each render of the container update its type.
   component.dito-component(
-    v-if="!isReplacedWithLabel"
+    v-if="!isReplacedWithLabel && $slots.default"
     :is="typeComponent"
     ref="component"
+    v-bind="componentProps"
     :class="componentClasses"
-    :schema="schema"
-    :dataPath="dataPath"
-    :data="data"
-    :store="store"
-    :field="field"
-    :single="single"
-    :nested="nested"
-    :errorsElementId="errors ? errorsElementId : null"
-    :labelId="labelId"
   )
-    //- The content that layouts place in custom components, see
-    //- `DitoSchemaField`, and the items of widgets with their slot props:
-    template(
-      v-if="$slots.default"
-      #default="slotProps"
-    )
+    template(#default="slotProps")
       slot(
         v-bind="slotProps"
       )
+  component.dito-component(
+    v-else-if="!isReplacedWithLabel"
+    :is="typeComponent"
+    ref="component"
+    v-bind="componentProps"
+    :class="componentClasses"
+  )
   DitoErrors(
     v-if="errors"
     :id="errorsElementId"
@@ -228,6 +225,15 @@ export default {
       )
     })
 
+    const errorsElementId = computed(() => `${componentPath.value}-errors`)
+
+    // Type components teleport their buttons into the row of the label:
+    const labelId = computed(() =>
+      shouldRenderLabel.value && typeDescriptor.value?.hasLabelButtons
+        ? `${componentPath.value}-label`
+        : null
+    )
+
     return {
       field,
       context,
@@ -247,14 +253,20 @@ export default {
         () => !!getDataKeywords(props.schema, context).required
       ),
 
-      errorsElementId: computed(() => `${componentPath.value}-errors`),
+      errorsElementId,
+      labelId,
 
-      // Type components teleport their buttons into the row of the label:
-      labelId: computed(() =>
-        shouldRenderLabel.value && typeDescriptor.value?.hasLabelButtons
-          ? `${componentPath.value}-label`
-          : null
-      ),
+      componentProps: computed(() => ({
+        schema: props.schema,
+        dataPath: props.dataPath,
+        data: props.data,
+        store: props.store,
+        field,
+        single: props.single,
+        nested: props.nested,
+        errorsElementId: errors.value ? errorsElementId.value : null,
+        labelId: labelId.value
+      })),
 
       // Type components use their component path as DOM id:
       labelHtmlFor: computed(() => (props.nested ? componentPath.value : null)),
