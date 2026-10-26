@@ -238,6 +238,86 @@ describe('DitoClipboard', () => {
     expect(form.data).toMatchObject({ id: 1, title: 'Two', position: 0 })
   })
 
+  it('pastes data like loaded data, also values stored in other keys', async () => {
+    // The prices are stored by region on the product, and edited as a list:
+    const regions = ['europe', 'asia', 'america']
+    const regionForm = {
+      type: 'form',
+      fields: { price: { type: 'number' } }
+    }
+    const { wrapper, data, dataModel, submit } = await mountForm({
+      schema: {
+        fields: {
+          products: {
+            type: 'list',
+            inlined: true,
+            form: {
+              type: 'form',
+              name: 'product',
+              clipboard: true,
+              fields: {
+                title: { type: 'text' },
+                prices: {
+                  type: 'list',
+                  inlined: true,
+                  forms: Object.fromEntries(
+                    regions.map(region => [region, regionForm])
+                  ),
+                  computeValue: ({ item, value }) => (
+                    value ??
+                    regions
+                      .filter(region => item[region])
+                      .map(region => ({ type: region, ...item[region] }))
+                  ),
+                  serializeValue: ({ value, serializedItem }) => {
+                    for (const { type, ...price } of value) {
+                      serializedItem[type] = price
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: {
+        products: [
+          { id: 1, title: 'Lamp', europe: { price: 3 } },
+          { id: 2, title: 'Chair', asia: { price: 5 }, america: { price: 7 } }
+        ]
+      },
+      request: ({ data }) => ({ data })
+    })
+    // Inlined items only show their buttons when hovered:
+    const click = async (index, button) => {
+      const item = wrapper
+        .findAll('.dito-schema-inlined')
+        .filter(item => item.find('.dito-clipboard').exists())[index]
+      await item.trigger('mouseenter')
+      await item
+        .find(`.dito-clipboard .dito-button--${button}`)
+        .trigger('click')
+      await flushPromises()
+    }
+    expect(data.products[1].prices).toEqual([
+      { type: 'asia', price: 5 },
+      { type: 'america', price: 7 }
+    ])
+    await click(0, 'copy')
+    expect(getClipboardData('product')).toEqual({
+      title: 'Lamp',
+      europe: { price: 3 }
+    })
+    await click(1, 'paste')
+    expect(data.products[1].prices).toEqual([{ type: 'europe', price: 3 }])
+    expect(dataModel.isDirty).toBe(true)
+    data.products[1].prices[0].price = 4
+    expect((await submit()).products).toEqual([
+      { id: 1, title: 'Lamp', europe: { price: 3 } },
+      { id: 2, title: 'Lamp', europe: { price: 4 } }
+    ])
+  })
+
   it('gives the forms of objects their clipboard, not of lists', async () => {
     const form = { type: 'form', fields: { title: { type: 'text' } } }
     const { findField, findContainer } = await mountForm({

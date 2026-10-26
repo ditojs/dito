@@ -138,7 +138,7 @@ import {
   watch
 } from 'vue'
 import { useRouter } from 'vue-router'
-import { isFunction } from '@ditojs/utils'
+import { isFunction, clone, equals } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui/src'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
@@ -147,6 +147,7 @@ import { useComponentPath } from '../composables/useComponentPath.ts'
 import { useStore } from '../composables/useStore.ts'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { isPanel } from '../utils/schema/structure.js'
+import { cloneItem, getSchemaSource } from '../utils/schema/walk.js'
 import {
   getNamedSchemas,
   getPanelEntries,
@@ -154,6 +155,7 @@ import {
   isEmptySchema
 } from '../utils/schema/lookup.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
+import { mergeData } from '../utils/mergeData.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
 import { getUploadEntries } from '../utils/interchange.ts'
 import {
@@ -516,19 +518,22 @@ export default {
           clipboardData,
           { dataPath: props.dataPath, services, rootData: context.rootItem }
         )
-        // The item keeps its position in its list:
-        const orderKey = unref(sourceSchema)?.orderKey
-        for (const [name, value] of Object.entries(data)) {
-          if (name in props.data && name !== orderKey) {
-            getModel().set(
-              {
-                data: props.data,
-                name,
-                dataPath: appendDataPath(props.dataPath, name)
-              },
-              value
-            )
-          }
+        // Replace the data like loaded data, for `computeValue()` to derive its
+        // values from the pasted ones. The item keeps what identifies it, also
+        // its position in its list:
+        const source = unref(sourceSchema)
+        const item = source
+          ? { ...data, ...cloneItem(getSchemaSource(source), props.data) }
+          : data
+        const model = getModel()
+        const previousData = clone(props.data)
+        mergeData(props.dataSchema, props.data, item, {
+          services,
+          shouldKeepSourcesWithResource: true
+        })
+        model.fields.writeComputedValues()
+        if (!equals(props.data, previousData)) {
+          model.markEdited()
         }
         if (unresolvedLabels.length > 0) {
           adminContext.notify({
