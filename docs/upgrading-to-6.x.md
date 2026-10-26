@@ -251,7 +251,7 @@ name, see [Hooks](api/server/controllers.md#hooks).
   `#dbRef`, `#unrelate` and `#delete` throw in all graph methods.
 - The graph methods write all graphs in Objection.js'
   [strict mode](https://ditojs.github.io/objection/guide/query-examples.html#strict-mode),
-  which needs `objection` ^4.4.0, see
+  which needs `objection` ^4.4.1, see
   [Graphs](guide/server/queries.md#graphs). Strict graphs throw:
   - for related models with ids that don't exist, with a `NotFoundError`.
     Upserts inserted them with only their ids before.
