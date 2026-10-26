@@ -110,7 +110,7 @@ describe('DitoClipboard', () => {
   it('reads the system clipboard in Chrome to enable pasting', async () => {
     appState.agent.chrome = true
     vi.spyOn(navigator.clipboard, 'readText').mockResolvedValue(
-      JSON.stringify({ title: 'Dune' })
+      JSON.stringify({ $name: 'items', title: 'Dune' })
     )
     const { pasteButton, findField } = await mountBookForm()
     // The clipboards of earlier tests already read it, so gain focus:
@@ -344,6 +344,134 @@ describe('DitoClipboard', () => {
     ])
   })
 
+  describe('forms of items', () => {
+    const createForm = (name, fields, clipboard = true) => ({
+      type: 'form',
+      ...(name && { name }),
+      clipboard,
+      fields
+    })
+
+    async function mountNotes({
+      name = null,
+      // The clipboard of the lists that share their forms, and of `style`:
+      clipboard,
+      styleClipboard
+    } = {}) {
+      // Lists of several forms that share them, and one of a single form:
+      const forms = {
+        footnote: createForm(name, { text: { type: 'text' } }),
+        style: createForm(null, { color: { type: 'text' } }, styleClipboard)
+      }
+      const createNotes = () => ({
+        type: 'list',
+        inlined: true,
+        clipboard,
+        forms
+      })
+      const result = await mountForm({
+        schema: {
+          fields: {
+            notes: createNotes(),
+            endnotes: createNotes(),
+            links: {
+              type: 'list',
+              inlined: true,
+              form: createForm(name, { url: { type: 'text' } })
+            }
+          }
+        },
+        data: {
+          notes: [
+            { id: 1, type: 'footnote', text: 'One' },
+            { id: 2, type: 'footnote', text: 'Two' },
+            { id: 3, type: 'style', color: 'red' }
+          ],
+          endnotes: [
+            { id: 4, type: 'footnote', text: 'Four' },
+            { id: 7, type: 'style', color: 'blue' }
+          ],
+          links: [
+            { id: 5, url: 'https://example.com' },
+            { id: 6, url: 'https://example.org' }
+          ]
+        }
+      })
+      // Inlined items only show their buttons when hovered:
+      const findButton = async (dataPath, index, button) => {
+        const item = result
+          .findContainer(dataPath)
+          .findAll('.dito-schema-inlined')[index]
+        await item.trigger('mouseenter')
+        return item.find(`.dito-clipboard .dito-button--${button}`)
+      }
+      const isPasteEnabled = async (dataPath, index) => {
+        const button = await findButton(dataPath, index, 'paste')
+        return button.attributes('disabled') === undefined
+      }
+      return {
+        ...result,
+        isPasteEnabled,
+        async copy(dataPath, index) {
+          await (await findButton(dataPath, index, 'copy')).trigger('click')
+          await flushPromises()
+        }
+      }
+    }
+
+    it('pastes copies into the items of lists of the same name', async () => {
+      const { copy, isPasteEnabled } = await mountNotes()
+      await copy('notes', 0)
+      // Items of other forms in the same list too:
+      expect(await isPasteEnabled('notes', 1)).toBe(true)
+      expect(await isPasteEnabled('notes', 2)).toBe(true)
+      expect(await isPasteEnabled('endnotes', 0)).toBe(false)
+      expect(await isPasteEnabled('links', 0)).toBe(false)
+      await copy('links', 0)
+      expect(await isPasteEnabled('links', 1)).toBe(true)
+      expect(await isPasteEnabled('notes', 1)).toBe(false)
+    })
+
+    it('pastes copies of named forms into all forms of that name', async () => {
+      const { copy, isPasteEnabled } = await mountNotes({ name: 'note' })
+      await copy('links', 0)
+      expect(await isPasteEnabled('notes', 0)).toBe(true)
+      expect(await isPasteEnabled('endnotes', 0)).toBe(true)
+      expect(await isPasteEnabled('notes', 2)).toBe(false)
+    })
+
+    it('pastes copies into lists of the same `clipboard.name`', async () => {
+      const { copy, isPasteEnabled } = await mountNotes({
+        name: 'note',
+        clipboard: { name: 'notes' }
+      })
+      // The name of the clipboard of the list wins over the form's name:
+      await copy('notes', 0)
+      expect(await isPasteEnabled('endnotes', 0)).toBe(true)
+      expect(await isPasteEnabled('endnotes', 1)).toBe(true)
+      expect(await isPasteEnabled('links', 0)).toBe(false)
+    })
+
+    it(`pastes copies by the form's own \`clipboard.name\``, async () => {
+      const { copy, isPasteEnabled } = await mountNotes({
+        clipboard: { name: 'notes' },
+        styleClipboard: { name: 'style' }
+      })
+      await copy('notes', 2)
+      expect(await isPasteEnabled('endnotes', 1)).toBe(true)
+      expect(await isPasteEnabled('notes', 0)).toBe(false)
+      expect(await isPasteEnabled('endnotes', 0)).toBe(false)
+    })
+
+    it(`doesn't paste copies without a name`, async () => {
+      const { isPasteEnabled } = await mountNotes()
+      await copyClipboardData(undefined, { text: 'Old' })
+      await flushPromises()
+      expect(await isPasteEnabled('notes', 0)).toBe(false)
+      expect(await isPasteEnabled('links', 0)).toBe(false)
+    })
+  })
+
   it('gives the forms of objects their clipboard, not of lists', async () => {
     const form = { type: 'form', fields: { title: { type: 'text' } } }
     const { findField, findContainer } = await mountForm({
@@ -396,7 +524,7 @@ describe('DitoClipboard', () => {
       ...settings
     })
 
-    async function mountShelves({ books, shelf } = {}) {
+    async function mountShelves({ books, shelf, magazines } = {}) {
       const result = await mountForm({
         schema: {
           fields: {
@@ -415,7 +543,7 @@ describe('DitoClipboard', () => {
               nested: true,
               fields: { books: createBooks(shelf) }
             },
-            magazines: createBooks()
+            magazines: createBooks(magazines)
           }
         },
         data: {
@@ -490,7 +618,7 @@ describe('DitoClipboard', () => {
       expect(data.blocks).toEqual(blocks)
       await wrapper.find('.dito-clipboard .dito-button--copy').trigger('click')
       await flushPromises()
-      expect(getClipboardData()).toEqual({ blocks })
+      expect(getClipboardData('items')).toEqual({ blocks })
       await wrapper.find('.dito-clipboard .dito-button--paste').trigger('click')
       await flushPromises()
       expect(data.blocks).toEqual(blocks)
@@ -524,6 +652,20 @@ describe('DitoClipboard', () => {
       ])
       expect(getNotificationTexts()).toEqual([])
       expect(dataModel.isDirty).toBe(true)
+    })
+
+    it('pastes into lists of the same `clipboard.name`', async () => {
+      const clipboard = { name: 'publications' }
+      const { click, findButton, data } = await mountShelves({
+        books: { clipboard },
+        magazines: { clipboard }
+      })
+      await click('books', 'copy')
+      expect(
+        findButton('shelf/books', 'paste').attributes('disabled')
+      ).toBeDefined()
+      await click('magazines', 'paste')
+      expect(data.magazines).toHaveLength(2)
     })
 
     it('leaves out the items without a creatable form', async () => {

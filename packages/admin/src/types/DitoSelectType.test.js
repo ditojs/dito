@@ -623,7 +623,10 @@ describe('DitoSelectType', () => {
         .find('.dito-clipboard .dito-button--copy')
         .trigger('click')
       await flushPromises()
-      expect(getClipboardData()).toMatchObject({ genre: '', country: '' })
+      expect(getClipboardData('items')).toMatchObject({
+        genre: '',
+        country: ''
+      })
       expect(await submit()).toMatchObject({ genre: '', country: '' })
     })
   })

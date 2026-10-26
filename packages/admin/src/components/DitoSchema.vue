@@ -57,7 +57,7 @@ slot(name="prepend")
         :class="{ 'dito-clipboard--header': isTopLevelSchema }"
         :idle="idle"
         :clipboard="clipboard"
-        :schema="schema"
+        :name="clipboardName"
         :label="clipboardLabel"
         :hasData="hasData"
         :getData="getClipboardData"
@@ -158,6 +158,7 @@ import {
   getItemFormSchema,
   isEmptySchema
 } from '../utils/schema/lookup.js'
+import { getClipboardName } from '../utils/clipboard.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
 import { mergeData } from '../utils/mergeData.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
@@ -486,6 +487,10 @@ export default {
       }),
 
       clipboard: computed(() => props.schema?.clipboard ?? null),
+
+      clipboardName: computed(() =>
+        getClipboardName(props.schema, unref(sourceSchema))
+      ),
 
       // The item label of the form, as its header shows it, or the form label:
       clipboardLabel: computed(

@@ -9,36 +9,47 @@ let clipboardVersion = 0
 
 let isWatchingClipboard = false
 
-// Mark the data with `$schema`, and with `$type` if it isn't the data of a
+// Mark the data with `$name`, and with `$type` if it isn't the data of a
 // form, e.g. 'list' or 'upload':
-export function createClipboardData(schemaName, data, type) {
-  return data ? { $schema: schemaName, $type: type, ...data } : null
+export function createClipboardData(name, data, type) {
+  return data ? { $name: name, $type: type, ...data } : null
+}
+
+// Name copies by the first name of the clipboards of the schemas, or else by
+// the first name of the schemas, e.g. of a form and of the source of its item:
+export function getClipboardName(...schemas) {
+  const findName = getName => schemas.map(getName).find(Boolean)
+  return (
+    findName(schema => schema?.clipboard?.name) ||
+    findName(schema => schema?.name) ||
+    null
+  )
 }
 
 // Files paste into all uploads, all other data only into schemas of the same
-// name and type:
-export function matchClipboardData(clipboardData, schemaName, type) {
+// name and type, and never without a name:
+export function matchClipboardData(clipboardData, name, type) {
   if (!clipboardData) {
     return null
   }
-  const { $schema, $type, ...data } = clipboardData
+  const { $name, $type, ...data } = clipboardData
   const isMatch = (
     $type === type &&
-    (type === 'upload' || $schema === schemaName)
+    (type === 'upload' || $name && $name === name)
   )
   return isMatch ? data : null
 }
 
-export function getClipboardData(schemaName, type) {
-  return matchClipboardData(clipboardState.data, schemaName, type)
+export function getClipboardData(name, type) {
+  return matchClipboardData(clipboardState.data, name, type)
 }
 
-export function hasClipboardData(schemaName, type) {
-  return !!getClipboardData(schemaName, type)
+export function hasClipboardData(name, type) {
+  return !!getClipboardData(name, type)
 }
 
-export async function copyClipboardData(schemaName, data, type) {
-  const clipboardData = createClipboardData(schemaName, data, type)
+export async function copyClipboardData(name, data, type) {
+  const clipboardData = createClipboardData(name, data, type)
   clipboardVersion++
   clipboardState.data = clipboardData
   try {
