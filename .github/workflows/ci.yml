@@ -22,8 +22,39 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      - run: pnpm build
+      - run: pnpm dist:check
+      - run: pnpm --filter @ditojs/tests test:types
+      - run: pnpm types
 
   unit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/3, 2/3, 3/3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The thresholds apply to the merged coverage, in the `coverage` job:
+      - run: >-
+          pnpm vitest run --coverage --shard=${{ matrix.shard }}
+          --reporter=blob --coverage.reporter=text-summary
+          --coverage.thresholds.lines=0 --coverage.thresholds.branches=0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ strategy.job-index }}
+          path: .vitest/blob/
+          include-hidden-files: true
+          retention-days: 1
+
+  coverage:
+    needs: unit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,11 +64,12 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm dist:check
-      - run: pnpm coverage
-      - run: pnpm --filter @ditojs/tests test:types
-      - run: pnpm types
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: blob-report-*
+          path: .vitest/blob/
+          merge-multiple: true
+      - run: pnpm vitest --merge-reports --coverage
 
   unit-sqlite:
     runs-on: ubuntu-latest
