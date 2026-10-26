@@ -175,6 +175,7 @@ import { fieldProps } from '../composables/useField.ts'
 import { useSource } from '../composables/useSource.ts'
 import { useSortable } from '../composables/useSortable.ts'
 import { useRenderedItems } from '../composables/useRenderedItems.ts'
+import { useSteps } from '../composables/useSteps.ts'
 import { provideToNode } from '../composables/useComponentPath.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
@@ -235,11 +236,28 @@ const DitoListType = {
     const hasCellEditButtons = computed(
       () => !source.isInlined.value && hasEditButtons.value
     )
-    // The inlined schemas of the items read their state from their stores:
-    const hasCollapsedItems = computed(() =>
-      listData.value.some(
-        (item, index) =>
-          !(getItemStore(item, index).opened ?? !source.collapsed.value)
+    // Expand the items in steps, as opening them all at once blocks the page
+    // for long, in the order in which `useRenderedItems()` renders them:
+    let expandedCount = 0
+    const expandSteps = useSteps(step => {
+      const items = listData.value.slice(expandedCount, expandedCount + step)
+      items.forEach((item, index) => {
+        getItemStore(item, expandedCount + index).opened = true
+      })
+      expandedCount += step
+      if (expandedCount >= listData.value.length) {
+        expandSteps.stop()
+      }
+    })
+    // The inlined schemas of the items read their state from their stores.
+    // While expanding, the items count as expanded already:
+    const hasCollapsedItems = computed(
+      () => (
+        !expandSteps.isRunning.value &&
+        listData.value.some(
+          (item, index) =>
+            !(getItemStore(item, index).opened ?? !source.collapsed.value)
+        )
       )
     )
     const hasToggleAll = computed(
@@ -252,12 +270,18 @@ const DitoListType = {
     const toggleAllTitle = computed(() =>
       hasCollapsedItems.value ? 'Expand All' : 'Collapse All'
     )
-    // Only the loaded items, which fire their toggle events themselves:
+    // Only the loaded items, which fire their toggle events themselves.
+    // Collapsing is cheap, and stops any expanding:
     const toggleAll = () => {
-      const opened = hasCollapsedItems.value
-      listData.value.forEach((item, index) => {
-        getItemStore(item, index).opened = opened
-      })
+      if (hasCollapsedItems.value) {
+        expandedCount = 0
+        expandSteps.start()
+      } else {
+        expandSteps.stop()
+        listData.value.forEach((item, index) => {
+          getItemStore(item, index).opened = false
+        })
+      }
     }
     // The label of the container toggles all items, if there is one:
     const labelToggle = inject(labelToggleKey)

@@ -11,6 +11,7 @@ import {
   enterValue,
   stubConfirm,
   settle,
+  unmountAdmin,
   isForm
 } from '../test/mount.js'
 import DitoSchema from '../components/DitoSchema.vue'
@@ -1844,6 +1845,57 @@ describe('DitoListType', () => {
       expect(getCounts()).toEqual([12, 12, 12, 12, 12])
       await runFrames()
       expect(getCounts()).toEqual(Array(12).fill(12))
+    })
+
+    describe(`collapsible: 'all'`, () => {
+      const mountCollapsedList = async () => {
+        const result = await mountSchema({
+          schema: createRecipeSchema({ collapsible: 'all', collapsed: true }),
+          data: { ingredients: createIngredients(12) }
+        })
+        await runFrames()
+        const field = result.findField('ingredients')
+        const toggleAll = field.find('.dito-chevron--double')
+        const clickToggleAll = async () => {
+          await toggleAll.trigger('click')
+          await flushPromises()
+        }
+        return { ...result, field, toggleAll, clickToggleAll }
+      }
+
+      it('expands the first items right away and the others in frames', async () => {
+        const { field, toggleAll, clickToggleAll } = await mountCollapsedList()
+        await clickToggleAll()
+        expect(getItemNames(field)).toEqual(['0', '1', '2', '3', '4'])
+        // While expanding, the toggle collapses all items:
+        expect(toggleAll.attributes('aria-label')).toBe('Collapse All')
+        expect(toggleAll.attributes('aria-expanded')).toBe('true')
+        await runFrames()
+        expect(getItemNames(field)).toEqual(
+          createIngredients(12).map(({ name }) => name)
+        )
+        expect(toggleAll.attributes('aria-label')).toBe('Collapse All')
+      })
+
+      it('collapses all items while expanding them', async () => {
+        const { field, toggleAll, clickToggleAll } = await mountCollapsedList()
+        await clickToggleAll()
+        expect(getItemNames(field)).toHaveLength(5)
+        await clickToggleAll()
+        await runFrames()
+        expect(getItemNames(field)).toEqual([])
+        expect(toggleAll.attributes('aria-label')).toBe('Expand All')
+      })
+
+      it('stops expanding when the list unmounts', async () => {
+        const { admin, clickToggleAll } = await mountCollapsedList()
+        // Expanding requests its next step before the items' transitions:
+        const expandFrame = lastFrame + 1
+        await clickToggleAll()
+        expect(frames.has(expandFrame)).toBe(true)
+        unmountAdmin(admin)
+        expect(frames.has(expandFrame)).toBe(false)
+      })
     })
 
     it('shows and focuses errors in items that the list has yet to render', async () => {
