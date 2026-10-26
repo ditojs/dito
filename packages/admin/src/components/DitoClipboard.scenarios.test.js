@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { isArray } from '@ditojs/utils'
 import { flushPromises } from '@vue/test-utils'
 import { copyClipboardData } from '../utils/clipboard.js'
 import { mountForm, unmountAdmin, enterValue } from '../test/mount.js'
@@ -239,6 +240,67 @@ describe('DitoClipboard in real-world forms', () => {
       const form = await mountProduct(null)
       await clickFormButton(form, 'paste')
       expect(await form.submit()).toEqual(lamp)
+    })
+
+    describe('in the items of converted lists', () => {
+      // The products are stored by name on the catalog, and edited as a list:
+      const catalogSchema = {
+        name: 'catalog',
+        clipboard: true,
+        fields: {
+          products: {
+            type: 'list',
+            inlined: true,
+            form: {
+              type: 'form',
+              fields: { name: { type: 'text' }, prices: schema.fields.prices }
+            },
+            computeValue: ({ value }) =>
+              isArray(value)
+                ? value
+                : Object.entries(value).map(([name, product]) => ({
+                    name,
+                    ...product
+                  })),
+            serializeValue: ({ value }) =>
+              Object.fromEntries(
+                value.map(({ name, ...product }) => [name, product])
+              )
+          }
+        }
+      }
+
+      const catalog = {
+        id: 1,
+        products: {
+          lamp: { europe: { price: 3 } },
+          chair: { asia: { price: 5 }, america: { price: 7 } }
+        }
+      }
+
+      const mountCatalog = data =>
+        mountForm({ schema: catalogSchema, data, request: respondWithData })
+
+      it(`doesn't change the record by pasting into it`, async () => {
+        const form = await mountCatalog(catalog)
+        await clickFormButton(form, 'copy')
+        await clickFormButton(form, 'paste')
+        expect(form.dataModel.isDirty).toBe(false)
+        expect(await form.submit()).toEqual(catalog)
+      })
+
+      it('changes the record by pasting other values into it', async () => {
+        const form = await mountCatalog(catalog)
+        await clickFormButton(form, 'copy')
+        await enterValue(
+          form.findField('products/0/prices/0/price').find('input'),
+          '4'
+        )
+        form.dataModel.markClean()
+        await clickFormButton(form, 'paste')
+        expect(form.dataModel.isDirty).toBe(true)
+        expect(await form.submit()).toEqual(catalog)
+      })
     })
   })
 
