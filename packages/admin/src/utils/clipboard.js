@@ -50,10 +50,11 @@ export function hasClipboardData(name, type) {
 
 export async function copyClipboardData(name, data, type) {
   const clipboardData = createClipboardData(name, data, type)
+  const json = JSON.stringify(clipboardData, null, 2)
   clipboardVersion++
-  clipboardState.data = clipboardData
+  // Hold the data as the system clipboard does, without `undefined` values:
+  clipboardState.data = JSON.parse(json)
   try {
-    const json = JSON.stringify(clipboardData, null, 2)
     await navigator.clipboard?.writeText?.(json)
   } catch (error) {
     // The copied data remains available inside the admin.
