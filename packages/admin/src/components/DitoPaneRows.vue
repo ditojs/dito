@@ -75,54 +75,65 @@ export default {
     const positions = ref([])
 
     const verticalLabelsByIndices = computed(() => {
-      // Removed containers don't necessarily resize the pane:
-      const renderedPositions = positions.value.map((position, index) =>
-        props.entries[index]?.shouldRender ? position : null
-      )
-
-      const findNextPosition = index => {
-        for (let i = index + 1; i < renderedPositions.length; i++) {
-          if (renderedPositions[i]) return renderedPositions[i]
-        }
-        return 0
-      }
-
-      // Rows wrap back to the left, also with components aligned vertically:
-      const isLastInRow = index => (
-        renderedPositions[index] && (
-          index === renderedPositions.length - 1 ||
-          findNextPosition(index).left <= renderedPositions[index].left
+      // Measured positions are objects, or null for containers without height:
+      if (positions.value.some(position => position !== undefined)) {
+        // Removed containers don't necessarily resize the pane:
+        const renderedPositions = positions.value.map((position, index) =>
+          props.entries[index]?.shouldRender ? position : null
         )
-      )
 
-      const rows = []
-      let row = []
-      for (let index = 0; index < renderedPositions.length; index++) {
-        row.push(index)
-        if (isLastInRow(index)) {
-          rows.push(row)
-          row = []
+        const findNextPosition = index => {
+          for (let i = index + 1; i < renderedPositions.length; i++) {
+            if (renderedPositions[i]) return renderedPositions[i]
+          }
+          return 0
         }
-      }
-      if (row.length > 0) {
-        rows.push(row)
-      }
 
-      const verticalLabelsByIndices = []
-      for (const row of rows) {
-        // Compact labels display next to their components, so only count the
-        // ones of containers higher than one line.
-        const hasLabelsInRow = row.some(
-          index => (
-            renderedPositions[index]?.height > 2 &&
-            props.entries[index].isLabelled
+        // Rows wrap back to the left, also with components aligned vertically:
+        const isLastInRow = index => (
+          renderedPositions[index] && (
+            index === renderedPositions.length - 1 ||
+            findNextPosition(index).left <= renderedPositions[index].left
           )
         )
-        for (const index of row) {
-          verticalLabelsByIndices[index] = hasLabelsInRow
+
+        const rows = []
+        let row = []
+        for (let index = 0; index < renderedPositions.length; index++) {
+          row.push(index)
+          if (isLastInRow(index)) {
+            rows.push(row)
+            row = []
+          }
         }
+        if (row.length > 0) {
+          rows.push(row)
+        }
+
+        const verticalLabelsByIndices = []
+        for (const row of rows) {
+          // Compact labels display next to their components, so only count the
+          // ones of containers higher than one line.
+          const hasLabelsInRow = row.some(
+            index => (
+              renderedPositions[index]?.height > 2 &&
+              props.entries[index].isLabelled
+            )
+          )
+          for (const index of row) {
+            verticalLabelsByIndices[index] = hasLabelsInRow
+          }
+        }
+        return verticalLabelsByIndices
+      } else {
+        // Guess before measuring, to not render all containers again after.
+        // Compact labels display next to their components:
+        const hasLabels = (
+          !props.compact &&
+          props.entries.some(entry => entry.shouldRender && entry.isLabelled)
+        )
+        return props.entries.map(() => hasLabels)
       }
-      return verticalLabelsByIndices
     })
 
     watch(
