@@ -425,6 +425,7 @@ const DitoListType = {
           items.filter(getForm).map((item, index) =>
             fromClipboard(getForm(item), item, {
               dataPath: appendDataPath(props.dataPath, offset + index),
+              sourceSchema: props.schema,
               services,
               rootData: context.rootItem
             })

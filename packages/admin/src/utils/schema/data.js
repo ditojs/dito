@@ -4,8 +4,13 @@ import { SchemaGraph } from '../SchemaGraph.js'
 import { getRelativeDataPath, getItemDataPath } from '../data.js'
 import { isArray, isFunction, resolveDataPath } from '@ditojs/utils'
 import { getSchemaValue } from './value.js'
-import { getLabelForRelated } from './options.ts'
-import { walkData, cloneItem, getSchemaSource } from './walk.js'
+import { getLabelForValue } from './options.ts'
+import {
+  walkData,
+  cloneItem,
+  getSchemaSource,
+  getReferenceSchema
+} from './walk.js'
 import { getFormSchemas, getItemFormSchema } from './lookup.js'
 
 export function getCreatableForms(schema, context) {
@@ -150,6 +155,7 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     }
     // Register the sources and relations whose ids the graph serializes:
     let labels
+    let referenceLabel = null
     if (source) {
       graph.addSource(dataPath, source)
     } else if (relation) {
@@ -172,12 +178,25 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
           options
         )
       }
+    } else if (target === 'clipboard') {
+      // Items that reference a record by their id hold its label instead:
+      const schema = getReferenceSchema(entry)
+      if (schema) {
+        referenceLabel = getRelatedLabels(
+          { schema, data, name, dataPath, itemDataPath },
+          value,
+          options
+        )
+      }
     }
     // Values that are excluded or that `serializeValue()` returns nothing for,
     // e.g. of virtual fields, leave out their key:
     value = propertyNodesByEntry.get(entry)?.serialize(value, entry)
     if (value === undefined) {
       delete serializedData[name]
+    } else if (referenceLabel) {
+      delete serializedData[name]
+      Object.assign(serializedData, referenceLabel)
     } else {
       serializedData[name] = labels ?? value
     }
@@ -187,6 +206,7 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     dataPath,
     services,
     rootData,
+    sourceSchema,
     serializedData: serializedRootData,
     // Hidden values aren't sent:
     shouldSkipIrrelevant: true,
@@ -345,8 +365,8 @@ export function getItemUid(sourceSchema, item) {
   return getUid(item, item => getItemId(sourceSchema, item))
 }
 
-// Copies refer to the related records outside of them by the labels of their
-// options, which `toClipboard()` loads first:
+// Copies refer to the records outside of them by the labels of their options,
+// which `toClipboard()` loads first:
 function getRelatedLabels(entry, value, { services, rootData }) {
   const options =
     services.dataContext.model.fields.getOptionsResolver(entry).value
@@ -355,7 +375,7 @@ function getRelatedLabels(entry, value, { services, rootData }) {
     rootData
   })
   const toLabel = value => ({
-    $label: getLabelForRelated(entry.schema, options ?? [], value, context)
+    $label: getLabelForValue(entry.schema, options ?? [], value, context)
   })
   return isArray(value) ? value.map(toLabel) : value && toLabel(value)
 }
