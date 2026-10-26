@@ -27,6 +27,7 @@ const fields = { title: { type: 'text' } }
 
 describe('DitoDialog', () => {
   it('renders tree lists with children', async () => {
+    const error = vi.spyOn(console, 'error')
     const { dialog } = await showDialog({
       fields: {
         pages: {
@@ -39,6 +40,8 @@ describe('DitoDialog', () => {
     })
     expect(dialog.find('.dito-tree-item').exists()).toBe(true)
     expect(dialog.text()).toContain('About')
+    // Dialogs have no route context:
+    expect(error).not.toHaveBeenCalled()
   })
 
   it('marks the container of its cancel button, with the class of the app', async () => {

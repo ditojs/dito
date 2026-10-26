@@ -60,7 +60,7 @@ const DitoTreeListType = {
 
       // The tree renders the forms of the items that it claimed:
       isEditingItem: computed(
-        () => routeContext.childClaim?.source === source.sourceContext
+        () => routeContext?.childClaim?.source === source.sourceContext
       ),
 
       treeData: computed(() =>
