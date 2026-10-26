@@ -160,6 +160,7 @@ export function walkData(schema, data, {
   const walkNodes = (
     nodes,
     data,
+    source,
     dataPath,
     serializedData,
     wrappedValueName = null
@@ -169,6 +170,7 @@ export function walkData(schema, data, {
       const entry = {
         node,
         data,
+        source,
         name,
         dataPath:
           name !== wrappedValueName ? getDataPath(dataPath, name) : dataPath,
@@ -226,13 +228,21 @@ export function walkData(schema, data, {
             walkNodes(
               nodes,
               item,
+              source,
               itemDataPath,
               serializedItem,
               wrappedValueName
             )
             return serializedItem
           } else if (nodes) {
-            walkNodes(nodes, item, itemDataPath, null, wrappedValueName)
+            walkNodes(
+              nodes,
+              item,
+              source,
+              itemDataPath,
+              null,
+              wrappedValueName
+            )
             const unwrapped = itemAdapter ? itemAdapter.unwrap(item) : value
             if (unwrapped !== value) {
               if (index !== null) {
@@ -269,6 +279,7 @@ export function walkData(schema, data, {
   walkNodes(
     getFieldNodes(schema, data, dataPath, { services, rootData }),
     data,
+    sourceSchema ? getSchemaSource(sourceSchema) : null,
     dataPath,
     serializedData,
     getItemAdapter(sourceSchema)?.name
@@ -443,6 +454,16 @@ export function getSchemaSource(schema) {
     hasSubmitButton: hasSubmitButton(schema.buttons),
     itemAdapter: getItemAdapter(schema)
   }
+}
+
+// Items reference the records that a field of their id chooses from its
+// options. Return the schema of that field, `null` for other values:
+export function getReferenceSchema({ node, source }) {
+  const field =
+    node.name === source?.idKey
+      ? node.fields?.find(({ schema }) => getOptionsDataSchema(schema))
+      : null
+  return field?.schema ?? null
 }
 
 // Copy what identifies the item, for its serialized values to be added to:

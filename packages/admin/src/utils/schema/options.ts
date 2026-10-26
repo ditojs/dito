@@ -116,10 +116,10 @@ export function getLabelForOption(
       : labelize(`${option}`)
 }
 
-// Clipboard data refers to related records by the labels of their options, as
-// their ids don't carry over to other databases. Related values without an
-// option use their own label:
-export function getLabelForRelated(
+// Clipboard data refers to records by the labels of their options, as their ids
+// don't carry over to other databases. Values without an option use their own
+// label:
+export function getLabelForValue(
   schema: Schema,
   options: any[],
   value: any,
@@ -129,23 +129,26 @@ export function getLabelForRelated(
   const option = findOptionForValue(
     settings,
     options,
-    getValueForOption(settings, value)
+    getSelectedValue(settings, value)
   )
   return getLabel(option ?? value)
 }
 
-// Match labels exactly, but ignore case and whitespace:
-export function findOptionsForLabel(
+// Match labels exactly, but ignore case and whitespace. Related options are
+// their own values:
+export function findValuesForLabel(
   schema: Schema,
   options: any[],
   label: string,
   context: Context
 ): any[] {
-  const { getLabel } = getLabelSettings(schema, options, context)
+  const { settings, getLabel } = getLabelSettings(schema, options, context)
   const normalizedLabel = normalizeLabel(label)
-  return options.filter(
-    option => normalizeLabel(getLabel(option)) === normalizedLabel
-  )
+  return options
+    .filter(option => normalizeLabel(getLabel(option)) === normalizedLabel)
+    .map(option =>
+      settings.relateKey ? option : getValueForOption(settings, option)
+    )
 }
 
 export function getValueForOption(settings: OptionsSettings, option: any) {

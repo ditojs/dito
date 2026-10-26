@@ -150,6 +150,7 @@ import { isPanel } from '../utils/schema/structure.js'
 import {
   cloneItem,
   getSchemaSource,
+  getReferenceSchema,
   walkData
 } from '../utils/schema/walk.js'
 import {
@@ -522,23 +523,34 @@ export default {
       },
 
       async pasteData(clipboardData) {
+        const source = unref(sourceSchema)
         const { data, unresolvedLabels } = await fromClipboard(
           props.dataSchema,
           clipboardData,
-          { dataPath: props.dataPath, services, rootData: context.rootItem }
+          {
+            dataPath: props.dataPath,
+            sourceSchema: source,
+            services,
+            rootData: context.rootItem
+          }
         )
         // Replace the data like loaded data, but keep the values of the item's
         // fields that the pasted data lacks, e.g. hidden ones. Values that
         // `computeValue()` derives are derived from the pasted ones instead:
         const item = { ...data }
+        // The id of items that reference a record is their content:
+        let pastedReference = null
         walkData(props.dataSchema, props.data, {
           dataPath: props.dataPath,
+          sourceSchema: source,
           services,
           rootData: context.rootItem,
           shouldWalk: () => false,
           visit: entry => {
             const { node, name } = entry
-            if (
+            if (getReferenceSchema(entry) && data[name] != null) {
+              pastedReference = { [name]: data[name] }
+            } else if (
               name in props.data &&
               !(name in item) &&
               !node.getRecordedSchema(entry)?.schema.computeValue
@@ -547,10 +559,14 @@ export default {
             }
           }
         })
-        // The item keeps what identifies it, also its position in its list:
-        const source = unref(sourceSchema)
+        // The item keeps what identifies it, also its position in its list,
+        // apart from the pasted record that it references:
         if (source) {
-          Object.assign(item, cloneItem(getSchemaSource(source), props.data))
+          Object.assign(
+            item,
+            cloneItem(getSchemaSource(source), props.data),
+            pastedReference
+          )
         }
         // Only changes of the data that is saved are edits:
         const model = getModel()
