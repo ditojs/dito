@@ -238,7 +238,7 @@ describe('DitoClipboard', () => {
     expect(form.data).toMatchObject({ id: 1, title: 'Two', position: 0 })
   })
 
-  it('pastes data like loaded data, also values stored in other keys', async () => {
+  it('pastes data in place of the item, keeping its other fields', async () => {
     // The prices are stored by region on the product, and edited as a list:
     const regions = ['europe', 'asia', 'america']
     const regionForm = {
@@ -254,8 +254,12 @@ describe('DitoClipboard', () => {
             form: {
               type: 'form',
               name: 'product',
-              clipboard: true,
+              clipboard: {
+                copy: ({ clipboardItem: { expectedUpdatedAt, ...item } }) =>
+                  item
+              },
               fields: {
+                expectedUpdatedAt: { type: 'value' },
                 title: { type: 'text' },
                 prices: {
                   type: 'list',
@@ -282,8 +286,16 @@ describe('DitoClipboard', () => {
       },
       data: {
         products: [
-          { id: 1, title: 'Lamp', europe: { price: 3 } },
-          { id: 2, title: 'Chair', asia: { price: 5 }, america: { price: 7 } }
+          { id: 1, title: 'Lamp', europe: { price: 3 }, updatedAt: 1 },
+          {
+            id: 2,
+            title: 'Chair',
+            asia: { price: 5, discount: 1 },
+            america: { price: 7 },
+            updatedAt: 2,
+            expectedUpdatedAt: 2
+          },
+          { id: 3, title: 'Desk', europe: { price: 9, discount: 2 } }
         ]
       },
       request: ({ data }) => ({ data })
@@ -300,7 +312,7 @@ describe('DitoClipboard', () => {
       await flushPromises()
     }
     expect(data.products[1].prices).toEqual([
-      { type: 'asia', price: 5 },
+      { type: 'asia', price: 5, discount: 1 },
       { type: 'america', price: 7 }
     ])
     await click(0, 'copy')
@@ -308,13 +320,27 @@ describe('DitoClipboard', () => {
       title: 'Lamp',
       europe: { price: 3 }
     })
+    // Pasting an item into itself changes nothing that is saved:
+    await click(0, 'paste')
+    expect(dataModel.isDirty).toBe(false)
+    // The item keeps the values of its fields that the copy doesn't hold, and
+    // values that `computeValue()` derives are derived from the pasted ones:
     await click(1, 'paste')
-    expect(data.products[1].prices).toEqual([{ type: 'europe', price: 3 }])
+    await click(2, 'paste')
+    expect(data.products[1]).toEqual({
+      id: 2,
+      title: 'Lamp',
+      europe: { price: 3 },
+      prices: [{ type: 'europe', price: 3 }],
+      expectedUpdatedAt: 2
+    })
+    expect(data.products[2].prices).toEqual([{ type: 'europe', price: 3 }])
     expect(dataModel.isDirty).toBe(true)
     data.products[1].prices[0].price = 4
     expect((await submit()).products).toEqual([
       { id: 1, title: 'Lamp', europe: { price: 3 } },
-      { id: 2, title: 'Lamp', europe: { price: 4 } }
+      { id: 2, title: 'Lamp', europe: { price: 4 }, expectedUpdatedAt: 2 },
+      { id: 3, title: 'Lamp', europe: { price: 3 } }
     ])
   })
 

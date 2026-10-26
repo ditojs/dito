@@ -147,7 +147,11 @@ import { useComponentPath } from '../composables/useComponentPath.ts'
 import { useStore } from '../composables/useStore.ts'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { isPanel } from '../utils/schema/structure.js'
-import { cloneItem, getSchemaSource } from '../utils/schema/walk.js'
+import {
+  cloneItem,
+  getSchemaSource,
+  walkData
+} from '../utils/schema/walk.js'
 import {
   getNamedSchemas,
   getPanelEntries,
@@ -518,21 +522,40 @@ export default {
           clipboardData,
           { dataPath: props.dataPath, services, rootData: context.rootItem }
         )
-        // Replace the data like loaded data, for `computeValue()` to derive its
-        // values from the pasted ones. The item keeps what identifies it, also
-        // its position in its list:
+        // Replace the data like loaded data, but keep the values of the item's
+        // fields that the pasted data lacks, e.g. hidden ones. Values that
+        // `computeValue()` derives are derived from the pasted ones instead:
+        const item = { ...data }
+        walkData(props.dataSchema, props.data, {
+          dataPath: props.dataPath,
+          services,
+          rootData: context.rootItem,
+          shouldWalk: () => false,
+          visit: entry => {
+            const { node, name } = entry
+            if (
+              name in props.data &&
+              !(name in item) &&
+              !node.getRecordedSchema(entry)?.schema.computeValue
+            ) {
+              item[name] = props.data[name]
+            }
+          }
+        })
+        // The item keeps what identifies it, also its position in its list:
         const source = unref(sourceSchema)
-        const item = source
-          ? { ...data, ...cloneItem(getSchemaSource(source), props.data) }
-          : data
+        if (source) {
+          Object.assign(item, cloneItem(getSchemaSource(source), props.data))
+        }
+        // Only changes of the data that is saved are edits:
         const model = getModel()
-        const previousData = clone(props.data)
+        const previousData = clone(model.serializedData.value)
         mergeData(props.dataSchema, props.data, item, {
           services,
           shouldKeepSourcesWithResource: true
         })
         model.fields.writeComputedValues()
-        if (!equals(props.data, previousData)) {
+        if (!equals(model.serializedData.value, previousData)) {
           model.markEdited()
         }
         if (unresolvedLabels.length > 0) {
