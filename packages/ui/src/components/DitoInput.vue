@@ -17,7 +17,7 @@
     :placeholder="placeholder"
     :autocomplete="autocomplete"
     :aria-label="title"
-    :size="size"
+    :size.attr="size"
     v-bind="attributes"
     @mousedown="onMouseDown"
   )
@@ -76,6 +76,8 @@ export default {
 
     size() {
       // Unless a size is provided, fit the longest of the min & max settings.
+      // Bound as an attribute, as Vue sets a missing `size` property to `0`,
+      // which throws:
       const { size, min, max } = this.$attrs
       const getLength = value => (value != null ? `${value}`.length : 0)
       return size || Math.max(getLength(min), getLength(max)) || undefined
