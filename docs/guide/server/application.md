@@ -177,6 +177,22 @@ application too.
   await Book.query(transaction).patch({ isAvailable: false }).findById(id)
   ```
 
+Code that isn't part of a model, controller or service, like a plain function
+that sends an email, gets the application from `useApp()`. Call it inside the
+function, as the application doesn't exist yet while the modules are loaded:
+
+```js
+import { useApp } from '@ditojs/server'
+
+export async function sendInvoice(invoice) {
+  const app = useApp()
+  await app.getService('mailer').send(invoice)
+}
+```
+
+`useApp()` throws if no application was created, or multiple were, as then it
+can't know which one is meant.
+
 ## Extending the application
 
 The application can be subclassed to change how it handles errors, logs or

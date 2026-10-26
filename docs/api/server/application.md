@@ -172,6 +172,18 @@ const { transaction } = this.app.requestLocals
 await Book.query(transaction).patch({ isAvailable: false }).where('id', id)
 ```
 
+## useApp()
+
+```js
+import { useApp } from '@ditojs/server'
+
+const app = useApp()
+```
+
+Returns the application of the process, for code that has no `app` of its own,
+see [Accessing the application](../../guide/server/application.md#accessing-the-application).
+Throws if no application was created yet, or multiple were.
+
 ## Lifecycle
 
 ### setup()

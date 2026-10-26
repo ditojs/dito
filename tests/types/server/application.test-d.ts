@@ -12,7 +12,8 @@ import {
   type ModelAsset,
   type Services,
   type Storage,
-  type UserModel
+  type UserModel,
+  useApp
 } from '@ditojs/server'
 import type { app } from './fixtures.ts'
 
@@ -31,6 +32,12 @@ describe('Application', () => {
       .toEqualTypeOf<Promise<void>>()
     expectTypeOf<ReturnType<App['stop']>>()
       .toEqualTypeOf<Promise<void>>()
+  })
+
+  it('useApp returns the application of the given models', () => {
+    type App = typeof app
+    expectTypeOf(useApp()).toEqualTypeOf<Application>()
+    expectTypeOf(useApp<App['models']>()).toEqualTypeOf<App>()
   })
 
   it('addModels accepts model class map', () => {

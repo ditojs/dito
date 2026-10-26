@@ -887,6 +887,12 @@ export class Application<$Models extends Models = Models> {
   requestLocals: Partial<AsyncRequestLocals>
 }
 
+/**
+ * The application of the process, for code that has no `app` of its own.
+ * Throws if no application or multiple were created.
+ */
+export function useApp<$Models extends Models = Models>(): Application<$Models>
+
 export interface AssetReference {
   key: string
   file: AssetFile
