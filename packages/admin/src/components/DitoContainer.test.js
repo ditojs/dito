@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSchema, mountForm } from '../test/mount.js'
+import DitoErrors from './DitoErrors.vue'
 
 // Mounts a view with a text field for each width in `widths`, named by index,
 // and returns the styles and classes of their containers.
@@ -144,6 +145,22 @@ describe('DitoContainer', () => {
     expect(
       wrapper.findAll('.dito-container').map(container => container.text())
     ).toEqual(['Contents', 'Draft'])
+  })
+
+  it('only mounts the errors of fields that have errors', async () => {
+    const { wrapper, submit } = await mountForm({
+      schema: {
+        fields: {
+          title: { type: 'text', required: true },
+          subtitle: { type: 'text' }
+        }
+      },
+      data: { title: '' },
+      request: ({ data }) => ({ data })
+    })
+    expect(wrapper.findAllComponents(DitoErrors)).toHaveLength(0)
+    expect(await submit()).toBe(null)
+    expect(wrapper.findAllComponents(DitoErrors)).toHaveLength(1)
   })
 
   it('adds the classes of the schema as a string or object', async () => {

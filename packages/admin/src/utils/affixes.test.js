@@ -57,4 +57,15 @@ describe('getInputAffixesProps()', () => {
       getProps({ info: 'Help', label: 'Title' }).suffix.inlineInfo
     ).toBe(null)
   })
+
+  it('tells which affixes have content to show', () => {
+    expect(getProps({})).toMatchObject({ hasPrefix: false, hasSuffix: false })
+    expect(getProps({ schema: { prefix: '$' } })).toMatchObject({
+      hasPrefix: true,
+      hasSuffix: false
+    })
+    expect(getProps({ clearable: true }).hasSuffix).toBe(false)
+    expect(getProps({ clearable: true, value: 'a' }).hasSuffix).toBe(true)
+    expect(getProps({ info: 'Help' }).hasSuffix).toBe(true)
+  })
 })
