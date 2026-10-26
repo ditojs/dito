@@ -228,7 +228,7 @@ describe('DitoClipboard interchange', () => {
     const cover = { ...reference.cover, $file: 'files/cover.png' }
     const scan = { ...reference.scan, $file: 'files/scan.pdf' }
     expect(JSON.parse(strFromU8(files['data.json']))).toEqual({
-      $schema: 'book',
+      $name: 'book',
       title: 'Emma',
       cover,
       chapters: [{ heading: 'One', scans: [scan, cover] }]
@@ -365,7 +365,7 @@ describe('DitoClipboard interchange', () => {
     expect(filenames).toEqual([`Page Home 'Vol. 1' Draft.zip`])
   })
 
-  it('names downloads of forms without labels and name `data`', async () => {
+  it('names downloads of forms without labels after their form', async () => {
     const { filenames } = stubDownloads()
     const { wrapper } = await mountForm({
       schema: {
@@ -379,7 +379,7 @@ describe('DitoClipboard interchange', () => {
       'Download'
     )
     await vi.waitFor(() => expect(filenames).toHaveLength(1))
-    expect(filenames).toEqual(['data.zip'])
+    expect(filenames).toEqual(['items.zip'])
   })
 
   it('names downloads of lists after their label', async () => {
@@ -411,7 +411,7 @@ describe('DitoClipboard interchange', () => {
     await uploadZip(
       createZip(
         {
-          $schema: 'book',
+          $name: 'book',
           title: 'Persuasion',
           cover: reference.cover,
           chapters: [{ heading: 'One', scans: [reference.scan] }]
@@ -449,7 +449,7 @@ describe('DitoClipboard interchange', () => {
     })
     await uploadZip(
       createZip(
-        { $schema: 'book', title: 'Emma', cover: reference.cover },
+        { $name: 'book', title: 'Emma', cover: reference.cover },
         { 'files/a1.png': 'cover' }
       )
     )
@@ -463,12 +463,12 @@ describe('DitoClipboard interchange', () => {
     const { uploadZip, uploads, data } = await mountBook()
     await uploadZip(
       createZip(
-        { $schema: 'author', title: 'Jane', cover: reference.cover },
+        { $name: 'author', title: 'Jane', cover: reference.cover },
         { 'files/a1.png': 'cover' }
       )
     )
     await uploadZip(
-      createZip({ $schema: 'book', $type: 'list', items: [] })
+      createZip({ $name: 'book', $type: 'list', items: [] })
     )
     expect(uploads).toEqual([])
     expect(data.title).toBe('Emma')
@@ -484,7 +484,7 @@ describe('DitoClipboard interchange', () => {
     await uploadZip(
       createZip(
         {
-          $schema: 'book',
+          $name: 'book',
           title: 'Persuasion',
           // Declared smaller than the file in the zip, which exceeds `maxSize`:
           cover: reference.cover,
@@ -517,7 +517,7 @@ describe('DitoClipboard interchange', () => {
     const { uploadZip, uploads, data } = await mountBook()
     await uploadZip(
       createZip(
-        { $schema: 'book', title: 'Emma', cover: reference.scan },
+        { $name: 'book', title: 'Emma', cover: reference.scan },
         { 'files/b2.pdf': 'scan' }
       )
     )
@@ -580,7 +580,7 @@ describe('DitoClipboard interchange', () => {
       const { findContainer, uploads, data } = await mountGallery()
       const input = findContainer('gallery').find('input[accept=".zip"]')
       const zip = createZip(
-        { $schema: 'cover', $type: 'upload', files: [reference.cover] },
+        { $name: 'cover', $type: 'upload', files: [reference.cover] },
         { 'files/a1.png': 'cover' }
       )
       Object.defineProperty(input.element, 'files', {

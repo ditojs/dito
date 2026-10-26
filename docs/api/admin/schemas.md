@@ -1410,6 +1410,7 @@ to their header, of lists to the header of their items, and of
 type ClipboardConfig =
   | boolean
   | {
+      name?: string
       copy?: (context: SchemaContext) => unknown
       paste?: (context: SchemaContext) => unknown
       interchange?:
@@ -1427,7 +1428,11 @@ For how to use it, see the [forms guide](../../guide/admin/forms.md#clipboard).
 clipboard, and keeps it in the admin as a fallback for browsers that don't let
 it read the clipboard. Data is only pasted into schemas of the same name and
 kind, e.g. the items of a list only into lists of the same name, except for the
-files of uploads, which paste into all uploads.
+files of uploads, which paste into all uploads. The data of forms is named by
+the first of: the form's `clipboard.name`, the `clipboard.name` of the list or
+object of its item, the form's `name`, the name of the list or object. Lists
+are named by their `clipboard.name`, or else by their name. So
+`clipboard: { name }` lets lists of different names share their items.
 
 - Copying leaves out the item's id, and the ids of the items of its lists, so
   that they paste as new items. Items that relations inside the copied data

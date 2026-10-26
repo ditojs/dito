@@ -2679,6 +2679,12 @@ export interface MenuSchema<$Item = any> {
 export type ClipboardConfig =
   | boolean
   | {
+      /**
+       * The name that marks copies, instead of the name of the form or
+       * list, or of the list or object of the items of a form. Copies only
+       * paste where the names match.
+       */
+      name?: string
       copy?: (context: SchemaContext) => unknown
       /**
        * Receives the copied data as `clipboardItem`, and

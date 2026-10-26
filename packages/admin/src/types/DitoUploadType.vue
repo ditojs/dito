@@ -448,7 +448,7 @@ const DitoUploadType = {
       // Shared by the clipboards in the footer and in the row of single files:
       clipboardAttributes: computed(() => ({
         clipboard: props.schema.clipboard,
-        schema: props.schema,
+        name: props.schema.name,
         label: field.labelText.value,
         type: 'upload',
         hasData: getStoredFiles(value.value).length > 0,
