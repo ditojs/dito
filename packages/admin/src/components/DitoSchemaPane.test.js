@@ -185,6 +185,43 @@ describe('DitoSchemaPane', () => {
     expect(isLabelVertical('captain')).toBe(true)
   })
 
+  it('guesses the alignment of its rows before measuring them', async () => {
+    stubLayout()
+    const { wrapper, findContainer } = await mountSchema({
+      schema: {
+        fields: {
+          name: { type: 'text', label: 'Name', width: '1/2' },
+          captain: { type: 'checkbox', label: false, width: '1/2' },
+          dimensions: {
+            type: 'section',
+            form: {
+              type: 'form',
+              compact: true,
+              fields: {
+                width: { type: 'number', label: 'Width', width: '1/2' },
+                height: { type: 'number', label: 'Height', width: '1/2' }
+              }
+            }
+          }
+        }
+      },
+      data: { name: 'Rovers', captain: true, width: 12, height: 20 }
+    })
+    const isLabelVertical = name =>
+      findContainer(name).classes('dito-container--label-vertical')
+    expect(isLabelVertical('captain')).toBe(true)
+    // Compact labels display next to their components:
+    expect(isLabelVertical('width')).toBe(false)
+
+    for (const rows of wrapper.findAllComponents(DitoPaneRows)) {
+      rows.vm.onResizePane()
+    }
+    await flushPromises()
+    expect(isLabelVertical('captain')).toBe(true)
+    // The compact components are measured to be higher than one line:
+    expect(isLabelVertical('width')).toBe(true)
+  })
+
   it(`doesn't align components that aren't laid out`, async () => {
     stubLayout()
     // Hidden components have no height, e.g. the ones in hidden tabs:
