@@ -1818,6 +1818,34 @@ describe('DitoListType', () => {
       expect(frames.size).toBe(0)
     })
 
+    it('renders the items of nested lists along with their item', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          fields: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              form: { type: 'form', ...createRecipeSchema() }
+            }
+          }
+        },
+        data: {
+          chapters: Array.from({ length: 12 }, () => ({
+            ingredients: createIngredients(12)
+          }))
+        }
+      })
+      const getCounts = () =>
+        Array.from({ length: 12 }, (_, index) =>
+          findField(`chapters/${index}/ingredients`)
+        )
+          .filter(field => field.exists())
+          .map(field => getItemNames(field).length)
+      expect(getCounts()).toEqual([12, 12, 12, 12, 12])
+      await runFrames()
+      expect(getCounts()).toEqual(Array(12).fill(12))
+    })
+
     it('shows and focuses errors in items that the list has yet to render', async () => {
       const ingredients = createIngredients(12)
       ingredients[10].name = ''
