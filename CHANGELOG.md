@@ -3,6 +3,26 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 6.4.0 (2026-10-26)
+
+### Behaviour changes
+
+- **admin:** `DitoClipboard` takes the `name` that it marks and matches copies with instead of a `schema`.
+- **admin:** Copies and downloads are marked with `$name` instead of `$schema`. Copies and downloaded files of earlier versions, and data without a mark, no longer paste.
+
+### New
+
+- **admin:** `clipboard.name` names the copies of a form, of a list, or of the items of a list or object, so that lists of different names can paste their items and whole lists into each other. See [Clipboard](docs/api/admin/schemas.md#clipboard) for the order of the names.
+
+### Fixes
+
+- **admin:** Pasting without access to the system clipboard, e.g. when the browser denies it, pastes the copied data as the system clipboard holds it: values that `clipboard.copy()` sets to `undefined` are left out, so the form keeps its own values of these fields, as when pasting from the system clipboard.
+- **admin:** Copies of list items that reference a record through a field of their `idKey` with `options` hold the label of that record in `$label`, which pasting resolves to its id again, instead of losing the reference.
+- **admin:** Copies of items whose form has no `name` are marked with the name of their list, and only paste into items of the same list or of lists of the same name. They used to paste into all forms without a name. Downloads of forms without a label are named after their list instead of `data`.
+- **admin:** Pasting a form into itself no longer marks it edited when its lists hold items with computed values of their own, e.g. lists that `computeValue()` converts from stored objects. The computed values of such items are written at once, together with the values that hold them.
+- **admin:** Pasting into a form replaces its data like loaded data, but keeps the values of its fields that the pasted data lacks, e.g. hidden fields that `clipboard.copy()` leaves out. Values that `computeValue()` derives are derived from the pasted data, e.g. lists that `serializeValue()` stores in other keys of the item, and the form is only edited if the data that it saves changes.
+- **admin:** Long lists size the steps in which they render and expand their items by the fields of the items, so that lists of collapsed or short items render at once, and items with many fields no longer block the page in the first step.
+
 ## 6.3.0 (2026-10-26)
 
 ### New
