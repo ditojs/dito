@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { isArray } from '@ditojs/utils'
+import { clone, isArray } from '@ditojs/utils'
 import { flushPromises } from '@vue/test-utils'
 import { copyClipboardData } from '../utils/clipboard.js'
 import { mountForm, unmountAdmin, enterValue } from '../test/mount.js'
@@ -418,23 +418,32 @@ describe('DitoClipboard in real-world forms', () => {
       expect(form.dataModel.isDirty).toBe(false)
     })
 
-    it('pastes copied lists as new items, without the types that the list lacks', async () => {
+    const clickListButton = async ({ findContainer }, dataPath, button) => {
+      await findContainer(dataPath)
+        .find(`.dito-label .dito-button--${button}`)
+        .trigger('click')
+      await flushPromises()
+    }
+
+    it('pastes copied lists in place of their items, without the types that the list lacks', async () => {
       const form = await mountArticle()
-      const clickListButton = async (dataPath, button) => {
-        await form
-          .findContainer(dataPath)
-          .find(`.dito-label .dito-button--${button}`)
-          .trigger('click')
-        await flushPromises()
-      }
-      await clickListButton('blocks', 'copy')
-      await clickListButton('blocks/3/blocks', 'paste')
+      await clickListButton(form, 'blocks', 'copy')
+      await clickListButton(form, 'blocks/3/blocks', 'paste')
       expect((await form.submit()).blocks[3].blocks).toEqual([
-        { type: 'heading', text: 'Five', level: 3 },
         { type: 'heading', text: 'One', level: 1 },
         { type: 'heading', text: 'Two', level: 2 },
         { type: 'quote', text: 'Three', source: 'Austen' }
       ])
+    })
+
+    it(`doesn't change lists by pasting them into themselves`, async () => {
+      const form = await mountArticle()
+      const { serializedData } = form.dataModel
+      const { blocks } = clone(serializedData.value)
+      await clickListButton(form, 'blocks', 'copy')
+      await clickListButton(form, 'blocks', 'paste')
+      expect(form.dataModel.isDirty).toBe(false)
+      expect(serializedData.value.blocks).toEqual(blocks)
     })
   })
 

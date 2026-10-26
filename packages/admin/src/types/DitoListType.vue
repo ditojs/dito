@@ -187,8 +187,9 @@ import {
 } from '../utils/schema/setup.js'
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
-import { getCreatableForms, getItemUid } from '../utils/schema/data.js'
+import { getItemUid, initializeData } from '../utils/schema/data.js'
 import {
+  getFormSchemas,
   getItemFormSchema,
   getItemFormSchemaFromForms
 } from '../utils/schema/lookup.js'
@@ -416,27 +417,29 @@ const DitoListType = {
         )
       },
 
-      // Append the items with their creatable forms, and leave out the others:
+      // Replace the items with the pasted ones of the list's forms, and leave
+      // out the others. Like all writes, it's an edit only if it changes them:
       async pasteItems({ items }) {
-        const forms = getCreatableForms(props.schema, context)
+        const forms = getFormSchemas(props.schema, context)
         const getForm = item => getItemFormSchemaFromForms(forms, item)
-        const offset = listData.value.length
         const results = await Promise.all(
           items.filter(getForm).map((item, index) =>
             fromClipboard(getForm(item), item, {
-              dataPath: appendDataPath(props.dataPath, offset + index),
+              dataPath: appendDataPath(props.dataPath, index),
               sourceSchema: props.schema,
               services,
               rootData: context.rootItem
             })
           )
         )
-        for (const { data } of results) {
-          source.insertItem(getForm(data), data)
-        }
-        if (results.length > 0) {
-          source.onChange()
-        }
+        listData.value = results.map(({ data }) => data)
+        listData.value.forEach((item, index) => {
+          initializeData(getForm(item), item, services, {
+            dataPath: appendDataPath(props.dataPath, index),
+            rootData: context.rootItem
+          })
+        })
+        source.onChange()
         const unresolvedLabels = results.flatMap(
           result => result.unresolvedLabels
         )
