@@ -624,7 +624,7 @@ describe('DitoClipboard', () => {
       expect(data.blocks).toEqual(blocks)
     })
 
-    it('copies the items and pastes them into lists of the same name', async () => {
+    it('copies the items and pastes them in place of the items of lists of the same name', async () => {
       const { click, data, dataModel } = await mountShelves()
       await click('books', 'copy')
       expect(getClipboardData('books', 'list')).toEqual({
@@ -641,14 +641,13 @@ describe('DitoClipboard', () => {
       await click('shelf/books', 'paste')
       // Each item is created with the form of its type:
       expect(data.shelf.books).toEqual([
-        { id: 9, type: 'comic', artist: 'Moebius', position: 0 },
         {
           type: 'novel',
           title: 'Emma',
           author: { id: 1, name: 'Jane Austen' },
-          position: 1
+          position: 0
         },
-        { type: 'comic', artist: 'Hergé', position: 2 }
+        { type: 'comic', artist: 'Hergé', position: 1 }
       ])
       expect(getNotificationTexts()).toEqual([])
       expect(dataModel.isDirty).toBe(true)
@@ -668,26 +667,48 @@ describe('DitoClipboard', () => {
       expect(data.magazines).toHaveLength(2)
     })
 
-    it('leaves out the items without a creatable form', async () => {
+    it('leaves out the items of forms that the list lacks', async () => {
       const { click, data } = await mountShelves({
         shelf: {
           forms: {
-            comic: {
-              type: 'form',
-              fields: { artist: { type: 'text' } }
-            },
-            novel: {
-              type: 'form',
-              creatable: false,
-              fields: { title: { type: 'text' } }
-            }
+            comic: { type: 'form', fields: { artist: { type: 'text' } } }
           }
         }
       })
       await click('books', 'copy')
       await click('shelf/books', 'paste')
       expect(data.shelf.books).toEqual([
-        { id: 9, type: 'comic', artist: 'Moebius', position: 0 },
+        { type: 'comic', artist: 'Hergé', position: 0 }
+      ])
+    })
+
+    it('pastes into lists with one item per type', async () => {
+      // Each form is creatable only while the list has no item of its type:
+      const createForm = (type, fields) => ({
+        type: 'form',
+        creatable: ({ value }) => value.every(item => item.type !== type),
+        fields
+      })
+      const { click, data } = await mountShelves({
+        shelf: {
+          forms: {
+            novel: createForm('novel', {
+              title: { type: 'text' },
+              author: relateAuthor
+            }),
+            comic: createForm('comic', { artist: { type: 'text' } })
+          }
+        }
+      })
+      await click('books', 'copy')
+      await click('shelf/books', 'paste')
+      expect(data.shelf.books).toEqual([
+        {
+          type: 'novel',
+          title: 'Emma',
+          author: { id: 1, name: 'Jane Austen' },
+          position: 0
+        },
         { type: 'comic', artist: 'Hergé', position: 1 }
       ])
     })
@@ -815,12 +836,12 @@ describe('DitoClipboard', () => {
           items: [{ name: 'Regular' }, { name: 'Bold' }]
         })
         await click('fonts/1/cuts', 'paste')
-        expect(data.fonts[1].cuts).toEqual(['Light', 'Regular', 'Bold'])
+        expect(data.fonts[1].cuts).toEqual(['Regular', 'Bold'])
         expect(
           findField('fonts/1/cuts')
             .findAll('input')
             .map(input => input.element.value)
-        ).toEqual(['Light', 'Regular', 'Bold'])
+        ).toEqual(['Regular', 'Bold'])
         expect(getNotificationTexts()).toEqual([])
         expect(dataModel.isDirty).toBe(true)
       })
@@ -837,10 +858,7 @@ describe('DitoClipboard', () => {
           items: [{ name: null }]
         })
         await click('fonts/1/cuts', 'paste')
-        expect(data.fonts[1].cuts).toEqual(['Light', null])
-        await click('fonts/1/cuts', 'copy')
-        await click('fonts/0/cuts', 'paste')
-        expect(data.fonts[0].cuts).toEqual(['', 'Light', null])
+        expect(data.fonts[1].cuts).toEqual([null])
       })
     })
 
