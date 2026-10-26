@@ -499,6 +499,31 @@ describe('DataModel', () => {
     dataModel.stop()
   })
 
+  it('writes the computed values of the items of computed lists at once', () => {
+    const schema = {
+      type: 'form',
+      fields: {
+        chapters: {
+          type: 'list',
+          computeValue: ({ item, value }) => (
+            value ?? item.titles.map(title => ({ title }))
+          ),
+          form: {
+            type: 'form',
+            fields: { title: { type: 'text' }, slug }
+          }
+        }
+      }
+    }
+    const { dataModel } = createDataModel(schema, { titles: [] })
+    dataModel.replace(reactive({ titles: ['One', 'Two'] }))
+    expect(dataModel.data.chapters).toEqual([
+      { title: 'One', slug: 'one' },
+      { title: 'Two', slug: 'two' }
+    ])
+    dataModel.stop()
+  })
+
   it('skips sources with their own resource', () => {
     const schema = {
       type: 'form',

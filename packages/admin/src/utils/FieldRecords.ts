@@ -94,9 +94,17 @@ export class FieldRecords {
   // Write the computed values of the current data right away, also of records
   // that the update of the data entries hasn't created yet.
   writeComputedValues() {
-    this.update(this.model.dataEntries.value.recordedEntries)
+    const { dataEntries } = this.model
+    let entries = dataEntries.value.recordedEntries
+    this.update(entries)
     for (const record of this.records.values()) {
       record.writeComputedValue?.()
+    }
+    // The written values may hold items with computed values of their own,
+    // e.g. lists that `computeValue()` creates, which their new records write:
+    while (entries !== dataEntries.value.recordedEntries) {
+      entries = dataEntries.value.recordedEntries
+      this.update(entries)
     }
   }
 
