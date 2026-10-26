@@ -4,9 +4,10 @@
   :class="[containerClasses, schema.class]"
   :style="containerStyles"
 )
-  //- Routes that are hidden by the forms of their items hide their panels:
+  //- Routes that are hidden by the forms of their items hide their panels.
+  //- Check `isMounted` last, so containers without panels render only once:
   Teleport(
-    v-if="isMounted && isRouteShown && panelEntries.length > 0"
+    v-if="panelEntries.length > 0 && isRouteShown && isMounted"
     to=".dito-sidebar__teleport"
   )
     DitoPanels(
