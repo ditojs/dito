@@ -1777,17 +1777,52 @@ describe('DitoListType', () => {
     const createIngredients = count =>
       Array.from({ length: count }, (_, index) => ({ name: `${index}` }))
 
+    // Items of a header and 26 fields, of which steps of 100 fields render 3:
+    const noteFields = Object.fromEntries(
+      Array.from({ length: 24 }, (_, index) => [
+        `note${index}`,
+        { type: 'text' }
+      ])
+    )
+    const createLongRecipeSchema = ingredients =>
+      createRecipeSchema({
+        form: {
+          ...ingredientForm,
+          fields: { ...ingredientForm.fields, ...noteFields }
+        },
+        ...ingredients
+      })
+
     it('renders the first items right away and the others in frames', async () => {
       const { findField } = await mountSchema({
-        schema: createRecipeSchema(),
+        schema: createLongRecipeSchema(),
         data: { ingredients: createIngredients(12) }
       })
       const field = findField('ingredients')
-      expect(getItemNames(field)).toEqual(['0', '1', '2', '3', '4'])
+      expect(getItemNames(field)).toEqual(['0', '1', '2'])
       await runFrames()
       expect(getItemNames(field)).toEqual(
         createIngredients(12).map(({ name }) => name)
       )
+    })
+
+    it('renders lists of short items at once', async () => {
+      const { findField } = await mountSchema({
+        schema: createRecipeSchema(),
+        data: { ingredients: createIngredients(12) }
+      })
+      expect(getItemNames(findField('ingredients'))).toHaveLength(12)
+      expect(frames.size).toBe(0)
+    })
+
+    it('renders lists of collapsed items at once', async () => {
+      const { findField } = await mountSchema({
+        schema: createLongRecipeSchema({ collapsible: true, collapsed: true }),
+        data: { ingredients: createIngredients(12) }
+      })
+      const field = findField('ingredients')
+      expect(field.findAllComponents(DitoSchemaInlined)).toHaveLength(12)
+      expect(frames.size).toBe(0)
     })
 
     it('renders the others in animation frames without idle callbacks', async () => {
@@ -1796,11 +1831,11 @@ describe('DitoListType', () => {
       const requestAnimationFrame = vi.fn(requestFrame)
       vi.stubGlobal('requestAnimationFrame', requestAnimationFrame)
       const { findField } = await mountSchema({
-        schema: createRecipeSchema(),
+        schema: createLongRecipeSchema(),
         data: { ingredients: createIngredients(12) }
       })
       const field = findField('ingredients')
-      expect(getItemNames(field)).toHaveLength(5)
+      expect(getItemNames(field)).toHaveLength(3)
       await runFrames()
       expect(getItemNames(field)).toHaveLength(12)
       expect(requestAnimationFrame).toHaveBeenCalled()
@@ -1842,7 +1877,8 @@ describe('DitoListType', () => {
         )
           .filter(field => field.exists())
           .map(field => getItemNames(field).length)
-      expect(getCounts()).toEqual([12, 12, 12, 12, 12])
+      // Chapters count their header, their list and its 12 items of 2 fields:
+      expect(getCounts()).toEqual([12, 12, 12])
       await runFrames()
       expect(getCounts()).toEqual(Array(12).fill(12))
     })
@@ -1850,7 +1886,10 @@ describe('DitoListType', () => {
     describe(`collapsible: 'all'`, () => {
       const mountCollapsedList = async () => {
         const result = await mountSchema({
-          schema: createRecipeSchema({ collapsible: 'all', collapsed: true }),
+          schema: createLongRecipeSchema({
+            collapsible: 'all',
+            collapsed: true
+          }),
           data: { ingredients: createIngredients(12) }
         })
         await runFrames()
@@ -1866,7 +1905,7 @@ describe('DitoListType', () => {
       it('expands the first items right away and the others in frames', async () => {
         const { field, toggleAll, clickToggleAll } = await mountCollapsedList()
         await clickToggleAll()
-        expect(getItemNames(field)).toEqual(['0', '1', '2', '3', '4'])
+        expect(getItemNames(field)).toEqual(['0', '1', '2'])
         // While expanding, the toggle collapses all items:
         expect(toggleAll.attributes('aria-label')).toBe('Collapse All')
         expect(toggleAll.attributes('aria-expanded')).toBe('true')
@@ -1880,7 +1919,7 @@ describe('DitoListType', () => {
       it('collapses all items while expanding them', async () => {
         const { field, toggleAll, clickToggleAll } = await mountCollapsedList()
         await clickToggleAll()
-        expect(getItemNames(field)).toHaveLength(5)
+        expect(getItemNames(field)).toHaveLength(3)
         await clickToggleAll()
         await runFrames()
         expect(getItemNames(field)).toEqual([])
@@ -1902,7 +1941,7 @@ describe('DitoListType', () => {
       const ingredients = createIngredients(12)
       ingredients[10].name = ''
       const { findField, submit, getErrors } = await mountForm({
-        schema: createRecipeSchema(),
+        schema: createLongRecipeSchema(),
         data: { ingredients },
         request: ({ data }) => ({ data })
       })
@@ -1952,6 +1991,7 @@ describe('DitoListType', () => {
               form: {
                 type: 'form',
                 fields: {
+                  ...noteFields,
                   notes: {
                     type: 'list',
                     editable: true,
