@@ -1,9 +1,10 @@
 import { vi } from 'vitest'
-import { h } from 'vue'
+import { h, ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { defineType } from '../index.js'
 import { mountSchema, mountForm } from '../test/mount.js'
 import DitoErrors from './DitoErrors.vue'
+import DitoSchemaField from './DitoSchemaField.vue'
 
 // Mounts a view with a text field for each width in `widths`, named by index,
 // and returns the styles and classes of their containers.
@@ -28,6 +29,32 @@ async function mountWidths(widths, schema = {}) {
       classes: [...element.classList]
     }
   })
+}
+
+// Defines the type `counted`, whose component counts its updates.
+function defineCountedType() {
+  const counter = { updates: 0 }
+  defineType({
+    type: 'counted',
+    component: {
+      emits: ['update:modelValue', 'change'],
+
+      props: {
+        schema: { type: Object, required: true },
+        context: { type: Object, required: true },
+        modelValue: { type: String, default: null }
+      },
+
+      updated() {
+        counter.updates++
+      },
+
+      render() {
+        return h('span', this.modelValue)
+      }
+    }
+  })
+  return counter
 }
 
 describe('DitoContainer', () => {
@@ -176,25 +203,7 @@ describe('DitoContainer', () => {
   })
 
   it('renders containers without panels only once on mount', async () => {
-    let updates = 0
-    defineType({
-      type: 'counted',
-      component: {
-        props: {
-          schema: { type: Object, required: true },
-          context: { type: Object, required: true },
-          modelValue: { type: String, default: null }
-        },
-
-        updated() {
-          updates++
-        },
-
-        render() {
-          return h('span', this.modelValue)
-        }
-      }
-    })
+    const counter = defineCountedType()
     const { findField } = await mountForm({
       schema: {
         fields: {
@@ -205,7 +214,61 @@ describe('DitoContainer', () => {
       data: { title: 'Emma', subtitle: 'A Novel' }
     })
     expect(findField('title').text()).toBe('Emma')
-    expect(updates).toBe(0)
+    expect(counter.updates).toBe(0)
+  })
+
+  it('keeps types without slot content from updating with their container', async () => {
+    const counter = defineCountedType()
+    const { findContainer, data, settle } = await mountSchema({
+      schema: {
+        fields: {
+          title: { type: 'counted', label: ({ item }) => item.heading }
+        }
+      },
+      data: { title: 'Emma', heading: 'Title' }
+    })
+    counter.updates = 0
+    data.heading = 'Name'
+    await settle()
+    expect(findContainer('title').find('.dito-label').text()).toBe('Name')
+    expect(counter.updates).toBe(0)
+  })
+
+  it('updates the slot content that it passes on to its type', async () => {
+    const note = ref('Draft')
+    const Slot = {
+      props: {
+        schema: { type: Object, required: true },
+        context: { type: Object, required: true }
+      },
+
+      render() {
+        return h('div', { class: 'slot' }, this.$slots.default?.())
+      }
+    }
+    // The layout passes the note in the slot content that it creates:
+    const Layout = {
+      props: { schema: Object, context: Object },
+      render() {
+        const text = note.value
+        return h(DitoSchemaField, { name: 'values' }, () => h('em', text))
+      }
+    }
+    const { findField, settle } = await mountSchema({
+      schema: {
+        fields: {
+          row: {
+            type: 'section',
+            component: Layout,
+            fields: { values: { type: 'component', component: Slot } }
+          }
+        }
+      }
+    })
+    expect(findField('values').find('.slot em').text()).toBe('Draft')
+    note.value = 'Final'
+    await settle()
+    expect(findField('values').find('.slot em').text()).toBe('Final')
   })
 
   describe('field', () => {
