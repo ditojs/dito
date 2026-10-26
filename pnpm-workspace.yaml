@@ -15,7 +15,7 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - prettier-plugin-penere
-  - objection@4.4.0
+  - objection@4.4.1
 patchedDependencies:
   # `:focus-within`, until capricorn86/happy-dom#2543 is released:
   happy-dom@21.0.4: patches/happy-dom@21.0.4.patch
