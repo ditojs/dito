@@ -3,6 +3,15 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 6.2.1 (2026-10-26)
+
+### Fixes
+
+- **server:** Graph writes check each model that the graph repeats only once for graph control properties, which makes large fetched graphs faster to save, and no longer overflows the stack for graphs that refer back to themselves.
+- **server:** Requires `objection` ^4.4.1, which resolves the settings of strict graphs once per relation path, so large graphs save faster.
+- **admin, types:** `showDialog()` accepts dialogs without `buttons` in its types.
+- **admin:** Forms and sources whose resource function reads its `parent` set up again: the admin checks whether they declare a `resource` instead of calling the function without its context. A declared resource function that returns `null` thus also counts as a resource of its own.
+
 ## 6.2.0 (2026-10-25)
 
 ### Behaviour changes
