@@ -186,6 +186,19 @@ describe('DitoInput', () => {
     }
   })
 
+  it('sets no size without `size`, `min` or `max`', () => {
+    // Browsers throw when `input.size` is set to `0`, which the test DOM
+    // doesn't, so watch the property instead:
+    const setSize = vi.spyOn(HTMLInputElement.prototype, 'size', 'set')
+    try {
+      wrapper = mountInput({ modelValue: 'Moby Dick' })
+      expect(wrapper.find('input').attributes('size')).toBeUndefined()
+      expect(setSize).not.toHaveBeenCalled()
+    } finally {
+      setSize.mockRestore()
+    }
+  })
+
   it('sizes number inputs according to `min` and `max`', () => {
     wrapper = mountInput(
       { type: 'number' },
