@@ -38,7 +38,7 @@ test.describe('interchange', () => {
       const downloadPromise = page.waitForEvent('download')
       await selectInterchangeItem(page, 'Download')
       const download = await downloadPromise
-      expect(download.suggestedFilename()).toBe('data.zip')
+      expect(download.suggestedFilename()).toBe('interchange.zip')
       await download.saveAs(zipPath)
 
       // Upload the zip into a second widget, which stores the files again:

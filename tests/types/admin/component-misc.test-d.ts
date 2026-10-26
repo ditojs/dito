@@ -196,6 +196,20 @@ describe('ClipboardConfig', () => {
     })
   })
 
+  it('accepts the name that marks the copies of items', () => {
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      clipboard: { name: 'style' },
+      fields: {}
+    })
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      // @ts-expect-error - name is a string
+      clipboard: { name: true },
+      fields: {}
+    })
+  })
+
   it('accepts interchange, also with copy/paste callbacks', () => {
     assertType<FormSchema<Entry>>({
       type: 'form',

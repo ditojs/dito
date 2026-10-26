@@ -44,7 +44,7 @@ describe('clipboard', () => {
       expect(getClipboardData('cover')).toBe(null)
       expect(
         JSON.parse(navigator.clipboard.writeText.mock.lastCall[0])
-      ).toEqual({ $schema: 'cover', $type: 'upload', files: [] })
+      ).toEqual({ $name: 'cover', $type: 'upload', files: [] })
     })
 
     it('provides list data only to lists of the same name', async () => {
@@ -53,6 +53,12 @@ describe('clipboard', () => {
       expect(getClipboardData('authors', 'list')).toBe(null)
       expect(getClipboardData('books')).toBe(null)
       expect(getClipboardData('books', 'upload')).toBe(null)
+    })
+
+    it('never provides data without a name', async () => {
+      await copyClipboardData(undefined, { title: 'Emma' })
+      expect(getClipboardData(undefined)).toBe(null)
+      expect(hasClipboardData(undefined)).toBe(false)
     })
 
     it('clears the data when copying `null`', async () => {
@@ -67,7 +73,7 @@ describe('clipboard', () => {
       await copyClipboardData('book', { title: 'Emma' })
       expect(
         JSON.parse(navigator.clipboard.writeText.mock.lastCall[0])
-      ).toEqual({ $schema: 'book', title: 'Emma' })
+      ).toEqual({ $name: 'book', title: 'Emma' })
     })
 
     it('keeps the data when the system clipboard fails', async () => {
@@ -82,7 +88,7 @@ describe('clipboard', () => {
   describe('readClipboardData()', () => {
     it('reads the data from the system clipboard', async () => {
       vi.spyOn(navigator.clipboard, 'readText').mockResolvedValue(
-        JSON.stringify({ $schema: 'book', title: 'Dune' })
+        JSON.stringify({ $name: 'book', title: 'Dune' })
       )
       await readClipboardData()
       expect(getClipboardData('book')).toEqual({ title: 'Dune' })
@@ -107,7 +113,7 @@ describe('clipboard', () => {
       vi.spyOn(navigator.clipboard, 'readText').mockReturnValue(promise)
       const read = readClipboardData()
       await copyClipboardData('book', { title: 'Emma' })
-      resolve(JSON.stringify({ $schema: 'book', title: 'Dune' }))
+      resolve(JSON.stringify({ $name: 'book', title: 'Dune' }))
       await read
       expect(getClipboardData('book')).toEqual({ title: 'Emma' })
     })
@@ -120,9 +126,9 @@ describe('clipboard', () => {
         .mockReturnValueOnce(second.promise)
       const firstRead = readClipboardData()
       const secondRead = readClipboardData()
-      second.resolve(JSON.stringify({ $schema: 'book', title: 'Dune' }))
+      second.resolve(JSON.stringify({ $name: 'book', title: 'Dune' }))
       await secondRead
-      first.resolve(JSON.stringify({ $schema: 'book', title: 'Emma' }))
+      first.resolve(JSON.stringify({ $name: 'book', title: 'Emma' }))
       await firstRead
       expect(getClipboardData('book')).toEqual({ title: 'Dune' })
     })
@@ -135,9 +141,9 @@ describe('clipboard', () => {
         .mockReturnValueOnce(second.promise)
       const firstRead = readClipboardData()
       const secondRead = readClipboardData()
-      first.resolve(JSON.stringify({ $schema: 'book', title: 'Emma' }))
+      first.resolve(JSON.stringify({ $name: 'book', title: 'Emma' }))
       await firstRead
-      second.resolve(JSON.stringify({ $schema: 'book', title: 'Dune' }))
+      second.resolve(JSON.stringify({ $name: 'book', title: 'Dune' }))
       await secondRead
       expect(getClipboardData('book')).toEqual({ title: 'Dune' })
     })

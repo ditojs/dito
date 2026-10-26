@@ -69,10 +69,11 @@ export default {
 
   props: {
     clipboard: { type: [Boolean, Object], required: true },
-    schema: { type: Object, required: true },
+    // The name that marks copies, which pastes need to match:
+    name: { type: String, default: null },
     // The type of data other than the data of forms, e.g. 'upload':
     type: { type: String, default: undefined },
-    // The text to name downloads after, or else the name of the schema:
+    // The text to name downloads after, or else `name`:
     label: { type: String, default: null },
     hasData: { type: Boolean, required: true },
     // A function, to only serialize the data when copying:
@@ -127,7 +128,7 @@ export default {
 
     const downloadData = async () => {
       try {
-        const { name } = props.schema
+        const { name } = props
         const clipboardData = createClipboardData(
           name,
           await getCopyData(),
@@ -160,7 +161,7 @@ export default {
       interchange: computed(() => !!clipboardOptions.value.interchange),
 
       isPasteEnabled: computed(
-        () => !props.disabled && hasClipboardData(props.schema.name, props.type)
+        () => !props.disabled && hasClipboardData(props.name, props.type)
       ),
 
       interchangeItems: computed(() => [
@@ -181,7 +182,7 @@ export default {
       async onCopy() {
         try {
           await copyClipboardData(
-            props.schema.name,
+            props.name,
             await getCopyData(),
             props.type
           )
@@ -207,7 +208,7 @@ export default {
           console.error(error, error.name, error.message)
         }
         try {
-          const data = getClipboardData(props.schema.name, props.type)
+          const data = getClipboardData(props.name, props.type)
           if (data) {
             pasteData(data)
           }
@@ -233,7 +234,7 @@ export default {
           const zip = new Uint8Array(await file.arrayBuffer())
           const data = matchClipboardData(
             await readInterchangeData(zip),
-            props.schema.name,
+            props.name,
             props.type
           )
           if (data) {
@@ -253,7 +254,7 @@ export default {
             adminContext.notify({
               type: 'error',
               title: 'Upload Error',
-              text: `The file doesn't contain data of '${props.schema.name}'.`
+              text: `The file doesn't contain data of '${props.name}'.`
             })
           }
         } catch (error) {

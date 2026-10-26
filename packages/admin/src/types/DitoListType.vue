@@ -33,7 +33,7 @@
     )
       DitoClipboard(
         :clipboard="schema.clipboard"
-        :schema="schema"
+        :name="clipboardName"
         :label="labelText"
         type="list"
         :hasData="listData.length > 0"
@@ -194,6 +194,7 @@ import {
 } from '../utils/schema/lookup.js'
 import { isSourceWithResource } from '../utils/schema/structure.js'
 import { walkData } from '../utils/schema/walk.js'
+import { getClipboardName } from '../utils/clipboard.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
 import { getUploadEntries } from '../utils/interchange.ts'
@@ -378,6 +379,8 @@ const DitoListType = {
       },
 
       // Lists with their own resource save their items through it:
+      clipboardName: computed(() => getClipboardName(props.schema)),
+
       hasClipboard: computed(
         () => !!props.schema.clipboard && !isSourceWithResource(props.schema)
       ),

@@ -243,6 +243,8 @@ export const bookForm = {
 **Copy** serializes the data, as it would be sent to the server, and writes it
 as JSON to the system clipboard, marked with the name of the schema. Data is
 only pasted into schemas of the same name: a copied book only into book forms.
+Forms without a name take the name of their list, see
+[Clipboard](../../api/admin/schemas.md#clipboard).
 The copy leaves out the item's id and the ids of the items in its lists. Items
 that relations in the copy point to get new temporary ids instead, one for
 each id in each list, so that these relations keep pointing to the same items.
@@ -320,7 +322,7 @@ clipboard: { interchange: true }
 
 **Download** saves the data that Copy would copy as a zip:
 
-- `data.json` holds the data with its `$schema` and `$type`, as Copy writes
+- `data.json` holds the data with its `$name` and `$type`, as Copy writes
   it to the clipboard.
 - `files/<name>` holds each file of the [upload](../../api/admin/schemas.md#upload) fields in the
   data under its name, e.g. `files/cover.png`. Different files of the same
@@ -331,7 +333,7 @@ clipboard: { interchange: true }
   the file's `url` and `signature`.
 
 **Upload** reads such a zip and pastes its data like Paste, but only when its
-`$schema` and `$type` match. It first uploads each referenced file through
+`$name` and `$type` match. It first uploads each referenced file through
 the upload route of its field, where the server stores it under a new key, and
 replaces the reference with the stored file. Files that the field's
 `extensions` or `maxSize` don't accept, or that are missing from the zip, are
