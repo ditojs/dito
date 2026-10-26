@@ -3,6 +3,23 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 6.3.0 (2026-10-26)
+
+### New
+
+- **server:** `useApp()` returns the application of the process, for code that isn't part of a model, controller or service, like plain functions that send emails. See [Accessing the application](docs/guide/server/application.md#accessing-the-application).
+
+### Fixes
+
+- **admin:** Forms with many fields open faster, as containers without panels render only once when they mount.
+- **admin:** "Expand All" on lists with `collapsible: 'all'` opens the items over several frames, so that long lists no longer block the page while they expand.
+- **admin:** Forms with many fields open faster, as they render affixes, errors and labels only when they have content.
+- **admin:** Forms open faster, as their components start out with their labels aligned the way they most likely are, instead of rendering again once the form is measured.
+- **admin:** Lists inside the items of other lists render all their items at once, as the outer list already renders its items over several frames, so long nested lists open faster.
+- **admin:** Forms update faster, as containers without slot content pass stable slots to their types, so their renders don't update the types and the items of lists.
+- **admin:** Tree lists in dialogs no longer log an error when they render, as dialogs have no route context.
+- **ui:** `DitoInput` sets no `size` without one, which threw and was caught once per input, so forms with many inputs open faster.
+
 ## 6.2.1 (2026-10-26)
 
 ### Fixes
