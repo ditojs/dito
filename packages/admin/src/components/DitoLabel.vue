@@ -22,6 +22,7 @@ component.dito-label(
       v-if="hasContent || prefixes.length > 0 || suffixes.length > 0"
     )
       DitoAffixes(
+        v-if="prefixes.length > 0"
         :items="prefixes"
         position="prefix"
         :parentContext="context"
@@ -32,6 +33,7 @@ component.dito-label(
         v-html="html"
       )
       DitoAffixes(
+        v-if="suffixes.length > 0"
         :items="suffixes"
         mode="ellipsis"
         position="suffix"

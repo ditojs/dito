@@ -8,11 +8,13 @@ DitoInput.dito-text(
 )
   template(#prefix)
     DitoInputAffixes(
+      v-if="inputAffixesProps.hasPrefix"
       position="prefix"
       v-bind="inputAffixesProps.prefix"
     )
   template(#suffix)
     DitoInputAffixes(
+      v-if="inputAffixesProps.hasSuffix"
       position="suffix"
       v-bind="inputAffixesProps.suffix"
       @clear="clear"

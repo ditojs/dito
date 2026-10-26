@@ -9,6 +9,7 @@
 )
   .dito-select__inner
     DitoInputAffixes(
+      v-if="inputAffixesProps.hasPrefix"
       position="prefix"
       v-bind="inputAffixesProps.prefix"
       absolute
@@ -48,6 +49,7 @@
           :value="getValueForOption(option)"
         ) {{ getLabelForOption(option) }}
     DitoInputAffixes(
+      v-if="inputAffixesProps.hasSuffix"
       position="suffix"
       v-bind="inputAffixesProps.suffix"
       absolute

@@ -4,6 +4,7 @@
 )
   .dito-multiselect__inner
     DitoInputAffixes(
+      v-if="inputAffixesProps.hasPrefix"
       position="prefix"
       v-bind="inputAffixesProps.prefix"
       absolute
@@ -54,6 +55,7 @@
             @mousedown.prevent="remove(option)"
           )
     DitoInputAffixes(
+      v-if="inputAffixesProps.hasSuffix"
       position="suffix"
       v-bind="inputAffixesProps.suffix"
       absolute

@@ -15,11 +15,14 @@ DitoTrigger.dito-color(
     )
       template(#prefix)
         DitoInputAffixes(
+          v-if="inputAffixesProps.hasPrefix"
           position="prefix"
           v-bind="inputAffixesProps.prefix"
         )
       template(#suffix)
+        //- The suffix also shows the preview of the color:
         DitoInputAffixes(
+          v-if="inputAffixesProps.hasSuffix || value"
           position="suffix"
           v-bind="inputAffixesProps.suffix"
           @clear="clear"

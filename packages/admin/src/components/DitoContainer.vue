@@ -56,6 +56,7 @@
         v-bind="slotProps"
       )
   DitoErrors(
+    v-if="errors"
     :id="errorsElementId"
     :errors="errors"
   )

@@ -1,5 +1,7 @@
 import { html } from '@ditojs/utils'
 import { mountSchema } from '../test/mount.js'
+import DitoLabel from './DitoLabel.vue'
+import DitoAffixes from './DitoAffixes.vue'
 
 async function mountLabel(label, data = {}) {
   const { findContainer } = await mountSchema({
@@ -57,5 +59,22 @@ describe('DitoLabel', () => {
     const label = findContainer('note').find('.dito-label')
     expect(label.text()).toBe('Draft & <b>proof</b>')
     expect(label.find('b').exists()).toBe(false)
+  })
+
+  it('only mounts the affixes that labels have', async () => {
+    const { wrapper } = await mountSchema({
+      schema: {
+        fields: {
+          title: { type: 'text', label: 'Title' },
+          chapter: { type: 'text', label: { text: 'Chapter', prefix: '1.' } }
+        }
+      }
+    })
+    expect(
+      wrapper
+        .findAllComponents(DitoLabel)
+        .flatMap(label => label.findAllComponents(DitoAffixes))
+        .map(affixes => affixes.props('position'))
+    ).toEqual(['prefix'])
   })
 })
