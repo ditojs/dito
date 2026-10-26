@@ -1,5 +1,7 @@
 import { vi } from 'vitest'
+import { h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
+import { defineType } from '../index.js'
 import { mountSchema, mountForm } from '../test/mount.js'
 import DitoErrors from './DitoErrors.vue'
 
@@ -171,6 +173,39 @@ describe('DitoContainer', () => {
     })
     expect(object.classes).toContain('featured')
     expect(object.classes).not.toContain('archived')
+  })
+
+  it('renders containers without panels only once on mount', async () => {
+    let updates = 0
+    defineType({
+      type: 'counted',
+      component: {
+        props: {
+          schema: { type: Object, required: true },
+          context: { type: Object, required: true },
+          modelValue: { type: String, default: null }
+        },
+
+        updated() {
+          updates++
+        },
+
+        render() {
+          return h('span', this.modelValue)
+        }
+      }
+    })
+    const { findField } = await mountForm({
+      schema: {
+        fields: {
+          title: { type: 'counted' },
+          subtitle: { type: 'counted' }
+        }
+      },
+      data: { title: 'Emma', subtitle: 'A Novel' }
+    })
+    expect(findField('title').text()).toBe('Emma')
+    expect(updates).toBe(0)
   })
 
   describe('field', () => {
