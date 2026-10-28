@@ -3,6 +3,17 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 6.5.0 (2026-10-28)
+
+### Behaviour changes
+
+- **admin:** Pasting a list replaces its items with the pasted ones instead of appending them, like pasting an item replaces its content. The `creatable` setting of the list's forms doesn't limit the pasted items anymore, and items of forms that the list lacks are left out as before.
+
+### Fixes
+
+- **admin:** `context.getValueAt()` finds the parent items of the items that lists load in callbacks that deserializing them calls, e.g. `options` of selects.
+- **admin:** Fields whose empty value isn't `null`, e.g. lists, keep `null` with `default: null`, instead of replacing it with their empty value.
+
 ## 6.4.0 (2026-10-26)
 
 ### Behaviour changes
