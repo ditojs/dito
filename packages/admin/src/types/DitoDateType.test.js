@@ -86,6 +86,19 @@ describe('DitoDateType', () => {
     expect(data.createdAt).toEqual(createdAt)
   })
 
+  it('sends the time of loaded timestamps that it does not show', async () => {
+    const paidAt = new Date(2026, 9, 14, 18, 14, 36)
+    const { findField, submit } = await mountForm({
+      schema: { fields: { paidOn: { type: 'date' } } },
+      data: { paidOn: paidAt.toISOString() },
+      request: ({ data }) => ({ data: clone(data) })
+    })
+    expect(findField('paidOn').find('input').element.value).toBe(
+      'October 14, 2026'
+    )
+    expect(await submit()).toMatchObject({ paidOn: paidAt.toISOString() })
+  })
+
   it(`keeps strings that aren't dates, e.g. times, but rejects them`, async () => {
     const { findField, data, getErrors, submit } = await mountForm({
       schema: { fields: { opensAt: { type: 'time' } } },

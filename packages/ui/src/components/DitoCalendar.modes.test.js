@@ -153,11 +153,12 @@ describe('DitoCalendar days', () => {
     ).toEqual([0, 0, 0, 0])
   })
 
-  it('selects today with the footer button', async () => {
+  it('selects today with the footer button, keeping the time', async () => {
     wrapper = mountCalendar()
     await click(wrapper, '.dito-calendar-select-now')
     const [date] = getEmittedDates(wrapper)
     expect(date.toDateString()).toBe(new Date().toDateString())
+    expect([date.getHours(), date.getMinutes()]).toEqual([14, 30])
     expect(wrapper.emitted('select')).toHaveLength(1)
   })
 
