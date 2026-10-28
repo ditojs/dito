@@ -667,16 +667,17 @@ function completeProperty(field, property, context) {
       typeDefaultValue === null && schema.nullable === false
         ? getPropertyEmptyValue(property)
         : typeDefaultValue
-    // Properties without a type accept `null` already:
-    if (property.type && emptyValue === null) {
-      property.nullable = true
-    }
-    // Default callbacks depend on the entry too, and `null` is no value:
+    // Default callbacks depend on the entry too:
     const value = isFunction(field.default)
-      ? null
+      ? undefined
       : schema.default !== undefined
         ? resolveValue(schema.default, context)
         : emptyValue
+    // Defaults of `null` keep `null`. Properties without a type accept it
+    // already:
+    if (property.type && (emptyValue === null || value === null)) {
+      property.nullable = true
+    }
     if (value != null) {
       property.default = value
     }

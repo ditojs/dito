@@ -487,6 +487,28 @@ describe('initializeData()', () => {
       prices: [100, 200]
     })
   })
+
+  it('keeps `null` in lists with a default of `null`', () => {
+    const form = { type: 'form', fields: { name: { type: 'text' } } }
+    const schema = {
+      type: 'form',
+      fields: {
+        items: { type: 'list', form },
+        parts: { type: 'list', form, default: null }
+      }
+    }
+    const serialize = data =>
+      serializeData(schema, null, data, '', { target: 'server' })
+    const loaded = { items: null, parts: null }
+    initializeData(schema, loaded, {})
+    expect(loaded).toEqual({ items: [], parts: null })
+    expect(serialize({ items: null, parts: null })).toEqual({
+      items: [],
+      parts: null
+    })
+    expect(initializeData(schema, {}, {})).toEqual({ items: [], parts: null })
+    expect(serialize({})).toEqual({ items: [], parts: null })
+  })
 })
 
 describe('getCreatableForms()', () => {
