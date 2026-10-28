@@ -743,6 +743,50 @@ describe('useSource()', () => {
         expect(data.books).toEqual([{ id: 1, tags: 'novel' }])
         expect(data.tags).toBe('classics')
       })
+
+      it('lets callbacks of loaded items read their parent items', async () => {
+        const genres = []
+        const { data } = await mountView(
+          {
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              form: {
+                type: 'form',
+                fields: {
+                  chapters: {
+                    type: 'list',
+                    form: {
+                      type: 'form',
+                      fields: {
+                        mood: {
+                          type: 'select',
+                          options: context => {
+                            const genre = context.getValueAt('../../genre')
+                            genres.push(genre)
+                            return genre.moods
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          () => ({
+            data: [
+              {
+                id: 1,
+                genre: { moods: ['Dark', 'Light'] },
+                chapters: [{ mood: 'Dark' }]
+              }
+            ]
+          })
+        )
+        expect(genres[0]).toEqual({ moods: ['Dark', 'Light'] })
+        expect(data.books[0].chapters).toEqual([{ mood: 'Dark' }])
+      })
     })
 
     it('ignores objects that lists in forms load', async () => {

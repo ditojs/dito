@@ -347,11 +347,13 @@ export class DataModel {
     },
     value: any
   ) {
-    data[name] = deserializeData(
+    // Deserialize in place, so that callbacks find the value in the root data:
+    data[name] = value
+    deserializeData(
       { fields: { [name]: schema } },
-      { [name]: value },
+      data,
       { ...this.walkOptions, dataPath: getParentDataPath(dataPath) }
-    )[name]
+    )
     this.markClean({ dataPath })
   }
 
