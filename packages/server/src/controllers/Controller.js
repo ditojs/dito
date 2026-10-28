@@ -67,20 +67,9 @@ export class Controller {
     const keys = Object.keys(Object.assign({}, hooks, ...chain))
     const events = {}
     for (const key of keys) {
-      const callbacks = []
-      let previous
-      for (const level of chain) {
-        if (level.hasOwnProperty(key) && level[key]) {
-          // Class field initializers run again for each subclass instance, so
-          // a level can hold a copy of its parent's hooks. Skip such copies by
-          // their source, except for native code such as bound functions.
-          const source = String(level[key])
-          if (source !== previous || source.includes('[native code]')) {
-            callbacks.push(level[key])
-          }
-          previous = source
-        }
-      }
+      const callbacks = chain
+        .map(hooks => (hooks.hasOwnProperty(key) ? hooks[key] : null))
+        .filter(Boolean)
       for (const part of key.split(',')) {
         // Keys can list events that other keys name too, so merge:
         const event = part.trim()
@@ -412,9 +401,14 @@ export class Controller {
     // can still be called.
     // NOTE: We can't check with `this.hasOwnProperty(type)` because the
     // field can be on the class prototype as well, in case of accessors.
+    // Class field initializers run again for each instance created above, so
+    // the values can also be a copy of the parent's, see `isCopyOf()`.
     const parentValues = entry[type]
     let currentValues = this[type]
-    if (currentValues && currentValues === parentValues) {
+    if (
+      currentValues &&
+      (currentValues === parentValues || isCopyOf(currentValues, parentValues))
+    ) {
       currentValues = this[type] = {}
     }
     // Combine parentValues and currentValues with correct inheritance.
@@ -661,6 +655,23 @@ export class Controller {
 }
 
 const inheritanceMap = new WeakMap()
+
+// Values are a copy of the parent's when they only repeat what it resolves to,
+// with functions of the same source. Each level only adds what it changes:
+function isCopyOf(values, parentValues) {
+  return (
+    isObject(values) &&
+    isObject(parentValues) &&
+    getOwnKeys(values).every(key => {
+      const value = values[key]
+      const parentValue = parentValues[key]
+      return (
+        value === parentValue ||
+        (isFunction(value) && String(value) === String(parentValue))
+      )
+    })
+  )
+}
 
 // Identify actions in hooks by their type, method and route, with hyphenated
 // parameter names and without wildcards, e.g. 'get :shopId/:format' in member

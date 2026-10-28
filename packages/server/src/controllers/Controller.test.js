@@ -42,6 +42,12 @@ describe('Controller', () => {
       expect(calls).toEqual(['wildcard'])
     })
 
+    it('runs inherited wildcard hooks once over several levels', async () => {
+      class Deep extends Middle {}
+      await createController(Deep).emitHook('after:controller:get')
+      expect(calls).toEqual(['wildcard'])
+    })
+
     it('runs inherited wildcard hooks once next to own hooks', async () => {
       await createController(Leaf).emitHook('after:controller:get')
       expect(calls.sort()).toEqual(['own', 'wildcard'])
