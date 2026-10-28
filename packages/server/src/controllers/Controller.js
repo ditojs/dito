@@ -67,9 +67,20 @@ export class Controller {
     const keys = Object.keys(Object.assign({}, hooks, ...chain))
     const events = {}
     for (const key of keys) {
-      const callbacks = chain
-        .map(hooks => (hooks.hasOwnProperty(key) ? hooks[key] : null))
-        .filter(Boolean)
+      const callbacks = []
+      let previous
+      for (const level of chain) {
+        if (level.hasOwnProperty(key) && level[key]) {
+          // Class field initializers run again for each subclass instance, so
+          // a level can hold a copy of its parent's hooks. Skip such copies by
+          // their source, except for native code such as bound functions.
+          const source = String(level[key])
+          if (source !== previous || source.includes('[native code]')) {
+            callbacks.push(level[key])
+          }
+          previous = source
+        }
+      }
       for (const part of key.split(',')) {
         // Keys can list events that other keys name too, so merge:
         const event = part.trim()
