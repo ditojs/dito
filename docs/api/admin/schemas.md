@@ -430,9 +430,11 @@ isAvailable: { type: 'switch', labels: { checked: 'yes', unchecked: 'no' } }
 
 Loaded values become `Date` objects; dates without a time are read in the
 local time zone. Strings that code writes into the data are shown as dates and
-sent unchanged. When saving, `date` values are sent as plain dates
-(`'2026-10-13'`), `datetime` and `time` values as ISO strings. Invalid dates
-and strings that aren't dates, e.g. times like `'14:30'`, fail validation.
+sent unchanged. When saving, `date` values without a time of day are sent as
+plain dates (`'2026-10-13'`), while timestamps that a `date` field displays keep
+their time and are sent as ISO strings, like `datetime` and `time` values.
+Invalid dates and strings that aren't dates, e.g. times like `'14:30'`, fail
+validation.
 
 ```js
 publishedAt: {

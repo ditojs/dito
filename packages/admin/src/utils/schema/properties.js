@@ -2,12 +2,16 @@ import {
   isFunction,
   isDate,
   isString,
-  pickBy,
-  formatPlainDate
+  pickBy
 } from '@ditojs/utils'
 import { computed, toRaw } from 'vue'
 import SchemaContext from '../../SchemaContext.js'
-import { convertToDate, convertTimeToDate, formatTime } from '../date.js'
+import {
+  convertToDate,
+  convertTimeToDate,
+  formatTime,
+  serializeDate
+} from '../date.js'
 import { createReference } from '../data.js'
 import { getStoredFiles, getUploadLimits } from '../upload.ts'
 import {
@@ -306,9 +310,7 @@ export class PropertyNode {
     if (relateKey) {
       return createReference(value, relateKey)
     } else if (isDate(value) && dateTypes.has(type)) {
-      // Send plain dates, so they can't shift to another day through time
-      // zones:
-      return type === 'date' ? formatPlainDate(value) : value.toISOString()
+      return serializeDate(value, type)
     } else if (isDate(value) && this.#get('format', entry) === 'iso-time') {
       return formatTime(value)
     } else if (type === 'asset') {

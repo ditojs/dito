@@ -1,4 +1,4 @@
-import { isString, parsePlainDate } from '@ditojs/utils'
+import { isString, parsePlainDate, formatPlainDate } from '@ditojs/utils'
 
 // Convert date strings to `Date` objects, plain dates in the local time zone.
 // Other strings stay, e.g. times like '14:30':
@@ -8,6 +8,21 @@ export function convertToDate(value) {
       ? (parsePlainDate(value) ?? new Date(value))
       : null
   return date && !isNaN(date) ? date : value
+}
+
+// Serialize dates as ISO strings. Days without a time of day in `date` types
+// are sent as plain dates, so they can't shift to another day through time
+// zones. Dates with a time keep it, also in `date` types, which only display
+// the day of timestamps:
+export function serializeDate(date, type) {
+  const isDay = (
+    type === 'date' &&
+    date.getHours() === 0 &&
+    date.getMinutes() === 0 &&
+    date.getSeconds() === 0 &&
+    date.getMilliseconds() === 0
+  )
+  return isDay ? formatPlainDate(date) : date.toISOString()
 }
 
 // Convert times like '14:30:00' to `Date` objects on the first day of 1970, in

@@ -37,13 +37,8 @@ import {
   DitoTimePicker,
   DitoDateTimePicker
 } from '@ditojs/ui/src'
-import { convertToDate } from '../utils/date.js'
-import {
-  isDate,
-  isString,
-  assignDeeply,
-  formatPlainDate
-} from '@ditojs/utils'
+import { convertToDate, serializeDate } from '../utils/date.js'
+import { isDate, isString, assignDeeply } from '@ditojs/utils'
 
 const pickerComponents = {
   date: DitoDatePicker,
@@ -107,12 +102,7 @@ defineType({
   },
 
   serializeValue({ schema, value }) {
-    // Send plain dates, so they can't shift to another day through time zones:
-    return isDate(value)
-      ? schema.type === 'date'
-        ? formatPlainDate(value)
-        : value.toISOString()
-      : value
+    return isDate(value) ? serializeDate(value, schema.type) : value
   }
 })
 

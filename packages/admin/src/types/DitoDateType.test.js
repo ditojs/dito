@@ -86,6 +86,26 @@ describe('DitoDateType', () => {
     expect(data.createdAt).toEqual(createdAt)
   })
 
+  it('keeps the time of timestamps that date fields display', async () => {
+    // Timestamp columns shown as days lose no time on saving other changes:
+    const paidAt = new Date(2026, 4, 14, 13, 23, 10, 560)
+    const { findField, submit } = await mountForm({
+      schema: {
+        fields: {
+          paidAt: { type: 'date' },
+          note: { type: 'text' }
+        }
+      },
+      data: { paidAt: paidAt.toISOString(), note: null },
+      request: ({ data }) => ({ data: clone(data) })
+    })
+    expect(findField('paidAt').find('input').element.value).toBe(
+      'May 14, 2026'
+    )
+    await enterValue(findField('note').find('input'), 'Paid by card')
+    expect(await submit()).toMatchObject({ paidAt: paidAt.toISOString() })
+  })
+
   it(`keeps strings that aren't dates, e.g. times, but rejects them`, async () => {
     const { findField, data, getErrors, submit } = await mountForm({
       schema: { fields: { opensAt: { type: 'time' } } },
