@@ -1,5 +1,5 @@
 import { toRaw } from 'vue'
-import { isArray, isPlainObject, clone } from '@ditojs/utils'
+import { isArray, isPlainObject, isDate, clone } from '@ditojs/utils'
 
 const uidsByItem = new WeakMap()
 const originalsByCopy = new WeakMap()
@@ -23,13 +23,14 @@ export function getUid(item, getItemId = null) {
 
 // Copies share the uids of their originals, e.g. drafts of nested forms, so the
 // components and stores keyed by them stay attached, and they merge back.
+// Dates are linked too, so they find the strings they were loaded from.
 export function cloneWithUids(value, options) {
   const copy = clone(value, options)
   const link = (original, copy) => {
     if (
       // Values that `options.transferables` share aren't copies...
       copy !== original &&
-      (isPlainObject(copy) || isArray(copy)) &&
+      (isPlainObject(copy) || isArray(copy) || isDate(copy)) &&
       // ...and copies that hold their ancestors are linked already:
       !originalsByCopy.has(copy)
     ) {

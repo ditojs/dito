@@ -2,15 +2,16 @@ import {
   isFunction,
   isDate,
   isString,
-  pickBy
+  pickBy,
+  formatPlainDate
 } from '@ditojs/utils'
 import { computed, toRaw } from 'vue'
 import SchemaContext from '../../SchemaContext.js'
 import {
-  convertToDate,
+  convertLoadedDate,
   convertTimeToDate,
   formatTime,
-  serializeDate
+  getLoadedString
 } from '../date.js'
 import { createReference } from '../data.js'
 import { getStoredFiles, getUploadLimits } from '../upload.ts'
@@ -233,7 +234,7 @@ export class PropertyNode {
   deserialize(value, entry) {
     const { property } = this
     if (dateTypes.has(property.type)) {
-      value = convertToDate(value)
+      value = convertLoadedDate(value)
     } else if (this.#get('format', entry) === 'iso-time') {
       // `DitoTimeField` edits times as `Date` objects too:
       value = convertTimeToDate(value)
@@ -310,7 +311,12 @@ export class PropertyNode {
     if (relateKey) {
       return createReference(value, relateKey)
     } else if (isDate(value) && dateTypes.has(type)) {
-      return serializeDate(value, type)
+      // Send unchanged dates as they were loaded, others as plain dates, so
+      // they can't shift to another day through time zones:
+      return (
+        getLoadedString(value) ??
+        (type === 'date' ? formatPlainDate(value) : value.toISOString())
+      )
     } else if (isDate(value) && this.#get('format', entry) === 'iso-time') {
       return formatTime(value)
     } else if (type === 'asset') {

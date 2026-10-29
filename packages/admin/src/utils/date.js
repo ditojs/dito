@@ -1,4 +1,5 @@
-import { isString, parsePlainDate, formatPlainDate } from '@ditojs/utils'
+import { isDate, isString, parsePlainDate } from '@ditojs/utils'
+import { getOriginal } from './uid.js'
 
 // Convert date strings to `Date` objects, plain dates in the local time zone.
 // Other strings stay, e.g. times like '14:30':
@@ -8,6 +9,30 @@ export function convertToDate(value) {
       ? (parsePlainDate(value) ?? new Date(value))
       : null
   return date && !isNaN(date) ? date : value
+}
+
+// The strings that dates were loaded from. Unchanged dates are sent back as
+// they came, so a save doesn't change dates that the user didn't edit, e.g.
+// the time of a timestamp in a date field:
+const loadedStrings = new WeakMap()
+
+export function convertLoadedDate(value) {
+  const date = convertToDate(value)
+  if (isDate(date) && isString(value)) {
+    loadedStrings.set(date, value)
+  }
+  return date
+}
+
+export function getLoadedString(date) {
+  // Drafts of nested forms hold copies of the loaded dates:
+  for (let loaded = date; loaded; loaded = getOriginal(loaded)) {
+    const string = loadedStrings.get(loaded)
+    if (string) {
+      return +loaded === +date ? string : null
+    }
+  }
+  return null
 }
 
 // Convert times like '14:30:00' to `Date` objects on the first day of 1970, in
@@ -22,18 +47,4 @@ export function formatTime(date) {
   return [date.getHours(), date.getMinutes(), date.getSeconds()]
     .map(part => `${part}`.padStart(2, '0'))
     .join(':')
-}
-
-// Send dates of date fields as plain dates, so they can't shift to another day
-// through time zones. Dates with a time, e.g. timestamps loaded into a date
-// field, keep it and are sent as ISO strings like all other dates:
-export function serializeDate(date, type) {
-  const startOfDay = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate()
-  )
-  return type === 'date' && +date === +startOfDay
-    ? formatPlainDate(date)
-    : date.toISOString()
 }

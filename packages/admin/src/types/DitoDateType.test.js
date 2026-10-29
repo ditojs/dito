@@ -1,5 +1,12 @@
 import { clone } from '@ditojs/utils'
-import { mountSchema, mountForm, enterValue } from '../test/mount.js'
+import { DOMWrapper } from '@vue/test-utils'
+import {
+  mountSchema,
+  mountForm,
+  enterValue,
+  settle,
+  isForm
+} from '../test/mount.js'
 
 describe('DitoDateType', () => {
   it('displays plain dates in the format of the locale', async () => {
@@ -86,17 +93,64 @@ describe('DitoDateType', () => {
     expect(data.createdAt).toEqual(createdAt)
   })
 
-  it('sends the time of loaded timestamps that it does not show', async () => {
-    const paidAt = new Date(2026, 9, 14, 18, 14, 36)
-    const { findField, submit } = await mountForm({
-      schema: { fields: { paidOn: { type: 'date' } } },
-      data: { paidOn: paidAt.toISOString() },
-      request: ({ data }) => ({ data: clone(data) })
+  describe('loaded dates', () => {
+    const paidAt = new Date(2026, 9, 14, 18, 14, 36).toISOString()
+
+    it('sends them back unchanged, with the time that it does not show', async () => {
+      const { findField, submit } = await mountForm({
+        schema: { fields: { paidOn: { type: 'date' } } },
+        data: { paidOn: paidAt },
+        request: ({ data }) => ({ data: clone(data) })
+      })
+      expect(findField('paidOn').find('input').element.value).toBe(
+        'October 14, 2026'
+      )
+      expect(await submit()).toMatchObject({ paidOn: paidAt })
     })
-    expect(findField('paidOn').find('input').element.value).toBe(
-      'October 14, 2026'
-    )
-    expect(await submit()).toMatchObject({ paidOn: paidAt.toISOString() })
+
+    it('sends them as plain dates once the user edits them', async () => {
+      const { findField, submit } = await mountForm({
+        schema: { fields: { paidOn: { type: 'date' } } },
+        data: { paidOn: paidAt },
+        request: ({ data }) => ({ data: clone(data) })
+      })
+      await enterValue(findField('paidOn').find('input'), 'May 14, 2026')
+      expect(await submit()).toMatchObject({ paidOn: '2026-05-14' })
+    })
+
+    it('sends them back unchanged from the drafts of nested forms', async () => {
+      const { admin, data, submit } = await mountForm({
+        schema: {
+          fields: {
+            payments: {
+              type: 'list',
+              editable: true,
+              form: {
+                type: 'form',
+                fields: {
+                  note: { type: 'text' },
+                  paidOn: { type: 'date' }
+                }
+              }
+            }
+          }
+        },
+        data: { payments: [{ id: 1, note: '', paidOn: paidAt }] },
+        request: ({ data }) => ({ data: clone(data) })
+      })
+      await admin.navigate('/items/1/payments/0')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      await enterValue(new DOMWrapper(form.$el).find('input'), 'Wire')
+      await new DOMWrapper(form.$el)
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle(form)
+      expect(data.payments[0].note).toBe('Wire')
+      expect(await submit()).toMatchObject({
+        payments: [{ note: 'Wire', paidOn: paidAt }]
+      })
+    })
   })
 
   it(`keeps strings that aren't dates, e.g. times, but rejects them`, async () => {
