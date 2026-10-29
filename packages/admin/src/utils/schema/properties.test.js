@@ -1115,6 +1115,20 @@ describe('written properties', () => {
       expect(serialize(properties, data)).toEqual({ tags: 'a,b' })
     })
 
+    it('sends unchanged values as they were loaded', () => {
+      const properties = {
+        tags: {
+          type: 'string',
+          deserializeValue: ({ value }) => value.split(','),
+          serializeValue: ({ value }) => value.join(', ')
+        }
+      }
+      const data = deserializeData(createForm(properties), { tags: 'a,b' })
+      expect(serialize(properties, data)).toEqual({ tags: 'a,b' })
+      data.tags.push('c')
+      expect(serialize(properties, data)).toEqual({ tags: 'a, b, c' })
+    })
+
     it('leaves out excluded and computed values', () => {
       const properties = {
         name: { type: 'string' },

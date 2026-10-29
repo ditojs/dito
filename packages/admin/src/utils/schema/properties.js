@@ -1,19 +1,18 @@
 import {
   isFunction,
   isDate,
+  isObject,
   isString,
   pickBy,
+  clone,
+  equals,
   formatPlainDate
 } from '@ditojs/utils'
 import { computed, toRaw } from 'vue'
 import SchemaContext from '../../SchemaContext.js'
-import {
-  convertLoadedDate,
-  convertTimeToDate,
-  formatTime,
-  getLoadedString
-} from '../date.js'
+import { convertToDate, convertTimeToDate, formatTime } from '../date.js'
 import { createReference } from '../data.js'
+import { getOriginal } from '../uid.js'
 import { getStoredFiles, getUploadLimits } from '../upload.ts'
 import {
   getTypeDescriptor,
@@ -233,25 +232,33 @@ export class PropertyNode {
 
   deserialize(value, entry) {
     const { property } = this
+    const loadedValue = value
     if (dateTypes.has(property.type)) {
-      value = convertLoadedDate(value)
+      value = convertToDate(value)
     } else if (this.#get('format', entry) === 'iso-time') {
       // `DitoTimeField` edits times as `Date` objects too:
       value = convertTimeToDate(value)
     }
-    return this.#callValueHooks('deserializeValue', value, entry)
+    value = this.#callValueHooks('deserializeValue', value, entry)
+    if (value !== loadedValue && !isObject(loadedValue)) {
+      setLoadedValue(entry, loadedValue, value)
+    }
+    return value
   }
 
   // Excluded values aren't sent, and `exclude()` sees the serialized value:
   serialize(value, entry) {
-    value = this.#callValueHooks(
+    const serializedValue = this.#callValueHooks(
       'serializeValue',
       this.#convertValue(value, entry),
       entry
     )
-    return value === undefined || this.isExcluded(entry, { value })
+    return (
+      serializedValue === undefined ||
+      this.isExcluded(entry, { value: serializedValue })
+    )
       ? undefined
-      : value
+      : (getLoadedValue(entry, value) ?? serializedValue)
   }
 
   // Computed properties are stored by the server, which doesn't accept them:
@@ -311,12 +318,9 @@ export class PropertyNode {
     if (relateKey) {
       return createReference(value, relateKey)
     } else if (isDate(value) && dateTypes.has(type)) {
-      // Send unchanged dates as they were loaded, others as plain dates, so
-      // they can't shift to another day through time zones:
-      return (
-        getLoadedString(value) ??
-        (type === 'date' ? formatPlainDate(value) : value.toISOString())
-      )
+      // Send plain dates, so they can't shift to another day through time
+      // zones:
+      return type === 'date' ? formatPlainDate(value) : value.toISOString()
     } else if (isDate(value) && this.#get('format', entry) === 'iso-time') {
       return formatTime(value)
     } else if (type === 'asset') {
@@ -762,6 +766,34 @@ function getCachedNode(schema, name, createNode) {
     nodesByName.set(name, node)
   }
   return node.value
+}
+
+// The values that deserializing converted, with the values they were loaded
+// as, by item and name. Unchanged values are sent as they were loaded, so a
+// save doesn't change values that the user didn't edit, e.g. the time of a
+// timestamp in a date field:
+const loadedValuesByItem = new WeakMap()
+
+function setLoadedValue({ data, name }, loadedValue, value) {
+  const item = toRaw(data)
+  let values = loadedValuesByItem.get(item)
+  if (!values) {
+    values = new Map()
+    loadedValuesByItem.set(item, values)
+  }
+  // Copy the value, so edits of it in place count as changes:
+  values.set(name, { loadedValue, value: clone(value) })
+}
+
+function getLoadedValue({ data, name }, value) {
+  // Drafts of nested forms are linked to the items that they copy:
+  for (let item = toRaw(data); item; item = getOriginal(item)) {
+    const loaded = loadedValuesByItem.get(item)?.get(name)
+    if (loaded) {
+      return equals(loaded.value, value) ? loaded.loadedValue : undefined
+    }
+  }
+  return undefined
 }
 
 // The contexts of the value, also of the hooks that convert it:
