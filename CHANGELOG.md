@@ -3,6 +3,16 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 6.6.0 (2026-10-30)
+
+### Deprecations
+
+- **server:** `hooks` instance fields of controllers are deprecated in favour of `static hooks`. They keep working and log a deprecation warning.
+
+### New
+
+- **server:** Controllers take `static hooks`, which run once per class that declares them, base classes first. See [Hooks](docs/api/server/controllers.md#hooks).
+
 ## 6.5.0 (2026-10-28)
 
 ### Behaviour changes
