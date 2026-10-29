@@ -31,6 +31,7 @@ import {
   asArray,
   equals,
   hyphenate,
+  deprecate,
   parseDataPath,
   normalizeDataPath
 } from '@ditojs/utils'
@@ -59,12 +60,21 @@ export class Controller {
   // which sets up the actions and routes, and the custom `async initialize()`.
   // @overridable
   configure() {
-    const hooks = this.inheritValues('hooks')
-    // Collect callbacks from the full inheritance chain of the hooks, so that
-    // the callbacks from base classes are also run. And reverse the chain so
-    // that the base class callbacks are run first.
-    const chain = getInheritanceChain(hooks).reverse()
-    const keys = Object.keys(Object.assign({}, hooks, ...chain))
+    if (this.hooks) {
+      deprecate(
+        'Controller `hooks` fields are deprecated, use `static hooks` instead.'
+      )
+    }
+    // Collect the static hooks of all classes that declare them, then the
+    // inheritance chain of the deprecated `hooks` fields and relation objects,
+    // reversed so that the callbacks from base classes are run first.
+    const chain = [
+      ...getInheritanceChain(this.inheritValues('hooks')),
+      ...getInheritanceChain(this.constructor)
+        .filter(controllerClass => Object.hasOwn(controllerClass, 'hooks'))
+        .map(controllerClass => controllerClass.hooks)
+    ].reverse()
+    const keys = Object.keys(Object.assign({}, ...chain))
     const events = {}
     for (const key of keys) {
       const callbacks = chain

@@ -16,6 +16,7 @@ import type {
   ModelControllerActions,
   ModelControllerMemberActions,
   ModelControllerHooks,
+  ControllerHooks,
   ControllerAction,
   ControllerActionHandler,
   ControllerActions,
@@ -30,6 +31,19 @@ import type {
 import type { Transaction } from 'objection'
 
 describe('Controller', () => {
+  it('static hooks have this typed to the annotated subclass', () => {
+    class Shop extends Controller {
+      static override hooks: ControllerHooks<Shop> = {
+        'before:actions:get-orders, before:actions:get-invoices'(ctx) {
+          expectTypeOf(this).toEqualTypeOf<Shop>()
+          expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+        },
+        'after:actions:*': [(ctx, result) => result]
+      }
+    }
+    expectTypeOf(Shop.hooks).toEqualTypeOf<ControllerHooks<Shop>>()
+  })
+
   it('getMember accepts ctx and returns Promise<Model | null>', () => {
     const ctrl = {} as Controller
     expectTypeOf(ctrl.getMember({} as KoaContext)).toEqualTypeOf<
@@ -402,6 +416,39 @@ describe('ModelController', () => {
     }
   })
 
+  it('static hooks have this typed to the annotated subclass', () => {
+    class Tasks extends ModelController<Model> {
+      customMethod() {}
+
+      static override hooks: ModelControllerHooks<Tasks> = {
+        'before:collection:get'(ctx, params) {
+          expectTypeOf(this).toEqualTypeOf<Tasks>()
+          expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+          expectTypeOf(params).toEqualTypeOf<Record<string, any> | undefined>()
+        },
+        'after:member:get'(ctx, item) {
+          expectTypeOf(item).toMatchTypeOf<Model>()
+        },
+        'after:*:delete'(ctx, result) {
+          expectTypeOf(result).toMatchTypeOf<{ count: number }>()
+        },
+        'after:collection:get-stats'(ctx, result) {
+          expectTypeOf(result).toBeAny()
+          return { modified: true }
+        }
+      }
+    }
+    expectTypeOf(Tasks.hooks!['before:collection:get']).returns.toBeVoid()
+    Tasks.hooks = {
+      // @ts-expect-error after: hooks only accept two arguments
+      'after:member:patch'(ctx, item, extra) {}
+    }
+    Tasks.hooks = {
+      // @ts-expect-error bare action name is not a valid hook key
+      get() {}
+    }
+  })
+
   it('rejects bare action names', () => {
     type MC = ModelController<Model>
     const collection: ModelControllerActions<MC> = {
@@ -570,7 +617,7 @@ describe('Controller settings', () => {
 
   it('accepts hooks and assets on all controllers', () => {
     class Imports extends Controller {
-      override hooks = {
+      static override hooks = {
         'before:actions:post-import'() {},
         'after:actions:post-import,after:actions:post-export': [
           (ctx: KoaContext, result: unknown) => result

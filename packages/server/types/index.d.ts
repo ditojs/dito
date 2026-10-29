@@ -2417,6 +2417,15 @@ export type ControllerAction<
   | ControllerActionHandler<$Controller, $Params>
 
 export class Controller {
+  /**
+   * Hooks that run before or after actions, by keys like
+   * `'before:actions:post-import'`. Keys can list several hooks separated by
+   * commas, and values can be arrays of handlers. They run once per class that
+   * declares them, base classes first. Annotate them with the controller class
+   * to type `this`: `static override hooks: ControllerHooks<MyController>`.
+   */
+  static hooks?: ControllerHooks<any>
+
   app: Application
   /**
    * Optionally provide the controller path. A default is
@@ -2467,11 +2476,7 @@ export class Controller {
    * controllers to use the model's asset definitions.
    */
   assets?: boolean | ControllerAssets<this>
-  /**
-   * Hooks that run before or after actions, by keys like
-   * `'before:actions:post-import'`. Keys can list several hooks separated by
-   * commas, and values can be arrays of handlers.
-   */
+  /** @deprecated Use `static hooks` instead. */
   hooks?: ControllerHooks<this>
 
   /** Returns the logger, optionally scoped to a context. */
@@ -3265,29 +3270,6 @@ export class ModelController<
   $Model extends Model = Model
 > extends CollectionController<$Model> {
   /**
-   * The model class this controller represents. If not
-   * provided, `resolveModelClass()` looks it up.
-   */
-  modelClass?: Class<$Model>
-  /**
-   * Resolves the model class when no `modelClass` is provided, by looking up
-   * the singularized controller name in the models registered with the
-   * application, see `Application.getModel()`. Override it to customize the
-   * lookup.
-   */
-  resolveModelClass(): Class<$Model> | null
-  /**
-   * The controller's collection actions. Wrap actions in
-   * this object to assign them to the collection.
-   */
-  collection?: ModelControllerActions<this>
-  /**
-   * The controller's member actions. Wrap actions in this
-   * object to assign them to the member.
-   */
-  member?: ModelControllerMemberActions<this>
-
-  /**
    * Lifecycle hooks that run before or after controller
    * actions. Keys follow the pattern
    * `'{before|after|*}:{collection|member|*}:{action|*}'`, with
@@ -3297,7 +3279,7 @@ export class ModelController<
    *
    * @example
    * ```ts
-   * override hooks: ModelControllerHooks<MyController> = {
+   * static override hooks: ModelControllerHooks<MyController> = {
    *   // Guard: prevent patching locked records
    *   'before:member:patch'(ctx) {
    *     if (ctx.request.body.locked) {
@@ -3338,6 +3320,32 @@ export class ModelController<
    * @see {@link ModelControllerMemberActions}
    * @see {@link QueryParameterOptions} for pagination parameters
    */
+  static override hooks?: ModelControllerHooks<any>
+
+  /**
+   * The model class this controller represents. If not
+   * provided, `resolveModelClass()` looks it up.
+   */
+  modelClass?: Class<$Model>
+  /**
+   * Resolves the model class when no `modelClass` is provided, by looking up
+   * the singularized controller name in the models registered with the
+   * application, see `Application.getModel()`. Override it to customize the
+   * lookup.
+   */
+  resolveModelClass(): Class<$Model> | null
+  /**
+   * The controller's collection actions. Wrap actions in
+   * this object to assign them to the collection.
+   */
+  collection?: ModelControllerActions<this>
+  /**
+   * The controller's member actions. Wrap actions in this
+   * object to assign them to the member.
+   */
+  member?: ModelControllerMemberActions<this>
+
+  /** @deprecated Use `static hooks` instead. */
   hooks?: ModelControllerHooks<this>
   /**
    * The relations to expose as nested routes, by relation name. After setup,
