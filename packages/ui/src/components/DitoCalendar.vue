@@ -75,7 +75,7 @@
             type="button"
             :aria-label="`Select today (${dateToString(new Date())})`"
             :title="dateToString(new Date())"
-            @click="selectDate(new Date())"
+            @click="selectDay(new Date())"
           )
       template(
         v-else-if="currentMode === 'month'"

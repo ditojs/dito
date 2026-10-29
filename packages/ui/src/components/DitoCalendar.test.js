@@ -88,6 +88,15 @@ describe('DitoCalendar', () => {
     expect(wrapper.emitted('select')).toHaveLength(1)
   })
 
+  it('selects today like its day, keeping the time', async () => {
+    wrapper = mountCalendar()
+    await wrapper.find('.dito-calendar-select-now').trigger('click')
+    const [date] = getEmittedDates(wrapper)
+    expect(isSameDay(date, new Date())).toBe(true)
+    expect([date.getHours(), date.getMinutes()]).toEqual([14, 30])
+    expect(wrapper.emitted('select')).toHaveLength(1)
+  })
+
   it('selects a day without a time after the value is cleared', async () => {
     wrapper = mountCalendar()
     await wrapper.setProps({ modelValue: null })
