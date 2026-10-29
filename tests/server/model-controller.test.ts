@@ -149,7 +149,7 @@ class LibraryController extends ModelController<any> {
 class Books extends ModelController<any> {
   override modelClass = Book
 
-  override hooks: any = {
+  static override hooks: any = {
     'before:collection:post'(ctx: any) {
       hookEvents.push(`before post ${ctx.request.body.title}`)
     },
@@ -472,6 +472,11 @@ class Authors extends ModelController<any> {
       },
       member: {
         allow: ['get', 'patch', 'delete']
+      },
+      hooks: {
+        'after:collection:get'(this: any, ctx: any, books: any) {
+          hookEvents.push(`after ${this.name} get ${books.length}`)
+        }
       }
     },
     notes: {
@@ -599,6 +604,8 @@ describe('ModelController', () => {
   })
 
   let url: string
+  // The warnings that setting up the controllers logs, e.g. deprecations:
+  let warnings: unknown[]
 
   const request = async (
     path: string,
@@ -637,7 +644,11 @@ describe('ModelController', () => {
       table.integer('tagId')
       table.integer('sortOrder')
     })
+    // `deprecate()` logs through `console.warn()`, observe it:
+    const warn = vi.spyOn(console, 'warn')
     await app.start()
+    warnings = warn.mock.calls.flat()
+    warn.mockRestore()
     url = getAppUrl(app)
   })
 
@@ -1234,6 +1245,14 @@ describe('ModelController', () => {
       const response = await request(`/authors/${author.id}/books`)
       expect(response.status).toBe(200)
       expect(response.data.map((book: any) => book.title)).toEqual(['Atlas'])
+    })
+
+    it('runs the hooks of relation objects, without a warning', async () => {
+      const author = await Author.query().insert({ name: 'Ada' })
+      await Book.query().insert({ title: 'Atlas', authorId: author.id })
+      await request(`/authors/${author.id}/books`)
+      expect(hookEvents).toEqual(['after books get 1'])
+      expect(warnings).not.toContainEqual(expect.stringContaining('deprecated'))
     })
 
     it('responds with 404 for relations of missing members', async () => {

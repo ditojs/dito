@@ -33,7 +33,7 @@ class Ingredient extends Model {
 const events: string[] = []
 
 class PantryController extends Controller {
-  hooks: any = {
+  static override hooks: any = {
     'before:actions:*'(ctx: any) {
       events.push(`base before ${ctx.action.name}`)
     },
@@ -55,7 +55,7 @@ class PantryController extends Controller {
 }
 
 class Pantry extends PantryController {
-  override hooks: any = {
+  static override hooks: any = {
     'after:actions:get-stock'(ctx: any, result: any) {
       events.push('sub after')
       return { ...result, checkedBy: `${result.checkedBy} and sub` }

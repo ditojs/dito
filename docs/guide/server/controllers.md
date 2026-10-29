@@ -435,7 +435,7 @@ Authentication itself, i.e. who the user is, comes from the session, see
 
 ## Hooks
 
-`hooks` runs code before and after actions. Keys are
+`static hooks` runs code before and after actions. Keys are
 `'before:<type>:<action>'` and `'after:<type>:<action>'`, where `<type>` is
 `collection` or `member` in model controllers and `actions` in plain
 controllers. Relations take `hooks` in their relation object, with the type
@@ -445,7 +445,7 @@ controllers. Relations take `hooks` in their relation object, with the type
 export class Notes extends ModelController {
   modelClass = Note
 
-  hooks = {
+  static hooks = {
     'before:collection:post'(ctx) {
       ctx.request.body.userId = ctx.state.user.id
     },
@@ -507,7 +507,7 @@ export class CatalogController extends ModelController {
   collection = { allow: ['get', 'post'] }
   member = { allow: ['get', 'patch', 'delete'] }
 
-  hooks = {
+  static hooks = {
     'after:member:patch'(ctx, model) {
       this.logger.info(`${ctx.state.user.username} changed ${model.id}`)
     }

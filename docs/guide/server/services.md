@@ -127,7 +127,7 @@ application:
 export class Orders extends ModelController {
   modelClass = Order
 
-  hooks = {
+  static hooks = {
     async 'after:collection:post'(ctx, order) {
       const customer = await order.$customer.query().first()
       await this.app.services.mail.sendOrderConfirmation(order, customer)

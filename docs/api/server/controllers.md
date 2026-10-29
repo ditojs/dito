@@ -216,7 +216,7 @@ examples.
 ## Hooks
 
 ```js
-hooks = {
+static hooks = {
   'before:member:patch'(ctx) { … },
   'after:collection:get'(ctx, result) { … },
   'after:*:delete'(ctx, { count }) { … },
@@ -246,9 +246,10 @@ of one of them.
 - `after:` hooks receive `(ctx, result)`. A returned value other than
   `undefined` replaces the result.
 
-Hooks run with the controller as `this`, in sequence, base class hooks first.
-`hooks` objects inherit from the ones of base classes, and relation objects
-accept their own `hooks`. The `before` and `after` options of an action run
+Hooks run with the controller as `this`, in sequence: the `static hooks` of
+each class that declares them once, base classes first, then the `hooks` of
+relation objects. `hooks` instance fields still work, but are deprecated: use
+`static hooks` instead. The `before` and `after` options of an action run
 after the controller's hooks of the action, with the same arguments:
 
 ```js
@@ -282,7 +283,7 @@ The base class of all controllers, for plain [actions](#actions), see
 | `url`           | `string`                            | The resolved route, `/<namespace>/<path>`. Set by `configure()`.                                                                           |
 | `actions`       | `object`                            | The actions, see [Actions](#actions).                                                                                                      |
 | `assets`        | `object`                            | Asset upload routes, see [Assets](#assets).                                                                                                |
-| `hooks`         | `object`                            | Hooks by key, see [Hooks](#hooks).                                                                                                         |
+| `hooks`         | `object`                            | Deprecated, see [Hooks](#hooks).                                                                                                           |
 | `authorize`     | [`ControllerAuthorize`](#authorize) | Fallback authorization of all actions and uploads, or by action name.                                                                      |
 | `transacted`    | `boolean`                           | Default `transacted` for all actions.                                                                                                      |
 | `isInitialized` | `boolean`                           | Whether `setupControllers()` set the controller up.                                                                                        |

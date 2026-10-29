@@ -4,7 +4,7 @@ import { createTestApp, getAppUrl } from '../utils/app.js'
 const events: string[] = []
 
 class ShopController extends Controller {
-  hooks: any = {
+  static override hooks: any = {
     'before:*:*'(ctx: any) {
       events.push(`before:*:* ${ctx.action.name}`)
     },
@@ -34,7 +34,7 @@ class ShopController extends Controller {
 }
 
 class Shop extends ShopController {
-  override hooks: any = {
+  static override hooks: any = {
     'after:actions:get-isbn-price'(ctx: any, result: any) {
       events.push('sub after')
       return { ...result, checkedBy: `${result.checkedBy} and sub` }
