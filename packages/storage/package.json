@@ -1,7 +1,6 @@
 {
   "name": "@ditojs/storage",
   "version": "7.0.0-next.0",
-  "private": true,
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
@@ -46,5 +45,29 @@
     "@ditojs/server-next": {
       "optional": true
     }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ditojs/dito.git",
+    "directory": "packages/storage"
   }
 }

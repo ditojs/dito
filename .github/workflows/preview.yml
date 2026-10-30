@@ -1,0 +1,32 @@
+name: Preview
+
+# Publishes preview builds of the next server's packages to pkg.pr.new on each
+# push to the branch, without npm versions. An app installs them by URL, such
+# as `https://pkg.pr.new/ditojs/dito/@ditojs/server-next@<commit>`, or
+# `@feature/server-next` for the branch's latest build. It needs the
+# pkg.pr.new GitHub app on the repository.
+on:
+  push:
+    branches: [feature/server-next]
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: >-
+          pnpm --filter ./packages/server-next --filter ./packages/objection
+          --filter ./packages/storage --filter ./packages/auth run build
+      - run: >-
+          pnpm exec pkg-pr-new publish --pnpm --comment=off
+          ./packages/server-next ./packages/objection ./packages/storage
+          ./packages/auth

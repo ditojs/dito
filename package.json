@@ -81,6 +81,7 @@
     "lint-staged": "^17.6.0",
     "objection": "^4.4.1",
     "pg": "^8.23.1",
+    "pkg-pr-new": "^0.0.92",
     "prettier": "~3.9.9",
     "prettier-plugin-penere": "^0.4.0",
     "stylelint": "^17.16.0",
