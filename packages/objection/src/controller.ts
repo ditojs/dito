@@ -204,9 +204,13 @@ function getAllowed(
 function getFilteredQuery(c: DitoContext) {
   const query: QueryValues = {}
   const filters: string[] = []
+  // The action's own query parameters aren't for `find()`, as in Dito 6.
+  const own = (c.req.valid('query' as never) ?? {}) as Record<string, unknown>
   for (const [key, values] of Object.entries(c.req.queries())) {
     const [, name] = key.match(/^filter\[(\w+)\]$/) ?? []
-    if (name) {
+    if (key in own) {
+      continue
+    } else if (name) {
       for (const value of values) {
         filters.push(`${name}:${value ? JSON.stringify(value) : ''}`)
       }

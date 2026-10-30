@@ -5,7 +5,9 @@ import {
   ResponseError,
   type ModelProperties
 } from '@ditojs/server'
+import { z } from 'zod'
 import {
+  action,
   createApp,
   ProblemError,
   problemResponse,
@@ -240,6 +242,25 @@ describe('collection get', () => {
       headers: { 'x-name': 'Bea' }
     })
     expect(await response.json()).toMatchObject([{ id: 2, name: 'Bea' }])
+  })
+
+  it('leaves the query parameters of the action out of `find()`', async () => {
+    const app = setup(
+      defineController({
+        path: 'authors',
+        model: Author,
+        collection: {
+          allow: ['get'],
+          get: action({
+            query: z.object({ preload: z.string().optional() }),
+            handler: (c, next) => next()
+          })
+        }
+      })
+    )
+    const response = await app.request('/api/authors?preload=x&order=id')
+    expect(response.status).toBe(200)
+    expect(await response.json()).toHaveLength(3)
   })
 })
 
