@@ -1,0 +1,66 @@
+{
+  "name": "@ditojs/admin-server",
+  "version": "7.0.0-next.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@ditojs/utils": "workspace:^"
+  },
+  "devDependencies": {
+    "@ditojs/build": "workspace:^",
+    "@hono/node-server": "^2.1.5",
+    "@types/node": "^26.6.4",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "hono": "^4.13.14",
+    "vite": "^8.3.4"
+  },
+  "peerDependencies": {
+    "@ditojs/build": "workspace:^",
+    "@hono/node-server": "^2.1.5",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "hono": "^4.13.14",
+    "vite": "^8.3.4"
+  },
+  "peerDependenciesMeta": {
+    "@ditojs/build": {
+      "optional": true
+    },
+    "@hono/node-server": {
+      "optional": true
+    },
+    "@vitejs/plugin-vue": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ditojs/dito.git",
+    "directory": "packages/admin-server"
+  }
+}

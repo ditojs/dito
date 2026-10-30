@@ -477,6 +477,31 @@ importers:
         specifier: ^3.2.2
         version: 3.2.2(vue@3.5.43(typescript@6.0.3))
 
+  packages/admin-server:
+    dependencies:
+      '@ditojs/utils':
+        specifier: workspace:^
+        version: link:../utils
+    devDependencies:
+      '@ditojs/build':
+        specifier: workspace:^
+        version: link:../build
+      '@hono/node-server':
+        specifier: ^2.1.5
+        version: 2.1.5(hono@4.13.14)
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+      '@vitejs/plugin-vue':
+        specifier: ^6.0.9
+        version: 6.0.9(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))(vue@3.5.43(typescript@6.0.3))
+      hono:
+        specifier: ^4.13.14
+        version: 4.13.14
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1)
+
   packages/auth:
     dependencies:
       '@ditojs/utils':
@@ -1135,6 +1160,12 @@ packages:
 
   '@hexagon/base64@1.1.28':
     resolution: {integrity: sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==}
+
+  '@hono/node-server@2.1.5':
+    resolution: {integrity: sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4 || ^5.0.0-0
 
   '@hono/standard-validator@0.4.1':
     resolution: {integrity: sha512-Q0+1dgMKAXEvsmJ5FNoamwnfrf/I5JNnKn7WzfynH8nJlNe1lNOW1+vlKpEQZbrBLEgmxIeys6HjRotDvZzq+A==}
@@ -6532,6 +6563,10 @@ snapshots:
   '@hapi/bourne@3.0.0': {}
 
   '@hexagon/base64@1.1.28': {}
+
+  '@hono/node-server@2.1.5(hono@4.13.14)':
+    dependencies:
+      hono: 4.13.14
 
   '@hono/standard-validator@0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.14)':
     dependencies:
