@@ -593,6 +593,40 @@ importers:
         specifier: ^3.5.43
         version: 3.5.43(typescript@6.0.3)
 
+  packages/mikro:
+    dependencies:
+      '@ditojs/utils':
+        specifier: workspace:^
+        version: link:../utils
+    devDependencies:
+      '@ditojs/server-next':
+        specifier: workspace:^
+        version: link:../server-next
+      '@ditojs/storage':
+        specifier: workspace:^
+        version: link:../storage
+      '@mikro-orm/core':
+        specifier: ^7.2.5
+        version: 7.2.5
+      '@mikro-orm/postgresql':
+        specifier: ^7.2.5
+        version: 7.2.5(@mikro-orm/core@7.2.5)
+      '@mikro-orm/sql':
+        specifier: ^7.2.5
+        version: 7.2.5(@mikro-orm/core@7.2.5)
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+      hono:
+        specifier: ^4.13.14
+        version: 4.13.14
+      kysely:
+        specifier: ^0.29.7
+        version: 0.29.7
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+
   packages/objection:
     dependencies:
       '@ditojs/utils':
@@ -1403,6 +1437,27 @@ packages:
 
   '@levischuck/tiny-cbor@0.2.11':
     resolution: {integrity: sha512-llBRm4dT4Z89aRsm6u2oEZ8tfwL/2l6BwpZ7JcyieouniDECM5AqNgr/y08zalEIvW3RSK4upYyybDcmjXqAow==}
+
+  '@mikro-orm/core@7.2.5':
+    resolution: {integrity: sha512-YF2q2Druxw4PQf/DoN1jZgYZdWfgQUWZWEapXIs0Oc/mC5HvD21nVncruDz2qMitmihro1oPhb9gI4LR5u8BEw==}
+    engines: {node: '>= 22.17.0'}
+    peerDependencies:
+      dataloader: 2.2.3
+    peerDependenciesMeta:
+      dataloader:
+        optional: true
+
+  '@mikro-orm/postgresql@7.2.5':
+    resolution: {integrity: sha512-2mDdd3DBQLxtLIyzkNahwxeZdDeSbQjwnp26JRnElXkq6u/X5AUwBagbrf/iu9m3a83GvkP6xxOnGL4bPeAJNA==}
+    engines: {node: '>= 22.17.0'}
+    peerDependencies:
+      '@mikro-orm/core': 7.2.5
+
+  '@mikro-orm/sql@7.2.5':
+    resolution: {integrity: sha512-sXctGMJ/QKeugdX3xKltKXVeHavkuGuo/LhH0In1htw+uylAXjyzxzsO8rTb/sS+Ay3tZaaB/Y2eK5dCl4ZAVw==}
+    engines: {node: '>= 22.17.0'}
+    peerDependencies:
+      '@mikro-orm/core': 7.2.5
 
   '@napi-rs/wasm-runtime@0.2.4':
     resolution: {integrity: sha512-9zESzOO5aDByvhIAsOy9TbpZ0Ur2AJbUI7UT73kcUTS2mxAMHOBaa1st/jAymNoCtvrit99kkzT1FZuXVcgfIQ==}
@@ -4350,6 +4405,10 @@ packages:
       knex: '>= 3.0.0 < 4'
       kysely: '>= 0.24.0 < 1'
 
+  kysely@0.29.6:
+    resolution: {integrity: sha512-hHaB8C/rfzDDtr/t8YZwxAuPJTT0zHyaPoVzcXwDYhYNAgH/4sIfVhi/XLLIY+bL/FqaIJnjATDbi8ObSELmxg==}
+    engines: {node: '>=22.0.0'}
+
   kysely@0.29.7:
     resolution: {integrity: sha512-fmIq+7kv4WbFm2tcfznRzikqB4cuNpgZ40PSU2fAJ2/OO5XhojqnTPrmgrCjYSRJVwBln03XcRXJGnw9H099IQ==}
     engines: {node: '>=22.0.0'}
@@ -5006,6 +5065,11 @@ packages:
   pg-connection-string@2.6.2:
     resolution: {integrity: sha512-ch6OwaeaPYcova4kKZ15sbJ2hKb/VP48ZD2gE7i1J+L4MspCtBMAx8nMgz7bksc7IojCIIWuEhHibSMFH8m8oA==}
 
+  pg-cursor@2.22.1:
+    resolution: {integrity: sha512-X10ldv3wwBONQkOSwgWEbaEITMGLd92V2Zd+xsFPhDt3nhhU3hpAT08SERBChnIFmomczLax6lKXLJrHPPXfxA==}
+    peerDependencies:
+      pg: ^8
+
   pg-int8@1.0.1:
     resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
     engines: {node: '>=4.0.0'}
@@ -5130,6 +5194,10 @@ packages:
     resolution: {integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==}
     engines: {node: '>=4'}
 
+  postgres-array@3.0.4:
+    resolution: {integrity: sha512-nAUSGfSDGOaOAEGwqsRY27GPOea7CNipJPOA7lPbdEpx5Kg3qzdP0AaWC5MlhTWV9s4hFX39nomVZ+C4tnGOJQ==}
+    engines: {node: '>=12'}
+
   postgres-bytea@1.0.1:
     resolution: {integrity: sha512-5+5HqXnsZPE65IJZSMkZtURARZelel2oXUEO8rH83VS/hxH5vv1uHquPg5wZs8yMAfdv971IU+kcPUczi7NVBQ==}
     engines: {node: '>=0.10.0'}
@@ -5138,9 +5206,17 @@ packages:
     resolution: {integrity: sha512-suDmjLVQg78nMK2UZ454hAG+OAW+HQPZ6n++TNDUX+L0+uUlLywnoxJKDou51Zm+zTCjrCl0Nq6J9C5hP9vK/Q==}
     engines: {node: '>=0.10.0'}
 
+  postgres-date@2.1.0:
+    resolution: {integrity: sha512-K7Juri8gtgXVcDfZttFKVmhglp7epKb1K4pgrkLxehjqkrgPhfG6OO8LHLkfaqkbpjNRnra018XwAr1yQFWGcA==}
+    engines: {node: '>=12'}
+
   postgres-interval@1.2.0:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
+
+  postgres-interval@4.1.0:
+    resolution: {integrity: sha512-nJLACcOHi2iyRuMJeW6CuIA0Dc0i1YEpRr26XDyHAfxPjYUJOFxwZjmOc5oFFctTTh/OlRAMlnlXEJvr170fJg==}
+    engines: {node: '>=12'}
 
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
@@ -6788,6 +6864,26 @@ snapshots:
       vue: 3.5.43(typescript@6.0.3)
 
   '@levischuck/tiny-cbor@0.2.11': {}
+
+  '@mikro-orm/core@7.2.5': {}
+
+  '@mikro-orm/postgresql@7.2.5(@mikro-orm/core@7.2.5)':
+    dependencies:
+      '@mikro-orm/core': 7.2.5
+      '@mikro-orm/sql': 7.2.5(@mikro-orm/core@7.2.5)
+      kysely: 0.29.6
+      pg: 8.23.1
+      pg-cursor: 2.22.1(pg@8.23.1)
+      postgres-array: 3.0.4
+      postgres-date: 2.1.0
+      postgres-interval: 4.1.0
+    transitivePeerDependencies:
+      - pg-native
+
+  '@mikro-orm/sql@7.2.5(@mikro-orm/core@7.2.5)':
+    dependencies:
+      '@mikro-orm/core': 7.2.5
+      kysely: 0.29.6
 
   '@napi-rs/wasm-runtime@0.2.4':
     dependencies:
@@ -9874,6 +9970,8 @@ snapshots:
       knex: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0)
       kysely: 0.29.7
 
+  kysely@0.29.6: {}
+
   kysely@0.29.7: {}
 
   lean-qr@2.7.4: {}
@@ -10739,6 +10837,10 @@ snapshots:
 
   pg-connection-string@2.6.2: {}
 
+  pg-cursor@2.22.1(pg@8.23.1):
+    dependencies:
+      pg: 8.23.1
+
   pg-int8@1.0.1: {}
 
   pg-pool@3.14.0(pg@8.23.1):
@@ -10873,13 +10975,19 @@ snapshots:
 
   postgres-array@2.0.0: {}
 
+  postgres-array@3.0.4: {}
+
   postgres-bytea@1.0.1: {}
 
   postgres-date@1.0.7: {}
 
+  postgres-date@2.1.0: {}
+
   postgres-interval@1.2.0:
     dependencies:
       xtend: 4.0.2
+
+  postgres-interval@4.1.0: {}
 
   prelude-ls@1.2.1: {}
 
