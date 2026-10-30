@@ -3437,6 +3437,27 @@ export type ValidatorOptions = {
   verbose?: boolean
 }
 
+// Validates and coerces the parameters of actions and filters.
+export class ParameterValidator {
+  constructor(
+    app: Application,
+    parameters:
+      | Record<string, Schema>
+      | Array<{ name?: string } & Schema>,
+    options?: Record<string, any>
+  )
+  list: Array<{ name?: string } & Schema>
+  schema: Schema
+  asObject: boolean
+  dataName: string
+  hasModelRefs: boolean
+  getParameterKey(parameter: { name?: string }): string
+  /** Coerces and validates `params` in place, and returns the errors. */
+  validateParameters(
+    params: Record<string, any>
+  ): Ajv.ErrorObject[] | Promise<Ajv.ErrorObject[]>
+}
+
 export class Validator extends objection.Validator {
   constructor(options?: {
     options?: ValidatorOptions
