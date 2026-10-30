@@ -8,23 +8,27 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@ditojs/utils": "workspace:^"
+    "@ditojs/utils": "workspace:^",
+    "kysely-knex": "^0.2.0"
   },
   "devDependencies": {
-    "knex": "^3.3.0",
-    "objection": "^4.4.1",
-    "hono": "^4.13.14",
-    "zod": "^4.6.7",
     "@ditojs/server": "workspace:^",
-    "@ditojs/server-next": "workspace:^"
+    "@ditojs/server-next": "workspace:^",
+    "@ditojs/storage": "workspace:^",
+    "hono": "^4.13.14",
+    "knex": "^3.3.0",
+    "kysely": "^0.29.7",
+    "objection": "^4.4.1",
+    "zod": "^4.6.7"
   },
   "peerDependencies": {
-    "knex": "^3.3.0",
-    "objection": "^4.4.1",
-    "hono": "^4.13.14",
-    "zod": "^4.6.7",
     "@ditojs/server": "workspace:^",
-    "@ditojs/server-next": "workspace:^"
+    "@ditojs/server-next": "workspace:^",
+    "hono": "^4.13.14",
+    "knex": "^3.3.0",
+    "kysely": "^0.29.7",
+    "objection": "^4.4.1",
+    "zod": "^4.6.7"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

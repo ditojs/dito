@@ -598,6 +598,9 @@ importers:
       '@ditojs/utils':
         specifier: workspace:^
         version: link:../utils
+      kysely-knex:
+        specifier: ^0.2.0
+        version: 0.2.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))(kysely@0.29.7)
     devDependencies:
       '@ditojs/server':
         specifier: workspace:^
@@ -605,12 +608,18 @@ importers:
       '@ditojs/server-next':
         specifier: workspace:^
         version: link:../server-next
+      '@ditojs/storage':
+        specifier: workspace:^
+        version: link:../storage
       hono:
         specifier: ^4.13.14
         version: 4.13.14
       knex:
         specifier: ^3.3.0
         version: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0)
+      kysely:
+        specifier: ^0.29.7
+        version: 0.29.7
       objection:
         specifier: ^4.4.1
         version: 4.4.1(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))(typescript@6.0.3)
@@ -4334,6 +4343,12 @@ packages:
   koa@3.2.1:
     resolution: {integrity: sha512-e7IpWJrnanNUroVK2taAgMxoEZvHLXdQiNjeExSu/DEIWm83jaKGBgb7tLmu2rMYpA027qFB3iLR/k3AVpFRnA==}
     engines: {node: '>= 18'}
+
+  kysely-knex@0.2.0:
+    resolution: {integrity: sha512-kaZSKXdRf+VM+FOEQqqBF1wq3N76xGozdqjOtYWAqfSgzMqD1bdEMN8Z0l/dAmfayMtB3oNN0vcMz7OADNxECA==}
+    peerDependencies:
+      knex: '>= 3.0.0 < 4'
+      kysely: '>= 0.24.0 < 1'
 
   kysely@0.29.7:
     resolution: {integrity: sha512-fmIq+7kv4WbFm2tcfznRzikqB4cuNpgZ40PSU2fAJ2/OO5XhojqnTPrmgrCjYSRJVwBln03XcRXJGnw9H099IQ==}
@@ -9853,6 +9868,11 @@ snapshots:
       statuses: 2.0.2
       type-is: 2.1.0
       vary: 1.1.2
+
+  kysely-knex@0.2.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))(kysely@0.29.7):
+    dependencies:
+      knex: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0)
+      kysely: 0.29.7
 
   kysely@0.29.7: {}
 

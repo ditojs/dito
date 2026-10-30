@@ -25,9 +25,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: >-
           pnpm --filter ./packages/server-next --filter ./packages/objection
-          --filter ./packages/storage --filter ./packages/auth
-          --filter ./packages/admin-server run build
+          --filter ./packages/mikro --filter ./packages/storage
+          --filter ./packages/auth --filter ./packages/admin-server run build
       - run: >-
           pnpm exec pkg-pr-new publish --pnpm --comment=off
-          ./packages/server-next ./packages/objection ./packages/storage
-          ./packages/auth ./packages/admin-server
+          ./packages/server-next ./packages/objection ./packages/mikro
+          ./packages/storage ./packages/auth ./packages/admin-server

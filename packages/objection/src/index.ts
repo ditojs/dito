@@ -23,3 +23,4 @@ export {
 export { type RelationControllerDefinition } from './relation.ts'
 export { objectionTransaction, requestStorage } from './transaction.ts'
 export { toProblem } from './errors.ts'
+export { objectionKysely } from './kysely.ts'

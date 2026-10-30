@@ -1,4 +1,5 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["src", "test"]
+  // The tests import the sources of `@ditojs/storage`, with its declarations.
+  "include": ["src", "test", "../storage/src/leather.d.ts"]
 }
