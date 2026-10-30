@@ -12,8 +12,14 @@ import type { DitoContext, FeatureDefinition } from '@ditojs/server-next'
 import type { AssetFile, AssetFileObject } from './asset-file.ts'
 import { resolveFileUrl, type Storage } from './storage.ts'
 import { AssetError } from './errors.ts'
-import { findAssetFiles, parseJsonValue, type AssetPath } from './asset-path.ts'
+import {
+  findAssetFiles,
+  getTablePaths,
+  parseJsonValue,
+  type AssetPath
+} from './asset-path.ts'
 import { insertAsset } from './assets.ts'
+import { toStorageRegistry, type Storages } from './registry.ts'
 
 // The asset handling of a controller's writes, with the asset paths of its
 // table. The paths are read in the body of `c.var.body()`, where the column of
@@ -21,14 +27,18 @@ import { insertAsset } from './assets.ts'
 // `customFontFile`. A `body` schema of the action needs to keep the
 // `signature` of files. The feature changes the files of the body in place,
 // so handlers read them through `c.var.body()` without their signatures. It
-// also signs the files of the rows that the controller sends.
+// also signs the files of the rows that the controller sends. It reads JSON
+// bodies only, so the multipart bodies of upload routes pass through.
+
+// The database of the `asset` table, or a function that returns the one of
+// the request, such as a Kysely on `c.var.db`.
+export type AssetDb = Kysely<any> | ((c: DitoContext) => Kysely<any>)
 
 export interface AssetsOptions {
-  // The storages by name.
-  storages: Record<string, Storage>
-  // The database of the `asset` table, or a function that returns the one of
-  // the request, such as a Kysely on `c.var.db`.
-  db: Kysely<any> | ((c: DitoContext) => Kysely<any>)
+  // Only the paths of this table are used, when set.
+  table?: string
+  storages: Storages
+  db: AssetDb
 }
 
 interface ImportedFile {
@@ -38,12 +48,13 @@ interface ImportedFile {
 
 const writeMethods = ['POST', 'PUT', 'PATCH']
 
-export function assets(paths: AssetPath[], { storages, db }: AssetsOptions) {
-  const getStorage = (name: string) => {
-    const storage = storages[name]
-    if (!storage) throw new Error(`Unknown storage '${name}'`)
-    return storage
-  }
+export function assets(
+  allPaths: AssetPath[],
+  { table, storages, db }: AssetsOptions
+) {
+  const paths = table ? getTablePaths(allPaths, table) : allPaths
+  const registry = toStorageRegistry(storages)
+  const getStorage = (name: string) => registry.get(name)
 
   const findFiles = (body: unknown) =>
     asArray(body).flatMap(item =>
@@ -59,7 +70,12 @@ export function assets(paths: AssetPath[], { storages, db }: AssetsOptions) {
 
   const feature: FeatureDefinition = {
     around: async (c, next) => {
-      if (!writeMethods.includes(c.req.method)) return next()
+      if (
+        !writeMethods.includes(c.req.method) ||
+        !c.req.header('Content-Type')?.includes('json')
+      ) {
+        return next()
+      }
       const body = await c.var.body()
       const files = findFiles(body)
       if (files.length === 0) return next()
@@ -170,6 +186,50 @@ async function importFiles(
     for (const { file } of group) Object.assign(file, importedFile)
   })
   return imported
+}
+
+export interface ImportAssetsOptions {
+  db: Kysely<any>
+  table: string
+  paths: AssetPath[]
+  storages: Storages
+}
+
+// Imports the files that `data`, the values of a row of `table`, references
+// but that no `asset` row holds yet, such as the `file://` files of seed
+// data, and inserts their `asset` rows. Files from sources that the storage
+// doesn't allow are skipped. The file objects in `data` get the properties
+// of the stored files. Requests do this through `assets()`. Seeds that insert
+// rows directly call this first.
+export async function importAssets<T extends object>(
+  data: T,
+  { db, table, paths, storages }: ImportAssetsOptions
+) {
+  const registry = toStorageRegistry(storages)
+  for (const path of getTablePaths(paths, table)) {
+    const value = (data as Record<string, unknown>)[camelize(path.column)]
+    const storage = registry.get(path.storage)
+    for (const { file } of findAssetFiles(value, path.path)) {
+      const asset = await db
+        .selectFrom('asset')
+        .select('file')
+        .where('key', '=', file.key)
+        .executeTakeFirst()
+      if (asset) {
+        // A file that the data references more than once is stored once.
+        Object.assign(file, parseJsonValue(asset.file))
+        continue
+      }
+      if (!storage.isImportSourceAllowed(file.url)) continue
+      const stored = await storage.addFile(
+        { ...file },
+        await fetchFile(file.url!)
+      )
+      await insertAsset(db, stored, storage)
+      Object.assign(file, stored)
+    }
+  }
+  return data
 }
 
 async function fetchFile(url: string) {

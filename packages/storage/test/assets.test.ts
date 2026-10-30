@@ -13,12 +13,19 @@ import {
 } from '@ditojs/server-next'
 import {
   DiskStorage,
+  StorageRegistry,
+  addAssetFile,
+  assetUploads,
   assets,
   findAssetFiles,
+  findAssetReferences,
   findAssetUsage,
   findStrayFiles,
+  getUploadPath,
+  importAssets,
   insertAsset,
   releaseAssets,
+  runAssetJobs,
   scanAssets,
   type AssetFileObject,
   type AssetPath
@@ -427,5 +434,313 @@ describe('assets()', () => {
     const response = await setup().request('/books')
     const json = await response.json()
     expect(covers.verifyAssetFile(json.cover)).toBe(true)
+  })
+})
+
+describe('getUploadPath()', () => {
+  it('joins the camelCase column and the path', () => {
+    expect(getUploadPath(paths[0])).toBe('cover')
+    expect(getUploadPath(paths[1])).toBe('pages/*/images')
+    expect(getUploadPath(paths[2])).toBe('notes/**/file')
+    expect(
+      getUploadPath({ ...paths[0], column: 'back_cover', path: '*/file' })
+    ).toBe('backCover/*/file')
+  })
+
+  it('takes `upload` when set', () => {
+    expect(getUploadPath({ ...paths[2], upload: '**/file' })).toBe('**/file')
+  })
+})
+
+describe('runAssetJobs()', () => {
+  const now = new Date('2026-10-30T12:00:00Z')
+
+  beforeEach(async () => {
+    await covers.addFile(file('old'), Buffer.from('old'))
+    await addBook(1, { cover: file('used') })
+    await addAsset('used', { since: '2026-10-01T00:00:00.000Z' })
+    await addAsset('old', { since: '2026-10-01T00:00:00.000Z' })
+  })
+
+  it('scans, then releases the unused assets', async () => {
+    const { scan, released } = await runAssetJobs({
+      db,
+      paths,
+      storages: new StorageRegistry([covers]),
+      deleteUnusedAfter: '1d',
+      now
+    })
+    expect(scan.changed).toEqual([
+      { key: 'used', storage: 'covers', from: 0, to: 1 }
+    ])
+    expect(released).toEqual([{ key: 'old', storage: 'covers' }])
+    expect((await getAssets()).map(asset => asset.key)).toEqual(['used'])
+    expect(await covers.listKeys()).toEqual([])
+  })
+
+  it('skips the release with `deleteUnusedAfter: false`', async () => {
+    const { released } = await runAssetJobs({
+      db,
+      paths,
+      storages: { covers },
+      deleteUnusedAfter: false,
+      now
+    })
+    expect(released).toEqual([])
+    expect(await getAssets()).toHaveLength(2)
+  })
+
+  it('writes and deletes nothing in a dry run', async () => {
+    const before = await getAssets()
+    const { scan, released } = await runAssetJobs({
+      db,
+      paths,
+      storages: { covers },
+      deleteUnusedAfter: 0,
+      dryRun: true,
+      now
+    })
+    expect(scan.changed).toHaveLength(1)
+    expect(released).toEqual([{ key: 'old', storage: 'covers' }])
+    expect(await getAssets()).toEqual(before)
+    expect(await covers.listKeys()).toEqual(['old'])
+  })
+})
+
+describe('addAssetFile()', () => {
+  it('stores the file and inserts its asset row', async () => {
+    const added = await addAssetFile(db, covers, {
+      name: 'report.txt',
+      data: Buffer.from('Report')
+    })
+    expect(added).toEqual({
+      key: expect.stringMatching(/\.txt$/),
+      name: 'report.txt',
+      type: 'text/plain',
+      size: 6,
+      url: `https://example.com/${added.key}`
+    })
+    expect(await covers.readFile(added)).toEqual(Buffer.from('Report'))
+    const [row] = await db.selectFrom('asset').selectAll().execute()
+    expect(row).toMatchObject({ key: added.key, storage: 'covers', count: 0 })
+    expect(JSON.parse(row.file)).toEqual(added)
+  })
+})
+
+describe('findAssetReferences()', () => {
+  beforeEach(async () => {
+    await addBook(1, {
+      cover: file('a'),
+      pages: [{ images: [file('a'), file('b')] }]
+    })
+    await addBook(2, { notes: { items: [{ file: file('b') }] } })
+  })
+
+  it('lists the files at the asset paths with their locations', async () => {
+    const references = await findAssetReferences({ db, paths })
+    expect(
+      references.map(({ key, id, column, dataPath, storage }) => ({
+        key,
+        id,
+        column,
+        dataPath,
+        storage
+      }))
+    ).toEqual([
+      {
+        key: 'a',
+        id: 1,
+        column: 'cover',
+        dataPath: 'cover',
+        storage: 'covers'
+      },
+      {
+        key: 'a',
+        id: 1,
+        column: 'pages',
+        dataPath: 'pages/0/images/0',
+        storage: 'covers'
+      },
+      {
+        key: 'b',
+        id: 1,
+        column: 'pages',
+        dataPath: 'pages/0/images/1',
+        storage: 'covers'
+      },
+      {
+        key: 'b',
+        id: 2,
+        column: 'notes',
+        dataPath: 'notes/items/0/file',
+        storage: 'covers'
+      }
+    ])
+    expect(references[0]).toMatchObject({
+      table: 'book',
+      file: file('a'),
+      assetPath: paths[0]
+    })
+  })
+
+  it('filters by keys, storage and tables', async () => {
+    expect(
+      (await findAssetReferences({ db, paths, keys: ['b'] })).map(
+        reference => reference.dataPath
+      )
+    ).toEqual(['pages/0/images/1', 'notes/items/0/file'])
+    expect(
+      await findAssetReferences({ db, paths, storage: 'archive' })
+    ).toEqual(
+      []
+    )
+    expect(await findAssetReferences({ db, paths, tables: ['other'] })).toEqual(
+      []
+    )
+  })
+
+  it('assigns each location to the first path that reaches it', async () => {
+    const overlapping = [...paths, { ...paths[1], storage: 'archive' }]
+    const references = await findAssetReferences({ db, paths: overlapping })
+    expect(references).toHaveLength(4)
+    expect(references.every(({ storage }) => storage === 'covers')).toBe(true)
+  })
+})
+
+describe('importAssets()', () => {
+  it('imports `file://` files and stores repeated files once', async () => {
+    const source = path.join(basePath, 'source.txt')
+    await fs.writeFile(source, 'Source')
+    covers.allowedImports = [`file://${basePath}/**`]
+    const url = `file://${source}`
+    const data = {
+      cover: { key: 'seed', name: 'source.txt', url },
+      pages: [{ images: [{ key: 'seed', name: 'source.txt', url }] }]
+    }
+    await importAssets(data, {
+      db,
+      table: 'book',
+      paths,
+      storages: { covers }
+    })
+    expect(data.cover.url).toBe('https://example.com/seed')
+    expect(data.pages[0].images[0]).toEqual(data.cover)
+    expect(await covers.readFile(data.cover)).toEqual(Buffer.from('Source'))
+    expect((await getAssets()).map(asset => asset.key)).toEqual(['seed'])
+  })
+
+  it('skips files from sources that aren`t allowed', async () => {
+    const data = { cover: { key: 'seed', url: 'https://other.com/a.png' } }
+    await importAssets(data, {
+      db,
+      table: 'book',
+      paths,
+      storages: { covers }
+    })
+    expect(data.cover).toEqual({ key: 'seed', url: 'https://other.com/a.png' })
+    expect(await getAssets()).toEqual([])
+  })
+})
+
+describe('assetUploads()', () => {
+  const uploadPaths: AssetPath[] = [
+    ...paths,
+    {
+      table: 'book',
+      column: 'back_cover',
+      path: '',
+      storage: 'archive',
+      readDimensions: true
+    },
+    { table: 'shelf', column: 'label', path: '', storage: 'archive' }
+  ]
+
+  function setup({ fail = false } = {}) {
+    const storages = new StorageRegistry([covers, archive])
+    const books = defineController({
+      path: 'books',
+      use: [
+        // `assets()` leaves the multipart bodies of the uploads alone.
+        assets(uploadPaths, {
+          table: 'book',
+          storages,
+          db: (c: DitoContext) => c.var.db as Kysely<any>
+        }),
+        assetUploads({
+          table: 'book',
+          paths: uploadPaths,
+          storages,
+          db: (c: DitoContext) => c.var.db as Kysely<any>
+        })
+      ],
+      ...(fail && {
+        around: async (_c, next) => {
+          await next()
+          throw new Error('Failed request')
+        }
+      })
+    })
+    const app = new Hono()
+    app.onError(problemResponse)
+    app.route(
+      '/',
+      createApp({
+        controllers: [books],
+        transaction: (c, fn) =>
+          db.transaction().execute(trx => {
+            c.set('trx', trx)
+            return fn()
+          }),
+        getUser: async () => null
+      })
+    )
+    return app
+  }
+
+  // Sends a file like the admin's upload component, under the data path of
+  // its field.
+  function upload(app: Hono, dataPath: string, route = dataPath) {
+    const body = new FormData()
+    body.append(dataPath, new File(['Page'], 'page.txt'))
+    return app.request(`/books/upload/${route}`, { method: 'POST', body })
+  }
+
+  it('stores uploads at the hyphenated upload paths', async () => {
+    const app = setup()
+    for (const dataPath of ['cover', 'pages/3/images', 'notes/a/b/file']) {
+      const response = await upload(app, dataPath)
+      expect(response.status).toBe(200)
+      const [uploaded] = await response.json()
+      expect(covers.verifyAssetFile(uploaded)).toBe(true)
+    }
+    const response = await upload(app, 'backCover', 'back-cover')
+    const [uploaded] = await response.json()
+    expect(archive.verifyAssetFile(uploaded)).toBe(true)
+    expect(await covers.listKeys()).toHaveLength(3)
+    expect(await archive.listKeys()).toEqual([uploaded.key])
+  })
+
+  it('inserts unreferenced asset rows in their storage', async () => {
+    const response = await upload(setup(), 'cover')
+    const [uploaded] = await response.json()
+    expect(
+      await db.selectFrom('asset').select(['key', 'storage', 'count']).execute()
+    ).toEqual([{ key: uploaded.key, storage: 'covers', count: 0 }])
+  })
+
+  it('rolls the asset rows back with the request', async () => {
+    const response = await upload(setup({ fail: true }), 'cover')
+    expect(response.status).toBe(500)
+    expect(await getAssets()).toEqual([])
+  })
+
+  it('answers paths without upload routes with 404', async () => {
+    expect((await upload(setup(), 'label')).status).toBe(404)
+  })
+
+  it('throws for tables without asset paths', () => {
+    expect(() =>
+      assetUploads({ table: 'author', paths, storages: {}, db })
+    ).toThrow(`No asset paths for table 'author'`)
   })
 })

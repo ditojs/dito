@@ -6,6 +6,7 @@
 - **objection:** `defineController()` for Objection models, with Dito 6's model controller settings (`scope`, `allowScope`, `allowFilter`, `graph`, `relations`), `objectionTransaction()`, `objectionConnect()`, `requestStorage()`, `objectionKysely()` and `toProblem()`.
 - **mikro:** `defineController()` for MikroORM entities: one `find` shape per controller, unit of work without refetching, write schemas from the entity metadata, and filters on the controller.
 - **storage:** Disk and S3 storages, `uploadHandler()`, and asset tracking by scanning the data: `scanAssets()`, `releaseAssets()`, `findAssetUsage()`, `insertAsset()` and the `assets()` feature. See `docs/plans/asset-scan.md`.
+  - `createStorages()` builds named storages from plain definitions, `assetUploads()` adds a controller's upload routes from its asset paths, and `runAssetJobs()`, `addAssetFile()`, `findAssetReferences()` and `importAssets()` cover the asset jobs, server-created files, the asset admin and seeds.
 - **auth:** Sessions, logins, confirmed access, password reset, passkeys and TOTP for the new server, on Dito 6's `session` and `credential` tables and cookies, so existing sessions stay valid.
 - **admin-server:** `serveAdmin()` serves the admin from a Hono app, with Vite in development, and `defineAdminViteConfig()` for `admin.vite.config.js`.
 - **server:** `ParameterValidator` is exported.

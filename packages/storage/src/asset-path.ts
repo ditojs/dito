@@ -1,16 +1,20 @@
 import {
   asArray,
+  camelize,
   getEntriesAtDataPath,
   isArray,
   isObject,
-  isString
+  isString,
+  normalizeDataPath,
+  parseDataPath
 } from '@ditojs/utils'
 import type { AssetFileObject } from './asset-file.ts'
 
 // Where a table stores files: a column, and the data path of the files inside
 // its JSON value, with `*` for one segment and `**` for any number of them, as
 // in Dito 6's `static assets`. `''` is the column itself. A value at the path
-// may be one file or an array of files.
+// may be one file or an array of files. In request bodies, the column is the
+// camelCase property, such as `custom_font_file` as `customFontFile`.
 
 export interface AssetPath {
   table: string
@@ -18,6 +22,22 @@ export interface AssetPath {
   path: string
   // The name of the storage that holds the files.
   storage: string
+  // Reads the width and height of uploaded images and videos.
+  readDimensions?: boolean
+  // The data path of the upload route, when it differs from the column's
+  // property followed by `path`, see `getUploadPath()`.
+  upload?: string
+}
+
+// The data path of the upload route of an asset path, such as
+// `pages/*/images` for the column `pages` with the path `*/images`.
+export function getUploadPath({ column, path, upload }: AssetPath): string {
+  return upload ?? normalizeDataPath([camelize(column), ...parseDataPath(path)])
+}
+
+// The asset paths of one table.
+export function getTablePaths(paths: AssetPath[], table: string) {
+  return paths.filter(path => path.table === table)
 }
 
 export interface FoundAssetFile {

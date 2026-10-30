@@ -1,13 +1,25 @@
 import { sql, type Kysely } from 'kysely'
 import parseDuration from 'parse-duration'
-import { asArray, isNumber, isString } from '@ditojs/utils'
-import type { AssetFileObject } from './asset-file.ts'
+import {
+  asArray,
+  camelize,
+  isNumber,
+  isString,
+  normalizeDataPath,
+  parseDataPath
+} from '@ditojs/utils'
+import {
+  AssetFile,
+  type AssetFileObject,
+  type FileDataInput
+} from './asset-file.ts'
 import type { Storage } from './storage.ts'
 import {
   findAssetFiles,
   parseJsonValue,
   type AssetPath
 } from './asset-path.ts'
+import { toStorageRegistry, type Storages } from './registry.ts'
 
 // Tracks stored files in Dito 6's `asset` table by scanning the data at the
 // asset paths, through Kysely, so it works with any ORM. `count` is the number
@@ -139,8 +151,7 @@ export async function scanAssets({
 
 export interface ReleaseAssetsOptions {
   db: Kysely<any>
-  // The storages by name.
-  storages: Record<string, Storage>
+  storages: Storages
   // How long an asset stays unreferenced before it is released, in
   // milliseconds or as a string such as `'12h'`.
   after: number | string
@@ -196,13 +207,12 @@ export async function releaseAssets({
   })
   // Remove the files after the commit, so that a failed transaction keeps
   // them. Files left over by failed removals are found by `findStrayFiles()`.
+  const registry = toStorageRegistry(storages)
   const released: ReleasedAsset[] = []
   for (const { key, storage: name, file } of assets) {
     const result: ReleasedAsset = { key, storage: name }
     try {
-      const storage = storages[name]
-      if (!storage) throw new Error(`Unknown storage '${name}'`)
-      await storage.removeFile(parseJsonValue(file) ?? { key })
+      await registry.get(name).removeFile(parseJsonValue(file) ?? { key })
     } catch (error) {
       // ENOENT means that the file is already gone.
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
@@ -296,6 +306,140 @@ export async function insertAsset(
   if (rows.length > 0) {
     await db.insertInto('asset').values(rows).execute()
   }
+}
+
+export interface RunAssetJobsOptions {
+  db: Kysely<any>
+  paths: AssetPath[]
+  storages: Storages
+  // The `after` of `releaseAssets()`. With `false`, the release is skipped.
+  deleteUnusedAfter: number | string | false
+  dryRun?: boolean
+  now?: Date
+}
+
+// Runs the scan and then the release, so that the release keeps the files
+// that rows reference again. The app logs the report and the errors of the
+// released assets.
+export async function runAssetJobs({
+  db,
+  paths,
+  storages,
+  deleteUnusedAfter,
+  dryRun = false,
+  now = new Date()
+}: RunAssetJobsOptions) {
+  const scan = await scanAssets({ db, paths, dryRun, now })
+  let released: ReleasedAsset[] = []
+  if (deleteUnusedAfter !== false) {
+    released = await releaseAssets({
+      db,
+      storages,
+      after: deleteUnusedAfter,
+      dryRun,
+      now
+    })
+    if (dryRun) {
+      // A dry run writes no counts, so leave out the assets that the scan
+      // found referenced.
+      const used = new Set(
+        scan.changed.filter(change => change.to > 0).map(change => change.key)
+      )
+      released = released.filter(asset => !used.has(asset.key))
+    }
+  }
+  return { scan, released }
+}
+
+// Stores data as a new file of `storage` and inserts its `asset` row, for
+// files that the server creates. Rows store the returned file object, and
+// the next scan counts them. If `db` is outside the transaction of the write
+// that references the file and that write rolls back, the release deletes
+// the file later.
+export async function addAssetFile(
+  db: Kysely<any>,
+  storage: Storage,
+  { name, type, data }: { name: string; type?: string; data: FileDataInput }
+): Promise<AssetFileObject> {
+  const file = AssetFile.create({ name, type, data })
+  await storage.addFile(file, file.data!)
+  await insertAsset(db, file, storage)
+  return { ...file }
+}
+
+export interface AssetReference {
+  key: string
+  file: AssetFileObject
+  table: string
+  id: unknown
+  column: string
+  // The data path of the file in the row, with the column as its camelCase
+  // property, such as `pages/0/images/1`.
+  dataPath: string
+  storage: string
+  // The asset path that reaches the file.
+  assetPath: AssetPath
+}
+
+export interface FindAssetReferencesOptions {
+  db: Kysely<any>
+  paths: AssetPath[]
+  // Only these tables, when set.
+  tables?: string[]
+  // Only files of this storage, when set.
+  storage?: string
+  // Only these keys, when set.
+  keys?: string[]
+}
+
+// Lists the files that the rows reference at the asset paths, as Dito 6's
+// `Application.getAssetReferences()` does. Each location in a row belongs to
+// the first asset path that reaches it.
+export async function findAssetReferences({
+  db,
+  paths,
+  tables,
+  storage,
+  keys
+}: FindAssetReferencesOptions) {
+  const keySet = keys && new Set(keys)
+  const references: AssetReference[] = []
+  const selected = tables
+    ? paths.filter(path => tables.includes(path.table))
+    : paths
+  for (const [table, tablePaths] of groupByTable(selected)) {
+    for await (const row of readRows(db, table, tablePaths)) {
+      const locations = new Set<string>()
+      for (const assetPath of tablePaths) {
+        const { column, path } = assetPath
+        const value = parseJsonValue(row[column])
+        for (const { file, path: filePath } of findAssetFiles(value, path)) {
+          const dataPath = normalizeDataPath([
+            camelize(column),
+            ...parseDataPath(filePath)
+          ])
+          if (locations.has(dataPath)) continue
+          locations.add(dataPath)
+          if (
+            (!storage || assetPath.storage === storage) &&
+            (!keySet || keySet.has(file.key))
+          ) {
+            references.push({
+              key: file.key,
+              file,
+              table,
+              id: row.id,
+              column,
+              dataPath,
+              storage: assetPath.storage,
+              assetPath
+            })
+          }
+        }
+      }
+    }
+  }
+  return references
 }
 
 export function getDuration(duration: number | string) {
