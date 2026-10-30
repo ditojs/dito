@@ -8,7 +8,7 @@ import {
   isObject,
   mapConcurrently
 } from '@ditojs/utils'
-import { defineFeature, type DitoContext } from '@ditojs/server-next'
+import type { DitoContext, FeatureDefinition } from '@ditojs/server-next'
 import type { AssetFile, AssetFileObject } from './asset-file.ts'
 import { resolveFileUrl, type Storage } from './storage.ts'
 import { AssetError } from './errors.ts'
@@ -56,7 +56,7 @@ export function assets(paths: AssetPath[], { storages, db }: AssetsOptions) {
         : []
     )
 
-  return defineFeature({
+  const feature: FeatureDefinition = {
     around: async (c, next) => {
       if (!writeMethods.includes(c.req.method)) return next()
       const body = await readBody(c)
@@ -110,7 +110,8 @@ export function assets(paths: AssetPath[], { storages, db }: AssetsOptions) {
       }
       return copy
     }
-  })
+  }
+  return feature
 }
 
 // Imports the files that the `asset` table doesn't hold in their storage, as

@@ -518,28 +518,28 @@ importers:
 
   packages/objection:
     dependencies:
+      '@ditojs/utils':
+        specifier: workspace:^
+        version: link:../utils
+    devDependencies:
       '@ditojs/server':
         specifier: workspace:^
         version: link:../server
       '@ditojs/server-next':
         specifier: workspace:^
         version: link:../server-next
-      '@ditojs/utils':
-        specifier: workspace:^
-        version: link:../utils
       hono:
         specifier: ^4.13.14
         version: 4.13.14
-      zod:
-        specifier: ^4.6.7
-        version: 4.6.7
-    devDependencies:
       knex:
         specifier: ^3.3.0
         version: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0)
       objection:
         specifier: ^4.4.1
         version: 4.4.1(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))(typescript@6.0.3)
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   packages/router:
     dependencies:
@@ -745,6 +745,7 @@ importers:
       '@standard-schema/spec':
         specifier: ^1.1.0
         version: 1.1.0
+    devDependencies:
       hono:
         specifier: ^4.13.14
         version: 4.13.14
@@ -754,9 +755,6 @@ importers:
 
   packages/storage:
     dependencies:
-      '@ditojs/server-next':
-        specifier: workspace:^
-        version: link:../server-next
       '@ditojs/utils':
         specifier: workspace:^
         version: link:../utils
@@ -772,12 +770,6 @@ importers:
       file-type:
         specifier: ^22.1.1
         version: 22.1.1(supports-color@10.2.2)
-      hono:
-        specifier: ^4.13.14
-        version: 4.13.14
-      kysely:
-        specifier: ^0.29.7
-        version: 0.29.7
       leather:
         specifier: ^3.0.3
         version: 3.0.3
@@ -797,6 +789,9 @@ importers:
       '@aws-lite/s3':
         specifier: ^0.2.7
         version: 0.2.7
+      '@ditojs/server-next':
+        specifier: workspace:^
+        version: link:../server-next
       '@types/better-sqlite3':
         specifier: ^9.6.0
         version: 9.6.0
@@ -806,6 +801,12 @@ importers:
       better-sqlite3:
         specifier: ^13.0.3
         version: 13.0.3
+      hono:
+        specifier: ^4.13.14
+        version: 4.13.14
+      kysely:
+        specifier: ^0.29.7
+        version: 0.29.7
 
   packages/ui:
     dependencies:

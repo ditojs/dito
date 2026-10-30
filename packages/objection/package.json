@@ -9,18 +9,22 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@ditojs/server": "workspace:^",
-    "@ditojs/server-next": "workspace:^",
-    "@ditojs/utils": "workspace:^",
-    "hono": "^4.13.14",
-    "zod": "^4.6.7"
+    "@ditojs/utils": "workspace:^"
   },
   "devDependencies": {
     "knex": "^3.3.0",
-    "objection": "^4.4.1"
+    "objection": "^4.4.1",
+    "hono": "^4.13.14",
+    "zod": "^4.6.7",
+    "@ditojs/server": "workspace:^",
+    "@ditojs/server-next": "workspace:^"
   },
   "peerDependencies": {
     "knex": "^3.3.0",
-    "objection": "^4.4.1"
+    "objection": "^4.4.1",
+    "hono": "^4.13.14",
+    "zod": "^4.6.7",
+    "@ditojs/server": "workspace:^",
+    "@ditojs/server-next": "workspace:^"
   }
 }

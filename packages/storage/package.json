@@ -9,14 +9,11 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@ditojs/server-next": "workspace:^",
     "@ditojs/utils": "workspace:^",
     "@types/mime-types": "^3.0.1",
     "@types/picomatch": "^4.0.3",
     "data-uri-to-buffer": "^8.0.0",
     "file-type": "^22.1.1",
-    "hono": "^4.13.14",
-    "kysely": "^0.29.7",
     "leather": "^3.0.3",
     "mime-types": "^3.0.2",
     "parse-duration": "^2.1.9",
@@ -27,17 +24,26 @@
     "@aws-lite/s3": "^0.2.7",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.6.4",
-    "better-sqlite3": "^13.0.3"
+    "better-sqlite3": "^13.0.3",
+    "hono": "^4.13.14",
+    "@ditojs/server-next": "workspace:^",
+    "kysely": "^0.29.7"
   },
   "peerDependencies": {
     "@aws-lite/client": "^0.24.0",
-    "@aws-lite/s3": "^0.2.7"
+    "@aws-lite/s3": "^0.2.7",
+    "hono": "^4.13.14",
+    "@ditojs/server-next": "workspace:^",
+    "kysely": "^0.29.7"
   },
   "peerDependenciesMeta": {
     "@aws-lite/client": {
       "optional": true
     },
     "@aws-lite/s3": {
+      "optional": true
+    },
+    "@ditojs/server-next": {
       "optional": true
     }
   }
