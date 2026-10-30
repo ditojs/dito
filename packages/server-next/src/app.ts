@@ -1,5 +1,4 @@
 import { Hono, type MiddlewareHandler } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import { sValidator } from '@hono/standard-validator'
 import {
   asArray,
@@ -13,44 +12,26 @@ import {
   type ResolvedAction,
   type ResolvedController
 } from './compose.ts'
-import {
-  ProblemError,
-  createValidationError,
-  getStatusTitle,
-  respondProblem,
-  toProblem
-} from './errors.ts'
+import { ProblemError, createValidationError } from './errors.ts'
 import type {
   AppConfig,
   Authorize,
   DitoContext,
   DitoEnv,
-  Plugin,
-  Slots
+  Slots,
+  Transaction
 } from './types.ts'
 
-// Builds the Hono app of the controllers. Each action runs plugin middleware,
-// sets the request's variables, authorizes, validates, and then runs the
-// `around` middleware and the handler inside the transaction. All of these are
-// Hono middleware in one chain.
+// Builds the Hono app of the controllers. Each action sets the request's
+// variables, authorizes, validates, and then runs the `around` middleware and
+// the handler inside the transaction. All of these are Hono middleware in one
+// chain. The app sets the `onError()` and `notFound()` handlers itself, and
+// adds its middleware to a parent app that mounts this one, so that it runs
+// before the actions.
 
 export function createApp(config: AppConfig) {
-  const { base = '', controllers, plugins = [], getUser } = config
-  const transaction = plugins.find(plugin => plugin.transaction)?.transaction
+  const { base = '', controllers, transaction, getUser } = config
   const app = new Hono<DitoEnv>()
-
-  app.onError((error, c) =>
-    error instanceof HTTPException && error.res
-      ? error.res
-      : respondProblem(c, toProblem(error, plugins))
-  )
-  app.notFound(c =>
-    respondProblem(c, { title: getStatusTitle(404), status: 404 })
-  )
-
-  for (const plugin of plugins) {
-    if (plugin.middleware) app.use(plugin.middleware)
-  }
 
   for (const definition of controllers) {
     const controller = resolveController(definition)
@@ -163,9 +144,7 @@ function validate(target: 'query' | 'json', schema: ResolvedAction['query']) {
 // Hono turns an error into a response where it's thrown and stores it in
 // `c.error`, so `next()` returns normally. Throwing `c.error` again rolls back.
 // The error response is already set, so the error stops here.
-function transact(
-  transaction: NonNullable<Plugin['transaction']>
-): MiddlewareHandler<DitoEnv> {
+function transact(transaction: Transaction): MiddlewareHandler<DitoEnv> {
   return async (c, next) => {
     try {
       await transaction(c, async () => {

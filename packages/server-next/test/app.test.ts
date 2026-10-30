@@ -1,3 +1,4 @@
+import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import {
@@ -6,10 +7,12 @@ import {
   defineController,
   defineFeature,
   ProblemError,
+  problemResponse,
   withBase,
   type AppConfig,
   type ControllerDefinition,
-  type Plugin,
+  type DitoEnv,
+  type Transaction,
   type User
 } from '../src/index.ts'
 
@@ -20,36 +23,45 @@ function setup(
   controllers: ControllerDefinition[],
   { user = admin, ...config }: Partial<AppConfig> & { user?: User | null } = {}
 ) {
-  return createApp({
+  const app = createApp({
     base: '/api',
     controllers,
     getUser: async () => user,
     ...config
   })
+  // The handlers an app sets. `RangeError` stands for an error of the app.
+  app.onError((error, c) =>
+    problemResponse(
+      error instanceof RangeError
+        ? new ProblemError({
+            status: 422,
+            title: 'Out of Range',
+            detail: error.message
+          })
+        : error,
+      c
+    )
+  )
+  app.notFound(c => problemResponse(new ProblemError({ status: 404 }), c))
+  return app
 }
 
-// A plugin that records its transactions instead of opening them.
-function createPlugin() {
+// A transaction that records its steps instead of opening one.
+function createTransaction() {
   const log: string[] = []
-  const plugin: Plugin = {
-    async transaction(c, fn) {
-      log.push('begin')
-      c.set('trx', 'trx')
-      try {
-        const result = await fn()
-        log.push('commit')
-        return result
-      } catch (error) {
-        log.push('rollback')
-        throw error
-      }
-    },
-    toProblem: error =>
-      error instanceof RangeError
-        ? { title: 'Out of Range', status: 422, detail: error.message }
-        : undefined
+  const transaction: Transaction = async (c, fn) => {
+    log.push('begin')
+    c.set('trx', 'trx')
+    try {
+      const result = await fn()
+      log.push('commit')
+      return result
+    } catch (error) {
+      log.push('rollback')
+      throw error
+    }
   }
-  return { plugin, log }
+  return { transaction, log }
 }
 
 const request = (
@@ -415,7 +427,7 @@ describe('validation', () => {
 
 describe('transactions', () => {
   it('runs writes in a transaction, but not reads', async () => {
-    const { plugin, log } = createPlugin()
+    const { transaction, log } = createTransaction()
     const app = setup(
       [
         {
@@ -432,7 +444,7 @@ describe('transactions', () => {
           }
         }
       ],
-      { plugins: [plugin] }
+      { transaction }
     )
     expect(await (await request(app, 'GET', '/api/fonts')).json()).toBe(null)
     expect(log).toEqual(['around none'])
@@ -450,7 +462,7 @@ describe('transactions', () => {
   })
 
   it('rolls back when the handler throws', async () => {
-    const { plugin, log } = createPlugin()
+    const { transaction, log } = createTransaction()
     const app = setup(
       [
         {
@@ -467,7 +479,7 @@ describe('transactions', () => {
           }
         }
       ],
-      { plugins: [plugin] }
+      { transaction }
     )
     const response = await request(app, 'POST', '/api/fonts')
     expect(log).toEqual(['begin', 'around Too wide', 'rollback'])
@@ -479,22 +491,20 @@ describe('transactions', () => {
     })
   })
 
-  it('runs the middleware of plugins first', async () => {
-    const app = setup(
-      [{ path: 'fonts', collection: { get: c => c.var.trx } }],
-      {
-        plugins: [
-          {
-            middleware: async (c, next) => {
-              c.set('trx', 'em')
-              await next()
-            }
-          }
-        ],
+  it('runs the middleware of a parent app first', async () => {
+    const parent = new Hono<DitoEnv>()
+    parent.use(async (c, next) => {
+      c.set('trx', 'em')
+      await next()
+    })
+    parent.route(
+      '/',
+      setup([{ path: 'fonts', collection: { get: c => c.var.trx } }], {
         getUser: async c => ({ id: String(c.var.trx), roles: [] })
-      }
+      })
     )
-    expect(await (await request(app, 'GET', '/api/fonts')).json()).toBe('em')
+    const response = await parent.request('/api/fonts')
+    expect(await response.json()).toBe('em')
   })
 })
 
@@ -647,7 +657,6 @@ describe('errors', () => {
   })
 
   it('answers other errors as 500 without internals', async () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const response = await request(app, 'GET', '/api/fonts/crash')
     expect(response.status).toBe(500)
     const text = await response.text()
@@ -656,7 +665,30 @@ describe('errors', () => {
       title: 'Internal Server Error',
       status: 500
     })
-    expect(error).toHaveBeenCalledOnce()
+  })
+
+  it('logs nothing on a 500', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await request(app, 'GET', '/api/fonts/crash')
+    expect(error).not.toHaveBeenCalled()
     error.mockRestore()
+  })
+
+  it('sends the response of an HTTPException unchanged', async () => {
+    const app = setup([
+      {
+        path: 'fonts',
+        collection: {
+          get: () => {
+            throw new HTTPException(401, {
+              res: new Response('Sign in', { status: 401 })
+            })
+          }
+        }
+      }
+    ])
+    const response = await request(app, 'GET', '/api/fonts')
+    expect(response.status).toBe(401)
+    expect(await response.text()).toBe('Sign in')
   })
 })

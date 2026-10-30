@@ -130,18 +130,17 @@ export interface ListQuery {
   fields: string[] | null
 }
 
-// An ORM package or other app-wide piece.
-export interface Plugin {
-  // Per-request setup, such as an entity manager fork.
-  middleware?: MiddlewareHandler<DitoEnv>
-  // Runs `fn` in a transaction and sets `c.var.trx` for it.
-  transaction?: <T>(c: DitoContext, fn: () => Promise<T>) => Promise<T>
-  // Maps an error of the plugin to a Problem Details response.
-  toProblem?: (error: unknown) => Problem | undefined
-}
+// Runs `fn` in a transaction and sets `c.var.trx` for it. An ORM package
+// provides it, and `createApp` runs the transacted actions through it.
+export type Transaction = <T>(
+  c: DitoContext,
+  fn: () => Promise<T>
+) => Promise<T>
 
-// RFC 9457. `errors` holds validation errors by JSON Pointer.
+// RFC 9457. `errors` holds validation errors by JSON Pointer. Other members
+// are extension members, such as the `message` of Dito 6's errors.
 export interface Problem {
+  [member: string]: unknown
   type?: string
   title: string
   status: number
@@ -153,7 +152,7 @@ export interface AppConfig {
   // The prefix of every controller path, such as `/api/admin`.
   base?: string
   controllers: ControllerDefinition[]
-  plugins?: Plugin[]
+  transaction?: Transaction
   // The signed-in user of the request, or null.
   getUser: (c: DitoContext) => Promise<User | null>
 }

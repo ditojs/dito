@@ -1,7 +1,23 @@
-import { Application, Model, type ModelProperties } from '@ditojs/server'
-import { createApp, type ControllerDefinition } from '@ditojs/server-next'
+import { Hono } from 'hono'
+import {
+  Application,
+  Model,
+  ResponseError,
+  type ModelProperties
+} from '@ditojs/server'
+import {
+  createApp,
+  ProblemError,
+  problemResponse,
+  type ControllerDefinition
+} from '@ditojs/server-next'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
-import { defineController, objectionPlugin } from '../src/index.ts'
+import {
+  defineController,
+  objectionTransaction,
+  requestStorage,
+  toProblem
+} from '../src/index.ts'
 
 class Author extends Model {
   declare id: number
@@ -63,13 +79,20 @@ const dito = new Application({
   models: { Author, Book }
 })
 
+// Sets up a Hono app with the parts and the handlers that an app wires in.
 function setup(...controllers: ControllerDefinition[]) {
-  return createApp({
+  const app = new Hono()
+  const api = createApp({
     base: '/api',
     controllers,
-    plugins: [objectionPlugin({ app: dito })],
+    transaction: objectionTransaction(dito),
     getUser: async () => null
   })
+  app.use(requestStorage(dito))
+  app.onError((error, c) => problemResponse(toProblem(error) ?? error, c))
+  app.notFound(c => problemResponse(new ProblemError({ status: 404 }), c))
+  app.route('/', api)
+  return app
 }
 
 const request = async (
@@ -348,6 +371,28 @@ describe('writes', () => {
     })
   })
 
+  it('hides the details of errors that are not exposed', async () => {
+    const app = setup(
+      defineController({
+        path: 'authors',
+        model: Author,
+        collection: {
+          'get secret': () => {
+            throw new ResponseError({
+              message: 'Secret internals',
+              type: 'Internal',
+              status: 503,
+              expose: false
+            })
+          }
+        }
+      })
+    )
+    const { status, json } = await request(app, 'GET', '/api/authors/secret')
+    expect(status).toBe(503)
+    expect(json).toEqual({ title: 'Service Unavailable', status: 503 })
+  })
+
   it('treats an empty body as an empty object', async () => {
     const response = await app.request('/api/authors', { method: 'POST' })
     expect(response.status).toBe(400)
@@ -428,25 +473,23 @@ describe('transactions', () => {
         model: Author,
         collection: {
           'post check': async c => ({
-            transaction: dito.requestLocals.transaction === c.var.trx,
-            logger: !!dito.requestLocals.logger
+            transaction: dito.requestLocals.transaction === c.var.trx
           }),
           'get check': async c => ({
             transaction: dito.requestLocals.transaction ?? null,
             trx: c.var.trx ?? null,
-            logger: !!dito.requestLocals.logger
+            storage: !!dito.requestStorage.getStore()
           })
         }
       })
     )
     expect((await request(app, 'POST', '/api/authors/check')).json).toEqual({
-      transaction: true,
-      logger: true
+      transaction: true
     })
     expect((await request(app, 'GET', '/api/authors/check')).json).toEqual({
       transaction: null,
       trx: null,
-      logger: true
+      storage: true
     })
   })
 })

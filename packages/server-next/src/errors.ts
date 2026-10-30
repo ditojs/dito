@@ -2,11 +2,12 @@ import type { Context } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { isObject, isString } from '@ditojs/utils'
-import type { Plugin, Problem } from './types.ts'
+import type { Problem } from './types.ts'
 
 // Errors become RFC 9457 Problem Details. Validation errors carry `errors`,
 // keyed by the JSON Pointer of the invalid value, such as `/sets/8/name`.
-// Errors that no part of the app knows are logged and answer a plain 500.
+// Other errors answer a bare 500. Nothing here logs: the app passes
+// `problemResponse` to Hono's `app.onError()` and logs there itself.
 
 const titles: Record<number, string> = {
   400: 'Bad Request',
@@ -34,14 +35,16 @@ export class ProblemError extends Error {
   detail: string | undefined
   errors: Problem['errors']
   type: string | undefined
+  extensions: Record<string, unknown>
 
   constructor({
     status,
     title = getStatusTitle(status),
     detail,
     errors,
-    type
-  }: Omit<Problem, 'title'> & { title?: string }) {
+    type,
+    ...extensions
+  }: Partial<Problem> & { status: number }) {
     super(detail ?? title)
     this.name = 'ProblemError'
     this.status = status
@@ -49,11 +52,12 @@ export class ProblemError extends Error {
     this.detail = detail
     this.errors = errors
     this.type = type
+    this.extensions = extensions
   }
 
   toProblem(): Problem {
     const { type, title, status, detail, errors } = this
-    return { type, title, status, detail, errors }
+    return { ...this.extensions, type, title, status, detail, errors }
   }
 }
 
@@ -87,7 +91,7 @@ export function toJsonPointer(path: StandardSchemaV1.Issue['path'] = []) {
     .join('')
 }
 
-export function toProblem(error: unknown, plugins: Plugin[]): Problem {
+export function toProblem(error: unknown): Problem {
   if (error instanceof ProblemError) return error.toProblem()
   if (error instanceof HTTPException) {
     return {
@@ -96,15 +100,14 @@ export function toProblem(error: unknown, plugins: Plugin[]): Problem {
       detail: error.message || undefined
     }
   }
-  for (const plugin of plugins) {
-    const problem = plugin.toProblem?.(error)
-    if (problem) return problem
-  }
-  console.error(error)
   return { title: getStatusTitle(500), status: 500 }
 }
 
-export function respondProblem(c: Context, problem: Problem) {
+// The Problem Details response of an error, for Hono's `app.onError()`. An
+// `HTTPException` with a response of its own sends that response.
+export function problemResponse(error: unknown, c: Context) {
+  if (error instanceof HTTPException && error.res) return error.res
+  const problem = toProblem(error)
   return c.body(JSON.stringify(problem), problem.status as never, {
     'Content-Type': 'application/problem+json'
   })
