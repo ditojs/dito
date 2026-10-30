@@ -6,6 +6,8 @@ import config from '../../eslint.config.js'
 
 export default [
   ...config,
+  // The build output of `tsconfig.build.json`.
+  { ignores: ['dist'] },
   {
     files: ['**/*.ts'],
     languageOptions: { parser: tsParser },
