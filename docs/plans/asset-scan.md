@@ -42,8 +42,9 @@ asset keys or asset URLs.
      scan runs.
    - Uploads that are never saved get `count = 0` and `unreferenced_since`
      set when inserted, so the same phase removes them.
-   - It lists the live storage to find files without an `asset` row, with
-     both the flat and the nested `a/b/key` folder layouts that exist on disk.
+   - `findStrayFiles({ db, storage })` lists the live storage and reports the
+     files without an `asset` row. It deletes nothing, and reads the folder
+     layout of the storage's `nestedFolders` option only.
 
 4. **Writes:** an `assets(paths)` feature for controllers.
    - It checks the signatures of incoming file objects and imports files from
@@ -62,7 +63,28 @@ asset keys or asset URLs.
 ## Schema
 
 `asset` gets `unreferenced_since timestamptz null`. Existing counts stay until
-the first real scan replaces them.
+the first real scan replaces them, which also sets `unreferenced_since` of the
+assets with a count of 0.
+
+```sql
+alter table asset add column unreferenced_since timestamptz null;
+```
+
+Or as a knex migration:
+
+```js
+export async function up(knex) {
+  await knex.schema.alterTable('asset', table => {
+    table.timestamp('unreferenced_since', { useTz: true }).nullable()
+  })
+}
+
+export async function down(knex) {
+  await knex.schema.alterTable('asset', table => {
+    table.dropColumn('unreferenced_since')
+  })
+}
+```
 
 ## Lineto
 
