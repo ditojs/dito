@@ -1,5 +1,4 @@
 import {
-  ProblemError,
   parseListQuery,
   withBase,
   type Actions,
@@ -152,7 +151,7 @@ export function defineController<T extends object>(
 
       async post(c) {
         const { em, meta, schemas } = use(c)
-        const data = parseWrite(schemas.create, await getBody(c))
+        const data = parseWrite(schemas.create, await c.var.body())
         const link = takeRefs(meta, data)
         const row = em.create(entity, data as never)
         link(row)
@@ -168,7 +167,7 @@ export function defineController<T extends object>(
       async patch(c) {
         const { em, meta, schemas } = use(c)
         const row = await c.var.load<T>()
-        const data = parseWrite(schemas.patch, await getBody(c))
+        const data = parseWrite(schemas.patch, await c.var.body())
         await checkOwnedIds(row, meta, data)
         const link = takeRefs(meta, data)
         em.assign(row, data as never, { onlyProperties: true })
@@ -291,18 +290,4 @@ function getAllowed(
   }
   collect(definition)
   return [...defined]
-}
-
-// The validated body when the action has a `body` schema, else the parsed
-// JSON. An empty body is an empty object, as Koa's body parser gives Dito 6.
-async function getBody(c: DitoContext) {
-  const valid = c.req.valid('json' as never)
-  if (valid !== undefined) return valid
-  const text = await c.req.text()
-  if (!text) return {}
-  try {
-    return JSON.parse(text)
-  } catch {
-    throw new ProblemError({ status: 400, detail: 'The body is invalid JSON.' })
-  }
 }

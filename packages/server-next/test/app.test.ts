@@ -419,6 +419,65 @@ describe('validation', () => {
     })
   })
 
+  it('parses the body once, as the same value each time', async () => {
+    const app = setup([
+      {
+        path: 'fonts',
+        collection: {
+          post: async c => {
+            const body = await c.var.body()
+            body.changed = true
+            return { same: body === (await c.var.body()), body }
+          },
+          get: async c => ({ body: (await c.var.body()) ?? null })
+        }
+      }
+    ])
+    expect(
+      await (await request(app, 'POST', '/api/fonts', { name: 'A' })).json()
+    ).toEqual({ same: true, body: { name: 'A', changed: true } })
+    expect(await (await request(app, 'POST', '/api/fonts')).json()).toEqual({
+      same: true,
+      body: { changed: true }
+    })
+    expect(await (await request(app, 'GET', '/api/fonts')).json()).toEqual({
+      body: null
+    })
+    const invalid = await app.request('/api/fonts', {
+      method: 'POST',
+      body: '{"name":',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    expect(invalid.status).toBe(400)
+    expect(await invalid.json()).toEqual({
+      title: 'Bad Request',
+      status: 400,
+      detail: 'The body is invalid JSON.'
+    })
+  })
+
+  it('returns the validated body with a schema', async () => {
+    const app = setup([
+      {
+        path: 'fonts',
+        collection: {
+          post: action({
+            body: z.object({ name: z.string().trim() }),
+            handler: async c => {
+              const body = await c.var.body()
+              return { same: body === c.req.valid('json'), body }
+            }
+          })
+        }
+      }
+    ])
+    expect(
+      await (
+        await request(app, 'POST', '/api/fonts', { name: ' A ', other: 1 })
+      ).json()
+    ).toEqual({ same: true, body: { name: 'A' } })
+  })
+
   it('validates no body without a schema', async () => {
     const app = setup([{ path: 'fonts', member: { patch: () => 'ok' } }])
     expect((await request(app, 'PATCH', '/api/fonts/1', [1])).status).toBe(200)

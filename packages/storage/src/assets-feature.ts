@@ -16,11 +16,12 @@ import { findAssetFiles, parseJsonValue, type AssetPath } from './asset-path.ts'
 import { insertAsset } from './assets.ts'
 
 // The asset handling of a controller's writes, with the asset paths of its
-// table. The paths are read in the JSON body, where the column of each path is
-// its camelCase property, such as `custom_font_file` as `customFontFile`. The
-// body is the validated one when the action has a `body` schema, which then
-// needs to keep the `signature` of files, and else the parsed JSON body. The
-// feature also signs the files of the rows that the controller sends.
+// table. The paths are read in the body of `c.var.body()`, where the column of
+// each path is its camelCase property, such as `custom_font_file` as
+// `customFontFile`. A `body` schema of the action needs to keep the
+// `signature` of files. The feature changes the files of the body in place,
+// so handlers read them through `c.var.body()` without their signatures. It
+// also signs the files of the rows that the controller sends.
 
 export interface AssetsOptions {
   // The storages by name.
@@ -59,7 +60,7 @@ export function assets(paths: AssetPath[], { storages, db }: AssetsOptions) {
   const feature: FeatureDefinition = {
     around: async (c, next) => {
       if (!writeMethods.includes(c.req.method)) return next()
-      const body = await readBody(c)
+      const body = await c.var.body()
       const files = findFiles(body)
       if (files.length === 0) return next()
       const database = isFunction(db) ? db(c) : db
@@ -75,7 +76,11 @@ export function assets(paths: AssetPath[], { storages, db }: AssetsOptions) {
       }
       try {
         // Throws an `AssetError` on invalid signatures, answered with 400.
-        for (const { file, storage } of files) storage.convertAssetFile(file)
+        for (const { file, storage } of files) {
+          storage.convertAssetFile(file)
+          // The body keeps plain objects, as parsed JSON has them.
+          Object.setPrototypeOf(file, Object.prototype)
+        }
         imported.push(...(await importFiles(database, files, getStorage)))
         // A file in a body is used again, so a release must skip it.
         const keys = [...new Set(files.map(({ file }) => file.key))]
@@ -85,7 +90,6 @@ export function assets(paths: AssetPath[], { storages, db }: AssetsOptions) {
           .where('key', 'in', keys)
           .where('unreferenced_since', 'is not', null)
           .execute()
-        writeBody(c, body)
       } catch (error) {
         await removeImported()
         throw error
@@ -179,25 +183,4 @@ async function fetchFile(url: string) {
     )
   }
   return Buffer.from(await response.arrayBuffer())
-}
-
-// The handler reads the validated body if the action has a schema, and else
-// parses the text of the body itself.
-async function readBody(c: DitoContext) {
-  const valid = c.req.valid('json' as never)
-  if (valid !== undefined) return valid
-  try {
-    const text = await c.req.text()
-    return text ? JSON.parse(text) : undefined
-  } catch {
-    // The handler answers invalid JSON.
-    return undefined
-  }
-}
-
-function writeBody(c: DitoContext, body: unknown) {
-  if (c.req.valid('json' as never) !== undefined) return
-  // Hono reads all body methods from this cache. It holds promises, which its
-  // types leave out.
-  c.req.bodyCache = { text: Promise.resolve(JSON.stringify(body)) as never }
 }

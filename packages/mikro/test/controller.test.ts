@@ -133,7 +133,7 @@ function families(overrides: Partial<MikroControllerDefinition<Family>> = {}) {
       // answers 409.
       async 'patch'(c, next) {
         const family = await c.var.load<Family>()
-        const { updatedAt } = await c.req.json()
+        const { updatedAt } = await c.var.body()
         if (updatedAt && +new Date(updatedAt) !== +family.updatedAt) {
           throw new ProblemError({
             status: 409,

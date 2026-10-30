@@ -1,5 +1,4 @@
 import {
-  ProblemError,
   withBase,
   type Actions,
   type ControllerDefinition,
@@ -212,7 +211,7 @@ export function createBase(options: BaseOptions): FeatureDefinition {
       },
 
       async post(c) {
-        const body = await getBody(c)
+        const body = await c.var.body()
         const result = relate
           ? await relateAndFetch!(c, body)
           : await execute(c, query =>
@@ -228,7 +227,7 @@ export function createBase(options: BaseOptions): FeatureDefinition {
       },
 
       async put(c) {
-        const body = getCollectionBody(model, await getBody(c), graph)
+        const body = getCollectionBody(model, await c.var.body(), graph)
         return graph
           ? executeGraph(c, getIds(model, body), query =>
               query.updateGraphAndFetch(body)
@@ -237,7 +236,7 @@ export function createBase(options: BaseOptions): FeatureDefinition {
       },
 
       async patch(c) {
-        const body = getCollectionBody(model, await getBody(c), graph)
+        const body = getCollectionBody(model, await c.var.body(), graph)
         return graph
           ? executeGraph(c, getIds(model, body), query =>
               query.patchGraphAndFetch(body)
@@ -274,7 +273,7 @@ export function createBase(options: BaseOptions): FeatureDefinition {
           },
 
           async put(c) {
-            const body = await getBody(c)
+            const body = await c.var.body()
             const id = c.var.memberId!
             return graph
               ? executeGraph(c, [id], query =>
@@ -286,7 +285,7 @@ export function createBase(options: BaseOptions): FeatureDefinition {
           },
 
           async patch(c) {
-            const body = await getBody(c)
+            const body = await c.var.body()
             const id = c.var.memberId!
             return graph
               ? executeGraph(c, [id], query =>
@@ -376,17 +375,6 @@ function getFilteredQuery(c: DitoContext) {
     query.filter = [...asArray(query.filter), ...filters]
   }
   return query
-}
-
-// Koa's body parser gives Dito 6 an empty object for an empty body.
-export async function getBody(c: DitoContext) {
-  const text = await c.req.text()
-  if (!text) return {}
-  try {
-    return JSON.parse(text)
-  } catch {
-    throw new ProblemError({ status: 400, detail: 'The body is invalid JSON.' })
-  }
 }
 
 // Collections are saved by the ids of their models, as Dito 6's

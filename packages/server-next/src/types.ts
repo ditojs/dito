@@ -22,6 +22,11 @@ export interface DitoVariables {
   memberId: number | undefined
   // Loads the member through the controller's `load` slot, once per request.
   load: <T = any>() => Promise<T>
+  // The JSON body, parsed once per request. It returns the same value each
+  // time, which handlers may change. With a `body` schema, it is the
+  // validated body. An empty body is `{}`, or undefined on a GET, and invalid
+  // JSON answers 400.
+  body: <T = any>() => Promise<T>
   // The database handle of the request, which handlers query through: the
   // one that the app's `connect()` returns, such as an entity manager fork or
   // a knex instance, and the transaction's handle during a transaction.

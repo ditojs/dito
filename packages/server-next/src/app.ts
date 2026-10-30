@@ -81,6 +81,10 @@ export function createApp(config: AppConfig) {
       c.set('action', action.info)
       c.set('memberId', memberId)
       c.set('load', () => (member ??= load(c, controller, memberId)) as never)
+      let body: Promise<unknown> | undefined
+      const getBody = async () =>
+        action.body ? c.req.valid('json' as never) : (body ??= parseBody(c))
+      c.set('body', getBody as never)
       if (connect) c.set('db', await connect(c))
       c.set('user', await getUser(c))
       await next()
@@ -102,6 +106,17 @@ async function load(
   const member = await controller.slots.load(c, id)
   if (member == null) throw new ProblemError({ status: 404 })
   return member
+}
+
+// Koa's body parser gives Dito 6 an empty object for an empty body.
+async function parseBody(c: DitoContext) {
+  const text = await c.req.text()
+  if (!text) return ['GET', 'HEAD'].includes(c.req.method) ? undefined : {}
+  try {
+    return JSON.parse(text)
+  } catch {
+    throw new ProblemError({ status: 400, detail: 'The body is invalid JSON.' })
+  }
 }
 
 function authorize(

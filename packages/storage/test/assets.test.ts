@@ -333,7 +333,7 @@ describe('assets()', () => {
       ],
       collection: {
         post: async c => {
-          const body = await c.req.json()
+          const body = await c.var.body()
           received = body
           if (body.fail) throw new Error('Failed write')
           return body
