@@ -9,7 +9,7 @@ import {
 } from '@ditojs/server-next'
 import { asArray, isArray, isObject } from '@ditojs/utils'
 import { ValidationError, type Model, type QueryBuilder } from '@ditojs/server'
-import type { Transaction } from 'objection'
+import type { Knex } from 'knex'
 import {
   defineRelation,
   type RelationControllerDefinition
@@ -18,7 +18,7 @@ import {
 // Dito 6's `ModelController` as a controller of the next server. Its default
 // verbs and the `load`, `toJSON` and `isRow` slots form the base layer that
 // the definition wraps through `next`. Each query starts from
-// `model.query(trx)` with the controller's `scope`, `allowScope` and
+// `model.query(c.var.db)` with the controller's `scope`, `allowScope` and
 // `allowFilter`, as Dito 6's `execute()` and `setupQuery()` do. As in Dito 6,
 // only the verbs in `allow`, or the ones the controller defines, are routed.
 
@@ -109,8 +109,7 @@ export function defineController<M extends ModelClass>(
   } = definition
 
   const execute: Execute = async (c, fn, scoped = true) => {
-    const trx = c.var.trx as Transaction | undefined
-    const query = setupQuery(model.query(trx) as unknown as Query, {
+    const query = setupQuery(model.query(getKnex(c)) as unknown as Query, {
       scope: scoped ? scope : undefined,
       allowScope,
       allowFilter
@@ -317,6 +316,12 @@ export function createBase(options: BaseOptions): FeatureDefinition {
   }
 
   return base
+}
+
+// The request's knex or transaction. Without `objectionConnect()`, it is
+// undefined outside of transactions, and queries use the model's knex.
+export function getKnex(c: DitoContext) {
+  return c.var.db as Knex | undefined
 }
 
 function asAllowArray(value: boolean | string | string[]) {

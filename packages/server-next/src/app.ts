@@ -31,7 +31,7 @@ import type {
 // a parent app that mounts this one, so that it runs before the actions.
 
 export function createApp(config: AppConfig) {
-  const { base = '', controllers, transaction, getUser } = config
+  const { base = '', controllers, transaction, connect, getUser } = config
   const app = new Hono<DitoEnv>()
 
   for (const definition of controllers) {
@@ -81,6 +81,7 @@ export function createApp(config: AppConfig) {
       c.set('action', action.info)
       c.set('memberId', memberId)
       c.set('load', () => (member ??= load(c, controller, memberId)) as never)
+      if (connect) c.set('db', await connect(c))
       c.set('user', await getUser(c))
       await next()
     }
@@ -144,12 +145,19 @@ function validate(target: 'query' | 'json', schema: ResolvedAction['query']) {
 
 // Hono turns an error into a response where it's thrown and stores it in
 // `c.error`, so `next()` returns normally. Throwing `c.error` again rolls back.
-// The error response is already set, so the error stops here.
+// The error response is already set, so the error stops here. During the
+// transaction, `c.var.db` is its handle, and the request's handle after it.
 function transact(transaction: Transaction): MiddlewareHandler<DitoEnv> {
   return async (c, next) => {
     try {
       await transaction(c, async () => {
-        await next()
+        const { db } = c.var
+        c.set('db', c.var.trx ?? db)
+        try {
+          await next()
+        } finally {
+          c.set('db', db)
+        }
         if (c.error) throw c.error
       })
     } catch (error) {

@@ -5,6 +5,7 @@
 //   const api = createApp({
 //     controllers: withRelations(controllers),
 //     transaction: objectionTransaction(dito),
+//     connect: objectionConnect(dito),
 //     getUser
 //   })
 //   app.use(requestStorage(dito))
@@ -21,6 +22,10 @@ export {
   type ModelControllerDefinition
 } from './controller.ts'
 export { type RelationControllerDefinition } from './relation.ts'
-export { objectionTransaction, requestStorage } from './transaction.ts'
+export {
+  objectionConnect,
+  objectionTransaction,
+  requestStorage
+} from './transaction.ts'
 export { toProblem } from './errors.ts'
 export { objectionKysely } from './kysely.ts'

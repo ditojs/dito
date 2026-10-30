@@ -491,6 +491,32 @@ describe('transactions', () => {
     })
   })
 
+  it('sets `c.var.db` from `connect`, and to the transaction in one', async () => {
+    const log: string[] = []
+    const transaction: Transaction = async (c, fn) => {
+      c.set('trx', 'trx')
+      const result = await fn()
+      log.push(`after ${c.var.db}`)
+      return result
+    }
+    const connect = vi.fn(c => `db ${c.req.method}`)
+    const app = setup(
+      [
+        {
+          path: 'fonts',
+          collection: { get: c => c.var.db, post: c => c.var.db }
+        }
+      ],
+      { transaction, connect }
+    )
+    expect(await (await request(app, 'GET', '/api/fonts')).json()).toBe(
+      'db GET'
+    )
+    expect(await (await request(app, 'POST', '/api/fonts')).json()).toBe('trx')
+    expect(log).toEqual(['after db POST'])
+    expect(connect).toHaveBeenCalledTimes(2)
+  })
+
   it('runs the middleware of a parent app first', async () => {
     const parent = new Hono<DitoEnv>()
     parent.use(async (c, next) => {

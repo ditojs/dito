@@ -328,7 +328,7 @@ describe('assets()', () => {
       use: [
         assets(paths.slice(0, 2), {
           storages: { covers, archive },
-          db: (c: DitoContext) => c.var.trx as Kysely<any>
+          db: (c: DitoContext) => c.var.db as Kysely<any>
         })
       ],
       collection: {

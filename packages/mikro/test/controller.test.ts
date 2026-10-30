@@ -16,8 +16,8 @@ import {
   createValidationError,
   defineController,
   getEntityManager,
+  mikroConnect,
   mikroTransaction,
-  requestContext,
   toProblem,
   type MikroControllerDefinition
 } from '../src/index.ts'
@@ -31,7 +31,6 @@ afterAll(drop)
 // Sets up a Hono app with the parts and the handlers that an app wires in.
 function setup(...controllers: ControllerDefinition[]) {
   const app = new Hono()
-  app.use(requestContext(orm))
   app.onError((error, c) => problemResponse(toProblem(error) ?? error, c))
   app.notFound(c => problemResponse(new ProblemError({ status: 404 }), c))
   app.route(
@@ -40,6 +39,7 @@ function setup(...controllers: ControllerDefinition[]) {
       base: '/api',
       controllers,
       transaction: mikroTransaction(orm),
+      connect: mikroConnect(orm),
       getUser: async () => null
     })
   )
@@ -697,11 +697,11 @@ describe('transactions', () => {
       families({
         collection: {
           'get check': c => {
-            managers.get = getEntityManager(c)
+            managers.get = c.var.db as EntityManager
             return {}
           },
           'post check': c => {
-            managers.post = getEntityManager(c)
+            managers.post = c.var.db as EntityManager
             return { transaction: !!managers.post.isInTransaction() }
           }
         }
@@ -713,6 +713,9 @@ describe('transactions', () => {
     await request(app, 'GET', '/api/families/check')
     expect(managers.get!.isInTransaction()).toBe(false)
     expect(managers.get).not.toBe(orm.em)
+    expect(getEntityManager({ var: { db: managers.get } } as never)).toBe(
+      managers.get
+    )
   })
 })
 

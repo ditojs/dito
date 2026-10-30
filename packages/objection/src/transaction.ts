@@ -3,12 +3,17 @@ import type { DitoEnv, Transaction } from '@ditojs/server-next'
 import type { Application } from '@ditojs/server'
 import { wrapError } from 'objection'
 
-// Connects the next server to a Dito 6 application: its knex for
+// Connects the next server to a Dito 6 application: its knex for requests and
 // transactions, and its request storage for the code that reads
 // `app.requestLocals.transaction`. Dito 6's `logger` and `session` are not
 // part of it.
 
 type RequestLocals = Parameters<Application['requestStorage']['run']>[0]
+
+// The `connect` of `createApp()`: the application's knex, as `c.var.db`.
+export function objectionConnect(app: Application) {
+  return () => app.knex
+}
 
 // Runs the rest of the request in request storage of its own.
 export function requestStorage(app: Application): MiddlewareHandler<DitoEnv> {

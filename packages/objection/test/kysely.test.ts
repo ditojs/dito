@@ -138,6 +138,15 @@ describe('objectionKysely()', () => {
     expect(other).not.toBe(first)
   })
 
+  it('runs on `c.var.db` of the request', async () => {
+    const other = dito.knex.withUserParams({})
+    const c = (knex: unknown) =>
+      ({ var: { db: knex } }) as unknown as DitoContext
+    expect(db(c(dito.knex))).toBe(db())
+    expect(db(c(other))).not.toBe(db())
+    expect(db(c(other))).toBe(db(c(other)))
+  })
+
   it(`runs on the application's knex outside a request`, async () => {
     await db().insertInto('note').values({ title: 'Outside' }).execute()
     expect(await titles()).toEqual(['Outside'])

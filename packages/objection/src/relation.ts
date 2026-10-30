@@ -17,9 +17,9 @@ import {
   isPlainObject
 } from '@ditojs/utils'
 import { ValidationError } from '@ditojs/server'
-import type { Transaction } from 'objection'
 import {
   createBase,
+  getKnex,
   hasIds,
   setupQuery,
   type Execute,
@@ -91,14 +91,14 @@ export function defineRelation(
   ]
 
   const execute: Execute = async (c, fn, scoped = true) => {
-    const trx = c.var.trx as Transaction | undefined
+    const knex = getKnex(c)
     const row = await parent.model
-      .query(trx)
+      .query(knex)
       .ignoreScope()
       .findById(getParentId(c))
       .throwIfNotFound()
       .select(...parentColumns)
-    const query = setupQuery(row.$relatedQuery(name, trx) as Query, {
+    const query = setupQuery(row.$relatedQuery(name, knex) as Query, {
       scope: scoped ? scope : undefined,
       allowScope,
       allowFilter
@@ -159,7 +159,7 @@ export function defineRelation(
     if (count < ids.length) {
       throw model.createNotFoundError({ byId: ids.length === 1 && ids[0] })
     }
-    const query = setupQuery(model.query(c.var.trx as never) as Query, {
+    const query = setupQuery(model.query(getKnex(c)) as Query, {
       scope,
       allowScope,
       allowFilter

@@ -26,7 +26,7 @@ export interface AssetsOptions {
   // The storages by name.
   storages: Record<string, Storage>
   // The database of the `asset` table, or a function that returns the one of
-  // the request, such as its transaction.
+  // the request, such as a Kysely on `c.var.db`.
   db: Kysely<any> | ((c: DitoContext) => Kysely<any>)
 }
 

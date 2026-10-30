@@ -5,9 +5,9 @@
 //   const api = createApp({
 //     controllers,
 //     transaction: mikroTransaction(orm),
+//     connect: mikroConnect(orm),
 //     getUser
 //   })
-//   app.use(requestContext(orm))
 //   app.onError((error, c) => {
 //     log(error)
 //     return problemResponse(toProblem(error) ?? error, c)
@@ -27,6 +27,7 @@ export {
 } from './write-schema.ts'
 export {
   getEntityManager,
+  mikroConnect,
   mikroTransaction,
   requestContext
 } from './transaction.ts'

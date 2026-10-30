@@ -22,7 +22,11 @@ export interface DitoVariables {
   memberId: number | undefined
   // Loads the member through the controller's `load` slot, once per request.
   load: <T = any>() => Promise<T>
-  // The ORM package's transaction or entity manager for this request.
+  // The database handle of the request, which handlers query through: the
+  // one that the app's `connect()` returns, such as an entity manager fork or
+  // a knex instance, and the transaction's handle during a transaction.
+  db: unknown
+  // The transaction's handle during a transaction, else undefined.
   trx: unknown
   // The action that runs, for middleware that reads its settings.
   action: ActionInfo
@@ -135,7 +139,8 @@ export interface ListQuery {
 }
 
 // Runs `fn` in a transaction and sets `c.var.trx` for it. An ORM package
-// provides it, and `createApp` runs the transacted actions through it.
+// provides it, and `createApp` runs the transacted actions through it. During
+// `fn`, `c.var.db` is `c.var.trx`.
 export type Transaction = <T>(
   c: DitoContext,
   fn: () => Promise<T>
@@ -157,6 +162,9 @@ export interface AppConfig {
   base?: string
   controllers: ControllerDefinition[]
   transaction?: Transaction
+  // The database handle of a request, as `c.var.db`. An ORM package provides
+  // it.
+  connect?: (c: DitoContext) => unknown
   // The signed-in user of the request, or null.
   getUser: (c: DitoContext) => Promise<User | null>
 }

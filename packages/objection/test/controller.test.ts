@@ -16,6 +16,7 @@ import {
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import {
   defineController,
+  objectionConnect,
   objectionTransaction,
   requestStorage,
   toProblem
@@ -88,6 +89,7 @@ function setup(...controllers: ControllerDefinition[]) {
     base: '/api',
     controllers,
     transaction: objectionTransaction(dito),
+    connect: objectionConnect(dito),
     getUser: async () => null
   })
   app.use(requestStorage(dito))
@@ -476,7 +478,7 @@ describe('transactions', () => {
         model: Author,
         collection: {
           'post fail': async (c, next) => {
-            await Author.query(c.var.trx as never).insert({ name: 'Eve' })
+            await Author.query(c.var.db as never).insert({ name: 'Eve' })
             throw new Error('Failed')
           }
         }
@@ -494,11 +496,15 @@ describe('transactions', () => {
         model: Author,
         collection: {
           'post check': async c => ({
-            transaction: dito.requestLocals.transaction === c.var.trx
+            transaction: (
+              dito.requestLocals.transaction === c.var.trx &&
+              c.var.db === c.var.trx
+            )
           }),
           'get check': async c => ({
             transaction: dito.requestLocals.transaction ?? null,
             trx: c.var.trx ?? null,
+            knex: c.var.db === dito.knex,
             storage: !!dito.requestStorage.getStore()
           })
         }
@@ -510,6 +516,7 @@ describe('transactions', () => {
     expect((await request(app, 'GET', '/api/authors/check')).json).toEqual({
       transaction: null,
       trx: null,
+      knex: true,
       storage: true
     })
   })

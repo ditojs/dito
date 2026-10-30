@@ -9,6 +9,7 @@ import {
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import {
   defineController,
+  objectionConnect,
   objectionTransaction,
   requestStorage,
   toProblem,
@@ -101,6 +102,7 @@ function setup(...controllers: ControllerDefinition[]) {
     base: '/api',
     controllers: withRelations(controllers),
     transaction: objectionTransaction(dito),
+    connect: objectionConnect(dito),
     getUser: async c => {
       const roles = c.req.header('x-roles')
       return roles === undefined ? null : { id: 1, roles: roles.split(',') }
