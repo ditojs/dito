@@ -18,5 +18,9 @@
   "devDependencies": {
     "knex": "^3.3.0",
     "objection": "^4.4.1"
+  },
+  "peerDependencies": {
+    "knex": "^3.3.0",
+    "objection": "^4.4.1"
   }
 }
