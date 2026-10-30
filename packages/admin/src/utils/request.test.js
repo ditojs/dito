@@ -120,6 +120,16 @@ describe('request()', () => {
     expect(response.data).toEqual([{ id: 1 }])
   })
 
+  it('parses Problem Details responses into `response.data`', async () => {
+    stubFetch({
+      status: 403,
+      contentType: 'application/problem+json',
+      body: { title: 'Forbidden', status: 403 }
+    })
+    const error = await request(createApi(), { url: 'books' }).catch(e => e)
+    expect(error.response.data).toEqual({ title: 'Forbidden', status: 403 })
+  })
+
   it('does not parse other responses', async () => {
     stubFetch({ contentType: 'text/plain' })
     const response = await request(createApi(), { url: 'books' })

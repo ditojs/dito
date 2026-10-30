@@ -43,7 +43,8 @@ export async function request(api, {
     signal: getRequestSignal({ signal, timeout })
   })
 
-  if (response.headers.get('Content-Type')?.includes('application/json')) {
+  // JSON and its variants, such as `application/problem+json` for errors:
+  if (isJsonType(response.headers.get('Content-Type'))) {
     response.data = await response.json()
   }
 
@@ -158,4 +159,8 @@ export function getApiUrl(api, { url, query }) {
 function combineUrls(baseUrl, relativeUrl) {
   // Use same approach as axios `combineURLs()` to join baseUrl & relativeUrl:
   return `${baseUrl.replace(/\/+$/, '')}/${relativeUrl.replace(/^\/+/, '')}`
+}
+
+function isJsonType(contentType) {
+  return /^application\/([\w.-]+\+)?json\b/i.test(contentType ?? '')
 }
