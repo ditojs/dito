@@ -1,0 +1,18 @@
+{
+  "name": "@ditojs/server-next",
+  "version": "7.0.0-next.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@ditojs/utils": "workspace:^",
+    "@hono/standard-validator": "^0.4.1",
+    "@standard-schema/spec": "^1.1.0",
+    "hono": "^4.13.14",
+    "zod": "^4.6.7"
+  }
+}
