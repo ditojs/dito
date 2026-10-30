@@ -5,8 +5,8 @@ import type { StandardSchemaV1 } from '@standard-schema/spec'
 // object: actions on its collection and on each member, keyed `'verb path'`,
 // and the verbs `get`, `post`, `patch`, `put` and `delete` without a path.
 // The core knows no ORM. An ORM package builds its model controllers as a
-// base layer of handlers and slots (`load`, `toJSON`) under the controller's
-// own definitions, which wrap them through `next`.
+// base layer of handlers and slots (`load`, `finish`, `toJSON`) under the
+// controller's own definitions, which wrap them through `next`.
 
 export type Verb = 'get' | 'post' | 'put' | 'patch' | 'delete'
 
@@ -97,6 +97,10 @@ export interface Slots {
   // Whether a value a handler returns is a row of this controller, which
   // goes through `toJSON` and `serialize`. Other values are sent as they are.
   isRow?: (value: unknown) => boolean
+  // Runs once on the result of the handlers, before `toJSON`, and inside the
+  // transaction if there is one. It gets every result, also `undefined` and
+  // values that aren't rows. It returns nothing, or a result to send instead.
+  finish?: (c: DitoContext, result: unknown) => unknown
   // The id of the member's owner, for `authorize: '$owner'`.
   owner?: (c: DitoContext) => Promise<unknown>
 }

@@ -8,6 +8,7 @@ import {
   type FeatureDefinition,
   type Verb
 } from '@ditojs/server-next'
+import { isArray, isPlainObject } from '@ditojs/utils'
 import {
   Reference,
   Utils,
@@ -42,10 +43,10 @@ import {
 //
 // Writes use the unit of work: `post` creates the row, and `patch` assigns
 // the body to the member that `c.var.load()` loads once. Both return the row
-// unwritten, so a wrapping handler can check the graph first. The first row
-// that goes out flushes the entity manager, and each row is serialized as it
-// is, without a new query. `refresh` loads the rows again after the flush,
-// for formulas and values that triggers set.
+// unwritten, so a wrapping handler can check the graph first. The `finish`
+// slot flushes the entity manager once after the handlers of a write, and
+// each row is serialized as it is, without a new query. `refresh` loads the
+// rows again after the flush, for formulas and values that triggers set.
 // As in Dito 6, only the verbs in `allow`, or the ones the controller
 // defines, are routed.
 
@@ -111,8 +112,6 @@ export function defineController<T extends object>(
   }
   const use = (c: DitoContext) => resolve(getEntityManager(c))
 
-  // The flush of a write runs once per request, before its first row goes out.
-  const flushes = new WeakMap<DitoContext, Promise<void>>()
   const outputs = new WeakMap<DitoContext, OutputOptions>()
 
   const getOutput = (
@@ -196,34 +195,49 @@ export function defineController<T extends object>(
 
     isRow: value => value instanceof entity,
 
-    async toJSON(c, row) {
-      const { em, meta, output } = use(c)
-      if (c.req.method !== 'GET') {
-        let flush = flushes.get(c)
-        if (!flush) {
-          setNulls(row as object)
-          flush = em.flush()
-          flushes.set(c, flush)
-        }
-        await flush
-        // Relations set by id are references, which this loads if `populate`
-        // has them. Loaded relations aren't queried again.
+    // Flushes the writes of the request, also of results that aren't rows,
+    // such as the count of a delete. The rows are then loaded in their shape.
+    async finish(c, result) {
+      if (c.req.method === 'GET') return
+      const { em, meta } = use(c)
+      const rows = getRows(result, entity)
+      for (const row of rows) setNulls(row)
+      await em.flush()
+      // Relations set by id are references, which this loads if `populate`
+      // has them. Loaded relations aren't queried again.
+      for (const row of rows) {
         await (
           refresh
-            ? em.refresh(row as T, findOptions as never)
-            : em.populate(row as T, populate as never)
+            ? em.refresh(row, findOptions as never)
+            : em.populate(row, populate as never)
         )
-        if (c.var.action.on === 'collection' && c.var.action.name === 'post') {
-          const id = (row as Record<string, unknown>)[meta.primaryKeys[0]!]
-          const path = new URL(c.req.url).pathname.replace(/\/$/, '')
-          c.header('Location', `${path}/${id}`)
-        }
       }
+      const { on, name } = c.var.action
+      if (on === 'collection' && name === 'post' && result instanceof entity) {
+        const id = (result as Record<string, unknown>)[meta.primaryKeys[0]!]
+        const path = new URL(c.req.url).pathname.replace(/\/$/, '')
+        c.header('Location', `${path}/${id}`)
+      }
+    },
+
+    toJSON(c, row) {
+      const { meta, output } = use(c)
       return serializeRow(row as object, getOutput(c, meta, output))
     }
   }
 
   return withBase(base, controller)
+}
+
+// The rows of the entity in a result: the result itself, an array, or the
+// `results` of a page.
+function getRows<T extends object>(result: unknown, entity: EntityClass<T>) {
+  const items = isArray(result)
+    ? result
+    : isPlainObject(result) && isArray(result.results)
+      ? result.results
+      : [result]
+  return items.filter((item): item is T => item instanceof entity)
 }
 
 // New rows leave out the properties that the body doesn't set. This sets

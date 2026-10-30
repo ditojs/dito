@@ -25,9 +25,10 @@ import type {
 // Builds the Hono app of the controllers. Each action sets the request's
 // variables, authorizes, validates, and then runs the `around` middleware and
 // the handler inside the transaction. All of these are Hono middleware in one
-// chain. The app sets the `onError()` and `notFound()` handlers itself, and
-// adds its middleware to a parent app that mounts this one, so that it runs
-// before the actions.
+// chain. The `finish` slot and `toJSON` run after the handler and inside the
+// `around` middleware, which sees the response that they make. The app sets
+// the `onError()` and `notFound()` handlers itself, and adds its middleware to
+// a parent app that mounts this one, so that it runs before the actions.
 
 export function createApp(config: AppConfig) {
   const { base = '', controllers, transaction, getUser } = config
@@ -162,7 +163,12 @@ async function respond(
   controller: ResolvedController,
   action: ResolvedAction
 ) {
-  const result = await action.run(c)
+  let result = await action.run(c)
+  const { finish } = controller.slots
+  if (finish) {
+    const replacement = await finish(c, result)
+    if (replacement !== undefined) result = replacement
+  }
   if (result instanceof Response) return result
   if (result === undefined) return c.body(null, 204)
   const json = await toJson(c, controller, result)

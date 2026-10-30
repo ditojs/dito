@@ -65,6 +65,7 @@ export function resolveController(
     ],
     slots: {
       load: last('load'),
+      finish: last('finish'),
       toJSON: last('toJSON'),
       isRow: last('isRow'),
       owner: last('owner')

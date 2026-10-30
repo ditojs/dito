@@ -577,6 +577,69 @@ describe('results', () => {
     expect(await empty.text()).toBe('')
   })
 
+  it('runs `finish` once on every result, before `toJSON`', async () => {
+    const order: string[] = []
+    const finish = vi.fn((c, result: unknown) => {
+      order.push('finish')
+      if (result === 'replace') return new Row(9)
+    })
+    const app = setup([
+      withBase(
+        { ...rows, finish },
+        {
+          path: 'fonts',
+          serialize: (_c, _row, json) => {
+            order.push('serialize')
+            return json
+          },
+          collection: {
+            'get': () => [new Row(1)],
+            'get replace': () => 'replace',
+            'post': () => undefined
+          }
+        }
+      )
+    ])
+    await request(app, 'GET', '/api/fonts')
+    expect(order).toEqual(['finish', 'serialize'])
+    expect(finish).toHaveBeenLastCalledWith(expect.anything(), [new Row(1)])
+    expect(
+      await (await request(app, 'GET', '/api/fonts/replace')).json()
+    ).toEqual({ id: 9, json: true })
+    expect((await request(app, 'POST', '/api/fonts')).status).toBe(204)
+    expect(finish).toHaveBeenLastCalledWith(expect.anything(), undefined)
+    expect(finish).toHaveBeenCalledTimes(3)
+  })
+
+  it('runs `finish` inside the transaction and `around`', async () => {
+    const { transaction, log } = createTransaction()
+    const app = setup(
+      [
+        {
+          path: 'fonts',
+          around: async (_c, next) => {
+            log.push('around in')
+            await next()
+            log.push('around out')
+          },
+          finish: c => {
+            log.push(`finish ${c.var.trx}`)
+          },
+          collection: { post: () => ({}) }
+        }
+      ],
+      { transaction }
+    )
+    await request(app, 'POST', '/api/fonts')
+    expect(log).toEqual([
+      'begin',
+      'around in',
+      'finish trx',
+      'around out',
+      'commit'
+    ])
+  })
+
   it('serializes rows through `toJSON` and the `serialize` chain', async () => {
     const feature = defineFeature({
       serialize: (_c, row, json) => ({ ...json, feature: row.id })

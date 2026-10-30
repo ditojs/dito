@@ -565,6 +565,14 @@ describe('writes', () => {
       []
     )
   })
+
+  it('flushes writes without a transaction, also for results that are no rows', async () => {
+    const app = setup(families({ transacted: false }))
+    const { status, json } = await request(app, 'DELETE', '/api/families/3')
+    expect(status).toBe(200)
+    expect(json).toEqual({ count: 1 })
+    expect(await sql('select id from family where id = 3')).toEqual([])
+  })
 })
 
 describe('actions', () => {
