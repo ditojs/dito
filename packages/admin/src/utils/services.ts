@@ -183,9 +183,13 @@ export function request(
       // with the status of the response:
       const data = error.response?.data
       throw data
-        ? Object.assign(new Error(data.message), data, {
-            status: error.response.status
-          })
+        ? Object.assign(
+            new Error(data.message ?? data.detail ?? data.title),
+            data,
+            {
+              status: error.response.status
+            }
+          )
         : error
     })
   if (loadCache) {

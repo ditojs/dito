@@ -107,11 +107,12 @@ export function useResource({
       : parentVerbs
   })
 
-  // Notify request errors with the type and message of their response data:
+  // Notify request errors with the type and message of their response data,
+  // as Dito.js errors or as Problem Details:
   const notifyRequestError = (error: any) => {
     const data = error?.response?.data
     const title = isString(data?.type) ? labelize(data.type) : 'Error'
-    const text = data?.message ?? error
+    const text = data?.message ?? data?.detail ?? data?.title ?? error
     adminContext.notify({ type: 'error', error, title, text })
   }
 

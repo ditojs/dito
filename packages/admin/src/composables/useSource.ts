@@ -148,7 +148,10 @@ export function useSource(
               onFilterErrors?.(data.errors)
             ) {
               return true
-            } else if (status === 401 && routeContext?.isForm) {
+            } else if (
+              (status === 401 || status === 403) &&
+              routeContext?.isForm
+            ) {
               // Sources in forms show that the user may not access their
               // resource:
               getModel().errors.add(props.dataPath, unauthorizedError)

@@ -302,9 +302,16 @@ export class Session {
   }
 
   #notifyError(error: any) {
-    // Logins answer their errors in `error`, other actions in `message`:
+    // Logins answer their errors in `error`, other actions in `message`, or in
+    // `detail` and `title` as Problem Details:
     const { data } = error.response ?? {}
-    const responseError = data?.error || data?.message || error
+    const responseError = (
+      data?.error ||
+      data?.message ||
+      data?.detail ||
+      data?.title ||
+      error
+    )
     this.#adminContext.notify({
       type: 'error',
       error: responseError,

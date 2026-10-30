@@ -486,6 +486,22 @@ describe('useResource()', () => {
       expect(getNotifications()).toEqual([])
     })
 
+    it('shows the same error for a forbidden load', async () => {
+      const { getErrors } = await mountForm({
+        schema: {
+          fields: { title: { type: 'text' }, reviews: reviewsSchema }
+        },
+        data: { title: 'Orlando' },
+        request: ({ url }) => {
+          if (url === '/reviews') {
+            throw createRequestError(403, { title: 'Forbidden', status: 403 })
+          }
+        }
+      })
+      expect(getErrors('reviews')).toEqual([message])
+      expect(getNotifications()).toEqual([])
+    })
+
     it('removes the error once the list loads', async () => {
       let isAuthorized = false
       const { getComponent, getErrors } = await mountForm({
