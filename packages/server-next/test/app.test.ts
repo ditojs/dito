@@ -149,17 +149,20 @@ describe('routing', () => {
     expect((await request(app, 'POST', '/api/fonts')).status).toBe(201)
   })
 
-  it('throws for a default verb outside `allow`', () => {
-    expect(() =>
-      setup([
-        {
-          path: 'fonts',
-          collection: { allow: ['get'], get: () => [], post: () => ({}) }
-        }
-      ])
-    ).toThrow(
-      "'post' is defined but not in `allow` in the collection of 'fonts'"
-    )
+  it('routes a default verb the controller defines outside `allow`', async () => {
+    const base = defineFeature({
+      collection: { get: () => 'list', post: () => 'created' },
+      member: { get: () => 'row', delete: () => 'gone' }
+    })
+    const app = setup([
+      withBase(base, {
+        path: 'fonts',
+        collection: { allow: ['get'], post: (c, next) => next() },
+        member: { allow: ['get'] }
+      })
+    ])
+    expect((await request(app, 'POST', '/api/fonts')).status).toBe(201)
+    expect((await request(app, 'DELETE', '/api/fonts/1')).status).toBe(404)
   })
 })
 

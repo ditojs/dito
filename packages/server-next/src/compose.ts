@@ -135,13 +135,14 @@ function resolveActions(
       throw new Error(`Invalid action '${key}' in the ${where}`)
     }
     const isDefault = !path
-    if (isDefault && allow && !allow.includes(verb)) {
-      // The base defines the default verbs that `allow` picks from.
-      if (list.some(entry => entry.kind !== 'base')) {
-        throw new Error(
-          `'${key}' is defined but not in \`allow\` in the ${where}`
-        )
-      }
+    // `allow` picks from the base's default verbs. A verb that a feature or
+    // the controller defines is routed, as in Dito 6.
+    if (
+      isDefault &&
+      allow &&
+      !allow.includes(verb) &&
+      list.every(entry => entry.kind === 'base')
+    ) {
       continue
     }
     const defs = list.map(entry => entry.def)
