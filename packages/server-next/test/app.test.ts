@@ -163,6 +163,37 @@ describe('routing', () => {
     expect((await request(app, 'POST', '/api/fonts')).status).toBe(201)
   })
 
+  it(`routes only the defined verbs with \`allow: 'defined'\``, async () => {
+    const base = defineFeature({
+      collection: { get: () => 'list', post: () => 'created' },
+      member: { get: () => 'row', patch: () => 'patched', delete: () => 'gone' }
+    })
+    const feature = defineFeature({ member: { patch: (c, next) => next() } })
+    const app = setup([
+      withBase(
+        base,
+        {
+          path: 'fonts',
+          use: [feature],
+          collection: { get: (c, next) => next() }
+        },
+        { allow: 'defined' }
+      ),
+      withBase(
+        base,
+        { path: 'all', collection: { allow: ['*'] }, member: { allow: ['*'] } },
+        { allow: 'defined' }
+      )
+    ])
+    expect((await request(app, 'GET', '/api/fonts')).status).toBe(200)
+    expect((await request(app, 'POST', '/api/fonts')).status).toBe(404)
+    expect((await request(app, 'GET', '/api/fonts/1')).status).toBe(404)
+    expect((await request(app, 'PATCH', '/api/fonts/1')).status).toBe(200)
+    expect((await request(app, 'DELETE', '/api/fonts/1')).status).toBe(404)
+    expect((await request(app, 'POST', '/api/all')).status).toBe(201)
+    expect((await request(app, 'DELETE', '/api/all/1')).status).toBe(200)
+  })
+
   it('routes a default verb the controller defines outside `allow`', async () => {
     const base = defineFeature({
       collection: { get: () => 'list', post: () => 'created' },

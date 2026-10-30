@@ -6,7 +6,18 @@ import type {
 } from './types.ts'
 
 // The bases that `withBase()` puts under controllers, by controller.
-const bases = new WeakMap<ControllerDefinition, FeatureDefinition>()
+const bases = new WeakMap<ControllerDefinition, Base>()
+
+export interface BaseOptions {
+  // Which default verbs of the base to route without `allow`: `all` of them,
+  // or only the `defined` ones, which a feature or the controller defines
+  // too. Dito 6 routes the defined ones.
+  allow?: 'all' | 'defined'
+}
+
+interface Base extends Required<BaseOptions> {
+  def: FeatureDefinition
+}
 
 export function defineController(def: ControllerDefinition) {
   return def
@@ -30,10 +41,11 @@ export function action<
 // slots.
 export function withBase(
   base: FeatureDefinition,
-  def: ControllerDefinition
+  def: ControllerDefinition,
+  { allow = 'all' }: BaseOptions = {}
 ): ControllerDefinition {
   const controller = { ...def }
-  bases.set(controller, base)
+  bases.set(controller, { def: base, allow })
   return controller
 }
 

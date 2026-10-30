@@ -94,7 +94,8 @@ export interface ActionDefinition<
 
 export type ActionValue = Handler | ActionDefinition<any, any>
 
-export type Actions = { allow?: Verb[] } & {
+// `allow` lists the default verbs of the base to route, `*` for all of them.
+export type Actions = { allow?: (Verb | '*')[] } & {
   [key in Verb | `${Verb} ${string}`]?: ActionValue
 }
 

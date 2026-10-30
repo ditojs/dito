@@ -1,10 +1,8 @@
 import {
   withBase,
-  type Actions,
   type ControllerDefinition,
   type DitoContext,
-  type FeatureDefinition,
-  type Verb
+  type FeatureDefinition
 } from '@ditojs/server-next'
 import { asArray, isArray, isObject } from '@ditojs/utils'
 import { ValidationError, type Model, type QueryBuilder } from '@ditojs/server'
@@ -27,8 +25,6 @@ export type Query<M extends ModelClass = ModelClass> = QueryBuilder<
   any
 >
 type QueryValues = Record<string, string | string[]>
-
-const verbs: Verb[] = ['get', 'post', 'put', 'patch', 'delete']
 
 // The query settings of model and relation controllers.
 export interface QueryOptions<M extends ModelClass = ModelClass> {
@@ -124,7 +120,7 @@ export function defineController<M extends ModelClass>(
     graph,
     allowParam
   })
-  const result = withBase(base, controller)
+  const result = withBase(base, controller, { allow: 'defined' })
   if (relations) {
     relationControllers.set(
       result,
@@ -200,8 +196,6 @@ export function createBase(options: BaseOptions): FeatureDefinition {
 
   const base: FeatureDefinition = {
     collection: {
-      allow: getAllowed(definition, 'collection'),
-
       async get(c) {
         const result = await execute(c, query =>
           oneToOne ? find(c, query).first() : find(c, query)
@@ -264,8 +258,6 @@ export function createBase(options: BaseOptions): FeatureDefinition {
     member: oneToOne
       ? {}
       : {
-          allow: getAllowed(definition, 'member'),
-
           async get(c) {
             return execute(c, query =>
               find(c, query.findById(c.var.memberId!)).throwIfNotFound()
@@ -325,29 +317,6 @@ export function getKnex(c: DitoContext) {
 
 function asAllowArray(value: boolean | string | string[]) {
   return value === false ? [] : asArray(value as string | string[])
-}
-
-// The default verbs to route: the ones in `allow`, or the ones that the
-// controller and its features define. `'*'` allows them all, as in Dito 6.
-function getAllowed(
-  definition: FeatureDefinition,
-  on: 'collection' | 'member'
-): Verb[] {
-  const allow = definition[on]?.allow as (Verb | '*')[] | undefined
-  if (allow) {
-    return allow.includes('*')
-      ? verbs.filter(verb => on === 'collection' || verb !== 'post')
-      : (allow as Verb[])
-  }
-  const defined = new Set<Verb>()
-  const collect = (feature: FeatureDefinition) => {
-    for (const child of feature.use ?? []) collect(child)
-    for (const verb of verbs) {
-      if (feature[on]?.[verb as keyof Actions]) defined.add(verb)
-    }
-  }
-  collect(definition)
-  return [...defined]
 }
 
 // Dito 6's `ctx.query`, which `find()` reads: a string per parameter, or an

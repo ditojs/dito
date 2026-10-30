@@ -1,11 +1,9 @@
 import {
   parseListQuery,
   withBase,
-  type Actions,
   type ControllerDefinition,
   type DitoContext,
-  type FeatureDefinition,
-  type Verb
+  type FeatureDefinition
 } from '@ditojs/server-next'
 import { isArray, isPlainObject } from '@ditojs/utils'
 import {
@@ -66,11 +64,6 @@ interface Resolved {
   meta: EntityMetadata
   schemas: WriteSchemas
   output: OutputOptions
-}
-
-const defaultVerbs = {
-  collection: ['get', 'post'] as Verb[],
-  member: ['get', 'patch', 'delete'] as Verb[]
 }
 
 export function defineController<T extends object>(
@@ -135,8 +128,6 @@ export function defineController<T extends object>(
 
   const base: FeatureDefinition = {
     collection: {
-      allow: getAllowed(definition, 'collection'),
-
       async get(c) {
         const { em, meta } = use(c)
         return findRows({
@@ -160,8 +151,6 @@ export function defineController<T extends object>(
     },
 
     member: {
-      allow: getAllowed(definition, 'member'),
-
       get: c => c.var.load(),
 
       async patch(c) {
@@ -225,7 +214,7 @@ export function defineController<T extends object>(
     }
   }
 
-  return withBase(base, controller)
+  return withBase(base, controller, { allow: 'defined' })
 }
 
 // The rows of the entity in a result: the result itself, an array, or the
@@ -269,25 +258,4 @@ function setNulls(row: object, seen = new WeakSet<object>()) {
       setNulls(Reference.unwrapReference(value), seen)
     }
   }
-}
-
-// The default verbs to route: the ones in `allow`, or the ones that the
-// controller and its features define. `'*'` allows them all, as in Dito 6.
-function getAllowed(
-  definition: ControllerDefinition,
-  on: 'collection' | 'member'
-): Verb[] {
-  const allow = definition[on]?.allow as (Verb | '*')[] | undefined
-  if (allow) {
-    return allow.includes('*') ? defaultVerbs[on] : (allow as Verb[])
-  }
-  const defined = new Set<Verb>()
-  const collect = (feature: FeatureDefinition) => {
-    for (const child of feature.use ?? []) collect(child)
-    for (const verb of defaultVerbs[on]) {
-      if (feature[on]?.[verb as keyof Actions]) defined.add(verb)
-    }
-  }
-  collect(definition)
-  return [...defined]
 }

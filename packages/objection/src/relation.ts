@@ -181,10 +181,11 @@ export function defineRelation(
   })
   base.transacted = parent.transacted
   base.around = authorizeParent(parent, controller)
-  return withBase(base, {
-    ...controller,
-    path: `${parent.path}/:parentId{[0-9]+}/${path}`
-  })
+  return withBase(
+    base,
+    { ...controller, path: `${parent.path}/:parentId{[0-9]+}/${path}` },
+    { allow: 'defined' }
+  )
 }
 
 function getParentId(c: DitoContext) {

@@ -279,6 +279,20 @@ describe('allow', () => {
     expect((await request(app, 'GET', '/api/authors/1')).status).toBe(200)
     expect((await request(app, 'DELETE', '/api/authors/1')).status).toBe(404)
   })
+
+  it('routes all default verbs with `*`', async () => {
+    const app = setup(
+      defineController({
+        path: 'authors',
+        model: Author,
+        collection: { allow: ['*'] },
+        member: { allow: ['*'] }
+      })
+    )
+    expect((await request(app, 'GET', '/api/authors')).status).toBe(200)
+    expect((await request(app, 'DELETE', '/api/authors/2')).status).toBe(200)
+    expect((await request(app, 'POST', '/api/authors/2')).status).toBe(404)
+  })
 })
 
 describe('member get', () => {
