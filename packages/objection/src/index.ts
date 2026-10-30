@@ -3,7 +3,7 @@
 //
 //   const app = new Hono()
 //   const api = createApp({
-//     controllers,
+//     controllers: withRelations(controllers),
 //     transaction: objectionTransaction(dito),
 //     getUser
 //   })
@@ -17,7 +17,9 @@
 
 export {
   defineController,
+  withRelations,
   type ModelControllerDefinition
 } from './controller.ts'
+export { type RelationControllerDefinition } from './relation.ts'
 export { objectionTransaction, requestStorage } from './transaction.ts'
 export { toProblem } from './errors.ts'
