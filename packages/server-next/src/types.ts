@@ -1,4 +1,4 @@
-import type { Context, Env, MiddlewareHandler } from 'hono'
+import type { Context, Env, Input, MiddlewareHandler } from 'hono'
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 
 // The controller model of Dito's server on Hono. A controller is a plain
@@ -52,10 +52,21 @@ export type Authorize =
 
 // `next` runs the definition this one wraps: the ORM package's default verb,
 // or a feature's action of the same name. It returns that handler's result.
-export type Handler = (
-  c: DitoContext,
+// `I` types `c.req.valid()` with the action's `query` and `body`.
+export type Handler<I extends Input = {}> = (
+  c: Context<DitoEnv, any, I>,
   next: () => Promise<unknown>
 ) => unknown
+
+// The validated input of an action with these `query` and `body` schemas.
+export interface ActionInput<Q, B> {
+  out: (Q extends StandardSchemaV1
+    ? { query: StandardSchemaV1.InferOutput<Q> }
+    : {}) &
+    (B extends StandardSchemaV1
+      ? { json: StandardSchemaV1.InferOutput<B> }
+      : {})
+}
 
 export interface ActionDefinition<
   Q extends StandardSchemaV1 | undefined = undefined,
@@ -69,7 +80,7 @@ export interface ActionDefinition<
   around?: MiddlewareHandler<DitoEnv> | MiddlewareHandler<DitoEnv>[]
   // Writes run in a transaction unless this is false. Reads can set true.
   transacted?: boolean
-  handler: Handler
+  handler: Handler<ActionInput<Q, B>>
 }
 
 export type ActionValue = Handler | ActionDefinition<any, any>
