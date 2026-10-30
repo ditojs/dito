@@ -4,10 +4,12 @@ import { z } from 'zod'
 import {
   action,
   createApp,
+  createValidationError,
   defineController,
   defineFeature,
   ProblemError,
   problemResponse,
+  toDitoErrors,
   withBase,
   type AppConfig,
   type ControllerDefinition,
@@ -415,6 +417,75 @@ describe('validation', () => {
         '/sets/1/name': [
           { message: expect.any(String), keyword: 'invalid_type' }
         ]
+      }
+    })
+  })
+
+  it(`answers in Dito 6's shape with \`errors: 'dito'\``, async () => {
+    const app = setup(
+      [
+        {
+          path: 'fonts',
+          member: {
+            patch: action({
+              query: z.object({ draft: z.enum(['yes', 'no']).optional() }),
+              body: z.object({
+                sets: z.array(z.object({ name: z.string() }))
+              }),
+              handler: () => 'ok'
+            })
+          }
+        }
+      ],
+      { errors: 'dito' }
+    )
+    const body = await request(app, 'PATCH', '/api/fonts/1', {
+      sets: [{ name: 'Regular' }, { name: 8 }]
+    })
+    expect(body.status).toBe(400)
+    expect(await body.json()).toEqual({
+      title: 'Bad Request',
+      status: 400,
+      type: 'ParameterValidation',
+      message: 'The provided action parameters are not valid',
+      detail: 'The provided action parameters are not valid',
+      errors: {
+        'sets/1/name': [
+          { message: expect.any(String), keyword: 'invalid_type' }
+        ]
+      }
+    })
+    const query = await request(app, 'PATCH', '/api/fonts/1?draft=maybe', {
+      sets: []
+    })
+    expect((await query.json()).errors).toEqual({
+      draft: [{ message: expect.any(String), keyword: 'invalid_value' }]
+    })
+  })
+
+  it('creates validation errors in both formats', () => {
+    const issues = [
+      { message: 'is taken', path: ['sets', { key: 8 }, 'name'] },
+      { message: 'is empty', path: [], code: 'too_small' }
+    ]
+    expect(toDitoErrors(issues)).toEqual({
+      'sets/8/name': [{ message: 'is taken' }],
+      '': [{ message: 'is empty', keyword: 'too_small' }]
+    })
+    expect(
+      createValidationError('model', issues, { format: 'dito' }).toProblem()
+    ).toMatchObject({
+      status: 400,
+      type: 'ModelValidation',
+      message: 'The provided data is not valid'
+    })
+    expect(createValidationError('model', issues).toProblem()).toEqual({
+      title: 'Validation Failed',
+      status: 400,
+      detail: 'The data is not valid.',
+      errors: {
+        '/sets/8/name': [{ message: 'is taken' }],
+        '': [{ message: 'is empty', keyword: 'too_small' }]
       }
     })
   })

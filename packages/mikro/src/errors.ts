@@ -1,4 +1,7 @@
-import { ProblemError, type Problem } from '@ditojs/server-next'
+import {
+  ProblemError,
+  createValidationError as createCoreValidationError
+} from '@ditojs/server-next'
 import {
   CheckConstraintViolationException,
   ConstraintViolationException,
@@ -21,19 +24,7 @@ export interface FieldError {
 // A 400 for invalid data, as Dito 6's `ModelValidation` errors. The empty
 // path stands for the whole row.
 export function createValidationError(fieldErrors: FieldError[]) {
-  const errors: NonNullable<Problem['errors']> = {}
-  for (const { path, message, code } of fieldErrors) {
-    const key = path.map(String).join('/')
-    ;(errors[key] ??= []).push({ message, ...(code && { keyword: code }) })
-  }
-  const message = 'The provided data is not valid'
-  return new ProblemError({
-    status: 400,
-    detail: message,
-    type: 'ModelValidation',
-    message,
-    errors
-  })
+  return createCoreValidationError('model', fieldErrors, { format: 'dito' })
 }
 
 // Maps MikroORM's errors to a `ProblemError`, and other errors to undefined.

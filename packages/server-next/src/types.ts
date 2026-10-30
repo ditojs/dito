@@ -151,8 +151,9 @@ export type Transaction = <T>(
   fn: () => Promise<T>
 ) => Promise<T>
 
-// RFC 9457. `errors` holds validation errors by JSON Pointer. Other members
-// are extension members, such as the `message` of Dito 6's errors.
+// RFC 9457. `errors` holds validation errors by JSON Pointer, or by data path
+// in Dito 6's format. Other members are extension members, such as the
+// `message` of Dito 6's errors.
 export interface Problem {
   [member: string]: unknown
   type?: string
@@ -162,6 +163,10 @@ export interface Problem {
   errors?: Record<string, { message: string; keyword?: string }[]>
 }
 
+// The shape of validation errors: RFC 9457 with JSON Pointers, or Dito 6's
+// shape, which its admin reads.
+export type ErrorFormat = 'problem' | 'dito'
+
 export interface AppConfig {
   // The prefix of every controller path, such as `/api/admin`.
   base?: string
@@ -170,6 +175,9 @@ export interface AppConfig {
   // The database handle of a request, as `c.var.db`. An ORM package provides
   // it.
   connect?: (c: DitoContext) => unknown
+  // The format of the errors of the `query` and `body` schemas, `problem` by
+  // default.
+  errors?: ErrorFormat
   // The signed-in user of the request, or null.
   getUser: (c: DitoContext) => Promise<User | null>
 }

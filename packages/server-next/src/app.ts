@@ -18,6 +18,7 @@ import type {
   Authorize,
   DitoContext,
   DitoEnv,
+  ErrorFormat,
   Slots,
   Transaction
 } from './types.ts'
@@ -31,7 +32,14 @@ import type {
 // a parent app that mounts this one, so that it runs before the actions.
 
 export function createApp(config: AppConfig) {
-  const { base = '', controllers, transaction, connect, getUser } = config
+  const {
+    base = '',
+    controllers,
+    transaction,
+    connect,
+    errors = 'problem',
+    getUser
+  } = config
   const app = new Hono<DitoEnv>()
 
   for (const definition of controllers) {
@@ -46,10 +54,10 @@ export function createApp(config: AppConfig) {
         authorize(action.authorize, controller.slots)
       ]
       if (action.query) {
-        handlers.push(validate('query', action.query))
+        handlers.push(validate('query', action.query, errors))
       }
       if (action.body) {
-        handlers.push(validate('json', action.body))
+        handlers.push(validate('json', action.body, errors))
       }
       const transacted =
         action.info.verb === 'get'
@@ -152,9 +160,15 @@ async function isAuthorized(
   return owner != null && String(owner) === String(user.id)
 }
 
-function validate(target: 'query' | 'json', schema: ResolvedAction['query']) {
+function validate(
+  target: 'query' | 'json',
+  schema: ResolvedAction['query'],
+  format: ErrorFormat
+) {
   return sValidator(target, schema!, result => {
-    if (!result.success) throw createValidationError(target, result.error)
+    if (!result.success) {
+      throw createValidationError(target, result.error, { format })
+    }
   }) as MiddlewareHandler<DitoEnv>
 }
 
