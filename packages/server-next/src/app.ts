@@ -25,15 +25,14 @@ import type {
   Authorize,
   DitoContext,
   DitoEnv,
+  Plugin,
   Slots
 } from './types.ts'
 
 // Builds the Hono app of the controllers. Each action runs plugin middleware,
 // sets the request's variables, authorizes, validates, and then runs the
-// `around` middleware and the handler inside the transaction. Hono's chain
-// turns an error into a response at the step that throws it, so the `around`
-// middleware run in a chain of their own, which passes errors on to the
-// transaction.
+// `around` middleware and the handler inside the transaction. All of these are
+// Hono middleware in one chain.
 
 export function createApp(config: AppConfig) {
   const { base = '', controllers, plugins = [], getUser } = config
@@ -70,26 +69,19 @@ export function createApp(config: AppConfig) {
       if (action.body) {
         handlers.push(validate('json', action.body))
       }
-      const transacted = (
-        transaction && (
-          action.info.verb === 'get'
-            ? action.transacted === true
-            : action.transacted !== false
-        )
-      )
+      const transacted =
+        action.info.verb === 'get'
+          ? action.transacted === true
+          : action.transacted !== false
+      if (transaction && transacted) {
+        handlers.push(transact(transaction))
+      }
       app.on(
         action.info.verb.toUpperCase(),
         [path || '/'],
         ...handlers,
-        async c => {
-          const execute = async () => {
-            await runAround(c, action.around, async () => {
-              c.res = await respond(c, controller, action)
-            })
-            return c.res
-          }
-          return transacted ? transaction(c, execute) : execute()
-        }
+        ...action.around,
+        c => respond(c, controller, action)
       )
     }
   }
@@ -168,18 +160,22 @@ function validate(target: 'query' | 'json', schema: ResolvedAction['query']) {
   }) as MiddlewareHandler<DitoEnv>
 }
 
-async function runAround(
-  c: DitoContext,
-  around: MiddlewareHandler<DitoEnv>[],
-  handler: () => Promise<void>
-) {
-  const dispatch = async (index: number): Promise<void> => {
-    const middleware = around[index]
-    if (!middleware) return handler()
-    const response = await middleware(c, () => dispatch(index + 1))
-    if (response instanceof Response) c.res = response
+// Hono turns an error into a response where it's thrown and stores it in
+// `c.error`, so `next()` returns normally. Throwing `c.error` again rolls back.
+// The error response is already set, so the error stops here.
+function transact(
+  transaction: NonNullable<Plugin['transaction']>
+): MiddlewareHandler<DitoEnv> {
+  return async (c, next) => {
+    try {
+      await transaction(c, async () => {
+        await next()
+        if (c.error) throw c.error
+      })
+    } catch (error) {
+      if (error !== c.error) throw error
+    }
   }
-  await dispatch(0)
 }
 
 async function respond(

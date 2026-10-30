@@ -455,8 +455,10 @@ describe('transactions', () => {
       [
         {
           path: 'fonts',
-          around: async (_c, next) => {
+          // Plain Hono middleware sees the error in `c.error` after `next()`.
+          around: async (c, next) => {
             await next()
+            log.push(`around ${c.error?.message}`)
           },
           collection: {
             post: () => {
@@ -468,7 +470,7 @@ describe('transactions', () => {
       { plugins: [plugin] }
     )
     const response = await request(app, 'POST', '/api/fonts')
-    expect(log).toEqual(['begin', 'rollback'])
+    expect(log).toEqual(['begin', 'around Too wide', 'rollback'])
     expect(response.status).toBe(422)
     expect(await response.json()).toEqual({
       title: 'Out of Range',
