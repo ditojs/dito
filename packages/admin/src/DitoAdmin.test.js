@@ -33,6 +33,17 @@ describe('DitoAdmin', () => {
     return admin
   }
 
+  it('joins resource paths without a trailing slash', () => {
+    const admin = createAdmin()
+    const { resources } = admin.api
+    const parent = { type: 'collection', path: 'books' }
+    expect(resources.any({ path: '', parent })).toBe('books')
+    expect(resources.any({ path: 'covers', parent })).toBe('books/covers')
+    expect(resources.any({ type: 'member', path: '', id: 1, parent })).toBe(
+      'books/1'
+    )
+  })
+
   it('mounts into the element of a selector', () => {
     const element = document.createElement('div')
     element.id = 'library-admin'

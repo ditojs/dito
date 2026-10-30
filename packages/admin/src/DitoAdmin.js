@@ -95,9 +95,10 @@ export default class DitoAdmin {
 
       default(resource) {
         const parentPath = this.any(resource.parent)
-        return parentPath
+        // An empty path is the parent itself, without a trailing slash:
+        return parentPath && resource.path
           ? `${parentPath}/${resource.path}`
-          : resource.path
+          : parentPath || resource.path
       },
 
       collection(resource) {
