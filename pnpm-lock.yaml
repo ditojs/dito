@@ -752,6 +752,46 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
 
+  packages/storage:
+    dependencies:
+      '@ditojs/utils':
+        specifier: workspace:^
+        version: link:../utils
+      '@types/mime-types':
+        specifier: ^3.0.1
+        version: 3.0.1
+      '@types/picomatch':
+        specifier: ^4.0.3
+        version: 4.0.3
+      data-uri-to-buffer:
+        specifier: ^8.0.0
+        version: 8.0.0
+      file-type:
+        specifier: ^22.1.1
+        version: 22.1.1(supports-color@10.2.2)
+      hono:
+        specifier: ^4.13.14
+        version: 4.13.14
+      leather:
+        specifier: ^3.0.3
+        version: 3.0.3
+      mime-types:
+        specifier: ^3.0.2
+        version: 3.0.2
+      picomatch:
+        specifier: ^4.0.7
+        version: 4.0.7
+    devDependencies:
+      '@aws-lite/client':
+        specifier: ^0.24.1
+        version: 0.24.1
+      '@aws-lite/s3':
+        specifier: ^0.2.7
+        version: 0.2.7
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+
   packages/ui:
     dependencies:
       '@ditojs/utils':
@@ -2059,8 +2099,14 @@ packages:
   '@types/koa__multer@2.0.8':
     resolution: {integrity: sha512-XkD9YzmGKzKfOkxwHepueQkP61okAeu6ibAieL4NSqwM1lyGOkgbT2XmP+xROd2agQVsewPqsFOsfgVmlEqJmg==}
 
+  '@types/mime-types@3.0.1':
+    resolution: {integrity: sha512-xRMsfuQbnRq1Ef+C+RKaENOxXX87Ygl38W1vDfPHRku02TgQr+Qd8iivLtAMcR0KF5/29xlnFihkTlbqFrGOVQ==}
+
   '@types/node@26.6.4':
     resolution: {integrity: sha512-ldVPDCzj7fsaGZrLB0NuHuTvJcsNasysBAqMolr/cgxrLd1xbqxIr3XJiPnHHJUCxj5sNF1vnRj9aWnrVh5Jcg==}
+
+  '@types/picomatch@4.0.3':
+    resolution: {integrity: sha512-iG0T6+nYJ9FAPmx9SsUlnwcq1ZVRuCXcVEvWnntoPlrOpwtSTKNDC9uVAxTsC3PUvJ+99n4RpAcNgBbHX3JSnQ==}
 
   '@types/prismjs@1.26.6':
     resolution: {integrity: sha512-vqlvI7qlMvcCBbVe0AKAb4f97//Hy0EBTaiW8AalRnG/xAN5zOiWWyrNqNXeq8+KAuvRewjCVY1+IPxk4RdNYw==}
@@ -7339,6 +7385,13 @@ snapshots:
       '@tiptap/extension-bubble-menu': 3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))(@tiptap/pm@3.31.4)
       '@tiptap/extension-floating-menu': 3.31.4(@floating-ui/dom@1.8.0)(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))(@tiptap/pm@3.31.4)
 
+  '@tokenizer/inflate@0.4.1(supports-color@10.2.2)':
+    dependencies:
+      debug: 4.4.3(supports-color@10.2.2)
+      token-types: 6.1.2
+    transitivePeerDependencies:
+      - supports-color
+
   '@tokenizer/inflate@0.4.1(supports-color@7.2.0)':
     dependencies:
       debug: 4.4.3(supports-color@7.2.0)
@@ -7475,9 +7528,13 @@ snapshots:
     dependencies:
       '@types/koa': 3.0.3
 
+  '@types/mime-types@3.0.1': {}
+
   '@types/node@26.6.4':
     dependencies:
       undici-types: 8.9.0
+
+  '@types/picomatch@4.0.3': {}
 
   '@types/prismjs@1.26.6': {}
 
@@ -8352,6 +8409,12 @@ snapshots:
     optionalDependencies:
       supports-color: 7.2.0
 
+  debug@4.4.3(supports-color@10.2.2):
+    dependencies:
+      ms: 2.1.3
+    optionalDependencies:
+      supports-color: 10.2.2
+
   debug@4.4.3(supports-color@7.2.0):
     dependencies:
       ms: 2.1.3
@@ -8876,6 +8939,15 @@ snapshots:
   file-entry-cache@11.1.5:
     dependencies:
       flat-cache: 6.1.23
+
+  file-type@22.1.1(supports-color@10.2.2):
+    dependencies:
+      '@tokenizer/inflate': 0.4.1(supports-color@10.2.2)
+      strtok3: 10.3.5
+      token-types: 6.1.2
+      uint8array-extras: 1.6.0
+    transitivePeerDependencies:
+      - supports-color
 
   file-type@22.1.1(supports-color@7.2.0):
     dependencies:
