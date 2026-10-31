@@ -35,10 +35,11 @@ describe('formatQuery()', () => {
   it('keeps the characters that the router leaves unencoded', () => {
     // As used by list filters, see `createFiltersPanel()`:
     expect(
-      formatQuery({ filter: ['title:"contains","A, B"', 'year:1900,2000'] })
-    ).toBe(
-      'filter=title:%22contains%22,%22A,+B%22&filter=year:1900,2000'
-    )
+      formatQuery({
+        'filter[title]': ['contains', 'A, B'],
+        'year': '1900,2000'
+      })
+    ).toBe('filter%5Btitle%5D=contains&filter%5Btitle%5D=A,+B&year=1900,2000')
     expect(formatQuery({ path: '/books/1?a=b@c;$!()' })).toBe(
       'path=/books/1?a=b@c;$!()'
     )

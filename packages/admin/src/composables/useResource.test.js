@@ -684,8 +684,14 @@ describe('useResource()', () => {
       expect(errors).toEqual(['The Text field must be shorter.'])
     })
 
+    it('shows filter errors by argument index on their components', async () => {
+      const errors = await mountFilteredBooks({
+        '/title/0': [{ message: 'must be longer' }]
+      })
+      expect(errors).toEqual(['The Text field must be longer.'])
+    })
+
     it('shows filter errors with the data paths of the server', async () => {
-      // The server keys filter errors by filter name, see `filters.js`:
       const errors = await mountFilteredBooks({
         '/title/text': [{ message: 'must be longer' }]
       })

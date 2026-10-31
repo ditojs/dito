@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 // Register the actual type components, for their `deserializeValue()`:
 import '../types/index.js'
 import { ref } from 'vue'
-import { html } from '@ditojs/utils'
+import { html, pickBy } from '@ditojs/utils'
 import {
   createFiltersPanel,
   filterComponents,
@@ -32,6 +32,7 @@ function createBookFilters() {
       fields: {
         genres: {
           type: 'multiselect',
+          multiple: true,
           options: ['fiction', 'poetry', 'essay']
         }
       }
@@ -228,12 +229,10 @@ describe('createFiltersPanel()', () => {
     it('maps the arguments of each filter to its components in sequence', () => {
       const { panel } = createPanel({
         query: {
-          filter: [
-            'title:"starts-with","The"',
-            'published:"2020-01-01T00:00:00.000Z",null',
-            'genres:["poetry","essay"]',
-            'available:false'
-          ]
+          'filter[title]': ['starts-with', 'The'],
+          'filter[published]': ['2020-01-01T00:00:00.000Z', ''],
+          'filter[genres]': ['poetry', 'essay'],
+          'filter[available]': 'false'
         }
       })
       expect(panel.data()).toEqual({
@@ -245,51 +244,55 @@ describe('createFiltersPanel()', () => {
       })
     })
 
-    it('supports a single filter as a string', () => {
-      const { panel } = createPanel({ query: { filter: 'author:"Le Guin"' } })
-      expect(panel.data().$author).toEqual({ text: 'Le Guin' })
+    it('reads empty arguments as `null`, keeping the positions after them', () => {
+      const { panel } = createPanel({
+        query: { 'filter[title]': ['', 'Sea'] }
+      })
+      expect(panel.data().$title).toEqual({ operator: null, text: 'Sea' })
     })
 
-    it('ignores filters with invalid JSON arguments', () => {
+    it('reads a single argument as a string', () => {
       const { panel } = createPanel({
-        query: { filter: ['author:Le Guin', 'title:"contains","Sea"'] }
+        query: { 'filter[author]': 'Le Guin', 'filter[genres]': 'poetry' }
       })
       const data = panel.data()
-      expect(data.$author).toEqual({})
-      expect(data.$title).toEqual({ operator: 'contains', text: 'Sea' })
+      expect(data.$author).toEqual({ text: 'Le Guin' })
+      // Array components keep the single value in an array:
+      expect(data.$genres).toEqual({ genres: ['poetry'] })
+    })
+
+    it('converts the arguments to the types of the components', () => {
+      const { panel } = createPanel({
+        filters: {
+          price: {
+            fields: {
+              from: { type: 'number' },
+              to: { type: 'integer' },
+              sale: { type: 'switch' }
+            }
+          }
+        },
+        query: { 'filter[price]': ['9.5', '', 'true'] }
+      })
+      expect(panel.data().$price).toEqual({ from: 9.5, to: null, sale: true })
+    })
+
+    it('reads filters without a value as an empty argument', () => {
+      // E.g. `?filter[author]`:
+      const { panel } = createPanel({ query: { 'filter[author]': null } })
+      expect(panel.data().$author).toEqual({ text: null })
     })
 
     it('ignores filters in the query that the panel does not define', () => {
-      const { panel } = createPanel({ query: { filter: 'isbn:"123"' } })
+      const { panel } = createPanel({ query: { 'filter[isbn]': '123' } })
       expect(Object.keys(panel.data())).not.toContain('$isbn')
     })
 
     it('reads the current query each time', () => {
       const { panel, query } = createPanel()
       expect(panel.data().$author).toEqual({})
-      query.value = { filter: 'author:"Austen"' }
+      query.value = { 'filter[author]': 'Austen' }
       expect(panel.data().$author).toEqual({ text: 'Austen' })
-    })
-
-    it('ignores filter entries without a name, with a warning', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const { panel } = createPanel({
-        query: { filter: ['Austen', 'author:"Le Guin"'] }
-      })
-      expect(panel.data().$author).toEqual({ text: 'Le Guin' })
-      expect(warn).toHaveBeenCalledWith(`Ignoring malformed filter: 'Austen'`)
-      warn.mockRestore()
-    })
-
-    it('ignores filter entries without a value, with a warning', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      // E.g. `?filter&filter=author:"Le Guin"`:
-      const { panel } = createPanel({
-        query: { filter: [null, 'author:"Le Guin"'] }
-      })
-      expect(panel.data().$author).toEqual({ text: 'Le Guin' })
-      expect(warn).toHaveBeenCalledWith(`Ignoring malformed filter: 'null'`)
-      warn.mockRestore()
     })
   })
 
@@ -297,43 +300,67 @@ describe('createFiltersPanel()', () => {
   // data that the panel displays, and returns the formatted filters:
   function applyFilters(panel, query, data) {
     panel.buttons.submit.onClick({ item: data })
-    return query.value.filter
+    return pickBy(query.value, (value, key) => key.startsWith('filter['))
   }
 
   describe('formatting filter data into the query', () => {
-    it('formats each filter as its name and JSON arguments', () => {
+    it('formats each filter as repeated values of its arguments', () => {
       const { panel, query } = createPanel()
       const filters = applyFilters(panel, query, {
         $title: { operator: 'contains', text: 'Sea' },
         $author: {},
         $published: { from: new Date('2020-01-01T00:00:00Z'), to: null },
-        $genres: { genres: ['poetry'] },
+        $genres: { genres: ['poetry', 'essay'] },
         $available: { available: false }
       })
-      expect(filters).toEqual([
-        'title:"contains","Sea"',
-        'published:"2020-01-01T00:00:00.000Z",null',
-        'genres:["poetry"]',
+      expect(filters).toEqual({
+        'filter[title]': ['contains', 'Sea'],
+        // The trailing empty `to` is left out:
+        'filter[published]': '2020-01-01T00:00:00.000Z',
+        'filter[genres]': ['poetry', 'essay'],
         // `false` is a value, unlike `null`, so the filter still applies:
-        'available:false'
-      ])
+        'filter[available]': 'false'
+      })
     })
 
-    it('fills missing arguments with `null` to keep their sequence', () => {
+    it('sends empty arguments as empty strings to keep their positions', () => {
       const { panel, query } = createPanel()
       expect(applyFilters(panel, query, { $title: { text: 'Sea' } })).toEqual(
-        ['title:null,"Sea"']
+        { 'filter[title]': ['', 'Sea'] }
       )
     })
 
-    it('leaves out filters with only `null` or missing arguments', () => {
+    it('formats numbers and booleans as strings', () => {
+      const { panel, query } = createPanel({
+        filters: {
+          price: {
+            fields: { from: { type: 'number' }, sale: { type: 'switch' } }
+          }
+        }
+      })
+      expect(
+        applyFilters(panel, query, { $price: { from: 0, sale: true } })
+      ).toEqual({ 'filter[price]': ['0', 'true'] })
+    })
+
+    it('leaves out filters with only empty or missing arguments', () => {
       const { panel, query } = createPanel()
       const filters = applyFilters(panel, query, {
-        $title: { operator: null, text: null },
+        $title: { operator: null, text: '' },
         $published: { from: null },
+        $genres: { genres: [] },
         $author: null
       })
-      expect(filters).toEqual([])
+      expect(filters).toEqual({})
+    })
+
+    it('replaces the filters of the query', () => {
+      const { panel, query } = createPanel({
+        query: { 'filter[author]': 'Austen', 'filter[isbn]': '123' }
+      })
+      expect(applyFilters(panel, query, { $title: { text: 'Sea' } })).toEqual(
+        { 'filter[title]': ['', 'Sea'] }
+      )
     })
 
     it('round-trips the filters through the query', () => {
@@ -341,8 +368,11 @@ describe('createFiltersPanel()', () => {
       const data = {
         $title: { operator: 'starts-with', text: 'A "quoted", title' },
         $author: { text: 'Woolf' },
-        $published: {},
-        $genres: { genres: ['fiction', 'essay'] },
+        $published: {
+          from: new Date('2020-01-01T00:00:00Z'),
+          to: new Date('2021-01-01T00:00:00Z')
+        },
+        $genres: { genres: ['fiction'] },
         $available: { available: true }
       }
       applyFilters(panel, query, data)
@@ -357,9 +387,9 @@ describe('createFiltersPanel()', () => {
       })
       applyFilters(panel, query, { $author: { text: 'Woolf' } })
       expect(query.value).toEqual({
-        order: 'title',
-        filter: ['author:"Woolf"'],
-        page: undefined
+        'order': 'title',
+        'filter[author]': 'Woolf',
+        'page': undefined
       })
     })
 
@@ -368,7 +398,7 @@ describe('createFiltersPanel()', () => {
       const data = panel.data()
       data.$author.text = 'Woolf'
       panel.onChange()
-      expect(query.value.filter).toEqual(['author:"Woolf"'])
+      expect(query.value['filter[author]']).toBe('Woolf')
     })
   })
 
@@ -395,6 +425,28 @@ describe('createFiltersPanel()', () => {
 })
 
 describe('getFiltersDataErrors()', () => {
+  it('keys the errors of filter arguments by the components', () => {
+    const { panel } = createPanel()
+    const textErrors = [{ message: 'must be longer' }]
+    const toErrors = [{ message: 'must be a date' }]
+    const genreErrors = [{ message: 'must be a genre' }]
+    expect(
+      getFiltersDataErrors(
+        {
+          '/title/1': textErrors,
+          '/published/1': toErrors,
+          // Arguments past the last component belong to its array:
+          '/genres/2': genreErrors
+        },
+        panel
+      )
+    ).toEqual({
+      '$title/text': textErrors,
+      '$published/to': toErrors,
+      '$genres/genres': genreErrors
+    })
+  })
+
   it('keys the errors of filters by their data names', () => {
     const titleErrors = [{ message: 'must be longer' }]
     const yearErrors = [{ message: 'must be a number' }]
@@ -417,13 +469,17 @@ describe('getFiltersDataErrors()', () => {
   })
 
   it('merges the errors of paths that map to the same data path', () => {
+    const { panel } = createPanel()
     const first = { message: 'must be longer' }
     const second = { message: 'must be shorter' }
     expect(
-      getFiltersDataErrors({
-        'title/text': [first],
-        '$title.text': [second]
-      })
+      getFiltersDataErrors(
+        {
+          'title/1': [first],
+          '$title.text': [second]
+        },
+        panel
+      )
     ).toEqual({ '$title/text': [first, second] })
   })
 })

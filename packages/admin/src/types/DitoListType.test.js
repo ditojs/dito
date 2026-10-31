@@ -2123,12 +2123,12 @@ describe('DitoListType', () => {
       await flushPromises()
       // Filtering resets the page, as the filtered list has other pages:
       expect(recipes.listQuery.query).toMatchObject({
-        filter: ['title:"Soup"'],
-        page: '0'
+        'filter[title]': 'Soup',
+        'page': '0'
       })
-      expect(JSON.stringify(request.mock.lastCall[0].query)).toContain(
-        'title:\\"Soup\\"'
-      )
+      expect(request.mock.lastCall[0].query).toMatchObject({
+        'filter[title]': 'Soup'
+      })
     })
 
     it('shows the filters of the route query in the panel', async () => {
@@ -2145,7 +2145,7 @@ describe('DitoListType', () => {
         },
         request: () => ({ data: { results: [], total: 0 } })
       })
-      await admin.navigate('/recipes?filter=title:"Soup"')
+      await admin.navigate('/recipes?filter[title]=Soup')
       const input = admin.wrapper.find('.dito-panel input[type="text"]')
       expect(input.element.value).toBe('Soup')
     })
@@ -2159,7 +2159,7 @@ describe('DitoListType', () => {
             data: {
               title: 'Validation Failed',
               detail: 'The query is not valid.',
-              errors: { '/course/course': [{ message: 'is no course' }] }
+              errors: { '/course/0': [{ message: 'is no course' }] }
             }
           })
         }
@@ -2189,18 +2189,18 @@ describe('DitoListType', () => {
       await enterValue(input, 'Soup')
       await panel.find('button[type="submit"]').trigger('click')
       await flushPromises()
-      expect(recipes.listQuery.query.filter).toEqual(['course:"Soup"'])
+      expect(recipes.listQuery.query['filter[course]']).toBe('Soup')
       expect(panel.findAll('.dito-errors li').length).toBe(1)
       await panel.find('button[id$="clear"]').trigger('click')
       await flushPromises()
       // The filters are applied with their defaults:
-      expect(recipes.listQuery.query.filter).toEqual(['course:"Main"'])
+      expect(recipes.listQuery.query['filter[course]']).toBe('Main')
       expect(input.element.value).toBe('Main')
       expect(panel.findAll('.dito-errors li').length).toBe(0)
       // Changes apply the cleared data:
       await enterValue(input, 'Dessert')
       await flushPromises()
-      expect(recipes.listQuery.query.filter).toEqual(['course:"Dessert"'])
+      expect(recipes.listQuery.query['filter[course]']).toBe('Dessert')
     })
 
     it('notifies filter errors of lists without filters panel', async () => {
@@ -2252,7 +2252,8 @@ describe('DitoListType', () => {
             data: {
               title: 'Validation Failed',
               detail: 'The query is not valid.',
-              errors: { '/title/text': [{ message: 'must be shorter' }] }
+              // The server keys the errors by argument index:
+              errors: { '/title/0': [{ message: 'must be shorter' }] }
             }
           })
         }

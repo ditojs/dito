@@ -14,13 +14,12 @@ export function parseListQuery(ctx: DitoContext): ListQuery {
     if (filter !== undefined) {
       check(namePattern.test(filter), key, value)
       // A repeated filter gets the values as its arguments, in order, so that
-      // empty values keep their positions. A filter with one empty value has
-      // no arguments, as in `?filter[published]`.
+      // empty values keep their positions.
       const entry = query.filters.find(({ name }) => name === filter)
       if (entry) {
         entry.args.push(value)
       } else {
-        query.filters.push({ name: filter, args: value ? [value] : [] })
+        query.filters.push({ name: filter, args: [value] })
       }
     } else if (key === 'order') {
       const [property = '', direction = 'asc', ...rest] = value
@@ -47,6 +46,10 @@ export function parseListQuery(ctx: DitoContext): ListQuery {
       )
       query.fields = [...(query.fields ?? []), ...fields]
     }
+  }
+  // Empty values at the end are no arguments, as in `?filter[published]`.
+  for (const { args } of query.filters) {
+    while (args.at(-1) === '') args.pop()
   }
   return query
 }

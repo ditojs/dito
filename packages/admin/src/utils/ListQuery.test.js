@@ -88,9 +88,9 @@ describe('ListQuery', () => {
 
     it('removes values that are changed to `undefined`', async () => {
       const { listQuery, router } = createListQuery({
-        storedQuery: { filter: ['title:"Emma"'] }
+        storedQuery: { 'filter[title]': 'Emma' }
       })
-      await listQuery.update({ filter: undefined })
+      await listQuery.update({ 'filter[title]': undefined })
       expect(router.push.mock.calls[0][0].query).toEqual({
         scope: 'all',
         order: 'title asc'
@@ -193,7 +193,7 @@ describe('ListQuery', () => {
 
     it('removes the values that the route query lacks', () => {
       const { listQuery, store } = createListQuery({
-        storedQuery: { filter: ['title:"Emma"'] }
+        storedQuery: { 'filter[title]': 'Emma' }
       })
       expect(listQuery.setFromRoute({})).toBe(true)
       expect(store.query).toEqual({ scope: 'all', order: 'title asc' })

@@ -41,6 +41,18 @@ describe('parseListQuery()', () => {
     ])
   })
 
+  it('keeps empty arguments in place, but not at the end', async () => {
+    const { json } = await parse(
+      'filter[title]=&filter[title]=Sea&filter[date]=&filter[date]=2026&' +
+      'filter[date]=&filter[flag]='
+    )
+    expect(json.filters).toEqual([
+      { name: 'title', args: ['', 'Sea'] },
+      { name: 'date', args: ['', '2026'] },
+      { name: 'flag', args: [] }
+    ])
+  })
+
   it("ignores Dito 6's `filter=name:args` and `scope=name`", async () => {
     const { status, json } = await parse('filter=range:1,2&scope=published')
     expect(status).toBe(200)
