@@ -695,6 +695,51 @@ describe('transactions', () => {
   })
 })
 
+describe('mounting', () => {
+  // A host that imports each controller on its first request, as Nitro's
+  // routes do, and passes the request to an app of that controller alone.
+  it('answers the same with one app per controller', async () => {
+    const fonts: ControllerDefinition = {
+      path: 'fonts',
+      collection: { get: () => ['a'] },
+      member: { get: c => ({ id: c.var.memberId }) }
+    }
+    const users: ControllerDefinition = {
+      path: 'users',
+      collection: { get: c => c.var.user }
+    }
+    const imports = { fonts: 0, users: 0 }
+    const lazy = (
+      name: keyof typeof imports,
+      controller: ControllerDefinition
+    ) => {
+      let app: ReturnType<typeof setup> | undefined
+      return async (c: { req: { raw: Request } }) => {
+        if (!app) {
+          imports[name]++
+          app = setup([controller])
+        }
+        return app.fetch(c.req.raw)
+      }
+    }
+    const host = new Hono()
+    host.all('/api/fonts/*', lazy('fonts', fonts))
+    host.all('/api/users/*', lazy('users', users))
+    const together = setup([fonts, users])
+    expect(imports).toEqual({ fonts: 0, users: 0 })
+    for (const path of [
+      '/api/fonts', '/api/fonts/3', '/api/users', '/api/fonts/x'
+    ]) {
+      const [a, b] = await Promise.all([
+        host.request(path),
+        together.request(path)
+      ])
+      expect([a.status, await a.text()]).toEqual([b.status, await b.text()])
+    }
+    expect(imports).toEqual({ fonts: 1, users: 1 })
+  })
+})
+
 describe('load', () => {
   it('calls the `load` slot once per request', async () => {
     const load = vi.fn(async (_c, id: number) => ({ id }))
