@@ -1,15 +1,15 @@
-import { Hono } from 'hono'
 import {
   Application,
   Model,
   ResponseError,
   type ModelProperties
 } from '@ditojs/server'
+import type { Knex } from 'knex'
+import { NotFoundError } from 'objection'
 import { z } from 'zod'
 import {
   action,
   createApp,
-  ProblemError,
   problemResponse,
   type ControllerDefinition
 } from '@ditojs/server-next'
@@ -82,21 +82,21 @@ const dito = new Application({
   models: { Author, Book }
 })
 
-// Sets up a Hono app with the parts and the handlers that an app wires in.
+// Sets up an app with the parts that an app wires in.
 function setup(...controllers: ControllerDefinition[]) {
-  const app = new Hono()
   const api = createApp({
     base: '/api',
     controllers,
+    around: requestStorage(dito),
     transaction: objectionTransaction(dito),
     connect: objectionConnect(dito),
-    getUser: async () => null
+    getUser: async () => null,
+    onError: error => problemResponse(toProblem(error) ?? error)
   })
-  app.use(requestStorage(dito))
-  app.onError((error, c) => problemResponse(toProblem(error) ?? error, c))
-  app.notFound(c => problemResponse(new ProblemError({ status: 404 }), c))
-  app.route('/', api)
-  return app
+  return {
+    request: (path: string, init?: RequestInit) =>
+      api.fetch(new Request(`http://localhost${path}`, init))
+  }
 }
 
 const request = async (
@@ -234,8 +234,8 @@ describe('collection get', () => {
       defineController({
         path: 'authors',
         model: Author,
-        query: (query, c) => {
-          query.where('name', c.req.header('x-name')!)
+        query: (query, ctx) => {
+          query.where('name', ctx.req.headers.get('x-name')!)
         },
         collection: { allow: ['get'] }
       })
@@ -255,7 +255,7 @@ describe('collection get', () => {
           allow: ['get'],
           get: action({
             query: z.object({ preload: z.string().optional() }),
-            handler: (c, next) => next()
+            handler: (ctx, next) => next()
           })
         }
       })
@@ -272,7 +272,7 @@ describe('allow', () => {
       defineController({
         path: 'authors',
         model: Author,
-        member: { get: (c, next) => next() }
+        member: { get: (ctx, next) => next() }
       })
     )
     expect((await request(app, 'GET', '/api/authors')).status).toBe(404)
@@ -387,10 +387,13 @@ describe('writes', () => {
     ])
     const missing = await request(app, 'PATCH', '/api/authors', [{ name: 'X' }])
     expect(missing.status).toBe(400)
-    expect(missing.json.type).toBe('BodyValidation')
+    expect(missing.json.detail).toBe(
+      'Updating a collection requires models with ids, ' +
+      'new models are created with POST'
+    )
   })
 
-  it('answers validation errors as Problem Details with Dito 6 errors', async () => {
+  it('answers validation errors as Problem Details by JSON Pointer', async () => {
     const { status, headers, json } = await request(
       app,
       'POST',
@@ -399,13 +402,74 @@ describe('writes', () => {
     )
     expect(status).toBe(400)
     expect(headers.get('Content-Type')).toBe('application/problem+json')
-    expect(json).toMatchObject({
+    expect(json).toEqual({
       status: 400,
-      title: 'Bad Request',
-      type: 'ModelValidation',
-      message: 'The provided data for the Author model is not valid',
-      errors: { name: [{ keyword: 'type', message: expect.any(String) }] }
+      title: 'Validation Failed',
+      detail: 'The provided data for the Author model is not valid',
+      errors: { '/name': [{ code: 'type', message: expect.any(String) }] }
     })
+  })
+
+  it('answers the errors of nested data by JSON Pointer', async () => {
+    const app = setup(
+      defineController({
+        path: 'authors',
+        model: Author,
+        graph: true,
+        collection: { allow: ['post'] }
+      })
+    )
+    const { status, json } = await request(app, 'POST', '/api/authors', {
+      name: 'Dora',
+      books: [{ title: 'Waves' }, { title: 3 }]
+    })
+    expect(status).toBe(400)
+    expect(json.errors).toEqual({
+      '/books/1/title': [{ code: 'type', message: expect.any(String) }]
+    })
+  })
+
+  it('answers unique violations with 409', async () => {
+    const insert = { id: 9, name: 'Ida' }
+    const app = setup(
+      defineController({
+        path: 'authors',
+        model: Author,
+        collection: {
+          'post model': async ctx => {
+            await Author.query(ctx.db as Knex).insert(insert)
+            await Author.query(ctx.db as Knex).insert(insert)
+          },
+          'post knex': async ctx => {
+            await (ctx.db as Knex)('Author').insert(insert)
+            await (ctx.db as Knex)('Author').insert(insert)
+          }
+        }
+      })
+    )
+    for (const path of ['/api/authors/model', '/api/authors/knex']) {
+      const { status, json } = await request(app, 'POST', path)
+      expect(status).toBe(409)
+      expect(json.detail).toMatch(/UNIQUE constraint failed/)
+      expect(json.detail).not.toMatch(/insert into/)
+    }
+  })
+
+  it("answers Objection's `NotFoundError` with 404", async () => {
+    const app = setup(
+      defineController({
+        path: 'authors',
+        model: Author,
+        collection: {
+          'get missing': () => {
+            throw new NotFoundError({ modelClass: Author as never })
+          }
+        }
+      })
+    )
+    const { status, json } = await request(app, 'GET', '/api/authors/missing')
+    expect(status).toBe(404)
+    expect(json).toEqual({ title: 'Not Found', status: 404 })
   })
 
   it('hides the details of errors that are not exposed', async () => {
@@ -433,9 +497,8 @@ describe('writes', () => {
   it('treats an empty body as an empty object', async () => {
     const response = await app.request('/api/authors', { method: 'POST' })
     expect(response.status).toBe(400)
-    // Dito 6 reports missing properties on their parent, here the root.
-    expect((await response.json()).errors).toMatchObject({
-      '': [{ keyword: 'required', params: { missingProperty: 'name' } }]
+    expect((await response.json()).errors).toEqual({
+      '/name': [{ code: 'required', message: expect.any(String) }]
     })
   })
 })
@@ -448,7 +511,7 @@ describe('wrapping the default verbs', () => {
         path: 'authors',
         model: Author,
         member: {
-          async patch(c, next) {
+          async patch(ctx, next) {
             const author = (await next()) as Author
             rows.push(author)
             return author
@@ -463,15 +526,15 @@ describe('wrapping the default verbs', () => {
     expect(json).toEqual({ id: 1, name: 'Ava', active: true })
   })
 
-  it('loads the member through `c.var.load()`', async () => {
+  it('loads the member through `ctx.load()`', async () => {
     const app = setup(
       defineController({
         path: 'authors',
         model: Author,
         scope: 'active',
         member: {
-          'get title': async c => {
-            const author = await c.var.load<Author>()
+          'get title': async ctx => {
+            const author = await ctx.load<Author>()
             return { title: `${author.name} (${author.constructor.name})` }
           }
         }
@@ -491,8 +554,8 @@ describe('transactions', () => {
         path: 'authors',
         model: Author,
         collection: {
-          'post fail': async (c, next) => {
-            await Author.query(c.var.db as never).insert({ name: 'Eve' })
+          'post fail': async ctx => {
+            await Author.query(ctx.db as never).insert({ name: 'Eve' })
             throw new Error('Failed')
           }
         }
@@ -509,16 +572,16 @@ describe('transactions', () => {
         path: 'authors',
         model: Author,
         collection: {
-          'post check': async c => ({
+          'post check': async ctx => ({
             transaction: (
-              dito.requestLocals.transaction === c.var.trx &&
-              c.var.db === c.var.trx
+              dito.requestLocals.transaction === ctx.trx &&
+              ctx.db === ctx.trx
             )
           }),
-          'get check': async c => ({
+          'get check': async ctx => ({
             transaction: dito.requestLocals.transaction ?? null,
-            trx: c.var.trx ?? null,
-            knex: c.var.db === dito.knex,
+            trx: ctx.trx ?? null,
+            knex: ctx.db === dito.knex,
             storage: !!dito.requestStorage.getStore()
           })
         }

@@ -1,7 +1,6 @@
 import Database from 'better-sqlite3'
 import { Kysely, SqliteDialect } from 'kysely'
-import { Hono } from 'hono'
-import { problemResponse } from '@ditojs/server-next'
+import { createApp, type App } from '@ditojs/server-next'
 import {
   createCredentials,
   createSessionStore,
@@ -102,22 +101,27 @@ export function setup({
   keys?: string[]
 } & Partial<UsersRoutesOptions<TestUser>>) {
   const sessions = createSessions({
-    store: createSessionStore(() => db),
+    store: createSessionStore(db),
     cookies: koaCookies(cookieKeys),
     name,
     maxAge: 24 * 60 * 60 * 1000
   })
   const credentials = createCredentials(() => db)
-  const users = usersRoutes({ sessions, source, credentials, ...options })
-  const app = new Hono()
-  app.onError(problemResponse)
-  app.use(sessions.middleware)
-  app.route('/admins', users.app)
+  const users = usersRoutes({
+    path: 'admins',
+    source,
+    credentials,
+    ...options
+  })
+  const app = createApp({
+    controllers: [users.controller],
+    around: sessions.middleware
+  })
   return { app, sessions, credentials, users }
 }
 
 // A browser's cookie jar for one host.
-export function createClient(app: Hono, origin = 'https://example.com') {
+export function createClient(app: App, origin = 'https://example.com') {
   const jar = new Map<string, string>()
   async function request(method: string, path: string, body?: unknown) {
     const headers: Record<string, string> = {}
@@ -127,11 +131,13 @@ export function createClient(app: Hono, origin = 'https://example.com') {
         .join('; ')
     }
     if (body !== undefined) headers['Content-Type'] = 'application/json'
-    const response = await app.request(`${origin}${path}`, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined
-    })
+    const response = await app.fetch(
+      new Request(`${origin}${path}`, {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined
+      })
+    )
     for (const cookie of response.headers.getSetCookie()) {
       const [pair, ...attributes] = cookie.split('; ')
       const index = pair.indexOf('=')

@@ -8,14 +8,15 @@ export {
 } from './define.ts'
 export { createApp } from './app.ts'
 export {
-  ProblemError,
+  HttpError,
   createValidationError,
   getStatusTitle,
   problemResponse,
-  toDitoErrors,
+  toJsonPointer,
   toProblem,
-  type ValidationIssue,
-  type ValidationTarget
+  toProblemErrors,
+  type HttpErrorOptions,
+  type ValidationIssue
 } from './errors.ts'
 export { parseListQuery } from './list-query.ts'
 export { q } from './query.ts'

@@ -1,4 +1,3 @@
-import { Hono } from 'hono'
 import Cookies from 'cookies'
 import Keygrip from 'keygrip'
 import { createKeygrip, koaCookies } from '../src/index.ts'
@@ -24,27 +23,8 @@ function readWithKoa(keys: string[], header: string, name: string) {
   return new Cookies(req, res, { keys }).get(name, { signed: true })
 }
 
-function createApp(keys: string[]) {
-  const cookies = koaCookies(keys)
-  const app = new Hono()
-  app.get('/read', c => c.json(cookies.get(c, 'admin.sess')))
-  app.get('/write', c => {
-    cookies.set(c, 'admin.sess', c.req.query('value')!, {
-      sameSite: 'lax',
-      secure: true,
-      expires: new Date(Date.UTC(2030, 0, 1))
-    })
-    return c.body(null, 204)
-  })
-  app.get('/remove', c => {
-    cookies.set(c, 'admin.sess', null, { sameSite: 'lax' })
-    return c.body(null, 204)
-  })
-  return app
-}
-
-const read = async (app: Hono, cookie: string) =>
-  (await app.request('/read', { headers: { Cookie: cookie } })).json()
+const read = (keys: string[], cookie: string) =>
+  koaCookies(keys).get(new Headers({ Cookie: cookie }), 'admin.sess')
 
 describe('createKeygrip()', () => {
   it('signs as Keygrip does', () => {
@@ -83,19 +63,22 @@ describe('createKeygrip()', () => {
 describe('koaCookies()', () => {
   const id = '6f1c2a3e-1111-4222-8333-944455556666'
 
-  it('reads the signed cookies of Koa', async () => {
+  it('reads the signed cookies of Koa', () => {
     const header = writeWithKoa(['secret sauce'], 'admin.sess', id)
-    expect(await read(createApp(['secret sauce']), header)).toEqual({
+    expect(read(['secret sauce'], header)).toEqual({
       value: id,
       index: 0
     })
   })
 
-  it('writes cookies that Koa reads', async () => {
-    const response = await createApp(['secret sauce']).request(
-      `/write?value=${id}`
-    )
-    const cookies = response.headers.getSetCookie()
+  it('writes cookies that Koa reads', () => {
+    const headers = new Headers()
+    koaCookies(['secret sauce']).set(headers, 'admin.sess', id, {
+      sameSite: 'lax',
+      secure: true,
+      expires: new Date(Date.UTC(2030, 0, 1))
+    })
+    const cookies = headers.getSetCookie()
     expect(cookies).toEqual([
       `admin.sess=${id}; path=/; expires=Tue, 01 Jan 2030 00:00:00 GMT; ` +
       'samesite=lax; secure; httponly',
@@ -109,32 +92,35 @@ describe('koaCookies()', () => {
     expect(readWithKoa(['secret sauce'], header, 'admin.sess')).toBe(id)
   })
 
-  it('accepts cookies of older keys', async () => {
+  it('accepts cookies of older keys', () => {
     const header = writeWithKoa(['old key'], 'admin.sess', id)
-    expect(await read(createApp(['new key', 'old key']), header)).toEqual({
+    expect(read(['new key', 'old key'], header)).toEqual({
       value: id,
       index: 1
     })
-    expect(await read(createApp(['new key']), header)).toBe(null)
+    expect(read(['new key'], header)).toBe(null)
   })
 
-  it('rejects tampered cookies', async () => {
-    const app = createApp(['secret sauce'])
+  it('rejects tampered cookies', () => {
+    const keys = ['secret sauce']
     const header = writeWithKoa(['secret sauce'], 'admin.sess', id)
     const other = header.replace(id, id.replace('6', '7'))
-    expect(await read(app, other)).toBe(null)
-    expect(await read(app, header.replace(/sig=./, 'sig=x'))).toBe(null)
-    expect(await read(app, header.split('; ')[0])).toBe(null)
+    expect(read(keys, other)).toBe(null)
+    expect(read(keys, header.replace(/sig=./, 'sig=x'))).toBe(null)
+    expect(read(keys, header.split('; ')[0])).toBe(null)
     // A signature of another cookie name:
     const renamed = writeWithKoa(['secret sauce'], 'customer.sess', id)
-    expect(await read(app, renamed.replaceAll('customer', 'admin'))).toBe(
+    expect(read(keys, renamed.replaceAll('customer', 'admin'))).toBe(
       null
     )
   })
 
-  it('removes both cookies', async () => {
-    const response = await createApp(['secret sauce']).request('/remove')
-    const cookies = response.headers.getSetCookie()
+  it('removes both cookies', () => {
+    const headers = new Headers()
+    koaCookies(['secret sauce']).set(headers, 'admin.sess', null, {
+      sameSite: 'lax'
+    })
+    const cookies = headers.getSetCookie()
     expect(cookies).toHaveLength(2)
     expect(cookies[0]).toBe(
       'admin.sess=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ' +

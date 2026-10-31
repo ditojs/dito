@@ -2295,8 +2295,8 @@ describe('DitoForm', () => {
               response: {
                 status: 400,
                 data: {
-                  type: 'ValidationError',
-                  errors: { 'families/0/price': [{ message: 'is too high' }] }
+                  title: 'Validation Failed',
+                  errors: { '/families/0/price': [{ message: 'is too high' }] }
                 }
               }
             })
@@ -2890,13 +2890,13 @@ describe('DitoForm', () => {
     ).toHaveLength(1)
   })
 
-  // Errors of responses without a message, e.g. `{ type: 'ServerError' }`,
-  // aren't shown as their object's string, "[object Object]":
+  // Errors of responses without a message, e.g. `{ status: 500 }`, aren't
+  // shown as their object's string, "[object Object]":
   it('notifies errors without a message without the object', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { submit, notify } = await mountBookForm(() => {
       throw Object.assign(new Error('Request failed'), {
-        response: { status: 500, data: { type: 'ServerError' } }
+        response: { status: 500, data: { status: 500 } }
       })
     })
     await submit()

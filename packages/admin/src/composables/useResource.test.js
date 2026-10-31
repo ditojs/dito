@@ -259,20 +259,35 @@ describe('useResource()', () => {
       }
     }
 
-    it('notifies failed loads with the type and message of the error', async () => {
+    it('notifies failed loads with the title and detail of the problem', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       await mountSchema({
         schema: listSchema,
         request: () => {
           throw createRequestError(404, {
-            type: 'NotFoundError',
-            message: 'The books are gone.'
+            title: 'Not Found',
+            status: 404,
+            detail: 'The books are gone.'
           })
         }
       })
       expect(getNotifications()).toContainEqual({
-        title: 'Not Found Error',
+        title: 'Not Found',
         text: 'The books are gone.'
+      })
+    })
+
+    it('notifies failed loads without a detail with the title', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      await mountSchema({
+        schema: listSchema,
+        request: () => {
+          throw createRequestError(404, { title: 'Not Found', status: 404 })
+        }
+      })
+      expect(getNotifications()).toContainEqual({
+        title: 'Not Found',
+        text: 'Not Found'
       })
     })
 
@@ -291,8 +306,9 @@ describe('useResource()', () => {
         request: ({ url }) => {
           if (url === '/books/1') {
             throw createRequestError(401, {
-              type: 'AuthorizationError',
-              message: 'Unauthorized Access'
+              title: 'Unauthorized',
+              status: 401,
+              detail: 'Unauthorized Access'
             })
           }
           return { data: [] }
@@ -300,7 +316,7 @@ describe('useResource()', () => {
       })
       await admin.navigate('/books/1')
       expect(getNotifications()).toContainEqual({
-        title: 'Authorization Error',
+        title: 'Unauthorized',
         text: 'Unauthorized Access'
       })
     })
@@ -435,9 +451,23 @@ describe('useResource()', () => {
       })
     })
 
+    it('notifies failed requests with the title of the problem', async () => {
+      const { wrapper } = await mountRecipesWithPublishButton(() => {
+        throw createRequestError(500, {
+          title: 'Internal Server Error',
+          status: 500
+        })
+      })
+      await clickPublish(wrapper)
+      expect(getNotifications()).toContainEqual({
+        title: 'Request Error',
+        text: 'Unable to send request: Internal Server Error'
+      })
+    })
+
     it('notifies failed requests with data without a message', async () => {
       const { wrapper } = await mountRecipesWithPublishButton(() => {
-        throw createRequestError(500, { type: 'ServerError' })
+        throw createRequestError(500, { status: 500 })
       })
       await clickPublish(wrapper)
       expect(getNotifications()).toContainEqual({
@@ -577,8 +607,8 @@ describe('useResource()', () => {
         request: options => {
           if (options.method !== 'get') {
             throw createRequestError(400, {
-              type: 'ModelValidation',
-              message: 'The provided data is not valid',
+              title: 'Validation Failed',
+              detail: 'The data is not valid.',
               errors
             })
           }
@@ -588,10 +618,10 @@ describe('useResource()', () => {
       return result
     }
 
-    it('shows the errors on the fields at their normalized data paths', async () => {
+    it('shows the errors on the fields at the data paths of their pointers', async () => {
       const { getErrors } = await submitWithErrors({
-        'name': [{ message: 'must be unique' }],
-        'books[0].title': [{ message: 'is too long' }]
+        '/name': [{ message: 'must be unique' }],
+        '/books/0/title': [{ message: 'is too long' }]
       })
       expect(getErrors('name')).toEqual(['The Name field must be unique.'])
       expect(getErrors('books/0/title')).toEqual([
@@ -607,8 +637,8 @@ describe('useResource()', () => {
 
     it('notifies errors that no field displays', async () => {
       const { getErrors } = await submitWithErrors({
-        'name': [{ message: 'must be unique' }],
-        'publisher.city': [{ message: 'is required' }],
+        '/name': [{ message: 'must be unique' }],
+        '/publisher/city': [{ message: 'is required' }],
         '': [{ message: 'is incomplete' }]
       })
       expect(getErrors('name')).toEqual(['The Name field must be unique.'])
@@ -634,8 +664,8 @@ describe('useResource()', () => {
         },
         request: () => {
           throw createRequestError(400, {
-            type: 'FilterValidation',
-            message: 'The provided data for query filter is not valid',
+            title: 'Validation Failed',
+            detail: 'The query is not valid.',
             errors
           })
         }
@@ -649,7 +679,7 @@ describe('useResource()', () => {
     it('shows filter errors on the filters, prefixed with the panel data path', async () => {
       // The filters panel has its own data, which the errors are relative to:
       const errors = await mountFilteredBooks({
-        '$title.text': [{ message: 'must be shorter' }]
+        '/$title/text': [{ message: 'must be shorter' }]
       })
       expect(errors).toEqual(['The Text field must be shorter.'])
     })
@@ -657,7 +687,7 @@ describe('useResource()', () => {
     it('shows filter errors with the data paths of the server', async () => {
       // The server keys filter errors by filter name, see `filters.js`:
       const errors = await mountFilteredBooks({
-        'title/text': [{ message: 'must be longer' }]
+        '/title/text': [{ message: 'must be longer' }]
       })
       expect(errors).toEqual(['The Text field must be longer.'])
     })

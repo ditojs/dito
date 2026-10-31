@@ -320,9 +320,9 @@ describe('DitoForm resources', () => {
   describe('server validation errors', () => {
     const respondWithErrors = () => {
       throw createRequestError(400, {
-        type: 'ModelValidation',
-        message: 'The provided data is not valid',
-        errors: { name: [{ message: 'must be unique' }] }
+        title: 'Validation Failed',
+        detail: 'The data is not valid.',
+        errors: { '/name': [{ message: 'must be unique' }] }
       })
     }
 

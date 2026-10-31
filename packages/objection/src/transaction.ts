@@ -1,5 +1,4 @@
-import type { MiddlewareHandler } from 'hono'
-import type { DitoEnv, Transaction } from '@ditojs/server-next'
+import type { Middleware, Transaction } from '@ditojs/server-next'
 import type { Application } from '@ditojs/server'
 import { wrapError } from 'objection'
 
@@ -10,22 +9,23 @@ import { wrapError } from 'objection'
 
 type RequestLocals = Parameters<Application['requestStorage']['run']>[0]
 
-// The `connect` of `createApp()`: the application's knex, as `c.var.db`.
+// The `connect` of `createApp()`: the application's knex, as `ctx.db`.
 export function objectionConnect(app: Application) {
   return () => app.knex
 }
 
-// Runs the rest of the request in request storage of its own.
-export function requestStorage(app: Application): MiddlewareHandler<DitoEnv> {
-  return (c, next) => app.requestStorage.run({} as RequestLocals, next)
+// Runs the rest of the request in request storage of its own, as middleware
+// for the `around` of `createApp()`.
+export function requestStorage(app: Application): Middleware {
+  return (ctx, next) => app.requestStorage.run({} as RequestLocals, next)
 }
 
-// The `transaction` of `createApp()`. It sets the transaction as `c.var.trx`
+// The `transaction` of `createApp()`. It sets the transaction as `ctx.trx`
 // and in the request storage.
 export function objectionTransaction(app: Application): Transaction {
-  return async (c, fn) => {
+  return async (ctx, fn) => {
     const trx = await app.knex.transaction()
-    c.set('trx', trx)
+    ctx.trx = trx
     try {
       const result = await app.requestStorage.run(
         { ...app.requestLocals, transaction: trx } as RequestLocals,
@@ -49,7 +49,7 @@ export function objectionTransaction(app: Application): Transaction {
       }
       throw error
     } finally {
-      c.set('trx', undefined)
+      ctx.trx = undefined
     }
   }
 }

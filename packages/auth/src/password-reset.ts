@@ -1,6 +1,7 @@
+import type { DitoContext } from '@ditojs/server-next'
 import { createKeygrip } from './cookies.ts'
 import { getUserIdentifier } from './identifiers.ts'
-import type { AnyContext, UserSource } from './types.ts'
+import type { UserSource } from './types.ts'
 
 // Stateless password reset links, as Dito 6 signs them: the token holds the
 // user's id and its creation time, with a Keygrip signature over these and the
@@ -16,8 +17,8 @@ export interface PasswordResetOptions {
   confirmUrl: string
   // Sends the email. It runs after the answer, so its failures don't change
   // the answer, and go to `onError`.
-  send(c: AnyContext, user: any, url: string): unknown
-  onError?(c: AnyContext, error: unknown): void
+  send(ctx: DitoContext, user: any, url: string): unknown
+  onError?(ctx: DitoContext, error: unknown): void
 }
 
 export type PasswordReset = ReturnType<typeof passwordReset>
@@ -44,15 +45,17 @@ export function passwordReset({
     createToken,
 
     // Sends the link without waiting for it.
-    request(c: AnyContext, source: UserSource, user: unknown) {
+    request(ctx: DitoContext, source: UserSource, user: unknown) {
       const url = confirmUrl.replace('{token}', createToken(source, user))
-      Promise.try(() => send(c, user, url)).catch(error => onError?.(c, error))
+      Promise.try(() => send(ctx, user, url)).catch(error =>
+        onError?.(ctx, error)
+      )
     },
 
     // The user of a token that hasn't expired and is signed with one of the
     // keys, or null.
     async findUser<U>(
-      c: AnyContext,
+      ctx: DitoContext,
       source: UserSource<U>,
       token: unknown
     ): Promise<U | null> {
@@ -62,7 +65,7 @@ export function passwordReset({
       const time = parseInt(encodedTime, 36)
       if (!(Date.now() - time < expiresAfter)) return null
       const id = Buffer.from(encodedId, 'base64url').toString()
-      const user = id ? await source.findById(c, id) : null
+      const user = id ? await source.findById(ctx, id) : null
       return user && keygrip.verify(getData(source, user, time), signature)
         ? user
         : null

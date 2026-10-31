@@ -27,8 +27,8 @@ export function defineFeature(def: FeatureDefinition) {
   return def
 }
 
-// Infers the types of `c.req.valid('query')` and `c.req.valid('json')` in the
-// handler from the `query` and `body` schemas.
+// Infers the types of `ctx.query` and `ctx.body()` in the handler from the
+// `query` and `body` schemas.
 export function action<
   Q extends StandardSchemaV1 | undefined = undefined,
   B extends StandardSchemaV1 | undefined = undefined

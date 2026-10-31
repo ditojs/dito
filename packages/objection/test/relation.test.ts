@@ -1,10 +1,9 @@
-import { Hono } from 'hono'
 import { Application, Model, type ModelProperties } from '@ditojs/server'
 import {
   createApp,
-  ProblemError,
   problemResponse,
-  type ControllerDefinition
+  type ControllerDefinition,
+  type DitoContext
 } from '@ditojs/server-next'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import {
@@ -97,22 +96,22 @@ const dito = new Application({
 
 // The user has the roles of the `x-roles` header, and is signed out without.
 function setup(...controllers: ControllerDefinition[]) {
-  const app = new Hono()
   const api = createApp({
     base: '/api',
     controllers: withRelations(controllers),
+    around: requestStorage(dito),
     transaction: objectionTransaction(dito),
     connect: objectionConnect(dito),
-    getUser: async c => {
-      const roles = c.req.header('x-roles')
-      return roles === undefined ? null : { id: 1, roles: roles.split(',') }
-    }
+    getUser: async ctx => {
+      const roles = ctx.req.headers.get('x-roles')
+      return roles === null ? null : { id: 1, roles: roles.split(',') }
+    },
+    onError: error => problemResponse(toProblem(error) ?? error)
   })
-  app.use(requestStorage(dito))
-  app.onError((error, c) => problemResponse(toProblem(error) ?? error, c))
-  app.notFound(c => problemResponse(new ProblemError({ status: 404 }), c))
-  app.route('/', api)
-  return app
+  return {
+    request: (path: string, init?: RequestInit) =>
+      api.fetch(new Request(`http://localhost${path}`, init))
+  }
 }
 
 const request = async (
@@ -180,8 +179,8 @@ describe('owner relations', () => {
           collection: { allow: ['get', 'post'] },
           member: {
             'allow': ['get', 'patch', 'delete'],
-            'get activity': async c => {
-              const book = await c.var.load<Book>()
+            'get activity': async ctx => {
+              const book = await ctx.load<Book>()
               return { activity: `${book.title} (${book.constructor.name})` }
             }
           }
@@ -248,8 +247,10 @@ describe('owner relations', () => {
     const post = await request(app, 'POST', '/api/authors/9/books', {
       body: { title: 'Waves' }
     })
+    const invalid = await request(app, 'GET', '/api/authors/x/books')
     expect(get.status).toBe(404)
     expect(post.status).toBe(404)
+    expect(invalid.status).toBe(404)
     expect(await Book.query().where('title', 'Waves')).toEqual([])
   })
 
@@ -278,7 +279,7 @@ describe('inherited settings', () => {
   })
 
   it('inherits `transacted` and `graph`', async () => {
-    const check = async (c: any) => ({ trx: !!c.var.trx })
+    const check = async (ctx: DitoContext) => ({ trx: !!ctx.trx })
     const definition = (transacted?: boolean) =>
       defineController({
         path: 'authors',
@@ -355,7 +356,7 @@ describe('relations that are not owners', () => {
       }
     )
     expect(status).toBe(400)
-    expect(json.type).toBe('BodyValidation')
+    expect(json.detail).toBe('Relating requires models with ids')
   })
 
   it('unrelates with delete', async () => {
@@ -395,8 +396,8 @@ describe('authorization', () => {
       path: 'authors',
       model: Author,
       member: {
-        get: { authorize: 'reader', handler: (c, next) => next() },
-        patch: { authorize: 'editor', handler: (c, next) => next() }
+        get: { authorize: 'reader', handler: (ctx, next) => next() },
+        patch: { authorize: 'editor', handler: (ctx, next) => next() }
       },
       relations: {
         books: {
@@ -448,8 +449,10 @@ describe('authorization', () => {
       defineController({
         path: 'authors',
         model: Author,
-        owner: async c => (await c.var.load<Author>()).id,
-        member: { get: { authorize: '$owner', handler: (c, next) => next() } },
+        owner: async ctx => (await ctx.load<Author>()).id,
+        member: {
+          get: { authorize: '$owner', handler: (ctx, next) => next() }
+        },
         relations: { books: { collection: { allow: ['get'] } } }
       })
     )

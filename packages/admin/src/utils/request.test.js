@@ -8,6 +8,8 @@ import {
   resolveDownloadUrl,
   getRequestCacheKey,
   getErrorMessage,
+  getDataPathErrors,
+  fromJsonPointer,
   RequestError
 } from './request.js'
 
@@ -419,14 +421,44 @@ describe('isApiUrl()', () => {
 })
 
 describe('getErrorMessage()', () => {
-  it('returns the message of errors and response data', () => {
+  it('returns the message of errors', () => {
     expect(getErrorMessage(new Error('Failed'))).toBe('Failed')
-    expect(getErrorMessage({ message: 'Failed' })).toBe('Failed')
+  })
+
+  it('returns the detail of problems, else their title', () => {
+    expect(
+      getErrorMessage({ title: 'Not Found', status: 404, detail: 'Gone' })
+    ).toBe('Gone')
+    expect(getErrorMessage({ title: 'Not Found', status: 404 })).toBe(
+      'Not Found'
+    )
   })
 
   it('returns `null` for errors without a string message', () => {
-    expect(getErrorMessage({ type: 'ServerError' })).toBe(null)
+    expect(getErrorMessage({ status: 500 })).toBe(null)
     expect(getErrorMessage({ message: { key: 'value' } })).toBe(null)
     expect(getErrorMessage(null)).toBe(null)
+  })
+})
+
+describe('fromJsonPointer()', () => {
+  it('returns the data path of JSON Pointers', () => {
+    expect(fromJsonPointer('/sets/8/name')).toBe('sets/8/name')
+    expect(fromJsonPointer('')).toBe('')
+  })
+
+  it('unescapes the tokens', () => {
+    expect(fromJsonPointer('/a~1b')).toBe('a/b')
+    expect(fromJsonPointer('/m~0n')).toBe('m~n')
+    expect(fromJsonPointer('/~01')).toBe('~1')
+  })
+})
+
+describe('getDataPathErrors()', () => {
+  it('keys the errors of problems by data path', () => {
+    const errors = [{ message: 'is required', code: 'invalid_type' }]
+    expect(
+      getDataPathErrors({ '/sets/8/name': errors, '': errors })
+    ).toEqual({ 'sets/8/name': errors, '': errors })
   })
 })

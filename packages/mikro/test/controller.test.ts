@@ -1,13 +1,13 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { Hono } from 'hono'
 import { z } from 'zod'
 import type { Kysely } from 'kysely'
 import {
+  HttpError,
   createApp,
-  ProblemError,
   problemResponse,
+  type App,
   type ControllerDefinition
 } from '@ditojs/server-next'
 import { DiskStorage, assets, insertAsset } from '@ditojs/storage'
@@ -28,37 +28,33 @@ const { orm, drop } = await createTestDatabase(entities)
 
 afterAll(drop)
 
-// Sets up a Hono app with the parts and the handlers that an app wires in.
+// Sets up an app with the parts that an app wires in.
 function setup(...controllers: ControllerDefinition[]) {
-  const app = new Hono()
-  app.onError((error, c) => problemResponse(toProblem(error) ?? error, c))
-  app.notFound(c => problemResponse(new ProblemError({ status: 404 }), c))
-  app.route(
-    '/',
-    createApp({
-      base: '/api',
-      controllers,
-      transaction: mikroTransaction(orm),
-      connect: mikroConnect(orm),
-      getUser: async () => null
-    })
-  )
-  return app
+  return createApp({
+    base: '/api',
+    controllers,
+    transaction: mikroTransaction(orm),
+    connect: mikroConnect(orm),
+    getUser: async () => null,
+    onError: error => problemResponse(toProblem(error) ?? error)
+  })
 }
 
 const request = async (
-  app: Hono,
+  app: App,
   method: string,
   path: string,
   body?: unknown
 ) => {
-  const response = await app.request(path, {
-    method,
-    ...(body !== undefined && {
-      body: JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json' }
+  const response = await app.fetch(
+    new Request(`http://localhost${path}`, {
+      method,
+      ...(body !== undefined && {
+        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' }
+      })
     })
-  })
+  )
   const text = await response.text()
   return {
     status: response.status,
@@ -115,8 +111,8 @@ function families(overrides: Partial<MikroControllerDefinition<Family>> = {}) {
     },
     collection: {
       'allow': ['get', 'post'],
-      'get names': async c => {
-        const rows = await getEntityManager(c).find(
+      'get names': async ctx => {
+        const rows = await getEntityManager(ctx).find(
           Family,
           {},
           {
@@ -131,20 +127,19 @@ function families(overrides: Partial<MikroControllerDefinition<Family>> = {}) {
 
       // The `updatedAt` the client loaded. A newer one in the database
       // answers 409.
-      async 'patch'(c, next) {
-        const family = await c.var.load<Family>()
-        const { updatedAt } = await c.var.body()
+      async 'patch'(ctx, next) {
+        const family = await ctx.load<Family>()
+        const { updatedAt } = await ctx.body()
         if (updatedAt && +new Date(updatedAt) !== +family.updatedAt) {
-          throw new ProblemError({
-            status: 409,
+          throw new HttpError(409, {
             detail: 'A more recent version exists in the database.'
           })
         }
         return next()
       },
 
-      async 'post publish'(c) {
-        const family = await c.var.load<Family>()
+      async 'post publish'(ctx) {
+        const family = await ctx.load<Family>()
         if (family.sets.length === 0) {
           throw createValidationError([
             { path: ['sets'], message: 'has no sets' }
@@ -255,7 +250,10 @@ describe('collection get', () => {
       status: 400,
       json: { detail: `Unknown filter 'none'` }
     })
-    expect(invalid.status).toBe(400)
+    expect(invalid).toMatchObject({
+      status: 400,
+      json: { errors: { '/published': [expect.any(Object)] } }
+    })
     expect(order.status).toBe(400)
     expect(relation.status).toBe(400)
   })
@@ -364,7 +362,7 @@ describe('allow', () => {
       defineController({
         path: 'families',
         entity: Family,
-        member: { get: (c, next) => next() }
+        member: { get: (ctx, next) => next() }
       })
     )
     expect((await request(app, 'GET', '/api/families')).status).toBe(404)
@@ -469,7 +467,7 @@ describe('writes', () => {
     })
     expect(status).toBe(400)
     expect(json.errors).toEqual({
-      'sets/0/defaultCut': [
+      '/sets/0/defaultCut': [
         { message: `references the unknown new row 'none'` }
       ]
     })
@@ -482,14 +480,14 @@ describe('writes', () => {
       sets: [...family.sets, { id: other.sets[0].id, name: 'Moved' }]
     })
     expect(status).toBe(400)
-    expect(Object.keys(json.errors)).toEqual(['sets/2/id'])
+    expect(Object.keys(json.errors)).toEqual(['/sets/2/id'])
     const [set] = await sql('select family_id from font_set where id = ?', [
       other.sets[0].id
     ])
     expect(set.family_id).toBe(3)
   })
 
-  it('answers validation errors in Dito 6 shape, by data path', async () => {
+  it('answers validation errors by JSON Pointer', async () => {
     const { json: family } = await request(app, 'GET', '/api/families/1')
     const { status, headers, json } = await request(
       app,
@@ -505,18 +503,17 @@ describe('writes', () => {
     expect(headers.get('Content-Type')).toBe('application/problem+json')
     expect(json).toMatchObject({
       status: 400,
-      title: 'Bad Request',
-      type: 'ModelValidation',
-      message: 'The provided data is not valid'
+      title: 'Validation Failed',
+      detail: 'The data is not valid.'
     })
     expect(Object.keys(json.errors).sort()).toEqual([
-      'name',
-      'sets/1/name',
-      'sets/2/name',
-      'specs/weight'
+      '/name',
+      '/sets/1/name',
+      '/sets/2/name',
+      '/specs/weight'
     ])
-    expect(json.errors.name).toEqual([
-      { message: expect.any(String), keyword: 'invalid_type' }
+    expect(json.errors['/name']).toEqual([
+      { message: expect.any(String), code: 'invalid_type' }
     ])
   })
 
@@ -548,9 +545,10 @@ describe('writes', () => {
       sets: [{ ...regular, cuts: [...regular.cuts, { name: 'Light' }] }]
     })
     expect(status).toBe(409)
-    expect(json).toMatchObject({
-      type: 'UniqueConstraintViolationException',
-      message: 'Database error'
+    expect(json).toEqual({
+      title: 'Conflict',
+      status: 409,
+      detail: 'The data conflicts with rows in the database.'
     })
     const saved = await request(app, 'GET', '/api/families/1')
     expect(saved.json.notes).toBe(null)
@@ -585,7 +583,7 @@ describe('actions', () => {
       '/api/families/2/publish'
     )
     expect(status).toBe(400)
-    expect(json.errors).toEqual({ sets: [{ message: 'has no sets' }] })
+    expect(json.errors).toEqual({ '/sets': [{ message: 'has no sets' }] })
     const published = await request(app, 'POST', '/api/families/3/publish')
     expect(published.json).toMatchObject({ id: 3, published: true })
     const [row] = await sql('select published from family where id = 3')
@@ -604,9 +602,9 @@ describe('wrapping the default verbs', () => {
       families({
         member: {
           allow: ['patch'],
-          async patch(c, next) {
+          async patch(ctx, next) {
             const family = (await next()) as Family
-            await getEntityManager(c).populate(family, ['awards'])
+            await getEntityManager(ctx).populate(family, ['awards'])
             if (family.name.length < 3 && family.awards.length > 0) {
               throw createValidationError([
                 { path: ['name'], message: 'is too short for an award' }
@@ -622,7 +620,7 @@ describe('wrapping the default verbs', () => {
     })
     expect(short.status).toBe(400)
     expect(short.json.errors).toEqual({
-      name: [{ message: 'is too short for an award' }]
+      '/name': [{ message: 'is too short for an award' }]
     })
     const [row] = await sql('select name from family where id = 1')
     expect(row.name).toBe('Akkurat')
@@ -635,14 +633,14 @@ describe('wrapping the default verbs', () => {
     expect(json).not.toHaveProperty('awards')
   })
 
-  it('loads the member once through `c.var.load()`', async () => {
+  it('loads the member once through `ctx.load()`', async () => {
     const loaded: unknown[] = []
     const app = setup(
       families({
         member: {
           allow: ['patch'],
-          async patch(c, next) {
-            loaded.push(await c.var.load())
+          async patch(ctx, next) {
+            loaded.push(await ctx.load())
             const family = await next()
             loaded.push(family)
             return family
@@ -677,8 +675,8 @@ describe('transactions', () => {
     const app = setup(
       families({
         collection: {
-          'post fail': async c => {
-            const em = getEntityManager(c)
+          'post fail': async ctx => {
+            const em = getEntityManager(ctx)
             em.create(Award, { name: 'Lost', family: 1 })
             await em.flush()
             throw new Error('Failed')
@@ -696,12 +694,12 @@ describe('transactions', () => {
     const app = setup(
       families({
         collection: {
-          'get check': c => {
-            managers.get = c.var.db as EntityManager
+          'get check': ctx => {
+            managers.get = ctx.db as EntityManager
             return {}
           },
-          'post check': c => {
-            managers.post = c.var.db as EntityManager
+          'post check': ctx => {
+            managers.post = ctx.db as EntityManager
             return { transaction: !!managers.post.isInTransaction() }
           }
         }
@@ -713,7 +711,7 @@ describe('transactions', () => {
     await request(app, 'GET', '/api/families/check')
     expect(managers.get!.isInTransaction()).toBe(false)
     expect(managers.get).not.toBe(orm.em)
-    expect(getEntityManager({ var: { db: managers.get } } as never)).toBe(
+    expect(getEntityManager({ db: managers.get } as never)).toBe(
       managers.get
     )
   })
@@ -752,8 +750,8 @@ describe('assets', () => {
     await fs.rm(basePath, { recursive: true, force: true })
   })
 
-  const kysely = (c: Parameters<typeof getEntityManager>[0]) =>
-    getEntityManager(c).getKysely() as unknown as Kysely<any>
+  const kysely = (ctx: Parameters<typeof getEntityManager>[0]) =>
+    getEntityManager(ctx).getKysely() as unknown as Kysely<any>
 
   const setupAssets = () =>
     setup(

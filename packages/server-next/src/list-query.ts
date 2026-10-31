@@ -1,6 +1,5 @@
-import type { Context } from 'hono'
-import { ProblemError } from './errors.ts'
-import type { ListQuery } from './types.ts'
+import { HttpError } from './errors.ts'
+import type { DitoContext, ListQuery } from './types.ts'
 
 // Parses the list parameters of a request in the order they appear. Names
 // are words, and properties are words joined by dots, as ORM packages expect.
@@ -8,9 +7,9 @@ import type { ListQuery } from './types.ts'
 const namePattern = /^\w+$/
 const propertyPattern = /^\w+(\.\w+)*$/
 
-export function parseListQuery(c: Context): ListQuery {
+export function parseListQuery(ctx: DitoContext): ListQuery {
   const query: ListQuery = { filters: [], order: [], range: null, fields: null }
-  for (const [key, value] of new URL(c.req.url).searchParams) {
+  for (const [key, value] of ctx.url.searchParams) {
     const [, filter] = key.match(/^filter\[(.*)\]$/) ?? []
     if (filter !== undefined) {
       check(namePattern.test(filter), key, value)
@@ -65,8 +64,5 @@ function check(valid: boolean, key: string, value: string) {
 }
 
 function invalid(key: string, value: string): never {
-  throw new ProblemError({
-    status: 400,
-    detail: `Invalid ${key} '${value}'`
-  })
+  throw new HttpError(400, { detail: `Invalid ${key} '${value}'` })
 }

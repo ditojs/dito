@@ -68,7 +68,7 @@ describe('totp()', () => {
     secret = data.secret
     expect(
       await client.post('/admins/totp-confirm', { code: '000000' })
-    ).toMatchObject({ status: 401, data: { message: 'Code is incorrect' } })
+    ).toMatchObject({ status: 401, data: { detail: 'Code is incorrect' } })
     const response = await client.post('/admins/totp-confirm', {
       code: generate()
     })
@@ -96,7 +96,7 @@ describe('totp()', () => {
       await client.post('/admins/totp-confirm', { code: '000000' })
     ).toMatchObject({
       status: 400,
-      data: { message: 'Missing or expired TOTP confirmation' }
+      data: { detail: 'Missing or expired TOTP confirmation' }
     })
     secret = (await client.post('/admins/totp')).data.secret
     vi.advanceTimersByTime(5 * 60 * 1000 + 1)
@@ -125,7 +125,7 @@ describe('totp()', () => {
       await client.post('/admins/login-code', { code: '000000' })
     ).toMatchObject({
       status: 401,
-      data: { success: false, error: 'Code is incorrect' }
+      data: { detail: 'Code is incorrect' }
     })
     // The code that confirmed the secret can't be used again:
     expect(
@@ -152,7 +152,7 @@ describe('totp()', () => {
       await client.post('/admins/login-code', { code: generate() })
     ).toMatchObject({
       status: 400,
-      data: { error: 'Missing or expired login' }
+      data: { detail: 'Missing or expired login' }
     })
   })
 
@@ -188,7 +188,7 @@ describe('totp()', () => {
     expect((await readTotp()).data.failures).toBe(9)
     expect(
       await client.post('/admins/login-code', { code: '000000' })
-    ).toMatchObject({ status: 400, data: { error: 'Too many attempts' } })
+    ).toMatchObject({ status: 400, data: { detail: 'Too many attempts' } })
     vi.advanceTimersByTime(30_000)
     expect(
       (await client.post('/admins/login-code', { code: generate() })).status
@@ -245,7 +245,7 @@ describe('totp()', () => {
       await other.post('/admins/login', { username: 'ada', password: 'secret' })
     ).toMatchObject({
       status: 401,
-      data: { error: 'Password or username is incorrect' }
+      data: { detail: 'Password or username is incorrect' }
     })
   })
 })

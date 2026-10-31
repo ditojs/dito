@@ -12,7 +12,7 @@ import type { Application } from '@ditojs/server'
 
 // Kysely on the knex of a Dito 6 application, for code that queries through
 // Kysely, such as the assets of `@ditojs/storage`. It runs on the request's
-// `c.var.db`, or else on the application's knex. In a request with a
+// `ctx.db`, or else on the application's knex. In a request with a
 // transaction, Kysely runs its queries in that transaction, so they commit
 // and roll back with the request's other writes. There is one Kysely per
 // transaction and one per knex.
@@ -28,8 +28,8 @@ const coldDialects = new Map([
 
 export function objectionKysely(app: Application) {
   const databases = new WeakMap<Knex, Kysely<any>>()
-  return (c?: DitoContext): Kysely<any> => {
-    const knex = ((c?.var.db ?? c?.var.trx) as Knex | undefined) ?? app.knex
+  return (ctx?: DitoContext): Kysely<any> => {
+    const knex = ((ctx?.db ?? ctx?.trx) as Knex | undefined) ?? app.knex
     let db = databases.get(knex)
     if (!db) {
       db = createKysely(knex)

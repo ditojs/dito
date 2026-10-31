@@ -22,17 +22,17 @@ import { insertAsset } from './assets.ts'
 import { toStorageRegistry, type Storages } from './registry.ts'
 
 // The asset handling of a controller's writes, with the asset paths of its
-// table. The paths are read in the body of `c.var.body()`, where the column of
+// table. The paths are read in the body of `ctx.body()`, where the column of
 // each path is its camelCase property, such as `custom_font_file` as
 // `customFontFile`. A `body` schema of the action needs to keep the
 // `signature` of files. The feature changes the files of the body in place,
-// so handlers read them through `c.var.body()` without their signatures. It
+// so handlers read them through `ctx.body()` without their signatures. It
 // also signs the files of the rows that the controller sends. It reads JSON
 // bodies only, so the multipart bodies of upload routes pass through.
 
 // The database of the `asset` table, or a function that returns the one of
-// the request, such as a Kysely on `c.var.db`.
-export type AssetDb = Kysely<any> | ((c: DitoContext) => Kysely<any>)
+// the request, such as a Kysely on `ctx.db`.
+export type AssetDb = Kysely<any> | ((ctx: DitoContext) => Kysely<any>)
 
 export interface AssetsOptions {
   // Only the paths of this table are used, when set.
@@ -69,17 +69,17 @@ export function assets(
     )
 
   const feature: FeatureDefinition = {
-    around: async (c, next) => {
+    around: async (ctx, next) => {
       if (
-        !writeMethods.includes(c.req.method) ||
-        !c.req.header('Content-Type')?.includes('json')
+        !writeMethods.includes(ctx.req.method) ||
+        !ctx.req.headers.get('Content-Type')?.includes('json')
       ) {
         return next()
       }
-      const body = await c.var.body()
+      const body = await ctx.body()
       const files = findFiles(body)
       if (files.length === 0) return next()
-      const database = isFunction(db) ? db(c) : db
+      const database = isFunction(db) ? db(ctx) : db
       const imported: ImportedFile[] = []
       const removeImported = async () => {
         await Promise.allSettled(
@@ -110,11 +110,15 @@ export function assets(
         await removeImported()
         throw error
       }
-      await next()
-      if (c.error) await removeImported()
+      try {
+        return await next()
+      } catch (error) {
+        await removeImported()
+        throw error
+      }
     },
 
-    serialize: (_c, _row, json) => {
+    serialize: (_ctx, _row, json) => {
       if (!isObject(json)) return json
       const copy: Record<string, unknown> = { ...json }
       for (const { column, path, storage } of paths) {

@@ -1,14 +1,12 @@
-import type { Context } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { isObject, isString } from '@ditojs/utils'
-import type { ErrorFormat, Problem } from './types.ts'
+import type { Problem } from './types.ts'
 
-// Errors become RFC 9457 Problem Details. Validation errors carry `errors`,
-// keyed by the JSON Pointer of the invalid value, such as `/sets/8/name`, or
-// by its data path in Dito 6's format.
-// Other errors answer a bare 500. Nothing here logs: the app passes
-// `problemResponse` to Hono's `app.onError()` and logs there itself.
+// Errors become RFC 9457 Problem Details. An `HttpError` is meant for the
+// client, which gets its detail and members. Other errors answer a bare 500.
+// Validation errors carry `errors`, keyed by the JSON Pointer of the invalid
+// value, such as `/sets/8/name`. Nothing here logs: the app does in the
+// `onError` of `createApp()`.
 
 const titles: Record<number, string> = {
   400: 'Bad Request',
@@ -17,9 +15,11 @@ const titles: Record<number, string> = {
   404: 'Not Found',
   405: 'Method Not Allowed',
   409: 'Conflict',
+  412: 'Precondition Failed',
   413: 'Content Too Large',
   415: 'Unsupported Media Type',
   422: 'Unprocessable Content',
+  428: 'Precondition Required',
   429: 'Too Many Requests',
   500: 'Internal Server Error',
   501: 'Not Implemented',
@@ -30,35 +30,43 @@ export function getStatusTitle(status: number) {
   return titles[status] ?? (status < 500 ? 'Client Error' : 'Server Error')
 }
 
-export class ProblemError extends Error {
+export interface HttpErrorOptions {
+  title?: string
+  detail?: string
+  errors?: Problem['errors']
+  type?: string
+  // The error that caused this one, for the app's logs.
+  cause?: unknown
+  // Extension members of the problem.
+  [member: string]: unknown
+}
+
+export class HttpError extends Error {
   status: number
   title: string
   detail: string | undefined
   errors: Problem['errors']
   type: string | undefined
-  extensions: Record<string, unknown>
+  members: Record<string, unknown>
 
-  constructor({
-    status,
-    title = getStatusTitle(status),
-    detail,
-    errors,
-    type,
-    ...extensions
-  }: Partial<Problem> & { status: number }) {
-    super(detail ?? title)
-    this.name = 'ProblemError'
+  constructor(
+    status: number,
+    { title, detail, errors, type, cause, ...members }: HttpErrorOptions = {}
+  ) {
+    title ??= getStatusTitle(status)
+    super(detail ?? title, { cause })
+    this.name = 'HttpError'
     this.status = status
     this.title = title
     this.detail = detail
     this.errors = errors
     this.type = type
-    this.extensions = extensions
+    this.members = members
   }
 
   toProblem(): Problem {
     const { type, title, status, detail, errors } = this
-    return { ...this.extensions, type, title, status, detail, errors }
+    return { ...this.members, type, title, status, detail, errors }
   }
 }
 
@@ -67,77 +75,34 @@ export interface ValidationIssue extends StandardSchemaV1.Issue {
   readonly code?: unknown
 }
 
-// What failed validation: the query or the body of an action, or the data of
-// a model, which ORM packages validate.
-export type ValidationTarget = 'query' | 'json' | 'model'
-
-const messages = {
-  problem: {
-    query: 'The query is not valid.',
-    json: 'The body is not valid.',
-    model: 'The data is not valid.'
-  },
-  // Dito 6's messages, which its admin shows.
-  dito: {
-    query: 'The provided action parameters are not valid',
-    json: 'The provided action parameters are not valid',
-    model: 'The provided data is not valid'
-  }
-}
-
-// A 400 for the issues. The `problem` format keys `errors` by JSON Pointer.
-// The `dito` format answers in Dito 6's shape, which its admin reads: `type`
-// and `message`, and `errors` keyed by data paths, see `toDitoErrors()`.
+// A 400 for the issues of the query, the body or a model's data.
 export function createValidationError(
-  target: ValidationTarget,
   issues: readonly ValidationIssue[],
-  { format = 'problem' }: { format?: ErrorFormat } = {}
+  detail = 'The data is not valid.'
 ) {
-  const detail = messages[format][target]
-  if (format === 'dito') {
-    return new ProblemError({
-      status: 400,
-      detail,
-      type: target === 'model' ? 'ModelValidation' : 'ParameterValidation',
-      message: detail,
-      errors: toDitoErrors(issues)
-    })
-  }
-  return new ProblemError({
-    status: 400,
+  return new HttpError(400, {
     title: 'Validation Failed',
     detail,
-    errors: getErrors(issues, toJsonPointer)
+    errors: toProblemErrors(issues)
   })
 }
 
-// The errors of the issues in Dito 6's shape, keyed by data paths such as
-// `sets/8/name`, and the empty path for the value itself.
-export function toDitoErrors(issues: readonly ValidationIssue[]) {
-  return getErrors(issues, toDataPath)
-}
-
-function getErrors(
-  issues: readonly ValidationIssue[],
-  getKey: (path: StandardSchemaV1.Issue['path']) => string
-) {
+// The `errors` of a problem, keyed by JSON Pointer.
+export function toProblemErrors(issues: readonly ValidationIssue[]) {
   const errors: NonNullable<Problem['errors']> = {}
   for (const { message, path, code } of issues) {
-    ;(errors[getKey(path)] ??= []).push({
+    ;(errors[toJsonPointer(path)] ??= []).push({
       message,
-      ...(isString(code) && { keyword: code as string })
+      ...(isString(code) && { code: code as string })
     })
   }
   return errors
 }
 
-function toDataPath(path: StandardSchemaV1.Issue['path'] = []) {
-  return path
-    .map(segment => String(isObject(segment) ? segment.key : segment))
-    .join('/')
-}
-
-export function toJsonPointer(path: StandardSchemaV1.Issue['path'] = []) {
+// The JSON Pointer of a path, `''` for the value itself.
+export function toJsonPointer(
+  path: StandardSchemaV1.Issue['path'] | string[] = []
+) {
   return path
     .map(segment => {
       const key = isObject(segment) ? segment.key : segment
@@ -147,23 +112,18 @@ export function toJsonPointer(path: StandardSchemaV1.Issue['path'] = []) {
 }
 
 export function toProblem(error: unknown): Problem {
-  if (error instanceof ProblemError) return error.toProblem()
-  if (error instanceof HTTPException) {
-    return {
-      title: getStatusTitle(error.status),
-      status: error.status,
-      detail: error.message || undefined
-    }
-  }
-  return { title: getStatusTitle(500), status: 500 }
+  return error instanceof HttpError
+    ? error.toProblem()
+    : { title: getStatusTitle(500), status: 500 }
 }
 
-// The Problem Details response of an error, for Hono's `app.onError()`. An
-// `HTTPException` with a response of its own sends that response.
-export function problemResponse(error: unknown, c: Context) {
-  if (error instanceof HTTPException && error.res) return error.res
+// The Problem Details response of an error. A `Response` that was thrown is
+// sent as it is.
+export function problemResponse(error: unknown) {
+  if (error instanceof Response) return error
   const problem = toProblem(error)
-  return c.body(JSON.stringify(problem), problem.status as never, {
-    'Content-Type': 'application/problem+json'
+  return Response.json(problem, {
+    status: problem.status,
+    headers: { 'Content-Type': 'application/problem+json' }
   })
 }

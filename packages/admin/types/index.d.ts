@@ -2458,7 +2458,7 @@ export type SchemaContext<$Item = any> = {
     match?: string | string[] | RegExp | ((dataPath: string) => boolean)
   ): Record<
     string,
-    { message: string; keyword?: string; params?: Record<string, any> }[]
+    { message: string; code?: string }[]
   > | null
   /**
    * Clears the errors of the data of the form, view, dialog

@@ -76,9 +76,11 @@ describe('passwordReset()', () => {
     expect(send.mock.calls[0][1]).toBe(ada)
     expect(await request(undefined)).toMatchObject({
       status: 400,
-      data: { message: `Missing 'email'` }
+      data: { errors: { '/email': [{ message: `Missing 'email'` }] } }
     })
-    expect((await request(['x'])).data.message).toBe(`Invalid 'email'`)
+    expect((await request(['x'])).data.errors).toEqual({
+      '/email': [{ message: `Invalid 'email'`, code: 'invalid_type' }]
+    })
   })
 
   it('reports failures to send without changing the answer', async () => {
@@ -108,7 +110,7 @@ describe('passwordReset()', () => {
       })
     ).toMatchObject({
       status: 400,
-      data: { errors: { '/password': [{ keyword: 'required' }] } }
+      data: { errors: { '/password': [{ code: 'too_small' }] } }
     })
     expect(
       await client.post('/admins/password-reset-confirm', {
@@ -125,7 +127,7 @@ describe('passwordReset()', () => {
       })
     ).toMatchObject({
       status: 400,
-      data: { message: 'Invalid or expired token' }
+      data: { detail: 'Invalid or expired token' }
     })
     expect(
       (
@@ -157,7 +159,7 @@ describe('passwordReset()', () => {
     }
     expect((await confirm(undefined as any)).status).toBe(400)
     vi.advanceTimersByTime(60 * 60 * 1000)
-    expect((await confirm(token)).data.message).toBe('Invalid or expired token')
+    expect((await confirm(token)).data.detail).toBe('Invalid or expired token')
     expect(ada.hash).not.toBe(null)
   })
 

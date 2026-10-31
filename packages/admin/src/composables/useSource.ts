@@ -7,10 +7,12 @@ import {
   toRef,
   watch
 } from 'vue'
+import { isObject } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { ItemStores } from '../utils/ItemStores.js'
 import { appendDataPath } from '../utils/data.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
+import { getDataPathErrors } from '../utils/request.js'
 import {
   adminContextKey,
   resourceContextKey,
@@ -143,9 +145,12 @@ export function useSource(
             await schemaEvents.emitEvent('load')
           },
           onError({ data, status }) {
+            // Loads send only their query, whose validation errors are the
+            // ones of its filters:
             if (
-              data?.type === 'FilterValidation' &&
-              onFilterErrors?.(data.errors)
+              status === 400 &&
+              isObject(data?.errors) &&
+              onFilterErrors?.(getDataPathErrors(data.errors))
             ) {
               return true
             } else if (

@@ -357,8 +357,8 @@ describe('widgets', () => {
         response: {
           status: 400,
           data: {
-            type: 'ValidationError',
-            errors: { rank: [{ message: 'is too low' }] }
+            title: 'Validation Failed',
+            errors: { '/rank': [{ message: 'is too low' }] }
           }
         }
       })

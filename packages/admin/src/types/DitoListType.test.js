@@ -897,8 +897,8 @@ describe('DitoListType', () => {
             response: {
               status: 400,
               data: {
-                type: 'ValidationError',
-                errors: { '0/title': [{ message: 'is taken' }] }
+                title: 'Validation Failed',
+                errors: { '/0/title': [{ message: 'is taken' }] }
               }
             }
           })
@@ -948,8 +948,8 @@ describe('DitoListType', () => {
             response: {
               status: 400,
               data: {
-                type: 'ValidationError',
-                errors: { '0/title': [{ message: 'is taken' }] }
+                title: 'Validation Failed',
+                errors: { '/0/title': [{ message: 'is taken' }] }
               }
             }
           })
@@ -2157,9 +2157,9 @@ describe('DitoListType', () => {
             status: 400,
             statusText: 'Error',
             data: {
-              type: 'FilterValidation',
-              message: 'The query filter is not valid',
-              errors: { 'course/course': [{ message: 'is no course' }] }
+              title: 'Validation Failed',
+              detail: 'The query is not valid.',
+              errors: { '/course/course': [{ message: 'is no course' }] }
             }
           })
         }
@@ -2220,9 +2220,9 @@ describe('DitoListType', () => {
             status: 400,
             statusText: 'Error',
             data: {
-              type: 'FilterValidation',
-              message: 'The query filter is not valid',
-              errors: { 'title/text': [{ message: 'must be shorter' }] }
+              title: 'Validation Failed',
+              detail: 'The query is not valid.',
+              errors: { '/title/text': [{ message: 'must be shorter' }] }
             }
           })
         }
@@ -2230,7 +2230,7 @@ describe('DitoListType', () => {
       const texts = [...document.querySelectorAll('.dito-notification')].map(
         notification => notification.textContent
       )
-      expect(texts.join()).toContain('The query filter is not valid')
+      expect(texts.join()).toContain('The query is not valid.')
     })
 
     it('shows filter errors on the filters panel', async () => {
@@ -2250,9 +2250,9 @@ describe('DitoListType', () => {
             status: 400,
             statusText: 'Error',
             data: {
-              type: 'FilterValidation',
-              message: 'The query filter is not valid',
-              errors: { 'title/text': [{ message: 'must be shorter' }] }
+              title: 'Validation Failed',
+              detail: 'The query is not valid.',
+              errors: { '/title/text': [{ message: 'must be shorter' }] }
             }
           })
         }

@@ -36,10 +36,10 @@ import {
 // A model controller on a MikroORM entity. Its default verbs and the `load`,
 // `toJSON` and `isRow` slots form the base layer that the definition wraps
 // through `next`. `find` is the one shape that the controller loads and
-// returns: list rows, members, `c.var.load()` and the rows of writes.
+// returns: list rows, members, `ctx.load()` and the rows of writes.
 //
 // Writes use the unit of work: `post` creates the row, and `patch` assigns
-// the body to the member that `c.var.load()` loads once. Both return the row
+// the body to the member that `ctx.load()` loads once. Both return the row
 // unwritten, so a wrapping handler can check the graph first. The `finish`
 // slot flushes the entity manager once after the handlers of a write, and
 // each row is serialized as it is, without a new query. `refresh` loads the
@@ -102,47 +102,47 @@ export function defineController<T extends object>(
     }
     return { em, ...entry }
   }
-  const use = (c: DitoContext) => resolve(getEntityManager(c))
+  const use = (ctx: DitoContext) => resolve(getEntityManager(ctx))
 
   const outputs = new WeakMap<DitoContext, OutputOptions>()
 
   const getOutput = (
-    c: DitoContext,
+    ctx: DitoContext,
     meta: EntityMetadata,
     base: OutputOptions
   ) => {
-    if (c.req.method !== 'GET') return base
-    let output = outputs.get(c)
+    if (ctx.req.method !== 'GET') return base
+    let output = outputs.get(ctx)
     if (!output) {
-      const { fields } = parseListQuery(c)
+      const { fields } = parseListQuery(ctx)
       output = fields
         ? getOutputOptions(meta, {
             ...shape,
             fields: narrowFields(meta, fields, shape)
           })
         : base
-      outputs.set(c, output)
+      outputs.set(ctx, output)
     }
     return output
   }
 
   const base: FeatureDefinition = {
     collection: {
-      async get(c) {
-        const { em, meta } = use(c)
+      async get(ctx) {
+        const { em, meta } = use(ctx)
         return findRows({
           em,
           entity,
           meta,
           find,
           filters,
-          query: parseListQuery(c)
+          query: parseListQuery(ctx)
         })
       },
 
-      async post(c) {
-        const { em, meta, schemas } = use(c)
-        const data = parseWrite(schemas.create, await c.var.body())
+      async post(ctx) {
+        const { em, meta, schemas } = use(ctx)
+        const data = parseWrite(schemas.create, await ctx.body())
         const link = takeRefs(meta, data)
         const row = em.create(entity, data as never)
         link(row)
@@ -151,12 +151,12 @@ export function defineController<T extends object>(
     },
 
     member: {
-      get: c => c.var.load(),
+      get: ctx => ctx.load(),
 
-      async patch(c) {
-        const { em, meta, schemas } = use(c)
-        const row = await c.var.load<T>()
-        const data = parseWrite(schemas.patch, await c.var.body())
+      async patch(ctx) {
+        const { em, meta, schemas } = use(ctx)
+        const row = await ctx.load<T>()
+        const data = parseWrite(schemas.patch, await ctx.body())
         await checkOwnedIds(row, meta, data)
         const link = takeRefs(meta, data)
         em.assign(row, data as never, { onlyProperties: true })
@@ -164,15 +164,15 @@ export function defineController<T extends object>(
         return row
       },
 
-      async delete(c) {
-        const { em } = use(c)
-        em.remove(await c.var.load<T>())
+      async delete(ctx) {
+        const { em } = use(ctx)
+        em.remove(await ctx.load<T>())
         return { count: 1 }
       }
     },
 
-    load: (c, id) => {
-      const { em, meta } = use(c)
+    load: (ctx, id) => {
+      const { em, meta } = use(ctx)
       const key = meta.primaryKeys[0]!
       return em.findOne(
         entity,
@@ -185,9 +185,9 @@ export function defineController<T extends object>(
 
     // Flushes the writes of the request, also of results that aren't rows,
     // such as the count of a delete. The rows are then loaded in their shape.
-    async finish(c, result) {
-      if (c.req.method === 'GET') return
-      const { em, meta } = use(c)
+    async finish(ctx, result) {
+      if (ctx.req.method === 'GET') return
+      const { em, meta } = use(ctx)
       const rows = getRows(result, entity)
       for (const row of rows) setNulls(row)
       await em.flush()
@@ -200,17 +200,17 @@ export function defineController<T extends object>(
             : em.populate(row, populate as never)
         )
       }
-      const { on, name } = c.var.action
+      const { on, name } = ctx.action
       if (on === 'collection' && name === 'post' && result instanceof entity) {
         const id = (result as Record<string, unknown>)[meta.primaryKeys[0]!]
-        const path = new URL(c.req.url).pathname.replace(/\/$/, '')
-        c.header('Location', `${path}/${id}`)
+        const path = ctx.url.pathname.replace(/\/$/, '')
+        ctx.res.headers.set('Location', `${path}/${id}`)
       }
     },
 
-    toJSON(c, row) {
-      const { meta, output } = use(c)
-      return serializeRow(row as object, getOutput(c, meta, output))
+    toJSON(ctx, row) {
+      const { meta, output } = use(ctx)
+      return serializeRow(row as object, getOutput(ctx, meta, output))
     }
   }
 

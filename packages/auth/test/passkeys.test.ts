@@ -98,7 +98,7 @@ describe('passkeys()', () => {
       await client.post('/admins/passkeys', answer('key-1'))
     ).toMatchObject({
       status: 400,
-      data: { message: 'Missing or expired passkey challenge' }
+      data: { detail: 'Missing or expired passkey challenge' }
     })
     // The same authenticator isn't registered twice:
     const second = (await client.post('/admins/passkey-options')).data
@@ -127,7 +127,7 @@ describe('passkeys()', () => {
     verifyRegistration.mockRejectedValueOnce(new Error('Unexpected origin'))
     expect(
       await client.post('/admins/passkeys', answer('key-1', 'https://evil.com'))
-    ).toMatchObject({ status: 400, data: { message: 'Unexpected origin' } })
+    ).toMatchObject({ status: 400, data: { detail: 'Unexpected origin' } })
     expect(verifyRegistration.mock.calls[0][0].expectedOrigin).toBe(
       'https://example.com'
     )
@@ -169,7 +169,7 @@ describe('passkeys()', () => {
       await client.post('/admins/passkey-login', answer('unknown'))
     ).toMatchObject({
       status: 401,
-      data: { success: false, error: 'Passkey is incorrect' }
+      data: { detail: 'Passkey is incorrect' }
     })
     // The unknown passkey used up the challenge:
     expect(
@@ -179,7 +179,7 @@ describe('passkeys()', () => {
     verifyAuthentication.mockRejectedValueOnce(new Error('Bad signature'))
     expect(
       await client.post('/admins/passkey-login', answer('key-1'))
-    ).toMatchObject({ status: 401, data: { error: 'Passkey is incorrect' } })
+    ).toMatchObject({ status: 401, data: { detail: 'Passkey is incorrect' } })
     expect((await client.get('/admins/session')).data.authenticated).toBe(
       false
     )
@@ -199,7 +199,7 @@ describe('passkeys()', () => {
       await client.post('/admins/confirm-access', {
         passkey: answer('key-bob')
       })
-    ).toMatchObject({ status: 401, data: { message: 'Passkey is incorrect' } })
+    ).toMatchObject({ status: 401, data: { detail: 'Passkey is incorrect' } })
     await client.post('/admins/logout')
     await client.post('/admins/login', { username: 'bob', password: 'secret' })
     await client.post('/admins/passkey-login-options')

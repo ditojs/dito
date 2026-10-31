@@ -1,21 +1,13 @@
-import type { MiddlewareHandler } from 'hono'
 import {
-  ProblemError,
+  HttpError,
   withBase,
-  type Actions,
   type Authorize,
   type ControllerDefinition,
   type DitoContext,
-  type DitoEnv,
-  type FeatureDefinition
+  type FeatureDefinition,
+  type Middleware
 } from '@ditojs/server-next'
-import {
-  asArray,
-  hyphenate,
-  isArray,
-  isFunction,
-  isPlainObject
-} from '@ditojs/utils'
+import { asArray, hyphenate, isArray, isFunction } from '@ditojs/utils'
 import { ValidationError } from '@ditojs/server'
 import {
   createBase,
@@ -28,6 +20,7 @@ import {
   type Query,
   type QueryOptions
 } from './controller.ts'
+import { findLast, getAuthorize, getLayers } from './layers.ts'
 
 // Dito 6's `RelationController`: a controller of the rows of one relation of
 // a parent controller's member, at `<parent>/:parentId/<path>`. Its queries
@@ -56,8 +49,6 @@ export interface ParentOptions {
   base: FeatureDefinition
   definition: ControllerDefinition
 }
-
-type On = 'collection' | 'member'
 
 export function defineRelation(
   name: string,
@@ -90,12 +81,12 @@ export function defineRelation(
     ])
   ]
 
-  const execute: Execute = async (c, fn, scoped = true) => {
-    const knex = getKnex(c)
+  const execute: Execute = async (ctx, fn, scoped = true) => {
+    const knex = getKnex(ctx)
     const row = await parent.model
       .query(knex)
       .ignoreScope()
-      .findById(getParentId(c))
+      .findById(getParentId(ctx))
       .throwIfNotFound()
       .select(...parentColumns)
     const query = setupQuery(row.$relatedQuery(name, knex) as Query, {
@@ -103,14 +94,14 @@ export function defineRelation(
       allowScope,
       allowFilter
     })
-    modify?.(query, c)
+    modify?.(query, ctx)
     return fn(query)
   }
 
   // Relates the rows of the body by their ids and fetches them, with the
   // extra columns of a many-to-many join table, such as a sort order.
-  const relateAndFetch = (c: DitoContext, body: unknown) =>
-    execute(c, async query => {
+  const relateAndFetch = (ctx: DitoContext, body: unknown) =>
+    execute(ctx, async query => {
       const items = asArray(body) as Record<string, unknown>[]
       if (!items.length || items.some(item => !hasIds(model, item))) {
         throw new ValidationError({
@@ -150,27 +141,26 @@ export function defineRelation(
 
   // Objection's `upsertGraph()` rejects queries of `$relatedQuery()`, so graph
   // updates check that the rows are related and run on the model's query.
-  const executeGraph: ExecuteGraph = async (c, ids, fn) => {
+  const executeGraph: ExecuteGraph = async (ctx, ids, fn) => {
     const count = await execute(
-      c,
+      ctx,
       query => query.findByIds(ids as never).resultSize(),
       false
     )
     if (count < ids.length) {
       throw model.createNotFoundError({ byId: ids.length === 1 && ids[0] })
     }
-    const query = setupQuery(model.query(getKnex(c)) as Query, {
+    const query = setupQuery(model.query(getKnex(ctx)) as Query, {
       scope,
       allowScope,
       allowFilter
     })
-    modify?.(query, c)
+    modify?.(query, ctx)
     return fn(query)
   }
 
   const base = createBase({
     model,
-    definition,
     execute,
     graph,
     allowParam,
@@ -183,13 +173,13 @@ export function defineRelation(
   base.around = authorizeParent(parent, controller)
   return withBase(
     base,
-    { ...controller, path: `${parent.path}/:parentId{[0-9]+}/${path}` },
+    { ...controller, path: `${parent.path}/:parentId(\\d+)/${path}` },
     { allow: 'defined' }
   )
 }
 
-function getParentId(c: DitoContext) {
-  return Number(c.req.param('parentId'))
+function getParentId(ctx: DitoContext) {
+  return Number(ctx.params.parentId)
 }
 
 // Only the graph scopes of the parent apply to its relations, as in Dito 6.
@@ -213,7 +203,7 @@ function validateId(model: ModelClass, item: unknown) {
 function authorizeParent(
   parent: ParentOptions,
   definition: FeatureDefinition
-): MiddlewareHandler<DitoEnv> {
+): Middleware {
   const parentLayers = getLayers(parent.definition, parent.base)
   const ownLayers = getLayers(definition)
   const get = getAuthorize(parentLayers, 'member', 'get')
@@ -221,19 +211,19 @@ function authorizeParent(
   const load = findLast(parentLayers.map(layer => layer.load))!
   const owner = findLast(parentLayers.map(layer => layer.owner))
 
-  return async (c, next) => {
-    const { on, name, verb } = c.var.action
-    const parentId = getParentId(c)
+  return async (ctx, next) => {
+    const { on, name, verb } = ctx.action
+    const parentId = getParentId(ctx)
     let member: Promise<unknown> | undefined
-    const loadParent = () => (member ??= load(c, parentId)) as never
+    const loadParent = () => (member ??= load(ctx, parentId)) as never
     // The parent's `owner` slot reads the parent as the member.
     const isAuthorizedForParent = (value: Authorize | undefined) => {
-      const { memberId, load } = c.var
-      c.set('memberId', parentId)
-      c.set('load', loadParent)
-      return isAuthorized(c, value, owner, parent.path).finally(() => {
-        c.set('memberId', memberId)
-        c.set('load', load)
+      const { memberId, load } = ctx
+      ctx.memberId = parentId
+      ctx.load = loadParent
+      return isAuthorized(ctx, value, owner, parent.path).finally(() => {
+        ctx.memberId = memberId
+        ctx.load = load
       })
     }
     const checks = [get]
@@ -242,55 +232,25 @@ function authorizeParent(
     }
     for (const value of checks) {
       if (!(await isAuthorizedForParent(value))) {
-        throw new ProblemError({ status: c.var.user ? 403 : 401 })
+        throw new HttpError(ctx.user ? 403 : 401)
       }
     }
-    if ((await loadParent()) == null) throw new ProblemError({ status: 404 })
-    await next()
+    if ((await loadParent()) == null) throw new HttpError(404)
+    return next()
   }
-}
-
-// The layers of a controller in the order of the core's `compose.ts`: the
-// base, the features of `use` depth-first, and the definition itself.
-function getLayers(
-  definition: FeatureDefinition,
-  base?: FeatureDefinition
-) {
-  const layers: FeatureDefinition[] = []
-  const add = (def: FeatureDefinition) => {
-    if (layers.includes(def)) return
-    for (const feature of def.use ?? []) add(feature)
-    layers.push(def)
-  }
-  if (base) add(base)
-  for (const feature of definition.use ?? []) add(feature)
-  layers.push(definition)
-  return layers
-}
-
-// The `authorize` of an action as the core resolves it: the action's own, or
-// else the last layer's.
-function getAuthorize(layers: FeatureDefinition[], on: On, name: string) {
-  const fromAction = findLast(
-    layers.map(layer => {
-      const value = layer[on]?.[name as keyof Actions]
-      return isPlainObject(value) ? (value.authorize as Authorize) : undefined
-    })
-  )
-  return fromAction ?? findLast(layers.map(layer => layer.authorize))
 }
 
 // The core's check of an `authorize` value.
 async function isAuthorized(
-  c: DitoContext,
+  ctx: DitoContext,
   value: Authorize | undefined,
   owner: FeatureDefinition['owner'],
   path: string
 ) {
   if (value === undefined || value === true) return true
   if (value === false) return false
-  if (isFunction(value)) return !!(await value(c))
-  const { user } = c.var
+  if (isFunction(value)) return !!(await value(ctx))
+  const { user } = ctx
   if (!user) return false
   const roles = asArray(value)
   if (roles.some(role => user.roles.includes(role))) return true
@@ -298,10 +258,6 @@ async function isAuthorized(
   if (!owner) {
     throw new Error(`'${path}' has no \`owner\` slot`)
   }
-  const id = await owner(c)
+  const id = await owner(ctx)
   return id != null && String(id) === String(user.id)
-}
-
-function findLast<T>(values: (T | undefined)[]) {
-  return values.findLast(value => value !== undefined)
 }

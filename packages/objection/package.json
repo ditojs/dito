@@ -15,7 +15,6 @@
     "@ditojs/server": "workspace:^",
     "@ditojs/server-next": "workspace:^",
     "@ditojs/storage": "workspace:^",
-    "hono": "^4.13.14",
     "knex": "^3.3.0",
     "kysely": "^0.29.7",
     "objection": "^4.4.1",
@@ -24,7 +23,6 @@
   "peerDependencies": {
     "@ditojs/server": "workspace:^",
     "@ditojs/server-next": "workspace:^",
-    "hono": "^4.13.14",
     "knex": "^3.3.0",
     "kysely": "^0.29.7",
     "objection": "^4.4.1",

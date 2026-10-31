@@ -1,7 +1,11 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { Hono } from 'hono'
+import {
+  createApp as createDitoApp,
+  defineController,
+  type App
+} from '@ditojs/server-next'
 import {
   AssetFile,
   DiskStorage,
@@ -27,16 +31,28 @@ afterEach(async () => {
   await fs.rm(basePath, { recursive: true, force: true })
 })
 
-function createApp(options?: UploadHandlerOptions) {
-  const app = new Hono()
-  app.post('/books/upload/:path{.+}', uploadHandler(storage, options))
-  return app
+function createApp(
+  options?: UploadHandlerOptions,
+  onError?: (error: unknown) => Response
+) {
+  return createDitoApp({
+    controllers: [
+      defineController({
+        path: 'books',
+        collection: { 'post upload/:path+': uploadHandler(storage, options) }
+      })
+    ],
+    onError
+  })
 }
+
+const request = (app: App, url: string, init?: RequestInit) =>
+  app.fetch(new Request(new URL(url, 'http://localhost'), init))
 
 // Sends the files like the admin's upload component, under the data path of
 // their field.
 function upload(
-  app: Hono,
+  app: App,
   files: Record<string, File | File[]>,
   url = '/books/upload/cover'
 ) {
@@ -44,7 +60,7 @@ function upload(
   for (const [field, value] of Object.entries(files)) {
     for (const file of [value].flat()) body.append(field, file)
   }
-  return app.request(url, { method: 'POST', body })
+  return request(app, url, { method: 'POST', body })
 }
 
 function createPngHeader(width: number, height: number) {
@@ -170,7 +186,7 @@ describe('uploadHandler()', () => {
 
   it('answers bodies that are not multipart with 415', async () => {
     const app = createApp()
-    const res = await app.request('/books/upload/cover', {
+    const res = await request(app, '/books/upload/cover', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}'
@@ -181,8 +197,8 @@ describe('uploadHandler()', () => {
   it('passes the stored files to `onUpload` before sending them', async () => {
     const calls: { path?: string; files: AssetFileObject[] }[] = []
     const app = createApp({
-      onUpload: (c, files) => {
-        calls.push({ path: c.req.param('path'), files })
+      onUpload: (ctx, files) => {
+        calls.push({ path: ctx.params.path, files })
       }
     })
     const res = await upload(app, { cover: new File(['a'], 'a.txt') })
@@ -191,12 +207,14 @@ describe('uploadHandler()', () => {
   })
 
   it('removes the stored files when `onUpload` throws', async () => {
-    const app = createApp({
-      onUpload: () => {
-        throw new Error('Database down')
-      }
-    })
-    app.onError((error, c) => c.text(error.message, 500))
+    const app = createApp(
+      {
+        onUpload: () => {
+          throw new Error('Database down')
+        }
+      },
+      error => new Response((error as Error).message, { status: 500 })
+    )
     const res = await upload(app, {
       covers: [new File(['a'], 'a.txt'), new File(['b'], 'b.txt')]
     })

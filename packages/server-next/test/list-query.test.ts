@@ -1,13 +1,14 @@
-import { createApp, parseListQuery, problemResponse } from '../src/index.ts'
+import { createApp, parseListQuery } from '../src/index.ts'
 
 const app = createApp({
   controllers: [{ path: 'fonts', collection: { get: parseListQuery } }],
   getUser: async () => null
 })
-app.onError(problemResponse)
 
 async function parse(query: string) {
-  const response = await app.request(`/fonts?${query}`)
+  const response = await app.fetch(
+    new Request(`http://localhost/fonts?${query}`)
+  )
   return { status: response.status, json: await response.json() }
 }
 

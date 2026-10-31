@@ -2,7 +2,7 @@ import { nextTick } from 'vue'
 import { format as formatValue, isString } from '@ditojs/utils'
 import defaultVerbs from '../verbs.js'
 import { getResource, getMemberResource } from './resource.js'
-import { getRequestCacheKey } from './request.js'
+import { getErrorMessage, getRequestCacheKey } from './request.js'
 import type { AdminContext } from './AdminContext.ts'
 import type { DataContext } from './DataContext.ts'
 import type { ResourceContext } from './ResourceContext.ts'
@@ -179,12 +179,12 @@ export function request(
       if (loadCache?.[cacheKey] === res) {
         delete loadCache[cacheKey]
       }
-      // Convert the data of error responses, e.g. Dito.js errors, to errors
-      // with the status of the response:
+      // Convert the Problem Details of error responses to errors with their
+      // members and the status of the response:
       const data = error.response?.data
       throw data
         ? Object.assign(
-            new Error(data.message ?? data.detail ?? data.title),
+            new Error(getErrorMessage(data) ?? undefined),
             data,
             {
               status: error.response.status

@@ -5,12 +5,13 @@ import {
   hkdfSync,
   randomBytes
 } from 'node:crypto'
+import type { DitoContext } from '@ditojs/server-next'
 import type { Kysely } from 'kysely'
 import type { Credentials } from './credentials.ts'
 import { authError } from './errors.ts'
 import { authenticationTimeout, getUserIdentifier } from './identifiers.ts'
 import { lazyPeer } from './peers.ts'
-import type { AnyContext, SessionValue, UserSource } from './types.ts'
+import type { SessionValue, UserSource } from './types.ts'
 
 // TOTP as Dito 6's `TotpService` stores it: a credential of type `totp` with
 // the secret encrypted by AES-256-GCM, the user's identifier as authenticated
@@ -72,7 +73,7 @@ export function totp({ issuer, secret: key }: TotpOptions) {
     // Stores the secret of the session once the user confirms it with a code,
     // along with backup codes, which it returns.
     async confirmSecret(
-      c: AnyContext,
+      ctx: DitoContext,
       session: SessionValue,
       credentials: Credentials,
       source: UserSource,
@@ -85,7 +86,7 @@ export function totp({ issuer, secret: key }: TotpOptions) {
       }
       const identifier = getUserIdentifier(source, user)
       const conflict = () => authError('TOTP is already set up', 409)
-      if (await credentials.first(c, source, user, 'totp')) throw conflict()
+      if (await credentials.first(ctx, source, user, 'totp')) throw conflict()
       const { secret } = pendingTotp
       const step = await getCodeStep(
         source.describe(user).username,
@@ -100,7 +101,7 @@ export function totp({ issuer, secret: key }: TotpOptions) {
         return `${code.slice(0, 5)}-${code.slice(5)}`
       })
       try {
-        await credentials.insert(c, source, user, 'totp', {
+        await credentials.insert(ctx, source, user, 'totp', {
           // The key is unique per source, so one of two concurrent
           // confirmations fails.
           key: `totp-${identifier}`,
@@ -112,7 +113,7 @@ export function totp({ issuer, secret: key }: TotpOptions) {
           }
         })
       } catch (error) {
-        if (await credentials.first(c, source, user, 'totp')) throw conflict()
+        if (await credentials.first(ctx, source, user, 'totp')) throw conflict()
         throw error
       }
       delete session.pendingTotp
@@ -121,21 +122,21 @@ export function totp({ issuer, secret: key }: TotpOptions) {
 
     // Verifies a TOTP code, or consumes a backup code. It locks the credential
     // meanwhile, against concurrent requests that use the same code or miss a
-    // failure. It runs in the transaction of `credentials.db(c)` if that is
+    // failure. It runs in the transaction of `credentials.db(ctx)` if that is
     // one, and in its own otherwise, which keeps the failures when the
     // request fails.
     async verifyCode(
-      c: AnyContext,
+      ctx: DitoContext,
       credentials: Credentials,
       source: UserSource,
       user: unknown,
       code: unknown
     ) {
-      const db = credentials.db(c)
+      const db = credentials.db(ctx)
       const identifier = getUserIdentifier(source, user)
       const { username } = source.describe(user)
       const verify = async (trx: Kysely<any>) => {
-        const totp = await credentials.first(c, source, user, 'totp', {
+        const totp = await credentials.first(ctx, source, user, 'totp', {
           database: trx,
           forUpdate: true
         })
@@ -154,7 +155,7 @@ export function totp({ issuer, secret: key }: TotpOptions) {
         const failures = isValid ? 0 : (data.failures ?? 0) + 1
         const isLocked = failures >= maxCodeFailures
         await credentials.update(
-          c,
+          ctx,
           totp.id,
           {
             data: {

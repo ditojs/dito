@@ -1,9 +1,8 @@
-import { Hono } from 'hono'
 import { Application } from '@ditojs/server'
 import {
   createApp,
   defineController,
-  ProblemError,
+  HttpError,
   problemResponse,
   type DitoContext
 } from '@ditojs/server-next'
@@ -31,31 +30,26 @@ const dito = new Application({
 const db = objectionKysely(dito)
 
 // Runs `fn` in a transacted action, which fails after it when `fail` is set.
-function run(fn: (c: DitoContext) => Promise<unknown>, fail = false) {
-  const app = new Hono()
-  app.use(requestStorage(dito))
-  app.onError((error, c) => problemResponse(toProblem(error) ?? error, c))
-  app.notFound(c => problemResponse(new ProblemError({ status: 404 }), c))
-  app.route(
-    '/',
-    createApp({
-      controllers: [
-        defineController({
-          path: 'notes',
-          collection: {
-            async post(c) {
-              const result = await fn(c)
-              if (fail) throw new ProblemError({ status: 409 })
-              return result
-            }
+function run(fn: (ctx: DitoContext) => Promise<unknown>, fail = false) {
+  const api = createApp({
+    controllers: [
+      defineController({
+        path: 'notes',
+        collection: {
+          async post(ctx) {
+            const result = await fn(ctx)
+            if (fail) throw new HttpError(409)
+            return result
           }
-        })
-      ],
-      transaction: objectionTransaction(dito),
-      getUser: async () => null
-    })
-  )
-  return app.request('/notes', { method: 'POST' })
+        }
+      })
+    ],
+    around: requestStorage(dito),
+    transaction: objectionTransaction(dito),
+    getUser: async () => null,
+    onError: error => problemResponse(toProblem(error) ?? error)
+  })
+  return api.fetch(new Request('http://localhost/notes', { method: 'POST' }))
 }
 
 const titles = async () =>
@@ -92,20 +86,20 @@ beforeEach(async () => {
 
 describe('objectionKysely()', () => {
   it(`writes in the request's transaction and commits with it`, async () => {
-    const response = await run(async c => {
-      await db(c).insertInto('note').values({ title: 'Kept' }).execute()
-      return db(c).selectFrom('note').select('title').execute()
+    const response = await run(async ctx => {
+      await db(ctx).insertInto('note').values({ title: 'Kept' }).execute()
+      return db(ctx).selectFrom('note').select('title').execute()
     })
     expect(await response.json()).toEqual([{ title: 'Kept' }])
     expect(await titles()).toEqual(['Kept'])
   })
 
   it(`rolls back with the request's transaction`, async () => {
-    const response = await run(async c => {
-      await db(c).insertInto('note').values({ title: 'Lost' }).execute()
+    const response = await run(async ctx => {
+      await db(ctx).insertInto('note').values({ title: 'Lost' }).execute()
       await dito
         .knex('note')
-        .transacting(c.var.trx as never)
+        .transacting(ctx.trx as never)
         .insert({ title: 'Lost too' })
     }, true)
     expect(response.status).toBe(409)
@@ -113,8 +107,8 @@ describe('objectionKysely()', () => {
   })
 
   it('rolls back its own transactions with the request', async () => {
-    await run(async c => {
-      await db(c)
+    await run(async ctx => {
+      await db(ctx)
         .transaction()
         .execute(trx =>
           trx.insertInto('note').values({ title: 'Nested' }).execute()
@@ -125,11 +119,11 @@ describe('objectionKysely()', () => {
 
   it('keeps one Kysely per transaction', async () => {
     const handles: unknown[] = []
-    await run(async c => {
-      handles.push(db(c), db(c), db())
+    await run(async ctx => {
+      handles.push(db(ctx), db(ctx), db())
     })
-    await run(async c => {
-      handles.push(db(c))
+    await run(async ctx => {
+      handles.push(db(ctx))
     })
     const [first, second, outside, other] = handles
     expect(first).toBe(second)
@@ -138,13 +132,12 @@ describe('objectionKysely()', () => {
     expect(other).not.toBe(first)
   })
 
-  it('runs on `c.var.db` of the request', async () => {
+  it('runs on `ctx.db` of the request', async () => {
     const other = dito.knex.withUserParams({})
-    const c = (knex: unknown) =>
-      ({ var: { db: knex } }) as unknown as DitoContext
-    expect(db(c(dito.knex))).toBe(db())
-    expect(db(c(other))).not.toBe(db())
-    expect(db(c(other))).toBe(db(c(other)))
+    const ctx = (knex: unknown) => ({ db: knex }) as DitoContext
+    expect(db(ctx(dito.knex))).toBe(db())
+    expect(db(ctx(other))).not.toBe(db())
+    expect(db(ctx(other))).toBe(db(ctx(other)))
   })
 
   it(`runs on the application's knex outside a request`, async () => {
@@ -157,9 +150,9 @@ describe('objectionKysely()', () => {
 
   it("inserts assets of `@ditojs/storage` in the request's transaction", async () => {
     let inserted: unknown[] = []
-    await run(async c => {
-      await insertAsset(db(c), { key: 'a', name: 'a.png' }, 'covers')
-      inserted = await db(c).selectFrom('asset').select('key').execute()
+    await run(async ctx => {
+      await insertAsset(db(ctx), { key: 'a', name: 'a.png' }, 'covers')
+      inserted = await db(ctx).selectFrom('asset').select('key').execute()
     }, true)
     expect(inserted).toEqual([{ key: 'a' }])
     expect(await dito.knex('asset')).toEqual([])

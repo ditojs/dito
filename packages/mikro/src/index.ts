@@ -1,19 +1,16 @@
 // Model controllers on MikroORM entities, and the parts an app needs to run
-// them. The app wires these into its own Hono app:
+// them:
 //
-//   const app = new Hono()
 //   const api = createApp({
 //     controllers,
 //     transaction: mikroTransaction(orm),
 //     connect: mikroConnect(orm),
-//     getUser
+//     getUser,
+//     onError(error) {
+//       log(error)
+//       return problemResponse(toProblem(error) ?? error)
+//     }
 //   })
-//   app.onError((error, c) => {
-//     log(error)
-//     return problemResponse(toProblem(error) ?? error, c)
-//   })
-//   app.notFound(c => problemResponse(new ProblemError({ status: 404 }), c))
-//   app.route('/', api)
 
 export {
   defineController,

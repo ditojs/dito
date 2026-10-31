@@ -359,12 +359,11 @@ describe('DataContext', () => {
       expect(errors.value).toBe(null)
     })
 
-    it('tells the keywords and parameters of server errors', async () => {
+    it('tells the codes of server errors', async () => {
       const { routeComponent, context } = await mountInvalidSchema()
       const error = {
         message: 'must be at least 3 characters long',
-        keyword: 'minLength',
-        params: { limit: 3 }
+        code: 'too_small'
       }
       await routeComponent.dataContext.showValidationErrors({
         'address/zip': [error]

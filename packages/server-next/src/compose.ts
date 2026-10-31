@@ -1,4 +1,3 @@
-import type { MiddlewareHandler } from 'hono'
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { asArray, isFunction } from '@ditojs/utils'
 import { getBase, type BaseOptions } from './define.ts'
@@ -9,8 +8,8 @@ import type {
   Authorize,
   ControllerDefinition,
   DitoContext,
-  DitoEnv,
   FeatureDefinition,
+  Middleware,
   Slots,
   Verb
 } from './types.ts'
@@ -30,14 +29,15 @@ interface Layer {
 
 export interface ResolvedAction {
   info: ActionInfo
-  // The path under the controller, such as `/:id{[0-9]+}/publish`.
+  // The path under the controller, such as `/:id/publish`. `fetch()` answers
+  // 404 for ids that aren't numbers.
   route: string
   authorize: Authorize | undefined
   transacted: boolean | undefined
   query: StandardSchemaV1 | undefined
   body: StandardSchemaV1 | undefined
-  around: MiddlewareHandler<DitoEnv>[]
-  run: (c: DitoContext) => Promise<unknown>
+  around: Middleware[]
+  run: (ctx: DitoContext) => Promise<unknown>
   // A default collection `post`, which answers 201.
   isCreate: boolean
 }
@@ -156,10 +156,17 @@ function resolveActions(
     )
     const route =
       on === 'member'
-        ? `/:id{[0-9]+}${path ? `/${path}` : ''}`
+        ? `/:id${path ? `/${path}` : ''}`
         : `/${path ?? ''}`
     actions.push({
-      info: { controller: controller.path, on, name: key, verb },
+      info: {
+        controller: controller.path,
+        on,
+        name: key,
+        verb,
+        query: fromAction('query'),
+        body: fromAction('body')
+      },
       route,
       authorize: fromLayers('authorize'),
       transacted: fromLayers('transacted'),
@@ -169,9 +176,9 @@ function resolveActions(
         ...layers.flatMap(layer => asArray(layer.def.around)),
         ...defs.flatMap(def => asArray(def.around))
       ],
-      run: c =>
+      run: ctx =>
         defs.reduce<() => Promise<unknown>>(
-          (next, def) => async () => def.handler(c, next),
+          (next, def) => async () => def.handler(ctx as never, next),
           async () => undefined
         )(),
       isCreate: isDefault && on === 'collection' && verb === 'post'

@@ -217,19 +217,15 @@ describe('useDitoForm()', () => {
 
   it('tells the validation errors of the server', async () => {
     const { page, request } = await mountProductPage()
-    const error = {
-      message: 'must be unique',
-      keyword: 'unique',
-      params: { property: 'name' }
-    }
+    const error = { message: 'must be unique', code: 'custom' }
     request.mockImplementationOnce(() => {
       throw new RequestError({
         status: 400,
         statusText: 'Bad Request',
         data: {
-          type: 'ModelValidation',
-          message: 'The provided data is not valid',
-          errors: { name: [error] }
+          title: 'Validation Failed',
+          detail: 'The data is not valid.',
+          errors: { '/name': [error] }
         }
       })
     })

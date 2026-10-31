@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import Keygrip from 'keygrip'
 import bcrypt from 'bcryptjs'
-import { Hono } from 'hono'
 import type { Kysely } from 'kysely'
 import { createApp, defineController } from '@ditojs/server-next'
 import * as passwords from '../src/passwords.ts'
@@ -160,17 +159,16 @@ describe('sessions', () => {
   it('answers wrong logins as Dito 6 does', async () => {
     const { app } = setup({ db, source: admins })
     const client = createClient(app)
-    const failure = { success: false, authenticated: false, user: null }
     expect(
       await client.post('/admins/login', { username: 'ada', password: 'x' })
     ).toMatchObject({
       status: 401,
-      data: { ...failure, error: 'Password or username is incorrect' }
+      data: { detail: 'Password or username is incorrect' }
     })
     expect(
       await client.post('/admins/login', { username: 'ada' })
     ).toMatchObject(
-      { status: 400, data: { ...failure, error: 'Missing credentials' } }
+      { status: 400, data: { detail: 'Missing credentials' } }
     )
     // Users without a password can't log in:
     expect(
@@ -197,7 +195,7 @@ describe('sessions', () => {
       password: 'secret'
     })
     expect(response.status).toBe(401)
-    expect(response.data.error).toBe('Password or username is incorrect')
+    expect(response.data.detail).toBe('Password or username is incorrect')
     await client.post('/admins/login', { username: 'bob', password: 'secret' })
     expect(compare).toHaveBeenCalledTimes(2)
     for (const [password, hash] of compare.mock.calls) {
@@ -296,7 +294,7 @@ describe('sessions', () => {
     const client = createClient(app)
     expect(
       await client.post('/admins/password', { password: 'x' })
-    ).toMatchObject({ status: 401, data: { message: 'Unauthorized Access' } })
+    ).toMatchObject({ status: 401, data: { detail: 'Unauthorized Access' } })
     await client.post('/admins/login', { username: 'ada', password: 'secret' })
     vi.advanceTimersByTime(61_000)
     const response = await client.post('/admins/password', { password: 'x' })
@@ -305,13 +303,13 @@ describe('sessions', () => {
       data: {
         status: 403,
         title: 'Forbidden',
-        message: 'Confirmation required',
+        detail: 'Confirmation required',
         confirmationRequired: true
       }
     })
     expect(
       await client.post('/admins/confirm-access', { password: 'wrong' })
-    ).toMatchObject({ status: 401, data: { message: 'Password is incorrect' } })
+    ).toMatchObject({ status: 401, data: { detail: 'Password is incorrect' } })
     expect(
       await client.post('/admins/confirm-access', { password: 'secret' })
     ).toMatchObject({ status: 200, data: { success: true } })
@@ -321,9 +319,7 @@ describe('sessions', () => {
     expect(
       (await client.post('/admins/password', { password: '' })).data.errors
     ).toEqual({
-      '/password': [
-        { message: 'The password is required.', keyword: 'required' }
-      ]
+      '/password': [{ message: 'The password is required.', code: 'too_small' }]
     })
   })
 
@@ -372,46 +368,54 @@ describe('sessions', () => {
     )
     // The session of the admin stays:
     expect((await client.get('/admins/session')).data.authenticated).toBe(true)
-    // Through `createApp()`:
-    const api = new Hono()
-    api.use(admin.sessions.middleware)
-    for (const [source, path] of [
-      [admins, '/admin'],
-      [customers, '/customer']
-    ] as const) {
-      api.route(
-        '/',
-        createApp({
-          base: path,
-          getUser: sessionUser(admin.sessions, source),
-          controllers: [
-            defineController({
-              path: 'me',
-              authorize: true,
-              collection: { get: c => c.var.user }
-            })
-          ]
+    // Through `getUser` of `createApp()`:
+    const apps = [admins, customers].map(source =>
+      createApp({
+        around: admin.sessions.middleware,
+        getUser: sessionUser(source),
+        controllers: [
+          defineController({
+            path: 'me',
+            authorize: true,
+            collection: { get: ctx => ctx.user }
+          })
+        ]
+      })
+    )
+    const cookie = [...client.jar].map(([k, v]) => `${k}=${v}`).join('; ')
+    const get = async (api: (typeof apps)[number]) =>
+      (
+        await api.fetch(
+          new Request('https://example.com/me', { headers: { Cookie: cookie } })
+        )
+      ).json()
+    expect(await get(apps[0]!)).toEqual({ id: 1, roles: ['admin'] })
+    expect(await get(apps[1]!)).toBe(null)
+  })
+
+  it('reads the session of a plain request', async () => {
+    const { app, sessions } = setup({ db, source: admins })
+    const client = createClient(app)
+    const read = () =>
+      sessions.read(
+        new Request('https://example.com', {
+          headers: {
+            Cookie: [...client.jar].map(([k, v]) => `${k}=${v}`).join('; ')
+          }
         })
       )
-    }
-    const cookie = [...client.jar].map(([k, v]) => `${k}=${v}`).join('; ')
-    const get = async (path: string) =>
-      (
-        await api.request(`https://example.com${path}`, {
-          headers: { Cookie: cookie }
-        })
-      ).json()
-    expect(await get('/admin/me')).toEqual({ id: 1, roles: ['admin'] })
-    expect(await get('/customer/me')).toBe(null)
+    expect(await read()).toBe(null)
+    await client.post('/admins/login', { username: 'ada', password: 'secret' })
+    expect(await read()).toMatchObject({ passport: { user: 'Admin-1' } })
   })
 
   it('deletes expired sessions', async () => {
-    const store = createSessionStore(() => db)
-    await store.set({} as any, 'old', { _expire: Date.now() - 1 })
-    await store.set({} as any, 'new', { _expire: Date.now() + 60_000 })
-    await store.set({} as any, 'new', { a: 1, _expire: Date.now() + 60_000 })
+    const store = createSessionStore(db)
+    await store.set('old', { _expire: Date.now() - 1 })
+    await store.set('new', { _expire: Date.now() + 60_000 })
+    await store.set('new', { a: 1, _expire: Date.now() + 60_000 })
     await deleteExpiredSessions(db)
     expect(await sessionIds()).toEqual(['new'])
-    expect(await store.get({} as any, 'new')).toMatchObject({ a: 1 })
+    expect(await store.get('new')).toMatchObject({ a: 1 })
   })
 })

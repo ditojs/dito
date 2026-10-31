@@ -1,7 +1,8 @@
+import type { DitoContext } from '@ditojs/server-next'
 import type { Kysely } from 'kysely'
 import { SqliteAdapter } from 'kysely'
 import { parseJson } from './session-store.ts'
-import type { AnyContext, Database, UserSource } from './types.ts'
+import type { Database, UserSource } from './types.ts'
 
 // The passkeys and TOTP secrets of users in Dito 6's `credential` table. All
 // sources share the table, so rows name their users by `user_model` and
@@ -34,12 +35,12 @@ export function createCredentials(db: Database, table = 'credential') {
     table,
 
     async list(
-      c: AnyContext,
+      ctx: DitoContext,
       source: UserSource,
       user: unknown,
       type: string
     ): Promise<Credential[]> {
-      const rows = await query(db(c), source)
+      const rows = await query(db(ctx), source)
         .where('type', '=', type)
         .where('user_id', '=', userId(source, user))
         .orderBy('id')
@@ -49,11 +50,11 @@ export function createCredentials(db: Database, table = 'credential') {
 
     // With `forUpdate`, it locks the row in the transaction of `database`.
     async first(
-      c: AnyContext,
+      ctx: DitoContext,
       source: UserSource,
       user: unknown,
       type: string,
-      { database = db(c), forUpdate = false } = {}
+      { database = db(ctx), forUpdate = false } = {}
     ): Promise<Credential | null> {
       const row = await query(database, source)
         .where('type', '=', type)
@@ -65,12 +66,12 @@ export function createCredentials(db: Database, table = 'credential') {
     },
 
     async findByKey(
-      c: AnyContext,
+      ctx: DitoContext,
       source: UserSource,
       type: string,
       key: string
     ): Promise<Credential | null> {
-      const row = await query(db(c), source)
+      const row = await query(db(ctx), source)
         .where('type', '=', type)
         .where('key', '=', key)
         .executeTakeFirst()
@@ -78,7 +79,7 @@ export function createCredentials(db: Database, table = 'credential') {
     },
 
     async insert(
-      c: AnyContext,
+      ctx: DitoContext,
       source: UserSource,
       user: unknown,
       type: string,
@@ -89,7 +90,7 @@ export function createCredentials(db: Database, table = 'credential') {
       }: Pick<Credential, 'data'> & Partial<Pick<Credential, 'key' | 'name'>>
     ): Promise<Credential> {
       const createdAt = new Date()
-      const { id } = await db(c)
+      const { id } = await db(ctx)
         .insertInto(table)
         .values({
           type,
@@ -116,10 +117,10 @@ export function createCredentials(db: Database, table = 'credential') {
     },
 
     async update(
-      c: AnyContext,
+      ctx: DitoContext,
       id: number,
       { data, lastUsedAt }: { data?: unknown; lastUsedAt?: Date },
-      database = db(c)
+      database = db(ctx)
     ) {
       await database
         .updateTable(table)
@@ -134,13 +135,13 @@ export function createCredentials(db: Database, table = 'credential') {
     // Deletes the user's credentials of `type`, or only the one with `id`.
     // Resolves to the number of deleted rows.
     async remove(
-      c: AnyContext,
+      ctx: DitoContext,
       source: UserSource,
       user: unknown,
       type: string,
       id?: number
     ) {
-      const result = await db(c)
+      const result = await db(ctx)
         .deleteFrom(table)
         .where('user_model', '=', source.name)
         .where('user_id', '=', userId(source, user))
@@ -152,9 +153,9 @@ export function createCredentials(db: Database, table = 'credential') {
 
     // Deletes all credentials of users, which the app calls when it deletes
     // them, as nothing deletes them through foreign keys.
-    async removeUsers(c: AnyContext, source: UserSource, ids: unknown[]) {
+    async removeUsers(ctx: DitoContext, source: UserSource, ids: unknown[]) {
       if (ids.length === 0) return
-      await db(c)
+      await db(ctx)
         .deleteFrom(table)
         .where('user_model', '=', source.name)
         .where('user_id', 'in', ids.map(String))

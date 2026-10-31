@@ -10,6 +10,7 @@ import {
   createInvalidPasswordNotification,
   isPasskeyPromptCancelled
 } from '../dialogs/authentication.js'
+import { getErrorMessage } from './request.js'
 import type { ViewRegistry } from './ViewRegistry.js'
 import type { AdminContext } from './AdminContext.ts'
 import type { Api } from './types.ts'
@@ -301,17 +302,9 @@ export class Session {
     return this.#api.request<any>({ method: resource.method, url, data })
   }
 
+  // Notify the Problem Details of the error response, or else the error:
   #notifyError(error: any) {
-    // Logins answer their errors in `error`, other actions in `message`, or in
-    // `detail` and `title` as Problem Details:
-    const { data } = error.response ?? {}
-    const responseError = (
-      data?.error ||
-      data?.message ||
-      data?.detail ||
-      data?.title ||
-      error
-    )
+    const responseError = getErrorMessage(error.response?.data) ?? error
     this.#adminContext.notify({
       type: 'error',
       error: responseError,

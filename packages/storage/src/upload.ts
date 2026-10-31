@@ -1,13 +1,11 @@
 import { Readable } from 'node:stream'
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
-import type { Context } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import {
-  asArray,
   escapeRegExp,
   normalizeDataPath,
   parseDataPath
 } from '@ditojs/utils'
+import { HttpError, type DitoContext } from '@ditojs/server-next'
 import type { Storage, UploadOptions } from './storage.ts'
 import type { AssetFileObject } from './asset-file.ts'
 
@@ -29,44 +27,40 @@ export interface UploadHandlerOptions extends UploadOptions {
   }
   // Runs after the files are stored and before they are sent, such as to
   // record them as assets. When it throws, the stored files are removed.
-  onUpload?: (c: Context<any>, files: AssetFileObject[]) => unknown
+  onUpload?: (ctx: DitoContext, files: AssetFileObject[]) => unknown
 }
 
-// Returns a Hono handler, which also serves as the handler of a controller
-// action, such as `'post upload/cover': uploadHandler(covers)`.
+// Returns the handler of a controller action, such as
+// `'post upload/cover': uploadHandler(covers)`. It returns the file objects.
 export function uploadHandler(
   storage: Storage,
   { dataPath, limits = {}, onUpload, ...options }: UploadHandlerOptions = {}
 ) {
   const matchesField = dataPath ? createFieldMatcher(dataPath) : () => true
 
-  return async (c: Context<any>): Promise<Response> => {
-    const contentType = c.req.header('Content-Type') ?? ''
+  return async (ctx: DitoContext): Promise<AssetFileObject[]> => {
+    const contentType = ctx.req.headers.get('Content-Type') ?? ''
     if (!contentType.startsWith('multipart/form-data')) {
-      throw new HTTPException(415, {
-        message: 'Uploads need a multipart/form-data body'
+      throw new HttpError(415, {
+        detail: 'Uploads need a multipart/form-data body.'
       })
     }
-    let body: Record<string, unknown>
+    let body: FormData
     try {
-      body = await c.req.parseBody({ all: true })
+      body = await ctx.req.formData()
     } catch {
-      throw new HTTPException(400, { message: 'Invalid multipart body' })
+      throw new HttpError(400, { detail: 'The multipart body is invalid.' })
     }
-    const entries = Object.entries(body).flatMap(([field, value]) =>
-      asArray(value)
-        .filter(value => value instanceof File)
-        .map(file => ({ field, file: file as File }))
+    const entries = [...body].flatMap(([field, value]) =>
+      value instanceof File ? [{ field, file: value }] : []
     )
     if (limits.files != null && entries.length > limits.files) {
-      throw new HTTPException(400, { message: 'Too many files' })
+      throw new HttpError(400, { detail: 'Too many files.' })
     }
     const uploads = entries.filter(({ field }) => matchesField(field))
     for (const { file } of uploads) {
       if (limits.fileSize != null && file.size > limits.fileSize) {
-        throw new HTTPException(413, {
-          message: `File too large: ${file.name}`
-        })
+        throw new HttpError(413, { detail: `File too large: ${file.name}` })
       }
     }
     const files: AssetFileObject[] = []
@@ -83,12 +77,12 @@ export function uploadHandler(
           )
         )
       }
-      await onUpload?.(c, files)
+      await onUpload?.(ctx, files)
     } catch (error) {
       await Promise.allSettled(files.map(file => storage.removeFile(file)))
       throw error
     }
-    return c.json(files)
+    return files
   }
 }
 

@@ -1,13 +1,9 @@
-import type { Context } from 'hono'
+import type { DitoContext } from '@ditojs/server-next'
 import type { Kysely } from 'kysely'
-
-// Any Hono context. The package reads the request and sets cookies, so it
-// needs no variables of its own.
-export type AnyContext = Context<any, any, any>
 
 // The database of a request, such as the root Kysely instance or the
 // request's transaction.
-export type Database = (c: AnyContext) => Kysely<any>
+export type Database = (ctx: DitoContext) => Kysely<any>
 
 export interface UserDescription {
   id: number | string
@@ -27,16 +23,23 @@ export interface UserSource<U = any> {
   // The body field of the username in logins and password resets.
   usernameField?: string
   // Resolves to null for ids it can't read, such as those of tampered tokens.
-  findById(c: AnyContext, id: string): Promise<U | null | undefined>
-  findByUsername(c: AnyContext, username: string): Promise<U | null | undefined>
+  findById(ctx: DitoContext, id: string): Promise<U | null | undefined>
+  findByUsername(
+    ctx: DitoContext,
+    username: string
+  ): Promise<U | null | undefined>
   describe(user: U): UserDescription
-  setPassword(c: AnyContext, user: U, hash: string): Promise<void>
+  setPassword(ctx: DitoContext, user: U, hash: string): Promise<void>
   // Stores the time of the login, as Dito 6's `lastLogin`.
-  touchLogin?(c: AnyContext, user: U): Promise<void>
+  touchLogin?(ctx: DitoContext, user: U): Promise<void>
   // Updates the user's own values, for `PATCH self`. It validates them. The
   // password never reaches it.
-  update?(c: AnyContext, user: U, values: Record<string, unknown>): Promise<U>
-  toJSON(c: AnyContext, user: U): unknown
+  update?(
+    ctx: DitoContext,
+    user: U,
+    values: Record<string, unknown>
+  ): Promise<U>
+  toJSON(ctx: DitoContext, user: U): unknown
 }
 
 // The value of a session, as Dito 6 stores it.

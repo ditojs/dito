@@ -1,12 +1,12 @@
 import { computed, markRaw, onUnmounted } from 'vue'
-import { isObject, isString, labelize } from '@ditojs/utils'
+import { isObject, isString } from '@ditojs/utils'
 import defaultVerbs from '../verbs.js'
 import {
   getResource,
   getMemberResource,
   hasResource
 } from '../utils/resource.js'
-import { getErrorMessage } from '../utils/request.js'
+import { getDataPathErrors, getErrorMessage } from '../utils/request.js'
 import { LoadingTracker } from '../utils/LoadingTracker.ts'
 import { sendRequest } from '../utils/services.ts'
 import type { AdminContext } from '../utils/AdminContext.ts'
@@ -107,12 +107,11 @@ export function useResource({
       : parentVerbs
   })
 
-  // Notify request errors with the type and message of their response data,
-  // as Dito.js errors or as Problem Details:
+  // Notify request errors with the Problem Details of their response:
   const notifyRequestError = (error: any) => {
     const data = error?.response?.data
-    const title = isString(data?.type) ? labelize(data.type) : 'Error'
-    const text = data?.message ?? data?.detail ?? data?.title ?? error
+    const title = isString(data?.title) ? data.title : 'Error'
+    const text = getErrorMessage(data) ?? error
     adminContext.notify({ type: 'error', error, title, text })
   }
 
@@ -262,10 +261,10 @@ export function useResource({
         async (err, response) => {
           const responseData = response?.data
           if (err) {
-            // Dito.js validation errors are shown on the fields:
-            const errors = response?.status === 400 && responseData.errors
-            if (errors) {
-              await showValidationErrors(errors)
+            // Validation errors are shown on the fields:
+            const errors = response?.status === 400 && responseData?.errors
+            if (isObject(errors)) {
+              await showValidationErrors(getDataPathErrors(errors))
             } else {
               const error = isObject(responseData) ? responseData : err
               const isHandled = await onError?.(error)

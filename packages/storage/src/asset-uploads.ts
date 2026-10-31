@@ -1,9 +1,5 @@
 import { hyphenate, isFunction, parseDataPath } from '@ditojs/utils'
-import type {
-  Actions,
-  DitoContext,
-  FeatureDefinition
-} from '@ditojs/server-next'
+import type { Actions, FeatureDefinition } from '@ditojs/server-next'
 import { getTablePaths, getUploadPath, type AssetPath } from './asset-path.ts'
 import { insertAsset } from './assets.ts'
 import type { AssetDb } from './assets-feature.ts'
@@ -46,21 +42,17 @@ export function uploadRoutes({
     const route = parseDataPath(dataPath)
       .map((token: string, index: number) =>
         token === '*'
-          ? `:p${index}{[^/]+}`
+          ? `:p${index}`
           : token === '**'
-            ? `:p${index}{.+}`
+            ? `:p${index}+`
             : hyphenate(token)
       )
       .join('/')
     collection[`post upload/${route}`] = uploadHandler(storage, {
       ...options,
       dataPath,
-      onUpload: (c, files) =>
-        insertAsset(
-          isFunction(db) ? db(c as DitoContext) : db,
-          files,
-          storage
-        )
+      onUpload: (ctx, files) =>
+        insertAsset(isFunction(db) ? db(ctx) : db, files, storage)
     })
   }
   return { collection }

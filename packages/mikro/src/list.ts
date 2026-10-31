@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import { ProblemError, type ListQuery } from '@ditojs/server-next'
+import { HttpError, toProblemErrors, type ListQuery } from '@ditojs/server-next'
 import {
   ReferenceKind,
   type EntityClass,
@@ -58,10 +58,7 @@ export async function findRows<T extends object>({
         | EntityProperty
         | undefined
       if (prop?.kind !== ReferenceKind.SCALAR || prop.hidden) {
-        throw new ProblemError({
-          status: 400,
-          detail: `Invalid order '${property}'`
-        })
+        throw new HttpError(400, { detail: `Invalid order '${property}'` })
       }
       qb.andOrderBy({ [property]: direction } as never)
     }
@@ -99,13 +96,20 @@ function applyFilter<T extends object>(
 ) {
   const filter = Object.hasOwn(filters, name) ? filters[name] : undefined
   if (!filter) {
-    throw new ProblemError({ status: 400, detail: `Unknown filter '${name}'` })
+    throw new HttpError(400, { detail: `Unknown filter '${name}'` })
   }
   const parsed = filter.args ? filter.args.safeParse(args) : { data: args }
   if (!parsed.data) {
-    throw new ProblemError({
-      status: 400,
-      detail: `Invalid arguments for filter '${name}'`
+    // The admin shows the errors on the filter's fields, by `/<filter>/<arg>`.
+    throw new HttpError(400, {
+      title: 'Validation Failed',
+      detail: `Invalid arguments for filter '${name}'`,
+      errors: toProblemErrors(
+        parsed.error!.issues.map(issue => ({
+          ...issue,
+          path: [name, ...issue.path]
+        }))
+      )
     })
   }
   filter.apply(qb, ...parsed.data)

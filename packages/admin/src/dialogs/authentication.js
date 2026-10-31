@@ -1,4 +1,5 @@
 /** @import { DialogOptions } from '../utils/AdminContext.ts' */
+import { getDataPathErrors } from '../utils/request.js'
 
 // The TOTP setup dialog fits the key:
 export const codeWidth = '25em'
@@ -195,13 +196,14 @@ export function createNewPasswordComponents({ autofocus = false } = {}) {
   }
 }
 
-// The notification of the validation errors of new passwords:
+// The notification of the validation errors of new passwords, which Problem
+// Details key by JSON Pointer:
 export function createInvalidPasswordNotification(errors) {
   return {
     type: 'error',
     title: 'Invalid Password',
-    text: Object.entries(errors).flatMap(([path, errs]) =>
-      errs.map(({ message }) => `${path} ${message}`)
+    text: Object.entries(getDataPathErrors(errors)).flatMap(([path, errs]) =>
+      errs.map(({ message }) => (path ? `${path} ${message}` : message))
     )
   }
 }

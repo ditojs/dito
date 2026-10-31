@@ -1,4 +1,4 @@
-import { ProblemError } from '@ditojs/server-next'
+import { HttpError } from '@ditojs/server-next'
 import {
   ReferenceKind,
   serialize,
@@ -87,10 +87,7 @@ export function narrowFields(
         )
       : isPopulatedPath(meta, tree, field.split('.'))
     if (!valid) {
-      throw new ProblemError({
-        status: 400,
-        detail: `Invalid field '${field}'`
-      })
+      throw new HttpError(400, { detail: `Invalid field '${field}'` })
     }
   }
   return requested

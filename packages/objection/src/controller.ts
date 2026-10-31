@@ -15,7 +15,7 @@ import {
 // Dito 6's `ModelController` as a controller of the next server. Its default
 // verbs and the `load`, `toJSON` and `isRow` slots form the base layer that
 // the definition wraps through `next`. Each query starts from
-// `model.query(c.var.db)` with the controller's `scope`, `allowScope` and
+// `model.query(ctx.db)` with the controller's `scope`, `allowScope` and
 // `allowFilter`, as Dito 6's `execute()` and `setupQuery()` do. As in Dito 6,
 // only the verbs in `allow`, or the ones the controller defines, are routed.
 
@@ -38,7 +38,7 @@ export interface QueryOptions<M extends ModelClass = ModelClass> {
   // Writes the relations of the body with Dito 6's graph methods.
   graph?: boolean
   // Runs on every query that the default verbs and `load` build.
-  query?: (query: Query<M>, c: DitoContext) => void
+  query?: (query: Query<M>, ctx: DitoContext) => void
 }
 
 export interface ModelControllerDefinition<M extends ModelClass = ModelClass>
@@ -54,14 +54,13 @@ export interface ModelControllerDefinition<M extends ModelClass = ModelClass>
 // query leaves out the controller's scopes, as Dito 6's deletes clear them
 // with `clearWithScope()`.
 export type Execute = <T>(
-  c: DitoContext,
+  ctx: DitoContext,
   fn: (query: Query) => T | PromiseLike<T>,
   scoped?: boolean
 ) => Promise<T>
 
 export interface BaseOptions {
   model: ModelClass
-  definition: FeatureDefinition
   execute: Execute
   graph: boolean
   allowParam?: string | string[]
@@ -71,13 +70,13 @@ export interface BaseOptions {
   // Whether the controller is of a one-to-one relation, without members.
   oneToOne?: boolean
   // Relates the rows of the body and returns them, for `relate`.
-  relateAndFetch?: (c: DitoContext, body: unknown) => Promise<unknown>
+  relateAndFetch?: (ctx: DitoContext, body: unknown) => Promise<unknown>
   // Runs the graph updates of the rows with these ids, `execute` by default.
   executeGraph?: ExecuteGraph
 }
 
 export type ExecuteGraph = <T>(
-  c: DitoContext,
+  ctx: DitoContext,
   ids: unknown[],
   fn: (query: Query) => T | PromiseLike<T>
 ) => Promise<T>
@@ -103,19 +102,18 @@ export function defineController<M extends ModelClass>(
     ...controller
   } = definition
 
-  const execute: Execute = async (c, fn, scoped = true) => {
-    const query = setupQuery(model.query(getKnex(c)) as unknown as Query, {
+  const execute: Execute = async (ctx, fn, scoped = true) => {
+    const query = setupQuery(model.query(getKnex(ctx)) as unknown as Query, {
       scope: scoped ? scope : undefined,
       allowScope,
       allowFilter
     })
-    modify?.(query as unknown as Query<M>, c)
+    modify?.(query as unknown as Query<M>, ctx)
     return fn(query)
   }
 
   const base = createBase({
     model,
-    definition,
     execute,
     graph,
     allowParam
@@ -175,18 +173,19 @@ export function setupQuery(
 export function createBase(options: BaseOptions): FeatureDefinition {
   const {
     model,
-    definition,
     execute,
     graph,
     relate = false,
     oneToOne = false,
     relateAndFetch,
-    executeGraph = (c, ids, fn) => execute(c, fn)
+    executeGraph = (ctx, ids, fn) => execute(ctx, fn)
   } = options
   const allowedParams = options.allowParam && asArray(options.allowParam)
-
-  const find = (c: DitoContext, query: Query) =>
-    query.find(getFilteredQuery(c), allowedParams as never)
+  const find = (ctx: DitoContext, query: Query) =>
+    query.find(
+      getFilteredQuery(ctx, !!ctx.action.query),
+      allowedParams as never
+    )
 
   // Unrelates or deletes the rows of the query and returns the count.
   const remove = async (query: Query) => {
@@ -196,53 +195,53 @@ export function createBase(options: BaseOptions): FeatureDefinition {
 
   const base: FeatureDefinition = {
     collection: {
-      async get(c) {
-        const result = await execute(c, query =>
-          oneToOne ? find(c, query).first() : find(c, query)
+      async get(ctx) {
+        const result = await execute(ctx, query =>
+          oneToOne ? find(ctx, query).first() : find(ctx, query)
         )
         // A one-to-one relation without a row answers null, as in Dito 6.
         return result ?? null
       },
 
-      async post(c) {
-        const body = await c.var.body()
+      async post(ctx) {
+        const body = await ctx.body()
         const result = relate
-          ? await relateAndFetch!(c, body)
-          : await execute(c, query =>
+          ? await relateAndFetch!(ctx, body)
+          : await execute(ctx, query =>
               graph
                 ? query.insertGraphAndFetch(body)
                 : query.insertAndFetch(body)
             )
         if (result instanceof model) {
-          const url = new URL(c.req.url).pathname.replace(/\/$/, '')
-          c.header('Location', `${url}/${result.$id()}`)
+          const path = ctx.url.pathname.replace(/\/$/, '')
+          ctx.res.headers.set('Location', `${path}/${result.$id()}`)
         }
         return result
       },
 
-      async put(c) {
-        const body = getCollectionBody(model, await c.var.body(), graph)
+      async put(ctx) {
+        const body = getCollectionBody(model, await ctx.body(), graph)
         return graph
-          ? executeGraph(c, getIds(model, body), query =>
+          ? executeGraph(ctx, getIds(model, body), query =>
               query.updateGraphAndFetch(body)
             )
-          : execute(c, query => query.updateAndFetch(body as never))
+          : execute(ctx, query => query.updateAndFetch(body as never))
       },
 
-      async patch(c) {
-        const body = getCollectionBody(model, await c.var.body(), graph)
+      async patch(ctx) {
+        const body = getCollectionBody(model, await ctx.body(), graph)
         return graph
-          ? executeGraph(c, getIds(model, body), query =>
+          ? executeGraph(ctx, getIds(model, body), query =>
               query.patchGraphAndFetch(body)
             )
-          : execute(c, query => query.patchAndFetch(body as never))
+          : execute(ctx, query => query.patchAndFetch(body as never))
       },
 
-      async delete(c) {
+      async delete(ctx) {
         return execute(
-          c,
+          ctx,
           async query => {
-            find(c, query)
+            find(ctx, query)
             if (oneToOne) {
               // Unrelating a `belongsTo` relation patches the owner row, so
               // the count can't tell that the relation is empty.
@@ -258,51 +257,51 @@ export function createBase(options: BaseOptions): FeatureDefinition {
     member: oneToOne
       ? {}
       : {
-          async get(c) {
-            return execute(c, query =>
-              find(c, query.findById(c.var.memberId!)).throwIfNotFound()
+          async get(ctx) {
+            return execute(ctx, query =>
+              find(ctx, query.findById(ctx.memberId!)).throwIfNotFound()
             )
           },
 
-          async put(c) {
-            const body = await c.var.body()
-            const id = c.var.memberId!
+          async put(ctx) {
+            const body = await ctx.body()
+            const id = ctx.memberId!
             return graph
-              ? executeGraph(c, [id], query =>
+              ? executeGraph(ctx, [id], query =>
                   query.updateGraphAndFetchById(id, body).throwIfNotFound()
                 )
-              : execute(c, query =>
+              : execute(ctx, query =>
                   query.updateAndFetchById(id, body).throwIfNotFound()
                 )
           },
 
-          async patch(c) {
-            const body = await c.var.body()
-            const id = c.var.memberId!
+          async patch(ctx) {
+            const body = await ctx.body()
+            const id = ctx.memberId!
             return graph
-              ? executeGraph(c, [id], query =>
+              ? executeGraph(ctx, [id], query =>
                   query.patchGraphAndFetchById(id, body).throwIfNotFound()
                 )
-              : execute(c, query =>
+              : execute(ctx, query =>
                   query.patchAndFetchById(id, body).throwIfNotFound()
                 )
           },
 
-          async delete(c) {
+          async delete(ctx) {
             return execute(
-              c,
+              ctx,
               query =>
                 remove(
-                  find(c, query.findById(c.var.memberId!)).throwIfNotFound()
+                  find(ctx, query.findById(ctx.memberId!)).throwIfNotFound()
                 ),
               false
             )
           }
         },
 
-    load: async (c, id) =>
-      execute(c, query => query.findById(id).throwIfNotFound()),
-    toJSON: (c, row) => (row as Model).toJSON(),
+    load: async (ctx, id) =>
+      execute(ctx, query => query.findById(id).throwIfNotFound()),
+    toJSON: (ctx, row) => (row as Model).toJSON(),
     isRow: value => value instanceof model
   }
 
@@ -311,8 +310,8 @@ export function createBase(options: BaseOptions): FeatureDefinition {
 
 // The request's knex or transaction. Without `objectionConnect()`, it is
 // undefined outside of transactions, and queries use the model's knex.
-export function getKnex(c: DitoContext) {
-  return c.var.db as Knex | undefined
+export function getKnex(ctx: DitoContext) {
+  return ctx.db as Knex | undefined
 }
 
 function asAllowArray(value: boolean | string | string[]) {
@@ -322,13 +321,15 @@ function asAllowArray(value: boolean | string | string[]) {
 // Dito 6's `ctx.query`, which `find()` reads: a string per parameter, or an
 // array for repeated ones. `filter[name]=value` joins the list of Dito 6's
 // `filter=name:args`. `find()` has no `fields` parameter and rejects unknown
-// ones, so `fields` is left out.
-function getFilteredQuery(c: DitoContext) {
+// ones, so `fields` is left out. When the action has a `query` schema, the
+// keys of `ctx.query` are its own, and `find()` skips them, as in Dito 6.
+function getFilteredQuery(ctx: DitoContext, hasQuery: boolean) {
   const query: QueryValues = {}
   const filters: string[] = []
-  // The action's own query parameters aren't for `find()`, as in Dito 6.
-  const own = (c.req.valid('query' as never) ?? {}) as Record<string, unknown>
-  for (const [key, values] of Object.entries(c.req.queries())) {
+  const own = hasQuery ? ctx.query : {}
+  const { searchParams } = ctx.url
+  for (const key of new Set(searchParams.keys())) {
+    const values = searchParams.getAll(key)
     const [, name] = key.match(/^filter\[(\w+)\]$/) ?? []
     if (key in own) {
       continue

@@ -190,7 +190,7 @@ describe('services', () => {
       const error = new Error('Request failed')
       error.response = {
         status: 404,
-        data: { message: 'Not found', type: 'NotFound' }
+        data: { title: 'Not Found', status: 404, detail: 'Not found' }
       }
       const { schemaComponent } = await mountSchema({
         schema: { fields: { title: { type: 'text' } } },
@@ -200,7 +200,8 @@ describe('services', () => {
         schemaComponent.context.request({ url: 'books' })
       ).rejects.toMatchObject({
         message: 'Not found',
-        type: 'NotFound',
+        title: 'Not Found',
+        detail: 'Not found',
         status: 404
       })
     })

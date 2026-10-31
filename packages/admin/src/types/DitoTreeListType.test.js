@@ -254,8 +254,8 @@ describe('DitoTreeListType', () => {
           response: {
             status: 400,
             data: {
-              type: 'ValidationError',
-              errors: { 'pages/0/subpages/1/title': [{ message: 'is taken' }] }
+              title: 'Validation Failed',
+              errors: { '/pages/0/subpages/1/title': [{ message: 'is taken' }] }
             }
           }
         })
@@ -285,9 +285,9 @@ describe('DitoTreeListType', () => {
             response: {
               status: 400,
               data: {
-                type: 'ValidationError',
+                title: 'Validation Failed',
                 errors: {
-                  'pages/0/subpages/1/title': [{ message: 'is taken' }]
+                  '/pages/0/subpages/1/title': [{ message: 'is taken' }]
                 }
               }
             }

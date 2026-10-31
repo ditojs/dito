@@ -1,10 +1,6 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import type { AddressInfo } from 'node:net'
-import type { Server } from 'node:http'
-import { Hono } from 'hono'
-import { serve } from '@hono/node-server'
 import { defineAdminViteConfig, serveAdmin } from '../src/index.ts'
 
 const api = { url: '/api/admin/', users: { path: 'admins' } }
@@ -32,19 +28,20 @@ describe('serveAdmin() in production', () => {
   afterAll(() => fs.rm(dist, { recursive: true }))
 
   function createApp(options = {}) {
-    const app = new Hono()
-    app.route(
-      '/',
-      serveAdmin({
-        base: '/admin/',
-        dist,
-        api,
-        settings: { rootClass: 'lineto' },
-        authentication,
-        ...options
-      }).app
-    )
-    return app
+    const admin = serveAdmin({
+      base: '/admin/',
+      dist,
+      api,
+      settings: { rootClass: 'lineto' },
+      authentication,
+      ...options
+    })
+    return {
+      request: (path: string, init?: RequestInit) =>
+        admin.fetch(
+          new Request(`http://localhost${path}`, init)
+        )
+    }
   }
 
   it('serves the built files', async () => {
@@ -79,6 +76,13 @@ describe('serveAdmin() in production', () => {
     expect((await app.request('/admin/missing.js')).status).toBe(404)
     expect((await app.request('/admin/%2e%2e/secret.js')).status).toBe(404)
     expect((await app.request('/other')).status).toBe(404)
+    expect((await app.request('/administrator')).status).toBe(404)
+  })
+
+  it('allows only GET and HEAD', async () => {
+    const response = await createApp().request('/admin/', { method: 'POST' })
+    expect(response.status).toBe(405)
+    expect(response.headers.get('allow')).toBe('GET, HEAD')
   })
 
   it('answers HEAD requests without a body', async () => {
@@ -118,9 +122,7 @@ describe('serveAdmin() in production', () => {
 
   it('authorizes the views', async () => {
     const app = createApp({
-      authorize: (c: { req: { header: (name: string) => unknown } }) => (
-        c.req.header('x-user') === 'admin'
-      )
+      authorize: (request: Request) => request.headers.get('x-user') === 'admin'
     })
     expect((await app.request('/admin/views-Cd34_y-W.js')).status).toBe(401)
     const response = await app.request('/admin/views-Cd34_y-W.js', {
@@ -138,49 +140,35 @@ describe('serveAdmin() in production', () => {
 describe('serveAdmin() in development', () => {
   const root = path.join(import.meta.dirname, 'fixture')
   let cacheDir: string
-  let server: Server
-  let close: () => Promise<void>
-  let url: string
+  let admin: ReturnType<typeof serveAdmin>
+
+  function request(path: string, init?: RequestInit) {
+    return admin.fetch(new Request(`https://admin.test${path}`, init))
+  }
 
   beforeAll(async () => {
     cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-admin-vite-'))
-    const app = new Hono()
-    server = serve({
-      fetch: app.fetch,
-      port: 0,
-      hostname: '127.0.0.1'
-    }) as Server
-    const admin = serveAdmin({
+    admin = serveAdmin({
       base: '/admin',
       mode: 'development',
       root,
       api,
       authentication,
-      server,
       vite: await defineAdminViteConfig(
         { root, base: '/admin', mode: 'development' },
         { cacheDir, logLevel: 'silent' }
       )
     })
-    close = admin.close
-    app.route('/', admin.app)
-    app.notFound(c => c.text('app', 404))
-    if (!server.listening) {
-      await new Promise(resolve => server.once('listening', resolve))
-    }
-    const { port } = server.address() as AddressInfo
-    url = `http://127.0.0.1:${port}`
   })
 
   afterAll(async () => {
-    await close()
-    await new Promise(resolve => server.close(resolve))
+    await admin.close()
     // Vite's optimizer may still write its cache when it closes.
     await fs.rm(cacheDir, { recursive: true, force: true, maxRetries: 5 })
   })
 
   it('serves index.html through Vite with dito.js', async () => {
-    const response = await fetch(`${url}/admin/`)
+    const response = await request('/admin/')
     expect(response.status).toBe(200)
     const html = await response.text()
     expect(html).toContain('<script src="/admin/dito.js"></script>')
@@ -189,33 +177,39 @@ describe('serveAdmin() in development', () => {
 
   it('answers the routes of the admin with index.html', async () => {
     for (const path of ['/admin', '/admin/fonts/12/edit']) {
-      const response = await fetch(`${url}${path}`)
+      const response = await request(path)
       expect(response.status).toBe(200)
       expect(await response.text()).toContain('/admin/dito.js')
     }
   })
 
   it('serves the sources through Vite', async () => {
-    const response = await fetch(`${url}/admin/index.js`)
+    const response = await request('/admin/index.js')
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toMatch(/javascript/)
     expect(await response.text()).toContain('views/index.js')
   })
 
   it('sends dito.js itself', async () => {
-    const code = await (await fetch(`${url}/admin/dito.js`)).text()
+    const code = await (await request('/admin/dito.js')).text()
     expect(code).toContain('"hasPasskeys": true')
   })
 
-  it('leaves other paths to the app', async () => {
-    const response = await fetch(`${url}/other`)
-    expect(await response.text()).toBe('app')
+  it('answers other paths with 404', async () => {
+    expect((await request('/other')).status).toBe(404)
   })
 
-  it(`serves HMR through the app's server`, async () => {
-    const socket = new WebSocket(`ws://127.0.0.1:${new URL(url).port}/admin/`, [
-      'vite-hmr'
-    ])
+  it(`serves HMR on Vite's port`, async () => {
+    const client = await (await request('/admin/@vite/client')).text()
+    const port = client.match(/const hmrPort = (\d+)/)?.[1]
+    const token = client.match(/const wsToken = "([^"]+)"/)?.[1]
+    expect(port).toBeDefined()
+    // The client uses `ws` also on pages served over HTTPS.
+    expect(client).toMatch(/const socketProtocol = "ws"/)
+    const socket = new WebSocket(
+      `ws://127.0.0.1:${port}/admin/?token=${token}`,
+      ['vite-hmr']
+    )
     const message = await new Promise<string>((resolve, reject) => {
       socket.onmessage = event => resolve(String(event.data))
       socket.onerror = reject
@@ -224,24 +218,16 @@ describe('serveAdmin() in development', () => {
     socket.close()
   })
 
-  it('needs @hono/node-server', async () => {
-    const admin = serveAdmin({
+  it('answers 503 once closed', async () => {
+    const other = serveAdmin({
       base: '/admin',
       mode: 'development',
       root,
-      vite: {
-        configFile: false,
-        logLevel: 'silent',
-        cacheDir,
-        server: { ws: false }
-      }
+      vite: { configFile: false, logLevel: 'silent', cacheDir }
     })
-    const app = new Hono()
-    app.route('/', admin.app)
-    app.onError((error, c) => c.text(error.message, 500))
-    const response = await app.request('/admin/')
-    expect(await response.text()).toMatch(/@hono\/node-server/)
-    await admin.close()
+    await other.close()
+    const response = await other.fetch(new Request('http://localhost/admin/'))
+    expect(response.status).toBe(503)
   })
 
   it('needs root', () => {

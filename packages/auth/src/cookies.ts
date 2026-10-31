@@ -1,5 +1,4 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import type { AnyContext } from './types.ts'
 
 // Signed cookies as Koa writes them with the `cookies` package: the cookie
 // `name` holds the value, and `name.sig` the Keygrip signature of
@@ -44,11 +43,13 @@ export interface SignedCookie {
   index: number
 }
 
+// Cookies are read from the `Cookie` header of the request's headers, and
+// set as `Set-Cookie` headers on the response's headers.
 export interface SignedCookies {
-  get(c: AnyContext, name: string): SignedCookie | null
+  get(headers: Headers, name: string): SignedCookie | null
   // A null value removes the cookie.
   set(
-    c: AnyContext,
+    headers: Headers,
     name: string,
     value: string | null,
     options?: CookieOptions
@@ -61,8 +62,8 @@ export function koaCookies(
 ): SignedCookies {
   const keygrip = createKeygrip(keys, algorithm)
   return {
-    get(c, name) {
-      const header = c.req.header('Cookie')
+    get(headers, name) {
+      const header = headers.get('Cookie')
       const value = header && readCookie(header, name)
       const signature = header && readCookie(header, `${name}.sig`)
       if (!value || !signature) return null
@@ -70,7 +71,7 @@ export function koaCookies(
       return index >= 0 ? { value, index } : null
     },
 
-    set(c, name, value, options = {}) {
+    set(headers, name, value, options = {}) {
       const removal = value === null
       const cookieOptions = removal
         ? { ...options, expires: new Date(0) }
@@ -78,9 +79,7 @@ export function koaCookies(
       const cookie = `${name}=${value ?? ''}`
       const signature = `${name}.sig=${keygrip.sign(cookie)}`
       for (const pair of [cookie, signature]) {
-        c.header('Set-Cookie', formatCookie(pair, cookieOptions), {
-          append: true
-        })
+        headers.append('Set-Cookie', formatCookie(pair, cookieOptions))
       }
     }
   }

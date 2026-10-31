@@ -1,8 +1,15 @@
-import { Hono, type Handler } from 'hono'
-import { isPlainObject, isString } from '@ditojs/utils'
-import { ProblemError } from '@ditojs/server-next'
+import { z } from 'zod'
+import { isFunction, isString } from '@ditojs/utils'
+import {
+  action,
+  HttpError,
+  type ActionValue,
+  type Actions,
+  type ControllerDefinition,
+  type DitoContext
+} from '@ditojs/server-next'
 import type { Credentials } from './credentials.ts'
-import { authError, validationError } from './errors.ts'
+import { authError } from './errors.ts'
 import {
   authenticationTimeout,
   getUserIdentifier,
@@ -11,20 +18,21 @@ import {
 import type { Passkeys } from './passkeys.ts'
 import type { PasswordReset } from './password-reset.ts'
 import { hashPassword, verifyPassword } from './passwords.ts'
-import type { Sessions } from './sessions.ts'
+import { getSession } from './sessions.ts'
 import type { Totp } from './totp.ts'
-import type { AnyContext, UserSource } from './types.ts'
+import type { UserSource } from './types.ts'
 
-// The actions of Dito 6's `UsersController` with its paths, status codes and
-// bodies, which the admin reads. The logins answer their failures in
-// `{ success: false, error }`, the other actions as Problem Details with the
-// `message` of Dito 6's errors. Each handler checks the login and the
-// confirmed access it needs itself. Nothing here runs in a transaction of its
-// own, except the TOTP codes, see `totp()`. The app adds CSRF protection, such
-// as Hono's `csrf()`.
+// The actions of Dito 6's `UsersController` with its paths and status codes.
+// Successes answer its bodies, which the admin reads, and failures answer as
+// Problem Details. They need the middleware of `createSessions()`. Each
+// handler checks the login and the confirmed access it needs itself. The
+// actions run outside the app's transactions, so the failures of TOTP codes
+// stay counted when the request fails, see `totp()`. The app adds CSRF
+// protection.
 
 export interface UsersRoutesOptions<U> {
-  sessions: Sessions
+  // The path of the users under the app's base, such as `admins`.
+  path: string
   source: UserSource<U>
   // Needed for passkeys and TOTP.
   credentials?: Credentials
@@ -37,7 +45,7 @@ export interface UsersRoutesOptions<U> {
   }
   // In milliseconds, ten minutes by default.
   reconfirmAfter?: number
-  afterLogin?: (c: AnyContext, user: U) => unknown
+  afterLogin?: (ctx: DitoContext, user: U) => unknown
 }
 
 export interface AuthenticationFeatures {
@@ -47,33 +55,48 @@ export interface AuthenticationFeatures {
   hasPasswordReset: boolean
 }
 
-export function createUserHandlers<U>({
-  sessions,
+const anyBody = z.record(z.string(), z.unknown())
+const requiredPassword = z
+  .string({ error: 'The password is required.' })
+  .min(1, 'The password is required.')
+
+// The controller of the actions, which the app passes to `createApp()`, or
+// `use`s in its own controller of the users. `features` tells the admin what
+// it offers, as `api.authentication`.
+export function usersRoutes<U>({
+  path,
   source,
   credentials,
-  features = {},
+  features: {
+    passkeys,
+    totp,
+    passwordReset,
+    passwordChange = true
+  } = {},
   reconfirmAfter = 10 * 60 * 1000,
   afterLogin
 }: UsersRoutesOptions<U>) {
-  const { passkeys, totp, passwordReset, passwordChange = true } = features
   if ((passkeys || totp) && !credentials) {
     throw new Error('Unable to use passkeys or TOTP without credentials.')
   }
   const usernameField = source.usernameField ?? 'username'
 
-  const getUser = async (c: AnyContext) => {
-    const user = await sessions.getUser(c, source)
+  const getUser = async (ctx: DitoContext) => {
+    const user = await getSession(ctx).getUser(source)
     if (!user) throw authError('Unauthorized Access')
     return user
   }
 
-  const hasTotp = async (c: AnyContext, user: U) => (
-    !!credentials && !!(await credentials.first(c, source, user, 'totp'))
+  const checkConfirmedAccess = (ctx: DitoContext) =>
+    getSession(ctx).checkConfirmedAccess(source)
+
+  const hasTotp = async (ctx: DitoContext, user: U) => (
+    !!credentials && !!(await credentials.first(ctx, source, user, 'totp'))
   )
 
-  // Users with TOTP always need a code, also when the app no longer uses
-  // TOTP. Then they get the answer of a wrong password, which doesn't tell
-  // that the password was right.
+  // Users with TOTP always need a code, also when the app doesn't use TOTP.
+  // Then they get the answer of a wrong password, which doesn't tell that the
+  // password was right.
   const checkTotp = (message: string) => {
     if (!totp) throw authError(message)
     return totp
@@ -82,57 +105,43 @@ export function createUserHandlers<U>({
   // Logs in the user that `authenticate()` resolves to, unless it needs a
   // code first.
   const handleLogin = async (
-    c: AnyContext,
+    ctx: DitoContext,
     authenticate: () => Promise<{ user?: U | null; codeRequired?: boolean }>
   ) => {
-    try {
-      const { user, codeRequired } = await authenticate()
-      if (codeRequired) {
-        return c.json({
-          success: false,
-          codeRequired: true,
-          authenticated: false,
-          user: null
-        })
+    const { user, codeRequired } = await authenticate()
+    if (codeRequired) {
+      return {
+        success: false,
+        codeRequired: true,
+        authenticated: false,
+        user: null
       }
-      if (!user) throw authError('Authentication error')
-      sessions.login(c, source, user)
-      await source.touchLogin?.(c, user)
-      sessions.confirmAccess(c, source, user, reconfirmAfter)
-      await afterLogin?.(c, user)
-      return c.json({
-        success: true,
-        authenticated: true,
-        user: await source.toJSON(c, user)
-      })
-    } catch (error) {
-      if (error instanceof ProblemError && error.status < 500) {
-        return c.json(
-          {
-            success: false,
-            authenticated: false,
-            user: null,
-            error: error.detail ?? error.title
-          },
-          error.status as 400
-        )
-      }
-      throw error
+    }
+    if (!user) throw authError('Authentication error')
+    const session = getSession(ctx)
+    session.login(source, user)
+    await source.touchLogin?.(ctx, user)
+    session.confirmAccess(source, user, reconfirmAfter)
+    await afterLogin?.(ctx, user)
+    return {
+      success: true,
+      authenticated: true,
+      user: await source.toJSON(ctx, user)
     }
   }
 
   // The user of the passkey that answered the challenge in the session.
-  const verifyPasskey = async (c: AnyContext, response: any) => {
+  const verifyPasskey = async (ctx: DitoContext, response: any) => {
     const key = response?.id
     const credential = isString(key)
-      ? await credentials!.findByKey(c, source, 'passkey', key as string)
+      ? await credentials!.findByKey(ctx, source, 'passkey', key as string)
       : null
     const user = credential
-      ? await source.findById(c, credential.userId)
+      ? await source.findById(ctx, credential.userId)
       : null
     await passkeys!.verifyAuthentication(
-      c,
-      sessions.session(c),
+      ctx,
+      getSession(ctx).value,
       credentials!,
       user ? credential : null,
       response
@@ -140,333 +149,361 @@ export function createUserHandlers<U>({
     return user!
   }
 
-  const setPassword = async (c: AnyContext, user: U, password: unknown) => {
-    if (!isString(password) || !password) {
-      throw validationError('password', 'The password is required.')
-    }
-    const hash = await hashPassword(password as string)
-    await source.setPassword(c, user, hash)
-    sessions.refreshFingerprint(c, source, user, hash)
+  const setPassword = async (ctx: DitoContext, user: U, password: string) => {
+    const hash = await hashPassword(password)
+    await source.setPassword(ctx, user, hash)
+    getSession(ctx).refreshFingerprint(source, user, hash)
   }
 
-  const handlers: Record<string, Handler> = {
-    'post login': async c => {
-      const body = await readBody(c)
-      return handleLogin(c, async () => {
-        const { [usernameField]: username, password } = body
-        if (!username || !password) {
-          throw authError('Missing credentials', 400)
-        }
-        // Usernames that aren't strings are compared like unknown ones.
-        const user = isString(username)
-          ? await source.findByUsername(c, username as string)
-          : null
-        const hash = user ? source.describe(user).hash : null
-        if (!((await verifyPassword(password, hash)) && user)) {
-          throw authError('Password or username is incorrect')
-        }
-        if (await hasTotp(c, user)) {
-          checkTotp('Password or username is incorrect')
-          // The login completes with a code, through `POST login-code`.
-          sessions.session(c).pendingLogin = {
-            user: getUserIdentifier(source, user),
-            expires: Date.now() + authenticationTimeout
+  const actions: Record<string, ActionValue> = {
+    'post login': action({
+      body: anyBody,
+      handler: async ctx => {
+        const body = await ctx.body()
+        return handleLogin(ctx, async () => {
+          const { [usernameField]: username, password } = body
+          if (!username || !password) {
+            throw authError('Missing credentials', 400)
           }
-          sessions.regenerate(c)
-          return { codeRequired: true }
-        }
-        return { user }
-      })
-    },
+          // Usernames that aren't strings are compared like unknown ones.
+          const user = isString(username)
+            ? await source.findByUsername(ctx, username as string)
+            : null
+          const hash = user ? source.describe(user).hash : null
+          if (!((await verifyPassword(password, hash)) && user)) {
+            throw authError('Password or username is incorrect')
+          }
+          if (await hasTotp(ctx, user)) {
+            checkTotp('Password or username is incorrect')
+            // The login completes with a code, through `POST login-code`.
+            const session = getSession(ctx)
+            session.value.pendingLogin = {
+              user: getUserIdentifier(source, user),
+              expires: Date.now() + authenticationTimeout
+            }
+            session.regenerate()
+            return { codeRequired: true }
+          }
+          return { user }
+        })
+      }
+    }),
 
     // The second step of the password logins of users with TOTP, with a TOTP
     // code or a backup code.
-    'post login-code': async c => {
-      const { code } = await readBody(c)
-      return handleLogin(c, async () => {
-        const session = sessions.session(c)
-        const { pendingLogin } = session
-        const parsed = parseUserIdentifier(pendingLogin?.user)
-        if (!(
-          parsed?.name === source.name && pendingLogin!.expires > Date.now()
-        )) {
-          throw authError('Missing or expired login', 400)
+    'post login-code': action({
+      body: anyBody,
+      handler: async ctx => {
+        const { code } = await ctx.body()
+        return handleLogin(ctx, async () => {
+          const session = getSession(ctx)
+          const { pendingLogin } = session.value
+          const parsed = parseUserIdentifier(pendingLogin?.user)
+          if (!(
+            parsed?.name === source.name && pendingLogin!.expires > Date.now()
+          )) {
+            throw authError('Missing or expired login', 400)
+          }
+          const user = await source.findById(ctx, parsed.id)
+          if (!user) throw authError('Code is incorrect')
+          await checkTotp('Code is incorrect').verifyCode(
+            ctx,
+            credentials!,
+            source,
+            user,
+            code
+          )
+          delete session.value.pendingLogin
+          return { user }
+        })
+      }
+    }),
+
+    'post logout': async ctx => {
+      const session = getSession(ctx)
+      const user = await session.getUser(source)
+      if (user) session.logout()
+      return { success: !!user, authenticated: false }
+    },
+
+    'get session': async ctx => {
+      const user = await getSession(ctx).getUser(source)
+      return {
+        authenticated: !!user,
+        user: user ? await source.toJSON(ctx, user) : null
+      }
+    },
+
+    'get self': async ctx => {
+      const user = await getSession(ctx).getUser(source)
+      return user ? source.toJSON(ctx, user) : null
+    },
+
+    // Confirms the access of the logged-in user with the password, and the
+    // code of users with TOTP, or with a passkey.
+    'post confirm-access': action({
+      body: anyBody,
+      handler: async ctx => {
+        const user = await getUser(ctx)
+        const { password, code, passkey } = await ctx.body()
+        if (passkeys && passkey) {
+          // The passkeys of other users verify too, but don't confirm.
+          const passkeyUser = await verifyPasskey(ctx, passkey)
+          if (
+            getUserIdentifier(source, passkeyUser) !==
+            getUserIdentifier(source, user)
+          ) {
+            throw authError('Passkey is incorrect')
+          }
+        } else if (
+          !(
+            password &&
+            (await verifyPassword(password, source.describe(user).hash))
+          )
+        ) {
+          throw authError('Password is incorrect')
+        } else if (await hasTotp(ctx, user)) {
+          const feature = checkTotp('Password is incorrect')
+          if (!code) return { success: false, codeRequired: true }
+          await feature.verifyCode(ctx, credentials!, source, user, code)
         }
-        const user = await source.findById(c, parsed.id)
-        if (!user) throw authError('Code is incorrect')
-        await checkTotp('Code is incorrect').verifyCode(
-          c,
+        getSession(ctx).confirmAccess(source, user, reconfirmAfter)
+        return { success: true }
+      }
+    }),
+
+    // Users change their own values, without the password and hashes, and
+    // with confirmed access for a new username, as password resets go to it.
+    'patch self': action({
+      body: z.looseObject({
+        password: requiredPassword.optional(),
+        hash: z.never({ error: `Unable to change 'hash'.` }).optional()
+      }),
+      handler: async ctx => {
+        const user = await getUser(ctx)
+        const { password, ...values } = await ctx.body()
+        const username = values[usernameField]
+        if (
+          password !== undefined || (
+            username !== undefined &&
+            username !== source.describe(user).username
+          )
+        ) {
+          await checkConfirmedAccess(ctx)
+        }
+        if (password !== undefined) await setPassword(ctx, user, password)
+        const updated =
+          Object.keys(values).length > 0
+            ? await source.update!(ctx, user, values)
+            : user
+        return source.toJSON(ctx, updated)
+      }
+    }),
+
+    'post password': action({
+      body: z.object({ password: requiredPassword }),
+      handler: async ctx => {
+        const user = await checkConfirmedAccess(ctx)
+        await setPassword(ctx, user, (await ctx.body()).password)
+        return { success: true }
+      }
+    }),
+
+    // The same answer whether the user exists or not, so the answer doesn't
+    // tell which usernames exist.
+    'post password-reset': action({
+      body: z.object({
+        [usernameField]: z
+          .string({
+            error: issue => (
+              `${issue.input === undefined ? 'Missing' : 'Invalid'} ` +
+              `'${usernameField}'`
+            )
+          })
+          .min(1, `Missing '${usernameField}'`)
+      }),
+      handler: async ctx => {
+        const { [usernameField]: username } = await ctx.body()
+        const user = await source.findByUsername(ctx, username!)
+        if (user) passwordReset!.request(ctx, source, user)
+        return { success: true }
+      }
+    }),
+
+    // The new hash ends the link and the user's other sessions.
+    'post password-reset-confirm': action({
+      body: z.object({
+        token: z
+          .string({ error: 'The token is required.' })
+          .min(1, 'The token is required.'),
+        password: requiredPassword
+      }),
+      handler: async ctx => {
+        const { token, password } = await ctx.body()
+        const user = await passwordReset!.findUser(ctx, source, token)
+        if (!user) throw authError('Invalid or expired token', 400)
+        await setPassword(ctx, user, password)
+        return { success: true }
+      }
+    }),
+
+    'post passkey-login-options': ctx =>
+      passkeys!.createAuthenticationOptions(ctx, getSession(ctx).value),
+
+    'post passkey-login': action({
+      body: anyBody,
+      handler: async ctx => {
+        const response = await ctx.body()
+        return handleLogin(ctx, async () => ({
+          user: await verifyPasskey(ctx, response)
+        }))
+      }
+    }),
+
+    'get passkeys': async ctx => {
+      const user = await getUser(ctx)
+      const list = await credentials!.list(ctx, source, user, 'passkey')
+      return list.map(({ id, name, createdAt, lastUsedAt }) => ({
+        id,
+        name,
+        createdAt,
+        lastUsedAt
+      }))
+    },
+
+    'post passkey-options': async ctx => {
+      const user = await checkConfirmedAccess(ctx)
+      return passkeys!.createRegistrationOptions(
+        ctx,
+        getSession(ctx).value,
+        source.describe(user).username,
+        await credentials!.list(ctx, source, user, 'passkey')
+      )
+    },
+
+    'post passkeys': action({
+      body: anyBody,
+      handler: async ctx => {
+        const user = await checkConfirmedAccess(ctx)
+        const { id, name, createdAt } = await passkeys!.verifyRegistration(
+          ctx,
+          getSession(ctx).value,
+          credentials!,
+          source,
+          user,
+          await ctx.body()
+        )
+        return { id, name, createdAt, lastUsedAt: null }
+      }
+    }),
+
+    'delete passkeys/:id': async ctx => {
+      const user = await checkConfirmedAccess(ctx)
+      const count = await credentials!.remove(
+        ctx,
+        source,
+        user,
+        'passkey',
+        Number(ctx.params.id)
+      )
+      if (count === 0) throw new HttpError(404)
+      return { success: true }
+    },
+
+    'get totp': async ctx => {
+      const user = await getUser(ctx)
+      const credential = await credentials!.first(ctx, source, user, 'totp')
+      return {
+        enabled: !!credential,
+        backupCodes: credential?.data.backupCodes.length ?? 0
+      }
+    },
+
+    'post totp': async ctx => {
+      const user = await checkConfirmedAccess(ctx)
+      if (await hasTotp(ctx, user)) {
+        throw authError('TOTP is already set up', 409)
+      }
+      return totp!.createSecret(getSession(ctx).value, source, user)
+    },
+
+    'post totp-confirm': action({
+      body: anyBody,
+      handler: async ctx => {
+        const user = await checkConfirmedAccess(ctx)
+        const { code } = await ctx.body()
+        const backupCodes = await totp!.confirmSecret(
+          ctx,
+          getSession(ctx).value,
           credentials!,
           source,
           user,
           code
         )
-        delete session.pendingLogin
-        return { user }
-      })
-    },
-
-    'post logout': async c => {
-      const user = await sessions.getUser(c, source)
-      if (user) sessions.logout(c)
-      return c.json({ success: !!user, authenticated: false })
-    },
-
-    'get session': async c => {
-      const user = await sessions.getUser(c, source)
-      return c.json({
-        authenticated: !!user,
-        user: user ? await source.toJSON(c, user) : null
-      })
-    },
-
-    'get self': async c => {
-      const user = await sessions.getUser(c, source)
-      return c.json(user ? await source.toJSON(c, user) : null)
-    },
-
-    // Confirms the access of the logged-in user with the password, and the
-    // code of users with TOTP, or with a passkey.
-    'post confirm-access': async c => {
-      const user = await getUser(c)
-      const { password, code, passkey } = await readBody(c)
-      if (passkeys && passkey) {
-        // The passkeys of other users verify too, but don't confirm.
-        const passkeyUser = await verifyPasskey(c, passkey)
-        if (
-          getUserIdentifier(source, passkeyUser) !==
-          getUserIdentifier(source, user)
-        ) {
-          throw authError('Passkey is incorrect')
-        }
-      } else if (
-        !(
-          password &&
-          (await verifyPassword(password, source.describe(user).hash))
-        )
-      ) {
-        throw authError('Password is incorrect')
-      } else if (await hasTotp(c, user)) {
-        const feature = checkTotp('Password is incorrect')
-        if (!code) return c.json({ success: false, codeRequired: true })
-        await feature.verifyCode(c, credentials!, source, user, code)
+        // The backup codes are stored hashed, so users only see them now.
+        return { backupCodes }
       }
-      sessions.confirmAccess(c, source, user, reconfirmAfter)
-      return c.json({ success: true })
-    },
+    }),
 
-    // Users change their own values, without the password and hashes, and
-    // with confirmed access for a new username, as password resets go to it.
-    'patch self': async c => {
-      const user = await getUser(c)
-      const { password, ...values } = await readBody(c)
-      if ('hash' in values) {
-        throw validationError('hash', `Unable to change 'hash'.`)
-      }
-      const username = values[usernameField]
-      if (
-        password !== undefined ||
-        (username !== undefined && username !== source.describe(user).username)
-      ) {
-        await sessions.checkConfirmedAccess(c, source)
-      }
-      if (password !== undefined) await setPassword(c, user, password)
-      const updated =
-        Object.keys(values).length > 0
-          ? await source.update!(c, user, values)
-          : user
-      return c.json((await source.toJSON(c, updated)) as never)
-    },
-
-    'post password': async c => {
-      const user = await sessions.checkConfirmedAccess(c, source)
-      const { password } = await readBody(c)
-      await setPassword(c, user, password)
-      return c.json({ success: true })
-    },
-
-    // The same answer whether the user exists or not, so the answer doesn't
-    // tell which usernames exist.
-    'post password-reset': async c => {
-      const { [usernameField]: username } = await readBody(c)
-      if (!username || !isString(username)) {
-        throw authError(
-          `${username ? 'Invalid' : 'Missing'} '${usernameField}'`,
-          400
-        )
-      }
-      const user = await source.findByUsername(c, username as string)
-      if (user) passwordReset!.request(c, source, user)
-      return c.json({ success: true })
-    },
-
-    // The new hash ends the link and the user's other sessions.
-    'post password-reset-confirm': async c => {
-      const { token, password } = await readBody(c)
-      if (!isString(token) || !token) {
-        throw validationError('token', 'The token is required.')
-      }
-      const user = await passwordReset!.findUser(c, source, token)
-      if (!user) throw authError('Invalid or expired token', 400)
-      await setPassword(c, user, password)
-      return c.json({ success: true })
-    },
-
-    'post passkey-login-options': async c =>
-      c.json(
-        await passkeys!.createAuthenticationOptions(c, sessions.session(c))
-      ),
-
-    'post passkey-login': async c => {
-      const response = await readBody(c)
-      return handleLogin(c, async () => ({
-        user: await verifyPasskey(c, response)
-      }))
-    },
-
-    'get passkeys': async c => {
-      const user = await getUser(c)
-      const list = await credentials!.list(c, source, user, 'passkey')
-      return c.json(
-        list.map(({ id, name, createdAt, lastUsedAt }) => ({
-          id,
-          name,
-          createdAt,
-          lastUsedAt
-        }))
-      )
-    },
-
-    'post passkey-options': async c => {
-      const user = await sessions.checkConfirmedAccess(c, source)
-      return c.json(
-        await passkeys!.createRegistrationOptions(
-          c,
-          sessions.session(c),
-          source.describe(user).username,
-          await credentials!.list(c, source, user, 'passkey')
-        )
-      )
-    },
-
-    'post passkeys': async c => {
-      const user = await sessions.checkConfirmedAccess(c, source)
-      const { id, name, createdAt } = await passkeys!.verifyRegistration(
-        c,
-        sessions.session(c),
-        credentials!,
-        source,
-        user,
-        await readBody(c)
-      )
-      return c.json({ id, name, createdAt, lastUsedAt: null })
-    },
-
-    'delete passkeys/:id': async c => {
-      const user = await sessions.checkConfirmedAccess(c, source)
-      const id = Number(c.req.param('id'))
-      const count = Number.isInteger(id)
-        ? await credentials!.remove(c, source, user, 'passkey', id)
-        : 0
-      if (count === 0) throw new ProblemError({ status: 404 })
-      return c.json({ success: true })
-    },
-
-    'get totp': async c => {
-      const user = await getUser(c)
-      const credential = await credentials!.first(c, source, user, 'totp')
-      return c.json({
-        enabled: !!credential,
-        backupCodes: credential?.data.backupCodes.length ?? 0
-      })
-    },
-
-    'post totp': async c => {
-      const user = await sessions.checkConfirmedAccess(c, source)
-      if (await hasTotp(c, user)) {
-        throw authError('TOTP is already set up', 409)
-      }
-      return c.json(await totp!.createSecret(sessions.session(c), source, user))
-    },
-
-    'post totp-confirm': async c => {
-      const user = await sessions.checkConfirmedAccess(c, source)
-      const { code } = await readBody(c)
-      const backupCodes = await totp!.confirmSecret(
-        c,
-        sessions.session(c),
-        credentials!,
-        source,
-        user,
-        code
-      )
-      // The backup codes are stored hashed, so users only see them now.
-      return c.json({ backupCodes })
-    },
-
-    'delete totp': async c => {
-      const user = await sessions.checkConfirmedAccess(c, source)
-      await credentials!.remove(c, source, user, 'totp')
-      return c.json({ success: true })
+    'delete totp': async ctx => {
+      const user = await checkConfirmedAccess(ctx)
+      await credentials!.remove(ctx, source, user, 'totp')
+      return { success: true }
     }
   }
 
-  const routed = (names: string[]) =>
-    Object.fromEntries(names.map(name => [name, handlers[name]]))
-
-  return {
-    ...routed([
-      'post login',
-      'post logout',
-      'get session',
-      'get self',
-      'post confirm-access'
-    ]),
-    ...(source.update && routed(['patch self'])),
-    ...(passwordChange && routed(['post password'])),
-    ...(passwordReset &&
-    routed(['post password-reset', 'post password-reset-confirm'])),
-    ...(passkeys &&
-    routed([
-      'post passkey-login-options',
-      'post passkey-login',
-      'get passkeys',
-      'post passkey-options',
-      'post passkeys',
-      'delete passkeys/:id'
-    ])),
-    ...(totp &&
-    routed([
-      'post login-code',
-      'get totp',
-      'post totp',
-      'post totp-confirm',
-      'delete totp'
-    ]))
-  } as Record<string, Handler>
-}
-
-// The Hono app of the handlers, which the app mounts at the path of its
-// users, such as `/api/admin/admins`, before its own routes of the users.
-// `features` tells the admin what it offers, as `api.authentication`.
-export function usersRoutes<U>(options: UsersRoutesOptions<U>) {
-  const handlers = createUserHandlers(options)
-  const app = new Hono()
-  for (const [key, handler] of Object.entries(handlers)) {
-    const [verb, path] = key.split(' ')
-    app.on(verb.toUpperCase(), `/${path}`, handler)
-  }
-  const isRouted = (...names: string[]) => names.every(name => handlers[name])
+  const routed = [
+    'post login',
+    'post logout',
+    'get session',
+    'get self',
+    'post confirm-access',
+    ...(source.update ? ['patch self'] : []),
+    ...(passwordChange ? ['post password'] : []),
+    ...(
+      passwordReset
+        ? ['post password-reset', 'post password-reset-confirm']
+        : []
+    ),
+    ...(
+      passkeys
+        ? [
+            'post passkey-login-options',
+            'post passkey-login',
+            'get passkeys',
+            'post passkey-options',
+            'post passkeys',
+            'delete passkeys/:id'
+          ]
+        : []
+    ),
+    ...(
+      totp
+        ? [
+            'post login-code',
+            'get totp',
+            'post totp',
+            'post totp-confirm',
+            'delete totp'
+          ]
+        : []
+    )
+  ]
+  const collection = Object.fromEntries(
+    routed.map(name => {
+      const value = actions[name]!
+      const def = isFunction(value) ? { handler: value } : value
+      return [name, { ...def, transacted: false }]
+    })
+  ) as Actions
+  const controller: ControllerDefinition = { path, collection }
+  const isRouted = (...names: string[]) =>
+    names.every(name => routed.includes(name))
   const features: AuthenticationFeatures = {
     hasPasskeys: isRouted('post passkey-login', 'post passkeys'),
     hasTotp: isRouted('post login-code', 'post totp'),
     hasPasswordChange: isRouted('post password'),
     hasPasswordReset: isRouted('post password-reset')
   }
-  return { app, features, handlers }
-}
-
-async function readBody(c: AnyContext): Promise<Record<string, any>> {
-  const body = await c.req.json().catch(() => null)
-  return isPlainObject(body) ? body : {}
+  return { controller, features }
 }

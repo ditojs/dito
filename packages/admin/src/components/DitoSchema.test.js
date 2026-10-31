@@ -1027,7 +1027,10 @@ describe('DitoSchema', () => {
       ({ method = 'get' }) => {
         if (method !== 'get') {
           throw Object.assign(new Error('Validation failed'), {
-            response: { status: 400, data: { type: 'ValidationError', errors } }
+            response: {
+              status: 400,
+              data: { title: 'Validation Failed', errors }
+            }
           })
         }
         return { data: [] }
@@ -1052,7 +1055,7 @@ describe('DitoSchema', () => {
 
     it('shows the errors on the fields of their data paths', async () => {
       const { submit, getErrors, notify } = await mountBookForm({
-        title: [{ message: 'is already taken' }]
+        '/title': [{ message: 'is already taken' }]
       })
       await submit()
       expect(getErrors('title')).toEqual([
@@ -1067,7 +1070,7 @@ describe('DitoSchema', () => {
 
     it('notifies the errors that no field displays', async () => {
       const { submit, notify } = await mountBookForm({
-        'isbn': [{ message: 'is invalid' }],
+        '/isbn': [{ message: 'is invalid' }],
         '': [{ message: 'is incomplete' }]
       })
       await submit()
@@ -1081,7 +1084,7 @@ describe('DitoSchema', () => {
 
     it('notifies the errors of fields that are not visible', async () => {
       const { submit, notify } = await mountBookForm(
-        { updatedAt: [{ message: 'must be a string' }] },
+        { '/updatedAt': [{ message: 'must be a string' }] },
         { updatedAt: { type: 'value' } }
       )
       await submit()
@@ -1094,7 +1097,7 @@ describe('DitoSchema', () => {
 
     it('keeps the errors of collapsed sections', async () => {
       const { submit, getErrors, findContainer } = await mountBookForm(
-        { subtitle: [{ message: 'is too long' }] },
+        { '/subtitle': [{ message: 'is too long' }] },
         {
           details: {
             type: 'section',
@@ -1128,8 +1131,8 @@ describe('DitoSchema', () => {
           },
           data: { title: 'Emma', summary: 'Short' },
           request: respondWithErrors({
-            title: [{ message: 'is taken' }],
-            summary: [{ message: 'is too short' }]
+            '/title': [{ message: 'is taken' }],
+            '/summary': [{ message: 'is too short' }]
           })
         }
       )
@@ -1164,9 +1167,9 @@ describe('DitoSchema', () => {
         },
         data: { title: 'Emma', chapters: [{ title: 'One', pages: 3 }] },
         request: respondWithErrors({
-          'chapters/0/title': [{ message: 'is too short' }],
-          'chapters/0/pages': [{ message: 'is too few' }],
-          'title': [{ message: 'is taken' }]
+          '/chapters/0/title': [{ message: 'is too short' }],
+          '/chapters/0/pages': [{ message: 'is too few' }],
+          '/title': [{ message: 'is taken' }]
         })
       })
       const notify = vi.spyOn(admin.context, 'notify')
@@ -1220,7 +1223,7 @@ describe('DitoSchema', () => {
         },
         data: { chapters: [{ title: 'One', pages: 3 }] },
         request: respondWithErrors({
-          'chapters/0/pages': [{ message: 'is too few' }]
+          '/chapters/0/pages': [{ message: 'is too few' }]
         })
       })
       await submit()
@@ -1253,8 +1256,8 @@ describe('DitoSchema', () => {
         },
         data: { chapters: [{ title: 'One' }, { title: 'Two' }] },
         request: respondWithErrors({
-          'chapters/0/title': [{ message: 'is too short' }],
-          'chapters/1/title': [{ message: 'is taken' }]
+          '/chapters/0/title': [{ message: 'is too short' }],
+          '/chapters/1/title': [{ message: 'is taken' }]
         })
       })
       const notify = vi.spyOn(admin.context, 'notify')
@@ -1344,8 +1347,8 @@ describe('DitoSchema', () => {
               response: {
                 status: 400,
                 data: {
-                  type: 'FilterValidation',
-                  errors: { 'title/text': [{ message: 'is too short' }] }
+                  title: 'Validation Failed',
+                  errors: { '/title/text': [{ message: 'is too short' }] }
                 }
               }
             })

@@ -1,8 +1,9 @@
+import type { DitoContext } from '@ditojs/server-next'
 import type { Credential, Credentials } from './credentials.ts'
 import { authError } from './errors.ts'
 import { authenticationTimeout } from './identifiers.ts'
 import { lazyPeer } from './peers.ts'
-import type { AnyContext, SessionValue, UserSource } from './types.ts'
+import type { SessionValue, UserSource } from './types.ts'
 
 // Passkeys as Dito 6's `PasskeyService` keeps them: discoverable WebAuthn
 // credentials of type `passkey`, with the credential id as `key`, named after
@@ -29,10 +30,10 @@ export function passkeys({ rpName, domain, origins }: PasskeysOptions) {
     'passkeys'
   )
 
-  const getDomain = (c: AnyContext) => domain ?? new URL(c.req.url).hostname
+  const getDomain = (ctx: DitoContext) => domain ?? ctx.url.hostname
 
-  const getExpectations = (c: AnyContext, response: any) => {
-    const expectedRPID = getDomain(c)
+  const getExpectations = (ctx: DitoContext, response: any) => {
+    const expectedRPID = getDomain(ctx)
     return {
       expectedRPID,
       expectedOrigin: origins ?? getDomainOrigin(response, expectedRPID)
@@ -40,13 +41,13 @@ export function passkeys({ rpName, domain, origins }: PasskeysOptions) {
   }
 
   return {
-    async createAuthenticationOptions(c: AnyContext, session: SessionValue) {
+    async createAuthenticationOptions(ctx: DitoContext, session: SessionValue) {
       // Passkeys are discoverable, so the browser offers them without a
       // username.
       const options = await (
         await webAuthn()
       ).generateAuthenticationOptions({
-        rpID: getDomain(c),
+        rpID: getDomain(ctx),
         userVerification: 'required'
       })
       storeChallenge(session, 'authentication', options)
@@ -57,7 +58,7 @@ export function passkeys({ rpName, domain, origins }: PasskeysOptions) {
     // in the session, and updates the counter of the passkey. The challenge
     // is consumed also without a credential.
     async verifyAuthentication(
-      c: AnyContext,
+      ctx: DitoContext,
       session: SessionValue,
       credentials: Credentials,
       credential: Credential | null,
@@ -70,7 +71,7 @@ export function passkeys({ rpName, domain, origins }: PasskeysOptions) {
         verifyAuthenticationResponse({
           response,
           expectedChallenge: challenge,
-          ...getExpectations(c, response),
+          ...getExpectations(ctx, response),
           credential: {
             id: credential.key!,
             publicKey: Buffer.from(credential.data.publicKey, 'base64url'),
@@ -80,14 +81,14 @@ export function passkeys({ rpName, domain, origins }: PasskeysOptions) {
         })
       ).catch(() => ({ verified: false, authenticationInfo: null }))
       if (!verified) throw authError('Passkey is incorrect')
-      await credentials.update(c, credential.id, {
+      await credentials.update(ctx, credential.id, {
         data: { ...credential.data, counter: authenticationInfo!.newCounter },
         lastUsedAt: new Date()
       })
     },
 
     async createRegistrationOptions(
-      c: AnyContext,
+      ctx: DitoContext,
       session: SessionValue,
       username: string,
       existing: Credential[]
@@ -96,7 +97,7 @@ export function passkeys({ rpName, domain, origins }: PasskeysOptions) {
         await webAuthn()
       ).generateRegistrationOptions({
         rpName,
-        rpID: getDomain(c),
+        rpID: getDomain(ctx),
         userName: username,
         // The same authenticator isn't registered twice.
         excludeCredentials: existing.map(({ key, data }) => ({
@@ -115,7 +116,7 @@ export function passkeys({ rpName, domain, origins }: PasskeysOptions) {
     // Verifies the response of `startRegistration()` against the challenge in
     // the session, and stores its passkey as a credential of the user.
     async verifyRegistration(
-      c: AnyContext,
+      ctx: DitoContext,
       session: SessionValue,
       credentials: Credentials,
       source: UserSource,
@@ -128,7 +129,7 @@ export function passkeys({ rpName, domain, origins }: PasskeysOptions) {
         verifyRegistrationResponse({
           response,
           expectedChallenge: challenge,
-          ...getExpectations(c, response)
+          ...getExpectations(ctx, response)
         })
       ).catch(error => {
         // Failed verifications are bad requests, not server errors.
@@ -139,7 +140,7 @@ export function passkeys({ rpName, domain, origins }: PasskeysOptions) {
       }
       const { credential, aaguid } = registrationInfo
       const names = (await aaguids()).default
-      return credentials.insert(c, source, user, 'passkey', {
+      return credentials.insert(ctx, source, user, 'passkey', {
         key: credential.id,
         // Anonymous providers send an all-zero AAGUID, which isn't listed.
         name: names[aaguid] ?? 'Passkey',

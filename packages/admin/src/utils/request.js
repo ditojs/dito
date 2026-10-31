@@ -12,9 +12,28 @@ export class RequestError extends Error {
   }
 }
 
-// Responses without a message have none, e.g. `{ type: 'ServerError' }`:
+// The message of errors, and of Problem Details: their `detail`, else their
+// `title`:
+/** @returns {string | null} */
 export function getErrorMessage(error) {
-  return isString(error?.message) ? error.message : null
+  const message = error?.detail ?? error?.message ?? error?.title
+  return isString(message) ? message : null
+}
+
+// Problem Details key validation errors by JSON Pointer, e.g. `/sets/8/name`,
+// and `''` for the value itself. Key them by data path, e.g. `sets/8/name`:
+export function getDataPathErrors(errors) {
+  return Object.fromEntries(
+    Object.entries(errors).map(([pointer, errs]) => [
+      fromJsonPointer(pointer),
+      errs
+    ])
+  )
+}
+
+// Unescape `~1` before `~0`, so that `~01` becomes `~1`, as RFC 6901 says:
+export function fromJsonPointer(pointer) {
+  return pointer.replace(/^\//, '').replaceAll('~1', '/').replaceAll('~0', '~')
 }
 
 export async function request(api, {

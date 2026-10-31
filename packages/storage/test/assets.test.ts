@@ -3,11 +3,10 @@ import os from 'node:os'
 import path from 'node:path'
 import Database from 'better-sqlite3'
 import { Kysely, SqliteDialect } from 'kysely'
-import { Hono } from 'hono'
 import {
   createApp,
   defineController,
-  problemResponse,
+  type App,
   type DitoContext,
   type Transaction
 } from '@ditojs/server-next'
@@ -35,6 +34,9 @@ let basePath: string
 let covers: DiskStorage
 let archive: DiskStorage
 let db: Kysely<any>
+
+const request = (app: App, url: string, init?: RequestInit) =>
+  app.fetch(new Request(new URL(url, 'http://localhost'), init))
 
 const paths: AssetPath[] = [
   { table: 'book', column: 'cover', path: '', storage: 'covers' },
@@ -321,9 +323,9 @@ describe('insertAsset()', () => {
 })
 
 describe('assets()', () => {
-  const kyselyTransaction: Transaction = (c, fn) =>
+  const kyselyTransaction: Transaction = (ctx, fn) =>
     db.transaction().execute(trx => {
-      c.set('trx', trx)
+      ctx.trx = trx
       return fn()
     })
 
@@ -335,12 +337,12 @@ describe('assets()', () => {
       use: [
         assets(paths.slice(0, 2), {
           storages: { covers, archive },
-          db: (c: DitoContext) => c.var.db as Kysely<any>
+          db: (ctx: DitoContext) => ctx.db as Kysely<any>
         })
       ],
       collection: {
-        post: async c => {
-          const body = await c.var.body()
+        post: async ctx => {
+          const body = await ctx.body()
           received = body
           if (body.fail) throw new Error('Failed write')
           return body
@@ -349,21 +351,15 @@ describe('assets()', () => {
       },
       isRow: () => true
     })
-    const app = new Hono()
-    app.onError(problemResponse)
-    app.route(
-      '/',
-      createApp({
-        controllers: [books],
-        transaction: kyselyTransaction,
-        getUser: async () => null
-      })
-    )
-    return app
+    return createApp({
+      controllers: [books],
+      transaction: kyselyTransaction,
+      getUser: async () => null
+    })
   }
 
-  const post = (app: Hono, body: unknown) =>
-    app.request('/books', {
+  const post = (app: App, body: unknown) =>
+    request(app, '/books', {
       method: 'POST',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' }
@@ -431,7 +427,7 @@ describe('assets()', () => {
   })
 
   it('signs the files that it sends', async () => {
-    const response = await setup().request('/books')
+    const response = await request(setup(), '/books')
     const json = await response.json()
     expect(covers.verifyAssetFile(json.cover)).toBe(true)
   })
@@ -664,13 +660,13 @@ describe('assetUploads()', () => {
         assets(uploadPaths, {
           table: 'book',
           storages,
-          db: (c: DitoContext) => c.var.db as Kysely<any>
+          db: (ctx: DitoContext) => ctx.db as Kysely<any>
         }),
         assetUploads({
           table: 'book',
           paths: uploadPaths,
           storages,
-          db: (c: DitoContext) => c.var.db as Kysely<any>
+          db: (ctx: DitoContext) => ctx.db as Kysely<any>
         })
       ],
       ...(fail && {
@@ -680,29 +676,23 @@ describe('assetUploads()', () => {
         }
       })
     })
-    const app = new Hono()
-    app.onError(problemResponse)
-    app.route(
-      '/',
-      createApp({
-        controllers: [books],
-        transaction: (c, fn) =>
-          db.transaction().execute(trx => {
-            c.set('trx', trx)
-            return fn()
-          }),
-        getUser: async () => null
-      })
-    )
-    return app
+    return createApp({
+      controllers: [books],
+      transaction: (ctx, fn) =>
+        db.transaction().execute(trx => {
+          ctx.trx = trx
+          return fn()
+        }),
+      getUser: async () => null
+    })
   }
 
   // Sends a file like the admin's upload component, under the data path of
   // its field.
-  function upload(app: Hono, dataPath: string, route = dataPath) {
+  function upload(app: App, dataPath: string, route = dataPath) {
     const body = new FormData()
     body.append(dataPath, new File(['Page'], 'page.txt'))
-    return app.request(`/books/upload/${route}`, { method: 'POST', body })
+    return request(app, `/books/upload/${route}`, { method: 'POST', body })
   }
 
   it('stores uploads at the hyphenated upload paths', async () => {

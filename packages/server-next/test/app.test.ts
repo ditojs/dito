@@ -1,5 +1,3 @@
-import { Hono } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import {
   action,
@@ -7,16 +5,24 @@ import {
   createValidationError,
   defineController,
   defineFeature,
-  ProblemError,
+  HttpError,
   problemResponse,
-  toDitoErrors,
+  toJsonPointer,
   withBase,
   type AppConfig,
   type ControllerDefinition,
-  type DitoEnv,
+  type DitoContext,
+  type Middleware,
   type Transaction,
   type User
 } from '../src/index.ts'
+
+declare module '../src/index.ts' {
+  interface DitoLocals {
+    ip?: string
+    session?: string
+  }
+}
 
 const admin: User = { id: 1, roles: ['admin'] }
 const editor: User = { id: 2, roles: ['editor'] }
@@ -25,35 +31,27 @@ function setup(
   controllers: ControllerDefinition[],
   { user = admin, ...config }: Partial<AppConfig> & { user?: User | null } = {}
 ) {
-  const app = createApp({
+  return createApp({
     base: '/api',
     controllers,
     getUser: async () => user,
+    // The handler an app sets. `RangeError` stands for an error of the app.
+    onError: error =>
+      problemResponse(
+        error instanceof RangeError
+          ? new HttpError(422, { title: 'Out of Range', detail: error.message })
+          : error
+      ),
     ...config
   })
-  // The handlers an app sets. `RangeError` stands for an error of the app.
-  app.onError((error, c) =>
-    problemResponse(
-      error instanceof RangeError
-        ? new ProblemError({
-            status: 422,
-            title: 'Out of Range',
-            detail: error.message
-          })
-        : error,
-      c
-    )
-  )
-  app.notFound(c => problemResponse(new ProblemError({ status: 404 }), c))
-  return app
 }
 
 // A transaction that records its steps instead of opening one.
 function createTransaction() {
   const log: string[] = []
-  const transaction: Transaction = async (c, fn) => {
+  const transaction: Transaction = async (ctx, fn) => {
     log.push('begin')
-    c.set('trx', 'trx')
+    ctx.trx = 'trx'
     try {
       const result = await fn()
       log.push('commit')
@@ -61,6 +59,8 @@ function createTransaction() {
     } catch (error) {
       log.push('rollback')
       throw error
+    } finally {
+      ctx.trx = undefined
     }
   }
   return { transaction, log }
@@ -70,15 +70,19 @@ const request = (
   app: ReturnType<typeof setup>,
   method: string,
   path: string,
-  body?: unknown
+  body?: unknown,
+  init: RequestInit = {}
 ) =>
-  app.request(path, {
-    method,
-    ...(body !== undefined && {
-      body: JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json' }
+  app.fetch(
+    new Request(`http://localhost${path}`, {
+      method,
+      ...(body !== undefined && {
+        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' }
+      }),
+      ...init
     })
-  })
+  )
 
 describe('routing', () => {
   it('routes default verbs and actions with paths', async () => {
@@ -91,8 +95,8 @@ describe('routing', () => {
           'get count': () => ({ count: 2 })
         },
         member: {
-          'get': c => ({ id: c.var.memberId }),
-          'post publish': c => ({ published: c.var.memberId })
+          'get': ctx => ({ id: ctx.memberId }),
+          'post publish': ctx => ({ published: ctx.memberId })
         }
       })
     ])
@@ -107,17 +111,73 @@ describe('routing', () => {
     expect(await (await request(app, 'GET', '/api/fonts/7')).json()).toEqual({
       id: 7
     })
+    expect(await (await request(app, 'GET', '/api/fonts/7/')).json()).toEqual({
+      id: 7
+    })
     expect(
       await (await request(app, 'POST', '/api/fonts/7/publish')).json()
     ).toEqual({ published: 7 })
-    const missing = await request(app, 'GET', '/api/fonts/abc')
+  })
+
+  it('answers 404 Problem Details for ids that are not numbers', async () => {
+    const app = setup([
+      { path: 'fonts', member: { 'get': () => 'row', 'post publish': () => 1 } }
+    ])
+    for (const path of ['/api/fonts/abc', '/api/fonts/1.5', '/api/fonts/x/']) {
+      const response = await request(app, 'GET', path)
+      expect(response.status).toBe(404)
+      expect(response.headers.get('Content-Type')).toBe(
+        'application/problem+json'
+      )
+    }
+    expect((await request(app, 'POST', '/api/fonts/a/publish')).status).toBe(
+      404
+    )
+  })
+
+  it('answers 404 Problem Details for unknown routes', async () => {
+    const onError = vi.fn(problemResponse)
+    const app = setup(
+      [{ path: 'fonts', collection: { get: () => [] } }],
+      { onError }
+    )
+    for (const [method, path] of [
+      ['GET', '/api/other'],
+      ['GET', '/fonts'],
+      ['DELETE', '/api/fonts'],
+      ['GET', '/api/fonts/count']
+    ] as const) {
+      const response = await request(app, method, path)
+      expect(response.status).toBe(404)
+      expect(response.headers.get('Content-Type')).toBe(
+        'application/problem+json'
+      )
+      expect(await response.json()).toEqual({ title: 'Not Found', status: 404 })
+    }
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('answers HEAD as GET without a body', async () => {
+    const handler = vi.fn((ctx: DitoContext) => {
+      ctx.res.headers.set('X-Total', '2')
+      return ['a', 'b']
+    })
+    const app = setup([{ path: 'fonts', collection: { get: handler } }])
+    const response = await request(app, 'HEAD', '/api/fonts')
+    expect(response.status).toBe(200)
+    expect(response.headers.get('X-Total')).toBe('2')
+    expect(response.headers.get('Content-Type')).toBe('application/json')
+    expect(await response.text()).toBe('')
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(handler.mock.calls[0]![0].req.method).toBe('HEAD')
+    const missing = await request(app, 'HEAD', '/api/other')
     expect(missing.status).toBe(404)
-    expect(missing.headers.get('Content-Type')).toBe('application/problem+json')
+    expect(await missing.text()).toBe('')
   })
 
   it('sets the action on the context', async () => {
     const app = setup([
-      { path: 'fonts', member: { 'post publish': c => c.var.action } }
+      { path: 'fonts', member: { 'post publish': ctx => ctx.action } }
     ])
     expect(
       await (await request(app, 'POST', '/api/fonts/1/publish')).json()
@@ -168,14 +228,14 @@ describe('routing', () => {
       collection: { get: () => 'list', post: () => 'created' },
       member: { get: () => 'row', patch: () => 'patched', delete: () => 'gone' }
     })
-    const feature = defineFeature({ member: { patch: (c, next) => next() } })
+    const feature = defineFeature({ member: { patch: (ctx, next) => next() } })
     const app = setup([
       withBase(
         base,
         {
           path: 'fonts',
           use: [feature],
-          collection: { get: (c, next) => next() }
+          collection: { get: (ctx, next) => next() }
         },
         { allow: 'defined' }
       ),
@@ -202,7 +262,7 @@ describe('routing', () => {
     const app = setup([
       withBase(base, {
         path: 'fonts',
-        collection: { allow: ['get'], post: (c, next) => next() },
+        collection: { allow: ['get'], post: (ctx, next) => next() },
         member: { allow: ['get'] }
       })
     ])
@@ -214,11 +274,11 @@ describe('routing', () => {
 describe('composition', () => {
   it('wraps base, feature and controller through `next`', async () => {
     const base = defineFeature({
-      member: { get: c => ({ id: c.var.memberId, from: ['base'] }) }
+      member: { get: ctx => ({ id: ctx.memberId, from: ['base'] }) }
     })
     const feature = defineFeature({
       member: {
-        get: async (c, next) => {
+        get: async (ctx, next) => {
           const row = (await next()) as { from: string[] }
           return { ...row, from: [...row.from, 'feature'] }
         }
@@ -229,7 +289,7 @@ describe('composition', () => {
         path: 'fonts',
         use: [feature],
         member: {
-          get: async (c, next) => {
+          get: async (ctx, next) => {
             const row = (await next()) as { from: string[] }
             return { ...row, from: [...row.from, 'controller'] }
           }
@@ -253,7 +313,7 @@ describe('composition', () => {
   it('takes slots from the last layer', async () => {
     const base = defineFeature({
       load: async () => 'base',
-      member: { get: c => c.var.load() }
+      member: { get: ctx => ctx.load() }
     })
     const feature = defineFeature({ load: async () => 'feature' })
     const app = setup([withBase(base, { path: 'fonts', use: [feature] })])
@@ -262,33 +322,47 @@ describe('composition', () => {
     )
   })
 
-  it('runs `around` in layer order, then the action', async () => {
+  it('runs `around` of the app, the layers and the action in order', async () => {
     const order: string[] = []
-    const around = (name: string) => async (_c: unknown, next: () => any) => {
-      order.push(`${name} in`)
-      await next()
-      order.push(`${name} out`)
-    }
+    const around =
+      (name: string): Middleware =>
+      async (_ctx, next) => {
+        order.push(`${name} in`)
+        const response = await next()
+        order.push(`${name} out`)
+        return response
+      }
     const base = defineFeature({ around: around('base') })
     const feature = defineFeature({ around: around('feature') })
-    const app = setup([
-      withBase(base, {
-        path: 'fonts',
-        use: [feature],
-        around: around('controller'),
-        collection: {
-          get: {
-            around: [around('action')],
-            handler: () => {
-              order.push('handler')
-              return []
+    const app = setup(
+      [
+        withBase(base, {
+          path: 'fonts',
+          use: [feature],
+          around: around('controller'),
+          collection: {
+            get: {
+              around: [around('action')],
+              handler: () => {
+                order.push('handler')
+                return []
+              }
             }
           }
+        })
+      ],
+      {
+        around: [around('app')],
+        getUser: async () => {
+          order.push('user')
+          return admin
         }
-      })
-    ])
+      }
+    )
     await request(app, 'GET', '/api/fonts')
     expect(order).toEqual([
+      'app in',
+      'user',
       'base in',
       'feature in',
       'controller in',
@@ -297,7 +371,8 @@ describe('composition', () => {
       'action out',
       'controller out',
       'feature out',
-      'base out'
+      'base out',
+      'app out'
     ])
   })
 
@@ -305,13 +380,45 @@ describe('composition', () => {
     const app = setup([
       {
         path: 'fonts',
-        around: async c => c.json('cached'),
+        around: async () => Response.json('cached'),
         collection: { get: () => 'fresh' }
       }
     ])
     expect(await (await request(app, 'GET', '/api/fonts')).json()).toBe(
       'cached'
     )
+  })
+
+  it('passes `locals` of `fetch()` and of `around` to the context', async () => {
+    const app = setup(
+      [
+        {
+          path: 'fonts',
+          collection: {
+            get: ctx => ({ ...ctx.locals, user: ctx.user?.id })
+          }
+        }
+      ],
+      {
+        around: async (ctx, next) => {
+          ctx.locals.session = `session of ${ctx.locals.ip}`
+          return next()
+        },
+        getUser: async ctx => ({ id: ctx.locals.session!, roles: [] })
+      }
+    )
+    const locals = { ip: '10.0.0.1' }
+    const response = await app.fetch(
+      new Request('http://localhost/api/fonts'),
+      locals
+    )
+    expect(await response.json()).toEqual({
+      ip: '10.0.0.1',
+      session: 'session of 10.0.0.1',
+      user: 'session of 10.0.0.1'
+    })
+    // Each request gets its own copy.
+    expect(locals).toEqual({ ip: '10.0.0.1' })
   })
 })
 
@@ -350,11 +457,13 @@ describe('authorize', () => {
 
   it('calls a function with the context', async () => {
     const app = setup(
-      [controller({ authorize: c => c.req.header('X-Key') === 'yes' })],
+      [
+        controller({ authorize: ctx => ctx.req.headers.get('X-Key') === 'yes' })
+      ],
       { user: null }
     )
     expect((await request(app, 'GET', '/api/fonts')).status).toBe(401)
-    const response = await app.request('/api/fonts', {
+    const response = await request(app, 'GET', '/api/fonts', undefined, {
       headers: { 'X-Key': 'yes' }
     })
     expect(response.status).toBe(200)
@@ -365,7 +474,7 @@ describe('authorize', () => {
       [
         controller({
           authorize: ['admin', '$owner'],
-          owner: async c => String(c.var.memberId),
+          owner: async ctx => String(ctx.memberId),
           member: { get: () => 'row' }
         })
       ],
@@ -406,16 +515,15 @@ describe('validation', () => {
             body: z.object({
               sets: z.array(z.object({ name: z.string() }))
             }),
-            handler: c => {
-              expectTypeOf(c.req.valid('query')).toEqualTypeOf<{
+            handler: async ctx => {
+              expectTypeOf(ctx.query).toEqualTypeOf<{
                 draft: 'yes' | 'no'
               }>()
-              expectTypeOf(c.req.valid('json').sets).toEqualTypeOf<
-                { name: string }[]
-              >()
+              const body = await ctx.body()
+              expectTypeOf(body.sets).toEqualTypeOf<{ name: string }[]>()
               return {
-                draft: c.req.valid('query').draft,
-                names: c.req.valid('json').sets.map(set => set.name)
+                draft: ctx.query.draft,
+                names: body.sets.map(set => set.name)
               }
             }
           })
@@ -431,8 +539,13 @@ describe('validation', () => {
       sets: []
     })
     expect(query.status).toBe(400)
-    expect((await query.json()).errors).toEqual({
-      '/draft': [{ message: expect.any(String), keyword: 'invalid_value' }]
+    expect(await query.json()).toEqual({
+      title: 'Validation Failed',
+      status: 400,
+      detail: 'The query is not valid.',
+      errors: {
+        '/draft': [{ message: expect.any(String), code: 'invalid_value' }]
+      }
     })
 
     const body = await request(app, 'PATCH', '/api/fonts/1?draft=no', {
@@ -445,80 +558,50 @@ describe('validation', () => {
       status: 400,
       detail: 'The body is not valid.',
       errors: {
-        '/sets/1/name': [
-          { message: expect.any(String), keyword: 'invalid_type' }
-        ]
+        '/sets/1/name': [{ message: expect.any(String), code: 'invalid_type' }]
       }
     })
   })
 
-  it(`answers in Dito 6's shape with \`errors: 'dito'\``, async () => {
-    const app = setup(
-      [
-        {
-          path: 'fonts',
-          member: {
-            patch: action({
-              query: z.object({ draft: z.enum(['yes', 'no']).optional() }),
-              body: z.object({
-                sets: z.array(z.object({ name: z.string() }))
-              }),
-              handler: () => 'ok'
-            })
-          }
+  it('passes arrays of repeated parameters to the query schema', async () => {
+    const app = setup([
+      {
+        path: 'fonts',
+        collection: {
+          'get': action({
+            query: z.object({
+              tag: z.array(z.string()),
+              page: z.string().optional()
+            }),
+            handler: ctx => ctx.query
+          }),
+          'get plain': ctx => ctx.query
         }
-      ],
-      { errors: 'dito' }
-    )
-    const body = await request(app, 'PATCH', '/api/fonts/1', {
-      sets: [{ name: 'Regular' }, { name: 8 }]
-    })
-    expect(body.status).toBe(400)
-    expect(await body.json()).toEqual({
-      title: 'Bad Request',
-      status: 400,
-      type: 'ParameterValidation',
-      message: 'The provided action parameters are not valid',
-      detail: 'The provided action parameters are not valid',
-      errors: {
-        'sets/1/name': [
-          { message: expect.any(String), keyword: 'invalid_type' }
-        ]
       }
-    })
-    const query = await request(app, 'PATCH', '/api/fonts/1?draft=maybe', {
-      sets: []
-    })
-    expect((await query.json()).errors).toEqual({
-      draft: [{ message: expect.any(String), keyword: 'invalid_value' }]
-    })
+    ])
+    expect(
+      await (await request(app, 'GET', '/api/fonts?tag=a&tag=b&page=2')).json()
+    ).toEqual({ tag: ['a', 'b'], page: '2' })
+    expect(
+      await (await request(app, 'GET', '/api/fonts/plain?tag=a&tag=b')).json()
+    ).toEqual({ tag: 'a' })
   })
 
-  it('creates validation errors in both formats', () => {
+  it('creates validation errors keyed by JSON Pointer', () => {
     const issues = [
       { message: 'is taken', path: ['sets', { key: 8 }, 'name'] },
       { message: 'is empty', path: [], code: 'too_small' }
     ]
-    expect(toDitoErrors(issues)).toEqual({
-      'sets/8/name': [{ message: 'is taken' }],
-      '': [{ message: 'is empty', keyword: 'too_small' }]
-    })
-    expect(
-      createValidationError('model', issues, { format: 'dito' }).toProblem()
-    ).toMatchObject({
-      status: 400,
-      type: 'ModelValidation',
-      message: 'The provided data is not valid'
-    })
-    expect(createValidationError('model', issues).toProblem()).toEqual({
+    expect(createValidationError(issues).toProblem()).toEqual({
       title: 'Validation Failed',
       status: 400,
       detail: 'The data is not valid.',
       errors: {
         '/sets/8/name': [{ message: 'is taken' }],
-        '': [{ message: 'is empty', keyword: 'too_small' }]
+        '': [{ message: 'is empty', code: 'too_small' }]
       }
     })
+    expect(toJsonPointer(['a/b', 'c~d', 0])).toBe('/a~1b/c~0d/0')
   })
 
   it('parses the body once, as the same value each time', async () => {
@@ -526,12 +609,12 @@ describe('validation', () => {
       {
         path: 'fonts',
         collection: {
-          post: async c => {
-            const body = await c.var.body()
+          post: async ctx => {
+            const body = await ctx.body()
             body.changed = true
-            return { same: body === (await c.var.body()), body }
+            return { same: body === (await ctx.body()), body }
           },
-          get: async c => ({ body: (await c.var.body()) ?? null })
+          get: async ctx => ({ body: (await ctx.body()) ?? null })
         }
       }
     ])
@@ -545,8 +628,7 @@ describe('validation', () => {
     expect(await (await request(app, 'GET', '/api/fonts')).json()).toEqual({
       body: null
     })
-    const invalid = await app.request('/api/fonts', {
-      method: 'POST',
+    const invalid = await request(app, 'POST', '/api/fonts', undefined, {
       body: '{"name":',
       headers: { 'Content-Type': 'application/json' }
     })
@@ -565,9 +647,9 @@ describe('validation', () => {
         collection: {
           post: action({
             body: z.object({ name: z.string().trim() }),
-            handler: async c => {
-              const body = await c.var.body()
-              return { same: body === c.req.valid('json'), body }
+            handler: async ctx => {
+              const body = await ctx.body()
+              return { same: body === (await ctx.body()), body }
             }
           })
         }
@@ -593,14 +675,14 @@ describe('transactions', () => {
       [
         {
           path: 'fonts',
-          around: async (c, next) => {
-            log.push(`around ${c.var.trx ?? 'none'}`)
-            await next()
+          around: async (ctx, next) => {
+            log.push(`around ${ctx.trx ?? 'none'}`)
+            return next()
           },
           collection: {
-            'get': c => c.var.trx ?? null,
-            'post': c => c.var.trx,
-            'get fresh': { transacted: true, handler: c => c.var.trx },
+            'get': ctx => ctx.trx ?? null,
+            'post': ctx => ctx.trx,
+            'get fresh': { transacted: true, handler: ctx => ctx.trx },
             'post log': { transacted: false, handler: () => null }
           }
         }
@@ -628,10 +710,14 @@ describe('transactions', () => {
       [
         {
           path: 'fonts',
-          // Plain Hono middleware sees the error in `c.error` after `next()`.
-          around: async (c, next) => {
-            await next()
-            log.push(`around ${c.error?.message}`)
+          // Middleware sees the error of what it wraps in plain try/catch.
+          around: async (_ctx, next) => {
+            try {
+              return await next()
+            } catch (error) {
+              log.push(`around ${(error as Error).message}`)
+              throw error
+            }
           },
           collection: {
             post: () => {
@@ -652,20 +738,46 @@ describe('transactions', () => {
     })
   })
 
-  it('sets `c.var.db` from `connect`, and to the transaction in one', async () => {
-    const log: string[] = []
-    const transaction: Transaction = async (c, fn) => {
-      c.set('trx', 'trx')
-      const result = await fn()
-      log.push(`after ${c.var.db}`)
-      return result
-    }
-    const connect = vi.fn(c => `db ${c.req.method}`)
+  it('rolls back when the chain throws after the handler', async () => {
+    const { transaction, log } = createTransaction()
     const app = setup(
       [
         {
           path: 'fonts',
-          collection: { get: c => c.var.db, post: c => c.var.db }
+          around: async (_ctx, next) => {
+            await next()
+            log.push('around throws')
+            throw new HttpError(409, { detail: 'Stale' })
+          },
+          collection: {
+            post: () => {
+              log.push('handler')
+              return {}
+            }
+          }
+        }
+      ],
+      { transaction }
+    )
+    const response = await request(app, 'POST', '/api/fonts')
+    expect(log).toEqual(['begin', 'handler', 'around throws', 'rollback'])
+    expect(response.status).toBe(409)
+  })
+
+  it('sets `ctx.db` from `connect`, and to the transaction in one', async () => {
+    const log: string[] = []
+    const transaction: Transaction = async (ctx, fn) => {
+      ctx.trx = 'trx'
+      const result = await fn()
+      log.push(`after ${ctx.db}`)
+      return result
+    }
+    const connect = vi.fn((ctx: DitoContext) => `db ${ctx.req.method}`)
+    const app = setup(
+      [
+        {
+          path: 'fonts',
+          collection: { get: ctx => ctx.db, post: ctx => ctx.db }
         }
       ],
       { transaction, connect }
@@ -678,20 +790,20 @@ describe('transactions', () => {
     expect(connect).toHaveBeenCalledTimes(2)
   })
 
-  it('runs the middleware of a parent app first', async () => {
-    const parent = new Hono<DitoEnv>()
-    parent.use(async (c, next) => {
-      c.set('trx', 'em')
-      await next()
-    })
-    parent.route(
-      '/',
-      setup([{ path: 'fonts', collection: { get: c => c.var.trx } }], {
-        getUser: async c => ({ id: String(c.var.trx), roles: [] })
-      })
+  it('runs the `around` of the app before `connect` and `getUser`', async () => {
+    const app = setup(
+      [{ path: 'fonts', collection: { get: ctx => [ctx.db, ctx.user?.id] } }],
+      {
+        around: async (ctx, next) => {
+          ctx.locals.session = 'em'
+          return next()
+        },
+        connect: ctx => `db ${ctx.locals.session}`,
+        getUser: async ctx => ({ id: String(ctx.locals.session), roles: [] })
+      }
     )
-    const response = await parent.request('/api/fonts')
-    expect(await response.json()).toBe('em')
+    const response = await request(app, 'GET', '/api/fonts')
+    expect(await response.json()).toEqual(['db em', 'em'])
   })
 })
 
@@ -702,11 +814,11 @@ describe('mounting', () => {
     const fonts: ControllerDefinition = {
       path: 'fonts',
       collection: { get: () => ['a'] },
-      member: { get: c => ({ id: c.var.memberId }) }
+      member: { get: ctx => ({ id: ctx.memberId }) }
     }
     const users: ControllerDefinition = {
       path: 'users',
-      collection: { get: c => c.var.user }
+      collection: { get: ctx => ctx.user }
     }
     const imports = { fonts: 0, users: 0 }
     const lazy = (
@@ -714,25 +826,32 @@ describe('mounting', () => {
       controller: ControllerDefinition
     ) => {
       let app: ReturnType<typeof setup> | undefined
-      return async (c: { req: { raw: Request } }) => {
+      return (req: Request) => {
         if (!app) {
           imports[name]++
           app = setup([controller])
         }
-        return app.fetch(c.req.raw)
+        return app.fetch(req)
       }
     }
-    const host = new Hono()
-    host.all('/api/fonts/*', lazy('fonts', fonts))
-    host.all('/api/users/*', lazy('users', users))
+    const routes = {
+      fonts: lazy('fonts', fonts),
+      users: lazy('users', users)
+    }
+    const host = (req: Request) => {
+      const [, name] = new URL(req.url).pathname.match(/^\/api\/(\w+)/) ?? []
+      const route = routes[name as keyof typeof routes]
+      return route ? route(req) : new Response(null, { status: 404 })
+    }
     const together = setup([fonts, users])
     expect(imports).toEqual({ fonts: 0, users: 0 })
     for (const path of [
       '/api/fonts', '/api/fonts/3', '/api/users', '/api/fonts/x'
     ]) {
+      const url = `http://localhost${path}`
       const [a, b] = await Promise.all([
-        host.request(path),
-        together.request(path)
+        host(new Request(url)),
+        together.fetch(new Request(url))
       ])
       expect([a.status, await a.text()]).toEqual([b.status, await b.text()])
     }
@@ -742,15 +861,15 @@ describe('mounting', () => {
 
 describe('load', () => {
   it('calls the `load` slot once per request', async () => {
-    const load = vi.fn(async (_c, id: number) => ({ id }))
+    const load = vi.fn(async (_ctx: DitoContext, id: number) => ({ id }))
     const app = setup([
       {
         path: 'fonts',
         load,
         member: {
-          get: async c => {
-            const [one, two] = await Promise.all([c.var.load(), c.var.load()])
-            return { same: one === two, row: await c.var.load() }
+          get: async ctx => {
+            const [one, two] = await Promise.all([ctx.load(), ctx.load()])
+            return { same: one === two, row: await ctx.load() }
           }
         }
       }
@@ -769,7 +888,7 @@ describe('load', () => {
       {
         path: 'fonts',
         load: async () => null,
-        member: { get: c => c.var.load() }
+        member: { get: ctx => ctx.load() }
       }
     ])
     const response = await request(app, 'GET', '/api/fonts/5')
@@ -788,7 +907,7 @@ describe('results', () => {
 
   const rows = defineFeature({
     isRow: value => value instanceof Row,
-    toJSON: (_c, row) => ({ id: (row as Row).id, json: true })
+    toJSON: (_ctx, row) => ({ id: (row as Row).id, json: true })
   })
 
   it('sends a Response unchanged and undefined as 204', async () => {
@@ -796,7 +915,7 @@ describe('results', () => {
       {
         path: 'fonts',
         collection: {
-          'get text': c => c.text('plain'),
+          'get text': () => new Response('plain'),
           'post': () => undefined
         }
       }
@@ -809,9 +928,95 @@ describe('results', () => {
     expect(await empty.text()).toBe('')
   })
 
+  it('uses the status and headers of `ctx.res` for data', async () => {
+    const app = setup([
+      {
+        path: 'fonts',
+        collection: {
+          'post': ctx => {
+            ctx.res.status = 202
+            ctx.res.headers.set('Location', '/api/fonts/1')
+            return { id: 1 }
+          },
+          'post empty': ctx => {
+            ctx.res.status = 205
+            ctx.res.headers.set('X-Done', 'yes')
+          },
+          'get': () => ({})
+        }
+      }
+    ])
+    const accepted = await request(app, 'POST', '/api/fonts')
+    expect(accepted.status).toBe(202)
+    expect(accepted.headers.get('Location')).toBe('/api/fonts/1')
+    expect(accepted.headers.get('Content-Type')).toBe('application/json')
+    expect(await accepted.json()).toEqual({ id: 1 })
+    const empty = await request(app, 'POST', '/api/fonts/empty')
+    expect(empty.status).toBe(205)
+    expect(empty.headers.get('X-Done')).toBe('yes')
+    expect((await request(app, 'GET', '/api/fonts')).status).toBe(200)
+  })
+
+  it('adds the headers of `ctx.res` to returned Responses', async () => {
+    const app = setup(
+      [
+        {
+          path: 'fonts',
+          collection: {
+            get: ctx => {
+              ctx.res.headers.set('Cache-Control', 'no-store')
+              ctx.res.headers.set('X-Extra', 'extra')
+              ctx.res.headers.append('Set-Cookie', 'b=2')
+              return new Response('text', {
+                headers: {
+                  'Cache-Control': 'max-age=60',
+                  'Set-Cookie': 'a=1'
+                }
+              })
+            }
+          }
+        }
+      ],
+      {
+        // Middleware sets a cookie on `ctx.res` and returns the response.
+        around: async (ctx, next) => {
+          ctx.res.headers.append('Set-Cookie', 'session=s')
+          return next()
+        }
+      }
+    )
+    const response = await request(app, 'GET', '/api/fonts')
+    expect(response.headers.get('Cache-Control')).toBe('max-age=60')
+    expect(response.headers.get('X-Extra')).toBe('extra')
+    expect(response.headers.getSetCookie()).toEqual([
+      'a=1',
+      'session=s',
+      'b=2'
+    ])
+    expect(await response.text()).toBe('text')
+  })
+
+  it('adds the headers of `ctx.res` to the responses of `around`', async () => {
+    const app = setup([
+      {
+        path: 'fonts',
+        around: async ctx => {
+          ctx.res.headers.append('Set-Cookie', 'a=1')
+          // A redirect has immutable headers, as a fetched response does.
+          return Response.redirect('http://localhost/signin', 302)
+        },
+        collection: { get: () => 'fresh' }
+      }
+    ])
+    const response = await request(app, 'GET', '/api/fonts')
+    expect(response.status).toBe(302)
+    expect(response.headers.get('Location')).toBe('http://localhost/signin')
+    expect(response.headers.getSetCookie()).toEqual(['a=1'])
+  })
+
   it('runs `finish` once on every result, before `toJSON`', async () => {
     const order: string[] = []
-    const finish = vi.fn((c, result: unknown) => {
+    const finish = vi.fn((_ctx: DitoContext, result: unknown) => {
       order.push('finish')
       if (result === 'replace') return new Row(9)
     })
@@ -820,7 +1025,7 @@ describe('results', () => {
         { ...rows, finish },
         {
           path: 'fonts',
-          serialize: (_c, _row, json) => {
+          serialize: (_ctx, _row, json) => {
             order.push('serialize')
             return json
           },
@@ -849,13 +1054,14 @@ describe('results', () => {
       [
         {
           path: 'fonts',
-          around: async (_c, next) => {
+          around: async (_ctx, next) => {
             log.push('around in')
-            await next()
+            const response = await next()
             log.push('around out')
+            return response
           },
-          finish: c => {
-            log.push(`finish ${c.var.trx}`)
+          finish: ctx => {
+            log.push(`finish ${ctx.trx}`)
           },
           collection: { post: () => ({}) }
         }
@@ -874,13 +1080,13 @@ describe('results', () => {
 
   it('serializes rows through `toJSON` and the `serialize` chain', async () => {
     const feature = defineFeature({
-      serialize: (_c, row, json) => ({ ...json, feature: row.id })
+      serialize: (_ctx, row, json) => ({ ...json, feature: row.id })
     })
     const app = setup([
       withBase(rows, {
         path: 'fonts',
         use: [feature],
-        serialize: async (_c, _row, json) => ({ ...json, controller: true }),
+        serialize: async (_ctx, _row, json) => ({ ...json, controller: true }),
         collection: {
           'get': () => [new Row(1), 'other'],
           'get page': () => ({ results: [new Row(2)], total: 9 }),
@@ -917,37 +1123,45 @@ describe('errors', () => {
       path: 'fonts',
       collection: {
         'get problem': () => {
-          throw new ProblemError({
-            status: 409,
+          throw new HttpError(409, {
             detail: 'The name is taken.',
-            errors: { '/name': [{ message: 'Taken' }] }
+            errors: { '/name': [{ message: 'Taken' }] },
+            name: 'Uni'
           })
         },
-        'get http': () => {
-          throw new HTTPException(418, { message: 'Teapot' })
+        'get teapot': () => {
+          throw new HttpError(418, {
+            title: 'Teapot',
+            type: 'https://example.com/teapot'
+          })
         },
         'get crash': () => {
           throw new Error('Secret internals')
+        },
+        'get response': () => {
+          throw new Response('Sign in', { status: 401 })
         }
       }
     }
   ])
 
-  it('answers ProblemError and HTTPException as Problem Details', async () => {
-    expect(
-      await (await request(app, 'GET', '/api/fonts/problem')).json()
-    ).toEqual({
+  it('answers an HttpError as Problem Details', async () => {
+    const problem = await request(app, 'GET', '/api/fonts/problem')
+    expect(problem.status).toBe(409)
+    expect(problem.headers.get('Content-Type')).toBe('application/problem+json')
+    expect(await problem.json()).toEqual({
       title: 'Conflict',
       status: 409,
       detail: 'The name is taken.',
-      errors: { '/name': [{ message: 'Taken' }] }
+      errors: { '/name': [{ message: 'Taken' }] },
+      name: 'Uni'
     })
-    const http = await request(app, 'GET', '/api/fonts/http')
-    expect(http.status).toBe(418)
-    expect(await http.json()).toEqual({
-      title: 'Client Error',
-      status: 418,
-      detail: 'Teapot'
+    const teapot = await request(app, 'GET', '/api/fonts/teapot')
+    expect(teapot.status).toBe(418)
+    expect(await teapot.json()).toEqual({
+      type: 'https://example.com/teapot',
+      title: 'Teapot',
+      status: 418
     })
   })
 
@@ -969,21 +1183,84 @@ describe('errors', () => {
     error.mockRestore()
   })
 
-  it('sends the response of an HTTPException unchanged', async () => {
+  it('sends a thrown Response as it is', async () => {
+    const response = await request(app, 'GET', '/api/fonts/response')
+    expect(response.status).toBe(401)
+    expect(await response.text()).toBe('Sign in')
+  })
+
+  it('answers with `problemResponse()` without `onError`', async () => {
+    const app = createApp({
+      controllers: [
+        {
+          path: 'fonts',
+          collection: {
+            'get': () => {
+              throw new RangeError('Too wide')
+            },
+            'get response': () => {
+              throw new Response('Sign in', { status: 401 })
+            }
+          }
+        }
+      ]
+    })
+    const response = await app.fetch(new Request('http://localhost/fonts'))
+    expect(response.status).toBe(500)
+    expect(response.headers.get('Content-Type')).toBe(
+      'application/problem+json'
+    )
+    const thrown = await app.fetch(
+      new Request('http://localhost/fonts/response')
+    )
+    expect(await thrown.text()).toBe('Sign in')
+  })
+
+  it('passes the error and the context to `onError`', async () => {
+    const error = new Error('Broken')
+    const onError = vi.fn(
+      (_error: unknown, ctx: DitoContext) =>
+        new Response(`${ctx.action.name} of ${ctx.memberId}`, { status: 503 })
+    )
+    const app = setup(
+      [
+        {
+          path: 'fonts',
+          member: {
+            'post publish': () => {
+              throw error
+            }
+          }
+        }
+      ],
+      { onError }
+    )
+    const response = await request(app, 'POST', '/api/fonts/4/publish')
+    expect(response.status).toBe(503)
+    expect(await response.text()).toBe('post publish of 4')
+    expect(onError).toHaveBeenCalledTimes(1)
+    expect(onError.mock.calls[0]![0]).toBe(error)
+    expect(onError.mock.calls[0]![1].req.url).toBe(
+      'http://localhost/api/fonts/4/publish'
+    )
+  })
+
+  it('keeps the cookies on error responses, but not other headers', async () => {
     const app = setup([
       {
         path: 'fonts',
         collection: {
-          get: () => {
-            throw new HTTPException(401, {
-              res: new Response('Sign in', { status: 401 })
-            })
+          get: ctx => {
+            ctx.res.headers.append('Set-Cookie', 'session=1')
+            ctx.res.headers.set('Cache-Control', 'public')
+            throw new HttpError(409)
           }
         }
       }
     ])
     const response = await request(app, 'GET', '/api/fonts')
-    expect(response.status).toBe(401)
-    expect(await response.text()).toBe('Sign in')
+    expect(response.status).toBe(409)
+    expect(response.headers.getSetCookie()).toEqual(['session=1'])
+    expect(response.headers.has('Cache-Control')).toBe(false)
   })
 })
