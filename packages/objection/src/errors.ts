@@ -1,10 +1,14 @@
-import { HttpError, toJsonPointer, type Problem } from '@ditojs/server-next'
+import {
+  HttpError,
+  toJsonPointer,
+  type HttpErrorBody
+} from '@ditojs/server-next'
 import { DatabaseError, ResponseError } from '@ditojs/server'
 import { asArray, isPlainObject, isString } from '@ditojs/utils'
 import { DBError, NotFoundError, wrapError } from 'objection'
 
 // Maps Dito 6's and Objection's errors to an `HttpError`, and other errors to
-// undefined, for the `onError` of `createApp()`. The problem has the status
+// undefined, for the `onError` of `createApp()`. The error has the status
 // and the message as `detail`. Validation errors carry `errors` by JSON
 // Pointer, with Dito 6's `keyword` as `code`. Errors that aren't exposed to
 // the client answer their status only. The original error is the `cause`.
@@ -14,11 +18,11 @@ type DitoErrors = Record<
   { message: string; keyword?: string; params?: Record<string, unknown> }[]
 >
 
-export function toProblem(error: unknown): HttpError | undefined {
+export function toHttpError(error: unknown): HttpError | undefined {
   // Objection wraps the errors of the database drivers that knex throws.
   const dbError = error instanceof Error ? wrapError(error) : undefined
   if (dbError instanceof DBError) {
-    return toProblem(
+    return toHttpError(
       new DatabaseError(dbError, { message: getMessage(dbError) })
     )
   }
@@ -28,7 +32,7 @@ export function toProblem(error: unknown): HttpError | undefined {
   if (!(error instanceof ResponseError)) return undefined
   const { status = 500 } = error
   if (!(error.expose ?? true)) return new HttpError(status, { cause: error })
-  const errors = toProblemErrors(error.data?.errors)
+  const errors = toFieldErrors(error.data?.errors)
   return new HttpError(status, {
     ...(errors && { title: 'Validation Failed' }),
     detail: error.message,
@@ -39,9 +43,9 @@ export function toProblem(error: unknown): HttpError | undefined {
 
 // Dito 6 keys errors by data path, such as `sets/8/name`, and reports a
 // missing property on the object that lacks it.
-function toProblemErrors(errors: unknown) {
+function toFieldErrors(errors: unknown) {
   if (!isPlainObject(errors)) return undefined
-  const result: NonNullable<Problem['errors']> = {}
+  const result: NonNullable<HttpErrorBody['errors']> = {}
   for (const [path, items] of Object.entries(errors as DitoErrors)) {
     for (const { message, keyword, params } of asArray(items)) {
       const segments = path ? path.split('/') : []

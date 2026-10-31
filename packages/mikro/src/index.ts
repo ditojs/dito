@@ -8,7 +8,7 @@
 //     getUser,
 //     onError(error) {
 //       log(error)
-//       return problemResponse(toProblem(error) ?? error)
+//       return errorResponse(toHttpError(error) ?? error)
 //     }
 //   })
 
@@ -28,4 +28,8 @@ export {
   mikroTransaction,
   requestContext
 } from './transaction.ts'
-export { createValidationError, toProblem, type FieldError } from './errors.ts'
+export {
+  createValidationError,
+  toHttpError,
+  type FieldError
+} from './errors.ts'

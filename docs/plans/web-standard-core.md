@@ -15,7 +15,7 @@ const api = createApp({
   connect,                              // ctx.db of a request
   transaction,                          // runs the writes
   getUser,                              // ctx.user
-  onError                               // error → Response, problemResponse by default
+  onError                               // error → Response, errorResponse by default
 })
 
 host.all('/api/admin/*', c => api.fetch(c.req.raw, { ip: getIp(c) }))
@@ -56,7 +56,7 @@ transactions roll back by throwing.
 - One format, RFC 9457 Problem Details. Validation errors carry `errors` keyed
   by JSON Pointer, such as `/sets/8/name`. Dito 6's format is gone, and the
   admin reads Problem Details.
-- ORM packages export `toProblem(error)` for their errors, which an app's
+- ORM packages export `toHttpError(error)` for their errors, which an app's
   `onError` chains.
 
 ## Packages

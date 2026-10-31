@@ -170,7 +170,7 @@ export type Transaction = <T>(
 
 // RFC 9457. `errors` holds validation errors by JSON Pointer, such as
 // `/sets/8/name`. Other members are extension members.
-export interface Problem {
+export interface HttpErrorBody {
   [member: string]: unknown
   type?: string
   title: string
@@ -192,7 +192,7 @@ export interface AppConfig {
   connect?: (ctx: DitoContext) => unknown
   // The signed-in user of the request, or null.
   getUser?: (ctx: DitoContext) => User | null | Promise<User | null>
-  // Turns an error into its response, `problemResponse()` by default. The app
+  // Turns an error into its response, `errorResponse()` by default. The app
   // logs errors here.
   onError?: (error: unknown, ctx: DitoContext) => Response | Promise<Response>
 }

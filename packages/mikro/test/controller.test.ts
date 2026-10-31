@@ -6,7 +6,7 @@ import type { Kysely } from 'kysely'
 import {
   HttpError,
   createApp,
-  problemResponse,
+  errorResponse,
   type App,
   type ControllerDefinition
 } from '@ditojs/server-next'
@@ -18,7 +18,7 @@ import {
   getEntityManager,
   mikroConnect,
   mikroTransaction,
-  toProblem,
+  toHttpError,
   type MikroControllerDefinition
 } from '../src/index.ts'
 import { createTestDatabase } from './database.ts'
@@ -36,7 +36,7 @@ function setup(...controllers: ControllerDefinition[]) {
     transaction: mikroTransaction(orm),
     connect: mikroConnect(orm),
     getUser: async () => null,
-    onError: error => problemResponse(toProblem(error) ?? error)
+    onError: error => errorResponse(toHttpError(error) ?? error)
   })
 }
 

@@ -9,7 +9,7 @@
 //     getUser,
 //     onError: (error, ctx) => {
 //       log(error)
-//       return problemResponse(toProblem(error) ?? error)
+//       return errorResponse(toHttpError(error) ?? error)
 //     }
 //   })
 
@@ -24,5 +24,5 @@ export {
   objectionTransaction,
   requestStorage
 } from './transaction.ts'
-export { toProblem } from './errors.ts'
+export { toHttpError } from './errors.ts'
 export { objectionKysely } from './kysely.ts'

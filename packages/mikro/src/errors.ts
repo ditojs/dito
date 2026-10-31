@@ -28,7 +28,7 @@ export function createValidationError(fieldErrors: readonly FieldError[]) {
 // Maps MikroORM's errors to an `HttpError`, and other errors to undefined,
 // for the app's `onError`. Violations describe the request's data. Other
 // database errors are internal and answer a bare 500.
-export function toProblem(error: unknown) {
+export function toHttpError(error: unknown) {
   if (error instanceof NotFoundError) {
     return new HttpError(404, { cause: error })
   }

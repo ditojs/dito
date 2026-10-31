@@ -12,7 +12,7 @@ import {
   type ResolvedAction,
   type ResolvedController
 } from './compose.ts'
-import { HttpError, createValidationError, problemResponse } from './errors.ts'
+import { HttpError, createValidationError, errorResponse } from './errors.ts'
 import type {
   App,
   AppConfig,
@@ -46,7 +46,7 @@ export function createApp(config: AppConfig): App {
     transaction,
     connect,
     getUser,
-    onError = problemResponse
+    onError = errorResponse
   } = config
   const router = createRouter<Route>()
 
@@ -103,7 +103,7 @@ export function createApp(config: AppConfig): App {
     )
     const params = match?.params ?? {}
     if (!match || ('id' in params && !/^\d+$/.test(params.id!))) {
-      return problemResponse(new HttpError(404))
+      return errorResponse(new HttpError(404))
     }
     const { controller, action, chain } = match.data
     const ctx = createContext(req, url, params, locals, controller, action)

@@ -11,10 +11,9 @@ export {
   HttpError,
   createValidationError,
   getStatusTitle,
-  problemResponse,
+  errorResponse,
   toJsonPointer,
-  toProblem,
-  toProblemErrors,
+  toFieldErrors,
   type HttpErrorOptions,
   type ValidationIssue
 } from './errors.ts'

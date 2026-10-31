@@ -10,7 +10,7 @@ import { z } from 'zod'
 import {
   action,
   createApp,
-  problemResponse,
+  errorResponse,
   type ControllerDefinition
 } from '@ditojs/server-next'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
@@ -19,7 +19,7 @@ import {
   objectionConnect,
   objectionTransaction,
   requestStorage,
-  toProblem
+  toHttpError
 } from '../src/index.ts'
 
 class Author extends Model {
@@ -91,7 +91,7 @@ function setup(...controllers: ControllerDefinition[]) {
     transaction: objectionTransaction(dito),
     connect: objectionConnect(dito),
     getUser: async () => null,
-    onError: error => problemResponse(toProblem(error) ?? error)
+    onError: error => errorResponse(toHttpError(error) ?? error)
   })
   return {
     request: (path: string, init?: RequestInit) =>

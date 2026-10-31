@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { isObject, isString } from '@ditojs/utils'
-import type { Problem } from './types.ts'
+import type { HttpErrorBody } from './types.ts'
 
 // Errors become RFC 9457 Problem Details. An `HttpError` is meant for the
 // client, which gets its detail and members. Other errors answer a bare 500.
@@ -33,11 +33,11 @@ export function getStatusTitle(status: number) {
 export interface HttpErrorOptions {
   title?: string
   detail?: string
-  errors?: Problem['errors']
+  errors?: HttpErrorBody['errors']
   type?: string
   // The error that caused this one, for the app's logs.
   cause?: unknown
-  // Extension members of the problem.
+  // Extension members of the body.
   [member: string]: unknown
 }
 
@@ -45,7 +45,7 @@ export class HttpError extends Error {
   status: number
   title: string
   detail: string | undefined
-  errors: Problem['errors']
+  errors: HttpErrorBody['errors']
   type: string | undefined
   members: Record<string, unknown>
 
@@ -64,7 +64,7 @@ export class HttpError extends Error {
     this.members = members
   }
 
-  toProblem(): Problem {
+  toJSON(): HttpErrorBody {
     const { type, title, status, detail, errors } = this
     return { ...this.members, type, title, status, detail, errors }
   }
@@ -83,13 +83,13 @@ export function createValidationError(
   return new HttpError(400, {
     title: 'Validation Failed',
     detail,
-    errors: toProblemErrors(issues)
+    errors: toFieldErrors(issues)
   })
 }
 
-// The `errors` of a problem, keyed by JSON Pointer.
-export function toProblemErrors(issues: readonly ValidationIssue[]) {
-  const errors: NonNullable<Problem['errors']> = {}
+// The errors of the fields, keyed by JSON Pointer.
+export function toFieldErrors(issues: readonly ValidationIssue[]) {
+  const errors: NonNullable<HttpErrorBody['errors']> = {}
   for (const { message, path, code } of issues) {
     ;(errors[toJsonPointer(path)] ??= []).push({
       message,
@@ -111,19 +111,16 @@ export function toJsonPointer(
     .join('')
 }
 
-export function toProblem(error: unknown): Problem {
-  return error instanceof HttpError
-    ? error.toProblem()
-    : { title: getStatusTitle(500), status: 500 }
-}
-
-// The Problem Details response of an error. A `Response` that was thrown is
-// sent as it is.
-export function problemResponse(error: unknown) {
+// The response of an error, as RFC 9457 Problem Details. A `Response` that
+// was thrown is sent as it is.
+export function errorResponse(error: unknown) {
   if (error instanceof Response) return error
-  const problem = toProblem(error)
-  return Response.json(problem, {
-    status: problem.status,
+  const body: HttpErrorBody =
+    error instanceof HttpError
+      ? error.toJSON()
+      : { title: getStatusTitle(500), status: 500 }
+  return Response.json(body, {
+    status: body.status,
     headers: { 'Content-Type': 'application/problem+json' }
   })
 }

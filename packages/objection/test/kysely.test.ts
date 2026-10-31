@@ -3,7 +3,7 @@ import {
   createApp,
   defineController,
   HttpError,
-  problemResponse,
+  errorResponse,
   type DitoContext
 } from '@ditojs/server-next'
 import { insertAsset } from '@ditojs/storage'
@@ -11,7 +11,7 @@ import {
   objectionKysely,
   objectionTransaction,
   requestStorage,
-  toProblem
+  toHttpError
 } from '../src/index.ts'
 
 const dito = new Application({
@@ -47,7 +47,7 @@ function run(fn: (ctx: DitoContext) => Promise<unknown>, fail = false) {
     around: requestStorage(dito),
     transaction: objectionTransaction(dito),
     getUser: async () => null,
-    onError: error => problemResponse(toProblem(error) ?? error)
+    onError: error => errorResponse(toHttpError(error) ?? error)
   })
   return api.fetch(new Request('http://localhost/notes', { method: 'POST' }))
 }

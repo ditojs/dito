@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import { HttpError, toProblemErrors, type ListQuery } from '@ditojs/server-next'
+import { HttpError, toFieldErrors, type ListQuery } from '@ditojs/server-next'
 import {
   ReferenceKind,
   type EntityClass,
@@ -104,7 +104,7 @@ function applyFilter<T extends object>(
     throw new HttpError(400, {
       title: 'Validation Failed',
       detail: `Invalid arguments for filter '${name}'`,
-      errors: toProblemErrors(
+      errors: toFieldErrors(
         parsed.error!.issues.map(issue => ({
           ...issue,
           path: [name, ...issue.path]

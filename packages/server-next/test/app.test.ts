@@ -6,7 +6,7 @@ import {
   defineController,
   defineFeature,
   HttpError,
-  problemResponse,
+  errorResponse,
   toJsonPointer,
   withBase,
   type AppConfig,
@@ -37,7 +37,7 @@ function setup(
     getUser: async () => user,
     // The handler an app sets. `RangeError` stands for an error of the app.
     onError: error =>
-      problemResponse(
+      errorResponse(
         error instanceof RangeError
           ? new HttpError(422, { title: 'Out of Range', detail: error.message })
           : error
@@ -136,7 +136,7 @@ describe('routing', () => {
   })
 
   it('answers 404 Problem Details for unknown routes', async () => {
-    const onError = vi.fn(problemResponse)
+    const onError = vi.fn(errorResponse)
     const app = setup(
       [{ path: 'fonts', collection: { get: () => [] } }],
       { onError }
@@ -592,7 +592,7 @@ describe('validation', () => {
       { message: 'is taken', path: ['sets', { key: 8 }, 'name'] },
       { message: 'is empty', path: [], code: 'too_small' }
     ]
-    expect(createValidationError(issues).toProblem()).toEqual({
+    expect(createValidationError(issues).toJSON()).toEqual({
       title: 'Validation Failed',
       status: 400,
       detail: 'The data is not valid.',
@@ -1189,7 +1189,7 @@ describe('errors', () => {
     expect(await response.text()).toBe('Sign in')
   })
 
-  it('answers with `problemResponse()` without `onError`', async () => {
+  it('answers with `errorResponse()` without `onError`', async () => {
     const app = createApp({
       controllers: [
         {

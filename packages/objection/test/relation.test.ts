@@ -1,7 +1,7 @@
 import { Application, Model, type ModelProperties } from '@ditojs/server'
 import {
   createApp,
-  problemResponse,
+  errorResponse,
   type ControllerDefinition,
   type DitoContext
 } from '@ditojs/server-next'
@@ -11,7 +11,7 @@ import {
   objectionConnect,
   objectionTransaction,
   requestStorage,
-  toProblem,
+  toHttpError,
   withRelations
 } from '../src/index.ts'
 
@@ -106,7 +106,7 @@ function setup(...controllers: ControllerDefinition[]) {
       const roles = ctx.req.headers.get('x-roles')
       return roles === null ? null : { id: 1, roles: roles.split(',') }
     },
-    onError: error => problemResponse(toProblem(error) ?? error)
+    onError: error => errorResponse(toHttpError(error) ?? error)
   })
   return {
     request: (path: string, init?: RequestInit) =>
