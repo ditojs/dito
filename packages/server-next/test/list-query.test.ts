@@ -1,4 +1,5 @@
-import { createApp, parseListQuery } from '../src/index.ts'
+import { createApp } from '../src/index.ts'
+import { parseListQuery } from '../src/base.ts'
 
 const app = createApp({
   controllers: [{ path: 'fonts', collection: { get: parseListQuery } }],

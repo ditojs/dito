@@ -8,7 +8,6 @@ import {
   HttpError,
   errorResponse,
   toJsonPointer,
-  withBase,
   type AppConfig,
   type ControllerDefinition,
   type DitoContext,
@@ -16,6 +15,7 @@ import {
   type Transaction,
   type User
 } from '../src/index.ts'
+import { withBase } from '../src/base.ts'
 
 declare module '../src/index.ts' {
   interface DitoLocals {

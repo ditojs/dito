@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely'
 import { TOTP } from 'otpauth'
-import { totp } from '../src/index.ts'
+import { totp } from '../src/totp.ts'
 import {
   createClient,
   createDatabase,

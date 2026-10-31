@@ -1,5 +1,6 @@
 import type { z } from 'zod'
-import { HttpError, toFieldErrors, type ListQuery } from '@ditojs/server-next'
+import { HttpError, toFieldErrors } from '@ditojs/server-next'
+import type { ListQuery } from '@ditojs/server-next/base'
 import {
   ReferenceKind,
   type EntityClass,

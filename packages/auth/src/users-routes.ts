@@ -37,6 +37,7 @@ export interface UsersRoutesOptions<U> {
   // Needed for passkeys and TOTP.
   credentials?: Credentials
   features?: {
+    // From `@ditojs/auth/passkeys` and `@ditojs/auth/totp`.
     passkeys?: Passkeys
     totp?: Totp
     passwordReset?: PasswordReset

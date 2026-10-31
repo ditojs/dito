@@ -1,9 +1,30 @@
-export * from './types.ts'
+export type {
+  ActionDefinition,
+  ActionInfo,
+  ActionKey,
+  ActionParams,
+  ActionValue,
+  Actions,
+  App,
+  AppConfig,
+  Authorize,
+  ControllerDefinition,
+  DitoContext,
+  DitoLocals,
+  FeatureDefinition,
+  Handler,
+  HttpErrorBody,
+  Middleware,
+  ResponseInit,
+  Transaction,
+  TypedActions,
+  User,
+  Verb
+} from './types.ts'
 export {
   defineController,
   defineFeature,
   action,
-  withBase,
   type Typed
 } from './define.ts'
 export { createApp, isAuthorized } from './app.ts'
@@ -17,4 +38,3 @@ export {
   type HttpErrorOptions,
   type ValidationIssue
 } from './errors.ts'
-export { parseListQuery } from './list-query.ts'

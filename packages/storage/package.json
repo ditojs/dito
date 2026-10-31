@@ -5,6 +5,7 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./s3": "./src/s3-storage.ts",
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -54,6 +55,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./s3": {
+        "types": "./dist/s3-storage.d.ts",
+        "import": "./dist/s3-storage.js"
       },
       "./package.json": "./package.json"
     },

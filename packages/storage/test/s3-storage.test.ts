@@ -1,11 +1,7 @@
 import { PassThrough, Readable } from 'node:stream'
 import awsLite from '@aws-lite/client'
-import {
-  AssetFile,
-  S3Storage,
-  type S3StorageOptions,
-  type UploadOptions
-} from '../src/index.ts'
+import { AssetFile, type UploadOptions } from '../src/index.ts'
+import { S3Storage, type S3StorageOptions } from '../src/s3-storage.ts'
 
 const { testing } = awsLite
 const MB = 1024 * 1024

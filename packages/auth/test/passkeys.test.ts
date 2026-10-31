@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely'
 import * as webAuthn from '@simplewebauthn/server'
-import { passkeys } from '../src/index.ts'
+import { passkeys } from '../src/passkeys.ts'
 import {
   createClient,
   createDatabase,

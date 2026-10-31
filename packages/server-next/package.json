@@ -5,6 +5,7 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./base": "./src/base.ts",
     "./zod": "./src/zod.ts",
     "./package.json": "./package.json"
   },
@@ -32,6 +33,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./base": {
+        "types": "./dist/base.d.ts",
+        "import": "./dist/base.js"
       },
       "./zod": {
         "types": "./dist/zod.d.ts",

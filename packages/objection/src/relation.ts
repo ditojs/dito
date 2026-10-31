@@ -1,13 +1,13 @@
 import {
   HttpError,
   isAuthorized,
-  withBase,
   type Authorize,
   type ControllerDefinition,
   type DitoContext,
   type FeatureDefinition,
   type Middleware
 } from '@ditojs/server-next'
+import { withBase } from '@ditojs/server-next/base'
 import { asArray, hyphenate, isArray } from '@ditojs/utils'
 import { ValidationError } from '@ditojs/server'
 import {

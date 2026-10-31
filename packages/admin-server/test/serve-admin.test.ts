@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { defineAdminViteConfig, serveAdmin } from '../src/index.ts'
+import { serveAdmin } from '../src/index.ts'
+import { defineAdminViteConfig } from '../src/vite.ts'
 
 const api = { url: '/api/admin/', users: { path: 'admins' } }
 const authentication = {

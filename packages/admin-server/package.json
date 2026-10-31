@@ -5,6 +5,7 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./vite": "./src/vite.ts",
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -45,6 +46,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./vite": {
+        "types": "./dist/vite.d.ts",
+        "import": "./dist/vite.js"
       },
       "./package.json": "./package.json"
     },

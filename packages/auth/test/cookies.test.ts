@@ -1,6 +1,7 @@
 import Cookies from 'cookies'
 import Keygrip from 'keygrip'
-import { createKeygrip, koaCookies } from '../src/index.ts'
+import { createKeygrip } from '../src/index.ts'
+import { koaCookies } from '../src/koa.ts'
 
 // Writes cookies with the `cookies` package, as Koa does, and returns the
 // `Cookie` header that a browser sends back.

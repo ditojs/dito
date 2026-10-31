@@ -8,8 +8,9 @@ import { isString } from '@ditojs/utils'
 import { Storage, type StorageOptions, type UploadInfo } from './storage.ts'
 import type { AssetFileObject, FileData } from './asset-file.ts'
 
-// Stores files as objects in an S3 bucket, under their keys. The aws-lite
-// client is an optional peer, imported when the storage first needs it.
+// Stores files as objects in an S3 bucket, under their keys. Apps import it
+// from `@ditojs/storage/s3`. The aws-lite client is an optional peer, imported
+// when the storage first needs it.
 
 export interface S3StorageOptions extends StorageOptions {
   bucket: string

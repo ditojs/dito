@@ -1,12 +1,11 @@
 import {
-  parseListQuery,
   HttpError,
-  withBase,
   type ControllerDefinition,
   type DitoContext,
   type FeatureDefinition,
   type Typed
 } from '@ditojs/server-next'
+import { parseListQuery, withBase } from '@ditojs/server-next/base'
 import { isArray, isPlainObject } from '@ditojs/utils'
 import {
   Reference,

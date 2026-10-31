@@ -5,6 +5,9 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./koa": "./src/koa.ts",
+    "./passkeys": "./src/passkeys.ts",
+    "./totp": "./src/totp.ts",
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -58,6 +61,18 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./koa": {
+        "types": "./dist/koa.d.ts",
+        "import": "./dist/koa.js"
+      },
+      "./passkeys": {
+        "types": "./dist/passkeys.d.ts",
+        "import": "./dist/passkeys.js"
+      },
+      "./totp": {
+        "types": "./dist/totp.d.ts",
+        "import": "./dist/totp.js"
       },
       "./package.json": "./package.json"
     },

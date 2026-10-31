@@ -6,11 +6,11 @@ import {
   createSessionStore,
   createSessions,
   hashPassword,
-  koaCookies,
   usersRoutes,
   type UserSource,
   type UsersRoutesOptions
 } from '../src/index.ts'
+import { koaCookies } from '../src/koa.ts'
 
 export const keys = ['secret sauce']
 

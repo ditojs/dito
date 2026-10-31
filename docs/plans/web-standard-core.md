@@ -108,7 +108,8 @@ ids that don't fit it.
 | `range=0,49`         | rows 0 to 49, inclusive; the answer is `{ results, total }`              |
 | `fields=id,name,a.b` | sparse fieldsets: only these fields, which the controller must allow     |
 
-`parseListQuery(ctx)` parses them for ORM packages. Zod helpers for query
+`parseListQuery(ctx)` parses them for ORM packages, which import it and
+`withBase()` from `@ditojs/server-next/base`. Zod helpers for query
 values, such as `q.boolean()`, are in `@ditojs/server-next/zod`. The core
 itself depends on Standard Schema only.
 
@@ -128,7 +129,11 @@ itself depends on Standard Schema only.
 
 - `auth`: sessions are middleware for `createApp({ middleware })`, the user
   routes are a controller, and cookies are read from and set on headers.
+  Passkeys, TOTP and Koa's signed cookies load from `@ditojs/auth/passkeys`,
+  `@ditojs/auth/totp` and `@ditojs/auth/koa`.
 - `storage`: uploads read `ctx.req.formData()`, which the core leaves unread.
 - `admin-server`: `serveAdmin()` returns `{ fetch, close }`. In development it
-  starts Vite's own server and passes requests to it.
+  starts Vite's own server and passes requests to it, loaded from
+  `@ditojs/admin-server/vite` on demand. Apps import `defineAdminViteConfig()`
+  from there too.
 - `objection`, `mikro`: model controllers on `ctx`.

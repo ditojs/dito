@@ -1,11 +1,11 @@
 import {
   HttpError,
-  withBase,
   type ControllerDefinition,
   type DitoContext,
   type FeatureDefinition,
   type Typed
 } from '@ditojs/server-next'
+import { withBase } from '@ditojs/server-next/base'
 import { asArray, isArray, isObject } from '@ditojs/utils'
 import {
   ValidationError,

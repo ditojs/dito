@@ -2,12 +2,13 @@ import path from 'node:path'
 import { isPlainObject } from '@ditojs/utils'
 import type { Storage } from './storage.ts'
 import { DiskStorage, type DiskStorageOptions } from './disk-storage.ts'
-import { S3Storage, type S3StorageOptions } from './s3-storage.ts'
+import type { S3StorageOptions } from './s3-storage.ts'
 
 // The storages of an app by name. `createStorages()` builds them from plain
-// definitions, such as the `storages` of an app's config. The functions of
-// this package that look up storages by name take a registry or a plain
-// object of storages.
+// definitions, such as the `storages` of an app's config. It imports
+// `@ditojs/storage/s3` only for definitions of type `s3`, so apps without S3
+// storages never load it. The functions of this package that look up storages
+// by name take a registry or a plain object of storages.
 
 type Definition<T> = Omit<T, 'name' | 'secret'> & {
   secret?: string | Buffer
@@ -65,22 +66,24 @@ export class StorageRegistry implements Iterable<[string, Storage]> {
 
 export type Storages = StorageRegistry | Record<string, Storage>
 
-export function createStorages(
+export async function createStorages(
   definitions: Record<string, StorageDefinition>,
   { secret, basePath = process.cwd() }: CreateStoragesOptions = {}
 ) {
   return new StorageRegistry(
-    Object.entries(definitions).map(([name, definition]) =>
-      createStorage(name, definition, { secret, basePath })
+    await Promise.all(
+      Object.entries(definitions).map(([name, definition]) =>
+        createStorage(name, definition, { secret, basePath })
+      )
     )
   )
 }
 
-function createStorage(
+async function createStorage(
   name: string,
   { type, ...options }: StorageDefinition,
   { secret, basePath }: CreateStoragesOptions & { basePath: string }
-): Storage {
+): Promise<Storage> {
   const common = { secret, ...options, name }
   switch (type) {
     case 'disk': {
@@ -91,8 +94,10 @@ function createStorage(
         path: folder && path.resolve(basePath, folder)
       })
     }
-    case 's3':
+    case 's3': {
+      const { S3Storage } = await import('./s3-storage.ts')
       return new S3Storage(common as S3StorageOptions)
+    }
     default:
       throw new Error(`Unknown type '${type}' of storage '${name}'`)
   }

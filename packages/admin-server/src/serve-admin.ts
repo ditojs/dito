@@ -2,14 +2,13 @@ import path from 'node:path'
 import type { InlineConfig } from 'vite'
 import { normalizeBase } from './base.ts'
 import { notFound, serveFiles } from './serve-files.ts'
-import { defineAdminViteConfig } from './vite-config.ts'
-import { startVite } from './vite-server.ts'
 
 // Serves the Dito admin under `base`: the built files from `dist` in
 // production, and the sources in `root` through Vite's dev server in
-// development. Both modes send the `dito` object to the browser as `dito.js`.
-// `fetch()` takes requests with `base` in their paths and answers 404 to
-// others, so the app passes it `base` and everything below.
+// development. Only development imports `./vite.ts`, and with it Vite. Both
+// modes send the `dito` object to the browser as `dito.js`. `fetch()` takes
+// requests with `base` in their paths and answers 404 to others, so the app
+// passes it `base` and everything below.
 
 export interface AdminOptions {
   // The path the admin is served at, such as `/admin`.
@@ -28,9 +27,9 @@ export interface AdminOptions {
   // Whether the request may load the admin's views. Denied requests get 401.
   authorize?: (request: Request) => boolean | Promise<boolean>
   // The Vite config in development, by default `defineAdminViteConfig()` of
-  // `root` and `base`. Vite listens on its `server.host`, by default
-  // `127.0.0.1`, and its `server.port`, by default a free one. The browser
-  // opens the HMR websocket there.
+  // `root` and `base`, from `@ditojs/admin-server/vite`. Vite listens on its
+  // `server.host`, by default `127.0.0.1`, and its `server.port`, by default a
+  // free one. The browser opens the HMR websocket there.
   vite?: InlineConfig
 }
 
@@ -58,22 +57,24 @@ export function serveAdmin(options: AdminOptions): AdminServer {
     if (!options.root) {
       throw new Error('serveAdmin() needs `root` in development mode.')
     }
-    const vite = startVite(
-      options.vite
-        ? Promise.resolve(options.vite)
-        : defineAdminViteConfig({
-            root: options.root,
-            base,
-            mode: 'development'
-          })
+    const { root, vite: viteConfig } = options
+    const vite = import('./vite.ts').then(
+      ({ startVite, defineAdminViteConfig }) =>
+        startVite(
+          viteConfig
+            ? Promise.resolve(viteConfig)
+            : defineAdminViteConfig({ root, base, mode: 'development' })
+        )
     )
+    // A failed import reaches the requests through `await vite`.
+    vite.catch(() => {})
     // Vite only serves `base` with its trailing slash.
-    handle = (request, pathname) =>
-      vite.fetch(
-        request,
-        pathname === base ? `${base}/` : pathname
-      )
-    close = vite.close
+    handle = async (request, pathname) =>
+      (await vite).fetch(request, pathname === base ? `${base}/` : pathname)
+    close = async () => {
+      const server = await vite.catch(() => null)
+      await server?.close()
+    }
   } else {
     if (!options.dist) {
       throw new Error('serveAdmin() needs `dist` in production mode.')
