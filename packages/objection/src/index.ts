@@ -3,7 +3,7 @@
 //
 //   const api = createApp({
 //     controllers: withRelations(controllers),
-//     around: requestStorage(dito),
+//     middleware: requestStorage(dito),
 //     transaction: objectionTransaction(dito),
 //     connect: objectionConnect(dito),
 //     getUser,

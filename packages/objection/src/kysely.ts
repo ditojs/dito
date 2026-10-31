@@ -29,7 +29,7 @@ const coldDialects = new Map([
 export function objectionKysely(app: Application) {
   const databases = new WeakMap<Knex, Kysely<any>>()
   return (ctx?: DitoContext): Kysely<any> => {
-    const knex = ((ctx?.db ?? ctx?.trx) as Knex | undefined) ?? app.knex
+    const knex = (ctx?.db as Knex | undefined) ?? app.knex
     let db = databases.get(knex)
     if (!db) {
       db = createKysely(knex)

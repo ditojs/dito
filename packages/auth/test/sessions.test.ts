@@ -371,12 +371,11 @@ describe('sessions', () => {
     // Through `getUser` of `createApp()`:
     const apps = [admins, customers].map(source =>
       createApp({
-        around: admin.sessions.middleware,
+        middleware: admin.sessions.middleware,
         getUser: sessionUser(source),
         controllers: [
           defineController({
             path: 'me',
-            authorize: true,
             collection: { get: ctx => ctx.user }
           })
         ]

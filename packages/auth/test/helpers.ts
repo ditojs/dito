@@ -115,7 +115,7 @@ export function setup({
   })
   const app = createApp({
     controllers: [users.controller],
-    around: sessions.middleware
+    middleware: sessions.middleware
   })
   return { app, sessions, credentials, users }
 }

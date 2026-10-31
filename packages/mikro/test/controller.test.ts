@@ -31,7 +31,7 @@ afterAll(drop)
 // Sets up an app with the parts that an app wires in.
 function setup(...controllers: ControllerDefinition[]) {
   return createApp({
-    base: '/api',
+    prefix: '/api',
     controllers,
     transaction: mikroTransaction(orm),
     connect: mikroConnect(orm),
@@ -92,7 +92,7 @@ function families(overrides: Partial<MikroControllerDefinition<Family>> = {}) {
         }
       },
       published: {
-        args: z.tuple([z.boolean().default(true)]).or(z.tuple([])),
+        args: z.tuple([z.stringbool()]).or(z.tuple([])),
         apply: (qb, published = true) => qb.andWhere({ published })
       }
     },
@@ -128,8 +128,8 @@ function families(overrides: Partial<MikroControllerDefinition<Family>> = {}) {
       // The `updatedAt` the client loaded. A newer one in the database
       // answers 409.
       async 'patch'(ctx, next) {
-        const family = await ctx.load<Family>()
-        const { updatedAt } = await ctx.body()
+        const family = await ctx.member<Family>()
+        const { updatedAt } = ctx.body
         if (updatedAt && +new Date(updatedAt) !== +family.updatedAt) {
           throw new HttpError(409, {
             detail: 'A more recent version exists in the database.'
@@ -139,7 +139,7 @@ function families(overrides: Partial<MikroControllerDefinition<Family>> = {}) {
       },
 
       async 'post publish'(ctx) {
-        const family = await ctx.load<Family>()
+        const family = await ctx.member<Family>()
         if (family.sets.length === 0) {
           throw createValidationError([
             { path: ['sets'], message: 'has no sets' }
@@ -149,7 +149,9 @@ function families(overrides: Partial<MikroControllerDefinition<Family>> = {}) {
         return family
       }
     },
-    ...overrides
+    // The overrides replace the definitions above. The cast keeps their types
+    // out of the inferred action keys.
+    ...(overrides as object)
   })
 }
 
@@ -208,17 +210,23 @@ describe('collection get', () => {
     expect(json[1].designers.map((it: any) => it.name)).toEqual(['Ada', 'Bea'])
   })
 
-  it('applies `filter=name:args`, `filter[name]=value` and `scope`', async () => {
-    const dito6 = await request(
+  it('applies `filter[name]=value`, repeated for several arguments', async () => {
+    const one = await request(app, 'GET', '/api/families?filter[name]=ir')
+    const two = await request(
       app,
       'GET',
-      `/api/families?filter=${encodeURIComponent('name:"contains","ir"')}`
+      '/api/families?filter[name]=equals&filter[name]=Akkurat'
     )
-    const next = await request(app, 'GET', '/api/families?filter[name]=ir')
-    const scope = await request(app, 'GET', '/api/families?scope=published')
-    expect(names(dito6.json)).toEqual(['Circular'])
-    expect(names(next.json)).toEqual(['Circular'])
-    expect(names(scope.json)).toEqual(['Akkurat', 'Circular'])
+    const none = await request(app, 'GET', '/api/families?filter[published]=')
+    const unpublished = await request(
+      app,
+      'GET',
+      '/api/families?filter[published]=false'
+    )
+    expect(names(one.json)).toEqual(['Circular'])
+    expect(names(two.json)).toEqual(['Akkurat'])
+    expect(names(none.json)).toEqual(['Akkurat', 'Circular'])
+    expect(names(unpublished.json)).toEqual(['Brown'])
   })
 
   it('applies `order`', async () => {
@@ -242,7 +250,7 @@ describe('collection get', () => {
     const invalid = await request(
       app,
       'GET',
-      `/api/families?filter=${encodeURIComponent('published:"yes"')}`
+      '/api/families?filter[published]=maybe'
     )
     const order = await request(app, 'GET', '/api/families?order=secret')
     const relation = await request(app, 'GET', '/api/families?order=sets')
@@ -306,6 +314,13 @@ describe('member get', () => {
     const { status, json } = await request(app, 'GET', '/api/families/9')
     expect(status).toBe(404)
     expect(json).toMatchObject({ status: 404, title: 'Not Found' })
+  })
+
+  it('answers 404 for ids that are no valid primary key', async () => {
+    for (const id of ['abc', '1.5', '1e3', '99999999999999999999']) {
+      const { status } = await request(app, 'GET', `/api/families/${id}`)
+      expect(status).toBe(404)
+    }
   })
 })
 
@@ -565,7 +580,7 @@ describe('writes', () => {
   })
 
   it('flushes writes without a transaction, also for results that are no rows', async () => {
-    const app = setup(families({ transacted: false }))
+    const app = setup(families({ transaction: false }))
     const { status, json } = await request(app, 'DELETE', '/api/families/3')
     expect(status).toBe(200)
     expect(json).toEqual({ count: 1 })
@@ -633,14 +648,14 @@ describe('wrapping the default verbs', () => {
     expect(json).not.toHaveProperty('awards')
   })
 
-  it('loads the member once through `ctx.load()`', async () => {
+  it('loads the member once through `ctx.member()`', async () => {
     const loaded: unknown[] = []
     const app = setup(
       families({
         member: {
           allow: ['patch'],
           async patch(ctx, next) {
-            loaded.push(await ctx.load())
+            loaded.push(await ctx.member())
             const family = await next()
             loaded.push(family)
             return family
@@ -756,7 +771,7 @@ describe('assets', () => {
   const setupAssets = () =>
     setup(
       families({
-        use: [
+        features: [
           assets(
             [
               {

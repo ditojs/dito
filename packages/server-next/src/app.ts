@@ -19,18 +19,17 @@ import type {
   Authorize,
   DitoContext,
   DitoLocals,
-  Middleware,
-  Slots,
-  Transaction
+  Middleware
 } from './types.ts'
 
 // Builds the `fetch()` of the controllers. A request runs one chain of
-// middleware: the app's `around`, then Dito sets the database handle and the
-// user, authorizes and validates, opens the transaction for writes, and runs
-// the `around` of the controller and the action. The handler runs last. The
-// `finish` slot and `toJSON` run after it, inside the transaction and the
-// `around` middleware, which see the response that they make. Errors are
-// thrown through the chain and become responses in `onError`.
+// middleware: the app's `middleware`, then Dito sets the database handle and
+// the user, authorizes, reads and validates the query and the body, opens the
+// transaction for writes, and runs the `middleware` of the controller and the
+// action. The handler runs last. The `onResult` slot and `serialize` run
+// after it, inside the transaction and the middleware, which see the response
+// that they make. Errors are thrown through the chain and become responses in
+// `onError`.
 
 interface Route {
   controller: ResolvedController
@@ -40,9 +39,9 @@ interface Route {
 
 export function createApp(config: AppConfig): App {
   const {
-    base = '',
+    prefix = '',
     controllers,
-    around,
+    middleware,
     transaction,
     connect,
     getUser,
@@ -53,23 +52,22 @@ export function createApp(config: AppConfig): App {
   for (const definition of controllers) {
     const controller = resolveController(definition)
     for (const action of controller.actions) {
-      const path = `${base}/${controller.path}${action.route}`.replace(
+      const path = `${prefix}/${controller.path}${action.route}`.replace(
         /\/+$/,
         ''
       )
       const chain: Middleware[] = [
-        ...asArray(around),
+        ...asArray(middleware),
         setup,
-        authorize(action.authorize, controller.slots)
+        authorize(action.authorize),
+        readInput(action)
       ]
-      if (action.query) chain.push(validateQuery(action.query))
-      if (action.body) chain.push(validateBody(action.body))
-      const transacted =
+      const inTransaction =
         action.info.verb === 'get'
-          ? action.transacted === true
-          : action.transacted !== false
-      if (transaction && transacted) chain.push(transact(transaction))
-      chain.push(...action.around)
+          ? action.transaction === true
+          : action.transaction !== false
+      if (transaction && inTransaction) chain.push(transaction)
+      chain.push(...action.middleware)
       addRoute(router, action.info.verb.toUpperCase(), path || '/', {
         controller,
         action,
@@ -101,10 +99,8 @@ export function createApp(config: AppConfig): App {
       method,
       url.pathname.replace(/(.)\/+$/, '$1')
     )
-    const params = match?.params ?? {}
-    if (!match || ('id' in params && !/^\d+$/.test(params.id!))) {
-      return errorResponse(new HttpError(404))
-    }
+    if (!match) return errorResponse(new HttpError(404))
+    const params = match.params ?? {}
     const { controller, action, chain } = match.data
     const ctx = createContext(req, url, params, locals, controller, action)
     try {
@@ -132,21 +128,19 @@ function createContext(
   controller: ResolvedController,
   action: ResolvedAction
 ): DitoContext {
-  const memberId = action.info.on === 'member' ? Number(params.id) : undefined
+  const id = action.info.on === 'member' ? params.id : undefined
   let member: Promise<unknown> | undefined
-  let body: Promise<unknown> | undefined
   const ctx: DitoContext = {
     req,
     url,
     params,
     query: getQuery(url, true) as Record<string, string>,
-    body: () => (body ??= parseBody(req)) as never,
+    body: undefined,
     res: { status: undefined, headers: new Headers() },
     user: null,
-    memberId,
-    load: () => (member ??= load(ctx, controller, memberId)) as never,
+    id,
+    member: () => (member ??= load(ctx, controller, id)) as never,
     db: undefined,
-    trx: undefined,
     action: action.info,
     locals: { ...locals } as DitoLocals
   }
@@ -179,10 +173,10 @@ function getQuery(url: URL, first: boolean) {
 async function load(
   ctx: DitoContext,
   controller: ResolvedController,
-  id: number | undefined
+  id: string | undefined
 ) {
   if (id === undefined) {
-    throw new Error(`load() needs a member route in '${controller.path}'`)
+    throw new Error(`member() needs a member route in '${controller.path}'`)
   }
   if (!controller.slots.load) {
     throw new Error(`'${controller.path}' has no \`load\` slot`)
@@ -192,7 +186,10 @@ async function load(
   return member
 }
 
+// Reads a JSON body. Bodies of other types stay unread for the handler.
 async function parseBody(req: Request) {
+  const type = req.headers.get('Content-Type')
+  if (type && !/^application\/([\w.-]+\+)?json\b/.test(type)) return undefined
   const text = await req.text()
   if (!text) return ['GET', 'HEAD'].includes(req.method) ? undefined : {}
   try {
@@ -202,34 +199,24 @@ async function parseBody(req: Request) {
   }
 }
 
-function authorize(value: Authorize | undefined, slots: Slots): Middleware {
+function authorize(value: Authorize | undefined): Middleware {
   return async (ctx, next) => {
-    if (!(await isAuthorized(ctx, value, slots))) {
+    if (!(await isAuthorized(ctx, value))) {
       throw new HttpError(ctx.user ? 403 : 401)
     }
     return next()
   }
 }
 
-async function isAuthorized(
+// Whether the user has any of the roles, or the function grants access.
+export async function isAuthorized(
   ctx: DitoContext,
-  value: Authorize | undefined,
-  slots: Slots
+  value: Authorize | undefined
 ) {
-  if (value === undefined || value === true) return true
-  if (value === false) return false
+  if (value === undefined) return true
   if (isFunction(value)) return !!(await value(ctx))
   const { user } = ctx
-  if (!user) return false
-  const roles = asArray(value)
-  if (roles.some(role => user.roles.includes(role))) return true
-  if (!roles.includes('$owner')) return false
-  if (!slots.owner) {
-    throw new Error(`'${ctx.action.controller}' has no \`owner\` slot`)
-  }
-  const owner = await slots.owner(ctx)
-  // Ids from the database may be strings, such as Postgres' bigints.
-  return owner != null && String(owner) === String(user.id)
+  return !!user && asArray(value).some(role => user.roles.includes(role))
 }
 
 async function validate(
@@ -242,42 +229,22 @@ async function validate(
   return result.value
 }
 
-function validateQuery(schema: StandardSchemaV1): Middleware {
+// Sets `ctx.query` and `ctx.body`, validated with the action's schemas.
+function readInput({ query, body }: ResolvedAction): Middleware {
   return async (ctx, next) => {
-    ctx.query = (await validate(
-      schema,
-      getQuery(ctx.url, false),
-      'The query is not valid.'
-    )) as Record<string, string>
+    if (query) {
+      ctx.query = (await validate(
+        query,
+        getQuery(ctx.url, false),
+        'The query is not valid.'
+      )) as Record<string, string>
+    }
+    ctx.body = await parseBody(ctx.req)
+    if (body) {
+      ctx.body = await validate(body, ctx.body, 'The body is not valid.')
+    }
     return next()
   }
-}
-
-function validateBody(schema: StandardSchemaV1): Middleware {
-  return async (ctx, next) => {
-    const body = await validate(
-      schema,
-      await ctx.body(),
-      'The body is not valid.'
-    )
-    ctx.body = async () => body as never
-    return next()
-  }
-}
-
-// During the transaction, `ctx.db` is its handle, and the request's handle
-// after it. An error that the chain throws rolls it back.
-function transact(transaction: Transaction): Middleware {
-  return (ctx, next) =>
-    transaction(ctx, async () => {
-      const { db } = ctx
-      ctx.db = ctx.trx ?? db
-      try {
-        return await next()
-      } finally {
-        ctx.db = db
-      }
-    })
 }
 
 async function respond(
@@ -286,9 +253,9 @@ async function respond(
   action: ResolvedAction
 ) {
   let result = await action.run(ctx)
-  const { finish } = controller.slots
-  if (finish) {
-    const replacement = await finish(ctx, result)
+  const { onResult } = controller.slots
+  if (onResult) {
+    const replacement = await onResult(ctx, result)
     if (replacement !== undefined) result = replacement
   }
   if (result instanceof Response) return result
@@ -323,11 +290,11 @@ async function toJson(
   controller: ResolvedController,
   value: unknown
 ) {
-  const { isRow, toJSON } = controller.slots
-  if (!isRow) return value
+  const { isRecord } = controller.slots
+  if (!isRecord) return value
   const convert = async (item: unknown) => {
-    if (!isRow(item)) return item
-    let json = toJSON ? await toJSON(ctx, item) : item
+    if (!isRecord(item)) return item
+    let json = item
     for (const serialize of controller.serialize) {
       json = await serialize(ctx, item, json)
     }

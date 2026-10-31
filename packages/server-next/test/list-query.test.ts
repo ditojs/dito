@@ -30,14 +30,20 @@ describe('parseListQuery()', () => {
     ])
   })
 
-  it("parses Dito 6's `filter=name:args` and `scope=name`", async () => {
+  it('gives a repeated filter several arguments in order', async () => {
     const { json } = await parse(
-      `filter=${encodeURIComponent('range:1,"b",{"c":true}')}&scope=published`
+      'filter[range]=1&filter[text]=a&filter[range]=9'
     )
     expect(json.filters).toEqual([
-      { name: 'range', args: [1, 'b', { c: true }] },
-      { name: 'published', args: [] }
+      { name: 'range', args: ['1', '9'] },
+      { name: 'text', args: ['a'] }
     ])
+  })
+
+  it("ignores Dito 6's `filter=name:args` and `scope=name`", async () => {
+    const { status, json } = await parse('filter=range:1,2&scope=published')
+    expect(status).toBe(200)
+    expect(json.filters).toEqual([])
   })
 
   it('parses order, range and fields', async () => {
@@ -55,10 +61,7 @@ describe('parseListQuery()', () => {
   })
 
   it.each([
-    'filter=nocolon',
-    'filter=name:{bad',
     'filter[a-b]=1',
-    'scope=a b',
     'order=name%20up',
     'order=a;drop',
     'range=5,1',

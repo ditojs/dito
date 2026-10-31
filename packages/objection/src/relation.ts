@@ -1,5 +1,6 @@
 import {
   HttpError,
+  isAuthorized,
   withBase,
   type Authorize,
   type ControllerDefinition,
@@ -7,13 +8,15 @@ import {
   type FeatureDefinition,
   type Middleware
 } from '@ditojs/server-next'
-import { asArray, hyphenate, isArray, isFunction } from '@ditojs/utils'
+import { asArray, hyphenate, isArray } from '@ditojs/utils'
 import { ValidationError } from '@ditojs/server'
 import {
   createBase,
   getKnex,
   hasIds,
   setupQuery,
+  toId,
+  validateId,
   type Execute,
   type ExecuteGraph,
   type ModelClass,
@@ -25,7 +28,7 @@ import { findLast, getAuthorize, getLayers } from './layers.ts'
 // Dito 6's `RelationController`: a controller of the rows of one relation of
 // a parent controller's member, at `<parent>/:parentId/<path>`. Its queries
 // start from the parent row, fetched without scopes, through
-// `$relatedQuery()`. It inherits the parent's `graph`, `transacted` and graph
+// `$relatedQuery()`. It inherits the parent's `graph`, `transaction` and graph
 // scopes (`^name`). Relations that aren't owners relate and unrelate rows
 // instead of inserting and deleting them. One-to-one relations have no
 // member routes. Every action needs the parent member's `get` authorization,
@@ -44,8 +47,8 @@ export interface ParentOptions {
   path: string
   scope?: string | string[]
   graph: boolean
-  transacted?: boolean
-  // The layers of the parent, for its `authorize`, `load` and `owner`.
+  transaction?: boolean
+  // The layers of the parent, for its `authorize` and `load`.
   base: FeatureDefinition
   definition: ControllerDefinition
 }
@@ -86,7 +89,7 @@ export function defineRelation(
     const row = await parent.model
       .query(knex)
       .ignoreScope()
-      .findById(getParentId(ctx))
+      .findById(toId(parent.model, ctx.params.parentId!))
       .throwIfNotFound()
       .select(...parentColumns)
     const query = setupQuery(row.$relatedQuery(name, knex) as Query, {
@@ -169,17 +172,12 @@ export function defineRelation(
     relateAndFetch,
     executeGraph
   })
-  base.transacted = parent.transacted
-  base.around = authorizeParent(parent, controller)
-  return withBase(
-    base,
-    { ...controller, path: `${parent.path}/:parentId(\\d+)/${path}` },
-    { allow: 'defined' }
-  )
-}
-
-function getParentId(ctx: DitoContext) {
-  return Number(ctx.params.parentId)
+  base.transaction = parent.transaction
+  base.middleware = authorizeParent(parent, controller)
+  return withBase(base, {
+    ...controller,
+    path: `${parent.path}/:parentId/${path}`
+  })
 }
 
 // Only the graph scopes of the parent apply to its relations, as in Dito 6.
@@ -188,18 +186,10 @@ function getGraphScopes(scope: string | string[] | undefined) {
   return scopes.length ? scopes : undefined
 }
 
-// Validates the id of a row and coerces it to the id's type.
-function validateId(model: ModelClass, item: unknown) {
-  // Objection's types leave out Dito 6's `getReference()`.
-  const reference = (model as any).getReference(item)
-  // eslint-disable-next-line new-cap
-  new model().$validate(reference, { coerceTypes: true, patch: true })
-  return reference.$id()
-}
-
 // Checks the parent's authorization and that the parent exists, as Dito 6's
 // `RelationController.handleAuthorization()` does. It runs after the core's
-// check of the relation's own `authorize`.
+// check of the relation's own `authorize`. The parent's `authorize`
+// functions get the parent as `ctx.id` and `ctx.member()`.
 function authorizeParent(
   parent: ParentOptions,
   definition: FeatureDefinition
@@ -209,21 +199,19 @@ function authorizeParent(
   const get = getAuthorize(parentLayers, 'member', 'get')
   const patch = getAuthorize(parentLayers, 'member', 'patch')
   const load = findLast(parentLayers.map(layer => layer.load))!
-  const owner = findLast(parentLayers.map(layer => layer.owner))
 
   return async (ctx, next) => {
     const { on, name, verb } = ctx.action
-    const parentId = getParentId(ctx)
+    const parentId = ctx.params.parentId!
     let member: Promise<unknown> | undefined
     const loadParent = () => (member ??= load(ctx, parentId)) as never
-    // The parent's `owner` slot reads the parent as the member.
     const isAuthorizedForParent = (value: Authorize | undefined) => {
-      const { memberId, load } = ctx
-      ctx.memberId = parentId
-      ctx.load = loadParent
-      return isAuthorized(ctx, value, owner, parent.path).finally(() => {
-        ctx.memberId = memberId
-        ctx.load = load
+      const { id, member } = ctx
+      ctx.id = parentId
+      ctx.member = loadParent
+      return isAuthorized(ctx, value).finally(() => {
+        ctx.id = id
+        ctx.member = member
       })
     }
     const checks = [get]
@@ -238,26 +226,4 @@ function authorizeParent(
     if ((await loadParent()) == null) throw new HttpError(404)
     return next()
   }
-}
-
-// The core's check of an `authorize` value.
-async function isAuthorized(
-  ctx: DitoContext,
-  value: Authorize | undefined,
-  owner: FeatureDefinition['owner'],
-  path: string
-) {
-  if (value === undefined || value === true) return true
-  if (value === false) return false
-  if (isFunction(value)) return !!(await value(ctx))
-  const { user } = ctx
-  if (!user) return false
-  const roles = asArray(value)
-  if (roles.some(role => user.roles.includes(role))) return true
-  if (!roles.includes('$owner')) return false
-  if (!owner) {
-    throw new Error(`'${path}' has no \`owner\` slot`)
-  }
-  const id = await owner(ctx)
-  return id != null && String(id) === String(user.id)
 }

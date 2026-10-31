@@ -1,11 +1,17 @@
 import {
+  HttpError,
   withBase,
   type ControllerDefinition,
   type DitoContext,
-  type FeatureDefinition
+  type FeatureDefinition,
+  type Typed
 } from '@ditojs/server-next'
 import { asArray, isArray, isObject } from '@ditojs/utils'
-import { ValidationError, type Model, type QueryBuilder } from '@ditojs/server'
+import {
+  ValidationError,
+  type Model,
+  type QueryBuilder
+} from '@ditojs/server'
 import type { Knex } from 'knex'
 import {
   defineRelation,
@@ -13,11 +19,13 @@ import {
 } from './relation.ts'
 
 // Dito 6's `ModelController` as a controller of the next server. Its default
-// verbs and the `load`, `toJSON` and `isRow` slots form the base layer that
-// the definition wraps through `next`. Each query starts from
+// verbs, the `load` and `isRecord` slots and the first `serialize` form the
+// base layer that the definition wraps through `next`. Each query starts from
 // `model.query(ctx.db)` with the controller's `scope`, `allowScope` and
-// `allowFilter`, as Dito 6's `execute()` and `setupQuery()` do. As in Dito 6,
-// only the verbs in `allow`, or the ones the controller defines, are routed.
+// `allowFilter`, as Dito 6's `execute()` and `setupQuery()` do. The base
+// converts the string ids of the path for the model's id properties, and
+// answers 404 for invalid ones. As in Dito 6, only the verbs in `allow`, or
+// the ones the controller defines, are routed.
 
 export type ModelClass = typeof Model
 export type Query<M extends ModelClass = ModelClass> = QueryBuilder<
@@ -87,8 +95,10 @@ const relationControllers = new WeakMap<
   ControllerDefinition[]
 >()
 
-export function defineController<M extends ModelClass>(
-  definition: ModelControllerDefinition<M>
+// Types the `ctx.params` of each action from its key, as the core's
+// `defineController()` does.
+export function defineController<M extends ModelClass, C = {}, N = {}>(
+  definition: Typed<ModelControllerDefinition<M>, C, N>
 ): ControllerDefinition {
   const {
     model,
@@ -118,7 +128,7 @@ export function defineController<M extends ModelClass>(
     graph,
     allowParam
   })
-  const result = withBase(base, controller, { allow: 'defined' })
+  const result = withBase(base, controller)
   if (relations) {
     relationControllers.set(
       result,
@@ -128,7 +138,7 @@ export function defineController<M extends ModelClass>(
           path: controller.path,
           scope,
           graph,
-          transacted: controller.transacted,
+          transaction: controller.transaction,
           base,
           definition: controller
         })
@@ -181,6 +191,7 @@ export function createBase(options: BaseOptions): FeatureDefinition {
     executeGraph = (ctx, ids, fn) => execute(ctx, fn)
   } = options
   const allowedParams = options.allowParam && asArray(options.allowParam)
+  const getId = (ctx: DitoContext) => toId(model, ctx.id!)
   const find = (ctx: DitoContext, query: Query) =>
     query.find(
       getFilteredQuery(ctx, !!ctx.action.query),
@@ -204,7 +215,7 @@ export function createBase(options: BaseOptions): FeatureDefinition {
       },
 
       async post(ctx) {
-        const body = await ctx.body()
+        const { body } = ctx
         const result = relate
           ? await relateAndFetch!(ctx, body)
           : await execute(ctx, query =>
@@ -220,7 +231,7 @@ export function createBase(options: BaseOptions): FeatureDefinition {
       },
 
       async put(ctx) {
-        const body = getCollectionBody(model, await ctx.body(), graph)
+        const body = getCollectionBody(model, ctx.body, graph)
         return graph
           ? executeGraph(ctx, getIds(model, body), query =>
               query.updateGraphAndFetch(body)
@@ -229,7 +240,7 @@ export function createBase(options: BaseOptions): FeatureDefinition {
       },
 
       async patch(ctx) {
-        const body = getCollectionBody(model, await ctx.body(), graph)
+        const body = getCollectionBody(model, ctx.body, graph)
         return graph
           ? executeGraph(ctx, getIds(model, body), query =>
               query.patchGraphAndFetch(body)
@@ -258,14 +269,15 @@ export function createBase(options: BaseOptions): FeatureDefinition {
       ? {}
       : {
           async get(ctx) {
+            const id = getId(ctx)
             return execute(ctx, query =>
-              find(ctx, query.findById(ctx.memberId!)).throwIfNotFound()
+              find(ctx, query.findById(id)).throwIfNotFound()
             )
           },
 
           async put(ctx) {
-            const body = await ctx.body()
-            const id = ctx.memberId!
+            const { body } = ctx
+            const id = getId(ctx)
             return graph
               ? executeGraph(ctx, [id], query =>
                   query.updateGraphAndFetchById(id, body).throwIfNotFound()
@@ -276,8 +288,8 @@ export function createBase(options: BaseOptions): FeatureDefinition {
           },
 
           async patch(ctx) {
-            const body = await ctx.body()
-            const id = ctx.memberId!
+            const { body } = ctx
+            const id = getId(ctx)
             return graph
               ? executeGraph(ctx, [id], query =>
                   query.patchGraphAndFetchById(id, body).throwIfNotFound()
@@ -288,21 +300,21 @@ export function createBase(options: BaseOptions): FeatureDefinition {
           },
 
           async delete(ctx) {
+            const id = getId(ctx)
             return execute(
               ctx,
-              query =>
-                remove(
-                  find(ctx, query.findById(ctx.memberId!)).throwIfNotFound()
-                ),
+              query => remove(find(ctx, query.findById(id)).throwIfNotFound()),
               false
             )
           }
         },
 
-    load: async (ctx, id) =>
-      execute(ctx, query => query.findById(id).throwIfNotFound()),
-    toJSON: (ctx, row) => (row as Model).toJSON(),
-    isRow: value => value instanceof model
+    load: async (ctx, id) => {
+      const modelId = toId(model, id)
+      return execute(ctx, query => query.findById(modelId).throwIfNotFound())
+    },
+    isRecord: value => value instanceof model,
+    serialize: (ctx, record) => (record as Model).toJSON()
   }
 
   return base
@@ -319,10 +331,12 @@ function asAllowArray(value: boolean | string | string[]) {
 }
 
 // Dito 6's `ctx.query`, which `find()` reads: a string per parameter, or an
-// array for repeated ones. `filter[name]=value` joins the list of Dito 6's
-// `filter=name:args`. `find()` has no `fields` parameter and rejects unknown
-// ones, so `fields` is left out. When the action has a `query` schema, the
-// keys of `ctx.query` are its own, and `find()` skips them, as in Dito 6.
+// array for repeated ones. `filter[name]=a&filter[name]=b` becomes
+// `filter=name:"a","b"`, and a `filter` parameter of its own answers 400.
+// `scope` goes to `find()` as it is, for Dito 6's admin. `find()` has no
+// `fields` parameter and rejects unknown ones, so `fields` is left out. When
+// the action has a `query` schema, the keys of `ctx.query` are its own, and
+// `find()` skips them, as in Dito 6.
 function getFilteredQuery(ctx: DitoContext, hasQuery: boolean) {
   const query: QueryValues = {}
   const filters: string[] = []
@@ -334,16 +348,18 @@ function getFilteredQuery(ctx: DitoContext, hasQuery: boolean) {
     if (key in own) {
       continue
     } else if (name) {
-      for (const value of values) {
-        filters.push(`${name}:${value ? JSON.stringify(value) : ''}`)
-      }
+      // A single empty value is a filter without arguments.
+      const args = values.length === 1 && !values[0] ? [] : values
+      filters.push(`${name}:${args.map(arg => JSON.stringify(arg)).join(',')}`)
+    } else if (key === 'filter') {
+      throw new HttpError(400, {
+        detail: `Invalid query parameter 'filter', use 'filter[name]=value'.`
+      })
     } else if (key !== 'fields') {
       query[key] = values.length > 1 ? values : values[0]!
     }
   }
-  if (filters.length) {
-    query.filter = [...asArray(query.filter), ...filters]
-  }
+  if (filters.length) query.filter = filters
   return query
 }
 
@@ -378,4 +394,25 @@ export function hasIds(model: ModelClass, item: unknown) {
   // Objection's types leave this static method out.
   const ids: string[] = (model as any).getIdPropertyArray()
   return isObject(item) && ids.every(key => (item as any)[key] != null)
+}
+
+// Converts the string id of a path for the model's id properties, with
+// Dito 6's validation of ids. An invalid id answers 404.
+export function toId(model: ModelClass, id: string) {
+  try {
+    return validateId(model, id)
+  } catch (error) {
+    if (error instanceof ValidationError) throw new HttpError(404)
+    throw error
+  }
+}
+
+// Validates the id of a row, or the id values themselves, and coerces them to
+// the types of the id properties.
+export function validateId(model: ModelClass, item: unknown) {
+  // Objection's types leave out Dito 6's `getReference()`.
+  const reference = (model as any).getReference(item)
+  // eslint-disable-next-line new-cap
+  new model().$validate(reference, { coerceTypes: true, patch: true })
+  return reference.$id()
 }

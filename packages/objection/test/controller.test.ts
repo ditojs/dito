@@ -85,9 +85,9 @@ const dito = new Application({
 // Sets up an app with the parts that an app wires in.
 function setup(...controllers: ControllerDefinition[]) {
   const api = createApp({
-    base: '/api',
+    prefix: '/api',
     controllers,
-    around: requestStorage(dito),
+    middleware: requestStorage(dito),
     transaction: objectionTransaction(dito),
     connect: objectionConnect(dito),
     getUser: async () => null,
@@ -168,15 +168,24 @@ describe('collection get', () => {
     expect(names(json)).toEqual(['Ada', 'Cleo'])
   })
 
-  it('applies `filter=name:args` and `filter[name]=value` alike', async () => {
-    const dito6 = await request(
+  it('applies `filter[name]=value`, repeated for several arguments', async () => {
+    const one = await request(app, 'GET', '/api/authors?filter[name]=le')
+    const two = await request(
+      app,
+      'GET',
+      '/api/authors?filter[name]=starts-with&filter[name]=a'
+    )
+    expect(names(one.json)).toEqual(['Cleo'])
+    expect(names(two.json)).toEqual(['Ada'])
+  })
+
+  it("rejects Dito 6's `filter=name:args`", async () => {
+    const { status } = await request(
       app,
       'GET',
       `/api/authors?filter=${encodeURIComponent('name:"contains","le"')}`
     )
-    const next = await request(app, 'GET', '/api/authors?filter[name]=le')
-    expect(names(dito6.json)).toEqual(['Cleo'])
-    expect(names(next.json)).toEqual(['Cleo'])
+    expect(status).toBe(400)
   })
 
   it('applies `order`', async () => {
@@ -312,6 +321,15 @@ describe('member get', () => {
       title: 'Not Found',
       detail: `'Author' model with id 9 not found`
     })
+  })
+
+  it('answers 404 for ids that are not valid for the model', async () => {
+    const get = await request(app, 'GET', '/api/authors/x')
+    const patch = await request(app, 'PATCH', '/api/authors/1.5', {
+      name: 'X'
+    })
+    expect(get.json).toEqual({ status: 404, title: 'Not Found' })
+    expect(patch.json).toEqual({ status: 404, title: 'Not Found' })
   })
 })
 
@@ -526,7 +544,7 @@ describe('wrapping the default verbs', () => {
     expect(json).toEqual({ id: 1, name: 'Ava', active: true })
   })
 
-  it('loads the member through `ctx.load()`', async () => {
+  it('loads the member through `ctx.member()`', async () => {
     const app = setup(
       defineController({
         path: 'authors',
@@ -534,7 +552,7 @@ describe('wrapping the default verbs', () => {
         scope: 'active',
         member: {
           'get title': async ctx => {
-            const author = await ctx.load<Author>()
+            const author = await ctx.member<Author>()
             return { title: `${author.name} (${author.constructor.name})` }
           }
         }
@@ -574,13 +592,12 @@ describe('transactions', () => {
         collection: {
           'post check': async ctx => ({
             transaction: (
-              dito.requestLocals.transaction === ctx.trx &&
-              ctx.db === ctx.trx
+              !!dito.requestLocals.transaction &&
+              dito.requestLocals.transaction === ctx.db
             )
           }),
           'get check': async ctx => ({
             transaction: dito.requestLocals.transaction ?? null,
-            trx: ctx.trx ?? null,
             knex: ctx.db === dito.knex,
             storage: !!dito.requestStorage.getStore()
           })
@@ -592,7 +609,6 @@ describe('transactions', () => {
     })
     expect((await request(app, 'GET', '/api/authors/check')).json).toEqual({
       transaction: null,
-      trx: null,
       knex: true,
       storage: true
     })

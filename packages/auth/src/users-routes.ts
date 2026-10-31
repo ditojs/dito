@@ -31,7 +31,7 @@ import type { UserSource } from './types.ts'
 // protection.
 
 export interface UsersRoutesOptions<U> {
-  // The path of the users under the app's base, such as `admins`.
+  // The path of the users under the app's prefix, such as `admins`.
   path: string
   source: UserSource<U>
   // Needed for passkeys and TOTP.
@@ -61,8 +61,8 @@ const requiredPassword = z
   .min(1, 'The password is required.')
 
 // The controller of the actions, which the app passes to `createApp()`, or
-// `use`s in its own controller of the users. `features` tells the admin what
-// it offers, as `api.authentication`.
+// puts in the `features` of its own controller of the users. The returned
+// `features` tell the admin what it offers, as `api.authentication`.
 export function usersRoutes<U>({
   path,
   source,
@@ -159,7 +159,7 @@ export function usersRoutes<U>({
     'post login': action({
       body: anyBody,
       handler: async ctx => {
-        const body = await ctx.body()
+        const body = ctx.body
         return handleLogin(ctx, async () => {
           const { [usernameField]: username, password } = body
           if (!username || !password) {
@@ -194,7 +194,7 @@ export function usersRoutes<U>({
     'post login-code': action({
       body: anyBody,
       handler: async ctx => {
-        const { code } = await ctx.body()
+        const { code } = ctx.body
         return handleLogin(ctx, async () => {
           const session = getSession(ctx)
           const { pendingLogin } = session.value
@@ -245,7 +245,7 @@ export function usersRoutes<U>({
       body: anyBody,
       handler: async ctx => {
         const user = await getUser(ctx)
-        const { password, code, passkey } = await ctx.body()
+        const { password, code, passkey } = ctx.body
         if (passkeys && passkey) {
           // The passkeys of other users verify too, but don't confirm.
           const passkeyUser = await verifyPasskey(ctx, passkey)
@@ -281,7 +281,7 @@ export function usersRoutes<U>({
       }),
       handler: async ctx => {
         const user = await getUser(ctx)
-        const { password, ...values } = await ctx.body()
+        const { password, ...values } = ctx.body
         const username = values[usernameField]
         if (
           password !== undefined || (
@@ -304,7 +304,7 @@ export function usersRoutes<U>({
       body: z.object({ password: requiredPassword }),
       handler: async ctx => {
         const user = await checkConfirmedAccess(ctx)
-        await setPassword(ctx, user, (await ctx.body()).password)
+        await setPassword(ctx, user, ctx.body.password)
         return { success: true }
       }
     }),
@@ -323,7 +323,7 @@ export function usersRoutes<U>({
           .min(1, `Missing '${usernameField}'`)
       }),
       handler: async ctx => {
-        const { [usernameField]: username } = await ctx.body()
+        const { [usernameField]: username } = ctx.body
         const user = await source.findByUsername(ctx, username!)
         if (user) passwordReset!.request(ctx, source, user)
         return { success: true }
@@ -339,7 +339,7 @@ export function usersRoutes<U>({
         password: requiredPassword
       }),
       handler: async ctx => {
-        const { token, password } = await ctx.body()
+        const { token, password } = ctx.body
         const user = await passwordReset!.findUser(ctx, source, token)
         if (!user) throw authError('Invalid or expired token', 400)
         await setPassword(ctx, user, password)
@@ -353,7 +353,7 @@ export function usersRoutes<U>({
     'post passkey-login': action({
       body: anyBody,
       handler: async ctx => {
-        const response = await ctx.body()
+        const response = ctx.body
         return handleLogin(ctx, async () => ({
           user: await verifyPasskey(ctx, response)
         }))
@@ -391,7 +391,7 @@ export function usersRoutes<U>({
           credentials!,
           source,
           user,
-          await ctx.body()
+          ctx.body
         )
         return { id, name, createdAt, lastUsedAt: null }
       }
@@ -431,7 +431,7 @@ export function usersRoutes<U>({
       body: anyBody,
       handler: async ctx => {
         const user = await checkConfirmedAccess(ctx)
-        const { code } = await ctx.body()
+        const { code } = ctx.body
         const backupCodes = await totp!.confirmSecret(
           ctx,
           getSession(ctx).value,
@@ -493,7 +493,7 @@ export function usersRoutes<U>({
     routed.map(name => {
       const value = actions[name]!
       const def = isFunction(value) ? { handler: value } : value
-      return [name, { ...def, transacted: false }]
+      return [name, { ...def, transaction: false }]
     })
   ) as Actions
   const controller: ControllerDefinition = { path, collection }

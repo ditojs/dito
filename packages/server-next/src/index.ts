@@ -4,9 +4,9 @@ export {
   defineFeature,
   action,
   withBase,
-  type BaseOptions
+  type Typed
 } from './define.ts'
-export { createApp } from './app.ts'
+export { createApp, isAuthorized } from './app.ts'
 export {
   HttpError,
   createValidationError,
@@ -18,4 +18,3 @@ export {
   type ValidationIssue
 } from './errors.ts'
 export { parseListQuery } from './list-query.ts'
-export { q } from './query.ts'

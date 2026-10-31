@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { asArray, isFunction } from '@ditojs/utils'
-import { getBase, type BaseOptions } from './define.ts'
+import { getBase } from './define.ts'
 import type {
   ActionDefinition,
   ActionInfo,
@@ -15,10 +15,12 @@ import type {
 } from './types.ts'
 
 // Resolves a controller into its routes, once at app creation. Its layers are
-// the base of `withBase()`, the features of `use` (depth-first, in order), and
-// the controller's own definition. A later layer wins over an earlier one, and
-// its action of the same key wraps the earlier one, which it runs as `next()`.
-// The last layer's `allow` picks the default verbs of the base to route.
+// the base of `withBase()`, the `features` (depth-first, in order), and the
+// controller's own definition. A later layer wins over an earlier one, and its
+// action of the same key wraps the earlier one, which it runs as `next()`.
+// The default verbs of the base are routed only if the last layer's `allow`
+// lists them. A verb that a feature or the controller defines is always
+// routed.
 
 type Kind = 'base' | 'feature' | 'controller'
 
@@ -29,14 +31,13 @@ interface Layer {
 
 export interface ResolvedAction {
   info: ActionInfo
-  // The path under the controller, such as `/:id/publish`. `fetch()` answers
-  // 404 for ids that aren't numbers.
+  // The path under the controller, such as `/:id/publish`.
   route: string
   authorize: Authorize | undefined
-  transacted: boolean | undefined
+  transaction: boolean | undefined
   query: StandardSchemaV1 | undefined
   body: StandardSchemaV1 | undefined
-  around: Middleware[]
+  middleware: Middleware[]
   run: (ctx: DitoContext) => Promise<unknown>
   // A default collection `post`, which answers 201.
   isCreate: boolean
@@ -57,20 +58,17 @@ export function resolveController(
   const layers = getLayers(controller)
   const last = <K extends keyof FeatureDefinition>(key: K) =>
     findLast(layers.map(layer => layer.def[key]))
-  const mode = getBase(controller)?.allow ?? 'all'
   return {
     path: controller.path,
     // Collection routes go first, so that `/:id` never shadows their paths.
     actions: [
-      ...resolveActions(controller, layers, 'collection', mode),
-      ...resolveActions(controller, layers, 'member', mode)
+      ...resolveActions(controller, layers, 'collection'),
+      ...resolveActions(controller, layers, 'member')
     ],
     slots: {
       load: last('load'),
-      finish: last('finish'),
-      toJSON: last('toJSON'),
-      isRow: last('isRow'),
-      owner: last('owner')
+      onResult: last('onResult'),
+      isRecord: last('isRecord')
     },
     serialize: layers.flatMap(layer => layer.def.serialize ?? [])
   }
@@ -83,12 +81,12 @@ function getLayers(controller: ControllerDefinition) {
     // A feature that several features use is one layer.
     if (seen.has(def)) return
     seen.add(def)
-    for (const feature of def.use ?? []) add(feature, kind)
+    for (const feature of def.features ?? []) add(feature, kind)
     layers.push({ def, kind })
   }
   const base = getBase(controller)
-  if (base) add(base.def, 'base')
-  for (const feature of controller.use ?? []) add(feature, 'feature')
+  if (base) add(base, 'base')
+  for (const feature of controller.features ?? []) add(feature, 'feature')
   layers.push({ def: controller, kind: 'controller' })
   return layers
 }
@@ -96,8 +94,7 @@ function getLayers(controller: ControllerDefinition) {
 function resolveActions(
   controller: ControllerDefinition,
   layers: Layer[],
-  on: 'collection' | 'member',
-  mode: NonNullable<BaseOptions['allow']>
+  on: 'collection' | 'member'
 ) {
   const where = `${on} of '${controller.path}'`
   const allow = findLast(layers.map(layer => layer.def[on]?.allow))
@@ -140,18 +137,13 @@ function resolveActions(
       throw new Error(`Invalid action '${key}' in the ${where}`)
     }
     const isDefault = !path
-    // `allow` picks the base's default verbs to route, and `*` allows them
-    // all. Without `allow`, the base's `allow` option decides. A verb that a
-    // feature or the controller defines is always routed, as in Dito 6.
-    const isAllowed = allow
-      ? allowsAll || allow.includes(verb)
-      : mode === 'all'
+    const isAllowed = allowsAll || !!allow?.includes(verb)
     const isBase = list.every(entry => entry.kind === 'base')
     if (isDefault && isBase && !isAllowed) continue
     const defs = list.map(entry => entry.def)
     const fromAction = <K extends keyof ActionDefinition>(key: K) =>
       findLast(defs.map(def => def[key]))
-    const fromLayers = <K extends 'authorize' | 'transacted'>(key: K) => (
+    const fromLayers = <K extends 'authorize' | 'transaction'>(key: K) => (
       fromAction(key) ?? findLast(layers.map(layer => layer.def[key]))
     )
     const route =
@@ -169,12 +161,12 @@ function resolveActions(
       },
       route,
       authorize: fromLayers('authorize'),
-      transacted: fromLayers('transacted'),
+      transaction: fromLayers('transaction'),
       query: fromAction('query'),
       body: fromAction('body'),
-      around: [
-        ...layers.flatMap(layer => asArray(layer.def.around)),
-        ...defs.flatMap(def => asArray(def.around))
+      middleware: [
+        ...layers.flatMap(layer => asArray(layer.def.middleware)),
+        ...defs.flatMap(def => asArray(def.middleware))
       ],
       run: ctx =>
         defs.reduce<() => Promise<unknown>>(

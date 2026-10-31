@@ -6,42 +6,45 @@ import type { EntityManager } from '@mikro-orm/sql'
 // fork of the entity manager as `ctx.db`, through `mikroConnect(orm)`.
 // Transacted actions run in a transaction of that fork, whose entity manager
 // is `ctx.db` while it runs. Code that reads `orm.em` can also run in
-// MikroORM's request context, through `requestContext(orm)`.
+// MikroORM's request context, through the `requestContext(orm)` middleware.
 
 // The `connect` of `createApp()`: a fork of the entity manager per request.
 export function mikroConnect(orm: MikroORM) {
   return () => orm.em.fork()
 }
 
-// Runs the rest of the request with an entity manager fork of its own.
+// Middleware that runs the rest of the request with an entity manager fork
+// of its own.
 export function requestContext(orm: MikroORM): Middleware {
   return (_ctx, next) => RequestContext.create(orm.em, next)
 }
 
-// The `transaction` of `createApp()`. MikroORM flushes the entity manager
-// before it commits, and rolls back when `fn` throws.
+// The `transaction` of `createApp()`. It sets `ctx.db` to the transaction's
+// entity manager while `fn` runs. MikroORM flushes the entity manager before
+// it commits, and rolls back when `fn` throws.
 export function mikroTransaction(orm: MikroORM): Transaction {
   return async (ctx, fn) => {
+    const db = ctx.db
     const em = (
-      (ctx.db as EntityManager | undefined) ??
+      (db as EntityManager | undefined) ??
       RequestContext.getEntityManager() ??
       orm.em.fork()
     )
     try {
       return await em.transactional(async trx => {
-        ctx.trx = trx
+        ctx.db = trx
         return fn()
       })
     } finally {
-      ctx.trx = undefined
+      ctx.db = db
     }
   }
 }
 
-// The entity manager of the request: `ctx.db`, or else the transaction's
-// or the fork of the request context.
+// The entity manager of the request: `ctx.db`, or else the fork of the
+// request context.
 export function getEntityManager(ctx: DitoContext): EntityManager {
-  const em = (ctx.db ?? ctx.trx ?? RequestContext.getEntityManager()) as
+  const em = (ctx.db ?? RequestContext.getEntityManager()) as
     | EntityManager
     | undefined
   if (!em) {

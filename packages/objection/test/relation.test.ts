@@ -97,9 +97,9 @@ const dito = new Application({
 // The user has the roles of the `x-roles` header, and is signed out without.
 function setup(...controllers: ControllerDefinition[]) {
   const api = createApp({
-    base: '/api',
+    prefix: '/api',
     controllers: withRelations(controllers),
-    around: requestStorage(dito),
+    middleware: requestStorage(dito),
     transaction: objectionTransaction(dito),
     connect: objectionConnect(dito),
     getUser: async ctx => {
@@ -180,7 +180,7 @@ describe('owner relations', () => {
           member: {
             'allow': ['get', 'patch', 'delete'],
             'get activity': async ctx => {
-              const book = await ctx.load<Book>()
+              const book = await ctx.member<Book>()
               return { activity: `${book.title} (${book.constructor.name})` }
             }
           }
@@ -278,13 +278,13 @@ describe('inherited settings', () => {
     ])
   })
 
-  it('inherits `transacted` and `graph`', async () => {
-    const check = async (ctx: DitoContext) => ({ trx: !!ctx.trx })
-    const definition = (transacted?: boolean) =>
+  it('inherits `transaction` and `graph`', async () => {
+    const check = async (ctx: DitoContext) => ({ trx: ctx.db !== dito.knex })
+    const definition = (transaction?: boolean) =>
       defineController({
         path: 'authors',
         model: Author,
-        transacted,
+        transaction,
         relations: { books: { collection: { 'post check': check } } }
       })
     const off = await request(
@@ -444,14 +444,19 @@ describe('authorization', () => {
     expect((await flag('reader,flagger')).json).toEqual({ flagged: true })
   })
 
-  it("checks `$owner` against the parent's owner", async () => {
+  it("gives the parent to the parent's `authorize` function", async () => {
     const app = setup(
       defineController({
         path: 'authors',
         model: Author,
-        owner: async ctx => (await ctx.load<Author>()).id,
         member: {
-          get: { authorize: '$owner', handler: (ctx, next) => next() }
+          get: {
+            authorize: async ctx => (
+              ctx.id === String(ctx.user?.id) &&
+              (await ctx.member<Author>()).id === ctx.user?.id
+            ),
+            handler: (ctx, next) => next()
+          }
         },
         relations: { books: { collection: { allow: ['get'] } } }
       })

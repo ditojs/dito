@@ -15,7 +15,8 @@ import type { EntityManager, QueryBuilder } from '@mikro-orm/sql'
 // controller's shape, so that list rows and members load alike.
 
 export interface Filter<T extends object = any> {
-  // The arguments of `filter[name]=value` or `filter=name:args`, as a list.
+  // Parses the arguments, the strings of `filter[name]=value` in order, such
+  // as `z.tuple([z.stringbool()])`.
   args?: z.ZodType<unknown[]>
   apply: (qb: QueryBuilder<T, any>, ...args: any[]) => void
 }
@@ -92,7 +93,7 @@ function applyFilter<T extends object>(
   qb: QueryBuilder<T, any>,
   filters: Record<string, Filter<T>>,
   name: string,
-  args: unknown[]
+  args: string[]
 ) {
   const filter = Object.hasOwn(filters, name) ? filters[name] : undefined
   if (!filter) {

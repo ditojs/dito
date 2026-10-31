@@ -13,15 +13,15 @@ export function parseListQuery(ctx: DitoContext): ListQuery {
     const [, filter] = key.match(/^filter\[(.*)\]$/) ?? []
     if (filter !== undefined) {
       check(namePattern.test(filter), key, value)
-      query.filters.push({ name: filter, args: value ? [value] : [] })
-    } else if (key === 'filter') {
-      // Dito 6's form: the name and its arguments as a JSON list.
-      const [, name, json] = value.match(/^(\w+):(.*)$/) ?? []
-      check(name !== undefined, key, value)
-      query.filters.push({ name: name!, args: parseArgs(json!, key, value) })
-    } else if (key === 'scope') {
-      check(namePattern.test(value), key, value)
-      query.filters.push({ name: value, args: [] })
+      // A repeated filter gets the values as its arguments, in order, so that
+      // empty values keep their positions. A filter with one empty value has
+      // no arguments, as in `?filter[published]`.
+      const entry = query.filters.find(({ name }) => name === filter)
+      if (entry) {
+        entry.args.push(value)
+      } else {
+        query.filters.push({ name: filter, args: value ? [value] : [] })
+      }
     } else if (key === 'order') {
       const [property = '', direction = 'asc', ...rest] = value
         .trim()
@@ -49,14 +49,6 @@ export function parseListQuery(ctx: DitoContext): ListQuery {
     }
   }
   return query
-}
-
-function parseArgs(json: string, key: string, value: string): unknown[] {
-  try {
-    return JSON.parse(`[${json}]`)
-  } catch {
-    return invalid(key, value)
-  }
 }
 
 function check(valid: boolean, key: string, value: string) {

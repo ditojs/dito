@@ -32,7 +32,7 @@ function setup(
   { user = admin, ...config }: Partial<AppConfig> & { user?: User | null } = {}
 ) {
   return createApp({
-    base: '/api',
+    prefix: '/api',
     controllers,
     getUser: async () => user,
     // The handler an app sets. `RangeError` stands for an error of the app.
@@ -46,12 +46,14 @@ function setup(
   })
 }
 
-// A transaction that records its steps instead of opening one.
+// A transaction that records its steps instead of opening one. It sets
+// `ctx.db` to 'trx' during `fn`.
 function createTransaction() {
   const log: string[] = []
   const transaction: Transaction = async (ctx, fn) => {
     log.push('begin')
-    ctx.trx = 'trx'
+    const { db } = ctx
+    ctx.db = 'trx'
     try {
       const result = await fn()
       log.push('commit')
@@ -60,7 +62,7 @@ function createTransaction() {
       log.push('rollback')
       throw error
     } finally {
-      ctx.trx = undefined
+      ctx.db = db
     }
   }
   return { transaction, log }
@@ -95,8 +97,8 @@ describe('routing', () => {
           'get count': () => ({ count: 2 })
         },
         member: {
-          'get': ctx => ({ id: ctx.memberId }),
-          'post publish': ctx => ({ published: ctx.memberId })
+          'get': ctx => ({ id: ctx.id }),
+          'post publish': ctx => ({ published: ctx.params.id })
         }
       })
     ])
@@ -109,30 +111,34 @@ describe('routing', () => {
       await (await request(app, 'GET', '/api/fonts/count')).json()
     ).toEqual({ count: 2 })
     expect(await (await request(app, 'GET', '/api/fonts/7')).json()).toEqual({
-      id: 7
+      id: '7'
     })
     expect(await (await request(app, 'GET', '/api/fonts/7/')).json()).toEqual({
-      id: 7
+      id: '7'
     })
     expect(
       await (await request(app, 'POST', '/api/fonts/7/publish')).json()
-    ).toEqual({ published: 7 })
+    ).toEqual({ published: '7' })
   })
 
-  it('answers 404 Problem Details for ids that are not numbers', async () => {
+  it('passes any id to the member actions as a string', async () => {
     const app = setup([
-      { path: 'fonts', member: { 'get': () => 'row', 'post publish': () => 1 } }
+      {
+        path: 'fonts',
+        member: {
+          'get': ctx => ({ id: ctx.id }),
+          'post publish': ctx => ({ id: ctx.id })
+        }
+      }
     ])
-    for (const path of ['/api/fonts/abc', '/api/fonts/1.5', '/api/fonts/x/']) {
-      const response = await request(app, 'GET', path)
-      expect(response.status).toBe(404)
-      expect(response.headers.get('Content-Type')).toBe(
-        'application/problem+json'
-      )
+    for (const id of ['abc', '1.5', 'x']) {
+      expect(
+        await (await request(app, 'GET', `/api/fonts/${id}`)).json()
+      ).toEqual({ id })
     }
-    expect((await request(app, 'POST', '/api/fonts/a/publish')).status).toBe(
-      404
-    )
+    expect(
+      await (await request(app, 'POST', '/api/fonts/a/publish')).json()
+    ).toEqual({ id: 'a' })
   })
 
   it('answers 404 Problem Details for unknown routes', async () => {
@@ -207,9 +213,30 @@ describe('routing', () => {
     expect((await request(app, 'DELETE', '/api/fonts/1')).status).toBe(404)
   })
 
-  it('routes every default verb without `allow`', async () => {
-    const base = defineFeature({ member: { delete: () => 'gone' } })
+  it('routes no default verb of the base without `allow`', async () => {
+    const base = defineFeature({
+      collection: { get: () => 'list' },
+      member: { delete: () => 'gone' }
+    })
     const app = setup([withBase(base, { path: 'fonts' })])
+    expect((await request(app, 'GET', '/api/fonts')).status).toBe(404)
+    expect((await request(app, 'DELETE', '/api/fonts/1')).status).toBe(404)
+  })
+
+  it('routes every default verb of the base with `*`', async () => {
+    const base = defineFeature({
+      collection: { get: () => 'list', post: () => 'created' },
+      member: { delete: () => 'gone' }
+    })
+    const app = setup([
+      withBase(base, {
+        path: 'fonts',
+        collection: { allow: ['*'] },
+        member: { allow: ['*'] }
+      })
+    ])
+    expect((await request(app, 'GET', '/api/fonts')).status).toBe(200)
+    expect((await request(app, 'POST', '/api/fonts')).status).toBe(201)
     expect((await request(app, 'DELETE', '/api/fonts/1')).status).toBe(200)
   })
 
@@ -223,35 +250,40 @@ describe('routing', () => {
     expect((await request(app, 'POST', '/api/fonts')).status).toBe(201)
   })
 
-  it(`routes only the defined verbs with \`allow: 'defined'\``, async () => {
+  it('routes the verbs that features and the controller define', async () => {
     const base = defineFeature({
       collection: { get: () => 'list', post: () => 'created' },
       member: { get: () => 'row', patch: () => 'patched', delete: () => 'gone' }
     })
     const feature = defineFeature({ member: { patch: (ctx, next) => next() } })
     const app = setup([
-      withBase(
-        base,
-        {
-          path: 'fonts',
-          use: [feature],
-          collection: { get: (ctx, next) => next() }
-        },
-        { allow: 'defined' }
-      ),
-      withBase(
-        base,
-        { path: 'all', collection: { allow: ['*'] }, member: { allow: ['*'] } },
-        { allow: 'defined' }
-      )
+      withBase(base, {
+        path: 'fonts',
+        features: [feature],
+        collection: { get: (ctx, next) => next() }
+      })
     ])
-    expect((await request(app, 'GET', '/api/fonts')).status).toBe(200)
+    expect(await (await request(app, 'GET', '/api/fonts')).json()).toBe('list')
     expect((await request(app, 'POST', '/api/fonts')).status).toBe(404)
     expect((await request(app, 'GET', '/api/fonts/1')).status).toBe(404)
-    expect((await request(app, 'PATCH', '/api/fonts/1')).status).toBe(200)
+    expect(
+      await (await request(app, 'PATCH', '/api/fonts/1')).json()
+    ).toBe('patched')
     expect((await request(app, 'DELETE', '/api/fonts/1')).status).toBe(404)
-    expect((await request(app, 'POST', '/api/all')).status).toBe(201)
-    expect((await request(app, 'DELETE', '/api/all/1')).status).toBe(200)
+  })
+
+  it('routes the verbs that features define without a base', async () => {
+    const feature = defineFeature({ collection: { get: () => 'list' } })
+    const app = setup([{ path: 'fonts', features: [feature] }])
+    expect((await request(app, 'GET', '/api/fonts')).status).toBe(200)
+  })
+
+  it('throws for a verb in `allow` that no layer defines', () => {
+    expect(() =>
+      setup([{ path: 'fonts', collection: { allow: ['post'] } }])
+    ).toThrow(
+      `'post' is in \`allow\` but not defined in the collection of 'fonts'`
+    )
   })
 
   it('routes a default verb the controller defines outside `allow`', async () => {
@@ -274,7 +306,7 @@ describe('routing', () => {
 describe('composition', () => {
   it('wraps base, feature and controller through `next`', async () => {
     const base = defineFeature({
-      member: { get: ctx => ({ id: ctx.memberId, from: ['base'] }) }
+      member: { get: ctx => ({ id: ctx.id, from: ['base'] }) }
     })
     const feature = defineFeature({
       member: {
@@ -287,7 +319,7 @@ describe('composition', () => {
     const app = setup([
       withBase(base, {
         path: 'fonts',
-        use: [feature],
+        features: [feature],
         member: {
           get: async (ctx, next) => {
             const row = (await next()) as { from: string[] }
@@ -297,7 +329,7 @@ describe('composition', () => {
       })
     ])
     expect(await (await request(app, 'GET', '/api/fonts/3')).json()).toEqual({
-      id: 3,
+      id: '3',
       from: ['base', 'feature', 'controller']
     })
   })
@@ -305,7 +337,7 @@ describe('composition', () => {
   it('throws when two features define the same action', () => {
     const one = defineFeature({ member: { 'post publish': () => 1 } })
     const two = defineFeature({ member: { 'post publish': () => 2 } })
-    expect(() => setup([{ path: 'fonts', use: [one, two] }])).toThrow(
+    expect(() => setup([{ path: 'fonts', features: [one, two] }])).toThrow(
       `'post publish' is defined by two features in the member of 'fonts'`
     )
   })
@@ -313,18 +345,24 @@ describe('composition', () => {
   it('takes slots from the last layer', async () => {
     const base = defineFeature({
       load: async () => 'base',
-      member: { get: ctx => ctx.load() }
+      member: { get: ctx => ctx.member() }
     })
     const feature = defineFeature({ load: async () => 'feature' })
-    const app = setup([withBase(base, { path: 'fonts', use: [feature] })])
+    const app = setup([
+      withBase(base, {
+        path: 'fonts',
+        features: [feature],
+        member: { allow: ['get'] }
+      })
+    ])
     expect(await (await request(app, 'GET', '/api/fonts/1')).json()).toBe(
       'feature'
     )
   })
 
-  it('runs `around` of the app, the layers and the action in order', async () => {
+  it('runs the middleware of the app, the layers and the action in order', async () => {
     const order: string[] = []
-    const around =
+    const middleware =
       (name: string): Middleware =>
       async (_ctx, next) => {
         order.push(`${name} in`)
@@ -332,17 +370,17 @@ describe('composition', () => {
         order.push(`${name} out`)
         return response
       }
-    const base = defineFeature({ around: around('base') })
-    const feature = defineFeature({ around: around('feature') })
+    const base = defineFeature({ middleware: middleware('base') })
+    const feature = defineFeature({ middleware: middleware('feature') })
     const app = setup(
       [
         withBase(base, {
           path: 'fonts',
-          use: [feature],
-          around: around('controller'),
+          features: [feature],
+          middleware: middleware('controller'),
           collection: {
             get: {
-              around: [around('action')],
+              middleware: [middleware('action')],
               handler: () => {
                 order.push('handler')
                 return []
@@ -352,7 +390,7 @@ describe('composition', () => {
         })
       ],
       {
-        around: [around('app')],
+        middleware: [middleware('app')],
         getUser: async () => {
           order.push('user')
           return admin
@@ -376,11 +414,11 @@ describe('composition', () => {
     ])
   })
 
-  it('lets `around` replace the response', async () => {
+  it('lets middleware replace the response', async () => {
     const app = setup([
       {
         path: 'fonts',
-        around: async () => Response.json('cached'),
+        middleware: async () => Response.json('cached'),
         collection: { get: () => 'fresh' }
       }
     ])
@@ -389,7 +427,7 @@ describe('composition', () => {
     )
   })
 
-  it('passes `locals` of `fetch()` and of `around` to the context', async () => {
+  it('passes `locals` of `fetch()` and of middleware to the context', async () => {
     const app = setup(
       [
         {
@@ -400,7 +438,7 @@ describe('composition', () => {
         }
       ],
       {
-        around: async (ctx, next) => {
+        middleware: async (ctx, next) => {
           ctx.locals.session = `session of ${ctx.locals.ip}`
           return next()
         },
@@ -450,11 +488,6 @@ describe('authorize', () => {
     expect((await request(app, 'GET', '/api/fonts')).status).toBe(200)
   })
 
-  it('denies access with `false`', async () => {
-    const app = setup([controller({ authorize: false })])
-    expect((await request(app, 'GET', '/api/fonts')).status).toBe(403)
-  })
-
   it('calls a function with the context', async () => {
     const app = setup(
       [
@@ -469,12 +502,14 @@ describe('authorize', () => {
     expect(response.status).toBe(200)
   })
 
-  it('grants `$owner` access to the owner of the member', async () => {
+  it('checks the owner of the member with a function', async () => {
     const app = setup(
       [
         controller({
-          authorize: ['admin', '$owner'],
-          owner: async ctx => String(ctx.memberId),
+          authorize: ctx => (
+            !!ctx.user?.roles.includes('admin') ||
+            ctx.id === String(ctx.user?.id)
+          ),
           member: { get: () => 'row' }
         })
       ],
@@ -485,15 +520,12 @@ describe('authorize', () => {
   })
 
   it('lets an action override the controller', async () => {
-    const base = defineFeature({ authorize: true })
     const app = setup(
       [
-        withBase(base, {
-          path: 'fonts',
-          authorize: ['admin'],
+        controller({
           collection: {
             'get': () => [],
-            'get public': { authorize: true, handler: () => [] }
+            'get public': { authorize: () => true, handler: () => [] }
           }
         })
       ],
@@ -501,6 +533,15 @@ describe('authorize', () => {
     )
     expect((await request(app, 'GET', '/api/fonts')).status).toBe(401)
     expect((await request(app, 'GET', '/api/fonts/public')).status).toBe(200)
+  })
+
+  it('takes `authorize` from the last layer', async () => {
+    const feature = defineFeature({ authorize: ['admin'] })
+    const app = setup(
+      [controller({ authorize: ['editor'], features: [feature] })],
+      { user: editor }
+    )
+    expect((await request(app, 'GET', '/api/fonts')).status).toBe(200)
   })
 })
 
@@ -515,15 +556,14 @@ describe('validation', () => {
             body: z.object({
               sets: z.array(z.object({ name: z.string() }))
             }),
-            handler: async ctx => {
+            handler: ctx => {
               expectTypeOf(ctx.query).toEqualTypeOf<{
                 draft: 'yes' | 'no'
               }>()
-              const body = await ctx.body()
-              expectTypeOf(body.sets).toEqualTypeOf<{ name: string }[]>()
+              expectTypeOf(ctx.body.sets).toEqualTypeOf<{ name: string }[]>()
               return {
                 draft: ctx.query.draft,
-                names: body.sets.map(set => set.name)
+                names: ctx.body.sets.map(set => set.name)
               }
             }
           })
@@ -604,53 +644,94 @@ describe('validation', () => {
     expect(toJsonPointer(['a/b', 'c~d', 0])).toBe('/a~1b/c~0d/0')
   })
 
-  it('parses the body once, as the same value each time', async () => {
+  it('parses the JSON body before the handler', async () => {
     const app = setup([
       {
         path: 'fonts',
         collection: {
-          post: async ctx => {
-            const body = await ctx.body()
-            body.changed = true
-            return { same: body === (await ctx.body()), body }
-          },
-          get: async ctx => ({ body: (await ctx.body()) ?? null })
-        }
+          post: ctx => ({ body: ctx.body }),
+          get: ctx => ({ body: ctx.body ?? null })
+        },
+        member: { patch: ctx => ({ body: ctx.body }) }
       }
     ])
     expect(
       await (await request(app, 'POST', '/api/fonts', { name: 'A' })).json()
-    ).toEqual({ same: true, body: { name: 'A', changed: true } })
+    ).toEqual({ body: { name: 'A' } })
+    const merge = await request(app, 'PATCH', '/api/fonts/1', undefined, {
+      body: '{"name":"B"}',
+      headers: { 'Content-Type': 'application/merge-patch+json' }
+    })
+    expect(await merge.json()).toEqual({ body: { name: 'B' } })
     expect(await (await request(app, 'POST', '/api/fonts')).json()).toEqual({
-      same: true,
-      body: { changed: true }
+      body: {}
     })
     expect(await (await request(app, 'GET', '/api/fonts')).json()).toEqual({
       body: null
     })
-    const invalid = await request(app, 'POST', '/api/fonts', undefined, {
+  })
+
+  it('answers 400 for invalid JSON, after the authorization', async () => {
+    const controller: ControllerDefinition = {
+      path: 'fonts',
+      authorize: ['admin'],
+      collection: { post: () => 'ok' }
+    }
+    const init = {
       body: '{"name":',
       headers: { 'Content-Type': 'application/json' }
-    })
+    }
+    const app = setup([controller])
+    const invalid = await request(app, 'POST', '/api/fonts', undefined, init)
     expect(invalid.status).toBe(400)
     expect(await invalid.json()).toEqual({
       title: 'Bad Request',
       status: 400,
       detail: 'The body is invalid JSON.'
     })
+    const anonymous = setup([controller], { user: null })
+    expect(
+      (await request(anonymous, 'POST', '/api/fonts', undefined, init)).status
+    ).toBe(401)
   })
 
-  it('returns the validated body with a schema', async () => {
+  it('leaves other bodies unread for the handler', async () => {
+    const app = setup([
+      {
+        path: 'fonts',
+        collection: {
+          'post upload': async ctx => {
+            const form = await ctx.req.formData()
+            return { body: ctx.body ?? null, name: form.get('name') }
+          },
+          'post raw': async ctx => {
+            const bytes = new Uint8Array(await ctx.req.arrayBuffer())
+            return { body: ctx.body ?? null, bytes: [...bytes] }
+          }
+        }
+      }
+    ])
+    const form = new FormData()
+    form.set('name', 'Regular')
+    const upload = await request(app, 'POST', '/api/fonts/upload', undefined, {
+      body: form
+    })
+    expect(await upload.json()).toEqual({ body: null, name: 'Regular' })
+    const raw = await request(app, 'POST', '/api/fonts/raw', undefined, {
+      body: new Uint8Array([1, 2, 3]),
+      headers: { 'Content-Type': 'application/octet-stream' }
+    })
+    expect(await raw.json()).toEqual({ body: null, bytes: [1, 2, 3] })
+  })
+
+  it('sets the validated body with a schema', async () => {
     const app = setup([
       {
         path: 'fonts',
         collection: {
           post: action({
             body: z.object({ name: z.string().trim() }),
-            handler: async ctx => {
-              const body = await ctx.body()
-              return { same: body === (await ctx.body()), body }
-            }
+            handler: ctx => ({ body: ctx.body })
           })
         }
       }
@@ -659,7 +740,7 @@ describe('validation', () => {
       await (
         await request(app, 'POST', '/api/fonts', { name: ' A ', other: 1 })
       ).json()
-    ).toEqual({ same: true, body: { name: 'A' } })
+    ).toEqual({ body: { name: 'A' } })
   })
 
   it('validates no body without a schema', async () => {
@@ -675,33 +756,65 @@ describe('transactions', () => {
       [
         {
           path: 'fonts',
-          around: async (ctx, next) => {
-            log.push(`around ${ctx.trx ?? 'none'}`)
+          middleware: async (ctx, next) => {
+            log.push(`middleware ${ctx.db ?? 'none'}`)
             return next()
           },
           collection: {
-            'get': ctx => ctx.trx ?? null,
-            'post': ctx => ctx.trx,
-            'get fresh': { transacted: true, handler: ctx => ctx.trx },
-            'post log': { transacted: false, handler: () => null }
+            'get': ctx => ctx.db ?? null,
+            'post': ctx => ctx.db,
+            'get fresh': { transaction: true, handler: ctx => ctx.db },
+            'post log': { transaction: false, handler: () => null }
           }
         }
       ],
       { transaction }
     )
     expect(await (await request(app, 'GET', '/api/fonts')).json()).toBe(null)
-    expect(log).toEqual(['around none'])
+    expect(log).toEqual(['middleware none'])
     log.length = 0
     expect(await (await request(app, 'POST', '/api/fonts')).json()).toBe('trx')
-    expect(log).toEqual(['begin', 'around trx', 'commit'])
+    expect(log).toEqual(['begin', 'middleware trx', 'commit'])
     log.length = 0
     expect(await (await request(app, 'GET', '/api/fonts/fresh')).json()).toBe(
       'trx'
     )
-    expect(log).toEqual(['begin', 'around trx', 'commit'])
+    expect(log).toEqual(['begin', 'middleware trx', 'commit'])
     log.length = 0
     await request(app, 'POST', '/api/fonts/log')
-    expect(log).toEqual(['around none'])
+    expect(log).toEqual(['middleware none'])
+  })
+
+  it('takes `transaction` from the action, else the last layer', async () => {
+    const { transaction, log } = createTransaction()
+    const feature = defineFeature({ transaction: false })
+    const app = setup(
+      [
+        {
+          path: 'fonts',
+          transaction: true,
+          collection: { get: ctx => ctx.db }
+        },
+        {
+          path: 'files',
+          features: [feature],
+          collection: {
+            'post': () => null,
+            'post import': { transaction: true, handler: ctx => ctx.db }
+          }
+        }
+      ],
+      { transaction }
+    )
+    expect(await (await request(app, 'GET', '/api/fonts')).json()).toBe('trx')
+    expect(log).toEqual(['begin', 'commit'])
+    log.length = 0
+    await request(app, 'POST', '/api/files')
+    expect(log).toEqual([])
+    expect(
+      await (await request(app, 'POST', '/api/files/import')).json()
+    ).toBe('trx')
+    expect(log).toEqual(['begin', 'commit'])
   })
 
   it('rolls back when the handler throws', async () => {
@@ -711,11 +824,11 @@ describe('transactions', () => {
         {
           path: 'fonts',
           // Middleware sees the error of what it wraps in plain try/catch.
-          around: async (_ctx, next) => {
+          middleware: async (_ctx, next) => {
             try {
               return await next()
             } catch (error) {
-              log.push(`around ${(error as Error).message}`)
+              log.push(`middleware ${(error as Error).message}`)
               throw error
             }
           },
@@ -729,7 +842,7 @@ describe('transactions', () => {
       { transaction }
     )
     const response = await request(app, 'POST', '/api/fonts')
-    expect(log).toEqual(['begin', 'around Too wide', 'rollback'])
+    expect(log).toEqual(['begin', 'middleware Too wide', 'rollback'])
     expect(response.status).toBe(422)
     expect(await response.json()).toEqual({
       title: 'Out of Range',
@@ -744,9 +857,9 @@ describe('transactions', () => {
       [
         {
           path: 'fonts',
-          around: async (_ctx, next) => {
+          middleware: async (_ctx, next) => {
             await next()
-            log.push('around throws')
+            log.push('middleware throws')
             throw new HttpError(409, { detail: 'Stale' })
           },
           collection: {
@@ -760,17 +873,21 @@ describe('transactions', () => {
       { transaction }
     )
     const response = await request(app, 'POST', '/api/fonts')
-    expect(log).toEqual(['begin', 'handler', 'around throws', 'rollback'])
+    expect(log).toEqual(['begin', 'handler', 'middleware throws', 'rollback'])
     expect(response.status).toBe(409)
   })
 
-  it('sets `ctx.db` from `connect`, and to the transaction in one', async () => {
+  it('sets `ctx.db` from `connect`, which the transaction swaps', async () => {
     const log: string[] = []
     const transaction: Transaction = async (ctx, fn) => {
-      ctx.trx = 'trx'
-      const result = await fn()
-      log.push(`after ${ctx.db}`)
-      return result
+      const { db } = ctx
+      ctx.db = `trx of ${db}`
+      try {
+        return await fn()
+      } finally {
+        ctx.db = db
+        log.push(`after ${ctx.db}`)
+      }
     }
     const connect = vi.fn((ctx: DitoContext) => `db ${ctx.req.method}`)
     const app = setup(
@@ -785,16 +902,27 @@ describe('transactions', () => {
     expect(await (await request(app, 'GET', '/api/fonts')).json()).toBe(
       'db GET'
     )
-    expect(await (await request(app, 'POST', '/api/fonts')).json()).toBe('trx')
+    expect(await (await request(app, 'POST', '/api/fonts')).json()).toBe(
+      'trx of db POST'
+    )
     expect(log).toEqual(['after db POST'])
     expect(connect).toHaveBeenCalledTimes(2)
   })
 
-  it('runs the `around` of the app before `connect` and `getUser`', async () => {
+  it('keeps `ctx.db` in a transaction that does not set it', async () => {
+    const transaction: Transaction = (_ctx, fn) => fn()
+    const app = setup(
+      [{ path: 'fonts', collection: { post: ctx => ctx.db } }],
+      { transaction, connect: () => 'db' }
+    )
+    expect(await (await request(app, 'POST', '/api/fonts')).json()).toBe('db')
+  })
+
+  it('runs the middleware of the app before `connect` and `getUser`', async () => {
     const app = setup(
       [{ path: 'fonts', collection: { get: ctx => [ctx.db, ctx.user?.id] } }],
       {
-        around: async (ctx, next) => {
+        middleware: async (ctx, next) => {
           ctx.locals.session = 'em'
           return next()
         },
@@ -814,7 +942,7 @@ describe('mounting', () => {
     const fonts: ControllerDefinition = {
       path: 'fonts',
       collection: { get: () => ['a'] },
-      member: { get: ctx => ({ id: ctx.memberId }) }
+      member: { get: ctx => ({ id: ctx.id }) }
     }
     const users: ControllerDefinition = {
       path: 'users',
@@ -861,26 +989,38 @@ describe('mounting', () => {
 
 describe('load', () => {
   it('calls the `load` slot once per request', async () => {
-    const load = vi.fn(async (_ctx: DitoContext, id: number) => ({ id }))
+    const load = vi.fn(async (_ctx: DitoContext, id: string) => ({ id }))
     const app = setup([
       {
         path: 'fonts',
         load,
         member: {
           get: async ctx => {
-            const [one, two] = await Promise.all([ctx.load(), ctx.load()])
-            return { same: one === two, row: await ctx.load() }
+            const [one, two] = await Promise.all([ctx.member(), ctx.member()])
+            return { same: one === two, row: await ctx.member() }
           }
         }
       }
     ])
     expect(await (await request(app, 'GET', '/api/fonts/5')).json()).toEqual({
       same: true,
-      row: { id: 5 }
+      row: { id: '5' }
     })
     expect(load).toHaveBeenCalledTimes(1)
     await request(app, 'GET', '/api/fonts/6')
     expect(load).toHaveBeenCalledTimes(2)
+    expect(load).toHaveBeenLastCalledWith(expect.anything(), '6')
+  })
+
+  it('throws for `member()` on the collection', async () => {
+    const app = setup([
+      {
+        path: 'fonts',
+        load: async () => 'row',
+        collection: { get: ctx => ctx.member() }
+      }
+    ])
+    expect((await request(app, 'GET', '/api/fonts')).status).toBe(500)
   })
 
   it('answers 404 when nothing loads', async () => {
@@ -888,7 +1028,7 @@ describe('load', () => {
       {
         path: 'fonts',
         load: async () => null,
-        member: { get: ctx => ctx.load() }
+        member: { get: ctx => ctx.member() }
       }
     ])
     const response = await request(app, 'GET', '/api/fonts/5')
@@ -905,9 +1045,13 @@ describe('results', () => {
     }
   }
 
+  // The base of an ORM package, whose `serialize` gets the record as `json`.
   const rows = defineFeature({
-    isRow: value => value instanceof Row,
-    toJSON: (_ctx, row) => ({ id: (row as Row).id, json: true })
+    isRecord: value => value instanceof Row,
+    serialize: (_ctx, record, json) => {
+      expect(json).toBe(record)
+      return { id: (record as Row).id, json: true }
+    }
   })
 
   it('sends a Response unchanged and undefined as 204', async () => {
@@ -979,7 +1123,7 @@ describe('results', () => {
       ],
       {
         // Middleware sets a cookie on `ctx.res` and returns the response.
-        around: async (ctx, next) => {
+        middleware: async (ctx, next) => {
           ctx.res.headers.append('Set-Cookie', 'session=s')
           return next()
         }
@@ -996,11 +1140,11 @@ describe('results', () => {
     expect(await response.text()).toBe('text')
   })
 
-  it('adds the headers of `ctx.res` to the responses of `around`', async () => {
+  it('adds the headers of `ctx.res` to the responses of middleware', async () => {
     const app = setup([
       {
         path: 'fonts',
-        around: async ctx => {
+        middleware: async ctx => {
           ctx.res.headers.append('Set-Cookie', 'a=1')
           // A redirect has immutable headers, as a fetched response does.
           return Response.redirect('http://localhost/signin', 302)
@@ -1014,15 +1158,15 @@ describe('results', () => {
     expect(response.headers.getSetCookie()).toEqual(['a=1'])
   })
 
-  it('runs `finish` once on every result, before `toJSON`', async () => {
+  it('runs `onResult` once on every result, before `serialize`', async () => {
     const order: string[] = []
-    const finish = vi.fn((_ctx: DitoContext, result: unknown) => {
-      order.push('finish')
+    const onResult = vi.fn((_ctx: DitoContext, result: unknown) => {
+      order.push('onResult')
       if (result === 'replace') return new Row(9)
     })
     const app = setup([
       withBase(
-        { ...rows, finish },
+        { ...rows, onResult },
         {
           path: 'fonts',
           serialize: (_ctx, _row, json) => {
@@ -1038,30 +1182,30 @@ describe('results', () => {
       )
     ])
     await request(app, 'GET', '/api/fonts')
-    expect(order).toEqual(['finish', 'serialize'])
-    expect(finish).toHaveBeenLastCalledWith(expect.anything(), [new Row(1)])
+    expect(order).toEqual(['onResult', 'serialize'])
+    expect(onResult).toHaveBeenLastCalledWith(expect.anything(), [new Row(1)])
     expect(
       await (await request(app, 'GET', '/api/fonts/replace')).json()
     ).toEqual({ id: 9, json: true })
     expect((await request(app, 'POST', '/api/fonts')).status).toBe(204)
-    expect(finish).toHaveBeenLastCalledWith(expect.anything(), undefined)
-    expect(finish).toHaveBeenCalledTimes(3)
+    expect(onResult).toHaveBeenLastCalledWith(expect.anything(), undefined)
+    expect(onResult).toHaveBeenCalledTimes(3)
   })
 
-  it('runs `finish` inside the transaction and `around`', async () => {
+  it('runs `onResult` inside the transaction and the middleware', async () => {
     const { transaction, log } = createTransaction()
     const app = setup(
       [
         {
           path: 'fonts',
-          around: async (_ctx, next) => {
-            log.push('around in')
+          middleware: async (_ctx, next) => {
+            log.push('middleware in')
             const response = await next()
-            log.push('around out')
+            log.push('middleware out')
             return response
           },
-          finish: ctx => {
-            log.push(`finish ${ctx.trx}`)
+          onResult: ctx => {
+            log.push(`onResult ${ctx.db}`)
           },
           collection: { post: () => ({}) }
         }
@@ -1071,21 +1215,21 @@ describe('results', () => {
     await request(app, 'POST', '/api/fonts')
     expect(log).toEqual([
       'begin',
-      'around in',
-      'finish trx',
-      'around out',
+      'middleware in',
+      'onResult trx',
+      'middleware out',
       'commit'
     ])
   })
 
-  it('serializes rows through `toJSON` and the `serialize` chain', async () => {
+  it('serializes records through the `serialize` chain of the layers', async () => {
     const feature = defineFeature({
       serialize: (_ctx, row, json) => ({ ...json, feature: row.id })
     })
     const app = setup([
       withBase(rows, {
         path: 'fonts',
-        use: [feature],
+        features: [feature],
         serialize: async (_ctx, _row, json) => ({ ...json, controller: true }),
         collection: {
           'get': () => [new Row(1), 'other'],
@@ -1220,7 +1364,7 @@ describe('errors', () => {
     const error = new Error('Broken')
     const onError = vi.fn(
       (_error: unknown, ctx: DitoContext) =>
-        new Response(`${ctx.action.name} of ${ctx.memberId}`, { status: 503 })
+        new Response(`${ctx.action.name} of ${ctx.id}`, { status: 503 })
     )
     const app = setup(
       [
@@ -1262,5 +1406,53 @@ describe('errors', () => {
     expect(response.status).toBe(409)
     expect(response.headers.getSetCookie()).toEqual(['session=1'])
     expect(response.headers.has('Cache-Control')).toBe(false)
+  })
+})
+
+describe('types', () => {
+  it('types `ctx.params` from the action keys', async () => {
+    const app = setup([
+      defineController({
+        path: 'fonts',
+        collection: {
+          'get': ctx => {
+            expectTypeOf(ctx.params).toEqualTypeOf<{}>()
+            return []
+          },
+          'get by/:name': ctx => {
+            expectTypeOf(ctx.params).toEqualTypeOf<{ name: string }>()
+            // @ts-expect-error A collection action has no `id`.
+            return ctx.params.id ?? ctx.params.name
+          }
+        },
+        member: {
+          'get files/:path+': ctx => {
+            expectTypeOf(ctx.params).toEqualTypeOf<{
+              id: string
+              path: string
+            }>()
+            return ctx.params
+          }
+        }
+      }),
+      defineController({
+        path: 'users',
+        member: {
+          get: ctx => {
+            expectTypeOf(ctx.params).toEqualTypeOf<{ id: string }>()
+            return ctx.params
+          }
+        }
+      })
+    ])
+    expect(
+      await (await request(app, 'GET', '/api/fonts/by/Uni')).json()
+    ).toBe('Uni')
+    expect(
+      await (await request(app, 'GET', '/api/fonts/3/files/a/b.otf')).json()
+    ).toEqual({ id: '3', path: 'a/b.otf' })
+    expect(await (await request(app, 'GET', '/api/users/u1')).json()).toEqual({
+      id: 'u1'
+    })
   })
 })

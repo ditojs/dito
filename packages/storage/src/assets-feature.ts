@@ -22,13 +22,13 @@ import { insertAsset } from './assets.ts'
 import { toStorageRegistry, type Storages } from './registry.ts'
 
 // The asset handling of a controller's writes, with the asset paths of its
-// table. The paths are read in the body of `ctx.body()`, where the column of
-// each path is its camelCase property, such as `custom_font_file` as
-// `customFontFile`. A `body` schema of the action needs to keep the
-// `signature` of files. The feature changes the files of the body in place,
-// so handlers read them through `ctx.body()` without their signatures. It
-// also signs the files of the rows that the controller sends. It reads JSON
-// bodies only, so the multipart bodies of upload routes pass through.
+// table. The paths are read in `ctx.body`, where the column of each path is
+// its camelCase property, such as `custom_font_file` as `customFontFile`. A
+// `body` schema of the action needs to keep the `signature` of files. The
+// feature changes the files of the body in place, so handlers read them in
+// `ctx.body` without their signatures. It also signs the files of the records
+// that the controller sends. Multipart bodies of upload routes have no
+// `ctx.body` and pass through.
 
 // The database of the `asset` table, or a function that returns the one of
 // the request, such as a Kysely on `ctx.db`.
@@ -69,15 +69,9 @@ export function assets(
     )
 
   const feature: FeatureDefinition = {
-    around: async (ctx, next) => {
-      if (
-        !writeMethods.includes(ctx.req.method) ||
-        !ctx.req.headers.get('Content-Type')?.includes('json')
-      ) {
-        return next()
-      }
-      const body = await ctx.body()
-      const files = findFiles(body)
+    middleware: async (ctx, next) => {
+      if (!writeMethods.includes(ctx.req.method)) return next()
+      const files = findFiles(ctx.body)
       if (files.length === 0) return next()
       const database = isFunction(db) ? db(ctx) : db
       const imported: ImportedFile[] = []
@@ -118,13 +112,13 @@ export function assets(
       }
     },
 
-    serialize: (_ctx, _row, json) => {
+    serialize: (_ctx, _record, json) => {
       if (!isObject(json)) return json
       const copy: Record<string, unknown> = { ...json }
       for (const { column, path, storage } of paths) {
         const property = camelize(column)
         if (copy[property] === undefined) continue
-        // Copy the value, as the row may share it.
+        // Copy the value, as the record may share it.
         if (copy[property] === json[property]) {
           copy[property] = clone(copy[property])
         }

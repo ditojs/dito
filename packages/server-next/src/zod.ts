@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
-// Schemas for values of the query string, which arrive as strings. Numbers and
-// dates reject the empty string. Each one can be `.optional()` or have a
-// `.default()`.
+// Zod schemas for the values of the query string, which arrive as strings,
+// imported from `@ditojs/server-next/zod`. Numbers and dates reject the empty
+// string. Each one can be `.optional()` or have a `.default()`.
 
 export const q = {
   boolean: () =>

@@ -2,50 +2,53 @@ import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type {
   ActionDefinition,
   ControllerDefinition,
-  FeatureDefinition
+  FeatureDefinition,
+  TypedActions
 } from './types.ts'
 
 // The bases that `withBase()` puts under controllers, by controller.
-const bases = new WeakMap<ControllerDefinition, Base>()
+const bases = new WeakMap<ControllerDefinition, FeatureDefinition>()
 
-export interface BaseOptions {
-  // Which default verbs of the base to route without `allow`: `all` of them,
-  // or only the `defined` ones, which a feature or the controller defines
-  // too. Dito 6 routes the defined ones.
-  allow?: 'all' | 'defined'
+// A definition whose handlers get the params of their action keys.
+export type Typed<D extends FeatureDefinition, C, M> = Omit<
+  D,
+  'collection' | 'member'
+> & {
+  collection?: TypedActions<C, 'collection'>
+  member?: TypedActions<M, 'member'>
 }
 
-interface Base extends Required<BaseOptions> {
-  def: FeatureDefinition
+export function defineController<C = {}, M = {}>(
+  def: Typed<ControllerDefinition, C, M>
+) {
+  return def as ControllerDefinition
 }
 
-export function defineController(def: ControllerDefinition) {
-  return def
+export function defineFeature<C = {}, M = {}>(
+  def: Typed<FeatureDefinition, C, M>
+) {
+  return def as FeatureDefinition
 }
 
-export function defineFeature(def: FeatureDefinition) {
-  return def
-}
-
-// Infers the types of `ctx.query` and `ctx.body()` in the handler from the
-// `query` and `body` schemas.
+// Infers the types of `ctx.query` and `ctx.body` in the handler from the
+// `query` and `body` schemas. Its handler's `ctx.params` are untyped. The
+// result doesn't infer the schemas from the type that it is assigned to.
 export function action<
   Q extends StandardSchemaV1 | undefined = undefined,
   B extends StandardSchemaV1 | undefined = undefined
->(def: ActionDefinition<Q, B>) {
+>(def: ActionDefinition<Q, B>): ActionDefinition<NoInfer<Q>, NoInfer<B>> {
   return def
 }
 
 // Puts `base` under the controller as its first layer, beneath its features
-// and its own definition. ORM packages use it for their default handlers and
-// slots.
+// and its own definition. ORM packages use it for their default verbs and
+// slots. The default verbs are routed only if `allow` lists them.
 export function withBase(
   base: FeatureDefinition,
-  def: ControllerDefinition,
-  { allow = 'all' }: BaseOptions = {}
+  def: ControllerDefinition
 ): ControllerDefinition {
   const controller = { ...def }
-  bases.set(controller, { def: base, allow })
+  bases.set(controller, base)
   return controller
 }
 

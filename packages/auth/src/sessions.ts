@@ -252,7 +252,7 @@ export function createSessions({
     cookies.set(headers, name, id, { ...options, expires: new Date(expire) })
   }
 
-  // The middleware for the `around` of `createApp()`. It saves the session
+  // The middleware for `createApp({ middleware })`. It saves the session
   // also when the action throws, so used challenges and codes stay used.
   const middleware: Middleware = async (ctx, next) => {
     const session = new Session(ctx, await load(ctx.req.headers))

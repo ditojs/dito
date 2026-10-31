@@ -44,7 +44,7 @@ function run(fn: (ctx: DitoContext) => Promise<unknown>, fail = false) {
         }
       })
     ],
-    around: requestStorage(dito),
+    middleware: requestStorage(dito),
     transaction: objectionTransaction(dito),
     getUser: async () => null,
     onError: error => errorResponse(toHttpError(error) ?? error)
@@ -99,7 +99,7 @@ describe('objectionKysely()', () => {
       await db(ctx).insertInto('note').values({ title: 'Lost' }).execute()
       await dito
         .knex('note')
-        .transacting(ctx.trx as never)
+        .transacting(ctx.db as never)
         .insert({ title: 'Lost too' })
     }, true)
     expect(response.status).toBe(409)

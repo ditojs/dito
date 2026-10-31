@@ -322,19 +322,25 @@ describe('insertAsset()', () => {
   })
 })
 
-describe('assets()', () => {
-  const kyselyTransaction: Transaction = (ctx, fn) =>
-    db.transaction().execute(trx => {
-      ctx.trx = trx
-      return fn()
-    })
+// Sets `ctx.db` to the transaction during `fn`, as ORM packages do.
+const kyselyTransaction: Transaction = (ctx, fn) =>
+  db.transaction().execute(async trx => {
+    const previous = ctx.db
+    ctx.db = trx
+    try {
+      return await fn()
+    } finally {
+      ctx.db = previous
+    }
+  })
 
+describe('assets()', () => {
   let received: any
 
   function setup() {
     const books = defineController({
       path: 'books',
-      use: [
+      features: [
         assets(paths.slice(0, 2), {
           storages: { covers, archive },
           db: (ctx: DitoContext) => ctx.db as Kysely<any>
@@ -342,14 +348,14 @@ describe('assets()', () => {
       ],
       collection: {
         post: async ctx => {
-          const body = await ctx.body()
+          const { body } = ctx
           received = body
           if (body.fail) throw new Error('Failed write')
           return body
         },
         get: () => ({ cover: file('a') })
       },
-      isRow: () => true
+      isRecord: () => true
     })
     return createApp({
       controllers: [books],
@@ -655,7 +661,7 @@ describe('assetUploads()', () => {
     const storages = new StorageRegistry([covers, archive])
     const books = defineController({
       path: 'books',
-      use: [
+      features: [
         // `assets()` leaves the multipart bodies of the uploads alone.
         assets(uploadPaths, {
           table: 'book',
@@ -670,7 +676,7 @@ describe('assetUploads()', () => {
         })
       ],
       ...(fail && {
-        around: async (_c, next) => {
+        middleware: async (_c, next) => {
           await next()
           throw new Error('Failed request')
         }
@@ -678,11 +684,7 @@ describe('assetUploads()', () => {
     })
     return createApp({
       controllers: [books],
-      transaction: (ctx, fn) =>
-        db.transaction().execute(trx => {
-          ctx.trx = trx
-          return fn()
-        }),
+      transaction: kyselyTransaction,
       getUser: async () => null
     })
   }

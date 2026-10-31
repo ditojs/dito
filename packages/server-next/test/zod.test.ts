@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { q } from '../src/index.ts'
+import { q } from '../src/zod.ts'
 
 describe('q', () => {
   it('parses booleans', () => {

@@ -15,17 +15,18 @@ export function objectionConnect(app: Application) {
 }
 
 // Runs the rest of the request in request storage of its own, as middleware
-// for the `around` of `createApp()`.
+// for the `middleware` of `createApp()`.
 export function requestStorage(app: Application): Middleware {
   return (ctx, next) => app.requestStorage.run({} as RequestLocals, next)
 }
 
-// The `transaction` of `createApp()`. It sets the transaction as `ctx.trx`
-// and in the request storage.
+// The `transaction` of `createApp()`. It sets the transaction as `ctx.db`
+// and in the request storage, and restores `ctx.db` after.
 export function objectionTransaction(app: Application): Transaction {
   return async (ctx, fn) => {
     const trx = await app.knex.transaction()
-    ctx.trx = trx
+    const { db } = ctx
+    ctx.db = trx
     try {
       const result = await app.requestStorage.run(
         { ...app.requestLocals, transaction: trx } as RequestLocals,
@@ -49,7 +50,7 @@ export function objectionTransaction(app: Application): Transaction {
       }
       throw error
     } finally {
-      ctx.trx = undefined
+      ctx.db = db
     }
   }
 }
