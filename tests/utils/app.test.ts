@@ -3,9 +3,8 @@ import { createTestApp, getAppUrl } from './app.js'
 
 describe('createTestApp()', () => {
   it('receives the requests to its url', async () => {
-    const app = createTestApp()
-    app.use(ctx => {
-      ctx.body = 'app'
+    const app = await createTestApp({
+      handlers: [async c => c.text('app')]
     })
     await app.start()
     // Servers of other processes may bind the app's port on specific loopback
@@ -32,7 +31,6 @@ describe('createTestApp()', () => {
         server.close()
       }
       await app.stop()
-      await app.knex.destroy()
     }
   })
 })

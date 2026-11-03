@@ -3,9 +3,8 @@ import { flushPromises } from '@vue/test-utils'
 import { startRegistration } from '@simplewebauthn/browser'
 import { TOTP } from 'otpauth'
 import { mountAdmin } from '../../packages/admin/src/test/mount.js'
-import { Credential } from '../e2e/passkeys/models/Credential.ts'
-import { Session } from '../e2e/passkeys/models/Session.ts'
 import { User } from '../e2e/passkeys/models/User.ts'
+import { Credential, Session } from '../utils/entities.ts'
 import {
   startPasskeysApp,
   getDialog,
@@ -19,7 +18,8 @@ vi.mock('@simplewebauthn/browser', async () =>
   (await import('./webauthn.js')).createWebAuthnMock()
 )
 
-const { getUrl, getAuthentication, post, logIn, setUpTotp } = startPasskeysApp()
+const { getUrl, em, getAuthentication, post, logIn, setUpTotp } =
+  startPasskeysApp()
 
 vi.setConfig({ testTimeout: 30_000 })
 
@@ -36,7 +36,7 @@ async function openSecurity({ features = {}, setUp = null } = {}) {
   const admin = await mountAdmin({
     views,
     server: getUrl(),
-    api: { users: 'users' },
+    api: { users: { path: 'users' } },
     authentication
   })
   const request = vi.spyOn(admin.context.api, 'request')
@@ -80,34 +80,36 @@ const getRequests = (request, method, url) =>
 
 // Passkeys with fixed dates, to compare the rows:
 async function addPasskeys(names = ['1Password']) {
-  const user = await User.query().findOne({ username: 'ada' })
+  const user = await em().findOne(User, { username: 'ada' })
+  const entityManager = em()
   for (const [index, name] of names.entries()) {
-    const { id } = await Credential.query().insert({
+    entityManager.create(Credential, {
       name,
       type: 'passkey',
       userModel: 'User',
       userId: `${user.id}`,
       key: `key-${index}`,
-      data: {}
+      data: {},
+      createdAt: new Date('2026-01-02T12:00:00Z')
     })
-    // The server sets `createdAt` on insert:
-    await Credential.query()
-      .findById(id)
-      .patch({ createdAt: '2026-01-02T12:00:00Z' })
   }
+  await entityManager.flush()
 }
 
 // Let the access that the login confirmed expire, as time would:
 async function expireConfirmedAccess() {
-  for (const session of await Session.query()) {
-    const { value } = session
+  for (const { id, value } of await em().find(Session, {})) {
     if (value.confirmedAccess) {
-      await session.$query().patch({
-        value: {
-          ...value,
-          confirmedAccess: { ...value.confirmedAccess, expires: 0 }
+      await em().nativeUpdate(
+        Session,
+        { id },
+        {
+          value: {
+            ...value,
+            confirmedAccess: { ...value.confirmedAccess, expires: 0 }
+          }
         }
-      })
+      )
     }
   }
 }
@@ -145,7 +147,7 @@ describe('Security dialog', () => {
       )
       expect(startRegistration).toHaveBeenCalledOnce()
       expect(getRows(admin)[1]).toMatch(/^Passkey.*Never$/)
-      expect(await Credential.query().where('type', 'passkey')).toHaveLength(2)
+      expect(await em().find(Credential, { type: 'passkey' })).toHaveLength(2)
     })
 
     it('stops quietly when the passkey prompt is cancelled', async () => {
@@ -178,7 +180,7 @@ describe('Security dialog', () => {
         () => expect(getRows(admin)).toEqual(['No passkeys yet.']),
         waitOptions
       )
-      expect(await Credential.query()).toEqual([])
+      expect(await em().find(Credential, {})).toEqual([])
     })
 
     it('names unknown passkeys plainly when asking', async () => {
@@ -281,7 +283,7 @@ describe('Security dialog', () => {
       await post('logout')
       await expect(
         post('login', { username: 'ada', password })
-      ).resolves.toMatchObject({ success: true })
+      ).resolves.toMatchObject({ user: { username: 'ada' } })
     }
 
     it('changes the password', async () => {
@@ -491,7 +493,7 @@ describe('Security dialog', () => {
       expect(dialog.find('input[name="code"]').exists()).toBe(false)
       await answerDialog(admin, 'Turn Off')
       await vi.waitFor(() => expect(getState(admin)).toContain('Not set up'))
-      expect(await Credential.query()).toEqual([])
+      expect(await em().find(Credential, {})).toEqual([])
     })
   })
 })

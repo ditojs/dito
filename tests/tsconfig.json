@@ -8,12 +8,18 @@
     "noEmit": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
-    "types": ["vitest/globals"]
+    "types": [
+      "vitest/globals"
+    ]
   },
-  "include": ["**/*.ts"],
+  "include": [
+    "**/*.ts",
+    "../packages/storage/src/leather.d.ts",
+    "../packages/storage/src/aws-lite-s3.d.ts",
+    "../packages/admin-server/src/ditojs-build.d.ts"
+  ],
   "exclude": [
     "e2e/**",
-    "utils/admin-app/**",
-    "types/server/from-model-js/**"
+    "utils/admin-app/**"
   ]
 }

@@ -2,9 +2,10 @@ import { vi } from 'vitest'
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser'
 import { mountAdmin } from '../../packages/admin/src/test/mount.js'
 import AdminUser from '../../packages/admin/src/AdminUser.js'
+import { hashPassword } from '@ditojs/auth'
 import { sentPasswordResets } from '../e2e/passkeys/app.ts'
-import { Session } from '../e2e/passkeys/models/Session.ts'
 import { User } from '../e2e/passkeys/models/User.ts'
+import { Session } from '../utils/entities.ts'
 import {
   startPasskeysApp,
   getDialog,
@@ -18,7 +19,8 @@ vi.mock('@simplewebauthn/browser', async () =>
   (await import('./webauthn.js')).createWebAuthnMock()
 )
 
-const { getUrl, getAuthentication, post, logIn, setUpTotp } = startPasskeysApp()
+const { getUrl, em, getAuthentication, post, logIn, setUpTotp } =
+  startPasskeysApp()
 
 const views = { books: { type: 'view', label: 'Books', fields: {} } }
 
@@ -30,7 +32,7 @@ const mount = ({ features = {}, ...options } = {}) =>
   mountAdmin({
     views,
     server: getUrl(),
-    api: { users: 'users' },
+    api: { users: { path: 'users' } },
     authentication: { ...getAuthentication(), ...features },
     ...options
   })
@@ -287,15 +289,19 @@ describe('Session', () => {
         await logInWithDialog(admin)
         // Expire the pending login of the session, as time would:
         await vi.waitFor(async () => {
-          const [session] = await Session.query()
+          const [session] = await em().find(Session, {})
           expect(session.value.pendingLogin).toBeDefined()
-          const { value } = session
-          await session.$query().patch({
-            value: {
-              ...value,
-              pendingLogin: { ...value.pendingLogin, expires: 0 }
+          const { id, value } = session
+          await em().nativeUpdate(
+            Session,
+            { id },
+            {
+              value: {
+                ...value,
+                pendingLogin: { ...value.pendingLogin, expires: 0 }
+              }
             }
-          })
+          )
         }, waitOptions)
         await answerDialog(admin, 'Verify', { code })
         await waitForNotification(notify, { text: 'Missing or expired login' })
@@ -336,14 +342,13 @@ describe('Session', () => {
       expect(admin.context.routeTree).toBe(null)
     })
 
-    it(`keeps the user when the server doesn't confirm`, async () => {
+    it('logs out when the session already ended on the server', async () => {
       await logIn()
       const admin = await mount()
       // The session ended on the server, e.g. as it expired:
-      await Session.query().delete()
-      expect(await admin.context.session.logout()).toBe(false)
-      expect(admin.context.user).toMatchObject({ username: 'ada' })
-      expect(admin.context.routeTree).not.toBe(null)
+      await em().nativeDelete(Session, {})
+      expect(await admin.context.session.logout()).toBe(true)
+      expect(admin.context.user).toBe(null)
     })
 
     it('logs a failing logout request and keeps the user', async () => {
@@ -368,7 +373,7 @@ describe('Session', () => {
       const { session } = admin.context
       expect(await session.ensureUser()).toMatchObject({ username: 'ada' })
       expect(getDialog(admin)).toBeUndefined()
-      await Session.query().delete()
+      await em().nativeDelete(Session, {})
       const ensuring = session.ensureUser()
       await logInWithDialog(admin)
       expect(await ensuring).toMatchObject({ username: 'ada' })
@@ -391,7 +396,10 @@ describe('Session', () => {
       await logIn()
       const { context } = await mount()
       context.session.loadCache.books = cachedResponse
-      await User.query().insert({ username: 'grace', password: 'secret' })
+      await em().insert(User, {
+        username: 'grace',
+        hash: await hashPassword('secret')
+      })
       await post('logout')
       await post('login', { username: 'grace', password: 'secret' })
       await context.session.ensureUser()

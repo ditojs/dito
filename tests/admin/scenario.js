@@ -1,52 +1,37 @@
-import os from 'node:os'
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { TOTP } from 'otpauth'
 import { enterValue } from '../../packages/admin/src/test/mount.js'
-import { AdminController } from '@ditojs/server'
 import { createTestApp, getAppUrl } from '../utils/app.ts'
-import { createTestDatabase } from '../utils/database.ts'
 import { scenario } from '../e2e/passkeys/app.ts'
 
 // Starts the app of the passkeys scenario for the tests of a file, and resets
-// its data before each test, which also ends the sessions. Returns the `app`,
-// `getUrl()`, as the URL is only known once the app runs, the `authentication`
-// features that its admin controller passes to the admin, and helpers that
-// prepare the user `ada` through the app's API, with the session cookie that
-// the admin uses too.
+// its data before each test, which also ends the sessions. Returns `getUrl()`,
+// as the URL is only known once the app runs, `em()`, a new fork of the
+// entity manager to read and write the data, the `authentication` features
+// that the admin gets from the server, and helpers that prepare the user `ada`
+// through the app's API, with the session cookie that the admin uses too. The
+// tests mount the admin themselves.
 export function startPasskeysApp() {
-  const { models, setup, beforeEach: seed } = scenario
-  const app = createTestApp({
-    ...scenario,
-    controllers: { ...scenario.controllers, admin: AdminController },
-    config: {
-      ...scenario.config,
-      // The tests send wrong passwords and codes on purpose:
-      log: { errors: false },
-      // Only for the global config, the admin is mounted by the tests:
-      admin: { mode: 'production', dist: os.tmpdir(), api: { users: 'users' } }
-    }
-  })
+  const { entities, users, seed } = scenario
+  let app = null
   let url = null
 
   beforeAll(async () => {
-    await createTestDatabase(app)
-    await setup(app)
+    // The admin of the tests sends its requests to the root of the server:
+    app = await createTestApp({ entities, api: users, prefix: '' })
+    // The tests send wrong passwords and codes on purpose:
+    app.logErrors = false
     await app.start()
     // Passkeys need a secure context, which `localhost` is:
     url = getAppUrl(app).replace('//127.0.0.1:', '//localhost:')
   })
 
-  afterAll(async () => {
-    await app.stop()
-    await app.knex.destroy()
-  })
+  afterAll(() => app?.stop())
 
   beforeEach(async () => {
-    for (const modelClass of Object.values(models).reverse()) {
-      await modelClass.query().delete()
-    }
-    await seed()
+    await app.orm.schema.clear()
+    await seed(app.orm.em.fork())
   })
 
   const post = async (path, data = {}) => {
@@ -57,7 +42,8 @@ export function startPasskeysApp() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     })
-    const result = await response.json()
+    // Actions without an answer answer 204:
+    const result = response.status === 204 ? null : await response.json()
     if (!response.ok) {
       throw new Error(result.message)
     }
@@ -65,10 +51,9 @@ export function startPasskeysApp() {
   }
 
   return {
-    app,
     getUrl: () => url,
-    getAuthentication: () =>
-      app.getAdminController().getGlobalConfig().authentication,
+    em: () => app.orm.em.fork(),
+    getAuthentication: () => app.authentication,
     post,
 
     logIn: () => post('login', { username: 'ada', password: 'secret' }),

@@ -1,117 +1,47 @@
 // tests/utils/database.ts
-import type { Knex } from 'knex'
-import type { Application } from '@ditojs/server'
+import { randomBytes } from 'node:crypto'
+import { MikroORM, type Options } from '@mikro-orm/postgresql'
+import type { Kysely } from 'kysely'
 
-interface PropertyDefinition {
-  type?: string
-  primary?: boolean
-  nullable?: boolean
-  index?: boolean
-  unique?: boolean | string
+// A database of its own on the local Postgres server, for the tests of the
+// packages and of `tests/`. MikroORM's schema generator creates the tables of
+// the entities. `db` is a Kysely on the ORM's pool, and `sql()` runs a query on
+// its connection. `PGUSER` names the user, `postgres` by default. `drop()`
+// closes the ORM and drops the database.
+
+export type TestOrm = MikroORM
+
+const connection = {
+  host: 'localhost',
+  user: process.env.PGUSER ?? 'postgres',
+  discovery: { warnWhenNoEntities: false },
+  // Use the process timezone for the database sessions too, like a typical
+  // deployment does.
+  ...(process.env.TZ && {
+    driverOptions: { options: `-c TimeZone=${process.env.TZ}` }
+  })
 }
 
-type TestApp = Application & { knex: Knex }
-
-export async function createTestDatabase(
-  app: TestApp,
-  ...modelClasses: any[]
-) {
-  const models = modelClasses.length
-    ? modelClasses
-    : Object.values(app.models)
-  for (const modelClass of models) {
-    const { properties } = modelClass.definition
-    const { jsonAttributes } = modelClass
-    await app.knex.schema.createTable(
-      modelClass.tableName,
-      (table: Knex.CreateTableBuilder) => {
-        // Properties with the same string in `unique` share one constraint,
-        // like in migrations:
-        const uniqueComposites: Record<string, string[]> = {}
-        for (const [name, property] of Object.entries(
-          properties as Record<
-            string,
-            PropertyDefinition
-          >
-        )) {
-          if (name === '#id' || name === '#ref') {
-            continue
-          }
-          addColumn(table, name, property, jsonAttributes.includes(name))
-          const { unique } = property
-          if (typeof unique === 'string') {
-            uniqueComposites[unique] ||= []
-            uniqueComposites[unique].push(name)
-          }
-        }
-        for (const columns of Object.values(uniqueComposites)) {
-          table.unique(columns)
-        }
-      }
-    )
+export async function createTestDatabase(entities: Options['entities'] = []) {
+  const dbName = `dito_test_${randomBytes(6).toString('hex')}`
+  const orm = await MikroORM.init({
+    ...connection,
+    dbName,
+    entities
+  })
+  await orm.schema.ensureDatabase({ create: true })
+  await orm.schema.create()
+  const db: Kysely<any> = orm.em.getConnection().getClient()
+  const sql = (query: string, params: unknown[] = []) =>
+    orm.em.getConnection().execute(query, params)
+  const drop = async () => {
+    await orm.close()
+    const admin = await MikroORM.init({ ...connection, dbName: 'postgres' })
+    try {
+      await admin.em.getConnection().execute(`drop database "${dbName}"`)
+    } finally {
+      await admin.close()
+    }
   }
-}
-
-function addColumn(
-  table: Knex.CreateTableBuilder,
-  name: string,
-  property: PropertyDefinition,
-  isJson: boolean
-) {
-  // `jsonAttributes` also holds the properties that reference definitions:
-  const type = isJson ? 'json' : property.type
-  let column: Knex.ColumnBuilder
-
-  if (property.primary) {
-    // Sessions have string ids, other models auto-incrementing integers:
-    column =
-      type === 'string'
-        ? table.string(name).primary()
-        : table.increments(name).primary()
-    return column
-  }
-
-  switch (type) {
-    case 'string':
-      column = table.text(name)
-      break
-    case 'text':
-      column = table.text(name)
-      break
-    case 'integer':
-      column = table.integer(name)
-      break
-    case 'number':
-      column = table.float(name)
-      break
-    case 'boolean':
-      column = table.boolean(name)
-      break
-    case 'date':
-      column = table.date(name)
-      break
-    case 'datetime':
-      column = table.datetime(name)
-      break
-    case 'timestamp':
-      column = table.timestamp(name)
-      break
-    case 'json':
-      column = table.jsonb(name)
-      break
-    default:
-      column = table.text(name)
-  }
-
-  if (property.nullable !== false) {
-    column.nullable()
-  } else {
-    column.notNullable()
-  }
-
-  if (property.index) {
-    column.index()
-  }
-
-  return column
+  return { orm, db, sql, drop }
 }

@@ -1,67 +1,52 @@
 import path from 'path'
-import type { Browser, Page } from '@playwright/test'
+import type { Browser } from '@playwright/test'
+import type { MiddlewareHandler } from 'hono'
+import { hyphenate } from '@ditojs/utils'
+import type { ControllerDefinition } from '@ditojs/server'
+import {
+  defineController,
+  type MikroControllerDefinition
+} from '@ditojs/mikro'
+import type {
+  EntityClass,
+  EntityManager,
+  RequiredEntityData
+} from '@mikro-orm/postgresql'
 import { test as base } from './browser-errors.js'
-import {
-  AdminController,
-  ModelController,
-  type ApplicationControllers,
-  type Model,
-  type ModelControllerActions,
-  type ModelControllerMemberActions,
-  type Services
-} from '@ditojs/server'
-import {
-  createTestApp,
-  getAppUrl,
-  stubSession
-} from './app.js'
-import { createTestDatabase } from './database.js'
+import { createTestApp, stubSession, type TestApi } from './app.js'
+import type { TestOrm } from './database.js'
 import { waitForUrl } from './net.js'
 
-type TestApp = ReturnType<typeof createTestApp>
+// The settings of a scenario's entity controller, which go over the defaults
+// of `scenarioController()`.
+export type ScenarioControllerOptions = Partial<
+  Omit<MikroControllerDefinition, 'entity'>
+>
 
-interface StartTestAppOptions {
-  /** The scenario's directory, containing its `views.ts`. */
-  dirname: string
-  models: Record<string, typeof Model>
-  controllers: Record<string, unknown>
-  services?: Services
-  config?: Record<string, unknown>
-  /** Merged into the admin's api config. */
-  api?: Record<string, unknown>
-}
-
-/** Create the embedded app + auth stub. Returns the unstarted app. */
-export function startTestApp(opts: StartTestAppOptions): TestApp {
-  const app = createTestApp({
-    models: opts.models,
-    controllers: opts.controllers,
-    services: opts.services,
-    admin: {
-      name: path.basename(opts.dirname),
-      views: path.join(opts.dirname, 'views.ts'),
-      api: { url: '/api/', ...opts.api }
+/**
+ * The controller of an entity, at the hyphenated plural of its name, such as
+ * `asset-widgets` for `AssetWidget`, which routes the usual CRUD actions and
+ * lets anyone in. Scenarios configure finds, filters, mixins, etc. through
+ * `options`, whose `actions` add to the CRUD actions.
+ */
+export function scenarioController(
+  entity: EntityClass<any>,
+  { actions, ...options }: ScenarioControllerOptions = {}
+): ControllerDefinition {
+  return defineController({
+    path: hyphenate(`${entity.name}s`),
+    authorize: true,
+    ...options,
+    actions: {
+      'get': true,
+      'post': true,
+      'get :id': true,
+      'patch :id': true,
+      'delete :id': true,
+      ...actions
     },
-    config: opts.config
+    entity
   })
-  // Scenarios with users of their own log in through their controller:
-  if (!opts.api?.users) {
-    stubSession(app)
-  }
-  return app
-}
-
-/** Initialise the in-process PGlite schema from the app's models. */
-export async function bootTestDb(app: TestApp): Promise<void> {
-  await createTestDatabase(app)
-}
-
-/** Start the HTTP server and wait for /admin/ to respond. Returns the url. */
-export async function startAndWaitForAdmin(app: TestApp): Promise<string> {
-  await app.start()
-  const url = getAppUrl(app)
-  await waitForUrl(`${url}/admin/`)
-  return url
 }
 
 /** Visit the admin once to warm its Vite dev server, so the first test
@@ -75,111 +60,135 @@ export async function warmAdmin(browser: Browser, url: string): Promise<void> {
   }
 }
 
-/** Stop the server and release knex/connection resources. */
-export async function teardownTestApp(app: TestApp): Promise<void> {
-  // Suppress errors during teardown — closing connections triggers
-  // expected "Premature close" errors from in-flight responses.
-  app.off('error', app.logError)
-  app.server?.closeAllConnections()
-  await app.stop()
-  await app.knex?.destroy()
-}
-
-/**
- * Base class for scenario controllers, allowing the usual CRUD actions.
- * Scenarios extend it to configure scopes, graphs, relations, etc.
- */
-export class ScenarioController extends ModelController {
-  // Typed as actions, so that scenarios can add actions of their own.
-  override collection: ModelControllerActions<this> = {
-    allow: ['get', 'post']
-  }
-
-  override member: ModelControllerMemberActions<this> = {
-    allow: ['get', 'patch', 'delete']
-  }
-}
-
 export interface ScenarioOptions {
   /** The scenario's directory, usually `import.meta.dirname`. */
   dirname: string
-  /** Models to register. Rows are deleted before each test, in reverse
-   * order, so list related models after the ones they depend on. */
-  models: Record<string, typeof Model>
-  /** Controllers, keyed by name. Models without a controller named after
-   * their plural (e.g. `Widgets` for `Widget`) get a `ScenarioController`. */
-  controllers?: ApplicationControllers
-  /** Services, e.g. `PasskeyService`. */
-  services?: Services
-  /** Extra tables to clear before the models, e.g. join tables. */
-  tables?: string[]
-  /** Extra config merged into the app config. */
-  config?: Record<string, unknown>
-  /** Merged into the admin's api config, e.g. `users` to log in through a
-   * `UsersController` instead of the stubbed session. */
+  /** The entities, with the tables that MikroORM's schema generator creates.
+   * The tables are emptied before each test. */
+  entities: EntityClass<any>[]
+  /** The settings of the entities' controllers by entity name, see
+   * `scenarioController()`, or `false` for entities without one. */
+  controllers?: Record<string, ScenarioControllerOptions | false>
+  /** The routes of users to log in with, instead of the stubbed session,
+   * such as the ones of `usersRoutes()`. */
+  users?: (orm: TestOrm) => TestApi
+  /** Merged into the admin's api config, e.g. `users` to log in through
+   * `users` instead of the stubbed session. */
   api?: Record<string, unknown>
-  /** Runs once after the database is created, before the app starts, e.g.
-   * to create join tables that `createTestDatabase()` doesn't derive. */
-  setup?: (app: TestApp) => Promise<void>
-  /** Runs before each test, after the default reset. Use it to clear extra
-   * tables or to seed data. */
+  /** Hono middleware that runs before the app, such as file servers. */
+  handlers?: MiddlewareHandler[]
+  /** Runs once the app listens at `url`, e.g. to set URLs of storages. */
+  setup?: (url: string) => void | Promise<void>
+  /** Runs after the app stopped, e.g. to remove folders. */
+  teardown?: () => void | Promise<void>
+  /** Runs before each test, after the tables are emptied, e.g. to seed
+   * data. */
   beforeEach?: () => Promise<void>
+  host?: string
+  port?: number
+}
+
+// The ORM of the running scenario, which `db` uses. A worker runs one scenario
+// at a time.
+let currentOrm: TestOrm | null = null
+
+export function getOrm(): TestOrm {
+  if (!currentOrm) throw new Error('The app of the scenario is not running')
+  return currentOrm
+}
+
+const fork = (): EntityManager => getOrm().em.fork()
+
+/**
+ * The database of the running scenario, for the tests to prepare and check
+ * data. Each call works on a new fork of the entity manager, so reads see what
+ * the app wrote meanwhile. `insert()` creates a row with the relations in
+ * `data`, as `em.create()` does, and flushes it.
+ */
+export const db = {
+  em: fork,
+  async insert<T extends object>(
+    entity: EntityClass<T>,
+    data: RequiredEntityData<T>
+  ): Promise<T> {
+    const em = fork()
+    const row = em.create(entity, data)
+    await em.flush()
+    return row
+  },
+  find: ((...args) => fork().find(...args)) as EntityManager['find'],
+  findOne: ((...args) => fork().findOne(...args)) as EntityManager['findOne'],
+  count: ((...args) => fork().count(...args)) as EntityManager['count'],
+  nativeUpdate: ((...args) =>
+    fork().nativeUpdate(...args)) as EntityManager['nativeUpdate']
 }
 
 /**
- * Starts the embedded Dito app of a scenario (PGlite-backed, Vite-served
- * admin), with a `reset()` function that resets its models and seeds them.
+ * Starts the embedded Dito app of a scenario (Postgres-backed, Vite-served
+ * admin) and waits for its admin. Returns `reset()`, which empties its tables
+ * and seeds them, and `stop()`, which stops it and drops its database.
  */
 export async function startScenario({
   dirname,
-  models,
+  entities,
   controllers = {},
-  services,
-  tables = [],
-  config,
+  users,
   api: adminApi,
+  handlers = [],
   setup,
-  beforeEach
+  teardown,
+  beforeEach,
+  host,
+  port
 }: ScenarioOptions) {
-  const api: Record<string, unknown> = { ...controllers }
-  for (const modelClass of Object.values(models)) {
-    const name = `${modelClass.name}s`
-    if (!api[name]) {
-      // Name the class, as Dito derives the controller's path from it.
-      api[name] = Object.defineProperty(
-        class extends ScenarioController {
-          override modelClass = modelClass
-        },
-        'name',
-        { value: name }
-      )
-    }
-  }
-  const modelClasses = Object.values(models).reverse()
-
-  const app = startTestApp({
-    dirname,
-    models,
-    controllers: { admin: AdminController, api },
-    services,
-    config,
-    api: adminApi
+  const app = await createTestApp({
+    entities,
+    api: orm => {
+      const own = users?.(orm)
+      return {
+        ...own,
+        controllers: [
+          ...entities.flatMap(entity => {
+            const options = controllers[entity.name]
+            return options === false
+              ? []
+              : [scenarioController(entity, options)]
+          }),
+          ...(own?.controllers ?? [])
+        ]
+      }
+    },
+    admin: {
+      name: path.basename(dirname),
+      views: path.join(dirname, 'views.ts'),
+      api: adminApi
+    },
+    // Scenarios with users of their own log in through their routes:
+    handlers: adminApi?.users ? handlers : [...handlers, stubSession()],
+    host,
+    port
   })
-  await bootTestDb(app)
-  await setup?.(app)
-  const url = await startAndWaitForAdmin(app)
+  const orm = app.orm!
+  currentOrm = orm
+  const url = await app.start()
+  await waitForUrl(`${url}/admin/`)
+  await setup?.(url)
 
   const reset = async () => {
-    for (const table of tables) {
-      await app.knex.table(table).delete()
-    }
-    for (const modelClass of modelClasses) {
-      await modelClass.query().delete()
-    }
+    await orm.schema.clear()
     await beforeEach?.()
   }
 
-  return { app, url, reset }
+  const stop = async () => {
+    // Closing the connections ends the responses in flight, which isn't worth
+    // logging.
+    app.logErrors = false
+    await app.stop()
+    currentOrm = null
+    await teardown?.()
+  }
+
+  return { app, url, reset, stop }
 }
 
 /**
@@ -200,7 +209,7 @@ export function defineScenario(options: ScenarioOptions) {
         try {
           await use(scenario.url)
         } finally {
-          await teardownTestApp(scenario.app)
+          await scenario.stop()
         }
       },
       // Starting the app and compiling its admin takes as long as it takes,
@@ -213,7 +222,7 @@ export function defineScenario(options: ScenarioOptions) {
     },
 
     // Tests share one database per worker, so reset it before each test.
-    // Requesting `url` boots the app, which binds the models to its knex.
+    // Requesting `url` boots the app and its database.
     reset: [
       async ({ url: _url }, use) => {
         await scenario.reset()
@@ -225,43 +234,4 @@ export function defineScenario(options: ScenarioOptions) {
 
   // Expose the options to start the scenario by hand, see `scripts/serve.js`:
   return Object.assign(test, { options })
-}
-
-/**
- * Returns `seed` and `saveAndFetch` helpers for a model + REST resource.
- */
-export function createModelHelpers<M extends typeof Model>(
-  ModelClass: M,
-  resource: string,
-  defaults: Record<string, unknown> = {}
-) {
-  async function seed(data: Record<string, unknown> = {}) {
-    const instance = await ModelClass.query().insert({ ...defaults, ...data })
-    return instance.$id() as number
-  }
-
-  async function saveAndFetch(
-    page: Page,
-    id: number
-  ): Promise<InstanceType<M>> {
-    const saved = page.waitForResponse(
-      resp => (
-        resp.url().includes(`/api/${resource}/${id}`) &&
-        resp.request().method() === 'PATCH' &&
-        resp.ok()
-      )
-    )
-    await page
-      .locator('button.dito-button[type="submit"]')
-      .first()
-      .click()
-    await saved
-    const instance = await ModelClass.query().findById(id)
-    if (!instance) {
-      throw new Error(`${ModelClass.name} ${id} not found`)
-    }
-    return instance as InstanceType<M>
-  }
-
-  return { seed, saveAndFetch }
 }

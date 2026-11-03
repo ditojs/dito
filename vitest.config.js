@@ -1,11 +1,9 @@
 import { defineConfig } from 'vitest/config'
 import createVuePlugin from '@vitejs/plugin-vue'
 
-const componentTests = [
-  'packages/{admin,ui}/src/**/*.test.*',
-  // The admin's tests against servers:
-  'tests/admin/**/*.test.*'
-]
+const componentTests = ['packages/{admin,ui}/src/**/*.test.*']
+// The admin's tests against servers:
+const adminTests = ['tests/admin/**/*.test.*']
 const excludedDirectories = [
   '**/node_modules/**',
   '**/e2e/**',
@@ -24,15 +22,11 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'node',
-          // Server tests start in-memory databases with pglite, which can take
-          // several seconds when many test files do so at once:
+          // Server tests create databases on Postgres, which can take several
+          // seconds when many test files do so at once:
           testTimeout: 30_000,
           hookTimeout: 30_000,
-          // NOTE: The V8 of Node.js 24 sometimes frees wasm code twice when
-          // collecting pglite's dead wasm code, and crashes the worker:
-          // https://github.com/nodejs/node/issues/66366
-          execArgv: ['--no-wasm-code-gc'],
-          exclude: [...excludedDirectories, ...componentTests]
+          exclude: [...excludedDirectories, ...componentTests, ...adminTests]
         }
       },
       {
@@ -42,6 +36,17 @@ export default defineConfig({
           name: 'components',
           include: componentTests,
           environment: 'happy-dom'
+        }
+      },
+      {
+        extends: true,
+        plugins: [createVuePlugin()],
+        test: {
+          name: 'admin',
+          // Their hooks start apps and drop databases, see above:
+          hookTimeout: 30_000,
+          include: adminTests,
+          environment: './tests/admin/environment.js'
         }
       }
     ],
