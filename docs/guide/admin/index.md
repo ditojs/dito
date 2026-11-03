@@ -10,8 +10,9 @@ option and member.
 
 ## How the pieces fit
 
-- The server hosts the admin through an `AdminController`, and serves the
-  global `dito` object with the `api` and `settings` of `config.admin`.
+- The server serves the admin with `serveAdmin()` of `@ditojs/admin-server`.
+  It passes the admin the global `dito` object with `api`, `settings` and
+  `authentication`.
 - The admin's entry module creates a `DitoAdmin` with your views.
 - Views hold fields, e.g. a list of books. Lists open forms to edit their
   items, and forms hold fields.
@@ -20,67 +21,66 @@ option and member.
 
 ## Server setup
 
-Add an `AdminController` at the top level of the app's controllers, next to
-the API namespace. Its name gives its path: `Admin` is served at `/admin` with
-`app.normalizePaths`, see [Controllers](../server/controllers.md#paths):
+`serveAdmin()` serves the admin under a path, next to the app's API, see
+[Serving the admin](../server/admin.md):
 
 ```js
-// src/server/controllers/index.js
-import { AdminController } from '@ditojs/server'
+import path from 'node:path'
+import { serveAdmin } from '@ditojs/admin-server'
+import { defineAdminViteConfig } from '@ditojs/admin-server/vite'
 
-export class Admin extends AdminController {
-  authorize = ['editor', 'sales', 'admin']
-}
+const admin = serveAdmin({
+  base: '/admin',
+  // Where the production build of the admin goes:
+  dist: path.resolve('dist/admin'),
+  // In development, Vite serves the admin's sources, `index.html` and
+  // `views/` in `root`:
+  vite:
+    process.env.NODE_ENV === 'development'
+      ? await defineAdminViteConfig({
+          root: 'src/admin',
+          base: '/admin',
+          mode: 'development'
+        })
+      : undefined,
+  // Passed to the admin as `dito.api`:
+  api: { url: '/api', locale: 'en-US' },
+  // Passed to the admin as `dito.settings`:
+  settings: { rootClass: 'bookshop-admin' },
+  // What the login and account views offer:
+  authentication: users.features
+})
 
-export * as api from './api/index.js'
+app.route('/admin', admin)
 ```
 
-The admin's users log in through a `UsersController`, e.g. at `/api/users`,
-see [Controllers](../server/controllers.md).
-
-Configure the admin in `config.admin`:
-
-```js
-// config/index.js
-export default {
-  admin: {
-    // The folder with the admin's sources, `index.html` and `index.js`:
-    root: './src/admin',
-    // Where the production build of the admin goes:
-    dist: './dist/admin',
-    // Passed to the admin as `dito.api`:
-    api: {
-      url: '/api',
-      locale: 'en-US'
-    },
-    // Passed to the admin as `dito.settings`:
-    settings: {
-      rootClass: 'bookshop-admin'
-    }
-  }
-}
-```
+The admin's users log in through the users controller of `@ditojs/auth`, e.g.
+at `/api/users`. Its `features` go to `authentication`. See
+[Users and sessions](../server/auth.md).
 
 `settings` holds `rootClass`, a class for the admin's root element, and
 `forceDragFallback`, see
 [AdminContext](../../api/admin/admin.md#settings).
 
-In development (`config.env === 'development'`), the controller serves the
-admin's sources through Vite with hot reloading. Otherwise it serves the build
-in `dist`. Both need the build tools, see
-[Installation](../server/index.md#installation). To build, add
+With `vite`, `serveAdmin()` serves the admin's sources through Vite with hot
+reloading. Without it, it serves the build in `dist`. To build, add
 `admin.vite.config.js` to the app's root folder and run
 `vite build --config admin.vite.config.js`:
 
 ```js
 // admin.vite.config.js
-import app from './src/server/app.js'
+import { defineAdminViteConfig } from '@ditojs/admin-server/vite'
 
-export default app.defineAdminViteConfig()
+export default defineAdminViteConfig({
+  root: 'src/admin',
+  base: '/admin',
+  dist: 'dist/admin'
+})
 ```
 
-`defineAdminViteConfig(config)` takes Vite options to merge, e.g. `resolve`
-aliases. The controller reads the same file in development.
+The second argument of `defineAdminViteConfig(options, config)` takes Vite
+options to merge, e.g. `resolve` aliases. Building and development need the
+peer dependencies `vite`, `@vitejs/plugin-vue` and `@ditojs/build`.
 
 ## The admin entry
 
@@ -101,10 +101,11 @@ aliases. The controller reads the same file in development.
 </html>
 ```
 
-`index.js` creates the admin. The controller injects the global `dito` object
-into `index.html`, which is the default of the `dito` option of `DitoAdmin`.
-The `api` option is merged over `dito.api`, so settings that belong to code,
-like functions, go here. `api.users` could live in `config.admin.api` too:
+`index.js` creates the admin. The admin's Vite config adds a script to
+`index.html`. The script loads the global `dito` object from `/admin/dito.js`.
+This object is the default of the `dito` option of `DitoAdmin`. The `api`
+option is merged over `dito.api`, so settings that belong to code, like
+functions, go here. `api.users` could also go in the `api` of `serveAdmin()`:
 
 ```js
 // src/admin/index.js

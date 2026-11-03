@@ -6,55 +6,86 @@ them again when no book uses them anymore.
 
 ## Solution
 
-Configure the storages in the application's config:
+Create the storages, and list where the `book` table stores files:
 
 ```js
-// config/index.js
-export default {
-  storages: {
-    covers: {
-      type: 'disk',
-      path: 'storage/covers',
-      // The absolute URL where your web server serves the folder:
-      url: 'https://bookshop.example.com/covers/'
-    },
-    samplePages: {
-      type: 'disk',
-      path: 'storage/sample-pages',
-      url: 'https://bookshop.example.com/sample-pages/'
-    }
+// storages.js
+import { getKysely } from '@ditojs/mikro'
+import { createAssets, createStorages } from '@ditojs/storage'
+
+export const storages = createStorages({
+  covers: { type: 'disk', path: 'storage/covers', url: '/covers/' },
+  samplePages: {
+    type: 'disk',
+    path: 'storage/sample-pages',
+    url: '/sample-pages/'
   }
-}
+})
+
+export const assetPaths = [
+  { table: 'book', column: 'cover', path: '', storage: 'covers' },
+  { table: 'book', column: 'sample_pages', path: '', storage: 'samplePages' }
+]
+
+export const assets = createAssets({
+  paths: assetPaths,
+  storages,
+  // The request's Kysely, so that the `asset` rows of a write commit with it.
+  db: getKysely,
+  deleteUnusedAfter: 24 * 60 * 60 * 1000
+})
 ```
 
-Declare the asset properties on the model, register an asset model, and let
-the controller accept uploads for them:
+Declare the file columns on the entity. Give the controller the upload
+actions and the file handling:
 
 ```js
-import { Model, AssetMixin, ModelController } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
+import { defineController } from '@ditojs/mikro'
+import { assets } from './storages.js'
 
-// Add it to the application's `models` under the name `Asset`:
-export class Asset extends AssetMixin(Model) {}
-
-export class Book extends Model {
-  static properties = {
-    title: { type: 'string', required: true },
-    cover: { type: 'asset', nullable: true },
-    samplePages: { type: 'array', items: { type: 'asset' }, default: [] }
+const BookSchema = defineEntity({
+  name: 'Book',
+  properties: {
+    id: p.integer().primary(),
+    title: p.string(),
+    // File objects, in plain JSON columns:
+    cover: p.json().nullable(),
+    samplePages: p.json().onCreate(() => [])
   }
+})
+export class Book extends BookSchema.class {}
+BookSchema.setClass(Book)
 
-  static assets = {
-    cover: { storage: 'covers', readDimensions: true },
-    samplePages: { storage: 'samplePages' }
+export const books = defineController({
+  path: 'books',
+  entity: Book,
+  authorize: ['editor', 'admin'],
+  mixins: [assets.mixin('book')],
+  actions: {
+    'get': true,
+    'post': true,
+    'get :id': true,
+    'patch :id': true,
+    'delete :id': true
   }
-}
+})
+```
 
-export class Books extends ModelController {
-  modelClass = Book
-  assets = true
-  collection = { allow: ['get', 'post'] }
-  member = { allow: ['get', 'patch', 'delete'] }
-}
+The host serves the folders at the storages' URLs, with `serveStorage()`. A
+timer deletes the files that no book uses:
+
+```js
+import { serveStorage } from '@ditojs/storage/node'
+import { assets, storages } from './storages.js'
+
+app.use('/covers/*', serveStorage(storages.get('covers')))
+app.use('/sample-pages/*', serveStorage(storages.get('samplePages')))
+
+setInterval(
+  () => assets.runJobs(orm.em.getKysely()),
+  60 * 60 * 1000
+)
 ```
 
 In the admin, upload fields edit the properties:
@@ -86,19 +117,26 @@ export const bookForm = {
 
 ## Why
 
-Upload fields send each file to the controller's upload route for their data
-path, e.g. `POST books/upload/cover`, which `assets = true` creates from the
-model's `assets`. The storage keeps the file and responds with a file object
-(`key`, `name`, `type`, `size`, `url`, …) that the field holds as its value.
-Saving the book stores the file objects, and the `Asset` model counts their
-references, so files that were uploaded but never saved, or that are no
-longer used, are removed after `config.assets` thresholds. Saving waits for
-uploads that are still running.
+Upload fields send each file to the controller's upload action under their
+data path, here `POST books/upload/cover` and `POST books/upload/samplePages`.
+The action takes hyphenated paths such as `sample-pages` too. `assets.mixin()`
+adds the action, which picks the storage of the asset path that matches. It
+stores the file, inserts its `asset` row and responds with its file object
+(`key`, `name`, `type`, `size`, `url`, and `width` and `height` of images). The
+field holds this object as its value.
+
+Saving the book stores the file objects in plain JSON columns. The mixin
+accepts the files that the `asset` table holds, and takes their properties
+from there, so clients can't make up files. Saving waits for uploads that are
+still running.
+
+`assets.runJobs()` finds the files that no book references, and deletes those
+that no book used for a day, such as uploads that were never saved.
 
 `thumbnails` shows images by their `url`; `thumbnailUrl` can point to a
 resized version instead.
 
-See also: [Storages](../guide/server/storages.md),
-[`static assets`](../api/server/model.md#static-assets),
-[Controller assets](../api/server/controllers.md#assets),
+See also: [Storages and files](../guide/server/storages.md),
+[Asset paths](../api/server/storage.md#asset-paths),
+[createAssets()](../api/server/storage.md#createassets),
 [`upload`](../api/admin/schemas.md#upload).

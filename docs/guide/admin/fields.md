@@ -75,17 +75,17 @@ genres: {
 
 `relate` selects related objects, with options loaded from the API: while
 editing, the value is the whole option, e.g. the author, and only `{ id }` is
-sent when saving, which the server relates. `relate: 'code'` relates by
-another key than `id`.
+sent when saving, which the server links. `relate: 'code'` relates by
+another key than `id`. The server links rows by their primary key, so this key
+must be the primary key of the related entity.
 
-Options only need the keys they show and relate by, so load them through a
-narrow scope of the model, instead of the full items:
+Options only need the keys they show and relate by. Load them from a narrow
+list instead of the full items. On the server, `choices()` of `@ditojs/mikro`
+adds such a list to a controller as `get choices`:
 
 ```js
-// src/server/models/Author.js
-static scopes = {
-  options: query => query.select('id', 'name').orderBy('name')
-}
+// In the authors controller:
+mixins: [choices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
 ```
 
 ```js
@@ -94,11 +94,7 @@ author: {
   relate: true,
   options: {
     data: ({ request }) =>
-      request({
-        url: 'authors',
-        query: { scope: 'options' },
-        cache: 'global'
-      }),
+      request({ url: 'authors/choices', cache: 'global' }),
     label: 'name'
   }
 },
@@ -110,15 +106,14 @@ genres: {
   relate: true,
   options: {
     data: ({ request }) =>
-      request({ url: 'genres', query: { scope: 'options' }, cache: 'global' }),
+      request({ url: 'genres/choices', cache: 'global' }),
     label: 'name'
   }
 }
 ```
 
-The controller has to allow the scope, if it restricts them with `allowScope`,
-see [Controllers](../server/controllers.md) and
-[Queries](../server/queries.md). `url` is resolved against the API's URL,
+See [Other lists](../server/entities.md#other-lists) in the server guide.
+`url` is resolved against the API's URL,
 unlike `resource`, which resolves relative to the nearest form or list, see
 [Buttons](./buttons.md#click-handlers). `cache: 'global'` keeps the response
 for the session, `cache: 'local'` while the form is shown.
@@ -126,8 +121,9 @@ for the session, `cache: 'local'` while the form is shown.
 Options can also come from the data being edited, with `options.dataPath`:
 
 ```js
-featuredChapterId: {
+featuredChapter: {
   type: 'select',
+  relate: true,
   // The chapters edited in the `chapters` list of the same book:
   options: { dataPath: 'chapters', label: 'title', value: 'id' }
 }
@@ -216,9 +212,9 @@ cover: {
 }
 ```
 
-On the server, the model's `assets` and the controller's `assets` name the
-storage of the field, see [Storages](../server/storages.md). Saving waits for
-running uploads.
+On the server, the storage of the field is named in the `assetUploads()` and
+`assets()` mixins of the controller. See
+[Storages and files](../server/storages.md). Saving waits for running uploads.
 
 ## Derived values
 

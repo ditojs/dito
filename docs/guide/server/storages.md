@@ -1,276 +1,175 @@
-# Storages and assets
+# Storages and files
 
-Dito.js stores uploaded files, e.g. book covers or sample pages, in
-storages, and keeps track of them in the models that use them:
+`@ditojs/storage` keeps files on disk or in S3. Rows store the files as JSON
+file objects, `{ key, name, type, size, url, width?, height? }`. The `asset`
+table holds a row for each stored file. A write accepts a file when the table
+holds its key, and takes its properties from there, so clients can't make up
+files or change their URLs.
 
-- A **storage** keeps files, on disk or in Amazon S3.
-- An **asset property** of a model holds file objects that describe stored
-  files.
-- **Upload routes** of controllers receive files and store them.
-- An **asset model** records every file, counts its references, and removes
-  files that are no longer used.
+The package reads and writes its own tables through
+[Kysely](https://kysely.dev). `getKysely(c)` of `@ditojs/mikro` returns the
+Kysely of the request.
 
 ## Storages
 
-Storages are configured in `config.storages`, keyed by name:
+`createStorages()` builds the app's storages from plain definitions, keyed by
+name:
 
 ```js
-// config/index.js
-export default {
-  storages: {
-    covers: {
+import { createStorages } from '@ditojs/storage'
+
+export const storages = createStorages(
+  {
+    public: {
       type: 'disk',
-      path: 'storage/covers',
-      url: 'https://bookshop.example.com/covers/'
+      path: 'storage/public',
+      url: '/assets/public/'
     },
-    samplePages: {
-      type: 'disk',
-      path: 'storage/sample-pages',
-      url: 'https://bookshop.example.com/sample-pages/'
+    downloads: {
+      type: 's3',
+      bucket: 'downloads',
+      url: 'https://downloads.example.com/',
+      s3: { region: 'eu-central-1', credentials },
+      params: { ACL: 'public-read' }
     }
-  }
-}
+  },
+  { basePath: import.meta.dirname }
+)
 ```
 
-`url` is the absolute URL at which the files are public, ending in `/`;
-file objects get a `url` built from it. Without it, disk files have no URL,
-and S3 files the URL of the bucket. `path` is the folder of a disk storage,
-relative to the app's `basePath`. The
-[`StorageConfig`](../../api/server/storage.md#storageconfig) lists all
-options.
+Disk paths resolve against `basePath`. `params` of S3 storages go to each
+`PutObject` request. S3 storages need the optional peers `@aws-lite/client` and
+`@aws-lite/s3`, which load when a storage first needs them.
 
-To keep the sample pages in Amazon S3 instead, give the storage the bucket,
-and the configuration of the S3 client in `s3`. S3 storages need
-[optional peer dependencies](../../api/server/storage.md):
+`serveStorage()` of `@ditojs/storage/node` serves a public disk storage at the
+path of its `url`, through `serveStatic()` of `@hono/node-server`:
 
 ```js
-samplePages: {
-  type: 's3',
-  bucket: 'bookshop-sample-pages',
-  acl: 'public-read',
-  url: 'https://bookshop.example.com/sample-pages/',
-  s3: {
-    region: 'eu-central-1',
-    credentials: {
-      accessKeyId: process.env.S3_KEY,
-      secretAccessKey: process.env.S3_SECRET
-    }
-  }
-}
+import { serveStorage } from '@ditojs/storage/node'
+
+app.use('/assets/public/*', serveStorage(storages.get('public')))
 ```
 
-Dito.js doesn't serve the files of disk storages. Serve them with Koa
-middleware at the storage's `url`, e.g. with `koa-mount` and `koa-static`
-(`pnpm add koa-mount koa-static`) in the application's `middleware` option:
+## Asset paths
+
+The app lists where its tables store files, as asset paths. The uploads, the
+writes and the jobs below read this list:
 
 ```js
-import mount from 'koa-mount'
-import serve from 'koa-static'
+export const assetPaths = [
+  { table: 'book', column: 'cover', path: '', storage: 'public' },
+  { table: 'book', column: 'chapters', path: '*/images', storage: 'public' },
+  { table: 'story', column: 'content', path: '**/file', storage: 'public' }
+]
+```
 
-const app = new Application({
-  config,
-  models,
-  controllers,
-  middleware: mount('/covers', serve('storage/covers'))
+`path` is the data path of the files inside the column's JSON value:
+
+- `''` stands for the column itself.
+- `*` matches one segment.
+- `**` matches any number of segments.
+
+The value at a path is one file or an array of files. On MikroORM entities, file
+columns are plain JSON columns.
+
+## The assets of an app
+
+`createAssets()` binds the asset paths and storages once, and returns the
+functions that the sections below use:
+
+```js
+import { getKysely } from '@ditojs/mikro'
+import { createAssets } from '@ditojs/storage'
+
+export const assets = createAssets({
+  paths: assetPaths,
+  storages,
+  db: getKysely,
+  deleteUnusedAfter: 24 * 60 * 60 * 1000
 })
 ```
 
-`app.getStorage(name)` returns a storage. The
-[`Storage` API](../../api/server/storage.md) lists its methods, e.g.
-`readFile()` and `listKeys()`.
-
-## File objects
-
-Files are described by plain objects, stored as JSON in the models:
-
-```json
-{
-  "key": "3f2a9c1e-6d0b-4c47-9b51-0a8d5e3c7f21.jpg",
-  "name": "emma-cover.jpg",
-  "type": "image/jpeg",
-  "size": 48213,
-  "url": "https://bookshop.example.com/covers/3/f/3f2a9c1e-….jpg",
-  "width": 800,
-  "height": 1200
-}
-```
-
-`key` is the file's unique name in the storage, `name` its original name.
-`width` and `height` are only there for images and videos uploaded with
-`readDimensions`.
-
-## Asset properties
-
-The static `assets` field of a model names the properties that hold files, and
-the storage of each. The built-in `asset` type validates file objects:
-
-```js
-import { Model } from '@ditojs/server'
-
-export class Book extends Model {
-  static properties = {
-    title: { type: 'string', required: true },
-    cover: { type: 'asset', nullable: true },
-    samplePages: { type: 'array', items: { type: 'asset' }, default: [] }
-  }
-
-  static assets = {
-    cover: { storage: 'covers', readDimensions: true },
-    samplePages: { storage: 'samplePages' }
-  }
-}
-```
-
-The keys are data paths, so files can also sit deeper in JSON properties, with
-`*` for any key or index and `**` for any number of levels:
-`'extras/*/file'`, `'**/image'`. Files in related models belong in the
-`assets` of the related model.
-
-When a model is saved, Dito.js compares its files with the stored ones: it
-adds the new files, counts their references, and releases the files that were
-replaced or removed.
+`db` returns the request's Kysely, so that the `asset` rows of imported files
+commit with the write's transaction. Uploads run without a transaction and
+commit their rows at once. Each method calls a function that the package also
+exports, such as `assets()`, `assetUploads()` or `runAssetJobs()`.
 
 ## Uploads
 
-Controllers set up upload routes with their `assets` setting. Model
-controllers can use `assets = true` for the asset properties of their model:
+The admin's upload component sends each file as `multipart/form-data` to the
+upload action, under the data path of its field, such as
+`POST books/upload/chapters/3/images`, and keeps the file object of the
+response. `assets.mixin(table)` adds the upload action of a table and the
+handling of its writes. The action picks the storage of the first asset path
+that matches the data path:
 
 ```js
-import { ModelController } from '@ditojs/server'
-
-export class Books extends ModelController {
-  modelClass = Book
-  assets = true
-
-  collection = { allow: ['get', 'post'] }
-  member = { allow: ['get', 'patch'] }
-}
-```
-
-This adds `POST /api/books/upload/cover` and
-`POST /api/books/upload/sample-pages` (with `app.normalizePaths`). They take
-multipart form data, with the files in fields named like the data path, and
-respond with an array of file objects. The client puts these into the model's
-data and saves it. The admin's `upload` type does all of this, see the
-[admin guide](../admin/fields.md).
-
-An `assets` object configures the routes itself, by data path, with the
-`storage` and [multer](https://github.com/expressjs/multer#multeropts)
-options such as `limits`, and `allow` and `authorize` like actions objects.
-Any controller can have one; in model controllers, its entries replace those
-of the model's `assets`:
-
-```js
-assets = {
-  authorize: 'editor',
-  cover: {
-    storage: 'covers',
-    readDimensions: true,
-    limits: { fileSize: 5 * 1024 * 1024 }
-  }
-}
-```
-
-### Signatures
-
-Upload responses and the file objects that models send to clients carry a
-`signature`, made with the first of `config.app.keys`. When files come back in
-the data of a request, the signature proves that they came from this server
-with their key and metadata unchanged; files without a valid signature are
-rejected with an [`AssetError`](errors.md). The signature isn't stored.
-
-Configure `app.keys`: without them, a random key is used, and signatures
-don't survive restarts of the server.
-
-## The asset model
-
-The asset model records every stored file: its `key`, its `file` object, its
-`storage`, and `count`, the number of references to it. It is the model named
-`Asset`, made with `AssetMixin`:
-
-```js
-import { AssetMixin, Model } from '@ditojs/server'
-
-export class Asset extends AssetMixin(Model) {}
-```
-
-Register it with the other models, and create its table with a
-[migration](database.md#creating-migrations-from-models):
-
-```sh
-pnpm db:create_migration create_assets Asset
-```
-
-Without an asset model, files are still stored and verified, but not counted
-or removed, and files can't be added from code or imported.
-
-### Cleanup
-
-Files that no model references anymore are removed, along with their records,
-once they haven't changed for `config.assets.deleteUnusedAfter`. Files that
-were uploaded but never saved in a model are removed after
-`config.assets.deleteUnsavedAfter`. Both default to 24 hours, and `false` keeps
-the files.
-
-These are minimum ages: the application checks for such files with
-[`app.deleteExpiredRecords()`](../../api/server/application.md#deleteexpiredrecords),
-every `config.app.deleteExpiredRecordsEvery` (one hour by default), and removes
-them at the first run after them. Before removing a file, it checks that no
-data references it anymore, as writes that skip the model hooks, e.g. of
-scripts and seeds, don't count the references they add. To remove unused
-files right away, e.g. from an admin action, call
-`app.releaseUnusedAssets({ olderThan: 0 })`. `pnpm db:recount_assets` sets the
-counts to the references in the data again.
-
-## Adding files in code
-
-`AssetFile.create()` creates a file from data, which is stored when the model
-is saved:
-
-```js
-import { AssetFile } from '@ditojs/server'
-
-const cover = AssetFile.create({
-  name: 'emma-cover.jpg',
-  data: await fs.readFile('covers/emma.jpg')
+defineController({
+  path: 'books',
+  entity: Book,
+  authorize: ['admin', 'editor'],
+  mixins: [assets.mixin('book')],
+  actions: { 'get': true, 'post': true, 'get :id': true, 'patch :id': true }
 })
-await book.$patch({ cover })
 ```
 
-`data` can be a `Buffer`, a string or a data URI. This needs the asset model.
+Controllers that write a table without uploads use
+`assets.mixin('book', { uploads: false })`.
 
-When a transaction rolls back with an error, the files that were stored or
-imported in it are removed again. Rollbacks without an error keep them in the
-storage. Failed writes outside of transactions keep them too, with counts that
-`pnpm db:recount_assets` corrects.
-
-### Importing files
-
-File objects with a `url` and a key that has no asset record yet, e.g. files
-copied from another server, are imported: Dito.js downloads them from their
-`url` and stores them. As such files carry no valid signature, only URLs that
-match the storage's `allowedImports` are accepted, and only keys in the format
-that Dito.js generates: letters, digits, `_` and `-`, with an optional file
-extension, like the UUIDs that Dito.js uses:
+For upload fields that no asset path describes, `uploadRoutes()` adds the upload
+action with its own list of globs:
 
 ```js
-covers: {
-  type: 'disk',
-  path: 'storage/covers',
-  url: 'https://bookshop.example.com/covers/',
-  allowedImports: ['https://staging.bookshop.example.com/covers/**']
-}
+uploadRoutes({
+  uploads: [{ path: 'avatar', storage: 'public' }],
+  storages,
+  db: getKysely
+})
 ```
 
-`file://` URLs import local files, e.g. `'file:///data/covers/**'`.
-Importing needs the asset model.
+An upload without a type from the client gets the type detected from its data,
+else `application/octet-stream`. `hostMiddleware()` sets no limit on multipart
+bodies: the reverse proxy limits the size of uploads, such as with
+`client_max_body_size` in nginx.
 
-Files of the same app that are stored in another storage than the one of their
-field, e.g. pasted from another upload field in the admin, are copied to the
-field's storage under a new key.
+## Writes
 
-## Custom storages
+The mixin handles the files in the body of a controller's writes:
 
-Storages for other backends extend `Storage` and register themselves for a
-`type`. The [`Storage` API](../../api/server/storage.md#custom-storages)
-describes the methods to implement.
+- A file whose key the `asset` table holds in its storage gets the properties of
+  the stored file, whatever the client sent.
+- A file of another storage is copied under a new key.
+- A file without an `asset` row is imported from its `url` under a new key, when
+  the URL matches the storage's `allowedImports`. Otherwise, the write responds
+  with 400. The patterns match the origin and path of the URL. URLs with
+  credentials and redirects respond with 400 as well.
+
+Responses send the file objects as the rows hold them.
+
+## Tracking files
+
+Each `asset` row has `unreferenced_since`, the time since no row references the
+file. Files that no row references for a while are deleted. Writes don't track
+the references. A job scans the data at the asset paths:
+
+```js
+setInterval(async () => {
+  const { scan, released } = await assets.runJobs(kysely)
+  logger.info({ scan, released }, 'Asset jobs')
+}, 60 * 60 * 1000)
+```
+
+`scanAssets()` sets and clears `unreferenced_since`. `releaseAssets()` deletes
+the files and rows of assets that no row referenced for longer than
+`deleteUnusedAfter`, in milliseconds. Without `deleteUnusedAfter`, nothing is
+deleted. A scan runs before each release, so files that rows reference again
+stay.
+
+- Files that the server creates, such as generated PDFs, go through
+  `assets.store(db, 'documents', { name, data })`, which stores them and inserts
+  their rows.
+- Seeds that insert rows directly call `assets.import(db, table, data)` first.
+  It stores the files that the rows reference by URL, such as `file://` URLs of
+  seed data.
+- `assets.references(db, { tables, storage, keys })` lists where rows reference
+  files, such as for an admin view of the assets.

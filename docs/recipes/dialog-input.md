@@ -7,32 +7,42 @@ book.
 
 ## Solution
 
-On the server, a collection action validates its parameters and creates the
-book:
+On the server, a custom action validates its body and creates the book:
 
 ```js
-export class Books extends ModelController {
-  modelClass = Book
+import { action } from '@ditojs/server'
+import { createRecord, defineController } from '@ditojs/mikro'
+import { z } from 'zod'
 
-  collection = {
-    allow: ['get', 'post'],
-    'post import': {
-      authorize: ['editor', 'admin'],
-      parameters: {
-        isbn: { type: 'string', required: true, pattern: '^97[89]\\d{10}$' },
-        stock: { type: 'integer', minimum: 0, default: 1 }
-      },
-      async handler(ctx, { isbn, stock }) {
-        // `lookUpBook()` stands for your catalog's API:
+export const books = defineController({
+  path: 'books',
+  entity: Book,
+  authorize: ['editor', 'admin'],
+  actions: {
+    'get': true,
+    'post': true,
+    // Opening the new book needs the member actions.
+    'get :id': true,
+    'patch :id': true,
+    'delete :id': true,
+    'post import': action({
+      body: z.object({
+        isbn: z.string().regex(/^97[89]\d{10}$/),
+        stock: z.int().min(0).default(1)
+      }),
+      async handler({ body: { isbn, stock }, db }) {
+        // `lookUpBook()` stands for your catalog's API.
         const { title, summary } = await lookUpBook(isbn)
-        return this.query().insertAndFetch({ isbn, title, summary, stock })
+        return createRecord(db, Book, {
+          isbn,
+          title,
+          summary,
+          stock
+        })
       }
-    }
+    })
   }
-
-  // Opening the new book needs the member actions:
-  member = { allow: ['get', 'patch', 'delete'] }
-}
+})
 ```
 
 In the admin, a button of the list shows the dialog:
@@ -83,15 +93,21 @@ export const books = {
 
 `showDialog()` resolves to the dialog's data when its `submit` button is
 clicked, and to `undefined` when it's cancelled. `request()` resolves
-`resource` relative to the list's resource, here `POST books/import`, whose
-`parameters` validate and coerce the body before the handler receives them:
-invalid input responds with a 400 `ValidationError`, which rejects the request
-and shows as an error notification. The dialog itself doesn't validate on
-submit, so the server's `parameters` are where the input is checked.
+`resource` relative to the list's resource, here `POST books/import`.
+
+The action's `body` schema validates the data and sets its defaults before the
+handler runs. Invalid input responds with 400 and the errors of each field. This
+rejects the request, and the admin shows an error notification. The dialog
+doesn't validate on submit, so the action's schema checks the input.
+
+`createRecord()` runs the checks of a body on the data and creates the book. The
+controller flushes it after the handler, and sends the book with the new `id`,
+in the shape of its `find`.
 
 On `isRunning`, see
 [Buttons that wait for a dialog](../guide/admin/buttons.md#buttons-that-wait-for-a-dialog).
 
 See also: [Dialogs](../guide/admin/dialogs.md),
 [`showDialog()`](../api/admin/context.md#showdialog),
-[Parameters](../api/server/controllers.md#parameters).
+[Query and body schemas](../guide/server/controllers.md#query-and-body-schemas),
+[Writes in custom handlers](../guide/server/writes.md#writes-in-custom-handlers).

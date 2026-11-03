@@ -7,8 +7,8 @@ authors, chapters, genres, orders, customers and reviews.
 
 The recipes assume the basics of the [server guide](../guide/server/index.md)
 and the [admin guide](../guide/admin/index.md). Admin code goes into view and
-form schemas passed to `new DitoAdmin()`, server code into the models and
-controllers passed to `new Application()`.
+form schemas passed to `new DitoAdmin()`. Server code goes into the entities
+and the controllers passed to `createApi()`.
 
 ## Admin
 

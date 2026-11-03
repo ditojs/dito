@@ -23,28 +23,31 @@ chapters: {
 }
 ```
 
-On the server, the relation loads them in that order:
+On the server, the `chapters` relation of `Book` owns the chapters and loads
+them in that order:
 
 ```js
-export class Chapter extends Model {
-  static properties = {
-    title: { type: 'string' },
-    position: { type: 'integer', nullable: true }
-  }
+import { defineEntity, p } from '@mikro-orm/core'
 
-  static scopes = {
-    ordered: query => query.orderBy('position')
+const ChapterSchema = defineEntity({
+  name: 'Chapter',
+  properties: {
+    id: p.integer().primary(),
+    title: p.string(),
+    position: p.integer().nullable(),
+    book: () => p.manyToOne(Book).deleteRule('cascade')
   }
-}
+})
+export class Chapter extends ChapterSchema.class {}
+ChapterSchema.setClass(Chapter)
 
-// In `Book.relations`:
-chapters: {
-  relation: 'hasMany',
-  from: 'Book.id',
-  to: 'Chapter.bookId',
-  owner: true,
-  scope: 'ordered'
-}
+// In the properties of `Book`:
+chapters: () =>
+  p
+    .oneToMany(Chapter)
+    .mappedBy(chapter => chapter.book)
+    .orphanRemoval()
+    .orderBy({ position: 'asc' })
 ```
 
 ## A list with its own resource
@@ -80,49 +83,53 @@ export const genres = {
 }
 ```
 
-On the server, the `default` scope of `Genre` loads the genres in their order,
-and a collection action stores it:
+On the server, the controller's `find` lists the genres in their order. A
+custom action stores the order:
 
 ```js
-export class Genre extends Model {
-  static properties = {
-    name: { type: 'string', required: true },
-    position: { type: 'integer', nullable: true }
+import { defineEntity, p } from '@mikro-orm/core'
+import { action } from '@ditojs/server'
+import { defineController } from '@ditojs/mikro'
+import { z } from 'zod'
+
+const GenreSchema = defineEntity({
+  name: 'Genre',
+  properties: {
+    id: p.integer().primary(),
+    name: p.string(),
+    position: p.integer().nullable()
   }
+})
+export class Genre extends GenreSchema.class {}
+GenreSchema.setClass(Genre)
 
-  static scopes = {
-    default: query => query.orderBy('position')
-  }
-}
-
-export class Genres extends ModelController {
-  modelClass = Genre
-
-  collection = {
-    allow: ['get', 'post'],
-    'post order': {
-      parameters: {
-        genres: {
-          from: 'root',
-          type: 'array',
-          required: true,
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'integer', required: true },
-              position: { type: 'integer', required: true }
-            }
-          }
+export const genres = defineController({
+  path: 'genres',
+  entity: Genre,
+  // Anyone may read. The rest is for editors.
+  authorize: ['editor', 'admin'],
+  find: { orderBy: { position: 'asc' } },
+  actions: {
+    'get': { authorize: true },
+    'post': true,
+    'get :id': { authorize: true },
+    'patch :id': true,
+    'delete :id': true,
+    'post order': action({
+      body: z.array(z.object({ id: z.int(), position: z.int() })),
+      async handler({ body, find }) {
+        const positions = new Map(body.map(({ id, position }) => [id, position]))
+        const genres = await find({
+          where: { id: { $in: [...positions.keys()] } }
+        })
+        for (const genre of genres) {
+          genre.position = positions.get(genre.id)
         }
-      },
-      handler(ctx, { genres }) {
-        return this.query().patchGraph(genres)
+        return genres
       }
-    }
+    })
   }
-
-  member = { allow: ['get', 'patch', 'delete'] }
-}
+})
 ```
 
 ## Why
@@ -131,9 +138,18 @@ With `orderKey`, the list numbers its items when they're loaded, added,
 removed or moved, so the order is part of the data. Inside a form, that data is
 saved with the form. A list with its own `resource` doesn't save its items, so
 a button submits its `resource.data` instead, relative to the list's resource:
-here `POST genres/order`, which patches the positions. In a view with a
-single list, the list's buttons receive the list's data as their `item`.
+here `POST genres/order`. In a view with a single list, the list's buttons
+receive the list's data as their `item`.
+
+The action's `body` schema checks the positions before the handler runs.
+`find()` of the handler's input loads the genres through the controller's
+`find`, so the action only changes genres that the controller shows. After the
+handler, the controller flushes the changes in the request's transaction.
+
+Wherever a book populates its chapters, the relation's `orderBy` loads them in
+their order.
 
 See also: [Source options](../api/admin/schemas.md#source-options),
 [`button`](../api/admin/schemas.md#button-submit),
-[Actions](../api/server/controllers.md#actions).
+[Actions](../api/server/controllers.md#actions),
+[find()](../api/server/mikro.md#find-1).

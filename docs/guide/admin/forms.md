@@ -198,9 +198,9 @@ exportJob: {
   them. Give their fields `exclude: true`, so that saves don't send them back
   over newer ones, see [Dirty State](./dirty-state.md#what-counts-as-an-edit).
 - Save responses replace the form's data, so the server needs to return these
-  values in them too, not only on `get`, e.g. through `after:member:patch`
-  [hooks](../server/controllers.md#hooks) when they aren't columns of the
-  model.
+  values in them too, not only on `get`, e.g. through the controller's
+  [`serialize`](../server/controllers.md#serialize-and-deserialize) when they
+  aren't columns of the entity.
 
 ## Fields that depend on the data
 

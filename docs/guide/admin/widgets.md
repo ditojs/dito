@@ -1,11 +1,10 @@
 # Forms with properties and widgets
 
-A form can describe its data with `properties` instead of `fields`, in the
-format of the [properties of server models](../server/models.md), and lay it
-out in a Vue template with widgets. The properties hold the data and its rules:
-types, `required`, limits, defaults, `if` and the admin's own keywords. The
-template only lays out. Each widget edits the property of its `name`, and its
-props are display options only.
+A form can describe its data with `properties` instead of `fields`, and lay
+it out in a Vue template with widgets. The properties hold the data and its
+rules: types, `required`, limits, defaults, `if` and the admin's own keywords.
+The template only lays out. Each widget edits the property of its `name`, and
+its props are display options only.
 
 ```vue
 <!-- src/admin/views/DesignerPage.vue -->
@@ -78,15 +77,12 @@ Nested forms of schema views can use `properties` too, see
 
 ## Properties
 
-The properties take the keywords of the server's models with the same
-meaning: `type` (`string`, `number`, `integer`, `boolean`, `date`,
-`datetime`, `timestamp`, `asset`, `object`, `array`), `nullable`,
-`required`, `default`, `minimum`, `maximum`, `range`, `decimals`,
+The properties take these keywords: `type` (`string`, `number`, `integer`,
+`boolean`, `date`, `datetime`, `timestamp`, `asset`, `object`, `array`),
+`nullable`, `required`, `default`, `minimum`, `maximum`, `range`, `decimals`,
 `minLength`, `maxLength`, `pattern`, `minItems`, `maxItems`, `enum` and
 `format` (`email`, `hostname`, `password`, `uri` and `iso-time`). Objects
-hold `properties`, and arrays hold `items`. The admin validates them as the
-server does, so the same properties can describe the model and the form,
-except that required arrays need one item, see
+hold `properties`, and arrays hold `items`. Required arrays need one item, see
 [Types and limits of fields](./validation.md#types-and-limits-of-fields).
 Other types and formats, and `definitions` and `$ref`, aren't supported yet:
 properties with them throw when the form is set up.
@@ -263,8 +259,8 @@ Levels can be shown and hidden like other components, e.g. with `v-if`.
 
 Selecting an item opens its form beside the tree, which edits the item in
 place. The form has its own route in the page, which follows the item's place
-in the data, e.g. `/fonts/1/shopSets/0/cuts/1`, or
-`/fonts/1/shop-sets/0/cuts/1` with `api.normalizePaths`, so reloads, the
+in the data, with hyphenated names, e.g. `/books/1/book-chapters/0/pages/1`, so
+reloads, the
 browser's history and shared links open it again. Errors in items open the
 forms that show them.
 
@@ -305,7 +301,7 @@ DitoCustomField(label="Preview" width="1/2")
 Widgets validate their value when the user leaves them after editing it.
 Submitting validates the data of the whole form, also of hidden widgets in
 collapsed sections and items, which open to show their errors. The errors of
-the server, e.g. a `400` with the errors of its model's validation, go to the
+the server, e.g. a `400` with the errors of a body's checks, go to the
 widgets of their values in the same way. Errors of values that no widget
 shows, e.g. because the template hides it with a `v-if`, go into the
 "Validation Errors" notification, as in schema views.

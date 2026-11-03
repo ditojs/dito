@@ -7,22 +7,26 @@ clients having to send these values.
 ## Solution
 
 ```js
-import { Model, TimestampedMixin } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
-export class Book extends TimestampedMixin(Model) {
-  static properties = {
-    title: { type: 'string', required: true },
-    slug: { type: 'string', unique: true }
+const BookSchema = defineEntity({
+  name: 'Book',
+  properties: {
+    id: p.integer().primary(),
+    title: p.string(),
+    slug: p
+      .string()
+      .unique()
+      .onCreate(book => toSlug(book.title)),
+    createdAt: p.datetime().onCreate(() => new Date()),
+    updatedAt: p
+      .datetime()
+      .onCreate(() => new Date())
+      .onUpdate(() => new Date())
   }
-
-  static hooks = {
-    'before:insert'({ inputItems }) {
-      for (const book of inputItems) {
-        book.slug ??= toSlug(book.title)
-      }
-    }
-  }
-}
+})
+export class Book extends BookSchema.class {}
+BookSchema.setClass(Book)
 
 function toSlug(text) {
   return text
@@ -34,15 +38,22 @@ function toSlug(text) {
 
 ## Why
 
-`TimestampedMixin` adds the `createdAt` and `updatedAt` properties and sets
-them in its own `before:insert` and `before:update` hooks. The hooks of a model
-run after the ones of its base classes, so the book's hook adds to them
-instead of replacing them. `inputItems` are the models that the query writes.
+MikroORM calls `onCreate` with the entity when it inserts a row, and
+`onUpdate` when it updates one. Both run for every write through MikroORM,
+whether it comes from a controller, a script or a seed.
 
-Hooks run for all writes through the model, from controllers, services or
-seeds alike. For values that depend on the request, e.g. the user who changed
-a book, use controller hooks such as `'before:member:patch'` instead.
+The checks of a body drop scalars with `onCreate` and columns with `onUpdate`.
+So clients can't set these values, and the admin can send back what it loaded. A
+slug that already exists responds with 409.
 
-See also: [`static hooks`](../api/server/model.md#static-hooks),
-[`TimestampedMixin`](../api/server/model.md#timestampedmixin),
-[Models](../guide/server/models.md).
+Some values depend on the request, such as the user who changed a book. Add them
+to the body in the controller's `deserialize`, which runs before these checks:
+
+```js
+deserialize: (c, json) => ({ ...json, changedBy: c.var.user.id })
+```
+
+See also:
+[The checks of a body](../guide/server/writes.md#the-checks-of-a-body),
+[Serialize and deserialize](../guide/server/controllers.md#serialize-and-deserialize),
+[Entities](../guide/server/entities.md#entities).

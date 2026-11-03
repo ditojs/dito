@@ -7,39 +7,52 @@ genre, loaded from the API, and be cleared when the genre changes.
 
 ## Solution
 
-On the server, the `Genres` controller exposes the subgenres of each genre
-through the `children` relation of `Genre`:
+On the server, a genre belongs to its parent genre, and the genres controller
+lists the subgenres of a genre through a filter:
 
 ```js
-import { ModelController } from '@ditojs/server'
-import { Genre } from '../models/index.js'
+import { defineEntity, p } from '@mikro-orm/core'
+import { defineController } from '@ditojs/mikro'
+import { q } from '@ditojs/server/zod'
 
-export class Genres extends ModelController {
-  modelClass = Genre
-  collection = { allow: ['get'] }
-  member = { allow: ['get'] }
-  relations = {
-    children: { relation: { allow: ['get'] } }
+const GenreSchema = defineEntity({
+  name: 'Genre',
+  properties: {
+    id: p.integer().primary(),
+    name: p.string(),
+    parent: () => p.manyToOne(Genre).nullable()
   }
-}
+})
+export class Genre extends GenreSchema.class {}
+GenreSchema.setClass(Genre)
+
+export const genres = defineController({
+  path: 'genres',
+  entity: Genre,
+  find: { orderBy: { name: 'asc' } },
+  // `GET /genres?filter[parent]=3` lists the subgenres of genre 3.
+  filters: { parent: q.integer() },
+  actions: { 'get': true, 'get :id': true }
+})
 ```
 
-The `Book` model filters by a genre, or by one of its subgenres, through its
-`genres` relation:
+The books controller filters books by a genre or one of its subgenres. It uses
+the `genres` relation of `Book`:
 
 ```js
-export class Book extends Model {
-  static filters = {
-    // Books of the genre or of one of its subgenres:
-    genre(query, genreId, subgenreId) {
-      const id = subgenreId ?? genreId
-      if (id) {
-        query.whereExists(
-          Book.relatedQuery('genres').where(genres =>
-            genres.where('genres.id', id).orWhere('genres.parentId', id)
-          )
-        )
-      }
+import { asArray } from '@ditojs/utils'
+import { q } from '@ditojs/server/zod'
+import { z } from 'zod'
+
+// In the books controller:
+filters: {
+  genre: {
+    // One id, or the ids of the genre and the subgenre.
+    schema: z.union([q.integer(), z.array(q.integer()).max(2)]),
+    where: ids => {
+      // The subgenre if it is set, else the genre:
+      const id = asArray(ids).at(-1)
+      return { genres: { $or: [{ id }, { parent: id }] } }
     }
   }
 }
@@ -68,7 +81,7 @@ export const books = {
                   resource: '/genres',
                   cache: 'global'
                 })
-                return genres.filter(genre => !genre.parentId)
+                return genres.filter(genre => !genre.parent)
               },
               label: 'name',
               value: 'id'
@@ -86,7 +99,10 @@ export const books = {
                 const genreId = item.genre
                 return genreId
                   ? ({ request }) =>
-                      request({ resource: `/genres/${genreId}/children` })
+                      request({
+                        resource: '/genres',
+                        query: { 'filter[parent]': genreId }
+                      })
                   : []
               },
               label: 'name',
@@ -109,12 +125,17 @@ itself doesn't add dependencies, so the options load again only when the genre
 changes. Selects keep values that their options lack and show them as
 unavailable, which is why `onChange()` of the genre clears the subgenre.
 
-A filter with `fields` sends their values in their order as arguments to
-the model filter of its name, `null` for empty ones, e.g.
-`filter=genre:3,null`.
+A filter with `fields` sends their values in order, as repeated
+`filter[name]` values. It sends `''` for an empty value before a set one, and
+leaves out empty values at the end. So the query is `filter[genre]=3`, or
+`filter[genre]=3&filter[genre]=5` with a subgenre. The server's filter gets one
+value as a string and several as an array, so its schema takes both.
+
+Responses send `parent` as `{ id }`, or `null` for the top genres, which the
+genre select keeps.
 
 See also:
 [The options object](../api/admin/schemas.md#the-options-object),
 [Filters](../api/admin/schemas.md#filters),
-[`static filters`](../api/server/model.md#static-filters),
-[RelationController](../api/server/controllers.md#relationcontroller).
+[Server filters](../api/server/mikro.md#filters),
+[Lists](../guide/server/entities.md#lists).

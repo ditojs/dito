@@ -63,7 +63,7 @@ export const orders = {
 ```
 
 The forms of such lists are routed under the view's path and the list's name,
-e.g. `/admin/orders/open-orders/12` with `app.normalizePaths`.
+hyphenated, e.g. `/admin/orders/open-orders/12`.
 
 A view's fields edit the view's own data, which it doesn't load or save
 itself: lists with a `resource` load and save their items, and
@@ -165,8 +165,9 @@ same component also works in a [dialog](./dialogs.md), as the `component` of a
 `type: 'component'` field, without the route: there, the form has a cancel
 button, and its submit button closes the dialog with the saved item.
 
-Instead of `fields`, the form can describe its data with `properties`, in the
-format of the server's models, and lay it out with widgets, see
+Instead of `fields`, the form can describe its data with `properties`, which
+hold the types and rules of its values. It then lays out the data with
+widgets, see
 [Forms with properties and widgets](./widgets.md).
 
 Lists and trees in the form edit their items in forms with routes of their
@@ -242,7 +243,7 @@ export const users = {
 
 `if` only hides the admin's interface. Protect the data on the server, with
 the `authorize` settings of the controllers, see
-[Controllers](../server/controllers.md).
+[Authorization](../server/controllers.md#authorization).
 
 The admin resolves its views again for each login: a `views` function is
 called again, e.g. to load schemas that depend on the API.
@@ -281,33 +282,31 @@ export default {
 ```
 
 The Security dialog of the account menu changes the password through
-`'post password'` of the `UsersController`, which needs no `patch`, see
-[Confirmed access](../server/controllers.md#confirmed-access).
+`'post password'` of the users controller, which needs no `patch`, see
+[Confirmed access](../server/auth.md#confirmed-access).
 
-On the server, `PATCH /users/self` goes through the `patch` member action of
-the `UsersController`, so the users need to be allowed to patch themselves:
-`member = { allow: ['get', 'patch'] }`, which only allows users to patch
-themselves (`'$self'`) by default. To keep users from changing some of their
-fields, e.g. their roles, override the member's `patch` action, which applies
-to both routes:
+On the server, the app routes `patch self` in its users controller, next to
+the actions of `usersRoutes()` of `@ditojs/auth`. It writes only the values
+that users may change themselves, e.g. not their roles or password:
 
 ```js
-export class Users extends UsersController {
-  modelClass = User
+import { getSession } from '@ditojs/auth'
+import { assignRecord } from '@ditojs/mikro'
+import { HttpError } from '@ditojs/server'
 
-  member = {
-    allow: ['get', 'patch'],
-    authorize: ['$self', 'admin'],
-
-    patch(ctx) {
-      if (!ctx.state.user.$hasRole('admin')) {
-        delete ctx.request.body.roles
-      }
-      return super.patch(ctx)
-    }
-  }
+// In the actions of the users controller:
+'patch self': async ({ body: { email }, db, c }) => {
+  const user = await getSession(c).getUser(adminSource)
+  if (!user) throw new HttpError(401)
+  await assignRecord(db, user, { email })
+  await db.flush()
+  return adminSource.toJSON(c, user)
 }
 ```
+
+A change of the username needs confirmed access, as password reset links go
+to it: `getSession(c).checkConfirmedAccess(adminSource)` returns the user, or
+makes the admin ask for it.
 
 ## Panels and tabs
 

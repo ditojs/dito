@@ -6,46 +6,45 @@ book, insert, update and delete its chapters, and relate the selected author.
 
 ## Solution
 
-On the server, the relations say which models the book owns, scopes load
-them, and the controller saves graphs:
+On the server, the `chapters` relation owns the book's chapters, and the
+controller's `find` loads them with the author:
 
 ```js
-import { Model, ModelController } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
+import { defineController, listHandler } from '@ditojs/mikro'
 
-export class Book extends Model {
-  static properties = {
-    title: { type: 'string', required: true }
+const BookSchema = defineEntity({
+  name: 'Book',
+  properties: {
+    id: p.integer().primary(),
+    title: p.string(),
+    author: () => p.manyToOne(Author).nullable(),
+    // `Chapter` is the entity of "Ordering by drag".
+    chapters: () =>
+      p
+        .oneToMany(Chapter)
+        .mappedBy(chapter => chapter.book)
+        .orphanRemoval()
+        .orderBy({ position: 'asc' })
   }
+})
+export class Book extends BookSchema.class {}
+BookSchema.setClass(Book)
 
-  static relations = {
-    author: {
-      relation: 'belongsTo',
-      from: 'Book.authorId',
-      to: 'Author.id',
-      nullable: true
-    },
-    chapters: {
-      relation: 'hasMany',
-      from: 'Book.id',
-      to: 'Chapter.bookId',
-      owner: true,
-      scope: 'ordered' // A scope of `Chapter`, see "Ordering by drag"
-    }
+export const books = defineController({
+  path: 'books',
+  entity: Book,
+  authorize: ['editor', 'admin'],
+  find: { populate: ['author', 'chapters'] },
+  actions: {
+    // The list loads the author only.
+    'get': listHandler({ populate: ['author'] }),
+    'post': true,
+    'get :id': true,
+    'patch :id': true,
+    'delete :id': true
   }
-
-  static scopes = {
-    withAuthor: query => query.withGraph('author'),
-    withChapters: query => query.withGraph('chapters')
-  }
-}
-
-export class Books extends ModelController {
-  modelClass = Book
-  graph = true
-  scope = ['withAuthor', 'withChapters']
-  collection = { allow: ['get', 'post'] }
-  member = { allow: ['get', 'patch', 'delete'] }
-}
+})
 ```
 
 In the admin, the form edits the chapters in an inlined list and selects the
@@ -85,18 +84,21 @@ export const bookForm = {
 
 ## Why
 
-The controller's scopes apply to all of its queries, so loading a book and
-the response of saving it include the author and the chapters. With
-`graph = true`, `POST` and `PATCH` save through the graph methods:
-related models with an id, here the author, are only related, while the
-models of `owner: true` relations, here the chapters, are inserted, updated or
-deleted to match the data. The inlined list has no `resource`, so its chapters
-are part of the book's data and saved with it.
+The controller's `find` populates the author and the chapters. So a loaded book
+includes both, and so does the response to saving it.
 
-The scopes also apply to the list of books, which then loads the authors and
-chapters as well: keep what it loads small.
+With `orphanRemoval`, the book owns its chapters. `post` and `patch :id` write
+them nested: they insert chapters without an id, update chapters with an id, and
+delete chapters that the array leaves out.
 
-See also: [Relations](../guide/server/relations.md),
-[graph methods](../api/server/query-builder.md#graph-methods),
+The author is a row of its own, so the select sends `{ id }` to link it. One
+flush in the request's transaction writes it all. The inlined list has no
+`resource`, so its chapters are part of the book's data and are saved with it.
+
+`find` applies to the list of books too. The list's `listHandler()` replaces
+its `populate`, so that the list leaves out the chapters and stays small.
+
+See also: [Writes](../guide/server/writes.md),
+[Nested rows](../guide/server/writes.md#nested-rows),
 [Nested forms](../guide/admin/nested-forms.md),
 [Ordering by drag](./drag-ordering.md).

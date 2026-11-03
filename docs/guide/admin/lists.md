@@ -40,8 +40,8 @@ the same page. Its forms load, save and delete their items themselves.
   [Text and HTML](../../api/admin/schemas.md#text-and-html). Without
   `render()`, cells show values as their types display them, e.g. dates
   formatted.
-- `sortable` columns sort through the `order` of the query, which the server's
-  model controllers understand.
+- `sortable` columns sort through the `order` of the query, e.g.
+  `order=title desc`, which the server's model controllers understand.
 - `paginate` sets the page size. Without it, the list shows all items.
 - `creatable`, `editable` and `deletable` add the buttons for these actions.
   They take callbacks too, e.g.
@@ -67,9 +67,9 @@ the item's form, every callback can read the label as `context.itemLabel`, see
 
 ## Scopes and filters
 
-`scopes` adds buttons that switch between the model scopes of the server, and
-`filters` adds a filter panel to the sidebar, whose values are sent as the
-`filter` query parameter:
+`scopes` adds buttons that switch the `scope` query parameter of the list.
+`filters` adds a filter panel to the sidebar. Its values are sent as
+`filter[name]` query parameters:
 
 ```js
 books: {
@@ -87,9 +87,24 @@ books: {
 }
 ```
 
-The model needs the matching scopes and filters, see
-[Queries](../server/queries.md). Changing a filter goes back to the first
-page.
+The server's controller needs a filter for each name, see
+[Filters](../server/entities.md#filters). A filter sends the values of its
+inputs as repeated parameters, e.g.
+`filter[title]=contains&filter[title]=Emma`, so the server's filter gets an
+array. Changing a filter goes back to the first page.
+
+Model controllers have no scopes and ignore `scope`. To handle it, give the
+controller a `find` function that reads `scope` from the query:
+
+```js
+// In the books controller:
+find: c => ({
+  where: c.req.query('scope') === 'published' ? { published: true } : {}
+})
+```
+
+A filter can do the same without `scope`. So can a list action of its own,
+such as `'get published': listHandler({ where: { published: true } })`.
 
 ## Items in the data
 

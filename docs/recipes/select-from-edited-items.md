@@ -8,42 +8,41 @@ no id yet.
 ## Solution
 
 On the server, `featuredChapter` relates a book to one of its chapters, and
-the controller saves books with their relations:
+the controller loads both relations:
 
 ```js
-export class Book extends Model {
-  static properties = {
-    title: { type: 'string', required: true }
-  }
+import { defineEntity, p } from '@mikro-orm/core'
+import { defineController } from '@ditojs/mikro'
 
-  static relations = {
-    chapters: {
-      relation: 'hasMany',
-      from: 'Book.id',
-      to: 'Chapter.bookId',
-      owner: true
-    },
-    featuredChapter: {
-      relation: 'belongsTo',
-      from: 'Book.featuredChapterId',
-      to: 'Chapter.id',
-      nullable: true
-    }
+const BookSchema = defineEntity({
+  name: 'Book',
+  properties: {
+    id: p.integer().primary(),
+    title: p.string(),
+    chapters: () =>
+      p
+        .oneToMany(Chapter)
+        .mappedBy(chapter => chapter.book)
+        .orphanRemoval(),
+    featuredChapter: () => p.manyToOne(Chapter).nullable()
   }
+})
+export class Book extends BookSchema.class {}
+BookSchema.setClass(Book)
 
-  static scopes = {
-    withChapters: query => query.withGraph('chapters'),
-    withFeaturedChapter: query => query.withGraph('featuredChapter')
+export const books = defineController({
+  path: 'books',
+  entity: Book,
+  authorize: ['editor', 'admin'],
+  find: { populate: ['chapters', 'featuredChapter'] },
+  actions: {
+    'get': true,
+    'post': true,
+    'get :id': true,
+    'patch :id': true,
+    'delete :id': true
   }
-}
-
-export class Books extends ModelController {
-  modelClass = Book
-  graph = true
-  scope = ['withChapters', 'withFeaturedChapter']
-  collection = { allow: ['get', 'post'] }
-  member = { allow: ['get', 'patch', 'delete'] }
-}
+})
 ```
 
 In the admin, the select takes its options from the edited chapters:
@@ -79,13 +78,14 @@ export const bookForm = {
 `options.dataPath` reads the options from the edited data, relative to the
 item that the select sits in, here the book; a leading `/` would make it
 absolute. With `relate: true`, the admin sends new chapters with a temporary
-`#id` and the selected one as a `#ref` to it, and the graph methods that
-`graph = true` enables resolve the reference when they insert the chapters.
+`#id`, and the selected one as `{ '#ref': key }` that points to it. The write
+links the reference to the new chapter. One flush inserts the chapters and sets
+the book's `featuredChapter`.
 
-The relation is `nullable`, as the book and its featured chapter refer to each
-other, which a graph insert can only resolve with a nullable foreign key.
+The book and its featured chapter refer to each other. One flush can only write
+this with a nullable foreign key, so the relation is nullable.
 
 See also:
 [The options object](../api/admin/schemas.md#the-options-object),
 [Editing a graph](./edit-graph.md),
-[graph methods](../api/server/query-builder.md#graph-methods).
+[New rows and references](../guide/server/writes.md#new-rows-and-references).

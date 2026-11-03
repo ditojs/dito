@@ -1,274 +1,123 @@
 # Dito.js Server
 
-Dito.js Server builds a REST API out of declarations. You describe your data as
-model classes, and controllers turn them into routes. The models check the data
-that comes in and save it to the database.
+Dito.js Server builds a REST API out of declarations.
 
-It builds on three libraries:
+- Entities describe the data.
+- Controllers describe how clients reach the data: which routes exist, who may
+  use them, and which rows and fields clients see and write.
 
-- [Koa](https://koajs.com/) handles HTTP. The application is a Koa
-  application, so any Koa middleware works with it.
-- [Objection.js](https://vincit.github.io/objection.js/) is the ORM, and
-  [Knex.js](https://knexjs.org/) builds its SQL queries. Dito.js models are
-  Objection.js models, with declarative definitions on top.
-- [Ajv](https://ajv.js.org/) validates the data against JSON schemas that
-  Dito.js builds from the model definitions.
+Dito.js checks what comes in against the entities, and sends all errors in one
+format.
 
-A small bookshop server looks like this:
+The core builds each API as a [Hono](https://hono.dev) app, which the app routes
+in its own Hono app. Handlers get Hono's context, and middleware is Hono
+middleware. The core has no configuration of its own. The app adds data access,
+files and users from packages:
 
-```js
-import { Application, Model, ModelController } from '@ditojs/server'
+| Package                | Role                                                                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `@ditojs/server`       | `createApi()` turns a list of controllers into a Hono app. Controllers, mixins, authorization, errors, and a server on Node. |
+| `@ditojs/mikro`        | Model controllers on [MikroORM](https://mikro-orm.io) entities: lists, records, writes and filters.                          |
+| `@ditojs/storage`      | File storages on disk and in S3, uploads, and the tracking of stored files.                                                  |
+| `@ditojs/auth`         | Sessions, logins, passkeys, TOTP and password reset.                                                                         |
+| `@ditojs/admin-server` | Serves the [Dito.js Admin](../admin/index.md).                                                                               |
 
-class Book extends Model {
-  static properties = {
-    title: { type: 'string', required: true },
-    price: { type: 'number', minimum: 0 }
-  }
-}
-
-class Books extends ModelController {
-  modelClass = Book
-  collection = { allow: ['get', 'post'] }
-  member = { allow: ['get', 'patch', 'delete'] }
-}
-
-const app = new Application({
-  config: {
-    server: { port: 8080 },
-    app: { normalizePaths: true },
-    knex: { client: 'postgresql', connection: { database: 'bookshop' } }
-  },
-  models: { Book },
-  controllers: { api: { Books } }
-})
-
-await app.execute()
-```
-
-This serves `GET` and `POST /api/books` and `GET`, `PATCH` and
-`DELETE /api/books/:id`, and validates every book before it reaches the
-database.
-
-## Guide
-
-- [Configuration](configuration.md): the configuration object.
-- [Application](application.md): creating, starting and extending the app.
-- [Models](models.md): properties, mixins, methods and hooks.
-- [Relations](relations.md): how models relate to each other.
-- [Queries](queries.md): reading and writing data, scopes and filters.
-- [Controllers](controllers.md): routes, actions, authorization and users.
-- [Validation](validation.md): validating data, custom keywords and formats.
-- [Errors](errors.md): errors and how they are sent to clients.
-- [Storages and assets](storages.md): file uploads and storage.
-- [Services](services.md): app-wide functionality with a lifecycle.
-- [Database](database.md): migrations and seeds.
-
-The [API reference](../../api/server/index.md) lists every class, method and
-option. To build an admin interface for the API, see the
-[admin guide](../admin/index.md). Upgrading from Dito.js 3.x is described in
-[Upgrading to Dito.js 4.x](../../upgrading-to-4.x.md), from 4.x in
-[Upgrading to Dito.js 5.x](../../upgrading-to-5.x.md), from 5.x in
-[Upgrading to Dito.js 6.x](../../upgrading-to-6.x.md).
+Schemas of queries, bodies, filters and column types are
+[Standard Schemas](https://standardschema.dev). The examples use
+[Zod](https://zod.dev).
 
 ## Installation
 
-Dito.js Server needs Node.js 24 or newer. It is published as an ES module
-only, so your project needs `"type": "module"` in its `package.json`, or `.mjs`
-files.
-
-Install the server with its peer dependencies, Knex.js and Objection.js, and
-the database driver that Knex uses for your database:
-
 ```sh
-pnpm add @ditojs/server knex objection pg
+pnpm add @ditojs/server @ditojs/mikro @mikro-orm/core @mikro-orm/postgresql hono @hono/node-server zod
 ```
 
-Knex supports PostgreSQL (`pg`), MySQL (`mysql2`), SQLite (`sqlite3` or
-`better-sqlite3`) and others, see
-[the Knex installation guide](https://knexjs.org/guide/#node-js). Dito.js is
-developed against PostgreSQL; a few features are PostgreSQL only, e.g.
-`knex.typeParsers` in the [configuration](configuration.md).
+The packages are ES modules and need Node.js 24 or later. They are written in
+TypeScript and ship their types.
 
-Storing files in S3 needs
-[optional peer dependencies](../../api/server/storage.md).
+## A first app
 
-`@ditojs/build`, `vite` and `@vitejs/plugin-vue` are optional peer
-dependencies too, needed only to build the admin or serve it in development.
-Install them as dev dependencies, so production installs leave them out:
-
-```sh
-pnpm add -D @ditojs/build vite @vitejs/plugin-vue
-```
-
-The admin interface comes with the server, as `@ditojs/admin` is one of its
-dependencies. Setting it up is described in the
-[admin guide](../admin/index.md).
-
-`@ditojs/server` has a single entry point. Import everything from it:
+A bookshop with books, served at `/api/books`:
 
 ```js
-import { Application, Model, ModelController } from '@ditojs/server'
-```
+import { defineEntity, p } from '@mikro-orm/core'
+import { MikroORM } from '@mikro-orm/postgresql'
+import { Hono } from 'hono'
+import { createApi } from '@ditojs/server'
+import { serve } from '@ditojs/server/node'
+import { defineController, mikroDb } from '@ditojs/mikro'
 
-## Project layout
-
-Dito.js doesn't require a layout, but `db:seed` and `db:create_migration`
-look for the `seeds` and `migrations` folders in the application's
-`basePath`, which is the current working directory by default. A typical
-project looks like this:
-
-```text
-config/
-  index.js          the configuration
-src/
-  server/
-    app.js          creates and exports the application
-    index.js        starts it
-    models/
-      index.js      exports all models
-    controllers/
-      index.js      exports all controllers
-    services/
-      index.js      exports all services
-  admin/            the admin views, see the admin guide
-migrations/         database migrations
-seeds/              database seeds
-```
-
-The `index.js` files re-export the classes of their folder, so the application
-can receive all of them at once:
-
-```js
-// src/server/models/index.js
-export * from './Author.js'
-export * from './Book.js'
-export * from './Chapter.js'
-```
-
-## A first application
-
-The configuration is a plain object. Read secrets and environment-specific
-values from environment variables:
-
-```js
-// config/index.js
-const { env } = process
-
-export default {
-  env: env.NODE_ENV || 'development',
-  server: {
-    host: env.HOST || '0.0.0.0',
-    port: env.PORT || 8080
-  },
-  app: {
-    normalizePaths: true,
-    keys: [env.APP_KEY]
-  },
-  knex: {
-    client: 'postgresql',
-    connection: { database: 'bookshop' },
-    normalizeDbNames: true
+const BookSchema = defineEntity({
+  name: 'Book',
+  properties: {
+    id: p.integer().primary(),
+    title: p.string().length(200),
+    price: p.decimal('number').precision(8).scale(2).nullable()
   }
-}
-```
+})
+export class Book extends BookSchema.class {}
+BookSchema.setClass(Book)
 
-The application receives the configuration and the models and controllers:
-
-```js
-// src/server/app.js
-import { Application } from '@ditojs/server'
-import config from '../../config/index.js'
-import * as models from './models/index.js'
-import * as controllers from './controllers/index.js'
-
-const app = new Application({ config, models, controllers })
-
-export default app
-```
-
-A separate file starts it, so that the command line tool can import the
-application without starting a server:
-
-```js
-// src/server/index.js
-import app from './app.js'
-
-await app.execute()
-```
-
-Start it with `node src/server/index.js`. [Application](application.md)
-describes the lifecycle.
-
-## Command line tool
-
-`@ditojs/server` installs a `dito` command. Its first argument is the command,
-its second the file to import: the migration commands import the
-configuration, the others the application. Add them to the scripts of your
-`package.json`:
-
-```json
-{
-  "scripts": {
-    "start": "node src/server/index.js",
-    "console": "dito console src/server/app.js",
-    "db:migrate": "dito db:migrate config/index.js",
-    "db:rollback": "dito db:rollback config/index.js",
-    "db:reset": "dito db:reset config/index.js",
-    "db:unlock": "dito db:unlock config/index.js",
-    "db:seed": "dito db:seed src/server/app.js",
-    "db:create_migration": "dito db:create_migration src/server/app.js",
-    "db:list_asset_config": "dito db:list_asset_config src/server/app.js"
+const books = defineController({
+  path: 'books',
+  entity: Book,
+  authorize: 'editor',
+  find: { orderBy: { title: 'asc' } },
+  actions: {
+    'get': { authorize: true },
+    'post': true,
+    'get :id': { authorize: true },
+    'patch :id': true,
+    'delete :id': true
   }
-}
+})
+
+const orm = await MikroORM.init({
+  entities: [Book],
+  dbName: 'bookshop',
+})
+
+const api = createApi({
+  controllers: [books],
+  db: mikroDb(orm)
+})
+
+const app = new Hono()
+app.route('/api', api)
+await serve(app, { port: 8080, onClose: () => orm.close() })
 ```
 
-Further arguments follow the script name, e.g.
-`pnpm db:create_migration create_books Author Book`. The
-[CLI reference](../../api/server/application.md#cli) describes each command;
-[Database](database.md) shows how to use them.
+This serves `GET` and `POST /api/books`, and `GET`, `PATCH` and
+`DELETE /api/books/:id`. Anyone may read. Writes need a user with the role
+`editor`. Dito.js checks every body against the entity before it reaches the
+database. Invalid data responds with 400 and an error for each field.
 
-`pnpm console` starts the application and a REPL with `app` and all models as
-globals, and awaits promises. It is useful to try out queries:
+## How a request runs
 
-```text
-dito > Book.where('price', '<', 10).withGraph('author')
-```
+1. Hono's router finds the action of the method and path. Paths that no action
+   matches go to the app's `notFound()`.
+2. The API's `middleware` runs, such as sessions. Then Dito sets `c.var.db`
+   through the `db` adapter and `c.var.user` with `getUser`.
+3. The action's `authorize` lets the user in, or responds with 401 or 403.
+4. The action's schemas check the query and the JSON body.
+5. Writes open a transaction.
+6. The middleware of the controller, its mixins and the action runs. A model
+   controller's base sets `record()` and `find()` first.
+7. The handler runs with its input, such as `{ query, body, params, user, db }`.
+   Dito saves its result, serializes it and sends it as JSON.
 
-## Logging in
+Errors in any step respond with [JSON](../../api/server/errors.md). Errors with
+a status of 500 or above also go to the API's `onError`, which logs them by
+default.
 
-The admin, and any route that checks [authorization](controllers.md#authorization),
-needs users who log in. In the bookshop, only staff log in: a `User` model
-with `UserMixin`, a `Session` model with `SessionMixin`, a users controller
-and the session settings in the configuration.
-[Controllers: users and sessions](controllers.md#users-and-sessions) shows
-them.
+## Next steps
 
-Create the tables of both models with a migration, and run it:
-
-```sh
-pnpm db:create_migration create_users User Session
-pnpm db:migrate
-```
-
-Then create the first user. Set `password`: `UserMixin` stores only its hash.
-Either in the console:
-
-```text
-dito > User.insert({ username: 'admin', password: 'secret', roles: ['admin'] })
-```
-
-Or with a seed, which `pnpm db:seed` runs (see [Seeds](database.md#seeds)).
-Seeds that are functions don't empty the table, so run this one once:
-
-```js
-// seeds/users.js
-export default async function ({ User }) {
-  return User.insert([
-    {
-      username: 'admin',
-      password: process.env.ADMIN_PASSWORD,
-      roles: ['admin']
-    }
-  ])
-}
-```
+- [API](api.md): `createApi()`, hosting, the database, users and errors.
+- [Controllers](controllers.md): actions, handlers, mixins, authorization and
+  middleware.
+- [Entities and controllers](entities.md): MikroORM controllers, `find`, lists
+  and filters.
+- [Writes](writes.md): the checks of a body, nested rows, relations and deletes.
+- [Validation](validation.md): schemas of queries, bodies and columns.
+- [Storages and files](storages.md), [Users and sessions](auth.md),
+  [Serving the admin](admin.md).

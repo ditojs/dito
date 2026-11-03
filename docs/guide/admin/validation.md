@@ -1,8 +1,11 @@
 # Validation
 
-The admin validates in two places: in the browser, with the types and limits
-of the fields, and on the server, with the schemas of the models. Errors of
-both are shown on the fields they belong to.
+The admin validates in two places:
+
+- in the browser, with the types and limits of the fields
+- on the server, with the checks of the body and the schemas of the actions
+
+Errors of both are shown on the fields they belong to.
 
 ## Types and limits of fields
 
@@ -29,8 +32,7 @@ than `required` only apply to values that aren't empty. Where a type checks
 too much, use a type without the check, e.g. `type: 'text'` instead of
 `'url'`, and [`validate()`](#custom-validation) for the rest.
 
-Text and arrays take the limits of the server's model properties, by the same
-names:
+Text and arrays take limits too:
 
 ```js
 code: { type: 'text', minLength: 2, maxLength: 8, pattern: '^[A-Z0-9]+$' },
@@ -94,20 +96,23 @@ Fields hidden with `if` aren't validated.
 
 ## Validation on the server
 
-The models validate all data they receive. When a save fails with validation
-errors, the admin shows the server's errors on the fields at their data
-paths:
+The server checks all data that it receives against the entity's columns and
+the schemas of the action. When a save fails with validation errors, the admin
+shows each error on the field at its path. For example, a missing title shows
+on the field at `title`:
 
 ```js
-// src/server/models/Book.js
-import { Model } from '@ditojs/server'
+// src/server/entities/book.js
+import { defineEntity, p } from '@mikro-orm/core'
 
-export class Book extends Model {
-  static properties = {
-    title: { type: 'string', required: true },
-    isbn: { type: 'string', pattern: '^\\d{13}$' }
+const BookSchema = defineEntity({
+  name: 'Book',
+  properties: {
+    id: p.integer().primary(),
+    title: p.string().length(200),
+    pages: p.integer().nullable()
   }
-}
+})
 ```
 
 Errors of values that no field displays, e.g. inside an object edited as
