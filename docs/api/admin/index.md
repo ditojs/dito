@@ -36,6 +36,7 @@ For an introduction, see the [admin guide](../../guide/admin/index.md).
 | `useDitoForm()`                                                       | Sets up a form in the calling component, which loads, creates and saves the item of its `resource` and `id`, and returns its [context](./context.md), see [Forms in pages](../../guide/admin/views.md#forms-in-pages) |
 | `DitoSchemaForm`                                                      | Renders the form of `useDitoForm()` with its buttons, its default slot lays out the fields, see [Forms in pages](../../guide/admin/views.md#forms-in-pages)                                                           |
 | `DitoTextField`, `DitoListField`, `DitoSection`, `DitoCustomField`, … | The [widgets](./widgets.md) that lay out forms with `properties`                                                                                                                                                      |
+| `createTemporaryId()`, `isTemporaryId()`                              | Create and detect temporary ids, for new rows that code links to a relation, e.g. in `onChange`. Fields with `relate` use them too. Saving sends such a row with `#id`, and its links as `{ '#ref' }`                 |
 
 All other exports are TypeScript types, see [Types](./types.md).
 

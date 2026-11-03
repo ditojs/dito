@@ -223,7 +223,9 @@ Fires when the `onClick()` of the button throws, or its submit fails with an
 error other than validation errors, which are shown on the fields. Can
 suppress dito's notification, see [Return values](#return-values).
 
-`context.error` is the thrown error, or the error data of the response.
+`context.error` is the thrown error, or the `Error` of the failed request,
+with the fields of the response body and its `status`, see
+[`request()`](./context.md#request).
 
 ## Form events
 

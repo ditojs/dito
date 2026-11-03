@@ -305,10 +305,10 @@ The logged-in user, `null` when logged out. See
 ### api
 
 ```ts
-context.api: ApiConfig
+context.api: Api
 ```
 
-The admin's `api` configuration, see [ApiConfig](./admin.md#apiconfig).
+The admin's API, see [`admin.api`](./admin.md#api).
 
 ### views
 
@@ -483,7 +483,8 @@ the API check the session first.
 #### Return value
 
 A promise for the data of the response. Error responses reject with an `Error`
-that carries the response data, e.g. `type`, `status` and `errors`.
+that has the fields of the response body, e.g. `type`, `code` and `errors`,
+the `status`, and the `response`.
 
 #### Example
 
@@ -629,7 +630,7 @@ Like [`validate()`](#validate), without showing the errors.
 ### getErrors()
 
 ```ts
-context.getErrors(match?): { [dataPath]: [{ message, keyword?, params? }] } | null
+context.getErrors(match?): { [dataPath]: [{ message }] } | null
 ```
 
 Returns the errors that the data holds, by the data paths of their values: the
@@ -641,8 +642,8 @@ errors.
 
 #### Return value
 
-The errors by absolute data paths, or `null` without errors. Only the errors
-of the server have a `keyword` and its `params`.
+The errors by absolute data paths, or `null` without errors. The errors of
+the server keep their other fields, e.g. `keyword`.
 
 #### Example
 

@@ -4,11 +4,9 @@
 import Router from '@ditojs/router'
 ```
 
-A fast, tree-based HTTP router, independent of any framework. The
-[`Application`](./server/application.md) of `@ditojs/server` routes its
-controllers with it, and takes another router with the same `add()` and
-`find()` methods through its `router` option. The package has one entry
-point, an ES module without TypeScript types.
+A fast, tree-based HTTP router, independent of any framework. Dito.js Server
+doesn't use it: [`createApi()`](./server/api.md) routes through Hono. It has one
+entry point, an ES module without TypeScript types.
 
 ```js
 const router = new Router()

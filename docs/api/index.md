@@ -3,17 +3,17 @@
 The reference of every public export of the Dito.js packages. For
 introductions and examples, see the guides in the [docs](../index.md).
 
-| Package                                                    | Description                                                                                                            |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| [@ditojs/server](./server/index.md)                        | The server framework: application, models, controllers, services, storages and validation, on Koa.js and Objection.js. |
-| [@ditojs/admin](./admin/index.md)                          | The admin interface: `DitoAdmin`, view and form schemas, contexts, events and custom types.                            |
-| [@ditojs/ui](./ui.md)                                      | The public Vue 3 components, helpers and styles that the admin is built with.                                          |
-| [@ditojs/utils](./utils.md)                                | Helpers for type checks, objects, strings, dates, data paths, timers and promises, for Node.js and browsers.           |
-| [@ditojs/router](./router.md)                              | The HTTP router of the server.                                                                                         |
-| [@ditojs/schema](./server/validator.md#shared-definitions) | The validation definitions that the server and the admin share: formats, keywords and messages.                        |
+| Package                              | Description                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| [Server packages](./server/index.md) | `@ditojs/server`, `@ditojs/mikro`, `@ditojs/storage`, `@ditojs/auth` and `@ditojs/admin-server`.             |
+| [@ditojs/admin](./admin/index.md)    | The admin interface: `DitoAdmin`, view and form schemas, contexts, events and custom types.                  |
+| [@ditojs/ui](./ui.md)                | The public Vue 3 components, helpers and styles that the admin is built with.                                |
+| [@ditojs/utils](./utils.md)          | Helpers for type checks, objects, strings, dates, data paths, timers and promises, for Node.js and browsers. |
+| [@ditojs/router](./router.md)        | A standalone HTTP router.                                                                                    |
 
 All packages are ES modules. Their entry points are listed on each package's
 page; anything not documented here is internal. For the changes since 3.x,
 see [Upgrading to 4.x](../upgrading-to-4.x.md), since 4.x
 [Upgrading to 5.x](../upgrading-to-5.x.md), since 5.x
-[Upgrading to 6.x](../upgrading-to-6.x.md).
+[Upgrading to 6.x](../upgrading-to-6.x.md), since 6.x
+[Upgrading to 7.x](../upgrading-to-7.x.md).

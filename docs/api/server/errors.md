@@ -1,292 +1,170 @@
 # Errors
 
 ```js
-import { ResponseError, NotFoundError } from '@ditojs/server'
+import {
+  HttpError,
+  bodyValidation,
+  createValidationError,
+  errorHandler,
+  notFound,
+  queryValidation
+} from '@ditojs/server'
 ```
 
-All errors that Dito.js sends as responses extend `ResponseError`. The error
-middleware responds with the error's `status` and, when the client accepts
-JSON, with `error.toJSON()` as body. A model validation error, e.g. for an
-empty `title`:
+Errors respond with JSON. An `HttpError` is meant for the client, which receives
+its message and data. Other errors respond with 500 and the title of the status,
+as their message may hold internals. Errors with a status of 500 or above go to
+the `onError` hook of [`createApi()`](api.md#apiconfig) and
+[`errorHandler()`](#errorhandler), which logs them by default.
+
+## The body
 
 ```json
 {
-  "message": "The provided data for the Book model is not valid",
-  "type": "ModelValidation",
+  "type": "BodyValidation",
+  "message": "The body is not valid.",
+  "status": 400,
   "errors": {
-    "title": [
-      {
-        "message": "is required",
-        "keyword": "format",
-        "params": { "format": "required" }
-      }
-    ]
+    "name": [{ "message": "Invalid input: expected string, received undefined", "keyword": "invalid_type" }]
   }
 }
 ```
 
-Controller actions wrap other errors they throw in a `ResponseError`, which
-keeps their `message`, `status` (default 500) and `code`. Errors from elsewhere
-respond with their `status` or 500 and `{ message }`. Either way, the message of
-a plain `Error` reaches the client: throw a `ResponseError` for messages meant
-for clients, and keep internals out of plain errors. All errors are emitted as
-`'error'` events on the application. See [Errors](../../guide/server/errors.md)
-for how to throw and handle them.
+| Key       | Type                                                      | Description                                                                     |
+| --------- | --------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `message` | `string`                                                  | What went wrong, for the client.                                                |
+| `status`  | `number`                                                  | The status of the response.                                                     |
+| `type`    | `string`                                                  | The kind of error, such as `ModelValidation`.                                   |
+| `code`    | `string`                                                  | A code that clients act on.                                                     |
+| `errors`  | `Record<string, { message: string; keyword?: string }[]>` | The field errors, see [Validation errors](#validation-errors).                  |
+| any other | `unknown`                                                 | The error's data, such as `confirmationRequired`, which clients act on as well. |
 
-| Class                                         | Status        | Default message                |
-| --------------------------------------------- | ------------- | ------------------------------ |
-| [`ResponseError`](#responseerror)             | 500           | `'Response error'`             |
-| [`AssetError`](#asseterror)                   | 400           | `'Asset error'`                |
-| [`AuthenticationError`](#authenticationerror) | 401           | `'Authentication error'`       |
-| [`AuthorizationError`](#authorizationerror)   | 401           | `'Unauthorized Access'`        |
-| [`ControllerError`](#controllererror)         | 400           | `'Controller <name>: <error>'` |
-| [`DatabaseError`](#databaseerror)             | 400, 409, 500 | The wrapped error's message    |
-| [`GraphError`](#grapherror)                   | 400           | `'Graph error'`                |
-| [`ModelError`](#modelerror)                   | 400           | `"Model '<name>': <error>"`    |
-| [`NotFoundError`](#notfounderror)             | 404           | `'Not-found error'`            |
-| [`NotImplementedError`](#notimplementederror) | 501           | `'Method not implemented'`     |
-| [`QueryBuilderError`](#querybuildererror)     | 400           | `'Query-builder error'`        |
-| [`RelationError`](#relationerror)             | 400           | `'Relation error'`             |
-| [`ValidationError`](#validationerror)         | 400           | `'Validation error'`           |
+## Validation errors
 
-## ResponseError
+Invalid input responds with 400 and `errors`, keyed by the path of the invalid
+value, such as `chapters/8/title`. The key `''` stands for the value itself.
+Each error has a `message` and a `keyword`. The `keyword` is a stable string,
+such as Zod's issue codes `invalid_type` and `too_small`, which clients can map
+to their own messages. The `type` tells where the input was:
 
-```js
-new ResponseError(error?, defaults?, overrides?)
+| Type                  | Errors of                                                      |
+| --------------------- | -------------------------------------------------------------- |
+| `ParameterValidation` | The action's `query` schema.                                   |
+| `BodyValidation`      | The action's `body` schema.                                    |
+| `FilterValidation`    | The filters of a list, keyed by filter name.                   |
+| `ModelValidation`     | The data of a model, and `createValidationError()` by default. |
+
+See [Validation](../../guide/server/validation.md) in the guide.
+
+## HttpError
+
+```ts
+new HttpError(status: number, options?: object)
 ```
 
-The base class of all errors sent as responses.
+| Option    | Type      | Description                                                                             |
+| --------- | --------- | --------------------------------------------------------------------------------------- |
+| `message` | `string`  | What went wrong, for the client. Default: the title of the status, such as `Not Found`. |
+| `type`    | `string`  | The kind of error, such as `ModelValidation`.                                           |
+| `code`    | `string`  | A code that clients act on.                                                             |
+| `errors`  | `object`  | Field errors by path, see [The body](#the-body).                                        |
+| `cause`   | `unknown` | The error that caused this one, for the app's logs. Not sent.                           |
+| any other | `unknown` | More data of the body.                                                                  |
 
-#### Parameters
-
-| Name        | Type                        | Description                                                                                                                 |
-| ----------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `error`     | `string \| object \| Error` | A message, an object with `message`, `status`, `cause` and further data, or an error to wrap.                               |
-| `defaults`  | `{ message?, status?, … }`  | Values that `error` doesn't provide. Default: `{ message: 'Response error', status: 500 }`, replaced as a whole when given. |
-| `overrides` | `object`                    | Values that replace those of `error`, e.g. `message` or `stack`.                                                            |
-
-`error`, `defaults` and `overrides` are merged in this order:
-
-- A string becomes `message`.
-- A wrapped `Error` contributes its `message`, its `toJSON()` data, and its
-  `status` and `code` when set; it becomes the `cause`.
-- `message`, `status`, `expose`, `stack` and `cause` are taken out; all other
-  properties become `data`.
-
-#### Properties
-
-| Name      | Type                   | Description                                                                                                            |
-| --------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `message` | `string`               | The message.                                                                                                           |
-| `status`  | `number`               | The HTTP status.                                                                                                       |
-| `expose`  | `boolean \| undefined` | `false` keeps the message and data out of the response, see [Plain errors](../../guide/server/errors.md#plain-errors). |
-| `data`    | `object \| undefined`  | Additional data sent with the response, e.g. `code` or `errors`.                                                       |
-| `cause`   | `unknown`              | The wrapped error.                                                                                                     |
-
-### toJSON()
+Properties: `status`, `message`, `type`, `code`, `errors`, `data`. `toJSON()`
+returns [the body](#the-body).
 
 ```js
-const body = error.toJSON()
-```
-
-Returns `object`: `{ message, ...data }`, the response body.
-
-#### Example
-
-```js
-throw new ResponseError('The book is checked out', { status: 409 })
-
-throw new ResponseError({
-  message: 'The book is checked out',
-  status: 409,
-  code: 'checked_out',
-  bookId: book.id
-})
-// Responds 409 with { message, code: 'checked_out', bookId }
-```
-
-Application errors can extend it with their own defaults:
-
-```js
-class ConflictError extends ResponseError {
-  constructor(error) {
-    super(error, { message: 'Conflict', status: 409 })
-  }
-}
-```
-
-The subclasses below take one argument, `error`, as `ResponseError` does,
-unless noted otherwise. A `status` in `error` replaces the default status.
-
-## AssetError
-
-```js
-new AssetError(error?)
-```
-
-400. Invalid asset files, e.g. unsigned files from sources not in
-     `allowedImports`, see [`convertAssetFile()`](storage.md#convertassetfile).
-
-## AuthenticationError
-
-```js
-new AuthenticationError(error?)
-```
-
-401. Failed authentication, e.g. invalid login credentials.
-
-## AuthorizationError
-
-```js
-new AuthorizationError(error?)
-```
-
-401. A denied [`authorize`](controllers.md#authorize) setting.
-
-## ControllerError
-
-```js
-new ControllerError(controller, error)
-```
-
-400. Errors in the configuration of a controller. The message is prefixed
-     with the class name.
-
-#### Parameters
-
-| Name         | Type                              | Description                  |
-| ------------ | --------------------------------- | ---------------------------- |
-| `controller` | `Controller \| Class<Controller>` | The controller or its class. |
-| `error`      | `string`                          | The message.                 |
-
-#### Example
-
-```js
-new ControllerError(BooksController, 'Missing handler')
-// 'Controller BooksController: Missing handler'
-```
-
-## DatabaseError
-
-```js
-new DatabaseError(error, overrides?)
-```
-
-Wraps Objection database errors, with their message. `data.type` is the
-class name of the wrapped error, `cause` its native driver error. Errors with
-status 500 or higher set `expose: false`: their message is only logged.
-
-| Wrapped error                                                                         | Status |
-| ------------------------------------------------------------------------------------- | ------ |
-| `CheckViolationError`, `NotNullViolationError`, `DataError`                           | 400    |
-| `ConstraintViolationError` (incl. `UniqueViolationError`, `ForeignKeyViolationError`) | 409    |
-| other `DBError`                                                                       | 500    |
-| any other error                                                                       | 400    |
-
-#### Parameters
-
-| Name        | Type      | Description                 |
-| ----------- | --------- | --------------------------- |
-| `error`     | `DBError` | The Objection error.        |
-| `overrides` | `object`  | E.g. `{ message, status }`. |
-
-Models convert database errors of their queries with
-[`app.createDatabaseError()`](application.md#createdatabaseerror), which
-removes the SQL from the message and keeps it as `data.sql` when
-`config.log.errors.sql` is set.
-
-## GraphError
-
-```js
-new GraphError(error?)
-```
-
-400. Invalid graphs, e.g. Objection's `InvalidGraph` errors or unsupported
-     graph control properties in the data.
-
-## ModelError
-
-```js
-new ModelError(model, error)
-```
-
-400. Errors in the definition of a model. The message is prefixed with the
-     model's class name.
-
-#### Parameters
-
-| Name    | Type                    | Description             |
-| ------- | ----------------------- | ----------------------- |
-| `model` | `Model \| Class<Model>` | The model or its class. |
-| `error` | `string`                | The message.            |
-
-#### Example
-
-```js
-new ModelError(Book, 'Invalid shelf') // "Model 'Book': Invalid shelf"
-```
-
-## NotFoundError
-
-```js
-new NotFoundError(error?)
-```
-
-404. Missing models or routes, e.g. from `throwIfNotFound()`.
-
-## NotImplementedError
-
-```js
-new NotImplementedError(error?)
-```
-
-501. Functionality that isn't implemented.
-
-## QueryBuilderError
-
-```js
-new QueryBuilderError(error?)
-```
-
-400. Invalid queries, e.g. invalid `range`, `order` or `filter` query
-     parameters, or scopes, filters and parameters that aren't allowed.
-
-## RelationError
-
-```js
-new RelationError(error?)
-```
-
-400. Invalid relation definitions and relation expressions. Mentions of
-     `relationMappings` in wrapped Objection errors are replaced with `relations`.
-
-## ValidationError
-
-```js
-new ValidationError(error?)
-```
-
-400. Failed validation of models, parameters, filters, responses or request
-     bodies. Mostly created by
-     [`app.createValidationError()`](application.md#createvalidationerror), with
-     `data`:
-
-| Property | Description                                                                                                     |
-| -------- | --------------------------------------------------------------------------------------------------------------- |
-| `type`   | `'ModelValidation'`, `'ParameterValidation'`, `'FilterValidation'`, `'ResultValidation'` or `'BodyValidation'`. |
-| `errors` | Errors by data path (not for `'BodyValidation'`), see [`parseErrors()`](validator.md#parseerrors).              |
-| `json`   | The validated data, when `config.log.errors.json` is set.                                                       |
-
-#### Example
-
-```js
-throw new ValidationError({
-  type: 'BookValidation',
-  message: 'The book is invalid',
-  errors: {
-    isbn: [
-      { message: 'needs to be an ISBN-13', keyword: 'isbn', params: {} }
-    ]
-  }
+throw new HttpError(404)
+throw new HttpError(409, { message: 'The order is already paid.' })
+throw new HttpError(403, {
+  message: 'Please confirm your password.',
+  confirmationRequired: true
 })
 ```
+
+## errorHandler()
+
+```ts
+errorHandler(
+  onError?: (error: unknown, c: Context) => void | Promise<void>,
+  toHttpError?: (error: unknown, c: Context) => HttpError | undefined
+): ErrorHandler
+```
+
+The error handler for Hono's `app.onError()`, for the errors outside of Dito
+APIs, such as those of the app's own routes and middleware. A Dito API handles
+its own errors the same way. `toHttpError()` first maps the error, such as the
+`toHttpError()` of a `db` adapter. Then:
+
+- An `HttpError` responds with [its body](#the-body).
+- An error with a numeric `status` between 400 and 599, such as the errors of
+  http-errors and Hono's `HTTPException`, responds with that status. It sends
+  its message when `expose` is true, else the title of the status. `expose`
+  defaults to true below 500.
+- Other errors respond with 500 and the title of the status.
+
+`onError` gets the errors with a status of 500 or above, as they were thrown. By
+default, it logs them with `c.var.logger.error()`, where `c.var.logger` is any
+object with `error()` that the app's middleware sets, else with
+`console.error()`. The response keeps the headers that were set before the
+error, such as cookies and those of `cors()`, but not `Content-*`, `ETag`,
+`Cache-Control` and `Location`, which describe the data.
+
+```js
+app.onError(errorHandler())
+// With a logger of the app:
+app.onError(errorHandler(error => logger.error(error)))
+```
+
+Hono only handles `Error`s, so throw an `HttpError`, not a `Response`.
+
+## notFound
+
+```ts
+notFound: NotFoundHandler
+```
+
+The handler of Hono's `app.notFound()`, for the paths that no API handles. It
+throws `new HttpError(404)`, which Hono sends to `app.onError()`, so the app
+needs [`errorHandler()`](#errorhandler) too.
+
+```js
+app.onError(errorHandler())
+app.notFound(notFound)
+```
+
+## createValidationError()
+
+```ts
+createValidationError(
+  issues: readonly { message: string; path?: readonly PropertyKey[]; code?: string }[],
+  options?: ValidationErrorOptions
+): HttpError
+```
+
+Returns an error with the field errors of Standard Schema issues, keyed by path.
+A string `code` of an issue becomes the `keyword`. Use it for rules that run in
+code, such as a check of a whole graph:
+
+```js
+throw createValidationError([
+  { path: ['royalties'], code: 'custom', message: 'must add up to 100' }
+])
+```
+
+| Option    | Type      | Description                                                   |
+| --------- | --------- | ------------------------------------------------------------- |
+| `message` | `string`  | Default: `The data is not valid.`                             |
+| `type`    | `string`  | Default: `ModelValidation`.                                   |
+| `status`  | `number`  | Default: 400.                                                 |
+| `cause`   | `unknown` | The error that caused this one, for the app's logs. Not sent. |
+
+`queryValidation` and `bodyValidation` are the options of Dito's own errors for
+the query and the body, for code that checks these itself:
+`createValidationError(issues, bodyValidation)`.
+
+## Database errors
+
+`mikroDb()` of `@ditojs/mikro` maps the errors of MikroORM and Postgres to an
+`HttpError`, see [Database errors](mikro.md#database-errors).
