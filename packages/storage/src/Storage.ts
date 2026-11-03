@@ -1,357 +1,148 @@
-import path from 'path'
-import { URL } from 'url'
-import crypto from 'crypto'
-import multer from '@koa/multer'
+import path from 'node:path'
+import crypto from 'node:crypto'
+import { fileURLToPath } from 'node:url'
 import picomatch from 'picomatch'
-import { PassThrough } from 'stream'
+import { fileTypeFromBuffer } from 'file-type'
 import { readMediaAttributes } from 'leather'
-import { hyphenate, isString, toPromiseCallback } from '@ditojs/utils'
-import {
-  AssetFile,
-  type AssetFileObject,
-  type FileData
-} from './AssetFile.ts'
-import { AssetError } from './AssetError.ts'
-import { resolveFileUrl } from '../utils/asset.js'
+import { isString } from '@ditojs/utils'
 
-export interface StorageConfig {
+// The base class of storages. Subclasses write, read, remove and list the
+// files in their backend, and `store()` adds what all storages share: unique
+// keys, the detection of types and dimensions, sizes and urls.
+
+// A stored file as it appears in JSON data: the storage key, and the name,
+// type and size of the file.
+export interface AssetFileObject {
+  key: string
+  name?: string
+  type?: string
+  size?: number
   url?: string
-  path?: string
-  concurrency?: number
+  width?: number
+  height?: number
+}
+
+export interface StorageOptions {
+  // The name of the storage, for asset records and error messages.
+  name: string
+  // The base url of the stored files.
+  url?: string
+  // Glob patterns of urls, from which files may be imported.
   allowedImports?: string[]
-  // The options of the storage implementations, such as `bucket`.
-  [key: string]: any
 }
 
-// The options of `getUploadHandler()`, passed on to multer.
-export interface UploadConfig {
-  readDimensions?: boolean
-  [key: string]: any
+export interface StoreOptions {
+  name: string
+  // Detected from the data when missing.
+  type?: string
+  data: Buffer
 }
 
-const storageClasses: Record<string, typeof Storage> = {}
+export abstract class Storage {
+  name: string
+  url: string | undefined
+  #isAllowedImport: (url: string) => boolean
 
-export class Storage {
-  declare static type?: string
-  declare static _fallbackSecret?: Buffer
-
-  declare app: any
-  declare name: string
-  declare config: StorageConfig
-  declare url: string | undefined
-  declare path: string | undefined
-  declare concurrency: number
-  declare storage: any
-
-  isInitialized = false
-
-  constructor(app: any, name: string, config: StorageConfig) {
-    this.app = app
+  constructor({ name, url, allowedImports = [] }: StorageOptions) {
     this.name = name
-    this.config = config
-    this.url = config.url
-    this.path = config.path
-    // Use a default concurrency of 8 for storage IO, e.g. the importing of
-    // foreign assets.
-    this.concurrency = config.concurrency ?? 8
-    // The actual multer storage object.
-    this.storage = null
-  }
-
-  // Internal, called by the application: storage implementations set
-  // themselves up here, like `DiskStorage` and `S3Storage`. Their subclasses
-  // override `initialize()`, which stays empty, so they never need to call
-  // super.
-  // @overridable
-  async setup() {}
-
-  // @overridable
-  async initialize() {}
-
-  static register(storageClass: typeof Storage) {
-    const type = (
-      storageClass.type ||
-      hyphenate(storageClass.name.match(/^(.*?)(?:Storage|)$/)[1])
-    )
-    storageClass.type = type
-    storageClasses[type] = storageClass
-  }
-
-  static get(type: string) {
-    return storageClasses[type] || null
-  }
-
-  getUploadStorage(config: UploadConfig) {
-    // Returns a storage that inherits from this.storage but overrides
-    // _handleFile to pass on `config` to the call of `handleUpload()`
-    return this.storage
-      ? Object.setPrototypeOf(
-          {
-            _handleFile: async (req: any, file: any, callback: any) => {
-              try {
-                callback(null, await this._handleUpload(req, file, config))
-              } catch (err) {
-                callback(err)
-              }
-            }
-          },
-          this.storage
-        )
-      : null
-  }
-
-  getUploadHandler(config: UploadConfig) {
-    const storage = this.getUploadStorage(config)
-    return storage ? multer({ ...config, storage }).any() : null
-  }
-
-  getUniqueKey(name: string) {
-    return AssetFile.getUniqueKey(name)
+    this.url = url
+    this.#isAllowedImport = picomatch(allowedImports.map(resolveFileUrl))
   }
 
   isImportSourceAllowed(url: unknown) {
     // Files of storages without `url` have no url to match.
     if (!isString(url)) return false
-    return picomatch.isMatch(
-      resolveFileUrl(url as string),
-      (this.config.allowedImports || []).map(resolveFileUrl)
+    const source = getImportSource(url)
+    return source !== null && this.#isAllowedImport(source)
+  }
+
+  // Stores data under a new key, and returns its file object, with the width
+  // and height of images and videos.
+  async store({ name, type, data }: StoreOptions): Promise<AssetFileObject> {
+    // Multipart bodies give untyped files `application/octet-stream`, so
+    // detect the type of those as well.
+    type = (
+      (type !== 'application/octet-stream' && type) ||
+      (await detectType(data)) ||
+      'application/octet-stream'
     )
-  }
-
-  convertAssetFile(
-    file: AssetFileObject & { data?: unknown },
-    { trusted = false } = {}
-  ) {
-    if (!trusted && !(file instanceof AssetFile)) {
-      if (!this.verifyAssetFile(file)) {
-        if (!this.isImportSourceAllowed(file.url)) {
-          throw new AssetError(
-            `Invalid asset signature for file '${
-              file.name ?? file.key
-            }'`
-          )
-        }
-        // Nothing vouches for the keys of unsigned imports, so only accept
-        // generated ones:
-        if (!(isString(file.key) && importKeyRegExp.test(file.key))) {
-          throw new AssetError(
-            `Invalid asset key for file '${file.name ?? file.key}'`
-          )
-        }
-      }
-      // Signatures don't cover data, and imports load their data from `url`,
-      // so never take file data from clients:
-      delete file.data
-    }
-    // Remove signature once the data made it to here.
-    delete file.signature
-    AssetFile.convert(file, this)
-  }
-
-  convertStorageFile(storageFile: any) {
-    // Convert multer file object to our own file object format:
     const file: AssetFileObject = {
-      key: storageFile.key,
-      name: storageFile.originalname,
-      type: storageFile.mimetype,
-      size: storageFile.size,
-      url: this._getFileUrl(storageFile),
-      // In case `config.readDimensions` is set:
-      width: storageFile.width,
-      height: storageFile.height
+      key: getUniqueKey(name),
+      name,
+      type,
+      size: data.byteLength,
+      ...(/^(image|video)\//.test(type) ? readDimensions(data) : null)
     }
-    this.signAssetFile(file)
+    await this.addFile(file, data)
+    const url = this.getFileUrl(file)
+    if (url) file.url = url
     return file
   }
 
-  convertStorageFiles(storageFiles: any[]) {
-    return storageFiles.map(storageFile => this.convertStorageFile(storageFile))
+  getFileUrl(_file: AssetFileObject): string | undefined {
+    return undefined
   }
 
-  async addFile(file: AssetFileObject, data: Buffer) {
-    await this._addFile(file, data)
-    file.size = Buffer.byteLength(data)
-    file.url = this._getFileUrl(file)
-    // TODO: Support `config.readDimensions`, but this can only be done once
-    // there are separate storage instances per model assets config!
-    this.convertAssetFile(file, { trusted: true })
-    return file
+  protected getUrl(...parts: string[]) {
+    if (!this.url) return undefined
+    const file = path.posix.join(...parts)
+    // A base url without origin, such as `/assets/`, gives paths.
+    return URL.canParse(this.url)
+      ? new URL(file, this.url).toString()
+      : path.posix.join(this.url, file)
   }
 
-  async removeFile(file: AssetFileObject) {
-    await this._removeFile(file)
-  }
+  // Writes the data of the file under its key.
+  abstract addFile(file: AssetFileObject, data: Buffer): Promise<void>
+  abstract removeFile(file: AssetFileObject): Promise<void>
+  abstract readFile(file: AssetFileObject): Promise<Buffer>
+  abstract listKeys(): Promise<string[]>
+}
 
-  async readFile(file: AssetFileObject): Promise<FileData> {
-    return this._readFile(file)
-  }
+// A random UUID and the lower-cased extension of the name.
+export function getUniqueKey(name: string) {
+  return `${crypto.randomUUID()}${path.extname(name).toLowerCase()}`
+}
 
-  async listKeys(): Promise<string[]> {
-    return this._listKeys()
-  }
+export function resolveFileUrl(url: string) {
+  return url.startsWith('file://')
+    ? `file://${path.resolve(url.slice(7))}`
+    : url
+}
 
-  getFilePath(file: AssetFileObject): string | undefined {
-    return this._getFilePath(file)
-  }
-
-  getFileUrl(file: AssetFileObject): string | undefined {
-    return this._getFileUrl(file)
-  }
-
-  signAssetFile(file: AssetFileObject) {
-    file.signature = this._signAssetFile(file)
-  }
-
-  verifyAssetFile(file: AssetFileObject | null | undefined) {
-    // Files without a string key can't carry a valid signature.
-    if (isString(file?.key)) {
-      const expected = this._signAssetFile(file)
-      try {
-        return crypto.timingSafeEqual(
-          Buffer.from(expected, 'hex'),
-          Buffer.from(file.signature!, 'hex')
-        )
-      } catch {
-        // Catches missing or malformed signatures.
-        // Fall through to return false below.
-      }
-    }
-    return false
-  }
-
-  _signAssetFile(file: AssetFileObject) {
-    const secret = (
-      this.app.keys?.[0] ??
-      (Storage._fallbackSecret ??= this._createFallbackSecret())
-    )
-    const { key, name, type, size, url, width, height } = file
-    // `JSON.stringify()` turns missing values into `null`:
-    return crypto
-      .createHmac('sha256', secret)
-      .update(JSON.stringify([key, name, type, size, url, width, height]))
-      .digest('hex')
-  }
-
-  _createFallbackSecret(): Buffer {
-    console.warn(
-      'No app.keys configured for asset signatures. ' +
-      'Please note that signatures will not survive ' +
-      'process restarts, and users will be unable to ' +
-      'update records with asset properties until they ' +
-      'reload the page.'
-    )
-    return crypto.randomBytes(32)
-  }
-
-  _getUrl(...parts: string[]) {
-    return this.url
-      ? new URL(path.posix.join(...parts), this.url).toString()
-      : undefined // So that it doesn't show up in JSON data.
-  }
-
-  _getPath(...parts: string[]) {
-    return this.path
-      ? path.resolve(this.app.basePath, this.path, ...parts)
-      : undefined // So that it doesn't show up in JSON data.
-  }
-
-  // @overridable
-  _getFilePath(_file: AssetFileObject): any {}
-
-  // @overridable
-  _getFileUrl(_file: AssetFileObject): any {}
-
-  // @overridable
-  async _addFile(_file: AssetFileObject, _data: Buffer): Promise<void> {}
-
-  // @overridable
-  async _removeFile(_file: AssetFileObject): Promise<void> {}
-
-  // @overridable
-  async _readFile(_file: AssetFileObject): Promise<any> {}
-
-  // @overridable
-  async _listKeys(): Promise<any> {}
-
-  async _handleUpload(req: any, file: any, config: UploadConfig) {
-    if (
-      config.readDimensions &&
-      /^(image|video)\//.test(file.mimetype)
-    ) {
-      return this._handleMediaFile(req, file)
-    } else {
-      return this._handleFile(req, file)
-    }
-  }
-
-  _handleFile(req: any, file: any, stream: PassThrough | null = null) {
-    // Calls the original `storage._handleFile()`, wrapped in a promise:
-    return new Promise((resolve, reject) => {
-      if (stream) {
-        // Replace the original `file.stream` with the pass-through stream:
-        Object.defineProperty(file, 'stream', {
-          configurable: true,
-          enumerable: false,
-          value: stream
-        })
-      }
-      this.storage._handleFile(req, file, toPromiseCallback(resolve, reject))
-    })
-  }
-
-  async _handleMediaFile(req: any, file: any) {
-    const { size, stream } = await new Promise<{
-      size: { width: number, height: number } | null
-      stream: PassThrough
-    }>(resolve => {
-      let data: Buffer | null = null
-
-      const done = (size: any, hasUploadEnded = false) => {
-        file.stream.off('data', onData).off('end', onEnd)
-        const stream = new PassThrough()
-        if (hasUploadEnded) {
-          // Nothing is left to pipe. `data` is still `null` if the upload is
-          // empty, which `end()` accepts.
-          stream.end(data)
-        } else {
-          stream.write(data)
-          file.stream.pipe(stream)
-        }
-        resolve({ size, stream })
-      }
-
-      const onEnd = () => {
-        this.app.emit('error', 'Unable to determine image size')
-        done(null, true)
-      }
-
-      const onData = (chunk: Buffer) => {
-        data = data ? Buffer.concat([data, chunk]) : chunk
-        try {
-          const size = readMediaAttributes(data)
-          // On partial data, sometimes we get results back from leather without
-          // actual dimensions, so check for that.
-          if (size.mime && (size.width > 0 || size.height > 0)) {
-            done(size)
-          }
-        } catch {
-          // Ignore errors in `readMediaAttributes()` on partial data.
-        }
-      }
-
-      file.stream
-        .on('data', onData)
-        .on('end', onEnd)
-    })
-
-    if (size) {
-      file.width = size.width
-      file.height = size.height
-    }
-    return this._handleFile(req, file, stream)
+// The part of a url that `allowedImports` match: its origin and path, without
+// the query and the hash that a `*` could match, and with all dot segments
+// resolved, also encoded ones. Returns null for invalid urls and for urls with
+// credentials.
+function getImportSource(value: string) {
+  try {
+    const url = new URL(resolveFileUrl(value))
+    if (url.username || url.password) return null
+    return url.protocol === 'file:'
+      ? `file://${fileURLToPath(url)}`
+      : `${url.origin}${url.pathname}`
+  } catch {
+    return null
   }
 }
 
-// The keys of `AssetFile.getUniqueKey()`: a name, and an extension without
-// path or URL delimiters, `%`, whitespace or control characters.
-const importKeyRegExp = /^[\w-]{2,}(\.[^\s\p{Cc}./\\:%?#]*)?$/u
+function readDimensions(data: Buffer) {
+  try {
+    const { width, height } = readMediaAttributes(data)
+    // Media without readable dimensions are stored without them.
+    if (width > 0 || height > 0) return { width, height }
+  } catch {}
+  return null
+}
+
+async function detectType(data: Buffer) {
+  try {
+    // leather detects more media types than file-type.
+    return (
+      (await fileTypeFromBuffer(data))?.mime ||
+      readMediaAttributes(data).mime
+    )
+  } catch {
+    return undefined
+  }
+}

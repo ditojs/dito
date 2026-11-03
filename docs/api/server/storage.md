@@ -1,437 +1,291 @@
-# `class` Storage
+# Storage
 
 ```js
-import { Storage, AssetFile } from '@ditojs/server'
+import {
+  createStorages,
+  createAssets,
+  DiskStorage,
+  S3Storage,
+  assetUploads,
+  assets,
+  runAssetJobs
+} from '@ditojs/storage'
+import { serveStorage } from '@ditojs/storage/node'
 ```
 
-Storages keep the files of asset properties and controller uploads. They are
-configured in [`config.storages`](application.md#applicationconfig), keyed by
-name, referenced by that name from model [`assets`](model.md#static-assets) and
-controller [`assets`](controllers.md#assets), and available as
-`app.getStorage(name)`. See [Storages and
-assets](../../guide/server/storages.md).
+Storages keep files on disk or in S3, and handle uploads. The `asset` table
+tracks the stored files. A write accepts the files that the table holds, and
+jobs scan the data to find the files that no row references. The package reads
+its tables through [Kysely](https://kysely.dev).
 
-The disk and S3 storages are built in. `@aws-lite/client` and `@aws-lite/s3`
-are optional peer dependencies, imported when an S3 storage uses them.
+Peer dependencies: `kysely`, `@ditojs/server`, `hono`, `@aws-lite/client` and
+`@aws-lite/s3` for S3 storages, and `@hono/node-server` for `serveStorage()`.
+See [Storages and files](../../guide/server/storages.md) in the guide.
 
-## StorageConfig
+## createStorages()
 
-Common options:
-
-| Key              | Type       | Description                                                                                                                                                     |
-| ---------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`           | `string`   | `'disk'`, `'s3'` or the type of a [registered](#static-register) storage class.                                                                                 |
-| `url`            | `string`   | Absolute base URL of the stored files, ending in `/`: file URLs are resolved against it, so `…/covers` without the slash drops `covers`.                        |
-| `concurrency`    | `number`   | Concurrency of storage operations, e.g. importing assets. Default `8`.                                                                                          |
-| `allowedImports` | `string[]` | Glob patterns of URLs from which unsigned asset files may be imported, e.g. `['https://images.example.com/**']`; `file://` URLs are resolved to absolute paths. |
-
-### DiskStorageConfig
-
-| Key             | Type      | Description                                                                                                                    |
-| --------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `type`          | `'disk'`  |                                                                                                                                |
-| `path`          | `string`  | Directory of the files, relative to the app's `basePath`. Required.                                                            |
-| `nestedFolders` | `boolean` | Stores files in two levels of folders named after the first two characters of their key, e.g. `3/f/3f2a….png`. Default `true`. |
-
-### S3StorageConfig
-
-| Key                    | Type     | Description                                                 |
-| ---------------------- | -------- | ----------------------------------------------------------- |
-| `type`                 | `'s3'`   |                                                             |
-| `bucket`               | `string` | The bucket. Required.                                       |
-| `s3`                   | `object` | Configuration of the S3 client, see below. Required.        |
-| `acl`                  | `string` | Canned ACL of stored objects, e.g. `'public-read'`.         |
-| `cacheControl`         | `string` | `Cache-Control` of stored objects.                          |
-| `contentDisposition`   | `string` | `Content-Disposition` of stored objects.                    |
-| `contentEncoding`      | `string` | `Content-Encoding` of stored objects.                       |
-| `storageClass`         | `string` | Storage class of stored objects, e.g. `'STANDARD_IA'`.      |
-| `serverSideEncryption` | `string` | Server-side encryption of stored objects, e.g. `'aws:kms'`. |
-| `sseKmsKeyId`          | `string` | KMS key of the server-side encryption.                      |
-
-The object options apply to uploads and to the files that the server stores
-itself, e.g. imported ones. Without them, the defaults of the bucket apply.
-
-The S3 client is [aws-lite](https://aws-lite.org), configured only through
-`s3`, never through environment variables or `~/.aws`:
-
-| Key           | Type     | Description                                                         |
-| ------------- | -------- | ------------------------------------------------------------------- |
-| `endpoint`    | `string` | URL of the S3 service. Default `https://s3.<region>.amazonaws.com`. |
-| `region`      | `string` | The region. Required.                                               |
-| `credentials` | `object` | `{ accessKeyId, secretAccessKey, sessionToken? }`. Required.        |
-
-Other options of the AWS SDK's `S3ClientConfig` aren't supported, e.g.
-`forcePathStyle`, `maxAttempts`, `requestHandler` or `credentials` as a
-provider function. aws-lite addresses buckets in path-style for `localhost`, IP
-addresses and bucket names with dots, else virtual-hosted.
-
-The content type of uploads is taken from the request, else detected from the
-data. With `readDimensions`, the image and video dimensions are stored as
-object metadata too. Streamed uploads are sent in parts of 8 MB.
-
-```js
-covers: {
-  type: 's3',
-  bucket: 'bookshop-covers',
-  acl: 'public-read',
-  s3: {
-    region: 'eu-central-1',
-    credentials: {
-      accessKeyId: process.env.S3_KEY,
-      secretAccessKey: process.env.S3_SECRET
-    }
-  },
-  url: 'https://bookshop-covers.s3.eu-central-1.amazonaws.com/'
-}
+```ts
+createStorages(
+  definitions: Record<string, StorageDefinition>,
+  options?: { basePath?: string }
+): StorageRegistry
 ```
 
-## Constructor
+Builds the storages from plain definitions keyed by name, such as those of an
+app's config, and returns them in a registry. The `path` of disk storages
+resolves against `basePath`, which defaults to the working directory. S3
+storages load the aws-lite client when they first need it.
 
 ```js
-const storage = new StorageClass(app, name, config)
-```
-
-The built-in storage classes aren't exported; [`Storage.get()`](#static-get)
-returns them by type. Usually the application creates storages from
-`config.storages`, see [`app.addStorage()`](application.md#addstorage), and
-initializes them in [`app.setupStorages()`](application.md#setupstorages).
-
-#### Parameters
-
-| Name     | Type                              | Description                   |
-| -------- | --------------------------------- | ----------------------------- |
-| `app`    | [`Application`](application.md)   | The application.              |
-| `name`   | `string`                          | The key in `config.storages`. |
-| `config` | [`StorageConfig`](#storageconfig) | The configuration.            |
-
-#### Example
-
-```js
-const DiskStorage = Storage.get('disk')
-const storage = new DiskStorage(app, 'covers', {
-  type: 'disk',
-  path: 'storage/covers'
-})
-```
-
-## Properties
-
-| Name            | Type                            | Description                                                  |
-| --------------- | ------------------------------- | ------------------------------------------------------------ |
-| `app`           | [`Application`](application.md) | The application.                                             |
-| `name`          | `string`                        | The storage name.                                            |
-| `config`        | `StorageConfig`                 | The configuration.                                           |
-| `url`           | `string \| undefined`           | `config.url`.                                                |
-| `path`          | `string \| undefined`           | `config.path`.                                               |
-| `concurrency`   | `number`                        | `config.concurrency`, default `8`.                           |
-| `isInitialized` | `boolean`                       | Set to `true` by `app.setupStorages()`.                      |
-| `storage`       | `multer.StorageEngine \| null`  | The multer storage engine for uploads, created by `setup()`. |
-
-## Methods
-
-The methods that take a `file` need only its `key`, so stored file objects
-can be passed as they are.
-
-### setup()
-
-```js
-await storage.setup()
-```
-
-Sets up the storage backend: the disk storage checks `path` and creates its
-multer disk storage, the S3 storage imports the AWS SDK and creates its client.
-A disk storage without `path` throws here. Internal, called by
-[`app.setupStorages()`](application.md#setupstorages) before `initialize()`.
-Storage implementations, like the custom storages below, set themselves up
-here; their subclasses override [`initialize()`](#initialize), which needs no
-`super`. Returns `Promise<void>`.
-
-### initialize()
-
-```js
-await storage.initialize()
-```
-
-Asynchronous initialization, after `setup()`. Does nothing by default, so
-overrides need no `super` call. _Hook._ Returns `Promise<void>`.
-
-### addFile()
-
-```js
-const file = await storage.addFile(file, data)
-```
-
-Writes `data` to the storage under `file.key`, sets `file.size` and
-`file.url`, and turns `file` into an [`AssetFile`](#assetfile) of this
-storage, in place.
-
-#### Parameters
-
-| Name   | Type                                         | Description        |
-| ------ | -------------------------------------------- | ------------------ |
-| `file` | [`AssetFile`](#assetfile) `\| { key, type }` | The file to store. |
-| `data` | `Buffer`                                     | The contents.      |
-
-Returns `Promise<AssetFile>`: the file.
-
-#### Example
-
-```js
-const file = AssetFile.create({ name: 'cover.png', data: buffer })
-await app.getStorage('covers').addFile(file, file.data)
-
-// A file with a key of your own:
-await app.getStorage('covers').addFile(
-  { key: `book-${book.id}.png`, type: 'image/png' },
-  png
+const storages = createStorages(
+  {
+    public: { type: 'disk', path: 'storage/public', url: '/assets/public/' },
+    files: { type: 's3', bucket: 'files', s3: { region, credentials } }
+  }
 )
 ```
 
-### removeFile()
+### StorageRegistry
+
+A `Map` of the storages by name, whose `get(name)` throws for unknown names.
+`new StorageRegistry(storages)` takes a list of storages. The functions of this
+package that look up storages by name take a registry.
+
+### StorageDefinition
+
+All storages:
+
+| Key              | Type             | Description                                                                                          |
+| ---------------- | ---------------- | ---------------------------------------------------------------------------------------------------- |
+| `type`           | `'disk' \| 's3'` | The kind of storage.                                                                                 |
+| `url`            | `string`         | The base URL of the stored files, ending in `/`.                                                     |
+| `allowedImports` | `string[]`       | Glob patterns of URLs from which files may be imported, such as `['https://images.example.com/**']`. |
+
+Disk storages:
+
+| Key             | Type      | Description                                                                                           |
+| --------------- | --------- | ----------------------------------------------------------------------------------------------------- |
+| `path`          | `string`  | The folder of the files.                                                                              |
+| `nestedFolders` | `boolean` | Puts each file in two levels of folders named after the first characters of its key. Default: `true`. |
+
+S3 storages:
+
+| Key      | Type     | Description                                                                                                                                       |
+| -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bucket` | `string` | The bucket.                                                                                                                                       |
+| `s3`     | `object` | The aws-lite options `{ region, credentials: { accessKeyId, secretAccessKey, sessionToken? }, endpoint? }`. Nothing is read from the environment. |
+| `params` | `object` | The S3 params of stored objects, passed to `PutObject`, such as `{ ACL: 'public-read', CacheControl: 'max-age=31536000' }`.                       |
+
+## Storage
+
+The base class of `DiskStorage` and `S3Storage`. The constructor of each takes
+the options of its definition, plus `name`.
+
+| Member                         | Description                                                                                                                                                                                                  |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`, `url`                  | The name and base URL.                                                                                                                                                                                       |
+| `store({ name, type?, data })` | Stores the `data` buffer under a new key and returns its file object, with the width and height of images and videos. Without `type`, or with `application/octet-stream`, it detects the type from the data. |
+| `addFile(file, data)`          | Writes `data` under the key of a file object.                                                                                                                                                                |
+| `removeFile(file)`             | Removes the file.                                                                                                                                                                                            |
+| `readFile(file)`               | Reads the file's data as a buffer.                                                                                                                                                                           |
+| `listKeys()`                   | Returns the keys of all stored files.                                                                                                                                                                        |
+| `getFileUrl(file)`             | Returns the URL of the file.                                                                                                                                                                                 |
+| `isImportSourceAllowed(url)`   | Returns whether `allowedImports` matches the origin and path of the URL. URLs with credentials never match.                                                                                                  |
+
+`DiskStorage` also has `getFilePath(file)`, the path of the file on disk. Keys
+that lead outside the storage folder throw an error.
+
+`store()` doesn't insert an `asset` row. Files that the server creates, such as
+generated PDFs, need one, so that the jobs track them. `storeAsset()` stores the
+file and inserts its row, and removes the file again when the insert fails:
 
 ```js
-await storage.removeFile(file)
+const file = await storeAsset(db, storages.get('documents'), {
+  name: 'invoice.pdf',
+  type: 'application/pdf',
+  data: pdf
+})
 ```
 
-Removes the file. The disk storage also removes nested folders that become
-empty. Returns `Promise<void>`.
-
-### readFile()
-
-```js
-const buffer = await storage.readFile(file)
-```
-
-Reads the file's contents. Returns `Promise<Buffer>`.
-
-### listKeys()
-
-```js
-const keys = await storage.listKeys()
-```
-
-Lists the keys of all files in the storage, e.g. to find orphaned files. Returns
-`Promise<string[]>`.
-
-### getFilePath()
-
-```js
-const filePath = storage.getFilePath(file)
-```
-
-Returns the absolute path of a file in a disk storage. Throws an
-[`AssetError`](errors.md#asseterror) for keys that address files outside the
-storage folder. Returns `string | undefined`: `undefined` for S3.
-
-### getFileUrl()
-
-```js
-const url = storage.getFileUrl(file)
-```
-
-Returns the public URL of the file, resolved against `config.url`. Returns
-`string | undefined`: without `config.url`, `undefined` for disk storages, and
-for S3 the URL of the file in the bucket at the `s3.endpoint`.
-
-### getUniqueKey()
-
-```js
-const key = storage.getUniqueKey('Cover.PNG') // '<uuid>.png'
-```
-
-Returns a unique key: a UUID v4 with the name's lowercase extension. Returns
-`string`.
-
-### signAssetFile()
-
-```js
-storage.signAssetFile(file)
-```
-
-Sets `file.signature` to an HMAC of its `key`, `name`, `type`, `size`, `url`,
-`width` and `height`, made with the first of `config.app.keys`. Without keys, a
-random secret is used, and signatures don't survive restarts.
-
-### verifyAssetFile()
-
-```js
-const isValid = storage.verifyAssetFile(file)
-```
-
-Returns `boolean`: whether `file.signature` is valid for the file's key and
-metadata.
-
-### convertAssetFile()
-
-```js
-storage.convertAssetFile(file, { trusted })
-```
-
-Turns a file object from request data into an [`AssetFile`](#assetfile) of
-this storage, in place, and removes its signature. Unless `trusted` is `true`
-(default `false`), throws an [`AssetError`](errors.md#asseterror) unless the
-file is already an `AssetFile`, carries a valid signature, or comes from an
-`allowedImports` URL with a key in the format of `getUniqueKey()`.
-
-### isImportSourceAllowed()
-
-```js
-const isAllowed = storage.isImportSourceAllowed(url)
-```
-
-Returns `boolean`: whether `url` matches one of `config.allowedImports`.
-
-### convertStorageFile()
-
-```js
-const object = storage.convertStorageFile(storageFile)
-```
-
-Converts a multer upload file to an [`AssetFileObject`](#assetfileobject), with
-`url` and `signature`. `convertStorageFiles(storageFiles)` converts an array.
-Returns [`AssetFileObject`](#assetfileobject).
-
-### getUploadHandler()
-
-```js
-const middleware = storage.getUploadHandler(config)
-```
-
-Returns Koa middleware that receives multipart uploads into the storage, with
-the multer options in `config` (plus `readDimensions`). Used by controller asset
-routes. `getUploadStorage(config)` returns the multer storage engine it uses.
-Returns `Koa.Middleware | null`: `null` before `setup()`.
-
-## Custom storages
-
-```js
-import { Storage } from '@ditojs/server'
-
-class MemoryStorage extends Storage {
-  static type = 'memory'
-  files = new Map()
-
-  async _addFile(file, data) { this.files.set(file.key, data) }
-  async _removeFile(file) { this.files.delete(file.key) }
-  async _readFile(file) { return this.files.get(file.key) }
-  async _listKeys() { return [...this.files.keys()] }
-  _getFileUrl(file) { return this._getUrl(file.key) }
-  _getFilePath(file) {}
-}
-
-Storage.register(MemoryStorage)
-```
-
-### `static` register()
-
-```js
-Storage.register(storageClass)
-```
-
-Registers a storage class for its static `type`, default: the hyphenated
-class name without a `Storage` suffix. Register before creating the
-application.
-
-### `static` get()
-
-```js
-const storageClass = Storage.get('disk')
-```
-
-Returns `Class<Storage> | null`: the class registered for the type.
-
-### Backend hooks
-
-_Hooks._ The public methods delegate to these:
-
-| Hook                   | Called by                            |
-| ---------------------- | ------------------------------------ |
-| `_addFile(file, data)` | `addFile()`                          |
-| `_removeFile(file)`    | `removeFile()`                       |
-| `_readFile(file)`      | `readFile()`                         |
-| `_listKeys()`          | `listKeys()`                         |
-| `_getFilePath(file)`   | `getFilePath()`                      |
-| `_getFileUrl(file)`    | `getFileUrl()`, `addFile()`, uploads |
-
-Uploads need a multer storage engine in `this.storage`, created in
-`initialize()`. `_getUrl(...parts)` and `_getPath(...parts)` resolve parts
-against `url` and `path`.
-
-## AssetFile
-
-A file of a storage, as stored in asset properties.
-
-```js
-import { AssetFile } from '@ditojs/server'
-
-const file = AssetFile.create({ name: 'notes.txt', data: 'Chapter one' })
-```
-
-### `static` create()
-
-```js
-AssetFile.create({ name, data, type?, width?, height? })
-```
-
-Creates a file with a new unique `key`. `data` is a `Buffer`, a string or a data
-URI, and required. `type` defaults to the data URI's type or the MIME type of
-`name`, else `'text/plain'` for strings and `'application/octet-stream'` for
-buffers. Same as `new AssetFile(options)`. Returns `AssetFile`.
-
-### Properties
-
-| Name              | Type                  | Description                                       |
-| ----------------- | --------------------- | ------------------------------------------------- |
-| `key`             | `string`              | Unique key, see `AssetFile.getUniqueKey(name)`.   |
-| `name`            | `string`              | The original file name.                           |
-| `type`            | `string`              | The MIME type.                                    |
-| `size`            | `number`              | Size in bytes.                                    |
-| `url`             | `string`              | Public URL, once stored.                          |
-| `width`, `height` | `number`              | Media dimensions, if read.                        |
-| `data`            | `Buffer \| null`      | The data of a created file (not enumerable).      |
-| `storage`         | `Storage \| null`     | The storage of a converted file (not enumerable). |
-| `path`            | `string \| undefined` | `storage.getFilePath(file)`.                      |
-
-### read()
-
-```js
-const buffer = await file.read()
-```
-
-Reads the contents from the file's storage. Returns `Promise<Buffer | null>`:
-`null` without a storage.
-
-### `static` convert()
-
-```js
-AssetFile.convert(object, storage)
-```
-
-Turns a plain file object into an `AssetFile` of `storage`, in place.
-
-### `static` getUniqueKey()
-
-```js
-const key = AssetFile.getUniqueKey('Cover.PNG') // '<uuid>.png'
-```
-
-Returns `string`: a UUID v4 with the name's lowercase extension.
-
-## AssetFileObject
-
-The JSON form of asset files, as returned by uploads and stored in asset
-properties: `{ key, name, type, size, url, width?, height?, signature? }`.
-`signature` is set in upload responses and in the JSON of models
-([`$formatJson()`](model.md#formatjson) signs their asset files), so that
-clients can send the files back; it is removed before storing, see
-[`convertAssetFile()`](#convertassetfile).
-
-## Typed storages
+## serveStorage()
 
 ```ts
-declare module '@ditojs/server' {
-  interface ApplicationStorages {
-    covers: Storage
-  }
+serveStorage(storage: DiskStorage): MiddlewareHandler
+```
+
+From `@ditojs/storage/node`. Returns Hono middleware that serves the folder of a
+disk storage with `serveStatic()` of `@hono/node-server`. The host routes it at
+the path of the storage's `url`. The path of the route is cut from the request's
+path, and missing files go on to the next handler:
+
+```js
+app.use('/assets/public/*', serveStorage(storages.get('public')))
+```
+
+## File objects
+
+Rows hold stored files as plain JSON objects:
+
+```ts
+interface AssetFileObject {
+  key: string
+  name?: string
+  type?: string
+  size?: number
+  url?: string
+  width?: number
+  height?: number
 }
 ```
+
+`getUniqueKey(name)` returns a new key: a random UUID with the lower-cased
+extension of `name`.
+
+## Asset paths
+
+```ts
+interface AssetPath {
+  table: string
+  column: string
+  // The data path of the files in the column's JSON value, '' for the column.
+  path: string
+  storage: string
+}
+```
+
+An asset path says where a table stores files. `path` takes `*` for one segment
+and `**` for any number of segments. A value at the path is one file or an array
+of files. In request bodies, the column appears as its camelCase property, such
+as `cover_image` as `coverImage`. The functions below take the app's list of
+asset paths.
+
+`assets()`, `assetUploads()` and `importAssets()` take the same options:
+
+| Option     | Type              | Description                                                                                                                                                                                                 |
+| ---------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `table`    | `string`          | The table whose asset paths are used.                                                                                                                                                                       |
+| `paths`    | `AssetPath[]`     | The app's asset paths.                                                                                                                                                                                      |
+| `storages` | `StorageRegistry` | The storages.                                                                                                                                                                                               |
+| `db`       | `AssetDb`         | A function of Hono's `c` that returns the request's Kysely, such as `getKysely` of `@ditojs/mikro`, so that the `asset` rows of a write commit with its transaction. `importAssets()` takes a plain Kysely. |
+
+## createAssets()
+
+```ts
+createAssets(options: {
+  paths: AssetPath[]
+  storages: StorageRegistry
+  db: AssetDb
+  deleteUnusedAfter?: number | false
+}): Assets
+```
+
+Returns an object that binds the options that the functions below share. Its
+methods call these functions, which apps can call instead. Except for `mixin()`,
+they take a Kysely as `db`, since they also run outside of requests.
+`deleteUnusedAfter` is in milliseconds. By default, `false` skips the release.
+
+| Member                                          | Description                                                                              |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `mixin(table, { uploads = true }?)`             | A mixin of [`assets()`](#assets) and, with `uploads`, [`assetUploads()`](#assetuploads). |
+| `store(db, storage, { name, type?, data })`     | [`storeAsset()`](#asset-jobs), with the storage's name or the storage.                   |
+| `import(db, table, data)`                       | [`importAssets()`](#asset-jobs) of a row's data. Returns `data`.                         |
+| `references(db, { tables?, storage?, keys? }?)` | [`findAssetReferences()`](#asset-jobs).                                                  |
+| `runJobs(db, { dryRun?, now? }?)`               | [`runAssetJobs()`](#asset-jobs) with `deleteUnusedAfter`.                                |
+| `paths`, `storages`                             | The options.                                                                             |
+
+```js
+const assets = createAssets({
+  paths: assetPaths,
+  storages,
+  db: getKysely,
+  deleteUnusedAfter: 24 * 60 * 60 * 1000
+})
+
+defineController({ path: 'books', mixins: [assets.mixin('book')], ... })
+
+const file = await assets.store(db, 'documents', {
+  name: 'invoice.pdf',
+  data: pdf
+})
+await assets.runJobs(db, { dryRun: true })
+```
+
+## assetUploads()
+
+```ts
+assetUploads(options: AssetOptions): MixinDefinition
+```
+
+Returns a mixin with the upload action of the asset paths of `table`:
+`post upload/:path{.+}`, such as `POST upload/cover-image` or
+`POST upload/chapters/3/images`. The action camelizes each segment of the path
+and stores the files in the storage of the first asset path whose camelCase
+column, followed by its path, matches it, such as `chapters/*/images`. Other
+paths respond with 404. The action inserts the `asset` rows of the files,
+unreferenced until a scan finds them, and responds with the file objects. It
+runs without a transaction, so the rows commit at once, and a release removes
+the files that no write references. It needs `authorize` on the controller or a
+layer.
+
+## uploadRoutes()
+
+```ts
+uploadRoutes(options: {
+  uploads: AssetUpload[]
+  storages: StorageRegistry
+  db: AssetDb
+}): MixinDefinition
+```
+
+Returns the same action as `assetUploads()` from a list of uploads, for upload
+fields that no asset path describes. The action takes a `multipart/form-data`
+body and stores all its files. Other bodies respond with 415.
+[`hostMiddleware()`](hono.md#hostmiddleware) sets no limit on multipart bodies.
+
+| Option    | Type     | Description                                                                                               |
+| --------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| `path`    | `string` | A glob of camelCase data paths, with `*` for one segment and `**` for several segments, such as `avatar`. |
+| `storage` | `string` | The name of the storage of the files.                                                                     |
+
+```js
+uploadRoutes({
+  uploads: [{ path: 'avatar', storage: 'public' }],
+  storages,
+  db: getKysely
+})
+```
+
+## assets()
+
+```ts
+assets(options: AssetOptions): MixinDefinition
+```
+
+Returns a mixin that handles the files at the asset paths in the JSON body of a
+controller's writes, `c.var.body`. For each file, it looks up the `asset` row of
+its key:
+
+- A row in the storage of the asset path: the file gets the properties of the
+  stored file, from the row's `file`, so clients can't change them.
+- A row in another storage: the file is copied under a new key.
+- No row: the file is imported from its `url` under a new key, when the
+  storage's `allowedImports` match it. Otherwise, the write responds with 400.
+
+It changes the files in place, so the handler reads the stored files in its
+`body`. It marks the files as used. When the write fails, it removes the
+imported files again.
+
+## Asset jobs
+
+The `asset` table holds one row for each stored file, with `key`, `file` as
+JSON, `storage` and `unreferenced_since`: the time a scan first found no row
+that references the file, or null.
+
+| Function                                                                  | Description                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scanAssets({ db, paths, dryRun?, now? })`                                | Finds the files that rows reference at the asset paths, sets `unreferenced_since` of the unreferenced files, clears it for the referenced ones, and inserts the rows of referenced files that have none. Returns a report: `referenced`, the files that rows reference again, `unreferenced`, all unreferenced files with their `since`, and `missing`, the inserted rows. |
+| `releaseAssets({ db, storages, after, now? })`                            | Deletes the files and rows of assets that have been unreferenced for longer than `after`, in milliseconds.                                                                                                                                                                                                                                                                 |
+| `runAssetJobs({ db, paths, storages, deleteUnusedAfter, dryRun?, now? })` | Runs the scan, then the release unless `deleteUnusedAfter` is `false`. `deleteUnusedAfter` is in milliseconds. Returns `{ scan, released }`. A dry run writes and deletes nothing, and returns the unreferenced files of the scan that the release would delete as `released`.                                                                                             |
+| `findAssetReferences({ db, paths, tables?, storage?, keys? })`            | Lists the files that rows reference, with their table, id, column and data path. With `keys`, only the references of these files.                                                                                                                                                                                                                                          |
+| `storeAsset(db, storage, { name, type?, data })`                          | Stores a file that the server creates and inserts its `asset` row, unreferenced until a scan finds it.                                                                                                                                                                                                                                                                     |
+| `importAssets(data, { table, paths, storages, db })`                      | Imports the files that a row's data references but no `asset` row holds, such as the `file://` files of seed data, as `assets()` does. Skips files from other sources.                                                                                                                                                                                                     |

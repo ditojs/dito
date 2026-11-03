@@ -1,129 +1,82 @@
-import fs from 'fs/promises'
-import path from 'path'
-import multer from '@koa/multer'
-import { mapConcurrently } from '@ditojs/utils'
-import { removeIfEmpty } from '../utils/fs.js'
-import { Storage } from './Storage.ts'
-import type { AssetFileObject } from './AssetFile.ts'
-import { AssetError } from './AssetError.ts'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import {
+  Storage,
+  type AssetFileObject,
+  type StorageOptions
+} from './Storage.ts'
+
+// Stores files in a folder. With `nestedFolders`, each file goes into two
+// levels of folders named after the first two characters of its key, such as
+// `3/f/3f2b….png`, which keeps folders small with many files.
+
+export interface DiskStorageOptions extends StorageOptions {
+  // The folder of the files, resolved against the working directory.
+  path: string
+  nestedFolders?: boolean
+}
 
 export class DiskStorage extends Storage {
-  static type = 'disk'
+  path: string
+  nestedFolders: boolean
 
-  declare nestedFolders: boolean
-
-  // @override
-  async setup() {
-    if (!this.path) {
-      throw new Error(`Missing configuration (path) for storage ${this.name}`)
+  constructor({
+    path: folder,
+    nestedFolders = true,
+    ...rest
+  }: DiskStorageOptions) {
+    super(rest)
+    if (!folder) {
+      throw new Error(`Missing option 'path' for storage '${this.name}'`)
     }
-    this.nestedFolders = this.config.nestedFolders ?? true
-    this.storage = multer.diskStorage({
-      destination: (req: any, storageFile: any, cb: any) => {
-        // Add `storageFile.key` property to internal storage file object.
-        storageFile.key = this.getUniqueKey(storageFile.originalname)
-        const dir = this._getPath(this._getNestedFolder(storageFile.key))
-        fs.mkdir(dir, { recursive: true })
-          .then(() => cb(null, dir))
-          .catch(cb)
-      },
-
-      filename: (req: any, storageFile: any, cb: any) => {
-        // Use added `storageFile.key` property for multer's `filename` also.
-        cb(null, storageFile.key)
-      }
-    })
+    this.path = path.resolve(folder)
+    this.nestedFolders = nestedFolders
   }
 
-  // @override
-  _getFilePath(file: AssetFileObject) {
-    const filePath = this._getPath(this._getNestedFolder(file.key), file.key)
+  getFilePath(file: AssetFileObject) {
+    const filePath = path.resolve(
+      this.path,
+      this.#getNestedFolder(file.key),
+      file.key
+    )
     // Never address files outside of the storage folder or the folder itself,
     // whatever the key. `path.join()` also handles folders at the root.
-    const folder = path.join(this._getPath(), path.sep)
+    const folder = path.join(this.path, path.sep)
     if (!filePath.startsWith(folder) || filePath === folder) {
-      throw new AssetError(`Invalid asset key: '${file.key}'`)
+      throw new Error(`Invalid asset key: '${file.key}'`)
     }
     return filePath
   }
 
-  // @override
-  _getFileUrl(file: AssetFileObject) {
-    return this._getUrl(this._getNestedFolder(file.key, true), file.key)
+  override getFileUrl(file: AssetFileObject) {
+    return this.getUrl(this.#getNestedFolder(file.key), file.key)
   }
 
-  // @override
-  async _addFile(file: AssetFileObject, data: Buffer) {
-    const filePath = this._getFilePath(file)
-    const dir = path.dirname(filePath)
-    await fs.mkdir(dir, { recursive: true })
+  async addFile(file: AssetFileObject, data: Buffer) {
+    const filePath = this.getFilePath(file)
+    await fs.mkdir(path.dirname(filePath), { recursive: true })
     await fs.writeFile(filePath, data)
   }
 
-  // @override
-  async _removeFile(file: AssetFileObject) {
-    const filePath = this._getFilePath(file)
-    await fs.unlink(filePath)
-    if (this.nestedFolders) {
-      // Clean up nested folders created with first two chars of `file.key`:
-      const dir = path.dirname(filePath)
-      if (await removeIfEmpty(dir)) {
-        await removeIfEmpty(path.dirname(dir))
-      }
-    }
+  async removeFile(file: AssetFileObject) {
+    await fs.unlink(this.getFilePath(file))
   }
 
-  // @override
-  async _readFile(file: AssetFileObject) {
-    return fs.readFile(this._getFilePath(file))
+  async readFile(file: AssetFileObject) {
+    return fs.readFile(this.getFilePath(file))
   }
 
-  // @override
-  async _listKeys() {
-    if (!this.nestedFolders) {
-      const files: string[] = []
-      for (const file of await fs.readdir(this._getPath())) {
-        if (!file.startsWith('.')) {
-          files.push(file)
-        }
-      }
-      return files
-    }
-
-    const readDir = (...parts: string[]) =>
-      fs.readdir(this._getPath(...parts), { withFileTypes: true })
-
-    const files: string[] = []
-    const list1 = await readDir()
-    await mapConcurrently(
-      list1,
-      async level1 => {
-        if (level1.isDirectory() && level1.name.length === 1) {
-          const list2 = await readDir(level1.name)
-          await mapConcurrently(
-            list2,
-            async level2 => {
-              if (level2.isDirectory() && level2.name.length === 1) {
-                const nestedFolder = this._getPath(level1.name, level2.name)
-                for (const file of await fs.readdir(nestedFolder)) {
-                  if (!file.startsWith('.')) {
-                    files.push(file)
-                  }
-                }
-              }
-            }
-          )
-        }
-      }
-    )
-    return files
+  async listKeys() {
+    const entries = await fs.readdir(this.path, {
+      recursive: true,
+      withFileTypes: true
+    })
+    return entries
+      .filter(entry => entry.isFile() && !entry.name.startsWith('.'))
+      .map(entry => entry.name)
   }
 
-  _getNestedFolder(key: string, posix = false) {
-    // Store files in nested folders created with the first two chars of the
-    // key, for faster access & management with large amounts of files.
-    return this.nestedFolders
-      ? (posix ? path.posix : path).join(key[0], key[1])
-      : ''
+  #getNestedFolder(key: string) {
+    return this.nestedFolders ? path.posix.join(key[0], key[1]) : ''
   }
 }

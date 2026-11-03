@@ -1,183 +1,42 @@
-import { vi } from 'vitest'
-import path from 'path'
-import { PassThrough, Readable } from 'stream'
-import { Storage } from '../src/Storage.ts'
-import { AssetFile } from '../src/AssetFile.ts'
+import path from 'node:path'
+import {
+  Storage,
+  getUniqueKey,
+  type AssetFileObject,
+  type StorageOptions
+} from '../src/index.ts'
 
-function createStorage(keys = ['test-secret']) {
-  const app = { keys }
-  return new Storage(app, 'test', {})
-}
-
-function createImportStorage() {
-  const app = { keys: ['test-secret'] }
-  return new Storage(app, 'test', {
-    allowedImports: ['https://example.com/**']
-  })
-}
-
-function simulateUpload(storage, key, originalname) {
-  return storage.convertStorageFile({
-    key,
-    originalname,
-    mimetype: 'image/png',
-    size: 2048
-  })
-}
-
-describe('Storage: asset key signature verification', () => {
-  it('preserves the key through a full upload-then-save cycle', () => {
-    const storage = createStorage()
-    const uploaded = simulateUpload(storage, 'real-key.png', 'photo.png')
-    const fromClient = { ...uploaded }
-    storage.convertAssetFile(fromClient, { trusted: false })
-    expect(fromClient.key).toBe('real-key.png')
-  })
-
-  it('throws when a forged key is submitted', () => {
-    const storage = createStorage()
-    const file = { key: 'victim-key.png', name: 'photo.png' }
-    expect(() => {
-      storage.convertAssetFile(file, { trusted: false })
-    }).toThrow('Invalid asset signature')
-  })
-
-  it('accepts unsigned files from allowed import sources', () => {
-    const storage = createImportStorage()
-    for (const key of ['5f3e8a2c-1b4d-4c6e-9f0a-7d2b3c4e5f6a.png', 'cover']) {
-      const file = { key, name: 'cover.png', url: 'https://example.com/a.png' }
-      storage.convertAssetFile(file, { trusted: false })
-      expect(file.key).toBe(key)
-    }
-  })
-
-  it('rejects unsigned imported files with keys of other formats', () => {
-    const storage = createImportStorage()
-    for (const key of [
-      '../escape.txt',
-      '/absolute.txt',
-      'nested/key.txt',
-      'nested\\key.txt',
-      '..',
-      '.',
-      '.htaccess',
-      'a',
-      'a.png',
-      'a.b',
-      'key.tar.gz',
-      'key.p g',
-      'key.png?x',
-      'key.png#x',
-      'key.png%00',
-      'key.png\0',
-      'http:example.org',
-      '%2e%2e'
-    ]) {
-      const file = { key, name: 'x.txt', url: 'https://example.com/x.txt' }
-      expect(() => {
-        storage.convertAssetFile(file, { trusted: false })
-      }).toThrow(`Invalid asset key for file 'x.txt'`)
-    }
-  })
-
-  it('accepts unsigned imported files with generated keys', () => {
-    const storage = createImportStorage()
-    for (const name of ['photo.JPÉ', 'code.c++', 'image.jp-g', 'trailing.']) {
-      const key = AssetFile.getUniqueKey(name)
-      const file = { key, name, url: 'https://example.com/a.png' }
-      storage.convertAssetFile(file, { trusted: false })
-      expect(file.key).toBe(key)
-    }
-  })
-
-  it('rejects unsigned files without string keys', () => {
-    const storage = createImportStorage()
-    for (const key of [undefined, null, 42, { length: 2 }]) {
-      const file = { key, name: 'x.txt', url: 'https://example.com/x.txt' }
-      expect(() => {
-        storage.convertAssetFile(file, { trusted: false })
-      }).toThrow(`Invalid asset key for file 'x.txt'`)
-      const other = { key, name: 'x.txt', url: 'https://other.com/x.txt' }
-      expect(() => {
-        storage.convertAssetFile(other, { trusted: false })
-      }).toThrow(`Invalid asset signature for file 'x.txt'`)
-    }
-  })
-
-  it('accepts signed files with keys of other formats', () => {
-    const storage = createImportStorage()
-    const fromClient = {
-      key: 'legacy/key.png',
-      name: 'photo.png',
-      url: 'https://example.com/a.png'
-    }
-    storage.signAssetFile(fromClient)
-    storage.convertAssetFile(fromClient, { trusted: false })
-    expect(fromClient.key).toBe('legacy/key.png')
-  })
-
-  it('throws when a valid signature is paired with a swapped key', () => {
-    const storage = createStorage()
-    const uploaded = simulateUpload(storage, 'legit.png', 'legit.png')
-    const forged = { ...uploaded, key: 'victim-file.png' }
-    expect(() => {
-      storage.convertAssetFile(forged, { trusted: false })
-    }).toThrow('Invalid asset signature')
-  })
-
-  it('does not throw when addFile() converts a server-created file', async () => {
-    const storage = createStorage()
-    const file = { key: 'imported.png', name: 'import.png' }
-    const data = Buffer.from('fake-image-data')
-    await storage.addFile(file, data)
-    expect(file.key).toBe('imported.png')
-  })
-
-  it('strips signature after conversion', () => {
-    const storage = createStorage()
-    const uploaded = simulateUpload(storage, 'upload.png', 'photo.png')
-    const fromClient = { ...uploaded }
-    storage.convertAssetFile(fromClient, { trusted: false })
-    expect('signature' in fromClient).toBe(false)
-  })
-})
-
-// A storage that keeps files in memory, to test the generic `Storage` logic.
+// A storage that keeps files in memory, to test the shared `Storage` logic.
 class MemoryStorage extends Storage {
-  dataByKey = new Map()
+  dataByKey = new Map<string, Buffer>()
 
-  _getFilePath(file) {
-    return this._getPath(file.key)
+  override getFileUrl(file: AssetFileObject) {
+    return this.getUrl(file.key)
   }
 
-  _getFileUrl(file) {
-    return this._getUrl(file.key)
-  }
-
-  async _addFile(file, data) {
+  async addFile(file: AssetFileObject, data: Buffer) {
     this.dataByKey.set(file.key, data)
   }
 
-  async _removeFile(file) {
+  async removeFile(file: AssetFileObject) {
     this.dataByKey.delete(file.key)
   }
 
-  async _readFile(file) {
-    return this.dataByKey.get(file.key)
+  async readFile(file: AssetFileObject) {
+    return this.dataByKey.get(file.key)!
   }
 
-  async _listKeys() {
+  async listKeys() {
     return [...this.dataByKey.keys()]
   }
 }
 
-function createMemoryStorage(config = {}) {
-  const app = { keys: ['test-secret'], basePath: '/app', emit: vi.fn() }
-  return new MemoryStorage(app, 'memory', config)
+function createStorage(options: Partial<StorageOptions> = {}) {
+  return new MemoryStorage({ name: 'memory', ...options })
 }
 
 // Creates the start of a PNG file, enough to read its dimensions.
-function createPngHeader(width, height) {
+function createPngHeader(width: number, height: number) {
   const buffer = Buffer.alloc(33)
   Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(buffer)
   buffer.writeUInt32BE(13, 8)
@@ -189,436 +48,173 @@ function createPngHeader(width, height) {
   return buffer
 }
 
-// A multer-like storage engine that consumes the file stream.
-function createUploadEngine() {
-  return {
-    _handleFile(req, file, callback) {
-      const chunks = []
-      file.stream.on('data', chunk => chunks.push(chunk))
-      file.stream.on('end', () => {
-        callback(null, {
-          key: `${file.originalname}-key`,
-          data: Buffer.concat(chunks)
-        })
-      })
-    },
-    _removeFile(req, file, callback) {
-      callback(null)
-    }
-  }
-}
+const uuidPattern = (
+  '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-' +
+  '[0-9a-f]{12}'
+)
 
-function createUpload(chunks, mimetype = 'image/png') {
-  return {
-    originalname: 'cover.png',
-    mimetype,
-    stream: Readable.from(chunks)
-  }
-}
-
-describe('Storage: constructor', () => {
-  it('takes its settings from the config', () => {
-    const storage = createMemoryStorage({
-      url: 'https://cdn.example.com/files/',
-      path: 'uploads',
-      concurrency: 2
-    })
-    expect(storage.name).toBe('memory')
-    expect(storage.url).toBe('https://cdn.example.com/files/')
-    expect(storage.path).toBe('uploads')
-    expect(storage.concurrency).toBe(2)
-    expect(storage.storage).toBe(null)
-    expect(storage.isInitialized).toBe(false)
-  })
-
-  it('uses a default concurrency of 8', () => {
-    expect(createMemoryStorage().concurrency).toBe(8)
-  })
-})
-
-describe('Storage.register()', () => {
-  it('derives the type from the class name', () => {
-    class CloudArchiveStorage extends Storage {}
-    Storage.register(CloudArchiveStorage)
-    expect(CloudArchiveStorage.type).toBe('cloud-archive')
-    expect(Storage.get('cloud-archive')).toBe(CloudArchiveStorage)
-  })
-
-  it('accepts class names without a `Storage` suffix', () => {
-    class Shelf extends Storage {}
-    Storage.register(Shelf)
-    expect(Shelf.type).toBe('shelf')
-  })
-
-  it('keeps an explicitly defined type', () => {
-    class BookStorage extends Storage {
-      static type = 'books'
-    }
-    Storage.register(BookStorage)
-    expect(Storage.get('books')).toBe(BookStorage)
-    expect(Storage.get('book')).toBe(null)
-  })
-
-  it('returns null for unknown types', () => {
-    expect(Storage.get('unknown')).toBe(null)
-  })
-})
-
-describe('Storage: file operations', () => {
-  it('adds files and sets their size and url', async () => {
-    const storage = createMemoryStorage({ url: 'https://cdn.example.com/' })
-    const file = AssetFile.create({ name: 'chapter.txt', data: 'Chapter' })
-    const data = Buffer.from('Chapter one')
-    const result = await storage.addFile(file, data)
-    expect(result).toBe(file)
-    expect(file.size).toBe(11)
-    expect(file.url).toBe(`https://cdn.example.com/${file.key}`)
-    expect(file.storage).toBe(storage)
-    expect(await storage.readFile(file)).toBe(data)
-    expect(await file.read()).toBe(data)
-    expect(await storage.listKeys()).toEqual([file.key])
-  })
-
-  it('removes files', async () => {
-    const storage = createMemoryStorage()
-    const file = await storage.addFile({ key: 'a.txt' }, Buffer.from('a'))
-    await storage.removeFile(file)
-    expect(await storage.listKeys()).toEqual([])
-  })
-
-  it('returns file paths relative to the app base path', () => {
-    const storage = createMemoryStorage({ path: 'uploads' })
-    expect(storage.getFilePath({ key: 'a.txt' })).toBe(
-      path.resolve('/app', 'uploads', 'a.txt')
+describe('getUniqueKey()', () => {
+  it('creates a uuid key with the lower-cased file extension', () => {
+    expect(getUniqueKey('Cover.JPG')).toMatch(
+      new RegExp(`^${uuidPattern}\\.jpg$`)
     )
   })
 
-  it('returns no file paths or urls without path and url', () => {
-    const storage = createMemoryStorage()
-    expect(storage.getFilePath({ key: 'a.txt' })).toBeUndefined()
-    expect(storage.getFileUrl({ key: 'a.txt' })).toBeUndefined()
+  it('creates a key without extension for names without one', () => {
+    expect(getUniqueKey('README')).toMatch(new RegExp(`^${uuidPattern}$`))
+  })
+
+  it('creates different keys for the same name', () => {
+    expect(getUniqueKey('a.txt')).not.toBe(getUniqueKey('a.txt'))
+  })
+})
+
+describe('Storage: constructor', () => {
+  it('takes its settings from the options', () => {
+    const storage = createStorage({
+      url: 'https://cdn.example.com/files/'
+    })
+    expect(storage.name).toBe('memory')
+    expect(storage.url).toBe('https://cdn.example.com/files/')
+  })
+})
+
+describe('Storage: urls', () => {
+  it('returns no file urls without url', () => {
+    expect(createStorage().getFileUrl({ key: 'a.txt' })).toBeUndefined()
   })
 
   it('joins file urls with the path of the base url', () => {
-    const storage = createMemoryStorage({ url: 'https://cdn.example.com/f/' })
+    const storage = createStorage({ url: 'https://cdn.example.com/f/' })
     expect(storage.getFileUrl({ key: 'a.txt' })).toBe(
       'https://cdn.example.com/f/a.txt'
     )
   })
 
-  it('provides no-op default implementations', async () => {
-    const storage = new Storage({ keys: ['secret'] }, 'base', {})
-    await storage.setup()
-    await storage.initialize()
-    const file = { key: 'a.txt' }
-    expect(storage.getFilePath(file)).toBeUndefined()
-    expect(storage.getFileUrl(file)).toBeUndefined()
-    expect(await storage.readFile(file)).toBeUndefined()
-    expect(await storage.listKeys()).toBeUndefined()
-    await expect(storage.removeFile(file)).resolves.toBeUndefined()
+  it('joins file urls with a base url without origin', () => {
+    const storage = createStorage({ url: '/assets/public/' })
+    expect(storage.getFileUrl({ key: 'a.txt' })).toBe('/assets/public/a.txt')
   })
 })
 
-describe('Storage: conversion of files', () => {
-  it('converts multer files to asset file data', () => {
-    const storage = createMemoryStorage({ url: 'https://cdn.example.com/' })
-    const [file] = storage.convertStorageFiles([
-      {
-        key: 'abc.png',
-        originalname: 'cover.png',
-        mimetype: 'image/png',
-        size: 100,
-        width: 320,
-        height: 200
-      }
-    ])
-    expect(file).toEqual({
-      key: 'abc.png',
-      name: 'cover.png',
-      type: 'image/png',
-      size: 100,
-      url: 'https://cdn.example.com/abc.png',
-      width: 320,
-      height: 200,
-      signature: expect.stringMatching(/^[0-9a-f]{64}$/)
-    })
-    expect(storage.verifyAssetFile(file)).toBe(true)
-  })
-
-  it('accepts existing AssetFile instances without signature', () => {
-    const storage = createMemoryStorage()
-    const file = AssetFile.create({ name: 'a.txt', data: 'a' })
-    storage.convertAssetFile(file)
-    expect(file.storage).toBe(storage)
-  })
-
-  it('accepts unsigned files from allowed import sources', () => {
-    const storage = createMemoryStorage({
+describe('Storage: import sources', () => {
+  it('matches urls against `allowedImports`', () => {
+    const storage = createStorage({
       allowedImports: ['https://images.example.com/**', 'file://imports/*']
     })
-    const remote = {
-      key: 'remote.png',
-      url: 'https://images.example.com/covers/remote.png'
-    }
-    storage.convertAssetFile(remote)
-    expect(remote).toBeInstanceOf(AssetFile)
-    const local = {
-      key: 'local.png',
-      url: `file://${path.resolve('imports/local.png')}`
-    }
-    storage.convertAssetFile(local)
-    expect(local).toBeInstanceOf(AssetFile)
+    expect(
+      storage.isImportSourceAllowed('https://images.example.com/a/b.png')
+    ).toBe(true)
+    expect(
+      storage.isImportSourceAllowed(`file://${path.resolve('imports/a.png')}`)
+    ).toBe(true)
+    expect(
+      storage.isImportSourceAllowed('https://evil.example.com/a.png')
+    ).toBe(false)
+    expect(storage.isImportSourceAllowed('file:///etc/passwd')).toBe(false)
+    expect(storage.isImportSourceAllowed(undefined)).toBe(false)
   })
 
-  it('rejects unsigned files from other sources', () => {
-    const storage = createMemoryStorage({
-      allowedImports: ['https://images.example.com/**']
+  it('matches the origin and path of urls only', () => {
+    const storage = createStorage({
+      allowedImports: ['https://*.example.com/**', 'file:///seed/files/**']
     })
-    expect(() =>
-      storage.convertAssetFile({
-        key: 'a.png',
-        url: 'https://evil.example.com/a.png'
-      })
-    ).toThrow(`Invalid asset signature for file 'a.png'`)
-    expect(() =>
-      storage.convertAssetFile({
-        key: 'b.png',
-        name: 'b.png',
-        url: 'file:///etc/passwd'
-      })
-    ).toThrow(`Invalid asset signature for file 'b.png'`)
+    const isAllowed = (url: string) => storage.isImportSourceAllowed(url)
+    expect(isAllowed('https://cdn.example.com/a.png?size=2#top')).toBe(true)
+    expect(isAllowed('https://evil.org#.example.com/a.png')).toBe(false)
+    expect(isAllowed('https://evil.org?.example.com/a.png')).toBe(false)
+    expect(isAllowed('https://cdn.example.com@evil.org/a.png')).toBe(false)
+    expect(isAllowed('https://user:secret@cdn.example.com/a.png')).toBe(false)
+    expect(isAllowed('not a url')).toBe(false)
+    expect(isAllowed('file:///seed/files/a.png')).toBe(true)
+    expect(isAllowed('file:///seed/files/../secret')).toBe(false)
+    expect(isAllowed('file:///seed/files/%2e%2e/%2e%2e/etc/passwd')).toBe(false)
+    expect(isAllowed('file:///seed/files/..%2f..%2fetc/passwd')).toBe(false)
   })
 
-  it('accepts trusted files without signature', () => {
-    const storage = createMemoryStorage()
-    const file = { key: 'a.png', signature: 'whatever' }
-    storage.convertAssetFile(file, { trusted: true })
-    expect(file).toBeInstanceOf(AssetFile)
-    expect('signature' in file).toBe(false)
-  })
-
-  it('isImportSourceAllowed() rejects everything without config', () => {
-    const storage = createMemoryStorage()
+  it('rejects everything without `allowedImports`', () => {
+    const storage = createStorage()
     expect(storage.isImportSourceAllowed('https://example.com/a.png')).toBe(
       false
     )
-    expect(storage.isImportSourceAllowed(undefined)).toBe(false)
-  })
-
-  it('isImportSourceAllowed() rejects missing urls with config', () => {
-    const storage = createMemoryStorage({
-      allowedImports: ['https://images.example.com/**']
-    })
-    expect(storage.isImportSourceAllowed(undefined)).toBe(false)
-  })
-
-  it('accepts signed files without url when imports are allowed', () => {
-    const storage = createMemoryStorage({
-      allowedImports: ['https://images.example.com/**']
-    })
-    const file = { key: 'signed.png', name: 'signed.png' }
-    storage.signAssetFile(file)
-    storage.convertAssetFile(file)
-    expect(file).toBeInstanceOf(AssetFile)
   })
 })
 
-describe('Storage: signatures', () => {
-  it('signs files so that they can be verified', () => {
-    const storage = createMemoryStorage()
-    const file = { key: 'a.png' }
-    storage.signAssetFile(file)
-    expect(file.signature).toMatch(/^[0-9a-f]{64}$/)
-    expect(storage.verifyAssetFile(file)).toBe(true)
-  })
-
-  it('accepts signed files sent back unchanged', () => {
-    const storage = createMemoryStorage({ url: 'https://cdn.example.com/' })
-    const uploaded = storage.convertStorageFile({
-      key: 'abc.png',
-      originalname: 'cover.png',
-      mimetype: 'image/png',
-      size: 100,
-      width: 320,
-      height: 200
+describe('Storage: store()', () => {
+  it('stores data under a unique key and returns its file object', async () => {
+    const storage = createStorage({ url: 'https://cdn.example.com/' })
+    const file = await storage.store({
+      name: 'Notes.TXT',
+      type: 'text/plain',
+      data: Buffer.from('Chapter one')
     })
-    const fromClient = JSON.parse(JSON.stringify(uploaded))
-    storage.convertAssetFile(fromClient)
-    expect(fromClient).toBeInstanceOf(AssetFile)
-  })
-
-  it('rejects signed files with changed metadata', () => {
-    const storage = createMemoryStorage({ url: 'https://cdn.example.com/' })
-    const uploaded = storage.convertStorageFile({
-      key: 'abc.png',
-      originalname: 'cover.png',
-      mimetype: 'image/png',
-      size: 100,
-      width: 320,
-      height: 200
+    expect(file).toEqual({
+      key: expect.stringMatching(/^[0-9a-f-]{36}\.txt$/),
+      name: 'Notes.TXT',
+      type: 'text/plain',
+      size: 11,
+      url: `https://cdn.example.com/${file.key}`
     })
-    for (const [key, value] of Object.entries({
-      url: 'javascript:alert(1)',
-      name: 'invoice.pdf',
-      type: 'text/html',
-      size: 101,
-      width: 321,
-      height: 201
-    })) {
-      expect(() =>
-        storage.convertAssetFile({ ...uploaded, [key]: value })
-      ).toThrow('Invalid asset signature')
-    }
+    expect(storage.dataByKey.get(file.key)!.toString()).toBe('Chapter one')
+    expect(await storage.listKeys()).toEqual([file.key])
   })
 
-  it('rejects signatures created with other keys', () => {
-    const storage = createMemoryStorage()
-    const other = new Storage({ keys: ['other-secret'] }, 'other', {})
-    const file = { key: 'a.png' }
-    other.signAssetFile(file)
-    expect(storage.verifyAssetFile(file)).toBe(false)
+  it('stores files without url when the storage has none', async () => {
+    const file = await createStorage().store({
+      name: 'a.txt',
+      data: Buffer.from('a')
+    })
+    expect('url' in file).toBe(false)
   })
 
-  it('rejects missing, malformed and truncated signatures', () => {
-    const storage = createMemoryStorage()
-    const file = { key: 'a.png' }
-    expect(storage.verifyAssetFile(null)).toBe(false)
-    expect(storage.verifyAssetFile(file)).toBe(false)
-    expect(storage.verifyAssetFile({ ...file, signature: 'xyz' })).toBe(false)
-    storage.signAssetFile(file)
+  it('detects the type without one', async () => {
+    const storage = createStorage()
+    const store = async (data: Buffer, type?: string) =>
+      (await storage.store({ name: 'upload', type, data })).type
+    expect(await store(createPngHeader(16, 16))).toBe('image/png')
     expect(
-      storage.verifyAssetFile({ ...file, signature: file.signature.slice(2) })
-    ).toBe(false)
+      await store(createPngHeader(16, 16), 'application/octet-stream')
+    ).toBe('image/png')
+    expect(
+      await store(Buffer.from('%PDF-1.4\n%âã\n1 0 obj\n<<>>\nendobj\n'))
+    ).toBe('application/pdf')
+    expect(await store(Buffer.from('plain text'))).toBe(
+      'application/octet-stream'
+    )
+    expect(await store(Buffer.alloc(0))).toBe('application/octet-stream')
   })
 
-  it('signs with a shared fallback secret when no keys exist', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    try {
-      Storage._fallbackSecret = undefined
-      const storage1 = new Storage({}, 'one', {})
-      const storage2 = new Storage({}, 'two', {})
-      const file = { key: 'a.png' }
-      storage1.signAssetFile(file)
-      expect(storage2.verifyAssetFile(file)).toBe(true)
-      expect(warn).toHaveBeenCalledTimes(1)
-      expect(warn.mock.calls[0][0]).toContain('No app.keys configured')
-    } finally {
-      Storage._fallbackSecret = undefined
-      warn.mockRestore()
-    }
-  })
-})
-
-describe('Storage: uploads', () => {
-  it('returns no upload storage and handler without a multer storage', () => {
-    const storage = createMemoryStorage()
-    expect(storage.getUploadStorage({})).toBe(null)
-    expect(storage.getUploadHandler({})).toBe(null)
-  })
-
-  it('returns an upload handler middleware with a multer storage', () => {
-    const storage = createMemoryStorage()
-    storage.storage = createUploadEngine()
-    expect(storage.getUploadHandler({})).toBeTypeOf('function')
-  })
-
-  it('creates upload storages that inherit from the multer storage', () => {
-    const storage = createMemoryStorage()
-    storage.storage = createUploadEngine()
-    const uploadStorage = storage.getUploadStorage({})
-    expect(Object.getPrototypeOf(uploadStorage)).toBe(storage.storage)
-    expect(uploadStorage._removeFile).toBe(storage.storage._removeFile)
-  })
-
-  it('handles uploads through the multer storage', async () => {
-    const storage = createMemoryStorage()
-    storage.storage = createUploadEngine()
-    const uploadStorage = storage.getUploadStorage({})
-    const result = await new Promise((resolve, reject) => {
-      uploadStorage._handleFile(
-        {},
-        createUpload([Buffer.from('text')], 'text/plain'),
-        (err, result) => (err ? reject(err) : resolve(result))
-      )
-    })
-    expect(result.data.toString()).toBe('text')
-  })
-
-  it('passes upload errors on to the callback', async () => {
-    const storage = createMemoryStorage()
-    storage.storage = {
-      _handleFile(req, file, callback) {
-        callback(new Error('Disk full'))
-      }
-    }
-    const uploadStorage = storage.getUploadStorage({})
-    const error = await new Promise(resolve => {
-      uploadStorage._handleFile({}, createUpload([]), resolve)
-    })
-    expect(error.message).toBe('Disk full')
-  })
-
-  it('reads the dimensions of images with `readDimensions`', async () => {
-    const storage = createMemoryStorage()
-    storage.storage = createUploadEngine()
-    const header = createPngHeader(320, 200)
-    const rest = Buffer.from('rest of the image')
-    // Split the header so the dimensions are only known after two chunks:
-    const file = createUpload([
-      header.subarray(0, 10),
-      header.subarray(10),
-      rest
+  it('reads the dimensions of images', async () => {
+    const storage = createStorage()
+    const data = Buffer.concat([
+      createPngHeader(320, 200),
+      Buffer.from('rest of the image')
     ])
-    const result = await storage._handleUpload({}, file, {
-      readDimensions: true
-    })
+    const file = await storage.store({ name: 'cover.png', data })
     expect(file.width).toBe(320)
     expect(file.height).toBe(200)
-    // The full data still reaches the multer storage:
-    expect(result.data).toEqual(Buffer.concat([header, rest]))
-    expect(storage.app.emit).not.toHaveBeenCalled()
+    expect(storage.dataByKey.get(file.key)).toEqual(data)
   })
 
-  it('reports media files without readable dimensions', async () => {
-    const storage = createMemoryStorage()
-    storage.storage = createUploadEngine()
-    const file = createUpload([Buffer.from('not an image')], 'video/mp4')
-    const result = await storage._handleUpload({}, file, {
-      readDimensions: true
+  it('stores media files without readable dimensions', async () => {
+    const storage = createStorage()
+    for (const data of [Buffer.from('not a video'), Buffer.alloc(0)]) {
+      const file = await storage.store({
+        name: 'clip.mp4',
+        type: 'video/mp4',
+        data
+      })
+      expect(file.size).toBe(data.length)
+      expect('width' in file).toBe(false)
+    }
+  })
+
+  it('reads no dimensions of other types', async () => {
+    const file = await createStorage().store({
+      name: 'a.pdf',
+      type: 'application/pdf',
+      data: createPngHeader(10, 10)
     })
-    expect(file.width).toBeUndefined()
-    expect(result.data.toString()).toBe('not an image')
-    expect(storage.app.emit).toHaveBeenCalledWith(
-      'error',
-      'Unable to determine image size'
-    )
-  })
-
-  test('handles empty media uploads with `readDimensions`', async () => {
-    const storage = createMemoryStorage()
-    storage.storage = createUploadEngine()
-    const stream = new PassThrough()
-    const file = { originalname: 'empty.png', mimetype: 'image/png', stream }
-    const promise = storage._handleUpload({}, file, { readDimensions: true })
-    // Emit `end` directly, so a thrown error surfaces here and not as an
-    // uncaught exception.
-    expect(() => stream.emit('end')).not.toThrow()
-    await promise
-  })
-
-  it('does not read dimensions of other file types', async () => {
-    const storage = createMemoryStorage()
-    storage.storage = createUploadEngine()
-    const file = createUpload([createPngHeader(10, 10)], 'application/pdf')
-    await storage._handleUpload({}, file, { readDimensions: true })
-    expect(file.width).toBeUndefined()
-  })
-
-  it('does not read dimensions without `readDimensions`', async () => {
-    const storage = createMemoryStorage()
-    storage.storage = createUploadEngine()
-    const file = createUpload([createPngHeader(10, 10)])
-    await storage._handleUpload({}, file, {})
     expect(file.width).toBeUndefined()
   })
 })
