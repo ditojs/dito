@@ -17,7 +17,7 @@ const folder = 'changelog/unreleased'
 // The kinds of changes in the order of the sections, and the packages in the
 // order of their entries in each section, the others follow:
 const kinds = ['Behaviour changes', 'Deprecations', 'New', 'Fixes', 'Internal']
-const packages = ['server', 'admin', 'ui', 'router', 'schema', 'utils', 'build']
+const packages = ['server', 'admin', 'ui', 'router', 'utils', 'build']
 
 const { version } = JSON.parse(fs.readFileSync('lerna.json', 'utf8'))
 const files = fs

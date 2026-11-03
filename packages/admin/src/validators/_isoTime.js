@@ -1,6 +1,6 @@
 import { isDate, isString } from '@ditojs/utils'
 
-// The `iso-time` format of the server's ajv-formats, also as `Date` objects
+// Times in `HH:mm:ss` with optional fractions and zone, also as `Date` objects
 // that `DitoTimeField` edits:
 export const isoTime = {
   validate: value =>

@@ -1,7 +1,7 @@
 import { isString } from '@ditojs/utils'
 
 export const maxLength = {
-  // Count code points as Ajv does, not UTF-16 units:
+  // Count code points, not UTF-16 units:
   validate: (value, maxLength) => (
     !isString(value) || [...value].length <= maxLength
   ),
