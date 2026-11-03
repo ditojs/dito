@@ -1,10 +1,10 @@
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Product } from '../models/Product.js'
 import { DitoForm } from '../../../utils/pages.js'
 
 test.describe('component forms', () => {
   test('load and save the item of their id', async ({ page, url }) => {
-    const { id } = await Product.query().insert({ name: 'Chair', price: 120 })
+    const { id } = await db.insert(Product, { name: 'Chair', price: 120 })
     const form = new DitoForm(page)
     await page.goto(`${url}/admin/products/${id}`)
     await expect(form.getField('Name')).toHaveValue('Chair')
@@ -12,7 +12,7 @@ test.describe('component forms', () => {
     await form.fill('Name', 'Stool')
     await form.save()
     await expect
-      .poll(async () => (await Product.query().findById(id))?.name)
+      .poll(async () => (await db.findOne(Product, id))?.name)
       .toBe('Stool')
   })
 
@@ -27,12 +27,14 @@ test.describe('component forms', () => {
     await form.fill('Price', '300')
     await form.save()
     await expect
-      .poll(() => Product.query().select('name', 'price'))
+      .poll(async () =>
+        (await db.find(Product, {})).map(({ name, price }) => ({ name, price }))
+      )
       .toEqual([{ name: 'Table', price: 300 }])
   })
 
   test('ask before leaving unsaved changes', async ({ page, url }) => {
-    const { id } = await Product.query().insert({ name: 'Chair' })
+    const { id } = await db.insert(Product, { name: 'Chair' })
     const form = new DitoForm(page)
     await page.goto(`${url}/admin/products/${id}`)
     await form.fill('Name', 'Stool')

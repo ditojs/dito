@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { test, expect } from './fixtures.js'
+import { test, expect, db, getColumnText, setColumns } from './fixtures.js'
 import { Case } from './models/Case.js'
 import type { CaseEntry } from './cases/define.js'
 import { getDriver } from '../../utils/drivers/index.js'
@@ -69,25 +69,19 @@ async function getStored(entry: CaseEntry) {
   if (type === 'date' || type === 'datetime') {
     // Read dates as database text, unaffected by the driver's parsing in the
     // server's timezone: `2026-05-14`, or ISO for datetimes.
-    const { rows } = await Case.knex().raw(
-      'select ??::text as value from ?? where id = 1',
-      [entry.name, Case.tableName]
-    )
-    const { value } = rows[0]
+    const value = await getColumnText(entry.name)
     return value && type === 'datetime'
       ? new Date(value).toISOString()
       : value
   }
-  const row = await Case.query().findById(1)
-  return (row as Record<string, unknown> | undefined)?.[entry.name] ?? null
+  const row = await db.findOne(Case, 1)
+  return (row as Record<string, unknown> | null)?.[entry.name] ?? null
 }
 
 export async function runCase(page: Page, url: string, entry: CaseEntry) {
   const driver = getDriver(entry.type)
   if (entry.seed !== undefined) {
-    await Case.query()
-      .patch({ [entry.name]: entry.seed })
-      .findById(1)
+    await setColumns({ [entry.name]: entry.seed })
   }
   await openCase(page, url, entry)
   if (entry.state === 'hidden') {

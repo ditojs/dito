@@ -64,17 +64,17 @@ describe('DitoAdmin', () => {
             hasPasswordReset: true
           }
         },
-        api: { users: { login: { path: 'sign-in' } } }
+        api: { users: { path: 'admins' } }
       }
     ])
   })
 
-  it(`rejects paths of the authentication features' resources`, () => {
+  it('rejects paths of the routes of the users', () => {
     assertType<ConstructorParameters<typeof DitoAdmin>>([
       '#app',
       {
-        // @ts-expect-error: They use the action names of `UsersController`.
-        api: { users: { passkeyLogin: { path: 'passkey-sign-in' } } }
+        // @ts-expect-error: They use the names of `usersRoutes()`.
+        api: { users: { login: { path: 'sign-in' } } }
       }
     ])
   })
@@ -97,7 +97,7 @@ describe('DitoAdmin', () => {
     assertType<ConstructorParameters<typeof DitoAdmin>>([
       '#app',
       {
-        api: { users: { path: 'users', self: { path: 'me' } } },
+        api: { users: { path: 'users' } },
         account: {
           settings: { type: 'form', fields: { title: { type: 'text' } } }
         }

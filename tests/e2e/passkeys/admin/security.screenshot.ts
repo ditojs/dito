@@ -1,9 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 import { TOTP } from 'otpauth'
-import { test, expect } from '../fixtures.js'
+import { Credential, Session } from '../../../utils/entities.js'
+import { test, expect, db } from '../fixtures.js'
 import { expectScreenshot, phone } from '../../screenshots/scenes.js'
-import { Credential } from '../models/Credential.js'
-import { Session } from '../models/Session.js'
 import { User } from '../models/User.js'
 
 // Screenshots of the login and Security dialogs, compared against the
@@ -30,37 +29,39 @@ async function openSecurity(page: Page) {
 
 // Passkeys with fixed dates, so that the screenshots stay the same:
 async function addPasskeys() {
-  const user = await User.query().findOne({ username: 'ada' })
+  const user = await db.findOne(User, { username: 'ada' })
+  // Local midnight, as the dates show in the time zone of the browser:
+  const date = (day: string) => new Date(`${day}T00:00`)
   const passkeys = [
-    { name: '1Password', createdAt: '2026-03-02', lastUsedAt: '2026-05-14' },
-    { name: 'iCloud Keychain', createdAt: '2026-04-20', lastUsedAt: null }
+    {
+      name: '1Password',
+      createdAt: date('2026-03-02'),
+      lastUsedAt: date('2026-05-14')
+    },
+    { name: 'iCloud Keychain', createdAt: date('2026-04-20'), lastUsedAt: null }
   ]
-  for (const [index, { createdAt, ...passkey }] of passkeys.entries()) {
-    const { id } = await Credential.query().insert({
+  for (const [index, passkey] of passkeys.entries()) {
+    await db.insert(Credential, {
       ...passkey,
       type: 'passkey',
       userModel: 'User',
       userId: `${user!.id}`,
       key: `key-${index}`,
       data: {}
-    } as any)
-    // The server sets `createdAt` on insert:
-    await Credential.query()
-      .findById(id)
-      .patch({ createdAt } as any)
+    })
   }
 }
 
 // TOTP with all backup codes left. The login and the security dialog only check
 // that the credential exists, and count its backup codes:
 async function addTotp() {
-  const user = await User.query().findOne({ username: 'ada' })
-  await Credential.query().insert({
+  const user = await db.findOne(User, { username: 'ada' })
+  await db.insert(Credential, {
     type: 'totp',
     userModel: 'User',
     userId: `${user!.id}`,
     data: { backupCodes: Array(10).fill('') }
-  } as any)
+  })
 }
 
 // Opens the setup, and returns its dialog and the TOTP of the key that it
@@ -274,14 +275,18 @@ test.describe('phone screenshots', () => {
     await login(page, url)
     const security = await openSecurity(page)
     // Let the access that the login confirmed expire, as time would:
-    const [session] = await Session.query()
-    const { value } = session as any
-    await session.$query().patch({
-      value: {
-        ...value,
-        confirmedAccess: { ...value.confirmedAccess, expires: 0 }
+    const [session] = await db.find(Session, {})
+    const value = session!.value as Record<string, any>
+    await db.nativeUpdate(
+      Session,
+      { id: session!.id },
+      {
+        value: {
+          ...value,
+          confirmedAccess: { ...value.confirmedAccess, expires: 0 }
+        }
       }
-    } as any)
+    )
     await security.getByRole('button', { name: 'Set Up' }).click()
     const dialog = page.getByRole('dialog', { name: 'Confirm Access' })
     await expect(dialog.getByLabel('Password')).toBeFocused()

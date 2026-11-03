@@ -1,34 +1,16 @@
-import type { AssetFileObject, ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
+import type { AssetFileObject } from '@ditojs/storage'
 
-export interface AssetWidget {
-  id: number
-  files: AssetFileObject[]
-  file: AssetFileObject | null
-  filesSmall: AssetFileObject[]
-}
-
-export class AssetWidget extends Model {
-  static override properties: ModelProperties = {
-    files: {
-      type: 'array',
-      items: { type: 'object' },
-      default: []
-    },
-    file: {
-      type: 'object',
-      nullable: true
-    },
-    filesSmall: {
-      type: 'array',
-      items: { type: 'object' },
-      default: []
-    }
+// The files of its columns are in `assetPaths` of the scenario's fixtures.
+const AssetWidgetSchema = defineEntity({
+  name: 'AssetWidget',
+  properties: {
+    id: p.integer().primary(),
+    files: p.json<AssetFileObject[]>().onCreate(() => []),
+    file: p.json<AssetFileObject>().nullable(),
+    filesSmall: p.json<AssetFileObject[]>().onCreate(() => [])
   }
+})
 
-  static assets = {
-    files: { storage: 'test' },
-    file: { storage: 'test' },
-    filesSmall: { storage: 'test' }
-  }
-}
+export class AssetWidget extends AssetWidgetSchema.class {}
+AssetWidgetSchema.setClass(AssetWidget)

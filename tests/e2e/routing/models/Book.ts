@@ -1,43 +1,23 @@
-import type { ModelProperties, ModelProperty } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
 export interface Entry {
   title: string
 }
 
-export interface Book {
-  id: number
-  title: string
-  chapters?: Entry[] | null
-  appendices?: Entry[] | null
-  contents?: { notes?: Entry[] | null } | null
-  // Sections that aren't nested hold no data of their own.
-  more: never
-  quotes?: Entry[] | null
-  meta?: { sources?: Entry[] | null } | null
-  sourceURLs?: Entry[] | null
-}
+const entries = () => p.json<Entry[]>().nullable()
 
-const entries: ModelProperty = {
-  type: 'array',
-  nullable: true,
-  items: { type: 'object' }
-}
-
-export interface Shelf {
-  // Labels hold no data.
-  intro?: never
-  shelfBooks?: Book[] | null
-}
-
-export class Book extends Model {
-  static override properties: ModelProperties = {
-    title: { type: 'string', required: true },
-    chapters: entries,
-    appendices: entries,
-    contents: { type: 'object', nullable: true },
-    quotes: entries,
-    meta: { type: 'object', nullable: true },
-    sourceURLs: entries
+const BookSchema = defineEntity({
+  name: 'Book',
+  properties: {
+    id: p.integer().primary(),
+    title: p.string(),
+    chapters: entries(),
+    appendices: entries(),
+    contents: p.json<{ notes?: Entry[] | null }>().nullable(),
+    quotes: entries(),
+    meta: p.json<{ sources?: Entry[] | null }>().nullable(),
+    sourceURLs: entries()
   }
-}
+})
+export class Book extends BookSchema.class {}
+BookSchema.setClass(Book)

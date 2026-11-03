@@ -1,6 +1,6 @@
 // Case tables for the per-type matrix. These files are pure data: they are
 // imported by the admin app (to generate one view per case), by the `Case`
-// model (to generate one column per case) and by the specs (to run them),
+// entity (to generate one column per case) and by the specs (to run them),
 // so they must not import Playwright or server code.
 
 export interface TypeCase {

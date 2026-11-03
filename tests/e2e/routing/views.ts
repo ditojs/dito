@@ -4,7 +4,17 @@ import type {
   ListSchema,
   ViewSchema
 } from '@ditojs/admin'
-import type { Book, Entry, Shelf } from './models/Book.js'
+import type { EntityDTO } from '@mikro-orm/core'
+import type { Book, Entry } from './models/Book.js'
+
+// Sections that aren't nested hold no data of their own.
+type BookItem = EntityDTO<Book> & { more: never }
+
+interface Shelf {
+  // Labels hold no data.
+  intro?: never
+  shelfBooks?: BookItem[] | null
+}
 
 function createEntries(
   label: string,
@@ -26,7 +36,7 @@ function createEntries(
   }
 }
 
-const bookFields: Fields<Book> = {
+const bookFields: Fields<BookItem> = {
   title: { type: 'text', label: 'Title' },
   chapters: createEntries('Chapters'),
   // Routes its forms under its own path instead of its name.
@@ -56,13 +66,13 @@ const bookFields: Fields<Book> = {
 }
 
 // Shared by two views, `books` and `drafts`.
-const bookForm: FormSchema<Book> = {
+const bookForm: FormSchema<BookItem> = {
   type: 'form',
   label: 'Book',
   fields: bookFields
 }
 
-function createBooksView(label: string): ViewSchema<Book> {
+function createBooksView(label: string): ViewSchema<BookItem> {
   return {
     type: 'view',
     label,
@@ -85,7 +95,7 @@ export const drafts = createBooksView('Drafts')
 
 // The book's chapters in a tab, whose name the URLs of their forms contain, so
 // that the book's form is reloaded on the form of a chapter with its tab.
-export const tabbedBooks: ViewSchema<Book> = {
+export const tabbedBooks: ViewSchema<BookItem> = {
   type: 'view',
   label: 'Tabbed Books',
   field: {
@@ -138,7 +148,7 @@ export const shelf: ViewSchema<Shelf> = {
 }
 
 // A list that edits and creates its books through the linked view `shelf`.
-export const featured: ViewSchema<Book> = {
+export const featured: ViewSchema<BookItem> = {
   type: 'view',
   label: 'Featured',
   field: {

@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Widget } from '../models/Widget.js'
 import {
   DitoListView,
@@ -11,7 +11,7 @@ test.describe('multiselect', () => {
     url
   }) => {
     // Seed a widget tied to no tags initially.
-    const widget = await Widget.query().insert({
+    const widget = await db.insert(Widget, {
       name: 'Widget A',
       size: 'Small'
     })
@@ -36,10 +36,14 @@ test.describe('multiselect', () => {
     await expect(tagsCombobox).toContainText('tag-2')
 
     // Re-fetch from DB and confirm the join-table relation persisted.
-    const persisted = await Widget.query()
-      .findById(widget.$id() as number)
-      .withGraphFetched('tags')
-    const persistedNames = (persisted?.tags ?? []).map(t => t.name).sort()
+    const persisted = await db.findOne(
+      Widget,
+      widget.id,
+      { populate: ['tags'] }
+    )
+    const persistedNames = (persisted?.tags.getItems() ?? [])
+      .map(t => t.name)
+      .sort()
     expect(persistedNames).toEqual(['tag-1', 'tag-2'])
 
     // Clear all tags.
@@ -52,17 +56,17 @@ test.describe('multiselect', () => {
     await expect(tagsCombobox).not.toContainText('tag-1')
     await expect(tagsCombobox).not.toContainText('tag-2')
 
-    const cleared = await Widget.query()
-      .findById(widget.$id() as number)
-      .withGraphFetched('tags')
-    expect(cleared?.tags ?? []).toHaveLength(0)
+    const cleared = await db.findOne(Widget, widget.id, {
+      populate: ['tags']
+    })
+    expect(cleared?.tags.getItems()).toHaveLength(0)
   })
 
   test('shows values without options as unavailable chips', async ({
     page,
     url
   }) => {
-    const widget = await Widget.query().insert({
+    const widget = await db.insert(Widget, {
       name: 'Widget A',
       size: 'Small',
       codes: ['a', 'gone']
@@ -84,12 +88,12 @@ test.describe('multiselect', () => {
       .locator('.multiselect__tag-icon')
       .click()
     await new DitoForm(page).save()
-    const stored = await Widget.query().findById(widget.$id() as number)
+    const stored = await db.findOne(Widget, widget.id)
     expect(stored?.codes).toEqual(['gone'])
   })
 
   test('keeps related values without options', async ({ page, url }) => {
-    const widget = await Widget.query().insertGraph({
+    const widget = await db.insert(Widget, {
       name: 'Widget A',
       size: 'Small',
       tags: [{ name: 'tag-1' }, { name: 'hidden' }]
@@ -106,10 +110,10 @@ test.describe('multiselect', () => {
       .locator('.multiselect__tag-icon')
       .click()
     await new DitoForm(page).save()
-    const stored = await Widget.query()
-      .findById(widget.$id() as number)
-      .withGraphFetched('tags')
-    expect(stored?.tags?.map(tag => tag.name)).toEqual(['hidden'])
+    const stored = await db.findOne(Widget, widget.id, {
+      populate: ['tags']
+    })
+    expect(stored?.tags.map(tag => tag.name)).toEqual(['hidden'])
   })
 
   test('keeps the errors of deselected required values', async ({
@@ -118,7 +122,7 @@ test.describe('multiselect', () => {
   }) => {
     // Deselecting closes the multiselect, which validates the new value in
     // the same tick as the value changes.
-    await Widget.query().insert({ name: 'Widget A', size: 'Small' })
+    await db.insert(Widget, { name: 'Widget A', size: 'Small' })
     const list = new DitoListView(page, url, 'Widget')
     await list.navigate('/widgets')
     await list.list.edit('Widget A')
@@ -137,7 +141,7 @@ test.describe('multiselect', () => {
     page,
     url
   }) => {
-    await Widget.query().insert({ name: 'Widget A', size: 'Small' })
+    await db.insert(Widget, { name: 'Widget A', size: 'Small' })
     const list = new DitoListView(page, url, 'Widget')
     await list.navigate('/widgets')
     await list.list.edit('Widget A')
@@ -151,7 +155,7 @@ test.describe('multiselect', () => {
   })
 
   test('keeps values that searches filter out', async ({ page, url }) => {
-    await Widget.query().insert({
+    await db.insert(Widget, {
       name: 'Widget A',
       size: 'Small',
       shape: 'triangle'
@@ -167,7 +171,7 @@ test.describe('multiselect', () => {
     await page.keyboard.press('Escape')
     await expect(shape).toContainText('Triangle')
     await new DitoForm(page).save()
-    const widget = await Widget.query().findOne({ name: 'Widget A' })
+    const widget = await db.findOne(Widget, { name: 'Widget A' })
     expect(widget?.shape).toBe('triangle')
   })
 
@@ -175,7 +179,7 @@ test.describe('multiselect', () => {
     page,
     url
   }) => {
-    await Widget.query().insert({ name: 'Widget A', size: 'Small' })
+    await db.insert(Widget, { name: 'Widget A', size: 'Small' })
     const list = new DitoListView(page, url, 'Widget')
     await list.navigate('/widgets')
     await list.list.edit('Widget A')
@@ -190,13 +194,13 @@ test.describe('multiselect', () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
       .poll(
-        async () => (await Widget.query().findOne({ name: 'Widget A' }))?.color
+        async () => (await db.findOne(Widget, { name: 'Widget A' }))?.color
       )
       .toBe('Blue')
   })
 
   test('shows the options of the latest search', async ({ page, url }) => {
-    await Widget.query().insert({ name: 'Widget A', size: 'Small' })
+    await db.insert(Widget, { name: 'Widget A', size: 'Small' })
     const list = new DitoListView(page, url, 'Widget')
     await list.navigate('/widgets')
     await list.list.edit('Widget A')

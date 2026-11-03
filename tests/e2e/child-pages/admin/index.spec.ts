@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Page } from '../models/Page.js'
 import { DitoNestedList } from '../../../utils/pages.js'
 import { getConfirmDialog } from '../../../utils/dialogs.js'
@@ -8,7 +8,7 @@ test.describe('child pages', () => {
     page,
     url
   }) => {
-    const parent = await Page.query().insertGraph({
+    const parent = await db.insert(Page, {
       name: 'Parent',
       order: 0,
       // Numbered differently than the list numbers them, so that loading them
@@ -33,8 +33,8 @@ test.describe('child pages', () => {
     page,
     url
   }) => {
-    await Page.query().insert({ name: 'First', order: 0 })
-    await Page.query().insert({ name: 'Second', order: 1 })
+    await db.insert(Page, { name: 'First', order: 0 })
+    await db.insert(Page, { name: 'Second', order: 1 })
     await page.goto(`${url}/admin/page-order`)
     const list = new DitoNestedList(page, 'Page Order')
     await expect(list.rows).toHaveCount(2)
@@ -42,7 +42,7 @@ test.describe('child pages', () => {
     await expect(list.rows.first()).toContainText('Second')
     await page.getByRole('button', { name: 'Save Order' }).click()
     await expect(page.getByText('The order was saved.')).toBeVisible()
-    const pages = await Page.query().orderBy('order')
+    const pages = await db.find(Page, {}, { orderBy: { order: 'asc' } })
     expect(pages.map(({ name, order }) => ({ name, order }))).toEqual([
       { name: 'Second', order: 0 },
       { name: 'First', order: 1 }

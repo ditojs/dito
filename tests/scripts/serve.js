@@ -46,20 +46,17 @@ for (const entry of fs.readdirSync(e2eDir, { withFileTypes: true })) {
 
 const options = scenarios[name]
 if (options) {
-  const { startScenario, teardownTestApp } =
-    await import('../utils/fixture-app.ts')
+  const { startScenario } = await import('../utils/fixture-app.ts')
   // Serve on `localhost`, as browsers only treat it and https as secure
   // contexts, e.g. for passkeys:
-  const { app, url, reset } = await startScenario({
+  const { url, reset, stop } = await startScenario({
     ...options,
-    config: {
-      ...options.config,
-      server: { host: 'localhost', port: +port }
-    }
+    host: 'localhost',
+    port: +port
   })
   await reset()
   console.info(`Serving '${name}' at ${url}/admin/, stop with Ctrl+C.`)
-  process.once('SIGINT', () => teardownTestApp(app))
+  process.once('SIGINT', stop)
 } else {
   if (name) {
     console.error(`Unknown scenario: '${name}'.`)

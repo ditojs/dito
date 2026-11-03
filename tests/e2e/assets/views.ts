@@ -1,7 +1,11 @@
 import type { ViewSchema } from '@ditojs/admin'
-import type { AssetWidget } from './models/AssetWidget.js'
-import type { NestedAssetWidget } from './models/NestedAssetWidget.js'
+import type { EntityDTO } from '@mikro-orm/core'
+import type { AssetWidget as WidgetEntity } from './models/AssetWidget.js'
+import type { NestedAssetWidget as NestedEntity } from './models/NestedAssetWidget.js'
 import { createWidgetView } from '../../utils/views.js'
+
+type AssetWidget = EntityDTO<WidgetEntity>
+type NestedAssetWidget = EntityDTO<NestedEntity>
 
 export const assets = createWidgetView<AssetWidget>(
   'files',

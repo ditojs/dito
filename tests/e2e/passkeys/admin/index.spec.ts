@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
-import { test, expect, getLocalUrl } from '../fixtures.js'
-import { Credential } from '../models/Credential.js'
+import { verifyPassword } from '@ditojs/auth'
+import { Credential } from '../../../utils/entities.js'
+import { test, expect, getLocalUrl, db } from '../fixtures.js'
 import { User } from '../models/User.js'
 
 // Gives the browser a passkey authenticator that verifies the user, like a
@@ -60,7 +61,7 @@ test.describe('passkeys', () => {
     await page.locator('button.dito-login').click()
     await page.getByRole('button', { name: 'Sign In with Passkey' }).click()
     await expect(getAccountButton(page)).toHaveText('ada')
-    const [credential] = await Credential.query()
+    const [credential] = await db.find(Credential, {})
     expect(credential.lastUsedAt).toBeInstanceOf(Date)
 
     // The passkey shows its last use, and is deleted:
@@ -80,7 +81,7 @@ test.describe('passkeys', () => {
       .getByRole('button', { name: 'Delete' })
       .click()
     await expect(dialog.locator('tbody tr')).toHaveText('No passkeys yet.')
-    expect(await Credential.query()).toEqual([])
+    expect(await db.find(Credential, {})).toEqual([])
   })
 
   test('change the password', async ({ page, browser, url }) => {
@@ -91,9 +92,10 @@ test.describe('passkeys', () => {
     await dialog.getByLabel('New Password', { exact: true }).fill('changed')
     await dialog.getByLabel('Confirm New Password').fill('changed')
     await dialog.getByRole('button', { name: 'Change Password' }).click()
-    await expect(dialog).toBeHidden()
-    const user = await User.query().findOne({ username: 'ada' })
-    expect(await user!.$verifyPassword('changed')).toBe(true)
+    // The dialog closes before the request, so wait for its notification:
+    await expect(page.getByText('Your password was changed.')).toBeVisible()
+    const user = await db.findOne(User, { username: 'ada' })
+    expect(await verifyPassword('changed', user!.hash)).toBe(true)
 
     // The new password works for a fresh login:
     const context = await browser.newContext()

@@ -9,5 +9,10 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["**/*.ts"]
+  "include": [
+    "**/*.ts",
+    "../../packages/storage/src/leather.d.ts",
+    "../../packages/storage/src/aws-lite-s3.d.ts",
+    "../../packages/admin-server/src/ditojs-build.d.ts"
+  ]
 }

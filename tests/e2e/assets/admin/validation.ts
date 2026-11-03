@@ -1,10 +1,5 @@
 import path from 'path'
-import {
-  test,
-  expect,
-  fixturesDir
-} from '../fixtures.js'
-import { createModelHelpers } from '../../../utils/fixture-app.js'
+import { test, expect, fixturesDir, createModelHelpers } from '../fixtures.js'
 import { DitoUploadField } from '../../../utils/pages.js'
 import { AssetWidget } from '../models/AssetWidget.js'
 

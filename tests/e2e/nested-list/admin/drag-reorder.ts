@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Widget } from '../models/Widget.js'
 import {
   DitoListView,
@@ -11,9 +11,8 @@ test.describe('drag reorder', () => {
     page,
     url
   }) => {
-    // Seed a widget with two items in a known order. `insertGraph`
-    // walks the relation and inserts the children in one round-trip.
-    const widget = await Widget.query().insertGraph({
+    // Seed a widget with two items in a known order.
+    const widget = await db.insert(Widget, {
       name: 'Widget',
       items: [
         { label: 'A', order: 0 },
@@ -41,19 +40,18 @@ test.describe('drag reorder', () => {
 
     await form.save()
 
-    // Reload via the list and confirm the order persisted through the
-    // controller's `^withItems` scope, which uses the `ordered` modifier.
+    // Reload via the list and confirm the order persisted. The relation
+    // loads the items by their `order`.
     await list.navigate('/widgets')
     await list.list.edit('Widget')
     await expect(items.rows.nth(0).getByLabel('Label')).toHaveValue('B')
     await expect(items.rows.nth(1).getByLabel('Label')).toHaveValue('A')
 
-    // DB shape: SortableMixin reassigns `order` to match array index, so
-    // labels in `order` ASC must be [B, A]. The `ordered` scope is auto-
-    // applied because Widget.relations.items declares it.
-    const persisted = await Widget.query()
-      .findById(widget.$id() as number)
-      .withGraphFetched('items')
-    expect((persisted?.items ?? []).map(i => i.label)).toEqual(['B', 'A'])
+    // The admin sets `order` to the index of each item, so the labels in
+    // `order` must be [B, A].
+    const persisted = await db.findOne(Widget, widget.id, {
+      populate: ['items']
+    })
+    expect(persisted?.items.map(i => i.label)).toEqual(['B', 'A'])
   })
 })

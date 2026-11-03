@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Library, type Catalog, type Shelf } from '../models/Library.js'
 import { DitoForm, dragHandle } from '../../../utils/pages.js'
 import { acceptConfirmDialog } from '../../../utils/dialogs.js'
@@ -10,7 +10,7 @@ async function openLibrary(
   shelves: Shelf[],
   catalog: Catalog | null = null
 ) {
-  const library = await Library.query().insert({
+  const library = await db.insert(Library, {
     name: 'Library',
     shelves,
     catalog
@@ -38,7 +38,7 @@ async function editTreeItem(page: Page, label: string) {
 }
 
 async function getStoredShelves(library: Library) {
-  return (await Library.query().findById(library.id))?.shelves
+  return (await db.findOne(Library, library.id))?.shelves
 }
 
 test.describe('tree list', () => {

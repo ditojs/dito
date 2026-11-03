@@ -1,27 +1,21 @@
-import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
-export interface Widget {
-  id: number
-  name: string
-  notes?: string | null
-  settings?: { color?: string } | null
-  size?: string | null
-  links?:
-    | {
-        url?: string
-        image?: { name: string; type: string; size: number; url?: string }
-        parts?: { name?: string }[]
-      }[]
-    | null
+interface Link {
+  url?: string
+  image?: { name: string; type: string; size: number; url?: string }
+  parts?: { name?: string }[]
 }
 
-export class Widget extends Model {
-  static override properties: ModelProperties = {
-    name: { type: 'string', required: true },
-    notes: { type: 'text', nullable: true },
-    settings: { type: 'object', nullable: true },
-    size: { type: 'string', nullable: true },
-    links: { type: 'array', nullable: true, items: { type: 'object' } }
+const WidgetSchema = defineEntity({
+  name: 'Widget',
+  properties: {
+    id: p.integer().primary(),
+    name: p.string(),
+    notes: p.text().nullable(),
+    settings: p.json<{ color?: string }>().nullable(),
+    size: p.string().nullable(),
+    links: p.json<Link[]>().nullable()
   }
-}
+})
+export class Widget extends WidgetSchema.class {}
+WidgetSchema.setClass(Widget)

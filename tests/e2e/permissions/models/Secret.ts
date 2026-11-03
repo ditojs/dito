@@ -1,13 +1,11 @@
-import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
-export interface Secret {
-  id: number
-  name: string
-}
-
-export class Secret extends Model {
-  static override properties: ModelProperties = {
-    name: { type: 'string', required: true }
+const SecretSchema = defineEntity({
+  name: 'Secret',
+  properties: {
+    id: p.integer().primary(),
+    name: p.string()
   }
-}
+})
+export class Secret extends SecretSchema.class {}
+SecretSchema.setClass(Secret)

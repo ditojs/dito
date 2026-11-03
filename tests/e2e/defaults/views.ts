@@ -1,9 +1,10 @@
+import type { EntityDTO } from '@mikro-orm/core'
 import type { Draft } from './models/Draft.js'
 import { createWidgetView } from '../../utils/views.js'
 
 // New drafts receive the defaults of the schema, and of the types without
 // one, e.g. `false` for `switch` and empty lists for `checkboxes` and `list`.
-export const drafts = createWidgetView<Draft>(
+export const drafts = createWidgetView<EntityDTO<Draft>>(
   'Draft',
   'drafts',
   {

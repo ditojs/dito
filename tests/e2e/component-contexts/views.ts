@@ -1,3 +1,4 @@
+import type { EntityDTO } from '@mikro-orm/core'
 import type { SchemaContext } from '@ditojs/admin'
 import type { Book } from './models/Book.js'
 import { createWidgetView } from '../../utils/views.js'
@@ -49,7 +50,7 @@ const text = (label: string, field: string) => ({
 // `publishing` and `links` are a section and a panel that don't hold values of
 // their own.
 export const books = createWidgetView<
-  Book & { publishing: never; links: never }
+  EntityDTO<Book> & { publishing: never; links: never }
 >(
   'Book',
   'books',

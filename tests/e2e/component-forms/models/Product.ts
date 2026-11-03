@@ -1,15 +1,12 @@
-import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
-export interface Product {
-  id: number
-  name: string
-  price?: number | null
-}
-
-export class Product extends Model {
-  static override properties: ModelProperties = {
-    name: { type: 'string', required: true },
-    price: { type: 'integer', nullable: true }
+const ProductSchema = defineEntity({
+  name: 'Product',
+  properties: {
+    id: p.integer().primary(),
+    name: p.string(),
+    price: p.integer().nullable()
   }
-}
+})
+export class Product extends ProductSchema.class {}
+ProductSchema.setClass(Product)

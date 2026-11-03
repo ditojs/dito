@@ -1,7 +1,14 @@
-import type { Album } from './models/Album.js'
+import type { EntityDTO } from '@mikro-orm/core'
+import type { Album, Credit, Track } from './models/Album.js'
 import { createWidgetView } from '../../utils/views.js'
 
-export const albums = createWidgetView<Album>(
+// The JSON columns as the form edits them.
+type AlbumItem = Omit<EntityDTO<Album>, 'tracks' | 'credits'> & {
+  tracks?: Track[] | null
+  credits?: Credit[] | null
+}
+
+export const albums = createWidgetView<AlbumItem>(
   'Album',
   'albums',
   {},

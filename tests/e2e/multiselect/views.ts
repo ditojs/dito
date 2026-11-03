@@ -1,3 +1,4 @@
+import type { EntityDTO } from '@mikro-orm/core'
 import type { Tag } from './models/Tag.js'
 import type { Widget } from './models/Widget.js'
 import { createWidgetView } from '../../utils/views.js'
@@ -13,7 +14,7 @@ function filterByBeginning(options: string[], searchTerm: string) {
   )
 }
 
-export const widgets = createWidgetView<Widget>(
+export const widgets = createWidgetView<EntityDTO<Widget>>(
   'Widget',
   'widgets',
   {
@@ -112,7 +113,7 @@ export const widgets = createWidgetView<Widget>(
         data: async ({
           request
         }: {
-          request: (opts: { url: string }) => Promise<Tag[]>
+          request: (opts: { url: string }) => Promise<EntityDTO<Tag>[]>
         }) =>
           (await request({ url: 'tags' })).filter(
             tag => tag.name !== 'hidden'

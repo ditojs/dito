@@ -1,23 +1,28 @@
-import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p, StringType } from '@mikro-orm/core'
+import { z } from 'zod'
 
-export interface Widget {
-  id: number
-  name: string
-  email: string | null
-}
+const nameSchema = z.string().min(3)
+const emailSchema = z.email()
 
-export class Widget extends Model {
-  static override properties: ModelProperties = {
-    name: {
-      type: 'string',
-      required: true,
-      minLength: 3
-    },
-    email: {
-      type: 'string',
-      format: 'email',
-      nullable: true
-    }
+class NameType extends StringType {
+  get schema() {
+    return nameSchema
   }
 }
+
+class EmailType extends StringType {
+  get schema() {
+    return emailSchema
+  }
+}
+
+const WidgetSchema = defineEntity({
+  name: 'Widget',
+  properties: {
+    id: p.integer().primary(),
+    name: p.string().type(new NameType()),
+    email: p.string().type(new EmailType()).nullable()
+  }
+})
+export class Widget extends WidgetSchema.class {}
+WidgetSchema.setClass(Widget)

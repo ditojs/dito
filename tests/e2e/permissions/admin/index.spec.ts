@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Vault } from '../models/Vault.js'
 import { DitoForm } from '../../../utils/pages.js'
 
@@ -17,13 +17,13 @@ test.describe('permissions', () => {
     await expect(page.locator('.dito-errors')).toContainText('permission')
     await page.getByLabel('Name', { exact: true }).fill('Renamed')
     await new DitoForm(page).save()
-    expect((await Vault.query().findById(1))?.name).toBe('Renamed')
+    expect((await db.findOne(Vault, 1))?.name).toBe('Renamed')
   })
 
   test('notifies about missing permissions of views', async ({ page, url }) => {
     await page.goto(`${url}/admin/secrets`)
     await expect(page.locator('.dito-notification')).toContainText(
-      'Unauthorized Access'
+      'Unauthorized'
     )
   })
 
@@ -33,7 +33,7 @@ test.describe('permissions', () => {
   }) => {
     await page.goto(`${url}/admin/secrets/1`)
     await expect(page.locator('.dito-notification')).toContainText(
-      'Unauthorized Access'
+      'Unauthorized'
     )
   })
 })

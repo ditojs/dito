@@ -1,6 +1,9 @@
-import type { Page } from './models/Page.js'
+import type { EntityDTO } from '@mikro-orm/core'
+import type { Page as PageEntity } from './models/Page.js'
 import type { ViewSchema } from '@ditojs/admin'
 import { createWidgetView } from '../../utils/views.js'
+
+type Page = EntityDTO<PageEntity>
 
 export const pages = createWidgetView<Page>('name', 'pages', {
   name: { type: 'text', label: 'Name' },

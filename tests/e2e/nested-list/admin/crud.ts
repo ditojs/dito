@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Widget } from '../models/Widget.js'
 import {
   DitoListView,
@@ -12,7 +12,7 @@ test.describe('nested-list', () => {
     url
   }) => {
     // Seed a widget with no items initially.
-    const widget = await Widget.query().insert({ name: 'Widget A' })
+    const widget = await db.insert(Widget, { name: 'Widget A' })
 
     const list = new DitoListView(page, url, 'Widget')
     const form = new DitoForm(page)
@@ -46,10 +46,10 @@ test.describe('nested-list', () => {
     await expect(items.rows.nth(1).getByLabel('Label')).toHaveValue('second')
 
     // Confirm DB state matches.
-    const persisted = await Widget.query()
-      .findById(widget.$id() as number)
-      .withGraphFetched('items')
-    const persistedLabels = (persisted?.items ?? [])
+    const persisted = await db.findOne(Widget, widget.id, {
+      populate: ['items']
+    })
+    const persistedLabels = (persisted?.items.getItems() ?? [])
       .map(i => i.label)
       .sort()
     expect(persistedLabels).toEqual(['first', 'second'])
@@ -63,10 +63,12 @@ test.describe('nested-list', () => {
     await expect(items.rows).toHaveCount(1)
     await expect(items.rows.nth(0).getByLabel('Label')).toHaveValue('second')
 
-    const remaining = await Widget.query()
-      .findById(widget.$id() as number)
-      .withGraphFetched('items')
-    const remainingLabels = (remaining?.items ?? []).map(i => i.label)
+    const remaining = await db.findOne(Widget, widget.id, {
+      populate: ['items']
+    })
+    const remainingLabels = (remaining?.items.getItems() ?? []).map(
+      i => i.label
+    )
     expect(remainingLabels).toEqual(['second'])
   })
 })

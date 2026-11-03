@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Book } from '../models/Book.js'
 
 // The contexts that schema callbacks receive must be the same wherever they
@@ -7,7 +7,7 @@ import { Book } from '../models/Book.js'
 // The fields' `if` callbacks record the contexts they see, see `views.ts`.
 
 async function seedBook() {
-  return Book.query().insert({
+  return db.insert(Book, {
     marker: 'book',
     title: 'Title',
     meta: { marker: 'meta', note: 'Note' },

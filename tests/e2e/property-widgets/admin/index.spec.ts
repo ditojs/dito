@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Designer } from '../models/Designer.js'
 import { ShopSet } from '../models/ShopSet.js'
 import { Collection } from '../models/Collection.js'
@@ -19,7 +19,7 @@ const getErrors = (page: Page, label: string) =>
 
 test.describe('forms with properties and widgets', () => {
   test('load and save the data of the properties', async ({ page, url }) => {
-    const { id } = await Designer.query().insert({
+    const { id } = await db.insert(Designer, {
       name: 'Ada',
       awards: [{ title: 'Gold', year: 2020 }],
       address: { city: 'London' }
@@ -39,7 +39,7 @@ test.describe('forms with properties and widgets', () => {
     await form.save()
     await expect
       .poll(async () => {
-        const designer = await Designer.query().findById(id)
+        const designer = await db.findOne(Designer, id)
         return {
           name: designer?.name,
           awards: designer?.awards,
@@ -57,7 +57,7 @@ test.describe('forms with properties and widgets', () => {
     page,
     url
   }) => {
-    const { id } = await Designer.query().insert({ name: 'Ada' })
+    const { id } = await db.insert(Designer, { name: 'Ada' })
     const form = new DitoForm(page)
     await page.goto(`${url}/admin/designers/${id}`)
     const profile = getContainer(page, 'Profile')
@@ -86,8 +86,15 @@ test.describe('forms with properties and widgets', () => {
     await form.fill('Title', 'Gold')
     await form.create()
     await expect
-      .poll(() =>
-        Designer.query().select('name', 'isFeatured', 'rank', 'awards')
+      .poll(async () =>
+        (await db.find(Designer, {})).map(
+          ({ name, isFeatured, rank, awards }) => ({
+            name,
+            isFeatured,
+            rank,
+            awards
+          })
+        )
       )
       .toEqual([
         {
@@ -103,7 +110,7 @@ test.describe('forms with properties and widgets', () => {
     page,
     url
   }) => {
-    const { id } = await Designer.query().insert({
+    const { id } = await db.insert(Designer, {
       name: 'Ada',
       isFeatured: true,
       rank: 3,
@@ -127,7 +134,7 @@ test.describe('forms with properties and widgets', () => {
   })
 
   test('reveal errors in collapsed sections', async ({ page, url }) => {
-    const { id } = await Designer.query().insert({
+    const { id } = await db.insert(Designer, {
       name: 'Ada',
       isFeatured: true,
       rank: 3
@@ -160,7 +167,7 @@ test.describe('forms with properties and widgets', () => {
     page,
     url
   }) => {
-    const { id } = await Designer.query().insert({
+    const { id } = await db.insert(Designer, {
       name: 'Ada',
       isFeatured: true,
       rank: 3
@@ -176,14 +183,14 @@ test.describe('forms with properties and widgets', () => {
     await form.save()
     await expect
       .poll(async () => {
-        const designer = await Designer.query().findById(id)
+        const designer = await db.findOne(Designer, id)
         return [designer?.isFeatured, designer?.rank]
       })
       .toEqual([false, 3])
   })
 
   test('notify the errors that no widget shows', async ({ page, url }) => {
-    const { id } = await Designer.query().insert({ name: 'Ada' })
+    const { id } = await db.insert(Designer, { name: 'Ada' })
     const form = new DitoForm(page)
     await page.goto(`${url}/admin/designers/${id}`)
     await form.fill('Email', 'ada')
@@ -202,7 +209,7 @@ test.describe('forms with properties and widgets', () => {
     page,
     url
   }) => {
-    const { id } = await Designer.query().insert({
+    const { id } = await db.insert(Designer, {
       name: 'Ada',
       awards: [{ title: 'Gold' }]
     })
@@ -218,7 +225,7 @@ test.describe('forms with properties and widgets', () => {
     await expect(getErrors(page, 'Name')).toContainText('20')
     await expect(getErrors(page, 'Title')).toContainText('12')
     await expect
-      .poll(async () => (await Designer.query().findById(id))?.name)
+      .poll(async () => (await db.findOne(Designer, id))?.name)
       .toBe('Ada')
   })
 })
@@ -242,7 +249,13 @@ test.describe('lists of several kinds in forms with properties', () => {
     await form.fill('Style Name', 'Regular')
     await form.create()
     await expect
-      .poll(() => ShopSet.query().select('name', 'prices', 'cuts'))
+      .poll(async () =>
+        (await db.find(ShopSet, {})).map(({ name, prices, cuts }) => ({
+          name,
+          prices,
+          cuts
+        }))
+      )
       .toEqual([
         {
           name: 'Starter',
@@ -259,7 +272,7 @@ test.describe('lists of several kinds in forms with properties', () => {
     page,
     url
   }) => {
-    const { id } = await ShopSet.query().insert({
+    const { id } = await db.insert(ShopSet, {
       name: 'Starter',
       prices: [40],
       cuts: [
@@ -297,7 +310,7 @@ test.describe('trees in forms with properties', () => {
     page,
     url
   }) => {
-    const { id } = await Collection.query().insert({
+    const { id } = await db.insert(Collection, {
       name: 'Fonts',
       shopSets: [
         { name: 'Sans', cuts: [{ name: 'Regular' }, { name: 'Bold' }] },
@@ -320,7 +333,7 @@ test.describe('trees in forms with properties', () => {
     await form.fill('Cut', 'Black')
     await form.save()
     await expect
-      .poll(async () => (await Collection.query().findById(id))?.shopSets)
+      .poll(async () => (await db.findOne(Collection, id))?.shopSets)
       .toEqual([
         { name: 'Sans', cuts: [{ name: 'Regular' }, { name: 'Black' }] },
         { name: 'Serif', cuts: [] }
@@ -328,7 +341,7 @@ test.describe('trees in forms with properties', () => {
   })
 
   test('reorder the items of draggable levels only', async ({ page, url }) => {
-    const { id } = await Collection.query().insert({
+    const { id } = await db.insert(Collection, {
       name: 'Fonts',
       shopSets: [
         { name: 'Sans', cuts: [{ name: 'Regular' }, { name: 'Bold' }] },
@@ -344,7 +357,7 @@ test.describe('trees in forms with properties', () => {
     await dragHandle(page, getHandle('Regular'), getHandle('Bold'))
     await new DitoForm(page).save()
     await expect
-      .poll(async () => (await Collection.query().findById(id))?.shopSets)
+      .poll(async () => (await db.findOne(Collection, id))?.shopSets)
       .toEqual([
         { name: 'Sans', cuts: [{ name: 'Bold' }, { name: 'Regular' }] },
         { name: 'Serif', cuts: [] }
@@ -352,7 +365,7 @@ test.describe('trees in forms with properties', () => {
   })
 
   test('reveal errors in the forms of their items', async ({ page, url }) => {
-    const { id } = await Collection.query().insert({
+    const { id } = await db.insert(Collection, {
       name: 'Fonts',
       shopSets: [{ name: 'Sans', cuts: [{ name: '' }] }]
     })

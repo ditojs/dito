@@ -1,133 +1,112 @@
 import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
-import { expect } from '@playwright/test'
-import { test as base } from '../../utils/browser-errors.js'
-import { AdminController, ModelController, AssetModel } from '@ditojs/server'
-import serve from 'koa-static'
-import mount from 'koa-mount'
+import { expect, type Page } from '@playwright/test'
+import type { EntityClass } from '@mikro-orm/postgresql'
+import type { Kysely } from 'kysely'
 import {
-  startTestApp,
-  bootTestDb,
-  startAndWaitForAdmin,
-  teardownTestApp
-} from '../../utils/fixture-app.js'
+  assets,
+  assetUploads,
+  createStorages,
+  runAssetJobs,
+  scanAssets,
+  type AssetPath
+} from '@ditojs/storage'
+import { getKysely } from '@ditojs/mikro'
+import { serveFolder } from '../../utils/app.js'
+import { Asset } from '../../utils/entities.js'
+import { db, defineScenario, getOrm } from '../../utils/fixture-app.js'
 import { AssetWidget } from './models/AssetWidget.js'
 import { NestedAssetWidget } from './models/NestedAssetWidget.js'
 
-// AssetModel is created via a mixin and has an empty `.name`, so we extend
-// it to get a proper named class that Application.addModels() can register
-// under the key 'Asset'.
-export class Asset extends AssetModel {}
-
-export { expect }
+export { expect, Asset, db }
 export { getInput, getContainer } from '../../utils/admin.js'
 
 export const fixturesDir = path.resolve(import.meta.dirname, 'fixtures')
 
-// Worker-scoped fixture: one app per worker, shared across all spec files
-// in that worker. Uses the shared lifecycle primitives plus this scenario's
-// custom storage config + middleware mounts.
-export const test = base.extend<{ url: string }, { workerUrl: string }>({
-  workerUrl: [
-    async ({}, use) => {
-      const tmpDir = await fs.mkdtemp(
-        path.join(os.tmpdir(), 'dito-e2e-uploads-')
-      )
-      // Kept as reference to add the HTTP import URL once the port is known.
-      const allowedImports = [`file://${fixturesDir}/**`]
-      try {
-        const app = startTestApp({
-          dirname: import.meta.dirname,
-          models: { AssetWidget, NestedAssetWidget, Asset },
-          controllers: {
-            admin: AdminController,
-            api: {
-              AssetWidgets: class extends ModelController {
-                override modelClass = AssetWidget
-                collection = { allow: ['get', 'post'] as const }
-                member = {
-                  allow: ['get', 'patch', 'delete'] as const
-                }
-
-                assets = {
-                  files: { storage: 'test' },
-                  file: { storage: 'test' },
-                  filesSmall: { storage: 'test' }
-                }
-              },
-              NestedAssetWidgets: class extends ModelController {
-                override modelClass = NestedAssetWidget
-                collection = { allow: ['get', 'post'] as const }
-                member = {
-                  allow: ['get', 'patch', 'delete'] as const
-                }
-
-                assets = true
-              }
-            }
-          },
-          config: {
-            storages: {
-              test: {
-                type: 'disk',
-                path: tmpDir,
-                url: '/uploads',
-                allowedImports
-              }
-            },
-            assets: {
-              deleteUnusedAfter: '0s',
-              deleteUnsavedAfter: '24h'
-            }
-          }
-        })
-
-        // Serve uploaded files at /uploads, fixture files at /fixtures
-        // (for HTTP import tests). Mounts must run before app.start.
-        app.use(mount('/uploads', serve(tmpDir)))
-        app.use(mount('/fixtures', serve(fixturesDir)))
-
-        await bootTestDb(app)
-        const url = await startAndWaitForAdmin(app)
-
-        // Update storage config with the actual port. Storage._getUrl()
-        // requires an absolute base URL, with a trailing slash to keep its
-        // path, and allowedImports uses the actual port for HTTP import tests
-        // (B12).
-        app.getStorage('test').url = `${url}/uploads/`
-        allowedImports.push(`${url}/fixtures/**`)
-
-        try {
-          await use(url)
-        } finally {
-          await teardownTestApp(app)
-        }
-      } finally {
-        await fs.rm(tmpDir, { recursive: true, force: true })
-      }
-    },
-    // As in `defineScenario()`, setting up takes as long as it takes:
-    { scope: 'worker', timeout: 0 }
-  ],
-
-  url: async ({ workerUrl }, use) => {
-    await use(workerUrl)
+// Where the tables store their files, by the snake case names of their tables
+// and columns.
+export const assetPaths: AssetPath[] = [
+  { table: 'asset_widget', column: 'files', path: '', storage: 'test' },
+  { table: 'asset_widget', column: 'file', path: '', storage: 'test' },
+  { table: 'asset_widget', column: 'files_small', path: '', storage: 'test' },
+  {
+    table: 'nested_asset_widget',
+    column: 'sections',
+    path: '*/items/*/items/*/image',
+    storage: 'test'
   }
+]
+
+// The folder of the stored files, one per worker.
+const uploadsDir = path.join(os.tmpdir(), `dito-e2e-uploads-${process.pid}`)
+// The host matches any port, as `setup()` learns it only later.
+const allowedImports = [`file://${fixturesDir}/**`, 'http://*/fixtures/**']
+const storages = createStorages({
+  test: { type: 'disk', path: uploadsDir, url: '/uploads', allowedImports }
 })
 
-/**
- * Upload a file via the server API and return its metadata. Used by server
- * and programmatic tests that don't need a browser.
- */
-export async function uploadViaApi(url: string) {
+export const getStorage = () => storages.get('test')
+
+// The Kysely instance of the ORM, for the work outside of requests.
+const getDb = () => getOrm().em.getKysely() as unknown as Kysely<any>
+
+/** Finds the unreferenced files, as the nightly scan does. */
+export function scan() {
+  return scanAssets({ db: getDb(), paths: assetPaths })
+}
+
+/** Scans, and releases the files that no row references any more. */
+export function deleteUnusedAssets() {
+  return runAssetJobs({
+    db: getDb(),
+    paths: assetPaths,
+    storages,
+    deleteUnusedAfter: 0
+  })
+}
+
+// The mixins of an entity with files, which check and import the files of
+// its writes, and take uploads.
+function assetMixins(table: string) {
+  const options = { table, paths: assetPaths, storages, db: getKysely }
+  return [assets(options), assetUploads(options)]
+}
+
+// Serves uploaded files at /uploads, and the fixture files at /fixtures for
+// the HTTP import tests.
+export const test = defineScenario({
+  dirname: import.meta.dirname,
+  entities: [AssetWidget, NestedAssetWidget, Asset],
+  controllers: {
+    AssetWidget: { mixins: assetMixins('asset_widget') },
+    NestedAssetWidget: { mixins: assetMixins('nested_asset_widget') },
+    Asset: false
+  },
+  handlers: [
+    serveFolder('/uploads', uploadsDir),
+    serveFolder('/fixtures', fixturesDir)
+  ],
+  setup: url => {
+    // The storage's urls need an absolute base URL, with a trailing slash to
+    // keep its path.
+    getStorage().url = `${url}/uploads/`
+  },
+  teardown: () => fs.rm(uploadsDir, { recursive: true, force: true })
+})
+
+/** Uploads a file through the API and returns its file object. */
+export async function uploadViaApi(
+  url: string,
+  route = 'asset-widgets/upload/files'
+) {
   const filePath = path.resolve(fixturesDir, 'tiny.png')
   const fileBuffer = await fs.readFile(filePath)
   const file = new File([fileBuffer], 'tiny.png', { type: 'image/png' })
   const form = new FormData()
   form.append('files', file)
 
-  const resp = await fetch(`${url}/api/asset-widgets/upload/files`, {
+  const resp = await fetch(`${url}/api/${route}`, {
     method: 'POST',
     body: form
   })
@@ -136,23 +115,37 @@ export async function uploadViaApi(url: string) {
 }
 
 /**
- * Temporarily suppress server error logging during a callback. Use this
- * around operations that are expected to trigger server errors (e.g.
- * invalid uploads, premature closes).
+ * Returns `seed` and `saveAndFetch` helpers for an entity and its REST
+ * resource.
  */
-export async function suppressErrors<T>(
-  app: { off: Function; on: Function; logError: Function },
-  fn: () => Promise<T>
-): Promise<T> {
-  const noop = () => {}
-  app.off('error', app.logError)
-  app.on('error', noop)
-  try {
-    return await fn()
-  } finally {
-    app.off('error', noop)
-    app.on('error', app.logError)
+export function createModelHelpers<T extends { id: number }>(
+  entity: EntityClass<T>,
+  resource: string,
+  defaults: Record<string, unknown> = {}
+) {
+  async function seed(data: Record<string, unknown> = {}) {
+    const row = await db.insert(entity, { ...defaults, ...data } as never)
+    return row.id
   }
+
+  async function saveAndFetch(page: Page, id: number): Promise<T> {
+    const saved = page.waitForResponse(
+      resp => (
+        resp.url().includes(`/api/${resource}/${id}`) &&
+        resp.request().method() === 'PATCH' &&
+        resp.ok()
+      )
+    )
+    await page.locator('button.dito-button[type="submit"]').first().click()
+    await saved
+    const row = await db.findOne(entity, { id } as never)
+    if (!row) {
+      throw new Error(`${entity.name} ${id} not found`)
+    }
+    return row as T
+  }
+
+  return { seed, saveAndFetch }
 }
 
 test.describe.configure({ mode: 'serial' })

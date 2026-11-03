@@ -1,12 +1,12 @@
 import type { Page } from '@playwright/test'
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Book } from '../models/Book.js'
 import { DitoNestedList } from '../../../utils/pages.js'
 
 const entries = [{ title: 'First' }, { title: 'Second' }]
 
 async function insertBook(book: Partial<Book> = {}) {
-  const { id } = await Book.query().insert({ title: 'Emma', ...book })
+  const { id } = await db.insert(Book, { title: 'Emma', ...book })
   return id
 }
 

@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { seedProjects, openProject, expectScreenshot } from '../scenes.js'
 import { Project } from '../models/Project.js'
 
@@ -31,12 +31,10 @@ test.describe('screenshots', () => {
   })
 
   test('row with a section without a label', async ({ page, url }) => {
-    await Project.query()
-      .findById(2)
-      .patch({
-        approved: true,
-        approval: { approver: 'Grace', approvedOn: '2026-05-14' }
-      })
+    await db.nativeUpdate(Project, 2, {
+      approved: true,
+      approval: { approver: 'Grace', approvedOn: '2026-05-14' }
+    })
     await page.goto(`${url}/admin/projects/2`)
     await page.getByRole('tab', { name: 'Details', exact: true }).click()
     const approver = page.getByLabel('Approver', { exact: true })
@@ -86,18 +84,16 @@ test.describe('screenshots', () => {
   })
 
   test('rows and tree items with errors', async ({ page, url }) => {
-    await Project.query()
-      .findById(1)
-      .patch({
-        milestones: [
-          { title: 'Design', due: '2026-06-01' },
-          { title: '', due: '2026-09-01' }
-        ],
-        phases: [
-          { name: 'Research', tasks: [{ name: 'Interviews' }, { name: '' }] },
-          { name: 'Build', tasks: [{ name: 'Prototype' }] }
-        ]
-      })
+    await db.nativeUpdate(Project, 1, {
+      milestones: [
+        { title: 'Design', due: '2026-06-01' },
+        { title: '', due: '2026-09-01' }
+      ],
+      phases: [
+        { name: 'Research', tasks: [{ name: 'Interviews' }, { name: '' }] },
+        { name: 'Build', tasks: [{ name: 'Prototype' }] }
+      ]
+    })
     await openProject(page, url)
     // The first error is in the form itself, so the nested forms stay closed:
     await page.getByLabel('Name', { exact: true }).fill('')

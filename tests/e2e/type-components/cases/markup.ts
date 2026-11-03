@@ -49,10 +49,10 @@ export default [
       schema: { marks },
       value: [
         'Visit ',
-        { link: { text: 'Lineto', href: 'https://lineto.com' } }
+        { link: { text: 'Example', href: 'https://example.com' } }
       ],
-      stored: '<p>Visit <a href="https://lineto.com">Lineto</a></p>',
-      shown: '<p>Visit <a href="https://lineto.com">Lineto</a></p>'
+      stored: '<p>Visit <a href="https://example.com">Example</a></p>',
+      shown: '<p>Visit <a href="https://example.com">Example</a></p>'
     },
     {
       title: 'stores headings',

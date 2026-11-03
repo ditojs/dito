@@ -1,36 +1,18 @@
-import type {
-  ModelProperties,
-  ModelRelations,
-  QueryBuilder
-} from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 import { Track } from './Track.js'
 
-export interface Playlist {
-  id: number
-  name: string
-  tracks?: Track[]
-}
-
-export class Playlist extends Model {
-  static override properties: ModelProperties = {
-    name: { type: 'string', required: true }
+const PlaylistSchema = defineEntity({
+  name: 'Playlist',
+  properties: {
+    id: p.integer().primary(),
+    name: p.string(),
+    tracks: () =>
+      p
+        .oneToMany(Track)
+        .mappedBy(track => track.playlist)
+        .orphanRemoval()
+        .orderBy({ order: 'asc', id: 'asc' })
   }
-
-  static override relations: ModelRelations = {
-    tracks: {
-      relation: 'hasMany',
-      from: 'Playlist.id',
-      to: 'Track.playlistId',
-      owner: true,
-      scope: 'ordered'
-    }
-  }
-
-  static override scopes = {
-    // Fetches the next tracks as references, `{ id }`, which the admin
-    // replaces with their options.
-    withTracks: (query: QueryBuilder<Playlist>) =>
-      query.withGraphFetched('tracks.nextTrack(relate)')
-  }
-}
+})
+export class Playlist extends PlaylistSchema.class {}
+PlaylistSchema.setClass(Playlist)

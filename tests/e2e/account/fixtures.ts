@@ -1,40 +1,26 @@
-import { UsersController } from '@ditojs/server'
-import { defineScenario } from '../../utils/fixture-app.js'
+import { hashPassword } from '@ditojs/auth'
+import { db, defineScenario } from '../../utils/fixture-app.js'
+import { Session } from '../../utils/entities.js'
+import { createUsersApi } from '../../utils/users.js'
 import { User } from './models/User.js'
 
 export { expect } from '@playwright/test'
+export { db } from '../../utils/fixture-app.js'
 
-// Users may only read and patch themselves, see `authorize` of
-// `UsersController`:
-class Users extends UsersController {
-  override modelClass = User
-  override member: any = {
-    allow: ['get', 'patch']
-  }
-}
-
-// Log in through the users' controller instead of the stubbed session:
+// Log in through the users' routes instead of the stubbed session. Users only
+// read and patch themselves, at `users/self`.
 export const test = defineScenario({
   dirname: import.meta.dirname,
-  models: { User },
-  controllers: { Users },
-  api: { users: 'users' },
-  config: {
-    app: {
-      normalizePaths: true,
-      helmet: false,
-      keys: ['account-secret'],
-      session: true
-    }
-  },
-  // The computed `password` property isn't stored in the database:
-  setup: app =>
-    app.knex.schema.alterTable('User', table => table.dropColumn('password')),
+  entities: [Session, User],
+  controllers: { Session: false, User: false },
+  users: orm =>
+    createUsersApi({ orm, entity: User, secrets: ['account-secret'] }),
+  api: { users: { path: 'users' } },
   beforeEach: async () => {
-    await User.query().insert({
+    await db.insert(User, {
       username: 'ada',
       email: 'ada@example.com',
-      password: 'secret'
-    } as any)
+      hash: await hashPassword('secret')
+    })
   }
 })

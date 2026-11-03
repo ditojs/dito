@@ -1,58 +1,58 @@
-import type { Application } from '@ditojs/server'
-import { PasskeyService, TotpService, UsersController } from '@ditojs/server'
-import type { Knex } from 'knex'
-import { Credential } from './models/Credential.js'
-import { Session } from './models/Session.js'
+import type { EntityManager } from '@mikro-orm/core'
+import type { Kysely } from 'kysely'
+import { z } from 'zod'
+import { createCredentials, hashPassword, passwordReset } from '@ditojs/auth'
+import { passkeys } from '@ditojs/auth/passkeys'
+import { totp } from '@ditojs/auth/totp'
+import type { TestOrm } from '../../utils/database.js'
+import { Credential, Session } from '../../utils/entities.js'
+import { createUsersApi } from '../../utils/users.js'
 import { User } from './models/User.js'
 
 // The links of the password reset emails, which the tests open:
 export const sentPasswordResets: string[] = []
 
-class Users extends UsersController {
-  override modelClass = User
+const secrets = ['passkeys-secret']
 
-  override async sendPasswordReset(ctx: unknown, user: User, url: string) {
-    sentPasswordResets.push(url)
-  }
+// The users with passkeys, TOTP and password resets, with the sessions and
+// credentials in the tables of `@ditojs/auth`.
+export function createApi(orm: TestOrm) {
+  return createUsersApi({
+    orm,
+    entity: User,
+    secrets,
+    password: z.string().min(6, 'must be at least 6 characters long'),
+    credentials: createCredentials(
+      () => orm.em.getKysely() as unknown as Kysely<any>
+    ),
+    features: {
+      // The passkeys belong to the domain of the requests, `localhost`:
+      passkeys: passkeys({ rpName: 'Example' }),
+      totp: totp({ issuer: 'Example', secret: 'totp-secret' }),
+      passwordReset: passwordReset({
+        secrets,
+        // The tests ask for several links for one user in a row.
+        throttle: 0,
+        // The tests open the token of the links on the admin's own URL:
+        confirmUrl: 'http://localhost/admin/#password-reset={token}',
+        send: (_c, _user, url) => {
+          sentPasswordResets.push(url)
+        }
+      })
+    }
+  })
 }
 
-// The app of the scenario, which the admin's unit tests start too:
+// The app of the scenario, which the admin's unit tests start too. `seed()`
+// adds the user `ada` through `em`, and forgets the sent password resets.
 export const scenario = {
-  models: { Session, User, Credential },
-  controllers: { Users },
-  services: { passkeys: PasskeyService, totp: TotpService },
-  config: {
-    app: {
-      name: 'Example',
-      normalizePaths: true,
-      helmet: false,
-      keys: ['passkeys-secret'],
-      // Passkeys and TOTP need sessions stored on the server:
-      session: { modelClass: 'Session' },
-      authentication: {
-        credentials: { modelClass: 'Credential' },
-        // The tests open the token of the links on the admin's own URL:
-        passwordReset: {
-          confirmUrl: 'http://localhost/admin/#password-reset={token}'
-        }
-      }
-    },
-    services: {
-      // The passkeys belong to the domain of the requests, `localhost`:
-      passkeys: true,
-      totp: { secret: 'totp-secret' }
-    }
-  },
+  entities: [Session, User, Credential],
+  controllers: { Session: false, User: false, Credential: false } as const,
+  users: createApi,
 
-  setup: async (app: Application & { knex: Knex }) => {
-    // The computed `password` property isn't stored in the database:
-    await app.knex.schema.alterTable('User', table =>
-      table.dropColumn('password')
-    )
-  },
-
-  beforeEach: async () => {
+  seed: async (em: EntityManager) => {
     sentPasswordResets.length = 0
-    await User.query().insert({ username: 'ada', password: 'secret' } as any)
+    em.create(User, { username: 'ada', hash: await hashPassword('secret') })
+    await em.flush()
   }
 }

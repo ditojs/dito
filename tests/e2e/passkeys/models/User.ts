@@ -1,18 +1,14 @@
-import type { ModelProperties } from '@ditojs/server'
-import { UserModel } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
-export class User extends UserModel {
-  declare id: number
-  declare username: string
-
-  // A getter, as `UserMixin` defines `properties` as one:
-  static override get properties(): ModelProperties {
-    return {
-      password: {
-        type: 'string',
-        computed: true,
-        minLength: 6
-      }
-    }
+const UserSchema = defineEntity({
+  name: 'User',
+  properties: {
+    id: p.integer().primary(),
+    username: p.string().unique(),
+    hash: p.string().nullable().hidden(),
+    roles: p.json<string[]>().nullable(),
+    lastLogin: p.datetime().nullable()
   }
-}
+})
+export class User extends UserSchema.class {}
+UserSchema.setClass(User)

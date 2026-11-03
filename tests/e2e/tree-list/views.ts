@@ -1,5 +1,8 @@
-import type { Library } from './models/Library.js'
+import type { EntityDTO } from '@mikro-orm/core'
+import type { Library as LibraryEntity } from './models/Library.js'
 import { createWidgetView } from '../../utils/views.js'
+
+type Library = EntityDTO<LibraryEntity>
 
 // The shelves and their books are edited in the forms of a tree list, which
 // edit the items directly, and reordered by dragging.

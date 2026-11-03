@@ -1,10 +1,10 @@
 import type { Page } from '@playwright/test'
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Book } from '../models/Book.js'
 import { DitoForm, DitoNestedList } from '../../../utils/pages.js'
 
 async function openBook(page: Page, url: string, book: Partial<Book>) {
-  const { id } = await Book.query().insert({ title: 'Emma', ...book })
+  const { id } = await db.insert(Book, { title: 'Emma', ...book })
   await page.goto(`${url}/admin/books/${id}`)
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Emma')
   return id
@@ -32,7 +32,7 @@ async function apply(page: Page, id: number) {
 }
 
 async function getStoredBook(id: number) {
-  return Book.query().findById(id)
+  return db.findOne(Book, id)
 }
 
 // Applying a nested form merges its draft into the item in the parent's data,

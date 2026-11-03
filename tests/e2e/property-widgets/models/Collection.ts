@@ -1,5 +1,4 @@
-import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
 export interface CollectionCut {
   name: string
@@ -10,15 +9,13 @@ export interface CollectionShopSet {
   cuts: CollectionCut[]
 }
 
-export interface Collection {
-  id: number
-  name: string
-  shopSets?: CollectionShopSet[]
-}
-
-export class Collection extends Model {
-  static override properties: ModelProperties = {
-    name: { type: 'string', required: true },
-    shopSets: { type: 'array', items: { type: 'object' } }
+const CollectionSchema = defineEntity({
+  name: 'Collection',
+  properties: {
+    id: p.integer().primary(),
+    name: p.string(),
+    shopSets: p.json<CollectionShopSet[]>().nullable()
   }
-}
+})
+export class Collection extends CollectionSchema.class {}
+CollectionSchema.setClass(Collection)

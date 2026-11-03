@@ -1,5 +1,5 @@
 import type { Locator } from '@playwright/test'
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Widget } from '../models/Widget.js'
 import { DitoForm, DitoListView } from '../../../utils/pages.js'
 
@@ -28,7 +28,7 @@ test.describe('layout', () => {
     // when creating records.
     await form.fill('Color', 'red')
     await form.create()
-    const widget = await Widget.query().findOne({ name: 'Widget A' })
+    const widget = await db.findOne(Widget, { name: 'Widget A' })
     expect(widget).toMatchObject({
       notes: 'Some notes',
       settings: { color: 'red' },
@@ -37,7 +37,7 @@ test.describe('layout', () => {
   })
 
   test('shows stored values in tabs and panels', async ({ page, url }) => {
-    await Widget.query().insert({
+    await db.insert(Widget, {
       name: 'Widget A',
       notes: 'Stored notes',
       settings: { color: 'blue' },
@@ -58,7 +58,7 @@ test.describe('layout', () => {
     page,
     url
   }) => {
-    await Widget.query().insert({ name: 'Widget A', settings: {} })
+    await db.insert(Widget, { name: 'Widget A', settings: {} })
     const list = new DitoListView(page, url, 'Widget')
     const form = new DitoForm(page)
     await list.navigate('/widgets')
@@ -80,7 +80,7 @@ test.describe('layout', () => {
     page,
     url
   }) => {
-    await Widget.query().insert({ name: 'Widget A', settings: {} })
+    await db.insert(Widget, { name: 'Widget A', settings: {} })
     const list = new DitoListView(page, url, 'Widget')
     const form = new DitoForm(page)
     await list.navigate('/widgets')
@@ -132,7 +132,7 @@ test.describe('layout', () => {
     page,
     url
   }) => {
-    await Widget.query().insert({
+    await db.insert(Widget, {
       name: 'Widget A',
       links: [{ url: `https://example.com/${'long/'.repeat(100)}` }]
     })
@@ -160,7 +160,7 @@ test.describe('layout', () => {
   })
 
   test('toggles all items of lists by their label', async ({ page, url }) => {
-    await Widget.query().insert({
+    await db.insert(Widget, {
       name: 'Widget A',
       links: [{ url: 'https://example.com' }]
     })
@@ -202,7 +202,7 @@ test.describe('layout', () => {
   })
 
   test('keeps long labels inside their containers', async ({ page, url }) => {
-    await Widget.query().insert({
+    await db.insert(Widget, {
       name: 'Widget A',
       links: [{ url: 'https://example.com', parts: [{ name: 'Part' }] }]
     })
@@ -234,7 +234,7 @@ test.describe('layout', () => {
     page,
     url
   }) => {
-    await Widget.query().insert({
+    await db.insert(Widget, {
       name: 'Widget A',
       links: [
         {

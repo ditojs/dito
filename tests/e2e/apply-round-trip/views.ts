@@ -1,3 +1,4 @@
+import type { EntityDTO } from '@mikro-orm/core'
 import type { Author, Book } from './models/Book.js'
 import { createWidgetView } from '../../utils/views.js'
 
@@ -6,7 +7,7 @@ const authors: Author[] = [
   { id: 2, name: 'Tom' }
 ]
 
-export const books = createWidgetView<Book>(
+export const books = createWidgetView<EntityDTO<Book>>(
   'Book',
   'books',
   {

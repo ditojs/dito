@@ -1,36 +1,19 @@
-import type {
-  ModelProperties,
-  ModelRelations,
-  QueryBuilder
-} from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
-export interface Page {
-  id: number
-  name: string
-  order: number | null
-  parentPageId?: number | null
-  childPages?: Page[]
-}
-
-export class Page extends Model {
-  static override properties: ModelProperties = {
-    name: { type: 'string', required: true },
-    order: { type: 'integer', nullable: true },
-    parentPageId: { type: 'integer', index: true, nullable: true }
+const PageSchema = defineEntity({
+  name: 'Page',
+  properties: {
+    id: p.integer().primary(),
+    name: p.string(),
+    order: p.integer().nullable(),
+    parentPage: () => p.manyToOne(Page).nullable().deleteRule('cascade'),
+    childPages: () =>
+      p
+        .oneToMany(Page)
+        .mappedBy(page => page.parentPage)
+        .orphanRemoval()
+        .orderBy({ order: 'asc' })
   }
-
-  static override relations: ModelRelations = {
-    childPages: {
-      relation: 'hasMany',
-      from: 'Page.id',
-      to: 'Page.parentPageId',
-      owner: true,
-      scope: 'ordered'
-    }
-  }
-
-  static override scopes = {
-    ordered: (query: QueryBuilder<Page>) => query.orderBy('order')
-  }
-}
+})
+export class Page extends PageSchema.class {}
+PageSchema.setClass(Page)

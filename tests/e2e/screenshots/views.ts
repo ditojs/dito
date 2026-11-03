@@ -1,6 +1,6 @@
 import type { ListSchema } from '@ditojs/admin'
 import { html } from '@ditojs/utils'
-import type { Project } from './models/Project.js'
+import type { ProjectItem } from './models/Project.js'
 import { createWidgetView } from '../../utils/views.js'
 import planPage from './components/plan-page.js'
 import guidePage from './components/guide-page.js'
@@ -9,7 +9,7 @@ const statusOptions = ['Planned', 'Active', 'Done']
 
 // A showcase of the admin's components, for screenshots of their styling: all
 // field types, lists, sections, tabs, panels, trees, buttons and dialogs.
-export const projects = createWidgetView<Project>(
+export const projects = createWidgetView<ProjectItem>(
   'Project',
   'projects',
   {},
@@ -388,9 +388,9 @@ export const projects = createWidgetView<Project>(
 // projects of one scope.
 function createScopeView(
   scope: 'planned' | 'done',
-  listOptions: Partial<ListSchema<Project>> = {}
+  listOptions: Partial<ListSchema<ProjectItem>> = {}
 ) {
-  return createWidgetView<Project>(
+  return createWidgetView<ProjectItem>(
     'Project',
     'projects',
     {},

@@ -2,8 +2,7 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import type { Page } from '@playwright/test'
-import { test, expect, fixturesDir } from '../fixtures.js'
-import { createModelHelpers } from '../../../utils/fixture-app.js'
+import { test, expect, fixturesDir, createModelHelpers } from '../fixtures.js'
 import { DitoUploadField } from '../../../utils/pages.js'
 import { AssetWidget } from '../models/AssetWidget.js'
 
@@ -81,7 +80,7 @@ test.describe('interchange', () => {
         [targetFile, 'tiny.png'],
         [target.file!, 'tiny.jpg']
       ] as const) {
-        const response = await fetch(stored.url)
+        const response = await fetch(stored.url!)
         expect(Buffer.from(await response.arrayBuffer())).toEqual(
           await fs.readFile(path.resolve(fixturesDir, fixture))
         )

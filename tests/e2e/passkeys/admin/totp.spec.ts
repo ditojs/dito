@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { TOTP } from 'otpauth'
-import { test, expect } from '../fixtures.js'
-import { Credential } from '../models/Credential.js'
+import { Credential } from '../../../utils/entities.js'
+import { test, expect, db } from '../fixtures.js'
 
 function getAccountButton(page: Page) {
   return page.locator('.dito-account').getByRole('button')
@@ -68,7 +68,7 @@ test.describe('TOTP', () => {
       .fill(totp.generate({ timestamp: Date.now() + totp.period * 1000 }))
     await dialog.getByRole('button', { name: 'Verify' }).click()
     await expect(getAccountButton(page)).toHaveText('ada')
-    const [credential] = await Credential.query().where('type', 'totp')
+    const [credential] = await db.find(Credential, { type: 'totp' })
     expect(credential.lastUsedAt).toBeInstanceOf(Date)
 
     // Turn off TOTP, with the access confirmed by the login:
@@ -79,6 +79,6 @@ test.describe('TOTP', () => {
     })
     await confirm.getByRole('button', { name: 'Turn Off' }).click()
     await expect(turnOff).toContainText('Not set up')
-    expect(await Credential.query()).toEqual([])
+    expect(await db.find(Credential, {})).toEqual([])
   })
 })

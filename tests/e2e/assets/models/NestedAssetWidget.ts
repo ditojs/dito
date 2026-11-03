@@ -1,29 +1,22 @@
-import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
+import type { AssetFileObject } from '@ditojs/storage'
 
-export interface NestedAssetWidget {
-  id: number
-  sections: {
+export interface Section {
+  items: {
     items: {
-      items: {
-        image: object | null
-      }[]
+      image: AssetFileObject | null
     }[]
   }[]
 }
 
-export class NestedAssetWidget extends Model {
-  static override properties: ModelProperties = {
-    sections: {
-      type: 'array',
-      items: { type: 'object' },
-      default: []
-    }
+// The files of its sections are in `assetPaths` of the scenario's fixtures.
+const NestedAssetWidgetSchema = defineEntity({
+  name: 'NestedAssetWidget',
+  properties: {
+    id: p.integer().primary(),
+    sections: p.json<Section[]>().onCreate(() => [])
   }
+})
 
-  static assets = {
-    'sections[*].items[*].items[*].image': {
-      storage: 'test'
-    }
-  }
-}
+export class NestedAssetWidget extends NestedAssetWidgetSchema.class {}
+NestedAssetWidgetSchema.setClass(NestedAssetWidget)

@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import {
   DitoListView,
   DitoForm
@@ -41,7 +41,7 @@ test.describe('crud', () => {
   })
 
   test('confirm deletions with Enter', async ({ page, url }) => {
-    await Widget.query().insert({ name: 'A' })
+    await db.insert(Widget, { name: 'A' })
     const list = new DitoListView(page, url, 'Widget')
     await list.navigate('/widgets')
     const row = list.list.getRow('A')

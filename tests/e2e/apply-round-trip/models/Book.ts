@@ -1,5 +1,4 @@
-import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
 export interface Author {
   id: number
@@ -20,17 +19,14 @@ export interface Volume {
   parts?: Volume[] | null
 }
 
-export interface Book {
-  id: number
-  title: string
-  chapters?: Chapter[] | null
-  volumes?: Volume[] | null
-}
-
-export class Book extends Model {
-  static override properties: ModelProperties = {
-    title: { type: 'string', required: true },
-    chapters: { type: 'array', nullable: true, items: { type: 'object' } },
-    volumes: { type: 'array', nullable: true, items: { type: 'object' } }
+const BookSchema = defineEntity({
+  name: 'Book',
+  properties: {
+    id: p.integer().primary(),
+    title: p.string(),
+    chapters: p.json<Chapter[]>().nullable(),
+    volumes: p.json<Volume[]>().nullable()
   }
-}
+})
+export class Book extends BookSchema.class {}
+BookSchema.setClass(Book)

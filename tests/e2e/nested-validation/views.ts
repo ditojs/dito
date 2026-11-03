@@ -1,10 +1,14 @@
+import type { EntityDTO } from '@mikro-orm/core'
 import type { Book } from './models/Book.js'
 import { createWidgetView } from '../../utils/views.js'
 
 const title = { type: 'text', label: 'Title' } as const
 
 // Unnested sections don't hold data of their own, so their keys are `never`.
-type BookItem = Book & { publishing: never }
+type BookItem = EntityDTO<Book> & {
+  publishing: never
+  fillEdition: never
+}
 
 export const books = createWidgetView<BookItem>(
   'Book',

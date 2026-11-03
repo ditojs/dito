@@ -1,15 +1,11 @@
-import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
-export interface Vault {
-  id: number
-  name: string
-  // Loaded through the list's own resource, not stored with the vault.
-  secrets?: never
-}
-
-export class Vault extends Model {
-  static override properties: ModelProperties = {
-    name: { type: 'string', required: true }
+const VaultSchema = defineEntity({
+  name: 'Vault',
+  properties: {
+    id: p.integer().primary(),
+    name: p.string()
   }
-}
+})
+export class Vault extends VaultSchema.class {}
+VaultSchema.setClass(Vault)

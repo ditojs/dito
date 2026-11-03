@@ -2,13 +2,14 @@ import type {
   Page,
   PageAssertionsToHaveScreenshotOptions
 } from '@playwright/test'
-import { expect } from './fixtures.js'
+import type { RequiredEntityData } from '@mikro-orm/core'
+import { expect, db } from './fixtures.js'
 import { Project } from './models/Project.js'
 
 // The data and helpers shared by the screenshot specs, so that they all show
 // the same projects.
 
-const project: Partial<Project> = {
+const project: RequiredEntityData<Project> = {
   id: 1,
   name: 'Website Relaunch',
   description: 'A new website, with a new design and a new backend.',
@@ -73,10 +74,12 @@ const project: Partial<Project> = {
 
 // Inserts the edited project, with `overrides` applied, and two more projects
 // for the list and its scopes.
-export async function seedProjects(overrides: Partial<Project> = {}) {
-  await Project.query().insert({ ...project, ...overrides })
-  await Project.query().insert({ id: 2, name: 'Mobile App', status: 'Planned' })
-  await Project.query().insert({ id: 3, name: 'Archive', status: 'Done' })
+export async function seedProjects(
+  overrides: Partial<RequiredEntityData<Project>> = {}
+) {
+  await db.insert(Project, { ...project, ...overrides })
+  await db.insert(Project, { id: 2, name: 'Mobile App', status: 'Planned' })
+  await db.insert(Project, { id: 3, name: 'Archive', status: 'Done' })
 }
 
 // Opens the form of the edited project, and selects its `tab` if provided.

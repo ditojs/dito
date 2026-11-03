@@ -1,90 +1,49 @@
-import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
-
-export interface Section {
-  title: string
-}
-
-export interface Chapter {
-  title: string
-  summary?: string | null
-  sections?: Section[]
-}
-
-export interface Volume {
-  title?: string | null
-  parts?: { title?: string | null }[]
-}
-
-export interface Book {
-  id: number
-  title: string
-  subtitle?: string | null
-  edition?: string | null
-  fillEdition?: never
-  publisher?: string | null
-  meta?: { note?: string } | null
-  credits?: { editor?: string | null } | null
-  tags?: { name: string }[]
-  chapters?: Chapter[]
-  volumes?: Volume[]
-}
+import { defineEntity, p, StringType } from '@mikro-orm/core'
+import { schemaJson } from '@ditojs/mikro'
+import { z } from 'zod'
 
 // Titles must start with an uppercase letter. Only the server knows this rule,
 // so the admin learns about violations through the server's errors.
-const title = { type: 'string', pattern: '^[A-Z]', nullable: true } as const
+const title = z.string().regex(/^[A-Z]/)
+const optionalTitle = title.nullish()
 
-export class Book extends Model {
-  static override properties: ModelProperties = {
-    title: { ...title, nullable: false, required: true },
-    subtitle: title,
-    edition: { type: 'string', nullable: true },
-    publisher: { type: 'string', nullable: true },
-    meta: {
-      type: 'object',
-      nullable: true,
-      properties: { note: title }
-    },
-    credits: {
-      type: 'object',
-      nullable: true,
-      properties: { editor: { type: 'string', nullable: true } }
-    },
-    tags: {
-      type: 'array',
-      default: [],
-      items: { type: 'object', properties: { name: title } }
-    },
-    chapters: {
-      type: 'array',
-      default: [],
-      items: {
-        type: 'object',
-        properties: {
-          title,
-          summary: { type: 'string', nullable: true },
-          sections: {
-            type: 'array',
-            nullable: true,
-            items: { type: 'object', properties: { title } }
-          }
-        }
-      }
-    },
-    volumes: {
-      type: 'array',
-      default: [],
-      items: {
-        type: 'object',
-        properties: {
-          title,
-          parts: {
-            type: 'array',
-            nullable: true,
-            items: { type: 'object', properties: { title } }
-          }
-        }
-      }
-    }
+class TitleType extends StringType {
+  get schema() {
+    return title
   }
 }
+
+const BookSchema = defineEntity({
+  name: 'Book',
+  properties: {
+    id: p.integer().primary(),
+    title: p.string().type(new TitleType()),
+    subtitle: p.string().type(new TitleType()).nullable(),
+    edition: p.string().nullable(),
+    publisher: p.string().nullable(),
+    meta: schemaJson(z.object({ note: optionalTitle })).nullable(),
+    credits: p.json<{ editor?: string | null }>().nullable(),
+    tags: schemaJson(z.array(z.object({ name: optionalTitle }))).onCreate(
+      () => []
+    ),
+    chapters: schemaJson(
+      z.array(
+        z.object({
+          title: optionalTitle,
+          summary: z.string().nullish(),
+          sections: z.array(z.object({ title: optionalTitle })).nullish()
+        })
+      )
+    ).onCreate(() => []),
+    volumes: schemaJson(
+      z.array(
+        z.object({
+          title: optionalTitle,
+          parts: z.array(z.object({ title: optionalTitle })).nullish()
+        })
+      )
+    ).onCreate(() => [])
+  }
+})
+export class Book extends BookSchema.class {}
+BookSchema.setClass(Book)

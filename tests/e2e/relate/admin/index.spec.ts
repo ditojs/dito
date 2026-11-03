@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Playlist } from '../models/Playlist.js'
 import { Track } from '../models/Track.js'
 import { DitoForm, DitoNestedList } from '../../../utils/pages.js'
@@ -20,9 +20,11 @@ async function expectToLeaveWithoutConfirmation(page: Page) {
 }
 
 async function getNextTrackTitles(playlist: Playlist) {
-  const tracks = await Track.query()
-    .where('playlistId', playlist.id)
-    .withGraphFetched('nextTrack')
+  const tracks = await db.find(
+    Track,
+    { playlist: playlist.id },
+    { populate: ['nextTrack'] }
+  )
   return Object.fromEntries(
     tracks.map(track => [track.title, track.nextTrack?.title ?? null])
   )
@@ -30,7 +32,7 @@ async function getNextTrackTitles(playlist: Playlist) {
 
 test.describe('relate', () => {
   test('relates to new items of the edited data', async ({ page, url }) => {
-    const playlist = await Playlist.query().insert({ name: 'Mix' })
+    const playlist = await db.insert(Playlist, { name: 'Mix' })
     const form = new DitoForm(page)
     const tracks = new DitoNestedList(page, 'Tracks')
     await openPlaylist(page, url, playlist)
@@ -59,17 +61,17 @@ test.describe('relate', () => {
   })
 
   test('replaces references with their options', async ({ page, url }) => {
-    const playlist = await Playlist.query().insert({ name: 'Mix' })
-    const outro = await Track.query().insert({
-      playlistId: playlist.id,
+    const playlist = await db.insert(Playlist, { name: 'Mix' })
+    const outro = await db.insert(Track, {
+      playlist: playlist.id,
       title: 'Outro',
       order: 1
     })
-    await Track.query().insert({
-      playlistId: playlist.id,
+    await db.insert(Track, {
+      playlist: playlist.id,
       title: 'Intro',
       order: 0,
-      nextTrackId: outro.id
+      nextTrack: outro.id
     })
     const form = new DitoForm(page)
     const tracks = new DitoNestedList(page, 'Tracks')
@@ -95,17 +97,17 @@ test.describe('relate', () => {
     page,
     url
   }) => {
-    const playlist = await Playlist.query().insert({ name: 'Mix' })
-    const outro = await Track.query().insert({
-      playlistId: playlist.id,
+    const playlist = await db.insert(Playlist, { name: 'Mix' })
+    const outro = await db.insert(Track, {
+      playlist: playlist.id,
       title: 'Outro',
       order: 1
     })
-    await Track.query().insert({
-      playlistId: playlist.id,
+    await db.insert(Track, {
+      playlist: playlist.id,
       title: 'Intro',
       order: 0,
-      nextTrackId: outro.id
+      nextTrack: outro.id
     })
     await openPlaylist(page, url, playlist)
     const intro = new DitoNestedList(page, 'Tracks').rows.nth(0)
@@ -119,11 +121,10 @@ test.describe('relate', () => {
     page,
     url
   }) => {
-    const playlist = await Playlist.query().insert({ name: 'Mix' })
-    await Track.query().insert([
-      { playlistId: playlist.id, title: 'Intro', order: null },
-      { playlistId: playlist.id, title: 'Outro', order: null }
-    ])
+    const playlist = await db.insert(Playlist, { name: 'Mix' })
+    for (const title of ['Intro', 'Outro']) {
+      await db.insert(Track, { playlist: playlist.id, title, order: null })
+    }
     await openPlaylist(page, url, playlist)
     await expect(new DitoNestedList(page, 'Tracks').rows).toHaveCount(2)
     await expectToLeaveWithoutConfirmation(page)
@@ -135,14 +136,14 @@ test.describe('relate', () => {
   }) => {
     // The playlist form is left while the track form is rendered, and must
     // not see the track form's schema, nor the track form its data.
-    const playlist = await Playlist.query().insertGraph({
+    const playlist = await db.insert(Playlist, {
       name: 'Mix',
       tracks: [{ title: 'Intro', order: 0 }]
     })
     await openPlaylist(page, url, playlist)
     await page.getByRole('button', { name: 'Edit First Track' }).click()
     await expect(page).toHaveURL(
-      new RegExp(`/library/tracks/${playlist.tracks![0].id}$`)
+      new RegExp(`/library/tracks/${playlist.tracks[0]!.id}$`)
     )
     await expect(page.getByLabel('Initial', { exact: true })).toHaveValue('I')
   })
@@ -151,7 +152,7 @@ test.describe('relate', () => {
     page,
     url
   }) => {
-    await Playlist.query().insertGraph({
+    await db.insert(Playlist, {
       name: 'Mix',
       tracks: ['A', 'B', 'C', 'D'].map((title, index) => ({
         title,

@@ -1,7 +1,8 @@
+import type { EntityDTO } from '@mikro-orm/core'
 import type { Widget } from './models/Widget.js'
 import { createWidgetView } from '../../utils/views.js'
 
-export const widgets = createWidgetView<Widget>(
+export const widgets = createWidgetView<EntityDTO<Widget>>(
   'Widget',
   'widgets',
   {

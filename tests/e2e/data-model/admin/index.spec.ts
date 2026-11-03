@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Article } from '../models/Article.js'
 import {
   acceptConfirmDialog,
@@ -32,7 +32,7 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({ title: 'Old' })
+    const article = await db.insert(Article, { title: 'Old' })
     await openArticle(page, url, article)
     const permalink = page.getByLabel('Permalink', { exact: true })
     await expect(permalink).toHaveValue('/articles/old')
@@ -44,13 +44,13 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({ title: 'Old' })
+    const article = await db.insert(Article, { title: 'Old' })
     await openArticle(page, url, article)
     await page.getByLabel('Title', { exact: true }).fill('Hello World')
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
       .poll(async () => {
-        const stored = await Article.query().findById(article.id)
+        const stored = await db.findOne(Article, article.id)
         return { slug: stored?.slug, titleLength: stored?.titleLength }
       })
       .toEqual({ slug: 'hello-world', titleLength: 11 })
@@ -60,11 +60,11 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({ title: 'Old' })
+    const article = await db.insert(Article, { title: 'Old' })
     await openArticle(page, url, article)
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
-      .poll(async () => (await Article.query().findById(article.id))?.status)
+      .poll(async () => (await db.findOne(Article, article.id))?.status)
       .toBe('draft')
   })
 
@@ -74,12 +74,12 @@ test.describe('data model', () => {
   }) => {
     // `topic` depends on the computed `category` through its options, and
     // isn't rendered. Saving right away waits for the delayed options.
-    const article = await Article.query().insert({ title: 'Old' })
+    const article = await db.insert(Article, { title: 'Old' })
     await openArticle(page, url, article)
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
       .poll(async () => {
-        const stored = await Article.query().findById(article.id)
+        const stored = await db.findOne(Article, article.id)
         return { category: stored?.category, topic: stored?.topic }
       })
       .toEqual({ category: 'news', topic: 'politics' })
@@ -89,7 +89,7 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({
+    const article = await db.insert(Article, {
       title: 'Old',
       category: 'news',
       topic: 'economy'
@@ -101,14 +101,14 @@ test.describe('data model', () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
       .poll(async () => {
-        const stored = await Article.query().findById(article.id)
+        const stored = await db.findOne(Article, article.id)
         return { category: stored?.category, topic: stored?.topic }
       })
       .toEqual({ category: 'sports', topic: 'football' })
   })
 
   test('handles options from data that was reset', async ({ page, url }) => {
-    const article = await Article.query().insert({
+    const article = await db.insert(Article, {
       title: 'Old',
       chooser: {
         source: { topics: [{ label: 'Politics', value: 'politics' }] },
@@ -120,7 +120,7 @@ test.describe('data model', () => {
     await page.getByLabel('Title', { exact: true }).fill('New')
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
-      .poll(async () => (await Article.query().findById(article.id))?.title)
+      .poll(async () => (await db.findOne(Article, article.id))?.title)
       .toBe('New')
   })
 
@@ -128,7 +128,7 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({
+    const article = await db.insert(Article, {
       title: 'Old',
       customFactor: 10
     })
@@ -143,7 +143,7 @@ test.describe('data model', () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
       .poll(async () => {
-        const stored = await Article.query().findById(article.id)
+        const stored = await db.findOne(Article, article.id)
         return { title: stored?.title, customFactor: stored?.customFactor }
       })
       .toEqual({ title: 'New', customFactor: 10 })
@@ -153,7 +153,7 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({
+    const article = await db.insert(Article, {
       title: 'Old',
       lines: [{ amount: 1 }, { amount: 2 }]
     })
@@ -167,7 +167,7 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({
+    const article = await db.insert(Article, {
       title: 'Old',
       lines: [{ amount: 1 }, { amount: 2 }]
     })
@@ -185,7 +185,7 @@ test.describe('data model', () => {
     await expect(doubleAmounts).toHaveCount(1)
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
-      .poll(async () => (await Article.query().findById(article.id))?.lines)
+      .poll(async () => (await db.findOne(Article, article.id))?.lines)
       .toEqual([{ amount: 1 }])
   })
 
@@ -195,7 +195,7 @@ test.describe('data model', () => {
   }) => {
     // The data model writes `slug`, `titleLength`, `status`, `category` and
     // `topic` into the data after it is loaded, which doesn't make it dirty.
-    const article = await Article.query().insert({ title: 'Old' })
+    const article = await db.insert(Article, { title: 'Old' })
     await openArticle(page, url, article)
     await waitForDelayedOptions(page)
     const title = page.getByLabel('Title', { exact: true })
@@ -213,18 +213,18 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({ title: 'Old', tags: ['a'] })
+    const article = await db.insert(Article, { title: 'Old', tags: ['a'] })
     await openArticle(page, url, article)
     const tags = page.getByLabel('Tags', { exact: true })
     await expect(tags).toHaveValue('a')
     await tags.fill('a,b')
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
-      .poll(async () => (await Article.query().findById(article.id))?.tags)
+      .poll(async () => (await db.findOne(Article, article.id))?.tags)
       .toEqual(['a', 'b'])
   })
   test('marks forms dirty by writes in handlers', async ({ page, url }) => {
-    const article = await Article.query().insert({ title: 'Old' })
+    const article = await db.insert(Article, { title: 'Old' })
     await openArticle(page, url, article)
     await waitForDelayedOptions(page)
     const title = page.getByLabel('Title', { exact: true })
@@ -237,7 +237,7 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({ title: 'Article' })
+    const article = await db.insert(Article, { title: 'Article' })
     await openArticle(page, url, article)
     const notes = page.locator('.dito-markup [contenteditable]')
     await notes.click()
@@ -255,7 +255,7 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({ title: 'Article' })
+    const article = await db.insert(Article, { title: 'Article' })
     await openArticle(page, url, article)
     await waitForDelayedOptions(page)
     await page.getByLabel('Category', { exact: true }).selectOption('sports')
@@ -269,7 +269,7 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({ title: 'Old' })
+    const article = await db.insert(Article, { title: 'Old' })
     await openArticle(page, url, article)
     await page.getByRole('button', { name: 'Replace Data' }).click()
     await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
@@ -277,7 +277,7 @@ test.describe('data model', () => {
     )
   })
   test('renders computed values from the start', async ({ page, url }) => {
-    const article = await Article.query().insert({
+    const article = await db.insert(Article, {
       title: 'Versioned',
       version: [1, 2]
     })
@@ -294,7 +294,7 @@ test.describe('data model', () => {
     await page.getByLabel('Version', { exact: true }).fill('1.3')
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
-      .poll(async () => (await Article.query().findById(article.id))?.version)
+      .poll(async () => (await db.findOne(Article, article.id))?.version)
       .toEqual([1, 3])
     expect(vueWarnings).toEqual([])
   })
@@ -310,7 +310,7 @@ test.describe('data model', () => {
     await page.getByRole('button', { name: 'Create', exact: true }).click()
     await expect
       .poll(
-        async () => (await Article.query().findOne({ title: 'New' }))?.keywords
+        async () => (await db.findOne(Article, { title: 'New' }))?.keywords
       )
       .toEqual(['News'])
   })
@@ -318,7 +318,7 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({ title: 'Old' })
+    const article = await db.insert(Article, { title: 'Old' })
     await openArticle(page, url, article)
     await page.getByLabel('Preview Key', { exact: true }).fill('key')
     await page.getByLabel('Title', { exact: true }).fill('New')
@@ -326,12 +326,12 @@ test.describe('data model', () => {
     await page.getByLabel('Title', { exact: true }).fill('Newer')
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
-      .poll(async () => (await Article.query().findById(article.id))?.title)
+      .poll(async () => (await db.findOne(Article, article.id))?.title)
       .toBe('Newer')
   })
 
   test('shows tabs by their `if`', async ({ page, url }) => {
-    const article = await Article.query().insert({ title: 'Draft' })
+    const article = await db.insert(Article, { title: 'Draft' })
     await openArticle(page, url, article)
     const stats = page.getByRole('tab', { name: 'Stats', exact: true })
     await expect(stats).toHaveCount(0)
@@ -343,7 +343,7 @@ test.describe('data model', () => {
   test('counts edits made while options load', async ({ page, url }) => {
     // The data model derives `category` and `topic` from delayed options,
     // which don't count, while the edit of `title` right away does.
-    const article = await Article.query().insert({ title: 'Old' })
+    const article = await db.insert(Article, { title: 'Old' })
     await openArticle(page, url, article)
     await page.getByLabel('Title', { exact: true }).fill('New')
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
@@ -354,7 +354,7 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    const article = await Article.query().insert({
+    const article = await db.insert(Article, {
       title: 'Old',
       references: [{ id: 1, title: 'Reference' }]
     })
@@ -363,7 +363,7 @@ test.describe('data model', () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
       .poll(async () => {
-        const stored = await Article.query().findById(article.id)
+        const stored = await db.findOne(Article, article.id)
         return { title: stored?.title, references: stored?.references }
       })
       .toEqual({ title: 'New', references: [{ id: 1, title: 'Reference' }] })
@@ -375,7 +375,7 @@ test.describe('data model', () => {
   }) => {
     // `status` keeps the value without option, which its compute leaves as
     // is, and shows it as unavailable:
-    const article = await Article.query().insert({
+    const article = await db.insert(Article, {
       title: 'Old',
       status: 'archived'
     })

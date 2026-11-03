@@ -1,5 +1,4 @@
-import type { ModelProperties, QueryBuilder } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p, type EntityDTO } from '@mikro-orm/core'
 
 export interface Contact {
   name: string
@@ -19,86 +18,54 @@ export interface Phase {
   tasks?: { name: string }[]
 }
 
-export interface Project {
-  id: number
-  name: string
-  description?: string | null
-  budget?: number | null
-  status?: string | null
-  tags?: string[] | null
-  priority?: string | null
-  features?: string[] | null
-  active?: boolean | null
-  archived?: boolean | null
-  progress?: number | null
-  color?: string | null
-  startDate?: string | null
-  notes?: string | null
-  config?: string | null
-  contacts?: Contact[] | null
-  milestones?: Milestone[] | null
-  phases?: Phase[] | null
-  settings?: { visibility?: string | null; reviewer?: string | null } | null
-  advanced?: { slug?: string | null } | null
-  website?: string | null
-  startTime?: string | null
-  meetingAt?: string | null
-  files?: object[] | null
-  links?: object[] | null
-  attachment?: object | null
-  references?: { url?: string | null }[] | null
-  contactInfo?: { phone?: string | null; email?: string | null } | null
-  approved?: boolean | null
-  approval?: { approver?: string | null; approvedOn?: string | null } | null
-  // Buttons and labels don't hold data of their own, so their keys are
-  // `never`.
+const ProjectSchema = defineEntity({
+  name: 'Project',
+  properties: {
+    id: p.integer().primary(),
+    name: p.string(),
+    description: p.text().nullable(),
+    budget: p.double().nullable(),
+    status: p.string().nullable(),
+    tags: p.json<string[]>().nullable(),
+    priority: p.string().nullable(),
+    features: p.json<string[]>().nullable(),
+    active: p.boolean().nullable(),
+    archived: p.boolean().nullable(),
+    progress: p.double().nullable(),
+    color: p.string().nullable(),
+    startDate: p.date().nullable(),
+    notes: p.text().nullable(),
+    config: p.text().nullable(),
+    contacts: p.json<Contact[]>().nullable(),
+    milestones: p.json<Milestone[]>().nullable(),
+    phases: p.json<Phase[]>().nullable(),
+    settings: p
+      .json<{ visibility?: string | null; reviewer?: string | null }>()
+      .nullable(),
+    advanced: p.json<{ slug?: string | null }>().nullable(),
+    website: p.string().nullable(),
+    startTime: p.datetime().nullable(),
+    meetingAt: p.datetime().nullable(),
+    files: p.json<object[]>().nullable(),
+    links: p.json<object[]>().nullable(),
+    attachment: p.json<object>().nullable(),
+    references: p.json<{ url?: string | null }[]>().nullable(),
+    contactInfo: p
+      .json<{ phone?: string | null; email?: string | null }>()
+      .nullable(),
+    approved: p.boolean().nullable(),
+    approval: p
+      .json<{ approver?: string | null; approvedOn?: string | null }>()
+      .nullable()
+  }
+})
+export class Project extends ProjectSchema.class {}
+ProjectSchema.setClass(Project)
+
+// A project as the admin edits it. Buttons and labels don't hold data of their
+// own, so their keys are `never`.
+export type ProjectItem = EntityDTO<Project> & {
   openDialog?: never
   owner?: never
   editSettings?: never
-}
-
-export class Project extends Model {
-  static override properties: ModelProperties = {
-    name: { type: 'string', required: true },
-    description: { type: 'text', nullable: true },
-    budget: { type: 'number', nullable: true },
-    status: { type: 'string', nullable: true },
-    tags: { type: 'array', nullable: true, items: { type: 'string' } },
-    priority: { type: 'string', nullable: true },
-    features: { type: 'array', nullable: true, items: { type: 'string' } },
-    active: { type: 'boolean', nullable: true },
-    archived: { type: 'boolean', nullable: true },
-    progress: { type: 'number', nullable: true },
-    color: { type: 'string', nullable: true },
-    startDate: { type: 'date', nullable: true },
-    notes: { type: 'text', nullable: true },
-    config: { type: 'text', nullable: true },
-    contacts: { type: 'array', nullable: true, items: { type: 'object' } },
-    milestones: { type: 'array', nullable: true, items: { type: 'object' } },
-    phases: { type: 'array', nullable: true, items: { type: 'object' } },
-    settings: { type: 'object', nullable: true },
-    advanced: { type: 'object', nullable: true },
-    website: { type: 'string', nullable: true },
-    startTime: { type: 'timestamp', nullable: true },
-    meetingAt: { type: 'timestamp', nullable: true },
-    files: { type: 'array', nullable: true, items: { type: 'object' } },
-    links: { type: 'array', nullable: true, items: { type: 'object' } },
-    attachment: { type: 'object', nullable: true },
-    references: { type: 'array', nullable: true, items: { type: 'object' } },
-    contactInfo: { type: 'object', nullable: true },
-    approved: { type: 'boolean', nullable: true },
-    approval: { type: 'object', nullable: true }
-  }
-
-  static override scopes = {
-    planned: (query: QueryBuilder<Project>) => query.where('status', 'Planned'),
-    active: (query: QueryBuilder<Project>) => query.where('status', 'Active'),
-    done: (query: QueryBuilder<Project>) => query.where('status', 'Done')
-  }
-
-  static override filters = {
-    search(query: QueryBuilder<Project>, search: string) {
-      query.whereILike('name', `%${search}%`)
-    }
-  }
 }

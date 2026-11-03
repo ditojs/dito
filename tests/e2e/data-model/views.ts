@@ -1,10 +1,11 @@
+import type { EntityDTO } from '@mikro-orm/core'
 import type { Article } from './models/Article.js'
 import { createWidgetView } from '../../utils/views.js'
 import { getValueAtDataPath, parseDataPath } from '@ditojs/utils'
 
 // `permalink` is only displayed, not stored. Unnested sections don't hold data
 // of their own, so their keys are `never`.
-type ArticleItem = Article & {
+type ArticleItem = EntityDTO<Article> & {
   permalink?: string | null
   pricing?: string | null
   tagsText?: string | null

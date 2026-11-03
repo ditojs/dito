@@ -12,7 +12,7 @@ import {
   DitoTreeListField,
   DitoTreeLevel
 } from '@ditojs/admin'
-import type { Project } from '../models/Project.js'
+import type { ProjectItem } from '../models/Project.js'
 import settingsForm from './settings-form.js'
 
 const messageStyle = {
@@ -27,7 +27,7 @@ const messageStyle = {
 export default defineComponent({
   setup() {
     const route = useRoute()
-    useDitoForm<Project>({
+    useDitoForm<ProjectItem>({
       resource: 'projects',
       id: () => route.params.id as string,
       properties: {

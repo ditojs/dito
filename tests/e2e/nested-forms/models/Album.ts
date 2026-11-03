@@ -1,5 +1,4 @@
-import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
 export interface Track {
   title: string
@@ -13,17 +12,14 @@ export interface Credit {
   role?: string | null
 }
 
-export interface Album {
-  id: number
-  title: string
-  tracks?: Track[] | null
-  credits?: Credit[] | null
-}
-
-export class Album extends Model {
-  static override properties: ModelProperties = {
-    title: { type: 'string', required: true },
-    tracks: { type: 'array', nullable: true, items: { type: 'object' } },
-    credits: { type: 'array', nullable: true, items: { type: 'object' } }
+const AlbumSchema = defineEntity({
+  name: 'Album',
+  properties: {
+    id: p.integer().primary(),
+    title: p.string(),
+    tracks: p.json<Track[]>().nullable(),
+    credits: p.json<Credit[]>().nullable()
   }
-}
+})
+export class Album extends AlbumSchema.class {}
+AlbumSchema.setClass(Album)

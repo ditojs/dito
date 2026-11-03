@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { Widget } from '../models/Widget.js'
 import {
   DitoListView,
@@ -11,7 +11,7 @@ test.describe('route-refetch-race', () => {
     page,
     url
   }) => {
-    const widget = await Widget.query().insertGraph({
+    const widget = await db.insert(Widget, {
       name: 'before',
       items: [{ label: 'item-one' }]
     })
@@ -55,10 +55,10 @@ test.describe('route-refetch-race', () => {
     await expect(form.getField('Name')).toHaveValue('after')
 
     await form.save()
-    const saved = await Widget.query()
-      .findById(widget.$id() as number)
-      .withGraphFetched('items')
+    const saved = await db.findOne(Widget, widget.id, {
+      populate: ['items']
+    })
     expect(saved?.name).toBe('after')
-    expect(saved?.items?.map(item => item.label)).toEqual(['item-two'])
+    expect(saved?.items.map(item => item.label)).toEqual(['item-two'])
   })
 })

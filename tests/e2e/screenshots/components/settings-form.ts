@@ -7,14 +7,14 @@ import {
   DitoSelectField,
   DitoSection
 } from '@ditojs/admin'
-import type { Project } from '../models/Project.js'
+import type { ProjectItem } from '../models/Project.js'
 
 // A form that edits the settings of the page's project in a dialog, ending in
 // a section with a label:
 export default defineComponent({
   setup() {
     const route = useRoute()
-    useDitoForm<Project>({
+    useDitoForm<ProjectItem>({
       resource: 'projects',
       id: () => route.params.id as string,
       properties: {

@@ -1,10 +1,16 @@
 import type { Page } from '@playwright/test'
-import { test, expect } from '../fixtures.js'
-import { Album } from '../models/Album.js'
+import { test, expect, db } from '../fixtures.js'
+import { Album, type Credit, type Track } from '../models/Album.js'
 import { DitoForm } from '../../../utils/pages.js'
 
-async function openAlbum(page: Page, url: string, album: Partial<Album>) {
-  const { id } = await Album.query().insert({ title: 'Album', ...album })
+interface AlbumData {
+  title?: string
+  tracks?: Track[]
+  credits?: Credit[]
+}
+
+async function openAlbum(page: Page, url: string, album: AlbumData) {
+  const { id } = await db.insert(Album, { title: 'Album', ...album })
   await page.goto(`${url}/admin/albums/${id}`)
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
     album.title ?? 'Album'
@@ -18,7 +24,7 @@ function getForm(page: Page) {
 }
 
 async function getStoredAlbum(id: number) {
-  return Album.query().findById(id)
+  return db.findOne(Album, id)
 }
 
 test.describe('nested forms', () => {

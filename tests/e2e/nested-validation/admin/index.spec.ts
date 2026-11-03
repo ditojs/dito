@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
-import { test, expect } from '../fixtures.js'
+import type { RequiredEntityData } from '@mikro-orm/core'
+import { test, expect, db } from '../fixtures.js'
 import { Book } from '../models/Book.js'
 import { dismissConfirmDialog } from '../../../utils/dialogs.js'
 
@@ -7,24 +8,17 @@ import { dismissConfirmDialog } from '../../../utils/dialogs.js'
 // that holds the invalid value, wherever it is: in another tab, a collapsed
 // section, a list row, or a nested form that needs to be opened first.
 
-async function seedBook(data: Partial<Book>) {
-  // Skip validation to store data that the server will reject when saved.
-  // Validation also applies the defaults, so provide them here.
-  const book = await Book.fromJson(
-    {
-      title: 'Book',
-      edition: 'First',
-      publisher: 'Publisher',
-      meta: {},
-      credits: { editor: 'Editor' },
-      tags: [],
-      chapters: [],
-      volumes: [],
-      ...data
-    },
-    { skipValidation: true }
-  )
-  return Book.query().insert(book)
+async function seedBook(data: Partial<RequiredEntityData<Book>>) {
+  // The database doesn't validate, so it stores data that the server rejects
+  // when saved.
+  return db.insert(Book, {
+    title: 'Book',
+    edition: 'First',
+    publisher: 'Publisher',
+    meta: {},
+    credits: { editor: 'Editor' },
+    ...data
+  } as RequiredEntityData<Book>)
 }
 
 async function openBook(page: Page, url: string, book: Book) {
@@ -91,7 +85,7 @@ test.describe('nested validation', () => {
     await expect(getErrors(form, 'Title')).toHaveCount(0)
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
-      .poll(async () => (await Book.query().findById(book.id))?.title)
+      .poll(async () => (await db.findOne(Book, book.id))?.title)
       .toBe('Upper')
   })
 

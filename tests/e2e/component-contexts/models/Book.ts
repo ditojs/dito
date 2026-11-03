@@ -1,39 +1,28 @@
-import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
+import { defineEntity, p } from '@mikro-orm/core'
 
 /** Data objects carry markers, to identify them in recorded contexts. */
 interface Marked {
   marker: string
 }
 
-export interface Book extends Marked {
-  id: number
-  title?: string | null
-  subtitle?: string | null
-  edition?: string | null
-  isbn?: string | null
-  website?: string | null
-  meta?: (Marked & { note?: string | null }) | null
-  tags?: (Marked & { name?: string | null })[]
-  chapters?: (Marked & { title?: string | null })[]
-  notes?: (Marked & { text?: string | null })[]
-  prices?: number[]
-}
+const items = <T>() => p.json<(Marked & T)[]>().onCreate(() => [])
 
-const json = { type: 'array', default: [], items: { type: 'object' } } as const
-
-export class Book extends Model {
-  static override properties: ModelProperties = {
-    marker: { type: 'string' },
-    title: { type: 'string', nullable: true },
-    subtitle: { type: 'string', nullable: true },
-    edition: { type: 'string', nullable: true },
-    isbn: { type: 'string', nullable: true },
-    website: { type: 'string', nullable: true },
-    meta: { type: 'object', nullable: true },
-    tags: json,
-    chapters: json,
-    notes: json,
-    prices: { type: 'array', default: [], items: { type: 'number' } }
+const BookSchema = defineEntity({
+  name: 'Book',
+  properties: {
+    id: p.integer().primary(),
+    marker: p.string(),
+    title: p.string().nullable(),
+    subtitle: p.string().nullable(),
+    edition: p.string().nullable(),
+    isbn: p.string().nullable(),
+    website: p.string().nullable(),
+    meta: p.json<Marked & { note?: string | null }>().nullable(),
+    tags: items<{ name?: string | null }>(),
+    chapters: items<{ title?: string | null }>(),
+    notes: items<{ text?: string | null }>(),
+    prices: p.json<number[]>().onCreate(() => [])
   }
-}
+})
+export class Book extends BookSchema.class {}
+BookSchema.setClass(Book)

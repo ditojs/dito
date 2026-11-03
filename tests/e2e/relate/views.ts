@@ -1,10 +1,11 @@
+import type { EntityDTO } from '@mikro-orm/core'
 import type { Playlist } from './models/Playlist.js'
 import type { Track } from './models/Track.js'
 import { createWidgetView } from '../../utils/views.js'
 
 // `nextTrackTitle` is only displayed, not stored.
-type TrackItem = Track & { nextTrackTitle?: string | null }
-type PlaylistItem = Omit<Playlist, 'tracks'> & {
+type TrackItem = EntityDTO<Track> & { nextTrackTitle?: string | null }
+type PlaylistItem = Omit<EntityDTO<Playlist>, 'tracks'> & {
   tracks?: TrackItem[]
   editFirstTrack: never
 }
@@ -65,7 +66,7 @@ const playlists = createWidgetView<PlaylistItem>(
 )
 
 // `initial` is only displayed, not stored.
-const tracks = createWidgetView<Track & { initial?: string | null }>(
+const tracks = createWidgetView<EntityDTO<Track> & { initial?: string | null }>(
   'Track',
   'tracks',
   {

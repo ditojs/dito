@@ -1,42 +1,41 @@
-import type { ModelControllerActions } from '@ditojs/server'
-import { defineScenario, ScenarioController } from '../../utils/fixture-app.js'
+import { z } from 'zod'
+import { action } from '@ditojs/server'
+import { assignRecord, getEntityManager } from '@ditojs/mikro'
+import { defineScenario } from '../../utils/fixture-app.js'
 import { Page } from './models/Page.js'
 
 export { expect } from '@playwright/test'
-
-// The child pages are loaded through their own resource, the relation of the
-// page.
-class Pages extends ScenarioController {
-  override modelClass = Page
-  override graph = true
-  // Stores the order of the pages that the order button sends.
-  override collection: ModelControllerActions<this> = {
-    'allow': ['get', 'post'],
-    'post order': {
-      parameters: {
-        data: {
-          type: 'array',
-          items: { type: 'object' },
-          from: 'root',
-          required: true
-        }
-      },
-      handler(_ctx: unknown, { data }: { data: Pick<Page, 'id' | 'order'>[] }) {
-        return Page.query().patchGraph(data)
-      }
-    }
-  }
-
-  override relations = {
-    childPages: {
-      relation: { allow: ['get'] as const },
-      member: { allow: ['get'] as const }
-    }
-  }
-}
+export { db } from '../../utils/fixture-app.js'
 
 export const test = defineScenario({
   dirname: import.meta.dirname,
-  models: { Page },
-  controllers: { Pages }
+  entities: [Page],
+  controllers: {
+    Page: {
+      actions: {
+        // Stores the order of the pages that the order button sends.
+        'post order': action({
+          body: z.array(
+            z.looseObject({ id: z.number(), order: z.number().nullable() })
+          ),
+          handler: async ({ body, c }) => {
+            const em = getEntityManager(c)
+            const pages = []
+            for (const { id, order } of body) {
+              const page = await em.findOneOrFail(Page, id)
+              pages.push(await assignRecord(em, page, { order }))
+            }
+            return pages
+          }
+        }),
+        // The child pages of a page, which their list loads through a
+        // resource of its own.
+        'get :id/child-pages': ({ params: { id }, list }) =>
+          list({
+            where: { parentPage: Number(id) },
+            orderBy: { order: 'asc' }
+          })
+      }
+    }
+  }
 })

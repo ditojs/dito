@@ -1,5 +1,5 @@
 import type { Page, Response } from '@playwright/test'
-import { test, expect } from '../fixtures.js'
+import { test, expect, db } from '../fixtures.js'
 import { User } from '../models/User.js'
 
 // Logs in through the admin's login dialog, which opens without a session.
@@ -71,7 +71,7 @@ test.describe('account settings', () => {
     expect((await selfPatched).status()).toBe(200)
 
     // The record changed, and the account menu shows it right away:
-    const user = (await User.query().findOne('username', 'lovelace'))!
+    const user = (await db.findOne(User, { username: 'lovelace' }))!
     expect(user.email).toBe('lovelace@example.com')
     await expect(getAccountButton(page)).toHaveText('lovelace')
   })

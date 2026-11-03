@@ -1,5 +1,4 @@
-import { test, expect } from '../fixtures.js'
-import { Case } from '../models/Case.js'
+import { test, expect, setColumns } from '../fixtures.js'
 import { getCase } from '../cases/index.js'
 import { list } from '../../../utils/drivers/structure.js'
 
@@ -10,9 +9,7 @@ test.describe('list', () => {
     // Header labels label the whole item, not an input. Their data path
     // would point nowhere, or to an input with `wrapPrimitives`.
     const entry = getCase('list', 'shows stored items')
-    await Case.query()
-      .patch({ [entry.name]: [{ name: 'One' }] })
-      .findById(1)
+    await setColumns({ [entry.name]: [{ name: 'One' }] })
     await page.goto(`${url}/admin/${entry.path}`)
     const labels = list
       .getElement(page, entry)
