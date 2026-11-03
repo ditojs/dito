@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import Sortable from 'sortablejs'
-import { getValueAtDataPath, hyphenate } from '@ditojs/utils'
+import { getValueAtDataPath } from '@ditojs/utils'
 import { setupView } from '../utils/schema/setup.js'
 import {
   mountForm,
@@ -10,6 +10,7 @@ import {
   enterValue,
   isForm
 } from '../test/mount.js'
+import { ApiError } from '../utils/request.js'
 
 const pageForm = {
   type: 'form',
@@ -170,7 +171,7 @@ describe('DitoTreeListType', () => {
     const schema = { type: 'view', ...createSiteSchema() }
     getTree(schema)[key] = true
     await expect(
-      setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'site')
+      setupView({ defaults: {} }, schema, 'site')
     ).rejects.toThrow(
       `Unsupported schema key '${key}' in '${name}': Use '${
         replacement
@@ -184,7 +185,7 @@ describe('DitoTreeListType', () => {
       order: { type: 'button', data: {} }
     }
     await expect(
-      setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'site')
+      setupView({ defaults: {} }, schema, 'site')
     ).rejects.toThrow(`Unsupported schema key 'data' in 'order'`)
   })
 
@@ -250,13 +251,11 @@ describe('DitoTreeListType', () => {
       schema,
       data: site,
       request: () => {
-        throw Object.assign(new Error('Validation failed'), {
-          response: {
-            status: 400,
-            data: {
-              type: 'ValidationError',
-              errors: { 'pages/0/subpages/1/title': [{ message: 'is taken' }] }
-            }
+        throw new ApiError({
+          status: 400,
+          data: {
+            type: 'ValidationError',
+            errors: { 'pages/0/subpages/1/title': [{ message: 'is taken' }] }
           }
         })
       }
@@ -281,14 +280,12 @@ describe('DitoTreeListType', () => {
       data: site,
       request: ({ method = 'get' }) => {
         if (method !== 'get') {
-          throw Object.assign(new Error('Validation failed'), {
-            response: {
-              status: 400,
-              data: {
-                type: 'ValidationError',
-                errors: {
-                  'pages/0/subpages/1/title': [{ message: 'is taken' }]
-                }
+          throw new ApiError({
+            status: 400,
+            data: {
+              type: 'ValidationError',
+              errors: {
+                'pages/0/subpages/1/title': [{ message: 'is taken' }]
               }
             }
           })

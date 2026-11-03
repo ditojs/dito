@@ -15,6 +15,7 @@ import {
 import { DitoSchemaField, useDitoContext } from '../index.js'
 import DitoButtonType from '../types/DitoButtonType.vue'
 import { transientNote } from '../utils/dialogs.js'
+import { ApiError } from '../utils/request.js'
 
 const maliciousName = '<img src="x" onerror="alert(1)">'
 const escapedName = '&lt;img src=&quot;x&quot; onerror=&quot;alert(1)&quot;&gt;'
@@ -2291,13 +2292,11 @@ describe('DitoForm', () => {
         data,
         request: ({ method = 'get' }) => {
           if (method !== 'get') {
-            throw Object.assign(new Error('Validation failed'), {
-              response: {
-                status: 400,
-                data: {
-                  type: 'ValidationError',
-                  errors: { 'families/0/price': [{ message: 'is too high' }] }
-                }
+            throw new ApiError({
+              status: 400,
+              data: {
+                type: 'ValidationError',
+                errors: { 'families/0/price': [{ message: 'is too high' }] }
               }
             })
           }
@@ -2895,9 +2894,7 @@ describe('DitoForm', () => {
   it('notifies errors without a message without the object', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { submit, notify } = await mountBookForm(() => {
-      throw Object.assign(new Error('Request failed'), {
-        response: { status: 500, data: { type: 'ServerError' } }
-      })
+      throw new ApiError({ status: 500, data: { type: 'ServerError' } })
     })
     await submit()
     expect(notify).toHaveBeenCalledWith(

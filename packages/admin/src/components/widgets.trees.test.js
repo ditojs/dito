@@ -155,7 +155,7 @@ describe('DitoTreeListField', () => {
 
   it('reads the levels and their props from templates', async () => {
     const { wrapper } = await mountFontPage(
-      '/font/shopSets/0/cuts/1',
+      '/font/shop-sets/0/cuts/1',
       TreeListPage
     )
     expect(getLabels(wrapper)).toEqual(['Sans', 'Regular', 'Bold', 'Serif'])
@@ -189,7 +189,7 @@ describe('DitoTreeListField', () => {
     const { admin, wrapper } = await mountFontPage()
     // Sans, Regular, Bold, Serif:
     await clickEdit(wrapper, 2)
-    expect(getPath(admin)).toBe('/font/shopSets/0/cuts/1')
+    expect(getPath(admin)).toBe('/font/shop-sets/0/cuts/1')
     const label = wrapper.find('.dito-tree-list__form-container label')
     expect(label.text()).toBe('Cut')
     expect(getFormInput(wrapper).element.value).toBe('Bold')
@@ -197,17 +197,17 @@ describe('DitoTreeListField', () => {
     expect(contexts.cuts.itemIndex).toBe(1)
     expect(contexts.cuts.parentItem).toBe(form.item.shopSets[0])
     await clickEdit(wrapper, 3)
-    expect(getPath(admin)).toBe('/font/shopSets/1')
+    expect(getPath(admin)).toBe('/font/shop-sets/1')
     expect(getFormInput(wrapper).element.value).toBe('Serif')
     expect(contexts.shopSets.item).toBe(form.item.shopSets[1])
     admin.router.back()
     await settle()
-    expect(getPath(admin)).toBe('/font/shopSets/0/cuts/1')
+    expect(getPath(admin)).toBe('/font/shop-sets/0/cuts/1')
     expect(getFormInput(wrapper).element.value).toBe('Bold')
   })
 
   it('opens the form of the item of a deep link', async () => {
-    const { wrapper } = await mountFontPage('/font/shopSets/0/cuts/1')
+    const { wrapper } = await mountFontPage('/font/shop-sets/0/cuts/1')
     expect(getFormInput(wrapper).element.value).toBe('Bold')
     expect(
       wrapper.find('.dito-tree-item--active .dito-tree-item__label').text()
@@ -215,7 +215,7 @@ describe('DitoTreeListField', () => {
   })
 
   it('edits the item in place', async () => {
-    const { wrapper } = await mountFontPage('/font/shopSets/0')
+    const { wrapper } = await mountFontPage('/font/shop-sets/0')
     await enterValue(getFormInput(wrapper), 'Mono')
     expect(form.item.shopSets[0].name).toBe('Mono')
     expect(form.isDirty).toBe(true)
@@ -227,7 +227,7 @@ describe('DitoTreeListField', () => {
     form.item.shopSets[0].cuts[1].title = ''
     expect(form.validate()).toBe(false)
     await settle()
-    expect(getPath(admin)).toBe('/font/shopSets/0/cuts/1')
+    expect(getPath(admin)).toBe('/font/shop-sets/0/cuts/1')
     expect(wrapper.find('.dito-tree-list__form-container .dito-errors').text())
       .toBe('The Cut field is required.')
   })
@@ -235,7 +235,7 @@ describe('DitoTreeListField', () => {
   it('shows the levels that are rendered', async () => {
     const hasCuts = ref(false)
     const { admin, wrapper } = await mountFontPage(
-      '/font/shopSets/0',
+      '/font/shop-sets/0',
       createFontPage({
         levels: () =>
           hasCuts.value
@@ -248,7 +248,7 @@ describe('DitoTreeListField', () => {
     await settle()
     expect(getLabels(wrapper)).toEqual(['Sans', 'Regular', 'Bold', 'Serif'])
     // The form of the selected item stays open:
-    expect(getPath(admin)).toBe('/font/shopSets/0')
+    expect(getPath(admin)).toBe('/font/shop-sets/0')
     expect(getFormInput(wrapper).element.value).toBe('Sans')
     hasCuts.value = false
     await settle()
@@ -259,7 +259,7 @@ describe('DitoTreeListField', () => {
   it('opens the form of the parent item when its level goes', async () => {
     const hasCuts = ref(true)
     const { admin, wrapper } = await mountFontPage(
-      '/font/shopSets/0/cuts/1',
+      '/font/shop-sets/0/cuts/1',
       createFontPage({
         levels: () =>
           hasCuts.value
@@ -274,7 +274,7 @@ describe('DitoTreeListField', () => {
     expect(getFormInput(wrapper).element.value).toBe('Bold')
     hasCuts.value = false
     await settle()
-    expect(getPath(admin)).toBe('/font/shopSets/0')
+    expect(getPath(admin)).toBe('/font/shop-sets/0')
     expect(getFormInput(wrapper).element.value).toBe('Sans')
   })
 
@@ -310,7 +310,7 @@ describe('DitoTreeListField', () => {
           })
       }
     }
-    const { wrapper } = await mountFontPage('/font/shopSets/0/cuts/1', page)
+    const { wrapper } = await mountFontPage('/font/shop-sets/0/cuts/1', page)
     const getLabel = () =>
       wrapper.find('.dito-tree-list__form-container label').text()
     expect(getLabel()).toBe('Cut 1')

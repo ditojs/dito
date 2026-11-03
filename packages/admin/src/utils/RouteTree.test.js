@@ -296,7 +296,7 @@ describe('RouteTree', () => {
       expect(
         await getRouteComponents(
           views,
-          '/articles/1/content/0/textContent/1/links/0',
+          '/articles/1/content/0/text-content/1/links/0',
           { '/articles/1': article }
         )
       ).toEqual([DitoView, DitoForm, DitoForm])

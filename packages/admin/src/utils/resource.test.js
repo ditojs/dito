@@ -1,5 +1,33 @@
 import { vi } from 'vitest'
-import { hasResource, getResource, getMemberResource } from './resource.js'
+import {
+  hasResource,
+  getResource,
+  getMemberResource,
+  getResourcePath
+} from './resource.js'
+
+describe('getResourcePath()', () => {
+  const parent = { type: 'collection', path: 'books' }
+
+  it('joins the paths without a trailing slash', () => {
+    expect(getResourcePath({ path: '', parent })).toBe('books')
+    expect(getResourcePath({ path: 'covers', parent })).toBe('books/covers')
+    expect(getResourcePath({ type: 'member', path: '', id: 1, parent })).toBe(
+      'books/1'
+    )
+  })
+
+  it('routes uploads on the collection of the parent', () => {
+    const member = { type: 'member', path: '', id: 1, parent }
+    expect(
+      getResourcePath({ type: 'upload', path: 'cover', parent: member })
+    ).toBe('books/upload/cover')
+  })
+
+  it('returns no path without a resource', () => {
+    expect(getResourcePath(null)).toBe(null)
+  })
+})
 
 describe('getResource()', () => {
   it('converts paths to resources', () => {

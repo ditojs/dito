@@ -255,13 +255,13 @@ const DitoUploadType = {
       )
     )
 
-    // Views without resource can't upload, see `api.resources.upload()`:
+    // Views without resource can't upload, see `getResourcePath()`:
     const uploadPath = computed(() =>
       services.resourceContext
         ? getResourceUrl(services, {
             type: 'upload',
             method: 'post',
-            path: adminContext.api.normalizePath(props.dataPath)
+            path: props.dataPath
           })
         : null
     )

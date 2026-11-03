@@ -3,7 +3,7 @@ import { h } from 'vue'
 import { useRoute } from 'vue-router'
 import { flushPromises } from '@vue/test-utils'
 import { mountAdmin, enterValue, stubConfirm } from '../test/mount.js'
-import { RequestError } from '../utils/request.js'
+import { ApiError } from '../utils/request.js'
 import {
   useDitoForm,
   DitoSchemaForm,
@@ -223,7 +223,7 @@ describe('useDitoForm()', () => {
       params: { property: 'name' }
     }
     request.mockImplementationOnce(() => {
-      throw new RequestError({
+      throw new ApiError({
         status: 400,
         statusText: 'Bad Request',
         data: {

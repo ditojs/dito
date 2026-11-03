@@ -1,8 +1,8 @@
 import { nextTick } from 'vue'
 import { format as formatValue, isString } from '@ditojs/utils'
 import defaultVerbs from '../verbs.js'
-import { getResource, getMemberResource } from './resource.js'
-import { getRequestCacheKey } from './request.js'
+import { getResource, getMemberResource, getResourcePath } from './resource.js'
+import { getRequestCacheKey, isApiUrl } from './request.js'
 import type { AdminContext } from './AdminContext.ts'
 import type { DataContext } from './DataContext.ts'
 import type { ResourceContext } from './ResourceContext.ts'
@@ -95,7 +95,7 @@ export async function sendRequest(
     throw new Error('Unable to send request: There is no URL or resource.')
   }
   method ||= resourceRequest?.method
-  const checkUser = !internal && api.isApiUrl(url)
+  const checkUser = !internal && isApiUrl(api, url)
   if (checkUser) {
     await session.ensureUser()
   }
@@ -104,7 +104,7 @@ export async function sendRequest(
     // Security changes answer `confirmationRequired` without a recent login,
     // so we confirm the access and send them again. Cancelled confirmations
     // end the request quietly, like aborted ones:
-    if (checkUser && error.response?.data?.confirmationRequired) {
+    if (checkUser && error.confirmationRequired) {
       if (await session.confirmAccess()) {
         return send()
       } else {
@@ -114,7 +114,8 @@ export async function sendRequest(
       throw error
     }
   })
-  // Fetch the own user again when it changed, through its member or `self`:
+  // Fetch the logged-in user again when it changed, through its member or
+  // `self`:
   if (checkUser && method === 'patch') {
     const { users } = api
     const userUrls = [
@@ -179,14 +180,7 @@ export function request(
       if (loadCache?.[cacheKey] === res) {
         delete loadCache[cacheKey]
       }
-      // Convert the data of error responses, e.g. Dito.js errors, to errors
-      // with the status of the response:
-      const data = error.response?.data
-      throw data
-        ? Object.assign(new Error(data.message), data, {
-            status: error.response.status
-          })
-        : error
+      throw error
     })
   if (loadCache) {
     loadCache[cacheKey] = res
@@ -250,7 +244,7 @@ function getResourceRequest(
       child: resource
     }) ?? null
   })
-  const url = api.resources.any(resolved)
+  const url = getResourcePath(resolved)
   return {
     method: resolved?.method,
     url: url ? api.getApiUrl({ url, query: resolved.query }) : null

@@ -301,7 +301,7 @@ export function useRouteContainer({
 
     schemaPath: computed(() => {
       const sourceSchema = options.sourceSchema()!
-      return getSchemaPath(sourceSchema, sourceSchema.name, adminContext.api)
+      return getSchemaPath(sourceSchema, sourceSchema.name)
     })
   }
 }

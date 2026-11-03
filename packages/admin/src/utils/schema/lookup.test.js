@@ -1,6 +1,5 @@
 import { vi } from 'vitest'
 import { reactive } from 'vue'
-import { hyphenate } from '@ditojs/utils'
 import SchemaContext from '../../SchemaContext.js'
 import { defineType } from './types.ts'
 import {
@@ -287,7 +286,7 @@ describe('getFormSchemas()', () => {
       )
     )
     const schema = { type: 'section', fields: createComponents }
-    const api = { defaults: {}, normalizePath: hyphenate }
+    const api = { defaults: {} }
     const createContext = data => new SchemaContext(null, { api, data })
 
     beforeEach(() => {

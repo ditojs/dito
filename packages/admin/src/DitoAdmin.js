@@ -5,7 +5,6 @@ import {
   isString,
   assignDeeply,
   hyphenate,
-  camelize,
   defaultFormats
 } from '@ditojs/utils'
 import * as components from './components/index.js'
@@ -13,8 +12,7 @@ import * as types from './types/index.js'
 import DitoRoot from './components/DitoRoot.vue'
 import DitoView from './components/DitoView.vue'
 import ResizeDirective from './directives/resize.js'
-import { getResource } from './utils/resource.js'
-import { request, getApiUrl, isApiUrl } from './utils/request.js'
+import { request, getApiUrl } from './utils/request.js'
 import { ViewRegistry } from './utils/ViewRegistry.js'
 import { AdminContext } from './utils/AdminContext.ts'
 import { adminContextKey } from './utils/keys.ts'
@@ -24,7 +22,7 @@ const knownOptions = ['login', 'spinner', 'account']
 
 export default class DitoAdmin {
   constructor(el, {
-    // The `dito` object passed from `AdminController`:
+    // The `dito` object of `serveAdmin()`:
     dito: ditoObject = globalThis.dito ?? {},
     api,
     views = {},
@@ -40,81 +38,12 @@ export default class DitoAdmin {
     }
     api.locale ||= 'en-US'
     api.formats = assignDeeply({}, defaultFormats, api.formats)
-    api.request ||= options => request(api, options)
-    api.getApiUrl ||= options => getApiUrl(api, options)
-    api.isApiUrl ||= url => isApiUrl(api, url)
-    // `api.normalizePaths` (plural) sets both directions:
-    api.normalizePath ||= api.normalizePaths ? hyphenate : val => val
-    api.denormalizePath ||= api.normalizePaths ? camelize : val => val
+    api.request = options => request(api, options)
+    api.getApiUrl = options => getApiUrl(api, options)
     // Defaults for the schemas of component types, nested per type, as objects
     // or functions that return them or modify the schema directly:
     api.defaults ||= {}
-
-    // Allow configuring the auth resources, e.g. `api.users.path = '/admins'`:
-    const users = getResource(api.users, { type: 'collection' }) || {}
-    const methods = { login: 'post', logout: 'post', session: 'get' }
-    for (const [name, method] of Object.entries(methods)) {
-      users[name] = getResource(users[name] || name, { method, parent: users })
-    }
-    // The own user, that the account settings load and patch:
-    users.self = getResource(users.self || 'self', { parent: users })
-    // The server only detects its authentication features under the names of
-    // dito's actions, so we derive their resources from these:
-    const actions = [
-      'password',
-      'passwordReset',
-      'passwordResetConfirm',
-      'passkeyLoginOptions',
-      'passkeyLogin',
-      'passkeyOptions',
-      'loginCode',
-      'totpConfirm',
-      'confirmAccess'
-    ]
-    for (const name of actions) {
-      users[name] = getResource(hyphenate(name), {
-        method: 'post',
-        parent: users
-      })
-    }
-    // The passkeys and the TOTP of the own user, that the security dialog
-    // manages:
-    users.passkeys = getResource('passkeys', {
-      type: 'collection',
-      parent: users
-    })
-    users.totp = getResource('totp', { parent: users })
-    api.users = users
-
-    // Apps may override the handlers of resource paths:
-    api.resources = {
-      any(resource) {
-        const handler = this[resource?.type] || this.default
-        return resource && handler.call(this, resource)
-      },
-
-      default(resource) {
-        const parentPath = this.any(resource.parent)
-        return parentPath
-          ? `${parentPath}/${resource.path}`
-          : resource.path
-      },
-
-      collection(resource) {
-        return this.default(resource)
-      },
-
-      member(resource) {
-        return `${this.default(resource)}/${resource.id}`
-      },
-
-      upload(resource) {
-        // Dito.js Server handles upload routes on the collection resource:
-        return `${this.collection(resource.parent)}/upload/${resource.path}`
-      },
-
-      ...api.resources
-    }
+    api.users = getUsersResources(api.users?.path)
 
     api.headers = {
       'Content-Type': 'application/json',
@@ -192,4 +121,33 @@ export default class DitoAdmin {
     el.classList.add('dito-app')
     app.mount(el)
   }
+}
+
+// The resources of the routes of `usersRoutes()` on the server, under `path`,
+// such as 'admins'.
+function getUsersResources(path) {
+  const users = { type: 'collection', path }
+  const getResource = (path, method) => ({ path, method, parent: users })
+  users.login = getResource('login', 'post')
+  users.logout = getResource('logout', 'post')
+  // The logged-in user, which the account settings load and patch:
+  users.self = getResource('self')
+  for (const name of [
+    'password',
+    'passwordReset',
+    'passwordResetConfirm',
+    'passkeyLoginOptions',
+    'passkeyLogin',
+    'passkeyOptions',
+    'loginCode',
+    'totpConfirm',
+    'confirmAccess'
+  ]) {
+    users[name] = getResource(hyphenate(name), 'post')
+  }
+  // The passkeys and the TOTP of the logged-in user, which the security dialog
+  // manages:
+  users.passkeys = { ...getResource('passkeys'), type: 'collection' }
+  users.totp = getResource('totp')
+  return users
 }

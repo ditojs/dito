@@ -1,7 +1,7 @@
 import {
   isArray,
+  isDate,
   isObject,
-  isString,
   asArray,
   labelize,
   normalizeDataPath,
@@ -11,7 +11,7 @@ import { getText } from './html.js'
 import { iterateNestedSchemaComponents } from './schema/structure.js'
 import { getNamedSchemas, getFormSchemas } from './schema/lookup.js'
 import { applySchemaDefaults } from './schema/setup.js'
-import { deserializeData } from './schema/data.js'
+import { walkData } from './schema/walk.js'
 
 export const filterComponents = {
   'text'(filter) {
@@ -65,7 +65,8 @@ export function createFiltersPanel(api, filters, dataPath, query) {
   const applyFilters = data => {
     query.value = {
       ...query.value,
-      filter: formatFiltersData(panel, data),
+      ...clearFilters(query.value),
+      ...formatFiltersData(panel, data),
       // Clear pagination when applying or clearing filters:
       page: undefined
     }
@@ -75,7 +76,9 @@ export function createFiltersPanel(api, filters, dataPath, query) {
     clear: {
       type: 'button',
       text: small ? null : 'Clear',
-      disabled: ({ item }) => formatFiltersData(panel, item).length === 0,
+      disabled: ({ item }) => (
+        Object.keys(formatFiltersData(panel, item)).length === 0
+      ),
       onClick({ resetItem }) {
         filtersData = resetItem()
         applyFilters(filtersData)
@@ -100,8 +103,8 @@ export function createFiltersPanel(api, filters, dataPath, query) {
     sticky,
 
     data() {
-      // The query holds the values serialized, e.g. dates as strings:
-      filtersData = deserializeData(panel, parseFiltersData(panel, query.value))
+      // The query holds the values as strings:
+      filtersData = parseFiltersData(panel, query.value)
       return filtersData
     },
 
@@ -133,14 +136,24 @@ function getDataName(filterName) {
   return `$${filterName}`
 }
 
-// The server keys the validation errors of filters by filter name, e.g.
-// `title/text`, while the panel keys the filter data by data name, `$title`:
-export function getFiltersDataErrors(errors) {
+// The server keys the validation errors of filters by filter name and
+// argument index, e.g. `title/1`, while the panel keys the filter data by data
+// name and component, `$title/text`. Arguments past the last component belong
+// to its array, see `formatFiltersData()`:
+export function getFiltersDataErrors(errors, schema = null) {
   const dataErrors = {}
   for (const [dataPath, errs] of Object.entries(errors)) {
-    const [token, ...rest] = parseDataPath(normalizeDataPath(dataPath))
+    const [token, key, ...rest] = parseDataPath(normalizeDataPath(dataPath))
+    const dataName =
+      !token || token.startsWith('$') ? token : getDataName(token)
+    const keys = Object.keys(getComponentsForFilter(schema, dataName) ?? {})
     const filtersDataPath = [
-      !token || token.startsWith('$') ? token : getDataName(token),
+      dataName,
+      ...(
+        key !== undefined
+          ? [/^\d+$/.test(key) ? (keys[key] ?? keys.at(-1) ?? key) : key]
+          : []
+      ),
       ...rest
     ].join('/')
     dataErrors[filtersDataPath] = [
@@ -198,67 +211,113 @@ function createFiltersComponents(filters) {
 }
 
 function getComponentsForFilter(schema, dataName) {
-  const component = schema.fields[dataName]
+  const component = schema?.fields?.[dataName]
   return component?.form?.fields
 }
 
+// A filter sends its arguments as repeated `filter[name]` values, one per
+// component in order and as strings: dates in ISO format, other values with
+// `String()`. Empty values are sent as '' to keep the positions of the ones
+// after them, and trailing empty values are left out. An array in the last
+// component gives the remaining arguments, e.g. the values of a multiselect.
 function formatFiltersData(schema, data) {
-  const filters = []
+  const query = {}
   for (const dataName in data) {
     const entry = data[dataName]
-    if (entry) {
-      // Map components sequence to arguments:
-      const args = Object.keys(getComponentsForFilter(schema, dataName)).map(
-        key => entry[key] ?? null
-      )
-      // Only apply filter if there are some arguments that aren't null:
-      if (args.some(value => value !== null)) {
-        filters.push(
-          `${
-            getFilterName(dataName)
-          }:${
-            args.map(JSON.stringify).join(',')
-          }`
-        )
+    const components = getComponentsForFilter(schema, dataName)
+    if (entry && components) {
+      const values = Object.keys(components).map(key => entry[key])
+      const last = values.pop()
+      const args = [...values, ...asArray(last)].map(formatArgument)
+      while (args.at(-1) === '') {
+        args.pop()
+      }
+      if (args.length > 0) {
+        query[getFilterKey(getFilterName(dataName))] =
+          args.length === 1 ? args[0] : args
       }
     }
   }
-  return filters
+  return query
 }
 
-function parseFiltersData(schema, query) {
-  const filters = {}
-  // Same as @ditojs/server's QueryParameters.filter: Translate the string data
-  // from $route.query back to param lists per filter:
-  if (query) {
-    for (const filter of asArray(query.filter)) {
-      // Query values without a value, e.g. `?filter`, are `null`:
-      const match = isString(filter) ? filter.match(/^(\w+):(.*)$/) : null
-      if (!match) {
-        console.warn(`Ignoring malformed filter: '${filter}'`)
-        continue
-      }
-      const [, filterName, json] = match
-      try {
-        filters[filterName] = asArray(JSON.parse(`[${json}]`))
-      } catch {}
+function formatArgument(value) {
+  return value == null ? '' : isDate(value) ? value.toISOString() : `${value}`
+}
+
+function getFilterKey(filterName) {
+  return `filter[${filterName}]`
+}
+
+function isFilterKey(key) {
+  return /^filter\[.*\]$/.test(key)
+}
+
+// The keys of all filters in `query`, set to `undefined` to remove them when
+// the query is merged with other filters:
+function clearFilters(query) {
+  const cleared = {}
+  for (const key in query) {
+    if (isFilterKey(key)) {
+      cleared[key] = undefined
     }
   }
+  return cleared
+}
+
+// Read the arguments of the filters back from the query, e.g. of a reloaded
+// route, and convert them to the types of their components' properties:
+function parseFiltersData(schema, query) {
   const filtersData = {}
+  const argumentsByData = new Map()
   for (const dataName in schema.fields) {
     const data = {}
-    // Map the params from the query back to the keys of the form components:
-    const args = filters[getFilterName(dataName)]
-    if (args) {
-      const components = getComponentsForFilter(schema, dataName)
-      if (components) {
-        let index = 0
-        for (const key in components) {
-          data[key] = args[index++]
+    const components = getComponentsForFilter(schema, dataName)
+    const value = query?.[getFilterKey(getFilterName(dataName))]
+    if (components && value !== undefined) {
+      // Query values without a value, e.g. `?filter[title]`, are `null`:
+      const args = asArray(value).map(arg => arg ?? '')
+      const keys = Object.keys(components)
+      const argumentsByKey = {}
+      keys.forEach((key, index) => {
+        if (index < args.length) {
+          argumentsByKey[key] =
+            index < keys.length - 1 ? [args[index]] : args.slice(index)
+          // The string, for components that `walkData()` doesn't convert:
+          data[key] = parseArgument(null, args[index])
         }
-      }
+      })
+      argumentsByData.set(data, argumentsByKey)
     }
     filtersData[dataName] = data
   }
-  return filtersData
+  return walkData(schema, filtersData, {
+    visit(entry) {
+      const { node, data, name } = entry
+      const args = argumentsByData.get(data)?.[name]
+      if (args) {
+        const propertyNode = node.getPropertyNode(entry)
+        const property = propertyNode?.property ?? {}
+        const value =
+          property.type === 'array'
+            ? args.map(arg => parseArgument(property.items, arg))
+            : parseArgument(property, args[0])
+        data[name] = propertyNode
+          ? propertyNode.deserialize(value, entry)
+          : value
+      }
+    }
+  })
+}
+
+// '' is an empty argument, see `formatFiltersData()`:
+function parseArgument(property, arg) {
+  const type = property?.type
+  return arg === ''
+    ? null
+    : type === 'number' || type === 'integer'
+      ? Number(arg)
+      : type === 'boolean'
+        ? arg === 'true'
+        : arg
 }

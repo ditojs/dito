@@ -43,14 +43,12 @@ describe('DitoAccount', () => {
   })
 
   describe('account settings', () => {
-    // The users resource moves the session out of the stubbed `/session`, so
-    // the user can change:
+    // The users resource moves the logged-in user out of the stubbed `/self`,
+    // so the user can change:
     const mountWithSettings = async () => {
       let user = { id: 1, username: 'reader', email: 'reader@example.com' }
       const request = vi.fn(({ method = 'get', url, data }) => {
-        if (url === '/users/session') {
-          return { data: { user } }
-        } else if (url === '/users/self') {
+        if (url === '/users/self') {
           if (method === 'patch') {
             user = { ...user, ...data }
           }

@@ -1,7 +1,8 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import DitoAdmin from './DitoAdmin.js'
-import { mountAdmin } from './test/mount.js'
+import { mountAdmin, stubRequests } from './test/mount.js'
+import { getResourcePath } from './utils/resource.js'
 
 describe('DitoAdmin', () => {
   const createdAdmins = []
@@ -21,11 +22,12 @@ describe('DitoAdmin', () => {
       element = document.createElement('div')
       document.body.appendChild(element)
     }
+    stubRequests()
     const admin = new DitoAdmin(element, {
       views: {},
       api: {
-        // Answer the session request without a user:
-        request: vi.fn(async () => ({ data: { user: null } }))
+        // Respond to the request for the logged-in user without one:
+        requestStub: vi.fn(async () => ({ data: null }))
       },
       ...options
     })
@@ -95,7 +97,7 @@ describe('DitoAdmin', () => {
   it('requests the API with `fetch()` by default', async () => {
     const fetch = vi.fn(
       async () =>
-        new Response(JSON.stringify({ user: { id: 1, username: 'ada' } }), {
+        new Response(JSON.stringify({ id: 1, username: 'ada' }), {
           headers: { 'Content-Type': 'application/json' }
         })
     )
@@ -112,7 +114,7 @@ describe('DitoAdmin', () => {
       expect(element.querySelector('.dito-account')?.textContent).toBe('ada')
     })
     const [url, options] = fetch.mock.calls[0]
-    expect(url).toBe('https://library.example/api/session')
+    expect(url).toBe('https://library.example/api/self')
     expect(options).toMatchObject({
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
@@ -158,20 +160,16 @@ describe('DitoAdmin', () => {
     })
   })
 
-  it('normalizes the paths with `normalizePaths`', () => {
-    const { api } = createAdmin({
+  it('derives the resources of the users routes from `users.path`', () => {
+    const { users } = createAdmin({
       api: {
-        normalizePaths: true,
-        request: async () => ({ data: { user: null } })
+        users: { path: 'admins' },
+        requestStub: async () => ({ data: null })
       }
-    })
-    expect(api.normalizePath('bookAuthors')).toBe('book-authors')
-    expect(api.denormalizePath('book-authors')).toBe('bookAuthors')
-  })
-
-  it('keeps the paths without `normalizePaths`', () => {
-    const { api } = createAdmin()
-    expect(api.normalizePath('bookAuthors')).toBe('bookAuthors')
-    expect(api.denormalizePath('book-authors')).toBe('book-authors')
+    }).api
+    expect(getResourcePath(users.login)).toBe('admins/login')
+    expect(users.login.method).toBe('post')
+    expect(getResourcePath(users.self)).toBe('admins/self')
+    expect(getResourcePath(users.passkeyLogin)).toBe('admins/passkey-login')
   })
 })

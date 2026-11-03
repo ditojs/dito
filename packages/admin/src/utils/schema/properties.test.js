@@ -1,5 +1,4 @@
 import { vi } from 'vitest'
-import { hyphenate } from '@ditojs/utils'
 import { reactive } from 'vue'
 import '../../types/index.js'
 import SchemaContext from '../../SchemaContext.js'
@@ -25,7 +24,7 @@ import { fromClipboard } from '../fromClipboard.ts'
 import { getUploadEntries } from '../interchange.ts'
 
 async function getProperties(fields, schema = {}, services = null) {
-  const api = { defaults: {}, normalizePath: hyphenate }
+  const api = { defaults: {} }
   const form = await setupForm(api, { type: 'form', fields, ...schema })
   const context = SchemaContext.createForSchema(services, {
     schema: form,
@@ -1363,7 +1362,7 @@ describe('written properties', () => {
 })
 
 describe('properties of fields', () => {
-  const api = { defaults: {}, normalizePath: hyphenate }
+  const api = { defaults: {} }
   const services = { adminContext: { api } }
 
   // The entries of the walk by data path, with the nodes of all their fields:

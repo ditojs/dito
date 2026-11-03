@@ -1,7 +1,7 @@
 import { h } from 'vue'
 import DefaultExport, * as exports from './index.js'
 import DitoAdmin from './DitoAdmin.js'
-import { mountSchema } from './test/mount.js'
+import { mountForm, mountSchema } from './test/mount.js'
 import { initializeData } from './utils/schema/data.js'
 import {
   defineType as defineTypeDescriptor,
@@ -131,5 +131,49 @@ describe('@ditojs/admin exports', () => {
         defineTypeDescriptor(descriptor)
       }
     })
+  })
+
+  it('exports `createTemporaryId()` for new rows that code links', async () => {
+    const { createTemporaryId, isTemporaryId } = exports
+    const id = createTemporaryId()
+    expect(isTemporaryId(id)).toBe(true)
+    expect(isTemporaryId(1)).toBe(false)
+    expect(createTemporaryId()).not.toBe(id)
+    // A license that code links to a new item, as an `onChange` would:
+    const { submit } = await mountForm({
+      schema: {
+        fields: {
+          shopItems: {
+            type: 'list',
+            inlined: true,
+            form: { type: 'form', fields: { name: { type: 'text' } } }
+          },
+          licenses: {
+            type: 'list',
+            inlined: true,
+            form: {
+              type: 'form',
+              fields: {
+                shopItems: {
+                  type: 'checkboxes',
+                  relate: true,
+                  options: { dataPath: '/shopItems', label: 'name' }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: {
+        shopItems: [{ id, name: 'New' }],
+        licenses: [{ shopItems: [{ id }] }]
+      },
+      request: ({ data }) => ({ data })
+    })
+    const payload = await submit()
+    const reference = payload.shopItems[0]['#id']
+    expect(reference).toEqual(expect.any(String))
+    expect(payload.shopItems[0]).not.toHaveProperty('id')
+    expect(payload.licenses[0].shopItems).toEqual([{ '#ref': reference }])
   })
 })

@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { asArray, html } from '@ditojs/utils'
+import { html } from '@ditojs/utils'
 import { flushPromises } from '@vue/test-utils'
 import Sortable from 'sortablejs'
 import { mountForm, stubConfirm, enterValue } from '../test/mount.js'
@@ -129,13 +129,13 @@ describe('DitoTreeItem', () => {
       )
       await enterValue(filterInput, 'draft')
       await settle()
-      const filter = ['text:"draft"']
-      expect(admin.router.currentRoute.value.query.filter).toEqual(filter)
+      const { query } = admin.router.currentRoute.value
+      expect(query['filter[text]']).toBe('draft')
       await findField('chapters').find('.dito-button--edit').trigger('click')
       await settle()
       const route = admin.router.currentRoute.value
       expect(route.path).toBe('/items/1/chapters/0')
-      expect(asArray(route.query.filter)).toEqual(filter)
+      expect(route.query['filter[text]']).toBe('draft')
     })
   })
 

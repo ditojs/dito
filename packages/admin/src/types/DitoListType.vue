@@ -213,7 +213,9 @@ const DitoListType = {
       onFilterErrors(errors) {
         // The filters panel holds its own data:
         const { dataContext } = source.node.value.getNode('$filters').mounted
-        dataContext?.showValidationErrors(getFiltersDataErrors(errors))
+        dataContext?.showValidationErrors(
+          getFiltersDataErrors(errors, dataContext.schema)
+        )
         return !!dataContext
       }
     })

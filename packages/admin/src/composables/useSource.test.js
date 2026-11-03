@@ -1238,11 +1238,10 @@ describe('useSource()', () => {
       })
     })
 
-    it('opens the forms of items of lists with normalized paths', async () => {
+    it('opens the forms of items of lists under hyphenated paths', async () => {
       const { admin } = await mountView(
         { fields: { tableOfURLs: createChaptersSchema() } },
-        { tableOfURLs: chapters },
-        { api: { normalizePaths: true } }
+        { tableOfURLs: chapters }
       )
       expect(await getFormData(admin, '/test/table-of-urls/1')).toEqual({
         title: 'Epilogue'
@@ -1498,7 +1497,7 @@ describe('useSource()', () => {
   })
 
   describe('setupSchema()', () => {
-    const api = { normalizePath: path => path }
+    const api = {}
 
     it('refuses resources of inlined lists', async () => {
       const schema = {

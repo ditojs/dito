@@ -1,20 +1,30 @@
-import { isAbsoluteUrl, isString } from '@ditojs/utils'
+import { isAbsoluteUrl, isPlainObject, isString } from '@ditojs/utils'
 import { formatQuery } from './route.js'
 
-export class RequestError extends Error {
+// The error of a failed request. It has the fields of the JSON body, e.g.
+// `message`, `type`, `code`, `errors` and `confirmationRequired`, the `status`
+// of the response, and the `response` itself:
+export class ApiError extends Error {
   constructor(response) {
+    const data = isPlainObject(response.data) ? response.data : null
     super(
-      `Request failed with status code: ${response.status} (${
-        response.statusText
-      })`
+      data
+        ? data.message
+        : `Request failed with status code: ${response.status} (${
+            response.statusText
+          })`
     )
-    this.response = response
+    Object.assign(this, data, { status: response.status, response })
+    this.name = 'ApiError'
   }
 }
 
-// Responses without a message have none, e.g. `{ type: 'ServerError' }`:
+// Errors of responses without a message have none, e.g. of
+// `{ type: 'ServerError' }`:
+/** @returns {string | null} */
 export function getErrorMessage(error) {
-  return isString(error?.message) ? error.message : null
+  const message = error?.message
+  return isString(message) && message ? message : null
 }
 
 export async function request(api, {
@@ -28,7 +38,7 @@ export async function request(api, {
 }) {
   const fetchOptions = getFetchOptions(api, url)
   const isFormData = data instanceof FormData
-  const response = await fetch(api.getApiUrl({ url, query }), {
+  const response = await fetch(getApiUrl(api, { url, query }), {
     method: method.toUpperCase(),
     ...(data && { body: isFormData ? data : JSON.stringify(data) }),
     headers: {
@@ -48,7 +58,7 @@ export async function request(api, {
   }
 
   if (!response.ok) {
-    throw new RequestError(response)
+    throw new ApiError(response)
   }
   return response
 }
@@ -67,7 +77,7 @@ export function getRequestCacheKey({ method, url, query, data }) {
 export function resolveDownloadUrl(api, url) {
   return isAbsoluteUrl(url) || url.startsWith('/')
     ? url
-    : api.getApiUrl({ url })
+    : getApiUrl(api, { url })
 }
 
 export async function fetchBlob(api, url) {
@@ -80,7 +90,7 @@ export async function fetchBlob(api, url) {
     getFetchOptions(api, getAbsoluteUrl(downloadUrl))
   )
   if (!response.ok) {
-    throw new RequestError(response)
+    throw new ApiError(response)
   }
   return response.blob()
 }
@@ -105,11 +115,11 @@ function omitContentType(headers) {
 
 // Only requests to the API receive its headers and, with CORS, its credentials:
 function getFetchOptions(api, url) {
-  const isApiUrl = api.isApiUrl(url)
+  const isApi = isApiUrl(api, url)
   return {
-    headers: { ...(isApiUrl && api.headers) },
+    headers: { ...(isApi && api.headers) },
     credentials:
-      isApiUrl && api.cors?.credentials
+      isApi && api.cors?.credentials
         ? 'include'
         : 'same-origin'
   }

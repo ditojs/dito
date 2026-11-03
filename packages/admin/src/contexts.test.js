@@ -10,6 +10,7 @@ import {
   enterValue
 } from './test/mount.js'
 import { toModelData } from './utils/data.js'
+import { ApiError } from './utils/request.js'
 
 // The contexts that the callbacks of each kind of component receive, by key:
 let contexts
@@ -517,8 +518,9 @@ describe('the contexts of components', () => {
       data: { id: 1, title: 'Emma' },
       request: ({ method = 'get', url }) => {
         if (url.endsWith('/publish')) {
-          throw Object.assign(new Error('Unable to publish'), {
-            response: { status: 500, data: { message: 'Unable to publish' } }
+          throw new ApiError({
+            status: 500,
+            data: { message: 'Unable to publish' }
           })
         }
         return method === 'get' && url === '/items/1/chapters'

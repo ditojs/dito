@@ -8,14 +8,11 @@ import {
   resolveDownloadUrl,
   getRequestCacheKey,
   getErrorMessage,
-  RequestError
+  ApiError
 } from './request.js'
 
 function createApi(settings = {}) {
-  const api = { url: 'https://example.com/api', ...settings }
-  api.getApiUrl = options => getApiUrl(api, options)
-  api.isApiUrl = url => isApiUrl(api, url)
-  return api
+  return { url: 'https://example.com/api', ...settings }
 }
 
 afterEach(() => {
@@ -126,20 +123,29 @@ describe('request()', () => {
     expect(response.data).toBe(undefined)
   })
 
-  it('throws a `RequestError` with the response for failed requests', async () => {
+  it('throws an `ApiError` with the fields of the body for failed requests', async () => {
     stubFetch({
       status: 400,
       statusText: 'Bad Request',
-      body: { message: 'Invalid title' }
+      body: { message: 'Invalid title', type: 'ModelValidation', errors: {} }
     })
     const error = await request(createApi(), { url: 'books' }).catch(
       error => error
     )
-    expect(error).toBeInstanceOf(RequestError)
-    expect(error.message).toBe(
-      'Request failed with status code: 400 (Bad Request)'
-    )
-    expect(error.response.data).toEqual({ message: 'Invalid title' })
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error).toBeInstanceOf(Error)
+    expect(error).toMatchObject({
+      name: 'ApiError',
+      message: 'Invalid title',
+      type: 'ModelValidation',
+      errors: {},
+      status: 400
+    })
+    expect(error.response.data).toEqual({
+      message: 'Invalid title',
+      type: 'ModelValidation',
+      errors: {}
+    })
   })
 
   it('aborts requests after `api.timeout`', async () => {
@@ -249,11 +255,14 @@ describe('fetchBlob()', () => {
     expect(await blob.text()).toBe('scan')
   })
 
-  it('throws a `RequestError` with the response for failed requests', async () => {
+  it('throws an `ApiError` with the status for failed requests', async () => {
     stubFetch({ status: 404, statusText: 'Not Found' })
     const error = await fetchBlob(api, 'files/scan.pdf').catch(error => error)
-    expect(error).toBeInstanceOf(RequestError)
-    expect(error.response.status).toBe(404)
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.status).toBe(404)
+    expect(error.message).toBe(
+      'Request failed with status code: 404 (Not Found)'
+    )
   })
 })
 
@@ -416,6 +425,7 @@ describe('getErrorMessage()', () => {
 
   it('returns `null` for errors without a string message', () => {
     expect(getErrorMessage({ type: 'ServerError' })).toBe(null)
+    expect(getErrorMessage(new Error())).toBe(null)
     expect(getErrorMessage({ message: { key: 'value' } })).toBe(null)
     expect(getErrorMessage(null)).toBe(null)
   })

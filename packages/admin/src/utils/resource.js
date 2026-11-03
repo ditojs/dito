@@ -43,3 +43,22 @@ export function getMemberResource(id, resource) {
       }
     : null
 }
+
+// The URL path of a resource relative to `api.url`, joined to the paths of its
+// parents. Upload routes are on the collection of the parent resource.
+export function getResourcePath(resource) {
+  if (!resource) return resource
+  const { type, id, path, parent } = resource
+  return type === 'member'
+    ? `${joinPaths(getResourcePath(parent), path)}/${id}`
+    : type === 'upload'
+      ? `${joinPaths(getResourcePath(parent.parent), parent.path)}/upload/${
+          path
+        }`
+      : joinPaths(getResourcePath(parent), path)
+}
+
+// An empty path is the parent itself, without a trailing slash:
+function joinPaths(parentPath, path) {
+  return parentPath && path ? `${parentPath}/${path}` : parentPath || path
+}

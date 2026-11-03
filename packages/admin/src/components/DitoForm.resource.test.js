@@ -8,23 +8,23 @@ import {
   stubConfirm,
   isForm
 } from '../test/mount.js'
-import { RequestError } from '../utils/request.js'
+import { ApiError } from '../utils/request.js'
 import DitoButtonType from '../types/DitoButtonType.vue'
 
 // How forms load and save their item through their resource, as they do now.
 
-// Returns the requests other than the session request, as
+// Returns the requests other than the one for the logged-in user, as
 // `[method, url, data]`.
 function getRequests(request) {
   return request.mock.calls
     .map(([{ method = 'get', url, data }]) => [method, url, data])
-    .filter(([, url]) => url !== '/session')
+    .filter(([, url]) => url !== '/self')
 }
 
 // Returns the error that `api.request()` throws for a response with `status`
 // and `data`, see `request()` in `utils/request.js`.
-function createRequestError(status, data) {
-  return new RequestError({ status, statusText: 'Error', data })
+function createApiError(status, data) {
+  return new ApiError({ status, statusText: 'Error', data })
 }
 
 function clickButton(element, label) {
@@ -299,7 +299,7 @@ describe('DitoForm resources', () => {
       const { wrapper, notify, submit } = await mountBookForm({
         data: null,
         respond: () => {
-          throw createRequestError(500, { message: 'Storage is full.' })
+          throw createApiError(500, { message: 'Storage is full.' })
         }
       })
       await enterValue(wrapper.find('input[name="name"]'), 'Emma')
@@ -319,7 +319,7 @@ describe('DitoForm resources', () => {
 
   describe('server validation errors', () => {
     const respondWithErrors = () => {
-      throw createRequestError(400, {
+      throw createApiError(400, {
         type: 'ModelValidation',
         message: 'The provided data is not valid',
         errors: { name: [{ message: 'must be unique' }] }

@@ -10,6 +10,7 @@ import {
   DitoSwitchField,
   DitoSection
 } from '../index.js'
+import { ApiError } from '../utils/request.js'
 
 const properties = {
   name: { type: 'string', required: true, maxLength: 40 },
@@ -353,13 +354,11 @@ describe('widgets', () => {
     form.item.isFeatured = false
     await nextTick()
     request.mockImplementation(() => {
-      throw Object.assign(new Error('Validation failed'), {
-        response: {
-          status: 400,
-          data: {
-            type: 'ValidationError',
-            errors: { rank: [{ message: 'is too low' }] }
-          }
+      throw new ApiError({
+        status: 400,
+        data: {
+          type: 'ValidationError',
+          errors: { rank: [{ message: 'is too low' }] }
         }
       })
     })

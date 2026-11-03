@@ -1,6 +1,6 @@
 import { toRaw, type Component } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
-import { parseDataPath } from '@ditojs/utils'
+import { hyphenate, parseDataPath } from '@ditojs/utils'
 import {
   getFormSchemas,
   getNamedSchemas,
@@ -23,7 +23,7 @@ import {
 import { appendDataPath, getRelativeDataPath } from './data.js'
 import type { ItemLocation, RouteClaim } from './RouteContext.ts'
 import type { SourceContext } from './SourceContext.ts'
-import type { Api, Schema } from './types.ts'
+import type { Schema } from './types.ts'
 
 export interface RouteComponents {
   readonly view: Component
@@ -137,15 +137,12 @@ export class RouteTree {
   readonly nodes: (MenuNode | ViewNode)[]
   // The nodes of the views that have routes but no menu items:
   readonly #hiddenNodes: (MenuNode | ViewNode)[]
-  readonly #api: Pick<Api, 'normalizePath'>
   readonly #viewsByName = new Map<string, ViewNode>()
 
   constructor(
     views: Record<string, Schema>,
-    api: Pick<Api, 'normalizePath'>,
     hiddenViews: Record<string, Schema> = {}
   ) {
-    this.#api = api
     const createViewNodes = (views: Record<string, Schema>) =>
       Object.entries(views).map(([name, schema]) =>
         this.#createViewNode(schema, name, null)
@@ -179,7 +176,7 @@ export class RouteTree {
     parent: MenuNode | null
   ): MenuNode | ViewNode {
     const path = `${parent?.path ?? ''}/${
-      getSchemaPath(schema, name, this.#api)
+      getSchemaPath(schema, name)
     }`
     if (isMenu(schema)) {
       const menu = new MenuNode(schema, parent, name, path)
@@ -209,7 +206,7 @@ export class RouteTree {
         itemPath =
           source === schema.field
             ? ''
-            : getSourcePath(source, componentPath, this.#api)
+            : getSourcePath(source, componentPath)
       }
     })
     return itemPath
@@ -246,14 +243,13 @@ function createViewRecord(
 // and panels around it, then its own `path`, e.g. `pricing/families`:
 export function getSourcePath(
   schema: Schema,
-  componentPath: string,
-  api: Pick<Api, 'normalizePath'>
+  componentPath: string
 ): string {
   const segments = parseDataPath(componentPath)
   const name = segments.pop()
   return [
-    ...segments.map((segment: string) => api.normalizePath(segment)),
-    getSchemaPath(schema, name, api)
+    ...segments.map((segment: string) => hyphenate(segment)),
+    getSchemaPath(schema, name)
   ].join('/')
 }
 
@@ -360,8 +356,8 @@ export function getItemKey(
     : ((item && getItemId(schema, item)) ?? String(index))
 }
 
-function getChildPath(schema: Schema, api: Pick<Api, 'normalizePath'>) {
-  return getSchemaPath(schema, schema.name, api)
+function getChildPath(schema: Schema) {
+  return getSchemaPath(schema, schema.name)
 }
 
 // Open the form of the item that `path` leads to below the source, the
@@ -369,8 +365,7 @@ function getChildPath(schema: Schema, api: Pick<Api, 'normalizePath'>) {
 // `families/0` or `pages/0/subpages/1`:
 export function claimSourceRoute(
   sourceRoute: SourceRoute,
-  path: string,
-  api: Pick<Api, 'normalizePath'>
+  path: string
 ): RouteClaim | null {
   const rest = getRelativeDataPath(path, sourceRoute.path)
   if (rest === null) return null
@@ -414,8 +409,8 @@ export function claimSourceRoute(
         isEmbedded: !!getTypeDescriptor(schema)?.hasEmbeddedForms,
         key: claimKey,
         claimItem: item => {
-          const itemPath = findItemPath(sourceRoute, item, api)
-          return itemPath ? claimSourceRoute(sourceRoute, itemPath, api) : null
+          const itemPath = findItemPath(sourceRoute, item)
+          return itemPath ? claimSourceRoute(sourceRoute, itemPath) : null
         }
       }
     }
@@ -425,11 +420,11 @@ export function claimSourceRoute(
       child &&
       param !== 'create' &&
       routesChildren(schema) &&
-      segments[0] === getChildPath(child, api)
+      segments[0] === getChildPath(child)
     ) {
       segments.shift()
       schema = child
-      sourcePath = `${formPath}/${getChildPath(child, api)}`
+      sourcePath = `${formPath}/${getChildPath(child)}`
       claimKey = appendDataPath(claimKey, child.name)
       const { data, key } = itemLocation
       location = {
@@ -450,8 +445,7 @@ export function claimSourceRoute(
 // path that remains within the form:
 export function getSourceFormRoute(
   sourceRoute: SourceRoute,
-  componentPath: string,
-  api: Pick<Api, 'normalizePath'>
+  componentPath: string
 ): { path: string; componentPath: string } | null {
   const { location } = sourceRoute
   const segments = parseDataPath(
@@ -480,7 +474,7 @@ export function getSourceFormRoute(
       segments[0] === child.name
     ) {
       segments.shift()
-      path += `/${getChildPath(child, api)}`
+      path += `/${getChildPath(child)}`
       schema = child
       value = item[child.name]
     } else {
@@ -494,8 +488,7 @@ export function getSourceFormRoute(
 // item of a parent moved:
 function findItemPath(
   sourceRoute: SourceRoute,
-  item: object,
-  api: Pick<Api, 'normalizePath'>
+  item: object
 ): string | null {
   const find = (
     schema: Schema,
@@ -522,7 +515,7 @@ function findItemPath(
               ? find(
                   child,
                   entry[child.name],
-                  `${formPath}/${getChildPath(child, api)}`,
+                  `${formPath}/${getChildPath(child)}`,
                   isTransient
                 )
               : null

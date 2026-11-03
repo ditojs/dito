@@ -48,7 +48,7 @@ export class ViewRegistry {
       [...Object.entries(views), ...Object.entries(hiddenViews)],
       ([name, schema]) => setupView(this.#api, schema, name)
     )
-    const routeTree = new RouteTree(views, this.#api, hiddenViews)
+    const routeTree = new RouteTree(views, hiddenViews)
     const { fullPath } = this.#router.currentRoute.value
     this.#removeRoutes?.()
     this.#removeRoutes = addRoutes(this.#router, [
@@ -71,7 +71,7 @@ export class ViewRegistry {
   }
 }
 
-// The account settings edit the own user, in a view without a menu item:
+// The account settings edit the logged-in user, in a view without a menu item:
 async function resolveAccountViews(api, { settings } = {}) {
   const form = settings && (await resolveSchema(settings, true))
   return form

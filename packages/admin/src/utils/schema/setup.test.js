@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { reactive, isReactive } from 'vue'
-import { hyphenate, html } from '@ditojs/utils'
+import { html } from '@ditojs/utils'
 import { defineType } from './types.ts'
 import { sourceTraits, numberTraits } from '../../types/traits.ts'
 import {
@@ -45,7 +45,7 @@ defineType({ type: 'color' })
 defineType({ ...numberTraits, type: 'number' })
 
 function createApi(defaults = {}) {
-  return { defaults, normalizePath: path => hyphenate(path) }
+  return { defaults }
 }
 
 // Creates an object that behaves like the module namespace object returned by

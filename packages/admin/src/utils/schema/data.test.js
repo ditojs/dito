@@ -23,6 +23,7 @@ defineType({
   serializeValue: ({ value }) => value && { id: value.id }
 })
 defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
+defineType({ ...sourceTraits, type: 'object', sourceType: 'object' })
 // Amounts are stored in cents, and edited in units:
 defineType({
   type: 'amount',
@@ -271,6 +272,34 @@ describe('serializeData()', () => {
     })
     expect(serialized.works[0]).toEqual(essay)
     expect(serialized.works[0]).not.toBe(essay)
+  })
+
+  describe('of relations', () => {
+    const options = { services: {}, target: 'server' }
+    const serialize = (fields, data) =>
+      serializeData({ type: 'form', fields }, null, data, '', options)
+
+    it('sends the `{ id }` that a `relate` field loaded', () => {
+      const fields = { author: { type: 'reference', relate: true } }
+      expect(serialize(fields, { author: { id: 2 } })).toEqual({
+        author: { id: 2 }
+      })
+      expect(serialize(fields, { author: { id: 2, name: 'Ann' } })).toEqual({
+        author: { id: 2 }
+      })
+      expect(serialize(fields, { author: null })).toEqual({ author: null })
+    })
+
+    it('keeps keys that end in `Id` next to a relation', () => {
+      const fields = {
+        authorId: { type: 'text' },
+        author: { type: 'reference', relate: true }
+      }
+      expect(serialize(fields, { authorId: 'a', author: { id: 2 } })).toEqual({
+        authorId: 'a',
+        author: { id: 2 }
+      })
+    })
   })
 
   describe('of items', () => {

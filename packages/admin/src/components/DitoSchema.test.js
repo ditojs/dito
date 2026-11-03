@@ -10,6 +10,7 @@ import {
   isForm
 } from '../test/mount.js'
 import DitoSchema from './DitoSchema.vue'
+import { ApiError } from '../utils/request.js'
 
 describe('DitoSchema', () => {
   it('shares the width of inlined schemas with their components', async () => {
@@ -1026,8 +1027,9 @@ describe('DitoSchema', () => {
       errors =>
       ({ method = 'get' }) => {
         if (method !== 'get') {
-          throw Object.assign(new Error('Validation failed'), {
-            response: { status: 400, data: { type: 'ValidationError', errors } }
+          throw new ApiError({
+            status: 400,
+            data: { type: 'ValidationError', errors }
           })
         }
         return { data: [] }
@@ -1286,13 +1288,15 @@ describe('DitoSchema', () => {
       const input = panel.find('input[name$="text"]')
       await enterValue(input, 'Emma')
       await settle()
-      expect(admin.router.currentRoute.value.query.filter).toEqual([
-        'title:"Emma"'
-      ])
+      expect(admin.router.currentRoute.value.query['filter[title]']).toBe(
+        'Emma'
+      )
       await panel.find('button[aria-label="Clear"]').trigger('click')
       await settle()
       expect(input.element.value).toBe('')
-      expect(admin.router.currentRoute.value.query.filter).toEqual([])
+      expect(admin.router.currentRoute.value.query).not.toHaveProperty(
+        'filter[title]'
+      )
     })
 
     it(`doesn't apply filters with fields that hold no value`, async () => {
@@ -1315,13 +1319,15 @@ describe('DitoSchema', () => {
       const checkbox = panel.find('input[type="checkbox"]')
       await checkbox.setValue(true)
       await settle()
-      expect(admin.router.currentRoute.value.query.filter).toEqual([
-        'isRead:true'
-      ])
+      expect(admin.router.currentRoute.value.query['filter[isRead]']).toBe(
+        'true'
+      )
       await panel.find('button[aria-label="Clear"]').trigger('click')
       await settle()
       expect(checkbox.element.checked).toBe(false)
-      expect(admin.router.currentRoute.value.query.filter).toEqual([])
+      expect(admin.router.currentRoute.value.query).not.toHaveProperty(
+        'filter[isRead]'
+      )
     })
   })
 
@@ -1339,14 +1345,12 @@ describe('DitoSchema', () => {
           }
         },
         request: ({ query }) => {
-          if (query?.filter?.length) {
-            throw Object.assign(new Error('Invalid filter'), {
-              response: {
-                status: 400,
-                data: {
-                  type: 'FilterValidation',
-                  errors: { 'title/text': [{ message: 'is too short' }] }
-                }
+          if (query?.['filter[title]']) {
+            throw new ApiError({
+              status: 400,
+              data: {
+                type: 'FilterValidation',
+                errors: { 'title/0': [{ message: 'is too short' }] }
               }
             })
           }

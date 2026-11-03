@@ -13,6 +13,7 @@ import {
   isView,
   isForm
 } from '../test/mount.js'
+import { ApiError } from './request.js'
 
 // A custom component that displays the progress of a job on the server, and
 // hands out its context to send the requests that poll it:
@@ -186,23 +187,18 @@ describe('services', () => {
       )
     })
 
-    it('converts errors of responses with data', async () => {
-      const error = new Error('Request failed')
-      error.response = {
+    it('rejects with the errors of the requests', async () => {
+      const error = new ApiError({
         status: 404,
         data: { message: 'Not found', type: 'NotFound' }
-      }
+      })
       const { schemaComponent } = await mountSchema({
         schema: { fields: { title: { type: 'text' } } },
         request: () => Promise.reject(error)
       })
       await expect(
         schemaComponent.context.request({ url: 'books' })
-      ).rejects.toMatchObject({
-        message: 'Not found',
-        type: 'NotFound',
-        status: 404
-      })
+      ).rejects.toBe(error)
     })
 
     it('keeps the requests of components running when they unmount', async () => {
@@ -463,8 +459,8 @@ describe('services', () => {
     const mountWithUsers = async () => {
       let username = 'reader'
       const request = vi.fn(({ method = 'get', url, data }) => {
-        if (url === '/users/session') {
-          return { data: { user: { id: 1, username } } }
+        if (method === 'get' && url === '/users/self') {
+          return { data: { id: 1, username } }
         }
         if (method === 'patch') {
           username = data.username
@@ -476,16 +472,15 @@ describe('services', () => {
         api: { users: { path: 'users' } },
         request
       })
-      const getSessionRequestCount = () =>
-        request.mock.calls.filter(([{ url }]) => url === '/users/session')
-          .length
-      return { ...result, request, getSessionRequestCount }
+      const getUserRequestCount = () =>
+        request.mock.calls.filter(([{ url }]) => url === '/users/self').length
+      return { ...result, request, getUserRequestCount }
     }
 
     it('fetches the own user again after patching it', async () => {
-      const { admin, getSessionRequestCount } = await mountWithUsers()
+      const { admin, getUserRequestCount } = await mountWithUsers()
       expect(admin.context.user.username).toBe('reader')
-      const count = getSessionRequestCount()
+      const count = getUserRequestCount()
       await sendRequest(
         { adminContext: admin.context },
         {
@@ -495,13 +490,13 @@ describe('services', () => {
         }
       )
       // Once to ensure the user before the request, and once after it:
-      expect(getSessionRequestCount()).toBe(count + 2)
+      expect(getUserRequestCount()).toBe(count + 2)
       expect(admin.context.user.username).toBe('editor')
     })
 
     it(`doesn't fetch the user again after patching others`, async () => {
-      const { admin, getSessionRequestCount } = await mountWithUsers()
-      const count = getSessionRequestCount()
+      const { admin, getUserRequestCount } = await mountWithUsers()
+      const count = getUserRequestCount()
       await sendRequest(
         { adminContext: admin.context },
         {
@@ -510,18 +505,18 @@ describe('services', () => {
           data: { username: 'editor' }
         }
       )
-      expect(getSessionRequestCount()).toBe(count + 1)
+      expect(getUserRequestCount()).toBe(count + 1)
       expect(admin.context.user.username).toBe('reader')
     })
 
     it(`doesn't check the user for internal requests`, async () => {
-      const { admin, request, getSessionRequestCount } = await mountWithUsers()
-      const count = getSessionRequestCount()
+      const { admin, request, getUserRequestCount } = await mountWithUsers()
+      const count = getUserRequestCount()
       await sendRequest(
         { adminContext: admin.context },
         { url: '/books', internal: true }
       )
-      expect(getSessionRequestCount()).toBe(count)
+      expect(getUserRequestCount()).toBe(count)
       expect(request).toHaveBeenLastCalledWith(
         expect.objectContaining({ url: '/books' })
       )

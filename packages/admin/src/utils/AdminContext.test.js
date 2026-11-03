@@ -30,7 +30,7 @@ describe('AdminContext', () => {
       views,
       request: ({ method, url, data }) =>
         method === 'post' && url === '/logout'
-          ? { data: { success: true } }
+          ? {}
           : method === 'post' && url === '/login'
             ? { data: { user: { id: 2, username: data.username } } }
             : null

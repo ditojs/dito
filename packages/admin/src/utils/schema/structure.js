@@ -1,4 +1,4 @@
-import { isObject, isString } from '@ditojs/utils'
+import { hyphenate, isObject, isString } from '@ditojs/utils'
 import { getTypeDescriptor, getSourceType } from './types.ts'
 
 export function iterateSchemaComponents(schemas, callback) {
@@ -85,9 +85,9 @@ export function getSchemaIdentifier(schema) {
   return JSON.stringify(schema)
 }
 
-// Views and sources are routed under their names by default:
-export function getSchemaPath(schema, name, api) {
-  return schema.path ?? api.normalizePath(name)
+// Views and sources are routed under their hyphenated names by default:
+export function getSchemaPath(schema, name) {
+  return schema.path ?? hyphenate(name)
 }
 
 export function isSingleFieldView(schema) {

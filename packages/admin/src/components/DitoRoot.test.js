@@ -8,7 +8,8 @@ import {
   mountAdmin,
   mountForm,
   unmountAdmin,
-  enterValue
+  enterValue,
+  stubRequests
 } from '../test/mount.js'
 
 // The DOM of the tests has no WebAuthn, so we answer passkey logins with a
@@ -142,7 +143,7 @@ describe('DitoRoot', () => {
         },
         request: ({ method, url, data }) =>
           method === 'post' && url === '/logout'
-            ? { data: { success: true } }
+            ? {}
             : method === 'post' && url === '/login'
               ? { data: { user: { id: 1, username: data.username } } }
               : null
@@ -176,15 +177,15 @@ describe('DitoRoot', () => {
       const request = vi.fn(({ method, url, data }) => {
         // Users named 'totp-user' have TOTP:
         const responses = {
-          '/logout': { success: true },
+          '/logout': undefined,
           '/login':
             data?.username === 'totp-user'
-              ? { success: false, codeRequired: true, user: null }
+              ? { codeRequired: true }
               : { user: { id: 1, username: data?.username } },
           '/login-code': { user: { id: 3, username: 'totp-user' } },
           '/passkey-login-options': { challenge: 'challenge' },
           '/passkey-login': { user: { id: 2, username: 'passkey-user' } },
-          '/password-reset': { success: true }
+          '/password-reset': undefined
         }
         return method === 'post' && url in responses
           ? { data: responses[url] }
@@ -447,11 +448,12 @@ describe('DitoRoot', () => {
       const logError = vi.spyOn(console, 'error').mockImplementation(() => {})
       const element = document.createElement('div')
       document.body.appendChild(element)
+      stubRequests()
       const admin = new DitoAdmin(element, {
         dito: { base: '/', settings: {} },
         api: {
           url: '/',
-          request: async () => ({ data: { user: { id: 1, username: 'ada' } } })
+          requestStub: async () => ({ data: { id: 1, username: 'ada' } })
         },
         // Views need to be of type 'view':
         views: { books: { type: 'form', fields: {} } }

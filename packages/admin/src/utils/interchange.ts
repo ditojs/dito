@@ -120,7 +120,7 @@ export async function uploadInterchangeFiles(
     const url = getResourceUrl(services, {
       type: 'upload',
       method: 'post',
-      path: api.normalizePath(dataPath!)
+      path: dataPath!
     })
     if (!url) {
       throw new Error('Unable to upload files without resource.')

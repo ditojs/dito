@@ -142,13 +142,13 @@ export function useSource(
             sourceData.setData(data)
             await schemaEvents.emitEvent('load')
           },
-          onError({ data, status }) {
-            if (
-              data?.type === 'FilterValidation' &&
-              onFilterErrors?.(data.errors)
-            ) {
+          onError({ type, errors, status }) {
+            if (type === 'FilterValidation' && onFilterErrors?.(errors)) {
               return true
-            } else if (status === 401 && routeContext?.isForm) {
+            } else if (
+              (status === 401 || status === 403) &&
+              routeContext?.isForm
+            ) {
               // Sources in forms show that the user may not access their
               // resource:
               getModel().errors.add(props.dataPath, unauthorizedError)

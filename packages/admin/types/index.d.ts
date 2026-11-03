@@ -45,30 +45,29 @@ export interface GlobalConfig {
     [key: string]: any
   }
   /**
-   * The authentication features that the users controller at `api.users`
-   * routes.
+   * The authentication features of the server, the `features` that
+   * `usersRoutes()` of `@ditojs/auth` returns.
    */
   authentication?: {
     /**
-     * Set with the passkey actions, through `PasskeyService`. Adds a passkey
+     * Set with `features.passkeys` of `usersRoutes()`. Adds a passkey
      * login to the login dialog, and the user's passkeys to the Security
      * dialog of the account menu.
      */
     hasPasskeys?: boolean
     /**
-     * Set with the TOTP actions, through `TotpService`. Adds the setup of
+     * Set with `features.totp` of `usersRoutes()`. Adds the setup of
      * two-factor authentication with TOTP to the Security dialog of the
      * account menu.
      */
     hasTotp?: boolean
     /**
-     * Set with `'post password'`. Adds the password change to the Security
+     * Always set by `usersRoutes()`. Adds the password change to the Security
      * dialog of the account menu.
      */
     hasPasswordChange?: boolean
     /**
-     * Set with the password reset actions, through
-     * `config.app.authentication.passwordReset`. Adds a "Forgot?"
+     * Set with `features.passwordReset` of `usersRoutes()`. Adds a "Forgot?"
      * button to the password field of the login dialog, which asks the server
      * to email a link that opens the admin with `#password-reset=` and the
      * token, to set a new password.
@@ -172,7 +171,7 @@ export interface ApiResource {
 /**
  * Configuration for the admin's API layer. Merged from three
  * sources in order of priority: the constructor `api` parameter,
- * `dito.api` (passed from `AdminController` on the server), and
+ * `dito.api` (passed from `serveAdmin()` on the server), and
  * built-in defaults.
  */
 export interface ApiConfig {
@@ -198,13 +197,6 @@ export interface ApiConfig {
     date?: DateFormat
     time?: TimeFormat
   }
-  /**
-   * The function used to perform HTTP requests. Defaults to a
-   * built-in `fetch` wrapper that applies {@link ApiConfig.headers},
-   * {@link ApiConfig.cors}, and {@link ApiConfig.getApiUrl}
-   * automatically for API URLs.
-   */
-  request?: RequestMethod
   /**
    * Controls admin notification toasts. Set to `false` to disable
    * all notifications, or provide an object to customize display
@@ -233,8 +225,8 @@ export interface ApiConfig {
    */
   timeout?: number | null
   /**
-   * CORS settings applied to API requests (where
-   * {@link ApiConfig.isApiUrl} returns `true`).
+   * CORS settings applied to API requests: relative URLs and the ones
+   * inside {@link ApiConfig.url}.
    */
   cors?: {
     /**
@@ -244,132 +236,28 @@ export interface ApiConfig {
     credentials: boolean
   }
   /**
-   * When `true`, sets {@link ApiConfig.normalizePath} to
-   * `hyphenate` (camelCase to kebab-case) and
-   * {@link ApiConfig.denormalizePath} to `camelize` (kebab-case to
-   * camelCase). Used for automatic path conversion between JS
-   * naming conventions and URL paths.
-   *
-   * @defaultValue Inherits from
-   * `Application.config.app.normalizePaths`, falling back
-   * to `false`.
-   */
-  normalizePaths?: boolean
-  /**
-   * Converts a camelCase path segment to its URL form. Applied
-   * when building schema routes and upload paths.
-   *
-   * @defaultValue `hyphenate` when {@link ApiConfig.normalizePaths}
-   * is `true`, otherwise an identity function.
-   */
-  normalizePath?: (path: string) => string
-  /**
-   * Converts a URL path segment back to its camelCase form.
-   *
-   * @defaultValue `camelize` when {@link ApiConfig.normalizePaths}
-   * is `true`, otherwise an identity function.
-   */
-  denormalizePath?: (path: string) => string
-  /**
-   * Authentication resource configuration. The `path` defines the
-   * user collection endpoint, and `login`, `logout`, and `session`
-   * are nested as child resources under it (e.g. `users/login`). The
-   * password changes, password resets, passkeys and TOTP use the action
-   * names of `UsersController` under it (e.g. `users/passkey-login`).
+   * The routes of `usersRoutes()` on the server. `login`, `logout`, `self`
+   * and the routes of passwords, password resets, passkeys and TOTP are
+   * under `path`, such as `admins/login` or `admins/passkey-login`.
    */
   users?: {
     /**
-     * The collection path for the user model.
+     * The path of the users routes, such as `'admins'`.
      *
-     * @defaultValue None: the endpoints are at the root of the API.
+     * @defaultValue None: the routes are at the root of the API.
      */
     path?: string
-    /** Login endpoint. */
-    login?: {
-      /**
-       * @defaultValue `'login'`
-       */
-      path?: string
-      /**
-       * @defaultValue `'post'`
-       */
-      method?: HttpMethod
-    }
-    /** Logout endpoint. */
-    logout?: {
-      /**
-       * @defaultValue `'logout'`
-       */
-      path?: string
-      /**
-       * @defaultValue `'post'`
-       */
-      method?: HttpMethod
-    }
-    /**
-     * Session endpoint for checking an existing authenticated
-     * session on page load.
-     */
-    session?: {
-      /**
-       * @defaultValue `'session'`
-       */
-      path?: string
-      /**
-       * @defaultValue `'get'`
-       */
-      method?: HttpMethod
-    }
-    /**
-     * The endpoint of the logged-in user, which the account settings load
-     * and patch.
-     */
-    self?: {
-      /**
-       * @defaultValue `'self'`
-       */
-      path?: string
-    }
   }
-  /**
-   * Custom resource path handlers, keyed by resource type. Merged
-   * with the built-in handlers (`any`, `default`, `collection`,
-   * `member`, `upload`). Each handler receives an
-   * {@link ApiResource} and returns the resolved path string.
-   */
-  resources?: Record<string, (resource: ApiResource | string) => string>
 
   /**
-   * HTTP headers included in all API requests (where
-   * {@link ApiConfig.isApiUrl} returns `true`). Merged with the
-   * default `Content-Type: application/json` header, and can be
-   * further overridden per-request.
+   * HTTP headers included in all API requests: relative URLs and the
+   * ones inside {@link ApiConfig.url}. Merged with the default
+   * `Content-Type: application/json` header, and can be further overridden
+   * per request.
    *
    * @defaultValue `{ 'Content-Type': 'application/json' }`
    */
   headers?: Record<string, string>
-
-  /**
-   * Returns the full API URL for a given request configuration.
-   * Prepends {@link ApiConfig.url} to relative URLs and appends
-   * formatted query parameters.
-   */
-  getApiUrl?: (options: {
-    url: string
-    query?:
-      | Record<string, string | number | (string | number)[]>
-      | [string, string | number][]
-      | null
-  }) => string
-
-  /**
-   * Returns `true` if the given URL is an API URL: a relative URL, which
-   * {@link ApiConfig.getApiUrl} resolves against the API, or an absolute URL
-   * inside {@link ApiConfig.url}, ending at a path boundary: `/api/books` is
-   * inside `/api`, `/api-docs` isn't. When `true`, the request includes
-   * {@link ApiConfig.headers} and respects {@link ApiConfig.cors} settings.
-   */
-  isApiUrl?: (url: string) => boolean
 
   /**
    * Default schema property values per schema type. During
@@ -402,6 +290,31 @@ export interface ApiConfig {
         schema: Field | FormSchema | ViewSchema | PageSchema
       ) => Record<string, any> | void)
   >
+}
+
+/**
+ * The API of the admin, as `DitoAdmin.api`: the {@link ApiConfig} with its
+ * defaults, and the functions that send requests to the API.
+ */
+export interface Api extends ApiConfig {
+  /**
+   * Sends a request with `fetch()`. API URLs get {@link ApiConfig.headers}
+   * and {@link ApiConfig.cors}, and relative URLs resolve against
+   * {@link ApiConfig.url}.
+   */
+  request: RequestMethod
+  /**
+   * Returns the full URL of a request: `url` prefixed with
+   * {@link ApiConfig.url} unless it is absolute or already starts with it,
+   * and `query` appended.
+   */
+  getApiUrl(options: {
+    url: string
+    query?:
+      | Record<string, string | number | (string | number)[]>
+      | [string, string | number][]
+      | null
+  }): string
 }
 
 /**
@@ -2199,8 +2112,8 @@ export type SchemaContext<$Item = any> = {
   readonly clipboardItem: any
   /** The currently authenticated user, `null` when logged out. */
   readonly user: AdminUser | null
-  /** The admin API configuration. */
-  readonly api: ApiConfig
+  /** The admin's API. */
+  readonly api: Api
   /** The schema definition for the current field. */
   readonly schema: Field | null
   /** All registered top-level views. */
@@ -2284,6 +2197,8 @@ export type SchemaContext<$Item = any> = {
   readonly sourceQuery: Record<string, any> | null
   /**
    * The error, in the contexts of the `error` handlers of buttons and forms.
+   * Failed requests give an `Error` with the fields of the response body,
+   * e.g. `type`, `code` and `errors`, the `status` and the `response`.
    */
   readonly error: unknown
   /**
@@ -2458,7 +2373,7 @@ export type SchemaContext<$Item = any> = {
     match?: string | string[] | RegExp | ((dataPath: string) => boolean)
   ): Record<
     string,
-    { message: string; keyword?: string; params?: Record<string, any> }[]
+    { message: string; code?: string }[]
   > | null
   /**
    * Clears the errors of the data of the form, view, dialog
@@ -2626,8 +2541,8 @@ export type SchemaContext<$Item = any> = {
  * `flattenedViews` change with each login, and are reactive.
  */
 export interface AdminContext {
-  /** The admin API configuration. */
-  readonly api: ApiConfig
+  /** The admin's API. */
+  readonly api: Api
   /** The settings of the `dito` object, e.g. `rootClass`. */
   readonly settings: NonNullable<GlobalConfig['settings']>
   /** Logs users in and out through the `api.users` resources. */
@@ -2639,7 +2554,7 @@ export interface AdminContext {
     login(): Promise<SchemaContext['user']>
     /** Logs out, and resolves to whether it worked. */
     logout(): Promise<boolean>
-    /** Fetches the user of the server's session. */
+    /** Fetches the logged-in user through `api.users.self`. */
     fetchUser(): Promise<SchemaContext['user']>
     /**
      * Asks to log in if the session expired, and resolves to the user, or
@@ -3226,8 +3141,8 @@ export class DitoAdmin<
 > {
   /** The DOM element the admin is mounted to, also when given a selector. */
   el: Element
-  /** The resolved API configuration. */
-  api: ApiConfig
+  /** The admin's API, with its defaults. */
+  api: Api
   /** The context of the admin. */
   context: AdminContext
   /** The Vue application instance. */
@@ -3240,7 +3155,7 @@ export class DitoAdmin<
     options?: AdminOptions & {
       /**
        * The base, api, settings and authentication passed from
-       * `AdminController`.
+       * `serveAdmin()`.
        *
        * @defaultValue `globalThis.dito`
        */
@@ -3393,6 +3308,18 @@ export interface TypeDescriptor {
  * `type: 'component'`.
  */
 export function defineType(descriptor: TypeDescriptor): TypeDescriptor
+
+/**
+ * Returns a new temporary id, such as `'@1'`, for a new row that a relation
+ * links before it is saved, as the options of fields with `relate` give them.
+ * Saving sends the row with `#id` and each link to it as `{ '#ref' }`.
+ */
+export function createTemporaryId(): string
+
+/**
+ * Whether `id` is a temporary id of {@link createTemporaryId}.
+ */
+export function isTemporaryId(id: unknown): boolean
 
 /**
  * Places the field `name` of the `fields` of a layout section, see

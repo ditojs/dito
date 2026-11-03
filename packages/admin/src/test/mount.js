@@ -1,9 +1,10 @@
 // Test harness that mounts schemas in the real Dito.js admin: `DitoAdmin`
-// creates the app with its provides, plugins and directives, `DitoRoot` sets
-// up the routes of the views, and `DitoView` or `DitoForm` own the data and its
-// `DataModel`. Only the network is stubbed: `api.request()` answers the session
-// request with a user, and passes all other requests to the test's `request()`,
-// unless a real server answers them, see `mountAdmin()`.
+// creates the app with its provides, plugins and directives, `DitoRoot` sets up
+// the routes of the views, and `DitoView` or `DitoForm` own the data and its
+// `DataModel`. Only the network is stubbed: `request()` of `utils/request.js`
+// responds to the session request with a user, and passes all other requests to
+// the test's `request()`, unless a real server handles them, see
+// `mountAdmin()`.
 import { vi, afterEach } from 'vitest'
 import { nextTick } from 'vue'
 import { VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils'
@@ -14,6 +15,9 @@ import DitoForm from '../components/DitoForm.vue'
 import DitoContainer from '../components/DitoContainer.vue'
 import DitoSchema from '../components/DitoSchema.vue'
 import { appendDataPath } from '../utils/data.js'
+import * as requestModule from '../utils/request.js'
+
+const { request: sendRequest } = requestModule
 
 const mountedAdmins = new Set()
 const confirmObservers = new Set()
@@ -30,6 +34,14 @@ afterEach(() => {
   confirmObservers.clear()
   vi.unstubAllGlobals()
 })
+
+// Sends the requests of admins with a `requestStub` in their `api` to the stub,
+// and the others to `fetch()`.
+export function stubRequests() {
+  vi.spyOn(requestModule, 'request').mockImplementation((api, options) =>
+    api.requestStub ? api.requestStub(options) : sendRequest(api, options)
+  )
+}
 
 // Mounts a view with the properties of `schema`, e.g. its `fields`, and
 // sets `data` as the view's data. Views don't submit, use `mountForm()` for
@@ -101,14 +113,14 @@ export async function mountForm({
   return createMountResult(admin, form)
 }
 
-// Mounts `DitoAdmin` with `views` into a new element in the document, and
-// waits until the views are resolved and their routes are set up, or until it
-// asks to log in. `request(options)` handles the API requests other than the
-// session request, and returns the response as `{ data }` or throws. With the
-// URL of a `server`, e.g. of a scenario's app, the server answers all requests
-// instead. The admin starts at `path`. `api` is merged into the API settings,
-// e.g. `api.defaults` or `api.formats`, and `settings` and `authentication`
-// are the ones of the `dito` object.
+// Mounts `DitoAdmin` with `views` into a new element in the document, and waits
+// until the views are resolved and their routes are set up, or until it asks to
+// log in. `request(options)` handles the API requests other than the request
+// for the logged-in user, and returns the response as `{ data }` or throws.
+// With the URL of a `server`, e.g. of a scenario's app, the server answers all
+// requests instead. The admin starts at `path`. `api` is merged into the API
+// settings, e.g. `api.defaults` or `api.formats`, and `settings` and
+// `authentication` are the ones of the `dito` object.
 export async function mountAdmin({
   views,
   request = null,
@@ -129,16 +141,17 @@ export async function mountAdmin({
   document.body.appendChild(element)
   const requestStub = vi.fn(async options => {
     const { method = 'get', url } = options
-    if (method === 'get' && url === '/session') {
-      return { data: { user: { id: 1, username: 'tester' } } }
+    if (method === 'get' && url === '/self') {
+      return { data: { id: 1, username: 'tester' } }
     }
     if (!request) {
       throw new Error(`Unexpected request: ${method} ${url}`)
     }
     return request(options)
   })
-  // `AdminController` provides the `dito` object as `window.dito` too:
+  // `serveAdmin()` provides the `dito` object as `window.dito` too:
   window.dito = { base: '/', settings, authentication }
+  stubRequests()
   const dito = new DitoAdmin(element, {
     dito: window.dito,
     api: server
@@ -148,7 +161,7 @@ export async function mountAdmin({
           // Unlike browsers, happy-dom caches responses without cache headers:
           headers: { 'Cache-Control': 'no-cache', ...api.headers }
         }
-      : { url: '/', ...api, request: requestStub },
+      : { url: '/', ...api, requestStub },
     views,
     ...options
   })

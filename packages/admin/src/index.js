@@ -42,6 +42,9 @@ export {
   DitoCustomField
 } from './components/widgets.js'
 export { default as DitoSection } from './components/DitoSection.vue'
+// New rows that a relation links get temporary ids, which saving sends as
+// `#id` on the row and `{ '#ref' }` on the links:
+export { createTemporaryId, isTemporaryId } from './utils/data.js'
 export default DitoAdmin
 
 // The keys of 3.x and what replaces them:

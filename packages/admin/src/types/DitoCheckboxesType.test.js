@@ -1,5 +1,9 @@
 import { html } from '@ditojs/utils'
-import { mountSchema, mountAdminWithGenresView } from '../test/mount.js'
+import {
+  mountForm,
+  mountSchema,
+  mountAdminWithGenresView
+} from '../test/mount.js'
 
 const genres = [
   { value: 'fiction', label: 'Fiction' },
@@ -265,5 +269,149 @@ describe('DitoCheckboxesType', () => {
       }
     })
     expect(findField('genres').attributes('aria-label')).toBe('Genres & forms')
+  })
+
+  it('sends checked new rows of a list as `#ref`s to their `#id`s', async () => {
+    // A license links shop items of its order: the options come from the
+    // order's items, and new items have no ids yet.
+    const changes = []
+    const { findField, data, submit } = await mountForm({
+      schema: {
+        // An order form that sends the serialized order to price it on each
+        // change:
+        onChange: ({ dataPath, serializedRootItem }) => {
+          if (dataPath.startsWith('licenses')) {
+            changes.push(structuredClone(serializedRootItem))
+          }
+        },
+        fields: {
+          shopItems: {
+            type: 'list',
+            inlined: true,
+            forms: {
+              font: { type: 'form', fields: { name: { type: 'text' } } },
+              charge: { type: 'form', fields: { name: { type: 'text' } } }
+            }
+          },
+          licenses: {
+            type: 'list',
+            inlined: true,
+            form: {
+              type: 'form',
+              fields: {
+                name: { type: 'text' },
+                shopItems: {
+                  type: 'checkboxes',
+                  relate: true,
+                  options: {
+                    data: ({ parentItem: order }) => order.shopItems,
+                    dataPath: '/shopItems',
+                    label: 'name'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: {
+        shopItems: [
+          { id: 1, type: 'font', name: 'Old' },
+          { type: 'font', name: 'A' },
+          { type: 'charge', name: 'B' }
+        ],
+        licenses: [{ name: 'L', shopItems: [] }]
+      },
+      request: ({ data }) => ({ data })
+    })
+    const checkboxes = findField('licenses/0/shopItems').findAll(
+      'input[type="checkbox"]'
+    )
+    await checkboxes[2].setValue(true)
+    expect(data.licenses[0].shopItems).toEqual([data.shopItems[2]])
+    const payload = await submit()
+    const reference = payload.shopItems[2]['#id']
+    expect(reference).toEqual(expect.any(String))
+    expect(payload.shopItems).toEqual([
+      { id: 1, type: 'font', name: 'Old' },
+      { type: 'font', name: 'A' },
+      { '#id': reference, 'type': 'charge', 'name': 'B' }
+    ])
+    expect(payload.licenses[0].shopItems).toEqual([{ '#ref': reference }])
+    const [change] = changes
+    expect(change.shopItems[2]['#id']).toEqual(expect.any(String))
+    expect(change.licenses[0].shopItems).toEqual([
+      { '#ref': change.shopItems[2]['#id'] }
+    ])
+  })
+
+  it('sends checked created rows as `#ref`s to their `#id`s', async () => {
+    const changes = []
+    const itemForm = { type: 'form', fields: { name: { type: 'text' } } }
+    const { findField, getComponent, settle, submit } = await mountForm({
+      schema: {
+        onChange: ({ dataPath, serializedRootItem }) => {
+          if (dataPath.startsWith('licenses')) {
+            changes.push(structuredClone(serializedRootItem))
+          }
+        },
+        fields: {
+          shopItems: {
+            type: 'list',
+            inlined: true,
+            forms: { font: itemForm }
+          },
+          licenses: {
+            type: 'list',
+            inlined: true,
+            form: {
+              type: 'form',
+              fields: {
+                shopItems: {
+                  type: 'checkboxes',
+                  relate: true,
+                  options: {
+                    data: ({ parentItem: order }) => order.shopItems,
+                    dataPath: '/shopItems',
+                    label: 'name'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: {
+        shopItems: [{ id: 1, type: 'font', name: 'Old' }],
+        licenses: [{ id: 1, shopItems: [{ id: 1 }] }]
+      },
+      request: ({ data }) => ({ data })
+    })
+    const list = getComponent('shopItems')
+    list.sourceContext.createItem(itemForm, 'font')
+    list.sourceContext.createItem(itemForm, 'font')
+    await settle()
+    const inputs = findField('shopItems').findAll('input[type="text"]')
+    await inputs[1].setValue('A')
+    await inputs[2].setValue('B')
+    await settle()
+    const checkboxes = findField('licenses/0/shopItems').findAll(
+      'input[type="checkbox"]'
+    )
+    await checkboxes[2].setValue(true)
+    await settle()
+    const payload = await submit()
+    const reference = payload.shopItems[2]['#id']
+    expect(reference).toEqual(expect.any(String))
+    expect(payload.shopItems[1]).not.toHaveProperty('#id')
+    expect(payload.licenses[0].shopItems).toEqual([
+      { id: 1 },
+      { '#ref': reference }
+    ])
+    const change = changes.at(-1)
+    expect(change.licenses[0].shopItems).toEqual([
+      { id: 1 },
+      { '#ref': change.shopItems[2]['#id'] }
+    ])
   })
 })

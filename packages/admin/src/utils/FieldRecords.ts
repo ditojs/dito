@@ -24,6 +24,7 @@ import {
 import { walkData, type DataEntry } from './schema/walk.js'
 import { getOptionsSettings, getReplacedValue } from './schema/options.ts'
 import { EntryMap } from './EntryMap.ts'
+import { getErrorMessage } from './request.js'
 import type { DataModel } from './DataModel.ts'
 import type { Schema } from './types.ts'
 
@@ -237,11 +238,15 @@ export class FieldRecords {
         () => resolver.lastLoadError,
         (error, previousError) => {
           const dataPath = record.dataPath.value
+          // Loaders can throw values that aren't errors:
+          const getMessage = (error: any) => (
+            getErrorMessage(error) ?? String(error)
+          )
           if (previousError) {
-            this.model.errors.remove(dataPath, getErrorMessage(previousError))
+            this.model.errors.remove(dataPath, getMessage(previousError))
           }
           if (error) {
-            this.model.errors.add(dataPath, getErrorMessage(error))
+            this.model.errors.add(dataPath, getMessage(error))
           }
         }
       )
@@ -461,8 +466,4 @@ function createFieldRecord(entry: FieldEntry): FieldRecord {
     optionsSchema: null,
     optionsScope: null
   }
-}
-
-function getErrorMessage(error: any): string {
-  return error.message || error
 }

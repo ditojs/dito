@@ -296,15 +296,11 @@ export class ComponentTree {
       node = node.getNode(key)
       const { sourceRoute } = node
       const route = sourceRoute
-        ? getSourceFormRoute(sourceRoute, componentPath, this.api)
+        ? getSourceFormRoute(sourceRoute, componentPath)
         : null
       if (route) return route
     }
     return null
-  }
-
-  get api() {
-    return this.dataContext.services.adminContext.api
   }
 
   // The same contexts as the rendered components get:
@@ -514,7 +510,7 @@ export class ComponentNode {
   claimRoute(path: string): RouteClaim | null {
     const { sourceRoute, sourceSchema } = this
     if (sourceRoute) {
-      return claimSourceRoute(sourceRoute, path, this.tree.api)
+      return claimSourceRoute(sourceRoute, path)
     } else if (!sourceSchema || isInlined(sourceSchema)) {
       for (const node of [...this.children, ...this.#detachedNodes.values()]) {
         const claim = node.isRelevant() ? node.claimRoute(path) : null
@@ -548,8 +544,7 @@ export class ComponentNode {
 
   #createSource(schema: Schema) {
     const { componentPath, tree } = this
-    const { adminContext, routeContext } = tree.dataContext.services
-    const { api } = adminContext
+    const { routeContext } = tree.dataContext.services
     const linksToView = !!getViewSchema(
       schema,
       tree.createContext(schema, {
@@ -578,7 +573,7 @@ export class ComponentNode {
           ? segments.shift()!
           : null
         return `${parent!.getItemRoutePath(index)}/${
-          getSourcePath(schema, segments.join('/'), api)
+          getSourcePath(schema, segments.join('/'))
         }`
       }
       const path = routeContext
@@ -596,7 +591,7 @@ export class ComponentNode {
           path === node.schema.name
         )
           ? basePath
-          : `${basePath}/${getSourcePath(schema, path, api)}`
+          : `${basePath}/${getSourcePath(schema, path)}`
       }
       return null
     }

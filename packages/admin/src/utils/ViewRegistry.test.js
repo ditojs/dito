@@ -108,7 +108,7 @@ describe('ViewRegistry across sessions', () => {
       },
       request({ method = 'get', url }) {
         if (method === 'post' && url === '/logout') {
-          return { data: { success: true } }
+          return {}
         }
         if (method === 'post' && url === '/login') {
           return { data: { user: { id: 1, username: 'tester' } } }

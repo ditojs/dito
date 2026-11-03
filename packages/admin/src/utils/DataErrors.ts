@@ -20,9 +20,6 @@ import type { DataModel } from './DataModel.ts'
 
 export interface ValueError {
   message: string
-  // Server errors also tell their keyword and its parameters:
-  keyword?: string
-  params?: Record<string, any>
   // The path of the error inside the value, if no deeper field displays it:
   path?: string
 }

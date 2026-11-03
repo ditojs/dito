@@ -7,7 +7,7 @@ import {
   unmountAdmin
 } from '../test/mount.js'
 import DitoButtonType from '../types/DitoButtonType.vue'
-import { RequestError } from '../utils/request.js'
+import { ApiError } from '../utils/request.js'
 
 // Returns a request that is pending until `resolve()` or `reject()` is called,
 // or until its signal aborts, like `fetch()` does.
@@ -36,8 +36,8 @@ function getNotificationTexts() {
 
 // Returns the error that `api.request()` throws for a response with `status`
 // and `data`, see `request()` in `utils/request.js`.
-function createRequestError(status, data) {
-  return new RequestError({ status, statusText: 'Error', data })
+function createApiError(status, data) {
+  return new ApiError({ status, statusText: 'Error', data })
 }
 
 function getNotifications() {
@@ -264,7 +264,7 @@ describe('useResource()', () => {
       await mountSchema({
         schema: listSchema,
         request: () => {
-          throw createRequestError(404, {
+          throw createApiError(404, {
             type: 'NotFoundError',
             message: 'The books are gone.'
           })
@@ -290,7 +290,7 @@ describe('useResource()', () => {
         },
         request: ({ url }) => {
           if (url === '/books/1') {
-            throw createRequestError(401, {
+            throw createApiError(401, {
               type: 'AuthorizationError',
               message: 'Unauthorized Access'
             })
@@ -315,7 +315,7 @@ describe('useResource()', () => {
       })
       expect(getNotifications()).toContainEqual({
         title: 'Error',
-        text: 'Error: Network down'
+        text: 'Network down'
       })
     })
 
@@ -333,7 +333,7 @@ describe('useResource()', () => {
       })
       expect(getNotifications()).toContainEqual({
         title: 'Error',
-        text: 'Error: Unable to process the books'
+        text: 'Unable to process the books'
       })
     })
   })
@@ -415,7 +415,7 @@ describe('useResource()', () => {
 
     it('notifies the message of failed requests with data', async () => {
       const { wrapper } = await mountRecipesWithPublishButton(() => {
-        throw createRequestError(500, { message: 'Publishing is closed.' })
+        throw createApiError(500, { message: 'Publishing is closed.' })
       })
       await clickPublish(wrapper)
       expect(getNotifications()).toContainEqual({
@@ -437,7 +437,7 @@ describe('useResource()', () => {
 
     it('notifies failed requests with data without a message', async () => {
       const { wrapper } = await mountRecipesWithPublishButton(() => {
-        throw createRequestError(500, { type: 'ServerError' })
+        throw createApiError(500, { type: 'ServerError' })
       })
       await clickPublish(wrapper)
       expect(getNotifications()).toContainEqual({
@@ -465,7 +465,7 @@ describe('useResource()', () => {
     }
     const unauthorized = ({ url }) => {
       if (url === '/reviews') {
-        throw createRequestError(401, { message: 'Unauthorized' })
+        throw createApiError(401, { message: 'Unauthorized' })
       }
     }
     const message = `You don't have permission to load this data.`
@@ -482,6 +482,25 @@ describe('useResource()', () => {
       // Loading again doesn't add the error twice:
       getComponent('reviews').sourceContext.reload()
       await flushPromises()
+      expect(getErrors('reviews')).toEqual([message])
+      expect(getNotifications()).toEqual([])
+    })
+
+    it('shows the same error for a forbidden load', async () => {
+      const { getErrors } = await mountForm({
+        schema: {
+          fields: { title: { type: 'text' }, reviews: reviewsSchema }
+        },
+        data: { title: 'Orlando' },
+        request: ({ url }) => {
+          if (url === '/reviews') {
+            throw createApiError(403, {
+              type: 'AuthorizationError',
+              message: 'Forbidden'
+            })
+          }
+        }
+      })
       expect(getErrors('reviews')).toEqual([message])
       expect(getNotifications()).toEqual([])
     })
@@ -560,7 +579,7 @@ describe('useResource()', () => {
         data: { name: 'Woolf', books: [{ id: 1, title: 'Orlando' }] },
         request: options => {
           if (options.method !== 'get') {
-            throw createRequestError(400, {
+            throw createApiError(400, {
               type: 'ModelValidation',
               message: 'The provided data is not valid',
               errors
@@ -617,7 +636,7 @@ describe('useResource()', () => {
           }
         },
         request: () => {
-          throw createRequestError(400, {
+          throw createApiError(400, {
             type: 'FilterValidation',
             message: 'The provided data for query filter is not valid',
             errors
@@ -636,6 +655,13 @@ describe('useResource()', () => {
         '$title.text': [{ message: 'must be shorter' }]
       })
       expect(errors).toEqual(['The Text field must be shorter.'])
+    })
+
+    it('shows filter errors by argument index on their components', async () => {
+      const errors = await mountFilteredBooks({
+        'title/0': [{ message: 'must be longer' }]
+      })
+      expect(errors).toEqual(['The Text field must be longer.'])
     })
 
     it('shows filter errors with the data paths of the server', async () => {

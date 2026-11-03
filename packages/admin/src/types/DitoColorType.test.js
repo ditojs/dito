@@ -1,6 +1,5 @@
 import { vi } from 'vitest'
 import { tinycolor } from 'vue-color'
-import { hyphenate } from '@ditojs/utils'
 import { setupView } from '../utils/schema/setup.js'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 
@@ -96,7 +95,7 @@ describe('DitoColorType', () => {
       fields: { background: { type: 'color', colorFormat: 'name' } }
     }
     await expect(
-      setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'colors')
+      setupView({ defaults: {} }, schema, 'colors')
     ).rejects.toThrow(`Unsupported color format: 'name'.`)
   })
 

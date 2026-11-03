@@ -10,6 +10,8 @@ import {
   createInvalidPasswordNotification,
   isPasskeyPromptCancelled
 } from '../dialogs/authentication.js'
+import { getErrorMessage } from './request.js'
+import { getResourcePath } from './resource.js'
 import type { ViewRegistry } from './ViewRegistry.js'
 import type { AdminContext } from './AdminContext.ts'
 import type { Api } from './types.ts'
@@ -146,7 +148,7 @@ export class Session {
         this.#notifyError(error)
         // Wrong codes answer 401, missing or expired logins and too many
         // attempts 400:
-        return error.response?.status === 401
+        return error.status === 401
           ? this.#requestWithCode(resource, data)
           : null
       }
@@ -175,17 +177,11 @@ export class Session {
             ? { passkey: await this.#getPasskey() }
             : { password: data.password }
         const response = await this.#request(users.confirmAccess, body)
-        if (response.data.codeRequired) {
-          // Cancelling the code ends the confirmation, like the password, and
-          // so do expired logins and too many attempts:
-          const codeResponse = await this.#requestWithCode(
-            users.confirmAccess,
-            body
-          )
-          return !!codeResponse?.data.success
-        } else if (response.data.success) {
-          return true
-        }
+        // Cancelling the code ends the confirmation, like the password, and so
+        // do expired logins and too many attempts:
+        return response.data?.codeRequired
+          ? !!(await this.#requestWithCode(users.confirmAccess, body))
+          : true
       } catch (error) {
         if (!isPasskeyPromptCancelled(error)) {
           this.#notifyError(error)
@@ -231,7 +227,7 @@ export class Session {
         })
       } catch (error: any) {
         // Ask again with the same token for invalid passwords:
-        const errors = error.response?.data?.errors
+        const errors = error.errors
         if (errors) {
           this.#adminContext.notify(createInvalidPasswordNotification(errors))
           await this.#confirmPasswordReset(token)
@@ -245,22 +241,20 @@ export class Session {
   // Resolve to whether the user was logged out:
   async logout(): Promise<boolean> {
     try {
-      const response = await this.#request(this.#api.users.logout)
-      if (response.data.success) {
-        this.#setUser(null)
-        return true
-      }
+      await this.#request(this.#api.users.logout)
+      this.#setUser(null)
+      return true
     } catch (error) {
       console.error(error)
+      return false
     }
-    return false
   }
 
   async fetchUser() {
     let user: User | null = null
     try {
-      const response = await this.#request(this.#api.users.session)
-      user = response.data.user || null
+      const response = await this.#request(this.#api.users.self)
+      user = response.data || null
     } catch (error) {
       this.#notifyError(error)
     }
@@ -297,19 +291,16 @@ export class Session {
   }
 
   #request(resource: any, data: any = null) {
-    const url = this.#api.getApiUrl({ url: this.#api.resources.any(resource) })
+    const url = this.#api.getApiUrl({ url: getResourcePath(resource) })
     return this.#api.request<any>({ method: resource.method, url, data })
   }
 
   #notifyError(error: any) {
-    // Logins answer their errors in `error`, other actions in `message`:
-    const { data } = error.response ?? {}
-    const responseError = data?.error || data?.message || error
     this.#adminContext.notify({
       type: 'error',
-      error: responseError,
+      error,
       title: 'Authentication Error',
-      text: responseError
+      text: getErrorMessage(error) ?? 'The request failed.'
     })
   }
 }

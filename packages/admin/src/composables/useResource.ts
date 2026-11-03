@@ -1,5 +1,5 @@
 import { computed, markRaw, onUnmounted } from 'vue'
-import { isObject, isString, labelize } from '@ditojs/utils'
+import { isString, labelize } from '@ditojs/utils'
 import defaultVerbs from '../verbs.js'
 import {
   getResource,
@@ -30,8 +30,8 @@ export interface RequestHandlerOptions {
 export interface LoadOptions {
   query?: Record<string, any>
   onLoad(data: any): Promise<unknown>
-  // Handle the error response of the load, and return whether it was handled:
-  onError?: (response: any) => boolean
+  // Handle the error of the load, and return whether it was handled:
+  onError?: (error: any) => boolean
 }
 
 export interface ButtonEventOptions {
@@ -107,11 +107,10 @@ export function useResource({
       : parentVerbs
   })
 
-  // Notify request errors with the type and message of their response data:
+  // Notify request errors with their type and message:
   const notifyRequestError = (error: any) => {
-    const data = error?.response?.data
-    const title = isString(data?.type) ? labelize(data.type) : 'Error'
-    const text = data?.message ?? error
+    const title = isString(error?.type) ? labelize(error.type) : 'Error'
+    const text = getErrorMessage(error) ?? 'The request failed.'
     adminContext.notify({ type: 'error', error, title, text })
   }
 
@@ -131,7 +130,7 @@ export function useResource({
       data,
       isDataLoad = false
     }: RequestHandlerOptions,
-    callback: (error: any, response: any) => any
+    callback: (error: any, response?: any) => any
   ) => {
     const controller = new AbortController()
     if (isDataLoad) {
@@ -162,7 +161,7 @@ export function useResource({
     }
     if (!controller.signal.aborted && error?.name !== 'AbortError') {
       if (error) {
-        if (!(await callback(error, error.response))) {
+        if (!(await callback(error))) {
           notifyRequestError(error)
         }
       } else {
@@ -205,9 +204,9 @@ export function useResource({
     loadData({ query, onLoad, onError }: LoadOptions) {
       return request(
         { method: 'get', query, isDataLoad: true },
-        async (err, response) => {
-          if (err) {
-            return !!response && !!onError?.(response)
+        async (error, response) => {
+          if (error) {
+            return !!onError?.(error)
           } else {
             // Await the handlers, so that their errors are notified below.
             await onLoad(response.data)
@@ -258,15 +257,12 @@ export function useResource({
       let isSuccessful = false
       await request(
         { method, resource, data: payload },
-        async (err, response) => {
-          const responseData = response?.data
-          if (err) {
+        async (error, response) => {
+          if (error) {
             // Dito.js validation errors are shown on the fields:
-            const errors = response?.status === 400 && responseData.errors
-            if (errors) {
-              await showValidationErrors(errors)
+            if (error.status === 400 && error.errors) {
+              await showValidationErrors(error.errors)
             } else {
-              const error = isObject(responseData) ? responseData : err
               const isHandled = await onError?.(error)
               await emitButtonEvent(button, 'error', {
                 notify: isHandled ? undefined : notifyError,
@@ -277,7 +273,7 @@ export function useResource({
           } else {
             // Forms merge the id of created items in `onSuccess()`, before the
             // notification reads the item label:
-            const isHandled = await onSuccess?.(responseData)
+            const isHandled = await onSuccess?.(response.data)
             await emitButtonEvent(button, 'success', {
               notify: isHandled ? undefined : notifySuccess
             })

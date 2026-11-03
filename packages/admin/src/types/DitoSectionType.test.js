@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { toRaw } from 'vue'
 import { flushPromises } from '@vue/test-utils'
-import { hyphenate, html } from '@ditojs/utils'
+import { html } from '@ditojs/utils'
 import { setupView } from '../utils/schema/setup.js'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 import DitoSectionType from './DitoSectionType.vue'
@@ -465,7 +465,7 @@ describe('DitoSectionType', () => {
       }
     }
     await expect(
-      setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'books')
+      setupView({ defaults: {} }, schema, 'books')
     ).rejects.toThrow(
       `Unsupported '${key}' in sections with 'component': 'details'.`
     )
