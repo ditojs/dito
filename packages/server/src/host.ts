@@ -1,0 +1,66 @@
+import type { MiddlewareHandler } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
+import { cors } from 'hono/cors'
+import { csrf } from 'hono/csrf'
+import { etag } from 'hono/etag'
+import { secureHeaders } from 'hono/secure-headers'
+
+// Hono's standard middleware for a host, for `app.use(...hostMiddleware())`.
+// Each option is `false`, `true` for the defaults of that middleware, or its
+// options.
+
+type Option<T extends (...args: any[]) => unknown> =
+  | boolean
+  | NonNullable<Parameters<T>[0]>
+
+export interface HostOptions {
+  // On by default. It only checks requests with `Origin`: browsers send it,
+  // and an attack needs a browser.
+  csrf?: Option<typeof csrf>
+  // On by default.
+  secureHeaders?: Option<typeof secureHeaders>
+  // Off by default.
+  cors?: Option<typeof cors>
+  // Off by default.
+  etag?: Option<typeof etag>
+  // 1 MB by default. Multipart bodies, such as uploads, have no limit.
+  bodyLimit?: boolean | Partial<Parameters<typeof bodyLimit>[0]>
+}
+
+const defaultBodyLimit = 1024 * 1024
+
+// `csrf()` and `bodyLimit()` run after `secureHeaders()` and `cors()`, so that
+// their responses have the headers of these.
+export function hostMiddleware({
+  csrf: csrfOptions = true,
+  secureHeaders: secureHeadersOptions = true,
+  cors: corsOptions = false,
+  etag: etagOptions = false,
+  bodyLimit: bodyLimitOptions = true
+}: HostOptions = {}) {
+  const options = <T>(value: true | T) => (value === true ? undefined : value)
+  const middleware: MiddlewareHandler[] = []
+  if (secureHeadersOptions) {
+    middleware.push(secureHeaders(options(secureHeadersOptions)))
+  }
+  if (corsOptions) middleware.push(cors(options(corsOptions)))
+  if (etagOptions) middleware.push(etag(options(etagOptions)))
+  if (csrfOptions) {
+    const check = csrf(options(csrfOptions))
+    middleware.push((c, next) =>
+      c.req.header('Origin') ? check(c, next) : next()
+    )
+  }
+  if (bodyLimitOptions) {
+    const limit = bodyLimit({
+      maxSize: defaultBodyLimit,
+      ...options(bodyLimitOptions)
+    })
+    middleware.push((c, next) =>
+      c.req.header('Content-Type')?.startsWith('multipart/')
+        ? next()
+        : limit(c, next)
+    )
+  }
+  return middleware
+}

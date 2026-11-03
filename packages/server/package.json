@@ -1,131 +1,68 @@
 {
   "name": "@ditojs/server",
-  "version": "6.6.1",
+  "version": "7.0.0-next.0",
   "type": "module",
-  "description": "Dito.js Server – Dito.js is a declarative and modern web framework, based on Objection.js, Koa.js and Vue.js",
-  "repository": "https://github.com/ditojs/dito/tree/main/packages/server",
-  "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
-  "license": "MIT",
-  "main": "./src/index.js",
-  "types": "./types/index.d.ts",
+  "main": "./src/index.ts",
   "exports": {
-    ".": {
-      "types": "./types/index.d.ts",
-      "import": "./src/index.js"
-    },
+    ".": "./src/index.ts",
+    "./node": "./src/node.ts",
+    "./zod": "./src/zod.ts",
     "./package.json": "./package.json"
   },
-  "files": [
-    "src/",
-    "types/",
-    "!src/**/*.test.js",
-    "!src/**/__snapshots__/",
-    "!src/**/node_modules/"
-  ],
-  "bin": {
-    "dito": "./src/cli/index.js"
-  },
-  "engines": {
-    "node": ">= 24.0.0"
-  },
-  "browserslist": [
-    "node >= 18"
-  ],
   "dependencies": {
-    "@ditojs/admin": "workspace:^",
-    "@ditojs/router": "workspace:^",
     "@ditojs/utils": "workspace:^",
-    "@koa/cors": "^5.0.0",
-    "@koa/etag": "^5.0.2",
-    "@koa/multer": "^4.0.0",
-    "ajv": "^8.20.0",
-    "ajv-formats": "^3.0.1",
-    "bcryptjs": "^3.0.3",
-    "bytes": "^3.1.2",
-    "data-uri-to-buffer": "^8.0.0",
-    "eventemitter2": "^6.4.9",
-    "file-type": "^22.1.1",
-    "helmet": "^8.3.0",
-    "keygrip": "^1.1.0",
-    "koa": "^3.2.1",
-    "koa-bodyparser": "^4.4.1",
-    "koa-compose": "^4.1.0",
-    "koa-compress": "^5.2.2",
-    "koa-conditional-get": "^3.0.0",
-    "koa-helmet": "^9.0.0",
-    "koa-mount": "^4.2.0",
-    "koa-response-time": "^2.1.0",
-    "koa-session": "^7.0.2",
-    "koa-static": "^5.0.0",
-    "leather": "^3.0.3",
-    "mime-types": "^3.0.2",
-    "multer": "^2.4.0",
-    "nanoid": "^6.0.2",
-    "parse-duration": "^2.1.9",
-    "passthrough-counter": "^1.0.0",
-    "picocolors": "^1.1.1",
-    "picomatch": "^4.0.7",
-    "pino": "^10.4.0",
-    "pino-pretty": "^13.2.0",
-    "pluralize": "^8.0.0",
-    "repl": "^0.1.3",
-    "type-fest": "^5.10.0",
-    "uuid": "^14.0.2"
+    "@hono/standard-validator": "^0.4.1",
+    "@standard-schema/spec": "^1.1.0"
   },
   "peerDependencies": {
-    "@aws-lite/client": "^0.24.0",
-    "@aws-lite/s3": "^0.2.7",
-    "@ditojs/build": "workspace:^",
-    "@simplewebauthn/server": "^14.0.0",
-    "@vitejs/plugin-vue": "^6.0.0",
-    "aaguids": "0.0.x",
-    "knex": "^3.3.0",
-    "objection": "^4.4.1",
-    "otpauth": "^9.0.0",
-    "vite": "^8.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@aws-lite/client": {
-      "optional": true
-    },
-    "@aws-lite/s3": {
-      "optional": true
-    },
-    "@ditojs/build": {
-      "optional": true
-    },
-    "@simplewebauthn/server": {
-      "optional": true
-    },
-    "@vitejs/plugin-vue": {
-      "optional": true
-    },
-    "aaguids": {
-      "optional": true
-    },
-    "otpauth": {
-      "optional": true
-    },
-    "vite": {
-      "optional": true
-    }
+    "@hono/node-server": "^2.1.5",
+    "hono": "^4.13.14",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@aws-lite/client": "^0.24.1",
-    "@aws-lite/s3": "^0.2.7",
-    "@simplewebauthn/server": "^14.0.3",
-    "@types/koa-bodyparser": "^4.3.13",
-    "@types/koa-compress": "^4.0.7",
-    "@types/koa-mount": "^4.0.5",
-    "@types/koa-response-time": "^2.1.5",
-    "@types/koa-static": "^4.0.4",
-    "@types/koa__cors": "^5.0.1",
-    "@types/koa__multer": "^2.0.8",
+    "@hono/node-server": "^2.1.5",
     "@types/node": "^26.6.4",
-    "aaguids": "^0.0.71",
-    "knex": "^3.3.0",
-    "objection": "^4.4.1",
-    "otpauth": "^9.5.2",
-    "typescript": "^6.0.3"
+    "hono": "^4.13.14",
+    "zod": "^4.6.7"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./node": {
+        "types": "./dist/node.d.ts",
+        "import": "./dist/node.js"
+      },
+      "./zod": {
+        "types": "./dist/zod.d.ts",
+        "import": "./dist/zod.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ditojs/dito.git",
+    "directory": "packages/server"
+  },
+  "peerDependenciesMeta": {
+    "@hono/node-server": {
+      "optional": true
+    },
+    "zod": {
+      "optional": true
+    }
   }
 }
