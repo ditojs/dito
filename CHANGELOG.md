@@ -18,7 +18,7 @@ version, see the upgrade guides in `docs/`.
 
 ### New
 
-- **server:** Controllers take `static hooks`, which run once per class that declares them, base classes first. See [Hooks](docs/api/server/controllers.md#hooks).
+- **server:** Controllers take `static hooks`, which run once per class that declares them, base classes first. See [Hooks](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/controllers.md#hooks).
 
 ## 6.5.0 (2026-10-28)
 
@@ -55,7 +55,7 @@ version, see the upgrade guides in `docs/`.
 
 ### New
 
-- **server:** `useApp()` returns the application of the process, for code that isn't part of a model, controller or service, like plain functions that send emails. See [Accessing the application](docs/guide/server/application.md#accessing-the-application).
+- **server:** `useApp()` returns the application of the process, for code that isn't part of a model, controller or service, like plain functions that send emails. See [Accessing the application](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/application.md#accessing-the-application).
 
 ### Fixes
 
@@ -110,7 +110,7 @@ change.
 
 - **server:** S3 storages use [aws-lite](https://aws-lite.org) instead of the AWS SDK and `multer-s3`:
   - Install `@aws-lite/client` and `@aws-lite/s3` instead of `@aws-sdk/client-s3` and `@aws-sdk/lib-storage`.
-  - `s3` needs `region` and `credentials`, which no longer come from environment variables or `~/.aws`, see [S3StorageConfig](docs/api/server/storage.md#s3storageconfig).
+  - `s3` needs `region` and `credentials`, which no longer come from environment variables or `~/.aws`, see [S3StorageConfig](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/storage.md#s3storageconfig).
   - Object options like `acl` or `cacheControl` take strings only, and apply to imported files too.
   - Without `url`, files get the URL of the bucket. The `MulterS3File` type is removed.
 - **server:** `UserMixin` rejects `hash` in all untrusted input, not only in `UsersController`.
@@ -296,7 +296,7 @@ change.
 
 ### New
 
-- **server:** `app.compileDitoSchema()` compiles schemas in the format of model properties, and `app.compileJsonSchema()` plain JSON schemas, see [Validation](docs/api/server/application.md#validation).
+- **server:** `app.compileDitoSchema()` compiles schemas in the format of model properties, and `app.compileJsonSchema()` plain JSON schemas, see [Validation](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/application.md#validation).
 - **admin:** `context.getErrors(match?)` returns the errors of the data by data path, e.g. for the markup of `useDitoForm()` pages.
 - **admin:** Fields take `minLength`, `pattern`, `minItems` and `maxItems`, and number types `minimum` and `maximum`, as the server's model properties do.
 - **admin:** `nullable: false` on string fields and `checkbox` stores no value as `''` or `false` instead of `null`.
@@ -370,7 +370,7 @@ change.
 
 ### Behaviour changes
 
-- **server:** Errors that aren't `ResponseError`s, e.g. a plain `Error` thrown in an action, respond with "An error has occurred." instead of their message, unless they have `expose: true` or a status below 500, or `config.env` is `'development'`. Their message still goes to the log and the `'error'` events. Apps throw `ResponseError`s for messages meant for clients, see [Plain errors](docs/guide/server/errors.md#plain-errors).
+- **server:** Errors that aren't `ResponseError`s, e.g. a plain `Error` thrown in an action, respond with "An error has occurred." instead of their message, unless they have `expose: true` or a status below 500, or `config.env` is `'development'`. Their message still goes to the log and the `'error'` events. Apps throw `ResponseError`s for messages meant for clients, see [Plain errors](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/errors.md#plain-errors).
 - **server:** Actions and model queries no longer wrap other errors in `ResponseError`s, and pass them on as they are: plain errors with a status below 500 respond with only their `message`, without `code` or other data, and `'error'` listeners receive the raw error, which often has no `status`.
 - **server:** `DatabaseError`s with status 500 or higher respond with "An error has occurred." instead of the database's message, through `expose: false`, which `ResponseError`s take as an option.
 - **server:** Logins that fail with other errors than `ResponseError`s below 500, e.g. a plain `Error` in a `before:login` hook, respond with their own status or 500 like other actions, instead of 401 and the login response with their message.
@@ -440,10 +440,10 @@ change.
 
 ### New
 
-- **server, admin:** Logins with passkeys, through `PasskeyService`, see [Passkeys](docs/guide/server/controllers.md#passkeys).
-- **server, admin:** Two-factor authentication with TOTP, through `TotpService`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication).
-- **server, admin:** Password resets by email, with `app.authentication.passwordReset`, see [Password reset](docs/guide/server/controllers.md#password-reset).
-- **server, admin:** Security changes need confirmed access, from a recent login or `'post confirm-access'`, see [Confirmed access](docs/guide/server/controllers.md#confirmed-access).
+- **server, admin:** Logins with passkeys, through `PasskeyService`, see [Passkeys](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/controllers.md#passkeys).
+- **server, admin:** Two-factor authentication with TOTP, through `TotpService`, see [Two-factor authentication](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/controllers.md#two-factor-authentication).
+- **server, admin:** Password resets by email, with `app.authentication.passwordReset`, see [Password reset](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/controllers.md#password-reset).
+- **server, admin:** Security changes need confirmed access, from a recent login or `'post confirm-access'`, see [Confirmed access](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/controllers.md#confirmed-access).
 - **server:** Users change their own password through `'post password'` of `UsersController`.
 - **server, admin:** The admin offers password changes, passkeys, TOTP and password resets when the users controller at `api.users` in the server's `config.admin.api` routes them, and requests them under their action names below `api.users.path`, e.g. `users/passkey-login`.
 - **server:** `CredentialMixin` and `CredentialModel` store the passkeys and TOTP of all user models in one table.
@@ -532,7 +532,7 @@ change.
 - **server:** Relation controllers authorize their parent member after the parameters are validated, and asset uploads on relations always need the parent's `patch` authorization. `handleRequestAuthorization()`, `authorizeMember()` and `getActionAuthorize()` are removed.
 - **server:** `getMember()` uses `member.get` only where `allow` routes it, and otherwise fetches the member by id through `fetchMember()`.
 - **server:** Validation:
-  - The validator runs Ajv with `strictSchema`, `strictNumbers` and `strictTuples`, so schemas with unknown keywords, e.g. `item` instead of `items`, throw when the app sets up its models. Fix the schema, or pass `new Validator({ options: { strictSchema: false } })`, see [Validator](docs/api/server/validator.md#constructor).
+  - The validator runs Ajv with `strictSchema`, `strictNumbers` and `strictTuples`, so schemas with unknown keywords, e.g. `item` instead of `items`, throw when the app sets up its models. Fix the schema, or pass `new Validator({ options: { strictSchema: false } })`, see [Validator](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/validator.md#constructor).
   - `nullable` properties with a model type or a `$ref` get the defaults of the referenced schema, and their own `default`.
   - `$validateGraph()` reports only the errors of related models for relations, and applies their defaults, unless it validates a patch.
   - The "must match "else" schema" errors of `if` keywords are left out.
@@ -544,7 +544,7 @@ change.
 
 ### New
 
-- **server:** `app.recountAssets()` and the `db:recount_assets` command correct the reference counts of all assets, and `app.getAssetReferences()` finds every place that stores an asset file, see [recountAssets()](docs/api/server/application.md#recountassets).
+- **server:** `app.recountAssets()` and the `db:recount_assets` command correct the reference counts of all assets, and `app.getAssetReferences()` finds every place that stores an asset file, see [recountAssets()](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/application.md#recountassets).
 - **admin:** `clipboard: { interchange: true }` adds a menu to the Copy and Paste buttons to download the data with its files as a zip, and to upload it again, e.g. into another installation, see [Download and Upload](docs/guide/admin/forms.md#download-and-upload). `interchange: { filename }` names the downloads. Requires the new peer dependency `fflate`.
 - **ui:** `DitoMenuButton`:
   - Items take an `icon`, shown instead of their label, and the icon set has `archive-download` and `archive-upload`.
@@ -575,7 +575,7 @@ change.
 
 ### New
 
-- **server:** `FromModel` derives the instance types of models from their `properties` and `relations` declared `as const`, see [Deriving types](docs/guide/server/models.md#deriving-types).
+- **server:** `FromModel` derives the instance types of models from their `properties` and `relations` declared `as const`, see [Deriving types](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/models.md#deriving-types).
 - **admin:** `account.settings` in the options of `DitoAdmin` takes a form that edits the logged-in user, opened through a Settings item in the account menu at `/account/settings`, without an item in the main menu. It loads and saves the user through `api.users.self`, by default `users/self`, and shows the changes in the account menu right away.
 
 ### Fixes

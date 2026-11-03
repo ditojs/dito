@@ -1,0 +1,36 @@
+### Behaviour changes
+
+- **server:** Dito.js 7 replaces the Koa and Objection.js server: `Application`, `Model`, `QueryBuilder`, `Validator`, the controller classes, services, storages, the CLI and logging are removed. See [Upgrading to 7.x](docs/upgrading-to-7.x.md) for each change, and for the steps to move an app.
+- **server:** `@ditojs/server` is a core on [Hono](https://hono.dev). `createApi({ controllers, middleware, db, getUser, onError })` returns a Hono app, which the app routes with `app.route('/api', api)`. There is no configuration. An API handles only the paths of its actions, so apps add `app.notFound(notFound)` and `app.onError(errorHandler())` for Dito's JSON errors.
+- **server:** Controllers are plain objects from `defineController()`, with one `actions` map keyed `'verb path'`. A path that starts with `:id` is a member action, and paths use Hono's syntax. `true` routes a default handler, a function replaces the handler beneath it and runs it as `next()`, and an object without `handler` adds settings. Default handlers are off unless a layer sets them.
+- **server:** Handlers get one object, `handler(input)`, with `query`, `body`, `params`, `user`, `db`, `action`, the app's own Hono variables, Hono's context `c` and `next()`. Middleware is Hono middleware, `(c, next)`, and reads the same values from `c.var`. Apps type their own variables by augmenting `DitoVariables`.
+- **server:** Handlers return data or a `Response`. Data responds with 200 and `undefined` with 204, unless the handler sets another status with `c.status()`. Hono doesn't send a thrown `Response`: throw an `HttpError`, or return the `Response`.
+- **server:** Mixins from `defineMixin()` replace features, base classes and hooks.
+- **server:** `authorize` takes `true`, a role, a list of roles, or a function of Hono's context `c`. If a write action has no `authorize`, on itself or on a layer, `createApi()` throws.
+- **server:** `HttpError` replaces `ResponseError` and its subclasses: `new HttpError(status, { message, type, code, errors })`. The error JSON stays `{ type, message, status, code, errors }`. Field errors are keyed by path, such as `chapters/8/title`, each with a `message` and a `keyword`. `createValidationError(issues, options)` builds a 400 from Standard Schema issues.
+- **admin:** Requests reject with an `ApiError`, which has the fields of the JSON body, the `status` and the `response`. Code that read `error.response.data` reads the fields on the error. See [Upgrading to 7.x](docs/upgrading-to-7.x.md#10-update-the-admin-the-clients-and-the-tests).
+- **admin:** The `api` config is plain data. `request`, `getApiUrl`, `isApiUrl`, `normalizePath`, `denormalizePath` and `resources` aren't options any more, and `admin.api` has `request()` and `getApiUrl()`. `normalizePaths` is gone: views and sources are routed under their hyphenated names. `users` takes only `path`, and the admin loads its user from `get self`.
+- **schema:** `@ditojs/schema` is removed. The admin holds the validators that it uses.
+- **admin:** Sources in forms show the permission error for 403 responses, as they do for 401 responses.
+- **admin:** Lists send their filters as `filter[name]=value`.
+- **admin:** Resource paths are joined without a trailing slash when a resource's path is empty.
+
+### New
+
+- **server:** Schemas of actions, filters and column types are Standard Schemas. `action({ query, body, handler })` types `query` and `body` of the handler's input. `@ditojs/server/zod` has `q`, Zod schemas for query values.
+- **server:** `c.var.body` holds the body of a write, parsed once, for middleware and the handler. `sendFile(c, body, { filename, type, inline })` responds with a file, also a stream.
+- **server:** `hostMiddleware()` returns Hono's `secureHeaders()`, `csrf()` for requests with `Origin`, and `bodyLimit()`, and optionally `cors()` and `etag()`.
+- **server:** `@ditojs/server/node` has `serve()`, a Node server that stops on signals, `forwarded(proxy)` for apps behind reverse proxies, and `getClientAddress(c)`.
+- **mikro:** `@ditojs/mikro` builds model controllers on MikroORM 7 entities, with `find`, `filters`, `textFilter()` and `dateRangeFilter()`. Writes check the JSON types of values, the ids of relations and the schemas of custom types. Postgres checks the rest, and a `body` schema on the action adds stricter rules.
+- **mikro:** `fields` alone defines what goes out. Dotted paths populate their relations, and a relation to one row goes out as `{ id }`. Writes take `{ relation: { id } }`, and `order` and filters name `relation.id`. Serialization `groups` aren't supported.
+- **mikro:** Handlers get `record()`, `find()`, `list()` and `listQuery()`, also as `c.var.record()` and so on. A `load` option replaces how `record()` loads, `maxRows` of a find limits its lists, and the `crud` mixin routes the five default handlers.
+- **mikro:** `serialize`, `beforeSerialize` and `deserialize` shape the records of a controller.
+- **mikro:** The package also has `setRecord()`, `parseListQuery()`, `createRecord()`, `assignRecord()`, `removeRecord()`, `schemaJson()`, `entityUserSource()`, and `mikroDb()`, the `db` adapter of `createApi()`.
+- **mikro:** `plainDate()` declares a `date` column that stores a `Date` or a string with a time as the local day, as Dito.js 6 did. `p.date()` stores the UTC day.
+- **mikro:** Handlers get the request's entity manager as `db` of their input. `getEntityManager(c)` returns it in middleware, filters and `find` functions, and `getKysely(c)` its Kysely.
+- **storage:** `@ditojs/storage` has the disk and S3 storages, `createStorages()`, `storeAsset()`, the `assets()`, `assetUploads()` and `uploadRoutes()` mixins, and `createAssets()`, which binds the paths, storages and `db` of an app. `serveStorage()` of `@ditojs/storage/node` serves disk storages.
+- **storage:** A write accepts a file when its key has an `asset` row in the storage of its path, and imports other files from their `url` when the storage allows it. File objects have no signatures. `runAssetJobs()` tracks files by scanning the data, so the `asset` table has no `count`. An app runs `scanAssets()` once at the release.
+- **auth:** `@ditojs/auth` has sessions as Hono middleware from `createSessions()`, and `usersRoutes()`, the actions of the admin's users, with passkeys, TOTP and password reset. Apps describe their users in a user source, such as the one of `entityUserSource()`. `passwordWrites()` is a mixin that hashes the passwords of a model controller.
+- **auth:** The `session` and `credential` tables stay. Sessions sign their cookie with Hono's signed cookies, so existing sessions end once and users log in again.
+- **auth:** The body of `post login` and `post password-reset` names the user as `username`. Logins respond with `{ user }` or `{ codeRequired: true }`, and `get self` replaces `get session`. New passwords need at least 8 characters by default.
+- **admin-server:** `serveAdmin()` serves the admin as a Hono app, with Vite in development and the build of `dist` otherwise. `authorize` protects the views, which the build puts below `views/`. `defineAdminViteConfig()` from `@ditojs/admin-server/vite` builds the admin on Vite 8, whose options are `build.rolldownOptions`.
