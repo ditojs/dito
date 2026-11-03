@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
 import path from 'path'
 import { PassThrough, Readable } from 'stream'
-import { Storage } from './Storage.js'
-import { AssetFile } from './AssetFile.js'
+import { Storage } from '../src/Storage.ts'
+import { AssetFile } from '../src/AssetFile.ts'
 
 function createStorage(keys = ['test-secret']) {
   const app = { keys }

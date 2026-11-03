@@ -6,16 +6,46 @@ import picomatch from 'picomatch'
 import { PassThrough } from 'stream'
 import { readMediaAttributes } from 'leather'
 import { hyphenate, isString, toPromiseCallback } from '@ditojs/utils'
-import { AssetFile } from './AssetFile.js'
-import { AssetError } from '../errors/AssetError.js'
+import {
+  AssetFile,
+  type AssetFileObject,
+  type FileData
+} from './AssetFile.ts'
+import { AssetError } from './AssetError.ts'
 import { resolveFileUrl } from '../utils/asset.js'
 
-const storageClasses = {}
+export interface StorageConfig {
+  url?: string
+  path?: string
+  concurrency?: number
+  allowedImports?: string[]
+  // The options of the storage implementations, such as `bucket`.
+  [key: string]: any
+}
+
+// The options of `getUploadHandler()`, passed on to multer.
+export interface UploadConfig {
+  readDimensions?: boolean
+  [key: string]: any
+}
+
+const storageClasses: Record<string, typeof Storage> = {}
 
 export class Storage {
+  declare static type?: string
+  declare static _fallbackSecret?: Buffer
+
+  declare app: any
+  declare name: string
+  declare config: StorageConfig
+  declare url: string | undefined
+  declare path: string | undefined
+  declare concurrency: number
+  declare storage: any
+
   isInitialized = false
 
-  constructor(app, name, config) {
+  constructor(app: any, name: string, config: StorageConfig) {
     this.app = app
     this.name = name
     this.config = config
@@ -38,7 +68,7 @@ export class Storage {
   // @overridable
   async initialize() {}
 
-  static register(storageClass) {
+  static register(storageClass: typeof Storage) {
     const type = (
       storageClass.type ||
       hyphenate(storageClass.name.match(/^(.*?)(?:Storage|)$/)[1])
@@ -47,17 +77,17 @@ export class Storage {
     storageClasses[type] = storageClass
   }
 
-  static get(type) {
+  static get(type: string) {
     return storageClasses[type] || null
   }
 
-  getUploadStorage(config) {
+  getUploadStorage(config: UploadConfig) {
     // Returns a storage that inherits from this.storage but overrides
     // _handleFile to pass on `config` to the call of `handleUpload()`
     return this.storage
       ? Object.setPrototypeOf(
           {
-            _handleFile: async (req, file, callback) => {
+            _handleFile: async (req: any, file: any, callback: any) => {
               try {
                 callback(null, await this._handleUpload(req, file, config))
               } catch (err) {
@@ -70,25 +100,28 @@ export class Storage {
       : null
   }
 
-  getUploadHandler(config) {
+  getUploadHandler(config: UploadConfig) {
     const storage = this.getUploadStorage(config)
     return storage ? multer({ ...config, storage }).any() : null
   }
 
-  getUniqueKey(name) {
+  getUniqueKey(name: string) {
     return AssetFile.getUniqueKey(name)
   }
 
-  isImportSourceAllowed(url) {
+  isImportSourceAllowed(url: unknown) {
     // Files of storages without `url` have no url to match.
     if (!isString(url)) return false
     return picomatch.isMatch(
-      resolveFileUrl(url),
+      resolveFileUrl(url as string),
       (this.config.allowedImports || []).map(resolveFileUrl)
     )
   }
 
-  convertAssetFile(file, { trusted = false } = {}) {
+  convertAssetFile(
+    file: AssetFileObject & { data?: unknown },
+    { trusted = false } = {}
+  ) {
     if (!trusted && !(file instanceof AssetFile)) {
       if (!this.verifyAssetFile(file)) {
         if (!this.isImportSourceAllowed(file.url)) {
@@ -115,9 +148,9 @@ export class Storage {
     AssetFile.convert(file, this)
   }
 
-  convertStorageFile(storageFile) {
+  convertStorageFile(storageFile: any) {
     // Convert multer file object to our own file object format:
-    const file = {
+    const file: AssetFileObject = {
       key: storageFile.key,
       name: storageFile.originalname,
       type: storageFile.mimetype,
@@ -131,11 +164,11 @@ export class Storage {
     return file
   }
 
-  convertStorageFiles(storageFiles) {
+  convertStorageFiles(storageFiles: any[]) {
     return storageFiles.map(storageFile => this.convertStorageFile(storageFile))
   }
 
-  async addFile(file, data) {
+  async addFile(file: AssetFileObject, data: Buffer) {
     await this._addFile(file, data)
     file.size = Buffer.byteLength(data)
     file.url = this._getFileUrl(file)
@@ -145,38 +178,38 @@ export class Storage {
     return file
   }
 
-  async removeFile(file) {
+  async removeFile(file: AssetFileObject) {
     await this._removeFile(file)
   }
 
-  async readFile(file) {
+  async readFile(file: AssetFileObject): Promise<FileData> {
     return this._readFile(file)
   }
 
-  async listKeys() {
+  async listKeys(): Promise<string[]> {
     return this._listKeys()
   }
 
-  getFilePath(file) {
+  getFilePath(file: AssetFileObject): string | undefined {
     return this._getFilePath(file)
   }
 
-  getFileUrl(file) {
+  getFileUrl(file: AssetFileObject): string | undefined {
     return this._getFileUrl(file)
   }
 
-  signAssetFile(file) {
+  signAssetFile(file: AssetFileObject) {
     file.signature = this._signAssetFile(file)
   }
 
-  verifyAssetFile(file) {
+  verifyAssetFile(file: AssetFileObject | null | undefined) {
     // Files without a string key can't carry a valid signature.
     if (isString(file?.key)) {
       const expected = this._signAssetFile(file)
       try {
         return crypto.timingSafeEqual(
           Buffer.from(expected, 'hex'),
-          Buffer.from(file.signature, 'hex')
+          Buffer.from(file.signature!, 'hex')
         )
       } catch {
         // Catches missing or malformed signatures.
@@ -186,7 +219,7 @@ export class Storage {
     return false
   }
 
-  _signAssetFile(file) {
+  _signAssetFile(file: AssetFileObject) {
     const secret = (
       this.app.keys?.[0] ??
       (Storage._fallbackSecret ??= this._createFallbackSecret())
@@ -199,7 +232,7 @@ export class Storage {
       .digest('hex')
   }
 
-  _createFallbackSecret() {
+  _createFallbackSecret(): Buffer {
     console.warn(
       'No app.keys configured for asset signatures. ' +
       'Please note that signatures will not survive ' +
@@ -210,37 +243,37 @@ export class Storage {
     return crypto.randomBytes(32)
   }
 
-  _getUrl(...parts) {
+  _getUrl(...parts: string[]) {
     return this.url
       ? new URL(path.posix.join(...parts), this.url).toString()
       : undefined // So that it doesn't show up in JSON data.
   }
 
-  _getPath(...parts) {
+  _getPath(...parts: string[]) {
     return this.path
       ? path.resolve(this.app.basePath, this.path, ...parts)
       : undefined // So that it doesn't show up in JSON data.
   }
 
   // @overridable
-  _getFilePath(_file) {}
+  _getFilePath(_file: AssetFileObject): any {}
 
   // @overridable
-  _getFileUrl(_file) {}
+  _getFileUrl(_file: AssetFileObject): any {}
 
   // @overridable
-  async _addFile(_file, _data) {}
+  async _addFile(_file: AssetFileObject, _data: Buffer): Promise<void> {}
 
   // @overridable
-  async _removeFile(_file) {}
+  async _removeFile(_file: AssetFileObject): Promise<void> {}
 
   // @overridable
-  async _readFile(_file) {}
+  async _readFile(_file: AssetFileObject): Promise<any> {}
 
   // @overridable
-  async _listKeys() {}
+  async _listKeys(): Promise<any> {}
 
-  async _handleUpload(req, file, config) {
+  async _handleUpload(req: any, file: any, config: UploadConfig) {
     if (
       config.readDimensions &&
       /^(image|video)\//.test(file.mimetype)
@@ -251,7 +284,7 @@ export class Storage {
     }
   }
 
-  _handleFile(req, file, stream = null) {
+  _handleFile(req: any, file: any, stream: PassThrough | null = null) {
     // Calls the original `storage._handleFile()`, wrapped in a promise:
     return new Promise((resolve, reject) => {
       if (stream) {
@@ -266,11 +299,14 @@ export class Storage {
     })
   }
 
-  async _handleMediaFile(req, file) {
-    const { size, stream } = await new Promise(resolve => {
-      let data = null
+  async _handleMediaFile(req: any, file: any) {
+    const { size, stream } = await new Promise<{
+      size: { width: number, height: number } | null
+      stream: PassThrough
+    }>(resolve => {
+      let data: Buffer | null = null
 
-      const done = (size, hasUploadEnded = false) => {
+      const done = (size: any, hasUploadEnded = false) => {
         file.stream.off('data', onData).off('end', onEnd)
         const stream = new PassThrough()
         if (hasUploadEnded) {
@@ -289,7 +325,7 @@ export class Storage {
         done(null, true)
       }
 
-      const onData = chunk => {
+      const onData = (chunk: Buffer) => {
         data = data ? Buffer.concat([data, chunk]) : chunk
         try {
           const size = readMediaAttributes(data)

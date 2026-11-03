@@ -2,9 +2,9 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import { Readable } from 'stream'
-import { DiskStorage } from './DiskStorage.js'
-import { AssetFile } from './AssetFile.js'
-import { Storage } from './index.js'
+import { DiskStorage } from '../src/DiskStorage.ts'
+import { AssetFile } from '../src/AssetFile.ts'
+import { Storage } from '../src/index.ts'
 
 let basePath
 

@@ -3,11 +3,14 @@ import path from 'path'
 import multer from '@koa/multer'
 import { mapConcurrently } from '@ditojs/utils'
 import { removeIfEmpty } from '../utils/fs.js'
-import { Storage } from './Storage.js'
-import { AssetError } from '../errors/AssetError.js'
+import { Storage } from './Storage.ts'
+import type { AssetFileObject } from './AssetFile.ts'
+import { AssetError } from './AssetError.ts'
 
 export class DiskStorage extends Storage {
   static type = 'disk'
+
+  declare nestedFolders: boolean
 
   // @override
   async setup() {
@@ -16,7 +19,7 @@ export class DiskStorage extends Storage {
     }
     this.nestedFolders = this.config.nestedFolders ?? true
     this.storage = multer.diskStorage({
-      destination: (req, storageFile, cb) => {
+      destination: (req: any, storageFile: any, cb: any) => {
         // Add `storageFile.key` property to internal storage file object.
         storageFile.key = this.getUniqueKey(storageFile.originalname)
         const dir = this._getPath(this._getNestedFolder(storageFile.key))
@@ -25,7 +28,7 @@ export class DiskStorage extends Storage {
           .catch(cb)
       },
 
-      filename: (req, storageFile, cb) => {
+      filename: (req: any, storageFile: any, cb: any) => {
         // Use added `storageFile.key` property for multer's `filename` also.
         cb(null, storageFile.key)
       }
@@ -33,7 +36,7 @@ export class DiskStorage extends Storage {
   }
 
   // @override
-  _getFilePath(file) {
+  _getFilePath(file: AssetFileObject) {
     const filePath = this._getPath(this._getNestedFolder(file.key), file.key)
     // Never address files outside of the storage folder or the folder itself,
     // whatever the key. `path.join()` also handles folders at the root.
@@ -45,12 +48,12 @@ export class DiskStorage extends Storage {
   }
 
   // @override
-  _getFileUrl(file) {
+  _getFileUrl(file: AssetFileObject) {
     return this._getUrl(this._getNestedFolder(file.key, true), file.key)
   }
 
   // @override
-  async _addFile(file, data) {
+  async _addFile(file: AssetFileObject, data: Buffer) {
     const filePath = this._getFilePath(file)
     const dir = path.dirname(filePath)
     await fs.mkdir(dir, { recursive: true })
@@ -58,7 +61,7 @@ export class DiskStorage extends Storage {
   }
 
   // @override
-  async _removeFile(file) {
+  async _removeFile(file: AssetFileObject) {
     const filePath = this._getFilePath(file)
     await fs.unlink(filePath)
     if (this.nestedFolders) {
@@ -71,14 +74,14 @@ export class DiskStorage extends Storage {
   }
 
   // @override
-  async _readFile(file) {
+  async _readFile(file: AssetFileObject) {
     return fs.readFile(this._getFilePath(file))
   }
 
   // @override
   async _listKeys() {
     if (!this.nestedFolders) {
-      const files = []
+      const files: string[] = []
       for (const file of await fs.readdir(this._getPath())) {
         if (!file.startsWith('.')) {
           files.push(file)
@@ -87,10 +90,10 @@ export class DiskStorage extends Storage {
       return files
     }
 
-    const readDir = (...parts) =>
+    const readDir = (...parts: string[]) =>
       fs.readdir(this._getPath(...parts), { withFileTypes: true })
 
-    const files = []
+    const files: string[] = []
     const list1 = await readDir()
     await mapConcurrently(
       list1,
@@ -116,7 +119,7 @@ export class DiskStorage extends Storage {
     return files
   }
 
-  _getNestedFolder(key, posix = false) {
+  _getNestedFolder(key: string, posix = false) {
     // Store files in nested folders created with the first two chars of the
     // key, for faster access & management with large amounts of files.
     return this.nestedFolders

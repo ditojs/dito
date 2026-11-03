@@ -1,9 +1,9 @@
 import { PassThrough, Readable } from 'stream'
 import awsLite from '@aws-lite/client'
 import { Application } from '../app/Application.js'
-import { S3Storage } from './S3Storage.js'
-import { AssetFile } from './AssetFile.js'
-import { Storage } from './index.js'
+import { S3Storage } from '../src/S3Storage.ts'
+import { AssetFile } from '../src/AssetFile.ts'
+import { Storage } from '../src/index.ts'
 
 const { testing } = awsLite
 const MB = 1024 * 1024

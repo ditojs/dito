@@ -6,15 +6,30 @@ import { PassThrough, Readable } from 'stream'
 import { fileTypeFromBuffer } from 'file-type'
 import { readMediaAttributes } from 'leather'
 import { isString } from '@ditojs/utils'
-import { Storage } from './Storage.js'
+import { Storage } from './Storage.ts'
+import type { AssetFileObject } from './AssetFile.ts'
 import { importPeer } from '../utils/module.js'
+
+type S3Method = (params: Record<string, any>) => Promise<any>
+
+// The methods of aws-lite's S3 client that the storage calls.
+export interface S3Client {
+  PutObject: S3Method
+  GetObject: S3Method
+  DeleteObject: S3Method
+  ListObjectsV2: S3Method
+  CreateMultipartUpload: S3Method
+  UploadPart: S3Method
+  CompleteMultipartUpload: S3Method
+  AbortMultipartUpload: S3Method
+}
 
 export class S3Storage extends Storage {
   static type = 's3'
 
-  s3 = null
-  bucket = null
-  uploadParams = null
+  s3: S3Client | null = null
+  bucket: string | null = null
+  uploadParams: Record<string, string> | null = null
 
   // @override
   async setup() {
@@ -44,7 +59,7 @@ export class S3Storage extends Storage {
             'Only strings are supported.'
           )
         }
-        this.uploadParams[param] = value
+        this.uploadParams[param] = value as string
       }
     }
 
@@ -72,7 +87,7 @@ export class S3Storage extends Storage {
 
     // The multer storage engine of uploads:
     this.storage = {
-      _handleFile: callbackify(async (req, file) => {
+      _handleFile: callbackify(async (req: any, file: any) => {
         const key = this.getUniqueKey(file.originalname)
         const { type, stream } = await getContentType(file)
         // Store the determined width and height as meta-data on the s3 object
@@ -89,28 +104,28 @@ export class S3Storage extends Storage {
         return { key, size }
       }),
 
-      _removeFile: callbackify((req, file) => this._removeFile(file))
+      _removeFile: callbackify((req: any, file: any) => this._removeFile(file))
     }
   }
 
   // @override
-  _getFilePath(_file) {
+  _getFilePath(_file: AssetFileObject): string | undefined {
     // There is no "local" file-path to files on S3.
     return undefined
   }
 
   // @override
-  _getFileUrl(file) {
+  _getFileUrl(file: AssetFileObject) {
     return this._getUrl(file.key)
   }
 
   // @override
-  async _addFile(file, data) {
+  async _addFile(file: AssetFileObject, data: Buffer) {
     await this._upload(file.key, data, { ContentType: file.type })
   }
 
   // @override
-  async _removeFile(file) {
+  async _removeFile(file: AssetFileObject) {
     await this.s3.DeleteObject({
       Bucket: this.bucket,
       Key: file.key
@@ -119,7 +134,7 @@ export class S3Storage extends Storage {
   }
 
   // @override
-  async _readFile(file) {
+  async _readFile(file: AssetFileObject) {
     const {
       ContentType: type,
       Body: buffer
@@ -136,8 +151,8 @@ export class S3Storage extends Storage {
 
   // @override
   async _listKeys() {
-    const files = []
-    const params = { Bucket: this.bucket }
+    const files: string[] = []
+    const params: Record<string, unknown> = { Bucket: this.bucket }
     let result
     do {
       result = await this.s3.ListObjectsV2(params)
@@ -150,7 +165,11 @@ export class S3Storage extends Storage {
     return files
   }
 
-  async _upload(key, data, params) {
+  async _upload(
+    key: string,
+    data: Buffer | Readable,
+    params: Record<string, unknown>
+  ): Promise<number> {
     const { s3 } = this
     const object = { Bucket: this.bucket, Key: key }
     params = { ...object, ...this.uploadParams, ...params }
@@ -159,7 +178,7 @@ export class S3Storage extends Storage {
       // aws-lite releases its fix of `S3.Upload()`, which can replace it:
       const { UploadId } = await s3.CreateMultipartUpload(params)
       try {
-        const Parts = []
+        const Parts: { PartNumber: number, ETag: string }[] = []
         let size = 0
         for await (const Body of getParts(data, uploadPartSize)) {
           const PartNumber = Parts.length + 1
@@ -203,8 +222,8 @@ const uploadParamNames = {
 
 const uploadPartSize = 8 * 1024 * 1024
 
-async function* getParts(stream, partSize) {
-  let chunks = []
+async function* getParts(stream: Readable, partSize: number) {
+  let chunks: Buffer[] = []
   let length = 0
   let count = 0
   for await (const chunk of stream) {
@@ -224,16 +243,22 @@ async function* getParts(stream, partSize) {
   }
 }
 
-async function getContentType({ mimetype, stream }) {
+async function getContentType({
+  mimetype,
+  stream
+}: {
+  mimetype?: string
+  stream: Readable
+}): Promise<{ type: string, stream: Readable }> {
   if (mimetype) {
     // 1. Trust file.mimetype if provided.
     return { type: mimetype, stream }
   } else {
     return new Promise(resolve => {
-      let data = null
-      let firstChunkTypePromise = null
+      let data: Buffer | null = null
+      let firstChunkTypePromise: Promise<string | null> | null = null
 
-      const done = (type, hasUploadEnded = false) => {
+      const done = (type: string, hasUploadEnded = false) => {
         stream.off('data', onData).off('end', onEnd)
         const outStream = new PassThrough()
         if (hasUploadEnded) {
@@ -247,7 +272,7 @@ async function getContentType({ mimetype, stream }) {
         resolve({ type, stream: outStream })
       }
 
-      const onData = chunk => {
+      const onData = (chunk: Buffer) => {
         data = data ? Buffer.concat([data, chunk]) : chunk
         if (!firstChunkTypePromise) {
           // 2. Try reading the mimetype from the first chunk. Pause the
@@ -280,7 +305,7 @@ async function getContentType({ mimetype, stream }) {
   }
 }
 
-async function getFileTypeFromBuffer(buffer) {
+async function getFileTypeFromBuffer(buffer: Buffer) {
   try {
     const fileType = await fileTypeFromBuffer(buffer)
     // Use leather as fall-back for better media file mime type detection.
