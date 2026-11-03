@@ -1,196 +1,160 @@
-import { Service } from './Service.js'
-import { AuthenticationError } from '../errors/index.js'
 import {
-  authenticationTimeout,
-  insertCredential
-} from './authentication.ts'
-import { importPeer } from '../utils/module.js'
+  generateAuthenticationOptions,
+  generateRegistrationOptions,
+  verifyAuthenticationResponse,
+  verifyRegistrationResponse
+} from '@simplewebauthn/server'
+import aaguids from 'aaguids'
+import type { Context } from 'hono'
+import { authError, authenticationTimeout } from './authentication.ts'
+import type { Credential, Credentials } from './credentials.ts'
+import { getSession } from './sessions.ts'
+import type { User, UserSource } from './types.ts'
 
-export class PasskeyService extends Service {
-  #webAuthn: any
-  #aaguids: Record<string, string>
+// Passkeys are discoverable WebAuthn credentials of type `passkey`, with the
+// credential id as `key`, named after their provider. The challenges are kept
+// in the session of the request, and each can be used once.
 
-  // @override
-  async initialize() {
-    if (!this.app.config.app.name) {
-      throw new Error(`Invalid passkeys, missing 'app.name'.`)
-    }
-    const [webAuthn, aaguids] = await Promise.all([
-      importPeer(this, '@simplewebauthn/server'),
-      importPeer(this, 'aaguids')
-    ])
-    this.#webAuthn = webAuthn
-    this.#aaguids = aaguids.default
-  }
+export interface PasskeysOptions {
+  // The name that the browser shows, such as the app's name.
+  rpName: string
+  // The domain that the passkeys belong to. By default, the request's host.
+  domain?: string
+  // The origins of the pages that may use the passkeys. By default, the
+  // request's origin, so an admin on another host sets them.
+  origins?: string[]
+}
 
-  async createAuthenticationOptions(ctx) {
-    // Passkeys are discoverable, so the browser offers them without a
-    // username:
-    const options = await this.#webAuthn.generateAuthenticationOptions({
-      rpID: this.#getDomain(ctx),
-      userVerification: 'required'
-    })
-    storeChallenge(ctx, 'authentication', options)
-    return options
-  }
+export function passkeys({ rpName, domain, origins }: PasskeysOptions) {
+  const getDomain = (c: Context) => domain ?? new URL(c.req.url).hostname
 
-  // Verify the response of `startAuthentication()` against the challenge in
-  // the session, and update the `credential` of its passkey:
-  async verifyAuthentication(ctx, credential, response) {
-    const challenge = consumeChallenge(ctx, 'authentication')
-    const { verified, authenticationInfo } = credential
-      ? await Promise.try(() =>
-          this.#webAuthn.verifyAuthenticationResponse({
-            response,
-            expectedChallenge: challenge,
-            ...this.#getExpectations(ctx, response),
-            credential: {
-              id: credential.key,
-              publicKey: Buffer.from(credential.data.publicKey, 'base64url'),
-              counter: credential.data.counter,
-              transports: credential.data.transports
-            }
-          })
-        ).catch(err => {
-          // Don't tell clients why, but keep the reason for the logs:
-          throw new AuthenticationError({
-            message: 'Passkey is incorrect',
-            cause: err
-          })
-        })
-      : { verified: false }
-    if (verified) {
-      await credential.$patch(
-        {
-          data: {
-            ...credential.data,
-            counter: authenticationInfo.newCounter
-          },
-          lastUsedAt: new Date()
-        },
-        ctx.transaction
-      )
-    } else {
-      throw new AuthenticationError('Passkey is incorrect')
-    }
-  }
+  const getExpectations = (c: Context) => ({
+    expectedRPID: getDomain(c),
+    expectedOrigin: origins ?? new URL(c.req.url).origin
+  })
 
-  async createRegistrationOptions(ctx, user, credentials) {
-    const { usernameProperty } = user.constructor.definition.options
-    const options = await this.#webAuthn.generateRegistrationOptions({
-      rpName: this.app.config.app.name,
-      rpID: this.#getDomain(ctx),
-      userName: user[usernameProperty],
-      // Don't register the same authenticator twice:
-      excludeCredentials: credentials.map(({ key, data }) => ({
-        id: key,
-        transports: data.transports
-      })),
-      authenticatorSelection: {
-        residentKey: 'required',
+  return {
+    async createAuthenticationOptions(c: Context) {
+      // Passkeys are discoverable, so the browser offers them without a
+      // username.
+      const options = await generateAuthenticationOptions({
+        rpID: getDomain(c),
         userVerification: 'required'
-      }
-    })
-    storeChallenge(ctx, 'registration', options)
-    return options
-  }
-
-  // Verify the response of `startRegistration()` against the challenge in the
-  // session, and store its passkey as a credential of the user:
-  async verifyRegistration(ctx, user, response) {
-    const challenge = consumeChallenge(ctx, 'registration')
-    const { verified, registrationInfo } = await Promise.try(() =>
-      this.#webAuthn.verifyRegistrationResponse({
-        response,
-        expectedChallenge: challenge,
-        ...this.#getExpectations(ctx, response)
       })
-    ).catch(err => {
-      // Failed verifications are bad requests, not server errors:
-      throw new AuthenticationError({ message: err.message, status: 400 })
-    })
-    if (verified) {
-      const { credential, aaguid } = registrationInfo
-      return insertCredential(
-        user,
-        'passkey',
-        {
-          key: credential.id,
-          // Name passkeys after their providers, e.g. '1Password'. Anonymous
-          // providers send an all-zero AAGUID, which isn't listed:
-          name: this.#aaguids[aaguid] ?? 'Passkey',
-          data: {
-            publicKey: Buffer.from(credential.publicKey).toString('base64url'),
-            counter: credential.counter,
-            transports: credential.transports
+      storeChallenge(c, 'authentication', options)
+      return options
+    },
+
+    // Verifies the response of `startAuthentication()` against the challenge
+    // in the session, and updates the counter of the passkey. The challenge
+    // is consumed also without a credential.
+    async verifyAuthentication(
+      c: Context,
+      credentials: Credentials,
+      credential: Credential | null,
+      response: any
+    ) {
+      const challenge = consumeChallenge(c, 'authentication')
+      if (!credential) throw authError('Passkey is incorrect')
+      const { verified, authenticationInfo } = await Promise.try(() =>
+        verifyAuthenticationResponse({
+          response,
+          expectedChallenge: challenge,
+          ...getExpectations(c),
+          credential: {
+            id: credential.key!,
+            publicKey: Buffer.from(credential.data.publicKey, 'base64url'),
+            counter: credential.data.counter,
+            transports: credential.data.transports
           }
-        },
-        ctx.transaction
-      )
-    } else {
-      throw new AuthenticationError({
-        message: 'Passkey is incorrect',
-        status: 400
+        })
+      ).catch(() => ({ verified: false, authenticationInfo: null }))
+      if (!verified) throw authError('Passkey is incorrect')
+      await credentials.update(credential.id, {
+        data: { ...credential.data, counter: authenticationInfo!.newCounter },
+        lastUsedAt: new Date()
+      })
+    },
+
+    async createRegistrationOptions(
+      c: Context,
+      username: string,
+      existing: Credential[]
+    ) {
+      const options = await generateRegistrationOptions({
+        rpName,
+        rpID: getDomain(c),
+        userName: username,
+        // The same authenticator isn't registered twice.
+        excludeCredentials: existing.map(({ key, data }) => ({
+          id: key!,
+          transports: data.transports
+        })),
+        authenticatorSelection: {
+          residentKey: 'required',
+          userVerification: 'required'
+        }
+      })
+      storeChallenge(c, 'registration', options)
+      return options
+    },
+
+    // Verifies the response of `startRegistration()` against the challenge in
+    // the session, and stores its passkey as a credential of the user.
+    async verifyRegistration(
+      c: Context,
+      credentials: Credentials,
+      source: UserSource<any>,
+      user: User,
+      response: any
+    ) {
+      const challenge = consumeChallenge(c, 'registration')
+      const { verified, registrationInfo } = await Promise.try(() =>
+        verifyRegistrationResponse({
+          response,
+          expectedChallenge: challenge,
+          ...getExpectations(c)
+        })
+      ).catch(error => {
+        // Failed verifications are bad requests, not server errors.
+        throw authError(error.message, 400)
+      })
+      if (!verified || !registrationInfo) {
+        throw authError('Passkey is incorrect', 400)
+      }
+      const { credential, aaguid } = registrationInfo
+      return credentials.insert(source, user, 'passkey', {
+        key: credential.id,
+        // Anonymous providers send an all-zero AAGUID, which isn't listed.
+        name: aaguids[aaguid] ?? 'Passkey',
+        data: {
+          publicKey: Buffer.from(credential.publicKey).toString('base64url'),
+          counter: credential.counter,
+          transports: credential.transports
+        }
       })
     }
   }
-
-  // Passkeys belong to `domain`, by default the one of the request:
-  #getDomain(ctx): string {
-    return this.config.domain ?? ctx.hostname
-  }
-
-  #getExpectations(ctx, response) {
-    const domain = this.#getDomain(ctx)
-    return {
-      expectedRPID: domain,
-      expectedOrigin: this.config.origins ?? getDomainOrigin(response, domain)
-    }
-  }
 }
 
-// Without `origins`, the pages of the domain and its subdomains may use its
-// passkeys, like WebAuthn allows, over https or on localhost. Other origins
-// fail the verification, which names the domain:
-function getDomainOrigin(response, domain: string): string {
-  const { origin } = JSON.parse(
-    Buffer.from(
-      response.response.clientDataJSON,
-      'base64url'
-    ) as unknown as string
-  )
-  const { protocol, hostname } = new URL(origin)
-  const isAllowed = (
-    (protocol === 'https:' || hostname === 'localhost') &&
-    (hostname === domain || hostname.endsWith(`.${domain}`))
-  )
-  return isAllowed ? origin : `https://${domain}`
-}
-
-// Registrations and authentications keep their challenges apart: confirming
-// the access with a passkey doesn't end a pending registration:
+// Registrations and authentications keep their challenges apart, so
+// confirming the access with a passkey doesn't end a pending registration.
 function storeChallenge(
-  ctx,
+  c: Context,
   type: string,
   { challenge }: { challenge: string }
 ) {
-  ctx.session[`${type}Challenge`] = {
+  getSession(c).value[`${type}Challenge`] = {
     challenge,
     expires: Date.now() + authenticationTimeout
   }
 }
 
-// Each challenge can only be answered once, before it expires:
-function consumeChallenge(ctx, type: string): string {
+function consumeChallenge(c: Context, type: string) {
+  const session = getSession(c).value
   const key = `${type}Challenge`
-  const { challenge, expires } = ctx.session[key] ?? {}
-  delete ctx.session[key]
-  if (challenge && expires > Date.now()) {
-    return challenge
-  } else {
-    throw new AuthenticationError({
-      message: 'Missing or expired passkey challenge',
-      status: 400
-    })
-  }
+  const { challenge, expires } = session[key] ?? {}
+  delete session[key]
+  if (challenge && expires > Date.now()) return challenge as string
+  throw authError('Missing or expired passkey challenge', 400)
 }

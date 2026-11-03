@@ -1,39 +1,34 @@
 import { createHash } from 'node:crypto'
+import { HttpError } from '@ditojs/server'
+import type { User, UserSource } from './types.ts'
 
-// The time to answer passkey challenges, and to confirm new TOTP secrets and
-// complete the logins of users with TOTP:
-export const authenticationTimeout = 5 * 60 * 1000 // 5 minutes
+// The time to complete passkey challenges, to confirm new TOTP secrets and to
+// complete the logins of users with TOTP.
+export const authenticationTimeout = 5 * 60 * 1000
 
-// To support multiple user model classes, sessions identify users by both their
-// model class name and id:
-export function getUserIdentifier(user): string {
-  return `${user.constructor.name}-${user.$id()}`
+// The errors of the auth actions, whose message the admin shows.
+export function authError(
+  message: string,
+  status = 401,
+  data: Record<string, unknown> = {}
+) {
+  return new HttpError(status, { message, ...data })
 }
 
-export function parseUserIdentifier(
-  identifier: string
-): { modelName?: string, id?: string } {
-  // Only split at the first hyphen, since ids may contain hyphens (UUIDs):
-  const [, modelName, id] = identifier.match(/^([^-]+)-(.+)$/) ?? []
-  return { modelName, id }
+// Sessions and credentials name users by their source and id, such as
+// `Admin-1`, so several sources can share them.
+export function getUserIdentifier(source: UserSource<any>, user: User) {
+  return `${source.name}-${user.id}`
 }
 
-// Sessions can be stored in cookies, so they store a hash of the password hash,
-// not the hash itself:
+// Splits at the first hyphen only, as ids may hold hyphens, such as UUIDs.
+export function parseUserIdentifier(identifier: unknown) {
+  const match = String(identifier).match(/^([^-]+)-(.+)$/)
+  return match ? { name: match[1], id: match[2] } : null
+}
+
+// Sessions keep a hash of the password hash, so a password change ends the
+// other sessions of the user.
 export function getPasswordFingerprint(hash: string | null | undefined) {
   return hash ? createHash('sha256').update(hash).digest('base64url') : null
-}
-
-// Credentials refer to their users by model name and id, as a string:
-export function getCredentialQuery(user, type: string, trx) {
-  return user.constructor
-    .credentialQuery(trx)
-    .where({ type, userId: `${user.$id()}` })
-}
-
-export function insertCredential(user, type: string, values: object, trx) {
-  const { credentialClass, name } = user.constructor
-  return credentialClass
-    .query(trx)
-    .insert({ type, userModel: name, userId: `${user.$id()}`, ...values })
 }

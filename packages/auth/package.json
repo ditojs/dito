@@ -1,0 +1,78 @@
+{
+  "name": "@ditojs/auth",
+  "version": "7.0.0-next.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./passkeys": "./src/passkeys.ts",
+    "./totp": "./src/totp.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@ditojs/utils": "workspace:^",
+    "bcryptjs": "^3.0.3"
+  },
+  "devDependencies": {
+    "@ditojs/server": "workspace:^",
+    "@simplewebauthn/server": "^14.0.3",
+    "@types/node": "^26.6.4",
+    "aaguids": "^0.0.71",
+    "hono": "^4.13.14",
+    "kysely": "0.29.6",
+    "otpauth": "^9.5.2",
+    "zod": "^4.6.7"
+  },
+  "peerDependencies": {
+    "@ditojs/server": "workspace:^",
+    "@simplewebauthn/server": "^14.0.0",
+    "aaguids": "0.0.x",
+    "hono": "^4.13.14",
+    "kysely": "^0.29.6",
+    "otpauth": "^9.0.0",
+    "zod": "^4.6.7"
+  },
+  "peerDependenciesMeta": {
+    "@simplewebauthn/server": {
+      "optional": true
+    },
+    "aaguids": {
+      "optional": true
+    },
+    "otpauth": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./passkeys": {
+        "types": "./dist/passkeys.d.ts",
+        "import": "./dist/passkeys.js"
+      },
+      "./totp": {
+        "types": "./dist/totp.d.ts",
+        "import": "./dist/totp.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ditojs/dito.git",
+    "directory": "packages/auth"
+  }
+}
