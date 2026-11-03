@@ -1,0 +1,927 @@
+# Upgrading to Dito.js 7.x
+
+This guide is for apps that move from Dito.js 6.x to Dito.js 7.0. It lists what
+replaces each part of Dito.js 6, then [the steps](#migrating-an-app) of the
+move, in order. Each step names what changes, and links to the
+[API reference](api/server/index.md) and the
+[server guide](guide/server/index.md) for the details.
+[`CHANGELOG.md`](../CHANGELOG.md) lists all changes.
+
+Dito.js 7 replaces the server. The admin keeps its schemas and views, but its
+`api` config changes, see
+[step 10](#10-update-the-admin-the-clients-and-the-tests). The UI and the utils
+keep their API.
+
+## What Dito.js 7 is
+
+- **A core on Hono.** `createApi({ controllers })` of `@ditojs/server` returns a
+  [Hono](https://hono.dev) app, which the app routes in its own Hono app. There
+  is no configuration and no CLI.
+- **MikroORM.** `@ditojs/mikro` builds model controllers on
+  [MikroORM](https://mikro-orm.io) 7 entities. Objection.js isn't supported.
+- **Controllers as objects**, with one `actions` map keyed `'verb path'`. Mixins
+  replace features and class inheritance.
+- **Standard Schema.** Every schema that an app passes is a
+  [Standard Schema](https://standardschema.dev), such as a Zod schema.
+
+## What replaces each part of Dito.js 6
+
+This table lists each part of Dito.js 6 that an app relies on, what replaces it,
+and how much work the move is. Low means a change of configuration or a few
+lines, medium one module of the app, and high every model or every controller.
+
+| Dito.js 6                                                                              | Dito.js 7                                                                                                                                                                     | Work                    |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `dito db:migrate`, `db:rollback`, `db:reset`, `db:unlock`                              | knex's own CLI with a `knexfile.js` of two lines, see [step 1](#1-run-the-migrations-with-knexs-cli)                                                                          | low                     |
+| `dito db:create_migration`, which wrote tables from models                             | `knex migrate:make`, empty; after step 11, MikroORM's `migrator.create()`, which diffs the entities                                                                           | low                     |
+| The knex migration history                                                             | MikroORM's Migrator with a baseline migration of the app, see [step 11](#11-move-the-migrations-to-mikroorm)                                                                  | medium, once            |
+| `dito db:seed` and `seeds/`                                                            | MikroORM's [seeder](https://mikro-orm.io/docs/seeding), or a script with an entity manager                                                                                    | medium                  |
+| `dito console`                                                                         | A REPL script of ten lines, see [step 4](#4-set-up-the-orm-the-services-and-the-scripts)                                                                                      | low                     |
+| `dito db:list_asset_config`, `db:recount_assets`                                       | The asset paths of the app, and `assets.runJobs()`                                                                                                                            | low                     |
+| `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `deleteExpiredSessions(kysely)` of `@ditojs/auth` on a timer of the app                                                                                                       | low                     |
+| `new Application()`, `app.execute()`, `start()`, `stop()`                              | `new Hono()` as the host, the controllers in one `createApi()` per area, routed with `app.route()`, and `serve()` of `@ditojs/server/node`, which stops on signals            | medium                  |
+| `config` and its sections                                                              | The app's own config module, whose sections the app passes to `hostMiddleware()`, `createSessions()`, `createStorages()` and `serveAdmin()`                                   | low                     |
+| `config.knex`, `app.knex`, `normalizeDbNames`                                          | `new MikroORM({ dbName, host, user, password })`, passed to `createApi({ db: mikroDb(orm) })`; MikroORM maps camelCase names to snake_case by default; `getKysely(c)` for SQL | low                     |
+| The `typeParsers` of knex, such as numeric to float                                    | `p.decimal('number')` and `p.bigint('number')` on the entity                                                                                                                  | low                     |
+| `Service`, `config.services`, `app.services`                                           | The app's own modules, started and stopped around `serve()`, see [step 4](#4-set-up-the-orm-the-services-and-the-scripts)                                                     | low, or medium for many |
+| `app.on()`, `before:start` and the other events                                        | Plain calls, or an `EventEmitter` of the app                                                                                                                                  | low                     |
+| `config.log`, `config.logger`, `app.logger`, `ctx.logger`                              | The host's logger, such as hono-pino, which errors go through by default; MikroORM's `debug` for SQL                                                                          | low                     |
+| `useApp()`, `ctx.app`                                                                  | Imports of the app's modules                                                                                                                                                  | low                     |
+| Models: `properties`, `relations`, `TimestampedModel`, model hooks                     | MikroORM entities with `defineEntity()`, `onCreate()`, `onUpdate()`, MikroORM's hooks                                                                                         | high                    |
+| Model scopes, modifiers, `static filters`, `allowScope`, `allowFilter`                 | `find` and `filters` of the controllers, `textFilter()`, `dateRangeFilter()`                                                                                                  | high                    |
+| JSON schemas of JSON columns, the `Validator`'s formats, keywords and types            | `schemaJson()` with Standard Schemas such as Zod's, converted by hand, see [step 5](#5-turn-models-into-entities)                                                             | medium                  |
+| `$parseJson()`, `$formatJson()`, read-only properties, `$validateGraph()`              | `deserialize`, `serialize` and `beforeSerialize` of the controller, rules as functions run by a mixin                                                                         | medium                  |
+| Graph writes: `upsertGraph()`, `relate`, `#id`, `#ref`                                 | Nested writes of owned relations, `createRecord()`, `assignRecord()`                                                                                                          | medium                  |
+| `Controller`, `ModelController`, `RelationController`, `collection`, `member`, `allow` | `defineController()` with one `actions` map, mixins, `crud`                                                                                                                   | high                    |
+| Controller hooks, `parameters`, `returns`, `transacted`                                | Handlers that call `next()`, middleware of mixins, `query` and `body` schemas, `transaction: true`                                                                            | high                    |
+| Koa's `ctx` in handlers and middleware                                                 | The handler's input, `{ query, body, params, user, db, action, record, find, list, c, next }`, with Hono's context `c`, see [step 8](#8-rewrite-the-controllers)              | high                    |
+| `ResponseError` and its subclasses, `app.logError()`                                   | `HttpError`, `toHttpError()` of the `db` adapter, and the `onError` hook, which logs by default                                                                               | low                     |
+| Koa middleware, `config.http`                                                          | Hono middleware on the host: `hostMiddleware()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`                                                 | low                     |
+| `app.proxy`, `config.server.proxy`                                                     | `forwarded(proxy)` of `@ditojs/server/node`, and `getClientAddress(c)` for the client's address                                                                               | low                     |
+| `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createSessions()`, `sessionUser()`, `usersRoutes()`, `passwordWrites()`, `passkeys()`, `totp()`, and `entityUserSource()` of `@ditojs/mikro`                 | medium                  |
+| `config.storages`, model `assets`, `AssetFile`, asset counts in hooks                  | `@ditojs/storage`: `createStorages()`, asset paths, `createAssets()`, `serveStorage()`                                                                                        | medium                  |
+| `AdminController`, `config.admin`, the admin's build                                   | `serveAdmin()` and `defineAdminViteConfig()` of `@ditojs/admin-server`                                                                                                        | low                     |
+| Tests on `app.knex` and models                                                         | Tests on an entity manager of the ORM, and `app.request()` of Hono                                                                                                            | medium                  |
+
+## Migrating an app
+
+Take the steps in this order:
+
+- Steps 1 and 2 run on Dito.js 6. The app keeps running after each one.
+- Steps 3 to 10 replace the server, on a branch. The app runs again after step 9.
+- Step 11 moves the migrations to MikroORM. Take it once the release of step 10
+  runs everywhere.
+
+### 1. Run the migrations with knex's CLI
+
+Dito.js 7 has no CLI. The `dito` CLI ran the migrations with knex, and knex's
+own CLI does the same with a `knexfile.js` next to `package.json`. This also
+works on Dito.js 6. Keep `knex` and `pg` as dependencies until step 11.
+
+```js
+// knexfile.js
+import config from './config/index.js'
+
+export default config.knex
+```
+
+| Dito.js 6                                       | knex                                                 |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| `dito db:migrate ./config/index.js`             | `knex migrate:latest`                                |
+| `dito db:rollback ./config/index.js`            | `knex migrate:rollback`                              |
+| `dito db:reset ./config/index.js`               | `knex migrate:rollback --all && knex migrate:latest` |
+| `dito db:unlock ./config/index.js`              | `knex migrate:unlock`                                |
+| `dito db:create_migration ./server/app.js name` | `knex migrate:make name -x mjs`, an empty ES module  |
+
+### 2. Change the schema for Dito.js 7
+
+Write knex migrations that prepare the schema. They also run on Dito.js 6,
+unless one of its models reads the `id` of a join table.
+
+- Give each join table with columns of its own a composite primary key of its
+  two foreign keys, instead of a serial `id`. With a serial `id`, MikroORM
+  orders the relation by it, writes kept pairs again without their columns, and
+  upserts pairs twice.
+- Add a unique key of the two foreign keys to the other join tables.
+- If the app stores files, add `unreferenced_since` to the `asset` table:
+  `table.timestamp('unreferenced_since', { useTz: true }).nullable()`.
+
+### 3. Swap the dependencies
+
+1. Remove `@ditojs/server` 6, `@ditojs/schema`, `objection`, `koa` and its
+   middleware. The admin holds the validators that it used from
+   `@ditojs/schema`.
+2. Add `@ditojs/server` and `@ditojs/mikro`, and `@ditojs/storage`,
+   `@ditojs/auth` and `@ditojs/admin-server` if the app needs them.
+3. Add `@mikro-orm/core`, `@mikro-orm/postgresql`, `kysely`, `hono`,
+   `@hono/node-server` and `zod`.
+
+All server packages are written in TypeScript and need Node.js 24. See
+[Server packages](api/server/index.md).
+
+### 4. Set up the ORM, the services and the scripts
+
+Dito.js 7 has no app object, no services and no CLI, so the app owns these
+parts.
+
+**The ORM.** Create it from the knex config. MikroORM maps camelCase properties
+to snake_case columns by default, as `normalizeDbNames` did. The sessions,
+credentials and asset jobs of step 9 use `kysely`:
+
+```js
+// server/orm.js
+import { MikroORM } from '@mikro-orm/postgresql'
+import config from '../config/index.js'
+import * as entities from './entities/index.js'
+
+const { connection, pool } = config.knex
+
+export const orm = new MikroORM({
+  entities: Object.values(entities),
+  dbName: connection.database,
+  host: connection.host,
+  port: connection.port,
+  user: connection.user,
+  password: connection.password,
+  pool
+})
+
+export const kysely = orm.em.getKysely()
+```
+
+**Services** become modules of the app. Each module exports functions such as
+`start()` and `stop()`, and imports the config and the ORM instead of reading
+them from `this.app`. The server calls them around `serve()`:
+
+```js
+// server/index.js
+import * as mailer from './services/mailer.js'
+import * as scheduler from './services/scheduler.js'
+
+const services = [mailer, scheduler]
+await Promise.all(services.map(service => service.start()))
+await serve(app, {
+  port: config.server.port,
+  async onClose() {
+    await Promise.all(services.map(service => service.stop()))
+    await orm.close()
+  }
+})
+```
+
+**Logging** moves to the host. `config.logger` and `ctx.logger` become a logger
+of the app, such as pino with hono-pino as middleware of the host.
+`config.log.sql` becomes MikroORM's `debug` option. See
+[Errors and logging](guide/server/api.md#errors-and-logging), also for how to
+use pino's `redact` with entities.
+
+**The console** of `dito console` becomes a REPL script:
+
+```js
+// scripts/console.js
+import repl from 'node:repl'
+import { orm } from '../server/orm.js'
+import * as entities from '../server/entities/index.js'
+
+const server = repl.start({ prompt: 'app > ' })
+server.setupHistory('.console_history', () => {})
+Object.assign(server.context, entities, { orm, em: orm.em.fork() })
+server.on('exit', () => orm.close())
+```
+
+### 5. Turn models into entities
+
+Write one MikroORM entity for each model, with `defineEntity()` and the `p`
+builders, see [Entities and controllers](guide/server/entities.md).
+
+- Don't declare foreign key properties such as `authorId`. The relation holds
+  the column.
+- `TimestampedModel` becomes `onCreate()` and `onUpdate()`. `$beforeInsert()`
+  and the other model hooks become `onCreate()`, `deserialize`, or MikroORM's
+  lifecycle hooks.
+- For each nullable relation that must refuse deletes, declare its delete rule
+  with `.deleteRule('no action')`.
+- Rules of a whole graph, `$validateGraph()`, become plain functions that return
+  issues, see
+  [Rules on rows and graphs](guide/server/writes.md#rules-on-rows-and-graphs).
+- Model `assets` become plain JSON columns, and [asset paths](#storage).
+- Entities have a single primary key. Only pivot entities have composite keys.
+- Hide fields with `.hidden()`. For fields that only some users see, use
+  `exclude` in a `find` function. Serialization `groups` aren't supported.
+- Dito.js 6 stored a `Date` in a `date` column as its local day. `p.date()` of
+  MikroORM stores its UTC day, also for strings with a time.
+  [`plainDate()`](api/server/mikro.md#plaindate) of `@ditojs/mikro` keeps the
+  local day.
+
+**JSON columns.** Convert the JSON schemas of JSON columns to Zod or another
+Standard Schema by hand, and pass them to `schemaJson()`. The formats and
+keywords of other columns become a custom type with a `schema` getter, see
+[Rules on values](guide/server/writes.md#rules-on-values).
+
+```js
+meta: schemaJson(z.object({ featured: z.boolean().default(false) })).nullable()
+```
+
+`schemaJson()` writes the value as sent, without the schema's defaults. Dito.js
+6 filled in the defaults of its schemas on insert. To keep this, add a
+`beforeCreate` hook that runs the schemas and keeps their output:
+
+```js
+export async function fillJsonDefaults({ entity, meta }) {
+  for (const prop of meta.props) {
+    const schema = prop.customType?.schema
+    if (schema && entity[prop.name] != null) {
+      const result = await schema['~standard'].validate(entity[prop.name])
+      if (!result.issues) {
+        entity[prop.name] = result.value
+      }
+    }
+  }
+}
+
+defineEntity({ name: 'Post', hooks: { beforeCreate: [fillJsonDefaults] } })
+```
+
+**Many-to-many relations.** A join table with columns of its own becomes a pivot
+entity, with `p.manyToOne(Post).primary()` on both foreign keys. A body writes
+the relation as ids, on either side. A pivot entity created next to a new pair
+inserts the row a second time, so a handler sets the other columns after a first
+flush, see
+[Many-to-many relations](guide/server/writes.md#many-to-many-relations).
+
+### 6. Turn scopes into find shapes
+
+Each controller decides what it loads and returns with `find`: MikroORM's find
+options plus `where` and `maxRows`, or a function of Hono's context `c` that
+returns them. It replaces `scope`, `allowScope`, `allowFilter`, `allowParam`,
+`graph` and the model's default scope. `filters` declares the list filters. See
+[Find](api/server/mikro.md#find) and [Filters](api/server/mikro.md#filters).
+
+```js
+// Dito.js 6
+static scopes = {
+  list: query => query.withGraph('author').orderBy('createdAt', 'desc'),
+  choose: query => query.select('id', 'title').orderBy('title')
+}
+static filters = {
+  authorId: { handler: (query, id) => query.where('authorId', id) }
+}
+// GET /posts?scope=choose&filter=authorId:12
+
+// Dito.js 7
+mixins: [choices({ fields: ['id', 'title'], orderBy: { title: 'asc' } })],
+find: { populate: ['author'], orderBy: { createdAt: 'desc' } },
+filters: {
+  title: textFilter(),
+  createdAt: dateRangeFilter(),
+  'author.id': q.integer()
+}
+// GET /posts/choices?filter[author.id]=12
+```
+
+- Rows that `find.where` hides respond with 404 on `record()` and the default
+  handlers.
+- `?scope=` and `?fields=` are gone. A controller routes the shapes that its
+  clients need instead, such as `'get :id/full'`, and `choices()` routes the
+  options of a select at `get choices`.
+- Dito.js 6's filter types `text` and `date-range` become `textFilter()` and
+  `dateRangeFilter()`, which read what the admin's filters send.
+- Custom actions query through `find(options)` of the handler's input, or
+  `c.var.find()`. `list(options)`, or `c.var.list()`, runs the list with its
+  filters, `order` and `range`. `listHandler(find)` returns such a list as a
+  handler. They keep to the rows of the controller's `find`. Only `where` and
+  `filters` merge, and the other options replace the controller's.
+- `listQuery()` of the input returns the `where`, `orderBy` and `range` of the
+  list, for summaries and exports over its rows.
+
+`fields` alone defines what goes out, see [Output](api/server/mikro.md#output):
+
+- Paths in `fields`, such as `author.name`, populate their relations and send
+  them nested, as `author: { name }`, instead of flat names such as
+  `authorName`. Where a label needs a flat value, add a `.formula()` property.
+- `author.*` stands for the columns of the relation that aren't lazy. To load a
+  lazy property, name it too.
+- Responses send each relation to one row as `{ id }`, such as
+  `author: { id: 12 }`, or `null`, unless `find` populates it. With `fields`, a
+  row has it only when `fields` names the relation, `author.id` or `*`.
+  `exclude: ['author']` leaves it out.
+- Writes take the relation, `{ author: { id: 12 } }`, so a client can send back
+  what it loaded. There are no `<name>Id` keys: a body with `authorId` has an
+  unknown key, which writes ignore.
+- `order` and filters name the relation too, such as `order=author.id` and
+  `filter[author.id]=12`.
+
+### 7. Turn features and hooks into mixins
+
+Controllers are plain objects, so they share code through mixins.
+`defineMixin()` takes what a controller takes, without `path`. Turn features and
+base controllers into mixins, see [Mixins](api/server/controllers.md#mixins):
+
+```js
+// Dito.js 6
+export class EditorController extends ModelController {
+  authorize = ['admin', 'editor']
+  transacted = true
+  collection = { allow: ['get', 'post'] }
+  member = { allow: ['get', 'patch', 'delete'] }
+}
+
+// Dito.js 7
+export const editor = defineMixin({
+  authorize: ['admin', 'editor'],
+  transaction: true,
+  mixins: [crud]
+})
+```
+
+[`crud`](api/server/mikro.md#crud) of `@ditojs/mikro` routes the five default
+handlers. When two layers set the same action key, the later one's handler runs
+the earlier one's as `next()`. A setting comes from the last action definition
+that has it, else from the last layer that has it.
+
+Hooks that ran after an action become a handler that calls `next()`, or
+middleware of a mixin. Both run inside the transaction, so an error after
+`next()` rolls back the write.
+
+An audit log of every write moves to a MikroORM
+[event subscriber](https://mikro-orm.io/docs/events). It sees each row that a
+flush writes, also from scripts and custom actions:
+
+```js
+export class Audit {
+  onFlush({ em, uow }) {
+    for (const change of uow.getChangeSets()) {
+      if (change.entity instanceof AuditLog) continue
+      const log = em.create(AuditLog, {
+        entity: change.name,
+        entityId: change.getPrimaryKey(),
+        type: change.type,
+        changes: change.payload
+      })
+      uow.computeChangeSet(log)
+    }
+  }
+}
+
+// MikroORM.init({ ...options, subscribers: [new Audit()] })
+```
+
+### 8. Rewrite the controllers
+
+Rewrite each controller with `defineController()`, of `@ditojs/mikro` for an
+entity and of `@ditojs/server` without one. Each one needs its `path`, `true`
+for each default handler it keeps, and `authorize` on every write. See
+[Controllers](guide/server/controllers.md).
+
+```js
+// Dito.js 6
+export class PostsController extends ModelController {
+  modelClass = Post
+  authorize = ['admin', 'editor']
+  collection = { allow: ['get'] }
+
+  member = {
+    allow: ['get', 'patch'],
+
+    'post publish': {
+      async handler(ctx) {
+        await Post.query().findById(ctx.memberId).patch({ published: true })
+        return this.getMember(ctx)
+      }
+    }
+  }
+
+  static hooks = {
+    async 'after:member:patch'(ctx, post) {
+      await notifySubscribers(post)
+    }
+  }
+}
+```
+
+```js
+// Dito.js 7
+export const posts = defineController({
+  path: 'posts',
+  entity: Post,
+  authorize: ['admin', 'editor'],
+  actions: {
+    'get': true,
+    'get :id': true,
+
+    async 'patch :id'({ next }) {
+      const post = await next()
+      await notifySubscribers(post)
+      return post
+    },
+
+    async 'post :id/publish'({ record }) {
+      const post = await record()
+      post.published = true
+      return post
+    }
+  }
+})
+```
+
+#### Actions
+
+One `actions` map holds every route, keyed `'verb path'`, see
+[Actions](api/server/controllers.md#actions):
+
+| Dito.js 6                                 | Dito.js 7                                           |
+| ----------------------------------------- | --------------------------------------------------- |
+| `collection.get`, `collection.post`       | `'get'`, `'post'`                                   |
+| `member.get`, `.patch`, `.delete`         | `'get :id'`, `'patch :id'`, `'delete :id'`          |
+| `collection: { 'get by-name': … }`        | `'get by-name'`                                     |
+| `member: { 'post publish': … }`           | `'post :id/publish'`                                |
+| `'get preview-:format'` with `parameters` | `'get :id/preview-:format'` or one action per value |
+
+- Each controller states its `path`, as the URL has it, such as `blog-posts`.
+  Nothing is derived from class names. `createApi()` throws for a path with
+  leading, trailing or double slashes, or with `:id`.
+- Paths use Hono's syntax: `:name` matches one segment, and `:name{.+}` one or
+  more. The `*` and `**` wildcards of Dito.js 6 become named parameters.
+- Default handlers are off. A forgotten key leaves the route out. There is no
+  default `put` and no write on the whole collection. Bulk writes are custom
+  actions, such as `'post order'`.
+- `parameters` and `returns` become the Standard Schemas `query` and `body`,
+  which `action()` types. `q` of `@ditojs/server/zod` has schemas for query
+  values, such as `q.integer()`, and `q.array(item)` for repeated keys.
+
+#### Handlers and the context
+
+Koa's `ctx` splits in two. A handler gets one object, the
+[input](api/server/api.md#the-handlers-input) of the request, which holds Hono's
+context `c` and `next()`. Middleware and `authorize` get `c`, and read Dito's
+variables from it, such as `c.var.user`.
+
+| Dito.js 6 (Koa)                              | Dito.js 7                                                                               |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `ctx.request`, `ctx.headers`                 | `c.req`; `c.req.header(name)`, and `c.req.raw`, the `Request`                           |
+| `ctx.href`, `ctx.url`, `ctx.path`            | `c.req.url`, the full URL; `c.req.path`                                                 |
+| `ctx.query`                                  | `query` of the input, the output of the `query` schema                                  |
+| `ctx.request.body`                           | `body` of the input; `c.var.body` in middleware                                         |
+| `ctx.params`                                 | `params` of the input; `c.req.param(name)`                                              |
+| `ctx.memberId`                               | `id` of the input in model controllers, a number for integer keys; else `params.id`     |
+| `this.getMember(ctx)`, `super.get(ctx)`      | `record()` of the input; `c.var.record()`; `next()`                                     |
+| `ctx.status`, `ctx.set()`                    | `c.status()`, `c.header()`                                                              |
+| `ctx.type`, `ctx.body =`, `ctx.attachment()` | A returned `Response`, such as `c.body()` or [`sendFile()`](api/server/api.md#sendfile) |
+| `ctx.state.user`                             | `user` of the input, `{ id, roles }`; `c.var.user`                                      |
+| `ctx.state.*`                                | `c.set()` and `c.var`, also in the input, typed by augmenting `DitoVariables`           |
+| `ctx.transaction`                            | `db` of the input, the transaction's handle during one; `c.var.db`                      |
+| `ctx.ip`                                     | `getClientAddress(c)` of `@ditojs/server/node`                                          |
+| `ctx.session`                                | `session` of the input, or `getSession(c)` of `@ditojs/auth`                            |
+| `ctx.action`                                 | `action` of the input, the key such as `'post :id/publish'`; `c.var.action`             |
+| `ctx.action.type`                            | `params.id !== undefined` for member actions; `c.req.method`                            |
+
+- Handlers return data or a `Response`. Data responds with 200 and `undefined`
+  responds with 204, also for `post`. A custom `post` that creates calls
+  `c.status(201)` itself.
+- In model controllers, the base converts the id by the primary key, and an id
+  that doesn't fit responds with 404. With `load`, an id such as `self` stays a
+  string. `params.id` and `c.req.param('id')` are the string of the path.
+- `c.var.body` holds the body of a write for the middleware of actions and
+  layers: the result of the `body` schema, else the JSON body. Dito reads it
+  before the transaction, so invalid JSON responds with 400 without one.
+- Hono doesn't send a thrown `Response`. Throw an `HttpError`, or return the
+  `Response`.
+- Middleware is Hono middleware, on the host, in `createApi({ middleware })`, or
+  on controllers, mixins and actions.
+- `getEntityManager(c)` of `@ditojs/mikro` returns the request's entity manager
+  in middleware, and `getKysely(c)` its Kysely, for queries that MikroORM
+  doesn't build.
+
+#### Authorization
+
+`authorize` takes `true`, a role, a list of roles, or a function of `c`, see
+[authorize](api/server/controllers.md#authorize). If a `post`, `put`, `patch` or
+`delete` action has no `authorize`, on itself or on a layer, `createApi()`
+throws. Front controllers that let anyone write set `authorize: true`.
+
+`$authorize()` and `handleAuthorization()` become a function of `c`, which reads
+`c.var.user` and `c.req.param('id')`. It runs before the body is read, before
+the transaction and before `record()` is set, so it loads what it checks itself.
+
+#### Writes
+
+A write runs the action's `body` schema, `deserialize`, the checks of the body,
+the ORM call, the app's rules and one flush. Then the base loads the written
+rows again in one query, with the values that formulas and triggers set. See
+[Writes](guide/server/writes.md).
+
+- **The checks of the body replace Ajv.** They read the entity's metadata, drop
+  the properties that clients can't write, and check JSON types, the ids of
+  relations, and the schemas of custom types and `schemaJson()` columns.
+  Postgres checks the rest, such as lengths, and its errors respond with 400.
+  For stricter rules, give the action a Zod `body` schema, such as
+  `'post': { body: postSchema }`, as the writes of a website need. The messages
+  name the expected type, such as `expected int` for integer columns.
+- **`deserialize(c, json, record?)`** decides what a user may write. It replaces
+  `$parseJson()`, the read-only rules of properties, and the `before:*:patch`
+  hooks that changed the body. Custom handlers don't run it.
+- **Graphs.** `graph: true`, `upsertGraph()`, `relate` and `unrelate` are gone.
+  Owned relations, with `orphanRemoval`, are written nested, and on a PATCH, the
+  array is the full set. Other relations link by id. Only new rows carry `#id`,
+  and links to them are `{ '#ref': key }`. `#dbRef` becomes an id or `{ id }`.
+- **Custom handlers** write a body with `createRecord(db, entity, data)` and
+  `assignRecord(db, record, data)`, which run the same checks and don't flush.
+  The base flushes once after the handler.
+- **Deletes.** Call `removeRecord(db, record)` instead of `em.remove()`, which
+  sets the foreign key of loaded one-to-many rows to null when the column is
+  nullable, whatever its delete rule says. Trees of one entity need
+  `.deleteRule('cascade')` on their foreign key. A delete that a foreign key
+  refuses responds with 409, see
+  [Database errors](api/server/mikro.md#database-errors).
+
+`serialize(c, record, json)` replaces `$formatJson()` and the hooks that changed
+responses. `beforeSerialize(c, records)` runs once per response with all the
+records, so that a mixin loads what they need in one query. See
+[Serialize and deserialize](guide/server/controllers.md#serialize-and-deserialize).
+
+#### Errors
+
+| Dito.js 6                                                                                                  | Dito.js 7                                                         |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `ResponseError(message, { status })`                                                                       | `new HttpError(status, { message })`                              |
+| `NotFoundError`                                                                                            | `new HttpError(404)`                                              |
+| `AuthorizationError`, `AuthenticationError`                                                                | `new HttpError(403)`, `new HttpError(401)`                        |
+| `ValidationError`                                                                                          | `createValidationError(issues, { message, type, status, cause })` |
+| `DatabaseError`                                                                                            | `toHttpError()` of `mikroDb()`                                    |
+| `ControllerError`, `ModelError`, `QueryBuilderError`, `RelationError`, `GraphError`, `NotImplementedError` | Plain `Error`s, which respond with 500                            |
+| `app.logError()`                                                                                           | The `onError` hook, which logs by default                         |
+
+Errors respond with the JSON of Dito.js 6:
+`{ type, message, status, code, errors }`. Field errors are keyed by the path of
+the value, such as `chapters/8/title`, each with a `message` and a `keyword`,
+such as Zod's `invalid_type`. Other options of `HttpError` go into the body.
+Errors with a numeric `status`, as Dito.js 6 and http-errors throw them, still
+respond with that status, so the app can move its error classes one by one. See
+[Errors](api/server/errors.md).
+
+The response of an error keeps the headers that were set before it, except those
+that describe the data. The `onError` hook gets the original error, also a
+database error, not the `HttpError` of the response.
+
+### 9. Host the app
+
+Replace the `Application` with a host, so that the app runs again. The app's own
+`Hono` app is the host, and the controllers go into one `createApi()` per area,
+each with its own sessions and users. See
+[Hosting with Hono](guide/server/api.md#hosting-with-hono).
+
+```js
+const api = createApi({
+  controllers,
+  middleware: [sessions.middleware],
+  db: mikroDb(orm),
+  getUser: sessionUser(adminSource)
+})
+
+const app = new Hono({ strict: false })
+app.use(forwarded(config.server.proxy ?? false), ...hostMiddleware())
+app.use('/assets/public/*', serveStorage(storages.get('public')))
+app.onError(errorHandler())
+app.notFound(notFound)
+app.route('/api', api)
+await serve(app, { port, shutdownTimeout: 5000, onClose: () => orm.close() })
+```
+
+- `controllers` is a list, or a module namespace, in which only the results of
+  `defineController()` count.
+- `config.http` becomes the options of
+  [`hostMiddleware()`](api/server/hono.md#hostmiddleware). Add it before
+  `app.route()`. As in Dito.js 6, `csrf()` only checks requests with `Origin`.
+  Multipart bodies have no limit here: the reverse proxy sets it, such as
+  `client_max_body_size` in nginx.
+- `cors` works differently. Dito.js 6 echoed the request's origin. Hono's
+  `cors()` allows any origin by default, without credentials. With
+  `credentials: true`, it needs the allowed `origin`.
+- `app.proxy` becomes [`forwarded(proxy)`](api/server/hono.md#forwarded), the
+  first middleware, so that `csrf()` compares the origin with the public URL.
+  `proxy` is the number of trusted proxies, or `true` for one.
+- Routes with a trailing slash respond with 404 unless the host is
+  `new Hono({ strict: false })`. The admin sends some paths with one.
+- Route the APIs at deeper paths first, such as `/api/admin` before `/api`, as
+  the middleware of an API runs on all paths below it.
+- An API handles only the paths of its actions and its own errors.
+  `app.notFound(notFound)` sends Dito's JSON 404 for the other paths, and
+  `app.onError(errorHandler())` handles the errors of the host's own middleware.
+
+#### Sessions and users
+
+`UsersController`, `UserMixin`, `SessionMixin` and `CredentialMixin` become
+`@ditojs/auth`. The `session` and `credential` tables stay the same, so passkeys
+and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
+
+- `createSessions({ db: () => kysely, secrets, name, maxAge })` returns the
+  session `middleware`, and `sessionUser(source)` the `getUser` of
+  `createApi()`.
+- [`entityUserSource()`](api/server/mikro.md#entityusersource) describes the
+  users of an entity. Its `username` option replaces `usernameProperty`. For
+  users that no entity holds, the app writes the
+  [`UserSource`](api/server/auth.md#usersource) itself.
+- [`usersRoutes()`](api/server/auth.md#usersroutes) serves the admin's users,
+  with `credentials: createCredentials(() => kysely)`. Its `controller` goes
+  into `controllers`, and its `features` to the admin. Other users, such as a
+  site's customers, log in through the app's own actions, see
+  [Other users](guide/server/auth.md#other-users).
+- `post login` and `post password-reset` name the user as `username` in the
+  body, whatever the property is. `get session` becomes `get self`, which
+  responds with the user, or `null`.
+- Responses have no `success` or `authenticated`. A login responds with
+  `{ user }`, or `{ codeRequired: true }`. `post confirm-access` responds with
+  `{ codeRequired: true }`, or 204 once it confirms the access. Other actions
+  without a result, such as `post logout`, respond with 204.
+- `post password` checks new passwords with the `password` schema, at least 8
+  characters by default.
+- The session saves after the action if it changed, even when the action throws,
+  so used challenges and codes stay used. A session that a parallel request
+  ended stays ended. `refreshFingerprint()` applies when the session saves after
+  a request without an error, so a failed write keeps the old hash and the
+  fingerprint that matches it.
+- [`passwordWrites({ source })`](api/server/auth.md#passwordwrites) is a mixin
+  for the model controller of the users, which hashes the `password` of the
+  body.
+- `PasskeyService` and `TotpService` become `passkeys()` and `totp()` of
+  `@ditojs/auth/passkeys` and `@ditojs/auth/totp`. Passkeys expect the request's
+  origin, so an app behind a proxy runs `forwarded()`. An admin on another host
+  than its API sets `origins`.
+- `config.app.authentication.passwordReset` becomes
+  [`passwordReset()`](api/server/auth.md#passwordreset), with times in
+  milliseconds.
+- When the app deletes users, it calls
+  `deleteUserCredentials(kysely, source, ids)`, as no foreign keys tie
+  credentials to users.
+- `readSignedCookie(c, secrets, name)` reads the app's own signed cookies.
+
+#### Storage
+
+`config.storages` and model `static assets` become `@ditojs/storage`. See
+[Storages and files](guide/server/storages.md).
+
+```js
+export const storages = createStorages(config.storages)
+
+export const assetPaths = [
+  { table: 'book', column: 'cover', path: '', storage: 'public' },
+  { table: 'book', column: 'chapters', path: '*/images', storage: 'public' }
+]
+
+export const assets = createAssets({
+  paths: assetPaths,
+  storages,
+  db: getKysely,
+  deleteUnusedAfter: 24 * 60 * 60 * 1000
+})
+```
+
+- `mixins: [assets.mixin('book')]` replaces `assets = true` of a controller, and
+  `assets.runJobs(kysely)` runs on a timer of the app. `serveStorage()` of
+  `@ditojs/storage/node` serves public disk storages.
+- `S3Storage` comes from the main entry of the package. The `PutObject` options
+  of S3 storages, such as `acl` and `cacheControl`, become a `params` object,
+  such as `{ ACL: 'public-read', CacheControl: 'max-age=31536000' }`.
+- `assets.mixin(table)` joins the mixins `assets()` and `assetUploads()`, which
+  take `{ table, paths, storages, db }`, where `db` is a function of `c` such as
+  `getKysely`. `{ uploads: false }` leaves out the uploads.
+- Each controller has one upload action, `post upload/:path{.+}`, which picks
+  the storage of the first asset path that matches the data path.
+  `uploadRoutes()` takes a list of `AssetUpload`s, `{ path, storage }` with a
+  glob as `path`, for fields that no asset path describes.
+- File objects have no signatures, and `AssetFile` is gone. A write accepts a
+  file when its key has an `asset` row in the storage of its path, and takes the
+  file's properties from the row. It imports other files from their `url` when
+  the storage allows it, or responds with 400.
+- `allowedImports` match the origin and path of a URL, without its query and
+  hash. URLs with credentials never match, and imports don't follow redirects.
+- Code that creates files, such as `AssetFile.create()` in scripts, calls
+  `assets.store(db, storage, { name, type, data })`, or `storeAsset()`. It
+  stores the file and inserts its row, which stays unreferenced until a scan
+  finds the file. Uploads run without a transaction, so their rows commit at
+  once.
+- The `asset` table has no `count`. Scans of the data replace the hooks on each
+  write, and set `unreferenced_since`. `deleteUnusedAfter` is in milliseconds.
+- `scanAssets()` reports `referenced`, `unreferenced` and `missing`.
+  `assets.runJobs(db, { dryRun: true })` shows what a run would delete.
+
+#### Admin server
+
+`AdminController` and `config.admin` become
+[`serveAdmin()`](api/server/admin-server.md#serveadmin), which returns a Hono
+app. See [Serving the admin](guide/server/admin.md).
+
+```js
+const admin = serveAdmin({
+  base: '/admin',
+  dist: path.resolve('dist/admin'),
+  vite: isDevelopment ? 'admin.vite.config.js' : undefined,
+  api: { url: '/api/admin', users: { path: 'admins' } },
+  authentication: users.features,
+  middleware: sessions.middleware,
+  getUser: sessionUser(adminSource),
+  authorize: 'admin'
+})
+app.route('/admin', admin)
+```
+
+- `vite`, a config or the path of its file, runs Vite in middleware mode on the
+  Node request of `@hono/node-server`, so the host runs on `serve()`. Without
+  it, the admin serves the build of `dist`.
+- `middleware`, `getUser` and `authorize` work as in `createApi()`. `authorize`
+  protects the admin's views, which the build puts below `views/`, and other
+  chunks below `assets/`.
+- `defineAdminViteConfig()` of `@ditojs/admin-server/vite` builds the admin, on
+  Vite 8. `build.rollupOptions` of an app's config become
+  `build.rolldownOptions`.
+
+### 10. Update the admin, the clients and the tests
+
+**The admin.** Its `api` config is plain data, see
+[ApiConfig](api/admin/admin.md#apiconfig):
+
+- `request`, `getApiUrl`, `isApiUrl`, `normalizePath`, `denormalizePath` and
+  `resources` aren't options any more. `admin.api` has `request()` and
+  `getApiUrl()`.
+- `normalizePaths` is gone. The admin routes views and sources under their
+  hyphenated names, unless their schema sets a `path`, and uploads send their
+  data paths as they are.
+- `users` takes only `path`, as `users: { path: 'admins' }`.
+- Requests reject with an `ApiError`, which has the fields of the JSON body, the
+  `status` and the `response`. Code that read `error.response.data`, such as the
+  `onError()` of a button, reads the fields on the error, such as
+  `error.errors`.
+
+**The clients.** Dito.js 7 keeps the lists with `range=0,49` and
+`order=name desc`, the 201 with `Location` of the default `post`, the
+`{ count }` of `delete :id`, the error JSON with validation errors as 400, and
+integer ids. GET actions may write. A GET action that writes sets its own
+`authorize`, and `transaction: true`.
+
+These things change. The admin of Dito.js 7 already handles them:
+
+- Filters are `filter[name]=value` instead of `filter=name:args`.
+- `?scope=` and `?fields=` are gone. Select options come from `choices` routes.
+- Joined values are nested rows instead of flat names.
+- There are no `<name>Id` keys. A client that read or wrote `authorId` uses
+  `author.id`: responses send `author: { id: 12 }`, writes send the same, and
+  `order` and filters name `author.id`.
+- A list returns at most 1000 rows. A larger list needs `range`, or a higher
+  `maxRows` in its find, such as `listHandler({ maxRows: 5000 })`.
+- Unknown filters, and `order` on columns that the rows don't return, respond
+  with 400.
+- The actions of users respond as in [Sessions and users](#sessions-and-users).
+
+**The tests** query through a fork of the ORM's entity manager, and call the app
+with Hono's `app.request()`.
+
+#### The release
+
+Ship these as knex migrations, in this order. They run with Dito.js 7, as
+Dito.js 6 still writes `count`, and `@ditojs/storage` needs the new server:
+
+1. Empty the `session` table with `await knex('session').del()`. Sessions sign
+   their cookie with Hono's signed cookies and can't read the cookies of Koa, so
+   every user logs in again once.
+2. If the app stores files, run `scanAssets()` once. It inserts the `asset` rows
+   that Dito.js 6 never wrote, such as those of files from scripts. Without
+   them, writes that keep such a file respond with 400. Rows of files that no
+   storage holds do no harm, as the jobs ignore files that are gone.
+
+   ```js
+   import { Kysely, PostgresDialect } from 'kysely'
+   import pg from 'pg'
+   import { scanAssets } from '@ditojs/storage'
+   import { assetPaths } from '../server/storages.js'
+
+   // The scan writes in its own transaction, on its own connection.
+   export const config = { transaction: false }
+
+   export async function up(knex) {
+     const db = new Kysely({
+       dialect: new PostgresDialect({
+         pool: new pg.Pool(knex.client.connectionSettings)
+       })
+     })
+     try {
+       await scanAssets({ db, paths: assetPaths })
+     } finally {
+       await db.destroy()
+     }
+   }
+
+   export async function down() {}
+   ```
+
+3. Then drop the `count` column of the `asset` table in a migration of its own,
+   with `table.dropColumn('count')`.
+
+### 11. Move the migrations to MikroORM
+
+Replace knex's migrations with MikroORM's Migrator once every database has run
+the last knex migration: in production, in staging, in CI and on each
+developer's machine. A baseline migration holds the schema at that point. On
+fresh databases, it creates the schema. On databases that knex migrated, it runs
+nothing.
+
+Add `@mikro-orm/migrations`, then:
+
+1. Dump the schema of a fresh database that knex migrated. A fresh database
+   leaves out changes made by hand:
+
+   ```sh
+   # `app_baseline` is a new database, migrated with `knex migrate:latest`.
+   pg_dump --schema-only --no-owner --no-privileges \
+     --exclude-table 'knex_migrations*' app_baseline > migrations/baseline.sql
+   ```
+
+   The migration runs the dump in its transaction. So remove the lines that only
+   psql reads, such as `\restrict`, the `COMMENT ON EXTENSION` lines and the
+   line that empties the `search_path`. Turn `SET` into `SET LOCAL`.
+
+2. Move the knex migrations and their helpers to `migrations/knex/`, and set
+   `migrations: { directory: './migrations/knex' }` in the knex config. MikroORM
+   runs each `.js` file at the top of `migrations/`. Databases that are behind
+   can still catch up with `knex migrate:latest`.
+
+3. Add the baseline. Name in it the last knex migration that the dump includes.
+   The Migrator records it as executed on all databases:
+
+   ```js
+   // migrations/Migration20261104000000_baseline.js
+   import { readFile } from 'node:fs/promises'
+   import { Migration } from '@mikro-orm/migrations'
+
+   const lastKnexMigration = '20261103000000_add_index.js'
+
+   export class Migration20261104000000_baseline extends Migration {
+     async up() {
+       const [{ knex }] = await this.execute(
+         `select to_regclass('knex_migrations') is not null as knex`
+       )
+       if (knex) {
+         const rows = await this.execute(
+           'select 1 from knex_migrations where name = ?',
+           [lastKnexMigration]
+         )
+         if (rows.length === 0) {
+           throw new Error(`Run the knex migrations up to ${lastKnexMigration}.`)
+         }
+       } else {
+         const file = new URL('./baseline.sql', import.meta.url)
+         this.addSql(await readFile(file, 'utf8'))
+       }
+     }
+   }
+   ```
+
+4. Register the Migrator with the ORM, with `extensions: [Migrator]` and
+   `migrations: { path: './migrations', emit: 'js' }`, and run it from a script,
+   or with `mikro-orm migration:up` of `@mikro-orm/cli`:
+
+   ```js
+   // scripts/migrate.js
+   // Usage: node ./scripts/migrate.js up|down|create [name]
+   import { orm } from '../server/orm.js'
+
+   const [command, name] = process.argv.slice(2)
+   try {
+     if (command === 'create') {
+       await orm.migrator.create(undefined, false, false, name)
+     } else {
+       await orm.migrator[command]()
+     }
+   } finally {
+     await orm.close()
+   }
+   ```
+
+5. Write new migrations as MikroORM migrations. `create` writes the difference
+   between the entities and a snapshot of the schema, `.snapshot-<dbName>.json`,
+   which the Migrator keeps next to the migrations. The first one may hold
+   differences between knex's schema and the entities, such as the names of
+   constraints. Review it, then align the entities or write it by hand.
+
+Keep the baseline, because fresh databases need it. Once no database is behind
+any more, remove `migrations/knex/`, `knexfile.js` and `knex`, and drop knex's
+tables in a migration:
+`this.addSql('drop table if exists knex_migrations, knex_migrations_lock')`. The
+baseline can then drop its checks of knex's table, and always run the SQL.
+
+## Known limitations
+
+- **Single primary keys.** Entities with a composite primary key, or with no
+  primary key, throw on the first request of their controller, as
+  `@ditojs/mikro` reads the metadata then. Pivot entities have composite keys
+  and no controller.
+- **PostgreSQL only.** The checks of the body and `toHttpError()` of `mikroDb()`
+  know PostgreSQL's column types and error codes.
+- **Date columns are strings.** `date` columns take and return `YYYY-MM-DD`
+  strings, and also take a `Date` with `plainDate()`. `time` columns also take
+  and return strings, not `Date`s. `timestamptz` needs an offset in writes.
+- **No optimistic locking over HTTP.** There is no `ETag` and no `If-Match`.
+  MikroORM's `OptimisticLockError` responds with 409, but only for races inside
+  one request. Apps that need locking check a value such as `updatedAt` in a
+  mixin.
+- **Unknown query parameters** are ignored, and bodies of types other than JSON
+  are left unread.

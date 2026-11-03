@@ -155,7 +155,7 @@ the fields inside it.
 
 Hook keys that name actions by their keys no longer match any action, so
 their hooks don't run: use the identifiers that the 5.x deprecation warnings
-name, see [Hooks](api/server/controllers.md#hooks).
+name, see [Hooks](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/controllers.md#hooks).
 
 ### Behaviour changes
 
@@ -208,7 +208,7 @@ name, see [Hooks](api/server/controllers.md#hooks).
 - S3 storages store their files through aws-lite: install `@aws-lite/client`
   and `@aws-lite/s3` instead of `@aws-sdk/client-s3`, and give `s3` its
   `region` and `credentials`, which no longer come from environment variables
-  or `~/.aws`, see [S3StorageConfig](api/server/storage.md#s3storageconfig).
+  or `~/.aws`, see [S3StorageConfig](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/storage.md#s3storageconfig).
 - Routes with several params in one segment, e.g. `/a/:x-:y`, throw when
   they're added, and `getAllowedMethods(path)` of the router adds the
   `prefix` to `path`, as `find()` does.
@@ -252,7 +252,7 @@ name, see [Hooks](api/server/controllers.md#hooks).
 - The graph methods write all graphs in Objection.js'
   [strict mode](https://ditojs.github.io/objection/guide/query-examples.html#strict-mode),
   which needs `objection` ^4.4.1, see
-  [Graphs](guide/server/queries.md#graphs). Strict graphs throw:
+  [Graphs](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/queries.md#graphs). Strict graphs throw:
   - for related models with ids that don't exist, with a `NotFoundError`.
     Upserts inserted them with only their ids before.
   - for keys that contradict their relation, like the `bookId` of a chapter in

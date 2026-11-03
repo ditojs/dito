@@ -49,18 +49,18 @@ koa-passport:
   handled, with sessions when `app.session` is set.
 - `ctx.req.user` and custom Passport strategies are gone. Use
   `ctx.state.user`. `ctx.login()`, `ctx.logout()` and `ctx.isAuthenticated()`
-  stay, see [Sessions](api/server/model.md#sessions).
+  stay, see [Sessions](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/model.md#sessions).
 - Existing sessions stay valid: the session keeps the user under the same key
   as Passport did.
 - The session cookie defaults to `sameSite: 'lax'`, see
-  [`config.app`](api/server/application.md#configapp) for admins on another
+  [`config.app`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/application.md#configapp) for admins on another
   site than the server.
-- [`UsersController`](api/server/controllers.md#userscontroller) needs
+- [`UsersController`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/controllers.md#userscontroller) needs
   `app.session`, else its setup throws.
 - `UsersController` only treats users of its own model class as logged in, not
   users of its subclasses.
 - Apps that override `UserMixin.sessionQuery()` set the `sessionScope` option
-  instead, see [`UserMixin`](api/server/model.md#usermixin).
+  instead, see [`UserMixin`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/model.md#usermixin).
 
 ### Errors
 
@@ -73,16 +73,16 @@ request errors, not even Koa's fallback: apps that turn it off log them in an
 
 Once started with `app.start()`, the application deletes expired records every
 hour through
-[`app.deleteExpiredRecords()`](api/server/application.md#deleteexpiredrecords),
-which calls [`deleteExpiredRecords()`](api/server/model.md#static-deleteexpiredrecords)
+[`app.deleteExpiredRecords()`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/application.md#deleteexpiredrecords),
+which calls [`deleteExpiredRecords()`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/model.md#static-deleteexpiredrecords)
 on every model. See
-[`config.app.deleteExpiredRecordsEvery`](api/server/application.md#configapp)
+[`config.app.deleteExpiredRecordsEvery`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/application.md#configapp)
 for the interval, and for apps that don't call `app.start()` or only run
 briefly.
 
 ### Sessions
 
-Session models built on [`SessionMixin`](api/server/model.md#sessionmixin)
+Session models built on [`SessionMixin`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/model.md#sessionmixin)
 store the expiry of sessions in a new `expiresAt` column, through which
 expired sessions are deleted. Add it to the sessions table with a migration:
 
@@ -132,7 +132,7 @@ export async function down(knex) {
 - To check, look for actions with their own `authorize` in controllers that
   are subclassed, and compare them with the `authorize` of the subclasses'
   actions objects and of the actions they redefine. See
-  [`authorize`](api/server/controllers.md#authorize) for the order.
+  [`authorize`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/controllers.md#authorize) for the order.
 - Authorize functions are called with the controller as `this`. This only
   changes methods and `function`s, where `this` was `undefined`; arrow
   functions keep theirs.
@@ -148,7 +148,7 @@ export async function down(knex) {
   `UsersController`.
 - The `post`, `patch` and `put` actions of `UsersController` reject `hash`.
   Setting a password or changing the username needs
-  [confirmed access](guide/server/controllers.md#confirmed-access), also when
+  [confirmed access](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/controllers.md#confirmed-access), also when
   admins change other users. Without it, they answer 403 with
   `confirmationRequired`, and the admin asks the user to confirm. Sessions
   from before the upgrade have no confirmed access yet.
@@ -157,7 +157,7 @@ export async function down(knex) {
   user model class.
 - Users controllers that route actions that need confirmed access, e.g.
   `patch`, also need `'post confirm-access'`, else their setup throws, see
-  [`UsersController`](api/server/controllers.md#userscontroller): subclasses
+  [`UsersController`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/controllers.md#userscontroller): subclasses
   that set `collection.allow` add it to the list, and `'post password'` for the
   admin's password change.
 - Changing a user's password ends their other sessions. The session of the
@@ -181,13 +181,13 @@ offers each one when the users controller at `api.users` in the server's
 `UsersController` below `api.users.path`, see
 [`authentication`](api/admin/admin.md#globalconfig).
 
-- [Passkeys](guide/server/controllers.md#passkeys), through
-  [`PasskeyService`](api/server/service.md#passkeyservice), with the new
+- [Passkeys](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/controllers.md#passkeys), through
+  [`PasskeyService`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/service.md#passkeyservice), with the new
   optional peer dependencies `@simplewebauthn/server` and `aaguids`.
-- [Two-factor authentication](guide/server/controllers.md#two-factor-authentication),
-  through [`TotpService`](api/server/service.md#totpservice), with the new
+- [Two-factor authentication](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/controllers.md#two-factor-authentication),
+  through [`TotpService`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/service.md#totpservice), with the new
   optional peer dependency `otpauth`.
-- [Password reset](guide/server/controllers.md#password-reset) by email,
+- [Password reset](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/controllers.md#password-reset) by email,
   through `app.authentication.passwordReset`.
 
 `PasskeyService` and `TotpService` list the configuration that they need, e.g.
@@ -204,7 +204,7 @@ sessions stored on the server.
   error has occurred." instead of their message, unless they have
   `expose: true` or a status below 500, or `config.env` is `'development'`.
   Throw `ResponseError`s for messages meant for clients, see
-  [Plain errors](guide/server/errors.md#plain-errors).
+  [Plain errors](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/errors.md#plain-errors).
 - Actions and queries no longer wrap other errors in `ResponseError`s: plain
   errors with a status below 500 respond with only their `message`, and
   `'error'` listeners receive the raw error, which often has no `status`.

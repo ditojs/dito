@@ -112,7 +112,7 @@ Since 4.7, the validator runs Ajv with `strictSchema`, `strictNumbers` and
 `items`, or with a `default` that Ajv can't apply, throw on startup, where 3.5
 ignored them. Fix the schemas, or turn it off with
 `options: { strictSchema: false }` of the
-[`Validator`](api/server/validator.md#constructor). Also since 4.7, `nullable`
+[`Validator`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/validator.md#constructor). Also since 4.7, `nullable`
 properties with a model type or a `$ref` get their own `default` and the
 defaults of the referenced schema, which Ajv ignored.
 
@@ -797,7 +797,7 @@ defineType({
 - Since 4.5, hooks identify custom actions by their method and path, without
   colons, e.g. `'before:member:get-tech-doc-format'` for
   `'get tech-doc-:format'`, see
-  [Hooks](./api/server/controllers.md#hooks). Keys with the action's key keep
+  [Hooks](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/controllers.md#hooks). Keys with the action's key keep
   working until 6.0, with a deprecation warning. Two actions of the same type
   with the same identifier throw: change the route of one of them. Wildcard
   hooks like `'before:*:*'` also run for actions with route parameters.
@@ -816,7 +816,7 @@ defineType({
   longer decide which member `getMember()` returns.
 - Since 4.7, asset files count one reference for each place in the data that
   stores them, e.g. twice for the same image twice in a list. Run
-  [`db:recount_assets`](api/server/application.md#commands) once after
+  [`db:recount_assets`](https://github.com/ditojs/dito/blob/v6.6.0/docs/api/server/application.md#commands) once after
   upgrading, to count the references of existing data this way.
 - Since 4.7, unused assets are released after `assets.cleanupTimeThreshold`,
   and uploads that were never saved after `danglingTimeThreshold`, instead of
@@ -835,7 +835,7 @@ defineType({
   columns with the new `capitalize()`, so key properties with a digit before a
   letter get other column names, e.g. `bookIsbn13code` instead of
   `bookIsbn13Code`: set `through` to keep the old ones, see
-  [Join models and tables](guide/server/relations.md#join-models-and-tables).
+  [Join models and tables](https://github.com/ditojs/dito/blob/v6.6.0/docs/guide/server/relations.md#join-models-and-tables).
 
 ## New features
 
