@@ -43,7 +43,7 @@ export function isNumber(arg: any): arg is number
 /**
  * Determines whether the supplied value is a string.
  */
-export function isString(arg: any): arg is string | String
+export function isString(arg: any): arg is string
 
 /**
  * Determines whether the supplied value is a boolean.
