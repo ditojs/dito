@@ -1,6 +1,0 @@
-export * from './Controller.js'
-export { CollectionController } from './CollectionController.js'
-export * from './ModelController.js'
-export * from './RelationController.js'
-export * from './AdminController.js'
-export * from './UsersController.js'

@@ -9,20 +9,17 @@
 //   to resolve from the app, also with pnpm's isolated linker, so it is a peer,
 //   as are the required peers of those packages that the app must also
 //   provide, e.g. `@floating-ui/dom` for `@tiptap/vue-3`.
-// - The server uses regular `dependencies`, except for the packages whose
-//   instances it has to share with the app, `knex` and `objection`, and the
-//   ones only some apps need, e.g. the S3 client of its S3 storage.
 // - Peers are mirrored in `devDependencies` for building and testing here,
 //   except optional peers, which keep the range their code needs, so apps that
 //   don't use them aren't pushed to the versions tested here.
-// - Packages that are only imported by the type definitions in `types/`, e.g.
-//   `type-fest`, are regular `dependencies`: TypeScript resolves them from the
-//   package itself, and bundlers never see them.
+// - Packages that are only imported by type definitions, e.g. `type-fest`,
+//   are regular `dependencies`: TypeScript resolves them from the package
+//   itself, and bundlers never see them.
 
 import fs from 'node:fs'
 import path from 'node:path'
 
-const packages = ['packages/admin', 'packages/ui', 'packages/server']
+const packages = ['packages/admin', 'packages/ui']
 
 const check = process.argv.includes('--check')
 let outOfSync = 0

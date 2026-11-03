@@ -1,5 +1,0 @@
-export * as keywords from './keywords/index.js'
-export { formats } from '@ditojs/schema'
-export * as types from './types/index.js'
-export * from './schema.js'
-export * from './relations.js'
