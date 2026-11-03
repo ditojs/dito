@@ -29,6 +29,18 @@ jobs:
 
   unit:
     runs-on: ubuntu-latest
+    # The tests of MikroORM entities run on a database of their own on the
+    # local Postgres server.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s
+          --health-retries 10
     strategy:
       fail-fast: false
       matrix:
@@ -71,23 +83,20 @@ jobs:
           merge-multiple: true
       - run: pnpm vitest --merge-reports --coverage
 
-  unit-sqlite:
-    runs-on: ubuntu-latest
-    env:
-      DITO_TEST_DB: sqlite
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      # The server tests run from source and need no build.
-      - run: pnpm test:unit --project node packages/server tests/server
-
   e2e:
     runs-on: ubuntu-latest
+    # The tests of MikroORM entities run on a database of their own on the
+    # local Postgres server.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s
+          --health-retries 10
     strategy:
       fail-fast: false
       matrix:
@@ -111,6 +120,18 @@ jobs:
 
   screenshots:
     runs-on: ubuntu-latest
+    # The tests of MikroORM entities run on a database of their own on the
+    # local Postgres server.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

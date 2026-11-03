@@ -1,0 +1,36 @@
+name: Preview
+
+# Publishes preview builds of Dito 7's packages to pkg.pr.new on each
+# push to the branch, without npm versions. An app installs them by URL, such
+# as `https://pkg.pr.new/ditojs/dito/@ditojs/server@<commit>`, or
+# `@feature/server-7` for the branch's latest build. It needs the
+# pkg.pr.new GitHub app on the repository.
+on:
+  push:
+    branches: [feature/server-7]
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: >-
+          pnpm --filter ./packages/server --filter ./packages/mikro
+          --filter ./packages/storage
+          --filter ./packages/auth --filter ./packages/admin-server
+          --filter ./packages/ui --filter ./packages/admin run build
+      - run: >-
+          pnpm exec pkg-pr-new publish --pnpm --comment=off
+          ./packages/utils ./packages/build
+          ./packages/server ./packages/mikro ./packages/storage
+          ./packages/auth ./packages/admin-server
+          ./packages/ui ./packages/admin
