@@ -1,16 +1,16 @@
 # Dito.js
 
-Dito.js is a declarative and modern web framework with a focus on API driven
-development, based on Koa.js, Objection.js and Vue.js
+Dito.js is a declarative web framework with a focus on API driven development,
+built on web standards, MikroORM and Vue.js.
 
-Dito.js consists of two main components: **Dito.js Server**, providing all
-classes and methods to build the server architecture, and **Dito.js Admin**, a
-Vue.js library that can be used to build views and forms for administration of
-the Dito.js models in a very efficient fashion.
+Dito.js consists of two main components: **Dito.js Server**, a set of packages
+that turn entities and controllers into a REST API, and **Dito.js Admin**, a
+Vue.js library that builds the views and forms for the administration of that
+data.
 
 Both components share the key philosophy of the Dito.js framework: The use of
 declarative descriptions not only of the data structures themselves (the
-models), but also of the way they are remotely interacted with (the
+entities), but also of the way they are remotely interacted with (the
 controllers), as well as the way they are edited (the admin views and forms).
 
 This is then also the reason for the name _Dito.js_ itself:
@@ -23,76 +23,39 @@ Dito.js was developed at [Lineto](https://lineto.com/) by [Jürg
 Lehni](http://juerglehni.com), and was made available by Lineto in 2018 under
 the MIT license.
 
-## Structuring a Dito.js Application
+## Packages
 
-Unlike other frameworks, Dito.js is not opinionated about its folder structures
-and file naming, and does not deduce any information from such structures. With
-the exception of the creation of migration files, there aren't any generators
-that automatically create files for you.
+| Package                                         | Description                                                                                        |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [`@ditojs/server`](packages/server)             | The core on Hono: `createApi()`, controllers, mixins, authorization, errors, and a server on Node. |
+| [`@ditojs/mikro`](packages/mikro)               | Model controllers on MikroORM entities.                                                            |
+| [`@ditojs/storage`](packages/storage)           | File storages, uploads and the tracking of stored files.                                           |
+| [`@ditojs/auth`](packages/auth)                 | Sessions, logins, passkeys, TOTP and password reset.                                               |
+| [`@ditojs/admin-server`](packages/admin-server) | Serves the admin, with Vite's dev server in development.                                           |
+| [`@ditojs/admin`](packages/admin)               | The admin interface.                                                                               |
+| [`@ditojs/ui`](packages/ui)                     | The Vue components that the admin is built with.                                                   |
+| [`@ditojs/utils`](packages/utils)               | Helpers for Node.js and browsers.                                                                  |
+| [`@ditojs/router`](packages/router)             | An HTTP router.                                                                                    |
 
-There is however a recommended way to structure a Dito.js application, by
-dividing it into the following folder structure:
+## Documentation
 
-- `src/server`: This folder contains the admin Dito.js Server app, along with all
-  models and controllers in sub-folders:
-  - `src/server/models`: The place where for the model classes.
-  - `src/server/controllers`: The place for the controller classes.
-- `src/admin`: This folder contains a declarations of all admin views and forms
-- `src/config`: The application configuration files.
-- `migrations`: The folder holding all migration files.
-- `seeds`: The folder holding all seeds files.
+The [documentation](docs/index.md) covers the guides, recipes and the API
+reference:
 
-This structure will be explained in more detail in the documentation of each
-these aspects separately:
+- [Server guide](docs/guide/server/index.md)
+- [Admin guide](docs/guide/admin/index.md)
+- [API reference](docs/api/index.md)
+- [Upgrading to 7.x](docs/upgrading-to-7.x.md), which is also the release
+  notes of Dito.js 7
+- Upgrade guides of older versions: [4.x](docs/upgrading-to-4.x.md),
+  [5.x](docs/upgrading-to-5.x.md), [6.x](docs/upgrading-to-6.x.md)
 
-- [Configuration](docs/guide/server/configuration.md)
-- [Application](docs/guide/server/application.md)
-- [Models](docs/guide/server/models.md)
-- [Controllers](docs/guide/server/controllers.md)
-- [Migrations](docs/guide/server/database.md#migrations)
-- [Seeds](docs/guide/server/database.md#seeds)
-- [Admin](docs/guide/admin/index.md)
-- [Upgrading to 4.x](docs/upgrading-to-4.x.md)
-- [Upgrading to 5.x](docs/upgrading-to-5.x.md)
-- [Upgrading to 6.x](docs/upgrading-to-6.x.md)
+Dito.js has no rules for folder structures and file names, and reads nothing
+from them. A common layout is:
 
-The [documentation](docs/index.md) covers everything else: guides, recipes
-and the API reference.
-
-## Setting up `package.json` for a Dito.js Application
-
-Dito.js server comes with its own CLI program, but it is rare to call it
-directly: Normally you simply set up a set of `package.json` scripts through
-which a selection of predefined tasks are executed:
-
-```json
-"scripts": {
-  "console": "dito console src/server/app",
-  "db:seed": "dito db:seed src/server/app",
-  "db:create_migration": "dito db:create_migration src/server/app",
-  "db:migrate": "dito db:migrate src/config/index.js",
-  "db:rollback": "dito db:rollback src/config/index.js",
-  "db:reset": "dito db:reset src/config/index.js"
-}
-```
-
-Note that in order to work, each of these scripts require either the path to the
-application, or the path to the application's configuration, as specified above.
-Here a brief description of each script's purpose:
-
-- `pnpm run console`: Starts an interactive Read-Eval-Print-Loop console in which
-  all Dito.js models can be directly used.
-- `pnpm run db:seed`: Seeds the configured database with the data provided in
-  `seeds`. See [Seeds](docs/guide/server/database.md#seeds) for more information.
-- `pnpm run db:create_migration`: Creates migration files for the specified models.
-  See [Migrations](docs/guide/server/database.md) for more information.
-- `pnpm run db:migrate`: Migrates to the latest state of migrations.
-  See [Migrations](docs/guide/server/database.md) for more information.
-- `pnpm run db:rollback`: Rolls back the last batch of applied migrations.
-  See [Migrations](docs/guide/server/database.md) for more information.
-- `pnpm run db:reset`: Resets the database by rolling back all applied migrations,
-  and then reapplying all available migrations.
-  See [Migrations](docs/guide/server/database.md) for more information.
+- `server/`: the entities, controllers and mixins of the server
+- `admin/`: the views and forms of the admin
+- `config/`: the configuration
 
 ## Releasing Dito.js
 

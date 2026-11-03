@@ -4,11 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-Dito.js is a declarative web framework with two main components: **Dito.js Server** (API-driven development with Koa.js/Objection.js) and **Dito.js Admin** (Vue.js admin interface). This is a monorepo managed by Lerna and pnpm workspaces.
+Dito.js is a declarative web framework with two main components: **Dito.js Server** (API-driven development on Hono, with MikroORM entities) and **Dito.js Admin** (Vue.js admin interface). This is a monorepo managed by Lerna and pnpm workspaces.
 
 ## Package Structure
 
-- **packages/server/**: Server framework with models, controllers, middleware, and CLI
+- **packages/server/**: The server core on Hono: `createApi()`, controllers, middleware and errors, and `@ditojs/server/node` with `serve()` and `forwarded()`
+- **packages/mikro/**: Model controllers for MikroORM entities
+- **packages/storage/**, **packages/auth/**, **packages/admin-server/**: Storages and assets, sessions and users, and serving the admin
 - **packages/admin/**: Vue.js admin interface with forms, types, and schema components
 - **packages/ui/**: Shared Vue.js UI components and styles
 - **packages/utils/**: Utility functions for arrays, objects, strings, dates, etc.
@@ -85,9 +87,10 @@ pnpm run clean
 
 ## Key Technologies
 
-- **Server**: Koa.js, Objection.js, Knex.js, AJV schema validation
+- **Server**: Hono, MikroORM, Zod, Kysely
 - **Admin/UI**: Vue 3, Vite, TipTap (rich text), Vue Router
-- **Database**: Objection.js ORM with Knex.js query builder
+- **Database**: MikroORM on Postgres; the tests use a local Postgres server
+  (`PGUSER` names the user)
 - **Build**: Vite for frontend packages, ESLint + Stylelint + Prettier (with prettier-plugin-penere)
 
 ## Code Conventions
@@ -179,13 +182,11 @@ seeds/              # Database seeds
 
 - Uses pnpm with workspaces
 - Peer dependencies follow the rule in `scripts/sync-peers.js`: admin and UI
-  declare every package their code imports at runtime as a peer, the server
-  only `knex`, `objection` and optional ones like the AWS SDK; required peers
-  are mirrored in `devDependencies`, types-only packages are `dependencies`
+  declare every package their code imports at runtime as a peer; required
+  peers are mirrored in `devDependencies`, types-only packages are `dependencies`
 - Changelog entries go into a file of their own per branch in
   `changelog/unreleased/`, not into `CHANGELOG.md`, see its README; the release
   collects them
 - Husky for pre-commit hooks with lint-staged
 - TypeScript definitions available for all packages
-- Supports linking to local Objection.js/Knex.js for development
 - Admin package uses Vite for bundling with Vue 3 + TypeScript support
