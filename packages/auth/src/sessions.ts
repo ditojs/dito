@@ -2,6 +2,13 @@ import session from 'koa-session'
 import compose from 'koa-compose'
 import { isString } from '@ditojs/utils'
 
+interface SessionOptions {
+  modelClass?: any
+  autoCommit?: boolean
+  sameSite?: 'strict' | 'lax' | 'none' | boolean
+  [key: string]: any
+}
+
 export function handleSession(app, {
   modelClass,
   autoCommit = true,
@@ -9,7 +16,7 @@ export function handleSession(app, {
   // navigations, against cross-site request forgery:
   sameSite = 'lax',
   ...options
-} = {}) {
+}: SessionOptions = {}) {
   if (modelClass) {
     // Create a ContextStore that resolved the specified model class,
     // uses it to persist and retrieve the session, and automatically
@@ -47,6 +54,9 @@ export function handleSession(app, {
 
 const createSessionStore = modelClass =>
   class SessionStore {
+    declare ctx: any
+    declare modelClass: any
+
     constructor(ctx) {
       this.ctx = ctx
       this.modelClass = isString(modelClass)
@@ -61,12 +71,12 @@ const createSessionStore = modelClass =>
       return this.modelClass.query(this.ctx.transaction)
     }
 
-    async get(id) {
+    async get(id: string): Promise<Record<string, any>> {
       const session = await this.query().findById(id)
       return session?.value || {}
     }
 
-    async set(id, value) {
+    async set(id: string, value: Record<string, any>): Promise<void> {
       // Sessions with `maxAge: 'session'` have no `_expire`:
       const { _expire } = value
       await this.query().upsert({
@@ -76,7 +86,7 @@ const createSessionStore = modelClass =>
       })
     }
 
-    async destroy(key) {
+    async destroy(key: string): Promise<void> {
       await this.query().deleteById(key)
     }
   }

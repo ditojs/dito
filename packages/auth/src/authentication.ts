@@ -6,11 +6,13 @@ export const authenticationTimeout = 5 * 60 * 1000 // 5 minutes
 
 // To support multiple user model classes, sessions identify users by both their
 // model class name and id:
-export function getUserIdentifier(user) {
+export function getUserIdentifier(user): string {
   return `${user.constructor.name}-${user.$id()}`
 }
 
-export function parseUserIdentifier(identifier) {
+export function parseUserIdentifier(
+  identifier: string
+): { modelName?: string, id?: string } {
   // Only split at the first hyphen, since ids may contain hyphens (UUIDs):
   const [, modelName, id] = identifier.match(/^([^-]+)-(.+)$/) ?? []
   return { modelName, id }
@@ -18,18 +20,18 @@ export function parseUserIdentifier(identifier) {
 
 // Sessions can be stored in cookies, so they store a hash of the password hash,
 // not the hash itself:
-export function getPasswordFingerprint(hash) {
+export function getPasswordFingerprint(hash: string | null | undefined) {
   return hash ? createHash('sha256').update(hash).digest('base64url') : null
 }
 
 // Credentials refer to their users by model name and id, as a string:
-export function getCredentialQuery(user, type, trx) {
+export function getCredentialQuery(user, type: string, trx) {
   return user.constructor
     .credentialQuery(trx)
     .where({ type, userId: `${user.$id()}` })
 }
 
-export function insertCredential(user, type, values, trx) {
+export function insertCredential(user, type: string, values: object, trx) {
   const { credentialClass, name } = user.constructor
   return credentialClass
     .query(trx)

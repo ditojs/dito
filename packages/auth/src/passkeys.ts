@@ -3,12 +3,12 @@ import { AuthenticationError } from '../errors/index.js'
 import {
   authenticationTimeout,
   insertCredential
-} from '../utils/authentication.js'
+} from './authentication.ts'
 import { importPeer } from '../utils/module.js'
 
 export class PasskeyService extends Service {
-  #webAuthn
-  #aaguids
+  #webAuthn: any
+  #aaguids: Record<string, string>
 
   // @override
   async initialize() {
@@ -136,7 +136,7 @@ export class PasskeyService extends Service {
   }
 
   // Passkeys belong to `domain`, by default the one of the request:
-  #getDomain(ctx) {
+  #getDomain(ctx): string {
     return this.config.domain ?? ctx.hostname
   }
 
@@ -152,9 +152,12 @@ export class PasskeyService extends Service {
 // Without `origins`, the pages of the domain and its subdomains may use its
 // passkeys, like WebAuthn allows, over https or on localhost. Other origins
 // fail the verification, which names the domain:
-function getDomainOrigin(response, domain) {
+function getDomainOrigin(response, domain: string): string {
   const { origin } = JSON.parse(
-    Buffer.from(response.response.clientDataJSON, 'base64url')
+    Buffer.from(
+      response.response.clientDataJSON,
+      'base64url'
+    ) as unknown as string
   )
   const { protocol, hostname } = new URL(origin)
   const isAllowed = (
@@ -166,7 +169,11 @@ function getDomainOrigin(response, domain) {
 
 // Registrations and authentications keep their challenges apart: confirming
 // the access with a passkey doesn't end a pending registration:
-function storeChallenge(ctx, type, { challenge }) {
+function storeChallenge(
+  ctx,
+  type: string,
+  { challenge }: { challenge: string }
+) {
   ctx.session[`${type}Challenge`] = {
     challenge,
     expires: Date.now() + authenticationTimeout
@@ -174,7 +181,7 @@ function storeChallenge(ctx, type, { challenge }) {
 }
 
 // Each challenge can only be answered once, before it expires:
-function consumeChallenge(ctx, type) {
+function consumeChallenge(ctx, type: string): string {
   const key = `${type}Challenge`
   const { challenge, expires } = ctx.session[key] ?? {}
   delete ctx.session[key]

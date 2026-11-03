@@ -1,13 +1,14 @@
 import Keygrip from 'keygrip'
 import { asArray, isArray, isString } from '@ditojs/utils'
 import { ModelController } from './ModelController.js'
-import { PasskeyService, TotpService } from '../services/index.js'
+import { PasskeyService } from './passkeys.ts'
+import { TotpService } from './totp.ts'
 import {
   authenticationTimeout,
   getCredentialQuery,
   getUserIdentifier,
   parseUserIdentifier
-} from '../utils/authentication.js'
+} from './authentication.ts'
 import { checkDuration } from '../utils/duration.js'
 import {
   AuthenticationError,
@@ -18,7 +19,22 @@ import {
   ValidationError
 } from '../errors/index.js'
 
+interface PasswordReset {
+  confirmUrl: string
+  expiresAfter: number
+  keys: {
+    sign(data: string): string
+    verify(data: string, digest: string): boolean
+  }
+  [key: string]: any
+}
+
 export class UsersController extends ModelController {
+  declare passkeys?: PasskeyService
+  declare totp?: TotpService
+  declare reconfirmAccessAfter: number
+  declare passwordReset: PasswordReset | null
+
   // The names of the actions of each feature, e.g. to list them in `allow`:
   static actionNames = {
     // Only routed with `PasskeyService`:
@@ -408,7 +424,7 @@ export class UsersController extends ModelController {
 
     // Passkey challenges and pending logins are kept in the session, stored on
     // the server against replays with old cookies, and both need credentials:
-    const checkCredentials = name => {
+    const checkCredentials = (name: string) => {
       if (!(session.modelClass || session.store || session.ContextStore)) {
         throw new ControllerError(
           this,
@@ -510,7 +526,7 @@ export class UsersController extends ModelController {
   }
 
   // @override
-  async executeAndFetch(action, ctx, modify, body = ctx.request.body) {
+  async executeAndFetch(action: string, ctx, modify, body = ctx.request.body) {
     await checkUserChanges(
       this,
       ctx,
@@ -532,12 +548,17 @@ export class UsersController extends ModelController {
   }
 
   // @override
-  async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
+  async executeAndFetchById(
+    action: string,
+    ctx,
+    modify,
+    body = ctx.request.body
+  ) {
     await checkUserChanges(this, ctx, action, [[ctx.memberId, body]])
     return super.executeAndFetchById(action, ctx, modify, body)
   }
 
-  isAuthenticated(ctx) {
+  isAuthenticated(ctx): boolean {
     // Make sure the currently logged in user has the exact model class, since
     // sub-classes have their own tables and ids:
     return (
@@ -548,7 +569,7 @@ export class UsersController extends ModelController {
 
   // Security changes need a login or a 'post confirm-access' of the user within
   // `app.authentication.reconfirmAccessAfter`:
-  hasConfirmedAccess(ctx) {
+  hasConfirmedAccess(ctx): boolean {
     const { user, expires } = ctx.session.confirmedAccess ?? {}
     return (
       this.isAuthenticated(ctx) &&
@@ -559,7 +580,7 @@ export class UsersController extends ModelController {
 
   // Without a login, we answer 401. Without confirmed access, we answer 403
   // with `confirmationRequired`, for clients to confirm it:
-  checkConfirmedAccess(ctx) {
+  checkConfirmedAccess(ctx): void {
     checkAuthentication(this, ctx)
     if (!this.hasConfirmedAccess(ctx)) {
       throw new AuthorizationError({
@@ -572,7 +593,8 @@ export class UsersController extends ModelController {
 
   // The admin offers the features whose actions we route, all of them:
   getAuthenticationFeatures() {
-    const isRouted = names => names.every(name => this.collection[name])
+    const isRouted = (names: string[]) =>
+      names.every(name => this.collection[name])
     const { actionNames } = UsersController
     return {
       hasPasskeys: isRouted(actionNames.passkeys),
@@ -593,7 +615,7 @@ export class UsersController extends ModelController {
   // Password reset links only work while these values of the user stay the
   // same: a login, a password change or a username change invalidates them:
   // @overridable
-  getPasswordResetTokenValues(user) {
+  getPasswordResetTokenValues(user): unknown[] {
     const { usernameProperty } = this.modelClass.definition.options
     return [user.hash, user.lastLogin, user[usernameProperty]]
   }
@@ -614,7 +636,11 @@ const confirmedAccessActionNames = [
 ]
 
 // Log in the user of `authenticate()`, unless it requires a code first:
-async function handleLogin(controller, ctx, authenticate) {
+async function handleLogin(
+  controller: UsersController,
+  ctx,
+  authenticate: () => Promise<{ user?: any, codeRequired?: boolean }>
+) {
   try {
     const { user, codeRequired } = await authenticate()
     if (codeRequired) {
@@ -650,7 +676,7 @@ async function handleLogin(controller, ctx, authenticate) {
 // The handlers check the login and the confirmed access themselves, which no
 // `authorize` setting can drop. Without a login of a user of the controller, we
 // answer 401:
-function checkAuthentication(controller, ctx) {
+function checkAuthentication(controller: UsersController, ctx): void {
   if (!controller.isAuthenticated(ctx)) {
     throw new AuthorizationError()
   }
@@ -658,7 +684,7 @@ function checkAuthentication(controller, ctx) {
 
 // Resolve to the user of the passkey that answered the challenge in the
 // session:
-async function verifyPasskey(controller, ctx, response) {
+async function verifyPasskey(controller: UsersController, ctx, response) {
   const { modelClass, passkeys } = controller
   const credential = await modelClass
     .credentialQuery(ctx.transaction)
@@ -671,7 +697,7 @@ async function verifyPasskey(controller, ctx, response) {
   return user
 }
 
-async function hasTotp(ctx, user) {
+async function hasTotp(ctx, user): Promise<boolean> {
   return (
     !!user.constructor.credentialClass &&
     !!(await getCredentialQuery(user, 'totp', ctx.transaction).first())
@@ -681,7 +707,11 @@ async function hasTotp(ctx, user) {
 // Users with TOTP always need a code, also when the app no longer registers
 // `TotpService`. Then we report it, and answer with the `message` of wrong
 // passwords, which doesn't tell that the password was right:
-function checkTotpService(controller, ctx, message) {
+function checkTotpService(
+  controller: UsersController,
+  ctx,
+  message: string
+): void {
   if (!controller.totp) {
     controller.app.emit(
       'error',
@@ -697,7 +727,12 @@ function checkTotpService(controller, ctx, message) {
 
 // Setting passwords and changing usernames needs confirmed access, the latter
 // as password resets go to them. `users` are `[id, user]` entries:
-async function checkUserChanges(controller, ctx, action, users) {
+async function checkUserChanges(
+  controller: UsersController,
+  ctx,
+  action: string,
+  users
+) {
   const { modelClass } = controller
   const { usernameProperty, passwordProperty } = modelClass.definition.options
   for (const [id, user] of users) {
@@ -718,7 +753,7 @@ async function checkUserChanges(controller, ctx, action, users) {
   }
 }
 
-function storeConfirmedAccess(controller, ctx, user) {
+function storeConfirmedAccess(controller: UsersController, ctx, user): void {
   ctx.session.confirmedAccess = {
     user: getUserIdentifier(user),
     expires: Date.now() + controller.reconfirmAccessAfter
@@ -727,9 +762,13 @@ function storeConfirmedAccess(controller, ctx, user) {
 
 // Tokens carry the user's id and their creation time, with a signature that
 // also covers the values of the user. Nothing is stored:
-function createPasswordResetToken(controller, user, time) {
+function createPasswordResetToken(
+  controller: UsersController,
+  user,
+  time: number
+): string {
   const id = Buffer.from(`${user.$id()}`).toString('base64url')
-  const signature = controller.passwordReset.keys.sign(
+  const signature = controller.passwordReset!.keys.sign(
     getPasswordResetData(controller, user, time)
   )
   return `${id}.${time.toString(36)}.${signature}`
@@ -737,8 +776,12 @@ function createPasswordResetToken(controller, user, time) {
 
 // Find the user of a token that hasn't expired and is signed with one of
 // `app.keys`:
-async function findPasswordResetUser(controller, ctx, token) {
-  const { keys, expiresAfter } = controller.passwordReset
+async function findPasswordResetUser(
+  controller: UsersController,
+  ctx,
+  token: string
+) {
+  const { keys, expiresAfter } = controller.passwordReset!
   const match = token.match(/^([\w-]*)\.([\da-z]+)\.([\w-]+)$/)
   const [, encodedId, encodedTime, signature] = match ?? []
   const time = parseInt(encodedTime, 36)
@@ -767,7 +810,11 @@ async function findPasswordResetUser(controller, ctx, token) {
 }
 
 // Dates count as ISO strings, missing values as `null`:
-function getPasswordResetData(controller, user, time) {
+function getPasswordResetData(
+  controller: UsersController,
+  user,
+  time: number
+): string {
   return JSON.stringify([
     getUserIdentifier(user),
     time,

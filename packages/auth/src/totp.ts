@@ -12,11 +12,11 @@ import {
   getCredentialQuery,
   getUserIdentifier,
   insertCredential
-} from '../utils/authentication.js'
+} from './authentication.ts'
 import { importPeer } from '../utils/module.js'
 
 export class TotpService extends Service {
-  #otpAuth
+  #otpAuth: any
 
   // @override
   async initialize() {
@@ -31,7 +31,7 @@ export class TotpService extends Service {
 
   // Create a new secret, with the URI for the QR code of authenticator apps,
   // and keep it in the session until the user confirms it with a code:
-  createSecret(ctx, user) {
+  createSecret(ctx, user): { uri: string, secret: string } {
     const { base32: secret } = new this.#otpAuth.Secret()
     ctx.session.pendingTotp = {
       secret,
@@ -42,7 +42,7 @@ export class TotpService extends Service {
 
   // Store the secret of the session once the user confirms it with a code,
   // along with backup codes, which we return:
-  async confirmSecret(ctx, user, code) {
+  async confirmSecret(ctx, user, code: unknown): Promise<string[]> {
     const { pendingTotp } = ctx.session
     if (!(pendingTotp?.expires > Date.now())) {
       throw new AuthenticationError({
@@ -95,7 +95,7 @@ export class TotpService extends Service {
   // codes in a row lock the account for a while. We lock the TOTP credential
   // meanwhile, against concurrent requests that use the same code or miss a
   // failure:
-  async verifyCode(ctx, user, code) {
+  async verifyCode(ctx, user, code: unknown): Promise<void> {
     const key = this.config.secret
     const { isValid, isLocked } = await user.constructor.credentialClass
       .transaction(ctx.transaction, async trx => {
@@ -124,7 +124,9 @@ export class TotpService extends Service {
               ...data,
               step: isTotpCode ? step : data.step,
               backupCodes: isBackupCode
-                ? data.backupCodes.filter(backupCode => backupCode !== hash)
+                ? data.backupCodes.filter(
+                    (backupCode: string) => backupCode !== hash
+                  )
                 : data.backupCodes,
               // The count starts anew once the lock ends:
               failures: isLocked ? 0 : failures,
@@ -151,7 +153,7 @@ export class TotpService extends Service {
     }
   }
 
-  #createTotp(user, secret) {
+  #createTotp(user, secret: string) {
     const { usernameProperty } = user.constructor.definition.options
     return new this.#otpAuth.TOTP({
       issuer: this.app.config.app.name,
@@ -162,7 +164,7 @@ export class TotpService extends Service {
 
   // Return the time step of a valid code, or `null`. Accept the previous and
   // the next code too, for clocks that drift:
-  #getCodeStep(user, secret, code) {
+  #getCodeStep(user, secret: string, code: unknown): number | null {
     const totp = this.#createTotp(user, secret)
     const timestamp = Date.now()
     const delta = totp.validate({ token: `${code}`, timestamp, window: 1 })
@@ -182,14 +184,14 @@ const tagLength = 16
 
 // The secret of the service is a long random string: HKDF suffices to derive
 // a key from it for each use:
-function deriveKey(key, use) {
+function deriveKey(key: string, use: string): Buffer {
   return Buffer.from(hkdfSync('sha256', key, 'dito-credentials', use, 32))
 }
 
 // Encrypt with AES-256-GCM, with a random IV and the authentication tag stored
 // before the encrypted value. The user is authenticated data, so the value
 // can't be moved to other users:
-function encrypt(key, value, user) {
+function encrypt(key: string, value: string, user): string {
   const iv = randomBytes(ivLength)
   const cipher = createCipheriv('aes-256-gcm', deriveKey(key, 'totp'), iv)
   cipher.setAAD(Buffer.from(getUserIdentifier(user)))
@@ -200,7 +202,7 @@ function encrypt(key, value, user) {
   return Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString('base64')
 }
 
-function decrypt(key, value, user) {
+function decrypt(key: string, value: string, user): string {
   const buffer = Buffer.from(value, 'base64')
   const decipher = createDecipheriv(
     'aes-256-gcm',
@@ -217,7 +219,7 @@ function decrypt(key, value, user) {
 
 // Backup codes are random, so a fast hash suffices. Keyed with the secret of
 // the service, a leaked database alone doesn't allow guessing them:
-function hashBackupCode(key, code) {
+function hashBackupCode(key: string, code: unknown): string {
   return createHmac('sha256', deriveKey(key, 'backup-code'))
     .update(`${code}`.toLowerCase().replace(/[^0-9a-f]/g, ''))
     .digest('hex')
