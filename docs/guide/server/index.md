@@ -31,6 +31,10 @@ Schemas of queries, bodies, filters and column types are
 pnpm add @ditojs/server @ditojs/mikro @mikro-orm/core @mikro-orm/postgresql hono @hono/node-server zod
 ```
 
+The other packages are optional: `@ditojs/auth` for users and sessions,
+`@ditojs/storage` for files, and `@ditojs/admin` with `@ditojs/admin-server` for
+the admin. `@ditojs/utils` holds their shared helpers, such as `html`.
+
 The packages are ES modules and need Node.js 24 or later. They are written in
 TypeScript and ship their types.
 
@@ -42,7 +46,7 @@ A bookshop with books, served at `/api/books`:
 import { defineEntity, p } from '@mikro-orm/core'
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Hono } from 'hono'
-import { createApi } from '@ditojs/server'
+import { createApi, errorHandler, notFound } from '@ditojs/server'
 import { serve } from '@ditojs/server/node'
 import { defineController, mikroDb } from '@ditojs/mikro'
 
@@ -74,7 +78,10 @@ const books = defineController({
 const orm = await MikroORM.init({
   entities: [Book],
   dbName: 'bookshop',
+  user: 'bookshop'
 })
+// Creates the tables of the entities. Apps with data use migrations.
+await orm.schema.update()
 
 const api = createApi({
   controllers: [books],
@@ -83,6 +90,9 @@ const api = createApi({
 
 const app = new Hono()
 app.route('/api', api)
+// JSON errors outside of the API too, such as for unknown paths.
+app.notFound(notFound)
+app.onError(errorHandler())
 await serve(app, { port: 8080, onClose: () => orm.close() })
 ```
 

@@ -45,7 +45,7 @@ They keep what a client may write, and check what Postgres can't check well:
   throws at the first wrong value, without its path in the body.
 - They run the schemas of custom types, see [Rules on values](#rules-on-values).
 - They collect every error, each at its path in the body, such as
-  `sections/2/title`, with the code `invalid_type` or `invalid_value`, and
+  `sections/2/title`, with the `keyword` `invalid_type` or `invalid_value`, and
   respond with 400, see
   [Validation errors](../../api/server/errors.md#validation-errors).
 

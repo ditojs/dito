@@ -12,7 +12,7 @@ import { Hono } from 'hono'
 import { createSessions, sessionUser } from '@ditojs/auth'
 
 export const adminSessions = createSessions({
-  db: () => kysely,
+  db: () => orm.em.getKysely(),
   secrets: config.keys,
   name: 'admin.sess',
   maxAge: 24 * 60 * 60 * 1000
@@ -87,6 +87,7 @@ the features that the controller offers, which the admin reads:
 
 ```js
 import { z } from 'zod'
+import { defineController } from '@ditojs/server'
 import { createCredentials, usersRoutes } from '@ditojs/auth'
 import { passkeys } from '@ditojs/auth/passkeys'
 import { totp } from '@ditojs/auth/totp'
@@ -96,7 +97,7 @@ const users = usersRoutes({
   source: adminSource,
   // New passwords, 8 characters at least by default:
   password: z.string().min(12),
-  credentials: createCredentials(() => kysely),
+  credentials: createCredentials(() => orm.em.getKysely()),
   features: {
     passkeys: passkeys({ rpName: 'Bookshop' }),
     totp: totp({ issuer: 'Bookshop', secret: config.totpSecret })
@@ -163,11 +164,11 @@ of a transaction.
 ### Credentials
 
 Passkeys and TOTP keep their secrets in the `credential` table, through
-`createCredentials(() => kysely)`. No foreign keys tie them to their users, so
+`createCredentials(() => orm.em.getKysely())`. No foreign keys tie them to their users, so
 an action that deletes users deletes their credentials too:
 
 ```js
-await deleteUserCredentials(kysely, adminSource, ids)
+await deleteUserCredentials(orm.em.getKysely(), adminSource, ids)
 ```
 
 ### Passkeys

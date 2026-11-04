@@ -80,7 +80,10 @@ build and for its dev server, deeply merged with `config`.
 The build puts the views into a chunk of their own below `views/`, which
 `authorize` protects, also for the sources that Vite serves in development. The
 chunk holds only the views' own modules, so the login, which loads before the
-user is known, doesn't need it.
+user is known, doesn't need it. Files that the views load from outside of
+`views/`, such as `forms/book.js`, end up in `assets/`, which anyone may read:
+keep what needs protection below `views/`. Vite's own urls, such as `/@fs/`,
+aren't protected, so only use `vite` in development.
 
 An `admin.vite.config.js` builds the admin with it. As a function, the same file
 also works for `serveAdmin()` in development, which loads it with the mode

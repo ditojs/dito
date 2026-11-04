@@ -54,8 +54,8 @@ properties: {
 }
 ```
 
-A schema that throws responds with 400 at the property, with the code `custom`
-and the message `Invalid input`, so that internal messages don't reach clients.
+A schema that throws responds with 400 at the property, with the `keyword`
+`custom` and the message `Invalid input`, so that internal messages don't reach clients.
 
 ## Stricter input
 

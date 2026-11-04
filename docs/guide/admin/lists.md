@@ -79,8 +79,7 @@ books: {
     published: { label: 'Published', filter: { published: true } },
     drafts: {
       label: 'Drafts',
-      filter: { published: false, archived: false },
-      default: true
+      filter: { published: false, archived: false }
     }
   },
   filters: {
@@ -100,8 +99,9 @@ array. Changing a tab or a filter goes back to the first page.
 The first tab, or the one with `default: true`, is selected by default.
 Selecting a tab replaces the filters of the other tabs. The selected tab is the
 one whose filters all match the query, the one with the most filters if several
-do. A tab without `filter` shows all rows. It only works as the default tab, as
-the default applies again when no tab has a value. The filters of tabs and of
+do. A tab without `filter` shows all rows. Only the default tab can be one, as
+the default applies again when no tab has a value, and the admin throws
+otherwise. The filters of tabs and of
 the panel need different names, as the panel keeps those of the tabs.
 
 ## Items in the data

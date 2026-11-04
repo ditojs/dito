@@ -51,8 +51,11 @@ to their own messages. The `type` tells where the input was:
 | --------------------- | -------------------------------------------------------------- |
 | `ParameterValidation` | The action's `query` schema.                                   |
 | `BodyValidation`      | The action's `body` schema.                                    |
-| `FilterValidation`    | The filters of a list, keyed by filter name.                   |
+| `FilterValidation`    | The values of a list's filters, keyed by filter name.          |
 | `ModelValidation`     | The data of a model, and `createValidationError()` by default. |
+
+An unknown filter, a wrong `order` or `range`, and invalid JSON also respond with
+400, but with only a `message`, without `errors`.
 
 See [Validation](../../guide/server/validation.md) in the guide.
 

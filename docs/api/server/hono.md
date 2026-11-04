@@ -26,7 +26,7 @@ of that middleware, or its options.
 | `secureHeaders` | `true`  | Hono's `secureHeaders()`.                                                                                                                                                           |
 | `cors`          | `false` | Hono's `cors()`.                                                                                                                                                                    |
 | `etag`          | `false` | Hono's `etag()`.                                                                                                                                                                    |
-| `csrf`          | `true`  | Hono's `csrf()`, only for requests with `Origin`: browsers send it, and other clients can't carry an attack.                                                                        |
+| `csrf`          | `true`  | Hono's `csrf()`, only for requests with `Origin`: browsers send it, and other clients can't carry an attack. It passes `application/json`, which forms can't send.                  |
 | `bodyLimit`     | `true`  | Hono's `bodyLimit()`, with a `maxSize` of 1 MB unless the options set one. Multipart bodies have no limit here: the reverse proxy sets it, such as `client_max_body_size` in nginx. |
 
 They run in this order, so the responses of `csrf()` and `bodyLimit()` have the

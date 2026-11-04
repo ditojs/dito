@@ -270,6 +270,9 @@ its key:
 - A row in another storage: the file is copied under a new key.
 - No row: the file is imported from its `url` under a new key, when the
   storage's `allowedImports` match it. Otherwise, the write responds with 400.
+- Other values at an asset path, such as an object without a string `key`,
+  respond with 400 and `BodyValidation` errors. An import gives up after 30
+  seconds.
 
 It changes the files in place, so the handler reads the stored files in its
 `body`. It marks the files as used. When the write fails, it removes the
@@ -277,9 +280,20 @@ imported files again.
 
 ## Asset jobs
 
-The `asset` table holds one row for each stored file, with `key`, `file` as
-JSON, `storage` and `unreferenced_since`: the time a scan first found no row
-that references the file, or null.
+The `asset` table holds one row for each stored file. `unreferenced_since` is
+the time a scan first found no row that references the file, or null:
+
+```sql
+create table asset (
+  id serial primary key,
+  key text not null unique,
+  file jsonb,
+  storage text not null,
+  unreferenced_since timestamptz,
+  created_at timestamptz,
+  updated_at timestamptz
+);
+```
 
 | Function                                                                  | Description                                                                                                                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

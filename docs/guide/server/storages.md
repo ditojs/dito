@@ -143,6 +143,8 @@ The mixin handles the files in the body of a controller's writes:
   the URL matches the storage's `allowedImports`. Otherwise, the write responds
   with 400. The patterns match the origin and path of the URL. URLs with
   credentials and redirects respond with 400 as well.
+- Any other value at an asset path, such as an object without a string `key`,
+  responds with 400.
 
 Responses send the file objects as the rows hold them.
 
@@ -154,7 +156,7 @@ the references. A job scans the data at the asset paths:
 
 ```js
 setInterval(async () => {
-  const { scan, released } = await assets.runJobs(kysely)
+  const { scan, released } = await assets.runJobs(orm.em.getKysely())
   logger.info({ scan, released }, 'Asset jobs')
 }, 60 * 60 * 1000)
 ```

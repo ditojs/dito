@@ -46,8 +46,17 @@ createSessions(options: SessionsOptions): {
 | `name`    | `string`            | The cookie name, such as `admin.sess`.                                                             |
 | `maxAge`  | `number`            | The lifetime of a session, in milliseconds. At most 400 days.                                      |
 
-The `session` table holds `id`, `value` as JSON, and `expires_at`. The cookie
-holds the id, signed with Hono's
+The app creates the `session` table:
+
+```sql
+create table session (
+  id text primary key,
+  value jsonb,
+  expires_at timestamptz
+);
+```
+
+The cookie holds the id, signed with Hono's
 [signed cookies](https://hono.dev/docs/helpers/cookie). It is `SameSite=Lax`,
 `HttpOnly`, and `Secure` when the request's URL is https. A row without
 `expires_at`, or with one in the past, isn't a session.
@@ -168,6 +177,8 @@ The actions, under `path`:
 | `post login-code`, `get totp`, `post totp`, `post totp-confirm`, `delete totp`                                                     | `totp`          |
 
 The body of `post login` and `post password-reset` names the user as `username`.
+`post password` takes `{ password }` and needs a confirmed access, and
+`post confirm-access` takes `{ password, code? }` or `{ passkey }`.
 A login responds with `{ user }`, or with `{ codeRequired: true }` when it needs
 a TOTP code, which `post login-code` takes. `post confirm-access` responds with
 `{ codeRequired: true }` when it needs a code, and with 204 once it confirms the
@@ -247,7 +258,22 @@ deleteUserCredentials(db: Kysely<any>, source: UserSource, ids: unknown[]): Prom
 
 Returns the store of the users' passkeys and TOTP secrets, in the `credential`
 table that all sources share, with `data` as JSON. `db` returns the root Kysely
-instance, like the one of `createSessions()`.
+instance, like the one of `createSessions()`. The app creates the table:
+
+```sql
+create table credential (
+  id serial primary key,
+  type text not null,
+  user_model text not null,
+  user_id text not null,
+  key text,
+  name text,
+  data jsonb,
+  created_at timestamptz,
+  last_used_at timestamptz,
+  unique (user_model, key)
+);
+```
 
 No foreign keys tie the credentials to their users. When the app deletes users,
 it calls `deleteUserCredentials(db, source, ids)`, also in the transaction of

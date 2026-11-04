@@ -39,6 +39,14 @@ price: {
 See [`FieldSchemaBase`](../../api/admin/schemas.md#fieldschemabase) for
 all common options.
 
+A `checkbox` stores `null` until it's touched, and a non-nullable column refuses
+that, also with a default on the server. Give such a checkbox `nullable: false`,
+which stores `false` instead:
+
+```js
+published: { type: 'checkbox', nullable: false }
+```
+
 ## Choices
 
 `select`, `multiselect`, `radio` and `checkboxes` choose from `options`: an

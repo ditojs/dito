@@ -93,6 +93,13 @@ peer dependencies `vite`, `@vitejs/plugin-vue` and `@ditojs/build`.
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Bookshop Admin</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+    </style>
   </head>
   <body>
     <div id="dito-admin"></div>

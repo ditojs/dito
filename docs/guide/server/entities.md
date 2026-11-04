@@ -59,6 +59,7 @@ it, see [Writes](writes.md). These rules of the entity matter for Dito:
 ```js
 import { defineController } from '@ditojs/mikro'
 import { q } from '@ditojs/server/zod'
+import { z } from 'zod'
 
 export const articles = defineController({
   path: 'articles',
@@ -136,7 +137,7 @@ user:
 ```js
 find: c => ({
   where: c.var.user ? {} : { published: true },
-  exclude: hasRole(c.var.user, 'admin') ? [] : ['internalNotes']
+  exclude: c.var.user?.roles.includes('admin') ? [] : ['internalNotes']
 })
 ```
 
@@ -190,7 +191,7 @@ action returns, go out with the relations that are loaded. Put secrets in
 The `get` list takes these query parameters:
 
 ```
-GET /articles?filter[author.id]=12&order=createdAt desc&range=0,49
+GET /articles?filter[author]=12&order=createdAt desc&range=0,49
 ```
 
 | Parameter            | Description                                                                                               |
