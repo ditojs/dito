@@ -410,8 +410,8 @@ again when the value changes.
 
 #### Parameters
 
-| Name       | Type     | Description                                      |
-| ---------- | -------- | ------------------------------------------------ |
+| Name       | Type     | Description                                       |
+| ---------- | -------- | ------------------------------------------------- |
 | `dataPath` | `string` | The data path of the value, e.g. `'../../genre'`. |
 
 #### Return value
