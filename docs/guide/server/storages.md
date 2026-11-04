@@ -8,7 +8,8 @@ files or change their URLs.
 
 The package reads and writes its own tables through
 [Kysely](https://kysely.dev). In a request, that's the Kysely of `c.var.db`,
-outside of requests the one that `getRootKysely(orm)` of `@ditojs/mikro` returns.
+outside of requests the one that `getRootKysely(orm)` of `@ditojs/mikro`
+returns.
 
 ## Storages
 

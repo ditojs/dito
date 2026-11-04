@@ -172,7 +172,8 @@ parameter. `c.req.queries()` holds all of them.
 Without a `body` schema, the `body` of writes is the JSON body. An empty body is
 `{}`, and so is a JSON body without `Content-Type`, which is dropped: a `PATCH`
 then changes nothing. Invalid JSON responds with 400. Dito doesn't read bodies
-of other types, and `body` is `undefined`. Handlers read them from `c.req`, such as
+of other types, and `body` is `undefined`. Handlers read them from `c.req`, such
+as
 uploads with `c.req.formData()`.
 
 ## Mixins

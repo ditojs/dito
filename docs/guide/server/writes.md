@@ -161,7 +161,7 @@ lose them.
 { "tags": [3, 7, { "id": 9 }] }
 ```
 
-A pivot entity can have columns of its own, such as the price of a book in an
+A pivot entity can have columns of its own, such as the due date of a book in a
 loan. Use MikroORM's many-to-many relation on a pivot entity whose primary key
 is its two foreign keys:
 
@@ -193,7 +193,7 @@ const books = loan.books.getItems()
 await em.populate(books, ['loanLinks'], { refresh: true })
 for (const book of books) {
   for (const link of book.loanLinks) {
-    link.price = getPrice(book, link.order)
+    link.dueDate = getDueDate(book, link.loan)
   }
 }
 ```
