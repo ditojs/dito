@@ -1,7 +1,7 @@
 import type { AddressInfo } from 'node:net'
 import { Hono } from 'hono'
 import { csrf } from 'hono/csrf'
-import { createApi } from '../src/index.ts'
+import { createApi, hostMiddleware } from '../src/index.ts'
 import { forwarded, getClientAddress, serve } from '../src/node.ts'
 
 function getUrl(server: { address(): unknown }) {
@@ -39,7 +39,69 @@ const headers = {
   'X-Forwarded-For': '203.0.113.7, 10.0.0.1'
 }
 
+describe('hostMiddleware() on Node', () => {
+  // Answers `/secret` with 401, without reading the body.
+  const host = () => {
+    const app = new Hono()
+    app.use(...hostMiddleware())
+    app.post('/secret', c => c.text('Unauthorized', 401))
+    app.get('/', c => c.text('ok'))
+    return app
+  }
+
+  // Keep-alive connections fail on the next request when the server resets
+  // them, which takes a few rounds to show.
+  async function expectOpenConnections(size: number, status: number) {
+    await withServer(host(), async url => {
+      for (let i = 0; i < 30; i++) {
+        const response = await fetch(`${url}/secret`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: 'x'.repeat(size)
+        })
+        expect(response.status).toBe(status)
+        await response.text()
+        expect((await fetch(url)).status).toBe(200)
+      }
+    })
+  }
+
+  it('keeps connections usable after an unread body', async () => {
+    await expectOpenConnections(900_000, 401)
+  })
+
+  it('keeps connections usable after a body over the limit', async () => {
+    await expectOpenConnections(1_100_000, 413)
+  })
+})
+
 describe('serve()', () => {
+  it('runs `onClosing` while a request still runs', async () => {
+    let release!: () => void
+    const released = new Promise<void>(resolve => (release = resolve))
+    const steps: string[] = []
+    const app = new Hono()
+    app.get('/', async c => {
+      await released
+      steps.push('response')
+      return c.text('Hello')
+    })
+    const { server, close } = await serve(app, {
+      host: '127.0.0.1',
+      onClosing: () => {
+        steps.push('closing')
+        release()
+      },
+      onClose: () => {
+        steps.push('closed')
+      }
+    })
+    const response = fetch(getUrl(server))
+    await new Promise(resolve => server.once('request', resolve))
+    await Promise.all([close(), response])
+    expect(steps).toEqual(['closing', 'response', 'closed'])
+  })
+
   it('serves the app until `close()`, and then runs `onClose`', async () => {
     const app = new Hono()
     app.get('/', c => c.text('Hello'))

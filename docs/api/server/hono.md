@@ -69,13 +69,14 @@ on Node.
 serve(app: Hono, options?: ServeOptions): Promise<{ server, close }>
 ```
 
-Listens on Node, and returns the Node server and `close()`. `close()` stops the
-server, then runs `onClose`. It fails after `shutdownTimeout`. SIGINT and
+Listens on Node, and returns the Node server and `close()`. `close()` runs
+`onClosing`, stops the server, then runs `onClose`. It fails after `shutdownTimeout`. SIGINT and
 SIGTERM call `close()` and exit the process.
 
-| Option            | Type                          | Description                                                                   |
-| ----------------- | ----------------------------- | ----------------------------------------------------------------------------- |
-| `port`            | `number \| string`            | Default: a free port.                                                         |
-| `host`            | `string`                      | The host to listen on.                                                        |
-| `shutdownTimeout` | `number`                      | The milliseconds `close()` may take. `0`, the default, waits without a limit. |
-| `onClose`         | `() => void \| Promise<void>` | Runs after the server has stopped, such as `orm.close()`.                     |
+| Option            | Type                          | Description                                                                                                 |
+| ----------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `port`            | `number \| string`            | Default: a free port.                                                                                       |
+| `host`            | `string`                      | The host to listen on.                                                                                      |
+| `shutdownTimeout` | `number`                      | The milliseconds `close()` may take. `0`, the default, waits without a limit.                               |
+| `onClosing`       | `() => void \| Promise<void>` | Runs before the server stops, while requests still run, so that long tasks can tell that a close has begun. |
+| `onClose`         | `() => void \| Promise<void>` | Runs after the server has stopped, such as `orm.close()`.                                                   |

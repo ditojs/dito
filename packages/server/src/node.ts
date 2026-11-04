@@ -12,6 +12,9 @@ export interface ServeOptions {
   // The milliseconds that `close()` may take before it fails. 0 waits
   // without a limit.
   shutdownTimeout?: number
+  // Runs before the server stops, while requests still run, so that long tasks
+  // can tell that a close has begun.
+  onClosing?: () => void | Promise<void>
   // Runs after the server has stopped, to stop the app.
   onClose?: () => void | Promise<void>
 }
@@ -20,7 +23,7 @@ export interface ServeOptions {
 // process once the server has stopped.
 export async function serve(
   app: Hono<any, any, any>,
-  { port, host, shutdownTimeout = 0, onClose }: ServeOptions = {}
+  { port, host, shutdownTimeout = 0, onClosing, onClose }: ServeOptions = {}
 ) {
   const server = createAdaptorServer({ fetch: app.fetch })
   server.listen(Number(port ?? 0), host)
@@ -30,6 +33,7 @@ export async function serve(
   const stop = async () => {
     process.off('SIGINT', onSignal)
     process.off('SIGTERM', onSignal)
+    await onClosing?.()
     await new Promise<void>((resolve, reject) =>
       server.close(error => (error ? reject(error) : resolve()))
     )
