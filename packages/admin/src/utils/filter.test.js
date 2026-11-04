@@ -319,8 +319,7 @@ describe('createFiltersPanel()', () => {
       })
       expect(filters).toEqual({
         'filter[title]': ['contains', 'Sea'],
-        // The trailing empty `to` is left out:
-        'filter[published]': '2020-01-01T00:00:00.000Z',
+        'filter[published]': ['2020-01-01T00:00:00.000Z', ''],
         'filter[genres]': ['poetry', 'essay'],
         // `false` is a value, unlike `null`, so the filter still applies:
         'filter[available]': 'false'
@@ -332,6 +331,13 @@ describe('createFiltersPanel()', () => {
       expect(applyFilters(panel, query, { $title: { text: 'Sea' } })).toEqual(
         { 'filter[title]': ['', 'Sea'] }
       )
+    })
+
+    it('keeps the position of a missing last argument', () => {
+      const { panel, query } = createPanel()
+      expect(
+        applyFilters(panel, query, { $title: { operator: 'starts-with' } })
+      ).toEqual({ 'filter[title]': ['starts-with', ''] })
     })
 
     it('formats numbers and booleans as strings', () => {

@@ -228,12 +228,13 @@ function formatFiltersData(schema, data) {
     const components = getComponentsForFilter(schema, dataName)
     if (entry && components) {
       const values = Object.keys(components).map(key => entry[key])
-      const last = values.pop()
-      const args = [...values, ...asArray(last)].map(formatArgument)
-      while (args.at(-1) === '') {
-        args.pop()
-      }
-      if (args.length > 0) {
+      const last = asArray(values.pop())
+      // Each component keeps its position, so that the server doesn't read an
+      // operator without a text as the text.
+      const args = [...values, ...(last.length ? last : [''])].map(
+        formatArgument
+      )
+      if (args.some(arg => arg !== '')) {
         query[getFilterKey(getFilterName(dataName))] =
           args.length === 1 ? args[0] : args
       }
