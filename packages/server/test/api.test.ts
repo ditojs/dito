@@ -226,6 +226,21 @@ describe('routing', () => {
     expect(handler).toHaveBeenCalledTimes(1)
   })
 
+  it('matches parameters with a pattern before plain parameters', async () => {
+    const api = setup([
+      {
+        path: 'books',
+        authorize: true,
+        actions: {
+          'get :slug': ({ params: { slug } }) => ({ slug }),
+          'get :id{[0-9]+}': ({ params: { id } }) => ({ id })
+        }
+      }
+    ])
+    expect(await json(api, 'GET', '/api/books/12')).toEqual({ id: '12' })
+    expect(await json(api, 'GET', '/api/books/emma')).toEqual({ slug: 'emma' })
+  })
+
   it('matches static segments before parameters', async () => {
     const api = setup([
       {

@@ -31,9 +31,10 @@ These are invalid:
   action or on a layer, see [Authorization](controllers.md#authorize);
 - a routed action without a handler.
 
-Hono runs the first route that matches. Dito adds the routes with static
-segments before those with parameters, also across controllers, so
-`get subscribe` matches before `get :id`.
+Hono runs the first route that matches. Dito adds the routes by how much they
+match, also across controllers: static segments first, then parameters with a
+pattern, plain parameters, and last wildcards and patterns of any text. So
+`get subscribe` matches before `get :id{[0-9]+}`, and that before `get :slug`.
 
 ```js
 const app = new Hono()

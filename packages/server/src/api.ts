@@ -228,14 +228,15 @@ function getDisposition(inline: boolean, filename?: string) {
   return `${type}; filename="${plainName}"; filename*=UTF-8''${encodedName}`
 }
 
-// The rank of each segment: 0 for static ones, 1 for parameters, and 2 for
-// parameters with a pattern and wildcards, which can match more.
+// The rank of each segment, by how much it matches: 0 for static ones, 1 for
+// parameters with a pattern, 2 for plain parameters, and 3 for wildcards and
+// patterns that match any text, such as `:path{.+}`.
 function rank(path: string) {
-  return path
-    .split('/')
-    .map(segment =>
-      segment === '*' || /^:.*\{/.test(segment) ? 2 : segment[0] === ':' ? 1 : 0
-    )
+  return path.split('/').map(segment => {
+    if (segment === '*' || /^:.*\{\.[+*]\}$/.test(segment)) return 3
+    if (segment[0] !== ':') return 0
+    return segment.includes('{') ? 1 : 2
+  })
 }
 
 function compareRanks(a: number[], b: number[]) {
