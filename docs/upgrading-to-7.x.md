@@ -31,9 +31,8 @@ lines, medium one module of the app, and high every model or every controller.
 
 | Dito.js 6                                                                              | Dito.js 7                                                                                                                                                                     | Work                    |
 | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| `dito db:migrate`, `db:rollback`, `db:reset`, `db:unlock`                              | knex's own CLI with a `knexfile.js` of two lines, see [step 1](#1-run-the-migrations-with-knexs-cli)                                                                          | low                     |
-| `dito db:create_migration`, which wrote tables from models                             | `knex migrate:make`, empty; after step 11, MikroORM's `migrator.create()`, which diffs the entities                                                                           | low                     |
-| The knex migration history                                                             | MikroORM's Migrator with a baseline migration of the app, see [step 11](#11-move-the-migrations-to-mikroorm)                                                                  | medium, once            |
+| `dito db:migrate`, `db:rollback`, `db:reset`, `db:unlock`, `db:create_migration`       | MikroORM's Migrator, whose `create()` writes migrations from the entities, see [step 11](#11-move-the-migrations-to-mikroorm)                                                 | medium, once            |
+| The app's knex migrations, until step 11                                               | knex's own CLI, as a bridge, see [step 1](#1-run-the-migrations-with-knexs-cli)                                                                                               | low                     |
 | `dito db:seed` and `seeds/`                                                            | MikroORM's [seeder](https://mikro-orm.io/docs/seeding), or a script with an entity manager                                                                                    | medium                  |
 | `dito console`                                                                         | A REPL script of ten lines, see [step 4](#4-set-up-the-orm-the-services-and-the-scripts)                                                                                      | low                     |
 | `dito db:list_asset_config`, `db:recount_assets`                                       | The asset paths of the app, and `assets.runJobs()`                                                                                                                            | low                     |
@@ -68,10 +67,15 @@ Take the steps in this order:
 
 - Steps 1 and 2 run on Dito.js 6. The app keeps running after each one.
 - Steps 3 to 10 replace the server, on a branch. The app runs again after step 9.
-- Step 11 moves the migrations to MikroORM. Take it once the release of step 10
-  runs everywhere.
+- Step 11 moves the migrations to MikroORM, which is where they end up. It comes
+  last because every database must first have run the last knex migration.
 
 ### 1. Run the migrations with knex's CLI
+
+Migrations end up on MikroORM's Migrator in [step 11](#11-move-the-migrations-to-mikroorm).
+Until then knex is a bridge: the existing migrations and the ones of steps 2 and
+10 stay knex migrations, because the Migrator can only take over from a schema
+that every database has reached.
 
 Dito.js 7 has no CLI. The `dito` CLI ran the migrations with knex, and knex's
 own CLI does the same with a `knexfile.js` next to `package.json`. This also
