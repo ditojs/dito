@@ -63,7 +63,7 @@ export function hostMiddleware({
       ...options(bodyLimitOptions)
     }
     const limit = bodyLimit({ maxSize, onError })
-    middleware.push((c, next) => {
+    middleware.push(async (c, next) => {
       if (c.req.header('Content-Type')?.startsWith('multipart/')) return next()
       const size = c.req.header('Content-Length')
       if (size === undefined) return limit(c, next)
