@@ -879,7 +879,7 @@ describe('useSource()', () => {
               type: 'list',
               resource: { path: 'books' },
               filterTabs: {
-                all: {},
+                old: { filter: { old: true } },
                 recent: { filter: { recent: true }, default: true }
               },
               columns: { title: {} }

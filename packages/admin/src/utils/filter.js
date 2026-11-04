@@ -1,6 +1,7 @@
 import {
   isArray,
   isDate,
+  isEmpty,
   isObject,
   asArray,
   equals,
@@ -218,9 +219,9 @@ function getComponentsForFilter(schema, dataName) {
 
 // A filter sends its arguments as repeated `filter[name]` values, one per
 // component in order and as strings: dates in ISO format, other values with
-// `String()`. Empty values are sent as '' to keep the positions of the ones
-// after them, and trailing empty values are left out. An array in the last
-// component gives the remaining arguments, e.g. the values of a multiselect.
+// `String()`. Empty values are sent as '', so each component keeps its
+// position. An array in the last component gives the remaining arguments, e.g.
+// the values of a multiselect.
 function formatFiltersData(schema, data) {
   const query = {}
   for (const dataName in data) {
@@ -268,6 +269,22 @@ export function getTabQuery(tab) {
     query[getFilterKey(name)] = isArray(value) ? value.map(String) : `${value}`
   }
   return query
+}
+
+// The tab that a list selects by default, the first one unless one says
+// `default`. Only that tab can have no `filter`, as a query without tab keys
+// always selects it.
+export function getDefaultTab(tabs) {
+  const values = Object.values(tabs ?? {})
+  const defaultTab = values.find(tab => tab.default) ?? values[0] ?? null
+  for (const tab of values) {
+    if (tab !== defaultTab && isEmpty(getTabQuery(tab))) {
+      throw new Error(
+        `The filter tab '${tab.name}' needs a \`filter\` or \`default: true\`.`
+      )
+    }
+  }
+  return defaultTab
 }
 
 // The keys of the filters of all tabs:

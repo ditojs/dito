@@ -7,6 +7,7 @@ import {
   clearTabs,
   createFiltersPanel,
   getSelectedTab,
+  getDefaultTab,
   getTabKeys,
   getTabQuery,
   filterComponents,
@@ -583,6 +584,21 @@ describe('filter tabs', () => {
     ).toBe(tabs.frontend)
     expect(select({ 'filter[state]': ['done', 'open'] })).toBe(tabs.states)
     expect(select({ 'filter[state]': 'done' })).toBe(tabs.all)
+  })
+
+  it('defaults to the first tab, or the one that says so', () => {
+    expect(getDefaultTab(tabs)).toBe(tabs.all)
+    expect(getDefaultTab(null)).toBe(null)
+    const recent = { filter: { recent: true }, default: true }
+    const old = { filter: { old: true } }
+    expect(getDefaultTab({ old, recent })).toBe(recent)
+  })
+
+  it('refuses a tab without filters that is not the default', () => {
+    const recent = { filter: { recent: true }, default: true }
+    expect(() => getDefaultTab({ all: { name: 'all' }, recent })).toThrow(
+      `The filter tab 'all' needs`
+    )
   })
 
   it('selects no tab without a match', () => {

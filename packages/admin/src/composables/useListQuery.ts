@@ -2,7 +2,7 @@ import { computed, markRaw, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { isString } from '@ditojs/utils'
 import { ListQuery } from '../utils/ListQuery.js'
-import { getTabKeys, getTabQuery } from '../utils/filter.js'
+import { getDefaultTab, getTabKeys, getTabQuery } from '../utils/filter.js'
 import { getNamedSchemas } from '../utils/schema/lookup.js'
 import { isListSource } from '../utils/schema/structure.js'
 import type { Schema } from '../utils/types.ts'
@@ -36,10 +36,7 @@ export function useListQuery(
       getNamedSchemas(props.schema.filterTabs) as Record<string, Schema> | null
   )
 
-  const defaultTab = computed(() => {
-    const values = Object.values(filterTabs.value ?? {})
-    return values.find(tab => tab.default) ?? values[0] ?? null
-  })
+  const defaultTab = computed(() => getDefaultTab(filterTabs.value))
 
   const tabKeys = computed(() => getTabKeys(filterTabs.value))
 
