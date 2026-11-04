@@ -12,7 +12,6 @@ import {
   parseListQuery,
   createRecord,
   assignRecord,
-  removeRecord,
   schemaJson,
   SchemaJson,
   assetsJson,
@@ -68,7 +67,7 @@ The keys of [`ControllerDefinition`](controllers.md#controllerdefinition), and:
 | `post`       | Runs `deserialize`, then [`createRecord()`](#createrecord). The new record becomes `record()`. Answers 201 with `Location`, even when a layer replaces the handler and returns the new entity. |
 | `get :id`    | Returns `record()`.                                                                                                                                                                            |
 | `patch :id`  | Runs `deserialize` with the record, then [`assignRecord()`](#assignrecord).                                                                                                                    |
-| `delete :id` | Runs [`removeRecord()`](#removerecord) and responds with `{ count: 1 }`.                                                                                                                       |
+| `delete :id` | Removes the record with `em.remove()`, flushes, and responds with `{ count: 1 }`.                                                                                                              |
 
 There is no default `put`, and no default write on the whole list. Custom
 actions handle these, such as `'post order'`. The [`crud`](#crud) mixin routes
@@ -444,31 +443,6 @@ are the full set, and relations link by id. In order, it:
 
 It doesn't flush.
 
-## removeRecord()
-
-```ts
-removeRecord(em: EntityManager, record: object): Promise<void>
-```
-
-Deletes a record with the rows that it owns, and flushes at once. In order, it:
-
-1. flushes `em`;
-2. loads the record again in a fork of `em`, in the same transaction and without
-   filters. It loads only the relations whose rows a remove deletes
-   (`orphanRemoval` or a cascade of removes);
-3. removes the record in the fork, and flushes the fork.
-
-The rows that refer to the record follow the delete rules of their foreign keys.
-The record stays loaded in `em`.
-
-Call it instead of `em.remove()` in custom handlers; the `delete :id` action
-does. MikroORM's `UnitOfWork.remove()` detaches the loaded rows of the removed
-row's one-to-many relations, which sets their foreign key to null when the
-column is nullable, whatever its delete rule says. A customer with loaded orders
-is then deleted and its orders lose their customer, where the database would
-have refused. `removeRecord()` loads the row again in a fork, with only the rows
-that go with it, so the delete reaches the database and its rules apply.
-
 ## schemaJson()
 
 ```ts
@@ -532,6 +506,12 @@ Adds what Dito's entities need to the options of `new MikroORM()`:
   strings as they are.
 - New rows get the defaults of their `schemaJson()` schemas, also with
   `em.create()`. Updates write the value as sent.
+- `em.remove()` deletes what the schema says. A flush loads the rows that go
+  with a removed row, through `orphanRemoval` or a cascade of removes, so they
+  needn't be loaded. The rows that refer to a removed row keep their foreign
+  keys, unless the rule is `set null`, so the database applies its delete rules.
+  A customer with orders stays when the rule refuses the delete, also when the
+  orders are loaded.
 - A pivot entity with an id of its own logs a warning, see
   [Known limitations](../../upgrading-to-7.x.md#known-limitations).
 

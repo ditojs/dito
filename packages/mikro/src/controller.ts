@@ -23,7 +23,7 @@ import { respond } from './respond.ts'
 // controller wraps the handlers of each key: after them, `respond()` flushes
 // the writes once and serializes the result, inside the transaction and the
 // middleware. So a handler can check the graph before the flush. A delete
-// flushes in its handler, see `removeRecord()`.
+// flushes in its handler.
 
 declare module '@ditojs/server' {
   interface MixinDefinition {

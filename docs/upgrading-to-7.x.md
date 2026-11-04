@@ -524,9 +524,9 @@ rows again in one query, with the values that formulas and triggers set. See
 - **Custom handlers** write a body with `createRecord(db, entity, data)` and
   `assignRecord(db, record, data)`, which run the same checks and don't flush.
   The base flushes once after the handler.
-- **Deletes.** Call `removeRecord(db, record)` instead of `em.remove()`, which
-  sets the foreign key of loaded one-to-many rows to null when the column is
-  nullable, whatever its delete rule says. Trees of one entity need
+- **Deletes.** Call `em.remove(record)` and flush. With `mikroOptions()`, owned
+  rows go with the record and foreign keys follow their delete rules, so declare
+  them on the entities. Trees of one entity need
   `.deleteRule('cascade')` on their foreign key. A delete that a foreign key
   refuses responds with 409, see
   [Database errors](api/server/mikro.md#database-errors).

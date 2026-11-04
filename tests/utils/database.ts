@@ -2,6 +2,7 @@
 import { randomBytes } from 'node:crypto'
 import { MikroORM, type Options } from '@mikro-orm/postgresql'
 import type { Kysely } from 'kysely'
+import { mikroOptions } from '../../packages/mikro/src/index.ts'
 
 // A database of its own on the local Postgres server, for the tests of the
 // packages and of `tests/`. MikroORM's schema generator creates the tables of
@@ -24,7 +25,7 @@ const connection = {
 
 export async function createTestDatabase(
   entities: Options['entities'] = [],
-  wrapOptions: (options: any) => Options = options => options
+  wrapOptions: (options: any) => Options = mikroOptions
 ) {
   const dbName = `dito_test_${randomBytes(6).toString('hex')}`
   const orm = await MikroORM.init(

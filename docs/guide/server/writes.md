@@ -266,10 +266,9 @@ customer: () => p.manyToOne(Customer).nullable().deleteRule('no action')
 A tree of rows of one entity, such as child pages with `orphanRemoval`, needs
 `.deleteRule('cascade')` on its foreign key.
 
-Custom handlers delete with
-[`removeRecord(em, record)`](../../api/server/mikro.md#removerecord), not
-`em.remove()`. MikroORM's remove sets the nullable foreign keys of loaded
-one-to-many rows to null, so a delete that the database would refuse goes through.
+Custom handlers delete with `em.remove(record)` and a flush. The rows that the
+record owns go with it, and the rows that refer to it follow their delete rules,
+see [`mikroOptions()`](../../api/server/mikro.md#mikrooptions).
 
 ## Writes in custom handlers
 

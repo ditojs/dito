@@ -1,7 +1,7 @@
 import { defineMixin, type Actions, type Handler } from '@ditojs/server'
 import { checkFind, type FindShape } from './find.ts'
 import type { ModelRequest } from './model-request.ts'
-import { assignRecord, createRecord, removeRecord } from './write.ts'
+import { assignRecord, createRecord } from './write.ts'
 
 // The default handlers of a model controller. An action gets one by setting
 // its key, in `actions` or through the mixin `crud`.
@@ -26,7 +26,8 @@ export const defaults: Actions = {
   },
 
   async 'delete :id'({ record, modelRequest: { em } }) {
-    await removeRecord(em, await record())
+    em.remove(await record())
+    await em.flush()
     return { count: 1 }
   }
 }

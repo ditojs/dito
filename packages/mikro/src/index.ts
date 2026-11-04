@@ -10,7 +10,7 @@ export {
 } from './controller.ts'
 export { choices, crud, listHandler } from './crud.ts'
 export { setRecord } from './model-request.ts'
-export { assignRecord, createRecord, removeRecord } from './write.ts'
+export { assignRecord, createRecord } from './write.ts'
 export type { Find, FindShape } from './find.ts'
 export { dateRangeFilter, textFilter } from './filters.ts'
 export type { Filter } from './list.ts'

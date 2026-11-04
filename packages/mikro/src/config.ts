@@ -1,10 +1,16 @@
 import {
+  Cascade,
   DateType,
   EntitySchema,
   ReferenceKind,
   UnderscoreNamingStrategy,
+  Utils,
+  wrap,
+  type EntityMetadata,
+  type EntityProperty,
   type EventArgs,
   type EventSubscriber,
+  type FlushEventArgs,
   type MetadataStorage,
   type Options
 } from '@mikro-orm/core'
@@ -12,8 +18,9 @@ import { PlainDate } from './plain-date.ts'
 import { SchemaJson, runSchema } from './schema-json.ts'
 
 // The options of `new MikroORM()` for entities of Dito: `p.date()` columns keep
-// the local day, and new rows get the defaults of their `schemaJson()` schemas.
-// Pivot entities with an id of their own log a warning.
+// the local day, new rows get the defaults of their `schemaJson()` schemas, and
+// `em.remove()` deletes owned rows and follows the delete rules of foreign
+// keys. Pivot entities with an id of their own log a warning.
 //
 //   const orm = new MikroORM(mikroOptions({ dbName, entities }))
 export function mikroOptions<T extends Partial<Options<any, any, any>>>(
@@ -22,7 +29,7 @@ export function mikroOptions<T extends Partial<Options<any, any, any>>>(
   const { discovery, subscribers = [] } = options
   return {
     ...options,
-    subscribers: [...subscribers, new SchemaDefaults()],
+    subscribers: [...subscribers, new SchemaDefaults(), new RemovedRows()],
     discovery: {
       ...discovery,
       onMetadata(meta, platform) {
@@ -39,6 +46,80 @@ export function mikroOptions<T extends Partial<Options<any, any, any>>>(
       }
     }
   }
+}
+
+// Makes `em.remove()` delete what the schema says. MikroORM deletes owned rows
+// only when they are loaded, so a flush loads them first. And it sets the
+// foreign keys of the loaded rows of a one-to-many relation to null, whatever
+// their delete rule says, so a flush puts them back. The database then applies
+// the rule and may refuse the delete.
+class RemovedRows implements EventSubscriber {
+  async beforeFlush({ em, uow }: FlushEventArgs) {
+    for (const entity of uow.getRemoveStack()) {
+      const wrapped = wrap(entity, true)
+      if (wrapped.__managed) {
+        await em.populate(
+          entity,
+          getOwnedPaths(wrapped.__meta) as never[],
+          { filters: false }
+        )
+      }
+    }
+  }
+
+  onFlush({ uow }: FlushEventArgs) {
+    const removed = uow.getRemoveStack()
+    const changes = new Map(uow.getChangeSets().map(cs => [cs.entity, cs]))
+    for (const entity of removed) {
+      for (const prop of wrap(entity, true).__meta.relations) {
+        const key = getKeptForeignKey(prop)
+        const rows = entity[prop.name as never]
+        if (!key || !Utils.isCollection(rows)) continue
+        for (const row of rows.getItems(false) as any[]) {
+          if (!removed.has(row) && row[key] == null) {
+            row[key] = entity
+            delete changes.get(row)?.payload[key]
+          }
+        }
+      }
+    }
+  }
+}
+
+// The foreign key of a one-to-many relation that a remove must leave alone.
+function getKeptForeignKey({ kind, mappedBy, targetMeta }: EntityProperty) {
+  const key = kind === ReferenceKind.ONE_TO_MANY ? mappedBy : null
+  const { nullable, deleteRule } = key ? targetMeta!.properties[key]! : {}
+  return nullable && deleteRule !== 'set null' ? key : null
+}
+
+// The paths of the relations whose rows a remove deletes with the row, as
+// MikroORM decides it: relations with `orphanRemoval` or a cascade of removes,
+// such as `chapters.sections`. A relation back to an entity of the path is left
+// out, so the rows of a tree of one entity need the delete rule `cascade` on
+// their foreign key.
+function getOwnedPaths(
+  meta: EntityMetadata,
+  prefix = '',
+  seen = new Set<EntityMetadata>([meta])
+): string[] {
+  const paths: string[] = []
+  for (const prop of meta.relations) {
+    const cascades = (
+      prop.orphanRemoval ||
+      prop.cascade?.some(
+        type => type === Cascade.REMOVE || type === Cascade.ALL
+      )
+    )
+    const target = prop.targetMeta!
+    if (!cascades || seen.has(target)) continue
+    const path = `${prefix}${prop.name}`
+    paths.push(
+      path,
+      ...getOwnedPaths(target, `${path}.`, new Set([...seen, target]))
+    )
+  }
+  return paths
 }
 
 // Fills the defaults of the schemas of new rows. The write check only

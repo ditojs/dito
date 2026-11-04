@@ -10,7 +10,6 @@ import {
   parsePlainDate
 } from '@ditojs/utils'
 import {
-  Cascade,
   ReferenceKind,
   wrap,
   type EntityMetadata,
@@ -32,8 +31,8 @@ import {
 } from './meta.ts'
 import { runSchema } from './schema-json.ts'
 
-// The writes of the controller's `post`, `patch :id` and `delete :id`, also for
-// custom handlers. `createRecord()` and `assignRecord()` keep the properties
+// The writes of the controller's `post` and `patch :id`, also for custom
+// handlers. `createRecord()` and `assignRecord()` keep the properties
 // that a client may write, check the values that Postgres can't check well, and
 // check that the ids of relations name rows. They don't flush, so a handler can
 // work on the entities before the flush. Issues are collected at their path in
@@ -113,58 +112,6 @@ export async function assignRecord<T extends object>(
   em.assign(record, row as never, { onlyProperties: true })
   setRefs(run, row => records.get(row))
   return record
-}
-
-// Deletes `record` at once with the rows it owns, and leaves the rows that
-// refer to it to the database's delete rules. `em.remove()` sets the foreign
-// key of the loaded rows of a one-to-many relation to null, whatever its delete
-// rule says. So this loads the record again in a fork of `em`, in the same
-// transaction, with only its owned rows, which MikroORM deletes only when they
-// are loaded.
-export async function removeRecord(
-  em: EntityManager,
-  record: object
-): Promise<void> {
-  // Pending changes of `em`, such as rows moved to another record, go first.
-  await em.flush()
-  const wrapped = wrap(record, true)
-  const fork = em.fork({ keepTransactionContext: true })
-  const row = await fork.findOneOrFail(
-    wrapped.__meta.class,
-    wrapped.getPrimaryKey() as never,
-    { populate: getRemovedPaths(wrapped.__meta) as never[], filters: false }
-  )
-  fork.remove(row)
-  await fork.flush()
-}
-
-// The paths of the relations whose rows a remove deletes with the row, as
-// MikroORM decides it: relations with `orphanRemoval` or a cascade of removes,
-// such as `chapters.sections`. A relation back to an entity of the path is left
-// out, so the rows of a tree of one entity need the delete rule `cascade` on
-// their foreign key.
-function getRemovedPaths(
-  meta: EntityMetadata,
-  prefix = '',
-  seen = new Set<EntityMetadata>([meta])
-): string[] {
-  const paths: string[] = []
-  for (const prop of meta.props) {
-    const cascades = (
-      prop.orphanRemoval ||
-      prop.cascade?.some(
-        type => type === Cascade.REMOVE || type === Cascade.ALL
-      )
-    )
-    const target = prop.targetMeta!
-    if (!isRelation(prop) || !cascades || seen.has(target)) continue
-    const path = `${prefix}${prop.name}`
-    paths.push(
-      path,
-      ...getRemovedPaths(target, `${path}.`, new Set([...seen, target]))
-    )
-  }
-  return paths
 }
 
 // Keeps the writable properties of `data` and checks them. Throws a 400 with

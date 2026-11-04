@@ -45,7 +45,8 @@ const OrderSchema = defineEntity({
   tableName: 'customer_order',
   properties: {
     id: p.integer().primary(),
-    customer: () => p.manyToOne(Customer).nullable().deleteRule('no action')
+    customer: () => p.manyToOne(Customer).nullable().deleteRule('no action'),
+    address: () => p.manyToOne(Address).nullable().deleteRule('no action')
   }
 })
 export class Order extends OrderSchema.class {}
@@ -69,6 +70,7 @@ const AddressSchema = defineEntity({
     id: p.integer().primary(),
     city: p.string(),
     customer: () => p.manyToOne(Customer),
+    orders: () => p.oneToMany(Order).mappedBy(order => order.address),
     lines: () =>
       p
         .oneToMany(AddressLine)
