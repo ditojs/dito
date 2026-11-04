@@ -82,7 +82,7 @@ Each value has a data path: its keys from the root data, joined by `/`, e.g.
 `valueIndex`, `itemIndex` and `parentItemIndex` are the indices of the value
 and the items in their lists.
 
-Paths that you pass to dito, e.g. to `validate()` or in `options.dataPath`,
+Paths that you pass to Dito.js, e.g. to `validate()` or in `options.dataPath`,
 are relative to the context's item, `itemDataPath`. A leading `/` makes them
 absolute, and `..` goes up one level:
 
@@ -104,7 +104,7 @@ inside `chapters`, but not `chapters` itself.
 ## Which item a context describes
 
 A context describes one value: `value`, stored under `name` in `item`. Where
-dito hands a callback an item, it also hands over the item's path,
+Dito.js hands a callback an item, it also hands over the item's path,
 `itemDataPath`, and `itemIndex` and `parentItem` follow from that path.
 
 In a book with an inlined list `chapters` and a section `metadata` with
@@ -181,7 +181,7 @@ the [AdminContext](../../api/admin/admin.md#admincontext).
 e.g. to run another callback of a schema for another value:
 
 ```js
-// The `info` of each order line's price, and the order's total:
+// The `info` of each acquisition line's price, and the acquisition's total:
 const getLineTotal = ({ item }) => item.quantity * item.price
 
 fields: {

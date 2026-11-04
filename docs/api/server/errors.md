@@ -79,7 +79,7 @@ returns [the body](#the-body).
 
 ```js
 throw new HttpError(404)
-throw new HttpError(409, { message: 'The order is already paid.' })
+throw new HttpError(409, { message: 'The loan is already paid.' })
 throw new HttpError(403, {
   message: 'Please confirm your password.',
   confirmationRequired: true
@@ -152,7 +152,7 @@ code, such as a check of a whole graph:
 
 ```js
 throw createValidationError([
-  { path: ['royalties'], code: 'custom', message: 'must add up to 100' }
+  { path: ['shares'], code: 'custom', message: 'must add up to 100' }
 ])
 ```
 

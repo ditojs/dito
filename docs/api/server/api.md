@@ -16,8 +16,8 @@ Bun and Deno, or in a test that calls `api.request()`. See
 createApi(config: ApiConfig): Hono<DitoEnv>
 ```
 
-Resolves the controllers and their mixins, and adds their routes to a new Hono
-app, with one sub-app per controller at its path. It throws for invalid
+Resolves the controllers and their mixins, and adds their routes to one new
+Hono app. It throws for invalid
 definitions, so errors appear when the app starts, not on the first request.
 These are invalid:
 
@@ -54,7 +54,7 @@ them.
 | ------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `controllers` | `ControllerDefinition[] \| object`             | The controllers, from `defineController()` of `@ditojs/server` or `@ditojs/mikro`. In an object, such as a module namespace, all other values are ignored.  |
 | `middleware`  | `Middleware \| Middleware[]`                   | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.db` and `c.var.user`.                                |
-| `db`          | [`DbAdapter`](#dbadapter)                      | The database adapter, such as [`mikroDb(orm)`](mikro.md#mikrodb). Without it, `db` is undefined and no action runs in a transaction.                        |
+| `db`          | [`DbAdapter`](#dbadapter)                      | The database, [`mikroDb(orm)`](mikro.md#mikrodb). Without it, `db` is undefined and no action runs in a transaction.                                        |
 | `getUser`     | `(c) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                    |
 | `onError`     | `(error, c) => void \| Promise<void>`          | Called with each error with a status of 500 or above, for the app's logs. By default, logs through `c.var.logger`, else `console`. See [Errors](errors.md). |
 
@@ -133,7 +133,7 @@ interface DbAdapter {
 }
 ```
 
-The database adapter of an API, such as [`mikroDb()`](mikro.md#mikrodb).
+The object that [`mikroDb()`](mikro.md#mikrodb) returns.
 `connect()` returns the database handle of a request, which becomes `c.var.db`.
 `transaction` runs the actions that need one. Without it, no action runs in a
 transaction. `toHttpError()` maps the database's errors to an `HttpError`, and
@@ -171,5 +171,5 @@ stream, such as a Node `Readable`. `Content-Disposition` is `attachment`, or
 
 ```js
 'get export': async ({ db, c }) =>
-  sendFile(c, await createCsv(db), { filename: 'orders.csv' })
+  sendFile(c, await createCsv(db), { filename: 'loans.csv' })
 ```

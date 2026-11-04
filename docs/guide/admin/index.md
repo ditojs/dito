@@ -4,7 +4,7 @@ Dito.js Admin renders an admin interface from plain objects, the schemas. You
 describe views, lists, forms and fields; the admin loads the data from your
 Dito.js Server API, lets users edit it, validates it and saves it back.
 
-This guide builds the admin of a bookshop step by step. The pages of the guide
+This guide builds the admin of a book catalog step by step. The pages of the guide
 explain the concepts; the [API reference](../../api/admin/index.md) lists every
 option and member.
 
@@ -46,7 +46,7 @@ const admin = serveAdmin({
   // Passed to the admin as `dito.api`:
   api: { url: '/api', locale: 'en-US' },
   // Passed to the admin as `dito.settings`:
-  settings: { rootClass: 'bookshop-admin' },
+  settings: { rootClass: 'catalog-admin' },
   // What the login and account views offer:
   authentication: users.features
 })
@@ -92,7 +92,7 @@ peer dependencies `vite`, `@vitejs/plugin-vue` and `@ditojs/build`.
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bookshop Admin</title>
+    <title>Catalog Admin</title>
     <style>
       html,
       body {
@@ -188,7 +188,7 @@ stock: {
   type: 'integer',
   // Only shown for books that are for sale:
   if: ({ item }) => item.isAvailable,
-  disabled: ({ user }) => !user.hasRole('sales')
+  disabled: ({ user }) => !user.hasRole('desk')
 }
 ```
 
@@ -206,5 +206,3 @@ receive the context too, see [Events](./events.md).
   [Dialogs](./dialogs.md).
 - [Forms with properties and widgets](./widgets.md): forms in Vue templates.
 - [Custom types](./custom-types.md): your own components and type defaults.
-
-Upgrading from Dito.js 3.x: see [Upgrading to 4.x](../../upgrading-to-4.x.md).

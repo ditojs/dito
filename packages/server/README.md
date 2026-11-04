@@ -10,7 +10,7 @@ Released in 2018 under the MIT license, with support by https://lineto.com/
 app, which the host routes with `app.route()`. Handlers get one object, the
 input of the request, `{ query, body, params, user, db, action, c, next }`. `c`
 is Hono's context, and `next()` runs the handler beneath. Middleware is Hono
-middleware. `@ditojs/mikro` connects MikroORM as the `db` adapter.
+middleware. `@ditojs/mikro` connects MikroORM, with `db: mikroDb(orm)`.
 
 ```js
 import { Hono } from 'hono'
@@ -40,8 +40,7 @@ await serve(app, { port: 8080 })
   `notFound` and `createValidationError()`.
 - `@ditojs/server/node`: `serve()`, and `forwarded()` and `getClientAddress()`
   for apps behind reverse proxies. Needs `@hono/node-server`, an optional peer.
-- `@ditojs/server/zod`: `q`, Zod schemas for query values. Needs `zod`, an
-  optional peer.
+- `@ditojs/server/zod`: `q`, Zod schemas for query values.
 
 See the
 [server guide](https://github.com/ditojs/dito/blob/main/docs/guide/server/index.md)

@@ -84,7 +84,7 @@ The properties take these keywords: `type` (`string`, `number`, `integer`,
 `format` (`email`, `hostname`, `password`, `uri` and `iso-time`). Objects
 hold `properties`, and arrays hold `items`. Required arrays need one item, see
 [Types and limits of fields](./validation.md#types-and-limits-of-fields).
-Other types and formats, and `definitions` and `$ref`, aren't supported yet:
+Other types and formats, and `definitions` and `$ref`, aren't supported:
 properties with them throw when the form is set up.
 
 The admin's own keywords go into the same objects:
@@ -197,7 +197,7 @@ chapters: {
       label: 'Bundle',
       properties: {
         title: { type: 'string', required: true },
-        discount: { type: 'integer', default: 10 }
+        copies: { type: 'integer', default: 10 }
       }
     }
   }
@@ -209,7 +209,7 @@ DitoListField(name="chapters" creatable v-slot="{ item }")
   DitoTextField(v-if="item.type === 'section'" name="name")
   template(v-else)
     DitoTextField(name="title")
-    DitoNumberField(name="discount")
+    DitoNumberField(name="copies")
 ```
 
 The items of lists in forms with properties are always edited in their slot.
@@ -313,6 +313,8 @@ their data with `properties` instead of `fields`, and lay it out with widgets
 in their `component`, also in routed item forms:
 
 ```js
+import ClimateLayout from './ClimateLayout.js'
+
 climate: {
   type: 'object',
   inlined: true,
@@ -334,7 +336,10 @@ climate: {
 
 ```js
 // ClimateLayout.js
-const ClimateLayout = {
+import { h } from 'vue'
+import { DitoSliderField, DitoSwitchField } from '@ditojs/admin'
+
+export default {
   props: { schema: Object, context: Object },
   render: () => [
     h(DitoSwitchField, { name: 'hasTemperature', label: 'Heating' }),

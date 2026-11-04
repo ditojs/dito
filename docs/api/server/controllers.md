@@ -210,7 +210,7 @@ and `c.req.valid('json')` have the types of the action's schemas.
 import { q } from '@ditojs/server/zod'
 ```
 
-`z` is Zod itself. `q` holds Zod schemas for query values, which arrive as
+`z` is the export of `zod`. `q` holds Zod schemas for query values, which arrive as
 strings: `z.number()` refuses `?id=12`, and `q.integer()` turns it into `12`.
 Use `q` for what the URL sends, and `z` for bodies and everything else.
 

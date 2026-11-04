@@ -35,4 +35,4 @@
 - **auth:** The body of `post login` and `post password-reset` names the user as `username`. Logins respond with `{ user }` or `{ codeRequired: true }`, and `get self` replaces `get session`. New passwords need at least 8 characters by default.
 - **admin-server:** `serveAdmin()` serves the admin as a Hono app, with Vite in development and the build of `dist` otherwise. `authorize` protects the views, which the build puts below `views/`. `defineAdminViteConfig()` from `@ditojs/admin-server/vite` builds the admin on Vite 8, whose options are `build.rolldownOptions`.
 - **mikro:** `mikroOptions()` makes `p.date()` columns keep the local day, fills the defaults of `schemaJson()` schemas in new rows, and warns of pivot entities with an id of their own. `assetsJson()`, the `assets` option of `schemaJson()` and `getAssetPaths()` declare asset paths on the entities.
-- **server:** `q.array(item, { max })` limits repeated keys, and `onClosing` of `serve()` runs before the server stops.
+- **server:** `q.array(item, { max })` limits repeated keys.

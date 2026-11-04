@@ -123,7 +123,7 @@ inputs and selects, `clearable` to inputs that can be cleared.
 | `pattern`          | `SchemaValue<string>`                                               |                                                                                    | A regular expression that text values need to match, as a string like the server's `pattern`, e.g. `'^[A-Z]{2}$'`.                                                                                                                                                                                                                                                                           |
 | `minItems`         | `SchemaValue<number>`                                               |                                                                                    | The minimum number of items of lists and fields with multiple values.                                                                                                                                                                                                                                                                                                                        |
 | `maxItems`         | `SchemaValue<number>`                                               |                                                                                    | The maximum number of items of lists and fields with multiple values.                                                                                                                                                                                                                                                                                                                        |
-| `autocomplete`     | `SchemaValue<'on' \| 'off'>`                                        |                                                                                    | The `autocomplete` attribute of text inputs. Fields without a credential token like `username`, `current-password`, `new-password` or `one-time-code` also tell password managers to ignore them.                                                                                                                                                                                            |
+| `autocomplete`     | `SchemaValue<AutoFill>`                                             |                                                                                    | The `autocomplete` attribute of text inputs. Fields without a credential token like `username`, `current-password`, `new-password` or `one-time-code` also tell password managers to ignore them.                                                                                                                                                                                            |
 | `width`            | `SchemaValue<…>`                                                    | `1` (full); `'auto'` for buttons, `checkboxes`, `radio`, `switch`                  | See [Layout options](#layout-options).                                                                                                                                                                                                                                                                                                                                                       |
 | `align`            | `SchemaValue<'top' \| 'center' \| 'bottom'>`                        | `'top'`                                                                            | See [Layout options](#layout-options).                                                                                                                                                                                                                                                                                                                                                       |
 | `break`            | `'before' \| 'after' \| 'both'`                                     |                                                                                    | Forces a line break before or after the field.                                                                                                                                                                                                                                                                                                                                               |
@@ -193,13 +193,10 @@ and accessible names, `html` shows its text without the tags. Prettier formats `
 which changes their whitespace, so apps that use them may want to set
 `embeddedLanguageFormatting: 'off'` for their JavaScript and TypeScript files.
 
-### Removed keys
+### Unknown keys
 
-Keys that 4.0 removed, e.g. the callbacks `format()` and `compute()`, or
-`methods`, `watch` and `relateBy`, throw when a schema still uses them, naming
-the replacement, see the [upgrade guide to 4.x](../../upgrading-to-4.x.md#admin-schemas).
-Keys that 6.0 removed aren't checked: the
-[upgrade guide to 6.x](../../upgrading-to-6.x.md#admin) lists them.
+`format()`, `compute()`, `methods`, `watch` and `relateBy` throw when a schema
+uses them, naming their replacement.
 
 ## RouteSchemaBase
 
@@ -299,7 +296,7 @@ their space. Clearable fields show their clear button this way in the suffix.
 price: {
   type: 'number',
   prefix: '€',
-  suffix: { text: 'incl. VAT', if: ({ item }) => item.includesVat }
+  suffix: { text: 'incl. tax', if: ({ item }) => item.includesTax }
 }
 ```
 
@@ -565,7 +562,7 @@ read-only input. Values are part of the data and sent to the server, unless
 | `dataPath` | `string`           |         | The data path of the value, relative to the item the field sits in, e.g. `'author/name'`, or absolute with a leading `/`. `..` goes up a level; above the root throws. |
 
 ```js
-// In the customer form:
+// In the member form:
 fullName: {
   type: 'value',
   computeValue: ({ item }) => `${item.firstName} ${item.lastName}`,
@@ -665,7 +662,7 @@ array throw.
 ```js
 status: {
   type: 'select',
-  options: ['open', 'paid', 'shipped', 'cancelled']
+  options: ['open', 'overdue', 'returned']
 },
 author: {
   type: 'select',
@@ -777,7 +774,7 @@ roles: {
   type: 'checkboxes',
   options: [
     { label: 'Editor', value: 'editor' },
-    { label: 'Sales', value: 'sales' },
+    { label: 'Desk', value: 'desk' },
     { label: 'Admin', value: 'admin' }
   ]
 }
@@ -825,10 +822,10 @@ details: {
     stock: { type: 'integer', width: '1/2' }
   }
 },
-// In the customer form:
-shippingAddress: {
+// In the member form:
+postalAddress: {
   type: 'section',
-  nested: true, // Stored in `item.shippingAddress`
+  nested: true, // Stored in `item.postalAddress`
   fields: {
     street: { type: 'text' },
     city: { type: 'text' },
@@ -900,7 +897,7 @@ one, or else its value, which is `TextOrHtml` as well, see
 server.
 
 ```js
-notice: { type: 'label', label: 'Prices include VAT.' }
+notice: { type: 'label', label: 'Prices include tax.' }
 ```
 
 ### spacer
@@ -1135,7 +1132,7 @@ default value is `null`.
 | `type` | `'object'` |         | Required.   |
 
 ```js
-shippingAddress: {
+postalAddress: {
   type: 'object',
   fields: {
     street: { type: 'text' },
@@ -1285,7 +1282,6 @@ schemas, also as promises, functions returning them, or module namespaces of
 | `properties`                            | `Record<string, object>`             |                    | The types and rules of the form's data, instead of `fields`, laid out with [widgets](./widgets.md) in `component`, see [Forms with properties and widgets](../../guide/admin/widgets.md).                                                                                    |
 | `component`                             | `Resolvable<VueComponent>`           |                    | A Vue component that lays out the form's `fields`, which it needs, as in [`section`](#section), or the widgets of its `properties`, and receives the props `schema` and `context` of the form, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields). |
 | `tabs`                                  | `Record<string, object>`             |                    | Shows groups of fields in tabs, see [Tabs](#tabs).                                                                                                                                                                                                                           |
-| `idKey`                                 | `string`                             | `'id'`             | The key of the item's id.                                                                                                                                                                                                                                                    |
 | `buttons`                               | `Buttons`                            |                    | Merged into the default buttons, see below.                                                                                                                                                                                                                                  |
 | `creatable`                             | `SchemaValue<boolean>`               | `true`             | `false` leaves the form out of the source's create button and menu. Callbacks receive the context of the source: `item` is the item that holds the list or object, `value` the list or object.                                                                               |
 | `editable`, `deletable`, `draggable`    | `SchemaValue<boolean>`               | `true`             | `false` disables the source's buttons of that action for the items of this form, e.g. in sources with several `forms`.                                                                                                                                                       |
@@ -1423,7 +1419,9 @@ type ClipboardConfig =
         | {
             filename?:
               | string
-              | ((context: SchemaContext) => string | null)
+              | ((
+                  context: SchemaContext
+                ) => string | null | Promise<string | null>)
           }
     }
 ```

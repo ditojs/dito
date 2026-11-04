@@ -11,8 +11,8 @@ format.
 
 The core builds each API as a [Hono](https://hono.dev) app, which the app routes
 in its own Hono app. Handlers get Hono's context, and middleware is Hono
-middleware. The core has no configuration of its own. The app adds data access,
-files and users from packages:
+middleware. The core has no configuration of its own. MikroORM, files and users
+come from these packages:
 
 | Package                | Role                                                                                                                         |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -40,7 +40,7 @@ TypeScript and ship their types.
 
 ## A first app
 
-A bookshop with books, served at `/api/books`:
+A catalog with books, served at `/api/books`:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
@@ -76,7 +76,7 @@ const books = defineController({
 })
 
 const orm = await MikroORM.init(
-  mikroOptions({ entities: [Book], dbName: 'bookshop', user: 'bookshop' })
+  mikroOptions({ entities: [Book], dbName: 'catalog', user: 'catalog' })
 )
 // Creates the tables of the entities. Apps with data use migrations.
 await orm.schema.update()

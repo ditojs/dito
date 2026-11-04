@@ -44,7 +44,7 @@ createSessions(options: SessionsOptions): {
 | `db`      | `() => Kysely<any>` | The database of the `session` table, outside of the requests' transactions.                        |
 | `secrets` | `string[]`          | The secrets that sign the cookie. The first one signs, and all of them verify, so they can rotate. |
 | `name`    | `string`            | The cookie name, such as `admin.sess`.                                                             |
-| `maxAge`  | `number`            | The lifetime of a session, in milliseconds. At most 400 days.                                      |
+| `maxAge`  | `number`            | The lifetime of a session, in milliseconds. Browsers cap cookies at 400 days.                      |
 
 The app creates the `session` table:
 
@@ -145,7 +145,7 @@ routes, which the admin's login and account views read. The app passes
 its own. A model controller doesn't fit, as it would flush and serialize the
 answers of the actions. It passes `features` to the admin as
 [`authentication`](admin-server.md#adminoptions). Other users, such as a site's
-customers, log in through the app's own actions, which call
+members, log in through the app's own actions, which call
 [`Session`](#session) and [`verifyPassword()`](#passwords). The actions:
 
 - need the session middleware;
@@ -236,7 +236,7 @@ interface User {
 }
 ```
 
-The users of one kind, such as admins or customers.
+The users of one kind, such as admins or members.
 [`entityUserSource()`](mikro.md#entityusersource) returns one for an entity, or
 the app implements it. Auth reads `id`, `username`, `hash`, `roles` and
 `lastLogin` of its users. The functions get Hono's context `c`, which holds the

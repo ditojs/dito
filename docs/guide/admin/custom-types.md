@@ -4,9 +4,9 @@ When no built-in type fits, render a field with your own Vue component: once,
 with `type: 'component'`, or as a type of its own with `defineType()`, which
 schemas then use like the built-in types.
 
-The admin's own components are internal and not meant to be imported, except
-`DitoSchemaField` and `DitoPane`, which place fields in custom layouts, see
-[Laying out fields](#laying-out-fields). Build custom components with plain
+The admin's own components are internal, except what `@ditojs/admin` exports,
+such as `DitoSchemaField` and `DitoPane`, which place fields in custom layouts,
+see [Laying out fields](#laying-out-fields). Build custom components with plain
 Vue and the public components of [`@ditojs/ui`](../../api/ui.md), e.g.
 `DitoProgress` for the progress of a background job.
 
@@ -263,7 +263,8 @@ const context = useDitoContext()
 </template>
 ```
 
-- Forms with `component` need `fields`, all fields come from the schema.
+- Forms with `component` need `fields` or `properties`, all fields come from the
+  schema.
 - Fields that the layout doesn't place still validate, and then block saving
   without showing their errors.
 - `width` applies where the parent element of a field is a flex row, like the

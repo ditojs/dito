@@ -63,6 +63,7 @@ Put the rules of a value on its column's custom type, as a
 schema:
 
 ```js
+import { z } from 'zod'
 import { schemaJson } from '@ditojs/mikro'
 
 properties: {
@@ -102,11 +103,11 @@ Write rules that span several fields or rows as plain functions next to the
 entity. They return issues:
 
 ```js
-export function checkRoyalties(book) {
-  const total = book.royalties.reduce((sum, { percent }) => sum + percent, 0)
+export function checkShares(book) {
+  const total = book.shares.reduce((sum, { percent }) => sum + percent, 0)
   return total === 100
     ? []
-    : [{ path: ['royalties'], code: 'custom', message: 'must add up to 100' }]
+    : [{ path: ['shares'], code: 'custom', message: 'must add up to 100' }]
 }
 ```
 
@@ -118,7 +119,7 @@ Rules that depend on the user stay in `deserialize` and `authorize`.
 ### Writes of the website
 
 The admin's writes rely on the entity, the checks of the body and the database.
-Writes of the website and of customers also get a strict `body` schema on their
+Writes of the website and of members also get a strict `body` schema on their
 action, also on default handlers. The schema is the allowlist, reports every
 error and sets size limits:
 
@@ -161,25 +162,25 @@ lose them.
 ```
 
 A pivot entity can have columns of its own, such as the price of a book in an
-order. Use MikroORM's many-to-many relation on a pivot entity whose primary key
+loan. Use MikroORM's many-to-many relation on a pivot entity whose primary key
 is its two foreign keys:
 
 ```js
-const OrderBookSchema = defineEntity({
-  name: 'OrderBook',
+const LoanBookSchema = defineEntity({
+  name: 'LoanBook',
   properties: {
     order: () => p.manyToOne(Order).primary().deleteRule('cascade'),
     book: () => p.manyToOne(Book).primary().deleteRule('cascade'),
-    price: p.decimal('number').precision(12).scale(2).nullable()
+    dueDate: p.date().nullable()
   }
 })
 
-// In Order, the owning side:
-books: () => p.manyToMany(Book).pivotEntity(() => OrderBook),
+// In Loan, the owning side:
+books: () => p.manyToMany(Book).pivotEntity(() => LoanBook),
 
 // In Book, the inverse side, and the pivot rows for their columns:
-orders: () => p.manyToMany(Order).mappedBy(order => order.books),
-orderLinks: () => p.oneToMany(OrderBook).mappedBy(link => link.book)
+loans: () => p.manyToMany(Loan).mappedBy(loan => loan.books),
+loanLinks: () => p.oneToMany(LoanBook).mappedBy(link => link.book)
 ```
 
 The body writes the relation as ids. The handler sets the other columns after a
@@ -188,10 +189,10 @@ first flush, in the same transaction, and the base flushes them at the end:
 ```js
 await assignRecord(em, order, data)
 await em.flush()
-const books = order.books.getItems()
-await em.populate(books, ['orderLinks'], { refresh: true })
+const books = loan.books.getItems()
+await em.populate(books, ['loanLinks'], { refresh: true })
 for (const book of books) {
-  for (const link of book.orderLinks) {
+  for (const link of book.loanLinks) {
     link.price = getPrice(book, link.order)
   }
 }
@@ -260,7 +261,7 @@ relation must refuse the delete, give it `.deleteRule('no action')` or
 `.deleteRule('restrict')`:
 
 ```js
-customer: () => p.manyToOne(Customer).nullable().deleteRule('no action')
+member: () => p.manyToOne(Member).nullable().deleteRule('no action')
 ```
 
 A tree of rows of one entity, such as child pages with `orphanRemoval`, needs
@@ -280,15 +281,15 @@ can work on the entities first:
 ```js
 import { assignRecord, createRecord } from '@ditojs/mikro'
 
-'put cart': action({
-  body: cartSchema,
+'put reservation': action({
+  body: reservationSchema,
   async handler({ db: em, body, session }) {
-    const cart = await findCart(em, session)
-    const order = cart
-      ? await assignRecord(em, cart, body)
-      : await createRecord(em, Order, body)
-    await priceOrder(em, order)
-    return order
+    const current = await findReservation(em, session)
+    const loan = current
+      ? await assignRecord(em, current, body)
+      : await createRecord(em, Loan, body)
+    await setDueDate(em, loan)
+    return loan
   }
 })
 ```

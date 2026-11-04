@@ -40,7 +40,7 @@ book as featured:
 
 ```vue
 <template>
-  <div class="bookshop-publishing">
+  <div class="catalog-publishing">
     <DitoDatePicker
       v-model="publishedAt"
       placeholder="Publication date"
@@ -260,7 +260,7 @@ that jump ten pages.
 The page buttons are only shown with more than one page.
 
 ```vue
-<DitoPagination v-model:page="page" :total="orderCount" :pageSize="20" />
+<DitoPagination v-model:page="page" :total="loanCount" :pageSize="20" />
 ```
 
 ### DitoProgress
@@ -323,7 +323,7 @@ dialogs.
     <DitoIcon name="info" />
   </template>
   <template #popup>
-    <p class="bookshop-hint">Shipped within 2 days.</p>
+    <p class="catalog-hint">Available within 2 days.</p>
   </template>
 </DitoTrigger>
 ```
@@ -406,7 +406,7 @@ Props, events, slots and methods are those of
 
 ```vue
 <DitoTimePicker
-  v-model="shop.opensAt"
+  v-model="library.opensAt"
   :format="{ time: { second: false } }"
 />
 ```
@@ -435,7 +435,7 @@ Events: `update:modelValue`, `change`, `update:show`, `focus` and `blur`, as in
 
 ```vue
 <DitoDateTimePicker
-  v-model="order.shippedAt"
+  v-model="loan.returnedAt"
   :format="{ time: { second: false } }"
 />
 ```
@@ -451,7 +451,7 @@ hidden, e.g. with `v-if` or `v-show`.
 
 ```vue
 <TransitionHeight>
-  <div v-if="showDetails" class="bookshop-order-details">…</div>
+  <div v-if="showDetails" class="catalog-loan-details">…</div>
 </TransitionHeight>
 ```
 
@@ -687,17 +687,19 @@ The variables of `_settings.scss`, with these groups:
 | Group               | Variables                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Colors              | `$color-dark-offset`, `$color-light-offset` (how much darker the dark and light greys are), `$color-black`, `$color-darkest`, `$color-darker`, `$color-dark`, `$color-grey`, `$color-light`, `$color-lighter`, `$color-lightest`, `$color-white`, `$color-active`, `$color-highlight`, `$color-success`, `$color-warning`, `$color-error`, `$color-text`, `$color-text-inverted`, `$color-placeholder`, `$color-disabled`, `$color-shadow` |
-| Sizes               | `$input-height`, `$input-height-factor`, `$input-padding`, `$input-padding-ver`, `$input-padding-hor`, `$popup-margin`, `$chevron-indent`                                                                                                                                                                                                                                                                                                  |
+| Sizes               | `$input-height`, `$input-height-factor`, `$input-padding`, `$input-padding-ver`, `$input-padding-hor`, `$popup-margin`, `$chevron-indent`, `$focus-ring-padding`, `$focus-ring-height`                                                                                                                                                                                                                                                     |
 | Borders and shadows | `$border-radius`, `$border-color`, `$border-width`, `$border-style`, `$shadow-window`, `$shadow-focus`                                                                                                                                                                                                                                                                                                                                     |
 | Buttons             | `$button-color`, `$button-color-hover`, `$button-color-active`, `$button-color-active-hover`, `$button-color-active-border`, `$button-round-padding`, `$button-round-padding-ver`, `$button-round-padding-hor`                                                                                                                                                                                                                             |
 | Selects             | `$select-arrow-width`, `$select-arrow-size`, `$select-arrow-bottom`, `$select-arrow-right`                                                                                                                                                                                                                                                                                                                                                 |
-| Other               | `$z-index-popup`, `$ease-out-quart`, `$ease-out-circ`, `$ease-out-elastic`, `$math-sqrt2`                                                                                                                                                                                                                                                                                                                                                  |
+| Other               | `$z-index-popup`, `$ease-out-quint`, `$ease-out-quart`, `$ease-out-circ`, `$ease-out-elastic`, `$math-sqrt2`                                                                                                                                                                                                                                                                                                                               |
 
 ### Mixins
 
 | Mixin                                                                       | Description                                                                                                                                                                                                                             |
 | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `focus-ring($color: null)`                                                  | The focus ring of keyboard-focused elements, drawn as a shadow that doesn't affect the layout. Pass `$color` on backgrounds of `$color-active`.                                                                                         |
+| `focus-ring($color: null, $inset: false)`                                   | The focus ring of keyboard-focused elements, drawn as a shadow that doesn't affect the layout. Pass `$color` on backgrounds of `$color-active`. `$inset: true` draws it inside the element.                                             |
+| `focus-ring-line($color: null)`                                             | The focus ring around a chevron and its text, as high as their line. The element needs to be positioned.                                                                                                                                |
+| `scroll-mask`                                                               | Scrolls sideways without a scrollbar, and fades out on the sides that `--masked-start` and `--masked-end` mark as hidden.                                                                                                               |
 | `arrow($size: $select-arrow-size, $direction: 'down', $position: absolute)` | A rotated border arrow, e.g. for selects, pointing `'up'`, `'down'`, `'left'` or `'right'`.                                                                                                                                             |
 | `ellipsis`                                                                  | Cuts text off with an ellipsis on one line.                                                                                                                                                                                             |
 | `user-select($select: none)`                                                | Sets `user-select` and `-webkit-user-drag`.                                                                                                                                                                                             |
@@ -749,7 +751,7 @@ placeholders `%icon--{name}` and the list `$icons`:
 ```scss
 @import '@ditojs/ui/imports.scss';
 
-.bookshop-wishlist-button::before {
+.catalog-wishlist-button::before {
   @extend %icon--heart;
 }
 ```

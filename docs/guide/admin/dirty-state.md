@@ -58,7 +58,7 @@ onClick({ item }) {
 
 ## Values that aren't stored as they are
 
-Don't exclude fields whose value is stored as other values, e.g. a customer's
+Don't exclude fields whose value is stored as other values, e.g. a member's
 `name` stored as `firstName` and `lastName`: their edits would not make the
 form dirty. See [Fields](./fields.md#values-that-arent-stored-as-they-are).
 

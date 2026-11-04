@@ -71,7 +71,7 @@ form: {
 
 Applying a draft to an existing item also fires `onChange()` on the nested
 form. `onCancel()` fires when Close closed the form. The value returned from
-`onApply()` is ignored: unlike `onSuccess()`, it can't replace dito's
+`onApply()` is ignored: unlike `onSuccess()`, it can't replace Dito.js'
 notification.
 
 ## Editing the parent's data directly

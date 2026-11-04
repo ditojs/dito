@@ -89,18 +89,20 @@ publishes one.
 
 A handler gets one argument, the input of the request, a plain object:
 
-| Key              | Description                                                                             |
-| ---------------- | --------------------------------------------------------------------------------------- |
-| `query`, `body`  | The query and the JSON body, validated by the action's schemas.                         |
-| `params`         | The parameters of the path.                                                             |
-| `user`           | `{ id, roles }` of the signed-in user, or `null`.                                       |
-| `action`         | The key of the action, such as `'post :id/publish'`.                                    |
-| `record()`       | In model controllers, the record of a member action.                                    |
-| `find(options?)` | The controller's records, through its `find`, see [find()](entities.md#custom-actions). |
-| `list(options?)` | The controller's list, see [Lists](entities.md#lists).                                  |
-| `db`             | The request's database handle, or the transaction's.                                    |
-| `c`              | Hono's context.                                                                         |
-| `next()`         | Runs the handler beneath, and returns its result.                                       |
+| Key              | Description                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------- |
+| `query`, `body`  | The query and the JSON body, validated by the action's schemas.                                         |
+| `params`         | The parameters of the path.                                                                             |
+| `user`           | `{ id, roles }` of the signed-in user, or `null`.                                                       |
+| `action`         | The key of the action, such as `'post :id/publish'`.                                                    |
+| `id`             | In model controllers, the id of a member action.                                                        |
+| `record()`       | In model controllers, the record of a member action.                                                    |
+| `find(options?)` | The controller's records, through its `find`, see [find()](entities.md#custom-actions).                 |
+| `list(options?)` | The controller's list, see [Lists](entities.md#lists).                                                  |
+| `listQuery()`    | The `where`, `orderBy` and `range` of the list, see [listQuery()](../../api/server/mikro.md#listquery). |
+| `db`             | The request's database handle, or the transaction's.                                                    |
+| `c`              | Hono's context.                                                                                         |
+| `next()`         | Runs the handler beneath, and returns its result.                                                       |
 
 It also holds the variables that the app's middleware sets with `c.set()`, such
 as a session. Handlers destructure what they need.
@@ -230,28 +232,28 @@ export const bookCategories = defineAdminController({
 `authorize` decides who may run an action. It can be set on actions, controllers
 and mixins:
 
-| Value                    | Lets in                                                                                |
-| ------------------------ | -------------------------------------------------------------------------------------- |
-| `true`                   | Anyone.                                                                                |
-| `'editor'`, `['a', 'b']` | Users with any of the roles.                                                           |
-| `c => boolean`           | Whom the function lets in. It may be async, and reads the id with `c.req.param('id')`. |
+| Value                    | Lets in                                                                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `true`                   | Anyone.                                                                                                                      |
+| `'editor'`, `['a', 'b']` | Users with any of the roles.                                                                                                 |
+| `c => boolean`           | Whom the function lets in: only a returned `true` grants access. It may be async, and reads the id with `c.req.param('id')`. |
 
 ```js
 defineController({
-  path: 'orders',
-  entity: Order,
+  path: 'loans',
+  entity: Loan,
   authorize: 'admin',
   actions: {
-    'get': { authorize: ['admin', 'shop'] },
-    'get :id': { authorize: ['admin', 'shop'] },
+    'get': { authorize: ['admin', 'desk'] },
+    'get :id': { authorize: ['admin', 'desk'] },
     'patch :id': true,
-    'post :id/refund': { authorize: 'superuser', handler: refund },
-    'get :id/invoice': {
+    'post :id/extend': { authorize: 'superuser', handler: extend },
+    'get :id/notice': {
       async authorize(c) {
-        const order = await c.var.db.findOne(Order, Number(c.req.param('id')))
-        return order?.customer.id === c.var.user?.id
+        const loan = await c.var.db.findOne(Loan, Number(c.req.param('id')))
+        return loan?.member.id === c.var.user?.id
       },
-      handler: sendInvoice
+      handler: sendNotice
     }
   }
 })

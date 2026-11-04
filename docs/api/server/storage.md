@@ -4,11 +4,20 @@
 import {
   createStorages,
   createAssets,
+  Storage,
+  StorageRegistry,
   DiskStorage,
   S3Storage,
   assetUploads,
+  uploadRoutes,
   assets,
-  runAssetJobs
+  storeAsset,
+  importAssets,
+  scanAssets,
+  releaseAssets,
+  findAssetReferences,
+  runAssetJobs,
+  getUniqueKey
 } from '@ditojs/storage'
 import { serveStorage } from '@ditojs/storage/node'
 ```
@@ -101,7 +110,7 @@ file and inserts its row, and removes the file again when the insert fails:
 
 ```js
 const file = await storeAsset(db, storages.get('documents'), {
-  name: 'invoice.pdf',
+  name: 'notice.pdf',
   type: 'application/pdf',
   data: pdf
 })
@@ -120,6 +129,8 @@ path, and missing files go on to the next handler:
 
 ```js
 app.use('/assets/public/*', serveStorage(storages.get('public')))
+// In TypeScript, as `get()` returns a `Storage`:
+// serveStorage(storages.get('public') as DiskStorage)
 ```
 
 ## File objects
@@ -206,7 +217,7 @@ const assets = createAssets({
 defineController({ path: 'books', mixins: [assets.mixin('book')], ... })
 
 const file = await assets.store(db, 'documents', {
-  name: 'invoice.pdf',
+  name: 'notice.pdf',
   data: pdf
 })
 await assets.runJobs(db, { dryRun: true })

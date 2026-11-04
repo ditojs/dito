@@ -1,13 +1,13 @@
 # Computed values
 
-An order has lines, each with a book, a quantity and a price. The order form
+An acquisition has lines, each with a book, a quantity and a price. The loan form
 should show the total, which updates while the user edits the lines, but the
-order doesn't store a total, so the admin shouldn't send it.
+loan doesn't store a total, so the admin shouldn't send it.
 
 ## Solution
 
 ```js
-export const orderForm = {
+export const loanForm = {
   type: 'form',
   fields: {
     lines: {

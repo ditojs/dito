@@ -1,7 +1,7 @@
 # Select from edited items
 
 A book has chapters, edited in a list in the book's form, and one of them is
-the featured chapter shown in the shop. Editors should pick it from the
+the featured chapter shown in the catalog. Editors should pick it from the
 chapters in the form, including chapters that they just added and that have
 no id yet.
 

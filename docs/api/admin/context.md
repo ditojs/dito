@@ -290,8 +290,8 @@ The query parameters of the current URL.
 context.sourceQuery: Record<string, any> | null
 ```
 
-The query of the nearest list, e.g. its scope, page, order and filters. `null`
-outside of lists, inside forms and in `itemLabel()`.
+The query of the nearest list: its page, order and `filter[…]` parameters,
+including those of its filter tab. `null` outside of lists, inside forms and in `itemLabel()`.
 
 ### user
 
@@ -321,7 +321,7 @@ The top-level views.
 ### flattenedViews
 
 ```ts
-context.flattenedViews: Record<string, ViewSchema>
+context.flattenedViews: Record<string, ViewSchema | PageSchema>
 ```
 
 All views, including the ones inside menus, by name.
@@ -421,8 +421,8 @@ The value, or `undefined` if it isn't there.
 #### Example
 
 ```js
-// In a field of a slice of a style, at 'styles/0/slices/0/…':
-const genre = context.getValueAt('../../genre') // 'styles/0/genre'
+// In a field of a chapter of a part, at 'parts/0/chapters/0/…':
+const genre = context.getValueAt('../../genre') // 'parts/0/genre'
 ```
 
 ### extend()
@@ -482,8 +482,8 @@ the API check the session first.
 
 #### Return value
 
-A promise for the data of the response. Error responses reject with an `Error`
-that has the fields of the response body, e.g. `type`, `code` and `errors`,
+A promise for the data of the response. Error responses reject with an
+`ApiError` that has the fields of the response body, e.g. `type`, `code` and `errors`,
 the `status`, and the `response`.
 
 #### Example
@@ -495,7 +495,7 @@ async onClick({ request, notify }) {
     resource: { path: 'restock' },
     data: { quantity: 100 }
   })
-  notify({ type: 'success', text: `${quantity} copies ordered.` })
+  notify({ type: 'success', text: `${quantity} copies added.` })
 }
 ```
 
@@ -694,9 +694,9 @@ to its defaults.
 
 #### Parameters
 
-| Name           | Type     | Description                     |
-| -------------- | -------- | ------------------------------- |
-| `options.data` | `object` | The new data. Defaults to `{}`. |
+| Name   | Type     | Description                     |
+| ------ | -------- | ------------------------------- |
+| `data` | `object` | The new data. Defaults to `{}`. |
 
 #### Return value
 
@@ -847,11 +847,11 @@ cancelled, or the value passed to [`closeDialog()`](#closedialog).
 async onClick({ showDialog, notify }) {
   const result = await showDialog({
     fields: { quantity: { type: 'integer', label: 'Quantity' } },
-    buttons: { cancel: {}, order: { type: 'submit', text: 'Order' } },
+    buttons: { cancel: {}, reserve: { type: 'submit', text: 'Reserve' } },
     data: { quantity: 1 }
   })
   if (result) {
-    notify({ text: `Ordered ${result.quantity} copies.` })
+    notify({ text: `Reserved ${result.quantity} copies.` })
   }
 }
 ```
@@ -924,12 +924,12 @@ Resolves to the value of the field when submitted, also when it's empty, e.g.
 
 ```js
 async onClick({ prompt, request }) {
-  const email = await prompt('Send the invoice to:', {
+  const email = await prompt('Send the notice to:', {
     action: 'Send',
     type: 'email'
   })
   if (email !== undefined) {
-    const resource = { path: 'invoice/send' }
+    const resource = { path: 'notice/send' }
     await request({ method: 'post', resource, data: { email } })
   }
 }
@@ -958,8 +958,8 @@ Resolves once the dialog is closed, with its button or with Escape.
 
 ```js
 async onClick({ alert, item }) {
-  if (item.orders > 0) {
-    await alert('Books with orders can only be archived.')
+  if (item.loans > 0) {
+    await alert('Books with loans can only be archived.')
   }
 }
 ```

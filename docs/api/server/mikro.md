@@ -101,7 +101,7 @@ deserialize?: (c: DitoContext, json: unknown, record?: any) => unknown
 gets the outgoing records of the controller as an array, also for a single
 record, and doesn't run without records. It can load what `serialize` needs in
 one query. `serialize` shapes each outgoing record of the controller, in layer
-order. `deserialize` shapes the body of the default `post` and `patch :id`, in
+loan. `deserialize` shapes the body of the default `post` and `patch :id`, in
 the reverse order. See
 [Serialize and deserialize](../../guide/server/controllers.md#serialize-and-deserialize)
 in the guide.
@@ -124,7 +124,7 @@ in the guide.
 
 ```ts
 interface FindShape<T> extends FindOptions<T> {
-  where?: FilterQuery<T>
+  where?: object
   maxRows?: number
 }
 type Find<T> = FindShape<T> | ((c: DitoContext) => FindShape<T> | Promise<FindShape<T>>)
@@ -271,6 +271,9 @@ merged shape. `query` replaces the list parameters of the URL.
 }
 ```
 
+With `range`, a request gets `{ results, total }` from `list()` instead of the
+rows.
+
 ## listQuery()
 
 ```ts
@@ -289,7 +292,7 @@ exports. MikroORM's default entity filters apply to these queries, but the
 async 'get export'({ db, listQuery, c }) {
   const { where, orderBy } = await listQuery()
   const rows = await db.find(Order, where, { orderBy })
-  return sendFile(c, toCsv(rows), { filename: 'orders.csv' })
+  return sendFile(c, toCsv(rows), { filename: 'loans.csv' })
 }
 ```
 
@@ -432,7 +435,7 @@ assignRecord<T>(em: EntityManager, record: T, data: unknown): Promise<T>
 
 Assigns a body to a record, as `patch :id` does after `deserialize`, and returns
 the record. Only the fields that `data` sends change. Its arrays of owned rows
-are the full set, and relations link by id. In order, it:
+are the full set, and relations link by id. In loan, it:
 
 1. runs the checks of the body;
 2. loads the owned rows and the many-to-many collections that `data` writes, in
@@ -513,8 +516,8 @@ whose other exports it leaves out:
   with a removed row, through `orphanRemoval` or a cascade of removes, so they
   needn't be loaded. The rows that refer to a removed row keep their foreign
   keys, unless the rule is `set null`, so the database applies its delete rules.
-  A customer with orders stays when the rule refuses the delete, also when the
-  orders are loaded.
+  A member with loans stays when the rule refuses the delete, also when the
+  loans are loaded.
 - A pivot entity with an id of its own logs a warning, see
   [Known limitations](../../upgrading-to-7.x.md#known-limitations).
 

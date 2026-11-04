@@ -47,9 +47,9 @@ then the one with more static segments, then the one added first:
 path ending in `/**` doesn't match the path before it: `/covers/**` doesn't
 match `/covers`.
 
-`*` and `**` only work as whole segments, and so do params after `**`: routes
-like `/files/*.json` or `/files/**/:name.json` throw an error when added. A
-param runs to the end of its segment, so a segment holds at most one: `/a/:x-:y`
+`*` and `**` only work as whole segments: `/files/*.json` throws an error when
+added. After `**`, a param must be its whole segment too: `/files/**/file-:name`
+throws. A param runs to the end of its segment, so a segment holds at most one: `/a/:x-:y`
 throws, and `/files/:name.json` names its param `name.json`. Params can't use
 the names of wildcards, e.g. `$` or `$0`.
 
@@ -112,6 +112,7 @@ are found through the `GET` route, and `HEAD` is allowed wherever `GET` is.
 | Methods without any routes                    | `501`    |
 
 ```js
+// A Koa app:
 app.use(async (ctx, next) => {
   const result = router.find(ctx.method, ctx.path)
   if (result.handler) {

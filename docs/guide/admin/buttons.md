@@ -4,29 +4,29 @@ Buttons run actions: open a page, send a request, show a dialog. They go into
 `buttons` of forms, views, lists and panels, or among their `fields`.
 
 ```js
-export const order = {
+export const loan = {
   type: 'form',
   fields: {
     number: { type: 'text', readonly: true },
-    customer: { type: 'object', … },
+    member: { type: 'object', … },
     // A button among the fields:
-    printInvoice: {
+    printNotice: {
       type: 'button',
-      text: 'Print Invoice',
+      text: 'Print Notice',
       onClick({ download, getResourceUrl, item }) {
-        // E.g. `/api/orders/12/invoice`, inside the resource of the form:
+        // E.g. `/api/loans/12/notice`, inside the resource of the form:
         download({
-          url: getResourceUrl({ path: 'invoice' }),
-          filename: `invoice-${item.number}.pdf`
+          url: getResourceUrl({ path: 'notice' }),
+          filename: `notice-${item.number}.pdf`
         })
       }
     }
   },
   // Buttons at the bottom of the form, next to Cancel and Save:
   buttons: {
-    ship: {
-      text: 'Ship',
-      resource: { path: 'ship', method: 'post' },
+    renew: {
+      text: 'Renew',
+      resource: { path: 'renew', method: 'post' },
       closeForm: true
     }
   }
@@ -64,10 +64,10 @@ duplicate: {
   that it's busy while its handler runs. When a button saves a form, the
   form's `onSuccess()` runs before the button's.
 - `context.request()` resolves a `resource` relative to the nearest form or
-  list with a resource, so `resource: { path: 'ship' }` in an order form sends
-  to `orders/12/ship`. A leading `/` resolves from the API root. A `url`
+  list with a resource, so `resource: { path: 'renew' }` in a loan form sends
+  to `loans/12/renew`. A leading `/` resolves from the API root. A `url`
   instead of `resource` is resolved against the API's URL, with the `query`
-  next to it: `request({ url: 'orders', query: { status: 'open' } })`.
+  next to it: `request({ url: 'loans', query: { status: 'open' } })`.
   `cache: 'global'` or `'local'` reuses responses, see
   [`request()`](../../api/admin/context.md#request).
 - Errors thrown by the handler go to the button's `onError()`, as they are,
@@ -102,14 +102,14 @@ publish: {
 - The response is merged into the form's data, like a save response.
 - `closeForm: true` closes the form after a successful submit.
 - `onSuccess()` and `onError()` get the same context as `onClick()`, with
-  `context.error` in `onError()`. They replace dito's notification when they
+  `context.error` in `onError()`. They replace Dito.js' notification when they
   return a value or call `notify()`.
 - An `onClick()` that returns a value other than `undefined` prevents the
   submit, e.g. after asking the user:
 
 ```js
-cancelOrder: {
-  text: 'Cancel Order',
+cancelLoan: {
+  text: 'Cancel Loan',
   resource: { path: 'cancel', method: 'post' },
   onClick: () => (window.confirm('Cancel this order?') ? undefined : false)
 }

@@ -10,7 +10,9 @@ routes for the admin, and tracks stored files in an `asset` table by scanning
 the data. It reads its tables through Kysely.
 
 ```js
+import { getAssetPaths } from '@ditojs/mikro'
 import { createAssets, createStorages } from '@ditojs/storage'
+import * as entities from './entities/index.js'
 
 const storages = createStorages({
   public: { type: 'disk', path: 'storage/public', url: '/assets/' }

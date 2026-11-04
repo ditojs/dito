@@ -1,6 +1,6 @@
 # Roles
 
-The shop's staff have roles: editors work on books, sales staff on orders, and
+The library's staff have roles: editors work on books, desk staff on loans, and
 only admins may delete books. Each user should see the views and buttons of
 their roles, and the server has to enforce the same rules.
 
@@ -14,7 +14,7 @@ import { defineEntity, p } from '@mikro-orm/core'
 import { schemaJson } from '@ditojs/mikro'
 import { z } from 'zod'
 
-const roleNames = z.array(z.enum(['editor', 'sales', 'admin']))
+const roleNames = z.array(z.enum(['editor', 'desk', 'admin']))
 
 const UserSchema = defineEntity({
   name: 'User',
@@ -56,10 +56,10 @@ export const books = defineController({
   }
 })
 
-export const orders = defineController({
-  path: 'orders',
-  entity: Order,
-  authorize: ['sales', 'admin'],
+export const loans = defineController({
+  path: 'loans',
+  entity: Loan,
+  authorize: ['desk', 'admin'],
   actions: { 'get': true, 'post': true, 'get :id': true, 'patch :id': true }
 })
 ```
@@ -80,10 +80,10 @@ export const books = {
   }
 }
 
-export const orders = {
+export const loans = {
   type: 'view',
-  if: ({ user }) => user.hasRole('sales', 'admin'),
-  field: { type: 'list', resource: 'orders', form: orderForm }
+  if: ({ user }) => user.hasRole('desk', 'admin'),
+  field: { type: 'list', resource: 'loans', form: loanForm }
 }
 ```
 
@@ -106,7 +106,7 @@ serveAdmin({
   ...options,
   middleware: sessions.middleware,
   getUser: sessionUser(source),
-  authorize: ['editor', 'sales', 'admin']
+  authorize: ['editor', 'desk', 'admin']
 })
 ```
 

@@ -4,7 +4,7 @@ Lists and objects hold items that are edited with forms. Together they are
 called sources:
 
 - `list` holds an array of items, shown as a table.
-- `object` holds one item, e.g. the address of a customer.
+- `object` holds one item, e.g. the address of a member.
 - `tree-list` and `tree-object` hold items with children, shown as a tree.
 
 A source either loads its items from its own `resource`, or edits items that
@@ -31,8 +31,8 @@ books: {
 }
 ```
 
-The list loads `GET books` with the query of its page, order, scope and
-filters, and keeps that query in the URL, so a reload or a shared link shows
+The list loads `GET books` with the query of its page, order and filters, and
+keeps that query in the URL, so a reload or a shared link shows
 the same page. Its forms load, save and delete their items themselves.
 
 - `columns` lists the keys to show, or maps them to column options. `render()`
@@ -139,9 +139,9 @@ chapters: {
 An `object` holds a single item, edited inline or in a form of its own:
 
 ```js
-shippingAddress: {
+postalAddress: {
   type: 'object',
-  label: 'Shipping Address',
+  label: 'Postal Address',
   fields: {
     street: { type: 'text' },
     city: { type: 'text', width: '1/2' },

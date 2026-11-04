@@ -99,8 +99,8 @@ const users = usersRoutes({
   password: z.string().min(12),
   credentials: createCredentials(() => getRootKysely(orm)),
   features: {
-    passkeys: passkeys({ rpName: 'Bookshop' }),
-    totp: totp({ issuer: 'Bookshop', secret: config.totpSecret })
+    passkeys: passkeys({ rpName: 'Book Catalog' }),
+    totp: totp({ issuer: 'Book Catalog', secret: config.totpSecret })
   }
 })
 
@@ -164,10 +164,12 @@ of a transaction.
 ### Credentials
 
 Passkeys and TOTP keep their secrets in the `credential` table, through
-`createCredentials(() => getRootKysely(orm))`. No foreign keys tie them to their users, so
-an action that deletes users deletes their credentials too:
+`createCredentials(() => getRootKysely(orm))`. No foreign keys tie them to their
+users, so an action that deletes users deletes their credentials too:
 
 ```js
+import { deleteUserCredentials } from '@ditojs/auth'
+
 await deleteUserCredentials(getRootKysely(orm), adminSource, ids)
 ```
 
@@ -223,7 +225,7 @@ Without confirmed access, the action responds with 403 and
 
 ## Other users
 
-Users other than the admin's, such as the customers of a shop, log in through
+Users other than the admin's, such as the members of a library, log in through
 the app's own actions, with a session of their own:
 
 ```js
@@ -232,12 +234,12 @@ import { getSession, verifyPassword } from '@ditojs/auth'
 
 actions: {
   async 'post login'({ body: { email, password }, c }) {
-    const customer = await customerSource.findByUsername(c, email)
-    if (!(await verifyPassword(password, customer?.hash))) {
+    const member = await memberSource.findByUsername(c, email)
+    if (!(await verifyPassword(password, member?.hash))) {
       throw new HttpError(401, { message: 'Password or email is incorrect' })
     }
-    getSession(c).login(customerSource, customer)
-    return { user: customerSource.toJSON(c, customer) }
+    getSession(c).login(memberSource, member)
+    return { user: memberSource.toJSON(c, member) }
   },
 
   'post logout': ({ c }) => {

@@ -10,7 +10,7 @@ import { createApi } from '@ditojs/server'
 import { mikroDb } from '@ditojs/mikro'
 
 const api = createApi({
-  controllers: [books, authors, orders],
+  controllers: [books, authors, loans],
   middleware: [sessions.middleware],
   db: mikroDb(orm),
   getUser: sessionUser(admins)
@@ -122,9 +122,9 @@ const adminApi = createApi({
 })
 const frontApi = createApi({
   controllers: frontControllers,
-  middleware: [customerSessions.middleware],
+  middleware: [memberSessions.middleware],
   db: mikroDb(orm),
-  getUser: sessionUser(customerSource)
+  getUser: sessionUser(memberSource)
 })
 
 app.route('/api/admin', adminApi)
@@ -133,23 +133,17 @@ app.route('/api', frontApi)
 
 ## The database
 
-`db` connects the API to the database. It has three parts:
-
-- `connect()` returns the database handle of a request. Handlers read it as `db`
-  of their input, and middleware as `c.var.db`.
-- `transaction` runs an action in a transaction. While it runs, `db` is the
-  transaction's handle.
-- `toHttpError()` maps the database's errors.
-
-`mikroDb(orm)` of `@ditojs/mikro` forks the entity manager for each request, and
-runs the action in a transaction of the fork:
+`db` is `mikroDb(orm)` of `@ditojs/mikro`. It forks the entity manager for each
+request, runs the action in a transaction of the fork, and maps MikroORM's
+errors:
 
 ```js
 db: mikroDb(orm)
 ```
 
-Handlers get the entity manager as `db` of their input. Middleware and other
-code that has Hono's context use `getEntityManager(c)` of `@ditojs/mikro`.
+Handlers get the entity manager as `db` of their input, which is the
+transaction's while one runs. Middleware and other code that has Hono's context
+use `getEntityManager(c)` of `@ditojs/mikro`.
 
 Writes run in a transaction unless their action sets `transaction: false`. Reads
 run in one only if they set `transaction: true`. The transaction covers the
@@ -157,10 +151,11 @@ middleware of the controller, its mixins and the action, so middleware that
 throws after `next()` rolls the write back. The API's own `middleware` runs
 outside of the transaction.
 
-The app handles MikroORM's setup, migrations and seeds. Use its
+The app handles MikroORM's setup, migrations and seeds, with its
 [migrations](https://mikro-orm.io/docs/migrations) and
-[seeders](https://mikro-orm.io/docs/seeding), or keep the tools you have, such
-as Knex migrations.
+[seeders](https://mikro-orm.io/docs/seeding). Apps that come from knex run their
+old migrations with knex's CLI until the Migrator takes over, see
+[Upgrading to 7.x](../../upgrading-to-7.x.md#11-move-the-migrations-to-mikroorm).
 
 ## Users
 

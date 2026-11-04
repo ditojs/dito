@@ -28,8 +28,6 @@ The types also export the helper types `ArrayLike<T>`, `Dictionary<T>` and
 `RecursiveArray<T>`, and the format option types `DateFormat`, `TimeFormat`
 and `NumberFormat` (see [Dates and numbers](#dates-and-numbers)).
 
-For the changes since 3.x, see [Upgrading to 4.x](../upgrading-to-4.x.md).
-
 ## Base and type checks
 
 ```js
@@ -139,7 +137,7 @@ flatten([1, [2, [3, [4]]]], 1) // [1, 2, [3, [4]]]
 shuffle(array)
 ```
 
-Returns a new array with the elements of `array` in random order
+Returns a new array with the elements of `array` in random loan
 (Fisher-Yates shuffle). `array` itself isn't changed.
 
 ```js
@@ -351,10 +349,10 @@ the end of a line joins it with the next one.
 
 ```js
 const text = deindent`
-  Dear ${customer.name},
-    your order has shipped.
+  Dear ${member.name},
+    your loan is due.
 `
-// 'Dear Ada,\n  your order has shipped.\n'
+// 'Dear Ada,\n  your loan is due.\n'
 ```
 
 ### escapeRegExp()
@@ -393,14 +391,14 @@ strings.
 
 ### Checks
 
-| Function             | Returns `true` for                                                                                                                                                      |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `isAbsoluteUrl(str)` | Strings starting with a scheme followed by `:`, e.g. `https:` or `mailto:`, or with `//` (protocol-relative).                                                           |
-| `isUrl(str)`         | URLs with or without scheme, e.g. `'bookshop.example'` and `'https://bookshop.example/books?page=2'`. Schemes: `http`, `https`, `ftp`, `ftps`, `mailto`, `rtsp`, `mms`. |
-| `isDomain(str)`      | Domain names, including internationalized ones, e.g. `'bücher.example'`. Not URLs, hosts with ports or paths.                                                           |
-| `isHostname(str)`    | Host names as in RFC 1123, e.g. `'localhost'` or `'shop.example.com'`.                                                                                                  |
-| `isEmail(str)`       | Email addresses with a domain that has a top-level domain of two letters or more.                                                                                       |
-| `isCreditCard(str)`  | Numbers of the common credit card schemes that pass the Luhn check. Spaces and hyphens are ignored.                                                                     |
+| Function             | Returns `true` for                                                                                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `isAbsoluteUrl(str)` | Strings starting with a scheme followed by `:`, e.g. `https:` or `mailto:`, or with `//` (protocol-relative).                                                     |
+| `isUrl(str)`         | URLs with or without scheme, e.g. `'books.example'` and `'https://books.example/books?page=2'`. Schemes: `http`, `https`, `ftp`, `ftps`, `mailto`, `rtsp`, `mms`. |
+| `isDomain(str)`      | Domain names, including internationalized ones, e.g. `'bücher.example'`. Not URLs, hosts with ports or paths.                                                     |
+| `isHostname(str)`    | Host names as in RFC 1123, e.g. `'localhost'` or `'books.example.com'`.                                                                                           |
+| `isEmail(str)`       | Email addresses with a domain that has a top-level domain of two letters or more.                                                                                 |
+| `isCreditCard(str)`  | Numbers of the common credit card schemes that pass the Luhn check. Spaces and hyphens are ignored.                                                               |
 
 Note that `isUrl()` accepts URLs without scheme, which `isAbsoluteUrl()`
 rejects.
@@ -471,8 +469,8 @@ Formats `value` as a date with time, converting it with `new Date(value)` if
 it isn't a `Date`. `date` and `time` work as in `format()`.
 
 ```js
-formatDate(order.createdAt) // 'October 13, 2026 at 02:05:00 PM'
-formatDate(order.createdAt, { time: false }) // 'October 13, 2026'
+formatDate(loan.createdAt) // 'October 13, 2026 at 02:05:00 PM'
+formatDate(loan.createdAt, { time: false }) // 'October 13, 2026'
 ```
 
 ### defaultFormats
@@ -525,15 +523,15 @@ A data path addresses a value inside nested objects and arrays, e.g. the
 title of the second item of an order:
 
 ```js
-const order = {
-  customer: { name: 'Ada' },
+const loan = {
+  member: { name: 'Ada' },
   items: [
     { book: { title: 'Orlando' }, quantity: 1 },
     { book: { title: 'The Waves' }, quantity: 2 }
   ]
 }
 
-getValueAtDataPath(order, 'items/1/book/title') // 'The Waves'
+getValueAtDataPath(loan, 'items/1/book/title') // 'The Waves'
 ```
 
 ### Formats
@@ -544,7 +542,7 @@ takes strings only:
 | Form            | Example                                             |
 | --------------- | --------------------------------------------------- |
 | Slash-separated | `'items/1/book/title'`                              |
-| JSON pointer    | `'/items/1/book/title'`                             |
+| Leading slash   | `'/items/1/book/title'`                             |
 | Property access | `'items[1].book.title'`, `"items[1]['book'].title"` |
 | Array of keys   | `['items', '1', 'book', 'title']`                   |
 
@@ -615,7 +613,7 @@ leads above the root. Wildcards are kept.
 ```js
 resolveDataPath('items/0', 'quantity') // 'items/0/quantity'
 resolveDataPath('items/0', '../1/quantity') // 'items/1/quantity'
-resolveDataPath('items/0', '/customer/name') // 'customer/name'
+resolveDataPath('items/0', '/member/name') // 'member/name'
 resolveDataPath('items/0', '../../..')
 // Error: Invalid data path: 'items/0/../../..' leads above the root.
 ```
@@ -639,10 +637,10 @@ wildcards too; for `**`, all matches depth-first, leaving out what doesn't
 exist.
 
 ```js
-getValueAtDataPath(order, 'items/0/quantity') // 1
-getValueAtDataPath(order, 'items/*/book/title') // ['Orlando', 'The Waves']
-getValueAtDataPath(order, '**/title') // ['Orlando', 'The Waves']
-getValueAtDataPath(order, 'items/5/quantity', () => null) // null
+getValueAtDataPath(loan, 'items/0/quantity') // 1
+getValueAtDataPath(loan, 'items/*/book/title') // ['Orlando', 'The Waves']
+getValueAtDataPath(loan, '**/title') // ['Orlando', 'The Waves']
+getValueAtDataPath(loan, 'items/5/quantity', () => null) // null
 ```
 
 ### getEntriesAtDataPath()
@@ -657,9 +655,9 @@ by their normalized data paths. Without wildcards, the object has one entry.
 out.
 
 ```js
-getEntriesAtDataPath(order, 'items/*/quantity')
+getEntriesAtDataPath(loan, 'items/*/quantity')
 // { 'items/0/quantity': 1, 'items/1/quantity': 2 }
-getEntriesAtDataPath(order, 'items/**/title')
+getEntriesAtDataPath(loan, 'items/**/title')
 // { 'items/0/book/title': 'Orlando', 'items/1/book/title': 'The Waves' }
 ```
 
@@ -674,7 +672,7 @@ key must exist and be an object or array, otherwise it throws. Missing levels
 aren't created, and wildcards aren't supported.
 
 ```js
-setValueAtDataPath(order, 'items/0/quantity', 3)
+setValueAtDataPath(loan, 'items/0/quantity', 3)
 ```
 
 ### setEntriesAtDataPath()
@@ -687,9 +685,9 @@ Sets each value of `entries` at its data path key with `setValueAtDataPath()`,
 and returns `obj`. It takes what `getEntriesAtDataPath()` returns.
 
 ```js
-const quantities = getEntriesAtDataPath(order, 'items/*/quantity')
+const quantities = getEntriesAtDataPath(loan, 'items/*/quantity')
 // … change the values, then write them back:
-setEntriesAtDataPath(order, quantities)
+setEntriesAtDataPath(loan, quantities)
 ```
 
 ## HTML
@@ -797,7 +795,7 @@ deprecate(message)
 Logs `message` with `console.warn()`, once per distinct message.
 
 ```js
-deprecate('`Book.findByIsbn()` is deprecated, use `Book.query().findOne()`.')
+deprecate('`findByIsbn()` is deprecated, use `findBook()`.')
 ```
 
 ### toAsync()
@@ -827,7 +825,7 @@ The opposite of `toAsync()`: converts a function that returns a promise into
 one that takes an error-first callback as its last argument.
 
 ```js
-const findBook = toCallback(id => Book.query().findById(id))
+const findBook = toCallback(id => em.findOne(Book, id))
 findBook(1, (err, book) => { /* … */ })
 ```
 
@@ -967,7 +965,6 @@ inheritance chain, in which case the class is returned as it is. This way a
 mixin is applied only once, also when several mixins include it.
 
 ```js
-import { Model } from '@ditojs/server'
 import { mixin } from '@ditojs/utils'
 
 const Priced = mixin(
@@ -979,9 +976,7 @@ const Priced = mixin(
     }
 )
 
-class Book extends Priced(Model) {}
+class Product {}
+class Book extends Priced(Product) {}
 class Ebook extends Priced(Book) {} // Priced(Book) returns Book
 ```
-
-The model mixins of `@ditojs/server`, e.g. `TimestampedMixin`, are made with
-`mixin()`.

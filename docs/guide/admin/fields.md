@@ -20,7 +20,7 @@ price: {
   width: '1/3',
   default: 0,
   readonly: ({ item }) => item.isArchived,
-  info: 'Including VAT'
+  info: 'Including tax'
 }
 ```
 
@@ -174,7 +174,7 @@ when each hook runs.
 
 When `serializeValue()` returns `undefined`, the key is left out of the data
 sent to the server. Virtual fields use this: they write the values to store
-into `context.serializedItem` and return nothing. In the customer form:
+into `context.serializedItem` and return nothing. In the member form:
 
 ```js
 name: {

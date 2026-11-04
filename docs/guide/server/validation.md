@@ -45,6 +45,7 @@ the column's custom type as a schema, see
 [Rules on values](writes.md#rules-on-values):
 
 ```js
+import { z } from 'zod'
 import { schemaJson } from '@ditojs/mikro'
 
 properties: {
@@ -55,7 +56,8 @@ properties: {
 ```
 
 A schema that throws responds with 400 at the property, with the `keyword`
-`custom` and the message `Invalid input`, so that internal messages don't reach clients.
+`custom` and the message `Invalid input`, so that internal messages don't reach
+clients.
 
 ## Stricter input
 
@@ -85,9 +87,9 @@ the same errors with `createValidationError()`:
 ```js
 import { createValidationError } from '@ditojs/server'
 
-if (!isValidVatNumber(body.vatNumber)) {
+if (!isValidIsbn(body.isbn)) {
   throw createValidationError([
-    { path: ['vatNumber'], code: 'invalid_format', message: 'Invalid VAT number' }
+    { path: ['isbn'], code: 'invalid_format', message: 'Invalid ISBN' }
   ])
 }
 ```

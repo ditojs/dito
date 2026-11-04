@@ -76,7 +76,7 @@ For values that always follow others, `computeValue()` is simpler, see
 
 Returning `false` stops bubbling, a value other than `undefined` from a
 button's `onClick()` prevents its default action, and from `onSuccess()` or
-`onError()` replaces dito's notification. Other return values are ignored, see
+`onError()` replaces Dito.js' notification. Other return values are ignored, see
 [Return values](../../api/admin/events.md#return-values).
 
 ## Native events

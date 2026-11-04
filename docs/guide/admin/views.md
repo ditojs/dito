@@ -35,27 +35,27 @@ With `fields`, a view lays out several fields like a form, e.g. two
 lists side by side:
 
 ```js
-// src/admin/views/orders.js
-export const orders = {
+// src/admin/views/loans.js
+export const loans = {
   type: 'view',
-  label: 'Orders',
+  label: 'Loans',
   fields: {
-    openOrders: {
+    openLoans: {
       type: 'list',
       label: 'Open',
-      resource: { path: 'orders', query: { status: 'open' } },
-      columns: ['number', 'customer', 'createdAt'],
+      resource: { path: 'loans', query: { status: 'open' } },
+      columns: ['number', 'member', 'createdAt'],
       editable: true,
-      form: () => import('../forms/order.js'),
+      form: () => import('../forms/loan.js'),
       width: '1/2'
     },
-    shippedOrders: {
+    returnedLoans: {
       type: 'list',
-      label: 'Shipped',
-      resource: { path: 'orders', query: { status: 'shipped' } },
-      columns: ['number', 'customer', 'createdAt'],
+      label: 'Returned',
+      resource: { path: 'loans', query: { status: 'returned' } },
+      columns: ['number', 'member', 'createdAt'],
       editable: true,
-      form: () => import('../forms/order.js'),
+      form: () => import('../forms/loan.js'),
       width: '1/2'
     }
   }
@@ -63,7 +63,7 @@ export const orders = {
 ```
 
 The forms of such lists are routed under the view's path and the list's name,
-hyphenated, e.g. `/admin/orders/open-orders/12`.
+hyphenated, e.g. `/admin/loans/open-loans/12`.
 
 A view's fields edit the view's own data, which it doesn't load or save
 itself: lists with a `resource` load and save their items, and
@@ -191,7 +191,7 @@ export const catalog = {
   }
 }
 
-export * from './orders.js'
+export * from './loans.js'
 ```
 
 A module with a single export, like `books.js`, stands for that export, so
@@ -217,8 +217,8 @@ export default [
   },
   {
     type: 'menu',
-    label: 'Sales',
-    items: [import('./orders.js'), import('./customers.js')]
+    label: 'Lending',
+    items: [import('./loans.js'), import('./members.js')]
   }
 ]
 ```
@@ -293,6 +293,7 @@ that users may change themselves, e.g. not their roles or password:
 import { getSession } from '@ditojs/auth'
 import { assignRecord } from '@ditojs/mikro'
 import { HttpError } from '@ditojs/server'
+import { adminSource } from './auth.js'
 
 // In the actions of the users controller:
 'patch self': {

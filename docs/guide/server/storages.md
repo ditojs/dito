@@ -29,6 +29,7 @@ export const storages = createStorages(
       type: 's3',
       bucket: 'downloads',
       url: 'https://downloads.example.com/',
+      // `credentials` holds the app's keys, such as `{ accessKeyId, … }`.
       s3: { region: 'eu-central-1', credentials },
       params: { ACL: 'public-read' }
     }

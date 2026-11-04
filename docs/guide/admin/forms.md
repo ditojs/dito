@@ -1,7 +1,7 @@
 # Forms
 
-A form edits one item: a book of the books list, the shipping address of a
-customer, a chapter of a book. Lists and objects name their form in `form`, or
+A form edits one item: a book of the books list, the postal address of a
+member, a chapter of a book. Lists and objects name their form in `form`, or
 `forms` for items of several kinds, see [Lists and objects](./lists.md). A
 form's `creatable` and `disabled` decide whether the source's create button
 offers it, see [Several kinds of items](./lists.md#several-kinds-of-items).
@@ -88,10 +88,10 @@ export const bookForm = {
   },
 
   onSuccess({ isCreating, itemLabel, notify }) {
-    // Replaces dito's own notification:
+    // Replaces Dito.js' own notification:
     notify({
       type: 'success',
-      text: `${itemLabel} was ${isCreating ? 'added to the shop' : 'saved'}.`
+      text: `${itemLabel} was ${isCreating ? 'added to the catalog' : 'saved'}.`
     })
   },
 
@@ -111,7 +111,7 @@ export const bookForm = {
 - `onError()` fires when saving fails, with `context.error`. Validation errors
   of the server are shown on the fields instead.
 - A value returned from `onSuccess()` or `onError()`, or a call of
-  `context.notify()` in them, replaces dito's notification.
+  `context.notify()` in them, replaces Dito.js' notification.
 - `onApply()` fires instead of `onSuccess()` in nested forms, see
   [Nested forms](./nested-forms.md#events).
 - `onCancel()` fires when the cancel button closed the form.
@@ -278,7 +278,7 @@ from `paste()` pastes nothing:
 
 ```js
 clipboard: {
-  // Copy only the content, without sales data:
+  // Copy only the content, without stock data:
   copy: ({ clipboardItem }) => ({
     title: clipboardItem.title,
     summary: clipboardItem.summary,

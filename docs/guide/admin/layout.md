@@ -39,9 +39,9 @@ fields: {
 A section groups fields under a header:
 
 ```js
-sales: {
+availability: {
   type: 'section',
-  label: 'Sales',
+  label: 'Availability',
   collapsible: true,
   collapsed: ({ item }) => item.isArchived,
   fields: {
@@ -49,20 +49,20 @@ sales: {
     stock: { type: 'integer', width: '1/2' }
   },
   onToggle({ collapsed }) {
-    console.log(`Sales ${collapsed ? 'collapsed' : 'expanded'}`)
+    console.log(`Availability ${collapsed ? 'collapsed' : 'expanded'}`)
   }
 }
 ```
 
 By default a section has no value of its own: its fields edit the item of
 the form, here `item.price` and `item.stock`. With `nested: true`, they edit
-an object stored under the section's name. In the customer form:
+an object stored under the section's name. In the member form:
 
 ```js
-shippingAddress: {
+postalAddress: {
   type: 'section',
-  label: 'Shipping Address',
-  nested: true, // Edits `item.shippingAddress.street`, …
+  label: 'Postal Address',
+  nested: true, // Edits `item.postalAddress.street`, …
   fields: {
     street: { type: 'text' },
     city: { type: 'text', width: '1/2' },
@@ -72,7 +72,7 @@ shippingAddress: {
 ```
 
 The section's callbacks and events then describe that object: `item` is
-`item.shippingAddress` and `parentItem` the customer, see
+`item.postalAddress` and `parentItem` the member, see
 [The context](./context.md#which-item-a-context-describes).
 
 Only sections and [panels](#panels) take `nested`; other types throw for it.
@@ -98,9 +98,9 @@ export const book = {
         summary: { type: 'textarea' }
       }
     },
-    sales: {
+    availability: {
       type: 'tab',
-      label: 'Sales',
+      label: 'Availability',
       defaultTab: ({ item }) => !!item.publishedAt,
       fields: {
         price: { type: 'number' },
@@ -145,23 +145,23 @@ export const book = {
 ```
 
 A panel edits the item around it. With `nested: true`, like a section, it
-edits an object stored under its name: a panel `shippingAddress` in the
-customer form edits `item.shippingAddress`.
+edits an object stored under its name: a panel `postalAddress` in the
+member form edits `item.postalAddress`.
 
 With its own `data`, a panel's fields edit that data instead, which isn't
 saved with the form and doesn't make it dirty:
 
 ```js
 panels: {
-  discount: {
+  repricing: {
     type: 'panel',
-    label: 'Discount',
+    label: 'Repricing',
     data: { percent: 10 },
     fields: {
       percent: { type: 'integer', suffix: '%' },
       apply: {
         type: 'button',
-        text: 'Apply Discount',
+        text: 'Lower the Price',
         // Writes to the page's data are edits of the book:
         onClick({ item, rootItem }) {
           rootItem.price *= 1 - item.percent / 100
@@ -184,7 +184,7 @@ lists are a panel of this kind. Panels with their own `data` can't be nested:
 `label` shows text in the place of a field, and `spacer` leaves a gap:
 
 ```js
-notice: { type: 'label', label: 'Prices include VAT.' },
+notice: { type: 'label', label: 'Prices include tax.' },
 gap: { type: 'spacer', width: '1/3' }
 ```
 

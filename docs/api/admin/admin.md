@@ -195,7 +195,7 @@ api.request<T>(options): Promise<Response & { data: T }>
 
 Performs an HTTP request with `fetch()`. It applies `getApiUrl()`, `headers`,
 `cors` and `timeout`, parses JSON responses into `response.data`, and rejects
-responses that aren't ok with an `Error` that has the fields of the JSON body,
+responses that aren't ok with an `ApiError` that has the fields of the JSON body,
 e.g. `message`, `type`, `code`, `errors` and `confirmationRequired`, the
 `status` of the response, and the `response` itself.
 
@@ -298,7 +298,7 @@ The resolved top-level views and menus, keyed by name. Empty while logged out.
 #### flattenedViews
 
 ```ts
-admin.context.flattenedViews: Record<string, ViewSchema>
+admin.context.flattenedViews: Record<string, ViewSchema | PageSchema>
 ```
 
 All views, with the items of menus flattened into one record, keyed by name.
@@ -401,7 +401,7 @@ if (await admin.context.session.logout()) {
 session.fetchUser(): Promise<AdminUser | null>
 ```
 
-Fetches the user of the server's session through `api.users.session`, and
+Fetches the user of the server's session through `api.users.self`, and
 sets it as the admin's user.
 
 ##### Return value

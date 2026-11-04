@@ -31,7 +31,7 @@ export const bookForm: FormSchema<Book> = {
 | Type                       | Description                                                                                       |
 | -------------------------- | ------------------------------------------------------------------------------------------------- |
 | `DitoAdmin`                | The admin class, see [DitoAdmin](./admin.md).                                                     |
-| `GlobalConfig`             | The global `dito` object: `base`, `api`, `settings`.                                              |
+| `GlobalConfig`             | The global `dito` object: `base`, `api`, `settings`, `authentication`.                            |
 | `ApiConfig`                | The configuration of the admin's API, see [ApiConfig](./admin.md#apiconfig).                      |
 | `Api`                      | The `ApiConfig` with its defaults, and `request()` and `getApiUrl()`.                             |
 | `ApiResource`              | A resource of the server API, with `type`, `path`, `method`, `id`, `parent` and `query`.          |
@@ -65,7 +65,8 @@ See [Events](./events.md).
 
 | Type                                | Description                                                                                                     |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `View<$Item>`                       | A top-level view: `ViewSchema` or `MenuSchema`.                                                                 |
+| `View<$Item>`                       | A top-level view: `ViewSchema`, `PageSchema` or `MenuSchema`.                                                   |
+| `PageSchema`                        | A view rendered by a Vue component, see [Forms in pages](../../guide/admin/views.md#forms-in-pages).            |
 | `ViewSchema<$Item>`                 | `type: 'view'`.                                                                                                 |
 | `MenuSchema<$Item>`                 | `type: 'menu'`, a group of views in the navigation.                                                             |
 | `FormSchema<$Item>`                 | `type: 'form'`.                                                                                                 |
@@ -111,20 +112,24 @@ See [Schemas](./schemas.md).
 
 ## Shared schema settings
 
-| Type                                | Description                                                                        |
-| ----------------------------------- | ---------------------------------------------------------------------------------- |
-| `SchemaBase<$Item>`                 | The options of all schemas: `panels` and the `on…` lifecycle handlers.             |
-| `FieldSchemaBase<$Item>`            | The options of all fields: `label`, `visible`, `default`, `validate`, …            |
-| `RouteSchemaBase<$Item>`            | The options of views and forms, also of inlined forms and dialogs.                 |
-| `SourceSettings<$Item>`             | The options of lists, objects and trees: `form`, `columns`, `creatable`, …         |
-| `SelectionSettings<$Item, $Option>` | The options of fields with options: `options`, `relate`, `search`.                 |
-| `SchemaOptions<$Item, $Option>`     | The `options` option.                                                              |
-| `SchemaOptionsOption<$Value>`       | One option: a value, or `{ label, value }`.                                        |
-| `NumberSettings<$Item>`             | The options of numbers, sliders and progress bars: `minimum`, `maximum`, `step`, … |
-| `TextSettings<$Item>`               | The `trim` option of text inputs and textareas.                                    |
-| `AffixSettings<$Item>`              | The `prefix` and `suffix` options.                                                 |
-| `SchemaAffix`                       | One prefix or suffix, see [Affixes](./schemas.md#affixes).                         |
-| `DataSettings<$Item>`               | The `data` and `dataPath` options of `value`.                                      |
+| Type                                | Description                                                                                                       |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `SchemaBase<$Item>`                 | The options of all schemas: `panels`, `onChange` and `onInput`.                                                   |
+| `FieldSchemaBase<$Item>`            | The options of all fields: `label`, `visible`, `default`, `validate`, …                                           |
+| `RouteSchemaBase<$Item>`            | The options of views and forms, also of inlined forms and dialogs, with `onInitialize`, `onDestroy` and `onLoad`. |
+| `SourceSettings<$Item>`             | The options of lists, objects and trees: `form`, `columns`, `creatable`, …                                        |
+| `SelectionSettings<$Item, $Option>` | The options of fields with options: `options`, `relate`, `search`.                                                |
+| `SchemaOptions<$Item, $Option>`     | The `options` option.                                                                                             |
+| `SchemaOptionsOption<$Value>`       | One option: a value, or `{ label, value }`.                                                                       |
+| `NumberSettings<$Item>`             | The options of numbers, sliders and progress bars: `minimum`, `maximum`, `step`, …                                |
+| `TextSettings<$Item>`               | The `trim` and `nullable` options of text inputs and textareas.                                                   |
+| `TextOrHtml`                        | Text, or HTML from the `html` template of `@ditojs/utils`.                                                        |
+| `SchemaLabel`                       | A label as text or HTML, with optional affixes.                                                                   |
+| `DisplaySchema<$Item, $Value>`      | How a value shows read-only, in columns and the details of tree items.                                            |
+| `Details<$Item>`                    | The `details` of tree items, by key.                                                                              |
+| `AffixSettings<$Item>`              | The `prefix` and `suffix` options.                                                                                |
+| `SchemaAffix`                       | One prefix or suffix, see [Affixes](./schemas.md#affixes).                                                        |
+| `DataSettings<$Item>`               | The `data` and `dataPath` options of `value`.                                                                     |
 
 ## Custom components and types
 
@@ -162,7 +167,7 @@ defineType(descriptor: TypeDescriptor): TypeDescriptor
 
 Registers a type of fields under `descriptor.type`, replacing a
 type of the same name. Call it before the admin resolves its views. It throws
-for unknown members, naming the replacement of the options of 3.x, and for the
+for unknown members, naming their replacement, and for the
 name of a built-in type without `override: true`.
 
 The component receives the same props and emits the same events as the

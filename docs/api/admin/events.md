@@ -193,7 +193,7 @@ and dialogs, `onClick()` replaces the default action.
   async onClick({ request, item, navigate }) {
     const copy = await request({
       method: 'post',
-      resource: 'books',
+      resource: '/books',
       data: { ...item, id: undefined }
     })
     await navigate(`/books/${copy.id}`)
@@ -210,7 +210,7 @@ onSuccess(context): unknown
 Fires after the button submitted its data successfully: the submit buttons of
 forms, buttons with a `resource`, and the submit buttons of nested forms when
 they applied their draft. Fires after the form's own `onSuccess()` or
-`onApply()`. Can suppress dito's notification, see
+`onApply()`. Can suppress Dito.js' notification, see
 [Return values](#return-values).
 
 ### onError()
@@ -221,9 +221,9 @@ onError({ error, ...context }): unknown
 
 Fires when the `onClick()` of the button throws, or its submit fails with an
 error other than validation errors, which are shown on the fields. Can
-suppress dito's notification, see [Return values](#return-values).
+suppress Dito.js' notification, see [Return values](#return-values).
 
-`context.error` is the thrown error, or the `Error` of the failed request,
+`context.error` is the thrown error, or the `ApiError` of the failed request,
 with the fields of the response body and its `status`, see
 [`request()`](./context.md#request).
 
@@ -242,7 +242,7 @@ onSuccess(context): unknown
 
 Fires after a form with its own resource saved its item, new and existing ones;
 `context.isCreating` tells whether the item was created. Fires before the
-`onSuccess()` of the submit button. Can suppress dito's notification, see
+`onSuccess()` of the submit button. Can suppress Dito.js' notification, see
 [Return values](#return-values). Nested forms
 fire [`onApply()`](#onapply) instead.
 
@@ -262,7 +262,7 @@ onError({ error, ...context }): unknown
 
 Fires when saving the item fails, with an error other than validation errors,
 which are shown on the fields. Fires before the `onError()` of the submit
-button. Can suppress dito's notification, see
+button. Can suppress Dito.js' notification, see
 [Return values](#return-values).
 
 ### onApply()

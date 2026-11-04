@@ -4,28 +4,28 @@ Dialogs ask the user for input in a modal form. `context.showDialog()` shows
 one and resolves when it closes:
 
 ```js
-refund: {
+extend: {
   type: 'button',
-  text: 'Refund',
+  text: 'Extend',
   async onClick(context) {
     // The button doesn't need to stay busy while the dialog is open:
     context.isRunning = false
     const data = await context.showDialog({
       fields: {
-        amount: { type: 'number', decimals: 2, minimum: 0 },
+        days: { type: 'integer', minimum: 1 },
         reason: { type: 'textarea', lines: 3 }
       },
       buttons: {
         cancel: {},
-        refund: { type: 'submit', text: 'Refund' }
+        extend: { type: 'submit', text: 'Extend' }
       },
-      data: { amount: 0 },
-      settings: { label: 'Refund Order', width: 400 }
+      data: { days: 14 },
+      settings: { label: 'Extend Loan', width: 400 }
     })
     if (data) {
       await context.request({
         method: 'post',
-        resource: { path: 'refund' },
+        resource: { path: 'extend' },
         data
       })
     }
@@ -79,7 +79,7 @@ dialog's initial focus, without submitting the dialog.
 ## Confirmations, prompts and alerts
 
 For the cases of the browser's `confirm()`, `prompt()` and `alert()`, the
-context has methods of these names that show dito dialogs with a message and a
+context has methods of these names that show Dito.js dialogs with a message and a
 button for the `action`, `'OK'` by default:
 [`confirm()`](../../api/admin/context.md#confirm) resolves to whether it was
 confirmed, [`prompt()`](../../api/admin/context.md#prompt) to the value of its

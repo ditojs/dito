@@ -2,8 +2,8 @@
 
 Short solutions to problems that most Dito.js applications run into. Each
 recipe states a problem, shows code that solves it and says in a sentence or
-two why it works. All of them use the same example: a bookshop with books,
-authors, chapters, genres, orders, customers and reviews.
+two why it works. All of them use the same example: a book catalog with books,
+authors, chapters, genres, loans, members and reviews.
 
 The recipes assume the basics of the [server guide](../guide/server/index.md)
 and the [admin guide](../guide/admin/index.md). Admin code goes into view and
@@ -12,10 +12,10 @@ and the controllers passed to `createApi()`.
 
 ## Admin
 
-| Recipe                                                    | Problem                                                                   |
-| --------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [Computed values](./computed-values.md)                   | Show a value derived from others, e.g. an order total, without saving it. |
-| [Select from edited items](./select-from-edited-items.md) | Pick one of the items that the same form edits, including new ones.       |
+| Recipe                                                    | Problem                                                                 |
+| --------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [Computed values](./computed-values.md)                   | Show a value derived from others, e.g. a loan total, without saving it. |
+| [Select from edited items](./select-from-edited-items.md) | Pick one of the items that the same form edits, including new ones.     |
 
 ## Admin and server
 
