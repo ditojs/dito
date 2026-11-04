@@ -14,16 +14,16 @@ class CodeType extends StringType {
   }
 }
 
-// A graph of test entities: a family owns its sets and its info, a set owns
-// its cuts, and a family has designers through a many-to-many relation and
-// awards it doesn't own. `specs`, `documents` and `features` are JSON
-// columns, `specs`, `features` and `code` have schemas, and `documents` holds
-// files. A family's name and notes are unique together. `rating` and a
-// designer's `email` belong to the `admin` serialization group.
+// A graph of test entities: a book owns its parts and its info, a part owns
+// its chapters, and a book has authors through a many-to-many relation and
+// awards it doesn't own. `specs`, `documents` and `keywords` are JSON
+// columns, `specs`, `keywords` and `code` have schemas, and `documents` holds
+// files. A book's name and notes are unique together. `rating` and an
+// author's `email` belong to the `admin` serialization group.
 
-const FamilySchema = defineEntity({
-  name: 'Family',
-  tableName: 'family',
+const BookSchema = defineEntity({
+  name: 'Book',
+  tableName: 'book',
   uniques: [{ properties: ['name', 'notes'] }],
   properties: {
     id: p.integer().primary(),
@@ -32,7 +32,7 @@ const FamilySchema = defineEntity({
     published: p.boolean().default(false),
     specs: schemaJson(
       z.strictObject({
-        weight: z.number().optional(),
+        pages: z.number().optional(),
         tags: z.array(z.string()).optional()
       })
     ).nullable(),
@@ -41,18 +41,18 @@ const FamilySchema = defineEntity({
     secret: p.string().nullable().hidden(),
     rating: p.integer().nullable(),
     nameLength: p.integer().formula(cols => `length(${cols.name})`),
-    sets: () =>
+    parts: () =>
       p
-        .oneToMany(FontSet)
-        .mappedBy(set => set.family)
+        .oneToMany(Part)
+        .mappedBy(part => part.book)
         .orphanRemoval()
         .orderBy({ order: 'asc', id: 'asc' }),
-    designers: () => p.manyToMany(Designer),
-    awards: () => p.oneToMany(Award).mappedBy(award => award.family),
+    authors: () => p.manyToMany(Author),
+    awards: () => p.oneToMany(Award).mappedBy(award => award.book),
     info: () =>
       p
         .oneToOne(Info)
-        .mappedBy(info => info.family)
+        .mappedBy(info => info.book)
         .orphanRemoval()
         .nullable(),
     releasedAt: p.datetime().nullable(),
@@ -63,51 +63,51 @@ const FamilySchema = defineEntity({
       .onUpdate(() => new Date())
   }
 })
-export class Family extends FamilySchema.class {}
-FamilySchema.setClass(Family)
+export class Book extends BookSchema.class {}
+BookSchema.setClass(Book)
 
-const FontSetSchema = defineEntity({
-  name: 'FontSet',
-  tableName: 'font_set',
+const PartSchema = defineEntity({
+  name: 'Part',
+  tableName: 'part',
   properties: {
     id: p.integer().primary(),
     name: p.string(),
     order: p.integer().nullable(),
-    family: () => p.manyToOne(Family),
-    defaultCut: () => p.manyToOne(Cut).nullable(),
-    cuts: () =>
+    book: () => p.manyToOne(Book),
+    defaultChapter: () => p.manyToOne(Chapter).nullable(),
+    chapters: () =>
       p
-        .oneToMany(Cut)
-        .mappedBy(cut => cut.set)
+        .oneToMany(Chapter)
+        .mappedBy(chapter => chapter.part)
         .orphanRemoval()
         .orderBy({ order: 'asc', id: 'asc' })
   }
 })
-export class FontSet extends FontSetSchema.class {}
-FontSetSchema.setClass(FontSet)
+export class Part extends PartSchema.class {}
+PartSchema.setClass(Part)
 
-const CutSchema = defineEntity({
-  name: 'Cut',
-  tableName: 'font_cut',
-  uniques: [{ properties: ['set', 'name'] }],
+const ChapterSchema = defineEntity({
+  name: 'Chapter',
+  tableName: 'chapter',
+  uniques: [{ properties: ['part', 'name'] }],
   properties: {
     id: p.integer().primary(),
     name: p.string(),
     order: p.integer().nullable(),
     code: p.string().type(new CodeType()).nullable(),
-    features: schemaJson(z.array(z.object({ tag: z.string().length(4) })))
+    keywords: schemaJson(z.array(z.object({ tag: z.string().length(4) })))
       .nullable(),
-    set: () => p.manyToOne(FontSet)
+    part: () => p.manyToOne(Part)
   }
 })
-export class Cut extends CutSchema.class {}
-CutSchema.setClass(Cut)
+export class Chapter extends ChapterSchema.class {}
+ChapterSchema.setClass(Chapter)
 
-// Deleted designers are left out of every query, by a default filter. `bio`
+// Deleted authors are left out of every query, by a default filter. `bio`
 // and `awardCount` are lazy.
-const DesignerSchema = defineEntity({
-  name: 'Designer',
-  tableName: 'designer',
+const AuthorSchema = defineEntity({
+  name: 'Author',
+  tableName: 'author',
   filters: {
     active: { name: 'active', cond: { deleted: false }, default: true }
   },
@@ -123,16 +123,16 @@ const DesignerSchema = defineEntity({
       .integer()
       .formula(
         cols =>
-          `(select count(*)::int from award where award.designer_id = ${
+          `(select count(*)::int from award where award.author_id = ${
             cols.id
           })`
       )
       .lazy(),
-    families: () => p.manyToMany(Family).mappedBy(family => family.designers)
+    books: () => p.manyToMany(Book).mappedBy(book => book.authors)
   }
 })
-export class Designer extends DesignerSchema.class {}
-DesignerSchema.setClass(Designer)
+export class Author extends AuthorSchema.class {}
+AuthorSchema.setClass(Author)
 
 const AwardSchema = defineEntity({
   name: 'Award',
@@ -140,17 +140,17 @@ const AwardSchema = defineEntity({
   properties: {
     id: p.integer().primary(),
     name: p.string(),
-    family: () => p.manyToOne(Family),
-    designer: () => p.manyToOne(Designer).nullable(),
+    book: () => p.manyToOne(Book),
+    author: () => p.manyToOne(Author).nullable(),
     // Never part of a response.
-    judge: () => p.manyToOne(Designer).nullable().hidden(),
-    jury: () => p.manyToOne(Designer).nullable()
+    judge: () => p.manyToOne(Author).nullable().hidden(),
+    jury: () => p.manyToOne(Author).nullable()
   }
 })
 export class Award extends AwardSchema.class {}
 AwardSchema.setClass(Award)
 
-// The owned row of a one-to-one relation. `familyCode` is ten times the
+// The owned row of a one-to-one relation. `bookCode` is ten times the
 // foreign key.
 const InfoSchema = defineEntity({
   name: 'Info',
@@ -158,8 +158,8 @@ const InfoSchema = defineEntity({
   properties: {
     id: p.integer().primary(),
     text: p.string(),
-    family: () => p.oneToOne(Family).owner(),
-    familyCode: p.integer().formula(cols => `${cols.family} * 10`)
+    book: () => p.oneToOne(Book).owner(),
+    bookCode: p.integer().formula(cols => `${cols.book} * 10`)
   }
 })
 export class Info extends InfoSchema.class {}
@@ -177,4 +177,4 @@ const PairSchema = defineEntity({
 export class Pair extends PairSchema.class {}
 PairSchema.setClass(Pair)
 
-export const entities = [Family, FontSet, Cut, Designer, Award, Info, Pair]
+export const entities = [Book, Part, Chapter, Author, Award, Info, Pair]

@@ -2,13 +2,13 @@ import { z } from 'zod'
 import { StringType, defineEntity, p } from '@mikro-orm/core'
 import { assignRecord, createRecord } from '../src/index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
-import { Family, entities } from './entities.ts'
+import { Book, entities } from './entities.ts'
 import {
-  ShopItem,
-  ShopOrder,
-  loadOrder,
-  orderEntities
-} from './order-entities.ts'
+  Volume,
+  Library,
+  loadLibrary,
+  libraryEntities
+} from './library-entities.ts'
 
 // A schema that throws for `throw`, and rejects for `reject` when async.
 const throwing = (isAsync: boolean) =>
@@ -53,7 +53,7 @@ SampleSchema.setClass(Sample)
 
 const { orm, drop } = await createTestDatabase([
   ...entities,
-  ...orderEntities,
+  ...libraryEntities,
   Sample
 ])
 
@@ -63,8 +63,8 @@ const reset = () =>
   orm.em
     .getConnection()
     .execute(
-      'truncate shop_order, license, shop_item, license_shop_item, ' +
-      'legacy_license_shop_item, family, font_set, font_cut ' +
+      'truncate library, reading_list, volume, reading_list_volume, ' +
+      'legacy_reading_list_volume, book, part, chapter ' +
       'restart identity cascade'
     )
 
@@ -84,51 +84,51 @@ const issues = (promise: Promise<unknown>) =>
       )
   )
 
-// The rows of a pivot table as `L<license>-I<item>`, with the price after
+// The rows of a pivot table as `L<list>-I<volume>`, with the fee after
 // `=`, and with `<id>:` before them where the table has ids.
-const pivots = async (table = 'license_shop_item') => {
+const pivots = async (table = 'reading_list_volume') => {
   const rows = await orm.em
     .fork()
     .getConnection()
-    .execute(`select * from ${table} order by license_id, shop_item_id`)
+    .execute(`select * from ${table} order by reading_list_id, volume_id`)
   return rows.map(
     (row: Record<string, unknown>) => (
       (row.id == null ? '' : `${row.id}:`) +
-      `L${row.license_id}-I${row.shop_item_id}` +
-      (row.final_price == null ? '' : `=${Number(row.final_price)}`)
+      `L${row.reading_list_id}-I${row.volume_id}` +
+      (row.fee == null ? '' : `=${Number(row.fee)}`)
     )
   )
 }
 
-// An order with licenses L1, L2 and shop items I1, I2, where L1 links I1 and
-// I2, and L2 links I2, with prices, through both pivot tables.
-async function createOrder() {
+// A library with reading lists L1, L2 and volumes I1, I2, where L1 links I1 and
+// I2, and L2 links I2, with fees, through both pivot tables.
+async function createLibrary() {
   const em = orm.em.fork()
-  await createRecord(em, ShopOrder, {
-    name: 'Order',
-    licenses: [
+  await createRecord(em, Library, {
+    name: 'Library',
+    readingLists: [
       {
         name: 'L1',
-        shopItems: [{ '#ref': 'i1' }, { '#ref': 'i2' }],
-        legacyShopItems: [{ '#ref': 'i1' }, { '#ref': 'i2' }]
+        volumes: [{ '#ref': 'i1' }, { '#ref': 'i2' }],
+        legacyVolumes: [{ '#ref': 'i1' }, { '#ref': 'i2' }]
       },
       {
         name: 'L2',
-        shopItems: [{ '#ref': 'i2' }],
-        legacyShopItems: [{ '#ref': 'i2' }]
+        volumes: [{ '#ref': 'i2' }],
+        legacyVolumes: [{ '#ref': 'i2' }]
       }
     ],
-    shopItems: [
+    volumes: [
       { '#id': 'i1', 'name': 'I1' },
       { '#id': 'i2', 'name': 'I2' }
     ]
   })
   await em.flush()
-  for (const table of ['license_shop_item', 'legacy_license_shop_item']) {
+  for (const table of ['reading_list_volume', 'legacy_reading_list_volume']) {
     await em
       .getConnection()
       .execute(
-        `update ${table} set final_price = license_id * 10 + shop_item_id`
+        `update ${table} set fee = reading_list_id * 10 + volume_id`
       )
   }
 }
@@ -195,56 +195,56 @@ describe('the checks of a body', () => {
 
   it('checks the shapes of rows, relations and ids', async () => {
     const em = orm.em.fork()
-    expect(await issues(createRecord(em, Family, []))).toEqual({
+    expect(await issues(createRecord(em, Book, []))).toEqual({
       '': 'Invalid input: expected object, received array'
     })
     expect(
       await issues(
-        createRecord(em, Family, {
+        createRecord(em, Book, {
           name: null,
-          sets: {},
-          designers: 1,
+          parts: {},
+          authors: 1,
           info: 'text'
         })
       )
     ).toEqual({
       name: 'Invalid input: expected string, received null',
-      sets: 'Invalid input: expected array, received object',
-      designers: 'Invalid input: expected array, received number',
+      parts: 'Invalid input: expected array, received object',
+      authors: 'Invalid input: expected array, received number',
       info: 'Invalid input: expected object, received string'
     })
     expect(
       await issues(
-        createRecord(em, Family, {
-          name: 'Family',
-          designers: ['a', { id: 'b' }],
-          sets: [{ name: 'Set', defaultCut: { id: 'a' } }]
+        createRecord(em, Book, {
+          name: 'Book',
+          authors: ['a', { id: 'b' }],
+          parts: [{ name: 'Part', defaultChapter: { id: 'a' } }]
         })
       )
     ).toEqual({
-      'designers/0': 'Invalid input: expected id, received string',
-      'designers/1/id': 'Invalid input: expected id, received string',
-      'sets/0/defaultCut/id': 'Invalid input: expected id, received string'
+      'authors/0': 'Invalid input: expected id, received string',
+      'authors/1/id': 'Invalid input: expected id, received string',
+      'parts/0/defaultChapter/id': 'Invalid input: expected id, received string'
     })
   })
 
   it('refuses ids of owned rows that are no ids', async () => {
     const em = orm.em.fork()
-    const family = await createRecord(em, Family, { name: 'Family' })
+    const book = await createRecord(em, Book, { name: 'Book' })
     await em.flush()
     expect(
-      await issues(assignRecord(em, family, { sets: [{ id: 'x', name: 'S' }] }))
+      await issues(assignRecord(em, book, { parts: [{ id: 'x', name: 'S' }] }))
     ).toEqual({
-      'sets/0/id': 'Invalid input: expected id, received string'
+      'parts/0/id': 'Invalid input: expected id, received string'
     })
   })
 })
 
 describe('createRecord()', () => {
   it('links new rows through a many-to-many relation in one flush', async () => {
-    await createOrder()
+    await createLibrary()
     expect(await pivots()).toEqual(['L1-I1=11', 'L1-I2=12', 'L2-I2=22'])
-    expect(await pivots('legacy_license_shop_item')).toEqual([
+    expect(await pivots('legacy_reading_list_volume')).toEqual([
       '2:L1-I1=11',
       '3:L1-I2=12',
       '1:L2-I2=22'
@@ -253,121 +253,122 @@ describe('createRecord()', () => {
 
   it('links a ref to a row that the body sends later', async () => {
     const em = orm.em.fork()
-    const order = await createRecord(em, ShopOrder, {
-      name: 'Order',
-      shopItems: [{ name: 'I1', bundle: { '#ref': 'l1' } }],
-      licenses: [{ '#id': 'l1', 'name': 'L1' }]
+    const library = await createRecord(em, Library, {
+      name: 'Library',
+      volumes: [{ name: 'I1', bundle: { '#ref': 'l1' } }],
+      readingLists: [{ '#id': 'l1', 'name': 'L1' }]
     })
-    const [license] = order.licenses.getItems()
-    expect(order.shopItems.getItems()[0]!.bundle).toBe(license)
+    const [readingList] = library.readingLists.getItems()
+    expect(library.volumes.getItems()[0]!.bundle).toBe(readingList)
     await em.flush()
-    expect(license!.id).toBe(1)
+    expect(readingList!.id).toBe(1)
   })
 
   it('takes no flush and leaves the record to the caller', async () => {
     const em = orm.em.fork()
-    const family = await createRecord(em, Family, { name: 'Family' })
-    expect(family).toBeInstanceOf(Family)
-    expect(family.id).toBeUndefined()
+    const book = await createRecord(em, Book, { name: 'Book' })
+    expect(book).toBeInstanceOf(Book)
+    expect(book.id).toBeUndefined()
     await em.flush()
-    expect(family.id).toBe(1)
+    expect(book.id).toBe(1)
   })
 
   it('answers the checks of the body and of `#id` and `#ref`', async () => {
     const em = orm.em.fork()
-    expect(await issues(createRecord(em, Family, {}))).toEqual({
+    expect(await issues(createRecord(em, Book, {}))).toEqual({
       name: 'Invalid input: expected string, received undefined'
     })
     expect(
       await issues(
-        createRecord(em, ShopOrder, {
-          name: 'Order',
-          licenses: [{ name: 'L1', shopItems: [{ id: 5 }] }]
+        createRecord(em, Library, {
+          name: 'Library',
+          readingLists: [{ name: 'L1', volumes: [{ id: 5 }] }]
         })
       )
     ).toEqual({
-      'licenses/0/shopItems/0': 'names no ShopItem'
+      'readingLists/0/volumes/0': 'names no Volume'
     })
     expect(
       await issues(
-        createRecord(em, ShopOrder, {
-          name: 'Order',
-          licenses: [{ name: 'L1', shopItems: [{ '#ref': 'x' }] }],
-          shopItems: [
+        createRecord(em, Library, {
+          name: 'Library',
+          readingLists: [{ name: 'L1', volumes: [{ '#ref': 'x' }] }],
+          volumes: [
             { '#id': 'i', 'name': 'I1', 'bundle': { '#ref': 'y' } },
             { '#id': 'i', 'name': 'I2' }
           ]
         })
       )
     ).toEqual({
-      'shopItems/1/#id': `is the key of another new row 'i'`,
-      'licenses/0/shopItems/0': `references the unknown new row 'x'`,
-      'shopItems/0/bundle': `references the unknown new row 'y'`
+      'volumes/1/#id': `is the key of another new row 'i'`,
+      'readingLists/0/volumes/0': `references the unknown new row 'x'`,
+      'volumes/0/bundle': `references the unknown new row 'y'`
     })
     // Keys that are no strings are issues too.
     expect(
       await issues(
-        createRecord(em, ShopOrder, {
-          name: 'Order',
-          licenses: [{ '#id': 1, 'name': 'L1' }],
-          shopItems: [{ name: 'I1', bundle: { '#ref': 2 } }]
+        createRecord(em, Library, {
+          name: 'Library',
+          readingLists: [{ '#id': 1, 'name': 'L1' }],
+          volumes: [{ name: 'I1', bundle: { '#ref': 2 } }]
         })
       )
     ).toEqual({
-      'licenses/0/#id': 'Invalid input: expected string, received number',
-      'shopItems/0/bundle/#ref':
-        'Invalid input: expected string, received number'
+      'readingLists/0/#id': 'Invalid input: expected string, received number',
+      'volumes/0/bundle/#ref': 'Invalid input: expected string, received number'
     })
     // A JSON value keeps its markers.
     expect(
       await issues(
-        createRecord(em, Family, {
-          name: 'Family',
-          sets: [
+        createRecord(em, Book, {
+          name: 'Book',
+          parts: [
             {
-              name: 'Set',
-              defaultCut: { '#ref': 'f' },
-              cuts: [{ name: 'C', features: [{ '#id': 'f', 'tag': 'kern' }] }]
+              name: 'Part',
+              defaultChapter: { '#ref': 'f' },
+              chapters: [
+                { name: 'C', keywords: [{ '#id': 'f', 'tag': 'epub' }] }
+              ]
             }
           ]
         })
       )
     ).toEqual({
-      'sets/0/defaultCut': `references the unknown new row 'f'`
+      'parts/0/defaultChapter': `references the unknown new row 'f'`
     })
     expect(
-      await issues(createRecord(em, ShopOrder, { '#id': 'o', 'name': 'Order' }))
+      await issues(createRecord(em, Library, { '#id': 'o', 'name': 'Library' }))
     ).toEqual({ '#id': 'is only allowed in nested rows' })
     expect(
       await issues(
-        createRecord(em, ShopOrder, {
-          name: 'Order',
-          licenses: [
-            { '#id': 'f', 'name': 'L1', 'shopItems': [{ '#ref': 'f' }] }
+        createRecord(em, Library, {
+          name: 'Library',
+          readingLists: [
+            { '#id': 'f', 'name': 'L1', 'volumes': [{ '#ref': 'f' }] }
           ]
         })
       )
     ).toEqual({
-      'licenses/0/shopItems/0': 'references a new row that is no ShopItem'
+      'readingLists/0/volumes/0': 'references a new row that is no Volume'
     })
   })
 })
 
 describe('assignRecord()', () => {
   it('refuses `#id` in rows with an id', async () => {
-    await createOrder()
+    await createLibrary()
     const em = orm.em.fork()
-    const order = await loadOrder(em, ['licenses', 'shopItems'])
+    const library = await loadLibrary(em, ['readingLists', 'volumes'])
     expect(
       await issues(
-        assignRecord(em, order, {
+        assignRecord(em, library, {
           '#id': 'o',
-          'licenses': [{ 'id': 1, '#id': 'l1' }]
+          'readingLists': [{ 'id': 1, '#id': 'l1' }]
         })
       )
     ).toEqual({
       '#id': 'is not allowed in a row with an id',
-      'licenses/0/#id': 'is not allowed in a row with an id'
+      'readingLists/0/#id': 'is not allowed in a row with an id'
     })
   })
 
@@ -376,19 +377,19 @@ describe('assignRecord()', () => {
     // the relation by that key (`fixedOrder`). When the owning side gains a
     // link, MikroORM deletes the rows of the kept pairs and inserts them
     // again, without their other columns.
-    await createOrder()
+    await createLibrary()
     const em = orm.em.fork()
-    const order = await loadOrder(em, ['licenses', 'shopItems'])
-    await assignRecord(em, order, {
-      licenses: [
-        { id: 1, legacyShopItems: [1] },
-        { id: 2, legacyShopItems: [2, { '#ref': 'i3' }] }
+    const library = await loadLibrary(em, ['readingLists', 'volumes'])
+    await assignRecord(em, library, {
+      readingLists: [
+        { id: 1, legacyVolumes: [1] },
+        { id: 2, legacyVolumes: [2, { '#ref': 'i3' }] }
       ],
-      shopItems: [{ id: 1 }, { id: 2 }, { '#id': 'i3', 'name': 'I3' }]
+      volumes: [{ id: 1 }, { id: 2 }, { '#id': 'i3', 'name': 'I3' }]
     })
     await em.flush()
-    // L2-I2 had the row 1 with a price.
-    expect(await pivots('legacy_license_shop_item')).toEqual([
+    // L2-I2 had the row 1 with a fee.
+    expect(await pivots('legacy_reading_list_volume')).toEqual([
       '2:L1-I1=11',
       '4:L2-I2',
       '5:L2-I3'

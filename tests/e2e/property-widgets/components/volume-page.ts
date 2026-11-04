@@ -7,24 +7,24 @@ import {
   DitoNumberField,
   DitoListField
 } from '@ditojs/admin'
-import type { Cut, ShopSet } from '../models/ShopSet.js'
+import type { Chapter, Volume } from '../models/Volume.js'
 
-// A page that edits sets of a shop, with prices and cuts of two kinds, laid
-// out by their type:
+// A page that edits volumes, with prices and chapters of two kinds, laid out by
+// their type:
 export default defineComponent({
   setup() {
     const route = useRoute()
-    useDitoForm<ShopSet>({
-      resource: 'shop-sets',
+    useDitoForm<Volume>({
+      resource: 'volumes',
       id: () => (route.params.id as string) || null,
       properties: {
         name: { type: 'string', required: true },
         prices: { type: 'array', items: { type: 'number', minimum: 0 } },
-        cuts: {
+        chapters: {
           type: 'array',
           forms: {
-            style: {
-              label: 'Style',
+            section: {
+              label: 'Section',
               properties: { name: { type: 'string', required: true } }
             },
             bundle: {
@@ -50,16 +50,16 @@ export default defineComponent({
           h(
             DitoListField,
             {
-              name: 'cuts',
+              name: 'chapters',
               collapsible: true,
               collapsed: true,
               creatable: true,
               deletable: true
             },
             {
-              default: ({ item }: { item: Cut }) =>
-                item.type === 'style'
-                  ? h(DitoTextField, { name: 'name', label: 'Style Name' })
+              default: ({ item }: { item: Chapter }) =>
+                item.type === 'section'
+                  ? h(DitoTextField, { name: 'name', label: 'Section Name' })
                   : [
                       h(DitoTextField, { name: 'title', width: '3/4' }),
                       h(DitoNumberField, { name: 'discount', width: '1/4' })

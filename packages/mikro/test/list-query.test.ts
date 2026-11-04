@@ -3,12 +3,12 @@ import { parseListQuery } from '../src/index.ts'
 
 const api = createApi({
   controllers: [
-    { path: 'fonts', actions: { get: ({ c }) => parseListQuery(c) } }
+    { path: 'books', actions: { get: ({ c }) => parseListQuery(c) } }
   ]
 })
 
 async function parse(query: string) {
-  const response = await api.request(`/fonts?${query}`)
+  const response = await api.request(`/books?${query}`)
   return { status: response.status, json: await response.json() }
 }
 
@@ -22,8 +22,8 @@ describe('parseListQuery()', () => {
   })
 
   it('parses `filter[relation.id]` filters', async () => {
-    const { json } = await parse('filter[family.id]=1')
-    expect(json.filter).toEqual({ 'family.id': '1' })
+    const { json } = await parse('filter[book.id]=1')
+    expect(json.filter).toEqual({ 'book.id': '1' })
   })
 
   it('parses `filter[name]` filters', async () => {
@@ -69,7 +69,7 @@ describe('parseListQuery()', () => {
     const api = createApi({
       controllers: [
         {
-          path: 'fonts',
+          path: 'books',
           actions: {
             get: ({ c }) =>
               parseListQuery(c, { 'filter[a]': ['1', '2'], 'range': '0,9' })
@@ -77,7 +77,7 @@ describe('parseListQuery()', () => {
         }
       ]
     })
-    const response = await api.request('/fonts?range=5,6&order=name')
+    const response = await api.request('/books?range=5,6&order=name')
     expect(await response.json()).toEqual({
       filter: { a: ['1', '2'] },
       order: [],

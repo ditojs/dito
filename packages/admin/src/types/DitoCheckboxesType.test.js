@@ -272,40 +272,40 @@ describe('DitoCheckboxesType', () => {
   })
 
   it('sends checked new rows of a list as `#ref`s to their `#id`s', async () => {
-    // A license links shop items of its order: the options come from the
-    // order's items, and new items have no ids yet.
+    // A reading list links volumes of its library: the options come from
+    // the library's volumes, and new volumes have no ids yet.
     const changes = []
     const { findField, data, submit } = await mountForm({
       schema: {
-        // An order form that sends the serialized order to price it on each
+        // A library form that sends the serialized library to check it on each
         // change:
         onChange: ({ dataPath, serializedRootItem }) => {
-          if (dataPath.startsWith('licenses')) {
+          if (dataPath.startsWith('readingLists')) {
             changes.push(structuredClone(serializedRootItem))
           }
         },
         fields: {
-          shopItems: {
+          volumes: {
             type: 'list',
             inlined: true,
             forms: {
-              font: { type: 'form', fields: { name: { type: 'text' } } },
+              book: { type: 'form', fields: { name: { type: 'text' } } },
               charge: { type: 'form', fields: { name: { type: 'text' } } }
             }
           },
-          licenses: {
+          readingLists: {
             type: 'list',
             inlined: true,
             form: {
               type: 'form',
               fields: {
                 name: { type: 'text' },
-                shopItems: {
+                volumes: {
                   type: 'checkboxes',
                   relate: true,
                   options: {
-                    data: ({ parentItem: order }) => order.shopItems,
-                    dataPath: '/shopItems',
+                    data: ({ parentItem: library }) => library.volumes,
+                    dataPath: '/volumes',
                     label: 'name'
                   }
                 }
@@ -315,33 +315,33 @@ describe('DitoCheckboxesType', () => {
         }
       },
       data: {
-        shopItems: [
-          { id: 1, type: 'font', name: 'Old' },
-          { type: 'font', name: 'A' },
+        volumes: [
+          { id: 1, type: 'book', name: 'Old' },
+          { type: 'book', name: 'A' },
           { type: 'charge', name: 'B' }
         ],
-        licenses: [{ name: 'L', shopItems: [] }]
+        readingLists: [{ name: 'L', volumes: [] }]
       },
       request: ({ data }) => ({ data })
     })
-    const checkboxes = findField('licenses/0/shopItems').findAll(
+    const checkboxes = findField('readingLists/0/volumes').findAll(
       'input[type="checkbox"]'
     )
     await checkboxes[2].setValue(true)
-    expect(data.licenses[0].shopItems).toEqual([data.shopItems[2]])
+    expect(data.readingLists[0].volumes).toEqual([data.volumes[2]])
     const payload = await submit()
-    const reference = payload.shopItems[2]['#id']
+    const reference = payload.volumes[2]['#id']
     expect(reference).toEqual(expect.any(String))
-    expect(payload.shopItems).toEqual([
-      { id: 1, type: 'font', name: 'Old' },
-      { type: 'font', name: 'A' },
+    expect(payload.volumes).toEqual([
+      { id: 1, type: 'book', name: 'Old' },
+      { type: 'book', name: 'A' },
       { '#id': reference, 'type': 'charge', 'name': 'B' }
     ])
-    expect(payload.licenses[0].shopItems).toEqual([{ '#ref': reference }])
+    expect(payload.readingLists[0].volumes).toEqual([{ '#ref': reference }])
     const [change] = changes
-    expect(change.shopItems[2]['#id']).toEqual(expect.any(String))
-    expect(change.licenses[0].shopItems).toEqual([
-      { '#ref': change.shopItems[2]['#id'] }
+    expect(change.volumes[2]['#id']).toEqual(expect.any(String))
+    expect(change.readingLists[0].volumes).toEqual([
+      { '#ref': change.volumes[2]['#id'] }
     ])
   })
 
@@ -351,28 +351,28 @@ describe('DitoCheckboxesType', () => {
     const { findField, getComponent, settle, submit } = await mountForm({
       schema: {
         onChange: ({ dataPath, serializedRootItem }) => {
-          if (dataPath.startsWith('licenses')) {
+          if (dataPath.startsWith('readingLists')) {
             changes.push(structuredClone(serializedRootItem))
           }
         },
         fields: {
-          shopItems: {
+          volumes: {
             type: 'list',
             inlined: true,
-            forms: { font: itemForm }
+            forms: { book: itemForm }
           },
-          licenses: {
+          readingLists: {
             type: 'list',
             inlined: true,
             form: {
               type: 'form',
               fields: {
-                shopItems: {
+                volumes: {
                   type: 'checkboxes',
                   relate: true,
                   options: {
-                    data: ({ parentItem: order }) => order.shopItems,
-                    dataPath: '/shopItems',
+                    data: ({ parentItem: library }) => library.volumes,
+                    dataPath: '/volumes',
                     label: 'name'
                   }
                 }
@@ -382,36 +382,36 @@ describe('DitoCheckboxesType', () => {
         }
       },
       data: {
-        shopItems: [{ id: 1, type: 'font', name: 'Old' }],
-        licenses: [{ id: 1, shopItems: [{ id: 1 }] }]
+        volumes: [{ id: 1, type: 'book', name: 'Old' }],
+        readingLists: [{ id: 1, volumes: [{ id: 1 }] }]
       },
       request: ({ data }) => ({ data })
     })
-    const list = getComponent('shopItems')
-    list.sourceContext.createItem(itemForm, 'font')
-    list.sourceContext.createItem(itemForm, 'font')
+    const list = getComponent('volumes')
+    list.sourceContext.createItem(itemForm, 'book')
+    list.sourceContext.createItem(itemForm, 'book')
     await settle()
-    const inputs = findField('shopItems').findAll('input[type="text"]')
+    const inputs = findField('volumes').findAll('input[type="text"]')
     await inputs[1].setValue('A')
     await inputs[2].setValue('B')
     await settle()
-    const checkboxes = findField('licenses/0/shopItems').findAll(
+    const checkboxes = findField('readingLists/0/volumes').findAll(
       'input[type="checkbox"]'
     )
     await checkboxes[2].setValue(true)
     await settle()
     const payload = await submit()
-    const reference = payload.shopItems[2]['#id']
+    const reference = payload.volumes[2]['#id']
     expect(reference).toEqual(expect.any(String))
-    expect(payload.shopItems[1]).not.toHaveProperty('#id')
-    expect(payload.licenses[0].shopItems).toEqual([
+    expect(payload.volumes[1]).not.toHaveProperty('#id')
+    expect(payload.readingLists[0].volumes).toEqual([
       { id: 1 },
       { '#ref': reference }
     ])
     const change = changes.at(-1)
-    expect(change.licenses[0].shopItems).toEqual([
+    expect(change.readingLists[0].volumes).toEqual([
       { id: 1 },
-      { '#ref': change.shopItems[2]['#id'] }
+      { '#ref': change.volumes[2]['#id'] }
     ])
   })
 })

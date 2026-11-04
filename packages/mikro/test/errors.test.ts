@@ -13,7 +13,7 @@ import {
 import { defineEntity, p } from '@mikro-orm/core'
 import { HttpError } from '@ditojs/server'
 import { toHttpError } from '../src/errors.ts'
-import { Cut, Family, FontSet, entities } from './entities.ts'
+import { Chapter, Book, Part, entities } from './entities.ts'
 
 // A page owns its child pages, which share its table.
 const PageSchema = defineEntity({
@@ -38,9 +38,9 @@ const orm = await MikroORM.init({
   dbName: 'dito_mikro_metadata',
   entities: [...entities, Page]
 })
-const family = orm.getMetadata().get(Family)
-const set = orm.getMetadata().get(FontSet)
-const cut = orm.getMetadata().get(Cut)
+const book = orm.getMetadata().get(Book)
+const part = orm.getMetadata().get(Part)
+const chapter = orm.getMetadata().get(Chapter)
 const page = orm.getMetadata().get(Page)
 
 // A MikroORM exception of a Postgres error, as the exception converter makes
@@ -55,7 +55,7 @@ function pgError<T extends DriverException>(
 
 const body = (
   error: unknown,
-  meta: EntityMetadata = family,
+  meta: EntityMetadata = book,
   method = 'PATCH'
 ) => (toHttpError(error, meta, method) as HttpError).toJSON()
 
@@ -63,7 +63,7 @@ describe('toHttpError()', () => {
   it('answers 23502 with 400 at the column of the root table', () => {
     const error = pgError(NotNullConstraintViolationException, 'not null', {
       code: '23502',
-      table: 'family',
+      table: 'book',
       column: 'name'
     })
     expect(body(error)).toMatchObject({
@@ -76,7 +76,7 @@ describe('toHttpError()', () => {
       status: 400,
       message: 'The data is not valid for the database.'
     })
-    expect(body(error, set).errors).toBeUndefined()
+    expect(body(error, part).errors).toBeUndefined()
   })
 
   it('answers with the status only for entities that own rows of their table', () => {
@@ -94,29 +94,29 @@ describe('toHttpError()', () => {
   it('answers 23505 with 409 at the key columns', () => {
     const error = pgError(UniqueConstraintViolationException, 'unique', {
       code: '23505',
-      table: 'font_set',
-      detail: 'Key (family_id, "name")=(1, Regular) already exists.'
+      table: 'part',
+      detail: 'Key (book_id, "name")=(1, Preface) already exists.'
     })
-    expect(body(error, set)).toMatchObject({
+    expect(body(error, part)).toMatchObject({
       status: 409,
       errors: {
-        family: [{ message: 'already exists', keyword: 'not_unique' }],
+        book: [{ message: 'already exists', keyword: 'not_unique' }],
         name: [{ message: 'already exists', keyword: 'not_unique' }]
       }
     })
     const composite = pgError(UniqueConstraintViolationException, 'unique', {
       code: '23505',
-      table: 'font_cut',
-      detail: 'Key (set_id, name)=(1, Light) already exists.'
+      table: 'chapter',
+      detail: 'Key (part_id, name)=(1, Lesson) already exists.'
     })
-    expect(Object.keys(body(composite, cut).errors!)).toEqual([
-      'set',
+    expect(Object.keys(body(composite, chapter).errors!)).toEqual([
+      'part',
       'name'
     ])
     // A key on an expression points nowhere.
     const expression = pgError(UniqueConstraintViolationException, 'unique', {
       code: '23505',
-      table: 'family',
+      table: 'book',
       detail: 'Key (lower(name::text))=(a) already exists.'
     })
     expect(body(expression)).toEqual({
@@ -128,13 +128,13 @@ describe('toHttpError()', () => {
   it('answers 23503 on a write with 400 at the relation', () => {
     const error = pgError(ForeignKeyConstraintViolationException, 'fk', {
       code: '23503',
-      table: 'font_set',
-      detail: 'Key (family_id)=(99) is not present in table "family".'
+      table: 'part',
+      detail: 'Key (book_id)=(99) is not present in table "book".'
     })
-    expect(body(error, set)).toMatchObject({
+    expect(body(error, part)).toMatchObject({
       status: 400,
       errors: {
-        family: [
+        book: [
           { message: 'references a missing row', keyword: 'invalid_value' }
         ]
       }
@@ -142,10 +142,10 @@ describe('toHttpError()', () => {
     // A Postgres detail that it can't read points nowhere.
     const other = pgError(ForeignKeyConstraintViolationException, 'fk', {
       code: '23503',
-      table: 'font_set',
-      detail: 'Schlüssel (family_id)=(99) ist nicht vorhanden.'
+      table: 'part',
+      detail: 'Schlüssel (book_id)=(99) ist nicht vorhanden.'
     })
-    expect(body(other, set)).toEqual({
+    expect(body(other, part)).toEqual({
       status: 400,
       message: 'The data is not valid for the database.'
     })
@@ -163,28 +163,28 @@ describe('toHttpError()', () => {
       table: 'award',
       detail: 'Auf Schlüssel (id)=(1) wird noch aus Tabelle »award« verwiesen.'
     })
-    expect(body(error, family, 'DELETE')).toEqual(conflict)
-    expect(body(error, family, 'PATCH')).toEqual(conflict)
+    expect(body(error, book, 'DELETE')).toEqual(conflict)
+    expect(body(error, book, 'PATCH')).toEqual(conflict)
     const root = pgError(ForeignKeyConstraintViolationException, 'fk', {
       code: '23503',
-      table: 'family',
-      detail: 'Auf Schlüssel (id)=(1) wird noch aus Tabelle »family« verwiesen.'
+      table: 'book',
+      detail: 'Auf Schlüssel (id)=(1) wird noch aus Tabelle »book« verwiesen.'
     })
-    expect(body(root, family, 'DELETE')).toEqual(conflict)
+    expect(body(root, book, 'DELETE')).toEqual(conflict)
   })
 
   it('answers 23514 with 400 at the column that the constraint names', () => {
     const error = pgError(CheckConstraintViolationException, 'check', {
       code: '23514',
-      table: 'family',
-      constraint: 'family_name_check'
+      table: 'book',
+      constraint: 'book_name_check'
     })
     expect(body(error).errors).toEqual({
       name: [{ message: 'fails a check', keyword: 'invalid_value' }]
     })
     const other = pgError(CheckConstraintViolationException, 'check', {
       code: '23514',
-      table: 'family',
+      table: 'book',
       constraint: 'name_not_empty'
     })
     expect(body(other)).toEqual({
@@ -196,7 +196,7 @@ describe('toHttpError()', () => {
   it('answers data exceptions such as 22001 with 400 without a field', () => {
     const error = pgError(DriverException, 'value too long', {
       code: '22001',
-      table: 'family',
+      table: 'book',
       column: 'name'
     })
     expect(body(error)).toEqual({
@@ -208,11 +208,11 @@ describe('toHttpError()', () => {
   it('answers other constraint violations with 409 without a field', () => {
     const exclusion = pgError(ConstraintViolationException, 'exclusion', {
       code: '23P01',
-      table: 'family'
+      table: 'book'
     })
     const unique = pgError(UniqueConstraintViolationException, 'unique', {
       code: '23505',
-      table: 'family'
+      table: 'book'
     })
     for (const error of [exclusion, unique]) {
       expect(body(error)).toEqual({
@@ -230,7 +230,7 @@ describe('toHttpError()', () => {
   it('maps MikroORM errors and leaves other errors', () => {
     expect(toHttpError(new NotFoundError('none'))!.status).toBe(404)
     expect(
-      toHttpError(OptimisticLockError.lockFailed('Family'))!.status
+      toHttpError(OptimisticLockError.lockFailed('Book'))!.status
     ).toBe(409)
     expect(toHttpError(new Error('other'))).toBeUndefined()
   })

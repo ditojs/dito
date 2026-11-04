@@ -20,15 +20,15 @@ const titleList = {
 }
 
 const properties = {
-  shopSets: {
+  volumes: {
     type: 'array',
     items: {
       type: 'object',
       properties: {
         name: { type: 'string', required: true },
-        cuts: titleList,
-        // Without a `DitoTreeLevel`, the styles aren't a level of the tree:
-        styles: titleList
+        chapters: titleList,
+        // Without a `DitoTreeLevel`, the sections aren't a level of the tree:
+        sections: titleList
       }
     }
   }
@@ -36,13 +36,13 @@ const properties = {
 
 const item = {
   id: 1,
-  shopSets: [
+  volumes: [
     {
-      name: 'Sans',
-      cuts: [{ title: 'Regular' }, { title: 'Bold' }],
-      styles: [{ title: 'Italic' }]
+      name: 'Poetry',
+      chapters: [{ title: 'Preface' }, { title: 'Body' }],
+      sections: [{ title: 'Interlude' }]
     },
-    { name: 'Serif', cuts: [], styles: [] }
+    { name: 'Prose', chapters: [], sections: [] }
   ]
 }
 
@@ -51,42 +51,42 @@ const contexts = {}
 
 let form = null
 
-// A page that edits a tree of shop sets and their cuts, a level each, with the
-// props of the levels:
-const createFontPage = ({
-  shopSetForm = context => {
-    contexts.shopSets = context
+// A page that edits a tree of volumes and their chapters, a level each, with
+// the props of the levels:
+const createBookPage = ({
+  volumeForm = context => {
+    contexts.volumes = context
     return h(DitoTextField, { name: 'name', label: 'Set' })
   },
   levels = () =>
     h(
       DitoTreeLevel,
-      { name: 'cuts', itemLabel: 'title', draggable: true },
+      { name: 'chapters', itemLabel: 'title', draggable: true },
       {
         form: context => {
-          contexts.cuts = context
-          return h(DitoTextField, { name: 'title', label: 'Cut' })
+          contexts.chapters = context
+          return h(DitoTextField, { name: 'title', label: 'Chapter' })
         }
       }
     )
 } = {}) => ({
   setup() {
-    form = useDitoForm({ resource: 'fonts', id: 1, properties })
+    form = useDitoForm({ resource: 'books', id: 1, properties })
     return () =>
       h(DitoSchemaForm, null, {
         default: () =>
           h(
             DitoTreeListField,
-            { name: 'shopSets', itemLabel: 'name', collapsed: false },
-            { form: shopSetForm, default: levels }
+            { name: 'volumes', itemLabel: 'name', collapsed: false },
+            { form: volumeForm, default: levels }
           )
       })
   }
 })
 
-async function mountFontPage(path = '/font', component = createFontPage()) {
+async function mountBookPage(path = '/book', component = createBookPage()) {
   const request = vi.fn(({ method = 'get', url }) => {
-    if (method === 'get' && url === '/fonts/1') {
+    if (method === 'get' && url === '/books/1') {
       return { data: structuredClone(item) }
     } else {
       throw new Error(`Unexpected request: ${method} ${url}`)
@@ -95,10 +95,10 @@ async function mountFontPage(path = '/font', component = createFontPage()) {
   const admin = await mountAdmin({
     path,
     views: {
-      font: {
+      book: {
         type: 'page',
         label: 'Font',
-        path: 'font',
+        path: 'book',
         component
       }
     },
@@ -139,143 +139,143 @@ describe('DitoTreeListField', () => {
   })
 
   it('shows the levels that it declares, each with its own props', async () => {
-    const { wrapper } = await mountFontPage()
+    const { wrapper } = await mountBookPage()
     // The levels label their items by their own `itemLabel`:
-    expect(getLabels(wrapper)).toEqual(['Sans', 'Regular', 'Bold', 'Serif'])
+    expect(getLabels(wrapper)).toEqual(['Poetry', 'Preface', 'Body', 'Prose'])
     expect(getFormInput(wrapper).exists()).toBe(false)
-    // Only the cuts are draggable, not the shop sets:
+    // Only the chapters are draggable, not the volumes:
     const getHandles = selector =>
       wrapper.findAll(
         `${selector} > .dito-tree-item__header .dito-button--drag`
       )
-    const shopSets = '.dito-tree-item[role="tree"] > div > .dito-tree-item'
-    expect(getHandles(shopSets)).toHaveLength(0)
-    expect(getHandles(`${shopSets} .dito-tree-item`)).toHaveLength(2)
+    const volumes = '.dito-tree-item[role="tree"] > div > .dito-tree-item'
+    expect(getHandles(volumes)).toHaveLength(0)
+    expect(getHandles(`${volumes} .dito-tree-item`)).toHaveLength(2)
   })
 
   it('reads the levels and their props from templates', async () => {
-    const { wrapper } = await mountFontPage(
-      '/font/shop-sets/0/cuts/1',
+    const { wrapper } = await mountBookPage(
+      '/book/volumes/0/chapters/1',
       TreeListPage
     )
-    expect(getLabels(wrapper)).toEqual(['Sans', 'Regular', 'Bold', 'Serif'])
+    expect(getLabels(wrapper)).toEqual(['Poetry', 'Preface', 'Body', 'Prose'])
     expect(wrapper.findAll('.dito-button--drag')).toHaveLength(2)
     const label = wrapper.find('.dito-tree-list__form-container label')
-    expect(label.text()).toBe('Cut 2')
+    expect(label.text()).toBe('Chapter 2')
   })
 
   it('reads hyphenated props of levels', async () => {
-    const { wrapper } = await mountFontPage(
-      '/font',
-      createFontPage({
+    const { wrapper } = await mountBookPage(
+      '/book',
+      createBookPage({
         levels: () =>
-          h(DitoTreeLevel, { 'name': 'cuts', 'item-label': 'title' })
+          h(DitoTreeLevel, { 'name': 'chapters', 'item-label': 'title' })
       })
     )
-    expect(getLabels(wrapper)).toEqual(['Sans', 'Regular', 'Bold', 'Serif'])
+    expect(getLabels(wrapper)).toEqual(['Poetry', 'Preface', 'Body', 'Prose'])
   })
 
   it('edits only the items of levels with a form', async () => {
-    const { wrapper } = await mountFontPage(
-      '/font',
-      createFontPage({ shopSetForm: null })
+    const { wrapper } = await mountBookPage(
+      '/book',
+      createBookPage({ volumeForm: null })
     )
-    // Regular, Bold:
+    // Preface, Body:
     const buttons = wrapper.findAll('.dito-tree-item .dito-button--edit')
     expect(buttons).toHaveLength(2)
   })
 
   it('opens the form of the selected item in its route', async () => {
-    const { admin, wrapper } = await mountFontPage()
-    // Sans, Regular, Bold, Serif:
+    const { admin, wrapper } = await mountBookPage()
+    // Poetry, Preface, Body, Prose:
     await clickEdit(wrapper, 2)
-    expect(getPath(admin)).toBe('/font/shop-sets/0/cuts/1')
+    expect(getPath(admin)).toBe('/book/volumes/0/chapters/1')
     const label = wrapper.find('.dito-tree-list__form-container label')
-    expect(label.text()).toBe('Cut')
-    expect(getFormInput(wrapper).element.value).toBe('Bold')
-    expect(contexts.cuts.item).toBe(form.item.shopSets[0].cuts[1])
-    expect(contexts.cuts.itemIndex).toBe(1)
-    expect(contexts.cuts.parentItem).toBe(form.item.shopSets[0])
+    expect(label.text()).toBe('Chapter')
+    expect(getFormInput(wrapper).element.value).toBe('Body')
+    expect(contexts.chapters.item).toBe(form.item.volumes[0].chapters[1])
+    expect(contexts.chapters.itemIndex).toBe(1)
+    expect(contexts.chapters.parentItem).toBe(form.item.volumes[0])
     await clickEdit(wrapper, 3)
-    expect(getPath(admin)).toBe('/font/shop-sets/1')
-    expect(getFormInput(wrapper).element.value).toBe('Serif')
-    expect(contexts.shopSets.item).toBe(form.item.shopSets[1])
+    expect(getPath(admin)).toBe('/book/volumes/1')
+    expect(getFormInput(wrapper).element.value).toBe('Prose')
+    expect(contexts.volumes.item).toBe(form.item.volumes[1])
     admin.router.back()
     await settle()
-    expect(getPath(admin)).toBe('/font/shop-sets/0/cuts/1')
-    expect(getFormInput(wrapper).element.value).toBe('Bold')
+    expect(getPath(admin)).toBe('/book/volumes/0/chapters/1')
+    expect(getFormInput(wrapper).element.value).toBe('Body')
   })
 
   it('opens the form of the item of a deep link', async () => {
-    const { wrapper } = await mountFontPage('/font/shop-sets/0/cuts/1')
-    expect(getFormInput(wrapper).element.value).toBe('Bold')
+    const { wrapper } = await mountBookPage('/book/volumes/0/chapters/1')
+    expect(getFormInput(wrapper).element.value).toBe('Body')
     expect(
       wrapper.find('.dito-tree-item--active .dito-tree-item__label').text()
-    ).toBe('Bold')
+    ).toBe('Body')
   })
 
   it('edits the item in place', async () => {
-    const { wrapper } = await mountFontPage('/font/shop-sets/0')
-    await enterValue(getFormInput(wrapper), 'Mono')
-    expect(form.item.shopSets[0].name).toBe('Mono')
+    const { wrapper } = await mountBookPage('/book/volumes/0')
+    await enterValue(getFormInput(wrapper), 'Drama')
+    expect(form.item.volumes[0].name).toBe('Drama')
     expect(form.isDirty).toBe(true)
-    expect(getLabels(wrapper)[0]).toBe('Mono')
+    expect(getLabels(wrapper)[0]).toBe('Drama')
   })
 
   it('opens the form of the item that holds errors', async () => {
-    const { admin, wrapper } = await mountFontPage()
-    form.item.shopSets[0].cuts[1].title = ''
+    const { admin, wrapper } = await mountBookPage()
+    form.item.volumes[0].chapters[1].title = ''
     expect(form.validate()).toBe(false)
     await settle()
-    expect(getPath(admin)).toBe('/font/shop-sets/0/cuts/1')
+    expect(getPath(admin)).toBe('/book/volumes/0/chapters/1')
     expect(wrapper.find('.dito-tree-list__form-container .dito-errors').text())
-      .toBe('The Cut field is required.')
+      .toBe('The Chapter field is required.')
   })
 
   it('shows the levels that are rendered', async () => {
-    const hasCuts = ref(false)
-    const { admin, wrapper } = await mountFontPage(
-      '/font/shop-sets/0',
-      createFontPage({
+    const hasChapters = ref(false)
+    const { admin, wrapper } = await mountBookPage(
+      '/book/volumes/0',
+      createBookPage({
         levels: () =>
-          hasCuts.value
-            ? h(DitoTreeLevel, { name: 'cuts', itemLabel: 'title' })
+          hasChapters.value
+            ? h(DitoTreeLevel, { name: 'chapters', itemLabel: 'title' })
             : null
       })
     )
-    expect(getLabels(wrapper)).toEqual(['Sans', 'Serif'])
-    hasCuts.value = true
+    expect(getLabels(wrapper)).toEqual(['Poetry', 'Prose'])
+    hasChapters.value = true
     await settle()
-    expect(getLabels(wrapper)).toEqual(['Sans', 'Regular', 'Bold', 'Serif'])
+    expect(getLabels(wrapper)).toEqual(['Poetry', 'Preface', 'Body', 'Prose'])
     // The form of the selected item stays open:
-    expect(getPath(admin)).toBe('/font/shop-sets/0')
-    expect(getFormInput(wrapper).element.value).toBe('Sans')
-    hasCuts.value = false
+    expect(getPath(admin)).toBe('/book/volumes/0')
+    expect(getFormInput(wrapper).element.value).toBe('Poetry')
+    hasChapters.value = false
     await settle()
-    expect(getLabels(wrapper)).toEqual(['Sans', 'Serif'])
-    expect(getFormInput(wrapper).element.value).toBe('Sans')
+    expect(getLabels(wrapper)).toEqual(['Poetry', 'Prose'])
+    expect(getFormInput(wrapper).element.value).toBe('Poetry')
   })
 
   it('opens the form of the parent item when its level goes', async () => {
-    const hasCuts = ref(true)
-    const { admin, wrapper } = await mountFontPage(
-      '/font/shop-sets/0/cuts/1',
-      createFontPage({
+    const hasChapters = ref(true)
+    const { admin, wrapper } = await mountBookPage(
+      '/book/volumes/0/chapters/1',
+      createBookPage({
         levels: () =>
-          hasCuts.value
+          hasChapters.value
             ? h(
                 DitoTreeLevel,
-                { name: 'cuts', itemLabel: 'title' },
+                { name: 'chapters', itemLabel: 'title' },
                 { form: () => h(DitoTextField, { name: 'title' }) }
               )
             : null
       })
     )
-    expect(getFormInput(wrapper).element.value).toBe('Bold')
-    hasCuts.value = false
+    expect(getFormInput(wrapper).element.value).toBe('Body')
+    hasChapters.value = false
     await settle()
-    expect(getPath(admin)).toBe('/font/shop-sets/0')
-    expect(getFormInput(wrapper).element.value).toBe('Sans')
+    expect(getPath(admin)).toBe('/book/volumes/0')
+    expect(getFormInput(wrapper).element.value).toBe('Poetry')
   })
 
   it('lays out the forms with the current slots of the levels', async () => {
@@ -283,24 +283,24 @@ describe('DitoTreeListField', () => {
     // A page that renders the tree in a loop, whose variable the slots read:
     const page = {
       setup() {
-        useDitoForm({ resource: 'fonts', id: 1, properties })
+        useDitoForm({ resource: 'books', id: 1, properties })
         return () =>
           h(DitoSchemaForm, null, {
             default: () =>
               suffixes.value.map(suffix =>
                 h(
                   DitoTreeListField,
-                  { key: 'shopSets', name: 'shopSets', itemLabel: 'name' },
+                  { key: 'volumes', name: 'volumes', itemLabel: 'name' },
                   {
                     default: () =>
                       h(
                         DitoTreeLevel,
-                        { name: 'cuts', itemLabel: 'title' },
+                        { name: 'chapters', itemLabel: 'title' },
                         {
                           form: () =>
                             h(DitoTextField, {
                               name: 'title',
-                              label: `Cut ${suffix}`
+                              label: `Chapter ${suffix}`
                             })
                         }
                       )
@@ -310,30 +310,30 @@ describe('DitoTreeListField', () => {
           })
       }
     }
-    const { wrapper } = await mountFontPage('/font/shop-sets/0/cuts/1', page)
+    const { wrapper } = await mountBookPage('/book/volumes/0/chapters/1', page)
     const getLabel = () =>
       wrapper.find('.dito-tree-list__form-container label').text()
-    expect(getLabel()).toBe('Cut 1')
+    expect(getLabel()).toBe('Chapter 1')
     suffixes.value = ['2']
     await settle()
-    expect(getLabel()).toBe('Cut 2')
+    expect(getLabel()).toBe('Chapter 2')
   })
 
   it('throws for levels with several child levels', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    await mountFontPage(
-      '/font',
-      createFontPage({
+    await mountBookPage(
+      '/book',
+      createBookPage({
         levels: () => [
-          h(DitoTreeLevel, { name: 'cuts' }),
-          h(DitoTreeLevel, { name: 'styles' })
+          h(DitoTreeLevel, { name: 'chapters' }),
+          h(DitoTreeLevel, { name: 'sections' })
         ]
       })
     )
     expect([...error.mock.calls, ...warn.mock.calls].flat()).toContainEqual(
       expect.objectContaining({
-        message: `Unsupported tree level with several child levels: 'cuts', 'styles'.`
+        message: `Unsupported tree level with several child levels: 'chapters', 'sections'.`
       })
     )
     error.mockRestore()

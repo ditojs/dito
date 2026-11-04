@@ -1,6 +1,6 @@
 import { test, expect, db } from '../fixtures.js'
-import { Designer } from '../models/Designer.js'
-import { ShopSet } from '../models/ShopSet.js'
+import { Author } from '../models/Author.js'
+import { Volume } from '../models/Volume.js'
 import { Collection } from '../models/Collection.js'
 import {
   DitoForm,
@@ -19,14 +19,14 @@ const getErrors = (page: Page, label: string) =>
 
 test.describe('forms with properties and widgets', () => {
   test('load and save the data of the properties', async ({ page, url }) => {
-    const { id } = await db.insert(Designer, {
+    const { id } = await db.insert(Author, {
       name: 'Ada',
       awards: [{ title: 'Gold', year: 2020 }],
       address: { city: 'London' }
     })
     const form = new DitoForm(page)
     const awards = new DitoNestedList(page, 'Awards')
-    await page.goto(`${url}/admin/designers/${id}`)
+    await page.goto(`${url}/admin/authors/${id}`)
     await expect(form.getField('Name')).toHaveValue('Ada')
     // The properties mark the label, not the widget:
     await expect(
@@ -39,11 +39,11 @@ test.describe('forms with properties and widgets', () => {
     await form.save()
     await expect
       .poll(async () => {
-        const designer = await db.findOne(Designer, id)
+        const author = await db.findOne(Author, id)
         return {
-          name: designer?.name,
-          awards: designer?.awards,
-          address: designer?.address
+          name: author?.name,
+          awards: author?.awards,
+          address: author?.address
         }
       })
       .toEqual({
@@ -57,13 +57,13 @@ test.describe('forms with properties and widgets', () => {
     page,
     url
   }) => {
-    const { id } = await db.insert(Designer, { name: 'Ada' })
+    const { id } = await db.insert(Author, { name: 'Ada' })
     const form = new DitoForm(page)
-    await page.goto(`${url}/admin/designers/${id}`)
+    await page.goto(`${url}/admin/authors/${id}`)
     const profile = getContainer(page, 'Profile')
-    await expect(profile.locator('.designer-profile')).toHaveText('Ada')
+    await expect(profile.locator('.author-profile')).toHaveText('Ada')
     await form.fill('Name', 'Grace')
-    await expect(profile.locator('.designer-profile')).toHaveText('Grace')
+    await expect(profile.locator('.author-profile')).toHaveText('Grace')
     // `break: 'before'` starts a new line, although the widget would fit:
     const nameBox = await getContainer(page, 'Name').boundingBox()
     const profileBox = await profile.boundingBox()
@@ -77,7 +77,7 @@ test.describe('forms with properties and widgets', () => {
   }) => {
     const form = new DitoForm(page)
     const awards = new DitoNestedList(page, 'Awards')
-    await page.goto(`${url}/admin/designers`)
+    await page.goto(`${url}/admin/authors`)
     await expect(form.getField('Featured')).not.toBeChecked()
     await form.fill('Name', 'Ada')
     await awards.add()
@@ -87,7 +87,7 @@ test.describe('forms with properties and widgets', () => {
     await form.create()
     await expect
       .poll(async () =>
-        (await db.find(Designer, {})).map(
+        (await db.find(Author, {})).map(
           ({ name, isFeatured, rank, awards }) => ({
             name,
             isFeatured,
@@ -110,7 +110,7 @@ test.describe('forms with properties and widgets', () => {
     page,
     url
   }) => {
-    const { id } = await db.insert(Designer, {
+    const { id } = await db.insert(Author, {
       name: 'Ada',
       isFeatured: true,
       rank: 3,
@@ -118,7 +118,7 @@ test.describe('forms with properties and widgets', () => {
     })
     const form = new DitoForm(page)
     const awards = new DitoNestedList(page, 'Awards')
-    await page.goto(`${url}/admin/designers/${id}`)
+    await page.goto(`${url}/admin/authors/${id}`)
     // Clear the title of the second award and collapse it again:
     const header = awards.rows.nth(1).locator('.dito-schema-header')
     await header.click()
@@ -134,14 +134,14 @@ test.describe('forms with properties and widgets', () => {
   })
 
   test('reveal errors in collapsed sections', async ({ page, url }) => {
-    const { id } = await db.insert(Designer, {
+    const { id } = await db.insert(Author, {
       name: 'Ada',
       isFeatured: true,
       rank: 3
     })
     const form = new DitoForm(page)
     const ranking = page.locator('.dito-schema-header', { hasText: 'Ranking' })
-    await page.goto(`${url}/admin/designers/${id}`)
+    await page.goto(`${url}/admin/authors/${id}`)
     await expect(form.getField('Rank')).toBeHidden()
     await ranking.click()
     await form.fill('Rank', '0')
@@ -167,14 +167,14 @@ test.describe('forms with properties and widgets', () => {
     page,
     url
   }) => {
-    const { id } = await db.insert(Designer, {
+    const { id } = await db.insert(Author, {
       name: 'Ada',
       isFeatured: true,
       rank: 3
     })
     const form = new DitoForm(page)
     const ranking = page.locator('.dito-schema-header', { hasText: 'Ranking' })
-    await page.goto(`${url}/admin/designers/${id}`)
+    await page.goto(`${url}/admin/authors/${id}`)
     await ranking.click()
     await form.fill('Rank', '0')
     // Without the feature, the rank hides, isn't validated and isn't sent:
@@ -183,16 +183,16 @@ test.describe('forms with properties and widgets', () => {
     await form.save()
     await expect
       .poll(async () => {
-        const designer = await db.findOne(Designer, id)
-        return [designer?.isFeatured, designer?.rank]
+        const author = await db.findOne(Author, id)
+        return [author?.isFeatured, author?.rank]
       })
       .toEqual([false, 3])
   })
 
   test('notify the errors that no widget shows', async ({ page, url }) => {
-    const { id } = await db.insert(Designer, { name: 'Ada' })
+    const { id } = await db.insert(Author, { name: 'Ada' })
     const form = new DitoForm(page)
-    await page.goto(`${url}/admin/designers/${id}`)
+    await page.goto(`${url}/admin/authors/${id}`)
     await form.fill('Email', 'ada')
     await page.getByRole('button', { name: 'Hide Contact' }).click()
     await expect(form.getField('Email')).toBeHidden()
@@ -209,13 +209,13 @@ test.describe('forms with properties and widgets', () => {
     page,
     url
   }) => {
-    const { id } = await db.insert(Designer, {
+    const { id } = await db.insert(Author, {
       name: 'Ada',
       awards: [{ title: 'Gold' }]
     })
     const form = new DitoForm(page)
     const awards = new DitoNestedList(page, 'Awards')
-    await page.goto(`${url}/admin/designers/${id}`)
+    await page.goto(`${url}/admin/authors/${id}`)
     await form.fill('Name', 'Ada Lovelace, Countess of Lovelace')
     await awards.rows.first().locator('.dito-schema-header').click()
     await form.fill('Title', 'Analytical Engine Award')
@@ -225,7 +225,7 @@ test.describe('forms with properties and widgets', () => {
     await expect(getErrors(page, 'Name')).toContainText('20')
     await expect(getErrors(page, 'Title')).toContainText('12')
     await expect
-      .poll(async () => (await db.findOne(Designer, id))?.name)
+      .poll(async () => (await db.findOne(Author, id))?.name)
       .toBe('Ada')
   })
 })
@@ -236,33 +236,33 @@ test.describe('lists of several kinds in forms with properties', () => {
     url
   }) => {
     const form = new DitoForm(page)
-    const cuts = new DitoNestedList(page, 'Cuts')
+    const chapters = new DitoNestedList(page, 'Chapters')
     const prices = new DitoNestedList(page, 'Prices')
-    await page.goto(`${url}/admin/shop-sets`)
+    await page.goto(`${url}/admin/volumes`)
     await form.fill('Name', 'Starter')
     await prices.add()
     await form.fill('Price', '40')
-    await cuts.addType('Bundle')
+    await chapters.addType('Bundle')
     await expect(form.getField('Discount')).toHaveValue('10')
     await form.fill('Title', 'Duo')
-    await cuts.addType('Style')
-    await form.fill('Style Name', 'Regular')
+    await chapters.addType('Section')
+    await form.fill('Section Name', 'Preface')
     await form.create()
     await expect
       .poll(async () =>
-        (await db.find(ShopSet, {})).map(({ name, prices, cuts }) => ({
+        (await db.find(Volume, {})).map(({ name, prices, chapters }) => ({
           name,
           prices,
-          cuts
+          chapters
         }))
       )
       .toEqual([
         {
           name: 'Starter',
           prices: [40],
-          cuts: [
+          chapters: [
             { type: 'bundle', title: 'Duo', discount: 10 },
-            { type: 'style', name: 'Regular' }
+            { type: 'section', name: 'Preface' }
           ]
         }
       ])
@@ -272,18 +272,18 @@ test.describe('lists of several kinds in forms with properties', () => {
     page,
     url
   }) => {
-    const { id } = await db.insert(ShopSet, {
+    const { id } = await db.insert(Volume, {
       name: 'Starter',
       prices: [40],
-      cuts: [
-        { type: 'style', name: 'Regular' },
+      chapters: [
+        { type: 'section', name: 'Preface' },
         { type: 'bundle', title: 'Duo', discount: 10 }
       ]
     })
     const form = new DitoForm(page)
-    const cuts = new DitoNestedList(page, 'Cuts')
-    await page.goto(`${url}/admin/shop-sets/${id}`)
-    const header = cuts.rows.nth(1).locator('.dito-schema-header')
+    const chapters = new DitoNestedList(page, 'Chapters')
+    await page.goto(`${url}/admin/volumes/${id}`)
+    const header = chapters.rows.nth(1).locator('.dito-schema-header')
     await header.click()
     await form.fill('Title', '')
     await header.click()
@@ -311,71 +311,71 @@ test.describe('trees in forms with properties', () => {
     url
   }) => {
     const { id } = await db.insert(Collection, {
-      name: 'Fonts',
-      shopSets: [
-        { name: 'Sans', cuts: [{ name: 'Regular' }, { name: 'Bold' }] },
-        { name: 'Serif', cuts: [] }
+      name: 'books',
+      volumes: [
+        { name: 'Poetry', chapters: [{ name: 'Preface' }, { name: 'Body' }] },
+        { name: 'Prose', chapters: [] }
       ]
     })
     const form = new DitoForm(page)
     await page.goto(`${url}/admin/collections/${id}`)
-    await page.getByRole('button', { name: 'Sans' }).click()
-    const header = getTreeHeader(page, 'Bold')
+    await page.getByRole('button', { name: 'Poetry' }).click()
+    const header = getTreeHeader(page, 'Body')
     await header.hover()
     await header.getByRole('link', { name: 'Edit' }).click()
-    await expect(page).toHaveURL(/\/collections\/\d+\/shop-sets\/0\/cuts\/1$/)
-    await expect(form.getField('Cut')).toHaveValue('Bold')
-    await form.fill('Cut', 'Black')
-    await expect(getTreeHeader(page, 'Black')).toBeVisible()
+    await expect(page).toHaveURL(/\/collections\/\d+\/volumes\/0\/chapters\/1$/)
+    await expect(form.getField('Chapter')).toHaveValue('Body')
+    await form.fill('Chapter', 'Back')
+    await expect(getTreeHeader(page, 'Back')).toBeVisible()
     await page.reload()
     // The reload loses the edit, and opens the form of the link again:
-    await expect(form.getField('Cut')).toHaveValue('Bold')
-    await form.fill('Cut', 'Black')
+    await expect(form.getField('Chapter')).toHaveValue('Body')
+    await form.fill('Chapter', 'Back')
     await form.save()
     await expect
-      .poll(async () => (await db.findOne(Collection, id))?.shopSets)
+      .poll(async () => (await db.findOne(Collection, id))?.volumes)
       .toEqual([
-        { name: 'Sans', cuts: [{ name: 'Regular' }, { name: 'Black' }] },
-        { name: 'Serif', cuts: [] }
+        { name: 'Poetry', chapters: [{ name: 'Preface' }, { name: 'Back' }] },
+        { name: 'Prose', chapters: [] }
       ])
   })
 
   test('reorder the items of draggable levels only', async ({ page, url }) => {
     const { id } = await db.insert(Collection, {
-      name: 'Fonts',
-      shopSets: [
-        { name: 'Sans', cuts: [{ name: 'Regular' }, { name: 'Bold' }] },
-        { name: 'Serif', cuts: [] }
+      name: 'books',
+      volumes: [
+        { name: 'Poetry', chapters: [{ name: 'Preface' }, { name: 'Body' }] },
+        { name: 'Prose', chapters: [] }
       ]
     })
     await page.goto(`${url}/admin/collections/${id}`)
-    await page.getByRole('button', { name: 'Sans' }).click()
+    await page.getByRole('button', { name: 'Poetry' }).click()
     const getHandle = (label: string) =>
       getTreeHeader(page, label).locator('.dito-button[title="Drag"]')
-    await expect(getHandle('Sans')).toHaveCount(0)
-    await getTreeHeader(page, 'Regular').hover()
-    await dragHandle(page, getHandle('Regular'), getHandle('Bold'))
+    await expect(getHandle('Poetry')).toHaveCount(0)
+    await getTreeHeader(page, 'Preface').hover()
+    await dragHandle(page, getHandle('Preface'), getHandle('Body'))
     await new DitoForm(page).save()
     await expect
-      .poll(async () => (await db.findOne(Collection, id))?.shopSets)
+      .poll(async () => (await db.findOne(Collection, id))?.volumes)
       .toEqual([
-        { name: 'Sans', cuts: [{ name: 'Bold' }, { name: 'Regular' }] },
-        { name: 'Serif', cuts: [] }
+        { name: 'Poetry', chapters: [{ name: 'Body' }, { name: 'Preface' }] },
+        { name: 'Prose', chapters: [] }
       ])
   })
 
   test('reveal errors in the forms of their items', async ({ page, url }) => {
     const { id } = await db.insert(Collection, {
-      name: 'Fonts',
-      shopSets: [{ name: 'Sans', cuts: [{ name: '' }] }]
+      name: 'books',
+      volumes: [{ name: 'Poetry', chapters: [{ name: '' }] }]
     })
     const form = new DitoForm(page)
     await page.goto(`${url}/admin/collections/${id}`)
     await form.fill('Name', 'Types')
     await form.save()
-    await expect(page).toHaveURL(/\/shop-sets\/0\/cuts\/0$/)
-    await expect(getErrors(page, 'Cut')).toHaveText(
-      'The Cut field is required.'
+    await expect(page).toHaveURL(/\/volumes\/0\/chapters\/0$/)
+    await expect(getErrors(page, 'Chapter')).toHaveText(
+      'The Chapter field is required.'
     )
   })
 })

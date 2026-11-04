@@ -10,15 +10,15 @@ import {
   DitoSection,
   DitoCustomField
 } from '@ditojs/admin'
-import type { Designer } from '../models/Designer.js'
+import type { Author } from '../models/Author.js'
 
-// A page that edits designers with widgets for the properties of its form,
+// A page that edits authors with widgets for the properties of its form,
 // which hold the data's rules:
 export default defineComponent({
   setup() {
     const route = useRoute()
-    const form = useDitoForm<Designer>({
-      resource: 'designers',
+    const form = useDitoForm<Author>({
+      resource: 'authors',
       id: () => (route.params.id as string) || null,
       properties: {
         name: { type: 'string', required: true },
@@ -28,7 +28,7 @@ export default defineComponent({
           type: 'integer',
           minimum: 1,
           nullable: true,
-          if: ({ item }: { item: Designer }) => !!item.isFeatured
+          if: ({ item }: { item: Author }) => !!item.isFeatured
         },
         awards: {
           type: 'array',
@@ -65,7 +65,7 @@ export default defineComponent({
           h(
             DitoCustomField,
             { label: 'Profile', width: '1/4', break: 'before' },
-            () => h('span', { class: 'designer-profile' }, form.item?.name)
+            () => h('span', { class: 'author-profile' }, form.item?.name)
           ),
           showsContact.value
             ? h(

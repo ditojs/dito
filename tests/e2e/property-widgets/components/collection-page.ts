@@ -13,7 +13,7 @@ const nameProperties = {
   name: { type: 'string', required: true }
 } as const
 
-// A page that edits the shop sets of a collection and their cuts in a tree,
+// A page that edits the volumes of a collection and their chapters in a tree,
 // one level each:
 export default defineComponent({
   setup() {
@@ -23,13 +23,13 @@ export default defineComponent({
       id: () => (route.params.id as string) || null,
       properties: {
         name: { type: 'string', required: true },
-        shopSets: {
+        volumes: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
               ...nameProperties,
-              cuts: {
+              chapters: {
                 type: 'array',
                 items: { type: 'object', properties: nameProperties }
               }
@@ -44,15 +44,16 @@ export default defineComponent({
           h(DitoTextField, { name: 'name' }),
           h(
             DitoTreeListField,
-            { name: 'shopSets', itemLabel: 'name', deletable: true },
+            { name: 'volumes', itemLabel: 'name', deletable: true },
             {
-              form: () => h(DitoTextField, { name: 'name', label: 'Set' }),
+              form: () => h(DitoTextField, { name: 'name', label: 'Volume' }),
               default: () =>
                 h(
                   DitoTreeLevel,
-                  { name: 'cuts', itemLabel: 'name', draggable: true },
+                  { name: 'chapters', itemLabel: 'name', draggable: true },
                   {
-                    form: () => h(DitoTextField, { name: 'name', label: 'Cut' })
+                    form: () =>
+                      h(DitoTextField, { name: 'name', label: 'Chapter' })
                   }
                 )
             }

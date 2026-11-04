@@ -1,19 +1,19 @@
-import designerPage from './components/designer-page.js'
-import shopSetPage from './components/shop-set-page.js'
+import authorPage from './components/author-page.js'
+import volumePage from './components/volume-page.js'
 import collectionPage from './components/collection-page.js'
 
-export const designer = {
+export const author = {
   type: 'page',
-  label: 'Designer',
-  path: 'designers/:id?',
-  component: designerPage
+  label: 'Author',
+  path: 'authors/:id?',
+  component: authorPage
 } as const
 
-export const shopSet = {
+export const volume = {
   type: 'page',
-  label: 'Shop Set',
-  path: 'shop-sets/:id?',
-  component: shopSetPage
+  label: 'Volume',
+  path: 'volumes/:id?',
+  component: volumePage
 } as const
 
 export const collection = {

@@ -1,21 +1,21 @@
 <template lang="pug">
 DitoSchemaForm
   DitoTreeListField(
-    name="shopSets"
+    name="volumes"
     itemLabel="name"
     :collapsed="false"
   )
     template(#form)
       DitoTextField(name="name")
     DitoTreeLevel(
-      name="cuts"
+      name="chapters"
       itemLabel="title"
       draggable
     )
       template(#form="context")
         DitoTextField(
           name="title"
-          :label="`Cut ${context.itemIndex + 1}`"
+          :label="`Chapter ${context.itemIndex + 1}`"
         )
 </template>
 
@@ -31,16 +31,16 @@ import {
 } from '../index.js'
 
 useDitoForm({
-  resource: 'fonts',
+  resource: 'books',
   id: 1,
   properties: {
-    shopSets: {
+    volumes: {
       type: 'array',
       items: {
         type: 'object',
         properties: {
           name: { type: 'string' },
-          cuts: {
+          chapters: {
             type: 'array',
             items: { type: 'object', properties: { title: { type: 'string' } } }
           }

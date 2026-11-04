@@ -779,17 +779,17 @@ describe('DitoClipboard', () => {
     })
 
     describe('of primitives, with `wrapPrimitives`', () => {
-      async function mountFonts(fonts) {
+      async function mountBooks(books) {
         const result = await mountForm({
           schema: {
             fields: {
-              fonts: {
+              books: {
                 type: 'list',
                 inlined: true,
                 form: {
                   type: 'form',
                   fields: {
-                    cuts: {
+                    chapters: {
                       type: 'list',
                       wrapPrimitives: 'name',
                       inlined: true,
@@ -797,7 +797,7 @@ describe('DitoClipboard', () => {
                       creatable: true,
                       draggable: true,
                       deletable: ({ value }) => value.length > 1,
-                      // Lists always show at least one empty cut:
+                      // Lists always show at least one empty chapter:
                       computeValue: ({ value }) =>
                         value.length > 0 ? value : [''],
                       form: {
@@ -811,7 +811,7 @@ describe('DitoClipboard', () => {
               }
             }
           },
-          data: { fonts }
+          data: { books }
         })
         const findButton = (dataPath, button) =>
           result
@@ -827,38 +827,38 @@ describe('DitoClipboard', () => {
       }
 
       it('copies the values and pastes them as values', async () => {
-        const { click, data, dataModel, findField } = await mountFonts([
-          { id: 1, cuts: ['Regular', 'Bold'] },
-          { id: 2, cuts: ['Light'] }
+        const { click, data, dataModel, findField } = await mountBooks([
+          { id: 1, chapters: ['Preface', 'Body'] },
+          { id: 2, chapters: ['Lesson'] }
         ])
-        await click('fonts/0/cuts', 'copy')
-        expect(getClipboardData('cuts', 'list')).toEqual({
-          items: [{ name: 'Regular' }, { name: 'Bold' }]
+        await click('books/0/chapters', 'copy')
+        expect(getClipboardData('chapters', 'list')).toEqual({
+          items: [{ name: 'Preface' }, { name: 'Body' }]
         })
-        await click('fonts/1/cuts', 'paste')
-        expect(data.fonts[1].cuts).toEqual(['Regular', 'Bold'])
+        await click('books/1/chapters', 'paste')
+        expect(data.books[1].chapters).toEqual(['Preface', 'Body'])
         expect(
-          findField('fonts/1/cuts')
+          findField('books/1/chapters')
             .findAll('input')
             .map(input => input.element.value)
-        ).toEqual(['Regular', 'Bold'])
+        ).toEqual(['Preface', 'Body'])
         expect(getNotificationTexts()).toEqual([])
         expect(dataModel.isDirty).toBe(true)
       })
 
       // Empty text serializes to `null`, as when the form is submitted:
       it('copies and pastes the empty value of empty lists', async () => {
-        const { click, data } = await mountFonts([
-          { id: 1, cuts: [] },
-          { id: 2, cuts: ['Light'] }
+        const { click, data } = await mountBooks([
+          { id: 1, chapters: [] },
+          { id: 2, chapters: ['Lesson'] }
         ])
-        expect(data.fonts[0].cuts).toEqual([''])
-        await click('fonts/0/cuts', 'copy')
-        expect(getClipboardData('cuts', 'list')).toEqual({
+        expect(data.books[0].chapters).toEqual([''])
+        await click('books/0/chapters', 'copy')
+        expect(getClipboardData('chapters', 'list')).toEqual({
           items: [{ name: null }]
         })
-        await click('fonts/1/cuts', 'paste')
-        expect(data.fonts[1].cuts).toEqual([null])
+        await click('books/1/chapters', 'paste')
+        expect(data.books[1].chapters).toEqual([null])
       })
     })
 

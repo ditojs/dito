@@ -1,12 +1,12 @@
 import { defineEntity, p } from '@mikro-orm/core'
 
-export interface CollectionCut {
+export interface CollectionChapter {
   name: string
 }
 
-export interface CollectionShopSet {
+export interface CollectionVolume {
   name: string
-  cuts: CollectionCut[]
+  chapters: CollectionChapter[]
 }
 
 const CollectionSchema = defineEntity({
@@ -14,7 +14,7 @@ const CollectionSchema = defineEntity({
   properties: {
     id: p.integer().primary(),
     name: p.string(),
-    shopSets: p.json<CollectionShopSet[]>().nullable()
+    volumes: p.json<CollectionVolume[]>().nullable()
   }
 })
 export class Collection extends CollectionSchema.class {}

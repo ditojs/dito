@@ -35,10 +35,10 @@ let form = null
 const showsName = ref(true)
 const showsEmail = ref(true)
 
-// A designer-like page, which lays out its properties with widgets:
-const DesignerPage = {
+// An author-like page, which lays out its properties with widgets:
+const AuthorPage = {
   setup() {
-    form = useDitoForm({ resource: 'designers', id: 7, properties })
+    form = useDitoForm({ resource: 'authors', id: 7, properties })
     return () =>
       h(DitoSchemaForm, null, {
         default: () => [
@@ -98,9 +98,9 @@ const DesignerPage = {
   }
 }
 
-async function mountDesignerPage(page = DesignerPage) {
+async function mountAuthorPage(page = AuthorPage) {
   const request = vi.fn(({ method = 'get', url, data }) => {
-    if (method === 'get' && url === '/designers/7') {
+    if (method === 'get' && url === '/authors/7') {
       return {
         data: {
           id: 7,
@@ -121,17 +121,17 @@ async function mountDesignerPage(page = DesignerPage) {
   })
   const admin = await mountAdmin({
     views: {
-      designer: {
+      author: {
         type: 'page',
-        label: 'Designer',
-        path: 'designer',
+        label: 'Author',
+        path: 'author',
         component: page
       }
     },
     request
   })
   const notify = vi.spyOn(admin.context, 'notify')
-  await admin.navigate('/designer')
+  await admin.navigate('/author')
   await settle()
   return { admin, notify, request, wrapper: admin.wrapper }
 }
@@ -158,7 +158,7 @@ describe('widgets', () => {
   })
 
   it('render the values of their properties with their props', async () => {
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper } = await mountAuthorPage()
     const name = getContainer(wrapper, 'Name')
     expect(name.attributes('style')).toContain('--basis: 50%')
     expect(name.find('input').element.value).toBe('Ada')
@@ -177,7 +177,7 @@ describe('widgets', () => {
   })
 
   it('edit the values of their properties', async () => {
-    const { wrapper, request } = await mountDesignerPage()
+    const { wrapper, request } = await mountAuthorPage()
     await enterValue(getContainer(wrapper, 'Name').find('input'), 'Grace')
     await enterValue(getContainer(wrapper, 'City').find('input'), 'Paris')
     expect(form.item).toMatchObject({
@@ -202,7 +202,7 @@ describe('widgets', () => {
   })
 
   it('validate their properties when they are blurred', async () => {
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper } = await mountAuthorPage()
     const name = getContainer(wrapper, 'Name')
     const input = name.find('input')
     await input.trigger('focus')
@@ -218,7 +218,7 @@ describe('widgets', () => {
     const CopiesPage = {
       setup() {
         form = useDitoForm({
-          resource: 'designers',
+          resource: 'authors',
           id: 7,
           properties: { ...properties, copies: { type: 'integer', default: 1 } }
         })
@@ -228,7 +228,7 @@ describe('widgets', () => {
           })
       }
     }
-    const { wrapper, request } = await mountDesignerPage(CopiesPage)
+    const { wrapper, request } = await mountAuthorPage(CopiesPage)
     expect(form.item.copies).toBe(1)
     const input = getContainer(wrapper, 'Copies').find('input')
     await enterValue(input, '')
@@ -245,7 +245,7 @@ describe('widgets', () => {
   })
 
   it('show the errors of submits, also widgets of the same name', async () => {
-    const { wrapper, notify } = await mountDesignerPage()
+    const { wrapper, notify } = await mountAuthorPage()
     form.item.name = ''
     expect(await form.submit()).toBe(false)
     // Each collapsed section is opened after its transition:
@@ -277,7 +277,7 @@ describe('widgets', () => {
   })
 
   it('label sections with their label or name', async () => {
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper } = await mountAuthorPage()
     const sections = wrapper.findAll('.dito-section')
     expect(sections.map(section => section.attributes('aria-label'))).toEqual(
       ['Featured', 'Award', 'Ranking', 'Address']
@@ -285,7 +285,7 @@ describe('widgets', () => {
   })
 
   it('reveal errors in collapsed sections, which show them', async () => {
-    const { wrapper, notify } = await mountDesignerPage()
+    const { wrapper, notify } = await mountAuthorPage()
     const section = getContainer(wrapper, 'Ranking')
     const content = () => section.find('.dito-schema-content')
     expect(content().exists()).toBe(false)
@@ -320,7 +320,7 @@ describe('widgets', () => {
   })
 
   it('hide themselves for irrelevant properties', async () => {
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper } = await mountAuthorPage()
     await getContainer(wrapper, 'Ranking')
       .find('.dito-schema-header .dito-label')
       .trigger('click')
@@ -335,7 +335,7 @@ describe('widgets', () => {
   })
 
   it('notify the errors that no widget shows', async () => {
-    const { notify } = await mountDesignerPage()
+    const { notify } = await mountAuthorPage()
     showsEmail.value = false
     form.item.email = 'ada'
     await nextTick()
@@ -350,7 +350,7 @@ describe('widgets', () => {
   })
 
   it('notify the errors of values that are irrelevant', async () => {
-    const { notify, request } = await mountDesignerPage()
+    const { notify, request } = await mountAuthorPage()
     form.item.isFeatured = false
     await nextTick()
     request.mockImplementation(() => {
@@ -373,7 +373,7 @@ describe('widgets', () => {
   })
 
   it('show errors in the other widget of the same name', async () => {
-    const { wrapper, notify } = await mountDesignerPage()
+    const { wrapper, notify } = await mountAuthorPage()
     showsName.value = false
     form.item.name = ''
     await nextTick()
@@ -392,9 +392,9 @@ describe('widgets', () => {
   })
 
   it('keep their state while their section is collapsed', async () => {
-    const { wrapper } = await mountDesignerPage({
+    const { wrapper } = await mountAuthorPage({
       setup() {
-        form = useDitoForm({ resource: 'designers', id: 7, properties })
+        form = useDitoForm({ resource: 'authors', id: 7, properties })
         return () =>
           h(DitoSchemaForm, null, {
             default: () =>
@@ -443,9 +443,9 @@ describe('widgets', () => {
   })
 
   it('nest sections only with `nested`', async () => {
-    const { wrapper } = await mountDesignerPage({
+    const { wrapper } = await mountAuthorPage({
       setup() {
-        form = useDitoForm({ resource: 'designers', id: 7, properties })
+        form = useDitoForm({ resource: 'authors', id: 7, properties })
         return () =>
           h(DitoSchemaForm, null, {
             default: () => [
@@ -475,9 +475,9 @@ describe('widgets', () => {
   })
 
   it('take the layout options `break`, `align` and `class` of fields', async () => {
-    const { wrapper } = await mountDesignerPage({
+    const { wrapper } = await mountAuthorPage({
       setup() {
-        form = useDitoForm({ resource: 'designers', id: 7, properties })
+        form = useDitoForm({ resource: 'authors', id: 7, properties })
         return () =>
           h(DitoSchemaForm, null, {
             default: () => [
@@ -535,9 +535,9 @@ describe('widgets', () => {
   it('throw for names without a property', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    await mountDesignerPage({
+    await mountAuthorPage({
       setup() {
-        useDitoForm({ resource: 'designers', id: 7, properties })
+        useDitoForm({ resource: 'authors', id: 7, properties })
         return () =>
           h(DitoSchemaForm, null, {
             default: () => h(DitoTextField, { name: 'title' })

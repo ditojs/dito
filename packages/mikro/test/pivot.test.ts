@@ -1,48 +1,48 @@
 import { assignRecord } from '../src/index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import {
-  License,
-  LicenseShopItem,
-  ShopItem,
-  loadOrder,
-  orderEntities
-} from './order-entities.ts'
+  ReadingList,
+  ReadingListVolume,
+  Volume,
+  loadLibrary,
+  libraryEntities
+} from './library-entities.ts'
 
 // How MikroORM 7.2.5 and `assignRecord()` write a many-to-many relation whose
 // pivot entity has a composite primary key of its two foreign keys and
 // columns of its own, the form that MikroORM's documentation gives for a
-// custom pivot entity, see `order-entities.ts`.
+// custom pivot entity, see `library-entities.ts`.
 
-const { orm, sql, drop } = await createTestDatabase(orderEntities)
+const { orm, sql, drop } = await createTestDatabase(libraryEntities)
 
 afterAll(drop)
 
-// L1 links I1 and I2, L2 links I2, each with a price.
+// L1 links I1 and I2, L2 links I2, each with a fee.
 beforeEach(async () => {
   await sql(
-    'truncate shop_order, license, shop_item, license_shop_item ' +
+    'truncate library, reading_list, volume, reading_list_volume ' +
     'restart identity cascade'
   )
-  await sql(`insert into shop_order (name) values ('Order')`)
+  await sql(`insert into library (name) values ('Library')`)
   await sql(
-    `insert into license (name, shop_order_id) values ('L1', 1), ('L2', 1)`
+    `insert into reading_list (name, library_id) values ('L1', 1), ('L2', 1)`
   )
   await sql(
-    `insert into shop_item (name, shop_order_id) values ('I1', 1), ('I2', 1)`
+    `insert into volume (name, library_id) values ('I1', 1), ('I2', 1)`
   )
   await sql(
-    'insert into license_shop_item (license_id, shop_item_id, final_price) ' +
+    'insert into reading_list_volume (reading_list_id, volume_id, fee) ' +
     'values (1, 1, 10), (1, 2, 20), (2, 2, 30)'
   )
 })
 
-// The pivot rows as `L<license>-I<item>`, with the price after `=`.
+// The pivot rows as `L<list>-I<volume>`, with the fee after `=`.
 const pivots = async () =>
-  (await sql('select * from license_shop_item order by 1, 2'))
+  (await sql('select * from reading_list_volume order by 1, 2'))
     .map(
       (row: Record<string, unknown>) => (
-        `L${row.license_id}-I${row.shop_item_id}` +
-        (row.final_price == null ? '' : `=${row.final_price}`)
+        `L${row.reading_list_id}-I${row.volume_id}` +
+        (row.fee == null ? '' : `=${row.fee}`)
       )
     )
     .join(' ')
@@ -61,25 +61,28 @@ it('keeps the pivot rows of kept pairs where the written side is loaded', async 
         [true, true]
       ] as const) {
         const em = orm.em.fork()
-        const license = await em.findOneOrFail(License, 2, {
-          populate: (owner ? ['shopItems'] : []) as never[]
+        const readingList = await em.findOneOrFail(ReadingList, 2, {
+          populate: (owner ? ['volumes'] : []) as never[]
         })
-        const shopItem = await em.findOneOrFail(ShopItem, 1, {
-          populate: (inverse ? ['licenses'] : []) as never[]
+        const volume = await em.findOneOrFail(Volume, 1, {
+          populate: (inverse ? ['readingLists'] : []) as never[]
         })
         if (side === 'owner') {
-          if (write === 'add') license.shopItems.add(shopItem)
+          if (write === 'add') readingList.volumes.add(volume)
           else if (write === 'assign') {
-            em.assign(license, { shopItems: [2, 1] } as never)
+            em.assign(readingList, { volumes: [2, 1] } as never)
           } else {
-            license.shopItems.set([em.getReference(ShopItem, 2), shopItem])
+            readingList.volumes.set([em.getReference(Volume, 2), volume])
           }
         } else if (write === 'add') {
-          shopItem.licenses.add(license)
+          volume.readingLists.add(readingList)
         } else if (write === 'assign') {
-          em.assign(shopItem, { licenses: [1, 2] } as never)
+          em.assign(volume, { readingLists: [1, 2] } as never)
         } else {
-          shopItem.licenses.set([em.getReference(License, 1), license])
+          volume.readingLists.set([
+            em.getReference(ReadingList, 1),
+            readingList
+          ])
         }
         await em.flush()
         const name = (
@@ -87,9 +90,9 @@ it('keeps the pivot rows of kept pairs where the written side is loaded', async 
           `inverse ${inverse ? 'loaded' : 'not loaded'}`
         )
         results[name] = await pivots()
-        await sql('delete from license_shop_item')
+        await sql('delete from reading_list_volume')
         await sql(
-          'insert into license_shop_item (license_id, shop_item_id, final_price) ' +
+          'insert into reading_list_volume (reading_list_id, volume_id, fee) ' +
           'values (1, 1, 10), (1, 2, 20), (2, 2, 30)'
         )
       }
@@ -97,7 +100,7 @@ it('keeps the pivot rows of kept pairs where the written side is loaded', async 
   }
   const kept = 'L1-I1=10 L1-I2=20 L2-I1 L2-I2=30'
   // An assign or `set()` on a collection that isn't loaded writes all rows of
-  // its side again, without their prices.
+  // its side again, without their fees.
   const ownerRewritten = 'L1-I1=10 L1-I2=20 L2-I1 L2-I2'
   const inverseRewritten = 'L1-I1 L1-I2=20 L2-I1 L2-I2=30'
   const expected: Record<string, string> = {}
@@ -118,22 +121,22 @@ it('keeps the pivot rows of kept pairs where the written side is loaded', async 
 
 describe('assignRecord()', () => {
   const body = {
-    licenses: [
-      { id: 1, shopItems: [{ id: 1 }] },
-      { id: 2, shopItems: [{ id: 2 }, { id: 1 }, { '#ref': 'i3' }] },
-      { name: 'L3', shopItems: [{ '#ref': 'i3' }] }
+    readingLists: [
+      { id: 1, volumes: [{ id: 1 }] },
+      { id: 2, volumes: [{ id: 2 }, { id: 1 }, { '#ref': 'i3' }] },
+      { name: 'L3', volumes: [{ '#ref': 'i3' }] }
     ],
-    shopItems: [{ id: 1 }, { id: 2 }, { '#id': 'i3', 'name': 'I3' }]
+    volumes: [{ id: 1 }, { id: 2 }, { '#id': 'i3', 'name': 'I3' }]
   }
 
-  // Counts the queries of `fn` that load the shop items of licenses through
+  // Counts the queries of `fn` that load the volumes of reading lists through
   // the pivot table.
   const countLoads = async (fn: () => Promise<unknown>) => {
     const spy = vi.spyOn(orm.em.getConnection(), 'executeQuery')
     try {
       await fn()
       return spy.mock.calls.filter(([query]) =>
-        /from "license_shop_item" .* inner join "shop_item"/.test(
+        /from "reading_list_volume" .* inner join "volume"/.test(
           String(query)
         )
       ).length
@@ -144,12 +147,12 @@ describe('assignRecord()', () => {
 
   it('keeps, drops and adds links from the owning side', async () => {
     // The record comes without its collections, and `assignRecord()` loads
-    // the ones that the body writes, once for all licenses.
+    // the ones that the body writes, once for all reading lists.
     const em = orm.em.fork()
-    const order = await loadOrder(em, ['licenses', 'shopItems'])
-    const loads = await countLoads(() => assignRecord(em, order, body))
+    const library = await loadLibrary(em, ['readingLists', 'volumes'])
+    const loads = await countLoads(() => assignRecord(em, library, body))
     expect(loads).toBe(1)
-    expect(order.shopItems.getItems()[0]!.licenses.isInitialized()).toBe(
+    expect(library.volumes.getItems()[0]!.readingLists.isInitialized()).toBe(
       false
     )
     await em.flush()
@@ -158,22 +161,22 @@ describe('assignRecord()', () => {
 
   it('leaves loaded collections as they are', async () => {
     const em = orm.em.fork()
-    const order = await loadOrder(em, ['licenses.shopItems', 'shopItems'])
-    expect(await countLoads(() => assignRecord(em, order, body))).toBe(0)
+    const library = await loadLibrary(em, ['readingLists.volumes', 'volumes'])
+    expect(await countLoads(() => assignRecord(em, library, body))).toBe(0)
     await em.flush()
     expect(await pivots()).toBe('L1-I1=10 L2-I1 L2-I2=30 L2-I3 L3-I3')
   })
 
   it('keeps, drops and adds links from the inverse side', async () => {
     const em = orm.em.fork()
-    const order = await loadOrder(em, ['licenses', 'shopItems'])
-    await assignRecord(em, order, {
-      shopItems: [
-        { id: 1, licenses: [{ id: 1 }, { id: 2 }] },
-        { id: 2, licenses: [1] },
-        { 'name': 'I3', '#id': 'i3', 'licenses': [{ '#ref': 'l3' }] }
+    const library = await loadLibrary(em, ['readingLists', 'volumes'])
+    await assignRecord(em, library, {
+      volumes: [
+        { id: 1, readingLists: [{ id: 1 }, { id: 2 }] },
+        { id: 2, readingLists: [1] },
+        { 'name': 'I3', '#id': 'i3', 'readingLists': [{ '#ref': 'l3' }] }
       ],
-      licenses: [{ id: 1 }, { id: 2 }, { '#id': 'l3', 'name': 'L3' }]
+      readingLists: [{ id: 1 }, { id: 2 }, { '#id': 'l3', 'name': 'L3' }]
     })
     await em.flush()
     expect(await pivots()).toBe('L1-I1=10 L1-I2=20 L2-I1 L3-I3')
@@ -181,41 +184,43 @@ describe('assignRecord()', () => {
 
   it('checks the ids of the inverse side', async () => {
     const em = orm.em.fork()
-    const order = await loadOrder(em, ['licenses', 'shopItems'])
+    const library = await loadLibrary(em, ['readingLists', 'volumes'])
     await expect(
-      assignRecord(em, order, { shopItems: [{ id: 1, licenses: [9] }] })
+      assignRecord(em, library, { volumes: [{ id: 1, readingLists: [9] }] })
     ).rejects.toMatchObject({
-      errors: { 'shopItems/0/licenses/0': [{ keyword: 'invalid_value' }] }
+      errors: { 'volumes/0/readingLists/0': [{ keyword: 'invalid_value' }] }
     })
   })
 
   it('updates the loaded collections of both sides', async () => {
     const em = orm.em.fork()
-    const order = await loadOrder(em, ['licenses', 'shopItems.licenses'])
-    await assignRecord(em, order, body)
+    const library = await loadLibrary(em, [
+      'readingLists', 'volumes.readingLists'
+    ])
+    await assignRecord(em, library, body)
     await em.flush()
     const names = (items: { name: string }[]) => items.map(item => item.name)
-    const [l1, l2, l3] = order.licenses.getItems()
-    const [i1, i2, i3] = order.shopItems.getItems()
-    expect(names(l2!.shopItems.getItems())).toEqual(['I2', 'I1', 'I3'])
-    expect(names(l3!.shopItems.getItems())).toEqual(['I3'])
-    expect(names(i1!.licenses.getItems())).toEqual(['L1', 'L2'])
-    expect(names(i2!.licenses.getItems())).toEqual(['L2'])
-    expect(names(i3!.licenses.getItems())).toEqual(['L2', 'L3'])
-    expect(names(l1!.shopItems.getItems())).toEqual(['I1'])
+    const [l1, l2, l3] = library.readingLists.getItems()
+    const [i1, i2, i3] = library.volumes.getItems()
+    expect(names(l2!.volumes.getItems())).toEqual(['I2', 'I1', 'I3'])
+    expect(names(l3!.volumes.getItems())).toEqual(['I3'])
+    expect(names(i1!.readingLists.getItems())).toEqual(['L1', 'L2'])
+    expect(names(i2!.readingLists.getItems())).toEqual(['L2'])
+    expect(names(i3!.readingLists.getItems())).toEqual(['L2', 'L3'])
+    expect(names(l1!.volumes.getItems())).toEqual(['I1'])
   })
 
-  it('sets the prices of the links in a second flush', async () => {
+  it('sets the fees of the links in a second flush', async () => {
     await orm.em.fork().transactional(async em => {
-      const order = await loadOrder(em, ['licenses', 'shopItems'])
-      await assignRecord(em, order, body)
+      const library = await loadLibrary(em, ['readingLists', 'volumes'])
+      await assignRecord(em, library, body)
       await em.flush()
       // The pivot rows weren't loaded before, so the query reads them all.
-      const links = await em.find(LicenseShopItem, {
-        license: { shopOrder: order.id }
+      const links = await em.find(ReadingListVolume, {
+        readingList: { library: library.id }
       })
       for (const link of links) {
-        link.finalPrice = link.license.id * 100 + link.shopItem.id
+        link.fee = link.readingList.id * 100 + link.volume.id
       }
       await em.flush()
     })
@@ -227,16 +232,16 @@ describe('assignRecord()', () => {
   it('inserts a new pair twice where the handler creates its pivot entity', async () => {
     // A handler that creates the pivot entity of a new pair before the flush,
     // next to the relation that links the pair, gets two inserts of the same
-    // row, so prices wait for a second flush.
+    // row, so fees wait for a second flush.
     const em = orm.em.fork()
-    const order = await loadOrder(em, ['licenses.shopItems', 'shopItems'])
-    await assignRecord(em, order, body)
-    const [, l2] = order.licenses.getItems()
-    const [i1] = order.shopItems.getItems()
-    em.create(LicenseShopItem, {
-      license: l2,
-      shopItem: i1,
-      finalPrice: 1
+    const library = await loadLibrary(em, ['readingLists.volumes', 'volumes'])
+    await assignRecord(em, library, body)
+    const [, l2] = library.readingLists.getItems()
+    const [i1] = library.volumes.getItems()
+    em.create(ReadingListVolume, {
+      readingList: l2,
+      volume: i1,
+      fee: 1
     } as never)
     await expect(em.flush()).rejects.toThrow(/duplicate key/)
   })

@@ -130,9 +130,9 @@ describe('page views', () => {
             books: views.books
           }
         },
-        shop: {
+        store: {
           type: 'menu',
-          label: 'Shop',
+          label: 'Store',
           items: { product: { ...views.product, path: 'items/:id' } }
         }
       }
@@ -142,11 +142,11 @@ describe('page views', () => {
     const link = admin.wrapper.find('.dito-menu__link')
     expect(link.attributes('href')).toBe('/catalog/books')
     // Menus without one link to their own path in the trail:
-    await admin.navigate('/shop/items/7')
+    await admin.navigate('/store/items/7')
     const trailLinks = admin.wrapper.findAll('.dito-trail__link')
     expect(trailLinks.map(link => link.attributes('href'))).toEqual([
-      '/shop',
-      '/shop/items/7'
+      '/store',
+      '/store/items/7'
     ])
   })
 })

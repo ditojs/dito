@@ -33,8 +33,8 @@ const awardSchema = z.object({
 
 export type Award = z.infer<typeof awardSchema>
 
-const DesignerSchema = defineEntity({
-  name: 'Designer',
+const AuthorSchema = defineEntity({
+  name: 'Author',
   properties: {
     id: p.integer().primary(),
     name: p.string().type(new NameType()),
@@ -45,5 +45,5 @@ const DesignerSchema = defineEntity({
     address: schemaJson(z.object({ city: z.string().optional() })).nullable()
   }
 })
-export class Designer extends DesignerSchema.class {}
-DesignerSchema.setClass(Designer)
+export class Author extends AuthorSchema.class {}
+AuthorSchema.setClass(Author)

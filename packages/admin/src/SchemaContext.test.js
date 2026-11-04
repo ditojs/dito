@@ -463,17 +463,17 @@ describe('SchemaContext', () => {
               form: {
                 type: 'form',
                 fields: {
-                  font: { type: 'text' },
+                  genre: { type: 'text' },
                   slices: {
                     type: 'list',
                     inlined: true,
                     form: {
                       type: 'form',
                       fields: {
-                        font: {
+                        genre: {
                           type: 'text',
                           computeValue: ({ getValueAt }) =>
-                            getValueAt('../../font')
+                            getValueAt('../../genre')
                         }
                       }
                     }
@@ -483,13 +483,13 @@ describe('SchemaContext', () => {
             }
           }
         },
-        data: { styles: [{ font: 'Sans', slices: [{}] }] }
+        data: { styles: [{ genre: 'Poetry', slices: [{}] }] }
       })
       const [style] = data.styles
-      expect(style.slices[0].font).toBe('Sans')
-      style.font = 'Serif'
+      expect(style.slices[0].genre).toBe('Poetry')
+      style.genre = 'Prose'
       await nextTick()
-      expect(style.slices[0].font).toBe('Serif')
+      expect(style.slices[0].genre).toBe('Prose')
     })
   })
 

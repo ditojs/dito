@@ -74,9 +74,9 @@ const priceContexts = []
 let form = null
 
 // A page that lays out the items of its lists and objects in their slots:
-const DesignerPage = {
+const AuthorPage = {
   setup() {
-    form = useDitoForm({ resource: 'designers', id: 1, properties })
+    form = useDitoForm({ resource: 'authors', id: 1, properties })
     return () =>
       h(DitoSchemaForm, null, {
         default: () => [
@@ -146,9 +146,9 @@ const DesignerPage = {
   }
 }
 
-async function mountDesignerPage() {
+async function mountAuthorPage() {
   const request = vi.fn(({ method = 'get', url, data }) => {
-    if (method === 'get' && url === '/designers/1') {
+    if (method === 'get' && url === '/authors/1') {
       return { data: structuredClone(item) }
     } else if (method === 'patch') {
       return { data: { ...data } }
@@ -158,17 +158,17 @@ async function mountDesignerPage() {
   })
   const admin = await mountAdmin({
     views: {
-      designer: {
+      author: {
         type: 'page',
-        label: 'Designer',
-        path: 'designer',
-        component: DesignerPage
+        label: 'Author',
+        path: 'author',
+        component: AuthorPage
       }
     },
     request
   })
   const notify = vi.spyOn(admin.context, 'notify')
-  await admin.navigate('/designer')
+  await admin.navigate('/author')
   await settle()
   return { admin, request, notify, wrapper: admin.wrapper }
 }
@@ -202,7 +202,7 @@ describe('DitoListField', () => {
   })
 
   it('lays out the items in its slot, with a scope per item', async () => {
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper } = await mountAuthorPage()
     expect(getRows(wrapper, 'awards')).toHaveLength(2)
     // Collapsed items don't mount their widgets:
     expect(getInputs(wrapper, 'awards')).toEqual([])
@@ -218,7 +218,7 @@ describe('DitoListField', () => {
 
   it('passes the context of each item to its slot', async () => {
     awardContexts.length = 0
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper } = await mountAuthorPage()
     await openItems(wrapper, 'awards')
     const [first, second] = awardContexts
     expect(second.item).toBe(form.item.awards[1])
@@ -231,7 +231,7 @@ describe('DitoListField', () => {
   })
 
   it('labels its items with `itemLabel`', async () => {
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper } = await mountAuthorPage()
     form.item.awards[0].title = '<i>Gold</i>'
     await nextTick()
     const getLabels = name =>
@@ -251,7 +251,7 @@ describe('DitoListField', () => {
   })
 
   it('edits primitive items with widgets without `name`', async () => {
-    const { wrapper, request } = await mountDesignerPage()
+    const { wrapper, request } = await mountAuthorPage()
     expect(getInputs(wrapper, 'prices')).toEqual(['10', '20'])
     await enterValue(getRows(wrapper, 'prices')[0].find('input'), '15')
     expect(form.item.prices).toEqual([15, 20])
@@ -265,7 +265,7 @@ describe('DitoListField', () => {
   })
 
   it('creates items with the defaults of their properties', async () => {
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper } = await mountAuthorPage()
     await getList(wrapper, 'awards')
       .find('tfoot .dito-button--add')
       .trigger('click')
@@ -276,7 +276,7 @@ describe('DitoListField', () => {
   })
 
   it('lays out the items of several forms by their type', async () => {
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper } = await mountAuthorPage()
     expect(getInputs(wrapper, 'works')).toEqual(['Notes', 'Ada'])
     const menu = getList(wrapper, 'works')
       .find('tfoot')
@@ -288,7 +288,7 @@ describe('DitoListField', () => {
   })
 
   it('shows the errors in items and reveals them', async () => {
-    const { wrapper, notify } = await mountDesignerPage()
+    const { wrapper, notify } = await mountAuthorPage()
     form.item.awards[1].title = ''
     form.item.works[1].artist = ''
     expect(form.validate()).toBe(false)
@@ -310,7 +310,7 @@ describe('DitoListField', () => {
   })
 
   it('notifies the errors of values that its slot does not show', async () => {
-    const { wrapper, notify } = await mountDesignerPage()
+    const { wrapper, notify } = await mountAuthorPage()
     form.item.works[1].notes = ''
     form.item.prices = [-1]
     await nextTick()
@@ -335,7 +335,7 @@ describe('DitoObjectField', () => {
   })
 
   it('lays out its object in its slot', async () => {
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper } = await mountAuthorPage()
     const object = wrapper.find('.dito-object[id$="address"]')
     expect(object.find('input').element.value).toBe('London')
     await enterValue(object.find('input'), 'Paris')
@@ -343,7 +343,7 @@ describe('DitoObjectField', () => {
   })
 
   it('creates and deletes `nullable` objects', async () => {
-    const { wrapper } = await mountDesignerPage()
+    const { wrapper } = await mountAuthorPage()
     const getObject = () => wrapper.find('.dito-object[id$="publisher"]')
     expect(getObject().find('input').exists()).toBe(false)
     await getObject().find('.dito-button--add').trigger('click')

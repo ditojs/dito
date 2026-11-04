@@ -139,25 +139,25 @@ describe('@ditojs/admin exports', () => {
     expect(isTemporaryId(id)).toBe(true)
     expect(isTemporaryId(1)).toBe(false)
     expect(createTemporaryId()).not.toBe(id)
-    // A license that code links to a new item, as an `onChange` would:
+    // A reading list that code links to a new item, as an `onChange` would:
     const { submit } = await mountForm({
       schema: {
         fields: {
-          shopItems: {
+          volumes: {
             type: 'list',
             inlined: true,
             form: { type: 'form', fields: { name: { type: 'text' } } }
           },
-          licenses: {
+          readingLists: {
             type: 'list',
             inlined: true,
             form: {
               type: 'form',
               fields: {
-                shopItems: {
+                volumes: {
                   type: 'checkboxes',
                   relate: true,
-                  options: { dataPath: '/shopItems', label: 'name' }
+                  options: { dataPath: '/volumes', label: 'name' }
                 }
               }
             }
@@ -165,15 +165,15 @@ describe('@ditojs/admin exports', () => {
         }
       },
       data: {
-        shopItems: [{ id, name: 'New' }],
-        licenses: [{ shopItems: [{ id }] }]
+        volumes: [{ id, name: 'New' }],
+        readingLists: [{ volumes: [{ id }] }]
       },
       request: ({ data }) => ({ data })
     })
     const payload = await submit()
-    const reference = payload.shopItems[0]['#id']
+    const reference = payload.volumes[0]['#id']
     expect(reference).toEqual(expect.any(String))
-    expect(payload.shopItems[0]).not.toHaveProperty('id')
-    expect(payload.licenses[0].shopItems).toEqual([{ '#ref': reference }])
+    expect(payload.volumes[0]).not.toHaveProperty('id')
+    expect(payload.readingLists[0].volumes).toEqual([{ '#ref': reference }])
   })
 })

@@ -2,21 +2,21 @@ import { defineEntity, p } from '@mikro-orm/core'
 import { schemaJson } from '@ditojs/mikro'
 import { z } from 'zod'
 
-export interface Cut {
-  type: 'style' | 'bundle'
+export interface Chapter {
+  type: 'section' | 'bundle'
   name?: string
   title?: string
   discount?: number
 }
 
-const ShopSetSchema = defineEntity({
-  name: 'ShopSet',
+const VolumeSchema = defineEntity({
+  name: 'Volume',
   properties: {
     id: p.integer().primary(),
     name: p.string(),
     prices: schemaJson(z.array(z.number().min(0))).nullable(),
-    cuts: p.json<Cut[]>().nullable()
+    chapters: p.json<Chapter[]>().nullable()
   }
 })
-export class ShopSet extends ShopSetSchema.class {}
-ShopSetSchema.setClass(ShopSet)
+export class Volume extends VolumeSchema.class {}
+VolumeSchema.setClass(Volume)

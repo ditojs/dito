@@ -56,7 +56,7 @@ const project: RequiredEntityData<Project> = {
     {
       type: 'note',
       text: (
-        'Ask Ada about the fonts, the colors and the grid of the new ' +
+        'Ask Ada about the paper, the colors and the grid of the new ' +
         'design, before the team starts to build the templates and the ' +
         'components of the new website, and the illustrations of the ' +
         'campaign that goes with it'

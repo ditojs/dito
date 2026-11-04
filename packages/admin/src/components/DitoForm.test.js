@@ -2220,8 +2220,8 @@ describe('DitoForm', () => {
   })
 
   describe('nested forms of sources of the same data in tabs', () => {
-    // Both tabs list the families, each with a form of its own:
-    const createFamilies = fields => ({
+    // Both tabs list the books, each with a form of its own:
+    const createBooks = fields => ({
       type: 'list',
       editable: true,
       form: { type: 'form', fields }
@@ -2230,23 +2230,23 @@ describe('DitoForm', () => {
       tabs: {
         info: {
           type: 'tab',
-          fields: { families: createFamilies({ name: { type: 'text' } }) }
+          fields: { books: createBooks({ name: { type: 'text' } }) }
         },
         pricing: {
           type: 'tab',
-          fields: { families: createFamilies({ price: { type: 'number' } }) }
+          fields: { books: createBooks({ price: { type: 'number' } }) }
         }
       }
     }
-    const data = { families: [{ name: 'Sans', price: 3 }] }
+    const data = { books: [{ name: 'Poetry', price: 3 }] }
     const fieldsByTab = { info: 'name', pricing: 'price' }
 
-    const expectFamilyForm = async (form, tab) => {
+    const expectBookForm = async (form, tab) => {
       await settle(form)
-      expect(form.dataPath).toBe('families/0')
-      expect(form.dataContext.componentPath).toBe(`${tab}/families/0`)
+      expect(form.dataPath).toBe('books/0')
+      expect(form.dataContext.componentPath).toBe(`${tab}/books/0`)
       expect([...form.$el.querySelectorAll('input')].map(({ id }) => id))
-        .toEqual([`${tab}/families/0/${fieldsByTab[tab]}`])
+        .toEqual([`${tab}/books/0/${fieldsByTab[tab]}`])
     }
 
     it.each(['info', 'pricing'])(
@@ -2256,16 +2256,16 @@ describe('DitoForm', () => {
         await admin.navigate('/items/1/pricing')
         const links = wrapper.findAll('a.dito-button--edit')
         expect(links.map(link => link.attributes('href'))).toEqual([
-          '/items/1/info/families/0',
-          '/items/1/pricing/families/0'
+          '/items/1/info/books/0',
+          '/items/1/pricing/books/0'
         ])
         await admin.navigate(`/items/1/${tab}`)
         await links[tab === 'info' ? 0 : 1].trigger('click')
         await flushPromises()
         expect(admin.router.currentRoute.value.path).toBe(
-          `/items/1/${tab}/families/0`
+          `/items/1/${tab}/books/0`
         )
-        await expectFamilyForm(admin.getRouteComponent(isForm), tab)
+        await expectBookForm(admin.getRouteComponent(isForm), tab)
       }
     )
 
@@ -2275,9 +2275,9 @@ describe('DitoForm', () => {
         const { admin, routeComponent: form } = await mountForm({
           schema,
           data,
-          path: `/items/1/${tab}/families/0`
+          path: `/items/1/${tab}/books/0`
         })
-        await expectFamilyForm(form, tab)
+        await expectBookForm(form, tab)
         const [itemForm] = admin.getRouteComponents(isForm)
         await form.routeContext.close()
         await flushPromises()
@@ -2296,7 +2296,7 @@ describe('DitoForm', () => {
               status: 400,
               data: {
                 type: 'ValidationError',
-                errors: { 'families/0/price': [{ message: 'is too high' }] }
+                errors: { 'books/0/price': [{ message: 'is too high' }] }
               }
             })
           }
@@ -2307,12 +2307,12 @@ describe('DitoForm', () => {
       await flushPromises()
       // The info tab is rendered first, but only the pricing form has a price:
       expect(admin.router.currentRoute.value.path).toBe(
-        '/items/1/pricing/families/0'
+        '/items/1/pricing/books/0'
       )
       const form = admin.getRouteComponent(isForm)
       await settle(form)
       const input = form.$el.querySelector(
-        'input[id="pricing/families/0/price"]'
+        'input[id="pricing/books/0/price"]'
       )
       expect(input.closest('.dito-container').textContent).toContain(
         'is too high'

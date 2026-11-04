@@ -133,8 +133,8 @@ describe('widgets', () => {
     h(DitoObjectField, { name: 'address', collapsible: true })
     type FormSlot = InstanceType<typeof DitoTreeListField>['$slots']['form']
     expectTypeOf<Parameters<FormSlot>[0]>().toEqualTypeOf<SchemaContext>()
-    h(DitoTreeListField, { name: 'shopSets', itemLabel: 'name' }, () =>
-      h(DitoTreeLevel, { name: 'cuts', draggable: true })
+    h(DitoTreeListField, { name: 'volumes', itemLabel: 'name' }, () =>
+      h(DitoTreeLevel, { name: 'chapters', draggable: true })
     )
     // Widgets without `name` edit the items of lists of values:
     h(DitoNumberField, { step: 5 })

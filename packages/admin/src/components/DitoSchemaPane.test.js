@@ -136,21 +136,21 @@ describe('DitoSchemaPane', () => {
     const { wrapper, findContainer } = await mountSchema({
       schema: {
         fields: {
-          weight: { type: 'slider', label: 'Weight', width: '1/3' },
-          isVariable: {
+          pages: { type: 'slider', label: 'Pages', width: '1/3' },
+          isLong: {
             type: 'switch',
             label: false,
             width: '1/3',
             align: 'bottom'
           },
-          axis: { type: 'text', label: false, width: '1/3' }
+          format: { type: 'text', label: false, width: '1/3' }
         }
       },
-      data: { weight: 400, isVariable: true, axis: 'wght' }
+      data: { pages: 400, isLong: true, format: 'a4' }
     })
     await measureRows(wrapper)
     expect(
-      findContainer('axis').classes('dito-container--label-vertical')
+      findContainer('format').classes('dito-container--label-vertical')
     ).toBe(true)
   })
 

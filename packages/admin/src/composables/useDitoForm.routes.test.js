@@ -18,14 +18,14 @@ const nameList = {
 }
 
 const createSets = () => [
-  { name: 'Sans', cuts: [{ name: 'Regular' }, { name: 'Bold' }] },
-  { name: 'Serif', cuts: [] }
+  { name: 'Poetry', chapters: [{ name: 'Preface' }, { name: 'Body' }] },
+  { name: 'Prose', chapters: [] }
 ]
 
 const generator = {
   id: 1,
   title: 'Generator',
-  sets: [{ name: 'Mono', cuts: [{ name: 'Light' }] }],
+  parts: [{ name: 'Drama', chapters: [{ name: 'Lesson' }] }],
   notes: [],
   groups: []
 }
@@ -33,8 +33,8 @@ const generator = {
 // The forms of the pages, set up by `createPage()`:
 const forms = {}
 
-// A page whose form edits a tree of sets and their cuts, a list of notes, and
-// the items of inlined groups, all in routed forms:
+// A page whose form edits a tree of parts and their chapters, a list of notes,
+// and the items of inlined groups, all in routed forms:
 function createPage(name, { resource = null, mutate = false } = {}) {
   return {
     setup() {
@@ -42,7 +42,7 @@ function createPage(name, { resource = null, mutate = false } = {}) {
         ...(resource && { resource, id: 1 }),
         fields: {
           title: { type: 'text', label: 'Title' },
-          sets: {
+          parts: {
             type: 'tree-list',
             label: 'Sets',
             itemLabel: 'name',
@@ -51,7 +51,7 @@ function createPage(name, { resource = null, mutate = false } = {}) {
             mutate,
             ...(!resource && { default: createSets }),
             form: nameForm,
-            children: { ...nameList, name: 'cuts', mutate }
+            children: { ...nameList, name: 'chapters', mutate }
           },
           notes: {
             ...nameList,
@@ -145,23 +145,23 @@ async function applyForm(admin, value) {
 describe('useDitoForm() with routed forms in pages', () => {
   it('edits tree items in their forms inside the page, and applies them to the page form', async () => {
     const admin = await mountPages({ path: '/upload' })
-    // Sans, Regular, Bold, Serif:
+    // Poetry, Preface, Body, Prose:
     await clickEdit(admin, '.dito-tree-list', 2)
-    expect(getPath(admin)).toBe('/upload/sets/0/cuts/1')
+    expect(getPath(admin)).toBe('/upload/parts/0/chapters/1')
     expect(admin.getRouteComponent(isForm).isEmbeddedRoute).toBe(true)
     expect(findPage(admin, 'upload').isVisible()).toBe(true)
     expect(findPage(admin, 'upload').find('.dito-form').isVisible()).toBe(true)
-    expect(findFormInput(admin).element.value).toBe('Bold')
-    await applyForm(admin, 'Black')
+    expect(findFormInput(admin).element.value).toBe('Body')
+    await applyForm(admin, 'Back')
     expect(getPath(admin)).toBe('/upload')
-    expect(forms.upload.item.sets[0].cuts[1].name).toBe('Black')
+    expect(forms.upload.item.parts[0].chapters[1].name).toBe('Back')
     expect(forms.upload.isDirty).toBe(true)
   })
 
   it('edits tree items in place with `mutate`', async () => {
-    const admin = await mountPages({ path: '/mutating/sets/0/cuts/1' })
+    const admin = await mountPages({ path: '/mutating/parts/0/chapters/1' })
     await enterValue(findFormInput(admin), 'Heavy')
-    expect(forms.mutating.item.sets[0].cuts[1].name).toBe('Heavy')
+    expect(forms.mutating.item.parts[0].chapters[1].name).toBe('Heavy')
     expect(forms.mutating.isDirty).toBe(true)
   })
 
@@ -184,18 +184,18 @@ describe('useDitoForm() with routed forms in pages', () => {
   })
 
   it('opens deep links into the forms of tree and list items', async () => {
-    let admin = await mountPages({ path: '/upload/sets/0/cuts/1' })
-    expect(getPath(admin)).toBe('/upload/sets/0/cuts/1')
-    expect(findFormInput(admin).element.value).toBe('Bold')
+    let admin = await mountPages({ path: '/upload/parts/0/chapters/1' })
+    expect(getPath(admin)).toBe('/upload/parts/0/chapters/1')
+    expect(findFormInput(admin).element.value).toBe('Body')
     expect(findPage(admin, 'upload').isVisible()).toBe(true)
     admin = await mountPages({ path: '/upload/notes/0' })
     expect(findFormInput(admin).element.value).toBe('First')
   })
 
   it('opens deep links into the forms of a page form with a resource', async () => {
-    const admin = await mountPages({ path: '/generator/sets/0/cuts/0' })
-    expect(getPath(admin)).toBe('/generator/sets/0/cuts/0')
-    expect(findFormInput(admin).element.value).toBe('Light')
+    const admin = await mountPages({ path: '/generator/parts/0/chapters/0' })
+    expect(getPath(admin)).toBe('/generator/parts/0/chapters/0')
+    expect(findFormInput(admin).element.value).toBe('Lesson')
   })
 
   it('shows the page and the item in the trail', async () => {
@@ -221,7 +221,7 @@ describe('useDitoForm() with routed forms in pages', () => {
     confirm.mockReturnValue(false)
     await enterValue(
       findPage(admin, 'upload').find('input[name="title"]'),
-      'Fonts'
+      'books'
     )
     await navigate(admin, '/books')
     expect(confirm).toHaveBeenCalledTimes(1)
@@ -232,8 +232,8 @@ describe('useDitoForm() with routed forms in pages', () => {
     const admin = await mountPages()
     await navigate(admin, '/upload')
     await navigate(admin, '/books')
-    await navigate(admin, '/upload/sets/1')
-    expect(findFormInput(admin).element.value).toBe('Serif')
+    await navigate(admin, '/upload/parts/1')
+    expect(findFormInput(admin).element.value).toBe('Prose')
   })
 
   it('lets users leave pages while their forms are set up', async () => {
@@ -246,9 +246,9 @@ describe('useDitoForm() with routed forms in pages', () => {
   })
 
   it('keeps the forms of pages with the same forms apart', async () => {
-    const admin = await mountPages({ path: '/generator/sets/0/cuts/0' })
-    await navigate(admin, '/upload/sets/0/cuts/0')
-    expect(findFormInput(admin).element.value).toBe('Regular')
+    const admin = await mountPages({ path: '/generator/parts/0/chapters/0' })
+    await navigate(admin, '/upload/parts/0/chapters/0')
+    expect(findFormInput(admin).element.value).toBe('Preface')
   })
 
   it('rejects lists with routed forms in dialogs and forms', async () => {

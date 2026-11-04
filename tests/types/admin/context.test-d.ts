@@ -98,7 +98,7 @@ describe('SchemaContext', () => {
 
   it('reads values relative to the item', () => {
     const context = {} as SchemaContext<Entry>
-    expectTypeOf(context.getValueAt('../../font')).toBeAny()
+    expectTypeOf(context.getValueAt('../../genre')).toBeAny()
     expectTypeOf(context.getValueAt<string>('../title')).toBeString()
     // @ts-expect-error Data paths are strings.
     context.getValueAt(['..', 'title'])
