@@ -21,7 +21,7 @@ export function isController(value: unknown): value is ControllerDefinition {
   return isObject(value) && controllerTag in value
 }
 
-// Types a mixin where it is written.
+// Returns `def` as it is. It only gives the mixin its types.
 export function defineMixin(def: MixinDefinition) {
   return def
 }
