@@ -478,7 +478,7 @@ export class ComponentNode {
   }
 
   // The path of the source within its route, after the names of the tabs,
-  // sections and panels around it, e.g. `pricing/families`, or after the path
+  // sections and panels around it, e.g. `pricing/books`, or after the path
   // of the item of the inlined source whose item holds it, e.g. `books/3`:
   get routePath(): string | null {
     return this.#getSource()?.routePath ?? null

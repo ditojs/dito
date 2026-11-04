@@ -137,7 +137,7 @@ Only requests to the API receive `headers` and `cors.credentials`: relative
 URLs, and absolute ones inside `api.url`.
 
 The admin routes views and sources under their hyphenated names, such as
-`/shop-orders` for a view named `shopOrders`, unless their schema sets a
+`/book-reviews` for a view named `bookReviews`, unless their schema sets a
 `path`.
 
 ### users

@@ -240,7 +240,7 @@ function createViewRecord(
 }
 
 // The URL path of a source within its route: the names of the tabs, sections
-// and panels around it, then its own `path`, e.g. `pricing/families`:
+// and panels around it, then its own `path`, e.g. `pricing/books`:
 export function getSourcePath(
   schema: Schema,
   componentPath: string
@@ -362,7 +362,7 @@ function getChildPath(schema: Schema) {
 
 // Open the form of the item that `path` leads to below the source, the
 // deepest one that has a form, also among the children of trees, e.g.
-// `families/0` or `pages/0/subpages/1`:
+// `books/0` or `pages/0/subpages/1`:
 export function claimSourceRoute(
   sourceRoute: SourceRoute,
   path: string

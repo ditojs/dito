@@ -412,7 +412,7 @@ again when the value changes.
 
 | Name       | Type     | Description                                      |
 | ---------- | -------- | ------------------------------------------------ |
-| `dataPath` | `string` | The data path of the value, e.g. `'../../font'`. |
+| `dataPath` | `string` | The data path of the value, e.g. `'../../genre'`. |
 
 #### Return value
 
@@ -422,7 +422,7 @@ The value, or `undefined` if it isn't there.
 
 ```js
 // In a field of a slice of a style, at 'styles/0/slices/0/…':
-const font = context.getValueAt('../../font') // 'styles/0/font'
+const genre = context.getValueAt('../../genre') // 'styles/0/genre'
 ```
 
 ### extend()

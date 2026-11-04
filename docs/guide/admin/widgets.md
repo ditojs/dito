@@ -7,7 +7,7 @@ The template only lays out. Each widget edits the property of its `name`, and
 its props are display options only.
 
 ```vue
-<!-- src/admin/views/DesignerPage.vue -->
+<!-- src/admin/views/AuthorPage.vue -->
 <template lang="pug">
 DitoSchemaForm
   DitoTextField(name="name" width="1/2")
@@ -36,7 +36,7 @@ import {
 
 const route = useRoute()
 useDitoForm({
-  resource: 'designers',
+  resource: 'authors',
   id: () => route.params.id || null,
   properties: {
     name: { type: 'string', required: true },
@@ -186,11 +186,11 @@ by the item's `type`, with the label that the create button shows. The slot
 lays out each item by its type:
 
 ```js
-cuts: {
+chapters: {
   type: 'array',
   forms: {
-    style: {
-      label: 'Style',
+    section: {
+      label: 'Section',
       properties: { name: { type: 'string', required: true } }
     },
     bundle: {
@@ -205,8 +205,8 @@ cuts: {
 ```
 
 ```pug
-DitoListField(name="cuts" creatable v-slot="{ item }")
-  DitoTextField(v-if="item.type === 'style'" name="name")
+DitoListField(name="chapters" creatable v-slot="{ item }")
+  DitoTextField(v-if="item.type === 'section'" name="name")
   template(v-else)
     DitoTextField(name="title")
     DitoNumberField(name="discount")
@@ -217,21 +217,21 @@ They have no forms with routes of their own, except in trees.
 
 ## Trees
 
-`DitoTreeListField` shows an array of objects as a tree, e.g. sets and their
-cuts. Each level of the tree lays out the form of its selected item in its
+`DitoTreeListField` shows an array of objects as a tree, e.g. volumes and their
+chapters. Each level of the tree lays out the form of its selected item in its
 `#form` slot, which receives the [context](./context.md) of the item like the
 slots of lists. A `DitoTreeLevel` in the default slot declares the next level:
 the array of its `name` in the items of the level around it, nested like the
 data:
 
 ```js
-shopSets: {
+volumes: {
   type: 'array',
   items: {
     type: 'object',
     properties: {
       name: { type: 'string', required: true },
-      cuts: {
+      chapters: {
         type: 'array',
         items: {
           type: 'object',
@@ -244,12 +244,12 @@ shopSets: {
 ```
 
 ```pug
-DitoTreeListField(name="shopSets" itemLabel="name")
+DitoTreeListField(name="volumes" itemLabel="name")
   template(#form="context")
     DitoTextField(name="name" label="Set")
-  DitoTreeLevel(name="cuts" itemLabel="title" draggable)
+  DitoTreeLevel(name="chapters" itemLabel="title" draggable)
     template(#form="context")
-      DitoTextField(name="title" label="Cut")
+      DitoTextField(name="title" label="Chapter")
 ```
 
 The props of each level, e.g. `itemLabel` and `draggable`, apply to that level
