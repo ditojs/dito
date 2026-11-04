@@ -3,6 +3,7 @@ import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { csrf } from 'hono/csrf'
 import { etag } from 'hono/etag'
+import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
 
 // Hono's standard middleware for a host, for `app.use(...hostMiddleware())`.
@@ -29,6 +30,10 @@ export interface HostOptions {
 
 const defaultBodyLimit = 1024 * 1024
 
+const overBodyLimit = () => {
+  throw new HTTPException(413, { message: 'Payload Too Large' })
+}
+
 // `csrf()` and `bodyLimit()` run after `secureHeaders()` and `cors()`, so that
 // their responses have the headers of these.
 export function hostMiddleware({
@@ -52,15 +57,22 @@ export function hostMiddleware({
     )
   }
   if (bodyLimitOptions) {
-    const limit = bodyLimit({
+    const { maxSize, onError } = {
       maxSize: defaultBodyLimit,
+      onError: overBodyLimit,
       ...options(bodyLimitOptions)
+    }
+    const limit = bodyLimit({ maxSize, onError })
+    middleware.push((c, next) => {
+      if (c.req.header('Content-Type')?.startsWith('multipart/')) return next()
+      const size = c.req.header('Content-Length')
+      if (size === undefined) return limit(c, next)
+      // `bodyLimit()` reads `c.req.raw.body`, after which `@hono/node-server`
+      // resets the connection of a body that nothing read. The next request
+      // of a keep-alive connection would fail. So bodies of a known size don't
+      // go through it.
+      return Number(size) > maxSize ? onError(c) : next()
     })
-    middleware.push((c, next) =>
-      c.req.header('Content-Type')?.startsWith('multipart/')
-        ? next()
-        : limit(c, next)
-    )
   }
   return middleware
 }
