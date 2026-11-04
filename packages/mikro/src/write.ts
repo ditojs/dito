@@ -114,7 +114,7 @@ export async function assignRecord<T extends object>(
   // of a deleted row, which a partly loaded row doesn't show. So the rows that
   // new rows replace go first.
   if (replaced.length) {
-    for (const { collection, rows } of replaced) collection.remove(...rows)
+    for (const { collection, rows } of replaced) collection.remove(rows)
     await em.flush()
   }
   createNewRows(em, run)
