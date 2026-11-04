@@ -169,7 +169,7 @@ is its two foreign keys:
 const LoanBookSchema = defineEntity({
   name: 'LoanBook',
   properties: {
-    order: () => p.manyToOne(Order).primary().deleteRule('cascade'),
+    loan: () => p.manyToOne(Loan).primary().deleteRule('cascade'),
     book: () => p.manyToOne(Book).primary().deleteRule('cascade'),
     dueDate: p.date().nullable()
   }
@@ -187,7 +187,7 @@ The body writes the relation as ids. The handler sets the other columns after a
 first flush, in the same transaction, and the base flushes them at the end:
 
 ```js
-await assignRecord(em, order, data)
+await assignRecord(em, loan, data)
 await em.flush()
 const books = loan.books.getItems()
 await em.populate(books, ['loanLinks'], { refresh: true })

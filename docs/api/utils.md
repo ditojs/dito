@@ -943,7 +943,7 @@ waiting for the previous one to resolve. Rejects with the first error, and
 doesn't call `callback` for the remaining elements.
 
 ```js
-const receipts = await mapSequentially(orders, order => sendReceipt(order))
+const notices = await mapSequentially(loans, loan => sendNotice(loan))
 ```
 
 ## Classes
