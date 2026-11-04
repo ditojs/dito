@@ -27,7 +27,6 @@
 - **mikro:** Handlers get `record()`, `find()`, `list()` and `listQuery()`, also as `c.var.record()` and so on. A `load` option replaces how `record()` loads, `maxRows` of a find limits its lists, and the `crud` mixin routes the five default handlers.
 - **mikro:** `serialize`, `beforeSerialize` and `deserialize` shape the records of a controller.
 - **mikro:** The package also has `setRecord()`, `parseListQuery()`, `createRecord()`, `assignRecord()`, `removeRecord()`, `schemaJson()`, `entityUserSource()`, and `mikroDb()`, the `db` adapter of `createApi()`.
-- **mikro:** `plainDate()` declares a `date` column that stores a `Date` or a string with a time as the local day, as Dito.js 6 did. `p.date()` stores the UTC day.
 - **mikro:** Handlers get the request's entity manager as `db` of their input. `getEntityManager(c)` returns it in middleware, filters and `find` functions, and `getKysely(c)` its Kysely.
 - **storage:** `@ditojs/storage` has the disk and S3 storages, `createStorages()`, `storeAsset()`, the `assets()`, `assetUploads()` and `uploadRoutes()` mixins, and `createAssets()`, which binds the paths, storages and `db` of an app. `serveStorage()` of `@ditojs/storage/node` serves disk storages.
 - **storage:** A write accepts a file when its key has an `asset` row in the storage of its path, and imports other files from their `url` when the storage allows it. File objects have no signatures. `runAssetJobs()` tracks files by scanning the data, so the `asset` table has no `count`. An app runs `scanAssets()` once at the release.
