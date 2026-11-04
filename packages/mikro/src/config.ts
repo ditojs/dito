@@ -92,7 +92,7 @@ export function getAssetPaths(entities: object) {
         : EntitySchema.REGISTRY.get(entity)
     if (!schema) return []
     const { meta } = schema
-    const table = meta.tableName ?? naming.classToTableName(schema.name)
+    const table = meta.tableName ?? naming.classToTableName(meta.className)
     return Object.entries(meta.properties).flatMap(([name, prop]) => {
       const type = prop.customType ?? prop.type
       if (!(type instanceof SchemaJson)) return []
