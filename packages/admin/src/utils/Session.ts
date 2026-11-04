@@ -280,6 +280,13 @@ export class Session {
   // user:
   async #resolveViews() {
     if (!(await this.#viewRegistry.resolve())) {
+      // Users without access to the admin end up here too, as the server
+      // refuses them its views:
+      this.#adminContext.notify({
+        type: 'error',
+        title: 'Authentication Error',
+        text: 'The admin could not be loaded. This user may have no access.'
+      })
       await this.login()
     }
   }

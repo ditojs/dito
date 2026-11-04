@@ -93,7 +93,9 @@ describe('Session', () => {
       await logInWithDialog(admin)
       await waitForUser(admin)
       expect(attempt).toBe(2)
-      expect(consoleError).toHaveBeenCalledOnce()
+      expect(consoleError).toHaveBeenCalledWith(
+        new Error('Unable to load the views')
+      )
     })
   })
 
