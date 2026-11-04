@@ -1,4 +1,4 @@
-import { removeRecord } from '../src/index.ts'
+import { assignRecord, removeRecord } from '../src/index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Customer, Folder, customerEntities } from './customer-entities.ts'
 
@@ -113,5 +113,22 @@ describe('removeRecord()', () => {
     const em = orm.em.fork()
     await removeRecord(em, await em.findOneOrFail(Folder, 1))
     expect(await ids('folder')).toEqual([])
+  })
+})
+
+describe('assignRecord()', () => {
+  it('moves a reference off an owned row that the same write replaces', async () => {
+    await sql('delete from address_line')
+    await sql(`insert into address (city, customer_id) values ('Z', 1)`)
+    await sql('update customer set main_address_id = 1 where id = 1')
+    const em = orm.em.fork()
+    const customer = await em.findOneOrFail(Customer, 1)
+    await assignRecord(em, customer, {
+      mainAddress: { id: 3 },
+      addresses: [{ id: 3 }, { city: 'New' }]
+    })
+    await em.flush()
+    expect(await ids('address')).toEqual([2, 3, 4])
+    expect(await ids('customer', 'main_address_id')).toEqual([3, null])
   })
 })

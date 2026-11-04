@@ -151,6 +151,18 @@ describe('toHttpError()', () => {
     })
   })
 
+  it('answers 23503 of a row that a write deletes with 409', () => {
+    const error = pgError(ForeignKeyConstraintViolationException, 'fk', {
+      code: '23503',
+      table: 'part',
+      detail: 'Key (id)=(1) is still referenced from table "part".'
+    })
+    expect(body(error, part)).toEqual({
+      status: 409,
+      message: 'The data conflicts with rows in the database.'
+    })
+  })
+
   it('answers 23503 on a delete or on another table with 409', () => {
     const conflict = {
       status: 409,

@@ -950,5 +950,9 @@ baseline can then drop its checks of knex's table, and always run the SQL.
   MikroORM's `OptimisticLockError` responds with 409, but only for races inside
   one request. Apps that need locking check a value such as `updatedAt` in a
   mixin.
+- **Replacing a partly loaded owned row.** A flush inserts before it deletes,
+  unless it sees that a new row takes the unique value of a deleted row. If the
+  old row was loaded without that column, the insert fails and the write answers
+  409. Load the column, or give the new row another value first.
 - **Unknown query parameters** are ignored, and bodies of types other than JSON
   are left unread.

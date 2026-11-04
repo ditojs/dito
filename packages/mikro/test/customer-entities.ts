@@ -5,7 +5,8 @@ import { Cascade, defineEntity, p } from '@mikro-orm/core'
 // a customer too, and the database sets theirs to null. A customer owns its
 // addresses, and an address owns its lines. Notes go with their customer
 // through a cascade of removes. A folder owns its child folders, whose
-// foreign key deletes them with their parent.
+// foreign key deletes them with their parent. A customer's main address is
+// one of its addresses, whose delete the foreign key refuses.
 
 const CustomerSchema = defineEntity({
   name: 'Customer',
@@ -21,6 +22,7 @@ const CustomerSchema = defineEntity({
   properties: {
     id: p.integer().primary(),
     name: p.string(),
+    mainAddress: () => p.manyToOne(Address).nullable().deleteRule('no action'),
     orders: () => p.oneToMany(Order).mappedBy(order => order.customer),
     visits: () => p.oneToMany(Visit).mappedBy(visit => visit.customer),
     addresses: () =>
