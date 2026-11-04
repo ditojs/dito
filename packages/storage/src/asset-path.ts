@@ -27,7 +27,22 @@ export interface AssetPath {
 // Finds the file objects at `path` inside `value`, with their data paths.
 // Values without a string `key` are skipped.
 export function findAssetFiles(value: unknown, path: string) {
-  const files: { file: AssetFileObject; path: string }[] = []
+  return findValues(value, path).filter(
+    (entry): entry is { file: AssetFileObject; path: string } =>
+      isAssetFileObject(entry.file)
+  )
+}
+
+// The data paths of the values at `path` inside `value` that aren't files.
+// Requests can't store these, as the `asset` table doesn't check them.
+export function findInvalidFiles(value: unknown, path: string) {
+  return findValues(value, path)
+    .filter(({ file }) => file != null && !isAssetFileObject(file))
+    .map(({ path }) => path)
+}
+
+function findValues(value: unknown, path: string) {
+  const values: { file: unknown; path: string }[] = []
   // Deep wildcards can reach the same location in several ways.
   const filePaths = new Set<string>()
   const entries = getEntriesAtDataPath(value, path, () => undefined)
@@ -36,13 +51,13 @@ export function findAssetFiles(value: unknown, path: string) {
       const filePath = isArray(entry)
         ? [entryPath, index].filter(part => part !== '').join('/')
         : entryPath
-      if (isAssetFileObject(file) && !filePaths.has(filePath)) {
+      if (!filePaths.has(filePath)) {
         filePaths.add(filePath)
-        files.push({ file, path: filePath })
+        values.push({ file, path: filePath })
       }
     }
   }
-  return files
+  return values
 }
 
 // The data path of `path` in a row, with the column as its camelCase property.

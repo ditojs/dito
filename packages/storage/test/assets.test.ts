@@ -459,6 +459,89 @@ describe('assets()', () => {
     expect(requests).toEqual(['/imports/a.png'])
   })
 
+  it('refuses values at asset paths that are no stored files', async () => {
+    const api = setup()
+    const url = 'https://other.com/a.png'
+    for (const cover of [{ name: 'a.png', url }, { key: 5, url }, 'a.png']) {
+      for (const value of [cover, [cover]]) {
+        const response = await post(api, { cover: value })
+        expect(response.status).toBe(400)
+        const { type, errors } = await response.json()
+        expect(type).toBe('BodyValidation')
+        expect(Object.keys(errors)[0]).toMatch(/^cover/)
+      }
+    }
+    expect(await getAssets()).toEqual([])
+  })
+
+  it('accepts empty values at asset paths', async () => {
+    const response = await post(setup(), { cover: null })
+    expect(response.status).toBe(200)
+  })
+
+  it('holds no lock while it fetches an import', async () => {
+    await covers.addFile(file('a'), Buffer.from('a'))
+    await addAsset('a')
+    let isLocked: boolean | undefined
+    const server = http.createServer(async (req, res) => {
+      isLocked = await db
+        .transaction()
+        .execute(trx =>
+          sql`select 1 from asset where key = 'a' for update nowait`.execute(
+            trx
+          )
+        )
+        .then(
+          () => false,
+          () => true
+        )
+      res.end('b')
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const { port } = server.address() as AddressInfo
+    const response = await post(setup(), {
+      cover: [
+        file('a'),
+        { key: 'b', url: `http://127.0.0.1:${port}/imports/b.png` }
+      ]
+    })
+    server.close()
+    expect(response.status).toBe(200)
+    expect(isLocked).toBe(false)
+  })
+
+  it('refuses a file that a release deletes during the imports', async () => {
+    await covers.addFile(file('a'), Buffer.from('a'))
+    await addAsset('a')
+    const server = http.createServer(async (req, res) => {
+      await db.deleteFrom('asset').where('key', '=', 'a').execute()
+      res.end('b')
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const { port } = server.address() as AddressInfo
+    const response = await post(setup(), {
+      cover: [
+        file('a'),
+        { key: 'b', url: `http://127.0.0.1:${port}/imports/b.png` }
+      ]
+    })
+    server.close()
+    expect(response.status).toBe(400)
+    expect(await covers.listKeys()).toEqual(['a'])
+  })
+
+  it('answers failed fetches of imports with 400', async () => {
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new DOMException('Timed out', 'TimeoutError'))
+    const response = await post(setup(), {
+      cover: { key: 'a', url: 'http://127.0.0.1:1/imports/a.png' }
+    })
+    expect(response.status).toBe(400)
+    expect(fetch.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal)
+    fetch.mockRestore()
+  })
+
   it('keeps the marks of files that it only copies', async () => {
     await archive.addFile(file('a'), Buffer.from('a'))
     await addAsset('a', { since: old, storage: 'archive' })

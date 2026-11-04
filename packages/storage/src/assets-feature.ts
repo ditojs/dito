@@ -1,8 +1,16 @@
 import fs from 'node:fs/promises'
 import type { Kysely } from 'kysely'
-import { asArray, camelize, isObject } from '@ditojs/utils'
+import {
+  asArray,
+  camelize,
+  isObject,
+  normalizeDataPath,
+  parseDataPath
+} from '@ditojs/utils'
 import {
   HttpError,
+  bodyValidation,
+  createValidationError,
   type DitoContext,
   type MixinDefinition
 } from '@ditojs/server'
@@ -11,7 +19,11 @@ import {
   type AssetFileObject,
   type Storage
 } from './Storage.ts'
-import { findAssetFiles, type AssetPath } from './asset-path.ts'
+import {
+  findAssetFiles,
+  findInvalidFiles,
+  type AssetPath
+} from './asset-path.ts'
 import { insertAsset } from './assets.ts'
 import type { StorageRegistry } from './registry.ts'
 
@@ -20,7 +32,8 @@ import type { StorageRegistry } from './registry.ts'
 // in the storage of its path, and it then gets the properties of the stored
 // file. Files of other storages are copied, and files without an `asset` row
 // are imported from their `url` when the storage allows it. The mixin changes
-// the files of the body in place, so handlers read the stored files.
+// the files of the body in place, so handlers read the stored files. Other
+// values at these paths respond with 400.
 
 // Returns the Kysely of the request, such as one on `c.var.db`, so that the
 // `asset` rows of a write commit with its transaction.
@@ -50,6 +63,9 @@ interface ImportOptions {
 
 const writeMethods = ['POST', 'PUT', 'PATCH']
 
+// How long an import from a `url` may take.
+const fetchTimeout = 30_000
+
 export function assets({
   table,
   paths,
@@ -60,6 +76,7 @@ export function assets({
   return {
     middleware: async (c, next) => {
       if (!writeMethods.includes(c.req.method)) return next()
+      checkFiles(c.var.body, tablePaths)
       const files = findFiles(c.var.body, tablePaths, storages)
       if (files.length === 0) return next()
       const database = db(c)
@@ -95,6 +112,26 @@ export function assets({
   }
 }
 
+// Throws a 400 for values at the asset paths that aren't file objects, which
+// `findFiles()` leaves out and the write would store as they are.
+function checkFiles(body: unknown, paths: AssetPath[]) {
+  const issues = asArray(body).flatMap(item =>
+    isObject(item)
+      ? paths.flatMap(({ column, path }) => {
+          const property = camelize(column)
+          return findInvalidFiles(item[property], path).map(filePath => ({
+            path: [
+              property,
+              ...parseDataPath(normalizeDataPath(filePath))
+            ],
+            message: 'Invalid input: expected a stored file'
+          }))
+        })
+      : []
+  )
+  if (issues.length > 0) throw createValidationError(issues, bodyValidation)
+}
+
 function findFiles(
   body: unknown,
   paths: AssetPath[],
@@ -115,7 +152,8 @@ function findFiles(
 // Gives the files the properties of their stored files. Files that the `asset`
 // table holds in their storage keep their key, and others go through
 // `importFile()`. Returns the keys of the rows that the files use and that a
-// scan found unreferenced.
+// scan found unreferenced. The rows are locked after the imports, so that a
+// slow source holds no locks.
 async function importFiles(
   db: Kysely<any>,
   files: StorageFile[],
@@ -125,12 +163,8 @@ async function importFiles(
   if (keys.length === 0) return []
   const assets = await db
     .selectFrom('asset')
-    .select(['key', 'storage', 'file', 'unreferenced_since'])
+    .select(['key', 'storage', 'file'])
     .where('key', 'in', keys)
-    // A release that runs now would delete rows that this write references.
-    // The order keeps two writes from locking each other out.
-    .orderBy('key')
-    .forUpdate()
     .execute()
   const assetsByKey = new Map(assets.map(asset => [asset.key, asset]))
   const groups = Map.groupBy(
@@ -158,12 +192,30 @@ async function importFiles(
   )
   const rejected = results.find(result => result.status === 'rejected')
   if (rejected) throw rejected.reason
-  return assets
-    .filter(
-      ({ key, storage, unreferenced_since: since }) => (
-        since && groups.has(`${storage}:${key}`)
-      )
+  const used = assets.filter(({ key, storage }) =>
+    groups.has(`${storage}:${key}`)
+  )
+  if (used.length === 0) return []
+  const locked = await db
+    .selectFrom('asset')
+    .select(['key', 'unreferenced_since'])
+    .where(
+      'key',
+      'in',
+      used.map(({ key }) => key)
     )
+    // A release that runs now would delete rows that this write references.
+    // The order keeps two writes from locking each other out.
+    .orderBy('key')
+    .forUpdate()
+    .execute()
+  if (locked.length < used.length) {
+    throw new HttpError(400, {
+      message: 'A file of the request was released in the meantime.'
+    })
+  }
+  return locked
+    .filter(({ unreferenced_since: since }) => since)
     .map(({ key }) => key)
 }
 
@@ -218,12 +270,21 @@ async function fetchFile(url: string) {
   if (url.startsWith('file://')) {
     return fs.readFile(new URL(resolveFileUrl(url)))
   }
-  // A redirect could lead to a url that `allowedImports` doesn't match.
-  const response = await fetch(url, { redirect: 'manual' })
-  if (!response.ok) {
-    throw new HttpError(400, {
-      message: `Unable to import asset from '${url}': ${response.status}`
+  const importError = (reason: unknown) =>
+    new HttpError(400, {
+      message: `Unable to import asset from '${url}': ${reason}`
     })
+  try {
+    const response = await fetch(url, {
+      // A redirect could lead to a url that `allowedImports` doesn't match.
+      redirect: 'manual',
+      signal: AbortSignal.timeout(fetchTimeout)
+    })
+    if (!response.ok) throw importError(response.status)
+    return Buffer.from(await response.arrayBuffer())
+  } catch (error) {
+    throw error instanceof HttpError
+      ? error
+      : importError((error as Error).message)
   }
-  return Buffer.from(await response.arrayBuffer())
 }
