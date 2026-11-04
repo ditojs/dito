@@ -1,4 +1,4 @@
-import type { StandardSchemaV1 } from '@standard-schema/spec'
+import type { z } from 'zod'
 import {
   HttpError,
   createValidationError,
@@ -33,8 +33,8 @@ type FilterWhere = (
 ) => object | undefined | Promise<object | undefined>
 
 export type Filter =
-  | StandardSchemaV1
-  | { schema: StandardSchemaV1; where: FilterWhere }
+  | z.ZodType
+  | { schema: z.ZodType; where: FilterWhere }
 
 // The most rows a list returns, unless its `find` says otherwise.
 const defaultMaxRows = 1000
@@ -159,7 +159,8 @@ async function getFilterWheres(
     if (!filter) {
       throw new HttpError(400, { message: `Unknown filter '${name}'` })
     }
-    return '~standard' in filter
+    // Not `instanceof`, which fails with two copies of Zod.
+    return 'safeParseAsync' in filter
       ? { name, value, schema: filter, where: toWhere(name) }
       : { name, value, ...filter }
   })

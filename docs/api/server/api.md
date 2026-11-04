@@ -69,7 +69,7 @@ For each request of an action, Hono and Dito:
 5. check the action's `authorize`, which responds with 401 without a user and
    403 with one;
 6. validate the query and the body with the action's schemas, through
-   `sValidator()` of `@hono/standard-validator`;
+   `validator()` of `hono/validator`;
 7. set `c.var.body` for writes, so invalid JSON fails before the transaction;
 8. open the transaction of `db`, for writes unless `transaction: false`, and for
    reads with `transaction: true`;

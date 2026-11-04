@@ -1,6 +1,5 @@
-import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type { Context, ErrorHandler, NotFoundHandler } from 'hono'
-import { isNumber, isObject, isString } from '@ditojs/utils'
+import { isNumber, isString } from '@ditojs/utils'
 import type { DbAdapter, ErrorLogger, HttpErrorBody } from './types.ts'
 
 // Errors respond with JSON: `{ type, message, status, code, errors }`. An
@@ -73,8 +72,10 @@ export class HttpError extends Error {
   }
 }
 
-// A validation issue of Standard Schema. Zod's issues also carry a `code`.
-export interface ValidationIssue extends StandardSchemaV1.Issue {
+// A validation issue, as Zod reports it.
+export interface ValidationIssue {
+  readonly message: string
+  readonly path?: readonly PropertyKey[]
   readonly code?: unknown
 }
 
@@ -121,9 +122,7 @@ export function createValidationError(
 function toFieldErrors(issues: readonly ValidationIssue[]) {
   const errors: NonNullable<HttpErrorBody['errors']> = {}
   for (const { message, path = [], code } of issues) {
-    const key = path
-      .map(segment => String(isObject(segment) ? segment.key : segment))
-      .join('/')
+    const key = path.map(String).join('/')
     ;(errors[key] ??= []).push({
       message,
       ...(isString(code) && { keyword: code })

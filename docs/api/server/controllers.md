@@ -74,16 +74,14 @@ set, with `true` or an object.
 | Key           | Type                         | Description                                                                                                                     |
 | ------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `handler`     | [`Handler`](#handler)        | The handler. Without it, the action routes the handler beneath.                                                                 |
-| `query`       | `StandardSchemaV1`           | Validates the query. Repeated parameters arrive as arrays. Its output becomes `query` of the input, and `c.req.valid('query')`. |
-| `body`        | `StandardSchemaV1`           | Validates the JSON body. Its output becomes `body` of the input, and `c.req.valid('json')`.                                     |
+| `query`       | `z.ZodType`                  | Validates the query. Repeated parameters arrive as arrays. Its output becomes `query` of the input, and `c.req.valid('query')`. |
+| `body`        | `z.ZodType`                  | Validates the JSON body. Its output becomes `body` of the input, and `c.req.valid('json')`.                                     |
 | `authorize`   | [`authorize`](#authorize)    | Who may run the action.                                                                                                         |
 | `middleware`  | `Middleware \| Middleware[]` | Hono middleware of this action only, such as caching headers.                                                                   |
 | `transaction` | `boolean`                    | Whether the action runs in a transaction.                                                                                       |
 
-Schemas are [Standard Schemas](https://standardschema.dev), such as Zod's,
-Valibot's or ArkType's, which run through `sValidator()` of
-`@hono/standard-validator`. Invalid input responds with 400 and the issues of
-the schema, see [Validation errors](errors.md#validation-errors).
+Schemas are [Zod](https://zod.dev) schemas, which run through `validator()` of
+`hono/validator`. Invalid input responds with 400 and the issues of the schema, see [Validation errors](errors.md#validation-errors).
 
 ## action()
 

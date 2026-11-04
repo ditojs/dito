@@ -577,9 +577,6 @@ importers:
       '@ditojs/utils':
         specifier: workspace:^
         version: link:../utils
-      '@standard-schema/spec':
-        specifier: ^1.1.0
-        version: 1.1.0
     devDependencies:
       '@ditojs/server':
         specifier: workspace:^
@@ -617,12 +614,6 @@ importers:
       '@ditojs/utils':
         specifier: workspace:^
         version: link:../utils
-      '@hono/standard-validator':
-        specifier: ^0.4.1
-        version: 0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.16)
-      '@standard-schema/spec':
-        specifier: ^1.1.0
-        version: 1.1.0
     devDependencies:
       '@hono/node-server':
         specifier: ^2.1.5
@@ -970,12 +961,6 @@ packages:
     engines: {node: '>=20'}
     peerDependencies:
       hono: ^4 || ^5.0.0-0
-
-  '@hono/standard-validator@0.4.1':
-    resolution: {integrity: sha512-Q0+1dgMKAXEvsmJ5FNoamwnfrf/I5JNnKn7WzfynH8nJlNe1lNOW1+vlKpEQZbrBLEgmxIeys6HjRotDvZzq+A==}
-    peerDependencies:
-      '@standard-schema/spec': ^1.0.0
-      hono: '>=4.11.2'
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -1748,9 +1733,6 @@ packages:
   '@sindresorhus/merge-streams@4.0.0':
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
-
-  '@standard-schema/spec@1.1.0':
-    resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
   '@tiptap/core@3.31.4':
     resolution: {integrity: sha512-cIVUQYBycighzsk6GbmCef8ZiEDVxoT5EuAe4xg2q9dNkDqCXVqI4YGr9aavCQEiAS4uHiRwqvcsPqJHipFDfg==}
@@ -5837,11 +5819,6 @@ snapshots:
     dependencies:
       hono: 4.13.16
 
-  '@hono/standard-validator@0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.16)':
-    dependencies:
-      '@standard-schema/spec': 1.1.0
-      hono: 4.13.16
-
   '@humanfs/core@0.19.2':
     dependencies:
       '@humanfs/types': 0.15.0
@@ -6627,8 +6604,6 @@ snapshots:
       reflect-metadata: 0.2.2
 
   '@sindresorhus/merge-streams@4.0.0': {}
-
-  '@standard-schema/spec@1.1.0': {}
 
   '@tiptap/core@3.31.4(@tiptap/pm@3.31.4)':
     dependencies:

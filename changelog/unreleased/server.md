@@ -7,7 +7,7 @@
 - **server:** Handlers return data or a `Response`. Data responds with 200 and `undefined` with 204, unless the handler sets another status with `c.status()`. Hono doesn't send a thrown `Response`: throw an `HttpError`, or return the `Response`.
 - **server:** Mixins from `defineMixin()` replace features, base classes and hooks.
 - **server:** `authorize` takes `true`, a role, a list of roles, or a function of Hono's context `c`. If a write action has no `authorize`, on itself or on a layer, `createApi()` throws.
-- **server:** `HttpError` replaces `ResponseError` and its subclasses: `new HttpError(status, { message, type, code, errors })`. The error JSON stays `{ type, message, status, code, errors }`. Field errors are keyed by path, such as `chapters/8/title`, each with a `message` and a `keyword`. `createValidationError(issues, options)` builds a 400 from Standard Schema issues.
+- **server:** `HttpError` replaces `ResponseError` and its subclasses: `new HttpError(status, { message, type, code, errors })`. The error JSON stays `{ type, message, status, code, errors }`. Field errors are keyed by path, such as `chapters/8/title`, each with a `message` and a `keyword`. `createValidationError(issues, options)` builds a 400 from Zod issues.
 - **admin:** Requests reject with an `ApiError`, which has the fields of the JSON body, the `status` and the `response`. Code that read `error.response.data` reads the fields on the error. See [Upgrading to 7.x](docs/upgrading-to-7.x.md#10-update-the-admin-the-clients-and-the-tests).
 - **admin:** The `api` config is plain data. `request`, `getApiUrl`, `isApiUrl`, `normalizePath`, `denormalizePath` and `resources` aren't options any more, and `admin.api` has `request()` and `getApiUrl()`. `normalizePaths` is gone: views and sources are routed under their hyphenated names. `users` takes only `path`, and the admin loads its user from `get self`.
 - **schema:** `@ditojs/schema` is removed. The admin holds the validators that it uses.
@@ -18,7 +18,7 @@
 
 ### New
 
-- **server:** Schemas of actions, filters and column types are Standard Schemas. `action({ query, body, handler })` types `query` and `body` of the handler's input. `@ditojs/server/zod` has `q`, Zod schemas for query values.
+- **server:** Schemas of actions, filters and column types are Zod schemas. `action({ query, body, handler })` types `query` and `body` of the handler's input. `@ditojs/server/zod` has `q`, Zod schemas for query values.
 - **server:** `c.var.body` holds the body of a write, parsed once, for middleware and the handler. `sendFile(c, body, { filename, type, inline })` responds with a file, also a stream.
 - **server:** `hostMiddleware()` returns Hono's `secureHeaders()`, `csrf()` for requests with `Origin`, and `bodyLimit()`, and optionally `cors()` and `etag()`.
 - **server:** `@ditojs/server/node` has `serve()`, a Node server that stops on signals, `forwarded(proxy)` for apps behind reverse proxies, and `getClientAddress(c)`.

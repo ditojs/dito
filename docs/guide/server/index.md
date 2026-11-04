@@ -23,8 +23,7 @@ files and users from packages:
 | `@ditojs/admin-server` | Serves the [Dito.js Admin](../admin/index.md).                                                                               |
 
 Schemas of queries, bodies, filters and column types are
-[Standard Schemas](https://standardschema.dev). The examples use
-[Zod](https://zod.dev).
+[Zod](https://zod.dev) schemas.
 
 ## Installation
 

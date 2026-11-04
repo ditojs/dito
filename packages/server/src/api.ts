@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono'
 import { getMimeType } from 'hono/utils/mime'
-import { sValidator } from '@hono/standard-validator'
-import type { StandardSchemaV1 } from '@standard-schema/spec'
+import { validator } from 'hono/validator'
+import type { z } from 'zod'
 import { asArray, isArray, isFunction } from '@ditojs/utils'
 import { resolveController, type ResolvedAction } from './compose.ts'
 import { isController } from './define.ts'
@@ -130,14 +130,16 @@ function authorize(value: Exclude<Authorize, true>): Middleware {
   }
 }
 
-function validate(target: 'query' | 'json', schema: StandardSchemaV1) {
-  return sValidator(target, schema, result => {
-    if (!result.success) {
+function validate(target: 'query' | 'json', schema: z.ZodType) {
+  return validator(target, async value => {
+    const { data, error } = await schema.safeParseAsync(value)
+    if (error) {
       throw createValidationError(
-        result.error,
+        error.issues,
         target === 'query' ? queryValidation : bodyValidation
       )
     }
+    return data as object
   }) as Middleware
 }
 

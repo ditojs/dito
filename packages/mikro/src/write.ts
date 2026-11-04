@@ -1,4 +1,4 @@
-import type { StandardSchemaV1 } from '@standard-schema/spec'
+import type { z } from 'zod'
 import { createValidationError, type ValidationIssue } from '@ditojs/server'
 import {
   isArray,
@@ -369,8 +369,8 @@ class Run {
         path
       )
     }
-    const { schema } = (prop.customType ?? {}) as { schema?: StandardSchemaV1 }
-    if (schema?.['~standard']) {
+    const { schema } = (prop.customType ?? {}) as { schema?: z.ZodType }
+    if (schema) {
       this.pending.push(this.checkSchema(schema, value, path))
     }
     // A plain date, such as `2026-05-14`, is local midnight, which
@@ -378,11 +378,11 @@ class Run {
     return (type === 'date' && parsePlainDate(value as string)) || value
   }
 
-  // Runs the Standard Schema of a custom type, such as that of `schemaJson()`,
-  // on the value as sent. Its output isn't written.
-  async checkSchema(schema: StandardSchemaV1, value: unknown, path: Path) {
+  // Runs the schema of a custom type, such as that of `schemaJson()`, on the
+  // value as sent. Its output isn't written.
+  async checkSchema(schema: z.ZodType, value: unknown, path: Path) {
     const { issues = [] } = await runSchema(schema, value)
-    for (const issue of issues as ValidationIssue[]) {
+    for (const issue of issues) {
       this.issues.push({
         path: [...path, ...(issue.path ?? [])],
         message: issue.message,

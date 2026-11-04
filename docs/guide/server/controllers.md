@@ -150,7 +150,7 @@ the handlers beneath it, but not for the handlers above it.
 
 ### Query and body schemas
 
-An action's `query` and `body` are [Standard Schemas](validation.md). Dito
+An action's `query` and `body` are [Zod schemas](validation.md). Dito
 validates the request with them before the handler runs, and invalid input
 responds with 400 and the issues. Their output becomes `query` and `body` of the
 input. `action()` gives them their types in the handler:

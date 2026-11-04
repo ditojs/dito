@@ -340,9 +340,9 @@ Invalid values respond with 400.
 
 ```ts
 type Filter =
-  | StandardSchemaV1
+  | z.ZodType
   | {
-      schema: StandardSchemaV1
+      schema: z.ZodType
       where: (
         value: any,
         c: DitoContext,
@@ -351,7 +351,7 @@ type Filter =
     }
 ```
 
-Each filter validates its value with a Standard Schema. Query values are
+Each filter validates its value with a Zod schema. Query values are
 strings, so schemas of numbers, booleans and dates need to parse them, as the
 [`q` schemas](controllers.md#ditojsserverzod) do. A repeated filter gives an
 array, which only an array schema accepts. Invalid values respond with 400, with
@@ -467,7 +467,7 @@ the column is nullable, whatever the delete rule says.
 ## schemaJson()
 
 ```ts
-schemaJson<S extends StandardSchemaV1>(schema: S): PropertyBuilder
+schemaJson<S extends z.ZodType>(schema: S): PropertyBuilder
 class SchemaJson<S> extends JsonType {
   constructor(schema: S)
   get schema(): S

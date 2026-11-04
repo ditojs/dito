@@ -803,7 +803,7 @@ describe('validation', () => {
 
   it('creates validation errors keyed by path', () => {
     const issues = [
-      { message: 'is taken', path: ['sets', { key: 8 }, 'name'] },
+      { message: 'is taken', path: ['sets', 8, 'name'] },
       { message: 'is empty', path: [], code: 'too_small' }
     ]
     expect(createValidationError(issues).toJSON()).toEqual({

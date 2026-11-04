@@ -1,20 +1,12 @@
-import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { z } from 'zod'
 import { StringType, defineEntity, p } from '@mikro-orm/core'
 import type { AssetFileObject } from '@ditojs/storage'
 import { schemaJson } from '../src/index.ts'
 
 // A string column whose schema is async: a code of upper-case letters.
-const codeSchema: StandardSchemaV1<string> = {
-  '~standard': {
-    version: 1,
-    vendor: 'test',
-    validate: async value =>
-      /^[A-Z]+$/.test(value as string)
-        ? { value: value as string }
-        : { issues: [{ message: 'Invalid code' }] }
-  }
-}
+const codeSchema = z
+  .string()
+  .refine(async value => /^[A-Z]+$/.test(value), 'Invalid code')
 
 class CodeType extends StringType {
   get schema() {

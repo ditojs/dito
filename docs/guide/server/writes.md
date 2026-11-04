@@ -59,7 +59,7 @@ fields, give the action a `body` schema, see
 ### Rules on values
 
 Put the rules of a value on its column's custom type, as a
-[Standard Schema](validation.md). `schemaJson()` declares a JSON column with a
+[Zod schema](validation.md). `schemaJson()` declares a JSON column with a
 schema:
 
 ```js

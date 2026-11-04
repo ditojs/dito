@@ -7,10 +7,8 @@ Dito.js validates in three places:
 - the checks of the bodies of model controllers, which read the entity's
   metadata and run the schemas of custom column types. Postgres checks the rest.
 
-Every schema that an app passes is a
-[Standard Schema](https://standardschema.dev). Zod, Valibot, ArkType and others
-implement it. The examples use [Zod](https://zod.dev), an optional peer of
-`@ditojs/server`.
+Every schema that an app passes is a [Zod](https://zod.dev) schema. Zod is a
+peer of `@ditojs/server`.
 
 ## Actions
 

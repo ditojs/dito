@@ -1,4 +1,4 @@
-import type { StandardSchemaV1 } from '@standard-schema/spec'
+import type { z } from 'zod'
 import { asArray, isFunction } from '@ditojs/utils'
 import type {
   ActionDefinition,
@@ -26,8 +26,8 @@ export interface ResolvedAction {
   verb: Verb
   // '' for a key without a path.
   path: string
-  query: StandardSchemaV1 | undefined
-  body: StandardSchemaV1 | undefined
+  query: z.ZodType | undefined
+  body: z.ZodType | undefined
   authorize: Authorize | undefined
   transaction: boolean | undefined
   middleware: Middleware[]

@@ -268,9 +268,8 @@ describe('get', () => {
   })
 
   it('answers 400 for a filter whose schema throws or rejects', async () => {
-    const failing = (validate: () => never | Promise<never>) => ({
-      '~standard': { version: 1 as const, vendor: 'test', validate }
-    })
+    const failing = (check: () => never | Promise<never>) =>
+      z.unknown().refine(check)
     const api = setup(
       families({
         filters: {

@@ -21,8 +21,7 @@ keep their API.
   [MikroORM](https://mikro-orm.io) 7 entities. Objection.js isn't supported.
 - **Controllers as objects**, with one `actions` map keyed `'verb path'`. Mixins
   replace features and class inheritance.
-- **Standard Schema.** Every schema that an app passes is a
-  [Standard Schema](https://standardschema.dev), such as a Zod schema.
+- **Zod.** Every schema that an app passes is a [Zod](https://zod.dev) schema.
 
 ## What replaces each part of Dito.js 6
 
@@ -49,7 +48,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `useApp()`, `ctx.app`                                                                  | Imports of the app's modules                                                                                                                                                  | low                     |
 | Models: `properties`, `relations`, `TimestampedModel`, model hooks                     | MikroORM entities with `defineEntity()`, `onCreate()`, `onUpdate()`, MikroORM's hooks                                                                                         | high                    |
 | Model scopes, modifiers, `static filters`, `allowScope`, `allowFilter`                 | `find` and `filters` of the controllers, `textFilter()`, `dateRangeFilter()`                                                                                                  | high                    |
-| JSON schemas of JSON columns, the `Validator`'s formats, keywords and types            | `schemaJson()` with Standard Schemas such as Zod's, converted by hand, see [step 5](#5-turn-models-into-entities)                                                             | medium                  |
+| JSON schemas of JSON columns, the `Validator`'s formats, keywords and types            | `schemaJson()` with Zod schemas, converted by hand, see [step 5](#5-turn-models-into-entities)                                                                                | medium                  |
 | `$parseJson()`, `$formatJson()`, read-only properties, `$validateGraph()`              | `deserialize`, `serialize` and `beforeSerialize` of the controller, rules as functions run by a mixin                                                                         | medium                  |
 | Graph writes: `upsertGraph()`, `relate`, `#id`, `#ref`                                 | Nested writes of owned relations, `createRecord()`, `assignRecord()`                                                                                                          | medium                  |
 | `Controller`, `ModelController`, `RelationController`, `collection`, `member`, `allow` | `defineController()` with one `actions` map, mixins, `crud`                                                                                                                   | high                    |
@@ -213,8 +212,8 @@ builders, see [Entities and controllers](guide/server/entities.md).
   [`plainDate()`](api/server/mikro.md#plaindate) of `@ditojs/mikro` keeps the
   local day.
 
-**JSON columns.** Convert the JSON schemas of JSON columns to Zod or another
-Standard Schema by hand, and pass them to `schemaJson()`. The formats and
+**JSON columns.** Convert the JSON schemas of JSON columns to Zod by hand, and
+pass them to `schemaJson()`. The formats and
 keywords of other columns become a custom type with a `schema` getter, see
 [Rules on values](guide/server/writes.md#rules-on-values).
 
@@ -231,9 +230,9 @@ export async function fillJsonDefaults({ entity, meta }) {
   for (const prop of meta.props) {
     const schema = prop.customType?.schema
     if (schema && entity[prop.name] != null) {
-      const result = await schema['~standard'].validate(entity[prop.name])
-      if (!result.issues) {
-        entity[prop.name] = result.value
+      const result = await schema.safeParseAsync(entity[prop.name])
+      if (result.success) {
+        entity[prop.name] = result.data
       }
     }
   }
@@ -445,7 +444,7 @@ One `actions` map holds every route, keyed `'verb path'`, see
 - Default handlers are off. A forgotten key leaves the route out. There is no
   default `put` and no write on the whole collection. Bulk writes are custom
   actions, such as `'post order'`.
-- `parameters` and `returns` become the Standard Schemas `query` and `body`,
+- `parameters` and `returns` become the Zod schemas `query` and `body`,
   which `action()` types. `q` of `@ditojs/server/zod` has schemas for query
   values, such as `q.integer()`, and `q.array(item)` for repeated keys.
 

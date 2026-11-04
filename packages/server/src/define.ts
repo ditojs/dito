@@ -1,4 +1,4 @@
-import type { StandardSchemaV1 } from '@standard-schema/spec'
+import type { z } from 'zod'
 import { isObject } from '@ditojs/utils'
 import type {
   ActionDefinition,
@@ -30,8 +30,8 @@ export function defineMixin(def: MixinDefinition) {
 // `c.req.valid()`, from the schemas. `NoInfer` keeps the type that the result
 // is assigned to from changing the schemas.
 export function action<
-  Q extends StandardSchemaV1 | undefined = undefined,
-  B extends StandardSchemaV1 | undefined = undefined
+  Q extends z.ZodType | undefined = undefined,
+  B extends z.ZodType | undefined = undefined
 >(def: ActionDefinition<Q, B>): ActionDefinition<NoInfer<Q>, NoInfer<B>> {
   return def
 }

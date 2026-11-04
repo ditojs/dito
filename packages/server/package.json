@@ -10,9 +10,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@ditojs/utils": "workspace:^",
-    "@hono/standard-validator": "^0.4.1",
-    "@standard-schema/spec": "^1.1.0"
+    "@ditojs/utils": "workspace:^"
   },
   "peerDependencies": {
     "@hono/node-server": "^2.1.5",
@@ -59,9 +57,6 @@
   },
   "peerDependenciesMeta": {
     "@hono/node-server": {
-      "optional": true
-    },
-    "zod": {
       "optional": true
     }
   }

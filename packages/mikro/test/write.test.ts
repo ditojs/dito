@@ -1,4 +1,4 @@
-import type { StandardSchemaV1 } from '@standard-schema/spec'
+import { z } from 'zod'
 import { StringType, defineEntity, p } from '@mikro-orm/core'
 import { assignRecord, createRecord } from '../src/index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
@@ -11,18 +11,13 @@ import {
 } from './order-entities.ts'
 
 // A schema that throws for `throw`, and rejects for `reject` when async.
-const throwing = (isAsync: boolean): StandardSchemaV1 => ({
-  '~standard': {
-    version: 1,
-    vendor: 'test',
-    validate: value => {
-      if (value === 'throw') throw new Error('Internal')
-      return isAsync && value === 'reject'
-        ? Promise.reject(new Error('Internal'))
-        : { value }
-    }
-  }
-})
+const throwing = (isAsync: boolean) =>
+  z.unknown().refine(value => {
+    if (value === 'throw') throw new Error('Internal')
+    return isAsync && value === 'reject'
+      ? Promise.reject(new Error('Internal'))
+      : true
+  })
 
 class SyncType extends StringType {
   get schema() {

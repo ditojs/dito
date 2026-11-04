@@ -143,7 +143,7 @@ createValidationError(
 ): HttpError
 ```
 
-Returns an error with the field errors of Standard Schema issues, keyed by path.
+Returns an error with the field errors of Zod issues, keyed by path.
 A string `code` of an issue becomes the `keyword`. Use it for rules that run in
 code, such as a check of a whole graph:
 

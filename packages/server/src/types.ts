@@ -1,4 +1,4 @@
-import type { StandardSchemaV1 } from '@standard-schema/spec'
+import type { z } from 'zod'
 import type { Context, MiddlewareHandler } from 'hono'
 import type { HttpError } from './errors.ts'
 
@@ -80,9 +80,7 @@ export type Handler<Query = Record<string, any>, Body = any> = (
   input: DitoInput<Query, Body>
 ) => unknown
 
-type Output<S, Default> = S extends StandardSchemaV1
-  ? StandardSchemaV1.InferOutput<S>
-  : Default
+type Output<S, Default> = S extends z.ZodType ? z.output<S> : Default
 
 // The settings of actions, controllers and mixins.
 export interface ActionSettings {
@@ -99,8 +97,8 @@ export interface ActionSettings {
 // An action with schemas, from `action()`, which types `query` and `body` of
 // the input from them.
 export interface ActionDefinition<
-  Q extends StandardSchemaV1 | undefined = undefined,
-  B extends StandardSchemaV1 | undefined = undefined
+  Q extends z.ZodType | undefined = undefined,
+  B extends z.ZodType | undefined = undefined
 > extends ActionSettings {
   query?: Q
   body?: B
@@ -114,8 +112,8 @@ type ActionValue =
   | true
   | Handler<Record<string, string>>
   | (ActionSettings & {
-      query?: StandardSchemaV1
-      body?: StandardSchemaV1
+      query?: z.ZodType
+      body?: z.ZodType
       handler?: Handler<any, any>
     })
 
