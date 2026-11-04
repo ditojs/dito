@@ -3307,6 +3307,16 @@ export interface TypeDescriptor {
 export function defineType(descriptor: TypeDescriptor): TypeDescriptor
 
 /**
+ * The error of a failed request, with the fields of the JSON body, such as
+ * `errors`, the `status` and the `response`.
+ */
+export class ApiError extends Error {
+  [key: string]: any
+  status: number
+  response: Response
+}
+
+/**
  * Returns a new temporary id, such as `'@1'`, for a new row that a relation
  * links before it is saved, as the options of fields with `relate` give them.
  * Saving sends the row with `#id` and each link to it as `{ '#ref' }`.

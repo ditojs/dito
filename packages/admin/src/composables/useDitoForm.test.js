@@ -215,7 +215,7 @@ describe('useDitoForm()', () => {
     expect(form.getErrors()).toEqual({ name: [{ message: 'is required' }] })
   })
 
-  it('tells the validation errors of the server', async () => {
+  it.each([400, 409])('tells the field errors of a %i', async status => {
     const { page, request } = await mountProductPage()
     const error = {
       message: 'must be unique',
@@ -224,7 +224,7 @@ describe('useDitoForm()', () => {
     }
     request.mockImplementationOnce(() => {
       throw new ApiError({
-        status: 400,
+        status,
         statusText: 'Bad Request',
         data: {
           type: 'ModelValidation',

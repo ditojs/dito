@@ -259,8 +259,8 @@ export function useResource({
         { method, resource, data: payload },
         async (error, response) => {
           if (error) {
-            // Dito.js validation errors are shown on the fields:
-            if (error.status === 400 && error.errors) {
+            // Dito.js field errors are shown on the fields:
+            if (error.errors) {
               await showValidationErrors(error.errors)
             } else {
               const isHandled = await onError?.(error)
