@@ -51,6 +51,33 @@ describe('AdminContext', () => {
     expect(getComponent('title').context.api).toBe(admin.context.api)
   })
 
+  it('says why the login dialog returns when the views fail', async () => {
+    let shouldFail = false
+    const admin = await mountAdmin({
+      views: () => {
+        if (shouldFail) throw new Error('Forbidden')
+        return views
+      },
+      request: ({ method, url, data }) =>
+        method === 'post' && url === '/login'
+          ? { data: { user: { id: 2, username: data.username } } }
+          : null
+    })
+    const notify = vi.fn()
+    const showDialog = vi
+      .fn()
+      .mockResolvedValueOnce({ username: 'reader', password: 'x' })
+      .mockResolvedValue(null)
+    admin.context.attachDialogsAndNotifications({ showDialog, notify })
+    shouldFail = true
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await admin.context.session.login()
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error' })
+    )
+    expect(showDialog).toHaveBeenCalledTimes(2)
+  })
+
   it('provides the user reactively', async () => {
     const admin = await mountAdminWithLogin()
     const { context } = admin
