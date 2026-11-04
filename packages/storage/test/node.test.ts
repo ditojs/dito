@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { Hono } from 'hono'
-import { DiskStorage } from '../src/index.ts'
+import { DiskStorage, S3Storage } from '../src/index.ts'
 import { serveStorage } from '../src/node.ts'
 
 describe('serveStorage()', () => {
@@ -36,6 +36,21 @@ describe('serveStorage()', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toMatch(/^text\/plain/)
     expect(await response.text()).toBe('Note')
+  })
+
+  it('refuses storages that are no disk storages', () => {
+    const covers = new S3Storage({
+      name: 'covers',
+      s3: {
+        endpoint: 'https://s3.example.com',
+        region: 'eu',
+        credentials: { accessKeyId: 'key', secretAccessKey: 'secret' }
+      },
+      bucket: 'covers'
+    })
+    expect(() => serveStorage(covers)).toThrow(
+      `Unable to serve 'covers': not a disk storage.`
+    )
   })
 
   it('answers missing files and files outside the folder with 404', async () => {

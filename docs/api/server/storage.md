@@ -119,18 +119,16 @@ const file = await storeAsset(db, storages.get('documents'), {
 ## serveStorage()
 
 ```ts
-serveStorage(storage: DiskStorage): MiddlewareHandler
+serveStorage(storage: Storage): MiddlewareHandler
 ```
 
 From `@ditojs/storage/node`. Returns Hono middleware that serves the folder of a
 disk storage with `serveStatic()` of `@hono/node-server`. The host routes it at
 the path of the storage's `url`. The path of the route is cut from the request's
-path, and missing files go on to the next handler:
+path, and missing files go on to the next handler. Other storages throw:
 
 ```js
 app.use('/assets/public/*', serveStorage(storages.get('public')))
-// In TypeScript, as `get()` returns a `Storage`:
-// serveStorage(storages.get('public') as DiskStorage)
 ```
 
 ## File objects
