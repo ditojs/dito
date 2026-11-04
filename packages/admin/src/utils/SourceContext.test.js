@@ -50,7 +50,7 @@ describe('SourceContext', () => {
           books: {
             type: 'list',
             resource: { path: 'books' },
-            scopes: { all: {}, published: {} },
+            filterTabs: { published: { filter: { published: true } } },
             columns: { title: {} },
             buttons: { export: { type: 'button' } }
           }
@@ -59,9 +59,11 @@ describe('SourceContext', () => {
       request: () => ({ data: [] })
     })
     const books = getComponent('books')
-    expect(books.sourceContext.listQuery.query).toEqual({ scope: 'all' })
+    expect(books.sourceContext.listQuery.query).toEqual({
+      'filter[published]': 'true'
+    })
     expect(getComponent('books/export').context.sourceQuery).toEqual({
-      scope: 'all'
+      'filter[published]': 'true'
     })
   })
 

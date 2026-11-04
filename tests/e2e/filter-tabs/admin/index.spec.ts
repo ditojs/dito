@@ -4,30 +4,30 @@ import {
   DitoFilterPanel
 } from '../../../utils/pages.js'
 
-test.describe('scopes', () => {
-  test('default scope shows all widgets', async ({ page, url }) => {
+test.describe('filter tabs', () => {
+  test('the default tab shows all widgets', async ({ page, url }) => {
     const list = new DitoListView(page, url, 'Widget')
     await list.navigate('/widgets')
     await expect(
       page.getByRole('button', { name: 'Create', exact: true })
     ).toBeHidden()
-    // Default scope: both rows visible.
+    // The default tab: both rows visible.
     await expect(list.list.getRow('Alpha')).toBeVisible()
     await expect(list.list.getRow('Beta')).toBeVisible()
   })
 
-  test('Published scope hides unpublished rows', async ({ page, url }) => {
+  test('the Published tab hides unpublished rows', async ({ page, url }) => {
     const list = new DitoListView(page, url, 'Widget')
     await list.navigate('/widgets')
-    await list.list.selectScope('Published')
+    await list.list.selectFilterTab('Published')
     await expect(list.list.getRow('Alpha')).toBeVisible()
     await expect(list.list.getRow('Beta')).toBeHidden()
   })
 
-  test('Unpublished scope hides published rows', async ({ page, url }) => {
+  test('the Unpublished tab hides published rows', async ({ page, url }) => {
     const list = new DitoListView(page, url, 'Widget')
     await list.navigate('/widgets')
-    await list.list.selectScope('Unpublished')
+    await list.list.selectFilterTab('Unpublished')
     await expect(list.list.getRow('Beta')).toBeVisible()
     await expect(list.list.getRow('Alpha')).toBeHidden()
   })
@@ -40,5 +40,16 @@ test.describe('scopes', () => {
     await filters.fillFilter('Search', 'Alpha')
     await expect(list.list.getRow('Alpha')).toBeVisible()
     await expect(list.list.getRow('Beta')).toBeHidden()
+  })
+
+  test('the filters panel keeps the tab', async ({ page, url }) => {
+    const list = new DitoListView(page, url, 'Widget')
+    const filters = new DitoFilterPanel(page)
+    await list.navigate('/widgets')
+    await list.list.selectFilterTab('Unpublished')
+    await expect(list.list.getRow('Alpha')).toBeHidden()
+    await filters.fillFilter('Search', 'a')
+    await expect(list.list.getRow('Beta')).toBeVisible()
+    await expect(list.list.getRow('Alpha')).toBeHidden()
   })
 })

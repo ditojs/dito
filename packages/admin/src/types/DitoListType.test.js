@@ -2026,7 +2026,11 @@ describe('DitoListType', () => {
               type: 'list',
               resource: { path: 'books' },
               paginate: 2,
-              scopes: { all: {}, drafts: {} },
+              filterTabs: {
+                all: {},
+                drafts: { filter: { draft: true } },
+                recent: { filter: { draft: true, recent: true } }
+              },
               columns: { title: { sortable: true } }
             }
           }
@@ -2047,26 +2051,77 @@ describe('DitoListType', () => {
     it('adds the defaults to the route query and loads once', async () => {
       const { admin, getLoadQueries } = await mountBooksView()
       expect(admin.router.currentRoute.value.query).toEqual({
-        scope: 'all',
         page: '2'
       })
-      expect(getLoadQueries()).toEqual([{ scope: 'all', range: '4,5' }])
+      expect(getLoadQueries()).toEqual([{ range: '4,5' }])
     })
 
-    it('changes the scope through the route and resets the page', async () => {
+    it('changes the tab through the route and resets the page', async () => {
       const { admin, getLoadQueries } = await mountBooksView()
-      const scopeButton = admin.wrapper.findAll('.dito-scopes button')[1]
-      await scopeButton.trigger('click')
+      const buttons = admin.wrapper.findAll('.dito-filter-tabs button')
+      await buttons[1].trigger('click')
       await flushPromises()
       expect(admin.router.currentRoute.value.query).toEqual({
-        scope: 'drafts',
-        page: '0'
+        'filter[draft]': 'true',
+        'page': '0'
       })
       expect(getLoadQueries().at(-1)).toEqual({
-        scope: 'drafts',
-        range: '0,1'
+        'filter[draft]': 'true',
+        'range': '0,1'
       })
-      expect(scopeButton.attributes('aria-pressed')).toBe('true')
+      expect(buttons[1].attributes('aria-pressed')).toBe('true')
+      expect(buttons[0].attributes('aria-pressed')).toBe('false')
+    })
+
+    it('selects the tab with the most matching filters', async () => {
+      const { admin } = await mountBooksView()
+      const buttons = admin.wrapper.findAll('.dito-filter-tabs button')
+      await buttons[2].trigger('click')
+      await flushPromises()
+      expect(buttons[1].attributes('aria-pressed')).toBe('false')
+      expect(buttons[2].attributes('aria-pressed')).toBe('true')
+    })
+
+    it('clears the filters of the other tabs', async () => {
+      const { admin } = await mountBooksView()
+      const buttons = admin.wrapper.findAll('.dito-filter-tabs button')
+      await buttons[2].trigger('click')
+      await flushPromises()
+      await buttons[0].trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.query).toEqual({ page: '0' })
+      expect(buttons[0].attributes('aria-pressed')).toBe('true')
+    })
+
+    it(`doesn't merge the default tab into a selected tab`, async () => {
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            field: {
+              type: 'list',
+              resource: { path: 'books' },
+              filterTabs: {
+                recent: { filter: { recent: true } },
+                old: { filter: { old: true } }
+              },
+              columns: { title: {} }
+            }
+          }
+        },
+        request: () => ({ data: [] })
+      })
+      await admin.navigate('/books')
+      expect(admin.router.currentRoute.value.query).toEqual({
+        'filter[recent]': 'true'
+      })
+      await admin.wrapper
+        .findAll('.dito-filter-tabs button')[1]
+        .trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.query).toEqual({
+        'filter[old]': 'true'
+      })
     })
 
     it('sorts by columns through the route and resets the page', async () => {
@@ -2074,12 +2129,10 @@ describe('DitoListType', () => {
       await admin.wrapper.find('.dito-table-head button').trigger('click')
       await flushPromises()
       expect(admin.router.currentRoute.value.query).toEqual({
-        scope: 'all',
         page: '0',
         order: 'title asc'
       })
       expect(getLoadQueries().at(-1)).toEqual({
-        scope: 'all',
         order: 'title asc',
         range: '0,1'
       })

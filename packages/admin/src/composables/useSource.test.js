@@ -869,8 +869,8 @@ describe('useSource()', () => {
     })
   })
 
-  describe('scopes', () => {
-    it('loads the scope marked as `defaultScope` by default', async () => {
+  describe('filterTabs', () => {
+    it('loads the tab marked as `default` by default', async () => {
       const request = vi.fn(() => ({ data: [] }))
       const { getComponent } = await mountSchema({
         schema: {
@@ -878,32 +878,41 @@ describe('useSource()', () => {
             books: {
               type: 'list',
               resource: { path: 'books' },
-              scopes: { all: {}, recent: { defaultScope: true } },
+              filterTabs: {
+                all: {},
+                recent: { filter: { recent: true }, default: true }
+              },
               columns: { title: {} }
             }
           }
         },
         request
       })
-      expect(getComponent('books').listQuery.query.scope).toBe('recent')
+      const query = { 'filter[recent]': 'true' }
+      expect(getComponent('books').listQuery.query).toEqual(query)
       expect(request).toHaveBeenCalledWith(
-        expect.objectContaining({ url: '/books', query: { scope: 'recent' } })
+        expect.objectContaining({ url: '/books', query })
       )
     })
 
-    it('defaults to the first scope', async () => {
+    it('defaults to the first tab', async () => {
       const { getComponent } = await mountSchema({
         schema: {
           fields: {
             books: {
               type: 'list',
-              scopes: { all: {}, recent: {} },
+              filterTabs: {
+                recent: { filter: { recent: true } },
+                old: { filter: { old: true } }
+              },
               columns: { title: {} }
             }
           }
         }
       })
-      expect(getComponent('books').listQuery.query.scope).toBe('all')
+      expect(getComponent('books').listQuery.query).toEqual({
+        'filter[recent]': 'true'
+      })
     })
   })
 

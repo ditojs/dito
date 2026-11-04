@@ -1,7 +1,7 @@
 import { pickBy } from '@ditojs/utils'
 import { formatQuery } from './route.js'
 
-// The scope, page, order and filters of a list: The route holds them, for
+// The page, order and filters of a list: The route holds them, for
 // links and reloads, and the store of the source remembers them for when we
 // navigate back. All changes of lists in routes go through the router, lists
 // outside of routes, e.g. in dialogs, only store them.
@@ -11,6 +11,7 @@ export class ListQuery {
     getRoute,
     getSourceStore,
     getDefaultQuery,
+    getTabKeys,
     isInRoute,
     onChange
   }) {
@@ -18,6 +19,7 @@ export class ListQuery {
     this.getRoute = getRoute
     this.getSourceStore = getSourceStore
     this.getDefaultQuery = getDefaultQuery
+    this.getTabKeys = getTabKeys
     this.isInRoute = isInRoute
     this.onChange = onChange
     this.pendingNavigation = null
@@ -70,12 +72,18 @@ export class ListQuery {
     return isSameQuery(query, this.getRoute().query)
   }
 
-  // The route query, e.g. of links, overrides the stored one, and the route
-  // receives the merged query with the defaults:
+  // The route query, e.g. of links, overrides the stored one, also its tab,
+  // and the route receives the merged query with the defaults:
   syncWithRoute() {
     const route = this.getRoute()
+    const { query: stored = {} } = this.getSourceStore()
+    const tabKeys = this.getTabKeys()
     const query = this.withDefaults({
-      ...this.getSourceStore().query,
+      ...(
+        tabKeys.some(key => key in route.query)
+          ? pickBy(stored, (value, key) => !tabKeys.includes(key))
+          : stored
+      ),
       ...route.query
     })
     this.getSourceStore().query = query
@@ -92,8 +100,8 @@ export class ListQuery {
     return hasChanged
   }
 
-  withDefaults(query) {
-    return removeEmptyValues({ ...this.getDefaultQuery(), ...query })
+  withDefaults(query = {}) {
+    return removeEmptyValues({ ...this.getDefaultQuery(query), ...query })
   }
 }
 

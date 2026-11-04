@@ -3,6 +3,7 @@ import {
   isDate,
   isObject,
   asArray,
+  equals,
   labelize,
   normalizeDataPath,
   parseDataPath
@@ -65,7 +66,7 @@ export function createFiltersPanel(api, filters, dataPath, query) {
   const applyFilters = data => {
     query.value = {
       ...query.value,
-      ...clearFilters(query.value),
+      ...clearFilters(panel),
       ...formatFiltersData(panel, data),
       // Clear pagination when applying or clearing filters:
       page: undefined
@@ -249,20 +250,56 @@ function getFilterKey(filterName) {
   return `filter[${filterName}]`
 }
 
-function isFilterKey(key) {
-  return /^filter\[.*\]$/.test(key)
-}
-
-// The keys of all filters in `query`, set to `undefined` to remove them when
-// the query is merged with other filters:
-function clearFilters(query) {
+// The keys of the panel's filters, set to `undefined` to remove them when the
+// query is merged with other filters. The filters of `filterTabs` stay:
+function clearFilters(schema) {
   const cleared = {}
-  for (const key in query) {
-    if (isFilterKey(key)) {
-      cleared[key] = undefined
-    }
+  for (const dataName in schema.fields) {
+    cleared[getFilterKey(getFilterName(dataName))] = undefined
   }
   return cleared
+}
+
+// The query of a tab of `filterTabs`. Its values are strings, as in routes:
+export function getTabQuery(tab) {
+  const query = {}
+  for (const [name, value] of Object.entries(tab?.filter ?? {})) {
+    query[getFilterKey(name)] = isArray(value) ? value.map(String) : `${value}`
+  }
+  return query
+}
+
+// The keys of the filters of all tabs:
+export function getTabKeys(tabs) {
+  const keys = Object.values(tabs ?? {}).flatMap(
+    tab => Object.keys(getTabQuery(tab))
+  )
+  return [...new Set(keys)]
+}
+
+// The keys of all tabs, set to `undefined` to remove them from the query:
+export function clearTabs(tabs) {
+  return Object.fromEntries(getTabKeys(tabs).map(key => [key, undefined]))
+}
+
+// The tab that `query` matches, the one with the most filters if several do.
+// A tab without filters matches every query.
+export function getSelectedTab(tabs, query) {
+  let selected = null
+  let selectedCount = -1
+  for (const tab of Object.values(tabs)) {
+    const entries = Object.entries(getTabQuery(tab))
+    if (
+      entries.length > selectedCount &&
+      entries.every(([key, value]) =>
+        equals(asArray(query[key]), asArray(value))
+      )
+    ) {
+      selected = tab
+      selectedCount = entries.length
+    }
+  }
+  return selected
 }
 
 // Read the arguments of the filters back from the query, e.g. of a reloaded

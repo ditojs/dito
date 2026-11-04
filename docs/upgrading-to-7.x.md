@@ -762,6 +762,10 @@ These things change. The admin of Dito.js 7 already handles them:
 
 - Filters are `filter[name]=value` instead of `filter=name:args`.
 - `?scope=` and `?fields=` are gone. Select options come from `choices` routes.
+- `scopes` of lists become `filterTabs`: a tab sets list filters, such as
+  `published: { label: 'Published', filter: { published: true } }`, and each
+  name needs a filter on the controller. `defaultScope` becomes `default`, and
+  labels are always objects.
 - Joined values are nested rows instead of flat names.
 - There are no `<name>Id` keys. A client that read or wrote `authorId` uses
   `author.id`: responses send `author: { id: 12 }`, writes send the same, and

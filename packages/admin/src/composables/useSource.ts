@@ -95,7 +95,7 @@ export function useSource(
   const {
     listQuery,
     columns,
-    scopes,
+    filterTabs,
     paginationRange,
     getRequestQuery
   } = useListQuery(props, {
@@ -469,7 +469,7 @@ export function useSource(
     sourceContext,
     listQuery,
     columns,
-    scopes,
+    filterTabs,
     total,
     paginate,
     isLoading: requests.isLoading,

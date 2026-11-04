@@ -4,7 +4,11 @@ import '../types/index.js'
 import { ref } from 'vue'
 import { html, pickBy } from '@ditojs/utils'
 import {
+  clearTabs,
   createFiltersPanel,
+  getSelectedTab,
+  getTabKeys,
+  getTabQuery,
   filterComponents,
   getFiltersDataErrors,
   applyNestedSchemaDefaults
@@ -356,7 +360,7 @@ describe('createFiltersPanel()', () => {
 
     it('replaces the filters of the query', () => {
       const { panel, query } = createPanel({
-        query: { 'filter[author]': 'Austen', 'filter[isbn]': '123' }
+        query: { 'filter[author]': 'Austen', 'filter[published]': 'true' }
       })
       expect(applyFilters(panel, query, { $title: { text: 'Sea' } })).toEqual(
         { 'filter[title]': ['', 'Sea'] }
@@ -381,6 +385,16 @@ describe('createFiltersPanel()', () => {
   })
 
   describe('applying and clearing filters', () => {
+    it('keeps the filters of tabs', () => {
+      const { panel, query } = createPanel({
+        query: { 'filter[state]': 'done', 'filter[title]': 'Emma' }
+      })
+      const { clear } = panel.buttons
+      clear.onClick({ resetItem: () => ({}) })
+      expect(query.value['filter[state]']).toBe('done')
+      expect(query.value['filter[title]']).toBe(undefined)
+    })
+
     it('stores the filters in the query and resets the pagination', () => {
       const { panel, query } = createPanel({
         query: { page: 3, order: 'title' }
@@ -520,5 +534,53 @@ describe('applyNestedSchemaDefaults()', () => {
       fields: { fields: { type: 'section', fields } }
     })
     expect(fields).not.toHaveBeenCalled()
+  })
+})
+
+describe('filter tabs', () => {
+  const tabs = {
+    all: {},
+    published: { filter: { published: true } },
+    frontend: { filter: { published: true, frontend: true } },
+    states: { filter: { state: ['done', 'open'] } }
+  }
+
+  it('turns the filters of a tab into query values', () => {
+    expect(getTabQuery(tabs.frontend)).toEqual({
+      'filter[published]': 'true',
+      'filter[frontend]': 'true'
+    })
+    expect(getTabQuery(tabs.states)).toEqual({
+      'filter[state]': ['done', 'open']
+    })
+    expect(getTabQuery(tabs.all)).toEqual({})
+    expect(getTabQuery(null)).toEqual({})
+  })
+
+  it('lists and clears the keys of all tabs', () => {
+    const keys = ['filter[published]', 'filter[frontend]', 'filter[state]']
+    expect(getTabKeys(tabs)).toEqual(keys)
+    expect(getTabKeys(null)).toEqual([])
+    expect(Object.keys(clearTabs(tabs))).toEqual(keys)
+    expect(Object.values(clearTabs(tabs))).toEqual([
+      undefined,
+      undefined,
+      undefined
+    ])
+  })
+
+  it('selects the matching tab with the most filters', () => {
+    const select = query => getSelectedTab(tabs, query)
+    expect(select({ 'filter[published]': 'true' })).toBe(tabs.published)
+    expect(
+      select({ 'filter[published]': 'true', 'filter[frontend]': 'true' })
+    ).toBe(tabs.frontend)
+    expect(select({ 'filter[state]': ['done', 'open'] })).toBe(tabs.states)
+    expect(select({ 'filter[state]': 'done' })).toBe(tabs.all)
+  })
+
+  it('selects no tab without a match', () => {
+    const { published } = tabs
+    expect(getSelectedTab({ published }, {})).toBe(null)
   })
 })

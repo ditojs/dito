@@ -65,19 +65,23 @@ Without `itemLabel`, the first column is used, else the item's `name`. Inside
 the item's form, every callback can read the label as `context.itemLabel`, see
 [The context](./context.md#the-label-of-the-item).
 
-## Scopes and filters
+## Filter tabs and filters
 
-`scopes` adds buttons that switch the `scope` query parameter of the list.
-`filters` adds a filter panel to the sidebar. Its values are sent as
-`filter[name]` query parameters:
+`filterTabs` adds buttons that set list filters. `filters` adds a filter panel
+to the sidebar. Both send their values as `filter[name]` query parameters:
 
 ```js
 books: {
   type: 'list',
   resource: 'books',
-  scopes: {
+  filterTabs: {
     all: { label: 'All' },
-    published: { label: 'Published', defaultScope: true }
+    published: { label: 'Published', filter: { published: true } },
+    drafts: {
+      label: 'Drafts',
+      filter: { published: false, archived: false },
+      default: true
+    }
   },
   filters: {
     title: { filter: 'text', operators: ['contains', 'starts-with'] },
@@ -91,20 +95,14 @@ The server's controller needs a filter for each name, see
 [Filters](../server/entities.md#filters). A filter sends the values of its
 inputs as repeated parameters, e.g.
 `filter[title]=contains&filter[title]=Emma`, so the server's filter gets an
-array. Changing a filter goes back to the first page.
+array. Changing a tab or a filter goes back to the first page.
 
-Model controllers have no scopes and ignore `scope`. To handle it, give the
-controller a `find` function that reads `scope` from the query:
-
-```js
-// In the books controller:
-find: c => ({
-  where: c.req.query('scope') === 'published' ? { published: true } : {}
-})
-```
-
-A filter can do the same without `scope`. So can a list action of its own,
-such as `'get published': listHandler({ where: { published: true } })`.
+The first tab, or the one with `default: true`, is selected by default.
+Selecting a tab replaces the filters of the other tabs. The selected tab is the
+one whose filters all match the query, the one with the most filters if several
+do. A tab without `filter` shows all rows. It only works as the default tab, as
+the default applies again when no tab has a value. The filters of tabs and of
+the panel need different names, as the panel keeps those of the tabs.
 
 ## Items in the data
 

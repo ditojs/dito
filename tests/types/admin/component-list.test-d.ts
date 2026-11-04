@@ -131,17 +131,12 @@ describe('ListSchema', () => {
     })
   })
 
-  it('accepts scopes as string array or object', () => {
+  it('accepts filterTabs', () => {
     assertType<ListSchema<Entry>>({
       type: 'list',
-      scopes: ['active', 'archived']
-    })
-
-    assertType<ListSchema<Entry>>({
-      type: 'list',
-      scopes: {
-        active: { label: 'Active', defaultScope: true },
-        archived: 'Archived'
+      filterTabs: {
+        all: { label: 'All' },
+        active: { hint: 'Active', filter: { active: true }, default: true }
       }
     })
   })

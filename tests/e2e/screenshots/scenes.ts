@@ -73,7 +73,7 @@ const project: RequiredEntityData<Project> = {
 }
 
 // Inserts the edited project, with `overrides` applied, and two more projects
-// for the list and its scopes.
+// for the list and its tabs.
 export async function seedProjects(
   overrides: Partial<RequiredEntityData<Project>> = {}
 ) {

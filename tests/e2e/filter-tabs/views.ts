@@ -17,10 +17,10 @@ export const widgets = createWidgetView<EntityDTO<Widget>>(
         render: ({ item }) => (item.published ? 'Yes' : 'No')
       }
     },
-    scopes: {
-      $default: { label: 'All' },
-      published: { label: 'Published' },
-      unpublished: { label: 'Unpublished' }
+    filterTabs: {
+      all: { label: 'All' },
+      published: { label: 'Published', filter: { published: true } },
+      unpublished: { label: 'Unpublished', filter: { published: false } }
     },
     filters: {
       search: {
