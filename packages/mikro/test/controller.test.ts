@@ -17,6 +17,7 @@ import {
   choices,
   crud,
   dateRangeFilter,
+  assignRecord,
   defineController,
   listHandler,
   textFilter,
@@ -32,6 +33,7 @@ import {
   Award,
   Designer,
   Family,
+  Cut,
   FontSet,
   Info,
   Pair,
@@ -1810,6 +1812,38 @@ describe('writes', () => {
       'select secret, created_at from family where id = 2'
     )
     expect(row).toEqual({ secret: null, created_at: before.created_at })
+  })
+
+  it('replaces an owned row with a new row of the same unique value', async () => {
+    const { json: family } = await request(api, 'GET', '/api/families/1')
+    const [set] = family.sets
+    const [cut] = set.cuts
+    const { status, json } = await request(api, 'PATCH', '/api/families/1', {
+      sets: [
+        { ...set, cuts: [...set.cuts.slice(1), { name: cut.name }] }
+      ]
+    })
+    expect(status).toBe(200)
+    const names = json.sets[0].cuts.map(({ name }) => name)
+    expect(names).toContain(cut.name)
+    expect(json.sets[0].cuts.map(({ id }) => id)).not.toContain(cut.id)
+  })
+
+  it('replaces an owned row that is loaded without its unique value', async () => {
+    const em = orm.em.fork()
+    const set = await em.findOneOrFail(FontSet, 1, {
+      populate: ['cuts'],
+      fields: ['cuts.id']
+    })
+    const [cut, ...cuts] = set.cuts.getItems()
+    const { name } = await orm.em.fork().findOneOrFail(Cut, cut.id)
+    await assignRecord(em, set, {
+      cuts: [...cuts.map(({ id }) => ({ id })), { name }]
+    })
+    await em.flush()
+    const rows = await orm.em.fork().find(Cut, { set: 1, name })
+    expect(rows).toHaveLength(1)
+    expect(rows[0].id).not.toBe(cut.id)
   })
 
   it('writes the owned row of a one-to-one relation', async () => {

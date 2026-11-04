@@ -13,6 +13,7 @@ import {
   Cascade,
   ReferenceKind,
   wrap,
+  type Collection,
   type EntityMetadata,
   type EntityName,
   type EntityProperty
@@ -102,13 +103,20 @@ export async function assignRecord<T extends object>(
   // of the pivot rows.
   const paths = [...getPopulatePaths(meta, row)]
   if (paths.length) await em.populate(record, paths as never)
-  const records = matchOwnedRows(meta, row, record)
+  const { records, replaced } = matchOwnedRows(meta, row, record)
   // Ids that the record already links need no check.
   const isLinked = getLinkCheck(records)
   await checkIds(
     em,
     run.ids.filter(id => !isLinked(id))
   )
+  // A flush inserts first, unless it sees that a new row has the unique values
+  // of a deleted row, which a partly loaded row doesn't show. So the rows that
+  // new rows replace go first.
+  if (replaced.length) {
+    for (const { collection, rows } of replaced) collection.remove(...rows)
+    await em.flush()
+  }
   createNewRows(em, run)
   em.assign(record, row as never, { onlyProperties: true })
   setRefs(run, row => records.get(row))
@@ -481,9 +489,10 @@ function getPopulatePaths(
 // Matches the owned rows of `row` that have ids to the loaded rows of
 // `record`, at any depth, and returns the records by row. `em.assign()`
 // matches them by id too, and would move a row of another record into this
-// one.
+// one. `replaced` holds the rows that leave collections which get new rows.
 function matchOwnedRows(meta: EntityMetadata, row: Row, record: object) {
   const records = new Map<Row, Row>()
+  const replaced: { collection: Collection<object>; rows: Row[] }[] = []
   const issues: ValidationIssue[] = []
   const match = (meta: EntityMetadata, row: Row, record: Row, path: Path) => {
     records.set(row, record)
@@ -494,7 +503,15 @@ function matchOwnedRows(meta: EntityMetadata, row: Row, record: object) {
         getLoaded(record, prop).map(item => [item[key], item])
       )
       const isMany = prop.kind === ReferenceKind.ONE_TO_MANY
-      getOwnedRows(prop, row[prop.name]).forEach((child, index) => {
+      const children = getOwnedRows(prop, row[prop.name])
+      if (isMany && children.some(child => child[key] == null)) {
+        const ids = new Set(children.map(child => child[key]))
+        const rows = [...existing.values()].filter(item => !ids.has(item[key]))
+        if (rows.length) {
+          replaced.push({ collection: record[prop.name] as never, rows })
+        }
+      }
+      children.forEach((child, index) => {
         if (child[key] == null) return
         const childPath = [...path, prop.name, ...(isMany ? [index] : [])]
         const found = existing.get(child[key])
@@ -512,7 +529,7 @@ function matchOwnedRows(meta: EntityMetadata, row: Row, record: object) {
   }
   match(meta, row, record as Row, [])
   if (issues.length) throw createValidationError(issues)
-  return records
+  return { records, replaced }
 }
 
 // A function that tells whether the record of a row links an id. It keeps the
