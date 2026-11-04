@@ -52,25 +52,29 @@ app.use('/assets/public/*', serveStorage(storages.get('public')))
 
 ## Asset paths
 
-The app lists where its tables store files, as asset paths. The uploads, the
-writes and the jobs below read this list:
+Entities say which columns hold files. `assetsJson()` declares a JSON column of
+files, and `schemaJson()` takes the same with its `assets` option:
 
 ```js
-export const assetPaths = [
-  { table: 'book', column: 'cover', path: '', storage: 'public' },
-  { table: 'book', column: 'chapters', path: '*/images', storage: 'public' },
-  { table: 'story', column: 'content', path: '**/file', storage: 'public' }
-]
+import { assetsJson, schemaJson } from '@ditojs/mikro'
+
+// In the properties of entities:
+cover: assetsJson('public').nullable(),
+chapters: assetsJson('public', '*/images').nullable(),
+content: schemaJson(contentSchema, {
+  assets: [{ path: '**/file', storage: 'public' }]
+})
 ```
 
-`path` is the data path of the files inside the column's JSON value:
+`getAssetPaths(entities)` collects them as asset paths, a list of `table`,
+`column`, `path` and `storage`, which the uploads, the writes and the jobs below
+read. `path` is the data path of the files inside the column's JSON value:
 
 - `''` stands for the column itself.
 - `*` matches one segment.
 - `**` matches any number of segments.
 
-The value at a path is one file or an array of files. On MikroORM entities, file
-columns are plain JSON columns.
+The value at a path is one file or an array of files.
 
 ## The assets of an app
 
@@ -78,11 +82,12 @@ columns are plain JSON columns.
 functions that the sections below use:
 
 ```js
-import { getKysely } from '@ditojs/mikro'
+import { getAssetPaths, getKysely } from '@ditojs/mikro'
 import { createAssets } from '@ditojs/storage'
+import * as entities from './entities/index.js'
 
 export const assets = createAssets({
-  paths: assetPaths,
+  paths: getAssetPaths(entities),
   storages,
   db: getKysely,
   deleteUnusedAfter: 24 * 60 * 60 * 1000

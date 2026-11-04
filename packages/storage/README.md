@@ -15,7 +15,11 @@ import { createAssets, createStorages } from '@ditojs/storage'
 const storages = createStorages({
   public: { type: 'disk', path: 'storage/public', url: '/assets/' }
 })
-const assets = createAssets({ paths: assetPaths, storages, db: getKysely })
+const assets = createAssets({
+  paths: getAssetPaths(entities),
+  storages,
+  db: getKysely
+})
 ```
 
 See

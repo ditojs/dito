@@ -6,12 +6,13 @@ them again when no book uses them anymore.
 
 ## Solution
 
-Create the storages, and list where the `book` table stores files:
+Create the storages and the assets:
 
 ```js
 // storages.js
-import { getKysely } from '@ditojs/mikro'
+import { getAssetPaths, getKysely } from '@ditojs/mikro'
 import { createAssets, createStorages } from '@ditojs/storage'
+import * as entities from './entities/index.js'
 
 export const storages = createStorages({
   covers: { type: 'disk', path: 'storage/covers', url: '/covers/' },
@@ -22,13 +23,8 @@ export const storages = createStorages({
   }
 })
 
-export const assetPaths = [
-  { table: 'book', column: 'cover', path: '', storage: 'covers' },
-  { table: 'book', column: 'sample_pages', path: '', storage: 'samplePages' }
-]
-
 export const assets = createAssets({
-  paths: assetPaths,
+  paths: getAssetPaths(entities),
   storages,
   // The request's Kysely, so that the `asset` rows of a write commit with it.
   db: getKysely,
@@ -41,7 +37,7 @@ actions and the file handling:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
-import { defineController } from '@ditojs/mikro'
+import { assetsJson, defineController } from '@ditojs/mikro'
 import { assets } from './storages.js'
 
 const BookSchema = defineEntity({
@@ -49,9 +45,9 @@ const BookSchema = defineEntity({
   properties: {
     id: p.integer().primary(),
     title: p.string(),
-    // File objects, in plain JSON columns:
-    cover: p.json().nullable(),
-    samplePages: p.json().onCreate(() => [])
+    // JSON columns of files, in these storages:
+    cover: assetsJson('covers').nullable(),
+    samplePages: assetsJson('samplePages').onCreate(() => [])
   }
 })
 export class Book extends BookSchema.class {}

@@ -196,7 +196,7 @@ they take a Kysely as `db`, since they also run outside of requests.
 
 ```js
 const assets = createAssets({
-  paths: assetPaths,
+  paths: getAssetPaths(entities),
   storages,
   db: getKysely,
   deleteUnusedAfter: 24 * 60 * 60 * 1000

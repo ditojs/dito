@@ -668,13 +668,12 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 ```js
 export const storages = createStorages(config.storages)
 
-export const assetPaths = [
-  { table: 'book', column: 'cover', path: '', storage: 'public' },
-  { table: 'book', column: 'chapters', path: '*/images', storage: 'public' }
-]
+// In the properties of the entity, instead of `static assets`:
+cover: assetsJson('public').nullable(),
+chapters: assetsJson('public', '*/images').nullable(),
 
 export const assets = createAssets({
-  paths: assetPaths,
+  paths: getAssetPaths(entities),
   storages,
   db: getKysely,
   deleteUnusedAfter: 24 * 60 * 60 * 1000
@@ -804,7 +803,7 @@ Dito.js 6 still writes `count`, and `@ditojs/storage` needs the new server:
    import { Kysely, PostgresDialect } from 'kysely'
    import pg from 'pg'
    import { scanAssets } from '@ditojs/storage'
-   import { assetPaths } from '../server/storages.js'
+   import { assets } from '../server/storages.js'
 
    // The scan writes in its own transaction, on its own connection.
    export const config = { transaction: false }
@@ -816,7 +815,7 @@ Dito.js 6 still writes `count`, and `@ditojs/storage` needs the new server:
        })
      })
      try {
-       await scanAssets({ db, paths: assetPaths })
+       await scanAssets({ db, paths: assets.paths })
      } finally {
        await db.destroy()
      }
