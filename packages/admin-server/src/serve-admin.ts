@@ -13,7 +13,8 @@ import { normalizeBase } from './normalize-base.ts'
 // `app.route(base, admin)`. It serves the built files from `dist`, or with a
 // `vite` config the sources through Vite, which needs the Node server of
 // `@hono/node-server`. `middleware`, `getUser` and `authorize` work as in
-// `createApi()`, and protect the files below `views/` in both modes.
+// `createApi()`, and protect the files below `views/`. Vite's own urls, such as
+// `/@fs/`, stay open, so only use `vite` in development.
 
 export interface AdminOptions {
   // The path the admin is served at, such as `/admin`.
