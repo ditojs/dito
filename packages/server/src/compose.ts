@@ -3,6 +3,7 @@ import { asArray, isFunction } from '@ditojs/utils'
 import type {
   ActionDefinition,
   ActionSettings,
+  Actions,
   Authorize,
   ControllerDefinition,
   DitoInput,
@@ -15,7 +16,8 @@ import type {
 // its mixins and the controller, in the order of `getLayers()`. In `actions`, a
 // function replaces the handler beneath it and runs it as `next()`, and `true`
 // routes the handler beneath. A setting comes from the last action definition
-// that has it, else from the last layer that has it.
+// that has it, else from the last layer that has it. A mixin with actions only
+// counts as a layer for its own actions, so its settings stay on them.
 
 // Runs the handlers of an action, on the input without `next`.
 type ActionRun = (input: Omit<DitoInput, 'next'>) => Promise<unknown>
@@ -88,9 +90,16 @@ function resolveActions(controllerPath: string, layers: MixinDefinition[]) {
     if (!handlers.length) {
       throw new Error(`'${key}' has no handler in ${where}`)
     }
-    const setting = <K extends keyof ActionSettings>(key: K) => (
-      findLast(defs.map(def => def[key])) ??
-      findLast(layers.map(layer => layer[key]))
+    const owners = layers.filter(
+      layer => (
+        layer === layers.at(-1) ||
+        !layer.actions ||
+        layer.actions[key as keyof Actions] !== undefined
+      )
+    )
+    const setting = <K extends keyof ActionSettings>(name: K) => (
+      findLast(defs.map(def => def[name])) ??
+      findLast(owners.map(layer => layer[name]))
     )
     const authorize = setting('authorize')
     if (verb !== 'get' && authorize === undefined) {

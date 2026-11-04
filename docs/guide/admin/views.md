@@ -295,12 +295,15 @@ import { assignRecord } from '@ditojs/mikro'
 import { HttpError } from '@ditojs/server'
 
 // In the actions of the users controller:
-'patch self': async ({ body: { email }, db, c }) => {
-  const user = await getSession(c).getUser(adminSource)
-  if (!user) throw new HttpError(401)
-  await assignRecord(db, user, { email })
-  await db.flush()
-  return adminSource.toJSON(c, user)
+'patch self': {
+  authorize: true,
+  async handler({ body: { email }, db, c }) {
+    const user = await getSession(c).getUser(adminSource)
+    if (!user) throw new HttpError(401)
+    await assignRecord(db, user, { email })
+    await db.flush()
+    return adminSource.toJSON(c, user)
+  }
 }
 ```
 

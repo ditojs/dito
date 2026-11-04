@@ -137,7 +137,10 @@ The settings that actions, controllers and mixins share.
 
 A setting comes from the last definition of the action that sets it, in layer
 order. Without one, it comes from the last layer that sets it. So a setting on
-an action, also on a mixin's action, overrides every layer.
+an action, also on a mixin's action, overrides every layer. A mixin with
+`actions` only counts as a layer for its own actions, so its `authorize` and
+`transaction` don't reach the actions of the controller. A mixin without
+`actions` holds settings for all of them.
 
 ## authorize
 

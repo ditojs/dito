@@ -564,6 +564,55 @@ describe('composition', () => {
   })
 })
 
+describe('settings of mixins', () => {
+  const open = defineMixin({
+    authorize: true,
+    transaction: false,
+    actions: { 'post shared': () => 'mixin', 'post own': () => 'mixin' }
+  })
+
+  it('keeps them off the actions of the host', () => {
+    expect(() =>
+      setup([
+        {
+          path: 'fonts',
+          mixins: [open],
+          actions: { 'post other': () => 'host' }
+        }
+      ])
+    ).toThrow(`'post other' has no \`authorize\` in 'fonts'`)
+  })
+
+  it('applies them to an action that the host adds to', async () => {
+    const api = setup([
+      {
+        path: 'fonts',
+        mixins: [open],
+        actions: { 'post shared': ({ next }) => next() }
+      }
+    ])
+    expect(await json(api, 'POST', '/api/fonts/shared')).toBe('mixin')
+  })
+
+  it('lets the controller override them', async () => {
+    const api = setup([
+      { path: 'fonts', authorize: ['editor'], mixins: [open] }
+    ])
+    expect((await request(api, 'POST', '/api/fonts/own')).status).toBe(403)
+  })
+
+  it('applies a mixin without actions to all actions', async () => {
+    const api = setup([
+      {
+        path: 'fonts',
+        mixins: [defineMixin({ authorize: ['editor'] }), open],
+        actions: { 'get other': () => 'host' }
+      }
+    ])
+    expect((await request(api, 'GET', '/api/fonts/other')).status).toBe(403)
+  })
+})
+
 describe('authorize', () => {
   const controller = (def: Partial<ControllerDefinition> = {}) =>
     defineController({

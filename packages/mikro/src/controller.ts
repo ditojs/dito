@@ -99,6 +99,7 @@ export function defineController<T extends object>(
 
   // The wrappers have no settings, so the settings of the layers apply. Keys
   // without a handler stay without one, so that `createApi()` rejects them.
+  // The controller's own settings go on the top layer, which holds all actions.
   const wrap: Handler = async ({ modelRequest, next }) =>
     respond(modelRequest, await next())
   const actions = Object.fromEntries(
@@ -108,7 +109,14 @@ export function defineController<T extends object>(
       )
       .map(key => [key, wrap])
   )
-  return defineServerController({ path, mixins: [base, def], actions })
+  const { authorize, transaction } = def
+  return defineServerController({
+    path,
+    authorize,
+    transaction,
+    mixins: [base, def],
+    actions
+  })
 }
 
 function hasHandler(actions: Actions = {}, key: string) {

@@ -75,7 +75,9 @@ export function createUsersApi<U extends TestUser>({
       {
         path: 'users',
         mixins: [controller],
-        actions: { 'patch self': patchSelf }
+        actions: {
+          'patch self': { authorize: true, handler: patchSelf }
+        }
       }
     ],
     middleware: [sessions.middleware],

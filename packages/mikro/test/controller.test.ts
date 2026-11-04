@@ -1360,6 +1360,22 @@ describe('default handlers', () => {
     })
   })
 
+  it('applies the settings of the controller to the actions of mixins', async () => {
+    const api = setup(
+      defineController({
+        path: 'families',
+        entity: Family,
+        authorize: true,
+        mixins: [crud],
+        actions: { 'get count': () => 1 }
+      })
+    )
+    const { status } = await request(api, 'POST', '/api/families', {
+      name: 'New'
+    })
+    expect(status).toBe(201)
+  })
+
   it('routes all five with `crud`', async () => {
     const api = setup(
       defineController({
