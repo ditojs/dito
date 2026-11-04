@@ -16,10 +16,11 @@ export const q = {
   integer: () => z.string().trim().min(1).pipe(z.coerce.number<string>().int()),
   string: () => z.string(),
   date: () => z.string().trim().min(1).pipe(z.coerce.date<string>()),
-  // Repeated keys, `?a=1&a=2`. A single value is an array of one item.
-  array: <T extends z.ZodType>(item: T) =>
+  // Repeated keys, `?a=1&a=2`. A single value is an array of one item. `max`
+  // limits the number of values.
+  array: <T extends z.ZodType>(item: T, { max }: { max?: number } = {}) =>
     z.preprocess(
       value => (value === undefined ? value : asArray(value)),
-      z.array(item)
+      max === undefined ? z.array(item) : z.array(item).max(max)
     )
 }

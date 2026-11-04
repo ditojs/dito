@@ -36,6 +36,13 @@ describe('q', () => {
     expect(z.object({ ids: schema.default([]) }).parse({})).toEqual({ ids: [] })
   })
 
+  it('limits the number of repeated keys with `max`', () => {
+    const schema = q.array(q.integer(), { max: 2 })
+    expect(schema.parse(['1', '2'])).toEqual([1, 2])
+    expect(schema.parse('1')).toEqual([1])
+    expect(schema.safeParse(['1', '2', '3']).success).toBe(false)
+  })
+
   it('works with `optional()` and `default()`', () => {
     const schema = z.object({
       draft: q.boolean().default(false),

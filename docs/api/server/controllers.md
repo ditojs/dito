@@ -210,17 +210,18 @@ and `c.req.valid('json')` have the types of the action's schemas.
 import { q } from '@ditojs/server/zod'
 ```
 
-Zod schemas for query values, which arrive as strings. They need `zod`, an
-optional peer dependency of `@ditojs/server`.
+`z` is Zod itself. `q` holds Zod schemas for query values, which arrive as
+strings: `z.number()` refuses `?id=12`, and `q.integer()` turns it into `12`.
+Use `q` for what the URL sends, and `z` for bodies and everything else.
 
-| Schema          | Accepts                                                                            |
-| --------------- | ---------------------------------------------------------------------------------- |
-| `q.boolean()`   | `true`, `1`, `false`, `0`, as a boolean.                                           |
-| `q.number()`    | A number, not the empty string.                                                    |
-| `q.integer()`   | An integer, not the empty string.                                                  |
-| `q.string()`    | Any string.                                                                        |
-| `q.date()`      | A date, as a `Date`, not the empty string.                                         |
-| `q.array(item)` | Repeated keys, `?a=1&a=2`, each as `item`. A single value is an array of one item. |
+| Schema                   | Accepts                                                                                                               |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `q.boolean()`            | `true`, `1`, `false`, `0`, as a boolean.                                                                              |
+| `q.number()`             | A number, not the empty string.                                                                                       |
+| `q.integer()`            | An integer, not the empty string.                                                                                     |
+| `q.string()`             | Any string.                                                                                                           |
+| `q.date()`               | A date, as a `Date`, not the empty string.                                                                            |
+| `q.array(item, { max })` | Repeated keys, `?a=1&a=2`, each as `item`. A single value is an array of one item. `max` limits the number of values. |
 
 Each one can be `.optional()` or have a `.default()`.
 
