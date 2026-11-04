@@ -19,8 +19,9 @@ import { assetUploads } from './upload.ts'
 export interface CreateAssetsOptions {
   paths: AssetPath[]
   storages: StorageRegistry
-  // The Kysely of a request, for the mixins.
-  db: AssetDb
+  // The Kysely of a request, for the mixins. By default, the one of
+  // `c.var.db`, which is the request's entity manager with `@ditojs/mikro`.
+  db?: AssetDb
   // The `deleteUnusedAfter` of `runJobs()`, in milliseconds. By default,
   // `false` skips the release.
   deleteUnusedAfter?: number | false
@@ -29,7 +30,7 @@ export interface CreateAssetsOptions {
 export function createAssets({
   paths,
   storages,
-  db,
+  db = c => (c.var.db as { getKysely(): Kysely<any> }).getKysely(),
   deleteUnusedAfter = false
 }: CreateAssetsOptions) {
   return {

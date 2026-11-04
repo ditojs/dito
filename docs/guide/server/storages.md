@@ -7,8 +7,8 @@ holds its key, and takes its properties from there, so clients can't make up
 files or change their URLs.
 
 The package reads and writes its own tables through
-[Kysely](https://kysely.dev). `getKysely(c)` of `@ditojs/mikro` returns the
-Kysely of the request.
+[Kysely](https://kysely.dev). In a request, that's the Kysely of `c.var.db`,
+outside of requests the one that `getRootKysely(orm)` of `@ditojs/mikro` returns.
 
 ## Storages
 
@@ -82,20 +82,20 @@ The value at a path is one file or an array of files.
 functions that the sections below use:
 
 ```js
-import { getAssetPaths, getKysely } from '@ditojs/mikro'
+import { getAssetPaths } from '@ditojs/mikro'
 import { createAssets } from '@ditojs/storage'
 import * as entities from './entities/index.js'
 
 export const assets = createAssets({
   paths: getAssetPaths(entities),
   storages,
-  db: getKysely,
   deleteUnusedAfter: 24 * 60 * 60 * 1000
 })
 ```
 
-`db` returns the request's Kysely, so that the `asset` rows of imported files
-commit with the write's transaction. Uploads run without a transaction and
+The mixins use the Kysely of `c.var.db`, so that the `asset` rows of imported
+files commit with the write's transaction. Without an entity manager there, the
+`db` option is a function of `c` that returns a Kysely. Uploads run without a transaction and
 commit their rows at once. Each method calls a function that the package also
 exports, such as `assets()`, `assetUploads()` or `runAssetJobs()`.
 
@@ -161,7 +161,7 @@ the references. A job scans the data at the asset paths:
 
 ```js
 setInterval(async () => {
-  const { scan, released } = await assets.runJobs(orm.em.getKysely())
+  const { scan, released } = await assets.runJobs(getRootKysely(orm))
   logger.info({ scan, released }, 'Asset jobs')
 }, 60 * 60 * 1000)
 ```

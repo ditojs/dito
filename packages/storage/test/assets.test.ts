@@ -929,6 +929,30 @@ describe('createAssets()', () => {
     expect(await written.json()).toEqual({ cover: stored })
   })
 
+  it('takes the Kysely of `c.var.db` by default', async () => {
+    const books = defineController({
+      path: 'books',
+      authorize: true,
+      mixins: [createAssets({ paths, storages }).mixin('book')]
+    })
+    const api = createApi({
+      controllers: [books],
+      db: {
+        connect: () => ({ getKysely: () => db }),
+        transaction: (c, fn) => fn()
+      },
+      getUser: async () => null,
+      onError: () => {}
+    })
+    const body = new FormData()
+    body.append('file', new File(['Front'], 'front.txt'))
+    const response = await request(api, '/books/upload/cover', {
+      method: 'POST',
+      body
+    })
+    expect((await response.json())[0]).toMatchObject({ name: 'front.txt' })
+  })
+
   it('leaves the uploads out with `uploads: false`', async () => {
     const response = await request(setup(false), '/books/upload/cover', {
       method: 'POST',

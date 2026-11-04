@@ -10,7 +10,7 @@ Create the storages and the assets:
 
 ```js
 // storages.js
-import { getAssetPaths, getKysely } from '@ditojs/mikro'
+import { getAssetPaths } from '@ditojs/mikro'
 import { createAssets, createStorages } from '@ditojs/storage'
 import * as entities from './entities/index.js'
 
@@ -26,8 +26,6 @@ export const storages = createStorages({
 export const assets = createAssets({
   paths: getAssetPaths(entities),
   storages,
-  // The request's Kysely, so that the `asset` rows of a write commit with it.
-  db: getKysely,
   deleteUnusedAfter: 24 * 60 * 60 * 1000
 })
 ```
@@ -79,7 +77,7 @@ app.use('/covers/*', serveStorage(storages.get('covers')))
 app.use('/sample-pages/*', serveStorage(storages.get('samplePages')))
 
 setInterval(
-  () => assets.runJobs(orm.em.getKysely()),
+  () => assets.runJobs(getRootKysely(orm)),
   60 * 60 * 1000
 )
 ```

@@ -175,7 +175,7 @@ asset paths. With MikroORM, declare them on the columns, see
 createAssets(options: {
   paths: AssetPath[]
   storages: StorageRegistry
-  db: AssetDb
+  db?: AssetDb
   deleteUnusedAfter?: number | false
 }): Assets
 ```
@@ -183,7 +183,9 @@ createAssets(options: {
 Returns an object that binds the options that the functions below share. Its
 methods call these functions, which apps can call instead. Except for `mixin()`,
 they take a Kysely as `db`, since they also run outside of requests.
-`deleteUnusedAfter` is in milliseconds. By default, `false` skips the release.
+`db` is a function of `c` for the mixins, by default `c.var.db.getKysely()`, the
+Kysely of the request's entity manager. `deleteUnusedAfter` is in milliseconds.
+By default, `false` skips the release.
 
 | Member                                          | Description                                                                              |
 | ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -198,7 +200,6 @@ they take a Kysely as `db`, since they also run outside of requests.
 const assets = createAssets({
   paths: getAssetPaths(entities),
   storages,
-  db: getKysely,
   deleteUnusedAfter: 24 * 60 * 60 * 1000
 })
 

@@ -17,8 +17,7 @@ const storages = createStorages({
 })
 const assets = createAssets({
   paths: getAssetPaths(entities),
-  storages,
-  db: getKysely
+  storages
 })
 ```
 
