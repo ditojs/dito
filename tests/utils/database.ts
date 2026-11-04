@@ -22,13 +22,14 @@ const connection = {
   })
 }
 
-export async function createTestDatabase(entities: Options['entities'] = []) {
+export async function createTestDatabase(
+  entities: Options['entities'] = [],
+  wrapOptions: (options: any) => Options = options => options
+) {
   const dbName = `dito_test_${randomBytes(6).toString('hex')}`
-  const orm = await MikroORM.init({
-    ...connection,
-    dbName,
-    entities
-  })
+  const orm = await MikroORM.init(
+    wrapOptions({ ...connection, dbName, entities })
+  )
   await orm.schema.ensureDatabase({ create: true })
   await orm.schema.create()
   const db: Kysely<any> = orm.em.getConnection().getClient()

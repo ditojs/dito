@@ -11,16 +11,36 @@ import { JsonType, p } from '@mikro-orm/core'
 // MikroORM deep-copies the metadata with its custom types, which breaks
 // schemas such as Zod's. So the schema comes from a getter, which the copy
 // leaves out.
+//
+// `assets` says where a JSON column holds files, for `getAssetPaths()`: `path`
+// is the data path inside the value, with `*` and `**` wildcards, and `storage`
+// the storage of the files. `assetsJson()` declares a column without a schema:
+//
+//   images: assetsJson('publicAssets').nullable()
+//   items: schemaJson(itemsSchema, {
+//     assets: [{ path: '**/file', storage: 'publicAssets' }]
+//   })
+
+export interface ColumnAsset {
+  path: string
+  storage: string
+}
+
+export interface SchemaJsonOptions {
+  assets?: ColumnAsset[]
+}
 
 export class SchemaJson<
   S extends z.ZodType = z.ZodType
 > extends JsonType {
   // The copy keeps functions as they are.
-  readonly getSchema: () => S
+  readonly getSchema: () => S | undefined
+  readonly assets: ColumnAsset[]
 
-  constructor(schema: S) {
+  constructor(schema?: S, { assets = [] }: SchemaJsonOptions = {}) {
     super()
     this.getSchema = () => schema
+    this.assets = assets
   }
 
   get schema() {
@@ -28,8 +48,19 @@ export class SchemaJson<
   }
 }
 
-export function schemaJson<S extends z.ZodType>(schema: S) {
-  return p.json<z.output<S>>().type(new SchemaJson(schema))
+export function schemaJson<S extends z.ZodType>(
+  schema: S,
+  options?: SchemaJsonOptions
+) {
+  return p.json<z.output<S>>().type(new SchemaJson(schema, options))
+}
+
+export function assetsJson(storage: string, path = '') {
+  return p.json<any>().type(
+    new SchemaJson(undefined, {
+      assets: [{ path, storage }]
+    })
+  )
 }
 
 // The result for a schema that throws, without the error's message, which may

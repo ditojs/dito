@@ -139,15 +139,17 @@ import * as entities from './entities/index.js'
 
 const { connection, pool } = config.knex
 
-export const orm = new MikroORM({
-  entities: Object.values(entities),
-  dbName: connection.database,
-  host: connection.host,
-  port: connection.port,
-  user: connection.user,
-  password: connection.password,
-  pool
-})
+export const orm = new MikroORM(
+  mikroOptions({
+    entities: Object.values(entities),
+    dbName: connection.database,
+    host: connection.host,
+    port: connection.port,
+    user: connection.user,
+    password: connection.password,
+    pool
+  })
+)
 
 export const kysely = orm.em.getKysely()
 ```
@@ -213,8 +215,8 @@ builders, see [Entities and controllers](guide/server/entities.md).
   `exclude` in a `find` function. Serialization `groups` aren't supported.
 - Dito.js 6 stored a `Date` in a `date` column as its local day. `p.date()` of
   MikroORM stores its UTC day, also for strings with a time.
-  [`plainDate()`](api/server/mikro.md#plaindate) of `@ditojs/mikro` keeps the
-  local day.
+  [`mikroOptions()`](api/server/mikro.md#mikrooptions) of `@ditojs/mikro` keeps
+  the local day.
 
 **JSON columns.** Convert the JSON schemas of JSON columns to Zod by hand, and
 pass them to `schemaJson()`. The formats and
@@ -225,25 +227,8 @@ keywords of other columns become a custom type with a `schema` getter, see
 meta: schemaJson(z.object({ featured: z.boolean().default(false) })).nullable()
 ```
 
-`schemaJson()` writes the value as sent, without the schema's defaults. Dito.js
-6 filled in the defaults of its schemas on insert. To keep this, add a
-`beforeCreate` hook that runs the schemas and keeps their output:
-
-```js
-export async function fillJsonDefaults({ entity, meta }) {
-  for (const prop of meta.props) {
-    const schema = prop.customType?.schema
-    if (schema && entity[prop.name] != null) {
-      const result = await schema.safeParseAsync(entity[prop.name])
-      if (result.success) {
-        entity[prop.name] = result.data
-      }
-    }
-  }
-}
-
-defineEntity({ name: 'Post', hooks: { beforeCreate: [fillJsonDefaults] } })
-```
+Dito.js 6 filled in the defaults of its schemas on insert.
+[`mikroOptions()`](api/server/mikro.md#mikrooptions) keeps this.
 
 **Many-to-many relations.** A join table with columns of its own becomes a pivot
 entity, with `p.manyToOne(Post).primary()` on both foreign keys. A body writes
@@ -944,15 +929,20 @@ baseline can then drop its checks of knex's table, and always run the SQL.
 - **PostgreSQL only.** The checks of the body and `toHttpError()` of `mikroDb()`
   know PostgreSQL's column types and error codes.
 - **Date columns are strings.** `date` columns take and return `YYYY-MM-DD`
-  strings, and also take a `Date` with `plainDate()`. `time` columns also take
+  strings, and also take a `Date` with `mikroOptions()`. `time` columns also take
   and return strings, not `Date`s. `timestamptz` needs an offset in writes.
 - **No optimistic locking over HTTP.** There is no `ETag` and no `If-Match`.
   MikroORM's `OptimisticLockError` responds with 409, but only for races inside
   one request. Apps that need locking check a value such as `updatedAt` in a
   mixin.
+- **Pivot entities need a composite key.** With an id of its own, MikroORM
+  orders a pivot table by it, writes kept pairs again without their other
+  columns, and upserts pairs twice. `mikroOptions()` warns of them.
+- **New pivot rows with columns.** A handler that creates the pivot entity of a
+  new pair next to the relation that links the pair gets two inserts of the same
+  row. Link the pair, flush, then set the columns of the pivot row.
 - **Replacing a partly loaded owned row.** A flush inserts before it deletes,
   unless it sees that a new row takes the unique value of a deleted row. If the
-  old row was loaded without that column, the insert fails and the write answers
-  409. Load the column, or give the new row another value first.
+  old row was loaded without that column, the insert fails and the write answers 409. Load the column, or give the new row another value first.
 - **Unknown query parameters** are ignored, and bodies of types other than JSON
   are left unread.

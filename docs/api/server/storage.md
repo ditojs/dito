@@ -157,7 +157,8 @@ An asset path says where a table stores files. `path` takes `*` for one segment
 and `**` for any number of segments. A value at the path is one file or an array
 of files. In request bodies, the column appears as its camelCase property, such
 as `cover_image` as `coverImage`. The functions below take the app's list of
-asset paths.
+asset paths. With MikroORM, declare them on the columns, see
+[`getAssetPaths()`](mikro.md#assetsjson-and-getassetpaths).
 
 `assets()`, `assetUploads()` and `importAssets()` take the same options:
 

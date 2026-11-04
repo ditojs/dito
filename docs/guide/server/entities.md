@@ -51,8 +51,9 @@ it, see [Writes](writes.md). These rules of the entity matter for Dito:
   with their parent, see [Nested rows](writes.md#nested-rows).
 - A foreign key's `.deleteRule()` decides what deleting a record does to the
   rows that refer to it, see [Deletes](writes.md#deletes).
-- [`plainDate()`](../../api/server/mikro.md#plaindate) declares a `date` column
-  that stores a `Date` as its local day. `p.date()` stores its UTC day.
+- With [`mikroOptions()`](../../api/server/mikro.md#mikrooptions), `p.date()`
+  stores a `Date` as its local day, and new rows get the defaults of their
+  `schemaJson()` schemas.
 
 ## Controllers
 

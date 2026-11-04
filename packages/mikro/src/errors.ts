@@ -81,9 +81,11 @@ export function toHttpError(
       // Postgres names the referencing table, even when a delete fails
       // because other rows still reference the deleted one. A write can
       // delete rows too, such as the owned rows that it leaves out.
-      return method === 'DELETE' ||
+      return (
+        method === 'DELETE' ||
         detail.includes('is still referenced') ||
         (meta && !isRootTable)
+      )
         ? create(409)
         : create(400, getKeyColumns(detail), {
             message: 'references a missing row',

@@ -268,7 +268,8 @@ A tree of rows of one entity, such as child pages with `orphanRemoval`, needs
 
 Custom handlers delete with
 [`removeRecord(em, record)`](../../api/server/mikro.md#removerecord), not
-`em.remove()`, which ignores the delete rules of loaded relations.
+`em.remove()`. MikroORM's remove sets the nullable foreign keys of loaded
+one-to-many rows to null, so a delete that the database would refuse goes through.
 
 ## Writes in custom handlers
 

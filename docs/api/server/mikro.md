@@ -13,10 +13,11 @@ import {
   createRecord,
   assignRecord,
   removeRecord,
-  plainDate,
-  PlainDate,
   schemaJson,
   SchemaJson,
+  assetsJson,
+  getAssetPaths,
+  mikroOptions,
   mikroDb,
   getEntityManager,
   getKysely,
@@ -460,17 +461,25 @@ Deletes a record with the rows that it owns, and flushes at once. In order, it:
 The rows that refer to the record follow the delete rules of their foreign keys.
 The record stays loaded in `em`.
 
-Call it instead of `em.remove()` on records whose one-to-many relations are
-loaded. `em.remove()` sets the foreign keys of their loaded rows to null when
-the column is nullable, whatever the delete rule says.
+Call it instead of `em.remove()` in custom handlers; the `delete :id` action
+does. MikroORM's `UnitOfWork.remove()` detaches the loaded rows of the removed
+row's one-to-many relations, which sets their foreign key to null when the
+column is nullable, whatever its delete rule says. A customer with loaded orders
+is then deleted and its orders lose their customer, where the database would
+have refused. `removeRecord()` loads the row again in a fork, with only the rows
+that go with it, so the delete reaches the database and its rules apply.
 
 ## schemaJson()
 
 ```ts
-schemaJson<S extends z.ZodType>(schema: S): PropertyBuilder
+schemaJson<S extends z.ZodType>(
+  schema: S,
+  options?: { assets?: { path: string; storage: string }[] }
+): PropertyBuilder
 class SchemaJson<S> extends JsonType {
-  constructor(schema: S)
-  get schema(): S
+  constructor(schema?: S, options?: { assets?: ColumnAsset[] })
+  get schema(): S | undefined
+  readonly assets: ColumnAsset[]
 }
 ```
 
@@ -482,21 +491,54 @@ throws responds with 400 at the property, with the code `custom`. Any custom
 type can carry a schema in a `schema` getter, see
 [Rules on values](../../guide/server/writes.md#rules-on-values).
 
-## plainDate()
+## assetsJson() and getAssetPaths()
 
 ```ts
-plainDate(): PropertyBuilder
-class PlainDate extends DateType {}
+assetsJson(storage: string, path = ''): PropertyBuilder
+getAssetPaths(entities: object): AssetPath[]
 ```
 
-`plainDate()` is `p.type(PlainDate)`. It declares a `date` column that holds the
-local day. `p.date()` of MikroORM sends a `Date` as a UTC time, which Postgres
-cuts to the UTC day, and does the same with a string with a time. `plainDate()`
-stores both as the day of the server's time zone, in writes, in `em.create()`
-and in queries. It takes and returns `YYYY-MM-DD` strings as they are.
+`assetsJson()` declares a JSON column that holds files. `path` is the data path
+inside the value, with `*` and `**` wildcards, and `storage` the name of the
+storage. A column with a schema names its files in the `assets` option of
+`schemaJson()`, as it can have several.
+
+`getAssetPaths()` returns the asset paths of these columns
+for `@ditojs/storage`. It takes an array of entities or a module of them, and
+reads their definitions, so it needs no ORM. Table and column names follow
+MikroORM's default naming strategy unless a property sets its own.
 
 ```js
-expiryDate: plainDate().nullable()
+images: assetsJson('public').nullable(),
+items: schemaJson(itemsSchema, {
+  assets: [{ path: '**/file', storage: 'public' }]
+})
+
+const assets = createAssets({ paths: getAssetPaths(entities), storages, db })
+```
+
+## mikroOptions()
+
+```ts
+mikroOptions<T>(options: T): T
+```
+
+Adds what Dito's entities need to the options of `new MikroORM()`:
+
+- `p.date()` columns hold the local day. MikroORM's own type sends a `Date` as a
+  UTC time, which Postgres cuts to the UTC day, and does the same with a string
+  with a time. These columns store both as the day of the server's time zone, in
+  writes, in `em.create()` and in queries. They take and return `YYYY-MM-DD`
+  strings as they are.
+- New rows get the defaults of their `schemaJson()` schemas, also with
+  `em.create()`. Updates write the value as sent.
+- A pivot entity with an id of its own logs a warning, see
+  [Known limitations](../../upgrading-to-7.x.md#known-limitations).
+
+It keeps the app's own `subscribers` and `discovery` hooks.
+
+```js
+const orm = new MikroORM(mikroOptions({ dbName, entities }))
 ```
 
 ## mikroDb()
@@ -516,7 +558,7 @@ Returns the `db` of [`createApi()`](api.md#dbadapter).
   [Database errors](#database-errors).
 
 ```js
-const orm = new MikroORM({ entities })
+const orm = new MikroORM(mikroOptions({ entities }))
 app.route('/api', createApi({ controllers, db: mikroDb(orm) }))
 ```
 

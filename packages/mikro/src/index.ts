@@ -15,8 +15,14 @@ export type { Find, FindShape } from './find.ts'
 export { dateRangeFilter, textFilter } from './filters.ts'
 export type { Filter } from './list.ts'
 export { parseListQuery, type ListQuery } from './list-query.ts'
-export { PlainDate, plainDate } from './plain-date.ts'
-export { SchemaJson, schemaJson } from './schema-json.ts'
+export { getAssetPaths, mikroOptions } from './config.ts'
+export {
+  SchemaJson,
+  assetsJson,
+  schemaJson,
+  type ColumnAsset,
+  type SchemaJsonOptions
+} from './schema-json.ts'
 export { getEntityManager, getKysely, mikroDb } from './transaction.ts'
 export {
   entityUserSource,
