@@ -393,6 +393,18 @@ describe('assets()', () => {
     )
   })
 
+  it('waits for a release of a file that the write uses', async () => {
+    await covers.addFile(file('released'), Buffer.from('Cover'))
+    await addAsset('released', { since: old })
+    let response: Promise<Response>
+    await db.transaction().execute(async trx => {
+      await releaseAssets({ db: trx, storages, after: 0 })
+      response = post(setup(), { cover: file('released') })
+      await new Promise(resolve => setTimeout(resolve, 100))
+    })
+    expect((await response!).status).toBe(400)
+  })
+
   it('rejects sources outside of `allowedImports`', async () => {
     const api = setup()
     for (const url of [

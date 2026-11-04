@@ -127,6 +127,10 @@ async function importFiles(
     .selectFrom('asset')
     .select(['key', 'storage', 'file', 'unreferenced_since'])
     .where('key', 'in', keys)
+    // A release that runs now would delete rows that this write references.
+    // The order keeps two writes from locking each other out.
+    .orderBy('key')
+    .forUpdate()
     .execute()
   const assetsByKey = new Map(assets.map(asset => [asset.key, asset]))
   const groups = Map.groupBy(
