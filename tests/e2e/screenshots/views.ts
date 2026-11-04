@@ -412,7 +412,10 @@ export const reports = {
         creatable: true,
         paginate: 20,
         filterTabs: {
-          all: { label: 'All Projects' },
+          all: {
+            label: 'All Projects',
+            filter: { status: ['Planned', 'Active', 'Done'] }
+          },
           planned: {
             label: 'Planned Projects',
             filter: { status: 'Planned' },
