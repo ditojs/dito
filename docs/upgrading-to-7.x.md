@@ -591,7 +591,9 @@ await serve(app, { port, shutdownTimeout: 5000, onClose: () => orm.close() })
   [`hostMiddleware()`](api/server/hono.md#hostmiddleware). Add it before
   `app.route()`. As in Dito.js 6, `csrf()` only checks requests with `Origin`.
   Multipart bodies have no limit here: the reverse proxy sets it, such as
-  `client_max_body_size` in nginx.
+  `client_max_body_size` in nginx. Dito.js 6 streamed uploads in parts of 8 MB
+  and had `limits` per upload. Now each upload is read whole into memory and
+  sent in one `PutObject`, so keep the proxy's limit within the server's memory.
 - `cors` works differently. Dito.js 6 echoed the request's origin. Hono's
   `cors()` allows any origin by default, without credentials. With
   `credentials: true`, it needs the allowed `origin`.
@@ -706,6 +708,8 @@ export const assets = createAssets({
   once.
 - The `asset` table has no `count`. Scans of the data replace the hooks on each
   write, and set `unreferenced_since`. `deleteUnusedAfter` is in milliseconds.
+  Uploads of forms that aren't saved yet count as unreferenced, so keep it longer
+  than a form stays open.
 - `scanAssets()` reports `referenced`, `unreferenced` and `missing`.
   `assets.runJobs(db, { dryRun: true })` shows what a run would delete.
 
@@ -735,6 +739,8 @@ app.route('/admin', admin)
 - `middleware`, `getUser` and `authorize` work as in `createApi()`. `authorize`
   protects the admin's views, which the build puts below `views/`, and other
   chunks below `assets/`.
+- The admin's build splits off only the chunk of the views, not the `core`,
+  `vendor` and `common` chunks of Dito.js 6.
 - `defineAdminViteConfig()` of `@ditojs/admin-server/vite` builds the admin, on
   Vite 8. `build.rollupOptions` of an app's config become
   `build.rolldownOptions`.

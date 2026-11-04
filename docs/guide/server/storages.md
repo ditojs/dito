@@ -137,7 +137,9 @@ uploadRoutes({
 An upload without a type from the client gets the type detected from its data,
 else `application/octet-stream`. `hostMiddleware()` sets no limit on multipart
 bodies: the reverse proxy limits the size of uploads, such as with
-`client_max_body_size` in nginx.
+`client_max_body_size` in nginx. The server reads each upload whole into memory,
+and S3 storages send it in one `PutObject`, so keep that limit within the
+server's memory.
 
 ## Writes
 
@@ -172,7 +174,8 @@ setInterval(async () => {
 the files and rows of assets that no row referenced for longer than
 `deleteUnusedAfter`, in milliseconds. Without `deleteUnusedAfter`, nothing is
 deleted. A scan runs before each release, so files that rows reference again
-stay.
+stay. An upload counts as unreferenced until its form is saved, so keep
+`deleteUnusedAfter` longer than a form stays open.
 
 - Files that the server creates, such as generated PDFs, go through
   `assets.store(db, 'documents', { name, data })`, which stores them and inserts
