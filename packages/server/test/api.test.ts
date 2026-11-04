@@ -110,6 +110,15 @@ const json = async (
 ) => (await request(app, method, path, body)).data
 
 describe('routing', () => {
+  it('matches static segments first, also across controllers', async () => {
+    const api = setup([
+      { path: 'fonts', actions: { 'get :id': () => 'font' } },
+      { path: 'fonts/popular', actions: { get: () => 'popular' } }
+    ])
+    expect(await json(api, 'GET', '/api/fonts/popular')).toBe('popular')
+    expect(await json(api, 'GET', '/api/fonts/1')).toBe('font')
+  })
+
   it('sets the action in `c.var` before its middleware', async () => {
     const seen: unknown[] = []
     const api = setup([

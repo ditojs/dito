@@ -46,30 +46,28 @@ export function createApi({
   const definitions = isArray(controllers)
     ? controllers
     : Object.values(controllers).filter(isController)
-  for (const definition of definitions) {
+  const actions = definitions.flatMap(definition => {
     const controller = resolveController(definition)
-    const sub = new Hono<DitoEnv>()
-    // Hono runs the first route that matches, so static segments go before
-    // parameters: `get subscribe` before `get :id`.
-    const actions = controller.actions.toSorted((a, b) =>
-      compareRanks(rank(a.path), rank(b.path))
-    )
-    for (const action of actions) {
-      const { verb, path } = action
-      const method = verb.toUpperCase()
-      const fullPath = `/${[controller.path, path].filter(Boolean).join('/')}`
-      const route = `${method} ${getRouteShape(fullPath)}`
-      if (routes.has(route)) {
-        throw new Error(`Two actions route ${method} ${fullPath}`)
-      }
-      routes.add(route)
-      const handlers: Middleware[] = [
-        ...getMiddleware(action, db.transaction),
-        async c => respond(c, action)
-      ]
-      sub.on(method, `/${path}`, ...(handlers as [Middleware]))
+    return controller.actions.map(action => ({
+      action,
+      path: `/${[controller.path, action.path].filter(Boolean).join('/')}`
+    }))
+  })
+  // Hono runs the first route that matches, so static segments go before
+  // parameters, also across controllers: `get subscribe` before `get :id`.
+  actions.sort((a, b) => compareRanks(rank(a.path), rank(b.path)))
+  for (const { action, path } of actions) {
+    const method = action.verb.toUpperCase()
+    const route = `${method} ${getRouteShape(path)}`
+    if (routes.has(route)) {
+      throw new Error(`Two actions route ${method} ${path}`)
     }
-    app.route(`/${controller.path}`, sub)
+    routes.add(route)
+    const handlers: Middleware[] = [
+      ...getMiddleware(action, db.transaction),
+      async c => respond(c, action)
+    ]
+    app.on(method, path, ...(handlers as [Middleware]))
   }
   app.onError(errorHandler(onError, db.toHttpError))
   return app

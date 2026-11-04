@@ -39,9 +39,8 @@ actions: {
 
 - Paths use Hono's syntax. `:name` matches one segment, and `:name{.+}` matches
   one or more. Both end up in `params`.
-- Within a controller, static segments match before parameters, whatever the
-  order of the keys. Across controllers, the order of the API's `controllers`
-  decides.
+- Static segments match before parameters, whatever the order of the keys and
+  of the API's `controllers`.
 - Two actions on the same method and path make `createApi()` throw, also across
   controllers.
 

@@ -32,9 +32,9 @@ import * as controllers from './controllers/index.js'
 const api = createApi({ controllers, db: mikroDb(orm) })
 ```
 
-Each controller is a sub-app at its path. Hono runs the first route that
-matches, so within a controller Dito adds the routes with static segments first:
-`get subscribe` matches before `get :id`. The API handles only the paths of its
+Hono runs the first route that matches, so Dito adds the routes with static
+segments first, also across controllers: `get subscribe` matches before
+`get :id`. The API handles only the paths of its
 actions and leaves the others to the app, so it also works at `/`. For paths
 that nothing matches, the app adds Dito's JSON 404, see
 [`errorHandler()`](../../api/server/errors.md#errorhandler):
