@@ -1460,6 +1460,37 @@ describe('writes', () => {
     expect(json).toEqual(book)
   })
 
+  it('leaves columns outside of the shape to the database', async () => {
+    const api = setup(
+      books({
+        find: { fields: ['name'] },
+        actions: {
+          // The record holds `notes`, which the shape leaves out, and which
+          // the database changes after the record loaded.
+          async 'patch :id'({ id, db }) {
+            const book = await db.findOneOrFail(Book, id)
+            await db.execute(`update book set notes = 'New' where id = ${id}`)
+            return book
+          }
+        }
+      })
+    )
+    const { status } = await request(api, 'PATCH', '/api/books/1', {})
+    expect(status).toBe(200)
+    expect((await sql(`select notes from book where id = 1`))[0].notes).toBe(
+      'New'
+    )
+  })
+
+  it('only takes the id of relations that the record does not own', async () => {
+    const { status } = await request(api, 'PATCH', '/api/books/1', {
+      authors: [{ id: 2, name: 'Changed' }]
+    })
+    expect(status).toBe(200)
+    const [{ name }] = await sql(`select name from author where id = 2`)
+    expect(name).toBe('Bea')
+  })
+
   it('saves nested changes in one patch', async () => {
     const { json: book } = await request(api, 'GET', '/api/books/1')
     const [preface, drama] = book.parts
