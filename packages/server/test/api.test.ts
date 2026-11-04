@@ -921,6 +921,38 @@ describe('validation', () => {
     expect(await json(api, 'GET', '/api/fonts')).toEqual({ body: null })
   })
 
+  it('reads no JSON from a body without a type', async () => {
+    const api = setup([
+      {
+        path: 'fonts',
+        authorize: true,
+        actions: { post: ({ body }) => ({ body }) }
+      }
+    ])
+    const { data } = await request(api, 'POST', '/api/fonts', undefined, {
+      body: new Blob(['{"name":"A"}'])
+    })
+    expect(data).toEqual({ body: {} })
+  })
+
+  it('keeps `query` and `params` from the variables of the app', async () => {
+    const api = setup([
+      {
+        path: 'fonts',
+        middleware: async (c, next) => {
+          c.set('query' as never, 'set' as never)
+          c.set('params' as never, 'set' as never)
+          await next()
+        },
+        actions: { 'get :id': ({ query, params }) => ({ query, params }) }
+      }
+    ])
+    expect(await json(api, 'GET', '/api/fonts/1?a=b')).toEqual({
+      query: { a: 'b' },
+      params: { id: '1' }
+    })
+  })
+
   it('answers 400 for invalid JSON, after the authorization', async () => {
     const controller: ControllerDefinition = {
       path: 'fonts',

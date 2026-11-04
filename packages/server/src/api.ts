@@ -143,10 +143,10 @@ function validate(target: 'query' | 'json', schema: z.ZodType) {
 
 async function respond(c: DitoContext, action: ResolvedAction) {
   const input: Omit<DitoInput, 'next'> = {
-    query: action.query ? c.req.valid('query') : c.req.query(),
-    params: c.req.param(),
     // The variables of Dito and of the app, such as a session's.
     ...c.var,
+    query: action.query ? c.req.valid('query') : c.req.query(),
+    params: c.req.param(),
     c
   }
   const result = await action.run(input)
@@ -183,7 +183,9 @@ function withHeaders(c: DitoContext, response: Response) {
 // undefined.
 async function readBody(c: Context) {
   const type = c.req.header('Content-Type')
-  if (type && !/^application\/([\w.-]+\+)?json\b/.test(type)) return undefined
+  // As Hono's validator does, which reads no JSON without a type.
+  if (!type) return {}
+  if (!/^application\/([\w.-]+\+)?json\b/.test(type)) return undefined
   const text = await c.req.text()
   if (!text) return {}
   try {
