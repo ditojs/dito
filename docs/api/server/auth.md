@@ -141,8 +141,9 @@ usersRoutes<U>(options: UsersRoutesOptions<U>): {
 
 Returns a controller with the actions of the admin's users, and the features it
 routes, which the admin's login and account views read. The app passes
-`controller` to `createApi()`, or lists it in the `mixins` of its own users
-controller. It passes `features` to the admin as
+`controller` to `createApi()`, or lists it in the `mixins` of a controller of
+its own. A model controller doesn't fit, as it would flush and serialize the
+answers of the actions. It passes `features` to the admin as
 [`authentication`](admin-server.md#adminoptions). Other users, such as a site's
 customers, log in through the app's own actions, which call
 [`Session`](#session) and [`verifyPassword()`](#passwords). The actions:

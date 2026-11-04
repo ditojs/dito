@@ -12,7 +12,7 @@ import { Hono } from 'hono'
 import { createSessions, sessionUser } from '@ditojs/auth'
 
 export const adminSessions = createSessions({
-  db: () => orm.em.getKysely(),
+  db: () => getRootKysely(orm),
   secrets: config.keys,
   name: 'admin.sess',
   maxAge: 24 * 60 * 60 * 1000
@@ -97,7 +97,7 @@ const users = usersRoutes({
   source: adminSource,
   // New passwords, 8 characters at least by default:
   password: z.string().min(12),
-  credentials: createCredentials(() => orm.em.getKysely()),
+  credentials: createCredentials(() => getRootKysely(orm)),
   features: {
     passkeys: passkeys({ rpName: 'Bookshop' }),
     totp: totp({ issuer: 'Bookshop', secret: config.totpSecret })
@@ -164,11 +164,11 @@ of a transaction.
 ### Credentials
 
 Passkeys and TOTP keep their secrets in the `credential` table, through
-`createCredentials(() => orm.em.getKysely())`. No foreign keys tie them to their users, so
+`createCredentials(() => getRootKysely(orm))`. No foreign keys tie them to their users, so
 an action that deletes users deletes their credentials too:
 
 ```js
-await deleteUserCredentials(orm.em.getKysely(), adminSource, ids)
+await deleteUserCredentials(getRootKysely(orm), adminSource, ids)
 ```
 
 ### Passkeys

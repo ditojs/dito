@@ -67,8 +67,9 @@ const defaultPassword = z
   .min(8, 'The password needs at least 8 characters.')
 
 // Returns the controller of the actions, which the app passes to `createApi()`,
-// or puts in the `mixins` of its own users controller, and the `features` that
-// tell the admin what to offer, as `dito.authentication`.
+// or puts in the `mixins` of a controller of its own, and the `features` that
+// tell the admin what to offer, as `dito.authentication`. A model controller
+// doesn't fit, as it would flush and serialize the answers of the actions.
 export function usersRoutes<U extends User>({
   path,
   source,
