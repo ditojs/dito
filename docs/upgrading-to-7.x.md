@@ -501,6 +501,15 @@ throws. Front controllers that let anyone write set `authorize: true`.
 `$authorize()` and `handleAuthorization()` become a function of `c`, which reads
 `c.var.user` and `c.req.param('id')`. It runs before the body is read, before
 the transaction and before `record()` is set, so it loads what it checks itself.
+Only `true` grants access. A function that returned a truthy value, such as a
+user or a count, returns a boolean. `$self` and `$owner` become such functions.
+
+Relation controllers don't exist. A nested route is a controller of its own,
+with a path such as `books/:bookId/chapters`. It inherits nothing from a parent,
+so it sets its own `authorize` and checks that the parent row may be read.
+
+A mixin with `actions` keeps its `authorize` and `transaction` on these actions.
+A mixin without `actions` holds settings for all actions of the controller.
 
 #### Writes
 
@@ -628,6 +637,14 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 - `post login` and `post password-reset` name the user as `username` in the
   body, whatever the property is. `get session` becomes `get self`, which
   responds with the user, or `null`.
+- `self` in member routes, such as `PATCH users/self`, isn't built in. A
+  controller that keeps it sets `load`, which gets the id as a string, see
+  [Handlers and the context](#handlers-and-the-context).
+- `passwordWrites()` doesn't ask for confirmed access. An app that asked for it
+  on password changes calls `checkConfirmedAccess()` in its own action.
+- Actions that change security settings call `checkConfirmedAccess()`, see
+  [Confirmed access](guide/server/auth.md#confirmed-access). Clients answer its
+  403 with `confirmationRequired: true` through `post confirm-access`.
 - Responses have no `success` or `authenticated`. A login responds with
   `{ user }`, or `{ codeRequired: true }`. `post confirm-access` responds with
   `{ codeRequired: true }`, or 204 once it confirms the access. Other actions
@@ -746,7 +763,7 @@ app.route('/admin', admin)
   hyphenated names, unless their schema sets a `path`, and uploads send their
   data paths as they are.
 - `users` takes only `path`, as `users: { path: 'admins' }`.
-- Requests reject with an `ApiError`, which has the fields of the JSON body, the
+- Requests reject with an `ApiError` of `@ditojs/admin`, which has the fields of the JSON body, the
   `status` and the `response`. Code that read `error.response.data`, such as the
   `onError()` of a button, reads the fields on the error, such as
   `error.errors`.
@@ -772,7 +789,10 @@ These things change. The admin of Dito.js 7 already handles them:
 - A list returns at most 1000 rows. A larger list needs `range`, or a higher
   `maxRows` in its find, such as `listHandler({ maxRows: 5000 })`.
 - Unknown filters, and `order` on columns that the rows don't return, respond
-  with 400.
+  with 400. So does `nulls first` or `nulls last` in `order`.
+- Field errors hold a `message` and a `keyword`, without `params`, so
+  `getErrors()` of the admin returns no `params`. Field errors of a 409 also show
+  on the fields.
 - The actions of users respond as in [Sessions and users](#sessions-and-users).
 
 **The tests** query through a fork of the ORM's entity manager, and call the app
