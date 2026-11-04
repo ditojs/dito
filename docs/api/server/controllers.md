@@ -154,7 +154,8 @@ authorize:
 
 - `true` lets anyone in.
 - Roles grant access if `c.var.user.roles` holds any of them.
-- A function of Hono's context decides. It reads the id of a member action with
+- A function of Hono's context decides, and only `true` grants access. It reads
+  the id of a member action with
   `c.req.param('id')`. It runs before the transaction and the middleware of the
   layers, so it loads what it checks itself.
 

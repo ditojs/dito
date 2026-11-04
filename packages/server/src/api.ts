@@ -123,7 +123,7 @@ function authorize(value: Exclude<Authorize, true>): Middleware {
   return async (c, next) => {
     const { user } = c.var
     const isAuthorized = isFunction(value)
-      ? await value(c)
+      ? (await value(c)) === true
       : !!user && asArray(value).some(role => user.roles.includes(role))
     if (!isAuthorized) throw new HttpError(user ? 403 : 401)
     await next()

@@ -90,7 +90,7 @@ export function serveAdmin(options: AdminOptions): AdminServer {
       const user = (await getUser?.(c)) ?? null
       c.set('user', user)
       const isAuthorized = isFunction(authorize)
-        ? await authorize(c)
+        ? (await authorize(c)) === true
         : !!user && asArray(authorize).some(role => user.roles.includes(role))
       if (isAuthorized) return next()
       return user ? c.text('Forbidden', 403) : c.text('Unauthorized', 401)

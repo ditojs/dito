@@ -153,6 +153,12 @@ describe('serveAdmin() in production', () => {
     )
   })
 
+  it('grants access only when the function returns `true`', async () => {
+    const admin = createAdmin({ authorize: () => 'yes' })
+    const response = await admin.request('/admin/views/views-Cd34_y-W.js')
+    expect(response.status).toBe(401)
+  })
+
   it('protects the views in any case', async () => {
     const admin = createAdmin({ authorize: () => false })
     for (const folder of ['VIEWS', 'Views', encodeURI('viewſ')]) {

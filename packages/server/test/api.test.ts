@@ -614,6 +614,14 @@ describe('settings of mixins', () => {
 })
 
 describe('authorize', () => {
+  it('grants access only when a function returns `true`', async () => {
+    const authorize = (() => 'yes') as never
+    const api = setup([
+      { path: 'fonts', authorize, actions: { get: () => 'ok' } }
+    ])
+    expect((await request(api, 'GET', '/api/fonts')).status).toBe(403)
+  })
+
   const controller = (def: Partial<ControllerDefinition> = {}) =>
     defineController({
       path: 'fonts',
