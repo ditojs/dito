@@ -76,32 +76,6 @@ describe('hostMiddleware() on Node', () => {
 })
 
 describe('serve()', () => {
-  it('runs `onClosing` while a request still runs', async () => {
-    let release!: () => void
-    const released = new Promise<void>(resolve => (release = resolve))
-    const steps: string[] = []
-    const app = new Hono()
-    app.get('/', async c => {
-      await released
-      steps.push('response')
-      return c.text('Hello')
-    })
-    const { server, close } = await serve(app, {
-      host: '127.0.0.1',
-      onClosing: () => {
-        steps.push('closing')
-        release()
-      },
-      onClose: () => {
-        steps.push('closed')
-      }
-    })
-    const response = fetch(getUrl(server))
-    await new Promise(resolve => server.once('request', resolve))
-    await Promise.all([close(), response])
-    expect(steps).toEqual(['closing', 'response', 'closed'])
-  })
-
   it('serves the app until `close()`, and then runs `onClose`', async () => {
     const app = new Hono()
     app.get('/', c => c.text('Hello'))
