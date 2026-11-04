@@ -6,7 +6,9 @@ import { Cascade, defineEntity, p } from '@mikro-orm/core'
 // addresses, and an address owns its lines. Notes go with their customer
 // through a cascade of removes. A folder owns its child folders, whose
 // foreign key deletes them with their parent. A customer's main address is
-// one of its addresses, whose delete the foreign key refuses.
+// one of its addresses, whose delete the foreign key refuses. A customer owns
+// its tasks, whose foreign key is nullable. Topics are a tree whose foreign key
+// refuses the delete of a topic with children.
 
 const CustomerSchema = defineEntity({
   name: 'Customer',
@@ -34,7 +36,12 @@ const CustomerSchema = defineEntity({
       p
         .oneToMany(Note)
         .mappedBy(note => note.customer)
-        .cascade(Cascade.ALL)
+        .cascade(Cascade.ALL),
+    tasks: () =>
+      p
+        .oneToMany(Task)
+        .mappedBy(task => task.customer)
+        .orphanRemoval()
   }
 })
 export class Customer extends CustomerSchema.class {}
@@ -46,7 +53,11 @@ const OrderSchema = defineEntity({
   properties: {
     id: p.integer().primary(),
     customer: () => p.manyToOne(Customer).nullable().deleteRule('no action'),
-    address: () => p.manyToOne(Address).nullable().deleteRule('no action')
+    address: () => p.manyToOne(Address).nullable().deleteRule('no action'),
+    updatedAt: p
+      .datetime()
+      .nullable()
+      .onUpdate(() => new Date())
   }
 })
 export class Order extends OrderSchema.class {}
@@ -120,6 +131,34 @@ const FolderSchema = defineEntity({
 export class Folder extends FolderSchema.class {}
 FolderSchema.setClass(Folder)
 
+const TaskSchema = defineEntity({
+  name: 'Task',
+  tableName: 'task',
+  properties: {
+    id: p.integer().primary(),
+    customer: () => p.manyToOne(Customer).nullable(),
+    topic: () => p.manyToOne(Topic).nullable().deleteRule('no action')
+  }
+})
+export class Task extends TaskSchema.class {}
+TaskSchema.setClass(Task)
+
+const TopicSchema = defineEntity({
+  name: 'Topic',
+  tableName: 'topic',
+  properties: {
+    id: p.integer().primary(),
+    parent: () => p.manyToOne(Topic).nullable().deleteRule('no action'),
+    children: () =>
+      p
+        .oneToMany(Topic)
+        .mappedBy(topic => topic.parent)
+        .orphanRemoval()
+  }
+})
+export class Topic extends TopicSchema.class {}
+TopicSchema.setClass(Topic)
+
 export const customerEntities = [
   Customer,
   Order,
@@ -127,5 +166,7 @@ export const customerEntities = [
   Address,
   AddressLine,
   Note,
-  Folder
+  Folder,
+  Task,
+  Topic
 ]

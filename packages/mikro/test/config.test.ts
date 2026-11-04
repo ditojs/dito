@@ -5,6 +5,8 @@ import {
   assetsJson,
   createRecord,
   getAssetPaths,
+  getRootKysely,
+  mikroDb,
   mikroOptions,
   schemaJson
 } from '../src/index.ts'
@@ -75,6 +77,27 @@ describe('`mikroOptions()`', () => {
   beforeEach(() => sql('truncate book restart identity'))
 
   const stored = async () => (await sql('select specs from book'))[0].specs
+
+  it('takes a module of entities', () => {
+    const module = { Book, helper: () => {}, states: ['a'] }
+    expect(mikroOptions({ entities: module }).entities).toEqual([Book])
+  })
+
+  it('is what `mikroDb()` needs', () => {
+    const options = { dbName: 'dito_mikro_options', entities: [Book] }
+    expect(() => mikroDb(new MikroORM(options))).toThrow(/`mikroOptions\(\)`/)
+    expect(() => mikroDb(new MikroORM(mikroOptions(options)))).not.toThrow()
+  })
+
+  it('reads outside of a transaction with `getRootKysely()`', async () => {
+    await orm.em.fork().transactional(async em => {
+      await em.insert(Book, { specs: {} } as never)
+      const read = (db: ReturnType<typeof getRootKysely>) =>
+        db.selectFrom('book').selectAll().execute()
+      expect(await read(em.getKysely() as never)).toHaveLength(1)
+      expect(await read(getRootKysely(orm))).toHaveLength(0)
+    })
+  })
 
   it('still reads the asset paths after the discovery', () => {
     expect(getAssetPaths([Book, BookShelf])).toEqual(paths)

@@ -23,7 +23,12 @@ export {
   type ColumnAsset,
   type SchemaJsonOptions
 } from './schema-json.ts'
-export { getEntityManager, getKysely, mikroDb } from './transaction.ts'
+export {
+  getEntityManager,
+  getKysely,
+  getRootKysely,
+  mikroDb
+} from './transaction.ts'
 export {
   entityUserSource,
   type EntityUserSourceOptions

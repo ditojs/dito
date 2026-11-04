@@ -484,6 +484,17 @@ describe('get', () => {
     expect(names(json)).toEqual(['Arcadia', 'Circuits'])
   })
 
+  it('lists all rows in `choices()`, past the limit of lists', async () => {
+    await sql(
+      `insert into book (name, created_at, updated_at)
+       select 'Many ' || n, now(), now() from generate_series(1, 1000) n`
+    )
+    const api = setup(books({ mixins: [choices({ fields: ['name'] })] }))
+    const { json } = await request(api, 'GET', '/api/books/choices')
+    await sql(`delete from book where name like 'Many %'`)
+    expect(json.length).toBeGreaterThan(1000)
+  })
+
   it('answers as many rows as `maxRows` lets it', async () => {
     const [{ count }] = await sql('select count(*)::int as count from book')
     const api = setup(
@@ -501,7 +512,7 @@ describe('get', () => {
             return (rows as Book[]).map(({ id }) => id)
           }
         },
-        mixins: [choices({ fields: ['name'], maxRows: Infinity })]
+        mixins: [choices({ fields: ['name'] })]
       })
     )
     for (const path of ['all', 'choices']) {

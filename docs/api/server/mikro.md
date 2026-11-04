@@ -20,6 +20,7 @@ import {
   mikroDb,
   getEntityManager,
   getKysely,
+  getRootKysely,
   entityUserSource
 } from '@ditojs/mikro'
 ```
@@ -242,8 +243,8 @@ choices(find: FindShape): MixinDefinition
 ```
 
 Returns a mixin that routes `get choices`, a list for the options of a select.
-It is `'get choices': listHandler(find)`, so it shows the same rows as the list
-and takes the same filters. A `find` with `fields` names the relations that it
+It is `'get choices': listHandler({ maxRows: Infinity, ...find })`, so it shows
+all the rows of the list, as a select needs, and takes the same filters. A `find` with `fields` names the relations that it
 sends in its paths or its own `populate`.
 
 ```js
@@ -497,7 +498,9 @@ const assets = createAssets({ paths: getAssetPaths(entities), storages, db })
 mikroOptions<T>(options: T): T
 ```
 
-Adds what Dito's entities need to the options of `new MikroORM()`:
+Adds what Dito's entities need to the options of `new MikroORM()`, which
+[`mikroDb()`](#mikrodb) requires. `entities` can also be a module of entities,
+whose other exports it leaves out:
 
 - `p.date()` columns hold the local day. MikroORM's own type sends a `Date` as a
   UTC time, which Postgres cuts to the UTC day, and does the same with a string
@@ -559,6 +562,15 @@ getKysely(c: Context): Kysely<any>
 
 Returns the Kysely instance of the request's entity manager, which runs in its
 transaction, for queries that MikroORM doesn't build.
+
+## getRootKysely()
+
+```ts
+getRootKysely(orm: MikroORM): Kysely<any>
+```
+
+Returns a Kysely on the ORM's pool, outside of any transaction, for sessions,
+credentials and jobs. `orm.em.getKysely()` joins the current transaction instead.
 
 ## entityUserSource()
 

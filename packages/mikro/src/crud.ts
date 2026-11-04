@@ -52,9 +52,12 @@ export function listHandler<T extends object = any>(
 }
 
 // A mixin with the list `get choices`, for the options of a select, such as
-// `choices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })`.
+// `choices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })`. A select
+// shows all rows, so its list has no row limit unless `find` sets one.
 export function choices<T extends object = any>(find: FindShape<T>) {
-  return defineMixin({ actions: { 'get choices': listHandler(find) } })
+  return defineMixin({
+    actions: { 'get choices': listHandler({ maxRows: Infinity, ...find }) }
+  })
 }
 
 // Runs `deserialize` of each layer on the body of a write.

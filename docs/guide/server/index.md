@@ -48,7 +48,7 @@ import { MikroORM } from '@mikro-orm/postgresql'
 import { Hono } from 'hono'
 import { createApi, errorHandler, notFound } from '@ditojs/server'
 import { serve } from '@ditojs/server/node'
-import { defineController, mikroDb } from '@ditojs/mikro'
+import { defineController, mikroDb, mikroOptions } from '@ditojs/mikro'
 
 const BookSchema = defineEntity({
   name: 'Book',
@@ -75,11 +75,9 @@ const books = defineController({
   }
 })
 
-const orm = await MikroORM.init({
-  entities: [Book],
-  dbName: 'bookshop',
-  user: 'bookshop'
-})
+const orm = await MikroORM.init(
+  mikroOptions({ entities: [Book], dbName: 'bookshop', user: 'bookshop' })
+)
 // Creates the tables of the entities. Apps with data use migrations.
 await orm.schema.update()
 

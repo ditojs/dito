@@ -3,6 +3,7 @@ import type { DbAdapter, DitoEnv } from '@ditojs/server'
 import type { EntityManager as CoreEntityManager } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
 import type { Kysely } from 'kysely'
+import { hasMikroOptions } from './config.ts'
 import { toHttpError } from './errors.ts'
 
 // The `MikroORM` of any driver and any entities.
@@ -13,6 +14,9 @@ interface Orm {
 // The `db` of `createApi()`. Each request gets a fork of the entity manager as
 // `c.var.db`, which is the transaction's entity manager during a transaction.
 export function mikroDb(orm: Orm): DbAdapter {
+  if (!hasMikroOptions(orm.em)) {
+    throw new Error('Create the ORM with the options of `mikroOptions()`.')
+  }
   return {
     connect: () => orm.em.fork(),
     // MikroORM flushes the entity manager before it commits, and rolls back
@@ -40,3 +44,11 @@ export const getEntityManager = (c: Context<DitoEnv>) =>
 // The Kysely of the request's entity manager, which runs in its transaction.
 export const getKysely = (c: Context<DitoEnv>) =>
   getEntityManager(c).getKysely() as unknown as Kysely<any>
+
+// A Kysely on the ORM's pool, outside of any transaction, for sessions,
+// credentials and jobs. `orm.em.getKysely()` joins the current transaction, a
+// fork doesn't.
+export const getRootKysely = (orm: Orm) =>
+  (
+    orm.em.fork() as unknown as EntityManager
+  ).getKysely() as unknown as Kysely<any>

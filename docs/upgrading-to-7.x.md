@@ -141,7 +141,7 @@ const { connection, pool } = config.knex
 
 export const orm = new MikroORM(
   mikroOptions({
-    entities: Object.values(entities),
+    entities,
     dbName: connection.database,
     host: connection.host,
     port: connection.port,
@@ -151,7 +151,7 @@ export const orm = new MikroORM(
   })
 )
 
-export const kysely = orm.em.getKysely()
+export const kysely = getRootKysely(orm)
 ```
 
 **Services** become modules of the app. Each module exports functions such as
@@ -675,7 +675,6 @@ chapters: assetsJson('public', '*/images').nullable(),
 export const assets = createAssets({
   paths: getAssetPaths(entities),
   storages,
-  db: getKysely,
   deleteUnusedAfter: 24 * 60 * 60 * 1000
 })
 ```

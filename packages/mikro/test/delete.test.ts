@@ -5,6 +5,8 @@ import {
   Address,
   Customer,
   Folder,
+  Order,
+  Topic,
   customerEntities
 } from './customer-entities.ts'
 
@@ -18,7 +20,7 @@ afterAll(drop)
 beforeEach(async () => {
   await sql(
     'truncate customer, customer_order, visit, address, address_line, ' +
-    'note, folder restart identity cascade'
+    'note, folder, task, topic restart identity cascade'
   )
   await sql(`insert into customer (name) values ('A'), ('B')`)
   await sql('insert into customer_order (customer_id) values (1)')
@@ -29,6 +31,8 @@ beforeEach(async () => {
   )
   await sql('insert into note (customer_id) values (1), (2)')
   await sql('insert into folder (parent_id) values (null), (1), (2)')
+  await sql('insert into task (customer_id) values (1)')
+  await sql('insert into topic (parent_id) values (null), (1)')
 })
 
 const ids = async (table: string, column = 'id') =>
@@ -125,6 +129,48 @@ describe('em.remove()', () => {
     })
     await expect(remove(em, customer)).rejects.toThrow(/foreign key/)
     expect(await ids('address', 'customer_id')).toEqual([1, 2])
+  })
+
+  it('keeps the foreign key of a new row', async () => {
+    const em = orm.em.fork()
+    const customer = await em.findOneOrFail(Customer, 2, {
+      populate: ['orders']
+    })
+    em.create(Order, { customer })
+    await expect(remove(em, customer)).rejects.toThrow(/foreign key/)
+    expect(await state()).toEqual(before)
+  })
+
+  it('leaves owned rows as they were after a refused delete', async () => {
+    await sql('insert into task (topic_id) values (2)')
+    const em = orm.em.fork()
+    const topic = await em.findOneOrFail(Topic, 1, { populate: ['children'] })
+    await expect(remove(em, topic)).rejects.toThrow(/foreign key/)
+    await em.flush()
+    expect(await ids('topic', 'parent_id')).toEqual([null, 1])
+  })
+
+  it('writes no `onUpdate` values to the rows it restores', async () => {
+    const updatedAt = new Date('2026-01-02T03:04:05Z')
+    await sql(
+      `update customer_order set updated_at = '${updatedAt.toISOString()}'`
+    )
+    const em = orm.em.fork()
+    const customer = await em.findOneOrFail(Customer, 1, {
+      populate: ['orders']
+    })
+    await expect(remove(em, customer)).rejects.toThrow(/foreign key/)
+    await em.flush()
+    expect(customer.orders.getItems()[0]!.updatedAt).toEqual(updatedAt)
+    const order = await orm.em.fork().findOneOrFail(Order, 1)
+    expect(order.updatedAt).toEqual(updatedAt)
+  })
+
+  it('refuses the delete of a tree node with children', async () => {
+    const em = orm.em.fork()
+    const topic = await em.findOneOrFail(Topic, 1)
+    await expect(remove(em, topic)).rejects.toThrow(/foreign key/)
+    expect(await ids('topic')).toEqual([1, 2])
   })
 
   it('sets the foreign keys of the rule `set null`', async () => {
