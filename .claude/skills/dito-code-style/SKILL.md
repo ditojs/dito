@@ -47,6 +47,9 @@ apply; this covers what they leave open.
 
 - Short domain words: `value`, `data`, `schema`, `options`, `path`, `key`.
   No `Info`, `Meta`, `Manager`, `Handler` suffixes.
+- Full words, not abbreviations: `context`, `error`, `database`, not `ctx`,
+  `err`, `db`, above all in public names that apps write or destructure.
+  Names that a library gives keep its spelling: Hono's `c`, MikroORM's `em`.
 - Functions start with a verb: `get*`, `create*`, `setup*`, `handle*`,
   `normalize*`. Factories are `create*` or `define*` (`createApi()`,
   `defineController()`), not named after what they return.
