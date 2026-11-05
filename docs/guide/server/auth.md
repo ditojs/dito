@@ -57,6 +57,7 @@ clients. `createEntityUserSource()` of `@ditojs/mikro` makes one for a MikroORM
 entity:
 
 ```js
+import { z } from 'zod'
 import { createEntityUserSource } from '@ditojs/mikro'
 
 export const adminSource = createEntityUserSource(Admin, {
@@ -70,7 +71,9 @@ export const adminSource = createEntityUserSource(Admin, {
   // `({ c, user })`.
   serialize: ['id', 'username', 'roles'],
   // Values computed from the user, added to the properties.
-  computed: { initials: ({ user }) => user.username.slice(0, 2) }
+  computed: { initials: ({ user }) => user.username.slice(0, 2) },
+  // New passwords, at least 8 characters by default:
+  password: z.string().min(12)
 })
 ```
 
@@ -78,8 +81,11 @@ It finds users with the request's entity manager, else with a fork of `em`.
 `patch()` writes the new `hash` or the `lastLogin` of a login at once, without
 flushing the request's other changes, and sets them on the user. An app can also
 write the object itself, with `name`, `findById(c, id)`,
-`findByUsername(c, username)`, `patch(c, user, values)` and
-`serialize(c, user)`.
+`findByUsername(c, username)`, `patch(c, user, values)`,
+`serialize(c, user)` and the schema `password`.
+
+The source's `password` checks new passwords, in the users controller and in
+the password writes below.
 
 Auth reads `id`, `username`, `hash`, `roles` and `lastLogin` from the users.
 `name`, the entity's name, names the users in sessions and credentials, such as
@@ -92,7 +98,6 @@ password change ends the user's other sessions.
 users, and the features that the controller offers, which the admin reads:
 
 ```js
-import { z } from 'zod'
 import { defineController } from '@ditojs/server'
 import { createCredentials, defineUserActions } from '@ditojs/auth'
 import { createPasskeys } from '@ditojs/auth/passkeys'
@@ -103,8 +108,6 @@ export const credentials = createCredentials({ adapter })
 const users = defineUserActions({
   path: 'admins',
   source: adminSource,
-  // New passwords, 8 characters at least by default:
-  password: z.string().min(12),
   credentials,
   features: {
     passkeys: createPasskeys({ rpName: 'Book Catalog' }),

@@ -356,10 +356,9 @@ describe('sessions', () => {
     expect(
       (await client.post('/admins/password', { password: '12345678' })).status
     ).toBe(204)
-    // An app's own schema:
-    const custom = createClient(
-      setup({ db, source: admins, password: z.string().min(12) }).api.fetch
-    )
+    // The schema of the user source:
+    const source = { ...admins, password: z.string().min(12) }
+    const custom = createClient(setup({ db, source }).api.fetch)
     await custom.post('/admins/login', {
       username: 'ada',
       password: '12345678'

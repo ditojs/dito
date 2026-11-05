@@ -593,6 +593,7 @@ createEntityUserSource<U>(entity: EntityClass<U>, options: {
   where?: object
   serialize: string[] | (({ c, user }) => unknown)
   computed?: Record<string, ({ user }) => unknown>
+  password?: ZodType<string>
 }): UserSource<U>
 ```
 
@@ -605,6 +606,8 @@ in session middleware outside of the API.
   `{ isActive: true }`.
 - `serialize` lists the properties that clients get, plus `computed`, or is a
   function that returns the JSON.
+- `password` is the schema of new passwords, a string of at least 8 characters
+  by default.
 
 `findById()` finds no user for an id that doesn't fit the primary key. `patch()`
 writes the values with `nativeUpdate()` and sets them on the user, without

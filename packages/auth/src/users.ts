@@ -1,4 +1,5 @@
 import type { Context } from 'hono'
+import type { z } from 'zod'
 
 // The values that auth reads from users.
 export interface User {
@@ -33,6 +34,9 @@ export interface UserSource<U extends User = User> {
     values: { hash?: string; lastLogin?: Date }
   ): Promise<void>
   serialize(c: Context, user: U): unknown
+  // The schema of new passwords, for `defineUserActions()` and
+  // `definePasswordWrites()`. At least 8 characters by default.
+  password?: z.ZodType<string>
 }
 
 // Sessions and credentials name users by their source and id, such as

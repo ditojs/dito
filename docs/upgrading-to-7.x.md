@@ -661,8 +661,8 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   `{ user }`, or `{ codeRequired: true }`. `post confirm-access` responds with
   `{ codeRequired: true }`, or 204 once it confirms the access. Other actions
   without a result, such as `post logout`, respond with 204.
-- `post password` checks new passwords with the `password` schema, at least 8
-  characters by default.
+- `post password` checks new passwords with the `password` schema of the user
+  source, at least 8 characters by default.
 - The session saves after the action if it changed, even when the action throws,
   so used challenges and codes stay used. A session that a parallel request
   ended stays ended. `refreshFingerprint()` applies when the session saves after

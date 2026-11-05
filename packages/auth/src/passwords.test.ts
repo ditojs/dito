@@ -45,6 +45,7 @@ const crud = defineMixin({
 })
 
 function createApp(password?: z.ZodType<string>) {
+  const source = { ...admins, password }
   const { api } = setup({
     db,
     source: admins,
@@ -52,7 +53,7 @@ function createApp(password?: z.ZodType<string>) {
       {
         path: 'users',
         authorize: true,
-        mixins: [crud, definePasswordWrites({ source: admins, password })]
+        mixins: [crud, definePasswordWrites({ source })]
       }
     ]
   })

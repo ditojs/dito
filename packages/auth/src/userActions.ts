@@ -35,6 +35,7 @@ import {
 export interface DefineUserActionsOptions<U extends User> {
   // The path of the users under the API's prefix, such as `admins`.
   path: string
+  // Its `password` checks the new passwords.
   source: UserSource<U>
   // Needed for passkeys and TOTP.
   credentials?: Credentials
@@ -44,8 +45,6 @@ export interface DefineUserActionsOptions<U extends User> {
     totp?: Totp
     passwordReset?: PasswordReset
   }
-  // The schema of new passwords, at least 8 characters by default.
-  password?: z.ZodType<string>
   // In milliseconds, ten minutes by default.
   reconfirmAfter?: number
   afterLogin?: (context: { c: Context; user: U }) => unknown
@@ -72,13 +71,13 @@ export function defineUserActions<U extends User>({
   source,
   credentials,
   features: { passkeys, totp, passwordReset } = {},
-  password = defaultPassword,
   reconfirmAfter = 10 * 60 * 1000,
   afterLogin
 }: DefineUserActionsOptions<U>) {
   if ((passkeys || totp) && !credentials) {
     throw new Error('Unable to use passkeys or TOTP without credentials.')
   }
+  const { password = defaultPassword } = source
   const checkAuthentication = async (c: Context) => {
     const user = await getSession(c).getUser(source)
     if (!user) throw authError('Unauthorized Access')

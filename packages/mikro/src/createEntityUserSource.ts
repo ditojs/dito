@@ -1,4 +1,5 @@
 import type { Context } from 'hono'
+import type { z } from 'zod'
 import type { EntityClass, EntityManager } from '@mikro-orm/core'
 import { isArray, isFunction, mapValues } from '@ditojs/utils'
 import { getPrimaryKey, toPrimaryKey } from './metadata.ts'
@@ -22,6 +23,9 @@ export interface EntityUserSourceOptions<U extends object> {
   serialize: string[] | ((context: { c: Context; user: U }) => unknown)
   // Values computed from the user, added to the properties of `serialize`.
   computed?: Record<string, (context: { user: U }) => unknown>
+  // The schema of new passwords, for `defineUserActions()` and
+  // `definePasswordWrites()`. At least 8 characters by default.
+  password?: z.ZodType<string>
 }
 
 export function createEntityUserSource<U extends { id: number | string }>(
@@ -31,7 +35,8 @@ export function createEntityUserSource<U extends { id: number | string }>(
     usernameProperty = 'username',
     where,
     serialize,
-    computed = {}
+    computed = {},
+    password
   }: EntityUserSourceOptions<U>
 ) {
   const getEm = (c: Context): EntityManager => {
@@ -56,6 +61,7 @@ export function createEntityUserSource<U extends { id: number | string }>(
 
   return {
     name: entity.name,
+    password,
     // Ids that don't fit the key, such as those of tampered tokens, find none.
     async findById(c: Context, id: string): Promise<U | null> {
       const em = getEm(c)

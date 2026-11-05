@@ -1,4 +1,5 @@
 import type { Context } from 'hono'
+import { z } from 'zod'
 import { defineEntity, p } from '@mikro-orm/core'
 import { createEntityUserSource } from './createEntityUserSource.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
@@ -123,6 +124,14 @@ describe('createEntityUserSource()', () => {
       email: 'a@example.com',
       domain: 'example.com'
     })
+  })
+
+  it('holds the schema of new passwords', () => {
+    const password = z.string().min(12)
+    expect(source.password).toBe(undefined)
+    expect(
+      createEntityUserSource(Account, { serialize: ['id'], password }).password
+    ).toBe(password)
   })
 
   it('takes a function as `serialize`', async () => {

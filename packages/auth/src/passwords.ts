@@ -14,7 +14,7 @@ import type { User, UserSource } from './users.ts'
 const hashRounds = 10
 let dummyHash: Promise<string> | null = null
 
-// The schema of new passwords, unless the app passes its own.
+// The schema of new passwords, unless the user source has its own.
 export const defaultPassword = z
   .string({ error: 'The password is required.' })
   .min(8, 'The password needs at least 8 characters.')
@@ -40,9 +40,8 @@ export async function verifyPassword(
 }
 
 export interface PasswordWritesOptions<U extends User> {
+  // Its `password` checks the new passwords.
   source: UserSource<U>
-  // The schema of new passwords, at least 8 characters by default.
-  password?: z.ZodType<string>
 }
 
 // A mixin for the `post` and `patch :id` of a model controller of the users:
@@ -51,9 +50,9 @@ export interface PasswordWritesOptions<U extends User> {
 // session, and their other sessions end. The controller writes the hash with
 // the user that the handler beneath returns.
 export function definePasswordWrites<U extends User>({
-  source,
-  password = defaultPassword
+  source
 }: PasswordWritesOptions<U>) {
+  const { password = defaultPassword } = source
   const schema = z.object({
     password: password.optional(),
     hash: z

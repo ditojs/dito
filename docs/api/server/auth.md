@@ -158,7 +158,6 @@ actions instead.
 | `source`         | [`UserSource`](#usersource)            | The users.                                                                                                                     |
 | `credentials`    | `Credentials`                          | From [`createCredentials()`](#createcredentials). Needed for passkeys and TOTP.                                                |
 | `features`       | `{ passkeys?, totp?, passwordReset? }` | From [`createPasskeys()`](#createpasskeys), [`createTotp()`](#createtotp) and [`createPasswordReset()`](#createpasswordreset). |
-| `password`       | `ZodType<string>`                      | The schema of new passwords, in `post password` and `post password-reset-confirm`. Default: a string of at least 8 characters. |
 | `reconfirmAfter` | `number`                               | How long a confirmed access lasts, in milliseconds. Default: ten minutes.                                                      |
 | `afterLogin`     | `({ c, user }) => unknown`             | Runs after each login, such as to set a cookie.                                                                                |
 
@@ -187,16 +186,15 @@ such as `patch self`, see [Account settings](../../guide/admin/views.md).
 ```ts
 definePasswordWrites<U>(options: {
   source: UserSource<U>
-  password?: ZodType<string>
 }): MixinDefinition
 ```
 
 A mixin for the model controller of the users, which routes `post` and
 `patch :id`. The body sets `password`, and the handler beneath gets the body
 without it. The mixin sets the hash of the password as `hash` on the user that
-the handler returns, and the model controller writes it. `password` is the
-schema of new passwords, by default a string of at least 8 characters. A `hash`
-in the body responds with 400. When users change their own password, their
+the handler returns, and the model controller writes it. The `password` of the
+source checks new passwords, see [`UserSource`](#usersource). A `hash` in the
+body responds with 400. When users change their own password, their
 session stays and their other sessions end, see `refreshFingerprint()` of
 [`Session`](#session).
 
@@ -219,6 +217,7 @@ interface UserSource<U> {
   findByUsername(c, username: string): Promise<U | null | undefined>
   patch(c, user: U, values: { hash?: string, lastLogin?: Date }): Promise<void>
   serialize(c, user: U): unknown
+  password?: ZodType<string>
 }
 
 interface User {
@@ -243,6 +242,9 @@ the API's database handle in `c.var.em`.
 - `patch()` stores the values and sets them on the user: a new `hash`, or the
   `lastLogin` of a login.
 - `serialize()` returns what the actions send.
+- `password` is the schema of new passwords, in the actions of
+  `defineUserActions()` and in `definePasswordWrites()`. By default, a new
+  password is a string of at least 8 characters.
 
 ## createCredentials()
 

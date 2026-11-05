@@ -1,5 +1,6 @@
 import type { EntityClass } from '@mikro-orm/core'
 import { wrap } from '@mikro-orm/core'
+import type { z } from 'zod'
 import {
   createSessions,
   defineUserActions,
@@ -35,18 +36,22 @@ export interface UsersApiOptions<U extends TestUser> extends Omit<
   orm: TestOrm
   entity: EntityClass<U>
   secrets: string[]
+  // The schema of new passwords, on the user source.
+  password?: z.ZodType<string>
 }
 
 export function createUsersApi<U extends TestUser>({
   orm,
   entity,
   secrets,
+  password,
   ...options
 }: UsersApiOptions<U>): TestApi {
   // Leaves out the hidden `hash`.
   const source = createEntityUserSource(entity, {
     em: orm.em,
-    serialize: ({ user }) => wrap(user).toObject()
+    serialize: ({ user }) => wrap(user).toObject(),
+    password
   })
   const sessions = createSessions({
     adapter: createMikroAdapter(orm),
