@@ -113,8 +113,9 @@ unless one of its models reads the `id` of a join table.
 
 1. Remove `@ditojs/server` 6, `@ditojs/schema`, `@ditojs/router`,
    `@ditojs/build`, `objection`, `koa` and its middleware. The admin holds the
-   validators that it used from `@ditojs/schema`, and building the admin needs
-   `autoprefixer` instead of `@ditojs/build`.
+   validators that it used from `@ditojs/schema`. Building the admin needs
+   `vite`, `@vitejs/plugin-vue` and `autoprefixer`, which came with
+   `@ditojs/build`.
 2. Add `@ditojs/server` and `@ditojs/mikro`, and `@ditojs/storage` and
    `@ditojs/auth` if the app needs them. `@ditojs/admin` serves and builds the
    admin, in `@ditojs/admin/server` and `@ditojs/admin/vite`.
@@ -213,7 +214,8 @@ builders, see [Entities and controllers](guide/server/mikro.md).
   issues, see
   [Rules on rows and graphs](guide/server/writes.md#rules-on-rows-and-graphs).
 - Model `assets` become the [`assets` of `defineJsonType()`](#storage).
-- Entities have a single primary key. Only pivot entities have composite keys.
+- Entities need a single primary key, see
+  [Known limitations](#known-limitations).
 - Hide fields with `.hidden()`. For fields that only some users see, use
   `exclude` in a `find` function. Serialization `groups` aren't supported.
 - Dito.js 6 stored a `Date` in a `date` column as its local day. `p.date()` of
@@ -240,10 +242,12 @@ Dito.js 6 filled in the defaults of its schemas on insert.
 [`defineMikroConfig()`](api/server/mikro.md#definemikroconfig) keeps this.
 
 **Many-to-many relations.** A join table with columns of its own becomes a pivot
-entity, with `p.manyToOne(Post).primary()` on both foreign keys. A body writes
-the relation as ids, on either side. Dito.js 6 wrote the other columns of the
-join table in graphs. A one-to-many relation to the pivot entity with
-`orphanRemoval` writes them as owned rows, see
+entity, with `p.manyToOne(Post).primary()` on both foreign keys.
+`defineMikroConfig()` warns of pivot entities with an id of their own, see
+[step 2](#2-change-the-schema-for-ditojs-7). A body writes the relation as ids,
+on either side. Dito.js 6 wrote the other columns of the join table in graphs.
+A one-to-many relation to the pivot entity with `orphanRemoval` writes them as
+owned rows, see
 [Many-to-many relations](guide/server/writes.md#many-to-many-relations).
 
 ### 6. Turn scopes into find shapes
@@ -336,13 +340,17 @@ export const editor = defineMixin({
 ```
 
 [`crud`](api/server/mikro.md#crud) of `@ditojs/mikro` routes the five default
-handlers. When two layers set the same action key, the later one's handler runs
-the earlier one's as `next()`. See [Mixins](api/server/controllers.md#mixins)
-for how the layers combine their settings.
+handlers. When two layers set a handler for the same action, the later one runs
+the handler of the layer beneath as `next()`, and gets its result. See
+[Mixins](api/server/controllers.md#mixins) for how the layers combine their
+settings. Writes run in a transaction by default. `transacted: true` adds the
+reads, see [Transactions](guide/server/controllers.md#transactions).
 
 Hooks that ran after an action become a handler that calls `next()`, or
 middleware of a mixin. Both run inside the transaction, so an error after
-`next()` rolls back the write.
+`next()` rolls back the write. In model controllers, a handler's `next()`
+returns the record before the base flushes it. The `next()` of middleware
+returns after the flush.
 
 An audit log of every write moves to a MikroORM
 [event subscriber](https://mikro-orm.io/docs/events). It sees each row that a
@@ -482,10 +490,8 @@ and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
 - Handlers return data or a `Response`, see
   [Handler](api/server/controllers.md#handler). `undefined` responds with 204,
   also for `post`. A custom `post` that creates calls `c.status(201)` itself.
-- In model controllers, the base converts the id by the primary key, see
-  [Variables](api/server/mikro.md#variables). An id such as `self` needs `load`.
-  `params.id` and `c.req.param('id')` are the string of the path.
-- Middleware of actions and layers reads the body of a write as `c.var.body`.
+- `params.id` and `c.req.param('id')` are the string of the path. See
+  [Variables](api/server/mikro.md#variables) for `id`.
 - Hono doesn't send a thrown `Response`. Throw an `HttpError`, or return the
   `Response`.
 - Middleware is Hono middleware. It goes on the host, in
@@ -497,8 +503,9 @@ and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
 #### Authorization
 
 `authorize` takes `true`, a role, a list of roles, or a function, see
-[authorize](api/server/controllers.md#authorize). Every write needs it. Front
-controllers that let anyone write set `authorize: true`.
+[authorize](api/server/controllers.md#authorize). Every write needs it, or
+`createApi()` throws. Front controllers that let anyone write set
+`authorize: true`.
 
 `$authorize()` and `handleAuthorization()` become a function that gets
 `{ c, user }`. It reads the id with `c.req.param('id')`. It runs before the body
@@ -532,7 +539,7 @@ and the app's rules, see [Writes](guide/server/writes.md). Then it flushes once.
   Owned relations, with `orphanRemoval`, are written nested, see
   [Nested rows](guide/server/writes.md#nested-rows). Other relations link by id.
   `#id` and `#ref` stay, but only new rows carry `#id`. `#dbRef` becomes an id
-  or `{ id }`.
+  or `{ id }`. Two owned rows with the same id respond with 400.
 - **Custom handlers** write a body with `createRecord(em, entity, data)` and
   `assignRecord(em, record, data)`, see
   [Writes in custom handlers](guide/server/writes.md#writes-in-custom-handlers).
@@ -576,7 +583,7 @@ each with its own sessions and users. See
 const api = createApi({
   controllers,
   middleware: [sessions.middleware],
-  adapter: createMikroAdapter(orm),
+  adapter,
   getUser: ({ c }) => getSessionUser(c, adminSource)
 })
 
@@ -592,9 +599,6 @@ await serve(app, { port, closeTimeout: '5s', onClose: () => orm.close() })
 - `config.http` becomes the options of
   [`hostMiddleware()`](api/server/hono.md#hostmiddleware). Add it before
   `app.route()`. As in Dito.js 6, `csrf()` only checks requests with `Origin`.
-- Uploads still stream into their storage, and S3 storages upload them in parts
-  of 8 MB. `limits.fileSize` becomes `maxSize`, see
-  [Uploads](api/server/storage.md#uploads).
 - `cors` works differently. Dito.js 6 echoed the request's origin. Hono's
   `cors()` allows any origin by default, without credentials. With
   `credentials: true`, it needs the allowed `origin`.
@@ -630,14 +634,21 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 - `get session` becomes `get self`.
 - `self` in record actions, such as `PATCH users/self`, isn't built in. A
   controller that keeps it sets `load`, which gets the id as a string.
+- Actions that change security settings call
+  `getSession(c).checkConfirmedAccess(source)`, see
+  [Confirmed access](guide/server/auth.md#confirmed-access).
 - `definePasswordWrites()` doesn't ask for confirmed access. An app that asked
   for it on password changes calls `checkConfirmedAccess()` in its own action.
-- Actions that change security settings call `checkConfirmedAccess()`, see
-  [Confirmed access](guide/server/auth.md#confirmed-access).
+- `config.app.authentication.reconfirmAccessAfter` becomes `reconfirmAfter` of
+  `defineUserActions()`.
 - Responses have no `success` or `authenticated`. The actions respond as in
   [`defineUserActions()`](api/server/auth.md#defineuseractions).
-- `post password` checks new passwords with the `password` schema of the user
-  source.
+- New passwords need at least 8 characters by default. Dito.js 6 took any
+  password that wasn't empty.
+- The `password` schema of the user source replaces the `password` property of
+  the model, such as `createEntityUserSource(Admin, { password })`. The actions
+  of `defineUserActions()` and `definePasswordWrites()` check new passwords
+  with it.
 - The session saves after the action if it changed, even when the action throws.
   So used challenges and codes stay used. A session that a parallel request
   ended stays ended.
@@ -648,8 +659,9 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   [`createPasskeys()`](api/server/auth.md#createpasskeys) and
   [`createTotp()`](api/server/auth.md#createtotp).
 - `config.app.authentication.passwordReset` becomes
-  [`createPasswordReset()`](api/server/auth.md#createpasswordreset), with times
-  in milliseconds.
+  [`createPasswordReset()`](api/server/auth.md#createpasswordreset). It takes
+  `secrets` instead of `app.keys`, and `send` instead of
+  `sendPasswordReset()`.
 - When the app deletes users, it calls `credentials.deleteUsers()`, see
   [Credentials](guide/server/auth.md#credentials).
 
@@ -688,6 +700,10 @@ export const assets = createAssets({
 - Each controller has one upload action, `post upload/:path{.+}`, see
   [Uploads](api/server/storage.md#uploads). Its `uploads` option takes the
   fields that no asset path describes.
+- Uploads still stream into their storage. S3 storages upload them in parts of
+  8 MB.
+- `limits.fileSize` becomes `maxSize`, the limit of each file. It also takes a
+  size with a unit, such as `'500mb'`.
 - File objects are plain objects of the type `AssetFile`, without signatures. A
   write accepts the files that the `asset` table holds, see
   [Writes](api/server/storage.md#writes).
@@ -718,7 +734,7 @@ app.route('/admin', admin)
 ```
 
 - With `vite`, the host runs on `serve()`. Without it, the admin serves the
-  build of `dist`.
+  build of `dist`. `createAdmin()` throws if the build is missing.
 - `authorize` protects the admin's views, which the build puts below `views/`.
   Other chunks go below `assets/`.
 - The admin's build splits off only the chunk of the views. The `core`, `vendor`
@@ -739,10 +755,10 @@ app.route('/admin', admin)
   hyphenated names, unless their schema sets a `path`, and uploads send their
   data paths as they are.
 - `users` takes only `path`, as `users: { path: 'admins' }`.
-- Requests reject with an `ApiError` of `@ditojs/admin`, which has the fields of the JSON body, the
-  `status` and the `response`. Code that read `error.response.data`, such as the
-  `onError()` of a button, reads the fields on the error, such as
-  `error.errors`.
+- Requests reject with an `ApiError` of `@ditojs/admin`, which has the fields
+  of the JSON body, the `status` and the `response`. Code that read
+  `error.response.data`, such as the `onError()` of a button, reads the fields
+  on the error, such as `error.errors`.
 
 **The clients.** Dito.js 7 keeps the lists with `range=0,49` and
 `order=name desc`, the 201 with `Location` of the default `post`, the
@@ -752,14 +768,12 @@ integer ids. GET actions may write. A GET action that writes sets its own
 
 These things change. The admin of Dito.js 7 already handles them:
 
-- Filters read their arguments as strings: `filter=published:true` gives
-  `'true'`, and several arguments give an array of strings.
-- `?fields=` and `?scope=` are gone. Select options come from `choices` routes,
-  and scopes of admin lists send their filters.
-- Joined values are nested rows instead of flat names.
-- There are no `<name>Id` keys. A client that read or wrote `authorId` uses
-  `author.id`: responses send `author: { id: 12 }`, writes send the same, and
-  `order` and filters name `author.id`.
+- Filters convert their arguments to what their schema expects, as query
+  values, instead of reading their JSON types. So `filter=code:12` gives `'12'`
+  to a `z.string()` filter.
+- Lists, records and writes take the shapes of
+  [step 6](#6-turn-scopes-into-find-shapes), such as `author: { id: 12 }`
+  instead of `authorId`.
 - A list returns at most 1000 rows. A larger list needs `range`, or a higher
   `maxRows` in its find, such as `defineListHandler({ maxRows: 5000 })`.
 - Unknown filters, and `order` on columns that the rows don't return, respond
@@ -924,16 +938,14 @@ baseline can then drop its checks of knex's table, and always run the SQL.
   MikroORM's `OptimisticLockError` responds with 409, but only for races inside
   one request. Apps that need locking check a value such as `updatedAt` in a
   mixin.
-- **Pivot entities need a composite key.** With an id of its own, MikroORM
-  orders a pivot table by it, writes kept pairs again without their other
-  columns, and upserts pairs twice. `defineMikroConfig()` warns of them.
 - **New pivot rows with columns.** A handler that creates the pivot entity of a
   new pair next to the relation that links the pair gets two inserts of the same
   row. Write the pivot rows as owned rows instead, or link the pair, flush, then
   set the columns of the pivot row.
 - **Replacing a partly loaded owned row.** A flush inserts before it deletes,
   unless it sees that a new row takes the unique value of a deleted row. If the
-  old row was loaded without that column, the insert fails and the write answers 409. Load the column, or give the new row another value first.
+  old row was loaded without that column, the insert fails and the write
+  responds with 409. Load the column, or give the new row another value first.
 - **Removes and filters.** A flush loads the owned rows of a removed row without
   filters. A collection that is already loaded under a filter stays as it is, so
   the rows that the filter hides aren't deleted, and the delete rule decides.

@@ -196,8 +196,9 @@ paths and storages.
 
 - `adapter` is the adapter of `createApi()`, such as
   [`createMikroAdapter(orm)`](mikro.md#createmikroadapter).
-- `deleteUnusedAfter` is in milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). By default, it is `false`, which skips the
-  release.
+- `deleteUnusedAfter` is in milliseconds, or a duration string such as `'24h'`,
+  see [`parseDuration()`](../utils.md#parseduration). By default, it is `false`,
+  which skips the release.
 - `maxSize` is the size limit of the uploads that don't set their own.
 - `createAssets()` throws for asset paths whose storage `storages` doesn't have.
   `defineUploads()` does the same for `uploads`.
