@@ -1,9 +1,13 @@
 import { Hono, type Context } from 'hono'
-import { getMimeType } from 'hono/utils/mime'
 import { validator } from 'hono/validator'
 import type { z } from 'zod'
 import { asArray, isArray, isFunction } from '@ditojs/utils'
-import { resolveController, type ResolvedAction } from './compose.ts'
+import {
+  compareRanks,
+  rank,
+  resolveController,
+  type ResolvedAction
+} from './compose.ts'
 import { isController } from './define.ts'
 import { convertQuery } from './query.ts'
 import {
@@ -205,57 +209,6 @@ async function readBody(c: Context) {
   } catch {
     throw new HttpError(400, { message: 'The body is invalid JSON.' })
   }
-}
-
-export interface SendFileOptions {
-  filename?: string
-  // Default: the type of the file's extension.
-  type?: string
-  // Shows the file in the browser, instead of downloading it.
-  inline?: boolean
-}
-
-// Returns a response with a file, also from a stream such as a Node `Readable`.
-export function sendFile(
-  c: Context,
-  body: BodyInit | AsyncIterable<Uint8Array>,
-  { filename, type, inline = false }: SendFileOptions
-) {
-  return c.body(body as never, 200, {
-    'Content-Type': (
-      type ??
-      (filename && getMimeType(filename)) ??
-      'application/octet-stream'
-    ),
-    'Content-Disposition': getDisposition(inline, filename)
-  })
-}
-
-function getDisposition(inline: boolean, filename?: string) {
-  const type = inline ? 'inline' : 'attachment'
-  if (!filename) return type
-  // The plain name is for clients that don't read `filename*`.
-  const plainName = filename.replace(/[^\x20-\x7e]|["\\]/g, '_')
-  const encodedName = encodeURIComponent(filename)
-  return `${type}; filename="${plainName}"; filename*=UTF-8''${encodedName}`
-}
-
-// The rank of each segment, by how much it matches: 0 for static ones, 1 for
-// parameters with a pattern, 2 for plain parameters, and 3 for wildcards and
-// patterns that match any text, such as `:path{.+}`.
-function rank(path: string) {
-  return path.split('/').map(segment => {
-    if (segment === '*' || /^:.*\{\.[+*]\}$/.test(segment)) return 3
-    if (segment[0] !== ':') return 0
-    return segment.includes('{') ? 1 : 2
-  })
-}
-
-function compareRanks(a: number[], b: number[]) {
-  for (let i = 0; i < Math.min(a.length, b.length); i++) {
-    if (a[i] !== b[i]) return a[i]! - b[i]!
-  }
-  return 0
 }
 
 // The path of a route with the names of parameters left out, so that two

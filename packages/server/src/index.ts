@@ -16,12 +16,8 @@ export type {
   User
 } from './types.ts'
 export { defineAction, defineController, defineMixin } from './define.ts'
-export {
-  createApi,
-  isAuthorized,
-  sendFile,
-  type SendFileOptions
-} from './api.ts'
+export { createApi, isAuthorized } from './api.ts'
+export { sendFile, type SendFileOptions } from './sendFile.ts'
 export { hostMiddleware, type HostMiddlewareOptions } from './host.ts'
 export {
   HttpError,
