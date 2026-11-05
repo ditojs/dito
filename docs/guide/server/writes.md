@@ -46,17 +46,23 @@ They keep what a client may write. They check what Postgres can't check well:
   `em.create()` would turn a string such as `"false"` into `true` for a boolean.
   `em.assign()` would throw at the first wrong value, without its path in the
   body.
+- They check the `length` of strings, in characters.
+- They check that decimals have no more integer digits than their `precision`
+  and `scale` leave.
+- They refuse empty strings in required columns, which aren't nullable and have
+  no default. Dito.js 6 did this with `required`.
 - They run the schemas of custom types, see [Rules on values](#rules-on-values).
 - They collect every error, each at its path in the body, such as
-  `sections/2/title`. The `keyword` is `invalid_type` or `invalid_value`.
+  `sections/2/title`. The `keyword` is `invalid_type`, `invalid_value`,
+  `too_big` or `too_small`.
 - They respond with 400, see
   [Validation errors](../../api/server/errors.md#validation-errors).
 
-Postgres checks lengths, ranges and formats when the base flushes, see
-[Database errors](../../api/server/mikro.md#database-errors). These errors name
-the field where Postgres names the column. A value that is too long or out of
-range responds with 400 without a field. For limits that clients see at their
-fields, give the action a `body` schema, see
+Postgres checks the ranges of numbers and its constraints when the base
+flushes, see [Database errors](../../api/server/mikro.md#database-errors). These
+errors name the field where Postgres names the column. A number out of range
+responds with 400 without a field. For limits that clients see at their fields,
+give the action a `body` schema, see
 [Stricter input](validation.md#stricter-input).
 
 ### Rules on values

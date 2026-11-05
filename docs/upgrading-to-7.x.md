@@ -519,11 +519,12 @@ A write runs the action's `body` schema, `deserialize`, the checks of the body
 and the app's rules, see [Writes](guide/server/writes.md). Then it flushes once.
 
 - **The checks of the body replace Ajv.** They read the entity's metadata, see
-  [The checks of a body](guide/server/writes.md#the-checks-of-a-body). Postgres
-  checks the rest, such as lengths. For stricter rules, give the action a Zod
-  `body` schema, such as `'post': { body: postSchema }`. The writes of a website
-  need one. The messages name the expected type, such as `expected int` for
-  integer columns.
+  [The checks of a body](guide/server/writes.md#the-checks-of-a-body). They
+  check lengths, empty required strings and the digits of decimals. Postgres
+  checks the rest, such as the ranges of numbers. For stricter rules, give the
+  action a Zod `body` schema, such as `'post': { body: postSchema }`. The writes
+  of a website need one. The messages name the expected type, such as
+  `expected int` for integer columns.
 - **`deserialize({ json, record, c })`** decides what a user may write. It
   replaces `$parseJson()`, the read-only rules of properties, and the
   `before:*:patch` hooks that changed the body. Custom handlers don't run it.

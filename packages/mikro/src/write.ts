@@ -9,6 +9,7 @@ import {
   parsePlainDate
 } from '@ditojs/utils'
 import {
+  DecimalType,
   ReferenceKind,
   wrap,
   type EntityMetadata,
@@ -148,6 +149,22 @@ class Run {
       path,
       code: 'invalid_type',
       message: `Invalid input: expected ${expected}, received ${received}`
+    })
+  }
+
+  tooBig(expected: string, path: Path) {
+    this.issues.push({
+      path,
+      code: 'too_big',
+      message: `Too big: expected ${expected}`
+    })
+  }
+
+  tooSmall(expected: string, path: Path) {
+    this.issues.push({
+      path,
+      code: 'too_small',
+      message: `Too small: expected ${expected}`
     })
   }
 
@@ -299,11 +316,12 @@ class Run {
     return id
   }
 
-  // Checks the type of a scalar and the items of an enum. Postgres checks
-  // ranges and lengths.
+  // Checks the type of a scalar, the items of an enum, and the bounds that the
+  // column declares, which Postgres would refuse without a field. Postgres
+  // checks the ranges of numbers.
   cleanScalar(prop: EntityProperty, value: unknown, path: Path) {
     const type = getType(prop)
-    const { items } = prop
+    const { items, length, precision, scale = 0 } = prop
     if (scalarChecks[type]?.(value) === false) {
       return this.invalidType(type, value, path)
     }
@@ -313,6 +331,25 @@ class Run {
         `Invalid option: expected one of ${options}`,
         path
       )
+    }
+    if (prop.customType instanceof DecimalType && precision) {
+      // Postgres rounds the fraction to the scale, but refuses more integer
+      // digits than the precision leaves:
+      const limit = 10 ** (precision - scale)
+      const number = Number(value)
+      if (number >= limit) return this.tooBig(`number to be <${limit}`, path)
+      if (number <= -limit) {
+        return this.tooSmall(`number to be >${-limit}`, path)
+      }
+    } else if (type === 'string' && isString(value)) {
+      // Postgres counts the characters of a string, not its UTF-16 units.
+      if (length && [...value].length > length) {
+        return this.tooBig(`string to have <=${length} characters`, path)
+      }
+      // As the `required` of Dito.js 6, a required string can't be empty.
+      if (value === '' && isRequired(prop)) {
+        return this.tooSmall('string to have >=1 characters', path)
+      }
     }
     const { schema } = (prop.customType ?? {}) as { schema?: z.ZodType }
     if (schema) {

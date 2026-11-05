@@ -37,6 +37,9 @@ const SampleSchema = defineEntity({
   properties: {
     id: p.integer().primary(),
     text: p.string().nullable(),
+    code: p.string().length(4).nullable(),
+    note: p.string().default(''),
+    price: p.decimal().precision(5).scale(2).nullable(),
     count: p.integer().nullable(),
     ratio: p.double().nullable(),
     flag: p.boolean().nullable(),
@@ -171,6 +174,50 @@ describe('the checks of a body', () => {
     expect(await issues(createRecord(em, Sample, { count: '1' }))).toEqual({
       count: 'Invalid input: expected int, received string'
     })
+  })
+
+  it('checks the lengths of strings in characters', async () => {
+    const em = orm.em.fork()
+    expect(await issues(createRecord(em, Sample, { code: 'abcde' }))).toEqual({
+      code: 'Too big: expected string to have <=4 characters'
+    })
+    const sample = await createRecord(em, Sample, { code: '😀😀😀😀' })
+    await em.flush()
+    expect(sample.code).toBe('😀😀😀😀')
+  })
+
+  it('refuses empty strings in required columns', async () => {
+    const em = orm.em.fork()
+    const message = 'Too small: expected string to have >=1 characters'
+    expect(await issues(createRecord(em, Book, { name: '' }))).toEqual({
+      name: message
+    })
+    const book = await createRecord(em, Book, { name: 'Book' })
+    await em.flush()
+    expect(await issues(assignRecord(em, book, { name: '' }))).toEqual({
+      name: message
+    })
+  })
+
+  it('takes empty strings in columns with a default', async () => {
+    const em = orm.em.fork()
+    const sample = await createRecord(em, Sample, { note: '', text: '' })
+    await em.flush()
+    expect(sample).toMatchObject({ note: '', text: '' })
+  })
+
+  it('checks the integer digits of decimals', async () => {
+    const em = orm.em.fork()
+    expect(
+      await issues(createRecord(em, Sample, { price: '1000.5' }))
+    ).toEqual({ price: 'Too big: expected number to be <1000' })
+    expect(
+      await issues(createRecord(em, Sample, { price: '-1000' }))
+    ).toEqual({ price: 'Too small: expected number to be >-1000' })
+    const sample = await createRecord(em, Sample, { price: '999.991' })
+    await em.flush()
+    await em.refresh(sample)
+    expect(sample.price).toBe('999.99')
   })
 
   it('reads plain dates as local midnight', async () => {

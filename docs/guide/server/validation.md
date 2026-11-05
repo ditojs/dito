@@ -54,10 +54,10 @@ properties: {
 ```
 
 The checks of a body know the entity's properties. They check required columns,
-the JSON types of scalars, and enums, see
-[The checks of a body](writes.md#the-checks-of-a-body). Postgres checks lengths,
-ranges and formats. Its errors respond with 400 without a field. Put other rules
-on the column's custom type as a schema, see
+the JSON types of scalars, enums, the lengths of strings and the digits of
+decimals, see [The checks of a body](writes.md#the-checks-of-a-body). Postgres
+checks the ranges of numbers. Its errors respond with 400 without a field. Put
+other rules, such as formats, on the column's custom type as a schema, see
 [Rules on values](writes.md#rules-on-values).
 
 A schema that throws responds with 400 at the property, with the `keyword`
