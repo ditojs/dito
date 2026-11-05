@@ -47,9 +47,9 @@ actions: {
 A controller's `path` may hold parameters too, such as
 `pages/:pageId/child-pages`. Its handlers read them in `params`.
 
-### Member actions
+### Record actions
 
-A path that starts with `:id` is a member action. Its handlers read the id in
+A path that starts with `:id` is a record action. Its handlers read the id in
 `params.id`, and middleware with `c.req.param('id')`. In a model controller,
 `id` of the context is the id converted to the type of the primary key, a number
 for integer keys. An id that doesn't fit responds with 404. `getRecord()` loads
@@ -67,7 +67,7 @@ actions: {
 }
 ```
 
-`:id` is reserved for member actions and can't be part of a controller's `path`.
+`:id` is reserved for record actions and can't be part of a controller's `path`.
 
 ### `true` and objects
 
@@ -95,9 +95,9 @@ A handler gets one object, its context:
 | `params`         | The parameters of the path.                                                                                   |
 | `user`           | `{ id, roles }` of the signed-in user, or `null`.                                                             |
 | `action`         | The key of the action, such as `'post :id/publish'`.                                                          |
-| `id`             | In model controllers, the id of a member action.                                                              |
+| `id`             | In model controllers, the id of a record action.                                                              |
 | `entity`         | In model controllers, the entity class. `em.getMetadata(entity)` has its metadata.                            |
-| `getRecord()`    | In model controllers, the record of a member action.                                                          |
+| `getRecord()`    | In model controllers, the record of a record action.                                                          |
 | `find(options?)` | The controller's records, through its `find`, see [find()](entities.md#custom-actions).                       |
 | `list(options?)` | The controller's list, see [Lists](entities.md#lists).                                                        |
 | `getListQuery()` | The `where`, `orderBy` and `range` of the list, see [getListQuery()](../../api/server/mikro.md#getlistquery). |

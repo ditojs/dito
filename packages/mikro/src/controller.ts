@@ -58,7 +58,7 @@ export interface ModelControllerDefinition<T extends object = any>
   find?: Find<T>
   // The filters of the list, `filter=name:args`, see `filters.ts`.
   filters?: Record<string, Filter>
-  // Loads the record of a member action, in place of the controller's `find`
+  // Loads the record of a record action, in place of the controller's `find`
   // with the id. It gets the id as sent, also one that isn't a key, such as
   // `self`. `null` or `undefined` responds with 404.
   load?: (context: {

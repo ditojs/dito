@@ -56,7 +56,7 @@ The keys of [`ControllerDefinition`](controllers.md#controllerdefinition), and:
 | `entity`  | `EntityClass`                                    | The entity of the controller.                                                                                                                                                                           |
 | `find`    | [`Find`](#find)                                  | What the controller loads and returns, or a function of Hono's context `c` that returns it.                                                                                                             |
 | `filters` | `Record<string, Filter>`                         | What `filter=name:args` may narrow in lists, see [Filters](#filters).                                                                                                                                   |
-| `load`    | `({ c, id }) => Promise<T \| null \| undefined>` | Loads the record of a member action in place of the default, which loads it through `find`. `null` or `undefined` responds with 404. It gets the id as sent, also one that isn't a key, such as `self`. |
+| `load`    | `({ c, id }) => Promise<T \| null \| undefined>` | Loads the record of a record action in place of the default, which loads it through `find`. `null` or `undefined` responds with 404. It gets the id as sent, also one that isn't a key, such as `self`. |
 
 ### Default handlers
 
@@ -79,7 +79,7 @@ handlers and the middleware of the layers. `authorize` runs before them.
 
 | Variable         | Description                                                                                                                                                                                                                                  |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | The id of a member action, converted by the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. With `load`, it stays a string, such as `self`. `params.id` is always the string of the path.          |
+| `id`             | The id of a record action, converted by the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. With `load`, it stays a string, such as `self`. `params.id` is always the string of the path.          |
 | `entity`         | The entity class of the controller. Its metadata is `em.getMetadata(entity)`, such as its `tableName`.                                                                                                                                       |
 | `getRecord()`    | Loads the record of the id once per request, through `load` or `find`. A missing record responds with 404. On other actions, it returns the record that a handler set with [`setRecord()`](#setrecord), such as the one that `post` creates. |
 | `find()`         | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                |

@@ -4,7 +4,7 @@ import type { HttpError } from './errors.ts'
 
 // A controller is a plain object with one map of `actions`, keyed
 // `'verb path'`, such as `get`, `get :id` or `post :id/publish`. A path that
-// starts with `:id` is a member action. Paths use Hono's syntax. A handler gets
+// starts with `:id` is a record action. Paths use Hono's syntax. A handler gets
 // one object, its context, with Hono's context as `c` and the handler beneath
 // as `next`. Middleware reads Dito's variables from `c.var`.
 

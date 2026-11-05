@@ -21,7 +21,7 @@ export const books = defineModelController({
   actions: {
     'get': true,
     'post': true,
-    // Opening the new book needs the member actions.
+    // Opening the new book needs the record actions.
     'get :id': true,
     'patch :id': true,
     'delete :id': true,

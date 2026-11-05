@@ -157,7 +157,7 @@ describe('routing', () => {
     })
   })
 
-  it('passes any id to the member actions as a string', async () => {
+  it('passes any id to the record actions as a string', async () => {
     const api = setup([
       {
         path: 'fonts',

@@ -657,7 +657,7 @@ describe('get :id', () => {
     }
   })
 
-  it('gives member actions the id of the primary key', async () => {
+  it('gives record actions the id of the primary key', async () => {
     const api = setup(
       books({
         actions: {
@@ -2179,7 +2179,7 @@ describe('writes', () => {
 describe('actions', () => {
   const api = setup(books())
 
-  it('runs a member action on the loaded row, and flushes it', async () => {
+  it('runs a record action on the loaded row, and flushes it', async () => {
     const { status, json } = await request(
       api,
       'POST',
@@ -2522,7 +2522,7 @@ describe('layers', () => {
     expect((await request(api, 'GET', '/api/books/1')).status).toBe(404)
   })
 
-  it('throws for `getRecord()` outside member actions', async () => {
+  it('throws for `getRecord()` outside record actions', async () => {
     const errors: unknown[] = []
     const api = new Hono().route(
       '/api',
@@ -2539,7 +2539,7 @@ describe('layers', () => {
     expect((await request(api, 'GET', '/api/books/one')).status).toBe(500)
     expect(errors[0]).toMatchObject({
       message: (
-        'getRecord() has no record here: only member actions load one, and ' +
+        'getRecord() has no record here: only record actions load one, and ' +
         'other actions need a handler that calls `setRecord()`'
       )
     })

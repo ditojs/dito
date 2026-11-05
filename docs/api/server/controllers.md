@@ -56,9 +56,9 @@ Returns the definition. A `MixinDefinition` has all keys of a
 or `delete`, then a space and the path below the controller's path, if any:
 `get`, `post`, `get :id`, `post :id/publish`, `get by-name/:name`.
 
-- A path that starts with `:id` is a member action. Its context holds the id in
+- A path that starts with `:id` is a record action. Its context holds the id in
   `params.id`, and in [model controllers](mikro.md#variables) the converted id
-  as `id`. `:id` is reserved for member actions.
+  as `id`. `:id` is reserved for record actions.
 - Paths use Hono's syntax: `:name` matches one segment, and `:name{.+}` one or
   more. Both become `params.name`.
 
@@ -160,7 +160,7 @@ authorize:
 - `true` lets anyone in.
 - Roles grant access if `c.var.user.roles` holds any of them.
 - A function of Hono's context `c` and the `user` decides, and only `true`
-  grants access. It reads the id of a member action with `c.req.param('id')`. It runs before the transaction and the middleware of the
+  grants access. It reads the id of a record action with `c.req.param('id')`. It runs before the transaction and the middleware of the
   layers, so it loads what it checks itself.
 
 A denied request responds with 401 without a user, and with 403 with one.

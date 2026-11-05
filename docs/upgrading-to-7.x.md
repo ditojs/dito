@@ -480,7 +480,7 @@ and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
 | `ctx.ip`                                     | `getClientAddress(c)` of `@ditojs/server/node`                                          |
 | `ctx.session`                                | `session` of the context, or `getSession(c)` of `@ditojs/auth`                          |
 | `ctx.action`                                 | `action` of the context, the key such as `'post :id/publish'`; `c.var.action`           |
-| `ctx.action.type`                            | `params.id !== undefined` for member actions; `c.req.method`                            |
+| `ctx.action.type`                            | `params.id !== undefined` for record actions; `c.req.method`                            |
 
 - Handlers return data or a `Response`. Data responds with 200 and `undefined`
   responds with 204, also for `post`. A custom `post` that creates calls

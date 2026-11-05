@@ -38,7 +38,7 @@ import { getOutput, type Output } from './serialize.ts'
 
 declare module '@ditojs/server' {
   interface DitoVariables {
-    // In model controllers: the id of a member action, converted to the type of
+    // In model controllers: the id of a record action, converted to the type of
     // the primary key, so a number for integer keys. An id that doesn't fit
     // responds with 404, and stays a string with `load`, such as `self`.
     id: any
@@ -164,7 +164,7 @@ export class ModelRequest<T extends object = any> {
     const id = c.req.param('id')
     if (id === undefined) {
       throw new Error(
-        'getRecord() has no record here: only member actions load one, and ' +
+        'getRecord() has no record here: only record actions load one, and ' +
         'other actions need a handler that calls `setRecord()`'
       )
     }
