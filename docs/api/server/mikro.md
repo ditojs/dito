@@ -107,7 +107,7 @@ deserialize?: ({ json, record, c }) => unknown
   for a single record. It doesn't run when there are no records. It can load
   what `serialize` needs in one query.
 - `serialize` shapes each outgoing record of the controller. The layers run it
-  in layer loan.
+  in layer order.
 - `deserialize` shapes the body of the default `post` and `patch :id`. The
   layers run it in the reverse order.
 
@@ -307,7 +307,7 @@ getListQuery(find?: FindShape & { query?: URLSearchParams | Record<string, strin
 ```js
 async 'get export'({ em, getListQuery, c }) {
   const { where, orderBy } = await getListQuery()
-  const rows = await em.find(Order, where, { orderBy })
+  const rows = await em.find(Loan, where, { orderBy })
   return sendFile(c, toCsv(rows), { filename: 'loans.csv' })
 }
 ```
@@ -498,7 +498,7 @@ assignRecord<T>(em: EntityManager, record: T, data: unknown): Promise<T>
 
 Assigns a body to a record and returns the record, as `patch :id` does after
 `deserialize`. Only the fields that `data` sends change. Its arrays of owned
-rows are the full set. Relations link by id. In loan, it:
+rows are the full set. Relations link by id. In this order, it:
 
 1. runs the checks of the body;
 2. loads the owned rows and the many-to-many collections that `data` writes, in

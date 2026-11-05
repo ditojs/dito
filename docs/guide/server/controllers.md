@@ -167,7 +167,7 @@ for the handlers beneath it, but not for the handlers above it.
 An action's `query` and `body` are [Zod schemas](validation.md). Dito validates
 the request with them before the handler runs. Invalid input responds with 400
 and the issues. The output of the schemas becomes `query` and `body` of the
-input. `defineAction()` gives them their types in the handler.
+handler's context. `defineAction()` gives them their types in the handler.
 
 Dito converts the strings of query values to the numbers, booleans, dates and
 arrays that the schema expects, see

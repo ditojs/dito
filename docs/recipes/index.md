@@ -12,10 +12,10 @@ and the controllers passed to `createApi()`.
 
 ## Admin
 
-| Recipe                                                    | Problem                                                                 |
-| --------------------------------------------------------- | ----------------------------------------------------------------------- |
-| [Computed values](./computed-values.md)                   | Show a value derived from others, e.g. a loan total, without saving it. |
-| [Select from edited items](./select-from-edited-items.md) | Pick one of the items that the same form edits, including new ones.     |
+| Recipe                                                    | Problem                                                                           |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [Computed values](./computed-values.md)                   | Show a value derived from others, e.g. an acquisition's total, without saving it. |
+| [Select from edited items](./select-from-edited-items.md) | Pick one of the items that the same form edits, including new ones.               |
 
 ## Admin and server
 

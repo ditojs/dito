@@ -52,7 +52,7 @@ lines, medium one module of the app, and high every model or every controller.
 | Graph writes: `upsertGraph()`, `relate`, `#id`, `#ref`                                 | Nested writes of owned relations, `createRecord()`, `assignRecord()`                                                                                                                                               | medium                  |
 | `Controller`, `ModelController`, `RelationController`, `collection`, `member`, `allow` | `defineController()` and `defineModelController()` with one `actions` map, mixins, `crud`                                                                                                                          | high                    |
 | Controller hooks, `parameters`, `returns`, `transacted`                                | Handlers that call `next()`, middleware of mixins, `query` and `body` schemas, `transacted: true`                                                                                                                  | high                    |
-| Koa's `ctx` in handlers and middleware                                                 | The handler's context, `{ query, body, params, user, em, action, record, find, list, c, next }`, with Hono's context `c`, see [step 8](#8-rewrite-the-controllers)                                                 | high                    |
+| Koa's `ctx` in handlers and middleware                                                 | The handler's context, `{ query, body, params, user, em, action, getRecord, find, list, c, next }`, with Hono's context `c`, see [step 8](#8-rewrite-the-controllers)                                              | high                    |
 | `ResponseError` and its subclasses, `app.logError()`                                   | `HttpError`, `toHttpError()` of the adapter, and the `onError` hook, which logs by default                                                                                                                         | low                     |
 | Koa middleware, `config.http`                                                          | Hono middleware on the host: `hostMiddleware()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`                                                                                      | low                     |
 | `app.proxy`, `config.server.proxy`                                                     | `forwarded(proxy)` of `@ditojs/server/node`, and `getClientAddress(c)` for the client's address                                                                                                                    | low                     |
@@ -651,7 +651,7 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 - `post login` and `post password-reset` name the user as `username` in the
   body, whatever the property is. `get session` becomes `get self`, which
   responds with the user, or `null`.
-- `self` in member routes, such as `PATCH users/self`, isn't built in. A
+- `self` in record actions, such as `PATCH users/self`, isn't built in. A
   controller that keeps it sets `load`, which gets the id as a string, see
   [Handlers and the context](#handlers-and-the-context).
 - `definePasswordWrites()` doesn't ask for confirmed access. An app that asked

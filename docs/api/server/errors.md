@@ -72,7 +72,7 @@ new HttpError(status: number, options?: object)
 
 ```js
 throw new HttpError(404)
-throw new HttpError(409, { message: 'The loan is already paid.' })
+throw new HttpError(409, { message: 'The book is already on loan.' })
 throw new HttpError(403, {
   message: 'Please confirm your password.',
   confirmationRequired: true
@@ -96,7 +96,7 @@ Its properties are `status`, `message`, `type`, `code`, `errors` and `data`.
 ```ts
 createErrorHandler({
   onError?: ({ error, c }: { error: unknown; c: Context }) => void | Promise<void>,
-  toHttpError?: (error: unknown, c: Context) => HttpError | undefined
+  toHttpError?: (error: unknown, c: DitoContext) => HttpError | undefined
 }?): ErrorHandler
 ```
 
