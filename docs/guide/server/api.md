@@ -142,9 +142,9 @@ and maps MikroORM's errors:
 adapter: createMikroAdapter(orm)
 ```
 
-Handlers get the entity manager as `db` of their input, which is the
+Handlers get the entity manager as `em` of their input, which is the
 transaction's while one runs. Middleware and other code that has Hono's context
-use `getEntityManager(c)` of `@ditojs/mikro`.
+read it as `c.var.em`, which `import '@ditojs/mikro/types'` types.
 
 Writes run in a transaction unless their action sets `transacted: false`. Reads
 run in one only if they set `transacted: true`. The transaction covers the
@@ -202,7 +202,7 @@ not with a leading `*`.
 
 ## Variables
 
-Dito sets its variables in Hono's context: `c.var.user`, `c.var.db`,
+Dito sets its variables in Hono's context: `c.var.user`, `c.var.em`,
 `c.var.action`, the key of the action, and `c.var.body` for writes. Model
 controllers add `c.var.id`, `c.var.entity`, `c.var.getRecord()`, `c.var.find()`,
 `c.var.list()` and `c.var.getListQuery()`. Middleware sets the app's own with

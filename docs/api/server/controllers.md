@@ -112,7 +112,7 @@ type Handler = (input: HandlerInput) => unknown
 ```
 
 A handler gets the [input](api.md#the-handlers-input) of the request,
-`{ query, body, params, user, db, action, c, next }`, and destructures what it
+`{ query, body, params, user, em, action, c, next }`, and destructures what it
 needs. `c` is Hono's context. `next()` runs the handler that this one replaces,
 and returns its result.
 
@@ -240,6 +240,6 @@ comma-separated lists and no nested keys.
     published: z.boolean().optional(),
     tags: z.array(z.string()).max(10).optional()
   }),
-  handler: ({ db, query: { term, limit } }) => search(db, term, limit)
+  handler: ({ em, query: { term, limit } }) => search(em, term, limit)
 })
 ```

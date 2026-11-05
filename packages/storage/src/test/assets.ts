@@ -32,7 +32,7 @@ export const paths: AssetPath[] = [
   { table: 'book', column: 'notes', path: '**.file', storage: 'covers' }
 ]
 
-export const getDb = (c: DitoContext) => c.var.db as Kysely<any>
+export const getDb = (c: DitoContext) => c.var.em as Kysely<any>
 
 export function setupAssetTests() {
   beforeAll(async () => {
@@ -144,12 +144,12 @@ export const handleAdapter: Adapter = {
   connect: () => ({ getKysely: () => db }),
   transaction: (c, fn) =>
     db.transaction().execute(async trx => {
-      const previous = c.var.db
-      c.set('db', { getKysely: () => trx })
+      const previous = c.var.em
+      c.set('em', { getKysely: () => trx })
       try {
         return await fn()
       } finally {
-        c.set('db', previous)
+        c.set('em', previous)
       }
     })
 }

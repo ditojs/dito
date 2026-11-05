@@ -68,13 +68,13 @@ function setup(
 }
 
 // A transaction that records its steps instead of opening one. It sets
-// `c.var.db` to 'trx' during `fn`.
+// `c.var.em` to 'trx' during `fn`.
 function createTransaction() {
   const log: string[] = []
   const transaction: Transaction = async (c, fn) => {
     log.push('begin')
-    const { db } = c.var
-    c.set('db', 'trx')
+    const { em } = c.var
+    c.set('em', 'trx')
     try {
       const result = await fn()
       log.push('commit')
@@ -83,7 +83,7 @@ function createTransaction() {
       log.push('rollback')
       throw error
     } finally {
-      c.set('db', db)
+      c.set('em', em)
     }
   }
   return { transaction, log }
@@ -549,7 +549,7 @@ describe('composition', () => {
       [
         {
           path: 'fonts',
-          actions: { get: ({ db, user, session }) => [db, user?.id, session] }
+          actions: { get: ({ em, user, session }) => [em, user?.id, session] }
         }
       ],
       {
@@ -1140,13 +1140,13 @@ describe('transactions', () => {
           path: 'fonts',
           authorize: true,
           middleware: async (c, next) => {
-            log.push(`middleware ${c.var.db ?? 'none'}`)
+            log.push(`middleware ${c.var.em ?? 'none'}`)
             await next()
           },
           actions: {
-            'get': ({ db }) => db ?? null,
-            'post': ({ db }) => db,
-            'get fresh': { transacted: true, handler: ({ db }) => db },
+            'get': ({ em }) => em ?? null,
+            'post': ({ em }) => em,
+            'get fresh': { transacted: true, handler: ({ em }) => em },
             'post log': { transacted: false, handler: () => null }
           }
         }
@@ -1174,7 +1174,7 @@ describe('transactions', () => {
         {
           path: 'fonts',
           transacted: true,
-          actions: { get: ({ db }) => db }
+          actions: { get: ({ em }) => em }
         },
         {
           path: 'files',
@@ -1182,7 +1182,7 @@ describe('transactions', () => {
           mixins: [mixin],
           actions: {
             'post': () => null,
-            'post import': { transacted: true, handler: ({ db }) => db }
+            'post import': { transacted: true, handler: ({ em }) => em }
           }
         }
       ],
@@ -1269,16 +1269,16 @@ describe('transactions', () => {
     expect(response.data.message).toBe('Commit failed')
   })
 
-  it('sets `db` from `connect`, which the transaction swaps', async () => {
+  it('sets `em` from `connect`, which the transaction swaps', async () => {
     const log: string[] = []
     const transaction: Transaction = async (c, fn) => {
-      const { db } = c.var
-      c.set('db', `trx of ${db}`)
+      const { em } = c.var
+      c.set('em', `trx of ${em}`)
       try {
         return await fn()
       } finally {
-        c.set('db', db)
-        log.push(`after ${c.var.db}`)
+        c.set('em', em)
+        log.push(`after ${c.var.em}`)
       }
     }
     const connect = vi.fn((c: DitoContext) => `db ${c.req.method}`)
@@ -1287,7 +1287,7 @@ describe('transactions', () => {
         {
           path: 'fonts',
           authorize: true,
-          actions: { get: ({ db }) => db, post: ({ db }) => db }
+          actions: { get: ({ em }) => em, post: ({ em }) => em }
         }
       ],
       { transaction, connect }
@@ -1298,10 +1298,10 @@ describe('transactions', () => {
     expect(connect).toHaveBeenCalledTimes(2)
   })
 
-  it('keeps `db` in a transaction that does not set it', async () => {
+  it('keeps `em` in a transaction that does not set it', async () => {
     const transaction: Transaction = (_c, fn) => fn()
     const api = setup(
-      [{ path: 'fonts', authorize: true, actions: { post: ({ db }) => db } }],
+      [{ path: 'fonts', authorize: true, actions: { post: ({ em }) => em } }],
       { transaction, connect: () => 'db' }
     )
     expect(await json(api, 'POST', '/api/fonts')).toBe('db')

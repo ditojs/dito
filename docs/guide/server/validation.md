@@ -22,7 +22,7 @@ import { z } from 'zod'
     rating: z.int().min(1).max(5),
     text: z.string().max(2000)
   }),
-  handler: ({ db, body, query }) => addReview(db, body, query.notify)
+  handler: ({ em, body, query }) => addReview(em, body, query.notify)
 })
 ```
 

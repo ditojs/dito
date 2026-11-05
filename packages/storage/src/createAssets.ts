@@ -13,7 +13,7 @@ import type { StorageRegistry } from './StorageRegistry.ts'
 import { uploadRoutes, type AssetUpload } from './assetUploads.ts'
 
 // Binds the asset handling to an app's adapter, asset paths and storages. The
-// mixins use the Kysely of the request's handle, `c.var.db`, so that the
+// mixins use the Kysely of the request's handle, `c.var.em`, so that the
 // `asset` rows of a write commit with its transaction. The other methods use
 // the Kysely of the adapter, outside of the requests' transactions.
 
@@ -39,7 +39,7 @@ export function createAssets({
   deleteUnusedAfter = false
 }: CreateAssetsOptions) {
   const getDb = (c: DitoContext) =>
-    (c.var.db as { getKysely(): Kysely<any> }).getKysely()
+    (c.var.em as { getKysely(): Kysely<any> }).getKysely()
 
   return {
     paths,

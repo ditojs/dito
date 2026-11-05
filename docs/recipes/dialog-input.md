@@ -30,10 +30,10 @@ export const books = defineModelController({
         isbn: z.string().regex(/^97[89]\d{10}$/),
         stock: z.int().min(0).default(1)
       }),
-      async handler({ body: { isbn, stock }, db }) {
+      async handler({ body: { isbn, stock }, em }) {
         // `lookUpBook()` stands for your catalog's API.
         const { title, summary } = await lookUpBook(isbn)
-        return createRecord(db, Book, {
+        return createRecord(em, Book, {
           isbn,
           title,
           summary,

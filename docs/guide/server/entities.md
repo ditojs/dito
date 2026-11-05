@@ -321,9 +321,9 @@ list with the filters and the `order` of the URL, for queries over its rows,
 such as a summary or an export:
 
 ```js
-async 'get summary'({ db, getListQuery }) {
+async 'get summary'({ em, getListQuery }) {
   const { where } = await getListQuery()
-  return { total: await db.count(Article, where) }
+  return { total: await em.count(Article, where) }
 }
 ```
 
@@ -341,14 +341,14 @@ async 'get :id/related'({ getRecord, find }) {
 }
 ```
 
-Other queries go through the request's entity manager, `db` of the input. During
+Other queries go through the request's entity manager, `em` of the input. During
 a write, this is the transaction's entity manager. Middleware and other code
-that has Hono's context get it with `getEntityManager(c)`:
+that has Hono's context read it as `c.var.em`:
 
 ```js
-async 'post :id/publish'({ getRecord, db }) {
+async 'post :id/publish'({ getRecord, em }) {
   const edition = await getRecord()
-  await db.nativeUpdate(
+  await em.nativeUpdate(
     Edition,
     { id: { $ne: edition.id } },
     { published: false }

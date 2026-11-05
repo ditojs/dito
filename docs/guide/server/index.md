@@ -106,14 +106,14 @@ database. Invalid data responds with 400 and an error for each field.
 
 1. Hono's router finds the action of the method and path. Paths that no action
    matches go to the app's `notFound()`.
-2. The API's `middleware` runs, such as sessions. Then Dito sets `c.var.db`
+2. The API's `middleware` runs, such as sessions. Then Dito sets `c.var.em`
    through the adapter and `c.var.user` with `getUser`.
 3. The action's `authorize` lets the user in, or responds with 401 or 403.
 4. The action's schemas check the query and the JSON body.
 5. Writes open a transaction.
 6. The middleware of the controller, its mixins and the action runs. A model
    controller's base sets `getRecord()` and `find()` first.
-7. The handler runs with its input, such as `{ query, body, params, user, db }`.
+7. The handler runs with its input, such as `{ query, body, params, user, em }`.
    Dito saves its result, serializes it and sends it as JSON.
 
 Errors in any step respond with [JSON](../../api/server/errors.md). Errors with

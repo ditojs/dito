@@ -5,6 +5,7 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./types": "./src/types.ts",
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -43,6 +44,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./types": {
+        "types": "./dist/types.d.ts",
+        "import": "./dist/types.js"
       },
       "./package.json": "./package.json"
     },

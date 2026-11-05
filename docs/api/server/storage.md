@@ -164,7 +164,7 @@ createAssets(options: {
 Returns the asset handling of an app, bound to its adapter, asset paths and
 storages. `adapter` is the one of `createApi()`, such as
 [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). The mixins use the
-Kysely of the request's handle, `c.var.db.getKysely()`, so that the `asset` rows
+Kysely of the request's handle, `c.var.em.getKysely()`, so that the `asset` rows
 of a write commit with its transaction. The other methods use
 `adapter.getKysely()`, outside of the requests' transactions.
 `deleteUnusedAfter` is in milliseconds. By default, `false` skips the release.

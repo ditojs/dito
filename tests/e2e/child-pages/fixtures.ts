@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { defineAction } from '@ditojs/server'
-import { assignRecord, getEntityManager } from '@ditojs/mikro'
+import { assignRecord } from '@ditojs/mikro'
 import { defineScenario } from '../../utils/fixture-app.js'
 import { Page } from './models/Page.js'
 
@@ -18,8 +18,7 @@ export const test = defineScenario({
           body: z.array(
             z.looseObject({ id: z.number(), order: z.number().nullable() })
           ),
-          handler: async ({ body, c }) => {
-            const em = getEntityManager(c)
+          handler: async ({ body, em }) => {
             const pages = []
             for (const { id, order } of body) {
               const page = await em.findOneOrFail(Page, id)

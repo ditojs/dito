@@ -15,6 +15,7 @@ import {
   type User
 } from '@ditojs/server'
 import { createMikroAdapter } from '@ditojs/mikro'
+import '@ditojs/mikro/types'
 import type { Options } from '@mikro-orm/postgresql'
 import {
   createAdmin,

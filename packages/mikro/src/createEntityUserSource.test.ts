@@ -44,7 +44,7 @@ const source = createEntityUserSource(Account, {
 // A context outside of the API, and one of a request with its entity manager.
 const outside = { var: {} } as Context
 const inRequest = (em = orm.em.fork()) =>
-  ({ var: { db: em } }) as unknown as Context
+  ({ var: { em } }) as unknown as Context
 
 let active: Account
 let inactive: Account

@@ -26,9 +26,9 @@ import {
   type ListParams,
   type ListQuery
 } from './listQuery.ts'
+import { getEntityManager } from './createMikroAdapter.ts'
 import { getPrimaryKey } from './metadata.ts'
 import { getOutput, type Output } from './serialize.ts'
-import { getEntityManager } from './createMikroAdapter.ts'
 
 // One request of a model controller, created by the middleware of the base
 // layer. That middleware runs inside the transaction, so `em` is the
@@ -43,7 +43,7 @@ declare module '@ditojs/server' {
     // responds with 404, and stays a string with `load`, such as `self`.
     id: any
     // In model controllers: the entity class of the controller. Its metadata is
-    // `db.getMetadata(entity)`.
+    // `em.getMetadata(entity)`.
     entity: EntityClass<any>
     // In model controllers: loads the record of the id once per request. On
     // other actions, it returns the record that a handler set with

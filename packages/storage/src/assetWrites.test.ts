@@ -55,15 +55,15 @@ describe('storeAsset()', () => {
   })
 })
 
-// Sets `c.var.db` to the transaction during `fn`, as ORM packages do.
+// Sets `c.var.em` to the transaction during `fn`, as ORM packages do.
 const kyselyTransaction: Transaction = (c, fn) =>
   db.transaction().execute(async trx => {
-    const previous = c.var.db
-    c.set('db', trx)
+    const previous = c.var.em
+    c.set('em', trx)
     try {
       return await fn()
     } finally {
-      c.set('db', previous)
+      c.set('em', previous)
     }
   })
 

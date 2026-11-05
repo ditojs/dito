@@ -1,5 +1,4 @@
-import type { Context } from 'hono'
-import type { Adapter, DitoEnv } from '@ditojs/server'
+import type { Adapter, DitoContext } from '@ditojs/server'
 import type { EntityManager as CoreEntityManager } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
 import type { Kysely } from 'kysely'
@@ -13,7 +12,7 @@ interface Orm {
 }
 
 // The `adapter` of `createApi()`. Each request gets a fork of the entity
-// manager as `c.var.db`, which is the transaction's entity manager during a
+// manager as `c.var.em`, which is the transaction's entity manager during a
 // transaction.
 export function createMikroAdapter(
   orm: Orm
@@ -22,18 +21,18 @@ export function createMikroAdapter(
     throw new Error('Create the ORM with the config of `defineMikroConfig()`.')
   }
   return {
-    connect: () => orm.em.fork(),
+    connect: () => orm.em.fork() as unknown as EntityManager,
     // MikroORM flushes the entity manager before it commits, and rolls back
     // when `fn` throws.
     transaction: async (c, fn) => {
       const em = getEntityManager(c)
       try {
         return await em.transactional(async trx => {
-          c.set('db', trx)
+          c.set('em', trx)
           return fn()
         })
       } finally {
-        c.set('db', em)
+        c.set('em', em)
       }
     },
     toHttpError: (error, c) =>
@@ -48,10 +47,5 @@ export function createMikroAdapter(
   }
 }
 
-// The entity manager of the request.
-export const getEntityManager = (c: Context<DitoEnv>) =>
-  c.var.db as EntityManager
-
-// The Kysely of the request's entity manager, which runs in its transaction.
-export const getKysely = (c: Context<DitoEnv>) =>
-  getEntityManager(c).getKysely() as unknown as Kysely<any>
+// The entity manager of the request, typed also without `@ditojs/mikro/types`.
+export const getEntityManager = (c: DitoContext) => c.var.em as EntityManager

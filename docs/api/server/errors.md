@@ -96,7 +96,7 @@ createErrorHandler({
 The error handler for Hono's `app.onError()`, for the errors outside of Dito
 APIs, such as those of the app's own routes and middleware. A Dito API handles
 its own errors the same way. `toHttpError()` first maps the error, such as the
-`toHttpError()` of a `db` adapter. Then:
+`toHttpError()` of the adapter. Then:
 
 - An `HttpError` responds with [its body](#the-body).
 - An error with a numeric `status` between 400 and 599, such as the errors of

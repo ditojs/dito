@@ -30,10 +30,10 @@ The key is `'verb'` or `'verb path'`. The verbs are `get`, `post`, `put`,
 
 ```js
 actions: {
-  'get': ({ db }) => listBooks(db),
-  'get by-isbn/:isbn': ({ db, params }) => findByIsbn(db, params.isbn),
+  'get': ({ em }) => listBooks(em),
+  'get by-isbn/:isbn': ({ em, params }) => findByIsbn(em, params.isbn),
   'get files/:path{.+}': ({ params }) => readFile(params.path),
-  'post import': ({ db, body }) => importBooks(db, body)
+  'post import': ({ em, body }) => importBooks(em, body)
 }
 ```
 
@@ -96,12 +96,12 @@ A handler gets one argument, the input of the request, a plain object:
 | `user`           | `{ id, roles }` of the signed-in user, or `null`.                                                             |
 | `action`         | The key of the action, such as `'post :id/publish'`.                                                          |
 | `id`             | In model controllers, the id of a member action.                                                              |
-| `entity`         | In model controllers, the entity class. `db.getMetadata(entity)` has its metadata.                            |
+| `entity`         | In model controllers, the entity class. `em.getMetadata(entity)` has its metadata.                            |
 | `getRecord()`    | In model controllers, the record of a member action.                                                          |
 | `find(options?)` | The controller's records, through its `find`, see [find()](entities.md#custom-actions).                       |
 | `list(options?)` | The controller's list, see [Lists](entities.md#lists).                                                        |
 | `getListQuery()` | The `where`, `orderBy` and `range` of the list, see [getListQuery()](../../api/server/mikro.md#getlistquery). |
-| `db`             | The request's database handle, or the transaction's.                                                          |
+| `em`             | The request's database handle, or the transaction's.                                                          |
 | `c`              | Hono's context.                                                                                               |
 | `next()`         | Runs the handler beneath, and returns its result.                                                             |
 
@@ -136,7 +136,7 @@ this one replaces, and returns its result:
 ```js
 actions: {
   // Stores a PDF of the book after the default handler assigned the body.
-  'patch :id': async ({ db, next }) => storePdf(db, await next()),
+  'patch :id': async ({ em, next }) => storePdf(em, await next()),
   async 'delete :id'({ getRecord, next }) {
     const book = await getRecord()
     if (book.published) {
@@ -160,7 +160,7 @@ input. `defineAction()` gives them their types in the handler:
 ```js
 'get search': defineAction({
   query: z.object({ term: z.string(), limit: z.number().int().default(20) }),
-  handler: ({ db, query: { term, limit } }) => search(db, term, limit)
+  handler: ({ em, query: { term, limit } }) => search(em, term, limit)
 })
 ```
 
@@ -251,7 +251,7 @@ defineModelController({
     'post :id/extend': { authorize: 'superuser', handler: extend },
     'get :id/notice': {
       async authorize(c) {
-        const loan = await c.var.db.findOne(Loan, Number(c.req.param('id')))
+        const loan = await c.var.em.findOne(Loan, Number(c.req.param('id')))
         return loan?.member.id === c.var.user?.id
       },
       handler: sendNotice
@@ -339,7 +339,7 @@ values that the entity's `find` can't express:
 
 ```js
 async serialize(c, book, json) {
-  return { ...json, reviews: await countReviews(c.var.db, book.id) }
+  return { ...json, reviews: await countReviews(c.var.em, book.id) }
 }
 ```
 
@@ -367,7 +367,7 @@ const counts = new WeakMap()
 
 defineMixin({
   async beforeSerialize(c, books) {
-    const reviews = await c.var.db.find(Review, { book: { $in: books } })
+    const reviews = await c.var.em.find(Review, { book: { $in: books } })
     for (const book of books) {
       counts.set(book, reviews.filter(review => review.book === book).length)
     }

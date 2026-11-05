@@ -35,7 +35,7 @@ import type { StorageRegistry } from './StorageRegistry.ts'
 // the files of the body in place, so handlers read the stored files. Other
 // values at these paths respond with 400.
 
-// Returns the Kysely of the request, such as one on `c.var.db`, so that the
+// Returns the Kysely of the request, such as one on `c.var.em`, so that the
 // `asset` rows of a write commit with its transaction.
 export type AssetDb = (c: DitoContext) => Kysely<any>
 

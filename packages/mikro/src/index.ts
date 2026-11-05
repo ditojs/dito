@@ -27,11 +27,7 @@ export {
   type JsonTypeAsset,
   type JsonTypeOptions
 } from './SchemaJsonType.ts'
-export {
-  createMikroAdapter,
-  getEntityManager,
-  getKysely
-} from './createMikroAdapter.ts'
+export { createMikroAdapter } from './createMikroAdapter.ts'
 export {
   createEntityUserSource,
   type EntityUserSourceOptions

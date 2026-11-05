@@ -35,7 +35,7 @@ export function createEntityUserSource<U extends { id: number | string }>(
   }: EntityUserSourceOptions<U>
 ) {
   const getEm = (c: Context): EntityManager => {
-    if (c.var.db) return c.var.db
+    if (c.var.em) return c.var.em
     const root = isFunction(em) ? em() : em
     if (!root) {
       throw new Error(

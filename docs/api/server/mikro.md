@@ -16,10 +16,9 @@ import {
   getAssetPaths,
   defineMikroConfig,
   createMikroAdapter,
-  getEntityManager,
-  getKysely,
   createEntityUserSource
 } from '@ditojs/mikro'
+import '@ditojs/mikro/types'
 ```
 
 Model controllers on [MikroORM](https://mikro-orm.io) 7 entities, for
@@ -81,7 +80,7 @@ handlers and the middleware of the layers. `authorize` runs before them.
 | Variable         | Description                                                                                                                                                                                                                                  |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`             | The id of a member action, converted by the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. With `load`, it stays a string, such as `self`. `params.id` is always the string of the path.          |
-| `entity`         | The entity class of the controller. Its metadata is `db.getMetadata(entity)`, such as its `tableName`.                                                                                                                                       |
+| `entity`         | The entity class of the controller. Its metadata is `em.getMetadata(entity)`, such as its `tableName`.                                                                                                                                       |
 | `getRecord()`    | Loads the record of the id once per request, through `load` or `find`. A missing record responds with 404. On other actions, it returns the record that a handler set with [`setRecord()`](#setrecord), such as the one that `post` creates. |
 | `find()`         | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                |
 | `list()`         | Runs the list of the controller, see [list()](#list).                                                                                                                                                                                        |
@@ -290,9 +289,9 @@ exports. MikroORM's default entity filters apply to these queries, but the
 `filters` of `find` don't.
 
 ```js
-async 'get export'({ db, getListQuery, c }) {
+async 'get export'({ em, getListQuery, c }) {
   const { where, orderBy } = await getListQuery()
-  const rows = await db.find(Order, where, { orderBy })
+  const rows = await em.find(Order, where, { orderBy })
   return sendFile(c, toCsv(rows), { filename: 'loans.csv' })
 }
 ```
@@ -553,10 +552,10 @@ createMikroAdapter(orm: MikroORM): Adapter & { getKysely(): Kysely<any> }
 
 Returns the `adapter` of [`createApi()`](api.md#adapter).
 
-- `connect()` forks the entity manager for each request. The fork becomes `db`
-  of the handler's input, and `c.var.db`.
+- `connect()` forks the entity manager for each request. The fork becomes `em`
+  of the handler's input, and `c.var.em`.
 - `transaction` runs the action in a transaction of the request's entity
-  manager. While it runs, `db` is the transaction's entity manager. When the
+  manager. While it runs, `em` is the transaction's entity manager. When the
   action throws, the transaction rolls back.
 - `toHttpError()` maps MikroORM's errors, see
   [Database errors](#database-errors).
@@ -569,23 +568,17 @@ const orm = new MikroORM(defineMikroConfig({ entities }))
 app.route('/api', createApi({ controllers, adapter: createMikroAdapter(orm) }))
 ```
 
-## getEntityManager()
+## @ditojs/mikro/types
 
-```ts
-getEntityManager(c: Context): EntityManager
+```js
+import '@ditojs/mikro/types'
 ```
 
-Returns the request's entity manager, `c.var.db`, typed, for middleware and
-filters. Handlers read `db` of their input.
-
-## getKysely()
-
-```ts
-getKysely(c: Context): Kysely<any>
-```
-
-Returns the Kysely instance of the request's entity manager, which runs in its
-transaction, for queries that MikroORM doesn't build.
+Types `em` of the handlers and `c.var.em` as MikroORM's `EntityManager` of
+`@mikro-orm/sql`, for apps written in TypeScript. One import anywhere in the app
+types them everywhere. `em.getKysely()` returns the Kysely of the request's
+entity manager, which runs in its transaction, for queries that MikroORM doesn't
+build.
 
 ## createEntityUserSource()
 

@@ -298,11 +298,11 @@ import { adminSource } from './auth.js'
 // In the actions of the users controller:
 'patch self': {
   authorize: true,
-  async handler({ body: { email }, db, c }) {
+  async handler({ body: { email }, em, c }) {
     const user = await getSession(c).getUser(adminSource)
     if (!user) throw new HttpError(401)
-    await assignRecord(db, user, { email })
-    await db.flush()
+    await assignRecord(em, user, { email })
+    await em.flush()
     return adminSource.serialize(c, user)
   }
 }

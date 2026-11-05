@@ -292,7 +292,7 @@ import { assignRecord, createRecord } from '@ditojs/mikro'
 
 'put reservation': defineAction({
   body: reservationSchema,
-  async handler({ db: em, body, session }) {
+  async handler({ em, body, session }) {
     const current = await findReservation(em, session)
     const loan = current
       ? await assignRecord(em, current, body)
@@ -309,4 +309,4 @@ The base flushes once after the handler, and loads the records of the result
 again.
 
 A handler that needs the values that the flush sets, such as the new id, flushes
-itself with `await db.flush()`.
+itself with `await em.flush()`.

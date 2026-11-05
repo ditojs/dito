@@ -10,8 +10,7 @@ import {
 import {
   assignRecord,
   createEntityUserSource,
-  createMikroAdapter,
-  getEntityManager
+  createMikroAdapter
 } from '@ditojs/mikro'
 import { HttpError, type Handler } from '@ditojs/server'
 import type { TestApi } from './app.js'
@@ -61,11 +60,10 @@ export function createUsersApi<U extends TestUser>({
     ...options
   })
   // Users change their own values, but not the password or its hash.
-  const patchSelf: Handler = async ({ body, c }) => {
+  const patchSelf: Handler = async ({ body, em, c }) => {
     const user = await getSession(c).getUser(source)
     if (!user) throw new HttpError(401)
     const { password, hash, ...values } = body ?? {}
-    const em = getEntityManager(c)
     await assignRecord(em, user, values)
     await em.flush()
     return source.serialize(c, user)

@@ -7,7 +7,7 @@ holds its key, and takes its properties from there, so clients can't make up
 files or change their URLs.
 
 The package reads and writes its own tables through
-[Kysely](https://kysely.dev). In a request, that's the Kysely of `c.var.db`,
+[Kysely](https://kysely.dev). In a request, that's the Kysely of `c.var.em`,
 outside of requests the one that `getKysely()` of the adapter returns, such as
 `createMikroAdapter(orm)` of `@ditojs/mikro`.
 
@@ -103,7 +103,7 @@ export const assets = createAssets({
 })
 ```
 
-The mixins use the Kysely of `c.var.db`, so that the `asset` rows of imported
+The mixins use the Kysely of `c.var.em`, so that the `asset` rows of imported
 files commit with the write's transaction. Uploads run without a transaction and
 commit their rows at once. The other methods use `adapter.getKysely()`, outside
 of the requests' transactions.

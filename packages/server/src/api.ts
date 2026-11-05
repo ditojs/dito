@@ -29,7 +29,7 @@ import type {
 
 // Builds a Hono app of the controllers, which the app routes with
 // `app.route('/api', api)`. A request runs the API's `middleware`, sets
-// `c.var.db` and `c.var.user`, then runs the middleware of its action, see
+// `c.var.em` and `c.var.user`, then runs the middleware of its action, see
 // `getMiddleware()`. The handler runs last, inside the transaction and the
 // middleware. Paths that no action matches go on to the app's `notFound()`.
 
@@ -42,7 +42,7 @@ export function createApi({
 }: ApiConfig) {
   const app = new Hono<DitoEnv>()
   app.use(...asArray(middleware), async (c, next) => {
-    if (adapter.connect) c.set('db', await adapter.connect(c))
+    if (adapter.connect) c.set('em', await adapter.connect(c))
     c.set('user', (await getUser?.(c)) ?? null)
     await next()
   })

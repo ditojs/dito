@@ -17,14 +17,20 @@ export interface User {
   roles: string[]
 }
 
+// The handle of the database, which adapters type by augmenting
+// `DitoVariables`, such as `@ditojs/mikro/types`. A property of
+// `DitoVariables` itself couldn't change its type.
+interface DatabaseVariables {
+  // The database handle of the request, from `connect()` of the API's
+  // adapter, such as a fork of MikroORM's entity manager. During a
+  // transaction, the transaction's handle.
+  em: any
+}
+
 // The variables that Dito sets on Hono's context of each request.
-export interface DitoVariables {
+export interface DitoVariables extends DatabaseVariables {
   // The signed-in user, or null.
   user: User | null
-  // The database handle of the request, from `connect()` of the API's `db`,
-  // such as a fork of the entity manager. During a transaction, the
-  // transaction's handle.
-  db: any
   // The key of the action that runs, such as `get` or `post :id/publish`.
   action: string
   // The result of the `body` schema, else the JSON body of a write: `{}` when
@@ -131,7 +137,7 @@ export interface ControllerDefinition extends MixinDefinition {
   path: string
 }
 
-// Runs `fn` in a transaction, with the transaction's handle as `c.var.db`,
+// Runs `fn` in a transaction, with the transaction's handle as `c.var.em`,
 // and rolls back when `fn` throws.
 export type Transaction = <T>(
   c: DitoContext,
@@ -151,8 +157,10 @@ export interface HttpErrorBody {
 
 // The database of an API, such as `createMikroAdapter(orm)`.
 export interface Adapter {
-  // The database handle of a request, as `c.var.db`.
-  connect?: (c: DitoContext) => unknown
+  // The database handle of a request, as `c.var.em`.
+  connect?: (
+    c: DitoContext
+  ) => DitoVariables['em'] | Promise<DitoVariables['em']>
   // Runs the actions that need a transaction. Without it, none runs in one.
   transaction?: Transaction
   // The `HttpError` of a database error, or undefined for other errors.

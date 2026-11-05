@@ -23,7 +23,6 @@ import {
   defineListHandler,
   defineModelController,
   defineTextFilter,
-  getEntityManager,
   type FindShape,
   type ModelControllerDefinition
 } from './index.ts'
@@ -121,7 +120,7 @@ function books({
       'get :id': true,
       'delete :id': true,
       'get names': async ({ c }) => {
-        const rows = await getEntityManager(c).find(
+        const rows = await c.var.em.find(
           Book,
           {},
           {
@@ -305,7 +304,7 @@ describe('get', () => {
             schema: z.boolean(),
             async where(mine, c) {
               if (!mine) return undefined
-              const author = await getEntityManager(c).findOneOrFail(
+              const author = await c.var.em.findOneOrFail(
                 Author,
                 { name: c.var.user!.id as string }
               )
@@ -674,9 +673,9 @@ describe('get :id', () => {
     const api = setup(
       books({
         actions: {
-          'get table': ({ entity, db }) => ({
+          'get table': ({ entity, em }) => ({
             isBook: entity === Book,
-            table: db.getMetadata(entity).tableName
+            table: em.getMetadata(entity).tableName
           })
         }
       })
@@ -688,8 +687,7 @@ describe('get :id', () => {
   it('leaves ids that are no primary key to `load`', async () => {
     const api = setup(
       books({
-        load: (c, id) =>
-          getEntityManager(c).findOne(Book, id === 'self' ? 1 : +id),
+        load: (c, id) => c.var.em.findOne(Book, id === 'self' ? 1 : +id),
         actions: {
           'get :id': true,
           'get :id/id': async ({ id, getRecord }) => ({
@@ -973,14 +971,14 @@ describe('c.var.getListQuery()', () => {
         find: { where: { published: true }, orderBy: { name: 'desc' } },
         filters: { name: defineTextFilter() },
         actions: {
-          async 'get summary'({ db, getListQuery }) {
+          async 'get summary'({ em, getListQuery }) {
             const { where, orderBy, range } = await getListQuery()
-            const rows = await db.find(Book, where, {
+            const rows = await em.find(Book, where, {
               fields: ['id'],
               orderBy
             })
             return {
-              ids: rows.map((row: Book) => row.id),
+              ids: rows.map(row => row.id),
               count: rows.length,
               range
             }
@@ -1088,7 +1086,7 @@ describe('output', () => {
         authorize: true,
         entity: Part,
         actions: {
-          'get :id': async ({ getRecord, db: em }) => {
+          'get :id': async ({ getRecord, em }) => {
             const part = await getRecord<Part>()
             await em.populate(part, ['book', 'chapters'] as never[])
             return part
@@ -1113,7 +1111,7 @@ describe('output', () => {
         entity: Part,
         actions: {
           // Only the id of `info` is known, as a reference.
-          'get book': ({ db: em }) =>
+          'get book': ({ em }) =>
             em.findOneOrFail(Book, 1, { populate: ['info:ref'] as never[] })
         }
       })
@@ -1126,7 +1124,7 @@ describe('output', () => {
     const records = setup(
       books({
         actions: {
-          'get :id': async ({ getRecord, db: em }) => {
+          'get :id': async ({ getRecord, em }) => {
             const book = await getRecord<Book>()
             await em.find(Info, {})
             expect(book.info).toBeDefined()
@@ -1361,7 +1359,7 @@ describe('output', () => {
     const api = setup(
       books({
         actions: {
-          'get graph': async ({ db: em }) => {
+          'get graph': async ({ em }) => {
             const award = await em.findOneOrFail(
               Award,
               { name: 'PEN' },
@@ -1537,9 +1535,9 @@ describe('writes', () => {
         actions: {
           // The record holds `notes`, which the shape leaves out, and which
           // the database changes after the record loaded.
-          async 'patch :id'({ id, db }) {
-            const book = await db.findOneOrFail(Book, id)
-            await db.execute(`update book set notes = 'New' where id = ${id}`)
+          async 'patch :id'({ id, em }) {
+            const book = await em.findOneOrFail(Book, id)
+            await em.execute(`update book set notes = 'New' where id = ${id}`)
             return book
           }
         }
@@ -2136,10 +2134,10 @@ describe('writes', () => {
     const api = setup(
       books({
         actions: {
-          'post batch': ({ db: em }) => {
+          'post batch': ({ em }) => {
             return [em.create(Book, { name: 'Gil' } as never)]
           },
-          'post page': ({ db: em }) => {
+          'post page': ({ em }) => {
             return {
               results: [em.create(Book, { name: 'Hal' } as never)],
               total: 1
@@ -2264,9 +2262,9 @@ describe('wrapping the default handlers', () => {
     const api = setup(
       books({
         actions: {
-          async 'patch :id'({ getRecord, db, next }) {
+          async 'patch :id'({ getRecord, em, next }) {
             const book = (await next()) as Book
-            await db.populate(book, ['awards'])
+            await em.populate(book, ['awards'])
             if (book.name.length < 3 && book.awards.length > 0) {
               throw createValidationError([
                 { path: ['name'], message: 'is too short for an award' }
@@ -2337,7 +2335,7 @@ describe('wrapping the default handlers', () => {
     const api = setup(
       books({
         actions: {
-          post: ({ db }) => db.create(Book, { name: 'Fay' } as never)
+          post: ({ em }) => em.create(Book, { name: 'Fay' } as never)
         }
       })
     )
@@ -2385,9 +2383,9 @@ describe('layers', () => {
       actions: {
         'patch :id': {
           authorize: 'admin',
-          async handler({ getRecord, db }) {
+          async handler({ getRecord, em }) {
             const row = await getRecord<Book>()
-            row.notes = `by ${db.isInTransaction() ? 'transaction' : 'none'}`
+            row.notes = `by ${em.isInTransaction() ? 'transaction' : 'none'}`
             return row
           }
         }
@@ -2510,7 +2508,7 @@ describe('layers', () => {
       books({
         load: async (c, id) =>
           id === 'first'
-            ? getEntityManager(c).findOne(Book, { name: 'Arcadia' })
+            ? c.var.em.findOne(Book, { name: 'Arcadia' })
             : null,
         find: { fields: ['name'] }
       })
@@ -2567,8 +2565,8 @@ describe('errors', () => {
     const api = setup(
       books({
         actions: {
-          'post own': ({ db }) => db.insert(Book, { name: null }),
-          'post other': ({ db }) => db.insert(Part, { name: 'Body', book: 0 })
+          'post own': ({ em }) => em.insert(Book, { name: null } as never),
+          'post other': ({ em }) => em.insert(Part, { name: 'Body', book: 0 })
         }
       })
     )
@@ -2589,7 +2587,7 @@ describe('transactions', () => {
     const api = setup(
       books({
         actions: {
-          'post fail': async ({ db: em }) => {
+          'post fail': async ({ em }) => {
             em.create(Award, { name: 'Lost', book: 1 })
             await em.flush()
             throw new Error('Failed')
@@ -2607,12 +2605,12 @@ describe('transactions', () => {
     const api = setup(
       books({
         actions: {
-          'get check': ({ db }) => {
-            managers.get = db as EntityManager
+          'get check': ({ em }) => {
+            managers.get = em
             return {}
           },
-          'post check': ({ db }) => {
-            managers.post = db as EntityManager
+          'post check': ({ em }) => {
+            managers.post = em
             return { transaction: !!managers.post.isInTransaction() }
           }
         }
@@ -2624,9 +2622,6 @@ describe('transactions', () => {
     await request(api, 'GET', '/api/books/check')
     expect(managers.get!.isInTransaction()).toBe(false)
     expect(managers.get).not.toBe(orm.em)
-    expect(getEntityManager({ var: { db: managers.get } } as never)).toBe(
-      managers.get
-    )
   })
   it('writes the row that `authorize` loads before the transaction', async () => {
     let checked: Book | undefined
@@ -2636,14 +2631,14 @@ describe('transactions', () => {
         actions: {
           'patch :id': {
             authorize: async c => {
-              const em = getEntityManager(c)
+              const em = c.var.em
               checked = await em.findOneOrFail(
                 Book,
                 Number(c.req.param('id'))
               )
               return !em.isInTransaction()
             },
-            async handler({ db: em, next }) {
+            async handler({ em, next }) {
               written = (await next()) as Book
               // The transaction's fork keeps the loaded entities.
               expect(em.isInTransaction()).toBe(true)
@@ -2700,7 +2695,7 @@ describe('createMikroAdapter()', () => {
   it('gives each request a fork of the entity manager', async () => {
     const api = createApi({
       controllers: [
-        { path: 'items', actions: { get: ({ db }) => db !== orm.em } }
+        { path: 'items', actions: { get: ({ em }) => em !== orm.em } }
       ],
       adapter: createMikroAdapter(orm)
     })

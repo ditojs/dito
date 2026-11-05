@@ -53,8 +53,8 @@ them.
 | Key           | Type                                           | Description                                                                                                                                                                             |
 | ------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `controllers` | `ControllerDefinition[] \| object`             | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, all other values are ignored. |
-| `middleware`  | `Middleware \| Middleware[]`                   | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.db` and `c.var.user`.                                                            |
-| `adapter`     | [`Adapter`](#adapter)                          | The database, [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `db` is undefined and no action runs in a transaction.                                              |
+| `middleware`  | `Middleware \| Middleware[]`                   | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.em` and `c.var.user`.                                                            |
+| `adapter`     | [`Adapter`](#adapter)                          | The database, [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined and no action runs in a transaction.                                              |
 | `getUser`     | `(c) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                |
 | `onError`     | `(error, c) => void \| Promise<void>`          | Called with each error with a status of 500 or above, for the app's logs. By default, logs through `c.var.logger`, else `console`. See [Errors](errors.md).                             |
 
@@ -64,14 +64,14 @@ For each request of an action, Hono and Dito:
 
 1. match the route. `HEAD` runs the `GET` action and sends no body;
 2. run the API's `middleware`;
-3. set `c.var.db` with `connect()` of `db`, and `c.var.user` with `getUser`;
+3. set `c.var.em` with `connect()` of the adapter, and `c.var.user` with `getUser`;
 4. set `c.var.action`, the key of the action;
 5. check the action's `authorize`, which responds with 401 without a user and
    403 with one;
 6. validate the query and the body with the action's schemas, through
    `validator()` of `hono/validator`;
 7. set `c.var.body` for writes, so invalid JSON fails before the transaction;
-8. open the transaction of `db`, for writes unless `transacted: false`, and for
+8. open the transaction of the adapter, for writes unless `transacted: false`, and for
    reads with `transacted: true`;
 9. run the `middleware` of the layers and of the action;
 10. run the handler with its input, and send the result, see
@@ -79,7 +79,7 @@ For each request of an action, Hono and Dito:
 
 Errors go to the API's error handler, which works like
 [`createErrorHandler()`](errors.md#createerrorhandler), with `onError` and
-`toHttpError()` of `db`. Hono handles an error where it is thrown, so the
+`toHttpError()` of the adapter. Hono handles an error where it is thrown, so the
 `await next()` of middleware returns, with the error in `c.error`. The
 transaction rolls back when `c.error` is set.
 
@@ -103,12 +103,12 @@ Dito builds the input for each request and each layer:
 | `body`   | For writes, the result of the action's `body` schema, or else the JSON body. An empty body and a body without `Content-Type` are `{}`, so a JSON body without it is dropped, and invalid JSON responds with 400. Bodies of other types, such as form data, are `undefined`, and handlers read them from `c.req`. |
 | `params` | The parameters of the path, by name, such as `params.id` of a member action.                                                                                                                                                                                                                                     |
 | `user`   | The signed-in user, or `null`.                                                                                                                                                                                                                                                                                   |
-| `db`     | The database handle of the request, from `connect()` of the `adapter`, such as a fork of the entity manager. During a transaction, the transaction's handle.                                                                                                                                                     |
+| `em`     | The database handle of the request, from `connect()` of the `adapter`, such as a fork of the entity manager. During a transaction, the transaction's handle.                                                                                                                                                     |
 | `action` | The key of the action that runs, such as `'get'` or `'post :id/publish'`.                                                                                                                                                                                                                                        |
 | `c`      | [Hono's context](controllers.md#ditocontext) of the request.                                                                                                                                                                                                                                                     |
 | `next`   | Runs the handler beneath, and returns its result. That handler sees the changes that this one makes to its input, such as a new `body`.                                                                                                                                                                          |
 
-`user`, `db`, `action` and `body` are also Hono variables, `c.var.user` and so
+`user`, `em`, `action` and `body` are also Hono variables, `c.var.user` and so
 on, which middleware and `authorize` read. They read parameters with
 `c.req.param()`, such as `c.req.param('id')`. The input also holds all other
 variables, such as `getRecord()`, `find()` and `list()` of [model
@@ -134,7 +134,7 @@ interface Adapter {
 ```
 
 The object that [`createMikroAdapter()`](mikro.md#createmikroadapter) returns.
-`connect()` returns the database handle of a request, which becomes `c.var.db`.
+`connect()` returns the database handle of a request, which becomes `c.var.em`.
 `transaction` runs the actions that need one. Without it, no action runs in a
 transaction. `toHttpError()` maps the database's errors to an `HttpError`, and
 returns `undefined` for others.
@@ -146,7 +146,7 @@ type Transaction = <T>(c: DitoContext, fn: () => Promise<T>) => Promise<T>
 ```
 
 Runs `fn` in a transaction, and rolls it back when `fn` throws. While `fn` runs,
-`c.var.db` is the transaction's handle.
+`c.var.em` is the transaction's handle.
 
 ## sendFile()
 
@@ -170,6 +170,6 @@ stream, such as a Node `Readable`. `Content-Disposition` is `attachment`, or
 `application/octet-stream`.
 
 ```js
-'get export': async ({ db, c }) =>
-  sendFile(c, await createCsv(db), { filename: 'loans.csv' })
+'get export': async ({ em, c }) =>
+  sendFile(c, await createCsv(em), { filename: 'loans.csv' })
 ```
