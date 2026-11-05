@@ -4,8 +4,7 @@ import { ListQuery } from './ListQuery.js'
 function createListQuery({
   routeQuery = {},
   storedQuery,
-  defaultQuery = { status: 'all', order: 'title asc' },
-  tabKeys = [],
+  defaultQuery = { scope: 'all', order: 'title asc' },
   isInRoute = true
 } = {}) {
   const onChange = vi.fn()
@@ -24,7 +23,6 @@ function createListQuery({
     getRoute: () => route,
     getSourceStore: () => store,
     getDefaultQuery: () => defaultQuery,
-    getTabKeys: () => tabKeys,
     isInRoute: () => isInRoute,
     onChange
   })
@@ -35,10 +33,10 @@ describe('ListQuery', () => {
   describe('query', () => {
     it('applies the defaults to the stored query', () => {
       const { listQuery } = createListQuery({
-        storedQuery: { status: 'drafts', page: '2' }
+        storedQuery: { scope: 'drafts', page: '2' }
       })
       expect(listQuery.query).toEqual({
-        status: 'drafts',
+        scope: 'drafts',
         order: 'title asc',
         page: '2'
       })
@@ -48,17 +46,17 @@ describe('ListQuery', () => {
   describe('update()', () => {
     it('navigates to the changed query', async () => {
       const { listQuery, router } = createListQuery({
-        storedQuery: { status: 'all', order: 'title asc' }
+        storedQuery: { scope: 'all', order: 'title asc' }
       })
       await listQuery.update({ order: 'title desc' })
       expect(router.push).toHaveBeenCalledWith({
-        query: { status: 'all', order: 'title desc' }
+        query: { scope: 'all', order: 'title desc' }
       })
     })
 
     it(`doesn't navigate if the query doesn't change`, async () => {
       const { listQuery, router } = createListQuery({
-        storedQuery: { status: 'all', order: 'title asc', page: '1' }
+        storedQuery: { scope: 'all', order: 'title asc', page: '1' }
       })
       // Route queries hold strings, see `isSameQuery()`:
       await listQuery.update({ page: 1 }, { resetPage: true })
@@ -69,9 +67,9 @@ describe('ListQuery', () => {
       const { listQuery, router } = createListQuery({
         storedQuery: { page: '3' }
       })
-      await listQuery.update({ status: 'drafts' }, { resetPage: true })
+      await listQuery.update({ scope: 'drafts' }, { resetPage: true })
       expect(router.push.mock.calls[0][0].query).toEqual({
-        status: 'drafts',
+        scope: 'drafts',
         order: 'title asc',
         page: 0
       })
@@ -79,22 +77,22 @@ describe('ListQuery', () => {
 
     it('stores the changed query of lists outside of routes', async () => {
       const { listQuery, router, store, onChange } = createListQuery({
-        storedQuery: { status: 'all', order: 'title asc' },
+        storedQuery: { scope: 'all', order: 'title asc' },
         isInRoute: false
       })
       await listQuery.update({ order: 'title desc' })
       expect(router.push).not.toHaveBeenCalled()
-      expect(store.query).toEqual({ status: 'all', order: 'title desc' })
+      expect(store.query).toEqual({ scope: 'all', order: 'title desc' })
       expect(onChange).toHaveBeenCalledOnce()
     })
 
     it('removes values that are changed to `undefined`', async () => {
       const { listQuery, router } = createListQuery({
-        storedQuery: { 'filter[title]': 'Emma' }
+        storedQuery: { filter: ['title:"Emma"'] }
       })
-      await listQuery.update({ 'filter[title]': undefined })
+      await listQuery.update({ filter: undefined })
       expect(router.push.mock.calls[0][0].query).toEqual({
-        status: 'all',
+        scope: 'all',
         order: 'title asc'
       })
     })
@@ -153,7 +151,7 @@ describe('ListQuery', () => {
       router.push.mockImplementation(() => new Promise(() => {}))
       listQuery.update({ page: 2 })
       expect(listQuery.whenNavigated()).not.toBe(null)
-      route.query = { status: 'all', order: 'title asc', page: '2' }
+      route.query = { scope: 'all', order: 'title asc', page: '2' }
       expect(listQuery.whenNavigated()).toBe(null)
     })
   })
@@ -162,28 +160,17 @@ describe('ListQuery', () => {
     it('merges the stored query and the route query', () => {
       const { listQuery, router, store } = createListQuery({
         routeQuery: { page: '2' },
-        storedQuery: { status: 'drafts', page: '1' }
+        storedQuery: { scope: 'drafts', page: '1' }
       })
       listQuery.syncWithRoute()
-      const query = { status: 'drafts', order: 'title asc', page: '2' }
+      const query = { scope: 'drafts', order: 'title asc', page: '2' }
       expect(store.query).toEqual(query)
       expect(router.replace).toHaveBeenCalledWith({ query })
     })
 
-    it('replaces the stored tab with the tab of the route', () => {
-      const { listQuery, store } = createListQuery({
-        routeQuery: { 'filter[state]': 'done' },
-        storedQuery: { 'filter[archived]': 'true', 'filter[latest]': 'true' },
-        defaultQuery: {},
-        tabKeys: ['filter[archived]', 'filter[latest]', 'filter[state]']
-      })
-      listQuery.syncWithRoute()
-      expect(store.query).toEqual({ 'filter[state]': 'done' })
-    })
-
     it(`doesn't replace the route if it holds the query`, () => {
       const { listQuery, router } = createListQuery({
-        routeQuery: { order: 'title asc', status: 'all' }
+        routeQuery: { order: 'title asc', scope: 'all' }
       })
       listQuery.syncWithRoute()
       expect(router.replace).not.toHaveBeenCalled()
@@ -193,12 +180,12 @@ describe('ListQuery', () => {
   describe('setFromRoute()', () => {
     it('stores the route query and returns whether it changed', () => {
       const { listQuery, store } = createListQuery({
-        storedQuery: { status: 'all', order: 'title asc', page: '2' }
+        storedQuery: { scope: 'all', order: 'title asc', page: '2' }
       })
       expect(listQuery.setFromRoute({ page: '2' })).toBe(false)
       expect(listQuery.setFromRoute({ page: '3' })).toBe(true)
       expect(store.query).toEqual({
-        status: 'all',
+        scope: 'all',
         order: 'title asc',
         page: '3'
       })
@@ -206,10 +193,10 @@ describe('ListQuery', () => {
 
     it('removes the values that the route query lacks', () => {
       const { listQuery, store } = createListQuery({
-        storedQuery: { 'filter[title]': 'Emma' }
+        storedQuery: { filter: ['title:"Emma"'] }
       })
       expect(listQuery.setFromRoute({})).toBe(true)
-      expect(store.query).toEqual({ status: 'all', order: 'title asc' })
+      expect(store.query).toEqual({ scope: 'all', order: 'title asc' })
     })
   })
 })

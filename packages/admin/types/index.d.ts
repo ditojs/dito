@@ -617,18 +617,21 @@ export interface SourceSettings<$Item> {
    */
   columns?: Columns<$Item> | (keyof $Item)[]
   /**
-   * Buttons that set list filters. `filter` holds the filters of a
-   * tab by name, sent as `filter[name]=value`. The first tab, or the
-   * one with `default: true`, is selected by default.
+   * Scope names as defined on the model. When set, the
+   * admin renders scope buttons allowing the user to
+   * switch between them while editing.
    */
-  filterTabs?: {
-    [tabName: string]: {
-      label?: string
-      hint?: string
-      filter?: Record<string, unknown>
-      default?: boolean
-    }
-  }
+  scopes?:
+    | string[]
+    | {
+        [scopeName: string]:
+          | {
+              label?: string
+              hint?: string
+              defaultScope?: boolean
+            }
+          | string
+      }
   /**
    * Use a Vue component to render the items.
    */
@@ -2187,8 +2190,8 @@ export type SchemaContext<$Item = any> = {
   /** Current URL query parameters. */
   readonly routeQuery: Record<string, string | (string | null)[]>
   /**
-   * The query of the nearest list, e.g. its page, order
-   * and filters, or `null` outside of lists, inside
+   * The query of the nearest list, e.g. its scope, page,
+   * order and filters, or `null` outside of lists, inside
    * forms and in `itemLabel()`.
    */
   readonly sourceQuery: Record<string, any> | null

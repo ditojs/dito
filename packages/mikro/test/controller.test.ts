@@ -219,34 +219,34 @@ describe('get', () => {
     expect(json[1].authors.map((it: any) => it.name)).toEqual(['Ada', 'Bea'])
   })
 
-  it('applies `filter[name]=value`', async () => {
+  it('applies `filter=name:args`', async () => {
     const get = async (query: string) =>
       names((await request(api, 'GET', `/api/books?${query}`)).json)
-    expect(await get('filter[name]=ir')).toEqual(['Circuits'])
-    expect(await get('filter[published]=false')).toEqual(['Burns'])
-    expect(await get('filter[name]=r&filter[published]=true')).toEqual([
+    expect(await get('filter=name:"ir"')).toEqual(['Circuits'])
+    expect(await get('filter=published:false')).toEqual(['Burns'])
+    expect(await get('filter=name:"r"&filter=published:true')).toEqual([
       'Arcadia',
       'Circuits'
     ])
-    expect(await get('filter[status]=draft')).toEqual(['Burns'])
-    expect(await get('filter[status]=all')).toEqual([
+    expect(await get('filter=status:"draft"')).toEqual(['Burns'])
+    expect(await get('filter=status:"all"')).toEqual([
       'Arcadia',
       'Burns',
       'Circuits'
     ])
   })
 
-  it('gives a filter the values of a repeated parameter', async () => {
+  it('gives a filter with several arguments an array', async () => {
     const both = await request(
       api,
       'GET',
-      '/api/books?filter[author]=Ada&filter[author]=Bea'
+      '/api/books?filter=author:"Ada","Bea"'
     )
-    const one = await request(api, 'GET', '/api/books?filter[author]=Bea')
+    const one = await request(api, 'GET', '/api/books?filter=author:"Bea"')
     const twice = await request(
       api,
       'GET',
-      '/api/books?filter[name]=A&filter[name]=B'
+      '/api/books?filter=name:"A","B"'
     )
     expect(names(both.json)).toEqual(['Arcadia', 'Burns'])
     expect(names(one.json)).toEqual(['Burns'])
@@ -254,11 +254,41 @@ describe('get', () => {
     expect(Object.keys(twice.json.errors)).toEqual(['name'])
   })
 
+  it('applies the filters of `scope=name` along with other filters', async () => {
+    const api = setup(
+      books({
+        scopes: {
+          all: {},
+          released: { published: true, status: 'published' },
+          byBoth: { author: ['Ada', 'Bea'] }
+        }
+      })
+    )
+    const get = async (query: string) =>
+      names((await request(api, 'GET', `/api/books?${query}`)).json)
+    expect(await get('scope=all')).toHaveLength(3)
+    expect(await get('scope=released')).toEqual(['Arcadia', 'Circuits'])
+    expect(await get('scope=byBoth')).toEqual(['Arcadia', 'Burns'])
+    expect(await get('scope=released&filter=name:"ir"')).toEqual(['Circuits'])
+    expect(await get('scope=released&filter=published:false')).toEqual([])
+  })
+
+  it('refuses unknown scopes', async () => {
+    const api = setup(books({ scopes: { all: {} } }))
+    for (const name of ['none', 'constructor']) {
+      const response = await request(api, 'GET', `/api/books?scope=${name}`)
+      expect(response).toMatchObject({
+        status: 400,
+        json: { message: `Unknown scope '${name}'` }
+      })
+    }
+  })
+
   it('validates each filter, and answers all errors at once', async () => {
     const { status, json } = await request(
       api,
       'GET',
-      '/api/books?filter[published]=maybe&filter[status]=x&filter[name]=A'
+      '/api/books?filter=published:"maybe"&filter=status:"x"&filter=name:"A"'
     )
     expect(status).toBe(400)
     expect(json).toMatchObject({
@@ -288,7 +318,7 @@ describe('get', () => {
     const { status, json } = await request(
       api,
       'GET',
-      '/api/books?filter[throws]=1&filter[rejects]=1'
+      '/api/books?filter=throws:1&filter=rejects:1'
     )
     expect(status).toBe(400)
     expect(json.errors).toEqual({
@@ -318,7 +348,7 @@ describe('get', () => {
     const { json } = await request(
       api,
       'GET',
-      '/api/books?filter[mine]=true',
+      '/api/books?filter=mine:true',
       undefined,
       'Bea'
     )
@@ -330,12 +360,12 @@ describe('get', () => {
     const none = await request(
       api,
       'GET',
-      '/api/books?filter[published]=false'
+      '/api/books?filter=published:false'
     )
     const some = await request(
       api,
       'GET',
-      '/api/books?filter[published]=true&filter[name]=ir'
+      '/api/books?filter=published:true&filter=name:"ir"'
     )
     expect(none.json).toEqual([])
     expect(names(some.json)).toEqual(['Circuits'])
@@ -358,11 +388,11 @@ describe('get', () => {
   })
 
   it('refuses unknown filters and orders', async () => {
-    const unknown = await request(api, 'GET', '/api/books?filter[none]=1')
+    const unknown = await request(api, 'GET', '/api/books?filter=none:1')
     const proto = await request(
       api,
       'GET',
-      '/api/books?filter[constructor]=1'
+      '/api/books?filter=constructor:1'
     )
     const order = await request(api, 'GET', '/api/books?order=secret')
     const relation = await request(api, 'GET', '/api/books?order=parts')
@@ -380,7 +410,7 @@ describe('get', () => {
       request(
         api,
         'GET',
-        `/api/books?filter[author]=Ada&filter[author]=Bea&range=${range}`
+        `/api/books?filter=author:"Ada","Bea"&range=${range}`
       )
     const first = await page('0,0')
     const second = await page('1,1')
@@ -525,7 +555,7 @@ describe('get', () => {
       expect(json).toHaveLength(count)
     }
     // Filters still apply.
-    const unknown = await request(api, 'GET', '/api/books/all?filter[x]=1')
+    const unknown = await request(api, 'GET', '/api/books/all?filter=x:1')
     expect(unknown.status).toBe(400)
     const ids = await request(api, 'GET', '/api/books/ids?order=name+desc')
     expect(ids.json).toEqual([3, 1])
@@ -737,7 +767,7 @@ describe('listHandler', () => {
     const filtered = await request(
       api,
       'GET',
-      '/api/books/choices?filter[name]=ad&range=0,9'
+      '/api/books/choices?filter=name:"ad"&range=0,9'
     )
     // `find.where` applies, `notes` stays excluded and only the relations of
     // `fields` go out.
@@ -874,10 +904,10 @@ describe('list filters', () => {
 
   it('matches text as the admin sends it', async () => {
     await sql(`update book set notes = '100% burns' where id = 3`)
-    expect(await names('filter[name]=ADI')).toEqual(['Arcadia'])
-    expect(await names('filter[name]=&filter[name]=urn')).toEqual(['Burns'])
+    expect(await names('filter=name:"ADI"')).toEqual(['Arcadia'])
+    expect(await names('filter=name:"","urn"')).toEqual(['Burns'])
     const operator = (name: string, text: string) =>
-      `filter[name]=${name}&filter[name]=${text}`
+      `filter=name:"${name}","${text}"`
     expect(await names(operator('starts-with', 'b'))).toEqual(['Burns'])
     expect(await names(operator('ends-with', 'TS'))).toEqual(['Circuits'])
     expect(await names(operator('equals', 'burn'))).toEqual([])
@@ -885,11 +915,11 @@ describe('list filters', () => {
     expect(await names(operator('contains', 'r'))).toHaveLength(3)
     expect(await names(operator('like', 'r'))).toBe(400)
     // Several properties, and no wildcards in the text.
-    expect(await names('filter[text]=burns')).toEqual(['Burns', 'Circuits'])
-    expect(await names('filter[text]=100%25')).toEqual(['Circuits'])
-    expect(await names('filter[text]=_')).toEqual([])
+    expect(await names('filter=text:"burns"')).toEqual(['Burns', 'Circuits'])
+    expect(await names('filter=text:"100%25"')).toEqual(['Circuits'])
+    expect(await names('filter=text:"_"')).toEqual([])
     // An empty text skips the filter.
-    expect(await names('filter[name]=')).toHaveLength(3)
+    expect(await names('filter=name:""')).toHaveLength(3)
   })
 
   it('matches date ranges as the admin sends them', async () => {
@@ -897,13 +927,13 @@ describe('list filters', () => {
     await sql(`update book set released_at = '2022-01-01' where id = 2`)
     const date = (year: number) => `${year}-06-01T00:00:00.000Z`
     const since = (...values: string[]) =>
-      names(values.map(value => `filter[since]=${value}`).join('&'))
+      names(`filter=since:${values.map(value => `"${value}"`).join(',')}`)
     expect(await since(date(2020))).toEqual(['Burns'])
     expect(await since('', date(2020))).toEqual(['Arcadia'])
     expect(await since(date(2019), date(2021))).toEqual(['Arcadia'])
     expect(await since('')).toHaveLength(3)
     expect(await since('tomorrow')).toBe(400)
-    expect(await names(`filter[createdAt]=${date(2000)}`)).toHaveLength(3)
+    expect(await names(`filter=createdAt:"${date(2000)}"`)).toHaveLength(3)
   })
 })
 
@@ -938,8 +968,8 @@ describe('c.var.listQuery()', () => {
     })
     expect((await summary('?range=0,9')).json.range).toEqual([0, 9])
     expect((await summary('?order=name')).json.ids).toEqual([1, 3])
-    expect((await summary('?filter[name]=circ')).json.ids).toEqual([3])
-    expect((await summary('?filter[other]=1')).status).toBe(400)
+    expect((await summary('?filter=name:"circ"')).json.ids).toEqual([3])
+    expect((await summary('?filter=other:1')).status).toBe(400)
     expect((await summary('?order=secret')).status).toBe(400)
   })
 })
@@ -1292,7 +1322,7 @@ describe('output', () => {
         actions: { get: true }
       })
     )
-    const { json } = await request(api, 'GET', '/api/parts?filter[book.id]=1')
+    const { json } = await request(api, 'GET', '/api/parts?filter=book.id:1')
     expect(json.length).toBeGreaterThan(0)
     for (const part of json) expect(part.book).toEqual({ id: 1 })
   })
@@ -2494,7 +2524,7 @@ describe('layers', () => {
     const { json } = await request(
       api,
       'GET',
-      '/api/books/first?range=0,9&filter[name]=x'
+      '/api/books/first?range=0,9&filter=name:"x"'
     )
     expect(json.total).toBe(3)
     expect(json.results.map((row: Book) => row.name)).toEqual(['Circuits'])

@@ -57,7 +57,8 @@ The keys of [`ControllerDefinition`](controllers.md#controllerdefinition), and:
 | --------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `entity`  | `EntityClass`                                | The entity of the controller.                                                                                                                                                                           |
 | `find`    | [`Find`](#find)                              | What the controller loads and returns, or a function of Hono's context `c` that returns it.                                                                                                             |
-| `filters` | `Record<string, Filter>`                     | What `filter[name]=value` may narrow in lists, see [Filters](#filters).                                                                                                                                 |
+| `filters` | `Record<string, Filter>`                     | What `filter=name:args` may narrow in lists, see [Filters](#filters).                                                                                                                                   |
+| `scopes`  | `Record<string, Scope>`                      | The filter values of each `scope=name` of lists, see [Filters](#filters).                                                                                                                               |
 | `load`    | `(c, id) => Promise<T \| null \| undefined>` | Loads the record of a member action in place of the default, which loads it through `find`. `null` or `undefined` responds with 404. It gets the id as sent, also one that isn't a key, such as `self`. |
 
 ### Default handlers
@@ -205,11 +206,12 @@ rows go out in the controller's shape. The merge:
 
 Lists take these query parameters:
 
-| Parameter            | Example               | Description                                                                                                                                                                                                                                                                  |
-| -------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `filter[name]=value` | `filter[author.id]=3` | A [filter](#filters) of the controller. A repeated filter gives an array. Unknown filters respond with 400.                                                                                                                                                                  |
-| `order=name dir`     | `order=name desc`     | Orders by a column of the entity, or by `relation.id`, the foreign key of a relation to one row, which needs no join. The rows must return the column, so that the order reveals nothing about hidden values. Repeat it for several columns. Other columns respond with 400. |
-| `range=start,end`    | `range=0,49`          | Responds with `{ results, total }` instead of an array, with the rows from `start` to `end`, both included. `total` counts the rows after the filters.                                                                                                                       |
+| Parameter          | Example              | Description                                                                                                                                                                                                                                                                  |
+| ------------------ | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `filter=name:args` | `filter=author.id:3` | A [filter](#filters) of the controller, with its arguments as JSON. Several arguments give an array. Unknown filters respond with 400.                                                                                                                                       |
+| `scope=name`       | `scope=published`    | A scope of the controller, which applies the [filter](#filters) values that it names. Unknown scopes respond with 400.                                                                                                                                                       |
+| `order=name dir`   | `order=name desc`    | Orders by a column of the entity, or by `relation.id`, the foreign key of a relation to one row, which needs no join. The rows must return the column, so that the order reveals nothing about hidden values. Repeat it for several columns. Other columns respond with 400. |
+| `range=start,end`  | `range=0,49`         | Responds with `{ results, total }` instead of an array, with the rows from `start` to `end`, both included. `total` counts the rows after the filters.                                                                                                                       |
 
 The list applies `find.where`, the filters and MikroORM's entity filters to the
 rows and to the total. Without `order`, the order of `find.orderBy` applies. The
@@ -337,7 +339,7 @@ interface ListQuery {
 }
 ```
 
-Parses `filter[name]=`, `order=` and `range=` of the URL, or of `params`.
+Parses `filter=`, `scope=`, `order=` and `range=` of the URL, or of `params`.
 Invalid values respond with 400.
 
 ## Filters
@@ -389,8 +391,8 @@ MikroORM's [entity filters](https://mikro-orm.io/docs/filters) with
 textFilter(...properties: string[]): Filter
 ```
 
-Reads what the admin's `text` filter sends: `filter[name]=text`, or
-`filter[name]=operator&filter[name]=text`. It matches rows where one of
+Reads what the admin's `text` filter sends: `filter=name:"text"`, or
+`filter=name:"operator","text"`. It matches rows where one of
 `properties`, by default the property of the filter's name, holds the text,
 ignoring case. The operators are `contains`, the default, `equals`,
 `starts-with` and `ends-with`. `%` and `_` in the text match themselves. An
@@ -403,7 +405,7 @@ dateRangeFilter(property?: string): Filter
 ```
 
 Reads what the admin's `date-range` filter sends:
-`filter[name]=from&filter[name]=to`, as ISO date-times with a time zone. It
+`filter=name:"from","to"`, as ISO date-times with a time zone. It
 matches rows whose `property`, by default the one of the filter's name, lies
 between the two, including them. Either one may be empty, and two empty values
 skip the filter.

@@ -3,8 +3,8 @@ import { z } from 'zod'
 import type { Filter } from './list.ts'
 
 // Server filters for the admin's `text` and `date-range` list filters. The
-// admin sends `filter[name]=text`, or `filter[name]=operator&filter[name]=text`
-// with operators, and `filter[name]=from&filter[name]=to` for date ranges.
+// admin sends `filter=name:"text"`, or `filter=name:"operator","text"` with
+// operators, and `filter=name:"from","to"` for date ranges.
 // Without properties, a filter applies to the property of its name.
 
 const operators = ['contains', 'equals', 'starts-with', 'ends-with'] as const

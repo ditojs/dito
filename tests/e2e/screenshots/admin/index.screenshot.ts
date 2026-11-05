@@ -14,7 +14,7 @@ test.describe('screenshots', () => {
 
   test('list', async ({ page, url }) => {
     await page.goto(`${url}/admin/projects`)
-    // Two projects per page, with the tabs and the filter above them.
+    // Two projects per page, with the scopes and the filter above them.
     await expect(page.getByText('Website Relaunch')).toBeVisible()
     await expectScreenshot(page, 'list.png')
   })

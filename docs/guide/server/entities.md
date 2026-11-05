@@ -192,14 +192,15 @@ action returns, go out with the relations that are loaded. Put secrets in
 The `get` list takes these query parameters:
 
 ```
-GET /articles?filter[author]=12&order=createdAt desc&range=0,49
+GET /articles?filter=author:12&order=createdAt desc&range=0,49
 ```
 
-| Parameter            | Description                                                                                               |
-| -------------------- | --------------------------------------------------------------------------------------------------------- |
-| `filter[name]=value` | A filter of the controller. Repeated, it gives an array.                                                  |
-| `order=name dir`     | Orders by a column or `relation.id` that the rows return, `asc` or `desc`. Repeat it to order by several. |
-| `range=start,end`    | Responds with the rows from `start` to `end`, both included, as `{ results, total }`.                     |
+| Parameter          | Description                                                                                               |
+| ------------------ | --------------------------------------------------------------------------------------------------------- |
+| `filter=name:args` | A filter of the controller, with its arguments as JSON. Several arguments give an array.                  |
+| `scope=name`       | A scope of the controller, which applies the filter values that it names.                                 |
+| `order=name dir`   | Orders by a column or `relation.id` that the rows return, `asc` or `desc`. Repeat it to order by several. |
+| `range=start,end`  | Responds with the rows from `start` to `end`, both included, as `{ results, total }`.                     |
 
 Without `range`, the list responds with an array. A list returns at most 1000
 rows, or the `maxRows` of its `find`. A larger `range` responds with 400, and so
@@ -211,7 +212,7 @@ reveals something about the values of a column.
 
 ### Filters
 
-`filters` maps each name of `filter[name]` to two things:
+`filters` maps each name of `filter=name:args` to two things:
 
 - a schema, which validates the value
 - a `where`, which turns the value into a MikroORM `where`

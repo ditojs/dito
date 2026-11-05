@@ -21,11 +21,11 @@ export const projects = createWidgetView<ProjectItem>(
       status: { label: 'Status' },
       budget: { label: 'Budget' }
     },
-    filterTabs: {
-      all: { label: 'All' },
-      planned: { label: 'Planned', filter: { status: 'Planned' } },
-      active: { label: 'Active', filter: { status: 'Active' } },
-      done: { label: 'Done', filter: { status: 'Done' } }
+    scopes: {
+      $default: { label: 'All' },
+      planned: { label: 'Planned' },
+      active: { label: 'Active' },
+      done: { label: 'Done' }
     },
     filters: {
       search: {
@@ -385,9 +385,9 @@ export const projects = createWidgetView<ProjectItem>(
 )
 
 // Further views in a sub-menu, for screenshots of the menus, each listing the
-// projects of one status.
-function createStatusView(
-  status: 'Planned' | 'Done',
+// projects of one scope.
+function createScopeView(
+  scope: 'planned' | 'done',
   listOptions: Partial<ListSchema<ProjectItem>> = {}
 ) {
   return createWidgetView<ProjectItem>(
@@ -396,7 +396,7 @@ function createStatusView(
     {},
     {
       columns: { name: { label: 'Name' } },
-      filterTabs: { [status]: { filter: { status } } },
+      scopes: { [scope]: { defaultScope: true } },
       ...listOptions
     }
   )
@@ -407,22 +407,15 @@ export const reports = {
   label: 'Reports',
   items: {
     planned: {
-      // A list and tabs wider than narrow windows, with a button below:
-      ...createStatusView('Planned', {
+      // A list and scopes wider than narrow windows, with a button below:
+      ...createScopeView('planned', {
         creatable: true,
         paginate: 20,
-        filterTabs: {
-          all: {
-            label: 'All Projects',
-            filter: { status: ['Planned', 'Active', 'Done'] }
-          },
-          planned: {
-            label: 'Planned Projects',
-            filter: { status: 'Planned' },
-            default: true
-          },
-          active: { label: 'Active Projects', filter: { status: 'Active' } },
-          done: { label: 'Done Projects', filter: { status: 'Done' } }
+        scopes: {
+          $default: { label: 'All Projects' },
+          planned: { label: 'Planned Projects', defaultScope: true },
+          active: { label: 'Active Projects' },
+          done: { label: 'Done Projects' }
         },
         columns: {
           name: { label: 'Name' },
@@ -436,7 +429,7 @@ export const reports = {
       }),
       label: 'Planned Projects'
     },
-    done: { ...createStatusView('Done'), label: 'Done Projects' }
+    done: { ...createScopeView('done'), label: 'Done Projects' }
   }
 } as const
 

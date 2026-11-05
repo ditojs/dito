@@ -130,12 +130,12 @@ describe('DitoTreeItem', () => {
       await enterValue(filterInput, 'draft')
       await settle()
       const { query } = admin.router.currentRoute.value
-      expect(query['filter[text]']).toBe('draft')
+      expect(query.filter).toEqual(['text:"draft"'])
       await findField('chapters').find('.dito-button--edit').trigger('click')
       await settle()
       const route = admin.router.currentRoute.value
       expect(route.path).toBe('/items/1/chapters/0')
-      expect(route.query['filter[text]']).toBe('draft')
+      expect(route.query.filter).toEqual(['text:"draft"'])
     })
   })
 

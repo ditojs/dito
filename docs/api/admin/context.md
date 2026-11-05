@@ -290,8 +290,7 @@ The query parameters of the current URL.
 context.sourceQuery: Record<string, any> | null
 ```
 
-The query of the nearest list: its page, order and `filter[…]` parameters,
-including those of its filter tab. `null` outside of lists, inside forms and in `itemLabel()`.
+The query of the nearest list: its scope, page, order and filters. `null` outside of lists, inside forms and in `itemLabel()`.
 
 ### user
 

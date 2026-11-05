@@ -1,28 +1,26 @@
 <template lang="pug">
-.dito-filter-tabs
+.dito-scopes
   DitoButton(
-    v-for="(tab, key) in tabs"
+    v-for="(scope, key) in scopes"
     :key="key"
-    :class="{ 'dito-button--selected': tab === selectedTab }"
-    :aria-pressed="tab === selectedTab"
-    :title="tab.hint || getLabelText(tab)"
-    @click="selectTab(tab)"
-  ) {{ getLabelText(tab) }}
+    :class="{ 'dito-button--selected': scope.name === listQuery.query.scope }"
+    :aria-pressed="scope.name === listQuery.query.scope"
+    :title="scope.hint || getLabelText(scope)"
+    @click="selectScope(scope)"
+  ) {{ getLabelText(scope) }}
 </template>
 
 <script>
-import { computed } from 'vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
-import { clearTabs, getSelectedTab, getTabQuery } from '../utils/filter.js'
 
 export default {
   components: { DitoButton },
 
   props: {
     listQuery: { type: Object, required: true },
-    tabs: { type: Object, required: true },
-    // The context of the list, for the callbacks of the tabs:
+    scopes: { type: Object, required: true },
+    // The context of the list, for the callbacks of the scopes:
     context: { type: Object, required: true }
   },
 
@@ -30,15 +28,8 @@ export default {
     return {
       getLabelText: useSchemaValue(props.context).getLabelText,
 
-      selectedTab: computed(() =>
-        getSelectedTab(props.tabs, props.listQuery.query)
-      ),
-
-      selectTab(tab) {
-        props.listQuery.update(
-          { ...clearTabs(props.tabs), ...getTabQuery(tab) },
-          { resetPage: true }
-        )
+      selectScope(scope) {
+        props.listQuery.update({ scope: scope.name }, { resetPage: true })
       }
     }
   }
@@ -48,10 +39,10 @@ export default {
 <style lang="scss">
 @import '../styles/_imports';
 
-.dito-filter-tabs {
+.dito-scopes {
   white-space: nowrap;
   display: flex;
-  // Scroll the tabs that don't fit, with room for the focus ring:
+  // Scroll the scopes that don't fit, with room for the focus ring:
   overflow-x: auto;
   padding: $border-width;
   margin: -$border-width;

@@ -87,7 +87,7 @@ export class DitoList {
     await this.page.getByRole('button', { name: 'Create', exact: true }).click()
   }
 
-  async selectFilterTab(name: string) {
+  async selectScope(name: string) {
     await this.page.getByRole('button', { name, exact: true }).click()
   }
 

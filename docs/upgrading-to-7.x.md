@@ -265,14 +265,18 @@ filters: {
   createdAt: dateRangeFilter(),
   'author.id': q.integer()
 }
-// GET /posts/choices?filter[author.id]=12
+// GET /posts/choices?filter=author.id:12
 ```
 
 - Rows that `find.where` hides respond with 404 on `record()` and the default
   handlers.
-- `?scope=` and `?fields=` are gone. A controller routes the shapes that its
-  clients need instead, such as `'get :id/full'`, and `choices()` routes the
-  options of a select at `get choices`.
+- `?fields=` is gone, and `?scope=` no longer chooses what a list loads. A
+  controller routes the shapes that its clients need instead, such as
+  `'get :id/full'`, and `choices()` routes the options of a select at
+  `get choices`.
+- `?scope=` narrows lists: `scopes` on the controller maps each scope of an
+  admin list to values of its filters, such as
+  `scopes: { published: { published: true } }`.
 - Dito.js 6's filter types `text` and `date-range` become `textFilter()` and
   `dateRangeFilter()`, which read what the admin's filters send.
 - Custom actions query through `find(options)` of the handler's input, or
@@ -298,7 +302,7 @@ filters: {
   what it loaded. There are no `<name>Id` keys: a body with `authorId` has an
   unknown key, which writes ignore.
 - `order` and filters name the relation too, such as `order=author.id` and
-  `filter[author.id]=12`.
+  `filter=author.id:12`.
 
 ### 7. Turn features and hooks into mixins
 
@@ -770,12 +774,10 @@ integer ids. GET actions may write. A GET action that writes sets its own
 
 These things change. The admin of Dito.js 7 already handles them:
 
-- Filters are `filter[name]=value` instead of `filter=name:args`.
-- `?scope=` and `?fields=` are gone. Select options come from `choices` routes.
-- `scopes` of lists become `filterTabs`: a tab sets list filters, such as
-  `published: { label: 'Published', filter: { published: true } }`, and each
-  name needs a filter on the controller. `defaultScope` becomes `default`, and
-  labels are always objects.
+- Filters read their arguments as strings: `filter=published:true` gives
+  `'true'`, and several arguments give an array of strings.
+- `?fields=` is gone. Select options come from `choices` routes, and `?scope=`
+  takes the `scopes` of the controller.
 - Joined values are nested rows instead of flat names.
 - There are no `<name>Id` keys. A client that read or wrote `authorId` uses
   `author.id`: responses send `author: { id: 12 }`, writes send the same, and

@@ -9,9 +9,7 @@
   //- Without a label, the buttons show in the header, which is otherwise
   //- empty and hidden:
   .dito-list__header(
-    v-if=`
-      filterTabs || hasPagination || hasClipboard || hasToggleAll && !labelId
-    `
+    v-if="scopes || hasPagination || hasClipboard || hasToggleAll && !labelId"
   )
     //- With a label, the label toggles all items:
     button.dito-chevron.dito-chevron--double(
@@ -23,10 +21,10 @@
       :aria-expanded="!hasCollapsedItems"
       @click="toggleAll"
     )
-    DitoFilterTabs.dito-list__filter-tabs(
-      v-if="filterTabs"
+    DitoScopes.dito-list__scopes(
+      v-if="scopes"
       :listQuery="listQuery"
-      :tabs="filterTabs"
+      :scopes="scopes"
       :context="context"
     )
     DitoLabelButtons(
@@ -514,7 +512,7 @@ export default DitoListType
 
   &__header {
     display: flex;
-    // Wrap the pagination below tabs that don't fit next to it:
+    // Wrap the pagination below scopes that don't fit next to it:
     flex-wrap: wrap;
     justify-content: space-between;
     row-gap: $content-padding-half;
@@ -525,7 +523,7 @@ export default DitoListType
       display: none;
     }
 
-    #{$self}__filter-tabs,
+    #{$self}__scopes,
     #{$self}__pagination {
       display: flex;
       flex: 0 1 auto;
@@ -569,7 +567,7 @@ export default DitoListType
 
     // Scroll up to the view's edges, from where the content starts:
     #{$self}__table,
-    #{$self}__filter-tabs {
+    #{$self}__scopes {
       margin-inline: calc(-1 * var(--pane-padding));
       padding-inline: var(--pane-padding);
     }

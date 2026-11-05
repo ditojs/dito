@@ -1288,15 +1288,13 @@ describe('DitoSchema', () => {
       const input = panel.find('input[name$="text"]')
       await enterValue(input, 'Emma')
       await settle()
-      expect(admin.router.currentRoute.value.query['filter[title]']).toBe(
-        'Emma'
-      )
+      expect(admin.router.currentRoute.value.query.filter).toEqual([
+        'title:"Emma"'
+      ])
       await panel.find('button[aria-label="Clear"]').trigger('click')
       await settle()
       expect(input.element.value).toBe('')
-      expect(admin.router.currentRoute.value.query).not.toHaveProperty(
-        'filter[title]'
-      )
+      expect(admin.router.currentRoute.value.query.filter).toEqual([])
     })
 
     it(`doesn't apply filters with fields that hold no value`, async () => {
@@ -1319,15 +1317,13 @@ describe('DitoSchema', () => {
       const checkbox = panel.find('input[type="checkbox"]')
       await checkbox.setValue(true)
       await settle()
-      expect(admin.router.currentRoute.value.query['filter[isRead]']).toBe(
-        'true'
-      )
+      expect(admin.router.currentRoute.value.query.filter).toEqual([
+        'isRead:true'
+      ])
       await panel.find('button[aria-label="Clear"]').trigger('click')
       await settle()
       expect(checkbox.element.checked).toBe(false)
-      expect(admin.router.currentRoute.value.query).not.toHaveProperty(
-        'filter[isRead]'
-      )
+      expect(admin.router.currentRoute.value.query.filter).toEqual([])
     })
   })
 
@@ -1345,7 +1341,7 @@ describe('DitoSchema', () => {
           }
         },
         request: ({ query }) => {
-          if (query?.['filter[title]']) {
+          if (query?.filter?.length) {
             throw new ApiError({
               status: 400,
               data: {

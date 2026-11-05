@@ -10,6 +10,12 @@ export const test = defineScenario({
   entities: [Project],
   controllers: {
     Project: {
+      scopes: {
+        $default: {},
+        planned: { status: 'Planned' },
+        active: { status: 'Active' },
+        done: { status: 'Done' }
+      },
       filters: {
         status: z.string(),
         search: {

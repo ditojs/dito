@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { q } from '@ditojs/server/zod'
 import { defineScenario, db } from '../../utils/fixture-app.js'
 import { Widget } from './models/Widget.js'
 
@@ -11,8 +10,13 @@ export const test = defineScenario({
   entities: [Widget],
   controllers: {
     Widget: {
+      scopes: {
+        $default: {},
+        published: { published: true },
+        unpublished: { published: false }
+      },
       filters: {
-        published: q.boolean(),
+        published: z.stringbool(),
         search: {
           schema: z.string(),
           where: (search: string) => ({ name: { $ilike: `%${search}%` } })

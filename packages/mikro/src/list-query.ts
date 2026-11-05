@@ -10,9 +10,12 @@ export type ListParams = URLSearchParams | Record<string, string | string[]>
 
 // The parsed list parameters.
 export interface ListQuery {
-  // `filter[name]=value` by name. A repeated filter has an array of its
-  // values, in order.
+  // `filter=name:args` by name, with the arguments as JSON, such as
+  // `filter=title:"contains","Emma"`. Filters read strings, and a filter with
+  // several arguments gets an array of them, in order.
   filter: Record<string, string | string[]>
+  // `scope=name`, see `list.ts`.
+  scope: string[]
   // `order=name desc`
   order: { property: string; direction: 'asc' | 'desc' }[]
   // `range=0,49`, inclusive. A list with a range responds with
@@ -26,6 +29,7 @@ export function parseListQuery(c: Context, params?: ListParams): ListQuery {
   const query: ListQuery = {
     // No prototype, so that names such as `__proto__` stay plain keys.
     filter: Object.create(null),
+    scope: [],
     order: [],
     range: null
   }
@@ -37,12 +41,13 @@ export function parseListQuery(c: Context, params?: ListParams): ListQuery {
           asArray(value).map(item => [key, item] as const)
         )
   for (const [key, value] of entries) {
-    const [, name] = key.match(/^filter\[(.*)\]$/) ?? []
-    if (name !== undefined) {
-      check(propertyPattern.test(name), key, value)
-      const current = query.filter[name]
-      query.filter[name] =
-        current === undefined ? value : [...asArray(current), value]
+    if (key === 'filter') {
+      const [, name = '', json = ''] = value.match(/^(.*?):(.*)$/s) ?? []
+      const args = parseArguments(json)
+      check(propertyPattern.test(name) && !!args, key, value)
+      query.filter[name] = toFilterValue(args!)
+    } else if (key === 'scope') {
+      query.scope.push(value)
     } else if (key === 'order') {
       const [property = '', direction = 'asc', ...rest] = value
         .trim()
@@ -69,6 +74,21 @@ export function parseListQuery(c: Context, params?: ListParams): ListQuery {
     }
   }
   return query
+}
+
+function parseArguments(json: string): unknown[] | null {
+  try {
+    return JSON.parse(`[${json}]`)
+  } catch {
+    return null
+  }
+}
+
+// The value of a filter with `args`, in strings as schemas read them from URLs.
+// An array flattens into the arguments, and `null` keeps its position as ''.
+export function toFilterValue(args: unknown[]): string | string[] {
+  const values = args.flat().map(arg => (arg === null ? '' : `${arg}`))
+  return values.length === 1 ? values[0]! : values
 }
 
 function check(valid: boolean, key: string, value: string) {

@@ -65,22 +65,19 @@ Without `itemLabel`, the first column is used, else the item's `name`. Inside
 the item's form, every callback can read the label as `context.itemLabel`, see
 [The context](./context.md#the-label-of-the-item).
 
-## Filter tabs and filters
+## Scopes and filters
 
-`filterTabs` adds buttons that set list filters. `filters` adds a filter panel
-to the sidebar. Both send their values as `filter[name]` query parameters:
+`scopes` adds buttons that switch the `scope` query parameter of the list.
+`filters` adds a filter panel to the sidebar. Its values are sent as
+`filter=name:args` query parameters:
 
 ```js
 books: {
   type: 'list',
   resource: 'books',
-  filterTabs: {
+  scopes: {
     all: { label: 'All' },
-    published: { label: 'Published', filter: { published: true } },
-    drafts: {
-      label: 'Drafts',
-      filter: { published: false, archived: false }
-    }
+    published: { label: 'Published', defaultScope: true }
   },
   filters: {
     title: { filter: 'text', operators: ['contains', 'starts-with'] },
@@ -92,17 +89,19 @@ books: {
 
 The server's controller needs a filter for each name, see
 [Filters](../server/entities.md#filters). A filter sends the values of its
-inputs as repeated parameters, e.g.
-`filter[title]=contains&filter[title]=Emma`, so the server's filter gets an
-array. Changing a tab or a filter goes back to the first page.
+inputs as JSON arguments, e.g. `filter=title:"contains","Emma"`, so the server's
+filter gets an array. Changing a scope or a filter goes back to the first page.
 
-The first tab, or the one with `default: true`, is selected by default.
-Selecting a tab replaces the filters of the other tabs. The selected tab is the
-one whose filters all match the query, the one with the most filters if several
-do. A tab without `filter` shows all rows. Only the default tab can be one, as
-the default applies again when no tab has a value, and the admin throws
-otherwise. The filters of tabs and of
-the panel need different names, as the panel keeps those of the tabs.
+The server's controller maps each scope to values of its filters:
+
+```js
+// In the books controller:
+filters: { published: q.boolean() },
+scopes: {
+  all: {},
+  published: { published: true }
+}
+```
 
 ## Items in the data
 

@@ -6,10 +6,10 @@
     'dito-tree-list--disabled': disabled
   }`
 )
-  DitoFilterTabs(
-    v-if="filterTabs"
+  DitoScopes(
+    v-if="scopes"
     :listQuery="listQuery"
-    :tabs="filterTabs"
+    :scopes="scopes"
     :context="context"
   )
   .dito-tree-list__panel

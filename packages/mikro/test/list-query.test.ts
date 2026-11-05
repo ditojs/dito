@@ -16,39 +16,53 @@ describe('parseListQuery()', () => {
   it('returns empty values without parameters', async () => {
     expect((await parse('')).json).toEqual({
       filter: {},
+      scope: [],
       order: [],
       range: null
     })
   })
 
-  it('parses `filter[relation.id]` filters', async () => {
-    const { json } = await parse('filter[book.id]=1')
+  it('parses filters of relations', async () => {
+    const { json } = await parse('filter=book.id:1')
     expect(json.filter).toEqual({ 'book.id': '1' })
   })
 
-  it('parses `filter[name]` filters', async () => {
-    const { json } = await parse('filter[text]=Uni&filter[active]&other=1')
-    expect(json.filter).toEqual({ text: 'Uni', active: '' })
+  it('gives filters their arguments as strings', async () => {
+    const { json } = await parse(
+      'filter=text:"Uni"&filter=active:true&filter=year:1900&other=1'
+    )
+    expect(json.filter).toEqual({ text: 'Uni', active: 'true', year: '1900' })
   })
 
-  it('gives a repeated filter an array of its values in order', async () => {
+  it('gives a filter with several arguments an array in order', async () => {
     const { json } = await parse(
-      'filter[range]=1&filter[text]=a&filter[range]=&filter[range]=9'
+      'filter=range:1,null,9&filter=genres:"a",["b","c"]'
     )
-    expect(json.filter).toEqual({ range: ['1', '', '9'], text: 'a' })
+    expect(json.filter).toEqual({
+      range: ['1', '', '9'],
+      genres: ['a', 'b', 'c']
+    })
+  })
+
+  it('keeps colons and commas in arguments', async () => {
+    const { json } = await parse('filter=text:"a:b,c"')
+    expect(json.filter).toEqual({ text: 'a:b,c' })
   })
 
   it('keeps names of `Object.prototype` as plain keys', async () => {
-    const { json } = await parse('filter[__proto__]=1&filter[toString]=2')
+    const { json } = await parse('filter=__proto__:1&filter=toString:2')
     expect(Object.keys(json.filter)).toEqual(['__proto__', 'toString'])
   })
 
-  it("ignores Dito 6's `filter=name:args`, `scope=name` and `fields`", async () => {
-    const { status, json } = await parse(
-      'filter=range:1,2&scope=published&fields=id'
-    )
+  it('collects scopes in order', async () => {
+    const { json } = await parse('scope=published&scope=recent')
+    expect(json.scope).toEqual(['published', 'recent'])
+  })
+
+  it('ignores the `fields` of Dito 6', async () => {
+    const { status, json } = await parse('fields=id')
     expect(status).toBe(200)
-    expect(json).toEqual({ filter: {}, order: [], range: null })
+    expect(json).toEqual({ filter: {}, scope: [], order: [], range: null })
   })
 
   it('parses order and range', async () => {
@@ -57,6 +71,7 @@ describe('parseListQuery()', () => {
     )
     expect(json).toEqual({
       filter: {},
+      scope: [],
       order: [
         { property: 'name', direction: 'asc' },
         { property: 'createdAt', direction: 'desc' }
@@ -72,7 +87,7 @@ describe('parseListQuery()', () => {
           path: 'books',
           actions: {
             get: ({ c }) =>
-              parseListQuery(c, { 'filter[a]': ['1', '2'], 'range': '0,9' })
+              parseListQuery(c, { filter: 'a:1,2', range: '0,9' })
           }
         }
       ]
@@ -80,13 +95,17 @@ describe('parseListQuery()', () => {
     const response = await api.request('/books?range=5,6&order=name')
     expect(await response.json()).toEqual({
       filter: { a: ['1', '2'] },
+      scope: [],
       order: [],
       range: [0, 9]
     })
   })
 
   it.each([
-    'filter[a-b]=1',
+    'filter=a-b:1',
+    'filter=a',
+    'filter=a:b',
+    'filter=a:1],[2',
     'order=name%20up',
     'order=a;drop',
     'range=5,1',

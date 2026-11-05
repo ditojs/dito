@@ -12,8 +12,6 @@
 - **admin:** The `api` config is plain data. `request`, `getApiUrl`, `isApiUrl`, `normalizePath`, `denormalizePath` and `resources` aren't options any more, and `admin.api` has `request()` and `getApiUrl()`. `normalizePaths` is gone: views and sources are routed under their hyphenated names. `users` takes only `path`, and the admin loads its user from `get self`.
 - **schema:** `@ditojs/schema` is removed. The admin holds the validators that it uses.
 - **admin:** Sources in forms show the permission error for 403 responses, as they do for 401 responses.
-- **admin:** Lists send their filters as `filter[name]=value`.
-- **admin:** `filterTabs` replaces `scopes` of lists: `{ name: { label, hint, filter, default } }`. A tab sets list filters, and the `scope` query parameter is gone.
 - **admin:** Resource paths are joined without a trailing slash when a resource's path is empty.
 
 ### New

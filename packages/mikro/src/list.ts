@@ -13,18 +13,22 @@ import {
   type FindOptions
 } from '@mikro-orm/core'
 import type { FindShape } from './find.ts'
-import type { ListQuery } from './list-query.ts'
+import { toFilterValue, type ListQuery } from './list-query.ts'
 import { getProperty, isLoadedColumn, isOwningToOne } from './meta.ts'
 import type { ModelRequest } from './model-request.ts'
 import { runSchema } from './schema-json.ts'
 
-// Lists take the parameters `filter[name]=value`, `order=name desc` and
-// `range=0,49`, which responds with `{ results, total }` instead of an array.
+// Lists take the parameters `filter=name:args`, `scope=name`, `order=name desc`
+// and `range=0,49`, which responds with `{ results, total }` instead of an
+// array.
 //
-// Each value of `filter[name]=value` is validated against the schema of its
+// Each value of `filter=name:args` is validated against the schema of its
 // filter, and `where` turns the result into a MikroORM `where`, or undefined to
-// skip it. A schema alone is short for `{ [name]: value }`. A repeated filter
-// gives the schema an array.
+// skip it. A schema alone is short for `{ [name]: value }`. Several arguments
+// give the schema an array.
+//
+// A scope names a set of filter values on the controller, for the scope buttons
+// of admin lists. It applies like those filters, along with `filter=name:args`.
 
 type FilterWhere = (
   value: any,
@@ -35,6 +39,8 @@ type FilterWhere = (
 export type Filter =
   | z.ZodType
   | { schema: z.ZodType; where: FilterWhere }
+
+export type Scope = Record<string, unknown>
 
 // The most rows a list returns, unless its `find` says otherwise.
 const defaultMaxRows = 1000
@@ -52,7 +58,11 @@ export async function getListQuery<T extends object>(
   { c, meta, definition }: ModelRequest<T>,
   { where, options, shape, own, query }: List<T>
 ) {
-  const wheres = await getFilterWheres(c, definition.filters, query.filter)
+  const { filters, scopes } = definition
+  const wheres = await mapConcurrently(
+    [...query.scope.map(name => getScopeValues(scopes, name)), query.filter],
+    values => getFilterWheres(c, filters, values)
+  )
   const key = meta.primaryKeys[0]!
   const orderBy = query.order.length
     ? query.order.map(({ property, direction }) => {
@@ -67,7 +77,7 @@ export async function getListQuery<T extends object>(
       })
     : asArray(options.orderBy ?? [])
   return {
-    where: { $and: [where, ...wheres] } as object,
+    where: { $and: [where, ...wheres.flat()] } as object,
     // The id breaks ties, so that pages don't overlap.
     orderBy: [...orderBy, { [key]: 'asc' }] as object[],
     range: query.range
@@ -146,6 +156,17 @@ function getOrderName(meta: EntityMetadata, shape: FindShape, name: string) {
     )
   )
   return isColumn && isShown ? prop.name : undefined
+}
+
+// The filter values of the scope `name`, as `parseListQuery()` gives them.
+function getScopeValues(scopes: Record<string, Scope>, name: string) {
+  const scope = Object.hasOwn(scopes, name) ? scopes[name] : undefined
+  if (!scope) {
+    throw new HttpError(400, { message: `Unknown scope '${name}'` })
+  }
+  return Object.fromEntries(
+    Object.entries(scope).map(([key, value]) => [key, toFilterValue([value])])
+  )
 }
 
 // The `where` of each filter in `values`, without the skipped ones.

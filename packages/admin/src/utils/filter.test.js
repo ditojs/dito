@@ -2,14 +2,9 @@ import { vi } from 'vitest'
 // Register the actual type components, for their `deserializeValue()`:
 import '../types/index.js'
 import { ref } from 'vue'
-import { html, pickBy } from '@ditojs/utils'
+import { html } from '@ditojs/utils'
 import {
-  clearTabs,
   createFiltersPanel,
-  getSelectedTab,
-  getDefaultTab,
-  getTabKeys,
-  getTabQuery,
   filterComponents,
   getFiltersDataErrors,
   applyNestedSchemaDefaults
@@ -37,7 +32,6 @@ function createBookFilters() {
       fields: {
         genres: {
           type: 'multiselect',
-          multiple: true,
           options: ['fiction', 'poetry', 'essay']
         }
       }
@@ -234,10 +228,12 @@ describe('createFiltersPanel()', () => {
     it('maps the arguments of each filter to its components in sequence', () => {
       const { panel } = createPanel({
         query: {
-          'filter[title]': ['starts-with', 'The'],
-          'filter[published]': ['2020-01-01T00:00:00.000Z', ''],
-          'filter[genres]': ['poetry', 'essay'],
-          'filter[available]': 'false'
+          filter: [
+            'title:"starts-with","The"',
+            'published:"2020-01-01T00:00:00.000Z",null',
+            'genres:["poetry","essay"]',
+            'available:false'
+          ]
         }
       })
       expect(panel.data()).toEqual({
@@ -249,55 +245,51 @@ describe('createFiltersPanel()', () => {
       })
     })
 
-    it('reads empty arguments as `null`, keeping the positions after them', () => {
-      const { panel } = createPanel({
-        query: { 'filter[title]': ['', 'Sea'] }
-      })
-      expect(panel.data().$title).toEqual({ operator: null, text: 'Sea' })
+    it('supports a single filter as a string', () => {
+      const { panel } = createPanel({ query: { filter: 'author:"Le Guin"' } })
+      expect(panel.data().$author).toEqual({ text: 'Le Guin' })
     })
 
-    it('reads a single argument as a string', () => {
+    it('ignores filters with invalid JSON arguments', () => {
       const { panel } = createPanel({
-        query: { 'filter[author]': 'Le Guin', 'filter[genres]': 'poetry' }
+        query: { filter: ['author:Le Guin', 'title:"contains","Sea"'] }
       })
       const data = panel.data()
-      expect(data.$author).toEqual({ text: 'Le Guin' })
-      // Array components keep the single value in an array:
-      expect(data.$genres).toEqual({ genres: ['poetry'] })
-    })
-
-    it('converts the arguments to the types of the components', () => {
-      const { panel } = createPanel({
-        filters: {
-          price: {
-            fields: {
-              from: { type: 'number' },
-              to: { type: 'integer' },
-              sale: { type: 'switch' }
-            }
-          }
-        },
-        query: { 'filter[price]': ['9.5', '', 'true'] }
-      })
-      expect(panel.data().$price).toEqual({ from: 9.5, to: null, sale: true })
-    })
-
-    it('reads filters without a value as an empty argument', () => {
-      // E.g. `?filter[author]`:
-      const { panel } = createPanel({ query: { 'filter[author]': null } })
-      expect(panel.data().$author).toEqual({ text: null })
+      expect(data.$author).toEqual({})
+      expect(data.$title).toEqual({ operator: 'contains', text: 'Sea' })
     })
 
     it('ignores filters in the query that the panel does not define', () => {
-      const { panel } = createPanel({ query: { 'filter[isbn]': '123' } })
+      const { panel } = createPanel({ query: { filter: 'isbn:"123"' } })
       expect(Object.keys(panel.data())).not.toContain('$isbn')
     })
 
     it('reads the current query each time', () => {
       const { panel, query } = createPanel()
       expect(panel.data().$author).toEqual({})
-      query.value = { 'filter[author]': 'Austen' }
+      query.value = { filter: 'author:"Austen"' }
       expect(panel.data().$author).toEqual({ text: 'Austen' })
+    })
+
+    it('ignores filter entries without a name, with a warning', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { panel } = createPanel({
+        query: { filter: ['Austen', 'author:"Le Guin"'] }
+      })
+      expect(panel.data().$author).toEqual({ text: 'Le Guin' })
+      expect(warn).toHaveBeenCalledWith(`Ignoring malformed filter: 'Austen'`)
+      warn.mockRestore()
+    })
+
+    it('ignores filter entries without a value, with a warning', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      // E.g. `?filter&filter=author:"Le Guin"`:
+      const { panel } = createPanel({
+        query: { filter: [null, 'author:"Le Guin"'] }
+      })
+      expect(panel.data().$author).toEqual({ text: 'Le Guin' })
+      expect(warn).toHaveBeenCalledWith(`Ignoring malformed filter: 'null'`)
+      warn.mockRestore()
     })
   })
 
@@ -305,73 +297,43 @@ describe('createFiltersPanel()', () => {
   // data that the panel displays, and returns the formatted filters:
   function applyFilters(panel, query, data) {
     panel.buttons.submit.onClick({ item: data })
-    return pickBy(query.value, (value, key) => key.startsWith('filter['))
+    return query.value.filter
   }
 
   describe('formatting filter data into the query', () => {
-    it('formats each filter as repeated values of its arguments', () => {
+    it('formats each filter as its name and JSON arguments', () => {
       const { panel, query } = createPanel()
       const filters = applyFilters(panel, query, {
         $title: { operator: 'contains', text: 'Sea' },
         $author: {},
         $published: { from: new Date('2020-01-01T00:00:00Z'), to: null },
-        $genres: { genres: ['poetry', 'essay'] },
+        $genres: { genres: ['poetry'] },
         $available: { available: false }
       })
-      expect(filters).toEqual({
-        'filter[title]': ['contains', 'Sea'],
-        'filter[published]': ['2020-01-01T00:00:00.000Z', ''],
-        'filter[genres]': ['poetry', 'essay'],
+      expect(filters).toEqual([
+        'title:"contains","Sea"',
+        'published:"2020-01-01T00:00:00.000Z",null',
+        'genres:["poetry"]',
         // `false` is a value, unlike `null`, so the filter still applies:
-        'filter[available]': 'false'
-      })
+        'available:false'
+      ])
     })
 
-    it('sends empty arguments as empty strings to keep their positions', () => {
+    it('fills missing arguments with `null` to keep their sequence', () => {
       const { panel, query } = createPanel()
       expect(applyFilters(panel, query, { $title: { text: 'Sea' } })).toEqual(
-        { 'filter[title]': ['', 'Sea'] }
+        ['title:null,"Sea"']
       )
     })
 
-    it('keeps the position of a missing last argument', () => {
-      const { panel, query } = createPanel()
-      expect(
-        applyFilters(panel, query, { $title: { operator: 'starts-with' } })
-      ).toEqual({ 'filter[title]': ['starts-with', ''] })
-    })
-
-    it('formats numbers and booleans as strings', () => {
-      const { panel, query } = createPanel({
-        filters: {
-          price: {
-            fields: { from: { type: 'number' }, sale: { type: 'switch' } }
-          }
-        }
-      })
-      expect(
-        applyFilters(panel, query, { $price: { from: 0, sale: true } })
-      ).toEqual({ 'filter[price]': ['0', 'true'] })
-    })
-
-    it('leaves out filters with only empty or missing arguments', () => {
+    it('leaves out filters with only `null` or missing arguments', () => {
       const { panel, query } = createPanel()
       const filters = applyFilters(panel, query, {
-        $title: { operator: null, text: '' },
+        $title: { operator: null, text: null },
         $published: { from: null },
-        $genres: { genres: [] },
         $author: null
       })
-      expect(filters).toEqual({})
-    })
-
-    it('replaces the filters of the query', () => {
-      const { panel, query } = createPanel({
-        query: { 'filter[author]': 'Austen', 'filter[published]': 'true' }
-      })
-      expect(applyFilters(panel, query, { $title: { text: 'Sea' } })).toEqual(
-        { 'filter[title]': ['', 'Sea'] }
-      )
+      expect(filters).toEqual([])
     })
 
     it('round-trips the filters through the query', () => {
@@ -379,11 +341,8 @@ describe('createFiltersPanel()', () => {
       const data = {
         $title: { operator: 'starts-with', text: 'A "quoted", title' },
         $author: { text: 'Woolf' },
-        $published: {
-          from: new Date('2020-01-01T00:00:00Z'),
-          to: new Date('2021-01-01T00:00:00Z')
-        },
-        $genres: { genres: ['fiction'] },
+        $published: {},
+        $genres: { genres: ['fiction', 'essay'] },
         $available: { available: true }
       }
       applyFilters(panel, query, data)
@@ -392,25 +351,15 @@ describe('createFiltersPanel()', () => {
   })
 
   describe('applying and clearing filters', () => {
-    it('keeps the filters of tabs', () => {
-      const { panel, query } = createPanel({
-        query: { 'filter[state]': 'done', 'filter[title]': 'Emma' }
-      })
-      const { clear } = panel.buttons
-      clear.onClick({ resetItem: () => ({}) })
-      expect(query.value['filter[state]']).toBe('done')
-      expect(query.value['filter[title]']).toBe(undefined)
-    })
-
     it('stores the filters in the query and resets the pagination', () => {
       const { panel, query } = createPanel({
         query: { page: 3, order: 'title' }
       })
       applyFilters(panel, query, { $author: { text: 'Woolf' } })
       expect(query.value).toEqual({
-        'order': 'title',
-        'filter[author]': 'Woolf',
-        'page': undefined
+        order: 'title',
+        filter: ['author:"Woolf"'],
+        page: undefined
       })
     })
 
@@ -419,7 +368,7 @@ describe('createFiltersPanel()', () => {
       const data = panel.data()
       data.$author.text = 'Woolf'
       panel.onChange()
-      expect(query.value['filter[author]']).toBe('Woolf')
+      expect(query.value.filter).toEqual(['author:"Woolf"'])
     })
   })
 
@@ -541,68 +490,5 @@ describe('applyNestedSchemaDefaults()', () => {
       fields: { fields: { type: 'section', fields } }
     })
     expect(fields).not.toHaveBeenCalled()
-  })
-})
-
-describe('filter tabs', () => {
-  const tabs = {
-    all: {},
-    published: { filter: { published: true } },
-    frontend: { filter: { published: true, frontend: true } },
-    states: { filter: { state: ['done', 'open'] } }
-  }
-
-  it('turns the filters of a tab into query values', () => {
-    expect(getTabQuery(tabs.frontend)).toEqual({
-      'filter[published]': 'true',
-      'filter[frontend]': 'true'
-    })
-    expect(getTabQuery(tabs.states)).toEqual({
-      'filter[state]': ['done', 'open']
-    })
-    expect(getTabQuery(tabs.all)).toEqual({})
-    expect(getTabQuery(null)).toEqual({})
-  })
-
-  it('lists and clears the keys of all tabs', () => {
-    const keys = ['filter[published]', 'filter[frontend]', 'filter[state]']
-    expect(getTabKeys(tabs)).toEqual(keys)
-    expect(getTabKeys(null)).toEqual([])
-    expect(Object.keys(clearTabs(tabs))).toEqual(keys)
-    expect(Object.values(clearTabs(tabs))).toEqual([
-      undefined,
-      undefined,
-      undefined
-    ])
-  })
-
-  it('selects the matching tab with the most filters', () => {
-    const select = query => getSelectedTab(tabs, query)
-    expect(select({ 'filter[published]': 'true' })).toBe(tabs.published)
-    expect(
-      select({ 'filter[published]': 'true', 'filter[frontend]': 'true' })
-    ).toBe(tabs.frontend)
-    expect(select({ 'filter[state]': ['done', 'open'] })).toBe(tabs.states)
-    expect(select({ 'filter[state]': 'done' })).toBe(tabs.all)
-  })
-
-  it('defaults to the first tab, or the one that says so', () => {
-    expect(getDefaultTab(tabs)).toBe(tabs.all)
-    expect(getDefaultTab(null)).toBe(null)
-    const recent = { filter: { recent: true }, default: true }
-    const old = { filter: { old: true } }
-    expect(getDefaultTab({ old, recent })).toBe(recent)
-  })
-
-  it('refuses a tab without filters that is not the default', () => {
-    const recent = { filter: { recent: true }, default: true }
-    expect(() => getDefaultTab({ all: { name: 'all' }, recent })).toThrow(
-      `The filter tab 'all' needs`
-    )
-  })
-
-  it('selects no tab without a match', () => {
-    const { published } = tabs
-    expect(getSelectedTab({ published }, {})).toBe(null)
   })
 })

@@ -19,7 +19,7 @@ import {
   type Find,
   type FindShape
 } from './find.ts'
-import { findRows, getListQuery, type Filter } from './list.ts'
+import { findRows, getListQuery, type Filter, type Scope } from './list.ts'
 import {
   parseListQuery,
   type ListParams,
@@ -74,6 +74,7 @@ export interface ModelDefinition<T extends object = any>
   extends Pick<MikroControllerDefinition<T>, 'entity' | 'load'> {
   find: Find<T>
   filters: Record<string, Filter>
+  scopes: Record<string, Scope>
   beforeSerializers: NonNullable<MixinDefinition['beforeSerialize']>[]
   serializers: NonNullable<MixinDefinition['serialize']>[]
   deserializers: NonNullable<MixinDefinition['deserialize']>[]

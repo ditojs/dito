@@ -2,13 +2,12 @@ import { computed, markRaw, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { isString } from '@ditojs/utils'
 import { ListQuery } from '../utils/ListQuery.js'
-import { getDefaultTab, getTabKeys, getTabQuery } from '../utils/filter.js'
 import { getNamedSchemas } from '../utils/schema/lookup.js'
 import { isListSource } from '../utils/schema/structure.js'
 import type { Schema } from '../utils/types.ts'
 import type { FieldProps } from './useField.ts'
 
-// The page, order and filters of a list, remembered in the store, and
+// The scope, page, order and filters of a list, remembered in the store, and
 // held by the route for lists that load their data in routes, see `ListQuery`.
 export function useListQuery(
   props: FieldProps,
@@ -31,14 +30,14 @@ export function useListQuery(
   const columns = computed(
     () => getNamedSchemas(props.schema.columns) as Record<string, Schema> | null
   )
-  const filterTabs = computed(
-    () =>
-      getNamedSchemas(props.schema.filterTabs) as Record<string, Schema> | null
+  const scopes = computed(
+    () => getNamedSchemas(props.schema.scopes) as Record<string, Schema> | null
   )
 
-  const defaultTab = computed(() => getDefaultTab(filterTabs.value))
-
-  const tabKeys = computed(() => getTabKeys(filterTabs.value))
+  const defaultScope = computed(() => {
+    const values = Object.values(scopes.value ?? {})
+    return values.find(scope => scope.defaultScope) ?? values[0] ?? null
+  })
 
   const defaultOrder = computed(() => {
     for (const column of Object.values(columns.value ?? {})) {
@@ -56,11 +55,8 @@ export function useListQuery(
       router,
       getRoute: () => router.currentRoute.value,
       getSourceStore: () => props.store,
-      getTabKeys: () => tabKeys.value,
-      // The default tab only applies while no tab is selected:
-      getDefaultQuery: (query: Record<string, unknown>) => ({
-        ...(!tabKeys.value.some(key => key in query) &&
-        getTabQuery(defaultTab.value)),
+      getDefaultQuery: () => ({
+        scope: defaultScope.value?.name,
         page: props.schema.page,
         order: defaultOrder.value
       }),
@@ -109,7 +105,7 @@ export function useListQuery(
   return {
     listQuery,
     columns,
-    filterTabs,
+    scopes,
     paginationRange,
 
     // Pass the pagination as range, so that the server counts the results:

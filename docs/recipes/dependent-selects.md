@@ -30,7 +30,7 @@ export const genres = defineController({
   path: 'genres',
   entity: Genre,
   find: { orderBy: { name: 'asc' } },
-  // `GET /genres?filter[parent]=3` lists the subgenres of genre 3.
+  // `GET /genres?filter=parent:3` lists the subgenres of genre 3.
   filters: { parent: q.integer() },
   actions: { 'get': true, 'get :id': true }
 })
@@ -40,18 +40,17 @@ The books controller filters books by a genre or one of its subgenres. It uses
 the `genres` relation of `Book`:
 
 ```js
-import { asArray } from '@ditojs/utils'
 import { q } from '@ditojs/server/zod'
 import { z } from 'zod'
 
 // In the books controller:
 filters: {
   genre: {
-    // One id, or the ids of the genre and the subgenre.
-    schema: z.union([q.integer(), z.array(q.integer()).max(2)]),
-    where: ids => {
+    // The ids of the genre and the subgenre, which may be empty.
+    schema: z.tuple([q.integer(), q.integer().or(z.literal(''))]),
+    where: ([genre, subgenre]) => {
       // The subgenre if it is set, else the genre:
-      const id = asArray(ids).at(-1)
+      const id = subgenre || genre
       return { genres: { $or: [{ id }, { parent: id }] } }
     }
   }
@@ -101,7 +100,7 @@ export const books = {
                   ? ({ request }) =>
                       request({
                         resource: '/genres',
-                        query: { 'filter[parent]': genreId }
+                        query: { filter: `parent:${genreId}` }
                       })
                   : []
               },
@@ -125,11 +124,10 @@ itself doesn't add dependencies, so the options load again only when the genre
 changes. Selects keep values that their options lack and show them as
 unavailable, which is why `onChange()` of the genre clears the subgenre.
 
-A filter with `fields` sends their values in order, as repeated
-`filter[name]` values. It sends `''` for an empty value before a set one, and
-leaves out empty values at the end. So the query is `filter[genre]=3`, or
-`filter[genre]=3&filter[genre]=5` with a subgenre. The server's filter gets one
-value as a string and several as an array, so its schema takes both.
+A filter with `fields` sends their values in order, as JSON arguments, with
+`null` for an empty value. So the query is `filter=genre:3,null`, or
+`filter=genre:3,5` with a subgenre. The server's filter gets an array of
+strings, with `''` for `null`.
 
 Responses send `parent` as `{ id }`, or `null` for the top genres, which the
 genre select keeps.
