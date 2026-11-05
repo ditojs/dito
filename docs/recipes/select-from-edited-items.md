@@ -75,10 +75,12 @@ export const bookForm = {
 
 ## Why
 
-`options.dataPath` reads the options from the edited data, relative to the
-item that the select sits in, here the book; a leading `/` would make it
-absolute. With `relate: true`, the admin sends new chapters with a temporary
-`#id`, and the selected one as `{ '#ref': key }` that points to it. The write
+`options.dataPath` reads the options from the edited data. The path is relative
+to the item that the select sits in, here the book. A leading `/` would make it
+absolute.
+
+With `relate: true`, the admin sends new chapters with a temporary `#id`. It
+sends the selected chapter as `{ '#ref': key }`, which points to it. The write
 links the reference to the new chapter. One flush inserts the chapters and sets
 the book's `featuredChapter`.
 

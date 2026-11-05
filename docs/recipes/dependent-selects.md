@@ -127,10 +127,10 @@ itself doesn't add dependencies, so the options load again only when the genre
 changes. Selects keep values that their options lack and show them as
 unavailable, which is why `onChange()` of the genre clears the subgenre.
 
-A filter with `fields` sends their values in order, as JSON arguments, with
-`null` for an empty value. So the query is `filter=genre:3,null`, or
-`filter=genre:3,5` with a subgenre. The server's filter gets an array of
-strings, with `''` for `null`.
+A filter with `fields` sends their values in order, as JSON arguments. An empty
+value is `null`. So the query is `filter=genre:3,null`, or `filter=genre:3,5`
+with a subgenre. The server's filter gets an array of strings, with `''` for
+`null`.
 
 Responses send `parent` as `{ id }`, or `null` for the top genres, which the
 genre select keeps.

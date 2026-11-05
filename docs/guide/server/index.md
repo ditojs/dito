@@ -9,8 +9,8 @@ Dito.js Server builds a REST API out of declarations.
 Dito.js checks what comes in against the entities, and sends all errors in one
 format.
 
-The core builds each API as a [Hono](https://hono.dev) app, which the app routes
-in its own Hono app. Handlers get Hono's context, and middleware is Hono
+The core builds each API as a [Hono](https://hono.dev) app. The app routes it in
+its own Hono app. Handlers get Hono's context, and middleware is Hono
 middleware. The core has no configuration of its own. MikroORM, files and users
 come from these packages:
 
@@ -50,8 +50,13 @@ The server docs use each of these words in one sense only:
 pnpm add @ditojs/server @ditojs/mikro @mikro-orm/core @mikro-orm/postgresql hono @hono/node-server zod
 ```
 
-The other packages are optional: `@ditojs/auth` for users and sessions,
-`@ditojs/storage` for files, and `@ditojs/admin` for the admin. `@ditojs/utils` holds their shared helpers, such as `html`.
+The other packages are optional:
+
+- `@ditojs/auth` for users and sessions;
+- `@ditojs/storage` for files;
+- `@ditojs/admin` for the admin.
+
+`@ditojs/utils` holds their shared helpers, such as `html`.
 
 The packages are ES modules and need Node.js 24 or later. They are written in
 TypeScript and ship their types.

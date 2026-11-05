@@ -12,41 +12,44 @@ A write of a model controller takes these steps:
 8. one query that loads the written records again, with the values that formulas
    and triggers set.
 
-All steps run in the request's transaction, so an error in any step rolls the
+All steps run in the request's transaction. So an error in any step rolls the
 write back.
 
 ## PATCH
 
-`patch :id` changes the fields that the body sends and leaves the others as they
-are.
+`patch :id` changes the fields that the body sends, and leaves the others as
+they are.
 
 - An array of owned rows is the full set. Rows missing from the array are
   deleted.
 - Relations to other rows link by id.
+- `null` sets a column to null.
+- Nested objects are rows, not partial updates.
 
-`null` sets a column to null, and nested objects are rows, not partial updates.
-
-A client can send back what it loaded, as `get :id` and `patch :id` use the same
-shape. The checks of the body drop fields such as `id` or `createdAt`.
+`get :id` and `patch :id` use the same shape. So a client can send back what it
+loaded. The checks of the body drop fields such as `id` or `createdAt`.
 
 ## The checks of a body
 
 The checks read the entity's MikroORM metadata, so each column is declared once.
-They keep what a client may write, and check what Postgres can't check well:
+They keep what a client may write. They check what Postgres can't check well:
 
-- They drop properties that clients can't write: the primary key, hidden
-  properties, formulas, versions, generated columns, `persist(false)`
-  properties, blobs, columns with `onUpdate`, and scalars and relations with
-  `onCreate`, such as `createdAt`. JSON and array columns with `onCreate` stay
-  writable, because `onCreate(() => [])` is their default.
-- They check required columns on create, `null` in columns that aren't nullable,
-  and the JSON types of scalars, integers, dates and enums. `em.create()` would
-  turn a string such as `"false"` into `true` for a boolean, and `em.assign()`
-  throws at the first wrong value, without its path in the body.
+- They drop properties that clients can't write. These are the primary key,
+  hidden properties, formulas, versions, generated columns, `persist(false)`
+  properties, blobs, and columns with `onUpdate`. They also drop scalars and
+  relations with `onCreate`, such as `createdAt`.
+- JSON and array columns with `onCreate` stay writable, because
+  `onCreate(() => [])` is their default.
+- They check required columns on create, and `null` in columns that aren't
+  nullable.
+- They check the JSON types of scalars, integers, dates and enums. Without this,
+  `em.create()` would turn a string such as `"false"` into `true` for a boolean.
+  `em.assign()` would throw at the first wrong value, without its path in the
+  body.
 - They run the schemas of custom types, see [Rules on values](#rules-on-values).
 - They collect every error, each at its path in the body, such as
-  `sections/2/title`, with the `keyword` `invalid_type` or `invalid_value`, and
-  respond with 400, see
+  `sections/2/title`. The `keyword` is `invalid_type` or `invalid_value`.
+- They respond with 400, see
   [Validation errors](../../api/server/errors.md#validation-errors).
 
 Postgres checks lengths, ranges and formats when the base flushes, see
@@ -57,10 +60,6 @@ fields, give the action a `body` schema, see
 [Stricter input](validation.md#stricter-input).
 
 ### Rules on values
-
-Put the rules of a value on its column's custom type, as a
-[Zod schema](validation.md). `defineJsonType()` declares a JSON column with a
-schema:
 
 ```js
 import { z } from 'zod'
@@ -83,6 +82,10 @@ properties: {
 }
 ```
 
+Put the rules of a value on its column's custom type, as a
+[Zod schema](validation.md). `defineJsonType()` declares a JSON column with a
+schema.
+
 Any custom type can carry a schema in a `schema` getter. For example, an email
 column:
 
@@ -101,15 +104,13 @@ export class EmailType extends StringType {
 email: p.string().type(new EmailType())
 ```
 
-It is a getter because MikroORM deep-copies custom types with the metadata. The
-checks run the schema at the property's path, wherever the property appears in a
-body. The schema only validates. The value is written as sent, without the
-schema's transforms and defaults.
+- It is a getter, because MikroORM deep-copies custom types with the metadata.
+- The checks run the schema at the property's path, wherever the property
+  appears in a body.
+- The schema only validates. The value is written as sent, without the schema's
+  transforms and defaults.
 
 ### Rules on rows and graphs
-
-Write rules that span several fields or rows as plain functions next to the
-entity. They return issues:
 
 ```js
 export function checkShares(book) {
@@ -120,17 +121,15 @@ export function checkShares(book) {
 }
 ```
 
+Write rules that span several fields or rows as plain functions next to the
+entity. They return issues.
+
 A mixin's middleware runs them inside the transaction, after the data is
-assigned, and throws `createValidationError(issues)`, see the
-[`validated` mixin](controllers.md#middleware). Scripts call the same functions.
-Rules that depend on the user stay in `deserialize` and `authorize`.
+assigned. It throws `createValidationError(issues)`, see the
+[`validated` mixin](controllers.md#middleware). Scripts call the same
+functions. Rules that depend on the user stay in `deserialize` and `authorize`.
 
 ### Writes of the website
-
-The admin's writes rely on the entity, the checks of the body and the database.
-Writes of the website and of members also get a strict `body` schema on their
-action, also on default handlers. The schema is the allowlist, reports every
-error and sets size limits:
 
 ```js
 'patch :id': {
@@ -142,37 +141,44 @@ error and sets size limits:
 }
 ```
 
-## Relations
+The admin's writes rely on the entity, the checks of the body and the database.
+Writes of the website and of members also get a strict `body` schema on their
+action. This also applies to default handlers. The schema is the allowlist. It
+reports every error, and it sets size limits.
 
-A relation to one row takes `{ id }`, the target's id, or `null` if the relation
-is nullable. Responses send it as `{ id }` or as a nested row. A write reads
-only its id, so a client can send back what it loaded:
+## Relations
 
 ```json
 { "title": "Emma", "author": { "id": 12 } }
 { "title": "Emma", "author": 12 }
 ```
 
-Each id must name a row that MikroORM's default filters let through. Missing or
-soft-deleted rows respond with 400 and `invalid_value` at the field, such as
-`tags/1`. The check runs one query per target entity. It doesn't apply the
-`find` of another controller, so a client can link a row that it can't list. A
-controller that needs more checks does them in `deserialize`. On a PATCH, ids
-that the record already links pass.
+A relation to one row takes `{ id }`, the target's id, or `null` if the relation
+is nullable. Responses send it as `{ id }` or as a nested row. A write reads
+only its id, so a client can send back what it loaded.
+
+- Each id must name a row that MikroORM's default filters let through.
+- Missing or soft-deleted rows respond with 400 and `invalid_value` at the
+  field, such as `tags/1`.
+- The check runs one query per target entity.
+- The check doesn't apply the `find` of another controller. So a client can link
+  a row that it can't list. A controller that needs more checks does them in
+  `deserialize`.
+- On a PATCH, ids that the record already links pass.
 
 ### Many-to-many relations
-
-A many-to-many relation takes an array of ids, on either side. MikroORM writes
-only the pairs that change. Kept pairs keep their pivot rows, and dropped pairs
-lose them.
 
 ```json
 { "tags": [3, 7, { "id": 9 }] }
 ```
 
+A many-to-many relation takes an array of ids, on either side. MikroORM writes
+only the pairs that change. Kept pairs keep their pivot rows, and dropped pairs
+lose them.
+
 A pivot entity can have columns of its own, such as the due date of a book in a
-loan. Use MikroORM's many-to-many relation on a pivot entity whose primary key
-is its two foreign keys:
+loan. Use MikroORM's many-to-many relation on a pivot entity. Its primary key is
+its two foreign keys:
 
 ```js
 const LoanBookSchema = defineEntity({
@@ -193,7 +199,7 @@ loanLinks: () => p.oneToMany(LoanBook).mappedBy(link => link.book)
 ```
 
 The body writes the relation as ids. The handler sets the other columns after a
-first flush, in the same transaction, and the base flushes them at the end:
+first flush, in the same transaction. The base flushes them at the end:
 
 ```js
 await assignRecord(em, loan, data)
@@ -208,13 +214,9 @@ for (const book of books) {
 ```
 
 A pivot entity with a primary key of its own doesn't work. MikroORM orders the
-relation by that key, and writes kept pairs again without their columns.
+relation by that key. It also writes kept pairs again without their columns.
 
 ## Nested rows
-
-A one-to-many relation with `orphanRemoval` owns its rows, and so does the
-inverse side of a one-to-one relation with `orphanRemoval`. A body writes these
-rows nested:
 
 ```json
 {
@@ -226,8 +228,12 @@ rows nested:
 }
 ```
 
-- A row with an id updates that row, and a row without an id is new. An id that
-  belongs to another record responds with 400.
+A one-to-many relation with `orphanRemoval` owns its rows. So does the inverse
+side of a one-to-one relation with `orphanRemoval`. A body writes these rows
+nested:
+
+- A row with an id updates that row. A row without an id is new.
+- An id that belongs to another record responds with 400.
 - On a PATCH, the array is the full set. Owned rows missing from it are deleted.
 - The nested rows of a new row are new too, so they can't carry an id.
 - `null` removes the owned row of a one-to-one relation.
@@ -236,9 +242,6 @@ rows nested:
 
 ### New rows and references
 
-A body can link rows that don't exist yet. A new row carries `#id`, a key that
-the client chooses. Other places in the body link to it with `{ '#ref': key }`:
-
 ```json
 {
   "chapters": [{ "#id": "c1", "title": "Intro" }],
@@ -246,46 +249,46 @@ the client chooses. Other places in the body link to it with `{ '#ref': key }`:
 }
 ```
 
+A body can link rows that don't exist yet. A new row carries `#id`, a key that
+the client chooses. Other places in the body link to it with `{ '#ref': key }`.
+
 - A ref can stand for a relation to one row, or for an item of a to-many
-  relation of any kind. It may point to a row before or after it in the body.
+  relation of any kind.
+- A ref may point to a row before or after it in the body.
 - Only new nested rows carry `#id`. A link to a row that the database already
   holds is its id.
-- An unknown key, a duplicate `#id`, `#id` on a row with an id, or a ref to a
-  row of another entity responds with 400, before anything is created.
+- These respond with 400, before anything is created: an unknown key, a
+  duplicate `#id`, `#id` on a row with an id, and a ref to a row of another
+  entity.
 - Markers inside JSON columns are part of the JSON value.
 - The database assigns the ids. Clients don't generate them.
 
-The write first creates the new rows that carry `#id` or hold refs, and puts
-each one in its place in the body. Then it creates or assigns the record, and
-sets the refs.
+The write first creates the new rows that carry `#id` or hold refs. It puts each
+one in its place in the body. Then it creates or assigns the record, and sets
+the refs.
 
 ## Deletes
-
-`delete :id` deletes the record and the rows it owns. The rows that refer to it
-follow the delete rules of their foreign keys. A foreign key without a rule
-refuses the delete, which responds with 409.
-
-MikroORM's default rule for a nullable relation is `set null`. If a nullable
-relation must refuse the delete, give it `.deleteRule('no action')` or
-`.deleteRule('restrict')`:
 
 ```js
 member: () => p.manyToOne(Member).nullable().deleteRule('no action')
 ```
 
+`delete :id` deletes the record and the rows that it owns. The rows that refer
+to it follow the delete rules of their foreign keys. A foreign key without a
+rule refuses the delete, which responds with 409.
+
+MikroORM's default rule for a nullable relation is `set null`. If a nullable
+relation must refuse the delete, give it `.deleteRule('no action')` or
+`.deleteRule('restrict')`, as above.
+
 A tree of rows of one entity, such as child pages with `orphanRemoval`, needs
 `.deleteRule('cascade')` on its foreign key.
 
 Custom handlers delete with `em.remove(record)` and a flush. The rows that the
-record owns go with it, and the rows that refer to it follow their delete rules,
-see [`defineMikroConfig()`](../../api/server/mikro.md#definemikroconfig).
+record owns go with it. The rows that refer to it follow their delete rules, see
+[`defineMikroConfig()`](../../api/server/mikro.md#definemikroconfig).
 
 ## Writes in custom handlers
-
-Custom handlers write a body the same way as `post` and `patch :id`, with
-`createRecord()` and `assignRecord()`. These functions run the checks of the
-body and the ids, and handle `#id` and `#ref`. They don't flush, so the handler
-can work on the records first:
 
 ```js
 import { assignRecord, createRecord } from '@ditojs/mikro'
@@ -302,6 +305,13 @@ import { assignRecord, createRecord } from '@ditojs/mikro'
   }
 })
 ```
+
+Custom handlers write a body the same way as `post` and `patch :id`, with
+`createRecord()` and `assignRecord()`.
+
+- These functions run the checks of the body and of the ids.
+- They handle `#id` and `#ref`.
+- They don't flush, so the handler can work on the records first.
 
 The `deserialize` chain runs in the default `post` and `patch :id` only. A
 custom handler decides what the body may write, such as with its `body` schema.

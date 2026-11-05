@@ -5,9 +5,11 @@ built on web standards, MikroORM and Vue.js.
 
 Released in 2018 under the MIT license, with support by https://lineto.com/
 
-`@ditojs/storage` keeps files on disk or in S3 for Dito.js apps. It has upload
-routes for the admin, and tracks stored files in an `asset` table by scanning
-the data. It reads its tables through Kysely.
+`@ditojs/storage` keeps files on disk or in S3 for Dito.js apps.
+
+- It has upload actions for the admin.
+- It tracks stored files in an `asset` table, by scanning the data.
+- It reads its tables through Kysely.
 
 ```js
 import { createMikroAdapter, getAssetPaths } from '@ditojs/mikro'

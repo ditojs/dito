@@ -5,11 +5,14 @@ built on web standards, MikroORM and Vue.js.
 
 Released in 2018 under the MIT license, with support by https://lineto.com/
 
-`@ditojs/auth` adds sessions and users to Dito.js apps. It has Hono middleware
-that keeps sessions in signed cookies and a `session` table, and a controller
-for login, logout, confirmed access, password change and reset, passkeys
-(`@ditojs/auth/passkeys`) and TOTP (`@ditojs/auth/totp`). The app stores its
-users in its own entities and finds them through a user source.
+`@ditojs/auth` adds sessions and users to Dito.js apps.
+
+- Its Hono middleware keeps sessions in signed cookies and a `session` table.
+- Its controller has login, logout, confirmed access, and password change and
+  reset.
+- Passkeys come from `@ditojs/auth/passkeys`, and TOTP from `@ditojs/auth/totp`.
+- The app stores its users in its own entities, and finds them through a user
+  source.
 
 ```js
 import { Hono } from 'hono'

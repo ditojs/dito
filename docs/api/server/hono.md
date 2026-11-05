@@ -5,7 +5,7 @@ import { hostMiddleware } from '@ditojs/server'
 import { forwarded, getClientAddress, serve } from '@ditojs/server/node'
 ```
 
-Dito APIs are [Hono](https://hono.dev) apps, which the app routes in its own
+Dito APIs are [Hono](https://hono.dev) apps. The app routes them in its own
 `Hono` instance. `@ditojs/server/node` serves the app on Node. It needs
 `@hono/node-server`, an optional peer. See
 [Hosting with Hono](../../guide/server/api.md#hosting-with-hono) and
@@ -17,21 +17,6 @@ Dito APIs are [Hono](https://hono.dev) apps, which the app routes in its own
 hostMiddleware(options?: HostMiddlewareOptions): MiddlewareHandler[]
 ```
 
-Returns Hono's standard middleware for a host, for
-`app.use(...hostMiddleware())`. Each option is `false`, `true` for the defaults
-of that middleware, or its options.
-
-| Option          | Default | Description                                                                                                                                                                         |
-| --------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `secureHeaders` | `true`  | Hono's `secureHeaders()`.                                                                                                                                                           |
-| `cors`          | `false` | Hono's `cors()`.                                                                                                                                                                    |
-| `etag`          | `false` | Hono's `etag()`.                                                                                                                                                                    |
-| `csrf`          | `true`  | Hono's `csrf()`, only for requests with `Origin`: browsers send it, and other clients can't carry an attack. It passes `application/json`, which forms can't send.                  |
-| `bodyLimit`     | `true`  | Hono's `bodyLimit()`, with a `maxSize` of 1 MB unless the options set one. Multipart bodies have no limit here: the reverse proxy sets it, such as `client_max_body_size` in nginx. |
-
-They run in this order, so the responses of `csrf()` and `bodyLimit()` have the
-headers of the others.
-
 ```js
 app.use(
   ...hostMiddleware({
@@ -42,17 +27,38 @@ app.use(
 )
 ```
 
+Returns Hono's standard middleware for a host, for
+`app.use(...hostMiddleware())`. Each option takes one of three values:
+
+- `false` leaves the middleware out;
+- `true` adds it with its defaults;
+- an object adds it with these options.
+
+| Option          | Default | Description                                                                                                                                                                               |
+| --------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `secureHeaders` | `true`  | Hono's `secureHeaders()`.                                                                                                                                                                 |
+| `cors`          | `false` | Hono's `cors()`.                                                                                                                                                                          |
+| `etag`          | `false` | Hono's `etag()`.                                                                                                                                                                          |
+| `csrf`          | `true`  | Hono's `csrf()`. It only checks requests with `Origin`. Browsers send `Origin`, and other clients can't carry an attack. `csrf()` lets `application/json` pass, which forms can't send.   |
+| `bodyLimit`     | `true`  | Hono's `bodyLimit()`. Its `maxSize` is 1 MB unless the options set one. Multipart bodies have no limit here. The reverse proxy limits them, such as with `client_max_body_size` in nginx. |
+
+The middleware runs in the order of the table. So the responses of `csrf()` and
+`bodyLimit()` have the headers of the others.
+
 ## forwarded()
 
 ```ts
 forwarded(proxy?: boolean | number): MiddlewareHandler
 ```
 
-Middleware for apps behind reverse proxies, which the app adds first. `proxy` is
-the number of trusted proxies, and `true`, the default, means one. It sets the
-public URL from `X-Forwarded-Proto` and `X-Forwarded-Host` as `c.req.url`, and
-the client's address from `X-Forwarded-For`, see
-[Behind a proxy](../../guide/server/api.md#behind-a-proxy).
+Middleware for apps behind reverse proxies. The app adds it first.
+
+- `proxy` is the number of trusted proxies. `true`, the default, means one.
+- It sets the public URL as `c.req.url`, from `X-Forwarded-Proto` and
+  `X-Forwarded-Host`.
+- It reads the client's address from `X-Forwarded-For`.
+
+See [Behind a proxy](../../guide/server/api.md#behind-a-proxy).
 
 ## getClientAddress()
 
@@ -60,8 +66,8 @@ the client's address from `X-Forwarded-For`, see
 getClientAddress(c: Context): string | undefined
 ```
 
-Returns the client's address: the one that `forwarded()` read, else the socket's
-on Node.
+Returns the client's address that `forwarded()` read. Without it, on Node, it
+returns the socket's address.
 
 ## serve()
 
@@ -69,9 +75,11 @@ on Node.
 serve(app: Hono, options?: ServeOptions): Promise<{ server, close }>
 ```
 
-Listens on Node, and returns the Node server and `close()`. `close()` stops
-the server, then runs `onClose`. It fails after `closeTimeout`. SIGINT and
-SIGTERM call `close()` and exit the process.
+Listens on Node, and returns the Node server and `close()`.
+
+- `close()` stops the server, then runs `onClose`.
+- `close()` fails after `closeTimeout`.
+- SIGINT and SIGTERM call `close()`, and exit the process.
 
 | Option         | Type                          | Description                                                                   |
 | -------------- | ----------------------------- | ----------------------------------------------------------------------------- |

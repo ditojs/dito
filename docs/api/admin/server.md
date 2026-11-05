@@ -4,13 +4,16 @@
 import { createAdmin } from '@ditojs/admin/server'
 ```
 
-Serves the [Dito.js Admin](index.md) under a path. In production, it
-serves the built files with `serveStatic()` of `@hono/node-server`. In
-development, with a `vite` config, it serves the sources through Vite in
-middleware mode. Only development loads Vite.
+Serves the [Dito.js Admin](index.md) under a path.
+
+- In production, it serves the built files with `serveStatic()` of
+  `@hono/node-server`.
+- In development, with a `vite` config, it serves the sources through Vite in
+  middleware mode.
+- Only development loads Vite.
 
 The entry needs the optional peer dependencies `@ditojs/server`, `hono` and
-`@hono/node-server`, and for development those of
+`@hono/node-server`. Development also needs those of
 [`@ditojs/admin/vite`](vite.md). See
 [Serving the admin](../../guide/server/admin.md) in the guide.
 
@@ -19,33 +22,6 @@ The entry needs the optional peer dependencies `@ditojs/server`, `hono` and
 ```ts
 createAdmin(options: AdminOptions): Hono & { close(): Promise<void> }
 ```
-
-Returns a Hono app that serves the admin. The host routes it at `base` with
-`app.route(base, admin)`. The admin's config, the `dito` object, is served as
-`<base>/dito.js`.
-
-Without `vite`, the app serves the built files of `dist` to GET and HEAD
-requests. Browsers cache the build's files below `assets/` and `views/` for
-good, and check other files again on each load. Paths without an extension get
-`index.html`. Without `vite` and `dist`, or with a `dist` that doesn't exist,
-`createAdmin()` throws.
-
-With `vite`, Vite handles the requests through the Node request and response of
-`@hono/node-server`, so the app needs that Node server. `close()` stops Vite.
-
-### AdminOptions
-
-| Key              | Type                                                                         | Description                                                                                                                                                       |
-| ---------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `base`           | `string`                                                                     | The path of the admin, such as `/admin`.                                                                                                                          |
-| `dist`           | `string`                                                                     | The built admin, served without `vite`.                                                                                                                           |
-| `api`            | `object`                                                                     | `dito.api` in the browser, such as `url` and `users`.                                                                                                             |
-| `settings`       | `object`                                                                     | `dito.settings` in the browser.                                                                                                                                   |
-| `authentication` | `AuthenticationFeatures`                                                     | `dito.authentication`: the `features` of [`defineUserActions()`](../server/auth.md#defineuseractions), which tell the login and account views what to offer.      |
-| `middleware`     | `Middleware \| Middleware[]`                                                 | Hono middleware that `getUser` and `authorize` need, such as the session middleware. It runs only on the requests that `authorize` checks.                        |
-| `getUser`        | `({ c }) => User \| null \| Promise<…>`                                      | The signed-in user of the request, such as the one of [`getSessionUser()`](../server/auth.md#getsessionuser). `authorize` reads it as `c.var.user`.               |
-| `authorize`      | `true \| string \| string[] \| ({ c, user }) => boolean \| Promise<boolean>` | Who may load the admin's views. It takes the values of an action's [`authorize`](../server/controllers.md#authorize). Without it, anyone may.                     |
-| `vite`           | `InlineConfig \| string`                                                     | The Vite config of development, or the path of its file, such as one that exports [`defineAdminViteConfig()`](vite.md). With it, Vite serves the admin's sources. |
 
 ```js
 const admin = createAdmin({
@@ -61,3 +37,33 @@ const admin = createAdmin({
 })
 app.route('/admin', admin)
 ```
+
+Returns a Hono app that serves the admin. The host routes it at `base` with
+`app.route(base, admin)`. The admin's config, the `dito` object, is served as
+`<base>/dito.js`.
+
+Without `vite`, the app serves the built files of `dist` to GET and HEAD
+requests.
+
+- Browsers cache the build's files below `assets/` and `views/` for good.
+- They check the other files again on each load.
+- Paths without an extension get `index.html`.
+- Without `vite` and without `dist`, `createAdmin()` throws. It also throws when
+  `dist` doesn't exist.
+
+With `vite`, Vite handles the requests through the Node request and response of
+`@hono/node-server`. So the app needs that Node server. `close()` stops Vite.
+
+### AdminOptions
+
+| Key              | Type                                                                         | Description                                                                                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `base`           | `string`                                                                     | The path of the admin, such as `/admin`.                                                                                                                          |
+| `dist`           | `string`                                                                     | The built admin, served without `vite`.                                                                                                                           |
+| `api`            | `object`                                                                     | `dito.api` in the browser, such as `url` and `users`.                                                                                                             |
+| `settings`       | `object`                                                                     | `dito.settings` in the browser.                                                                                                                                   |
+| `authentication` | `AuthenticationFeatures`                                                     | `dito.authentication`: the `features` of [`defineUserActions()`](../server/auth.md#defineuseractions). They tell the login and account views what to offer.       |
+| `middleware`     | `Middleware \| Middleware[]`                                                 | Hono middleware that `getUser` and `authorize` need, such as the session middleware. It runs only on the requests that `authorize` checks.                        |
+| `getUser`        | `({ c }) => User \| null \| Promise<…>`                                      | The signed-in user of the request, such as the one of [`getSessionUser()`](../server/auth.md#getsessionuser). `authorize` reads it as `c.var.user`.               |
+| `authorize`      | `true \| string \| string[] \| ({ c, user }) => boolean \| Promise<boolean>` | Who may load the admin's views. It takes the values of an action's [`authorize`](../server/controllers.md#authorize). Without it, anyone may.                     |
+| `vite`           | `InlineConfig \| string`                                                     | The Vite config of development, or the path of its file, such as one that exports [`defineAdminViteConfig()`](vite.md). With it, Vite serves the admin's sources. |

@@ -6,12 +6,15 @@ built on web standards, MikroORM and Vue.js.
 Released in 2018 under the MIT license, with support by https://lineto.com/
 
 `@ditojs/server` is the core of Dito.js Server, built on
-[Hono](https://hono.dev). `createApi()` turns a list of controllers into a Hono
-app, which the host routes with `app.route()`. Handlers get one object, their
-context, `{ query, body, params, user, em, action, c, next }`. `c`
-is Hono's context, and `next()` runs the handler beneath. Middleware is Hono
-middleware. `@ditojs/mikro` connects MikroORM, with
-`adapter: createMikroAdapter(orm)`.
+[Hono](https://hono.dev).
+
+- `createApi()` turns a list of controllers into a Hono app. The host routes it
+  with `app.route()`.
+- Handlers get one object, their context,
+  `{ query, body, params, user, em, action, c, next }`. `c` is Hono's context.
+  `next()` runs the handler beneath, and returns its result.
+- Middleware is Hono middleware.
+- `@ditojs/mikro` connects MikroORM, with `adapter: createMikroAdapter(orm)`.
 
 ```js
 import { Hono } from 'hono'

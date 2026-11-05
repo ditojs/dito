@@ -11,7 +11,7 @@ entities. A controller's `find` decides what it loads and returns, and its
 metadata.
 
 `createMikroAdapter(orm)` connects the app to the ORM. It forks an entity
-manager per request, runs transactions and maps MikroORM's errors.
+manager for each request. It runs transactions, and maps MikroORM's errors.
 
 ```js
 import { createApi } from '@ditojs/server'

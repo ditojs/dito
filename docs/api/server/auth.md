@@ -16,16 +16,23 @@ import { createPasskeys } from '@ditojs/auth/passkeys'
 import { createTotp } from '@ditojs/auth/totp'
 ```
 
-Sessions in signed cookies, and the actions of the admin's users: login, logout,
-reading the logged-in user, confirmed access, password change and reset,
-passkeys and TOTP. The app keeps its users in its own entities, and describes
-them in a [`UserSource`](#usersource). Sessions and credentials are stored in
-the `session` and `credential` tables, which auth reads through
+`@ditojs/auth` keeps sessions in signed cookies. It also has the actions of the
+admin's users:
+
+- login and logout;
+- reading the logged-in user;
+- confirmed access;
+- password change and reset;
+- passkeys and TOTP.
+
+The app keeps its users in its own entities, and describes them in a
+[`UserSource`](#usersource). Sessions and credentials are stored in the
+`session` and `credential` tables. Auth reads these tables through
 [Kysely](https://kysely.dev).
 
-Peer dependencies: `@ditojs/server`, `hono`, `kysely` and `zod`, plus
-`@simplewebauthn/server` and `aaguids` for passkeys, and `otpauth` for TOTP. See
-[Users and sessions](../../guide/server/auth.md) in the guide.
+The peer dependencies are `@ditojs/server`, `hono`, `kysely` and `zod`.
+Passkeys also need `@simplewebauthn/server` and `aaguids`, and TOTP needs
+`otpauth`. See [Users and sessions](../../guide/server/auth.md) in the guide.
 
 ## createSessions()
 
@@ -38,12 +45,12 @@ createSessions(options: CreateSessionsOptions): {
 }
 ```
 
-| Option       | Type                           | Description                                                                                                                                                              |
-| ------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `adapter`    | `{ getKysely(): Kysely<any> }` | The adapter of the API, such as [`createMikroAdapter(orm)`](mikro.md#createmikroadapter), whose Kysely holds the `session` table, outside of the requests' transactions. |
-| `secrets`    | `string[]`                     | The secrets that sign the cookie. The first one signs, and all of them verify, so they can rotate.                                                                       |
-| `cookieName` | `string`                       | The cookie name, such as `admin.sess`.                                                                                                                                   |
-| `maxAge`     | `number`                       | The lifetime of a session, in milliseconds. Browsers cap cookies at 400 days.                                                                                            |
+| Option       | Type                           | Description                                                                                                                                                            |
+| ------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `adapter`    | `{ getKysely(): Kysely<any> }` | The adapter of the API, such as [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Its Kysely holds the `session` table, outside of the requests' transactions. |
+| `secrets`    | `string[]`                     | The secrets that sign the cookie. The first one signs, and all of them verify, so they can rotate.                                                                     |
+| `cookieName` | `string`                       | The cookie name, such as `admin.sess`.                                                                                                                                 |
+| `maxAge`     | `number`                       | The lifetime of a session, in milliseconds. Browsers cap cookies at 400 days.                                                                                          |
 
 The app creates the `session` table:
 
@@ -55,25 +62,30 @@ create table session (
 );
 ```
 
-The cookie holds the id, signed with Hono's
-[signed cookies](https://hono.dev/docs/helpers/cookie). It is `SameSite=Lax`,
-`HttpOnly`, and `Secure` when the request's URL is https. A row without
+The cookie holds the id of the session, signed with Hono's
+[signed cookies](https://hono.dev/docs/helpers/cookie). It is `SameSite=Lax` and
+`HttpOnly`. It is `Secure` when the request's URL is https. A row without
 `expires_at`, or with one in the past, isn't a session.
-`deleteExpired()` deletes the expired rows. The app runs it on a timer.
 
-Returns the `cookieName`, the session `middleware`, `readSignedCookie()` and
-`deleteExpired()`. `middleware` is Hono middleware, which the app passes to the
-`middleware` of `createApi()`, or uses in its own Hono routes. The API runs it
-before `getUser`, which reads the session. It loads the session into
-`c.var.session` before the action. After the action, it saves the session if it
-changed, even when the action throws, and adds its `Set-Cookie` header to the
-response, also to error responses.
+`createSessions()` returns these:
 
-`readSignedCookie(c, name)` returns the value of the cookie `name` if one of
-`secrets` signed it, or `null`, for the app's own cookies, which it writes with
-`setSignedCookie(c, name, value, secrets[0])` of `hono/cookie`.
+| Member                      | Description                                                                                                                                                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `cookieName`                | The option of the same name.                                                                                                                                                                                 |
+| `middleware`                | The session middleware, see below.                                                                                                                                                                           |
+| `readSignedCookie(c, name)` | Returns the value of the cookie `name` if one of `secrets` signed it, else `null`. It reads the app's own cookies, which the app writes with `setSignedCookie(c, name, value, secrets[0])` of `hono/cookie`. |
+| `deleteExpired()`           | Deletes the expired rows. The app runs it on a timer.                                                                                                                                                        |
 
-[`createAdmin()`](../admin/server.md#adminoptions) takes the middleware and the
+`middleware` is Hono middleware. The app passes it to the `middleware` of
+`createApi()`, or uses it in its own Hono routes.
+
+- The API runs it before `getUser`, which reads the session.
+- It loads the session into `c.var.session` before the action.
+- After the action, it saves the session if it changed. It does this even when
+  the action throws.
+- It adds its `Set-Cookie` header to the response, also to error responses.
+
+[`createAdmin()`](../admin/server.md#adminoptions) takes the middleware, and the
 `getUser` of [`getSessionUser()`](#getsessionuser), as `createApi()` does:
 
 ```js
@@ -90,16 +102,16 @@ createAdmin({
 The session of a request, from `getSession(c)` or `c.var.session`. The package
 exports the type `Session`, not the class.
 
-| Member                                  | Description                                                                                                                                                                    |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`                                 | The session's data, which handlers change in place.                                                                                                                            |
-| `login(source, user)`                   | Logs the user in, with the fingerprint of their password.                                                                                                                      |
-| `logout()`                              | Clears the session.                                                                                                                                                            |
-| `regenerate()`                          | Gives the session a new id when it's saved.                                                                                                                                    |
-| `getUser(source)`                       | Returns the user of the session if it belongs to `source`, or `null`. It loads the user once per request. If the user changed the password since the login, it returns `null`. |
-| `refreshFingerprint(source, user)`      | Keeps the session valid after the user changed the password, if the request succeeds. The user's other sessions end.                                                           |
-| `confirmAccess(source, user, duration)` | Confirms the user's access for `duration` milliseconds.                                                                                                                        |
-| `checkConfirmedAccess(source)`          | Resolves to the user. Throws 401 without a login, and 403 with `confirmationRequired: true` without confirmed access. Use it for actions such as changing roles.               |
+| Member                                  | Description                                                                                                                                                                     |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                                 | The session's data, which handlers change in place.                                                                                                                             |
+| `login(source, user)`                   | Logs the user in, with the fingerprint of their password.                                                                                                                       |
+| `logout()`                              | Clears the session.                                                                                                                                                             |
+| `regenerate()`                          | Gives the session a new id when it's saved.                                                                                                                                     |
+| `getUser(source)`                       | Returns the user of the session if it belongs to `source`, else `null`. It loads the user once per request. It returns `null` if the user changed the password since the login. |
+| `refreshFingerprint(source, user)`      | Keeps the session valid after the user changed the password, if the request succeeds. The user's other sessions end.                                                            |
+| `confirmAccess(source, user, duration)` | Confirms the user's access for `duration` milliseconds.                                                                                                                         |
+| `checkConfirmedAccess(source)`          | Resolves to the user. Without a login, it throws 401. Without confirmed access, it throws 403 with `confirmationRequired: true`. Use it for actions such as changing roles.     |
 
 ## getSession()
 
@@ -108,7 +120,7 @@ getSession(c: Context): Session
 ```
 
 Returns the session of the request, in actions and in the app's own Hono routes.
-Throws if the middleware of `createSessions()` didn't run.
+It throws if the middleware of `createSessions()` didn't run.
 
 ## getSessionUser()
 
@@ -116,8 +128,12 @@ Throws if the middleware of `createSessions()` didn't run.
 getSessionUser(c: Context, source: UserSource): Promise<User | null>
 ```
 
-Returns `{ id, roles }` of the session's user, if the user belongs to `source`,
-for the `getUser` of `createApi()`: `getUser: ({ c }) => getSessionUser(c, admins)`.
+```js
+getUser: ({ c }) => getSessionUser(c, admins)
+```
+
+Returns `{ id, roles }` of the session's user, if the user belongs to `source`.
+It is meant for the `getUser` of `createApi()`.
 
 ## defineUserActions()
 
@@ -133,20 +149,26 @@ defineUserActions<U>(options: DefineUserActionsOptions<U>): {
 }
 ```
 
-Returns a controller with the actions of the admin's users, and the features it
-routes, which the admin's login and account views read. The app passes
-`controller` to `createApi()`, or lists it in the `mixins` of a controller of
-its own. A model controller doesn't fit, as it would flush and serialize the
-answers of the actions. It passes `features` to the admin as
-[`authentication`](../admin/server.md#adminoptions). Other users, such as a site's
-members, log in through the app's own actions, which call
-[`Session`](#session) and [`verifyPassword()`](#passwords). The actions:
+Returns two things:
+
+- `controller`, a controller with the actions of the admin's users. The app
+  passes it to `createApi()`, or lists it in the `mixins` of a controller of its
+  own. A model controller doesn't fit, as it would flush and serialize the
+  responses of the actions.
+- `features`, the features that the controller routes. The admin's login and
+  account views read them. The app passes them to the admin as
+  [`authentication`](../admin/server.md#adminoptions).
+
+Other users, such as a site's members, log in through the app's own actions.
+These call [`Session`](#session) and [`verifyPassword()`](#passwords).
+
+The actions:
 
 - need the session middleware;
 - check the login themselves, as the controller sets `authorize: true`;
 - run outside the API's transactions, as the controller sets
-  `transacted: false`. TOTP opens a transaction of its own, so failed codes
-  stay counted.
+  `transacted: false`. TOTP opens a transaction of its own, so failed codes stay
+  counted.
 
 A controller that mixes in `controller` and sets `authorize` or `transacted`
 replaces these settings, also for the mixed-in actions. Set them on its own
@@ -170,16 +192,22 @@ The actions, under `path`:
 | `post passkey-login-options`, `post passkey-login`, `get passkeys`, `post passkey-options`, `post passkeys`, `delete passkeys/:id` | `passkeys`      |
 | `post login-code`, `get totp`, `post totp`, `post totp-confirm`, `delete totp`                                                     | `totp`          |
 
-The body of `post login` and `post password-reset` names the user as `username`.
-`post password` takes `{ password }` and needs a confirmed access, and
-`post confirm-access` takes `{ password, code? }` or `{ passkey }`.
-A login responds with `{ user }`, or with `{ codeRequired: true }` when it needs
-a TOTP code, which `post login-code` takes. `post confirm-access` responds with
-`{ codeRequired: true }` when it needs a code, and with 204 once it confirms the
-access. `get self` responds with the user, or `null`. Other actions without a
-result, such as `post logout` and `post password`, respond with 204. Users
-change their other values, such as their email, through an action of the app,
-such as `patch self`, see [Account settings](../../guide/admin/views.md).
+Their bodies and responses:
+
+- The body of `post login` and `post password-reset` names the user as
+  `username`.
+- `post password` takes `{ password }`, and needs a confirmed access.
+- `post confirm-access` takes `{ password, code? }` or `{ passkey }`.
+- A login responds with `{ user }`. When it needs a TOTP code, it responds with
+  `{ codeRequired: true }`, and `post login-code` takes the code.
+- `post confirm-access` responds with `{ codeRequired: true }` when it needs a
+  code. It responds with 204 once it confirms the access.
+- `get self` responds with the user, or `null`.
+- Other actions without a result, such as `post logout` and `post password`,
+  respond with 204.
+
+Users change their other values, such as their email, through an action of the
+app, such as `patch self`, see [Account settings](../../guide/admin/views.md).
 
 ## definePasswordWrites()
 
@@ -188,15 +216,6 @@ definePasswordWrites<U>(options: {
   source: UserSource<U>
 }): MixinDefinition
 ```
-
-A mixin for the model controller of the users, which routes `post` and
-`patch :id`. The body sets `password`, and the handler beneath gets the body
-without it. The mixin sets the hash of the password as `hash` on the user that
-the handler returns, and the model controller writes it. The `password` of the
-source checks new passwords, see [`UserSource`](#usersource). A `hash` in the
-body responds with 400. When users change their own password, their
-session stays and their other sessions end, see `refreshFingerprint()` of
-[`Session`](#session).
 
 ```js
 defineModelController({
@@ -207,6 +226,18 @@ defineModelController({
   actions: { 'get': true, 'get :id': true }
 })
 ```
+
+A mixin for the model controller of the users. It routes `post` and
+`patch :id`, where the body sets `password`.
+
+- The handler beneath gets the body without `password`.
+- The mixin sets the hash of the password as `hash` on the user that the
+  handler returns. The model controller writes it.
+- The `password` schema of the source checks new passwords, see
+  [`UserSource`](#usersource).
+- A `hash` in the body responds with 400.
+- When users change their own password, their session stays, and their other
+  sessions end. See `refreshFingerprint()` of [`Session`](#session).
 
 ## UserSource
 
@@ -231,14 +262,14 @@ interface User {
 
 The users of one kind, such as admins or members.
 [`createEntityUserSource()`](mikro.md#createentityusersource) returns one for an
-entity, or the app implements it. Auth reads `id`, `username`, `hash`, `roles`
-and `lastLogin` of its users. The functions get Hono's context `c`, which holds
-the request's entity manager in `c.var.em`.
+entity. The app can also write one itself. Auth reads `id`, `username`, `hash`,
+`roles` and `lastLogin` of its users. The functions get `c`, which holds the
+request's entity manager in `c.var.em`.
 
 - `name` names the users in sessions and credentials, as `'<name>-<id>'`.
-- The source loads `hash`, as sessions keep its fingerprint and end when it
+- The source loads `hash`. Sessions keep its fingerprint, and end when it
   changes.
-- `findById()` resolves to `null` for ids it can't read.
+- `findById()` resolves to `null` for ids that it can't read.
 - `patch()` stores the values and sets them on the user: a new `hash`, or the
   `lastLogin` of a login.
 - `serialize()` returns what the actions send.
@@ -254,10 +285,10 @@ createCredentials(options: {
 }): Credentials
 ```
 
-Returns the store of the users' passkeys and TOTP secrets, in the `credential`
-table that all sources share, with `data` as JSON. It uses the Kysely of the
-`adapter` outside of the requests' transactions, like `createSessions()`. The
-app creates the table:
+Returns the store of the users' passkeys and TOTP secrets. They are kept in the
+`credential` table, which all sources share, with `data` as JSON. Like
+`createSessions()`, it uses the adapter's Kysely, outside of the requests'
+transactions. The app creates the table:
 
 ```sql
 create table credential (
@@ -274,9 +305,9 @@ create table credential (
 );
 ```
 
-No foreign keys tie the credentials to their users. When the app deletes users,
-it calls `credentials.deleteUsers(source, ids, { c? })`, with the request's `c`
-to delete in the transaction of the deletion.
+No foreign keys tie the credentials to their users. So when the app deletes
+users, it calls `credentials.deleteUsers(source, ids, { c? })`. With the
+request's `c`, it deletes in the transaction of the deletion.
 
 ## createPasskeys()
 
@@ -289,11 +320,16 @@ createPasskeys(options: {
 ```
 
 From `@ditojs/auth/passkeys`. Enables passkeys, as discoverable WebAuthn
-credentials. `rpName` is the name that the browser shows. `domain` defaults to
-the request's host, and `origins` to the request's origin. An app behind a proxy
-runs the `forwarded()` middleware of `@ditojs/server/node`, so that the
-request's URL is the public one. An admin on another host than the API sets
-`origins`, such as `['https://admin.example.com']`.
+credentials.
+
+- `rpName` is the name that the browser shows.
+- `domain` defaults to the request's host.
+- `origins` defaults to the request's origin.
+
+An app behind a proxy runs the `forwarded()` middleware of
+`@ditojs/server/node`, so that the request's URL is the public one. An admin on
+another host than the API sets `origins`, such as
+`['https://admin.example.com']`.
 
 ## createTotp()
 
@@ -302,9 +338,11 @@ createTotp(options: { issuer: string, secret: string }): Totp
 ```
 
 From `@ditojs/auth/totp`. Enables time-based one-time codes, with backup codes.
-`issuer` is the name that authenticator apps show. `secret` is a long random
-string of the app, from which the keys that encrypt the TOTP secrets are
-derived. Ten wrong codes in a row lock the codes for 15 minutes.
+
+- `issuer` is the name that authenticator apps show.
+- `secret` is a long random string of the app. The keys that encrypt the TOTP
+  secrets are derived from it.
+- Ten wrong codes in a row lock the codes for 15 minutes.
 
 ## createPasswordReset()
 
@@ -321,16 +359,19 @@ createPasswordReset(options: CreatePasswordResetOptions): PasswordReset
 | `send`         | `({ c, user, url }) => unknown` | Sends the email. The response doesn't wait for it.                                   |
 | `onError`      | `({ error, c }) => void`        | Gets the errors of `send`.                                                           |
 
-Enables password resets by email. `post password-reset` responds the same way
-whether the user exists or not, and even when `resendAfter` holds the link back.
-`resendAfter` counts per process. Tokens hold the user's id and their time,
-signed with HMAC-SHA256 over these and the user's hash, last login and username.
-So a login, a password change or a username change makes the link invalid,
-including the password change that the link itself makes.
+Enables password resets by email.
+
+- `post password-reset` responds the same way whether the user exists or not. It
+  does so also when `resendAfter` holds the link back.
+- `resendAfter` counts per process.
+- A token holds the user's id and its time.
+- The token is signed with HMAC-SHA256 over these, the user's hash, last login
+  and username. So a login, a password change or a username change makes the
+  link invalid. This includes the password change that the link itself makes.
 
 ## Passwords
 
-| Function                         | Description                                                                                                             |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `hashPassword(password)`         | Returns the bcrypt hash.                                                                                                |
-| `verifyPassword(password, hash)` | Returns whether the password matches the hash. Without a hash, it compares against a dummy hash, to take the same time. |
+| Function                         | Description                                                                                                                      |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `hashPassword(password)`         | Returns the bcrypt hash.                                                                                                         |
+| `verifyPassword(password, hash)` | Returns whether the password matches the hash. Without a hash, it compares against a dummy hash, so that it takes the same time. |

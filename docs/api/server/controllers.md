@@ -9,14 +9,15 @@ import {
 } from '@ditojs/server'
 ```
 
-A controller is a plain object with a `path`, a map of `actions` keyed
-`'verb path'`, and settings. A mixin is a controller without a `path`. It adds
-its actions, settings and middleware to the controllers that list it. See
+A controller is a plain object with a `path`, settings, and a map of `actions`
+keyed `'verb path'`. A mixin is a controller without a `path`. It adds its
+actions, settings and middleware to the controllers that list it. See
 [Controllers](../../guide/server/controllers.md) in the guide.
 
-Model controllers, from [`defineModelController()` of
-`@ditojs/mikro`](mikro.md#definemodelcontroller), take the same options and add
-their own, such as `serialize` and `deserialize`.
+Model controllers come from
+[`defineModelController()` of `@ditojs/mikro`](mikro.md#definemodelcontroller).
+They take the same options, and add their own, such as `serialize` and
+`deserialize`.
 
 ## defineController()
 
@@ -52,15 +53,18 @@ Returns the definition. A `MixinDefinition` has all keys of a
 
 ## Actions
 
-`actions` maps keys to actions. A key is the verb, `get`, `post`, `put`, `patch`
-or `delete`, then a space and the path below the controller's path, if any:
-`get`, `post`, `get :id`, `post :id/publish`, `get by-name/:name`.
+`actions` maps keys to actions. A key is the verb, then a space and the path
+below the controller's path, if any:
 
+- The verbs are `get`, `post`, `put`, `patch` and `delete`.
+- Keys look like `get`, `post`, `get :id`, `post :id/publish` and
+  `get by-name/:name`.
 - A path that starts with `:id` is a record action. Its context holds the id in
-  `params.id`, and in [model controllers](mikro.md#variables) the converted id
-  as `id`. `:id` is reserved for record actions.
-- Paths use Hono's syntax: `:name` matches one segment, and `:name{.+}` one or
-  more. Both become `params.name`.
+  `params.id`. In [model controllers](mikro.md#variables), it also holds the
+  converted id as `id`.
+- `:id` is reserved for record actions.
+- Paths use Hono's syntax. `:name` matches one segment, and `:name{.+}` matches
+  one or more. Both become `params.name`.
 
 The value of a key:
 
@@ -72,7 +76,7 @@ The value of a key:
 | an object without it     | Routes the handler beneath, and adds settings and schemas, such as `'patch :id': { authorize: 'editor' }`. |
 
 A model controller routes the default handlers of the keys that it or its mixins
-set, with `true` or an object.
+set, with `true` or with an object.
 
 ### Action objects
 
@@ -85,18 +89,15 @@ set, with `true` or an object.
 | `middleware` | `Middleware \| Middleware[]` | Hono middleware of this action only, such as caching headers.                                                                     |
 | `transacted` | `boolean`                    | Whether the action runs in a transaction.                                                                                         |
 
-Schemas are [Zod](https://zod.dev) schemas, which run through `validator()` of
-`hono/validator`. Invalid input responds with 400 and the issues of the schema, see [Validation errors](errors.md#validation-errors).
+Schemas are [Zod](https://zod.dev) schemas. They run through `validator()` of
+`hono/validator`. Invalid input responds with 400 and the issues of the schema,
+see [Validation errors](errors.md#validation-errors).
 
 ## defineAction()
 
 ```ts
 defineAction(definition)
 ```
-
-Returns the [action object](#action-objects). In TypeScript, it types `query`
-and `body` of the handler's context, and `c.req.valid('query' | 'json')`, from the
-output of its schemas.
 
 ```js
 'post :id/publish': defineAction({
@@ -105,16 +106,15 @@ output of its schemas.
 })
 ```
 
+Returns the [action object](#action-objects). In TypeScript, it types `query`
+and `body` of the handler's context by the output of its schemas. It types
+`c.req.valid('query')` and `c.req.valid('json')` the same way.
+
 ## Handler
 
 ```ts
 type Handler = (context: HandlerContext) => unknown
 ```
-
-A handler gets its [context](api.md#the-handlers-context) as one object,
-`{ query, body, params, user, em, action, c, next }`, and destructures what it
-needs. `c` is Hono's context. `next()` runs the handler that this one replaces,
-and returns its result.
 
 ```js
 'get subscribe': defineAction({
@@ -123,12 +123,23 @@ and returns its result.
 })
 ```
 
-A handler returns data, which Dito sends as JSON, or a `Response`, such as
-`c.text()` or `c.redirect()`, which Dito sends as it is. Data responds with 200
-and `undefined` with 204, unless `c.status()` sets another status. A `post` that
-creates a row sets 201 itself, as the default `post` of
-[`@ditojs/mikro`](mikro.md) does. `c.header()` adds headers to the data, and to
-a returned `Response` unless it sets them itself.
+A handler gets its [context](api.md#the-handlers-context) as one object,
+`{ query, body, params, user, em, action, c, next }`. It destructures what it
+needs. `next()` runs the handler that this one replaces, and returns its result.
+
+A handler returns one of two things:
+
+- data, which Dito sends as JSON;
+- a `Response`, such as `c.text()` or `c.redirect()`, which Dito sends as it is.
+
+The status and headers:
+
+- Data responds with 200, and `undefined` with 204, unless `c.status()` sets
+  another status.
+- A `post` that creates a row sets 201 itself. The default `post` of
+  [`@ditojs/mikro`](mikro.md) does this.
+- `c.header()` adds headers to the data. It also adds them to a returned
+  `Response`, unless the `Response` sets them itself.
 
 ## ActionSettings
 
@@ -142,10 +153,11 @@ The settings that actions, controllers and mixins share.
 
 A setting comes from the last definition of the action that sets it, in layer
 order. Without one, it comes from the last layer that sets it. So a setting on
-an action, also on a mixin's action, overrides every layer. A mixin with
-`actions` only counts as a layer for its own actions, so its `authorize` and
-`transacted` don't reach the actions of the controller. A mixin without
-`actions` holds settings for all of them.
+an action overrides every layer, also when the action is a mixin's.
+
+A mixin with `actions` only counts as a layer for its own actions. So its
+`authorize` and `transacted` don't reach the actions of the controller. A mixin
+without `actions` holds settings for all actions.
 
 ## authorize
 
@@ -159,19 +171,21 @@ authorize:
 
 - `true` lets anyone in.
 - Roles grant access if `c.var.user.roles` holds any of them.
-- A function of Hono's context `c` and the `user` decides, and only `true`
-  grants access. It reads the id of a record action with `c.req.param('id')`. It runs before the transaction and the middleware of the
-  layers, so it loads what it checks itself.
+- A function gets `{ c, user }` and decides. Only `true` grants access.
+- A function reads the id of a record action with `c.req.param('id')`.
+- A function runs before the transaction and before the middleware of the
+  layers. So it loads what it checks itself.
 
 A denied request responds with 401 without a user, and with 403 with one.
 
-Every write action needs `authorize` on itself or on a layer. Otherwise,
+Every write action needs `authorize`, on itself or on a layer. Otherwise,
 `createApi()` throws. Use `authorize: true` to open a write to anyone. GET
 actions without `authorize` let anyone in.
 
 `isAuthorized(c, authorize)` resolves to whether `authorize` lets the user of
 `c.var.user` in. `createApi()` and
-[`createAdmin()`](../admin/server.md#createadmin) check with it, and apps can too.
+[`createAdmin()`](../admin/server.md#createadmin) check with it. Apps can use it
+too.
 
 ## Middleware
 
@@ -180,18 +194,24 @@ type Middleware = MiddlewareHandler<{ Variables: DitoVariables }>
 ```
 
 Hono middleware, `async (c, next) => { ... }`, which reads Dito's variables from
-`c.var`, such as `c.var.user` and `c.var.action`. Any Hono middleware works,
-also that of `hono/*` and third parties. It runs before the handler, calls
-`await next()`, and may return a `Response` of its own instead. The middleware
-of controllers, mixins and actions runs inside the transaction. It reads the
-body of a write from `c.var.body`, the same object that the handler gets.
+`c.var`, such as `c.var.user` and `c.var.action`.
+
+- Any Hono middleware works, also that of `hono/*` and of third parties.
+- It runs before the handler, and calls `await next()`. It may return a
+  `Response` of its own instead.
+- The middleware of controllers, mixins and actions runs inside the transaction.
+- It reads the body of a write from `c.var.body`. This is the same object that
+  the handler gets.
 
 ## Mixins
 
-A controller's layers are its mixins, depth-first and in order, each after the
-mixins that it lists, and then the controller. A mixin that several layers list
-is one layer, where it is first listed. A model controller puts its base, with
-the default handlers, before the mixins.
+A controller's layers are its mixins, then the controller itself:
+
+- The mixins come depth-first and in order. Each mixin comes after the mixins
+  that it lists.
+- A mixin that several layers list is one layer, where it is first listed.
+- A model controller puts its base, with the default handlers, beneath the
+  mixins.
 
 In `actions`, each layer applies the rules of [Actions](#actions) on top of the
 layers beneath it. When several layers set a key, each handler replaces the one
@@ -208,28 +228,11 @@ type DitoContext<Query, Body> = Context<
 >
 ```
 
-Hono's context of a Dito request, `c`, with the variables of
-[`DitoVariables`](api.md#the-handlers-context) in `c.var`. `c.req.valid('query')`
-and `c.req.valid('json')` have the types of the action's schemas.
+Hono's context of a Dito request, `c`. `c.var` holds the variables of
+[`DitoVariables`](api.md#the-handlers-context). `c.req.valid('query')` and
+`c.req.valid('json')` have the types of the action's schemas.
 
 ## Query values
-
-Query values arrive as strings. Before the `query` schema of an action, or the
-schema of a list filter, validates them, Dito converts each value to what the
-schema expects at its key:
-
-| The schema expects     | Dito converts                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A number or an integer | `Number(value)`. The empty string stays a string, so the schema rejects it.                                                                             |
-| A boolean              | `true` and `1` to `true`, `false` and `0` to `false`. Other values stay strings.                                                                        |
-| A `Date`               | `new Date(value)`. Invalid dates stay strings.                                                                                                          |
-| An array               | All values of a repeated key, `?a=1&a=2`, and a single value as an array of one. Each item is converted by the item's type. `.max()` limits the values. |
-| A single value         | A repeated key responds with 400, at the key.                                                                                                           |
-
-Dito looks through `.optional()`, `.nullable()` and `.default()`. Unions,
-transforms, tuples and all other types get the strings as they are, so their
-schemas parse them themselves, such as with `z.coerce.number()`. There are no
-comma-separated lists and no nested keys.
 
 ```js
 'get search': defineAction({
@@ -242,3 +245,20 @@ comma-separated lists and no nested keys.
   handler: ({ em, query: { term, limit } }) => search(em, term, limit)
 })
 ```
+
+Query values arrive as strings. Dito converts each value to what the schema
+expects at its key. It does this before the `query` schema of an action
+validates them, and before the schema of a list filter does:
+
+| The schema expects     | Dito converts                                                                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A number or an integer | `Number(value)`. The empty string stays a string, so the schema rejects it.                                                                             |
+| A boolean              | `true` and `1` to `true`, `false` and `0` to `false`. Other values stay strings.                                                                        |
+| A `Date`               | `new Date(value)`. Invalid dates stay strings.                                                                                                          |
+| An array               | All values of a repeated key, `?a=1&a=2`, and a single value as an array of one. Each item is converted by the item's type. `.max()` limits the values. |
+| A single value         | A repeated key responds with 400, at the key.                                                                                                           |
+
+- Dito looks through `.optional()`, `.nullable()` and `.default()`.
+- Unions, transforms, tuples and all other types get the strings as they are.
+  Their schemas parse them, such as with `z.coerce.number()`.
+- There are no comma-separated lists and no nested keys.

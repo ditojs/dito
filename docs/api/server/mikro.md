@@ -21,14 +21,14 @@ import {
 import '@ditojs/mikro/types'
 ```
 
-Model controllers on [MikroORM](https://mikro-orm.io) 7 entities, for
-PostgreSQL. Peer dependencies: `@mikro-orm/core` and `@mikro-orm/sql` 7.2 or
-later, `kysely`, `hono`, `zod` and `@ditojs/server`. See
-[Entities and controllers](../../guide/server/entities.md) and
-[Writes](../../guide/server/writes.md) in the guide.
+`@ditojs/mikro` builds model controllers on [MikroORM](https://mikro-orm.io) 7
+entities. It supports PostgreSQL only. Its peer dependencies are
+`@mikro-orm/core` and `@mikro-orm/sql` 7.2 or later, `kysely`, `hono`, `zod` and
+`@ditojs/server`. See [Entities and controllers](../../guide/server/entities.md)
+and [Writes](../../guide/server/writes.md) in the guide.
 
-Entities need a single primary key. For an entity with a composite key or none,
-the controller throws on its first request.
+Entities need a single primary key. If an entity has a composite key or none,
+its controller throws on its first request.
 
 ## defineModelController()
 
@@ -38,12 +38,17 @@ defineModelController<T>(
 ): ControllerDefinition
 ```
 
-Returns a [controller](controllers.md#controllerdefinition) of an entity. It
-puts a base layer before the definition and its mixins. The base holds the
-default handlers of the keys that the definition or its mixins set, such as
-`'get': true`, and the middleware that sets `getRecord()`, `find()`, `list()`
-and `getListQuery()`. After the handlers of each key, the controller flushes and
-serializes, inside the transaction and the middleware. `authorize`,
+Returns a [controller](controllers.md#controllerdefinition) of an entity. The
+controller has a base layer beneath the definition and its mixins. The base
+holds two things:
+
+- the default handlers of the keys that the definition or its mixins set, such
+  as `'get': true`;
+- the middleware that sets `getRecord()`, `find()`, `list()` and
+  `getListQuery()`.
+
+After the handlers of an action have run, the controller flushes and serializes.
+This happens inside the transaction and inside the middleware. `authorize`,
 `transacted`, the schemas and the middleware come from the definition and its
 mixins.
 
@@ -51,40 +56,41 @@ mixins.
 
 The keys of [`ControllerDefinition`](controllers.md#controllerdefinition), and:
 
-| Key       | Type                                             | Description                                                                                                                                                                                             |
-| --------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `entity`  | `EntityClass`                                    | The entity of the controller.                                                                                                                                                                           |
-| `find`    | [`Find`](#find)                                  | What the controller loads and returns, or a function of Hono's context `c` that returns it.                                                                                                             |
-| `filters` | `Record<string, Filter>`                         | What `filter=name:args` may narrow in lists, see [Filters](#filters).                                                                                                                                   |
-| `load`    | `({ c, id }) => Promise<T \| null \| undefined>` | Loads the record of a record action in place of the default, which loads it through `find`. `null` or `undefined` responds with 404. It gets the id as sent, also one that isn't a key, such as `self`. |
+| Key       | Type                                             | Description                                                                                                                                                                                              |
+| --------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `entity`  | `EntityClass`                                    | The entity of the controller.                                                                                                                                                                            |
+| `find`    | [`Find`](#find)                                  | What the controller loads and returns. It can also be a function that returns it.                                                                                                                        |
+| `filters` | `Record<string, Filter>`                         | The filters that lists take in `filter=name:args`, see [Filters](#filters).                                                                                                                              |
+| `load`    | `({ c, id }) => Promise<T \| null \| undefined>` | Loads the record of a record action, in place of the default, which loads it through `find`. It gets the id as sent, also one that isn't a key, such as `self`. `null` or `undefined` responds with 404. |
 
 ### Default handlers
 
-| Key          | Handler                                                                                                                                                                                           |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get`        | [`defineListHandler()`](#definelisthandler): the list, see [Lists](#lists).                                                                                                                       |
-| `post`       | Runs `deserialize`, then [`createRecord()`](#createrecord). The new record becomes `getRecord()`. Answers 201 with `Location`, even when a layer replaces the handler and returns the new record. |
-| `get :id`    | Returns `getRecord()`.                                                                                                                                                                            |
-| `patch :id`  | Runs `deserialize` with the record, then [`assignRecord()`](#assignrecord).                                                                                                                       |
-| `delete :id` | Removes the record with `em.remove()`, flushes, and responds with `{ count: 1 }`.                                                                                                                 |
+| Key          | Handler                                                                                                                                                                                                |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `get`        | [`defineListHandler()`](#definelisthandler), which returns the list, see [Lists](#lists).                                                                                                              |
+| `post`       | Runs `deserialize`, then [`createRecord()`](#createrecord). The new record becomes `getRecord()`. Responds with 201 and `Location`, also when a layer replaces the handler and returns the new record. |
+| `get :id`    | Returns `getRecord()`.                                                                                                                                                                                 |
+| `patch :id`  | Runs `deserialize` with the record, then [`assignRecord()`](#assignrecord).                                                                                                                            |
+| `delete :id` | Removes the record with `em.remove()` and flushes. Responds with `{ count: 1 }`.                                                                                                                       |
 
-There is no default `put`, and no default write on the whole list. Custom
-actions handle these, such as `'post order'`. The [`crud`](#crud) mixin routes
-all five.
+There is no default `put`. There is also no default write to all records at
+once. Custom actions handle these, such as `'post order'`. The [`crud`](#crud)
+mixin routes all five default handlers.
 
 ### Variables
 
-The base sets these variables in the handler's context and in `c.var`, for the
-handlers and the middleware of the layers. `authorize` runs before them.
+The base sets these variables in the handler's context and in `c.var`. The
+handlers and the middleware of all layers read them. `authorize` runs before the
+base sets them.
 
-| Variable         | Description                                                                                                                                                                                                                                  |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | The id of a record action, converted by the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. With `load`, it stays a string, such as `self`. `params.id` is always the string of the path.          |
-| `entity`         | The entity class of the controller. Its metadata is `em.getMetadata(entity)`, such as its `tableName`.                                                                                                                                       |
-| `getRecord()`    | Loads the record of the id once per request, through `load` or `find`. A missing record responds with 404. On other actions, it returns the record that a handler set with [`setRecord()`](#setrecord), such as the one that `post` creates. |
-| `find()`         | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                |
-| `list()`         | Runs the list of the controller, see [list()](#list).                                                                                                                                                                                        |
-| `getListQuery()` | Returns the `where`, `orderBy` and `range` of the list, see [getListQuery()](#getlistquery).                                                                                                                                                 |
+| Variable         | Description                                                                                                                                                                                                                                         |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | The id of a record action, converted to the type of the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. With `load`, the id stays a string, such as `self`. `params.id` is always the string of the path. |
+| `entity`         | The entity of the controller. `em.getMetadata(entity)` returns its metadata, such as its `tableName`.                                                                                                                                               |
+| `getRecord()`    | Loads the record of the id through `load` or `find`, once per request. A missing record responds with 404. In other actions, it returns the record that a handler set with [`setRecord()`](#setrecord), such as the one that `post` creates.        |
+| `find()`         | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                       |
+| `list()`         | Runs the list of the controller, see [list()](#list).                                                                                                                                                                                               |
+| `getListQuery()` | Returns the `where`, `orderBy` and `range` of the list, see [getListQuery()](#getlistquery).                                                                                                                                                        |
 
 ### Serialize and deserialize
 
@@ -96,28 +102,33 @@ serialize?: ({ record, json, c }) => unknown
 deserialize?: ({ json, record, c }) => unknown
 ```
 
-`beforeSerialize` runs once per response, in layer order, before `serialize`. It
-gets the outgoing records of the controller as an array, also for a single
-record, and doesn't run without records. It can load what `serialize` needs in
-one query. `serialize` shapes each outgoing record of the controller, in layer
-loan. `deserialize` shapes the body of the default `post` and `patch :id`, in
-the reverse order. See
+- `beforeSerialize` runs once per response, before `serialize`. The layers run
+  it in layer order. It gets the controller's outgoing records as an array, also
+  for a single record. It doesn't run when there are no records. It can load
+  what `serialize` needs in one query.
+- `serialize` shapes each outgoing record of the controller. The layers run it
+  in layer loan.
+- `deserialize` shapes the body of the default `post` and `patch :id`. The
+  layers run it in the reverse order.
+
+See
 [Serialize and deserialize](../../guide/server/controllers.md#serialize-and-deserialize)
 in the guide.
 
 ### What the base does
 
 - Without `load`, `getRecord()` loads the record with `em.findOne()` through the
-  controller's `find`, so rows that `find.where` hides respond with 404. An id
-  fits the primary key if it is an integer within the range of the column, or a
-  UUID, which the base converts to lower case.
+  controller's `find`. So a record that `find.where` hides responds with 404.
+- An id fits the primary key if it is an integer within the range of the column,
+  or a UUID. The base converts UUIDs to lower case.
 - After the handler of a write, the base flushes the entity manager once. Then
-  it loads the controller's records in the result again in one query, in the
-  shape of `find`, with the values that formulas and triggers set.
+  it loads the controller's records in the result again, in one query and in the
+  shape of `find`. They then hold the values that formulas and triggers set.
 - The controller's records in a result go through `beforeSerialize` and
-  `serialize`, see [Output](#output). Records of other entities go out through MikroORM's
-  `serialize()`, with the relations that are loaded. Nothing goes out through
-  `toJSON()`.
+  `serialize`, see [Output](#output).
+- Records of other entities go out through MikroORM's `serialize()`, with the
+  relations that are loaded.
+- Nothing goes out through `toJSON()`.
 
 ## Find
 
@@ -131,19 +142,23 @@ type Find<T> = FindShape<T> | (({ c, user }) => FindShape<T> | Promise<FindShape
 
 `find` decides what a controller loads and returns. It holds MikroORM's
 [find options](https://mikro-orm.io/docs/entity-manager), such as `populate`,
-`fields`, `exclude`, `orderBy` and `filters`, the entity filters, plus two keys.
-Every query of the controller applies `where`, and `maxRows` limits the rows of
-a list, see [Lists](#lists).
+`fields`, `exclude`, `orderBy` and `filters`, MikroORM's entity filters. It
+also holds two keys of its own:
+
+- `where` applies to every query of the controller.
+- `maxRows` limits the rows of a list, see [Lists](#lists).
+
+The rules of `find`:
 
 - `limit`, `offset`, `ctx`, `disableIdentityMap` and `lockMode` throw, because
-  the base controls them. An object throws when the controller is defined, a
-  function on the request.
-- A function gets Hono's context `c` and the `user`. It runs once per request,
-  on the first query, after `getUser`. Middleware that runs before Dito sets the user can't
-  query through it.
+  the base controls them. In an object, they throw when the controller is
+  defined. In a function, they throw on the request.
+- A function gets `{ c, user }`. It runs once per request, on the first query,
+  after `getUser`. So middleware that runs before Dito sets the user can't query
+  through it.
 - `fields` and `exclude` both work. MikroORM can't take both, so the query gets
   `fields`, and the output leaves out what `exclude` names.
-- Dito passes no serialization groups to MikroORM's `serialize()`, so properties
+- Dito passes no serialization groups to MikroORM's `serialize()`. So properties
   with groups go out like other properties. Use `fields`, `exclude` and `hidden`
   instead.
 
@@ -153,20 +168,23 @@ Records go out in the shape of `find`:
 
 - `fields` and `exclude` go to MikroORM's `serialize()`. Each row keeps its
   primary key.
-- The relations of `populate` and of the paths in `fields`, such as `author` of
-  `author.name`, go out as nested rows. MikroORM populates the latter itself, so
-  `find` doesn't repeat them in `populate`.
+- Two kinds of relations go out as nested rows: those of `populate`, and those
+  of the paths in `fields`, such as `author` of `author.name`. MikroORM
+  populates the relations of the paths itself, so `find` doesn't repeat them in
+  `populate`.
 - Any other relation to one row that holds the foreign key goes out as `{ id }`,
-  or `null` when it is empty, such as `author: { id: 3 }`, even when a handler
-  loaded the row. Nested rows have it too, such as `book` in the rows of
-  `chapters`. With `fields`, it goes out where they name the relation,
+  such as `author: { id: 3 }`. An empty one goes out as `null`. This also
+  applies when a handler loaded the row, and to nested rows, such as `book` in
+  the rows of `chapters`.
+- With `fields`, such a relation only goes out where `fields` names it, as
   `relation.id` or `*`. `relation.id` joins the table of the relation, and
-  `relation` doesn't. `exclude: ['<name>']` leaves it out. Hidden relations stay
-  out unless `populate` names them.
-- Other relations don't go out, even when a handler loaded them: relations to
-  many rows and the inverse side of a one-to-one relation.
+  `relation` doesn't.
+- `exclude: ['<name>']` leaves the relation out.
+- Hidden relations stay out unless `populate` names them.
+- Other relations don't go out, even when a handler loaded them. These are the
+  relations to many rows, and the inverse side of a one-to-one relation.
 - `relation.*` in `fields` stands for the columns of the relation that aren't
-  lazy, and lazy formulas stay out. To load a lazy property, name it too.
+  lazy. Lazy formulas stay out. To load a lazy property, name it too.
 - A relation that `populate` adds without paths in `fields` goes out with all
   its columns.
 
@@ -175,18 +193,6 @@ Records go out in the shape of `find`:
 ```ts
 find<T>(options?: FindShape<T>): Promise<T[]>
 ```
-
-`find()` of the handler's context, and `c.var.find()`. Queries the controller's
-entity through its `find`, merged with `options`. Use it in custom actions, so
-that they see the same rows as the default handlers. It has no row limit. The
-rows go out in the controller's shape. The merge:
-
-- joins the `where`s with `$and`, so the rows stay within the controller's;
-- merges `filters` by name. `true`, `false` and lists of names replace;
-- replaces the other options, such as `populate`, `fields` and `exclude`;
-- leaves out the controller's `populate` when `options` sets `fields` without a
-  `populate` of its own, so that a narrow list loads no more than it sends. The
-  paths in `fields` still populate their relations.
 
 ```js
 'post order': {
@@ -200,33 +206,45 @@ rows go out in the controller's shape. The merge:
 }
 ```
 
+`find()` is a variable of the handler's context and of `c.var`. It queries the
+records of the controller through the controller's `find`, merged with
+`options`. Custom actions use it to see the same records as the default
+handlers. It has no row limit. The records go out in the controller's shape.
+
+The merge:
+
+- joins the `where`s with `$and`, so the records stay within the controller's;
+- merges `filters` by name, where `true`, `false` and lists of names replace;
+- replaces the other options, such as `populate`, `fields` and `exclude`;
+- leaves out the controller's `populate` when `options` sets `fields` without a
+  `populate` of its own. So a narrow list loads no more than it sends. The paths
+  in `fields` still populate their relations.
+
 ## Lists
 
 Lists take these query parameters:
 
-| Parameter          | Example              | Description                                                                                                                                                                                                                                                                  |
-| ------------------ | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `filter=name:args` | `filter=author.id:3` | A [filter](#filters) of the controller, with its arguments as JSON. Several arguments give an array. Unknown filters respond with 400.                                                                                                                                       |
-| `order=name dir`   | `order=name desc`    | Orders by a column of the entity, or by `relation.id`, the foreign key of a relation to one row, which needs no join. The rows must return the column, so that the order reveals nothing about hidden values. Repeat it for several columns. Other columns respond with 400. |
-| `range=start,end`  | `range=0,49`         | Responds with `{ results, total }` instead of an array, with the rows from `start` to `end`, both included. `total` counts the rows after the filters.                                                                                                                       |
+| Parameter          | Example              | Description                                                                                                                                                                                                                                                                                 |
+| ------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `filter=name:args` | `filter=author.id:3` | A [filter](#filters) of the controller, with its arguments as JSON. Several arguments give an array. Unknown filters respond with 400.                                                                                                                                                      |
+| `order=name dir`   | `order=name desc`    | Orders by a column of the entity, or by `relation.id`. `relation.id` is the foreign key of a relation to one row, and needs no join. The rows must return the column, so that the order reveals nothing about hidden values. Repeat it for several columns. Other columns respond with 400. |
+| `range=start,end`  | `range=0,49`         | Responds with `{ results, total }` instead of an array. `results` holds the rows from `start` to `end`, both included. `total` counts the rows after the filters.                                                                                                                           |
 
-The list applies `find.where`, the filters and MikroORM's entity filters to the
-rows and to the total. Without `order`, the order of `find.orderBy` applies. The
-primary key breaks ties. `order` takes the columns that the list's rows return,
-or those of the controller's own list.
+The list applies `find.where`, the filters and MikroORM's entity filters. They
+apply to the rows and to the total. Without `order`, the order of `find.orderBy`
+applies. The primary key breaks ties. `order` takes the columns that the list's
+rows return, or those of the controller's own list.
 
-A list returns at most 1000 rows, or the `maxRows` of its find, such as
-`defineListHandler({ maxRows: 50 })`. `Infinity` lifts the limit. A larger
-`range` responds with 400. So does a list without `range` that has more rows.
+A list returns at most 1000 rows. The `maxRows` of its `find` changes the
+limit, such as `defineListHandler({ maxRows: 50 })`. `Infinity` lifts it. A
+larger `range` responds with 400. A list without `range` that has more rows
+responds with 400 too.
 
 ## defineListHandler()
 
 ```ts
 defineListHandler(find?: FindShape): Handler
 ```
-
-Returns the handler of a list, `({ list }) => list(find)`. The default `get` is
-`defineListHandler()`.
 
 ```js
 actions: {
@@ -235,33 +253,31 @@ actions: {
 }
 ```
 
+Returns the handler of a list, `({ list }) => list(find)`. The default `get` is
+`defineListHandler()`.
+
 ## defineChoices()
 
 ```ts
 defineChoices(find: FindShape): MixinDefinition
 ```
 
-Returns a mixin that routes `get choices`, a list for the options of a select.
-It is `'get choices': defineListHandler({ maxRows: Infinity, ...find })`, so it
-shows all the rows of the list, as a select needs, and takes the same filters. A
-`find` with `fields` names the relations that it sends in its paths or its own
-`populate`.
-
 ```js
 mixins: [defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
 // GET /book-categories/choices → [{ id, name }, …]
 ```
+
+Returns a mixin that routes `get choices`, a list for the options of a select.
+The action is `'get choices': defineListHandler({ maxRows: Infinity, ...find })`.
+So it returns all rows of the list, as a select needs, and takes the same
+filters. A `find` with `fields` names the relations that it sends, in its paths
+or in its own `populate`.
 
 ## list()
 
 ```ts
 list<T>(find?: FindShape<T> & { query?: URLSearchParams | Record<string, string | string[]> }): Promise<T[] | { results: T[]; total: number }>
 ```
-
-`list()` of the handler's context, and `c.var.list()`. Runs the list of the
-controller: its `find` merged with `find`, as in [`find()`](#find-1), with the
-controller's filters, `order`, `range` and the row limit. The rows go out in the
-merged shape. `query` replaces the list parameters of the URL.
 
 ```js
 // The filtered, ordered ids of the list, such as for an export.
@@ -271,22 +287,22 @@ merged shape. `query` replaces the list parameters of the URL.
 }
 ```
 
-With `range`, a request gets `{ results, total }` from `list()` instead of the
-rows.
+`list()` is a variable of the handler's context and of `c.var`. It runs the list
+of the controller:
+
+- the controller's `find`, merged with `find` as in [`find()`](#find-1);
+- the controller's filters, and `order` and `range`;
+- the row limit.
+
+The rows go out in the merged shape. `query` replaces the list parameters of
+the URL. When the request has `range`, `list()` returns `{ results, total }`
+instead of the rows.
 
 ## getListQuery()
 
 ```ts
 getListQuery(find?: FindShape & { query?: URLSearchParams | Record<string, string | string[]> }): Promise<{ where: object; orderBy: object[]; range: [number, number] | null }>
 ```
-
-`getListQuery()` of the handler's context, and `c.var.getListQuery()`. Returns the
-`where`, `orderBy` and `range` that [`list()`](#list) uses for the same
-arguments: `find.where` with the filters, `order` or else `find.orderBy`, with
-the primary key last, and the `range` of the request. It fails with 400 as the
-list does. Use it for queries over the rows of the list, such as summaries and
-exports. MikroORM's default entity filters apply to these queries, but the
-`filters` of `find` don't.
 
 ```js
 async 'get export'({ em, getListQuery, c }) {
@@ -296,14 +312,24 @@ async 'get export'({ em, getListQuery, c }) {
 }
 ```
 
+`getListQuery()` is a variable of the handler's context and of `c.var`. It
+returns the `where`, `orderBy` and `range` that [`list()`](#list) uses for the
+same arguments:
+
+- `where` is `find.where` joined with the filters;
+- `orderBy` is the `order` of the request, else `find.orderBy`, with the primary
+  key last;
+- `range` is the `range` of the request.
+
+It fails with 400 where the list does. Use it for queries over the rows of the
+list, such as summaries and exports. MikroORM's default entity filters apply to
+these queries. The `filters` of `find` don't.
+
 ## crud
 
 ```ts
 crud: MixinDefinition
 ```
-
-A mixin that routes the five [default handlers](#default-handlers). Writes still
-need `authorize`.
 
 ```js
 defineModelController({
@@ -313,6 +339,9 @@ defineModelController({
   mixins: [crud]
 })
 ```
+
+A mixin that routes the five [default handlers](#default-handlers). Writes
+still need `authorize`.
 
 ## setRecord()
 
@@ -333,8 +362,8 @@ interface ListQuery {
 }
 ```
 
-The parsed `filter=`, `order=` and `range=` of a list's URL. Invalid values
-respond with 400.
+The parsed `filter=`, `order=` and `range=` parameters of a list's URL. Invalid
+values respond with 400.
 
 ## Filters
 
@@ -352,20 +381,6 @@ type Filter =
     }
 ```
 
-Each filter validates its value with a Zod schema. Dito converts the strings of
-the arguments to what the schema expects, as for
-[query values](controllers.md#query-values). Several arguments give an array,
-which only an array schema accepts. Invalid values respond with 400, with
-`errors` keyed by the filter's name. A schema that throws gives the code
-`custom` and the message `Invalid input`.
-
-`where` gets one object: the output of the schema as `value`, the filter's
-`name`, Hono's context `c` and the request's entity manager `em`.
-It returns a MikroORM `where`, or `undefined` to skip the filter. A schema alone
-is short for a filter whose `where` returns `{ [name]: value }`. The list joins
-`find.where` and the filters with `$and`, also a filter that the URL repeats,
-such as that of a scope and of the filter panel.
-
 ```js
 filters: {
   author: z.number().int(),
@@ -380,6 +395,26 @@ filters: {
   })
 }
 ```
+
+Each filter validates its value with a Zod schema:
+
+- Dito converts the strings of the arguments to what the schema expects, as for
+  [query values](controllers.md#query-values).
+- Several arguments give an array, which only an array schema accepts.
+- Invalid values respond with 400, with `errors` keyed by the filter's name.
+- A schema that throws gives the code `custom` and the message `Invalid input`.
+
+`where` gets one object, with these keys:
+
+- `value`, the output of the schema;
+- `name`, the filter's name;
+- `c`;
+- `em`.
+
+It returns a MikroORM `where`, or `undefined` to skip the filter. A schema alone
+is short for a filter whose `where` returns `{ [name]: value }`. The list joins
+`find.where` and the filters with `$and`. This also applies to a filter that the
+URL repeats, such as one from a scope and one from the filter panel.
 
 Filters that apply to every query, such as soft deletes or tenants, are
 MikroORM's [entity filters](https://mikro-orm.io/docs/filters) with
@@ -408,25 +443,6 @@ of the schema.
 defineTextFilter(properties?: string[]): Filter
 ```
 
-Reads what the admin's `text` filter sends: `filter=name:"text"`, or
-`filter=name:"operator","text"`. It matches rows where one of
-`properties`, by default the property of the filter's name, holds the text,
-ignoring case. The operators are `contains`, the default, `equals`,
-`starts-with` and `ends-with`. `%` and `_` in the text match themselves. An
-empty text skips the filter.
-
-### defineDateRangeFilter()
-
-```ts
-defineDateRangeFilter(property?: string): Filter
-```
-
-Reads what the admin's `date-range` filter sends:
-`filter=name:"from","to"`, as ISO date-times with a time zone. It
-matches rows whose `property`, by default the one of the filter's name, lies
-between the two, including them. Either one may be empty, and two empty values
-skip the filter.
-
 ```js
 filters: {
   name: defineTextFilter(['firstName', 'lastName']),
@@ -434,17 +450,45 @@ filters: {
 }
 ```
 
+Reads what the admin's `text` filter sends: `filter=name:"text"`, or
+`filter=name:"operator","text"`.
+
+- It matches rows where one of `properties` holds the text, ignoring case.
+- `properties` defaults to the property of the filter's name.
+- The operators are `contains`, the default, `equals`, `starts-with` and
+  `ends-with`.
+- `%` and `_` in the text match themselves.
+- An empty text skips the filter.
+
+### defineDateRangeFilter()
+
+```ts
+defineDateRangeFilter(property?: string): Filter
+```
+
+Reads what the admin's `date-range` filter sends: `filter=name:"from","to"`, as
+ISO date-times with a time zone.
+
+- It matches rows whose `property` lies between the two, including them.
+- `property` defaults to the property of the filter's name.
+- Either value may be empty. Two empty values skip the filter.
+
 ## createRecord()
 
 ```ts
 createRecord<T>(em: EntityManager, entity: EntityName<T>, data: unknown): Promise<T>
 ```
 
-Creates a record from a body, as `post` does after `deserialize`, and returns
-it. It runs the
-[checks of the body](../../guide/server/writes.md#the-checks-of-a-body), checks
-the ids of relations, creates the new rows of `#id` and `#ref`, and calls
-`em.create()`. It doesn't flush.
+Creates a record from a body and returns it, as `post` does after
+`deserialize`. It:
+
+1. runs the
+   [checks of the body](../../guide/server/writes.md#the-checks-of-a-body);
+2. checks the ids of relations;
+3. creates the new rows of `#id` and `#ref`;
+4. calls `em.create()`.
+
+It doesn't flush.
 
 ## assignRecord()
 
@@ -452,9 +496,9 @@ the ids of relations, creates the new rows of `#id` and `#ref`, and calls
 assignRecord<T>(em: EntityManager, record: T, data: unknown): Promise<T>
 ```
 
-Assigns a body to a record, as `patch :id` does after `deserialize`, and returns
-the record. Only the fields that `data` sends change. Its arrays of owned rows
-are the full set, and relations link by id. In loan, it:
+Assigns a body to a record and returns the record, as `patch :id` does after
+`deserialize`. Only the fields that `data` sends change. Its arrays of owned
+rows are the full set. Relations link by id. In loan, it:
 
 1. runs the checks of the body;
 2. loads the owned rows and the many-to-many collections that `data` writes, in
@@ -475,18 +519,6 @@ defineJsonType<S extends z.ZodType>(options: {
 }): Type<z.output<S>>
 ```
 
-Returns the custom type of a JSON column, for `p.type()`. The column's type
-follows the schema's output, and is `any` without a schema. The
-[checks of a body](../../guide/server/writes.md#the-checks-of-a-body) validate
-the column's value with `schema`. A schema that throws responds with 400 at the
-property, with the code `custom`. Any custom type can carry a schema in a
-`schema` getter, see
-[Rules on values](../../guide/server/writes.md#rules-on-values).
-
-`assets` says where the column holds files. `path` is the data path inside the
-value, with `*` and `**` wildcards, `''` for the value itself, and `storage` the
-name of the storage. A column can hold several.
-
 ```js
 specs: p.type(defineJsonType({ schema: specsSchema })).nullable(),
 images: p
@@ -500,21 +532,41 @@ items: p.type(
 )
 ```
 
+Returns the custom type of a JSON column, for `p.type()`.
+
+- The column's type follows the output of `schema`. Without a schema, it is
+  `any`.
+- The [checks of a body](../../guide/server/writes.md#the-checks-of-a-body)
+  validate the column's value with `schema`.
+- A schema that throws responds with 400 at the property, with the code
+  `custom`.
+- Any custom type can carry a schema in a `schema` getter, see
+  [Rules on values](../../guide/server/writes.md#rules-on-values).
+
+`assets` says where the column holds files. A column can hold several:
+
+- `path` is the data path inside the value. It takes `*` and `**` wildcards, and
+  `''` for the value itself.
+- `storage` is the name of the storage.
+
 ## getAssetPaths()
 
 ```ts
 getAssetPaths(entities: object): AssetPath[]
 ```
 
-Returns the asset paths of the `assets` of [`defineJsonType()`](#definejsontype)
-for `@ditojs/storage`. It takes an array of entities or a module of them, and
-reads their definitions, so it needs no ORM. Table and column names follow
-MikroORM's default naming strategy unless a property sets its own.
-
 ```js
 const paths = getAssetPaths(entities)
 const assets = createAssets({ adapter, paths, storages })
 ```
+
+Returns the asset paths that the `assets` of
+[`defineJsonType()`](#definejsontype) declare, for `@ditojs/storage`.
+
+- It takes an array of entities, or a module of them.
+- It reads their definitions, so it needs no ORM.
+- Table and column names follow MikroORM's default naming strategy, unless a
+  property sets its own.
 
 ## defineMikroConfig()
 
@@ -522,31 +574,32 @@ const assets = createAssets({ adapter, paths, storages })
 defineMikroConfig<T>(options: T): T
 ```
 
-Adds what Dito's entities need to the options of `new MikroORM()`, which
-[`createMikroAdapter()`](#createmikroadapter) requires. `entities` can also be a
-module of entities, whose other exports it leaves out:
-
-- `p.date()` columns hold the local day. MikroORM's own type sends a `Date` as a
-  UTC time, which Postgres cuts to the UTC day, and does the same with a string
-  with a time. These columns store both as the day of the server's time zone, in
-  writes, in `em.create()` and in queries. They take and return `YYYY-MM-DD`
-  strings as they are.
-- New rows get the defaults of their `defineJsonType()` schemas, also with
-  `em.create()`. Updates write the value as sent.
-- `em.remove()` deletes what the schema says. A flush loads the rows that go
-  with a removed row, through `orphanRemoval` or a cascade of removes, so they
-  needn't be loaded. The rows that refer to a removed row keep their foreign
-  keys, unless the rule is `set null`, so the database applies its delete rules.
-  A member with loans stays when the rule refuses the delete, also when the
-  loans are loaded.
-- A pivot entity with an id of its own logs a warning, see
-  [Known limitations](../../upgrading-to-7.x.md#known-limitations).
-
-It keeps the app's own `subscribers` and `discovery` hooks.
-
 ```js
 const orm = new MikroORM(defineMikroConfig({ dbName, entities }))
 ```
+
+Adds what Dito's entities need to the options of `new MikroORM()`.
+[`createMikroAdapter()`](#createmikroadapter) requires it. `entities` can also
+be a module of entities. `defineMikroConfig()` leaves out the module's other
+exports. It keeps the app's own `subscribers` and `discovery` hooks.
+
+It changes these things:
+
+- `p.date()` columns hold the local day. MikroORM's own type sends a `Date` as a
+  UTC time, and Postgres cuts it to the UTC day. It does the same with a string
+  with a time. These columns store both as the day in the server's time zone.
+  This applies to writes, to `em.create()` and to queries. They take and return
+  `YYYY-MM-DD` strings as they are.
+- New rows get the defaults of their `defineJsonType()` schemas, also with
+  `em.create()`. Updates write the value as sent.
+- `em.remove()` deletes what the schema says. A flush loads the rows that go
+  with a removed row, through `orphanRemoval` or a cascade of removes. So these
+  rows needn't be loaded.
+- The rows that refer to a removed row keep their foreign keys, unless the rule
+  is `set null`. So the database applies its delete rules. A member with loans
+  stays when the rule refuses the delete, also when the loans are loaded.
+- A pivot entity with an id of its own logs a warning, see
+  [Known limitations](../../upgrading-to-7.x.md#known-limitations).
 
 ## createMikroAdapter()
 
@@ -554,7 +607,12 @@ const orm = new MikroORM(defineMikroConfig({ dbName, entities }))
 createMikroAdapter(orm: MikroORM): Adapter & { getKysely(): Kysely<any> }
 ```
 
-Returns the `adapter` of [`createApi()`](api.md#adapter).
+```js
+const orm = new MikroORM(defineMikroConfig({ entities }))
+app.route('/api', createApi({ controllers, adapter: createMikroAdapter(orm) }))
+```
+
+Returns the `adapter` of [`createApi()`](api.md#adapter):
 
 - `connect()` forks the entity manager for each request. The fork becomes `em`
   of the handler's context, and `c.var.em`.
@@ -563,14 +621,9 @@ Returns the `adapter` of [`createApi()`](api.md#adapter).
   action throws, the transaction rolls back.
 - `toHttpError()` maps MikroORM's errors, see
   [Database errors](#database-errors).
-- `getKysely()` returns a Kysely on the ORM's pool, outside of any
-  transaction, for sessions, credentials and jobs. `orm.em.getKysely()` joins
-  the current transaction instead.
-
-```js
-const orm = new MikroORM(defineMikroConfig({ entities }))
-app.route('/api', createApi({ controllers, adapter: createMikroAdapter(orm) }))
-```
+- `getKysely()` returns a Kysely on the ORM's pool, outside of any transaction.
+  Sessions, credentials and jobs use it. `orm.em.getKysely()` joins the current
+  transaction instead.
 
 ## @ditojs/mikro/types
 
@@ -581,8 +634,8 @@ import '@ditojs/mikro/types'
 Types `em` of the handlers and `c.var.em` as MikroORM's `EntityManager` of
 `@mikro-orm/sql`, for apps written in TypeScript. One import anywhere in the app
 types them everywhere. `em.getKysely()` returns the Kysely of the request's
-entity manager, which runs in its transaction, for queries that MikroORM doesn't
-build.
+entity manager, which runs in its transaction. Use it for queries that MikroORM
+doesn't build.
 
 ## createEntityUserSource()
 
@@ -598,20 +651,19 @@ createEntityUserSource<U>(entity: EntityClass<U>, options: {
 ```
 
 Returns the [`UserSource`](auth.md#usersource) of `@ditojs/auth` for an entity.
-It queries with the request's entity manager, else with a fork of `em`, such as
-in session middleware outside of the API.
+It queries with the request's entity manager. Outside of a request, such as in
+session middleware outside of the API, it queries with a fork of `em`.
 
-- `usernameProperty` is the property of the username, `username` by default.
-- `where` is a condition that users also need to meet, such as
-  `{ isActive: true }`.
-- `serialize` lists the properties that clients get, plus `computed`, or is a
-  function that returns the JSON.
-- `password` is the schema of new passwords, a string of at least 8 characters
-  by default.
+| Option             | Description                                                                                        |
+| ------------------ | -------------------------------------------------------------------------------------------------- |
+| `usernameProperty` | The property of the username. Default: `username`.                                                 |
+| `where`            | A condition that users also need to meet, such as `{ isActive: true }`.                            |
+| `serialize`        | The properties that clients get, plus `computed`. It can also be a function that returns the JSON. |
+| `password`         | The schema of new passwords. Default: a string of at least 8 characters.                           |
 
-`findById()` finds no user for an id that doesn't fit the primary key. `patch()`
-writes the values with `nativeUpdate()` and sets them on the user, without
-flushing the request's other changes.
+`findById()` finds no user for an id that doesn't fit the primary key.
+`patch()` writes the values with `nativeUpdate()` and sets them on the user. It
+doesn't flush the request's other changes.
 
 ## Database errors
 
@@ -631,6 +683,6 @@ responses:
 | other driver errors             | 500                                                                           |
 
 In requests of a model controller, errors on the table of its entity point at
-the property, such as `name`. All other errors respond with the status only,
-such as those on the tables of nested rows, and those of an entity that owns
-rows of its own table.
+the property, such as `name`. All other errors respond with the status only.
+This includes errors on the tables of nested rows, and errors of an entity that
+owns rows of its own table.

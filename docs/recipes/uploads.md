@@ -119,17 +119,17 @@ export const bookForm = {
 Upload fields send each file to the controller's upload action under their data
 path, here `POST books/upload/cover` and `POST books/upload/samplePages`. The
 action takes hyphenated paths such as `sample-pages` too.
-`assets.defineUploads()` adds the action, which picks the storage of the asset
-path that matches. It stores the file, inserts its `asset` row and responds with
-its file object (`key`, `name`, `type`, `size`, `url`, and `width` and `height`
-of images). The field holds this object as its value.
+`assets.defineUploads()` adds the action. The action picks the storage of the
+asset path that matches. It stores the file and inserts its `asset` row. It
+responds with the file object: `key`, `name`, `type`, `size` and `url`, and the
+`width` and `height` of images. The field holds this object as its value.
 
 Saving the book stores the file objects in plain JSON columns. The mixin
-accepts the files that the `asset` table holds, and takes their properties
-from there, so clients can't make up files. Saving waits for uploads that are
-still running.
+accepts the files that the `asset` table holds, and takes their properties from
+there. So clients can't make up files. Saving waits for uploads that are still
+running.
 
-`assets.runJobs()` finds the files that no book references, and deletes those
+`assets.runJobs()` finds the files that no book references. It deletes those
 that no book used for a day, such as uploads that were never saved.
 
 `thumbnails` shows images by their `url`; `thumbnailUrl` can point to a

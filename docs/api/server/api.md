@@ -5,36 +5,20 @@ import { createApi, sendFile } from '@ditojs/server'
 ```
 
 An API is a list of controllers in one [Hono](https://hono.dev) app. The host
-routes it with `app.route()`. `api.fetch()` takes a web-standard `Request`
-anywhere a `fetch` handler runs: on Node through [`serve()`](hono.md#serve), on
-Bun and Deno, or in a test that calls `api.request()`. See
-[API](../../guide/server/api.md) in the guide.
+routes it with `app.route()`. `api.fetch()` takes a web-standard `Request`. So
+an API runs anywhere a `fetch` handler runs:
+
+- on Node, through [`serve()`](hono.md#serve);
+- on Bun and Deno;
+- in a test that calls `api.request()`.
+
+See [API](../../guide/server/api.md) in the guide.
 
 ## createApi()
 
 ```ts
 createApi(config: ApiConfig): Hono<DitoEnv>
 ```
-
-Resolves the controllers and their mixins, and adds their routes to one new
-Hono app. It throws for invalid
-definitions, so errors appear when the app starts, not on the first request.
-These are invalid:
-
-- an action key that isn't `'verb'` or `'verb path'`, or a path with empty
-  segments;
-- a controller `path` with empty segments, such as `/books` or
-  `books//chapters`, or that holds `:id`;
-- two actions that route the same method and path, in one controller or across
-  controllers;
-- a write action (`post`, `put`, `patch`, `delete`) without `authorize` on the
-  action or on a layer, see [Authorization](controllers.md#authorize);
-- a routed action without a handler.
-
-Hono runs the first route that matches. Dito adds the routes by how much they
-match, also across controllers: static segments first, then parameters with a
-pattern, plain parameters, and last wildcards and patterns of any text. So
-`get subscribe` matches before `get :id{[0-9]+}`, and that before `get :slug`.
 
 ```js
 const app = new Hono()
@@ -44,23 +28,48 @@ app.onError(createErrorHandler())
 app.notFound(notFound)
 ```
 
-An API handles only the paths of its actions and leaves the others to the app,
-so it also works at `/`. The app's [`notFound`](errors.md#notfound) handles
-them.
+Resolves the controllers and their mixins, and adds their routes to one new Hono
+app. It throws for invalid definitions, so errors appear when the app starts,
+not on the first request. These are invalid:
+
+- an action key that isn't `'verb'` or `'verb path'`, or a path with empty
+  segments;
+- a controller `path` with empty segments, such as `/books` or
+  `books//chapters`;
+- a controller `path` that holds `:id`;
+- two actions that route the same method and path, in one controller or across
+  controllers;
+- a write action (`post`, `put`, `patch`, `delete`) without `authorize`, on the
+  action or on a layer, see [Authorization](controllers.md#authorize);
+- a routed action without a handler;
+- an action whose `authorize` holds roles when the API has no `getUser`, as no
+  user could have them;
+- an action with `transacted: true` when the adapter has no `transaction`.
+
+Hono runs the first route that matches. So Dito adds the routes by how much
+they match, also across controllers:
+
+1. static segments;
+2. parameters with a pattern;
+3. plain parameters;
+4. wildcards and patterns of any text.
+
+So `get subscribe` matches before `get :id{[0-9]+}`, and that before
+`get :slug`.
+
+An API handles only the paths of its actions, and leaves the others to the app.
+So it also works at `/`. The app's [`notFound`](errors.md#notfound) handles the
+other paths.
 
 ### ApiConfig
 
-| Key           | Type                                               | Description                                                                                                                                                                             |
-| ------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `controllers` | `ControllerDefinition[] \| object`                 | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, all other values are ignored. |
-| `middleware`  | `Middleware \| Middleware[]`                       | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.em` and `c.var.user`.                                                            |
-| `adapter`     | [`Adapter`](#adapter)                              | The database, [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined and no action runs in a transaction.                                              |
-| `getUser`     | `({ c }) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                |
-| `onError`     | `({ error, c }) => void \| Promise<void>`          | Called with each error with a status of 500 or above, for the app's logs. By default, logs through `c.var.logger`, else `console`. See [Errors](errors.md).                             |
-
-`createApi()` throws for an action whose `authorize` holds roles without
-`getUser`, as no user could have them. It also throws for an action with
-`transacted: true` when the adapter has no `transaction`.
+| Key           | Type                                               | Description                                                                                                                                                                              |
+| ------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `controllers` | `ControllerDefinition[] \| object`                 | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, Dito ignores all other values. |
+| `middleware`  | `Middleware \| Middleware[]`                       | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.em` and `c.var.user`.                                                             |
+| `adapter`     | [`Adapter`](#adapter)                              | The database: [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined, and no action runs in a transaction.                                              |
+| `getUser`     | `({ c }) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                 |
+| `onError`     | `({ error, c }) => void \| Promise<void>`          | Gets each error with a status of 500 or above, for the app's logs. By default, it logs through `c.var.logger`, else through `console`. See [Errors](errors.md).                          |
 
 ### The request
 
@@ -68,23 +77,25 @@ For each request of an action, Hono and Dito:
 
 1. match the route. `HEAD` runs the `GET` action and sends no body;
 2. run the API's `middleware`;
-3. set `c.var.em` with `connect()` of the adapter, and `c.var.user` with `getUser`;
-4. set `c.var.action`, the key of the action;
-5. check the action's `authorize`, which responds with 401 without a user and
-   403 with one;
-6. validate the query and the body with the action's schemas, through
+3. set `c.var.em` with `connect()` of the adapter;
+4. set `c.var.user` with `getUser`;
+5. set `c.var.action`, the key of the action;
+6. check the action's `authorize`, which responds with 401 without a user, and
+   with 403 with one;
+7. validate the query and the body with the action's schemas, through
    `validator()` of `hono/validator`;
-7. set `c.var.body` for writes, so invalid JSON fails before the transaction;
-8. open the transaction of the adapter, for writes unless `transacted: false`, and for
+8. set `c.var.body` for writes, so that invalid JSON fails before the
+   transaction;
+9. open the adapter's transaction, for writes unless `transacted: false`, and for
    reads with `transacted: true`;
-9. run the `middleware` of the layers and of the action;
-10. run the handler with its context, and send the result, see
+10. run the `middleware` of the layers and of the action;
+11. run the handler with its context, and send the result, see
     [Handler](controllers.md#handler).
 
-Errors go to the API's error handler, which works like
-[`createErrorHandler()`](errors.md#createerrorhandler), with `onError` and
-`toHttpError()` of the adapter. Hono handles an error where it is thrown, so the
-`await next()` of middleware returns, with the error in `c.error`. The
+Errors go to the API's error handler. It works like
+[`createErrorHandler()`](errors.md#createerrorhandler), with the API's `onError`
+and the adapter's `toHttpError()`. Hono handles an error where it is thrown. So
+the `await next()` of middleware returns, and `c.error` holds the error. The
 transaction rolls back when `c.error` is set.
 
 ### The handler's context
@@ -101,23 +112,28 @@ interface HandlerContext<Query, Body> extends DitoVariables {
 
 Dito builds the context for each request and each layer:
 
-| Key      | Description                                                                                                                                                                                                                                                                                                      |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `query`  | The result of the action's `query` schema, or else the first value of each parameter.                                                                                                                                                                                                                            |
-| `body`   | For writes, the result of the action's `body` schema, or else the JSON body. An empty body and a body without `Content-Type` are `{}`, so a JSON body without it is dropped, and invalid JSON responds with 400. Bodies of other types, such as form data, are `undefined`, and handlers read them from `c.req`. |
-| `params` | The parameters of the path, by name, such as `params.id` of a record action.                                                                                                                                                                                                                                     |
-| `user`   | The signed-in user, or `null`.                                                                                                                                                                                                                                                                                   |
-| `em`     | The request's entity manager, from `connect()` of the `adapter`. During a transaction, the transaction's entity manager.                                                                                                                                                                                         |
-| `action` | The key of the action that runs, such as `'get'` or `'post :id/publish'`.                                                                                                                                                                                                                                        |
-| `c`      | [Hono's context](controllers.md#ditocontext) of the request.                                                                                                                                                                                                                                                     |
-| `next`   | Runs the handler beneath, and returns its result. That handler sees the changes that this one makes to its context, such as a new `body`.                                                                                                                                                                        |
+| Key      | Description                                                                                                                               |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `query`  | The result of the action's `query` schema. Without a schema, the first value of each parameter.                                           |
+| `body`   | For writes, the result of the action's `body` schema. Without a schema, the JSON body. See [The body](#the-body).                         |
+| `params` | The parameters of the path, by name, such as `params.id` of a record action.                                                              |
+| `user`   | The signed-in user, or `null`.                                                                                                            |
+| `em`     | The request's entity manager, from `connect()` of the `adapter`. During a transaction, the transaction's entity manager.                  |
+| `action` | The key of the action that runs, such as `'get'` or `'post :id/publish'`.                                                                 |
+| `c`      | [Hono's context](controllers.md#ditocontext) of the request.                                                                              |
+| `next`   | Runs the handler beneath, and returns its result. That handler sees the changes that this one makes to its context, such as a new `body`. |
 
-`user`, `em`, `action` and `body` are also Hono variables, `c.var.user` and so
-on, which middleware and `authorize` read. They read parameters with
-`c.req.param()`, such as `c.req.param('id')`. The context also holds all other
-variables, such as `getRecord()`, `find()` and `list()` of [model
-controllers](mikro.md#definemodelcontroller), and a session that middleware sets
-with `c.set()`. Apps type their own by augmenting `DitoVariables`:
+`user`, `em`, `action` and `body` are also Hono variables, such as `c.var.user`.
+Middleware and `authorize` read them there. They read the parameters with
+`c.req.param()`, such as `c.req.param('id')`.
+
+The context also holds all other variables:
+
+- `getRecord()`, `find()` and `list()` of
+  [model controllers](mikro.md#definemodelcontroller);
+- the app's own, such as a session that middleware sets with `c.set()`.
+
+Apps type their own variables by augmenting `DitoVariables`:
 
 ```ts
 declare module '@ditojs/server' {
@@ -126,6 +142,17 @@ declare module '@ditojs/server' {
   }
 }
 ```
+
+### The body
+
+The `body` of a write without a `body` schema follows these rules:
+
+- An empty body is `{}`.
+- A body without `Content-Type` is `{}` too. So a JSON body without it is
+  dropped.
+- Invalid JSON responds with 400.
+- Bodies of other types, such as form data, are `undefined`. Handlers read them
+  from `c.req`.
 
 ### Adapter
 
@@ -137,11 +164,13 @@ interface Adapter {
 }
 ```
 
-The object that [`createMikroAdapter()`](mikro.md#createmikroadapter) returns.
-`connect()` returns the request's entity manager, which becomes `c.var.em`.
-`transaction` runs the actions that need one. Without it, no action runs in a
-transaction. `toHttpError()` maps the database's errors to an `HttpError`, and
-returns `undefined` for others.
+The object that [`createMikroAdapter()`](mikro.md#createmikroadapter) returns:
+
+- `connect()` returns the request's entity manager, which becomes `c.var.em`.
+- `transaction` runs the actions that need a transaction. Without it, no action
+  runs in one.
+- `toHttpError()` maps the database's errors to an `HttpError`. It returns
+  `undefined` for other errors.
 
 ### Transaction
 
@@ -149,8 +178,8 @@ returns `undefined` for others.
 type Transaction = <T>(c: DitoContext, fn: () => Promise<T>) => Promise<T>
 ```
 
-Runs `fn` in a transaction, and rolls it back when `fn` throws. While `fn` runs,
-`c.var.em` is the transaction's entity manager.
+Runs `fn` in a transaction. When `fn` throws, it rolls the transaction back.
+While `fn` runs, `c.var.em` is the transaction's entity manager.
 
 ## sendFile()
 
@@ -167,13 +196,15 @@ interface SendFileOptions {
 }
 ```
 
-Returns a response with a file, such as a generated export. `body` may be a
-stream, such as a Node `Readable`. `Content-Disposition` is `attachment`, or
-`inline` with `inline: true`, and names `filename`, if given. `Content-Type` is
-`type`, by default the type of the file's extension, else
-`application/octet-stream`.
-
 ```js
 'get export': async ({ em, c }) =>
   sendFile(c, await createCsv(em), { filename: 'loans.csv' })
 ```
+
+Returns a response with a file, such as a generated export.
+
+- `body` may be a stream, such as a Node `Readable`.
+- `Content-Disposition` is `attachment`, or `inline` with `inline: true`. It
+  names `filename`, if given.
+- `Content-Type` is `type`. By default, it is the type of the file's extension,
+  else `application/octet-stream`.

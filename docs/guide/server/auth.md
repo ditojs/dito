@@ -1,9 +1,16 @@
 # Users and sessions
 
 `@ditojs/auth` keeps sessions in signed cookies and a `session` table. It adds
-the actions of the admin's users: login, logout, reading the logged-in user,
-confirmed access, password change and reset, passkeys and TOTP. The app stores
-its users in its own entities, and describes them to auth in a user source.
+the actions of the admin's users:
+
+- login and logout;
+- reading the logged-in user;
+- confirmed access;
+- password change and reset;
+- passkeys and TOTP.
+
+The app stores its users in its own entities. It describes them to auth in a
+user source.
 
 ## Sessions
 
@@ -32,29 +39,33 @@ const app = new Hono()
 app.route('/api/admin', api)
 ```
 
-`adminSessions.middleware` is Hono middleware. The API runs it before `getUser`,
-which reads the session. It loads the session into `c.var.session` before the
-action. After the action, it saves the session if it changed, even when the
-action throws, and adds its cookie to the response. `getSession(c)` returns the
-session, also in the app's own Hono routes. `getSessionUser(c, source)` returns
-the id and roles of the session's user, for the `getUser` of the API.
+`adminSessions.middleware` is Hono middleware.
 
-Sessions use `adapter.getKysely()`, outside of the action's transaction, because
-they load before it and save after it. `adminSessions.deleteExpired()`
-deletes the expired rows. Call it from a timer of the app.
+- The API runs it before `getUser`, which reads the session.
+- It loads the session into `c.var.session` before the action.
+- After the action, it saves the session if it changed. It does this even when
+  the action throws.
+- It adds its cookie to the response.
 
-The cookie holds the session's id, signed with Hono's signed cookies. The first
-of `secrets` signs, and all of them verify. So a new secret goes first, and the
-old one stays until its sessions have expired. Session cookies are
-`SameSite=Lax`, `HttpOnly`, and `Secure` on https.
-`adminSessions.readSignedCookie(c, name)` reads the app's own cookies, which it
-signs with `setSignedCookie()` of `hono/cookie` and the first secret.
+`getSession(c)` returns the session, also in the app's own Hono routes.
+`getSessionUser(c, source)` returns the id and roles of the session's user, for
+the `getUser` of the API.
+
+Sessions use `adapter.getKysely()`, outside of the action's transaction. This is
+because they load before the action, and save after it.
+`adminSessions.deleteExpired()` deletes the expired rows. Call it from a timer
+of the app.
+
+The cookie holds the session's id, signed with Hono's signed cookies.
+
+- The first of `secrets` signs, and all of them verify. So a new secret goes
+  first. The old one stays until its sessions have expired.
+- Session cookies are `SameSite=Lax` and `HttpOnly`. On https, they are also
+  `Secure`.
+- `adminSessions.readSignedCookie(c, name)` reads the app's own cookies. The app
+  signs them with `setSignedCookie()` of `hono/cookie` and the first secret.
 
 ## User sources
-
-A user source tells auth how to find and change users, and how to send them to
-clients. `createEntityUserSource()` of `@ditojs/mikro` makes one for a MikroORM
-entity:
 
 ```js
 import { z } from 'zod'
@@ -77,25 +88,26 @@ export const adminSource = createEntityUserSource(Admin, {
 })
 ```
 
-It finds users with the request's entity manager, else with a fork of `em`.
-`patch()` writes the new `hash` or the `lastLogin` of a login at once, without
-flushing the request's other changes, and sets them on the user. An app can also
-write the object itself, with `name`, `findById(c, id)`,
-`findByUsername(c, username)`, `patch(c, user, values)`,
-`serialize(c, user)` and the schema `password`.
+A user source tells auth how to find and change users, and how to send them to
+clients. `createEntityUserSource()` of `@ditojs/mikro` makes one for a MikroORM
+entity.
 
-The source's `password` checks new passwords, in the users controller and in
-the password writes below.
+- It finds users with the request's entity manager, else with a fork of `em`.
+- `patch()` writes the new `hash`, or the `lastLogin` of a login, at once. It
+  doesn't flush the request's other changes. It sets the values on the user.
+- The source's `password` checks new passwords. It does this in the users
+  controller, and in the password writes below.
+
+An app can also write the source itself. It has `name`, `findById(c, id)`,
+`findByUsername(c, username)`, `patch(c, user, values)`, `serialize(c, user)`
+and the schema `password`.
 
 Auth reads `id`, `username`, `hash`, `roles` and `lastLogin` from the users.
 `name`, the entity's name, names the users in sessions and credentials, such as
-`Admin-1`. Sessions keep a fingerprint of the user's password hash, so a
+`Admin-1`. Sessions keep a fingerprint of the user's password hash. So a
 password change ends the user's other sessions.
 
 ## The users controller
-
-`defineUserActions()` returns a controller with the actions of the admin's
-users, and the features that the controller offers, which the admin reads:
 
 ```js
 import { defineController } from '@ditojs/server'
@@ -121,21 +133,28 @@ export const adminUsers = defineController({
 })
 ```
 
-It routes `post login`, `post logout`, `get self`, `post confirm-access` and
-`post password`, and the actions of its features. Logins post `username` and
-`password`, and respond with `{ user }`, or with `{ codeRequired: true }` for
-users with TOTP. `get self` responds with the user, or `null`. See
-[`defineUserActions()`](../../api/server/auth.md#defineuseractions) for all
+`defineUserActions()` returns a controller with the actions of the admin's
+users. It also returns the features that the controller offers, which the admin
+reads.
+
+- It routes `post login`, `post logout`, `get self`, `post confirm-access` and
+  `post password`, and the actions of its features.
+- Logins post `username` and `password`. They respond with `{ user }`, or with
+  `{ codeRequired: true }` for users with TOTP.
+- `get self` responds with the user, or `null`.
+
+See [`defineUserActions()`](../../api/server/auth.md#defineuseractions) for all
 actions.
 
-The actions check the login themselves, as the controller sets
-`authorize: true`. They run outside the API's transactions, as it sets
-`transacted: false`. TOTP opens a transaction of its own, so failed codes stay
-counted when a request fails. A controller that mixes it in and sets these
-settings replaces them for the mixed-in actions too.
+The controller sets two settings:
 
-A controller that lists `users.controller` in its `mixins` can replace or wrap
-its actions, as with any mixin:
+- `authorize: true`, as the actions check the login themselves;
+- `transacted: false`, as the actions run outside the API's transactions. TOTP
+  opens a transaction of its own, so failed codes stay counted when a request
+  fails.
+
+A controller that mixes it in and sets these settings replaces them for the
+mixed-in actions too.
 
 ```js
 import { deleteCookie } from 'hono/cookie'
@@ -149,12 +168,10 @@ actions: {
 }
 ```
 
-### Password writes
+A controller that lists `users.controller` in its `mixins` can replace or wrap
+its actions, as with any mixin.
 
-[`definePasswordWrites()`](../../api/server/auth.md#definepasswordwrites) is a
-mixin for the model controller of the users. It routes `post` and `patch :id`,
-where the body sets `password`, which the user stores as `hash`. Users who
-change their own password stay logged in, and their other sessions end.
+### Password writes
 
 ```js
 import { definePasswordWrites } from '@ditojs/auth'
@@ -169,42 +186,48 @@ export const admins = defineModelController({
 })
 ```
 
-This controller is separate from `users.controller` and doesn't mix it in. Its
-`authorize` would then apply to the logins too, and the writes would run outside
-of a transaction.
+[`definePasswordWrites()`](../../api/server/auth.md#definepasswordwrites) is a
+mixin for the model controller of the users. It routes `post` and `patch :id`.
+Their body sets `password`, which the user stores as `hash`. Users who change
+their own password stay logged in, and their other sessions end.
+
+This controller is separate from `users.controller`, and doesn't mix it in. If
+it did, its `authorize` would apply to the logins too. The writes would also run
+outside of a transaction.
 
 ### Credentials
-
-Passkeys and TOTP keep their secrets in the `credential` table, through
-`createCredentials({ adapter })`. No foreign keys tie them to their users, so an
-action that deletes users deletes their credentials too:
 
 ```js
 await credentials.deleteUsers(adminSource, ids, { c })
 ```
 
+Passkeys and TOTP keep their secrets in the `credential` table, through
+`createCredentials({ adapter })`. No foreign keys tie them to their users. So an
+action that deletes users deletes their credentials too, as above.
+
 ### Passkeys
 
 `createPasskeys({ rpName, domain?, origins? })` from `@ditojs/auth/passkeys`
-adds logins with passkeys, and the actions to list, add and remove passkeys. It
-needs `credentials` and the packages `@simplewebauthn/server` and `aaguids`. The
-passkeys belong to the request's host and origin, unless `domain` and `origins`
-say otherwise, see
-[`createPasskeys()`](../../api/server/auth.md#createpasskeys).
+adds logins with passkeys. It also adds the actions to list, add and remove
+passkeys.
+
+- It needs `credentials`, and the packages `@simplewebauthn/server` and
+  `aaguids`.
+- The passkeys belong to the request's host and origin, unless `domain` and
+  `origins` say otherwise, see
+  [`createPasskeys()`](../../api/server/auth.md#createpasskeys).
 
 ### Two-factor authentication
 
 `createTotp({ issuer, secret })` from `@ditojs/auth/totp` adds codes from an
-authenticator app, with backup codes. Users with TOTP enter a code after the
-password. `secret` is a long random string of the app, which encrypts the TOTP
-secrets in the `credential` table. `createTotp()` needs `credentials` and the
-package `otpauth`.
+authenticator app, with backup codes.
+
+- Users with TOTP enter a code after the password.
+- `secret` is a long random string of the app. It encrypts the TOTP secrets in
+  the `credential` table.
+- `createTotp()` needs `credentials` and the package `otpauth`.
 
 ### Password reset
-
-`createPasswordReset({ secrets, confirmUrl, send })` adds `post password-reset`,
-which emails a link, and `post password-reset-confirm`, which sets the new
-password:
 
 ```js
 passwordReset: createPasswordReset({
@@ -215,15 +238,16 @@ passwordReset: createPasswordReset({
 })
 ```
 
-The link expires after an hour, or earlier with the next login or password
-change, including the one that the link makes. A user gets one link per minute,
-and the response is the same whether the user exists or not.
+`createPasswordReset({ secrets, confirmUrl, send })` adds two actions:
+
+- `post password-reset`, which emails a link;
+- `post password-reset-confirm`, which sets the new password.
+
+The link expires after an hour. It expires earlier with the next login or
+password change, including the one that the link makes. A user gets one link
+per minute. The response is the same whether the user exists or not.
 
 ### Confirmed access
-
-A login confirms the user's access for ten minutes. `reconfirmAfter` sets this
-time. Actions that change security settings, such as roles, need confirmed
-access:
 
 ```js
 'patch :id': async ({ c, next }) => {
@@ -232,14 +256,15 @@ access:
 }
 ```
 
+A login confirms the user's access for ten minutes. `reconfirmAfter` sets this
+time. Actions that change security settings, such as roles, need confirmed
+access.
+
 Without confirmed access, the action responds with 403 and
-`confirmationRequired: true`. The admin then asks for the password, posts it to
-`post confirm-access`, and sends the request again.
+`confirmationRequired: true`. The admin then asks for the password, and posts it
+to `post confirm-access`. Then it sends the request again.
 
 ## Other users
-
-Users other than the admin's, such as the members of a library, log in through
-the app's own actions, with a session of their own:
 
 ```js
 import { HttpError } from '@ditojs/server'
@@ -261,10 +286,10 @@ actions: {
 }
 ```
 
-## Users outside of Dito
+Users other than the admin's, such as the members of a library, log in through
+the app's own actions. They have a session of their own.
 
-`createAdmin()` takes the session middleware and `getSessionUser()` as
-`createApi()` does, and checks the roles of the user in `authorize`:
+## Users outside of Dito
 
 ```js
 createAdmin({
@@ -275,5 +300,8 @@ createAdmin({
 })
 ```
 
-The app's own Hono routes run the session middleware with `app.use()`, and read
+`createAdmin()` takes the session middleware and `getSessionUser()`, as
+`createApi()` does. It checks the roles of the user in `authorize`.
+
+The app's own Hono routes run the session middleware with `app.use()`. They read
 the user with `getSessionUser()`.

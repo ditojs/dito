@@ -1,11 +1,5 @@
 # Serving the admin
 
-`@ditojs/admin/server` serves the [Dito.js Admin](../admin/index.md) under a
-path. In production, it serves the built files. In development, given a Vite
-config, it runs Vite in middleware mode, with hot reloading of the admin's
-views, which needs the Node server of `@hono/node-server`. Production never
-loads Vite.
-
 ```js
 import path from 'node:path'
 import { createAdmin } from '@ditojs/admin/server'
@@ -31,23 +25,31 @@ app.route('/admin', admin)
 await serve(app, { onClose: () => admin.close() })
 ```
 
-- `dist` holds the built admin, and `root` of the Vite config its sources:
+`@ditojs/admin/server` serves the [Dito.js Admin](../admin/index.md) under a
+path.
+
+- In production, it serves the built files. Production never loads Vite.
+- In development, given a Vite config, it runs Vite in middleware mode. The
+  admin's views reload while they are edited. This needs the Node server of
+  `@hono/node-server`.
+
+The options:
+
+- `dist` holds the built admin. `root` of the Vite config holds its sources:
   `index.html` and the `views/` that create the `DitoAdmin`.
 - `api`, `settings` and `authentication` become the `dito` object in the
-  browser, served as `/admin/dito.js`.
+  browser. It is served as `/admin/dito.js`.
 - `authentication` is the `features` of the
-  [users controller](auth.md#the-users-controller), which tells the login and
+  [users controller](auth.md#the-users-controller). They tell the login and
   account views what to offer.
 - `createAdmin()` returns a Hono app, which the host routes at `base`.
 - `middleware`, `getUser` and `authorize` work as in
-  [`createApi()`](controllers.md#authorization). `authorize` decides whether a
-  request may load the admin's views. `middleware` runs only on those requests.
-  Other requests, such as the login's, need no user.
+  [`createApi()`](controllers.md#authorization).
+- `authorize` decides whether a request may load the admin's views.
+  `middleware` runs only on those requests. Other requests, such as the
+  login's, need no user.
 
 ## Building
-
-An `admin.vite.config.js` builds the admin with the same config that development
-uses:
 
 ```js
 import { defineAdminViteConfig } from '@ditojs/admin/vite'
@@ -63,5 +65,7 @@ export default ({ mode }) =>
 vite build --config admin.vite.config.js
 ```
 
-The second argument is merged into the config. In development, pass the file's
-path to `createAdmin()` as `vite`, which loads it with the mode `development`.
+An `admin.vite.config.js` builds the admin with the same config that
+development uses. The second argument is merged into the config. In
+development, pass the file's path to `createAdmin()` as `vite`. It loads the
+file with the mode `development`.

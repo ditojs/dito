@@ -248,11 +248,12 @@ flush, see
 
 ### 6. Turn scopes into find shapes
 
-Each controller decides what it loads and returns with `find`: MikroORM's find
-options plus `where` and `maxRows`, or a function of Hono's context `c` that
-returns them. It replaces `scope`, `allowScope`, `allowFilter`, `allowParam`,
-`graph` and the model's default scope. `filters` declares the list filters. See
-[Find](api/server/mikro.md#find) and [Filters](api/server/mikro.md#filters).
+Each controller decides what it loads and returns with `find`. `find` holds
+MikroORM's find options, plus `where` and `maxRows`. It can also be a function
+that returns them. It replaces `scope`, `allowScope`, `allowFilter`,
+`allowParam`, `graph` and the model's default scope. `filters` declares the
+list filters. See [Find](api/server/mikro.md#find) and
+[Filters](api/server/mikro.md#filters).
 
 ```js
 // Dito.js 6
@@ -278,24 +279,25 @@ filters: {
 
 - Rows that `find.where` hides respond with 404 on `getRecord()` and the default
   handlers.
-- `?fields=` is gone, and `?scope=` no longer chooses what a list loads. A
-  controller routes the shapes that its clients need instead, such as
-  `'get :id/full'`, and `defineChoices()` routes the options of a select at
-  `get choices`.
-- List `scopes` of the admin keep their name and `defaultScope`, but each scope
-  now sets list filters with `filter`, and optionally the order with `order`,
-  such as `published: { label: 'Published', filter: { published: true } }`. The
-  controller needs a filter of each name. `?scope=` stays in the admin's URL
-  only, and isn't sent to the server.
+- `?fields=` is gone. `?scope=` no longer chooses what a list loads. Instead, a
+  controller routes the shapes that its clients need, such as `'get :id/full'`.
+  `defineChoices()` routes the options of a select at `get choices`.
+- List `scopes` of the admin keep their name and `defaultScope`. Each scope now
+  sets list filters with `filter`, and optionally the order with `order`, such
+  as `published: { label: 'Published', filter: { published: true } }`. The
+  controller needs a filter of each name.
+- `?scope=` stays in the admin's URL only. The admin doesn't send it to the
+  server.
 - Dito.js 6's filter types `text` and `date-range` become `defineTextFilter()`
-  and `defineDateRangeFilter()`, which read what the admin's filters send.
+  and `defineDateRangeFilter()`. They read what the admin's filters send.
 - Custom actions query through `find(options)` of the handler's context, or
-  `c.var.find()`. `list(options)`, or `c.var.list()`, runs the list with its
-  filters, `order` and `range`. `defineListHandler(find)` returns such a list as
-  a handler. They keep to the rows of the controller's `find`. Only `where` and
-  `filters` merge, and the other options replace the controller's.
+  through `c.var.find()`.
+- `list(options)`, or `c.var.list()`, runs the list with its filters, `order`
+  and `range`. `defineListHandler(find)` returns such a list as a handler.
+- Both keep to the rows of the controller's `find`. Only `where` and `filters`
+  merge. The other options replace the controller's.
 - `getListQuery()` of the context returns the `where`, `orderBy` and `range` of
-  the list, for summaries and exports over its rows.
+  the list. Use it for summaries and exports over its rows.
 
 `fields` alone defines what goes out, see [Output](api/server/mikro.md#output):
 

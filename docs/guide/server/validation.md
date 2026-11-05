@@ -2,10 +2,10 @@
 
 Dito.js validates in three places:
 
-- the `query` and `body` schemas of actions, before the handler runs
-- the filters of lists, each with its own schema
-- the checks of the bodies of model controllers, which read the entity's
-  metadata and run the schemas of custom column types. Postgres checks the rest.
+- the `query` and `body` schemas of actions, before the handler runs;
+- the filters of lists, each with its own schema;
+- the checks of the bodies of model controllers. They read the entity's metadata
+  and run the schemas of custom column types. Postgres checks the rest.
 
 Every schema that an app passes is a [Zod](https://zod.dev) schema. Zod is a
 peer of `@ditojs/server`.
@@ -26,22 +26,16 @@ import { z } from 'zod'
 })
 ```
 
-The output of the schemas becomes `query` and `body` of the handler's context, and
-`c.req.valid('query')` and `c.req.valid('json')`, so transforms and defaults
-apply. `defineAction()` gives them their types in the handler.
+The output of the schemas becomes `query` and `body` of the handler's context.
+It also becomes `c.req.valid('query')` and `c.req.valid('json')`. So transforms
+and defaults apply. `defineAction()` gives `query` and `body` their types in the
+handler.
 
 Query values are strings. Dito converts them to the numbers, booleans, dates and
 arrays that the schema expects, see
 [Query values](../../api/server/controllers.md#query-values).
 
 ## Columns
-
-The checks of a body know the entity's properties. They check required columns,
-the JSON types of scalars, and enums, see
-[The checks of a body](writes.md#the-checks-of-a-body). Postgres checks lengths,
-ranges and formats, which respond with 400 without a field. Put other rules on
-the column's custom type as a schema, see
-[Rules on values](writes.md#rules-on-values):
 
 ```js
 import { z } from 'zod'
@@ -59,17 +53,18 @@ properties: {
 }
 ```
 
+The checks of a body know the entity's properties. They check required columns,
+the JSON types of scalars, and enums, see
+[The checks of a body](writes.md#the-checks-of-a-body). Postgres checks lengths,
+ranges and formats. Its errors respond with 400 without a field. Put other rules
+on the column's custom type as a schema, see
+[Rules on values](writes.md#rules-on-values).
+
 A schema that throws responds with 400 at the property, with the `keyword`
-`custom` and the message `Invalid input`, so that internal messages don't reach
+`custom` and the message `Invalid input`. So internal messages don't reach
 clients.
 
 ## Stricter input
-
-A `body` schema on an action checks the body before the entity's checks run,
-with the messages of the schema at each field. Use it for limits that clients
-should see at their fields, such as the length of a name, and for writes of the
-website, where the schema is also the allowlist. It also works on the default
-handlers:
 
 ```js
 'post': {
@@ -81,12 +76,14 @@ handlers:
 }
 ```
 
-## Rules in code
+A `body` schema on an action checks the body before the entity's checks run. It
+reports the messages of the schema at each field. It also works on the default
+handlers. Use it for two things:
 
-Write rules that span rows, or that read the database, as functions that return
-issues. A mixin's middleware runs them inside the transaction, see
-[Rules on rows and graphs](writes.md#rules-on-rows-and-graphs). Handlers throw
-the same errors with `createValidationError()`:
+- limits that clients should see at their fields, such as the length of a name;
+- writes of the website, where the schema is also the allowlist.
+
+## Rules in code
 
 ```js
 import { createValidationError } from '@ditojs/server'
@@ -98,9 +95,14 @@ if (!isValidIsbn(body.isbn)) {
 }
 ```
 
+Write rules that span rows, or that read the database, as functions that return
+issues. A mixin's middleware runs them inside the transaction, see
+[Rules on rows and graphs](writes.md#rules-on-rows-and-graphs). Handlers throw
+the same errors with `createValidationError()`, as above.
+
 ## Errors
 
-Validation errors respond with 400 and the errors of each field at the path of
-its value, see
-[Validation errors](../../api/server/errors.md#validation-errors). The admin
-shows the errors at its fields, and opens the nested forms that they belong to.
+Validation errors respond with 400. Each field's errors are at the path of its
+value, see [Validation errors](../../api/server/errors.md#validation-errors). The
+admin shows the errors at its fields. It opens the nested forms that they belong
+to.

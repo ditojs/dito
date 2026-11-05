@@ -8,9 +8,6 @@
 
 ## Entities
 
-Entities are MikroORM entities, defined with `defineEntity()` and the `p`
-builders:
-
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
 
@@ -39,20 +36,23 @@ export class Article extends ArticleSchema.class {}
 ArticleSchema.setClass(Article)
 ```
 
-Each column is declared only in the entity. The controllers check writes against
-it, see [Writes](writes.md). These rules of the entity matter for Dito:
+Entities are MikroORM entities, defined with `defineEntity()` and the `p`
+builders. Each column is declared only in the entity. The controllers check
+writes against it, see [Writes](writes.md).
+
+These rules of the entity matter for Dito:
 
 - Entities have a single primary key. Composite keys aren't supported, except on
   the pivot entities of many-to-many relations, which have no controller.
 - `.hidden()` keeps a property out of every response, such as a password hash.
-- Dito passes no serialization groups to MikroORM, so `.groups()` keeps no
+- Dito passes no serialization groups to MikroORM. So `.groups()` keeps no
   property out. Use `find.fields` and `find.exclude` per controller.
 - A relation with `.orphanRemoval()` owns its rows. They are written and deleted
   with their parent, see [Nested rows](writes.md#nested-rows).
 - A foreign key's `.deleteRule()` decides what deleting a record does to the
   rows that refer to it, see [Deletes](writes.md#deletes).
 - With [`defineMikroConfig()`](../../api/server/mikro.md#definemikroconfig),
-  `p.date()` stores a `Date` as its local day, and new rows get the defaults of
+  `p.date()` stores a `Date` as its local day. New rows also get the defaults of
   their `defineJsonType()` schemas.
 
 ## Controllers
@@ -111,13 +111,20 @@ defineModelController({
 })
 ```
 
-There is no default `put` and no write on the whole list. Write these as custom
-actions, such as `'post order'`.
+There is no default `put`, and no write to all records at once. Write these as
+custom actions, such as `'post order'`.
 
 An id that doesn't fit the primary key, such as `abc` for an integer key,
 responds with 404. So does a record that `find` hides.
 
 ## Find
+
+```js
+find: ({ user }) => ({
+  where: user ? {} : { published: true },
+  exclude: user?.roles.includes('admin') ? [] : ['internalNotes']
+})
+```
 
 `find` decides what the controller loads and returns. It takes MikroORM's
 [find options](https://mikro-orm.io/docs/entity-manager), plus `where` and
@@ -133,24 +140,13 @@ responds with 404. So does a record that `find` hides.
 | `filters`  | MikroORM's entity filters, such as `{ softDelete: false }`.                        |
 | `maxRows`  | The most rows that a list returns, 1000 by default.                                |
 
-`find` is an object, or a function of Hono's context `c` and the `user` that
-returns one. The function runs once per request, after `getUser`, so its result
-can depend on the user:
-
-```js
-find: ({ user }) => ({
-  where: user ? {} : { published: true },
-  exclude: user?.roles.includes('admin') ? [] : ['internalNotes']
-})
-```
+`find` is an object, or a function that gets `{ c, user }` and returns one. The
+function runs once per request, after `getUser`. So its result can depend on
+the user, as above.
 
 `limit` and `offset` belong to lists, so `find` can't set them.
 
 ### Shared shapes
-
-The admin and the website use separate controllers on the same entity, each with
-its own `find`. When several controllers share a `find`, keep it as a plain
-constant next to the entity:
 
 ```js
 // entities/article.js
@@ -168,34 +164,39 @@ defineModelController({
 })
 ```
 
+The admin and the website use separate controllers on the same entity. Each one
+has its own `find`. When several controllers share a `find`, keep it as a plain
+constant next to the entity.
+
 ### What goes out
 
 Records go out in the shape of `find`:
 
-- Populated relations are nested rows, and so are the relations of paths in
+- Populated relations are nested rows. So are the relations of the paths in
   `fields`, such as `author` of `author.name`.
-- Other relations to one row go out as `{ id }`, such as `author: { id: 12 }`,
-  or `null` when they are empty. Nested rows have the relation to their parent
-  too. With `fields`, the relation only goes out when `fields` names it,
+- Other relations to one row go out as `{ id }`, such as `author: { id: 12 }`.
+  An empty one goes out as `null`. Nested rows have the relation to their parent
+  too.
+- With `fields`, such a relation only goes out when `fields` names it, as
   `author.id` or `*`.
 - Relations to many rows that `find` doesn't populate aren't sent, even when a
   handler loaded them.
-- `fields` narrows the columns. The primary key always goes out. `author.*`
-  stands for the columns of the relation that aren't lazy. To load a lazy one,
-  name it too, such as `author.bio`.
+- `fields` narrows the columns. The primary key always goes out.
+- `author.*` stands for the columns of the relation that aren't lazy. To load a
+  lazy one, name it too, such as `author.bio`.
 - `exclude: ['author']` leaves out the relation.
 
 Records that aren't the controller's, such as those that a custom action
-returns, go out with the relations that are loaded. Put secrets in
-`.hidden()` properties, so that no response sends them.
+returns, go out with the relations that are loaded. Put secrets in `.hidden()`
+properties, so that no response sends them.
 
 ## Lists
-
-The `get` list takes these query parameters:
 
 ```
 GET /articles?filter=author:12&order=createdAt desc&range=0,49
 ```
+
+The `get` list takes these query parameters:
 
 | Parameter          | Description                                                                                               |
 | ------------------ | --------------------------------------------------------------------------------------------------------- |
@@ -203,22 +204,15 @@ GET /articles?filter=author:12&order=createdAt desc&range=0,49
 | `order=name dir`   | Orders by a column or `relation.id` that the rows return, `asc` or `desc`. Repeat it to order by several. |
 | `range=start,end`  | Responds with the rows from `start` to `end`, both included, as `{ results, total }`.                     |
 
-Without `range`, the list responds with an array. A list returns at most 1000
-rows, or the `maxRows` of its `find`. A larger `range` responds with 400, and so
-does a list without `range` that has more rows. The primary key breaks ties in
-the order, so that pages don't overlap.
-
-`order` only takes columns that the user's rows return, as the order alone
-reveals something about the values of a column.
+- Without `range`, the list responds with an array.
+- A list returns at most 1000 rows, or the `maxRows` of its `find`.
+- A larger `range` responds with 400. So does a list without `range` that has
+  more rows.
+- The primary key breaks ties in the order, so that pages don't overlap.
+- `order` only takes columns that the user's rows return. The order alone would
+  reveal something about the values of a column.
 
 ### Filters
-
-`filters` maps each name of `filter=name:args` to two things:
-
-- a schema, which validates the value
-- a `where`, which turns the value into a MikroORM `where`
-
-`defineFilter()` types the `where` by the output of the schema:
 
 ```js
 filters: {
@@ -233,7 +227,7 @@ filters: {
     where: ({ value }) =>
       value === 'all' ? undefined : { published: value === 'published' }
   }),
-  // A filter's `where` gets Hono's context and `em` too.
+  // A filter's `where` gets `c` and `em` too.
   mine: defineFilter({
     schema: z.boolean(),
     where: ({ value, c }) => (value ? { author: c.var.user.id } : undefined)
@@ -241,19 +235,22 @@ filters: {
 }
 ```
 
-Dito converts the strings of the arguments to the numbers, booleans and dates
-that the schema expects, see
-[Query values](../../api/server/controllers.md#query-values). A `where` that
-returns `undefined` skips the filter. Unknown filters and invalid values
-respond with 400.
+`filters` maps each name of `filter=name:args` to two things:
+
+- a schema, which validates the value;
+- a `where`, which turns the value into a MikroORM `where`.
+
+`defineFilter()` types the `where` by the output of the schema.
+
+- Dito converts the strings of the arguments to the numbers, booleans and dates
+  that the schema expects, see
+  [Query values](../../api/server/controllers.md#query-values).
+- A `where` that returns `undefined` skips the filter.
+- Unknown filters and invalid values respond with 400.
 
 A filter's name may differ from the property, such as `author` for a property
-`book.author`, so that clients keep their URLs. A name with a dot, such as
+`book.author`. So clients keep their URLs. A name with a dot, such as
 `author.id`, filters by that path when the filter is a schema alone.
-
-`defineTextFilter()` and `defineDateRangeFilter()` read what the `text` and
-`date-range` filters of the admin send. Without properties, they apply to the
-property of the filter's name:
 
 ```js
 import { defineDateRangeFilter, defineTextFilter } from '@ditojs/mikro'
@@ -267,17 +264,14 @@ filters: {
 }
 ```
 
+`defineTextFilter()` and `defineDateRangeFilter()` read what the `text` and
+`date-range` filters of the admin send. Without properties, they apply to the
+property of the filter's name.
+
 For filters that apply to every query, such as soft deletes or tenants, use
 MikroORM's [entity filters](https://mikro-orm.io/docs/filters).
 
 ### Other lists
-
-`defineListHandler(find)` returns the handler of a list with its own `find`.
-This `find` is merged with the controller's: both `where`s apply, and its other
-options, such as `fields` and `populate`, replace the controller's. A `find`
-with `fields` leaves out the controller's `populate`, so it names the relations
-that it sends in its paths or its own `populate`. The list applies the
-controller's filters, `order` and `range`:
 
 ```js
 import { defineListHandler } from '@ditojs/mikro'
@@ -290,8 +284,14 @@ actions: {
 }
 ```
 
-For the options of a select, use `defineChoices()`. This mixin routes
-`get choices`:
+`defineListHandler(find)` returns the handler of a list with its own `find`.
+This `find` is merged with the controller's:
+
+- Both `where`s apply.
+- Its other options, such as `fields` and `populate`, replace the controller's.
+- A `find` with `fields` leaves out the controller's `populate`. So it names the
+  relations that it sends, in its paths or in its own `populate`.
+- The list applies the controller's filters, `order` and `range`.
 
 ```js
 import { defineChoices } from '@ditojs/mikro'
@@ -300,12 +300,9 @@ mixins: [defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
 // GET /book-categories/choices → [{ id, name }, …]
 ```
 
-`maxRows: Infinity` lifts the limit of 1000 rows, for selects that list more:
-`defineChoices({ fields: ['id', 'name'], maxRows: Infinity })`.
-
-`list(find)` of the handler's context runs the same list in a custom handler, such
-as to load more data for its rows. Its `query` option replaces the list
-parameters of the URL:
+For the options of a select, use `defineChoices()`. This mixin routes
+`get choices`. A select shows all rows, so the list has no row limit, unless
+its `find` sets `maxRows`.
 
 ```js
 async 'get'({ list, c }) {
@@ -316,9 +313,9 @@ async 'get'({ list, c }) {
 }
 ```
 
-`getListQuery()` of the context returns the `where`, `orderBy` and `range` of the
-list with the filters and the `order` of the URL, for queries over its rows,
-such as a summary or an export:
+`list(find)` of the handler's context runs the same list in a custom handler,
+such as to load more data for its rows. Its `query` option replaces the list
+parameters of the URL.
 
 ```js
 async 'get summary'({ em, getListQuery }) {
@@ -327,12 +324,11 @@ async 'get summary'({ em, getListQuery }) {
 }
 ```
 
-## Custom actions
+`getListQuery()` of the context returns the `where`, `orderBy` and `range` of
+the list, with the filters and the `order` of the URL. Use it for queries over
+the rows of the list, such as a summary or an export.
 
-Custom actions query through `find()` of their context, so that they see the same
-rows as the default handlers. `find()` merges its options with the controller's
-`find`, as `defineListHandler()` does, so its rows stay within the controller's
-`where`:
+## Custom actions
 
 ```js
 async 'get :id/related'({ getRecord, find }) {
@@ -341,9 +337,10 @@ async 'get :id/related'({ getRecord, find }) {
 }
 ```
 
-Other queries go through the request's entity manager, `em` of the context. During
-a write, this is the transaction's entity manager. Middleware and other code
-that has Hono's context read it as `c.var.em`:
+Custom actions query through `find()` of their context. So they see the same
+rows as the default handlers. `find()` merges its options with the controller's
+`find`, as `defineListHandler()` does. So its rows stay within the controller's
+`where`.
 
 ```js
 async 'post :id/publish'({ getRecord, em }) {
@@ -358,13 +355,15 @@ async 'post :id/publish'({ getRecord, em }) {
 }
 ```
 
+Other queries go through the request's entity manager, `em` of the context.
+During a write, this is the transaction's entity manager. Middleware and other
+code that has `c` read it as `c.var.em`.
+
 A handler changes the records and returns them. After the handler, the base
-flushes the entity manager once, and sends the controller's records in the shape
-of its `find`.
+flushes the entity manager once. Then it sends the controller's records in the
+shape of its `find`.
 
 ## Nested resources
-
-A controller's `path` may hold parameters, which route nested resources:
 
 ```js
 defineModelController({
@@ -380,6 +379,7 @@ defineModelController({
 })
 ```
 
-Put the parent's visibility in `find.where`, so that the children of a hidden
-parent respond with 404 too. Owned rows, with `orphanRemoval`, are part of their
-parent's writes and need no controller of their own.
+A controller's `path` may hold parameters, which route nested resources. Put
+the parent's visibility in `find.where`. Then the children of a hidden parent
+respond with 404 too. Owned rows, with `orphanRemoval`, are part of their
+parent's writes. They need no controller of their own.
