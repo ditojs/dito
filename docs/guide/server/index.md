@@ -87,7 +87,7 @@ await orm.schema.update()
 
 const api = createApi({
   controllers: [books],
-  db: createMikroAdapter(orm)
+  adapter: createMikroAdapter(orm)
 })
 
 const app = new Hono()
@@ -108,7 +108,7 @@ database. Invalid data responds with 400 and an error for each field.
 1. Hono's router finds the action of the method and path. Paths that no action
    matches go to the app's `notFound()`.
 2. The API's `middleware` runs, such as sessions. Then Dito sets `c.var.db`
-   through the `db` adapter and `c.var.user` with `getUser`.
+   through the adapter and `c.var.user` with `getUser`.
 3. The action's `authorize` lets the user in, or responds with 401 or 403.
 4. The action's schemas check the query and the JSON body.
 5. Writes open a transaction.

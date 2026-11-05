@@ -1,6 +1,6 @@
 import type { Context, ErrorHandler, NotFoundHandler } from 'hono'
 import { isNumber, isString } from '@ditojs/utils'
-import type { DbAdapter, ErrorLogger, HttpErrorBody } from './types.ts'
+import type { Adapter, ErrorLogger, HttpErrorBody } from './types.ts'
 
 // Errors respond with JSON: `{ type, message, status, code, errors }`. An
 // `HttpError` is meant for the client, which gets its message and data. Other
@@ -165,7 +165,7 @@ export function createErrorHandler({
   toHttpError
 }: {
   onError?: ErrorLogger
-  toHttpError?: DbAdapter['toHttpError']
+  toHttpError?: Adapter['toHttpError']
 } = {}): ErrorHandler {
   return async (error, c) => {
     const httpError = toStatusError(toHttpError?.(error, c as never) ?? error)

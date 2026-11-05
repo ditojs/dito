@@ -532,10 +532,10 @@ const orm = new MikroORM(defineMikroConfig({ dbName, entities }))
 ## createMikroAdapter()
 
 ```ts
-createMikroAdapter(orm: MikroORM): DbAdapter
+createMikroAdapter(orm: MikroORM): Adapter
 ```
 
-Returns the `db` of [`createApi()`](api.md#dbadapter).
+Returns the `adapter` of [`createApi()`](api.md#adapter).
 
 - `connect()` forks the entity manager for each request. The fork becomes `db`
   of the handler's input, and `c.var.db`.
@@ -547,7 +547,7 @@ Returns the `db` of [`createApi()`](api.md#dbadapter).
 
 ```js
 const orm = new MikroORM(defineMikroConfig({ entities }))
-app.route('/api', createApi({ controllers, db: createMikroAdapter(orm) }))
+app.route('/api', createApi({ controllers, adapter: createMikroAdapter(orm) }))
 ```
 
 ## getEntityManager()

@@ -54,7 +54,7 @@ them.
 | ------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `controllers` | `ControllerDefinition[] \| object`             | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, all other values are ignored. |
 | `middleware`  | `Middleware \| Middleware[]`                   | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.db` and `c.var.user`.                                                            |
-| `db`          | [`DbAdapter`](#dbadapter)                      | The database, [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `db` is undefined and no action runs in a transaction.                                              |
+| `adapter`     | [`Adapter`](#adapter)                          | The database, [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `db` is undefined and no action runs in a transaction.                                              |
 | `getUser`     | `(c) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                |
 | `onError`     | `(error, c) => void \| Promise<void>`          | Called with each error with a status of 500 or above, for the app's logs. By default, logs through `c.var.logger`, else `console`. See [Errors](errors.md).                             |
 
@@ -103,7 +103,7 @@ Dito builds the input for each request and each layer:
 | `body`   | For writes, the result of the action's `body` schema, or else the JSON body. An empty body and a body without `Content-Type` are `{}`, so a JSON body without it is dropped, and invalid JSON responds with 400. Bodies of other types, such as form data, are `undefined`, and handlers read them from `c.req`. |
 | `params` | The parameters of the path, by name, such as `params.id` of a member action.                                                                                                                                                                                                                                     |
 | `user`   | The signed-in user, or `null`.                                                                                                                                                                                                                                                                                   |
-| `db`     | The database handle of the request, from `connect()` of `db`, such as a fork of the entity manager. During a transaction, the transaction's handle.                                                                                                                                                              |
+| `db`     | The database handle of the request, from `connect()` of the `adapter`, such as a fork of the entity manager. During a transaction, the transaction's handle.                                                                                                                                                     |
 | `action` | The key of the action that runs, such as `'get'` or `'post :id/publish'`.                                                                                                                                                                                                                                        |
 | `c`      | [Hono's context](controllers.md#ditocontext) of the request.                                                                                                                                                                                                                                                     |
 | `next`   | Runs the handler beneath, and returns its result. That handler sees the changes that this one makes to its input, such as a new `body`.                                                                                                                                                                          |
@@ -123,10 +123,10 @@ declare module '@ditojs/server' {
 }
 ```
 
-### DbAdapter
+### Adapter
 
 ```ts
-interface DbAdapter {
+interface Adapter {
   connect?(c: DitoContext): unknown
   transaction?: Transaction
   toHttpError?(error: unknown, c: DitoContext): HttpError | undefined

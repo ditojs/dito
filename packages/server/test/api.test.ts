@@ -16,9 +16,9 @@ import {
   notFound,
   sendFile,
   type ActionSettings,
+  type Adapter,
   type ApiConfig,
   type ControllerDefinition,
-  type DbAdapter,
   type DitoContext,
   type HandlerInput,
   type Middleware,
@@ -38,12 +38,12 @@ declare module '../src/index.ts' {
 const admin: User = { id: 1, roles: ['admin'] }
 const editor: User = { id: 2, roles: ['editor'] }
 
-interface SetupOptions extends Partial<ApiConfig>, DbAdapter {
+interface SetupOptions extends Partial<ApiConfig>, Adapter {
   user?: User | null
 }
 
 // The host app, which routes the API below `/api`. `connect` and
-// `transaction` go to the `db` adapter, whose `toHttpError()` maps
+// `transaction` go to the adapter, whose `toHttpError()` maps
 // `RangeError`, which stands for an error of the ORM.
 function setup(
   controllers: ControllerDefinition[],
@@ -55,7 +55,7 @@ function setup(
     createApi({
       controllers,
       getUser: async () => user,
-      db: {
+      adapter: {
         connect,
         transaction,
         toHttpError: error =>
@@ -1486,12 +1486,12 @@ describe('errors', () => {
     expect(c.req.url).toBe('https://example.com/api/fonts/4/publish')
     expect(c.req.param('id')).toBe('4')
     expect((await request(api, 'GET', '/api/fonts/missing')).status).toBe(404)
-    // `toHttpError()` of the `db` adapter maps the error to a 422 first.
+    // `toHttpError()` of the adapter maps the error to a 422 first.
     expect((await request(api, 'GET', '/api/fonts/wide')).status).toBe(422)
     expect(onError).toHaveBeenCalledTimes(1)
   })
 
-  it('passes the context to `toHttpError()` of the `db` adapter', async () => {
+  it('passes the context to `toHttpError()` of the adapter', async () => {
     const toHttpError = vi.fn(
       (_error: unknown, c: DitoContext) =>
         new HttpError(503, {
@@ -1511,7 +1511,7 @@ describe('errors', () => {
           }
         }
       ],
-      { db: { toHttpError }, onError }
+      { adapter: { toHttpError }, onError }
     )
     const response = await request(api, 'GET', '/api/fonts/4')
     expect(response.status).toBe(503)

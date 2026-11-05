@@ -31,13 +31,13 @@ import type {
 export function createApi({
   controllers,
   middleware,
-  db = {},
+  adapter = {},
   getUser,
   onError
 }: ApiConfig) {
   const app = new Hono<DitoEnv>()
   app.use(...asArray(middleware), async (c, next) => {
-    if (db.connect) c.set('db', await db.connect(c))
+    if (adapter.connect) c.set('db', await adapter.connect(c))
     c.set('user', (await getUser?.(c)) ?? null)
     await next()
   })
@@ -64,12 +64,12 @@ export function createApi({
     }
     routes.add(route)
     const handlers: Middleware[] = [
-      ...getMiddleware(action, db.transaction),
+      ...getMiddleware(action, adapter.transaction),
       async c => respond(c, action)
     ]
     app.on(method, path, ...(handlers as [Middleware]))
   }
-  app.onError(createErrorHandler({ onError, toHttpError: db.toHttpError }))
+  app.onError(createErrorHandler({ onError, toHttpError: adapter.toHttpError }))
   return app
 }
 

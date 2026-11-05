@@ -1,8 +1,8 @@
 // Model controllers on MikroORM entities, and the parts an app needs to run
 // them:
 //
-//   const db = createMikroAdapter(orm)
-//   const api = createApi({ controllers, db, getUser })
+//   const adapter = createMikroAdapter(orm)
+//   const api = createApi({ controllers, adapter, getUser })
 //   app.route('/api', api)
 
 export {

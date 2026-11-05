@@ -331,7 +331,7 @@ describe('assets()', () => {
     })
     return createApi({
       controllers: [books],
-      db: { connect: () => db, transaction: kyselyTransaction },
+      adapter: { connect: () => db, transaction: kyselyTransaction },
       getUser: async () => null,
       onError: () => {}
     })
@@ -737,7 +737,7 @@ describe('assetUploads()', () => {
     })
     return createApi({
       controllers: [books],
-      db: { connect: () => db, transaction: kyselyTransaction },
+      adapter: { connect: () => db, transaction: kyselyTransaction },
       getUser: async () => null,
       onError: () => {}
     })
@@ -904,7 +904,7 @@ describe('createAssets()', () => {
     })
     return createApi({
       controllers: [books],
-      db: { connect: () => db, transaction: kyselyTransaction },
+      adapter: { connect: () => db, transaction: kyselyTransaction },
       getUser: async () => null,
       onError: () => {}
     })
@@ -937,7 +937,7 @@ describe('createAssets()', () => {
     })
     const api = createApi({
       controllers: [books],
-      db: {
+      adapter: {
         connect: () => ({ getKysely: () => db }),
         transaction: (c, fn) => fn()
       },

@@ -55,7 +55,7 @@ const sessions = createSessions({
 const app = new Hono().route(
   '/',
   createApi({
-    db: createMikroAdapter(orm),
+    adapter: createMikroAdapter(orm),
     middleware: [sessions.middleware],
     getUser: c => getSessionUser(c, source),
     controllers: [

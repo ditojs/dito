@@ -52,7 +52,7 @@ function setup(...controllers: ControllerDefinition[]) {
       '/api',
       createApi({
         controllers,
-        db: createMikroAdapter(orm),
+        adapter: createMikroAdapter(orm),
         // The user of the `X-User` header, with that name as its role.
         getUser: async c => {
           const name = c.req.header('X-User')
@@ -702,7 +702,7 @@ describe('find', () => {
       controllers: [
         books({ find: () => ({ disableIdentityMap: true }) })
       ],
-      db: createMikroAdapter(orm),
+      adapter: createMikroAdapter(orm),
       onError: error => {
         errors.push(error)
       }
@@ -1369,7 +1369,7 @@ describe('default handlers', () => {
           actions: { get: true }
         })
       ],
-      db: createMikroAdapter(orm),
+      adapter: createMikroAdapter(orm),
       onError: error => {
         errors.push(error)
       }
@@ -2467,7 +2467,7 @@ describe('layers', () => {
         controllers: [
           books({ actions: { 'get one': ({ getRecord }) => getRecord() } })
         ],
-        db: createMikroAdapter(orm),
+        adapter: createMikroAdapter(orm),
         onError: error => {
           errors.push(error)
         }
@@ -2622,7 +2622,7 @@ describe('createMikroAdapter()', () => {
           }
         }
       ],
-      db: createMikroAdapter(orm),
+      adapter: createMikroAdapter(orm),
       onError
     })
     const locked = await request(api, 'GET', '/items/locked')
@@ -2641,7 +2641,7 @@ describe('createMikroAdapter()', () => {
       controllers: [
         { path: 'items', actions: { get: ({ db }) => db !== orm.em } }
       ],
-      db: createMikroAdapter(orm)
+      adapter: createMikroAdapter(orm)
     })
     expect((await request(api, 'GET', '/items')).json).toBe(true)
   })

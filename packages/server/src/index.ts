@@ -1,10 +1,10 @@
 export type {
   ActionSettings,
   Actions,
+  Adapter,
   ApiConfig,
   Authorize,
   ControllerDefinition,
-  DbAdapter,
   DitoContext,
   DitoEnv,
   DitoVariables,

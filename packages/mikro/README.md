@@ -34,7 +34,7 @@ export const books = defineModelController({
 
 app.route(
   '/api',
-  createApi({ controllers: [books], db: createMikroAdapter(orm) })
+  createApi({ controllers: [books], adapter: createMikroAdapter(orm) })
 )
 ```
 

@@ -126,7 +126,7 @@ export async function createTestApp(
     createApi({
       controllers,
       middleware,
-      ...(orm && { db: createMikroAdapter(orm) }),
+      ...(orm && { adapter: createMikroAdapter(orm) }),
       getUser,
       onError: logError
     })

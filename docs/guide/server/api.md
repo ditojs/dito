@@ -12,7 +12,7 @@ import { createMikroAdapter } from '@ditojs/mikro'
 const api = createApi({
   controllers: [books, authors, loans],
   middleware: [sessions.middleware],
-  db: createMikroAdapter(orm),
+  adapter: createMikroAdapter(orm),
   getUser: c => getSessionUser(c, admins)
 })
 app.route('/api/admin', api)
@@ -29,7 +29,7 @@ things too:
 ```js
 import * as controllers from './controllers/index.js'
 
-const api = createApi({ controllers, db: createMikroAdapter(orm) })
+const api = createApi({ controllers, adapter: createMikroAdapter(orm) })
 ```
 
 Hono runs the first route that matches, so Dito adds the routes with static
@@ -118,13 +118,13 @@ of the API at `/api`:
 const adminApi = createApi({
   controllers: adminControllers,
   middleware: [adminSessions.middleware],
-  db: createMikroAdapter(orm),
+  adapter: createMikroAdapter(orm),
   getUser: c => getSessionUser(c, adminSource)
 })
 const frontApi = createApi({
   controllers: frontControllers,
   middleware: [memberSessions.middleware],
-  db: createMikroAdapter(orm),
+  adapter: createMikroAdapter(orm),
   getUser: c => getSessionUser(c, memberSource)
 })
 
@@ -134,12 +134,12 @@ app.route('/api', frontApi)
 
 ## The database
 
-`db` is `createMikroAdapter(orm)` of `@ditojs/mikro`. It forks the entity
-manager for each request, runs the action in a transaction of the fork, and maps
-MikroORM's errors:
+The `adapter` is `createMikroAdapter(orm)` of `@ditojs/mikro`. It forks the
+entity manager for each request, runs the action in a transaction of the fork,
+and maps MikroORM's errors:
 
 ```js
-db: createMikroAdapter(orm)
+adapter: createMikroAdapter(orm)
 ```
 
 Handlers get the entity manager as `db` of their input, which is the
@@ -174,7 +174,7 @@ getUser: c => getSessionUser(c, adminSource)
 
 ## Errors and logging
 
-First, `toHttpError()` of the `db` adapter maps the errors of the ORM, such as a
+First, `toHttpError()` of the adapter maps the errors of the ORM, such as a
 unique violation to 409. Then the API sends each error as JSON:
 
 - An `HttpError`, or another error with a numeric `status`, responds with that

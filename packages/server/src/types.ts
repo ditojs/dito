@@ -150,7 +150,7 @@ export interface HttpErrorBody {
 }
 
 // The database of an API, such as `createMikroAdapter(orm)`.
-export interface DbAdapter {
+export interface Adapter {
   // The database handle of a request, as `c.var.db`.
   connect?: (c: DitoContext) => unknown
   // Runs the actions that need a transaction. Without it, none runs in one.
@@ -168,7 +168,7 @@ export interface ApiConfig {
   controllers: ControllerDefinition[] | Record<string, unknown>
   // Middleware of every action, before the user is read, such as sessions.
   middleware?: Middleware | Middleware[]
-  db?: DbAdapter
+  adapter?: Adapter
   // The signed-in user of the request, or null.
   getUser?: (c: DitoContext) => User | null | Promise<User | null>
   // By default, logs through `c.var.logger`, else `console`.

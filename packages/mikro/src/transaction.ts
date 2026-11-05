@@ -1,5 +1,5 @@
 import type { Context } from 'hono'
-import type { DbAdapter, DitoEnv } from '@ditojs/server'
+import type { Adapter, DitoEnv } from '@ditojs/server'
 import type { EntityManager as CoreEntityManager } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
 import type { Kysely } from 'kysely'
@@ -11,9 +11,10 @@ interface Orm {
   em: CoreEntityManager<any>
 }
 
-// The `db` of `createApi()`. Each request gets a fork of the entity manager as
-// `c.var.db`, which is the transaction's entity manager during a transaction.
-export function createMikroAdapter(orm: Orm): DbAdapter {
+// The `adapter` of `createApi()`. Each request gets a fork of the entity
+// manager as `c.var.db`, which is the transaction's entity manager during a
+// transaction.
+export function createMikroAdapter(orm: Orm): Adapter {
   if (!hasMikroConfig(orm.em)) {
     throw new Error('Create the ORM with the config of `defineMikroConfig()`.')
   }
