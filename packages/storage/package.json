@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@ditojs/utils": "workspace:^",
+    "@types/busboy": "^1.5.5",
     "@types/picomatch": "^4.0.3",
+    "busboy": "^1.6.0",
     "file-type": "^22.1.1",
     "leather": "^3.0.3",
     "picomatch": "^4.0.7"

@@ -1,5 +1,12 @@
+import fs from 'node:fs/promises'
 import { createApi, defineController } from '@ditojs/server'
-import { createAssets, type AssetFile, type AssetPath } from './index.ts'
+import {
+  DiskStorage,
+  StorageRegistry,
+  createAssets,
+  type AssetFile,
+  type AssetPath
+} from './index.ts'
 import { uploadRoutes } from './assetUploads.ts'
 import {
   setupAssetTests,
@@ -176,12 +183,19 @@ describe('defineUploads()', () => {
         message: 'Content Too Large'
       })
       expect(await getAssets()).toEqual([])
-      // Uploads under the limit go through:
+      // Uploads under the limit go through, and are the only stored files:
       const [uploaded] = await (await upload(api, 'cover', small())).json()
       expect(await covers.listKeys()).toEqual([uploaded.key])
       expect(await getAssets()).toEqual([
         { key: uploaded.key, unreferenced_since: expect.any(Date) }
       ])
+    })
+
+    it('limits each file, not the whole body', async () => {
+      const files = [new File(['a'.repeat(200)], 'a.txt'), small()]
+      const response = await upload(setupLimits(), 'cover', ...files)
+      expect(response.status).toBe(200)
+      expect(await covers.listKeys()).toHaveLength(2)
     })
 
     it('applies the default of `createAssets()`', async () => {
@@ -193,18 +207,86 @@ describe('defineUploads()', () => {
       }
       expect(await archive.listKeys()).toHaveLength(2)
     })
+  })
 
-    it('checks `Content-Length` before reading the body', async () => {
-      const body = new FormData()
-      body.append('file', small())
-      const response = await request(setupLimits(), '/books/upload/cover', {
-        method: 'POST',
-        headers: { 'Content-Length': '301' },
-        body
-      })
-      expect(response.status).toBe(413)
-      expect(await getAssets()).toEqual([])
+  it('streams large files into the storage as they arrive', async () => {
+    const megabyte = 1024 * 1024
+    let writtenBeforeEnd = 0
+    // A multipart body of a 20 MB file, which checks how much of it is on disk
+    // before its last megabyte arrives:
+    async function* createBody() {
+      yield Buffer.from(
+        '--boundary\r\n' +
+        'Content-Disposition: form-data; name="file"; filename="a.bin"\r\n' +
+        'Content-Type: application/octet-stream\r\n\r\n'
+      )
+      for (let i = 0; i < 20; i++) {
+        if (i === 19) {
+          const [key] = await covers.listKeys()
+          writtenBeforeEnd = key
+            ? (await fs.stat(covers.getFilePath({ key }))).size
+            : 0
+        }
+        yield Buffer.alloc(megabyte, i)
+      }
+      yield Buffer.from('\r\n--boundary--\r\n')
+    }
+    const chunks = createBody()
+    const body = new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        const { value, done } = await chunks.next()
+        if (done) {
+          controller.close()
+        } else {
+          controller.enqueue(value)
+        }
+      }
     })
+    // Requests with streamed bodies need `duplex`, which the DOM types lack:
+    const init: RequestInit & { duplex: 'half' } = {
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data; boundary=boundary' },
+      body,
+      duplex: 'half'
+    }
+    const response = await request(setup(), '/books/upload/cover', init)
+    expect(response.status).toBe(200)
+    const [uploaded] = await response.json()
+    expect(uploaded.size).toBe(20 * megabyte)
+    expect(writtenBeforeEnd).toBeGreaterThan(8 * megabyte)
+    const data = await covers.readFile(uploaded)
+    expect(data[19 * megabyte]).toBe(19)
+  })
+
+  it('answers failing storages with an error after the whole body', async () => {
+    // A file where the storage folder should be makes `mkdir()` fail before
+    // the storage reads more of the file than the head of `store()`:
+    const broken = new DiskStorage({ name: 'covers', path: covers.path })
+    await fs.writeFile(broken.path, '')
+    const api = createApi({
+      controllers: [
+        {
+          path: 'books',
+          authorize: true,
+          mixins: [
+            uploadRoutes({
+              uploads: [{ path: 'cover', storage: 'covers' }],
+              storages: new StorageRegistry([broken]),
+              db: () => db
+            })
+          ]
+        }
+      ],
+      onError: () => {}
+    })
+    const response = await upload(
+      api,
+      'cover',
+      new File([Buffer.alloc(10 * 1024 * 1024)], 'a.bin'),
+      new File(['b'], 'b.txt')
+    )
+    expect(response.status).toBe(500)
+    expect(await getAssets()).toEqual([])
   })
 
   it('commits the asset rows without a transaction', async () => {

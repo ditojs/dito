@@ -592,9 +592,8 @@ await serve(app, { port, closeTimeout: 5000, onClose: () => orm.close() })
 - `config.http` becomes the options of
   [`hostMiddleware()`](api/server/hono.md#hostmiddleware). Add it before
   `app.route()`. As in Dito.js 6, `csrf()` only checks requests with `Origin`.
-- Dito.js 6 streamed uploads in parts of 8 MB, and had `limits` per upload. Now
-  each upload is read whole into memory, and sent in one `PutObject`.
-  `limits.fileSize` becomes `maxSize`, see
+- Uploads still stream into their storage, and S3 storages upload them in parts
+  of 8 MB. `limits.fileSize` becomes `maxSize`, see
   [Uploads](api/server/storage.md#uploads).
 - `cors` works differently. Dito.js 6 echoed the request's origin. Hono's
   `cors()` allows any origin by default, without credentials. With

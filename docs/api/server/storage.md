@@ -146,7 +146,7 @@ interface AssetPath {
   // The data path of the files in the column's JSON value, '' for the column.
   path: string
   storage: string
-  // The size limit of the uploads, in bytes, see Uploads.
+  // The size limit of each uploaded file, in bytes, see Uploads.
   maxSize?: number
 }
 ```
@@ -266,9 +266,9 @@ assets.defineUploads({ uploads: [{ path: 'avatar', storage: 'public' }] })
 The action takes a `multipart/form-data` body and stores all its files.
 
 - Other bodies respond with 415.
-- Bodies over the upload's `maxSize` respond with 413. A `Content-Length` over it
-  responds before the body is read. Without one, reading stops at the limit.
-- The multipart body is a few hundred bytes larger than its files.
+- The files stream from the body into the storage as they arrive.
+- Files over the upload's `maxSize` respond with 413, and none of the body's
+  files are stored.
 - [`hostMiddleware()`](hono.md#hostmiddleware) sets no limit on multipart bodies.
 - It inserts the `asset` rows of the files. They stay unreferenced until a scan
   finds them.
@@ -281,7 +281,7 @@ The action takes a `multipart/form-data` body and stores all its files.
 | --------- | -------- | --------------------------------------------------------------------------------------------------------- |
 | `path`    | `string` | A glob of camelCase data paths, with `*` for one segment and `**` for several segments, such as `avatar`. |
 | `storage` | `string` | The name of the storage of the files.                                                                     |
-| `maxSize` | `number` | Optional, the size limit of the multipart body, in bytes.                                                 |
+| `maxSize` | `number` | Optional, the size limit of each file, in bytes.                                                          |
 
 ### Stored files
 

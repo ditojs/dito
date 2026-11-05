@@ -144,8 +144,8 @@ Controllers without asset paths pass `uploads` without a table.
 An upload without a type from the client gets the type detected from its data.
 Without one, its type is `application/octet-stream`.
 
-The server reads each upload whole into memory. S3 storages send it in one
-`PutObject`. So limit the size of uploads with `maxSize`, see
+The server streams each upload into its storage, and S3 storages upload files
+over 8 MB in parts. `maxSize` limits the size of each file, see
 [Uploads](../../api/server/storage.md#uploads). The reverse proxy can limit all
 of them too, see [`hostMiddleware()`](../../api/server/hono.md#hostmiddleware).
 
