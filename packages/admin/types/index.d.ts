@@ -44,36 +44,6 @@ export interface GlobalConfig {
     forceDragFallback?: boolean
     [key: string]: any
   }
-  /**
-   * The authentication features of the server, the `features` that
-   * `defineUserActions()` of `@ditojs/auth` returns.
-   */
-  authentication?: {
-    /**
-     * Set with `features.passkeys` of `defineUserActions()`. Adds a passkey
-     * login to the login dialog, and the user's passkeys to the Security
-     * dialog of the account menu.
-     */
-    hasPasskeys?: boolean
-    /**
-     * Set with `features.totp` of `defineUserActions()`. Adds the setup of
-     * two-factor authentication with TOTP to the Security dialog of the
-     * account menu.
-     */
-    hasTotp?: boolean
-    /**
-     * Always set by `defineUserActions()`. Adds the password change to the
-     * Security dialog of the account menu.
-     */
-    hasPasswordChange?: boolean
-    /**
-     * Set with `features.passwordReset` of `defineUserActions()`. Adds a
-     * "Forgot?" button to the password field of the login dialog, which asks
-     * the server to email a link that opens the admin with `#password-reset=`
-     * and the token, to set a new password.
-     */
-    hasPasswordReset?: boolean
-  }
 }
 
 /**
@@ -237,8 +207,9 @@ export interface ApiConfig {
   }
   /**
    * The routes of `defineUserActions()` on the server. `login`, `logout`,
-   * `self` and the routes of passwords, password resets, passkeys and TOTP are
-   * under `path`, such as `admins/login` or `admins/passkey-login`.
+   * `self`, `features` and the routes of passwords, password resets, passkeys
+   * and TOTP are under `path`, such as `admins/login` or
+   * `admins/passkey-login`.
    */
   users?: {
     /**
@@ -3158,8 +3129,7 @@ export class DitoAdmin<
     element: Element | string,
     options?: AdminOptions & {
       /**
-       * The base, api, settings and authentication passed from
-       * `createAdmin()`.
+       * The base, api and settings passed from `createAdmin()`.
        *
        * @defaultValue `globalThis.dito`
        */

@@ -14,14 +14,6 @@ import type { AdminContext as PublicAdminContext } from '../../types/index.d.ts'
 export type DialogOptions = Parameters<PublicAdminContext['showDialog']>[0]
 export type NotifyOptions = Parameters<PublicAdminContext['notify']>[0]
 
-// The authentication features that the server enables:
-export interface Authentication {
-  hasPasskeys?: boolean
-  hasTotp?: boolean
-  hasPasswordChange?: boolean
-  hasPasswordReset?: boolean
-}
-
 // Rendered by `DitoRoot`:
 export interface DialogsAndNotifications {
   // Dialogs resolve to their data, to the value of `closeDialog()`, or to
@@ -37,7 +29,6 @@ export class AdminContext {
   readonly api: Api
   readonly router: Router
   readonly settings: Record<string, any>
-  readonly authentication: Authentication
   readonly session: Session
   readonly #user = shallowRef<User | null>(null)
   readonly title = document.title || 'Dito.js Admin'
@@ -55,20 +46,17 @@ export class AdminContext {
     router,
     viewRegistry,
     settings,
-    authentication,
     login
   }: {
     api: Api
     router: Router
     viewRegistry: ViewRegistry
     settings: Record<string, any>
-    authentication: Authentication
     login?: LoginOptions
   }) {
     this.api = api
     this.router = router
     this.settings = settings
-    this.authentication = authentication
     this.session = new Session({
       adminContext: this,
       viewRegistry,

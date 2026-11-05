@@ -115,12 +115,12 @@ export async function mountForm({
 
 // Mounts `DitoAdmin` with `views` into a new element in the document, and waits
 // until the views are resolved and their routes are set up, or until it asks to
-// log in. `request(options)` handles the API requests other than the request
-// for the logged-in user, and returns the response as `{ data }` or throws.
-// With the URL of a `server`, e.g. of a scenario's app, the server answers all
-// requests instead. The admin starts at `path`. `api` is merged into the API
-// settings, e.g. `api.defaults` or `api.formats`, and `settings` and
-// `authentication` are the ones of the `dito` object.
+// log in. `request(options)` handles the API requests other than the requests
+// for the logged-in user and for the `features` of the users API, and returns
+// the response as `{ data }` or throws. With the URL of a `server`, e.g. of a
+// scenario's app, the server answers all requests instead. The admin starts at
+// `path`. `api` is merged into the API settings, e.g. `api.defaults` or
+// `api.formats`, and `settings` are the ones of the `dito` object.
 export async function mountAdmin({
   views,
   request = null,
@@ -128,7 +128,7 @@ export async function mountAdmin({
   path = '/',
   api = {},
   settings = {},
-  authentication = {},
+  features = {},
   options = {}
 }) {
   if (server) {
@@ -139,10 +139,14 @@ export async function mountAdmin({
   window.history.replaceState(null, '', path)
   const element = document.createElement('div')
   document.body.appendChild(element)
+  const usersPath = api.users?.path ? `/${api.users.path}` : ''
   const requestStub = vi.fn(async options => {
     const { method = 'get', url } = options
     if (method === 'get' && url === '/self') {
       return { data: { id: 1, username: 'tester' } }
+    }
+    if (method === 'get' && url === `${usersPath}/features`) {
+      return { data: features }
     }
     if (!request) {
       throw new Error(`Unexpected request: ${method} ${url}`)
@@ -150,7 +154,7 @@ export async function mountAdmin({
     return request(options)
   })
   // `createAdmin()` provides the `dito` object as `window.dito` too:
-  window.dito = { base: '/', settings, authentication }
+  window.dito = { base: '/', settings }
   stubRequests()
   const dito = new DitoAdmin(element, {
     dito: window.dito,

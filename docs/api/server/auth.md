@@ -129,26 +129,19 @@ It is meant for the `getUser` of `createApi()`.
 ## defineUserActions()
 
 ```ts
-defineUserActions<U>(options: DefineUserActionsOptions<U>): {
-  controller: ControllerDefinition
-  features: {
-    hasPasskeys: boolean
-    hasTotp: boolean
-    hasPasswordChange: boolean
-    hasPasswordReset: boolean
-  }
-}
+defineUserActions<U>(options: DefineUserActionsOptions<U>): MixinDefinition
 ```
 
-Returns two things:
+```js
+defineController({
+  path: 'admins',
+  mixins: [defineUserActions({ source: adminSource })]
+})
+```
 
-- `controller`, a controller with the actions of the admin's users. The app
-  passes it to `createApi()`, or lists it in the `mixins` of a controller of its
-  own. A model controller doesn't fit, as it would flush and serialize the
-  responses of the actions.
-- `features`, the features that the controller routes. The admin's login and
-  account views read them. The app passes them to the admin as
-  [`authentication`](../admin/server.md#adminoptions).
+Returns a mixin with the actions of the admin's users. The app lists it in the
+`mixins` of a controller of its own. A model controller doesn't fit, as it would
+flush and serialize the responses of the actions.
 
 Other users, such as a site's members, log in through the app's own actions.
 These call [`Session`](#session) and [`verifyPassword()`](#passwords).
@@ -156,29 +149,28 @@ These call [`Session`](#session) and [`verifyPassword()`](#passwords).
 The actions:
 
 - need the session middleware;
-- check the login themselves, as the controller sets `authorize: true`;
-- run outside the API's transactions, as the controller sets
+- check the login themselves, as the mixin sets `authorize: true`;
+- run outside the API's transactions, as the mixin sets
   `transacted: false`. TOTP opens a transaction of its own, so failed codes stay
   counted.
 
-A controller that mixes in `controller` and sets `authorize` or `transacted`
-replaces these settings, also for the mixed-in actions. Set them on its own
-actions instead.
+A controller that mixes it in and sets `authorize` or `transacted` replaces
+these settings, also for the mixed-in actions. Set them on its own actions
+instead.
 
 | Option           | Type                                   | Description                                                                                                                    |
 | ---------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `path`           | `string`                               | The path of the users, such as `admins`.                                                                                       |
 | `source`         | [`UserSource`](#usersource)            | The users.                                                                                                                     |
 | `credentials`    | `Credentials`                          | From [`createCredentials()`](#createcredentials). Needed for passkeys and TOTP.                                                |
 | `features`       | `{ passkeys?, totp?, passwordReset? }` | From [`createPasskeys()`](#createpasskeys), [`createTotp()`](#createtotp) and [`createPasswordReset()`](#createpasswordreset). |
 | `reconfirmAfter` | `number`                               | How long a confirmed access lasts, in milliseconds. Default: ten minutes.                                                      |
 | `afterLogin`     | `({ c, user }) => unknown`             | Runs after each login, such as to set a cookie.                                                                                |
 
-The actions, under `path`:
+The actions, under the controller's path:
 
 | Action                                                                                                                             | Feature         |
 | ---------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| `post login`, `post logout`, `get self`, `post confirm-access`, `post password`                                                    | always          |
+| `post login`, `post logout`, `get self`, `get features`, `post confirm-access`, `post password`                                    | always          |
 | `post password-reset`, `post password-reset-confirm`                                                                               | `passwordReset` |
 | `post passkey-login-options`, `post passkey-login`, `get passkeys`, `post passkey-options`, `post passkeys`, `delete passkeys/:id` | `passkeys`      |
 | `post login-code`, `get totp`, `post totp`, `post totp-confirm`, `delete totp`                                                     | `totp`          |
@@ -194,6 +186,10 @@ Their bodies and responses:
 - `post confirm-access` responds with `{ codeRequired: true }` when it needs a
   code. It responds with 204 once it confirms the access.
 - `get self` responds with the user, or `null`.
+- `get features` responds with the features that the actions offer, as
+  `hasPasskeys`, `hasTotp`, `hasPasswordChange` and `hasPasswordReset`, also
+  without a login. The admin loads them when it starts, see
+  [features](../admin/admin.md#features).
 - Other actions without a result, such as `post logout` and `post password`,
   respond with 204.
 

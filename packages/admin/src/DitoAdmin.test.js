@@ -113,9 +113,11 @@ describe('DitoAdmin', () => {
     await vi.waitFor(() => {
       expect(element.querySelector('.dito-account')?.textContent).toBe('ada')
     })
-    const [url, options] = fetch.mock.calls[0]
-    expect(url).toBe('https://library.example/api/self')
-    expect(options).toMatchObject({
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual([
+      'https://library.example/api/features',
+      'https://library.example/api/self'
+    ])
+    expect(fetch.mock.calls[1][1]).toMatchObject({
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     })

@@ -16,12 +16,6 @@ function route(admin: AdminServer) {
 }
 
 const api = { url: '/api/admin/', users: { path: 'admins' } }
-const authentication = {
-  hasPasskeys: true,
-  hasTotp: false,
-  hasPasswordChange: true,
-  hasPasswordReset: false
-}
 
 describe('createAdmin() in production', () => {
   let dist: string
@@ -47,7 +41,6 @@ describe('createAdmin() in production', () => {
       dist,
       api,
       settings: { rootClass: 'app' },
-      authentication,
       ...options
     })
     return { request: route(admin) }
@@ -130,21 +123,7 @@ describe('createAdmin() in production', () => {
     expect(JSON.parse(code.replace(/^window\.dito = /, ''))).toEqual({
       base: '/admin',
       api,
-      settings: { rootClass: 'app' },
-      authentication
-    })
-  })
-
-  it('sends no authentication features by default', async () => {
-    const admin = setupAdmin({ authentication: undefined })
-    const code = await (await admin.request('/admin/dito.js')).text()
-    expect(JSON.parse(code.replace(/^window\.dito = /, ''))).toMatchObject({
-      authentication: {
-        hasPasskeys: false,
-        hasTotp: false,
-        hasPasswordChange: false,
-        hasPasswordReset: false
-      }
+      settings: { rootClass: 'app' }
     })
   })
 
@@ -245,7 +224,6 @@ describe('createAdmin() in development', () => {
     admin = createAdmin({
       base: '/admin',
       api,
-      authentication,
       authorize: 'admin',
       vite: path.join(import.meta.dirname, '../test/admin.vite.config.ts')
     })
@@ -292,7 +270,7 @@ describe('createAdmin() in development', () => {
 
   it('sends dito.js itself', async () => {
     const code = await (await request('/admin/dito.js')).text()
-    expect(code).toContain('"hasPasskeys": true')
+    expect(code).toContain('"path": "admins"')
   })
 
   it('answers other paths with 404', async () => {

@@ -17,11 +17,7 @@ import {
 import { createMikroAdapter } from '@ditojs/mikro'
 import '@ditojs/mikro/types'
 import type { Options } from '@mikro-orm/postgresql'
-import {
-  createAdmin,
-  type AdminServer,
-  type AuthenticationFeatures
-} from '@ditojs/admin/server'
+import { createAdmin, type AdminServer } from '@ditojs/admin/server'
 import { defineAdminViteConfig } from '@ditojs/admin/vite'
 import { createTestDatabase, type TestOrm } from './database.js'
 
@@ -37,8 +33,6 @@ export interface TestApi {
   controllers: ControllerDefinition[]
   middleware?: Middleware[]
   getUser?: (context: { c: DitoContext }) => User | null | Promise<User | null>
-  // The features of `defineUserActions()`, which the admin offers.
-  authentication?: AuthenticationFeatures
 }
 
 export interface TestAppOptions {
@@ -64,7 +58,6 @@ export interface TestApp {
   orm: TestOrm | null
   // The Hono app of the handlers, the admin and the API.
   app: Hono
-  authentication: AuthenticationFeatures | undefined
   server: http.Server | null
   // The URL of the started app.
   url: string | null
@@ -98,8 +91,7 @@ export async function createTestApp(
   const {
     controllers = [],
     middleware = [],
-    getUser,
-    authentication
+    getUser
   } = options.api?.(orm!) ?? {}
 
   const logError = ({ error }: { error: unknown }) => {
@@ -116,7 +108,6 @@ export async function createTestApp(
     admin = createAdmin({
       base: '/admin',
       api: { url: `${prefix}/`, ...api },
-      authentication,
       vite
     })
     app.route('/admin', admin)
@@ -137,7 +128,6 @@ export async function createTestApp(
   const testApp: TestApp = {
     orm,
     app,
-    authentication,
     server: null,
     url: null,
     logErrors: true,
@@ -208,13 +198,22 @@ async function getViteConfig(name: string, views: string) {
   return config
 }
 
-// Answers the own user as logged in, for scenarios without users of their
-// own.
+// Answers the own user as logged in, and no features of the users API, for
+// scenarios without users of their own.
 export function stubSession(): MiddlewareHandler {
   const user = { id: 1, username: 'test', name: 'Test' }
+  const features = {
+    hasPasskeys: false,
+    hasTotp: false,
+    hasPasswordChange: false,
+    hasPasswordReset: false
+  }
   return async (c, next) => {
     const { path, method } = c.req
-    if (path === '/api/self' && method === 'GET') return c.json(user)
+    if (method === 'GET') {
+      if (path === '/api/self') return c.json(user)
+      if (path === '/api/features') return c.json(features)
+    }
     await next()
   }
 }

@@ -4,8 +4,10 @@ import { z } from 'zod'
 import type { Kysely } from 'kysely'
 import { HttpError, createApi, defineController } from '@ditojs/server'
 import * as passwords from './passwords.ts'
+import { createPasskeys } from './passkeys.ts'
+import { createTotp } from './totp.ts'
 import { getPasswordFingerprint } from './sessions.ts'
-import { getSession, getSessionUser } from './index.ts'
+import { createPasswordReset, getSession, getSessionUser } from './index.ts'
 import {
   createSource,
   createUser,
@@ -384,6 +386,43 @@ describe('sessions', () => {
       lastLogin: expect.any(String)
     })
   })
+
+  it.for([
+    { passkeys: false, totp: false, passwordReset: false },
+    { passkeys: true, totp: false, passwordReset: false },
+    { passkeys: false, totp: true, passwordReset: false },
+    { passkeys: false, totp: false, passwordReset: true },
+    { passkeys: true, totp: true, passwordReset: true }
+  ])(
+    'serves the features without a login, with passkeys: $passkeys, ' +
+    'TOTP: $totp, password reset: $passwordReset',
+    async ({ passkeys, totp, passwordReset }) => {
+      const { api } = setup({
+        db,
+        source: admins,
+        features: {
+          passkeys: passkeys ? createPasskeys({ rpName: 'Dito' }) : undefined,
+          totp: totp
+            ? createTotp({ issuer: 'Dito', secret: 'a long secret' })
+            : undefined,
+          passwordReset: passwordReset
+            ? createPasswordReset({
+                secrets,
+                confirmUrl: 'https://example.com/#password-reset={token}',
+                send: () => {}
+              })
+            : undefined
+        }
+      })
+      const client = createClient(api.fetch)
+      expect((await client.get('/admins/features')).data).toEqual({
+        hasPasskeys: passkeys,
+        hasTotp: totp,
+        hasPasswordChange: true,
+        hasPasswordReset: passwordReset
+      })
+    }
+  )
 
   it('keeps the users of other sources out', async () => {
     const carl = await createUser(1, 'carl', 'secret', [])

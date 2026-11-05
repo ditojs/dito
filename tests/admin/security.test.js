@@ -18,27 +18,26 @@ vi.mock('@simplewebauthn/browser', async () =>
   (await import('./webauthn.js')).createWebAuthnMock()
 )
 
-const { getUrl, em, getAuthentication, post, logIn, setUpTotp } =
-  startPasskeysApp()
+const passkeysApp = startPasskeysApp()
+const { em, post, logIn, setUpTotp } = passkeysApp
 
 vi.setConfig({ testTimeout: 30_000 })
 
 const views = { books: { type: 'view', label: 'Books', fields: {} } }
 
-// Logs in `ada`, runs `setUp()`, and opens the Security dialog from the account
-// menu, with the features that the server enables, and `features` that turn
-// some of them off. Waits until the dialog loaded the passkeys and the TOTP.
-// Requests and notifications are observed through `request` and `notify`:
-async function openSecurity({ features = {}, setUp = null } = {}) {
-  await logIn()
+// Logs in `ada` on `app`, runs `setUp()`, and opens the Security dialog from
+// the account menu, with the features that the app enables. Waits until the
+// dialog loaded the passkeys and the TOTP. Requests and notifications are
+// observed through `request` and `notify`:
+async function openSecurity({ app = passkeysApp, setUp = null } = {}) {
+  await app.logIn()
   await setUp?.()
-  const authentication = { ...getAuthentication(), ...features }
   const admin = await mountAdmin({
     views,
-    server: getUrl(),
-    api: { users: { path: 'users' } },
-    authentication
+    server: app.getUrl(),
+    api: { users: { path: 'users' } }
   })
+  const { features } = admin.context.session
   const request = vi.spyOn(admin.context.api, 'request')
   const notify = vi.spyOn(admin.context, 'notify')
   const account = admin.wrapper.find('.dito-account')
@@ -49,10 +48,10 @@ async function openSecurity({ features = {}, setUp = null } = {}) {
   const security = await vi.waitFor(() => {
     const dialog = getDialog(admin)
     expect(dialog?.attributes('aria-label')).toBe('Security')
-    if (authentication.hasPasskeys) {
+    if (features.hasPasskeys) {
       expect(getRows(admin).length).toBeGreaterThan(0)
     }
-    if (authentication.hasTotp) {
+    if (features.hasTotp) {
       expect(getState(admin)).not.toBe('')
     }
     return dialog
@@ -96,11 +95,11 @@ async function addPasskeys(names = ['1Password']) {
   await entityManager.flush()
 }
 
-// Let the access that the login confirmed expire, as time would:
-async function expireConfirmedAccess() {
-  for (const { id, value } of await em().find(Session, {})) {
+// Let the access that the login confirmed on `app` expire, as time would:
+async function expireConfirmedAccess(app = passkeysApp) {
+  for (const { id, value } of await app.em().find(Session, {})) {
     if (value.confirmedAccess) {
-      await em().nativeUpdate(
+      await app.em().nativeUpdate(
         Session,
         { id },
         {
@@ -278,11 +277,12 @@ describe('Security dialog', () => {
         .trigger('click')
         .then(() => answerDialog(admin, 'Change Password', values))
 
-    // The changed password logs in, after the change ended the session:
-    const expectPassword = async password => {
-      await post('logout')
+    // The changed password logs in on `app`, after the change ended the
+    // session:
+    const expectPassword = async (password, app = passkeysApp) => {
+      await app.post('logout')
       await expect(
-        post('login', { username: 'ada', password })
+        app.post('login', { username: 'ada', password })
       ).resolves.toMatchObject({ user: { username: 'ada' } })
     }
 
@@ -302,51 +302,55 @@ describe('Security dialog', () => {
       await expectPassword('changed')
     })
 
-    it('changes the password without passkeys or TOTP', async () => {
-      const { admin, security, request, notify } = await openSecurity({
-        features: { hasPasskeys: false, hasTotp: false }
-      })
-      expect(security.find('input[name="password"]').exists()).toBe(true)
-      expect(security.find('.dito-list').exists()).toBe(false)
-      await expireConfirmedAccess()
+    // Asks to confirm the access for the password change, on `app`:
+    const openConfirmAccess = async app => {
+      // Browsers with WebAuthn have `PublicKeyCredential`:
+      vi.stubGlobal('PublicKeyCredential', class {})
+      const { admin } = await openSecurity({ app })
+      await expireConfirmedAccess(app)
       await changePassword(admin, {
         password: 'changed',
         confirmation: 'changed'
       })
-      await confirmAccess(admin, 'secret')
-      await waitForNotification(notify, {
-        type: 'success',
-        text: 'Your password was changed.'
-      })
-      expect(getRequests(request, 'post', '/users/password')).toHaveLength(2)
-      await expectPassword('changed')
+      const dialog = await waitForDialog(admin, 'Confirm')
+      expect(dialog.attributes('aria-label')).toBe('Confirm Access')
+      return dialog
+    }
+
+    it('offers passkeys to confirm the access', async () => {
+      const dialog = await openConfirmAccess(passkeysApp)
+      expect(dialog.text()).toContain('Use Passkey')
     })
 
-    it.for([true, false])(
-      'offers passkeys to confirm the access only with passkeys: %s',
-      async hasPasskeys => {
-        // Browsers with WebAuthn have `PublicKeyCredential`:
-        vi.stubGlobal('PublicKeyCredential', class {})
-        const { admin } = await openSecurity({
-          features: { hasPasskeys }
+    describe('without passkeys or TOTP', () => {
+      const app = startPasskeysApp({ passkeys: false, totp: false })
+
+      it('changes the password', async () => {
+        const { admin, security, request, notify } = await openSecurity({
+          app
         })
-        await expireConfirmedAccess()
+        expect(security.find('input[name="password"]').exists()).toBe(true)
+        expect(security.find('.dito-list').exists()).toBe(false)
+        await expireConfirmedAccess(app)
         await changePassword(admin, {
           password: 'changed',
           confirmation: 'changed'
         })
-        const dialog = await waitForDialog(admin, 'Confirm')
-        expect(dialog.attributes('aria-label')).toBe('Confirm Access')
-        expect(dialog.text().includes('Use Passkey')).toBe(hasPasskeys)
-      }
-    )
-
-    it(`isn't shown without the password change`, async () => {
-      const { admin, security } = await openSecurity({
-        features: { hasPasswordChange: false }
+        await confirmAccess(admin, 'secret')
+        await waitForNotification(notify, {
+          type: 'success',
+          text: 'Your password was changed.'
+        })
+        expect(getRequests(request, 'post', '/users/password')).toHaveLength(
+          2
+        )
+        await expectPassword('changed', app)
       })
-      expect(security.find('input[name="password"]').exists()).toBe(false)
-      expect(findButton(admin, 'Change')).toBeUndefined()
+
+      it(`doesn't offer passkeys to confirm the access`, async () => {
+        const dialog = await openConfirmAccess(app)
+        expect(dialog.text()).not.toContain('Use Passkey')
+      })
     })
 
     it('shows a placeholder instead of the password', async () => {

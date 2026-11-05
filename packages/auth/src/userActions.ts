@@ -3,9 +3,9 @@ import { z } from 'zod'
 import { isString } from '@ditojs/utils'
 import {
   defineAction,
+  defineMixin,
   HttpError,
-  type Actions,
-  type ControllerDefinition
+  type Actions
 } from '@ditojs/server'
 import { authError, authenticationTimeout } from './authentication.ts'
 import type { Credentials } from './credentials.ts'
@@ -27,14 +27,12 @@ import {
 
 // The login, session and security actions of the admin, which need the
 // middleware of `createSessions()`. Each handler checks the login and the
-// confirmed access it needs itself, so the controller sets `authorize: true`.
+// confirmed access it needs itself, so the mixin sets `authorize: true`.
 // It also sets `transacted: false`, as TOTP opens a transaction of its own, so
 // that failed codes stay counted when the request fails. The app adds CSRF
 // protection.
 
 export interface DefineUserActionsOptions<U extends User> {
-  // The path of the users under the API's prefix, such as `admins`.
-  path: string
   // Its `password` checks the new passwords.
   source: UserSource<U>
   // Needed for passkeys and TOTP.
@@ -62,12 +60,10 @@ const required = (name: string) => {
   return z.string({ error }).min(1, error)
 }
 
-// Returns the controller of the actions, which the app passes to `createApi()`,
-// or puts in the `mixins` of a controller of its own, and the `features` that
-// tell the admin what to offer, as `dito.authentication`. A model controller
+// Returns the mixin of the actions, which the app puts in the `mixins` of a
+// controller of its own, such as the one at `admins`. A model controller
 // doesn't fit, as it would flush and serialize the answers of the actions.
 export function defineUserActions<U extends User>({
-  path,
   source,
   credentials,
   features: { passkeys, totp, passwordReset } = {},
@@ -78,6 +74,13 @@ export function defineUserActions<U extends User>({
     throw new Error('Unable to use passkeys or TOTP without credentials.')
   }
   const { password = defaultPassword } = source
+  // What the admin offers, also before the login:
+  const features = {
+    hasPasskeys: !!passkeys,
+    hasTotp: !!totp,
+    hasPasswordChange: true,
+    hasPasswordReset: !!passwordReset
+  }
   const checkAuthentication = async (c: Context) => {
     const user = await getSession(c).getUser(source)
     if (!user) throw authError('Unauthorized Access')
@@ -169,6 +172,8 @@ export function defineUserActions<U extends User>({
       const user = await getSession(c).getUser(source)
       return user ? source.serialize(c, user) : null
     },
+
+    'get features': () => features,
 
     // Confirms the access of the logged-in user with the password, and the
     // code of users with TOTP, or with a passkey.
@@ -346,17 +351,5 @@ export function defineUserActions<U extends User>({
     })
   }
 
-  const controller: ControllerDefinition = {
-    path,
-    authorize: true,
-    transacted: false,
-    actions
-  }
-  const features = {
-    hasPasskeys: !!passkeys,
-    hasTotp: !!totp,
-    hasPasswordChange: true,
-    hasPasswordReset: !!passwordReset
-  }
-  return { controller, features }
+  return defineMixin({ authorize: true, transacted: false, actions })
 }

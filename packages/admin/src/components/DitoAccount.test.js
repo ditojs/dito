@@ -30,7 +30,7 @@ describe('DitoAccount', () => {
     async name => {
       const admin = await mountAdmin({
         views,
-        authentication: { [name]: true }
+        features: { [name]: true }
       })
       const { items } = await openMenu(admin)
       expect(items.map(item => item.text())).toEqual(['Security', 'Sign Out'])

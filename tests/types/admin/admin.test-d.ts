@@ -55,15 +55,7 @@ describe('DitoAdmin', () => {
     assertType<ConstructorParameters<typeof DitoAdmin>>([
       '#app',
       {
-        dito: {
-          settings: { forceDragFallback: true },
-          authentication: {
-            hasPasskeys: true,
-            hasTotp: true,
-            hasPasswordChange: true,
-            hasPasswordReset: true
-          }
-        },
+        dito: { settings: { forceDragFallback: true } },
         api: { users: { path: 'admins' } }
       }
     ])

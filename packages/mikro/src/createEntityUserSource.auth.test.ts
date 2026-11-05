@@ -59,7 +59,7 @@ const app = new Hono().route(
     middleware: [sessions.middleware],
     getUser: ({ c }) => getSessionUser(c, source),
     controllers: [
-      defineUserActions({ path: 'auth', source }).controller,
+      { path: 'auth', mixins: [defineUserActions({ source })] },
       defineModelController({
         path: 'members',
         entity: Member,

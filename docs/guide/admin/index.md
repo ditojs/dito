@@ -11,8 +11,7 @@ option and member.
 ## How the pieces fit
 
 - The server serves the admin with `createAdmin()` of `@ditojs/admin/server`.
-  It passes the admin the global `dito` object with `api`, `settings` and
-  `authentication`.
+  It passes the admin the global `dito` object with `api` and `settings`.
 - The admin's entry module creates a `DitoAdmin` with your views.
 - Views hold fields, e.g. a list of books. Lists open forms to edit their
   items, and forms hold fields.
@@ -46,17 +45,15 @@ const admin = createAdmin({
   // Passed to the admin as `dito.api`:
   api: { url: '/api', locale: 'en-US' },
   // Passed to the admin as `dito.settings`:
-  settings: { rootClass: 'catalog-admin' },
-  // What the login and account views offer:
-  authentication: users.features
+  settings: { rootClass: 'catalog-admin' }
 })
 
 app.route('/admin', admin)
 ```
 
 The admin's users log in through the users controller of `@ditojs/auth`, e.g.
-at `/api/users`. Its `features` go to `authentication`. See
-[Users and sessions](../server/auth.md).
+at `/api/users`. The admin loads its features from there, to know what the login
+and account views offer. See [Users and sessions](../server/auth.md).
 
 `settings` holds `rootClass`, a class for the admin's root element, and
 `forceDragFallback`, see

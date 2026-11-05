@@ -31,7 +31,7 @@ export const bookForm: FormSchema<Book> = {
 | Type                       | Description                                                                                       |
 | -------------------------- | ------------------------------------------------------------------------------------------------- |
 | `DitoAdmin`                | The admin class, see [DitoAdmin](./admin.md).                                                     |
-| `GlobalConfig`             | The global `dito` object: `base`, `api`, `settings`, `authentication`.                            |
+| `GlobalConfig`             | The global `dito` object: `base`, `api`, `settings`.                                              |
 | `ApiConfig`                | The configuration of the admin's API, see [ApiConfig](./admin.md#apiconfig).                      |
 | `Api`                      | The `ApiConfig` with its defaults, and `request()` and `getApiUrl()`.                             |
 | `ApiResource`              | A resource of the server API, with `type`, `path`, `method`, `id`, `parent` and `query`.          |

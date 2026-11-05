@@ -622,8 +622,8 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   users that no entity holds, the app writes the
   [`UserSource`](api/server/auth.md#usersource) itself.
 - [`defineUserActions()`](api/server/auth.md#defineuseractions) serves the
-  admin's users. Its `controller` goes into `controllers`, and its `features` go
-  to the admin. Other users, such as a site's members, log in through the app's
+  admin's users. It returns a mixin for the `mixins` of the users controller.
+  Its `get features` tells the admin what to offer. Other users, such as a site's members, log in through the app's
   own actions, see [Other users](guide/server/auth.md#other-users).
 - `post login` and `post password-reset` name the user as `username` in the
   body, whatever the property is.
@@ -710,7 +710,6 @@ const admin = createAdmin({
   dist: path.resolve('dist/admin'),
   vite: isDevelopment ? 'admin.vite.config.js' : undefined,
   api: { url: '/api/admin', users: { path: 'admins' } },
-  authentication: users.features,
   middleware: sessions.middleware,
   getUser: ({ c }) => getSessionUser(c, adminSource),
   authorize: 'admin'

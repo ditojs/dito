@@ -28,8 +28,6 @@ export interface AdminOptions {
   api?: Record<string, unknown>
   // `dito.settings` in the browser.
   settings?: Record<string, unknown>
-  // `dito.authentication`: the `features` of `defineUserActions()`.
-  authentication?: AuthenticationFeatures
   // Middleware that `getUser` and `authorize` need, such as the session
   // middleware. It runs only on the requests that `authorize` checks.
   middleware?: MiddlewareHandler | MiddlewareHandler[]
@@ -45,13 +43,6 @@ export interface AdminOptions {
   // With it, Vite serves the admin's sources. The HMR websocket listens on
   // its `server.port`, by default a free one.
   vite?: InlineConfig | string
-}
-
-export interface AuthenticationFeatures {
-  hasPasskeys: boolean
-  hasTotp: boolean
-  hasPasswordChange: boolean
-  hasPasswordReset: boolean
 }
 
 interface AdminEnv {
@@ -197,17 +188,8 @@ function getFreePort() {
 }
 
 function getConfigScript(base: string, options: AdminOptions) {
-  const {
-    api = {},
-    settings = {},
-    authentication = {
-      hasPasskeys: false,
-      hasTotp: false,
-      hasPasswordChange: false,
-      hasPasswordReset: false
-    }
-  } = options
-  const dito = { base, api, settings, authentication }
+  const { api = {}, settings = {} } = options
+  const dito = { base, api, settings }
   const code = `window.dito = ${JSON.stringify(dito, null, 2)}`
   return () =>
     new Response(code, {

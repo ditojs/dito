@@ -90,17 +90,15 @@ export function setup({
     maxAge: 24 * 60 * 60 * 1000
   })
   const credentials = createCredentials({ adapter })
-  const users = defineUserActions({
+  const users = {
     path: 'admins',
-    source,
-    credentials,
-    ...options
-  })
+    mixins: [defineUserActions({ source, credentials, ...options })]
+  }
   // The sessions run before the API, as in the app's host.
   const api = new Hono()
   api.use(sessions.middleware)
-  api.route('/', createApi({ controllers: [users.controller, ...controllers] }))
-  return { api, sessions, credentials, users }
+  api.route('/', createApi({ controllers: [users, ...controllers] }))
+  return { api, sessions, credentials }
 }
 
 // The value of a cookie as a browser stores it, signed with `secret`.

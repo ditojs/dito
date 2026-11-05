@@ -19,8 +19,9 @@ export const sentPasswordResets: string[] = []
 const secrets = ['passkeys-secret']
 
 // The users with passkeys, TOTP and password resets, with the sessions and
-// credentials in the tables of `@ditojs/auth`.
-export function createApi(orm: TestOrm) {
+// credentials in the tables of `@ditojs/auth`. The admin's unit tests turn
+// passkeys and TOTP off, to see what the admin offers without them.
+export function createApi(orm: TestOrm, { passkeys = true, totp = true } = {}) {
   return createUsersApi({
     orm,
     entity: User,
@@ -29,8 +30,10 @@ export function createApi(orm: TestOrm) {
     credentials: createCredentials({ adapter: createMikroAdapter(orm) }),
     features: {
       // The passkeys belong to the domain of the requests, `localhost`:
-      passkeys: createPasskeys({ rpName: 'Example' }),
-      totp: createTotp({ issuer: 'Example', secret: 'totp-secret' }),
+      passkeys: passkeys ? createPasskeys({ rpName: 'Example' }) : undefined,
+      totp: totp
+        ? createTotp({ issuer: 'Example', secret: 'totp-secret' })
+        : undefined,
       passwordReset: createPasswordReset({
         secrets,
         // The tests ask for several links for one user in a row.

@@ -19,21 +19,18 @@ vi.mock('@simplewebauthn/browser', async () =>
   (await import('./webauthn.js')).createWebAuthnMock()
 )
 
-const { getUrl, em, getAuthentication, post, logIn, setUpTotp } =
-  startPasskeysApp()
+const { getUrl, em, post, logIn, setUpTotp } = startPasskeysApp()
 
 const views = { books: { type: 'view', label: 'Books', fields: {} } }
 
 vi.setConfig({ testTimeout: 30_000 })
 
-// Mounts the admin with the features that the server enables, and `features`
-// that turn some of them off:
-const mount = ({ features = {}, ...options } = {}) =>
+// Mounts the admin with the features that the server enables:
+const mount = options =>
   mountAdmin({
     views,
     server: getUrl(),
     api: { users: { path: 'users' } },
-    authentication: { ...getAuthentication(), ...features },
     ...options
   })
 
@@ -221,16 +218,24 @@ describe('Session', () => {
       expect(startAuthentication).toHaveBeenCalledOnce()
     })
 
-    it('offers passkeys only with passkeys', async () => {
-      offerPasskeys()
+    describe('offers passkeys only with passkeys', () => {
+      const app = startPasskeysApp({ passkeys: false })
       const getButtons = admin =>
         getDialog(admin)
           .findAll('button')
           .map(button => button.text())
-      expect(getButtons(await mount())).toContain('Sign In with Passkey')
-      expect(
-        getButtons(await mount({ features: { hasPasskeys: false } }))
-      ).not.toContain('Sign In with Passkey')
+
+      it('with passkeys', async () => {
+        offerPasskeys()
+        expect(getButtons(await mount())).toContain('Sign In with Passkey')
+      })
+
+      it('without passkeys', async () => {
+        offerPasskeys()
+        expect(
+          getButtons(await mount({ server: app.getUrl() }))
+        ).not.toContain('Sign In with Passkey')
+      })
     })
 
     it('asks again quietly when the passkey prompt is cancelled', async () => {

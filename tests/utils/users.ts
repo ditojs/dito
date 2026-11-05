@@ -31,7 +31,7 @@ export interface TestUser {
 
 export interface UsersApiOptions<U extends TestUser> extends Omit<
   DefineUserActionsOptions<U>,
-  'path' | 'source'
+  'source'
 > {
   orm: TestOrm
   entity: EntityClass<U>
@@ -59,11 +59,6 @@ export function createUsersApi<U extends TestUser>({
     cookieName: 'dito.sess',
     maxAge: 24 * 60 * 60 * 1000
   })
-  const { controller, features } = defineUserActions({
-    path: 'users',
-    source,
-    ...options
-  })
   // Users change their own values, but not the password or its hash.
   const patchSelf: Handler = async ({ body, em, c }) => {
     const user = await getSession(c).getUser(source)
@@ -77,14 +72,13 @@ export function createUsersApi<U extends TestUser>({
     controllers: [
       {
         path: 'users',
-        mixins: [controller],
+        mixins: [defineUserActions({ source, ...options })],
         actions: {
           'patch self': { authorize: true, handler: patchSelf }
         }
       }
     ],
     middleware: [sessions.middleware],
-    getUser: ({ c }) => getSessionUser(c, source),
-    authentication: features
+    getUser: ({ c }) => getSessionUser(c, source)
   }
 }

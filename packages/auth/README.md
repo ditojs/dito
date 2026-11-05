@@ -16,6 +16,7 @@ Released in 2018 under the MIT license, with support by https://lineto.com/
 
 ```js
 import { Hono } from 'hono'
+import { createApi, defineController } from '@ditojs/server'
 import { createSessions, defineUserActions, getSessionUser } from '@ditojs/auth'
 
 const sessions = createSessions({
@@ -24,10 +25,13 @@ const sessions = createSessions({
   cookieName: 'admin.sess',
   maxAge
 })
-const users = defineUserActions({ path: 'admins', source: adminSource })
+const users = defineController({
+  path: 'admins',
+  mixins: [defineUserActions({ source: adminSource })]
+})
 
 const api = createApi({
-  controllers: [users.controller, ...controllers],
+  controllers: [users, ...controllers],
   adapter,
   middleware: [sessions.middleware],
   getUser: ({ c }) => getSessionUser(c, adminSource)

@@ -5,21 +5,25 @@ import { enterValue } from '../../packages/admin/src/test/mount.js'
 import { createTestApp, getAppUrl } from '../utils/app.ts'
 import { scenario } from '../e2e/passkeys/app.ts'
 
-// Starts the app of the passkeys scenario for the tests of a file, and resets
-// its data before each test, which also ends the sessions. Returns `getUrl()`,
-// as the URL is only known once the app runs, `em()`, a new fork of the
-// entity manager to read and write the data, the `authentication` features
-// that the admin gets from the server, and helpers that prepare the user `ada`
+// Starts the app of the passkeys scenario for the tests of a file, or of a
+// `describe()` block, with the `options` of its `createApi()`, and resets its
+// data before each test, which also ends the sessions. Returns `getUrl()`, as
+// the URL is only known once the app runs, `em()`, a new fork of the entity
+// manager to read and write the data, and helpers that prepare the user `ada`
 // through the app's API, with the session cookie that the admin uses too. The
 // tests mount the admin themselves.
-export function startPasskeysApp() {
+export function startPasskeysApp(options = {}) {
   const { entities, users, seed } = scenario
   let app = null
   let url = null
 
   beforeAll(async () => {
     // The admin of the tests sends its requests to the root of the server:
-    app = await createTestApp({ entities, api: users, prefix: '' })
+    app = await createTestApp({
+      entities,
+      api: orm => users(orm, options),
+      prefix: ''
+    })
     // The tests send wrong passwords and codes on purpose:
     app.logErrors = false
     await app.start()
@@ -53,7 +57,6 @@ export function startPasskeysApp() {
   return {
     getUrl: () => url,
     em: () => app.orm.em.fork(),
-    getAuthentication: () => app.authentication,
     post,
 
     logIn: () => post('login', { username: 'ada', password: 'secret' }),

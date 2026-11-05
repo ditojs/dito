@@ -109,36 +109,34 @@ import { createTotp } from '@ditojs/auth/totp'
 
 export const credentials = createCredentials({ adapter })
 
-const users = defineUserActions({
-  path: 'admins',
-  source: adminSource,
-  credentials,
-  features: {
-    passkeys: createPasskeys({ rpName: 'Book Catalog' }),
-    totp: createTotp({ issuer: 'Book Catalog', secret: config.totpSecret })
-  }
-})
-
 export const adminUsers = defineController({
   path: 'admins',
-  mixins: [users.controller]
+  mixins: [
+    defineUserActions({
+      source: adminSource,
+      credentials,
+      features: {
+        passkeys: createPasskeys({ rpName: 'Book Catalog' }),
+        totp: createTotp({ issuer: 'Book Catalog', secret: config.totpSecret })
+      }
+    })
+  ]
 })
 ```
 
-`defineUserActions()` returns a controller with the actions of the admin's
-users. It also returns the features that the controller offers, which the admin
-reads.
+`defineUserActions()` returns a mixin with the actions of the admin's users.
 
-- It routes `post login`, `post logout`, `get self`, `post confirm-access` and
-  `post password`, and the actions of its features.
+- It routes `post login`, `post logout`, `get self`, `get features`,
+  `post confirm-access` and `post password`, and the actions of its features.
 - Logins post `username` and `password`. They respond with `{ user }`, or with
   `{ codeRequired: true }` for users with TOTP.
 - `get self` responds with the user, or `null`.
+- `get features` tells the admin what to offer, also before the login.
 
 See [`defineUserActions()`](../../api/server/auth.md#defineuseractions) for all
 actions.
 
-The controller sets `authorize: true` and `transacted: false`, see
+The mixin sets `authorize: true` and `transacted: false`, see
 [`defineUserActions()`](../../api/server/auth.md#defineuseractions). A
 controller that mixes it in, and sets these settings, replaces them for the
 mixed-in actions too.
@@ -155,8 +153,8 @@ actions: {
 }
 ```
 
-A controller that lists `users.controller` in its `mixins` can replace or wrap
-its actions, as with any mixin.
+A controller that lists the mixin in its `mixins` can replace or wrap its
+actions, as with any mixin.
 
 ### Password writes
 
@@ -178,7 +176,8 @@ mixin for the model controller of the users. It routes `post` and `patch :id`.
 Their body sets `password`, which the user stores as `hash`. Users who change
 their own password stay logged in, and their other sessions end.
 
-This controller is separate from `users.controller`, and doesn't mix it in. If
+This controller is separate from the one of `defineUserActions()`, and doesn't
+mix it in. If
 it did, its `authorize` would apply to the logins too. The writes would also run
 outside of a transaction.
 

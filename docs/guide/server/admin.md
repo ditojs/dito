@@ -13,7 +13,6 @@ const admin = createAdmin({
     process.env.NODE_ENV === 'development' ? 'admin.vite.config.js' : undefined,
   api: { url: '/api/admin', users: { path: 'admins' } },
   settings: { language: 'en' },
-  authentication: users.features,
   // The session middleware loads the session that `getUser` reads.
   middleware: adminSessions.middleware,
   getUser: ({ c }) => getSessionUser(c, adminSource),
@@ -37,11 +36,11 @@ The options:
 
 - `dist` holds the built admin. `root` of the Vite config holds its sources:
   `index.html` and the `views/` that create the `DitoAdmin`.
-- `api`, `settings` and `authentication` become the `dito` object in the
-  browser. It is served as `/admin/dito.js`.
-- `authentication` is the `features` of the
-  [users controller](auth.md#the-users-controller). They tell the login and
-  account views what to offer.
+- `api` and `settings` become the `dito` object in the browser. It is served
+  as `/admin/dito.js`.
+- The admin loads the features of the
+  [users controller](auth.md#the-users-controller) at `api.users` when it
+  starts. They tell the login and account views what to offer.
 - `createAdmin()` returns a Hono app, which the host routes at `base`.
 - `middleware`, `getUser` and `authorize` work as in
   [`createApi()`](controllers.md#authorization).

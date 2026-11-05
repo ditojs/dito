@@ -82,7 +82,6 @@ export default class DitoAdmin {
       router,
       viewRegistry,
       settings: ditoObject.settings ?? {},
-      authentication: ditoObject.authentication ?? {},
       login: options.login
     }))
 
@@ -132,6 +131,8 @@ function getUsersResources(path) {
   users.logout = getResource('logout', 'post')
   // The logged-in user, which the account settings load and patch:
   users.self = getResource('self')
+  // What the users API offers, which the admin loads before the login:
+  users.features = getResource('features')
   for (const name of [
     'password',
     'passwordReset',

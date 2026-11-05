@@ -19,6 +19,14 @@ import type { RequestMethodResponse } from '../../types/index.d.ts'
 
 export type User = Record<string, any>
 
+// What the users API offers, from its `get features` action:
+export interface Features {
+  hasPasskeys?: boolean
+  hasTotp?: boolean
+  hasPasswordChange?: boolean
+  hasPasswordReset?: boolean
+}
+
 // The `login` options of the admin:
 export interface LoginOptions {
   additionalFields?: Record<string, any>
@@ -37,6 +45,7 @@ export class Session {
   readonly #user: ShallowRef<User | null>
   // The responses of `request({ cache: 'global' })`, kept for the same user:
   loadCache: Record<string, Promise<any>> = {}
+  features: Features = {}
 
   constructor({
     adminContext,
@@ -71,6 +80,8 @@ export class Session {
       const { path, query } = router.currentRoute.value
       await router.replace({ path, query })
     }
+    // The login dialog and the account menu need the features:
+    await this.#fetchFeatures()
     if (await this.fetchUser()) {
       await this.#resolveViews()
     } else {
@@ -83,10 +94,7 @@ export class Session {
     const loginData = await this.#adminContext.showDialog<
       Record<string, any> | 'passkey' | 'passwordReset'
     >(
-      createLoginDialog(
-        this.#adminContext.authentication,
-        this.#login.additionalFields
-      )
+      createLoginDialog(this.features, this.#login.additionalFields)
     )
     if (!loginData) {
       return null
@@ -164,10 +172,7 @@ export class Session {
     const data = await this.#adminContext.showDialog<
       { password: string } | 'passkey'
     >(
-      createConfirmAccessDialog(
-        this.#adminContext.authentication,
-        this.#adminContext.user
-      )
+      createConfirmAccessDialog(this.features, this.#adminContext.user)
     )
     if (data) {
       try {
@@ -260,6 +265,15 @@ export class Session {
     }
     this.#setUser(user)
     return user
+  }
+
+  async #fetchFeatures() {
+    try {
+      const response = await this.#request(this.#api.users.features)
+      this.features = response.data
+    } catch (error) {
+      this.#notifyError(error)
+    }
   }
 
   async ensureUser(): Promise<User | null> {

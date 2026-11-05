@@ -13,8 +13,9 @@ import {
 // The Security dialog of the account menu, which changes the password and
 // manages the passkeys and the TOTP of the logged-in user:
 export function showSecurityDialog(adminContext) {
-  const { api, authentication } = adminContext
+  const { api, session } = adminContext
   const { users } = api
+  const { features } = session
   const formatDate = ({ value, format }) =>
     value ? format(value, { date: true }) : 'Never'
 
@@ -43,7 +44,7 @@ export function showSecurityDialog(adminContext) {
 
   return adminContext.showDialog({
     fields: {
-      ...(authentication.hasPasswordChange && {
+      ...(features.hasPasswordChange && {
         // The password itself is never shown, only that there is one:
         password: {
           type: 'password',
@@ -97,7 +98,7 @@ export function showSecurityDialog(adminContext) {
         }
       }),
 
-      ...(authentication.hasPasskeys && {
+      ...(features.hasPasskeys && {
         passkeys: {
           type: 'list',
           label: 'Passkeys',
@@ -140,7 +141,7 @@ export function showSecurityDialog(adminContext) {
         }
       }),
 
-      ...(authentication.hasTotp && {
+      ...(features.hasTotp && {
         totp: {
           type: 'object',
           label: 'Two-Factor Authentication',
