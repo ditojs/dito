@@ -102,7 +102,8 @@ export default {
       closeEvents: null,
       popupEvents: null,
       mouseLeaveTimer: null,
-      targetResizeObserver: null
+      targetResizeObserver: null,
+      targetScrollEvents: null
     }
   },
 
@@ -149,8 +150,8 @@ export default {
       if (this.$refs.trigger) {
         this.addTargetEvents()
         if (this.targetResizeObserver) {
-          this.unobserveTargetSize()
-          this.observeTargetSize()
+          this.unobserveTarget()
+          this.observeTarget()
         }
       }
     },
@@ -181,7 +182,7 @@ export default {
     this.focusEvents?.remove()
     this.removeCloseEvents()
     this.popupEvents?.remove()
-    this.unobserveTargetSize()
+    this.unobserveTarget()
     clearTimeout(this.mouseLeaveTimer)
   },
 
@@ -295,25 +296,33 @@ export default {
     // includes the moment it is laid out, also if the popup is shown inside a
     // hidden part of the page that only becomes visible later. The target is
     // observed rather than the popup, since `updatePosition()` resizes the
-    // popup, which would trigger the observer again.
-    observeTargetSize() {
+    // popup, which would trigger the observer again. The fixed popup also
+    // follows the target when anything scrolls, and scroll events don't
+    // bubble, so capture them:
+    observeTarget() {
       if (!this.targetResizeObserver) {
-        this.targetResizeObserver = new ResizeObserver(
-          () => this.updatePosition()
-        )
+        const updatePosition = () => this.updatePosition()
+        this.targetResizeObserver = new ResizeObserver(updatePosition)
         this.targetResizeObserver.observe(this.getTargetElement())
+        this.targetScrollEvents = addEvents(
+          window,
+          { scroll: updatePosition, resize: updatePosition },
+          { capture: true, passive: true }
+        )
       }
     },
 
-    unobserveTargetSize() {
+    unobserveTarget() {
       this.targetResizeObserver?.disconnect()
       this.targetResizeObserver = null
+      this.targetScrollEvents?.remove()
+      this.targetScrollEvents = null
     },
 
     updatePosition() {
       const { trigger, popup } = this.$refs
       if (!popup || !this.showPopup || popup.offsetWidth === 0) {
-        // Unmounted, hidden, or not laid out yet, see `observeTargetSize()`.
+        // Unmounted, hidden, or not laid out yet, see `observeTarget()`.
         return
       }
 
@@ -326,11 +335,14 @@ export default {
         }
       }
 
-      const bounds = target.getBoundingClientRect()
-      const triggerLeft = bounds.left + window.scrollX
-      const triggerTop = bounds.top + window.scrollY
-      const triggerWidth = bounds.width
-      const triggerHeight = bounds.height
+      // The popup is fixed so that scrolling panels don't clip it, and is
+      // positioned in window coordinates:
+      const {
+        left: triggerLeft,
+        top: triggerTop,
+        width: triggerWidth,
+        height: triggerHeight
+      } = target.getBoundingClientRect()
       const popupWidth = popup.offsetWidth
       const popupHeight = popup.offsetHeight
 
@@ -447,7 +459,7 @@ export default {
       // pointing at the middle of the trigger:
       let shift = 0
       if (part2 === 'center' && this.keepInView) {
-        const start = isAboveOrBelow ? bounds.left + left : bounds.top + top
+        const start = isAboveOrBelow ? triggerLeft + left : triggerTop + top
         const size = isAboveOrBelow ? popupWidth : popupHeight
         const room = isAboveOrBelow ? window.innerWidth : window.innerHeight
         shift = Math.max(Math.min(room - start - size, 0), -start)
@@ -465,13 +477,8 @@ export default {
           top -= triggerHeight
         }
       }
-      if (target !== trigger) {
-        const triggerBounds = trigger.getBoundingClientRect()
-        left += triggerLeft - triggerBounds.left
-        top += triggerTop - triggerBounds.top
-      }
-      popup.style.left = `${left}px`
-      popup.style.top = `${top}px`
+      popup.style.left = `${triggerLeft + left}px`
+      popup.style.top = `${triggerTop + top}px`
     },
 
     addFocusEvents(parent) {
@@ -568,12 +575,12 @@ export default {
           this.popupEvents = this.addFocusEvents(this.$refs.popup)
         }
         this.addCloseEvents()
-        this.observeTargetSize()
+        this.observeTarget()
       } else {
         this.popupEvents?.remove()
         this.popupEvents = null
         this.removeCloseEvents()
-        this.unobserveTargetSize()
+        this.unobserveTarget()
       }
     },
 
@@ -625,7 +632,7 @@ export default {
 }
 
 .dito-popup {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   z-index: $z-index-popup;
