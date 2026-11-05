@@ -100,7 +100,7 @@ export async function assignRecord<T extends object>(
   // of the pivot rows.
   const paths = [...getPopulatePaths(meta, row)]
   if (paths.length) await em.populate(record, paths as never)
-  const records = matchOwnedRows(meta, row, record)
+  const records = matchOwnedRows(meta, run, record)
   // Ids that the record already links need no check.
   const isLinked = getLinkCheck(records)
   await checkIds(
@@ -190,6 +190,17 @@ class Run {
         this.invalidType(getType(prop), value, [...path, prop.name])
       }
     }
+    // A many-to-many relation writes the same rows as the owned rows of its
+    // pivot entity, and MikroORM would insert them twice.
+    for (const prop of meta.props) {
+      const owned = meta.props.find(
+        other => isOwned(other) && other.targetMeta!.class === prop.pivotEntity
+      )
+      if (owned && row[prop.name] && row[owned.name]) {
+        const message = `writes the same rows as '${owned.name}'`
+        this.invalidValue(message, [...path, prop.name])
+      }
+    }
     const source =
       '#id' in data
         ? this.addSource(meta, row, data['#id'], path, isNew)
@@ -246,6 +257,20 @@ class Run {
             )
           : this.cleanId(row, prop, item, [...path, index])
       )
+      if (isOwned(prop)) {
+        // Two rows with the same key would write the same row.
+        const key = getRowKey(prop).name
+        const ids = items.map(item => (item as Row | undefined)?.[key])
+        ids.forEach((id, index) => {
+          if (id != null && ids.indexOf(id) < index) {
+            this.invalidValue('is the key of another row', [
+              ...path,
+              index,
+              key
+            ])
+          }
+        })
+      }
       return isOwned(prop) ? items : items.filter(item => item !== undefined)
     }
     if (isOwned(prop)) {
@@ -278,15 +303,25 @@ class Run {
     place: (entity: object) => void
   ) {
     const target = prop.targetMeta!
-    const key = getPrimaryKey(target)
+    const key = getRowKey(prop)
     const id = isPlainObject(value) ? value[key.name] : undefined
     const idPath = [...path, key.name]
-    if (isParentNew && id != null) {
-      this.invalidValue('is not allowed in a new row', idPath)
-    }
-    const isNew = isParentNew || id == null
+    // A pivot row is keyed by a relation to a stored row, which it requires.
+    // Only matching tells whether the row is new.
+    const isPivot = isOwningToOne(key)
+    const message = isPivot
+      ? isPlainObject(id) && '#ref' in id
+        ? 'is not allowed to reference a new row'
+        : undefined
+      : isParentNew && id != null
+        ? 'is not allowed in a new row'
+        : undefined
+    if (message) this.invalidValue(message, idPath)
+    const isNew = isParentNew || (id == null && !isPivot)
     const row = this.cleanRow(target, value, path, isNew, prop.mappedBy)
-    if (row && !isNew) {
+    if (isPivot) {
+      if (row && !isNew && id === undefined) this.invalidType('id', id, idPath)
+    } else if (row && !isNew) {
       row[key.name] = toPrimaryKey(key, id)
       if (row[key.name] === undefined) this.invalidType('id', id, idPath)
     }
@@ -397,12 +432,13 @@ const getType = (prop: EntityProperty) =>
         ? 'int'
         : prop.runtimeType
 
-// Whether a client may write the property. `onCreate` fills scalars and
-// relations that clients can't set, such as `createdAt`, and gives JSON and
-// array columns their defaults, which clients can set. JSON can't hold the
-// bytes of a blob.
-const isWritable = (prop: EntityProperty) => (
-  !prop.primary &&
+// Whether a client may write the property. Of the primary keys, only the
+// relations of composite keys are written, as in pivot rows. `onCreate` fills
+// scalars and relations that clients can't set, such as `createdAt`, and gives
+// JSON and array columns their defaults, which clients can set. JSON can't
+// hold the bytes of a blob.
+const isWritable = (prop: EntityProperty, meta: EntityMetadata) => (
+  (!prop.primary || (meta.compositePK && isOwningToOne(prop))) &&
   prop.runtimeType !== 'Buffer' &&
   prop.persist !== false &&
   !prop.hidden &&
@@ -424,7 +460,7 @@ const writableProps = new WeakMap<EntityMetadata, EntityProperty[]>()
 function getWritableProps(meta: EntityMetadata) {
   let props = writableProps.get(meta)
   if (!props) {
-    props = meta.props.filter(isWritable)
+    props = meta.props.filter(prop => isWritable(prop, meta))
     writableProps.set(meta, props)
   }
   return props
@@ -463,38 +499,61 @@ function getPopulatePaths(
 // Matches the owned rows of `row` that have ids to the loaded rows of
 // `record`, at any depth, and returns the records by row. `em.assign()`
 // matches them by id too, and would move a row of another record into this
-// one.
-function matchOwnedRows(meta: EntityMetadata, row: Row, record: object) {
+// one. Pivot rows that match no loaded row are new.
+function matchOwnedRows(meta: EntityMetadata, run: Run, record: object) {
   const records = new Map<Row, Row>()
-  const issues: ValidationIssue[] = []
   const match = (meta: EntityMetadata, row: Row, record: Row, path: Path) => {
     records.set(row, record)
     for (const prop of meta.props) {
       if (!isOwned(prop) || row[prop.name] == null) continue
-      const key = getPrimaryKey(prop.targetMeta!).name
+      const target = prop.targetMeta!
+      const key = getRowKey(prop)
+      const isPivot = isOwningToOne(key)
+      const getKey = (item: Row) =>
+        isPivot ? wrap(item[key.name], true).getPrimaryKey() : item[key.name]
       const existing = new Map(
-        getLoaded(record, prop).map(item => [item[key], item])
+        getLoaded(record, prop).map(item => [getKey(item), item])
       )
       const isMany = prop.kind === ReferenceKind.ONE_TO_MANY
       getOwnedRows(prop, row[prop.name]).forEach((child, index) => {
-        if (child[key] == null) return
+        if (child[key.name] == null) return
         const childPath = [...path, prop.name, ...(isMany ? [index] : [])]
-        const found = existing.get(child[key])
+        const found = existing.get(child[key.name])
+        // MikroORM finds a pivot row by both of its keys.
+        if (isPivot) child[prop.mappedBy] = wrap(record, true).getPrimaryKey()
         if (found) {
-          match(prop.targetMeta!, child, found, childPath)
+          match(target, child, found, childPath)
+        } else if (isPivot) {
+          // A new pair, whose required columns `cleanRow()` didn't check.
+          for (const required of getWritableProps(target).filter(isRequired)) {
+            if (child[required.name] === undefined) {
+              const type = getType(required)
+              run.invalidType(type, undefined, [...childPath, required.name])
+            }
+          }
         } else {
-          issues.push({
-            path: [...childPath, key],
-            code: 'invalid_value',
-            message: `is not a row of this ${meta.className}`
-          })
+          run.invalidValue(`is not a row of this ${meta.className}`, [
+            ...childPath,
+            key.name
+          ])
         }
       })
     }
   }
-  match(meta, row, record as Row, [])
-  if (issues.length) throw createValidationError(issues)
+  match(meta, run.row, record as Row, [])
+  if (run.issues.length) throw createValidationError(run.issues)
   return records
+}
+
+// The key of an owned row within its parent: its primary key, or for a pivot
+// entity with two keys, the relation that isn't the one back to the parent.
+function getRowKey(prop: EntityProperty) {
+  const target = prop.targetMeta!
+  const keys = target.primaryKeys.filter(name => name !== prop.mappedBy)
+  const key = keys.length === 1 && target.properties[keys[0]!]
+  return target.primaryKeys.length === 2 && key && isOwningToOne(key)
+    ? key
+    : getPrimaryKey(target)
 }
 
 // A function that tells whether the record of a row links an id. It keeps the

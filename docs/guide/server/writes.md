@@ -183,8 +183,8 @@ only the pairs that change. Kept pairs keep their pivot rows, and dropped pairs
 lose them.
 
 A pivot entity can have columns of its own, such as the due date of a book in a
-loan. Use MikroORM's many-to-many relation on a pivot entity. Its primary key is
-its two foreign keys:
+loan. Its primary key is its two foreign keys. The owning side writes the pivot
+rows as owned rows, through a one-to-many relation with `orphanRemoval`:
 
 ```js
 const LoanBookSchema = defineEntity({
@@ -192,32 +192,31 @@ const LoanBookSchema = defineEntity({
   properties: {
     loan: () => p.manyToOne(Loan).primary().deleteRule('cascade'),
     book: () => p.manyToOne(Book).primary().deleteRule('cascade'),
-    dueDate: p.date().nullable()
+    dueDate: p.date()
   }
 })
 
-// In Loan, the owning side:
+// In Loan, the many-to-many relation and its pivot rows:
 books: () => p.manyToMany(Book).pivotEntity(() => LoanBook),
-
-// In Book, the inverse side, and the pivot rows for their columns:
-loans: () => p.manyToMany(Loan).mappedBy(loan => loan.books),
-loanLinks: () => p.oneToMany(LoanBook).mappedBy(link => link.book)
+bookLinks: () =>
+  p.oneToMany(LoanBook).mappedBy(link => link.loan).orphanRemoval()
 ```
 
-The body writes the relation as ids. The handler sets the other columns after a
-first flush, in the same transaction. The base flushes them at the end:
-
-```js
-await assignRecord(em, loan, data)
-await em.flush()
-const books = loan.books.getItems()
-await em.populate(books, ['loanLinks'], { refresh: true })
-for (const book of books) {
-  for (const link of book.loanLinks) {
-    link.dueDate = getDueDate(book, link.loan)
-  }
-}
+```json
+{ "bookLinks": [{ "book": 12, "dueDate": "2026-12-01" }] }
 ```
+
+The key of a pivot row is its relation that isn't the one back to the parent,
+here `book`. It works like the id of other owned rows:
+
+- Each pivot row requires its key, the id of a stored row. `#ref` isn't allowed
+  there.
+- On a PATCH, a pivot row whose key the record links updates that row. Other
+  pivot rows are new, and need their required columns.
+- The array is the full set. Pivot rows missing from it are deleted.
+- Two pivot rows with the same key respond with 400 at the second one.
+- A body that writes both `bookLinks` and `books` responds with 400 at `books`.
+  Both write the same rows.
 
 A pivot entity with a primary key of its own doesn't work. MikroORM orders the
 relation by that key. It also writes kept pairs again without their columns.
@@ -241,6 +240,7 @@ nested:
 - A row with an id updates that row. A row without an id is new.
 - An id that belongs to another record responds with 400.
 - On a PATCH, the array is the full set. Owned rows missing from it are deleted.
+- Two rows with the same id respond with 400 at the second one.
 - The nested rows of a new row are new too, so they can't carry an id.
 - `null` removes the owned row of a one-to-one relation.
 - One-to-many relations without `orphanRemoval` aren't written. Their rows are

@@ -241,9 +241,9 @@ Dito.js 6 filled in the defaults of its schemas on insert.
 
 **Many-to-many relations.** A join table with columns of its own becomes a pivot
 entity, with `p.manyToOne(Post).primary()` on both foreign keys. A body writes
-the relation as ids, on either side. A pivot entity created next to a new pair
-inserts the row a second time, so a handler sets the other columns after a first
-flush, see
+the relation as ids, on either side. Dito.js 6 wrote the other columns of the
+join table in graphs. A one-to-many relation to the pivot entity with
+`orphanRemoval` writes them as owned rows, see
 [Many-to-many relations](guide/server/writes.md#many-to-many-relations).
 
 ### 6. Turn scopes into find shapes
@@ -929,7 +929,8 @@ baseline can then drop its checks of knex's table, and always run the SQL.
   columns, and upserts pairs twice. `defineMikroConfig()` warns of them.
 - **New pivot rows with columns.** A handler that creates the pivot entity of a
   new pair next to the relation that links the pair gets two inserts of the same
-  row. Link the pair, flush, then set the columns of the pivot row.
+  row. Write the pivot rows as owned rows instead, or link the pair, flush, then
+  set the columns of the pivot row.
 - **Replacing a partly loaded owned row.** A flush inserts before it deletes,
   unless it sees that a new row takes the unique value of a deleted row. If the
   old row was loaded without that column, the insert fails and the write answers 409. Load the column, or give the new row another value first.

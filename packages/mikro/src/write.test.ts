@@ -418,6 +418,21 @@ describe('assignRecord()', () => {
     })
   })
 
+  it('refuses the same owned row twice', async () => {
+    await createLibrary()
+    const em = orm.em.fork()
+    const library = await loadLibrary(em, ['readingLists'])
+    expect(
+      await issues(
+        assignRecord(em, library, {
+          readingLists: [{ id: 1 }, { id: 2 }, { id: 1, name: 'L3' }]
+        })
+      )
+    ).toEqual({
+      'readingLists/2/id': 'is the key of another row'
+    })
+  })
+
   it('rewrites the kept pairs of a pivot entity with an id of its own', async () => {
     // A pivot entity with a primary key of its own makes MikroORM 7.2.5 order
     // the relation by that key (`fixedOrder`). When the owning side gains a
