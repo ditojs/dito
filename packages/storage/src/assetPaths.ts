@@ -22,8 +22,8 @@ export interface AssetPath {
   path: string
   // The name of the storage that holds the files.
   storage: string
-  // The size limit of an upload, in bytes, see `AssetUpload`.
-  maxSize?: number
+  // The size limit of an upload, see `AssetUpload`.
+  maxSize?: number | string
 }
 
 // Finds the file objects at `path` inside `value`, with their data paths.

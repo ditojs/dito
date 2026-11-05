@@ -1,6 +1,5 @@
-import { asArray, isRegExp, isString } from '@ditojs/utils'
+import { asArray, isRegExp, isString, parseFileSize } from '@ditojs/utils'
 import { getSchemaValue } from './schema/value.js'
-import { parseFileSize } from './units.js'
 import type { Context } from './schema/types.ts'
 import type { Schema } from './types.ts'
 

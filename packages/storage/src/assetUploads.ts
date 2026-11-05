@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream'
 import busboy from 'busboy'
 import picomatch from 'picomatch'
-import { camelize } from '@ditojs/utils'
+import { camelize, parseFileSize } from '@ditojs/utils'
 import { HttpError, defineAction, type MixinDefinition } from '@ditojs/server'
 import type { AssetFile } from './Storage.ts'
 import { storeAsset, type AssetDb } from './assetWrites.ts'
@@ -21,8 +21,9 @@ export interface AssetUpload {
   path: string
   // The name of the storage that holds the files.
   storage: string
-  // The size limit of each file, in bytes.
-  maxSize?: number
+  // The size limit of each file, in bytes, or as a string with a unit, such as
+  // `'500mb'`.
+  maxSize?: number | string
 }
 
 export interface UploadRoutesOptions {
@@ -41,7 +42,7 @@ export function uploadRoutes({
   const matchers = uploads.map(({ path, storage, maxSize }) => ({
     isMatch: picomatch(path),
     storage,
-    maxSize
+    maxSize: maxSize != null ? parseFileSize(maxSize) : undefined
   }))
   return {
     actions: {

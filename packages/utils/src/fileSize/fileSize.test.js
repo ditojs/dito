@@ -1,4 +1,4 @@
-import { formatFileSize, parseFileSize } from './units.js'
+import { formatFileSize, parseFileSize } from './fileSize.js'
 
 describe('formatFileSize()', () => {
   // Expected values match the previously used `filesize` package.

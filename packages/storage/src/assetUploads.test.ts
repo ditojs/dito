@@ -148,14 +148,20 @@ describe('defineUploads()', () => {
   describe('maxSize', () => {
     // A cover limit of 300 bytes leaves room for the multipart framing around
     // a small file, the default of 1000 bytes for a larger one.
-    function setupLimits() {
+    function setupLimits({
+      coverSize = 300,
+      defaultSize = 1000
+    }: {
+      coverSize?: number | string
+      defaultSize?: number | string
+    } = {}) {
       const limits = createAssets({
         adapter,
         paths: uploadPaths.map(path =>
-          path.column === 'cover' ? { ...path, maxSize: 300 } : path
+          path.column === 'cover' ? { ...path, maxSize: coverSize } : path
         ),
         storages,
-        maxSize: 1000
+        maxSize: defaultSize
       })
       const uploads = [{ path: 'drafts/*', storage: 'archive' }]
       return createApi({
@@ -206,6 +212,24 @@ describe('defineUploads()', () => {
         expect((await upload(api, route, huge)).status).toBe(413)
       }
       expect(await archive.listKeys()).toHaveLength(2)
+    })
+
+    it('takes sizes with units', async () => {
+      const api = setupLimits({ coverSize: '300b', defaultSize: '1kb' })
+      expect((await upload(api, 'cover', large())).status).toBe(413)
+      expect((await upload(api, 'cover', small())).status).toBe(200)
+      expect((await upload(api, 'back-cover', large())).status).toBe(200)
+      const huge = new File(['a'.repeat(1000)], 'a.txt')
+      expect((await upload(api, 'back-cover', huge)).status).toBe(413)
+    })
+
+    it('throws for invalid sizes', () => {
+      expect(() => setupLimits({ coverSize: '300 bananas' })).toThrow(
+        'Invalid file size unit: bananas'
+      )
+      expect(() => setupLimits({ defaultSize: 'large' })).toThrow(
+        `Can't interpret file size: large`
+      )
     })
   })
 

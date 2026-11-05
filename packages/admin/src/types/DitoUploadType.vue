@@ -169,7 +169,6 @@ import { useSortable } from '../composables/useSortable.ts'
 import DitoDragHandle from '../components/DitoDragHandle.vue'
 import DitoClipboard from '../components/DitoClipboard.vue'
 import { DitoButton, DitoProgress } from '@ditojs/ui/src'
-import { formatFileSize } from '../utils/units.js'
 import {
   getUploadLimits,
   isAcceptedFile,
@@ -186,7 +185,7 @@ import {
 } from '../utils/request.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
 import { getHtml } from '../utils/html.js'
-import { isArray, clone } from '@ditojs/utils'
+import { isArray, clone, formatFileSize } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
 import { fileDropTargetsKey } from '../utils/keys.ts'
 

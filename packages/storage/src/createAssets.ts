@@ -26,8 +26,8 @@ export interface CreateAssetsOptions {
   // The `deleteUnusedAfter` of `runJobs()`, in milliseconds, unless a call
   // passes its own. By default, `false` skips the release.
   deleteUnusedAfter?: number | false
-  // The `maxSize` of the uploads without their own, in bytes.
-  maxSize?: number
+  // The `maxSize` of the uploads without their own, see `AssetUpload`.
+  maxSize?: number | string
 }
 
 export interface DefineUploadsOptions {

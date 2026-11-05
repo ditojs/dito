@@ -990,6 +990,27 @@ export function isHtml(arg: unknown): arg is Html
  */
 export function asHtml(arg: unknown): string
 
+/* -------------------------------- fileSize -------------------------------- */
+
+/**
+ * Formats a number of bytes with a unit, such as `'1.5 MB'`, or `'1.5 MiB'`
+ * with `{ base: 2 }`.
+ */
+export function formatFileSize(
+  size: number,
+  options?: { base?: 2 | 10 }
+): string
+
+/**
+ * Parses a file size with a unit, such as `'500mb'` or `'10 MiB'`, into a
+ * number of bytes. IEC units always use base 2, bit units such as `'1Mb'` are
+ * case-sensitive. Throws for sizes that it can't interpret.
+ */
+export function parseFileSize(
+  input: number | string,
+  options?: { base?: 2 | 10 }
+): number
+
 /* -------------------------- typescript utilities -------------------------- */
 export interface ArrayLike<T> {
   readonly length: number

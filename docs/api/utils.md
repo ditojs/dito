@@ -16,7 +16,7 @@ entry point, `@ditojs/utils`, an ES module with TypeScript types.
 | [Arrays](#arrays)                             | `flatten()`, `shuffle()`                                                                                                                                                                                                                                                                                        |
 | [Objects](#objects)                           | `clone()`, `equals()`, `groupBy()`, `mapKeys()`, `mapValues()`, `mergeDeeply()`, `assignDeeply()`, `pick()`, `pickBy()`                                                                                                                                                                                         |
 | [Strings](#strings)                           | `camelize()`, `capitalize()`, `decamelize()`, `hyphenate()`, `underscore()`, `labelize()`, `deindent()`, `escapeRegExp()`, `getCommonPrefix()`, `getCommonOffset()`, `isAbsoluteUrl()`, `isUrl()`, `isDomain()`, `isHostname()`, `isEmail()`, `isCreditCard()`                                                  |
-| [Dates and numbers](#dates-and-numbers)       | `format()`, `formatDate()`, `defaultFormats`, `formatPlainDate()`, `parsePlainDate()`                                                                                                                                                                                                                           |
+| [Dates and numbers](#dates-and-numbers)       | `format()`, `formatDate()`, `defaultFormats`, `formatPlainDate()`, `parsePlainDate()`, `formatFileSize()`, `parseFileSize()`                                                                                                                                                                                    |
 | [Data paths](#data-paths)                     | `parseDataPath()`, `normalizeDataPath()`, `resolveDataPath()`, `getValueAtDataPath()`, `getEntriesAtDataPath()`, `setValueAtDataPath()`, `setEntriesAtDataPath()`                                                                                                                                               |
 | [HTML](#html)                                 | `html`, `isHtml()`, `asHtml()`, `escapeHtml()`, `stripHtml()`                                                                                                                                                                                                                                                   |
 | [Functions](#functions)                       | `deprecate()`, `toAsync()`, `toCallback()`, `toPromiseCallback()`                                                                                                                                                                                                                                               |
@@ -409,7 +409,8 @@ rejects.
 import { format, formatDate, formatPlainDate } from '@ditojs/utils'
 ```
 
-Formatting with the `Intl` API, and conversion of plain dates.
+Formatting with the `Intl` API, and conversion of plain dates and file
+sizes.
 
 ### format()
 
@@ -511,6 +512,44 @@ dates that don't exist, e.g. `'2026-02-30'`.
 ```js
 parsePlainDate('2026-05-14') // May 14, 2026, 00:00 local time
 parsePlainDate('2026-02-30') // null
+```
+
+### formatFileSize()
+
+```js
+formatFileSize(size, { base = 10 } = {})
+```
+
+Formats a number of bytes with the largest unit that keeps it at 1 or more,
+rounded to two decimals. Base 10 uses SI units (1 kB = 1000 bytes), base 2
+IEC units (1 KiB = 1024 bytes).
+
+```js
+formatFileSize(1234567) // '1.23 MB'
+formatFileSize(1536, { base: 2 }) // '1.5 KiB'
+```
+
+### parseFileSize()
+
+```js
+parseFileSize(input, { base = 10 } = {})
+```
+
+Parses a file size with a unit into a number of bytes, as the `maxSize` of the
+admin's [upload fields](admin/schemas.md#upload) and of the server's
+[uploads](server/storage.md#uploads) do. Numbers and strings without a unit
+are bytes.
+
+- The byte units are case-insensitive: `'500mb'`, `'500 MB'` and `'500M'` are
+  the same, in `base`.
+- IEC units, such as `'10 MiB'` or `'10Ki'`, always use base 2.
+- Bit units are case-sensitive: `'1Mb'` is a megabit, 125 000 bytes.
+- It throws for input that it can't interpret, and for unknown units.
+
+```js
+parseFileSize('500mb') // 500000000
+parseFileSize('1.5 MiB') // 1572864
+parseFileSize('1 MB', { base: 2 }) // 1048576
 ```
 
 ## Data paths
