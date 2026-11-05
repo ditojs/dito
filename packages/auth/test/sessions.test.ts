@@ -5,12 +5,7 @@ import type { Kysely } from 'kysely'
 import { HttpError, createApi, defineController } from '@ditojs/server'
 import * as passwords from '../src/passwords.ts'
 import { getPasswordFingerprint } from '../src/authentication.ts'
-import {
-  deleteExpiredSessions,
-  getSession,
-  getSessionUser,
-  readSignedCookie
-} from '../src/index.ts'
+import { getSession, getSessionUser } from '../src/index.ts'
 import {
   createSource,
   createUser,
@@ -480,9 +475,9 @@ describe('sessions', () => {
   })
 
   it('reads signed cookies of all secrets', async () => {
-    const app = new Hono().get(
-      '/',
-      async c => c.json(await readSignedCookie(c, ['new', 'old'], 'flag'))
+    const { sessions } = setup({ db, source: admins, secrets: ['new', 'old'] })
+    const app = new Hono().get('/', async c =>
+      c.json(await sessions.readSignedCookie(c, 'flag'))
     )
     const read = async (cookie?: string) =>
       (
@@ -508,7 +503,7 @@ describe('sessions', () => {
         { id: 'endless', value: '{}', expires_at: null }
       ])
       .execute()
-    await deleteExpiredSessions(db)
+    await setup({ db, source: admins }).sessions.deleteExpired()
     expect((await sessionIds()).sort()).toEqual(['endless', 'new'])
   })
 })

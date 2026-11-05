@@ -3,14 +3,11 @@
 ```js
 import {
   createSessions,
-  deleteExpiredSessions,
   getSession,
   getSessionUser,
-  readSignedCookie,
   defineUserActions,
   definePasswordWrites,
   createCredentials,
-  deleteUserCredentials,
   createPasswordReset,
   hashPassword,
   verifyPassword
@@ -36,6 +33,8 @@ Peer dependencies: `@ditojs/server`, `hono`, `kysely` and `zod`, plus
 createSessions(options: CreateSessionsOptions): {
   cookieName: string
   middleware: MiddlewareHandler
+  readSignedCookie(c: Context, name: string): Promise<string | null>
+  deleteExpired(): Promise<void>
 }
 ```
 
@@ -60,15 +59,20 @@ The cookie holds the id, signed with Hono's
 [signed cookies](https://hono.dev/docs/helpers/cookie). It is `SameSite=Lax`,
 `HttpOnly`, and `Secure` when the request's URL is https. A row without
 `expires_at`, or with one in the past, isn't a session.
-`deleteExpiredSessions(db)` deletes the expired rows. The app runs it on a
-timer.
+`deleteExpired()` deletes the expired rows. The app runs it on a timer.
 
-Returns the `cookieName` and the session `middleware`. `middleware` is Hono
-middleware, which the app passes to the `middleware` of `createApi()`, or uses
-in its own Hono routes. The API runs it before `getUser`, which reads the
-session. It loads the session into `c.var.session` before the action. After the
-action, it saves the session if it changed, even when the action throws, and
-adds its `Set-Cookie` header to the response, also to error responses.
+Returns the `cookieName`, the session `middleware`, `readSignedCookie()` and
+`deleteExpired()`. `middleware` is Hono middleware, which the app passes to the
+`middleware` of `createApi()`, or uses in its own Hono routes. The API runs it
+before `getUser`, which reads the session. It loads the session into
+`c.var.session` before the action. After the action, it saves the session if it
+changed, even when the action throws, and adds its `Set-Cookie` header to the
+response, also to error responses.
+
+`readSignedCookie(c, name)` returns the value of the cookie `name` if one of
+`secrets` signed it, or `null`, for the app's own cookies, which it writes with
+`setSignedCookie(c, name, value, secrets[0])` of `hono/cookie`.
+
 [`createAdmin()`](admin-server.md#adminoptions) takes the middleware and the
 `getUser` of [`getSessionUser()`](#getsessionuser), as `createApi()` does:
 
@@ -114,16 +118,6 @@ getSessionUser(c: Context, source: UserSource): Promise<User | null>
 
 Returns `{ id, roles }` of the session's user, if the user belongs to `source`,
 for the `getUser` of `createApi()`: `getUser: c => getSessionUser(c, admins)`.
-
-## readSignedCookie()
-
-```ts
-readSignedCookie(c: Context, secrets: string[], name: string): Promise<string | null>
-```
-
-Returns the value of the cookie `name` if one of `secrets` signed it, or `null`.
-Use it with the secrets of `createSessions()` for the app's own cookies, which
-it writes with `setSignedCookie(c, name, value, secrets[0])` of `hono/cookie`.
 
 ## defineUserActions()
 
@@ -256,7 +250,6 @@ the API's database handle in `c.var.db`.
 createCredentials(options: {
   adapter: { getKysely(): Kysely<any> }
 }): Credentials
-deleteUserCredentials(db: Kysely<any>, source: UserSource, ids: unknown[]): Promise<void>
 ```
 
 Returns the store of the users' passkeys and TOTP secrets, in the `credential`
@@ -280,8 +273,8 @@ create table credential (
 ```
 
 No foreign keys tie the credentials to their users. When the app deletes users,
-it calls `deleteUserCredentials(db, source, ids)`, also in the transaction of
-the deletion.
+it calls `credentials.deleteUsers(source, ids, trx?)`, with the transaction of
+the deletion as `trx`.
 
 ## createPasskeys()
 

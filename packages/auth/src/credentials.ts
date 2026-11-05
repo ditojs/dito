@@ -138,23 +138,24 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
         .$if(id !== undefined, qb => qb.where('id', '=', id!))
         .executeTakeFirst()
       return Number(result.numDeletedRows)
+    },
+
+    // Deletes the credentials of the users with `ids`. The app calls it when it
+    // deletes users, as no foreign keys do. With `trx`, it runs in that
+    // transaction.
+    async deleteUsers(
+      source: UserSource<any>,
+      ids: unknown[],
+      trx?: Kysely<any>
+    ) {
+      if (ids.length === 0) return
+      await (trx ?? db())
+        .deleteFrom('credential')
+        .where('user_model', '=', source.name)
+        .where('user_id', 'in', ids.map(String))
+        .execute()
     }
   }
-}
-
-// Deletes the credentials of the users with `ids`. The app calls it when it
-// deletes users, as no foreign keys do.
-export async function deleteUserCredentials(
-  db: Kysely<any>,
-  source: UserSource<any>,
-  ids: unknown[]
-) {
-  if (ids.length === 0) return
-  await db
-    .deleteFrom('credential')
-    .where('user_model', '=', source.name)
-    .where('user_id', 'in', ids.map(String))
-    .execute()
 }
 
 function toCredential(row: any): Credential {

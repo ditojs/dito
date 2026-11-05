@@ -1,10 +1,8 @@
 export * from './types.ts'
 export {
   createSessions,
-  deleteExpiredSessions,
   getSession,
   getSessionUser,
-  readSignedCookie,
   type CreateSessionsOptions,
   type Session,
   type Sessions

@@ -40,15 +40,15 @@ session, also in the app's own Hono routes. `getSessionUser(c, source)` returns
 the id and roles of the session's user, for the `getUser` of the API.
 
 Sessions use `adapter.getKysely()`, outside of the action's transaction, because
-they load before it and save after it. `deleteExpiredSessions(kysely)` deletes
-the expired rows. Call it from a timer of the app.
+they load before it and save after it. `adminSessions.deleteExpired()`
+deletes the expired rows. Call it from a timer of the app.
 
 The cookie holds the session's id, signed with Hono's signed cookies. The first
 of `secrets` signs, and all of them verify. So a new secret goes first, and the
 old one stays until its sessions have expired. Session cookies are
 `SameSite=Lax`, `HttpOnly`, and `Secure` on https.
-`readSignedCookie(c, secrets, name)` reads the app's own cookies, which it signs
-with `setSignedCookie()` of `hono/cookie` and the first secret.
+`adminSessions.readSignedCookie(c, name)` reads the app's own cookies, which it
+signs with `setSignedCookie()` of `hono/cookie` and the first secret.
 
 ## User sources
 
@@ -97,12 +97,14 @@ import { createCredentials, defineUserActions } from '@ditojs/auth'
 import { createPasskeys } from '@ditojs/auth/passkeys'
 import { createTotp } from '@ditojs/auth/totp'
 
+export const credentials = createCredentials({ adapter })
+
 const users = defineUserActions({
   path: 'admins',
   source: adminSource,
   // New passwords, 8 characters at least by default:
   password: z.string().min(12),
-  credentials: createCredentials({ adapter }),
+  credentials,
   features: {
     passkeys: createPasskeys({ rpName: 'Book Catalog' }),
     totp: createTotp({ issuer: 'Book Catalog', secret: config.totpSecret })
@@ -170,13 +172,11 @@ of a transaction.
 ### Credentials
 
 Passkeys and TOTP keep their secrets in the `credential` table, through
-`createCredentials({ adapter })`. No foreign keys tie them to their
-users, so an action that deletes users deletes their credentials too:
+`createCredentials({ adapter })`. No foreign keys tie them to their users, so an
+action that deletes users deletes their credentials too:
 
 ```js
-import { deleteUserCredentials } from '@ditojs/auth'
-
-await deleteUserCredentials(adapter.getKysely(), adminSource, ids)
+await credentials.deleteUsers(adminSource, ids)
 ```
 
 ### Passkeys

@@ -215,9 +215,28 @@ export function createSessions(options: CreateSessionsOptions) {
     throw new Error('Unable to sign cookies without secrets.')
   }
 
+  // The value of a cookie that one of `secrets` signed, or null, also for the
+  // app's own signed cookies.
+  async function readSignedCookie(c: Context, name: string) {
+    for (const secret of secrets) {
+      const value = await getSignedCookie(c, secret, name)
+      if (value) return value
+    }
+    return null
+  }
+
+  // Deletes the expired sessions. The app runs it on a timer.
+  async function deleteExpired() {
+    await adapter
+      .getKysely()
+      .deleteFrom('session')
+      .where('expires_at', '<', new Date())
+      .execute()
+  }
+
   // The session of the request's cookie, if it hasn't expired.
   async function load(c: Context): Promise<Loaded> {
-    const id = await readSignedCookie(c, secrets, cookieName)
+    const id = await readSignedCookie(c, cookieName)
     const row = id
       ? await adapter
           .getKysely()
@@ -245,29 +264,7 @@ export function createSessions(options: CreateSessionsOptions) {
     }
   }
 
-  return { cookieName, middleware }
-}
-
-// The value of a cookie that one of `secrets` signed, or null. `secrets` are
-// the ones of `createSessions()`, for the app's own signed cookies.
-export async function readSignedCookie(
-  c: Context,
-  secrets: string[],
-  name: string
-) {
-  for (const secret of secrets) {
-    const value = await getSignedCookie(c, secret, name)
-    if (value) return value
-  }
-  return null
-}
-
-// Deletes the expired sessions. The app runs it on a timer.
-export async function deleteExpiredSessions(db: Kysely<any>) {
-  await db
-    .deleteFrom('session')
-    .where('expires_at', '<', new Date())
-    .execute()
+  return { cookieName, middleware, readSignedCookie, deleteExpired }
 }
 
 // The session of the request, from the middleware of `createSessions()`.

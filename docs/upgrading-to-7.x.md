@@ -36,7 +36,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `dito db:seed` and `seeds/`                                                            | MikroORM's [seeder](https://mikro-orm.io/docs/seeding), or a script with an entity manager                                                                                                                       | medium                  |
 | `dito console`                                                                         | A REPL script of ten lines, see [step 4](#4-set-up-the-orm-the-services-and-the-scripts)                                                                                                                         | low                     |
 | `dito db:list_asset_config`, `db:recount_assets`                                       | The asset paths of the app, and `assets.runJobs()`                                                                                                                                                               | low                     |
-| `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `deleteExpiredSessions(adapter.getKysely())` of `@ditojs/auth` on a timer of the app                                                                                                                             | low                     |
+| `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `sessions.deleteExpired()` of `@ditojs/auth` on a timer of the app                                                                                                                                               | low                     |
 | `new Application()`, `app.execute()`, `start()`, `stop()`                              | `new Hono()` as the host, the controllers in one `createApi()` per area, routed with `app.route()`, and `serve()` of `@ditojs/server/node`, which stops on signals                                               | medium                  |
 | `config` and its sections                                                              | The app's own config module, whose sections the app passes to `hostMiddleware()`, `createSessions()`, `createStorages()` and `createAdmin()`                                                                     | low                     |
 | `config.knex`, `app.knex`, `normalizeDbNames`                                          | `new MikroORM(defineMikroConfig({ dbName, host, user, password }))`, passed to `createApi({ adapter: createMikroAdapter(orm) })`; MikroORM maps camelCase names to snake_case by default; `getKysely(c)` for SQL | low                     |
@@ -673,9 +673,9 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   [`createPasswordReset()`](api/server/auth.md#createpasswordreset), with times
   in milliseconds.
 - When the app deletes users, it calls
-  `deleteUserCredentials(adapter.getKysely(), source, ids)`, as no foreign keys
-  tie credentials to users.
-- `readSignedCookie(c, secrets, name)` reads the app's own signed cookies.
+  `credentials.deleteUsers(source, ids)`, as no foreign keys tie credentials to
+  users.
+- `sessions.readSignedCookie(c, name)` reads the app's own signed cookies.
 
 #### Storage
 
