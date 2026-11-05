@@ -1,4 +1,4 @@
-export * from './types.ts'
+export type { User, UserSource } from './users.ts'
 export {
   createSessions,
   getSession,
@@ -7,11 +7,19 @@ export {
   type Session,
   type Sessions
 } from './sessions.ts'
-export * from './passwords.ts'
+export {
+  definePasswordWrites,
+  hashPassword,
+  verifyPassword,
+  type PasswordWritesOptions
+} from './passwords.ts'
 export * from './credentials.ts'
 export {
   createPasswordReset,
   type CreatePasswordResetOptions,
   type PasswordReset
 } from './password-reset.ts'
-export * from './users-routes.ts'
+export {
+  defineUserActions,
+  type DefineUserActionsOptions
+} from './userActions.ts'

@@ -3,13 +3,14 @@ import type { Context, MiddlewareHandler } from 'hono'
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
 import type { Kysely } from 'kysely'
 import { isEmpty } from '@ditojs/utils'
+import { authError } from './authentication.ts'
+import { getPasswordFingerprint } from './passwords.ts'
 import {
-  authError,
-  getPasswordFingerprint,
   getUserIdentifier,
-  parseUserIdentifier
-} from './authentication.ts'
-import type { User, UserSource } from './types.ts'
+  parseUserIdentifier,
+  type User,
+  type UserSource
+} from './users.ts'
 
 // Sessions in the `session` table: the signed cookie holds the id, and the row
 // holds `value` as JSON and `expires_at`. The middleware loads the session into

@@ -9,7 +9,7 @@ import type { Context } from 'hono'
 import { authError, authenticationTimeout } from './authentication.ts'
 import type { Credential, Credentials } from './credentials.ts'
 import { getSession } from './sessions.ts'
-import type { User, UserSource } from './types.ts'
+import type { User, UserSource } from './users.ts'
 
 // Passkeys are discoverable WebAuthn credentials of type `passkey`, with the
 // credential id as `key`, named after their provider. The challenges are kept

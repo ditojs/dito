@@ -1,29 +1,29 @@
 import type { Context } from 'hono'
 import { z } from 'zod'
-import { isPlainObject, isString } from '@ditojs/utils'
+import { isString } from '@ditojs/utils'
 import {
-  createValidationError,
   defineAction,
-  defineMixin,
   HttpError,
   type Actions,
-  type ControllerDefinition,
-  type Handler
+  type ControllerDefinition
 } from '@ditojs/server'
-import { bodyValidation } from '@ditojs/server/internal'
-import {
-  authError,
-  authenticationTimeout,
-  getUserIdentifier,
-  parseUserIdentifier
-} from './authentication.ts'
+import { authError, authenticationTimeout } from './authentication.ts'
 import type { Credentials } from './credentials.ts'
 import type { Passkeys } from './passkeys.ts'
 import type { PasswordReset } from './password-reset.ts'
-import { hashPassword, verifyPassword } from './passwords.ts'
+import {
+  defaultPassword,
+  hashPassword,
+  verifyPassword
+} from './passwords.ts'
 import { getSession } from './sessions.ts'
 import type { Totp } from './totp.ts'
-import type { User, UserSource } from './types.ts'
+import {
+  getUserIdentifier,
+  parseUserIdentifier,
+  type User,
+  type UserSource
+} from './users.ts'
 
 // The login, session and security actions of the admin, which need the
 // middleware of `createSessions()`. Each handler checks the login and the
@@ -62,9 +62,6 @@ const required = (name: string) => {
   const error = `The ${name} is required.`
   return z.string({ error }).min(1, error)
 }
-const defaultPassword = z
-  .string({ error: 'The password is required.' })
-  .min(8, 'The password needs at least 8 characters.')
 
 // Returns the controller of the actions, which the app passes to `createApi()`,
 // or puts in the `mixins` of a controller of its own, and the `features` that
@@ -363,53 +360,4 @@ export function defineUserActions<U extends User>({
     hasPasswordReset: !!passwordReset
   }
   return { controller, features }
-}
-
-export interface PasswordWritesOptions<U extends User> {
-  source: UserSource<U>
-  // The schema of new passwords, at least 8 characters by default.
-  password?: z.ZodType<string>
-}
-
-// A mixin for the `post` and `patch :id` of a model controller of the users:
-// the body sets `password`, which it stores as the user's `hash`. A `hash` in
-// the body responds with 400. Users who change their own password keep their
-// session, and their other sessions end. The controller writes the hash with
-// the user that the handler beneath returns.
-export function definePasswordWrites<U extends User>({
-  source,
-  password = defaultPassword
-}: PasswordWritesOptions<U>) {
-  const schema = z.object({
-    password: password.optional(),
-    hash: z
-      .never({ error: `Unable to set 'hash', set 'password' instead.` })
-      .optional()
-  })
-
-  const handler: Handler = async input => {
-    const { c, next } = input
-    if (!isPlainObject(input.body)) return next()
-    const result = await schema.safeParseAsync(input.body)
-    if (!result.success) {
-      throw createValidationError(result.error.issues, bodyValidation)
-    }
-    const { password: value, ...body } = input.body
-    if (value === undefined) return next()
-    // The handlers beneath get the body without the password.
-    input.body = body
-    const user = (await next()) as U | undefined
-    if (user) {
-      user.hash = await hashPassword(result.data.password!)
-      getSession(c).refreshFingerprint(source, user)
-    }
-    return user
-  }
-
-  return defineMixin({
-    actions: {
-      'post': handler,
-      'patch :id': handler
-    }
-  })
 }

@@ -34,3 +34,15 @@ export interface UserSource<U extends User = User> {
   ): Promise<void>
   serialize(c: Context, user: U): unknown
 }
+
+// Sessions and credentials name users by their source and id, such as
+// `Admin-1`, so several sources can share them.
+export function getUserIdentifier(source: UserSource<any>, user: User) {
+  return `${source.name}-${user.id}`
+}
+
+// Splits at the first hyphen only, as ids may hold hyphens, such as UUIDs.
+export function parseUserIdentifier(identifier: unknown) {
+  const match = String(identifier).match(/^([^-]+)-(.+)$/)
+  return match ? { name: match[1], id: match[2] } : null
+}

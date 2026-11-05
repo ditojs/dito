@@ -8,14 +8,14 @@ import {
 import type { Kysely } from 'kysely'
 import { Secret, TOTP } from 'otpauth'
 import type { Context } from 'hono'
-import {
-  authError,
-  authenticationTimeout,
-  getUserIdentifier
-} from './authentication.ts'
+import { authError, authenticationTimeout } from './authentication.ts'
 import type { Credentials } from './credentials.ts'
 import { getSession } from './sessions.ts'
-import type { User, UserSource } from './types.ts'
+import {
+  getUserIdentifier,
+  type User,
+  type UserSource
+} from './users.ts'
 
 // TOTP is stored as a credential of type `totp`, with the secret encrypted by
 // AES-256-GCM, the user's identifier as authenticated data, the last accepted

@@ -1,7 +1,10 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import type { Context } from 'hono'
-import { getUserIdentifier } from './authentication.ts'
-import type { User, UserSource } from './types.ts'
+import {
+  getUserIdentifier,
+  type User,
+  type UserSource
+} from './users.ts'
 
 // Stateless password reset links: the token holds the user's id and its
 // creation time, with an HMAC-SHA256 signature over these and the user's hash,

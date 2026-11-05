@@ -4,7 +4,7 @@ import { z } from 'zod'
 import type { Kysely } from 'kysely'
 import { HttpError, createApi, defineController } from '@ditojs/server'
 import * as passwords from '../src/passwords.ts'
-import { getPasswordFingerprint } from '../src/authentication.ts'
+import { getPasswordFingerprint } from '../src/passwords.ts'
 import { getSession, getSessionUser } from '../src/index.ts'
 import {
   createSource,

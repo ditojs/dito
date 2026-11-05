@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely'
-import type { User, UserSource } from './types.ts'
+import type { User, UserSource } from './users.ts'
 
 // The passkeys and TOTP secrets of users in the `credential` table, with `data`
 // as JSON. All sources share the table, so rows name their users by
