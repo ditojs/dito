@@ -10,7 +10,7 @@ export {
   type ModelControllerDefinition
 } from './controller.ts'
 export { crud, defineChoices, defineListHandler } from './crud.ts'
-export { setRecord } from './model-request.ts'
+export { setRecord } from './ModelRequest.ts'
 export { assignRecord, createRecord } from './write.ts'
 export type { Find, FindShape } from './find.ts'
 export {
@@ -19,14 +19,14 @@ export {
   defineTextFilter,
   type Filter
 } from './filters.ts'
-export type { ListQuery } from './list-query.ts'
+export type { ListQuery } from './listQuery.ts'
 export { defineMikroConfig } from './defineMikroConfig.ts'
 export {
   defineJsonType,
   getAssetPaths,
   type JsonTypeAsset,
   type JsonTypeOptions
-} from './schema-json.ts'
+} from './SchemaJsonType.ts'
 export {
   createMikroAdapter,
   getEntityManager,
@@ -35,4 +35,4 @@ export {
 export {
   createEntityUserSource,
   type EntityUserSourceOptions
-} from './user-source.ts'
+} from './createEntityUserSource.ts'

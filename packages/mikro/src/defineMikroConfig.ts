@@ -6,8 +6,8 @@ import {
   type MetadataStorage,
   type Options
 } from '@mikro-orm/core'
-import { getEntities } from './meta.ts'
-import { PlainDate } from './plain-date.ts'
+import { getEntities } from './metadata.ts'
+import { PlainDate } from './PlainDate.ts'
 import { RemovedRows, SchemaDefaults } from './subscribers.ts'
 
 // The options of `new MikroORM()` for entities of Dito: `p.date()` columns keep

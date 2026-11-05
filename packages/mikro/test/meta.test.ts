@@ -1,6 +1,6 @@
 import { MikroORM } from '@mikro-orm/postgresql'
 import { defineEntity, p, type EntityProperty } from '@mikro-orm/core'
-import { getPrimaryKey, toPrimaryKey } from '../src/meta.ts'
+import { getPrimaryKey, toPrimaryKey } from '../src/metadata.ts'
 
 const entity = (name: string, properties: Record<string, any>) =>
   defineEntity({ name, properties })

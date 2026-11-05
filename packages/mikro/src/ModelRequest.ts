@@ -25,8 +25,8 @@ import {
   parseListQuery,
   type ListParams,
   type ListQuery
-} from './list-query.ts'
-import { getPrimaryKey } from './meta.ts'
+} from './listQuery.ts'
+import { getPrimaryKey } from './metadata.ts'
 import { getOutput, type Output } from './serialize.ts'
 import { getEntityManager } from './createMikroAdapter.ts'
 

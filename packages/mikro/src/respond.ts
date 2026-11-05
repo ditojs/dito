@@ -1,6 +1,6 @@
 import { isArray, isPlainObject } from '@ditojs/utils'
 import { serialize } from '@mikro-orm/core'
-import type { ModelRequest } from './model-request.ts'
+import type { ModelRequest } from './ModelRequest.ts'
 import { serializeResult } from './serialize.ts'
 
 // Turns the result of the handlers into the response. Writes flush here, also

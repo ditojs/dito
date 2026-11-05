@@ -13,12 +13,12 @@ import type { EntityClass } from '@mikro-orm/core'
 import { defaults } from './crud.ts'
 import { checkFind, type Find } from './find.ts'
 import type { Filter } from './filters.ts'
-import { toPrimaryKey } from './meta.ts'
+import { toPrimaryKey } from './metadata.ts'
 import {
   ModelRequest,
   getModelRequest,
   type ModelDefinition
-} from './model-request.ts'
+} from './ModelRequest.ts'
 import { respond } from './respond.ts'
 
 // A model controller on a MikroORM entity. `defineModelController()` puts a

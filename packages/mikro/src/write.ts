@@ -28,7 +28,7 @@ import {
   isToMany,
   toPrimaryKey,
   type Row
-} from './meta.ts'
+} from './metadata.ts'
 import { runSchema } from './validation.ts'
 
 // The writes of the controller's `post` and `patch :id`, also for custom

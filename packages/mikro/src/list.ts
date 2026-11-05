@@ -7,9 +7,9 @@ import {
 } from '@mikro-orm/core'
 import { getFilterWheres } from './filters.ts'
 import type { FindShape } from './find.ts'
-import type { ListQuery } from './list-query.ts'
-import { getProperty, isLoadedColumn, isOwningToOne } from './meta.ts'
-import type { ModelRequest } from './model-request.ts'
+import type { ListQuery } from './listQuery.ts'
+import { getProperty, isLoadedColumn, isOwningToOne } from './metadata.ts'
+import type { ModelRequest } from './ModelRequest.ts'
 
 // Lists take the parameters `filter=name:args`, `order=name desc` and
 // `range=0,49`, which responds with `{ results, total }` instead of an array.

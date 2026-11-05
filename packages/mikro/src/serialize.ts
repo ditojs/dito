@@ -14,7 +14,7 @@ import {
   isRelation,
   isToMany,
   type Row
-} from './meta.ts'
+} from './metadata.ts'
 
 // Rows go out through MikroORM's `serialize()`, never through `toJSON()`.
 // Records of a controller go out in the shape of its `find`: `fields` and

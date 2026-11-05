@@ -18,7 +18,7 @@ export {
   createPasswordReset,
   type CreatePasswordResetOptions,
   type PasswordReset
-} from './password-reset.ts'
+} from './passwordReset.ts'
 export {
   defineUserActions,
   type DefineUserActionsOptions

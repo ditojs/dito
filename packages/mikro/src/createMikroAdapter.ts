@@ -5,7 +5,7 @@ import type { EntityManager } from '@mikro-orm/sql'
 import type { Kysely } from 'kysely'
 import { toHttpError } from './databaseErrors.ts'
 import { hasMikroConfig } from './defineMikroConfig.ts'
-import { getModelRequest } from './model-request.ts'
+import { getModelRequest } from './ModelRequest.ts'
 
 // The `MikroORM` of any driver and any entities.
 interface Orm {

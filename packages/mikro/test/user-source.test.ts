@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 import { defineEntity, p } from '@mikro-orm/core'
-import { createEntityUserSource } from '../src/user-source.ts'
+import { createEntityUserSource } from '../src/createEntityUserSource.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 
 const AccountSchema = defineEntity({

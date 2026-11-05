@@ -5,7 +5,7 @@ import {
   type EntityMetadata,
   type FindOptions
 } from '@mikro-orm/core'
-import { getPathProps, isLoadedColumn, isOwningToOne } from './meta.ts'
+import { getPathProps, isLoadedColumn, isOwningToOne } from './metadata.ts'
 
 // The `find` of a controller: MikroORM's find options, the `where` that every
 // query applies, and the most rows that a list returns.

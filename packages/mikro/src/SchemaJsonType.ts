@@ -6,7 +6,7 @@ import {
   type Platform,
   type TransformContext
 } from '@mikro-orm/core'
-import { getEntities } from './meta.ts'
+import { getEntities } from './metadata.ts'
 
 // A write runs the `schema` of a column's custom type, a Zod schema, on the
 // value, see `write.ts`. The schema only validates, and the value is

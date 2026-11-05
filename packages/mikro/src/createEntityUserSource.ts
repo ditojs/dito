@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 import type { EntityClass, EntityManager } from '@mikro-orm/core'
 import { isArray, isFunction, mapValues } from '@ditojs/utils'
-import { getPrimaryKey, toPrimaryKey } from './meta.ts'
+import { getPrimaryKey, toPrimaryKey } from './metadata.ts'
 
 // The user source of `@ditojs/auth` for a MikroORM entity. It queries with the
 // request's entity manager, else with a fork of `em`, such as in session

@@ -10,7 +10,7 @@ import {
 import { authError, authenticationTimeout } from './authentication.ts'
 import type { Credentials } from './credentials.ts'
 import type { Passkeys } from './passkeys.ts'
-import type { PasswordReset } from './password-reset.ts'
+import type { PasswordReset } from './passwordReset.ts'
 import {
   defaultPassword,
   hashPassword,

@@ -11,7 +11,7 @@ import {
   type EventSubscriber,
   type FlushEventArgs
 } from '@mikro-orm/core'
-import { SchemaJsonType } from './schema-json.ts'
+import { SchemaJsonType } from './SchemaJsonType.ts'
 import { runSchema } from './validation.ts'
 
 // The event subscribers of `defineMikroConfig()`.

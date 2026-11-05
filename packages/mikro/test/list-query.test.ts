@@ -1,5 +1,5 @@
 import { createApi } from '@ditojs/server'
-import { parseListQuery } from '../src/list-query.ts'
+import { parseListQuery } from '../src/listQuery.ts'
 
 const api = createApi({
   controllers: [

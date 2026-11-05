@@ -7,7 +7,7 @@ import {
   type EntityMetadata,
   type EntityProperty
 } from '@mikro-orm/core'
-import { isOwned } from './meta.ts'
+import { isOwned } from './metadata.ts'
 
 // Maps the errors of MikroORM and Postgres to `HttpError`s. Postgres checks the
 // types, ranges and lengths of the values that a write sends, beyond what

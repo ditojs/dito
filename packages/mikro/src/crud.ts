@@ -1,6 +1,6 @@
 import { defineMixin, type Actions, type Handler } from '@ditojs/server'
 import { checkFind, type FindShape } from './find.ts'
-import { getModelRequest, type ModelRequest } from './model-request.ts'
+import { getModelRequest, type ModelRequest } from './ModelRequest.ts'
 import { assignRecord, createRecord } from './write.ts'
 
 // The default handlers of a model controller. An action gets one by setting
