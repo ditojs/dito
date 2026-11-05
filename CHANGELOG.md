@@ -3,6 +3,13 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 6.6.1 (2026-11-05)
+
+### Fixes
+
+- **admin:** The link dialog of `markup` fields accepts paths within the site, like `/about`, `?page=2` or `#top`, and keeps them as they are instead of prefixing them with `https://`.
+- **ui:** The popups of `DitoTrigger`, e.g. of date pickers and menus, are `position: fixed`, so panels that scroll, such as the filters in the sidebar, don't clip them anymore. They follow their trigger when the page or a panel scrolls.
+
 ## 6.6.0 (2026-10-30)
 
 ### Deprecations
