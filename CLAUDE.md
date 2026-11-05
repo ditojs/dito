@@ -92,6 +92,8 @@ pnpm run clean
 
 ## Code Conventions
 
+- **Code style**: follow the `dito-code-style` skill in
+  `.claude/skills/dito-code-style/SKILL.md`
 - **80 character line limit** enforced by ESLint
 - **PascalCase** for Vue components
 - **camelCase** for props and variables
