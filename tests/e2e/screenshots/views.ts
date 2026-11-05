@@ -22,7 +22,7 @@ export const projects = createWidgetView<ProjectItem>(
       budget: { label: 'Budget' }
     },
     scopes: {
-      $default: { label: 'All' },
+      all: { label: 'All' },
       planned: { label: 'Planned' },
       active: { label: 'Active' },
       done: { label: 'Done' }
@@ -412,7 +412,7 @@ export const reports = {
         creatable: true,
         paginate: 20,
         scopes: {
-          $default: { label: 'All Projects' },
+          all: { label: 'All Projects' },
           planned: { label: 'Planned Projects', defaultScope: true },
           active: { label: 'Active Projects' },
           done: { label: 'Done Projects' }

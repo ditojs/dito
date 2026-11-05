@@ -13,7 +13,7 @@ export { setRecord } from './model-request.ts'
 export { assignRecord, createRecord } from './write.ts'
 export type { Find, FindShape } from './find.ts'
 export { dateRangeFilter, textFilter } from './filters.ts'
-export type { Filter, Scope } from './list.ts'
+export type { Filter } from './list.ts'
 export { parseListQuery, type ListQuery } from './list-query.ts'
 export { getAssetPaths, mikroOptions } from './config.ts'
 export {

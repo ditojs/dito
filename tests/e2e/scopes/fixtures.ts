@@ -10,13 +10,13 @@ export const test = defineScenario({
   entities: [Widget],
   controllers: {
     Widget: {
-      scopes: {
-        $default: {},
-        published: { published: true },
-        unpublished: { published: false }
-      },
       filters: {
+        all: { schema: z.stringbool(), where: () => undefined },
         published: z.stringbool(),
+        unpublished: {
+          schema: z.stringbool(),
+          where: () => ({ published: false })
+        },
         search: {
           schema: z.string(),
           where: (search: string) => ({ name: { $ilike: `%${search}%` } })

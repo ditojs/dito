@@ -92,14 +92,14 @@ The server's controller needs a filter for each name, see
 inputs as JSON arguments, e.g. `filter=title:"contains","Emma"`, so the server's
 filter gets an array. Changing a scope or a filter goes back to the first page.
 
-The server's controller maps each scope to values of its filters:
+`scope=name` is short for `filter=name:true`, so the server's controller needs a
+filter for each scope too:
 
 ```js
 // In the books controller:
-filters: { published: q.boolean() },
-scopes: {
-  all: {},
-  published: { published: true }
+filters: {
+  all: { schema: q.boolean(), where: () => undefined },
+  published: q.boolean()
 }
 ```
 

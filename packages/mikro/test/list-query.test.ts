@@ -16,7 +16,6 @@ describe('parseListQuery()', () => {
   it('returns empty values without parameters', async () => {
     expect((await parse('')).json).toEqual({
       filter: {},
-      scope: [],
       order: [],
       range: null
     })
@@ -54,15 +53,15 @@ describe('parseListQuery()', () => {
     expect(Object.keys(json.filter)).toEqual(['__proto__', 'toString'])
   })
 
-  it('collects scopes in order', async () => {
+  it('reads `scope=name` as `filter=name:true`', async () => {
     const { json } = await parse('scope=published&scope=recent')
-    expect(json.scope).toEqual(['published', 'recent'])
+    expect(json.filter).toEqual({ published: 'true', recent: 'true' })
   })
 
   it('ignores the `fields` of Dito 6', async () => {
     const { status, json } = await parse('fields=id')
     expect(status).toBe(200)
-    expect(json).toEqual({ filter: {}, scope: [], order: [], range: null })
+    expect(json).toEqual({ filter: {}, order: [], range: null })
   })
 
   it('parses order and range', async () => {
@@ -71,7 +70,6 @@ describe('parseListQuery()', () => {
     )
     expect(json).toEqual({
       filter: {},
-      scope: [],
       order: [
         { property: 'name', direction: 'asc' },
         { property: 'createdAt', direction: 'desc' }
@@ -95,7 +93,6 @@ describe('parseListQuery()', () => {
     const response = await api.request('/books?range=5,6&order=name')
     expect(await response.json()).toEqual({
       filter: { a: ['1', '2'] },
-      scope: [],
       order: [],
       range: [0, 9]
     })
@@ -103,6 +100,7 @@ describe('parseListQuery()', () => {
 
   it.each([
     'filter=a-b:1',
+    'scope=a-b',
     'filter=a',
     'filter=a:b',
     'filter=a:1],[2',

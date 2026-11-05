@@ -12,10 +12,9 @@ export type ListParams = URLSearchParams | Record<string, string | string[]>
 export interface ListQuery {
   // `filter=name:args` by name, with the arguments as JSON, such as
   // `filter=title:"contains","Emma"`. Filters read strings, and a filter with
-  // several arguments gets an array of them, in order.
+  // several arguments gets an array of them, in order. `scope=name` is short
+  // for `filter=name:true`.
   filter: Record<string, string | string[]>
-  // `scope=name`, see `list.ts`.
-  scope: string[]
   // `order=name desc`
   order: { property: string; direction: 'asc' | 'desc' }[]
   // `range=0,49`, inclusive. A list with a range responds with
@@ -29,7 +28,6 @@ export function parseListQuery(c: Context, params?: ListParams): ListQuery {
   const query: ListQuery = {
     // No prototype, so that names such as `__proto__` stay plain keys.
     filter: Object.create(null),
-    scope: [],
     order: [],
     range: null
   }
@@ -47,7 +45,8 @@ export function parseListQuery(c: Context, params?: ListParams): ListQuery {
       check(propertyPattern.test(name) && !!args, key, value)
       query.filter[name] = toFilterValue(args!)
     } else if (key === 'scope') {
-      query.scope.push(value)
+      check(propertyPattern.test(value), key, value)
+      query.filter[value] = 'true'
     } else if (key === 'order') {
       const [property = '', direction = 'asc', ...rest] = value
         .trim()
@@ -86,7 +85,7 @@ function parseArguments(json: string): unknown[] | null {
 
 // The value of a filter with `args`, in strings as schemas read them from URLs.
 // An array flattens into the arguments, and `null` keeps its position as ''.
-export function toFilterValue(args: unknown[]): string | string[] {
+function toFilterValue(args: unknown[]): string | string[] {
   const values = args.flat().map(arg => (arg === null ? '' : `${arg}`))
   return values.length === 1 ? values[0]! : values
 }

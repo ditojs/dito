@@ -12,7 +12,7 @@ import { isFunction, isPlainObject, pickBy } from '@ditojs/utils'
 import type { EntityClass } from '@mikro-orm/core'
 import { defaults } from './crud.ts'
 import { checkFind, type Find } from './find.ts'
-import type { Filter, Scope } from './list.ts'
+import type { Filter } from './list.ts'
 import { toPrimaryKey } from './meta.ts'
 import { ModelRequest, type ModelDefinition } from './model-request.ts'
 import { respond } from './respond.ts'
@@ -50,8 +50,6 @@ export interface MikroControllerDefinition<T extends object = any>
   find?: Find<T>
   // The filters of the list, `filter=name:args`, see `list.ts`.
   filters?: Record<string, Filter>
-  // The filter values of each `scope=name` of the list, see `list.ts`.
-  scopes?: Record<string, Scope>
   // Loads the record of a member action, in place of the controller's `find`
   // with the id. It gets the id as sent, also one that isn't a key, such as
   // `self`. `null` or `undefined` responds with 404.
@@ -61,15 +59,7 @@ export interface MikroControllerDefinition<T extends object = any>
 export function defineController<T extends object>(
   definition: MikroControllerDefinition<T>
 ): ControllerDefinition {
-  const {
-    path,
-    entity,
-    find = {},
-    filters = {},
-    scopes = {},
-    load,
-    ...def
-  } = definition
+  const { path, entity, find = {}, filters = {}, load, ...def } = definition
   if (!isFunction(find)) checkFind(find)
 
   const layers = getLayers(def)
@@ -77,7 +67,6 @@ export function defineController<T extends object>(
     entity,
     find,
     filters,
-    scopes,
     load,
     beforeSerializers: layers.flatMap(layer => layer.beforeSerialize ?? []),
     serializers: layers.flatMap(layer => layer.serialize ?? []),

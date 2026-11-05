@@ -18,7 +18,7 @@ export const widgets = createWidgetView<EntityDTO<Widget>>(
       }
     },
     scopes: {
-      $default: { label: 'All' },
+      all: { label: 'All' },
       published: { label: 'Published' },
       unpublished: { label: 'Unpublished' }
     },
