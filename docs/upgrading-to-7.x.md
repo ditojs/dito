@@ -58,7 +58,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `app.proxy`, `config.server.proxy`                                                     | `forwarded(proxy)` of `@ditojs/server/node`, and `getClientAddress(c)` for the client's address                                                                                                                  | low                     |
 | `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createSessions()`, `getSessionUser()`, `defineUserActions()`, `definePasswordWrites()`, `createPasskeys()`, `createTotp()`, and `createEntityUserSource()` of `@ditojs/mikro`                   | medium                  |
 | `config.storages`, model `assets`, `AssetFile`, asset counts in hooks                  | `@ditojs/storage`: `createStorages()`, asset paths, `createAssets()`, `serveStorage()`                                                                                                                           | medium                  |
-| `AdminController`, `config.admin`, the admin's build                                   | `createAdmin()` and `defineAdminViteConfig()` of `@ditojs/admin-server`                                                                                                                                          | low                     |
+| `AdminController`, `config.admin`, the admin's build                                   | `createAdmin()` of `@ditojs/admin/server` and `defineAdminViteConfig()` of `@ditojs/admin/vite`                                                                                                                  | low                     |
 | Tests on `app.knex` and models                                                         | Tests on an entity manager of the ORM, and `app.request()` of Hono                                                                                                                                               | medium                  |
 
 ## Migrating an app
@@ -115,8 +115,9 @@ unless one of its models reads the `id` of a join table.
    `@ditojs/build`, `objection`, `koa` and its middleware. The admin holds the
    validators that it used from `@ditojs/schema`, and building the admin needs
    `autoprefixer` instead of `@ditojs/build`.
-2. Add `@ditojs/server` and `@ditojs/mikro`, and `@ditojs/storage`,
-   `@ditojs/auth` and `@ditojs/admin-server` if the app needs them.
+2. Add `@ditojs/server` and `@ditojs/mikro`, and `@ditojs/storage` and
+   `@ditojs/auth` if the app needs them. `@ditojs/admin` serves and builds the
+   admin, in `@ditojs/admin/server` and `@ditojs/admin/vite`.
 3. Add `@mikro-orm/core`, `@mikro-orm/postgresql`, `kysely`, `hono`,
    `@hono/node-server` and `zod`.
 
@@ -737,7 +738,7 @@ export const assets = createAssets({
 #### Admin server
 
 `AdminController` and `config.admin` become
-[`createAdmin()`](api/server/admin-server.md#createadmin), which returns a Hono
+[`createAdmin()`](api/admin/server.md#createadmin), which returns a Hono
 app. See [Serving the admin](guide/server/admin.md).
 
 ```js
@@ -762,7 +763,7 @@ app.route('/admin', admin)
   chunks below `assets/`.
 - The admin's build splits off only the chunk of the views, not the `core`,
   `vendor` and `common` chunks of Dito.js 6.
-- `defineAdminViteConfig()` of `@ditojs/admin-server/vite` builds the admin, on
+- `defineAdminViteConfig()` of `@ditojs/admin/vite` builds the admin, on
   Vite 8. `build.rollupOptions` of an app's config become
   `build.rolldownOptions`.
 

@@ -8,7 +8,7 @@ import { RESPONSE_ALREADY_SENT } from '@hono/node-server/utils/response'
 import type { InlineConfig, ViteDevServer } from 'vite'
 import { asArray, assignDeeply, isString } from '@ditojs/utils'
 import { isAuthorized, type Authorize, type User } from '@ditojs/server'
-import { normalizeBase } from './normalize-base.ts'
+import { normalizeBase } from './normalizeBase.ts'
 
 // Serves the Dito admin as a Hono app, which the host routes at `base` with
 // `app.route(base, admin)`. It serves the built files from `dist`, or with a
@@ -39,7 +39,7 @@ export interface AdminOptions {
   // get 401, or 403 with a user. Without it, anyone may.
   authorize?: Authorize
   // The Vite config of development, or the path of its file, such as one
-  // that exports `defineAdminViteConfig()` from `@ditojs/admin-server/vite`.
+  // that exports `defineAdminViteConfig()` from `@ditojs/admin/vite`.
   // With it, Vite serves the admin's sources. The HMR websocket listens on
   // its `server.port`, by default a free one.
   vite?: InlineConfig | string

@@ -1,6 +1,6 @@
 # Serving the admin
 
-`@ditojs/admin-server` serves the [Dito.js Admin](../admin/index.md) under a
+`@ditojs/admin/server` serves the [Dito.js Admin](../admin/index.md) under a
 path. In production, it serves the built files. In development, given a Vite
 config, it runs Vite in middleware mode, with hot reloading of the admin's
 views, which needs the Node server of `@hono/node-server`. Production never
@@ -8,7 +8,7 @@ loads Vite.
 
 ```js
 import path from 'node:path'
-import { createAdmin } from '@ditojs/admin-server'
+import { createAdmin } from '@ditojs/admin/server'
 import { getSessionUser } from '@ditojs/auth'
 
 const admin = createAdmin({
@@ -50,7 +50,7 @@ An `admin.vite.config.js` builds the admin with the same config that development
 uses:
 
 ```js
-import { defineAdminViteConfig } from '@ditojs/admin-server/vite'
+import { defineAdminViteConfig } from '@ditojs/admin/vite'
 
 export default ({ mode }) =>
   defineAdminViteConfig(

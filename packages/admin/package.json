@@ -16,6 +16,8 @@
     "./style.css": "./dist/dito-admin.css",
     "./src": "./src/index.js",
     "./imports.scss": "./src/styles/_imports.scss",
+    "./server": "./src/server/index.ts",
+    "./vite": "./src/vite/index.ts",
     "./package.json": "./package.json"
   },
   "files": [
@@ -30,7 +32,7 @@
     "!src/**/node_modules/"
   ],
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && tsc -p tsconfig.build.json",
     "watch": "pnpm run build --mode 'development' --watch",
     "prepare": "pnpm run build"
   },
@@ -49,7 +51,9 @@
     "type-fest": "^5.10.0"
   },
   "peerDependencies": {
+    "@ditojs/server": "workspace:^",
     "@floating-ui/dom": "^1.8.0",
+    "@hono/node-server": "^2.1.5",
     "@kyvg/vue3-notification": "^3.4.2",
     "@simplewebauthn/browser": "^14.0.0",
     "@tiptap/core": "^3.31.4",
@@ -77,24 +81,50 @@
     "@tiptap/extensions": "^3.31.4",
     "@tiptap/pm": "^3.31.4",
     "@tiptap/vue-3": "^3.31.4",
+    "@vitejs/plugin-vue": "^6.0.9",
     "@vueuse/integrations": "^15.0.0",
+    "autoprefixer": "^10.6.1",
     "codeflask": "^1.4.1",
     "fflate": "^0.8.3",
     "focus-trap": "^8.2.3",
+    "hono": "^4.13.14",
     "lean-qr": "^2.7.4",
     "nanoid": "^6.0.2",
     "sortablejs": "^1.15.7",
     "tippy.js": "^6.3.7",
     "tiptap-footnotes": "^3.0.1",
+    "vite": "^8.3.4",
     "vue": "^3.5.43",
     "vue-color": "^3.3.3",
     "vue-multiselect": "^3.5.0",
     "vue-router": "^5.4.0",
     "vue-upload-component": "^3.2.2"
   },
+  "peerDependenciesMeta": {
+    "@ditojs/server": {
+      "optional": true
+    },
+    "@hono/node-server": {
+      "optional": true
+    },
+    "@vitejs/plugin-vue": {
+      "optional": true
+    },
+    "autoprefixer": {
+      "optional": true
+    },
+    "hono": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@ditojs/build": "workspace:^",
+    "@ditojs/server": "workspace:^",
     "@floating-ui/dom": "^1.8.0",
+    "@hono/node-server": "^2.1.5",
     "@kyvg/vue3-notification": "^3.4.2",
     "@simplewebauthn/browser": "^14.0.0",
     "@tiptap/core": "^3.31.4",
@@ -122,10 +152,14 @@
     "@tiptap/extensions": "^3.31.4",
     "@tiptap/pm": "^3.31.4",
     "@tiptap/vue-3": "^3.31.4",
+    "@types/node": "^26.6.4",
+    "@vitejs/plugin-vue": "^6.0.9",
     "@vueuse/integrations": "^15.0.0",
+    "autoprefixer": "^10.6.1",
     "codeflask": "^1.4.1",
     "fflate": "^0.8.3",
     "focus-trap": "^8.2.3",
+    "hono": "^4.13.14",
     "lean-qr": "^2.7.4",
     "nanoid": "^6.0.2",
     "sortablejs": "^1.15.7",
@@ -138,5 +172,25 @@
     "vue-multiselect": "^3.5.0",
     "vue-router": "^5.4.0",
     "vue-upload-component": "^3.2.2"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./types/index.d.ts",
+        "import": "./dist/dito-admin.es.js"
+      },
+      "./style.css": "./dist/dito-admin.css",
+      "./src": "./src/index.js",
+      "./imports.scss": "./src/styles/_imports.scss",
+      "./server": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.js"
+      },
+      "./vite": {
+        "types": "./dist/vite/index.d.ts",
+        "import": "./dist/vite/index.js"
+      },
+      "./package.json": "./package.json"
+    }
   }
 }

@@ -14,13 +14,13 @@ in its own Hono app. Handlers get Hono's context, and middleware is Hono
 middleware. The core has no configuration of its own. MikroORM, files and users
 come from these packages:
 
-| Package                | Role                                                                                                                         |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `@ditojs/server`       | `createApi()` turns a list of controllers into a Hono app. Controllers, mixins, authorization, errors, and a server on Node. |
-| `@ditojs/mikro`        | Model controllers on [MikroORM](https://mikro-orm.io) entities: lists, records, writes and filters.                          |
-| `@ditojs/storage`      | File storages on disk and in S3, uploads, and the tracking of stored files.                                                  |
-| `@ditojs/auth`         | Sessions, logins, passkeys, TOTP and password reset.                                                                         |
-| `@ditojs/admin-server` | Serves the [Dito.js Admin](../admin/index.md).                                                                               |
+| Package           | Role                                                                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `@ditojs/server`  | `createApi()` turns a list of controllers into a Hono app. Controllers, mixins, authorization, errors, and a server on Node. |
+| `@ditojs/mikro`   | Model controllers on [MikroORM](https://mikro-orm.io) entities: lists, records, writes and filters.                          |
+| `@ditojs/storage` | File storages on disk and in S3, uploads, and the tracking of stored files.                                                  |
+| `@ditojs/auth`    | Sessions, logins, passkeys, TOTP and password reset.                                                                         |
+| `@ditojs/admin`   | The [Dito.js Admin](../admin/index.md), with `@ditojs/admin/server` that serves it.                                          |
 
 Schemas of queries, bodies, filters and column types are
 [Zod](https://zod.dev) schemas.
@@ -32,8 +32,7 @@ pnpm add @ditojs/server @ditojs/mikro @mikro-orm/core @mikro-orm/postgresql hono
 ```
 
 The other packages are optional: `@ditojs/auth` for users and sessions,
-`@ditojs/storage` for files, and `@ditojs/admin` with `@ditojs/admin-server` for
-the admin. `@ditojs/utils` holds their shared helpers, such as `html`.
+`@ditojs/storage` for files, and `@ditojs/admin` for the admin. `@ditojs/utils` holds their shared helpers, such as `html`.
 
 The packages are ES modules and need Node.js 24 or later. They are written in
 TypeScript and ship their types.

@@ -25,16 +25,15 @@ the MIT license.
 
 ## Packages
 
-| Package                                         | Description                                                                                        |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| [`@ditojs/server`](packages/server)             | The core on Hono: `createApi()`, controllers, mixins, authorization, errors, and a server on Node. |
-| [`@ditojs/mikro`](packages/mikro)               | Model controllers on MikroORM entities.                                                            |
-| [`@ditojs/storage`](packages/storage)           | File storages, uploads and the tracking of stored files.                                           |
-| [`@ditojs/auth`](packages/auth)                 | Sessions, logins, passkeys, TOTP and password reset.                                               |
-| [`@ditojs/admin-server`](packages/admin-server) | Serves the admin, with Vite's dev server in development.                                           |
-| [`@ditojs/admin`](packages/admin)               | The admin interface.                                                                               |
-| [`@ditojs/ui`](packages/ui)                     | The Vue components that the admin is built with.                                                   |
-| [`@ditojs/utils`](packages/utils)               | Helpers for Node.js and browsers.                                                                  |
+| Package                               | Description                                                                                        |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [`@ditojs/server`](packages/server)   | The core on Hono: `createApi()`, controllers, mixins, authorization, errors, and a server on Node. |
+| [`@ditojs/mikro`](packages/mikro)     | Model controllers on MikroORM entities.                                                            |
+| [`@ditojs/storage`](packages/storage) | File storages, uploads and the tracking of stored files.                                           |
+| [`@ditojs/auth`](packages/auth)       | Sessions, logins, passkeys, TOTP and password reset.                                               |
+| [`@ditojs/admin`](packages/admin)     | The admin interface, and its server and Vite config.                                               |
+| [`@ditojs/ui`](packages/ui)           | The Vue components that the admin is built with.                                                   |
+| [`@ditojs/utils`](packages/utils)     | Helpers for Node.js and browsers.                                                                  |
 
 ## Documentation
 

@@ -23,6 +23,8 @@ For an introduction, see the [admin guide](../../guide/admin/index.md).
 | [Events](./events.md)         | The `on…` event handlers of schemas, forms, views and buttons                                                                                                                      |
 | [Widgets](./widgets.md)       | The widgets that lay out forms with `properties`, and their props and slots                                                                                                        |
 | [Types](./types.md)           | The exported TypeScript types, `defineType()` and the descriptors of custom field types                                                                                            |
+| [Server](./server.md)         | `createAdmin()` of `@ditojs/admin/server`, which serves the admin as a Hono app                                                                                                    |
+| [Vite](./vite.md)             | `defineAdminViteConfig()` of `@ditojs/admin/vite`, which builds the admin                                                                                                          |
 
 ## Exports
 
@@ -46,6 +48,8 @@ All other exports are TypeScript types, see [Types](./types.md).
 | `@ditojs/admin`              | The JavaScript module and its types                          |
 | `@ditojs/admin/style.css`    | The admin's styles                                           |
 | `@ditojs/admin/imports.scss` | The SCSS variables and mixins, for styling custom components |
+| `@ditojs/admin/server`       | [`createAdmin()`](./server.md), which serves the admin       |
+| `@ditojs/admin/vite`         | [`defineAdminViteConfig()`](./vite.md), which builds it      |
 
 UI components shared with the admin, such as buttons, inputs and date pickers,
 are public in [@ditojs/ui](../ui.md).

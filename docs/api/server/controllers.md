@@ -172,7 +172,7 @@ actions without `authorize` let anyone in.
 
 `isAuthorized(c, authorize)` resolves to whether `authorize` lets the user of
 `c.var.user` in. `createApi()` and
-[`createAdmin()`](admin-server.md#createadmin) check with it, and apps can too.
+[`createAdmin()`](../admin/server.md#createadmin) check with it, and apps can too.
 
 ## Middleware
 

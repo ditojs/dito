@@ -2,10 +2,10 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { build } from 'vite'
-import { defineAdminViteConfig } from '../src/vite-config.ts'
+import { defineAdminViteConfig } from './index.ts'
 
 describe('defineAdminViteConfig()', () => {
-  const root = path.join(import.meta.dirname, 'fixture')
+  const root = path.join(import.meta.dirname, '../test/admin-app')
   let dist: string
 
   beforeAll(async () => {

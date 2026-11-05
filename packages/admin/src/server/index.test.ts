@@ -4,7 +4,7 @@ import path from 'node:path'
 import type { AddressInfo } from 'node:net'
 import { Hono, type Context, type Next } from 'hono'
 import { createAdaptorServer } from '@hono/node-server'
-import { createAdmin, type AdminServer } from '../src/serve-admin.ts'
+import { createAdmin, type AdminServer } from './index.ts'
 
 // Routes the admin at `/admin` of a host app, as apps do.
 function route(admin: AdminServer) {
@@ -235,7 +235,7 @@ describe('createAdmin() in development', () => {
       api,
       authentication,
       authorize: 'admin',
-      vite: path.join(import.meta.dirname, 'admin.vite.config.ts')
+      vite: path.join(import.meta.dirname, '../test/admin.vite.config.ts')
     })
     const app = new Hono()
     app.route('/admin', admin)

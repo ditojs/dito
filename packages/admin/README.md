@@ -11,3 +11,7 @@ auto-generated views and forms and built with Vue.js
 See the [Admin guide](https://github.com/ditojs/dito/blob/main/docs/guide/admin/index.md)
 and the [Admin API reference](https://github.com/ditojs/dito/blob/main/docs/api/admin/index.md)
 for its views, forms and fields.
+
+`@ditojs/admin/server` serves the admin from a Hono app with `createAdmin()`,
+and `@ditojs/admin/vite` builds it with `defineAdminViteConfig()`. See
+[Serving the admin](https://github.com/ditojs/dito/blob/main/docs/guide/server/admin.md).

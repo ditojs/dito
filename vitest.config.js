@@ -1,7 +1,12 @@
 import { defineConfig } from 'vitest/config'
 import createVuePlugin from '@vitejs/plugin-vue'
 
-const componentTests = ['packages/{admin,ui}/src/**/*.test.*']
+// The admin's server and Vite config are tested on Node, with the server tests:
+const componentTests = [
+  'packages/ui/src/**/*.test.*',
+  'packages/admin/src/*.test.*',
+  'packages/admin/src/!(server|vite)/**/*.test.*'
+]
 // The admin's tests against servers:
 const adminTests = ['tests/admin/**/*.test.*']
 const excludedDirectories = [

@@ -458,7 +458,7 @@ const books = {
 ## GlobalConfig
 
 The global `dito` object, built from the options of
-[`createAdmin()`](../server/admin-server.md#createadmin) and served as
+[`createAdmin()`](./server.md#createadmin) and served as
 `window.dito`.
 `window.dito` is only the default of the constructor's `dito` option; the
 admin reads the configuration from that option, and keeps its `settings` in

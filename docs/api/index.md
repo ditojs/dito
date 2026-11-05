@@ -5,8 +5,8 @@ introductions and examples, see the guides in the [docs](../index.md).
 
 | Package                              | Description                                                                                                  |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| [Server packages](./server/index.md) | `@ditojs/server`, `@ditojs/mikro`, `@ditojs/storage`, `@ditojs/auth` and `@ditojs/admin-server`.             |
-| [@ditojs/admin](./admin/index.md)    | The admin interface: `DitoAdmin`, view and form schemas, contexts, events and custom types.                  |
+| [Server packages](./server/index.md) | `@ditojs/server`, `@ditojs/mikro`, `@ditojs/storage` and `@ditojs/auth`.                                     |
+| [@ditojs/admin](./admin/index.md)    | The admin interface: `DitoAdmin`, view and form schemas, contexts, events and custom types, and its server.  |
 | [@ditojs/ui](./ui.md)                | The public Vue 3 components, helpers and styles that the admin is built with.                                |
 | [@ditojs/utils](./utils.md)          | Helpers for type checks, objects, strings, dates, data paths, timers and promises, for Node.js and browsers. |
 

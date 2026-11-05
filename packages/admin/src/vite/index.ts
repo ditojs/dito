@@ -2,7 +2,7 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import type { InlineConfig } from 'vite'
 import { assignDeeply } from '@ditojs/utils'
-import { normalizeBase } from './normalize-base.ts'
+import { normalizeBase } from '../server/normalizeBase.ts'
 
 // The Vite config of the admin, for its build and for `createAdmin()` in
 // development. The app's own config file can call it to build the admin, and

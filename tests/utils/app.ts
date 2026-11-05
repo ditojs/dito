@@ -20,8 +20,8 @@ import {
   createAdmin,
   type AdminServer,
   type AuthenticationFeatures
-} from '@ditojs/admin-server'
-import { defineAdminViteConfig } from '@ditojs/admin-server/vite'
+} from '@ditojs/admin/server'
+import { defineAdminViteConfig } from '@ditojs/admin/vite'
 import { createTestDatabase, type TestOrm } from './database.js'
 
 // A test app: the entities on a test database of their own, the Dito API of

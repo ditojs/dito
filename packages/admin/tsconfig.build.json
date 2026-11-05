@@ -1,5 +1,5 @@
 {
-  "extends": "./tsconfig.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
     "declaration": true,
@@ -8,5 +8,6 @@
     "rewriteRelativeImportExtensions": true,
     "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src/server", "src/vite"],
+  "exclude": ["src/**/*.test.ts"]
 }

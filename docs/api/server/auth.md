@@ -73,7 +73,7 @@ response, also to error responses.
 `secrets` signed it, or `null`, for the app's own cookies, which it writes with
 `setSignedCookie(c, name, value, secrets[0])` of `hono/cookie`.
 
-[`createAdmin()`](admin-server.md#adminoptions) takes the middleware and the
+[`createAdmin()`](../admin/server.md#adminoptions) takes the middleware and the
 `getUser` of [`getSessionUser()`](#getsessionuser), as `createApi()` does:
 
 ```js
@@ -138,7 +138,7 @@ routes, which the admin's login and account views read. The app passes
 `controller` to `createApi()`, or lists it in the `mixins` of a controller of
 its own. A model controller doesn't fit, as it would flush and serialize the
 answers of the actions. It passes `features` to the admin as
-[`authentication`](admin-server.md#adminoptions). Other users, such as a site's
+[`authentication`](../admin/server.md#adminoptions). Other users, such as a site's
 members, log in through the app's own actions, which call
 [`Session`](#session) and [`verifyPassword()`](#passwords). The actions:
 

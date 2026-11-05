@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@ditojs/admin": "workspace:^",
-    "@ditojs/admin-server": "workspace:^",
     "@ditojs/auth": "workspace:^",
     "@ditojs/mikro": "workspace:^",
     "@ditojs/server": "workspace:^",

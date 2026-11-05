@@ -10,7 +10,7 @@ option and member.
 
 ## How the pieces fit
 
-- The server serves the admin with `createAdmin()` of `@ditojs/admin-server`.
+- The server serves the admin with `createAdmin()` of `@ditojs/admin/server`.
   It passes the admin the global `dito` object with `api`, `settings` and
   `authentication`.
 - The admin's entry module creates a `DitoAdmin` with your views.
@@ -26,8 +26,8 @@ option and member.
 
 ```js
 import path from 'node:path'
-import { createAdmin } from '@ditojs/admin-server'
-import { defineAdminViteConfig } from '@ditojs/admin-server/vite'
+import { createAdmin } from '@ditojs/admin/server'
+import { defineAdminViteConfig } from '@ditojs/admin/vite'
 
 const admin = createAdmin({
   base: '/admin',
@@ -69,7 +69,7 @@ reloading. Without it, it serves the build in `dist`. To build, add
 
 ```js
 // admin.vite.config.js
-import { defineAdminViteConfig } from '@ditojs/admin-server/vite'
+import { defineAdminViteConfig } from '@ditojs/admin/vite'
 
 export default defineAdminViteConfig({
   root: 'src/admin',
