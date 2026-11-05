@@ -73,7 +73,7 @@ async function deserialize(
 ) {
   let data = json
   for (const layer of definition.deserializers) {
-    data = await layer(c, data, record)
+    data = await layer({ json: data, record, c })
   }
   return data
 }

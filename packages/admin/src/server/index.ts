@@ -33,7 +33,7 @@ export interface AdminOptions {
   middleware?: MiddlewareHandler | MiddlewareHandler[]
   // The signed-in user of the request, or null. `authorize` reads it as
   // `c.var.user`.
-  getUser?: (c: Context) => User | null | Promise<User | null>
+  getUser?: (context: { c: Context }) => User | null | Promise<User | null>
   // Who may load the admin's views: `true` for anyone, a role or a list of
   // roles, of which the user needs one, or a function of `c`. Denied requests
   // get 401, or 403 with a user. Without it, anyone may.
@@ -79,7 +79,7 @@ export function createAdmin(options: AdminOptions): AdminServer {
       await next()
     })
     app.use('/views/*', ...asArray(middleware), async (c, next) => {
-      const user = (await getUser?.(c)) ?? null
+      const user = (await getUser?.({ c })) ?? null
       c.set('user', user)
       if (await isAuthorized(c, authorize)) return next()
       return user ? c.text('Forbidden', 403) : c.text('Unauthorized', 401)

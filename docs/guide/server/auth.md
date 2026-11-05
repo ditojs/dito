@@ -25,7 +25,7 @@ const api = createApi({
   controllers,
   adapter,
   middleware: [adminSessions.middleware],
-  getUser: c => getSessionUser(c, adminSource)
+  getUser: ({ c }) => getSessionUser(c, adminSource)
 })
 
 const app = new Hono()
@@ -66,10 +66,11 @@ export const adminSource = createEntityUserSource(Admin, {
   usernameProperty: 'username',
   // Inactive admins don't log in.
   where: { isActive: true },
-  // What the admin and `get self` get: properties, or a function `(c, user)`.
+  // What the admin and `get self` get: properties, or a function
+  // `({ c, user })`.
   serialize: ['id', 'username', 'roles'],
   // Values computed from the user, added to the properties.
-  computed: { initials: admin => admin.username.slice(0, 2) }
+  computed: { initials: ({ user }) => user.username.slice(0, 2) }
 })
 ```
 
@@ -206,7 +207,8 @@ password:
 passwordReset: createPasswordReset({
   secrets: config.keys,
   confirmUrl: 'https://example.com/admin/#password-reset={token}',
-  send: (c, user, url) => mailer.send(user.email, 'Reset your password', url)
+  send: ({ user, url }) =>
+    mailer.send(user.email, 'Reset your password', url)
 })
 ```
 
@@ -265,7 +267,7 @@ actions: {
 createAdmin({
   ...options,
   middleware: adminSessions.middleware,
-  getUser: c => getSessionUser(c, adminSource),
+  getUser: ({ c }) => getSessionUser(c, adminSource),
   authorize: 'admin'
 })
 ```

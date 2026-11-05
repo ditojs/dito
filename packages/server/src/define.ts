@@ -26,7 +26,7 @@ export function defineMixin(def: MixinDefinition) {
   return def
 }
 
-// Infers the types of `query` and `body` of the handler's input, and of
+// Infers the types of `query` and `body` of the handler's context, and of
 // `c.req.valid()`, from the schemas. `NoInfer` keeps the type that the result
 // is assigned to from changing the schemas.
 export function defineAction<

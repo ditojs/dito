@@ -409,7 +409,7 @@ describe('sessions', () => {
       new Hono().use(admin.sessions.middleware).route(
         '/',
         createApi({
-          getUser: c => getSessionUser(c, source),
+          getUser: ({ c }) => getSessionUser(c, source),
           controllers: [
             defineController({
               path: 'me',

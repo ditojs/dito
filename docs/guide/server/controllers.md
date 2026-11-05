@@ -51,7 +51,7 @@ A controller's `path` may hold parameters too, such as
 
 A path that starts with `:id` is a member action. Its handlers read the id in
 `params.id`, and middleware with `c.req.param('id')`. In a model controller,
-`id` of the input is the id converted to the type of the primary key, a number
+`id` of the context is the id converted to the type of the primary key, a number
 for integer keys. An id that doesn't fit responds with 404. `getRecord()` loads
 the record through the controller's `find`, once per request. If there is no
 such record, it responds with 404:
@@ -87,7 +87,7 @@ publishes one.
 
 ### Handlers
 
-A handler gets one argument, the input of the request, a plain object:
+A handler gets one object, its context:
 
 | Key              | Description                                                                                                   |
 | ---------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -147,7 +147,7 @@ actions: {
 }
 ```
 
-A handler that sets `input.body` before it calls `next()` changes the body for
+A handler that sets `context.body` before it calls `next()` changes the body for
 the handlers beneath it, but not for the handlers above it.
 
 ### Query and body schemas
@@ -233,11 +233,11 @@ export const bookCategories = defineAdminController({
 `authorize` decides who may run an action. It can be set on actions, controllers
 and mixins:
 
-| Value                    | Lets in                                                                                                                      |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `true`                   | Anyone.                                                                                                                      |
-| `'editor'`, `['a', 'b']` | Users with any of the roles.                                                                                                 |
-| `c => boolean`           | Whom the function lets in: only a returned `true` grants access. It may be async, and reads the id with `c.req.param('id')`. |
+| Value                      | Lets in                                                                                                                      |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `true`                     | Anyone.                                                                                                                      |
+| `'editor'`, `['a', 'b']`   | Users with any of the roles.                                                                                                 |
+| `({ c, user }) => boolean` | Whom the function lets in: only a returned `true` grants access. It may be async, and reads the id with `c.req.param('id')`. |
 
 ```js
 defineModelController({
@@ -250,9 +250,9 @@ defineModelController({
     'patch :id': true,
     'post :id/extend': { authorize: 'superuser', handler: extend },
     'get :id/notice': {
-      async authorize(c) {
+      async authorize({ c, user }) {
         const loan = await c.var.em.findOne(Loan, Number(c.req.param('id')))
-        return loan?.member.id === c.var.user?.id
+        return loan?.member.id === user?.id
       },
       handler: sendNotice
     }
@@ -332,18 +332,18 @@ actions: {
 
 Model controllers and their mixins take `serialize` and `deserialize`, see
 [`defineModelController()`](../../api/server/mikro.md#serialize-and-deserialize)
-of `@ditojs/mikro`. `serialize(c, record, json)` shapes each outgoing record of
+of `@ditojs/mikro`. `serialize({ record, json, c })` shapes each outgoing record of
 the controller, also records in arrays and plain objects such as
 `{ results, total }`, and records from custom actions. Use it for computed
 values that the entity's `find` can't express:
 
 ```js
-async serialize(c, book, json) {
-  return { ...json, reviews: await countReviews(c.var.em, book.id) }
+async serialize({ record, json, c }) {
+  return { ...json, reviews: await countReviews(c.var.em, record.id) }
 }
 ```
 
-`deserialize(c, json, record?)` shapes the body of the default `post` and
+`deserialize({ json, record, c })` shapes the body of the default `post` and
 `patch :id` before the [checks of the body](writes.md#the-checks-of-a-body). On
 updates, it also gets the current record. A handler that wraps the default one
 with `next()` gets it too. Custom handlers don't run it. It decides what this
@@ -351,14 +351,14 @@ user may write: it removes or adds fields, or throws. Fields that it removes are
 dropped without an error:
 
 ```js
-deserialize(c, json, record) {
+deserialize({ json, c }) {
   return c.var.user?.roles.includes('admin')
     ? json
     : omit(json, ['internalNotes'])
 }
 ```
 
-`beforeSerialize(c, records)` runs once per response, before `serialize`, with
+`beforeSerialize({ records, c })` runs once per response, before `serialize`, with
 all outgoing records as an array, also for a single record. It can load what the
 records need with one query, which `serialize` then reads:
 
@@ -366,14 +366,14 @@ records need with one query, which `serialize` then reads:
 const counts = new WeakMap()
 
 defineMixin({
-  async beforeSerialize(c, books) {
+  async beforeSerialize({ records: books, c }) {
     const reviews = await c.var.em.find(Review, { book: { $in: books } })
     for (const book of books) {
       counts.set(book, reviews.filter(review => review.book === book).length)
     }
   },
 
-  serialize: (c, book, json) => ({ ...json, reviews: counts.get(book) })
+  serialize: ({ record, json }) => ({ ...json, reviews: counts.get(record) })
 })
 ```
 
@@ -387,9 +387,10 @@ order:
 
 ## The context
 
-Handlers read Hono's context as `c` of their input. It is the first argument of
-middleware, `authorize` functions, `serialize` and `deserialize`. They read the
+Handlers read Hono's context as `c` of their context. It is the first argument of
+middleware, and `c` of every other callback's context, such as that of
+`authorize`, `serialize` and `deserialize`. They read the
 [variables](api.md#variables) from `c.var`, and the parameters of the path with
 `c.req.param()`, such as `c.req.param('id')`. See
 [DitoContext](../../api/server/controllers.md#ditocontext) and
-[the handler's input](../../api/server/api.md#the-handlers-input).
+[the handler's context](../../api/server/api.md#the-handlers-context).

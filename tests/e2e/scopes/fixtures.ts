@@ -14,7 +14,9 @@ export const test = defineScenario({
         published: z.stringbool(),
         search: {
           schema: z.string(),
-          where: (search: string) => ({ name: { $ilike: `%${search}%` } })
+          where: ({ value }: { value: string }) => ({
+            name: { $ilike: `%${value}%` }
+          })
         }
       }
     }

@@ -134,7 +134,7 @@ error and sets size limits:
 
 ```js
 'patch :id': {
-  authorize: c => isOwnAccount(c),
+  authorize: ({ c, user }) => isOwnAccount(c, user),
   body: z.strictObject({
     name: z.string().max(100),
     acceptsNewsletter: z.boolean()

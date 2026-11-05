@@ -4,6 +4,7 @@ import path from 'node:path'
 import type { AddressInfo } from 'node:net'
 import { Hono, type Context, type Next } from 'hono'
 import { createAdaptorServer } from '@hono/node-server'
+import type { User } from '@ditojs/server'
 import { createAdmin, type AdminServer } from './index.ts'
 
 // Routes the admin at `/admin` of a host app, as apps do.
@@ -139,7 +140,7 @@ describe('createAdmin() in production', () => {
 
   it('authorizes the views with a function', async () => {
     const admin = setupAdmin({
-      authorize: (c: Context) => c.req.header('x-user') === 'admin'
+      authorize: ({ c }: { c: Context }) => c.req.header('x-user') === 'admin'
     })
     expect((await admin.request('/admin/views/views-Cd34_y-W.js')).status).toBe(
       401
@@ -176,7 +177,7 @@ describe('createAdmin() in production', () => {
         c.set('role' as never, c.req.header('x-role') as never)
         await next()
       },
-      getUser: (c: Context) => {
+      getUser: ({ c }: { c: Context }) => {
         const role = c.get('role' as never) as string | undefined
         return role ? { roles: [role] } : null
       },
@@ -210,10 +211,11 @@ describe('createAdmin() in production', () => {
     expect(paths).toEqual(['/admin/views/views-Cd34_y-W.js'])
   })
 
-  it('gives a function of authorize the user as c.var.user', async () => {
+  it('gives a function of `authorize` the user', async () => {
     const admin = setupAdmin({
       getUser: () => ({ roles: ['admin'] }),
-      authorize: (c: Context) => c.var.user?.roles.includes('admin')
+      authorize: ({ user }: { user: User | null }) =>
+        !!user?.roles.includes('admin')
     })
     expect((await admin.request('/admin/views/views-Cd34_y-W.js')).status).toBe(
       200

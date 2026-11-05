@@ -48,7 +48,7 @@ export interface DefineUserActionsOptions<U extends User> {
   password?: z.ZodType<string>
   // In milliseconds, ten minutes by default.
   reconfirmAfter?: number
-  afterLogin?: (c: Context, user: U) => unknown
+  afterLogin?: (context: { c: Context; user: U }) => unknown
 }
 
 const anyBody = z.record(z.string(), z.unknown())
@@ -105,7 +105,7 @@ export function defineUserActions<U extends User>({
     session.login(source, user)
     await source.patch(c, user, { lastLogin: new Date() })
     session.confirmAccess(source, user, reconfirmAfter)
-    await afterLogin?.(c, user)
+    await afterLogin?.({ c, user })
     return { user: await source.serialize(c, user) }
   }
 

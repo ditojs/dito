@@ -36,7 +36,7 @@ import { createTestDatabase, type TestOrm } from './database.js'
 export interface TestApi {
   controllers: ControllerDefinition[]
   middleware?: Middleware[]
-  getUser?: (c: DitoContext) => User | null | Promise<User | null>
+  getUser?: (context: { c: DitoContext }) => User | null | Promise<User | null>
   // The features of `defineUserActions()`, which the admin offers.
   authentication?: AuthenticationFeatures
 }
@@ -102,7 +102,7 @@ export async function createTestApp(
     authentication
   } = options.api?.(orm!) ?? {}
 
-  const logError = (error: unknown) => {
+  const logError = ({ error }: { error: unknown }) => {
     if (testApp.logErrors) console.error(error)
   }
   const app = new Hono()

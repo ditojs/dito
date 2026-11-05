@@ -142,7 +142,7 @@ here `POST genres/order`. In a view with a single list, the list's buttons
 receive the list's data as their `item`.
 
 The action's `body` schema checks the positions before the handler runs.
-`find()` of the handler's input loads the genres through the controller's
+`find()` of the handler's context loads the genres through the controller's
 `find`, so the action only changes genres that the controller shows. After the
 handler, the controller flushes the changes in the request's transaction.
 

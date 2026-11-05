@@ -51,12 +51,12 @@ mixins.
 
 The keys of [`ControllerDefinition`](controllers.md#controllerdefinition), and:
 
-| Key       | Type                                         | Description                                                                                                                                                                                             |
-| --------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `entity`  | `EntityClass`                                | The entity of the controller.                                                                                                                                                                           |
-| `find`    | [`Find`](#find)                              | What the controller loads and returns, or a function of Hono's context `c` that returns it.                                                                                                             |
-| `filters` | `Record<string, Filter>`                     | What `filter=name:args` may narrow in lists, see [Filters](#filters).                                                                                                                                   |
-| `load`    | `(c, id) => Promise<T \| null \| undefined>` | Loads the record of a member action in place of the default, which loads it through `find`. `null` or `undefined` responds with 404. It gets the id as sent, also one that isn't a key, such as `self`. |
+| Key       | Type                                             | Description                                                                                                                                                                                             |
+| --------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `entity`  | `EntityClass`                                    | The entity of the controller.                                                                                                                                                                           |
+| `find`    | [`Find`](#find)                                  | What the controller loads and returns, or a function of Hono's context `c` that returns it.                                                                                                             |
+| `filters` | `Record<string, Filter>`                         | What `filter=name:args` may narrow in lists, see [Filters](#filters).                                                                                                                                   |
+| `load`    | `({ c, id }) => Promise<T \| null \| undefined>` | Loads the record of a member action in place of the default, which loads it through `find`. `null` or `undefined` responds with 404. It gets the id as sent, also one that isn't a key, such as `self`. |
 
 ### Default handlers
 
@@ -74,7 +74,7 @@ all five.
 
 ### Variables
 
-The base sets these variables in the handler's input and in `c.var`, for the
+The base sets these variables in the handler's context and in `c.var`, for the
 handlers and the middleware of the layers. `authorize` runs before them.
 
 | Variable         | Description                                                                                                                                                                                                                                  |
@@ -91,9 +91,9 @@ handlers and the middleware of the layers. `authorize` runs before them.
 `defineModelController()` adds these keys to controllers and mixins:
 
 ```ts
-beforeSerialize?: (c: DitoContext, records: any[]) => unknown
-serialize?: (c: DitoContext, record: any, json: any) => unknown
-deserialize?: (c: DitoContext, json: unknown, record?: any) => unknown
+beforeSerialize?: ({ records, c }) => unknown
+serialize?: ({ record, json, c }) => unknown
+deserialize?: ({ json, record, c }) => unknown
 ```
 
 `beforeSerialize` runs once per response, in layer order, before `serialize`. It
@@ -126,7 +126,7 @@ interface FindShape<T> extends FindOptions<T> {
   where?: object
   maxRows?: number
 }
-type Find<T> = FindShape<T> | ((c: DitoContext) => FindShape<T> | Promise<FindShape<T>>)
+type Find<T> = FindShape<T> | (({ c, user }) => FindShape<T> | Promise<FindShape<T>>)
 ```
 
 `find` decides what a controller loads and returns. It holds MikroORM's
@@ -138,8 +138,8 @@ a list, see [Lists](#lists).
 - `limit`, `offset`, `ctx`, `disableIdentityMap` and `lockMode` throw, because
   the base controls them. An object throws when the controller is defined, a
   function on the request.
-- A function runs once per request, on the first query, after `getUser`, so it
-  can read `c.var.user`. Middleware that runs before Dito sets the user can't
+- A function gets Hono's context `c` and the `user`. It runs once per request,
+  on the first query, after `getUser`. Middleware that runs before Dito sets the user can't
   query through it.
 - `fields` and `exclude` both work. MikroORM can't take both, so the query gets
   `fields`, and the output leaves out what `exclude` names.
@@ -176,7 +176,7 @@ Records go out in the shape of `find`:
 find<T>(options?: FindShape<T>): Promise<T[]>
 ```
 
-`find()` of the handler's input, and `c.var.find()`. Queries the controller's
+`find()` of the handler's context, and `c.var.find()`. Queries the controller's
 entity through its `find`, merged with `options`. Use it in custom actions, so
 that they see the same rows as the default handlers. It has no row limit. The
 rows go out in the controller's shape. The merge:
@@ -258,7 +258,7 @@ mixins: [defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
 list<T>(find?: FindShape<T> & { query?: URLSearchParams | Record<string, string | string[]> }): Promise<T[] | { results: T[]; total: number }>
 ```
 
-`list()` of the handler's input, and `c.var.list()`. Runs the list of the
+`list()` of the handler's context, and `c.var.list()`. Runs the list of the
 controller: its `find` merged with `find`, as in [`find()`](#find-1), with the
 controller's filters, `order`, `range` and the row limit. The rows go out in the
 merged shape. `query` replaces the list parameters of the URL.
@@ -280,7 +280,7 @@ rows.
 getListQuery(find?: FindShape & { query?: URLSearchParams | Record<string, string | string[]> }): Promise<{ where: object; orderBy: object[]; range: [number, number] | null }>
 ```
 
-`getListQuery()` of the handler's input, and `c.var.getListQuery()`. Returns the
+`getListQuery()` of the handler's context, and `c.var.getListQuery()`. Returns the
 `where`, `orderBy` and `range` that [`list()`](#list) uses for the same
 arguments: `find.where` with the filters, `order` or else `find.orderBy`, with
 the primary key last, and the `range` of the request. It fails with 400 as the
@@ -343,11 +343,12 @@ type Filter =
   | z.ZodType
   | {
       schema: z.ZodType
-      where: (
-        value: any,
-        c: DitoContext,
-        name: string
-      ) => object | undefined | Promise<object | undefined>
+      where: ({
+        value,
+        name,
+        c,
+        em
+      }) => object | undefined | Promise<object | undefined>
     }
 ```
 
@@ -358,7 +359,8 @@ which only an array schema accepts. Invalid values respond with 400, with
 `errors` keyed by the filter's name. A schema that throws gives the code
 `custom` and the message `Invalid input`.
 
-`where` gets the output of the schema, Hono's context `c` and the filter's name.
+`where` gets one object: the output of the schema as `value`, the filter's
+`name`, Hono's context `c` and the request's entity manager `em`.
 It returns a MikroORM `where`, or `undefined` to skip the filter. A schema alone
 is short for a filter whose `where` returns `{ [name]: value }`. The list joins
 `find.where` and the filters with `$and`.
@@ -368,12 +370,12 @@ filters: {
   author: z.number().int(),
   tag: defineFilter({
     schema: z.string(),
-    where: name => ({ tags: { name } })
+    where: ({ value }) => ({ tags: { name: value } })
   }),
   status: defineFilter({
     schema: z.enum(['draft', 'published', 'all']),
-    where: status =>
-      status === 'all' ? undefined : { published: status === 'published' }
+    where: ({ value }) =>
+      value === 'all' ? undefined : { published: value === 'published' }
   })
 }
 ```
@@ -387,11 +389,12 @@ MikroORM's [entity filters](https://mikro-orm.io/docs/filters) with
 ```ts
 defineFilter<S extends z.ZodType>(filter: {
   schema: S
-  where: (
-    value: z.output<S>,
-    c: DitoContext,
+  where: (context: {
+    value: z.output<S>
     name: string
-  ) => object | undefined | Promise<object | undefined>
+    c: DitoContext
+    em: EntityManager
+  }) => object | undefined | Promise<object | undefined>
 }): Filter
 ```
 
@@ -553,7 +556,7 @@ createMikroAdapter(orm: MikroORM): Adapter & { getKysely(): Kysely<any> }
 Returns the `adapter` of [`createApi()`](api.md#adapter).
 
 - `connect()` forks the entity manager for each request. The fork becomes `em`
-  of the handler's input, and `c.var.em`.
+  of the handler's context, and `c.var.em`.
 - `transaction` runs the action in a transaction of the request's entity
   manager. While it runs, `em` is the transaction's entity manager. When the
   action throws, the transaction rolls back.
@@ -587,8 +590,8 @@ createEntityUserSource<U>(entity: EntityClass<U>, options: {
   em?: EntityManager | (() => EntityManager)
   usernameProperty?: string
   where?: object
-  serialize: string[] | ((c, user: U) => unknown)
-  computed?: Record<string, (user: U) => unknown>
+  serialize: string[] | (({ c, user }) => unknown)
+  computed?: Record<string, ({ user }) => unknown>
 }): UserSource<U>
 ```
 

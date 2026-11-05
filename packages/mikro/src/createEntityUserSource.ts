@@ -19,9 +19,9 @@ export interface EntityUserSourceOptions<U extends object> {
   where?: object
   // The properties of the user that the admin and `get self` get, or a
   // function that returns the JSON.
-  serialize: string[] | ((c: Context, user: U) => unknown)
+  serialize: string[] | ((context: { c: Context; user: U }) => unknown)
   // Values computed from the user, added to the properties of `serialize`.
-  computed?: Record<string, (user: U) => unknown>
+  computed?: Record<string, (context: { user: U }) => unknown>
 }
 
 export function createEntityUserSource<U extends { id: number | string }>(
@@ -76,11 +76,11 @@ export function createEntityUserSource<U extends { id: number | string }>(
       Object.assign(user, values)
     },
     serialize(c: Context, user: U) {
-      if (!isArray(serialize)) return serialize(c, user)
+      if (!isArray(serialize)) return serialize({ c, user })
       const record = user as Record<string, unknown>
       return {
         ...Object.fromEntries(serialize.map(key => [key, record[key]])),
-        ...mapValues(computed, get => get(user))
+        ...mapValues(computed, get => get({ user }))
       }
     }
   }

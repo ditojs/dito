@@ -38,7 +38,7 @@ const source = createEntityUserSource(Account, {
   usernameProperty: 'email',
   where: { isActive: true },
   serialize: ['id', 'email'],
-  computed: { domain: user => user.email.split('@')[1] }
+  computed: { domain: ({ user }) => user.email.split('@')[1] }
 })
 
 // A context outside of the API, and one of a request with its entity manager.
@@ -128,7 +128,7 @@ describe('createEntityUserSource()', () => {
   it('takes a function as `serialize`', async () => {
     const custom = createEntityUserSource(Account, {
       em: orm.em,
-      serialize: (c, user) => ({ email: user.email })
+      serialize: ({ user }) => ({ email: user.email })
     })
     const user = (await custom.findById(outside, String(active.id)))!
     expect(custom.serialize(outside, user)).toEqual({ email: 'a@example.com' })

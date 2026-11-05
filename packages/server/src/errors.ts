@@ -147,7 +147,7 @@ function toStatusError(error: unknown) {
   })
 }
 
-function logError(error: unknown, c: Context) {
+function logError({ error, c }: { error: unknown; c: Context }) {
   const { logger = console } = c.var as { logger?: Pick<Console, 'error'> }
   logger.error(error)
 }
@@ -170,7 +170,7 @@ export function createErrorHandler({
   return async (error, c) => {
     const httpError = toStatusError(toHttpError?.(error, c as never) ?? error)
     const body = (httpError ?? new HttpError(500)).toJSON()
-    if (body.status >= 500) await onError(error, c)
+    if (body.status >= 500) await onError({ error, c })
     const response = Response.json(body, { status: body.status })
     const { headers } = c.res
     // Hono adds the headers of the current response to the one returned here,

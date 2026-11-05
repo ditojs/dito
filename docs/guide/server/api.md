@@ -13,7 +13,7 @@ const api = createApi({
   controllers: [books, authors, loans],
   middleware: [sessions.middleware],
   adapter: createMikroAdapter(orm),
-  getUser: c => getSessionUser(c, admins)
+  getUser: ({ c }) => getSessionUser(c, admins)
 })
 app.route('/api/admin', api)
 ```
@@ -119,13 +119,13 @@ const adminApi = createApi({
   controllers: adminControllers,
   middleware: [adminSessions.middleware],
   adapter: createMikroAdapter(orm),
-  getUser: c => getSessionUser(c, adminSource)
+  getUser: ({ c }) => getSessionUser(c, adminSource)
 })
 const frontApi = createApi({
   controllers: frontControllers,
   middleware: [memberSessions.middleware],
   adapter: createMikroAdapter(orm),
-  getUser: c => getSessionUser(c, memberSource)
+  getUser: ({ c }) => getSessionUser(c, memberSource)
 })
 
 app.route('/api/admin', adminApi)
@@ -142,7 +142,7 @@ and maps MikroORM's errors:
 adapter: createMikroAdapter(orm)
 ```
 
-Handlers get the entity manager as `em` of their input, which is the
+Handlers get the entity manager as `em` of their context, which is the
 transaction's while one runs. Middleware and other code that has Hono's context
 read it as `c.var.em`, which `import '@ditojs/mikro/types'` types.
 
@@ -160,14 +160,14 @@ old migrations with knex's CLI until the Migrator takes over, see
 
 ## Users
 
-`getUser(c)` returns the user of a request as `{ id, roles }`, or `null`. Dito
-sets it as `c.var.user`, which handlers read as `user` of their input, and
+`getUser({ c })` returns the user of a request as `{ id, roles }`, or `null`. Dito
+sets it as `c.var.user`, which handlers read as `user` of their context, and
 `authorize` checks its roles. With the sessions of `@ditojs/auth`, use
 `getSessionUser(c, source)`, see [Users and sessions](auth.md):
 
 ```js
 middleware: [adminSessions.middleware],
-getUser: c => getSessionUser(c, adminSource)
+getUser: ({ c }) => getSessionUser(c, adminSource)
 ```
 
 `getUser` runs after the API's `middleware`, so the session is loaded by then.
@@ -181,14 +181,14 @@ unique violation to 409. Then the API sends each error as JSON:
   status.
 - All other errors respond with 500, without their message.
 
-Errors with a status of 500 or above go to `onError(error, c)`. By default, it
+Errors with a status of 500 or above go to `onError({ error, c })`. By default, it
 logs them through `c.var.logger`, else through `console.error()`. `c.var.logger`
 is any object with `error()` that the app's middleware sets, such as that of
 [hono-pino](https://github.com/maou-shonen/hono-pino). Other apps pass their own
 hook:
 
 ```js
-onError: error => logger.error(error)
+onError: ({ error }) => logger.error(error)
 ```
 
 See [Errors](../../api/server/errors.md). For request logs, use the logger of
@@ -206,7 +206,7 @@ Dito sets its variables in Hono's context: `c.var.user`, `c.var.em`,
 `c.var.action`, the key of the action, and `c.var.body` for writes. Model
 controllers add `c.var.id`, `c.var.entity`, `c.var.getRecord()`, `c.var.find()`,
 `c.var.list()` and `c.var.getListQuery()`. Middleware sets the app's own with
-`c.set()`, such as the session. Handlers get them all in their input:
+`c.set()`, such as the session. Handlers get them all in their context:
 
 ```js
 const api = createApi({

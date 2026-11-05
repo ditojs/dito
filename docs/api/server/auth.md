@@ -80,7 +80,7 @@ response, also to error responses.
 createAdmin({
   ...options,
   middleware: adminSessions.middleware,
-  getUser: c => getSessionUser(c, adminSource),
+  getUser: ({ c }) => getSessionUser(c, adminSource),
   authorize: 'admin'
 })
 ```
@@ -117,7 +117,7 @@ getSessionUser(c: Context, source: UserSource): Promise<User | null>
 ```
 
 Returns `{ id, roles }` of the session's user, if the user belongs to `source`,
-for the `getUser` of `createApi()`: `getUser: c => getSessionUser(c, admins)`.
+for the `getUser` of `createApi()`: `getUser: ({ c }) => getSessionUser(c, admins)`.
 
 ## defineUserActions()
 
@@ -160,7 +160,7 @@ actions instead.
 | `features`       | `{ passkeys?, totp?, passwordReset? }` | From [`createPasskeys()`](#createpasskeys), [`createTotp()`](#createtotp) and [`createPasswordReset()`](#createpasswordreset). |
 | `password`       | `ZodType<string>`                      | The schema of new passwords, in `post password` and `post password-reset-confirm`. Default: a string of at least 8 characters. |
 | `reconfirmAfter` | `number`                               | How long a confirmed access lasts, in milliseconds. Default: ten minutes.                                                      |
-| `afterLogin`     | `(c, user) => unknown`                 | Runs after each login, such as to set a cookie.                                                                                |
+| `afterLogin`     | `({ c, user }) => unknown`             | Runs after each login, such as to set a cookie.                                                                                |
 
 The actions, under `path`:
 
@@ -310,14 +310,14 @@ derived. Ten wrong codes in a row lock the codes for 15 minutes.
 createPasswordReset(options: CreatePasswordResetOptions): PasswordReset
 ```
 
-| Option         | Type                        | Description                                                                          |
-| -------------- | --------------------------- | ------------------------------------------------------------------------------------ |
-| `secrets`      | `string[]`                  | The secrets that sign the tokens, such as the ones of the sessions. The first signs. |
-| `expiresAfter` | `number`                    | In milliseconds. Default: one hour.                                                  |
-| `resendAfter`  | `number`                    | The time before a user gets another link, in milliseconds. Default: one minute.      |
-| `confirmUrl`   | `string`                    | The link, with a `{token}` placeholder.                                              |
-| `send`         | `(c, user, url) => unknown` | Sends the email. The response doesn't wait for it.                                   |
-| `onError`      | `(c, error) => void`        | Gets the errors of `send`.                                                           |
+| Option         | Type                            | Description                                                                          |
+| -------------- | ------------------------------- | ------------------------------------------------------------------------------------ |
+| `secrets`      | `string[]`                      | The secrets that sign the tokens, such as the ones of the sessions. The first signs. |
+| `expiresAfter` | `number`                        | In milliseconds. Default: one hour.                                                  |
+| `resendAfter`  | `number`                        | The time before a user gets another link, in milliseconds. Default: one minute.      |
+| `confirmUrl`   | `string`                        | The link, with a `{token}` placeholder.                                              |
+| `send`         | `({ c, user, url }) => unknown` | Sends the email. The response doesn't wait for it.                                   |
+| `onError`      | `({ error, c }) => void`        | Gets the errors of `send`.                                                           |
 
 Enables password resets by email. `post password-reset` responds the same way
 whether the user exists or not, and even when `resendAfter` holds the link back.

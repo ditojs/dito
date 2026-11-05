@@ -144,7 +144,9 @@ export class ModelRequest<T extends object = any> {
     const { meta } = this
     const { find } = this.definition
     this.#find ??= isFunction(find)
-      ? Promise.resolve(find(this.c)).then(checkFind)
+      ? Promise.resolve(find({ c: this.c, user: this.c.var.user })).then(
+          checkFind
+        )
       : Promise.resolve(find)
     const own = await this.#find
     const shape = extra ? mergeFind(own, extra) : own
@@ -166,7 +168,7 @@ export class ModelRequest<T extends object = any> {
         'other actions need a handler that calls `setRecord()`'
       )
     }
-    const record = load ? await load(c, id) : await this.#findRecord()
+    const record = load ? await load({ c, id }) : await this.#findRecord()
     if (record == null) throw new HttpError(404)
     return record
   }

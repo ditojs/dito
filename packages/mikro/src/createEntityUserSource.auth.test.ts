@@ -57,7 +57,7 @@ const app = new Hono().route(
   createApi({
     adapter: createMikroAdapter(orm),
     middleware: [sessions.middleware],
-    getUser: c => getSessionUser(c, source),
+    getUser: ({ c }) => getSessionUser(c, source),
     controllers: [
       defineUserActions({ path: 'auth', source }).controller,
       defineModelController({

@@ -113,7 +113,7 @@ database. Invalid data responds with 400 and an error for each field.
 5. Writes open a transaction.
 6. The middleware of the controller, its mixins and the action runs. A model
    controller's base sets `getRecord()` and `find()` first.
-7. The handler runs with its input, such as `{ query, body, params, user, em }`.
+7. The handler runs with its context, such as `{ query, body, params, user, em }`.
    Dito saves its result, serializes it and sends it as JSON.
 
 Errors in any step respond with [JSON](../../api/server/errors.md). Errors with

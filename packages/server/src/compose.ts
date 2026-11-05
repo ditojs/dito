@@ -6,7 +6,7 @@ import type {
   Actions,
   Authorize,
   ControllerDefinition,
-  HandlerInput,
+  HandlerContext,
   Middleware,
   MixinDefinition,
   Verb
@@ -19,8 +19,8 @@ import type {
 // that has it, else from the last layer that has it. A mixin with actions only
 // counts as a layer for its own actions, so its settings stay on them.
 
-// Runs the handlers of an action, on the input without `next`.
-type ActionRun = (input: Omit<HandlerInput, 'next'>) => Promise<unknown>
+// Runs the handlers of an action, on the context without `next`.
+type ActionRun = (context: Omit<HandlerContext, 'next'>) => Promise<unknown>
 
 export interface ResolvedAction {
   // The key in `actions`, such as `post :id/publish`, and its verb and path.
@@ -118,10 +118,10 @@ function resolveActions(controllerPath: string, layers: MixinDefinition[]) {
         ...defs.flatMap(def => asArray(def.middleware))
       ],
       run: handlers.reduce<ActionRun>(
-        (beneath, handler) => async input => {
+        (beneath, handler) => async context => {
           // Each handler has its own `next`. The layer beneath starts from
-          // this input, so that a handler can change `input.body` for it.
-          const own: HandlerInput = { ...input, next: () => beneath(own) }
+          // this context, so that a handler can change `context.body` for it.
+          const own: HandlerContext = { ...context, next: () => beneath(own) }
           return handler(own as never)
         },
         async () => undefined

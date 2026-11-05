@@ -22,7 +22,7 @@ const admin = createAdmin({
   authentication: users.features,
   // The session middleware loads the session that `getUser` reads.
   middleware: adminSessions.middleware,
-  getUser: c => getSessionUser(c, adminSource),
+  getUser: ({ c }) => getSessionUser(c, adminSource),
   authorize: ['admin', 'editor']
 })
 

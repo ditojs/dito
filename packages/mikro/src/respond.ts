@@ -22,7 +22,7 @@ export async function respond(request: ModelRequest, result: unknown) {
   const getRow = (row: object) => reloaded.get(row) ?? row
   if (records.length) {
     for (const beforeSerialize of definition.beforeSerializers) {
-      await beforeSerialize(c, records.map(getRow))
+      await beforeSerialize({ records: records.map(getRow), c })
     }
   }
   return serializeResult(result, isRecord, async record => {
@@ -30,7 +30,7 @@ export async function respond(request: ModelRequest, result: unknown) {
     const row = getRow(record as object)
     let json: unknown = serialize(row, output)
     for (const layer of definition.serializers) {
-      json = await layer(c, row, json)
+      json = await layer({ record: row, json, c })
     }
     return json
   })

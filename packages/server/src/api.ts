@@ -22,7 +22,7 @@ import type {
   Authorize,
   DitoContext,
   DitoEnv,
-  HandlerInput,
+  HandlerContext,
   Middleware,
   Transaction
 } from './types.ts'
@@ -43,7 +43,7 @@ export function createApi({
   const app = new Hono<DitoEnv>()
   app.use(...asArray(middleware), async (c, next) => {
     if (adapter.connect) c.set('em', await adapter.connect(c))
-    c.set('user', (await getUser?.(c)) ?? null)
+    c.set('user', (await getUser?.({ c })) ?? null)
     await next()
   })
   // The routes by method and path, with the names of parameters left out.
@@ -137,7 +137,7 @@ function authorize(value: Exclude<Authorize, true>): Middleware {
 export async function isAuthorized(c: DitoContext, authorize: Authorize) {
   const { user } = c.var
   return isFunction(authorize)
-    ? (await authorize(c)) === true
+    ? (await authorize({ c, user })) === true
     : authorize === true ||
       (!!user && asArray(authorize).some(role => user.roles.includes(role)))
 }
@@ -158,14 +158,14 @@ function validate(target: 'query' | 'json', schema: z.ZodType) {
 }
 
 async function respond(c: DitoContext, action: ResolvedAction) {
-  const input: Omit<HandlerInput, 'next'> = {
+  const context: Omit<HandlerContext, 'next'> = {
     // The variables of Dito and of the app, such as a session's.
     ...c.var,
     query: action.query ? c.req.valid('query') : c.req.query(),
     params: c.req.param(),
     c
   }
-  const result = await action.run(input)
+  const result = await action.run(context)
   if (result instanceof Response) return withHeaders(c, result)
   if (result === undefined) {
     // Reads the status of `c.status()`, which Hono keeps private. It is 200

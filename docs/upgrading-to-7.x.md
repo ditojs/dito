@@ -52,7 +52,7 @@ lines, medium one module of the app, and high every model or every controller.
 | Graph writes: `upsertGraph()`, `relate`, `#id`, `#ref`                                 | Nested writes of owned relations, `createRecord()`, `assignRecord()`                                                                                                                                               | medium                  |
 | `Controller`, `ModelController`, `RelationController`, `collection`, `member`, `allow` | `defineController()` and `defineModelController()` with one `actions` map, mixins, `crud`                                                                                                                          | high                    |
 | Controller hooks, `parameters`, `returns`, `transacted`                                | Handlers that call `next()`, middleware of mixins, `query` and `body` schemas, `transacted: true`                                                                                                                  | high                    |
-| Koa's `ctx` in handlers and middleware                                                 | The handler's input, `{ query, body, params, user, em, action, record, find, list, c, next }`, with Hono's context `c`, see [step 8](#8-rewrite-the-controllers)                                                   | high                    |
+| Koa's `ctx` in handlers and middleware                                                 | The handler's context, `{ query, body, params, user, em, action, record, find, list, c, next }`, with Hono's context `c`, see [step 8](#8-rewrite-the-controllers)                                                 | high                    |
 | `ResponseError` and its subclasses, `app.logError()`                                   | `HttpError`, `toHttpError()` of the adapter, and the `onError` hook, which logs by default                                                                                                                         | low                     |
 | Koa middleware, `config.http`                                                          | Hono middleware on the host: `hostMiddleware()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`                                                                                      | low                     |
 | `app.proxy`, `config.server.proxy`                                                     | `forwarded(proxy)` of `@ditojs/server/node`, and `getClientAddress(c)` for the client's address                                                                                                                    | low                     |
@@ -289,12 +289,12 @@ filters: {
   only, and isn't sent to the server.
 - Dito.js 6's filter types `text` and `date-range` become `defineTextFilter()`
   and `defineDateRangeFilter()`, which read what the admin's filters send.
-- Custom actions query through `find(options)` of the handler's input, or
+- Custom actions query through `find(options)` of the handler's context, or
   `c.var.find()`. `list(options)`, or `c.var.list()`, runs the list with its
   filters, `order` and `range`. `defineListHandler(find)` returns such a list as
   a handler. They keep to the rows of the controller's `find`. Only `where` and
   `filters` merge, and the other options replace the controller's.
-- `getListQuery()` of the input returns the `where`, `orderBy` and `range` of
+- `getListQuery()` of the context returns the `where`, `orderBy` and `range` of
   the list, for summaries and exports over its rows.
 
 `fields` alone defines what goes out, see [Output](api/server/mikro.md#output):
@@ -456,29 +456,30 @@ One `actions` map holds every route, keyed `'verb path'`, see
 
 #### Handlers and the context
 
-Koa's `ctx` splits in two. A handler gets one object, the
-[input](api/server/api.md#the-handlers-input) of the request, which holds Hono's
-context `c` and `next()`. Middleware and `authorize` get `c`, and read Dito's
-variables from it, such as `c.var.user`.
+Koa's `ctx` splits in two. A handler gets one object, its
+[context](api/server/api.md#the-handlers-context), which holds Hono's context `c`
+and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
+`c.var.user`. Every other callback, such as `authorize`, gets one object with
+`c` and what it needs, such as `({ c, user })`.
 
 | Dito.js 6 (Koa)                              | Dito.js 7                                                                               |
 | -------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `ctx.request`, `ctx.headers`                 | `c.req`; `c.req.header(name)`, and `c.req.raw`, the `Request`                           |
 | `ctx.href`, `ctx.url`, `ctx.path`            | `c.req.url`, the full URL; `c.req.path`                                                 |
-| `ctx.query`                                  | `query` of the input, the output of the `query` schema                                  |
-| `ctx.request.body`                           | `body` of the input; `c.var.body` in middleware                                         |
-| `ctx.params`                                 | `params` of the input; `c.req.param(name)`                                              |
-| `ctx.memberId`                               | `id` of the input in model controllers, a number for integer keys; else `params.id`     |
-| `this.getMember(ctx)`, `super.get(ctx)`      | `getRecord()` of the input; `c.var.getRecord()`; `next()`                               |
-| `this.modelClass`, `modelClass.tableName`    | `entity` of the input in model controllers; `em.getMetadata(entity).tableName`          |
+| `ctx.query`                                  | `query` of the context, the output of the `query` schema                                |
+| `ctx.request.body`                           | `body` of the context; `c.var.body` in middleware                                       |
+| `ctx.params`                                 | `params` of the context; `c.req.param(name)`                                            |
+| `ctx.memberId`                               | `id` of the context in model controllers, a number for integer keys; else `params.id`   |
+| `this.getMember(ctx)`, `super.get(ctx)`      | `getRecord()` of the context; `c.var.getRecord()`; `next()`                             |
+| `this.modelClass`, `modelClass.tableName`    | `entity` of the context in model controllers; `em.getMetadata(entity).tableName`        |
 | `ctx.status`, `ctx.set()`                    | `c.status()`, `c.header()`                                                              |
 | `ctx.type`, `ctx.body =`, `ctx.attachment()` | A returned `Response`, such as `c.body()` or [`sendFile()`](api/server/api.md#sendfile) |
-| `ctx.state.user`                             | `user` of the input, `{ id, roles }`; `c.var.user`                                      |
-| `ctx.state.*`                                | `c.set()` and `c.var`, also in the input, typed by augmenting `DitoVariables`           |
-| `ctx.transaction`                            | `em` of the input, the transaction's handle during one; `c.var.em`                      |
+| `ctx.state.user`                             | `user` of the context, `{ id, roles }`; `c.var.user`                                    |
+| `ctx.state.*`                                | `c.set()` and `c.var`, also in the context, typed by augmenting `DitoVariables`         |
+| `ctx.transaction`                            | `em` of the context, the transaction's handle during one; `c.var.em`                    |
 | `ctx.ip`                                     | `getClientAddress(c)` of `@ditojs/server/node`                                          |
-| `ctx.session`                                | `session` of the input, or `getSession(c)` of `@ditojs/auth`                            |
-| `ctx.action`                                 | `action` of the input, the key such as `'post :id/publish'`; `c.var.action`             |
+| `ctx.session`                                | `session` of the context, or `getSession(c)` of `@ditojs/auth`                          |
+| `ctx.action`                                 | `action` of the context, the key such as `'post :id/publish'`; `c.var.action`           |
 | `ctx.action.type`                            | `params.id !== undefined` for member actions; `c.req.method`                            |
 
 - Handlers return data or a `Response`. Data responds with 200 and `undefined`
@@ -533,7 +534,7 @@ rows again in one query, with the values that formulas and triggers set. See
   For stricter rules, give the action a Zod `body` schema, such as
   `'post': { body: postSchema }`, as the writes of a website need. The messages
   name the expected type, such as `expected int` for integer columns.
-- **`deserialize(c, json, record?)`** decides what a user may write. It replaces
+- **`deserialize({ json, record, c })`** decides what a user may write. It replaces
   `$parseJson()`, the read-only rules of properties, and the `before:*:patch`
   hooks that changed the body. Custom handlers don't run it.
 - **Graphs.** `graph: true`, `upsertGraph()`, `relate` and `unrelate` are gone.
@@ -550,8 +551,8 @@ rows again in one query, with the values that formulas and triggers set. See
   refuses responds with 409, see [Database
   errors](api/server/mikro.md#database-errors).
 
-`serialize(c, record, json)` replaces `$formatJson()` and the hooks that changed
-responses. `beforeSerialize(c, records)` runs once per response with all the
+`serialize({ record, json, c })` replaces `$formatJson()` and the hooks that changed
+responses. `beforeSerialize({ records, c })` runs once per response with all the
 records, so that a mixin loads what they need in one query. See
 [Serialize and deserialize](guide/server/controllers.md#serialize-and-deserialize).
 
@@ -591,7 +592,7 @@ const api = createApi({
   controllers,
   middleware: [sessions.middleware],
   adapter: createMikroAdapter(orm),
-  getUser: c => getSessionUser(c, adminSource)
+  getUser: ({ c }) => getSessionUser(c, adminSource)
 })
 
 const app = new Hono({ strict: false })
@@ -749,7 +750,7 @@ const admin = createAdmin({
   api: { url: '/api/admin', users: { path: 'admins' } },
   authentication: users.features,
   middleware: sessions.middleware,
-  getUser: c => getSessionUser(c, adminSource),
+  getUser: ({ c }) => getSessionUser(c, adminSource),
   authorize: 'admin'
 })
 app.route('/admin', admin)

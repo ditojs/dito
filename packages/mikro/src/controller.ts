@@ -34,15 +34,19 @@ declare module '@ditojs/server' {
     // Called once per response of a model controller, in layer order, with the
     // outgoing records, before `serialize`. It can load what the records need
     // in one query, which `serialize` then reads.
-    beforeSerialize?: (c: DitoContext, records: any[]) => unknown
+    beforeSerialize?: (context: { records: any[]; c: DitoContext }) => unknown
     // Called for each record of a model controller, in layer order, with its
     // JSON in the shape of the controller's `find`, or the result of the
     // previous layer. Returns the JSON to send.
-    serialize?: (c: DitoContext, record: any, json: any) => unknown
+    serialize?: (context: { record: any; json: any; c: DitoContext }) => unknown
     // Shapes the body of a default write before its checks, in the reverse
     // order of `serialize`. It gets the body, or the result of the previous
     // layer, and on updates the current record. Returns the data to write.
-    deserialize?: (c: DitoContext, json: unknown, record?: any) => unknown
+    deserialize?: (context: {
+      json: unknown
+      record?: any
+      c: DitoContext
+    }) => unknown
   }
 }
 
@@ -57,7 +61,10 @@ export interface ModelControllerDefinition<T extends object = any>
   // Loads the record of a member action, in place of the controller's `find`
   // with the id. It gets the id as sent, also one that isn't a key, such as
   // `self`. `null` or `undefined` responds with 404.
-  load?: (c: DitoContext, id: string) => Promise<T | null | undefined>
+  load?: (context: {
+    c: DitoContext
+    id: string
+  }) => Promise<T | null | undefined>
 }
 
 export function defineModelController<T extends object>(

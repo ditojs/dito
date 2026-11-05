@@ -56,7 +56,7 @@ Returns the definition. A `MixinDefinition` has all keys of a
 or `delete`, then a space and the path below the controller's path, if any:
 `get`, `post`, `get :id`, `post :id/publish`, `get by-name/:name`.
 
-- A path that starts with `:id` is a member action. Its input holds the id in
+- A path that starts with `:id` is a member action. Its context holds the id in
   `params.id`, and in [model controllers](mikro.md#variables) the converted id
   as `id`. `:id` is reserved for member actions.
 - Paths use Hono's syntax: `:name` matches one segment, and `:name{.+}` one or
@@ -76,14 +76,14 @@ set, with `true` or an object.
 
 ### Action objects
 
-| Key          | Type                         | Description                                                                                                                     |
-| ------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `handler`    | [`Handler`](#handler)        | The handler. Without it, the action routes the handler beneath.                                                                 |
-| `query`      | `z.ZodType`                  | Validates the query. Repeated parameters arrive as arrays. Its output becomes `query` of the input, and `c.req.valid('query')`. |
-| `body`       | `z.ZodType`                  | Validates the JSON body. Its output becomes `body` of the input, and `c.req.valid('json')`.                                     |
-| `authorize`  | [`authorize`](#authorize)    | Who may run the action.                                                                                                         |
-| `middleware` | `Middleware \| Middleware[]` | Hono middleware of this action only, such as caching headers.                                                                   |
-| `transacted` | `boolean`                    | Whether the action runs in a transaction.                                                                                       |
+| Key          | Type                         | Description                                                                                                                       |
+| ------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `handler`    | [`Handler`](#handler)        | The handler. Without it, the action routes the handler beneath.                                                                   |
+| `query`      | `z.ZodType`                  | Validates the query. Repeated parameters arrive as arrays. Its output becomes `query` of the context, and `c.req.valid('query')`. |
+| `body`       | `z.ZodType`                  | Validates the JSON body. Its output becomes `body` of the context, and `c.req.valid('json')`.                                     |
+| `authorize`  | [`authorize`](#authorize)    | Who may run the action.                                                                                                           |
+| `middleware` | `Middleware \| Middleware[]` | Hono middleware of this action only, such as caching headers.                                                                     |
+| `transacted` | `boolean`                    | Whether the action runs in a transaction.                                                                                         |
 
 Schemas are [Zod](https://zod.dev) schemas, which run through `validator()` of
 `hono/validator`. Invalid input responds with 400 and the issues of the schema, see [Validation errors](errors.md#validation-errors).
@@ -95,7 +95,7 @@ defineAction(definition)
 ```
 
 Returns the [action object](#action-objects). In TypeScript, it types `query`
-and `body` of the handler's input, and `c.req.valid('query' | 'json')`, from the
+and `body` of the handler's context, and `c.req.valid('query' | 'json')`, from the
 output of its schemas.
 
 ```js
@@ -108,10 +108,10 @@ output of its schemas.
 ## Handler
 
 ```ts
-type Handler = (input: HandlerInput) => unknown
+type Handler = (context: HandlerContext) => unknown
 ```
 
-A handler gets the [input](api.md#the-handlers-input) of the request,
+A handler gets its [context](api.md#the-handlers-context) as one object,
 `{ query, body, params, user, em, action, c, next }`, and destructures what it
 needs. `c` is Hono's context. `next()` runs the handler that this one replaces,
 and returns its result.
@@ -154,14 +154,13 @@ authorize:
   | true
   | string
   | string[]
-  | ((c: DitoContext) => boolean | Promise<boolean>)
+  | (({ c, user }) => boolean | Promise<boolean>)
 ```
 
 - `true` lets anyone in.
 - Roles grant access if `c.var.user.roles` holds any of them.
-- A function of Hono's context decides, and only `true` grants access. It reads
-  the id of a member action with
-  `c.req.param('id')`. It runs before the transaction and the middleware of the
+- A function of Hono's context `c` and the `user` decides, and only `true`
+  grants access. It reads the id of a member action with `c.req.param('id')`. It runs before the transaction and the middleware of the
   layers, so it loads what it checks itself.
 
 A denied request responds with 401 without a user, and with 403 with one.
@@ -210,7 +209,7 @@ type DitoContext<Query, Body> = Context<
 ```
 
 Hono's context of a Dito request, `c`, with the variables of
-[`DitoVariables`](api.md#the-handlers-input) in `c.var`. `c.req.valid('query')`
+[`DitoVariables`](api.md#the-handlers-context) in `c.var`. `c.req.valid('query')`
 and `c.req.valid('json')` have the types of the action's schemas.
 
 ## Query values

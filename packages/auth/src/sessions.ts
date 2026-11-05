@@ -277,7 +277,7 @@ export function getSession(c: Context) {
 }
 
 // The id and roles of the source's user, for the `getUser` of `createApi()`,
-// as `getUser: c => getSessionUser(c, admins)`.
+// as `getUser: ({ c }) => getSessionUser(c, admins)`.
 export async function getSessionUser(c: Context, source: UserSource<any>) {
   const user = await getSession(c).getUser(source)
   return user ? { id: user.id, roles: user.roles ?? [] } : null

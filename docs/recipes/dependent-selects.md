@@ -51,7 +51,7 @@ filters: {
       z.coerce.number().int(),
       z.literal('').or(z.coerce.number().int())
     ]),
-    where: ([genre, subgenre]) => {
+    where: ({ value: [genre, subgenre] }) => {
       // The subgenre if it is set, else the genre:
       const id = subgenre || genre
       return { genres: { $or: [{ id }, { parent: id }] } }

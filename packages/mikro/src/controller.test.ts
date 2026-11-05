@@ -53,7 +53,7 @@ function setup(...controllers: ControllerDefinition[]) {
         controllers,
         adapter: createMikroAdapter(orm),
         // The user of the `X-User` header, with that name as its role.
-        getUser: async c => {
+        getUser: async ({ c }) => {
           const name = c.req.header('X-User')
           return name ? { id: name, roles: [name] } : null
         },
@@ -92,26 +92,26 @@ function books({
       orderBy: { name: 'asc' }
     },
     // Clients can't publish through a write.
-    deserialize: (_c, json) => {
+    deserialize: ({ json }) => {
       const { published, ...rest } = json as Record<string, unknown>
       return rest
     },
     filters: {
       name: {
         schema: z.string(),
-        where: text => ({ name: { $ilike: `%${text}%` } })
+        where: ({ value }) => ({ name: { $ilike: `%${value}%` } })
       },
       published: z.boolean(),
       // Books by the names of their authors, repeated for several.
       author: {
         schema: z.union([z.string(), z.array(z.string())]),
-        where: names => ({ authors: { name: { $in: asArray(names) } } })
+        where: ({ value }) => ({ authors: { name: { $in: asArray(value) } } })
       },
       // `all` skips the filter.
       status: {
         schema: z.enum(['draft', 'published', 'all']),
-        where: status =>
-          status === 'all' ? undefined : { published: status === 'published' }
+        where: ({ value }) =>
+          value === 'all' ? undefined : { published: value === 'published' }
       }
     },
     actions: {
@@ -302,9 +302,9 @@ describe('get', () => {
         filters: {
           mine: {
             schema: z.boolean(),
-            async where(mine, c) {
+            async where({ value: mine, c, em }) {
               if (!mine) return undefined
-              const author = await c.var.em.findOneOrFail(
+              const author = await em.findOneOrFail(
                 Author,
                 { name: c.var.user!.id as string }
               )
@@ -330,11 +330,11 @@ describe('get', () => {
         filters: {
           ids: defineFilter({
             schema: z.array(z.number().int()),
-            where: ids => ({ id: { $in: ids } })
+            where: ({ value }) => ({ id: { $in: value } })
           }),
           below: defineFilter({
             schema: z.number().int(),
-            where: id => ({ id: { $lt: id } })
+            where: ({ value }) => ({ id: { $lt: value } })
           })
         }
       })
@@ -356,9 +356,9 @@ describe('get', () => {
         filters: {
           below: defineFilter({
             schema: z.number().int(),
-            where: id => {
-              expectTypeOf(id).toEqualTypeOf<number>()
-              return { id: { $lt: id } }
+            where: ({ value }) => {
+              expectTypeOf(value).toEqualTypeOf<number>()
+              return { id: { $lt: value } }
             }
           })
         }
@@ -687,7 +687,7 @@ describe('get :id', () => {
   it('leaves ids that are no primary key to `load`', async () => {
     const api = setup(
       books({
-        load: (c, id) => c.var.em.findOne(Book, id === 'self' ? 1 : +id),
+        load: ({ c, id }) => c.var.em.findOne(Book, id === 'self' ? 1 : +id),
         actions: {
           'get :id': true,
           'get :id/id': async ({ id, getRecord }) => ({
@@ -716,11 +716,11 @@ describe('find', () => {
     let calls = 0
     const api = setup(
       books({
-        find: c => {
+        find: ({ user }) => {
           calls++
           return {
-            where: c.var.user ? {} : { published: true },
-            exclude: c.var.user ? [] : ['notes'],
+            where: user ? {} : { published: true },
+            exclude: user ? [] : ['notes'],
             orderBy: { name: 'asc' }
           }
         }
@@ -760,7 +760,7 @@ describe('find', () => {
         books({ find: () => ({ disableIdentityMap: true }) })
       ],
       adapter: createMikroAdapter(orm),
-      onError: error => {
+      onError: ({ error }) => {
         errors.push(error)
       }
     })
@@ -813,8 +813,8 @@ describe('defineListHandler', () => {
   it("merges its `find` into the controller's", async () => {
     const api = setup(
       books({
-        find: c => ({
-          where: c.var.user ? {} : { name: { $ne: 'Arcadia' } },
+        find: ({ user }) => ({
+          where: user ? {} : { name: { $ne: 'Arcadia' } },
           orderBy: { name: 'asc' }
         }),
         actions: {
@@ -1427,7 +1427,7 @@ describe('default handlers', () => {
         })
       ],
       adapter: createMikroAdapter(orm),
-      onError: error => {
+      onError: ({ error }) => {
         errors.push(error)
       }
     })
@@ -2022,7 +2022,7 @@ describe('writes', () => {
   it('runs `deserialize` with the record before the check', async () => {
     const records: unknown[] = []
     const mixin = defineMixin({
-      deserialize: (_c, json) => ({
+      deserialize: ({ json }) => ({
         ...(json as object),
         notes: `by mixin`
       })
@@ -2030,7 +2030,7 @@ describe('writes', () => {
     const api = setup(
       books({
         mixins: [mixin],
-        deserialize: (_c, json, record) => {
+        deserialize: ({ json, record }) => {
           records.push(record)
           const { createdAt, ...rest } = json as Record<string, unknown>
           return { ...rest, name: (rest.name as string).toUpperCase() }
@@ -2057,7 +2057,7 @@ describe('writes', () => {
   it('checks what `deserialize` returns', async () => {
     const api = setup(
       books({
-        deserialize: (_c, json) => ({ ...(json as object), notes: 5 })
+        deserialize: ({ json }) => ({ ...(json as object), notes: 5 })
       })
     )
     const { status, json } = await request(api, 'POST', '/api/books', {
@@ -2201,8 +2201,8 @@ describe('find()', () => {
   it('queries the rows that `find` lets the user see, in its shape', async () => {
     const api = setup(
       books({
-        find: c => ({
-          where: c.var.user ? {} : { published: true },
+        find: ({ user }) => ({
+          where: user ? {} : { published: true },
           populate: ['parts'],
           orderBy: { name: 'asc' }
         }),
@@ -2356,7 +2356,7 @@ describe('layers', () => {
     const records: unknown[] = []
     const layer = (name: string) =>
       defineMixin({
-        deserialize: (_c, json, record) => {
+        deserialize: ({ json, record }) => {
           order.push(name)
           records.push(record)
           return { ...(json as object), notes: name }
@@ -2365,7 +2365,7 @@ describe('layers', () => {
     const api = setup(
       books({
         mixins: [layer('one'), layer('two')],
-        deserialize: (_c, json) => {
+        deserialize: ({ json }) => {
           order.push('controller')
           return json
         },
@@ -2425,18 +2425,20 @@ describe('layers', () => {
 
   it('runs the `beforeSerialize` chain once per response', async () => {
     const calls: [string, number[]][] = []
-    const record = (name: string) => (_c: unknown, rows: Book[]) => {
-      calls.push([name, rows.map(row => row.id)])
-    }
+    const record =
+      (name: string) =>
+      ({ records }: { records: Book[] }) => {
+        calls.push([name, records.map(row => row.id)])
+      }
     const lengths = new Map<number, number>()
     const mixin = defineMixin({
-      beforeSerialize: (_c, rows: Book[]) => {
-        record('mixin')(_c, rows)
-        for (const row of rows) lengths.set(row.id, row.name.length)
+      beforeSerialize: ({ records }: { records: Book[] }) => {
+        record('mixin')({ records })
+        for (const row of records) lengths.set(row.id, row.name.length)
       },
-      serialize: (_c, row, json) => ({
+      serialize: ({ record, json }) => ({
         ...(json as object),
-        length: lengths.get(row.id)
+        length: lengths.get(record.id)
       })
     })
     const api = setup(
@@ -2478,13 +2480,13 @@ describe('layers', () => {
 
   it('serializes records through the `serialize` chain of the layers', async () => {
     const mixin = defineMixin({
-      serialize: (_c, row, json) => ({ ...json, mixin: row.id })
+      serialize: ({ record, json }) => ({ ...json, mixin: record.id })
     })
     const api = setup(
       books({
         find: { fields: ['name'] },
         mixins: [mixin],
-        serialize: async (_c, _row, json) => ({ ...json, controller: true }),
+        serialize: async ({ json }) => ({ ...json, controller: true }),
         actions: {
           'get nested': async ({ find }) => {
             const [row] = await find<Book>({ where: { id: 1 } })
@@ -2506,7 +2508,7 @@ describe('layers', () => {
   it('loads the record through `load`', async () => {
     const api = setup(
       books({
-        load: async (c, id) =>
+        load: async ({ c, id }) =>
           id === 'first'
             ? c.var.em.findOne(Book, { name: 'Arcadia' })
             : null,
@@ -2527,7 +2529,7 @@ describe('layers', () => {
           books({ actions: { 'get one': ({ getRecord }) => getRecord() } })
         ],
         adapter: createMikroAdapter(orm),
-        onError: error => {
+        onError: ({ error }) => {
           errors.push(error)
         }
       })
@@ -2630,7 +2632,7 @@ describe('transactions', () => {
       books({
         actions: {
           'patch :id': {
-            authorize: async c => {
+            authorize: async ({ c }) => {
               const em = c.var.em
               checked = await em.findOneOrFail(
                 Book,
@@ -2689,7 +2691,7 @@ describe('createMikroAdapter()', () => {
     expect(onError).not.toHaveBeenCalled()
     expect((await request(api, 'GET', '/items/failed')).status).toBe(500)
     expect(onError).toHaveBeenCalledOnce()
-    expect(onError.mock.calls[0]![0]).toBe(error)
+    expect(onError.mock.calls[0]![0].error).toBe(error)
   })
 
   it('gives each request a fork of the entity manager', async () => {

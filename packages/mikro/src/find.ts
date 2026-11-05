@@ -1,4 +1,4 @@
-import type { DitoContext } from '@ditojs/server'
+import type { DitoContext, User } from '@ditojs/server'
 import { isPlainObject } from '@ditojs/utils'
 import {
   ReferenceKind,
@@ -20,7 +20,10 @@ export interface FindShape<T extends object = any>
 
 export type Find<T extends object = any> =
   | FindShape<T>
-  | ((c: DitoContext) => FindShape<T> | Promise<FindShape<T>>)
+  | ((context: {
+      c: DitoContext
+      user: User | null
+    }) => FindShape<T> | Promise<FindShape<T>>)
 
 // The options that the base sets itself.
 const controlled = ['limit', 'offset', 'ctx', 'disableIdentityMap', 'lockMode']

@@ -66,17 +66,17 @@ export const articles = defineModelController({
   entity: Article,
   // Anyone may read. The writes are for editors.
   authorize: ['admin', 'editor'],
-  find: c => ({
-    where: isEditor(c) ? {} : { published: true },
+  find: ({ user }) => ({
+    where: isEditor(user) ? {} : { published: true },
     populate: ['author', 'tags', 'sections'],
-    exclude: isEditor(c) ? [] : ['internalNotes'],
+    exclude: isEditor(user) ? [] : ['internalNotes'],
     orderBy: { createdAt: 'desc' }
   }),
   filters: {
     author: z.number().int(),
     tag: defineFilter({
       schema: z.string(),
-      where: name => ({ tags: { name } })
+      where: ({ value }) => ({ tags: { name: value } })
     })
   },
   actions: {
@@ -133,14 +133,14 @@ responds with 404. So does a record that `find` hides.
 | `filters`  | MikroORM's entity filters, such as `{ softDelete: false }`.                        |
 | `maxRows`  | The most rows that a list returns, 1000 by default.                                |
 
-`find` is an object, or a function of Hono's context `c` that returns one. The
-function runs once per request, after `getUser`, so its result can depend on the
-user:
+`find` is an object, or a function of Hono's context `c` and the `user` that
+returns one. The function runs once per request, after `getUser`, so its result
+can depend on the user:
 
 ```js
-find: c => ({
-  where: c.var.user ? {} : { published: true },
-  exclude: c.var.user?.roles.includes('admin') ? [] : ['internalNotes']
+find: ({ user }) => ({
+  where: user ? {} : { published: true },
+  exclude: user?.roles.includes('admin') ? [] : ['internalNotes']
 })
 ```
 
@@ -226,17 +226,17 @@ filters: {
   author: z.number().int(),
   tag: defineFilter({
     schema: z.string(),
-    where: name => ({ tags: { name } })
+    where: ({ value }) => ({ tags: { name: value } })
   }),
   status: defineFilter({
     schema: z.enum(['draft', 'published', 'all']),
-    where: status =>
-      status === 'all' ? undefined : { published: status === 'published' }
+    where: ({ value }) =>
+      value === 'all' ? undefined : { published: value === 'published' }
   }),
-  // A filter's `where` gets Hono's context too.
+  // A filter's `where` gets Hono's context and `em` too.
   mine: defineFilter({
     schema: z.boolean(),
-    where: (mine, c) => (mine ? { author: c.var.user.id } : undefined)
+    where: ({ value, c }) => (value ? { author: c.var.user.id } : undefined)
   })
 }
 ```
@@ -303,7 +303,7 @@ mixins: [defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
 `maxRows: Infinity` lifts the limit of 1000 rows, for selects that list more:
 `defineChoices({ fields: ['id', 'name'], maxRows: Infinity })`.
 
-`list(find)` of the handler's input runs the same list in a custom handler, such
+`list(find)` of the handler's context runs the same list in a custom handler, such
 as to load more data for its rows. Its `query` option replaces the list
 parameters of the URL:
 
@@ -316,7 +316,7 @@ async 'get'({ list, c }) {
 }
 ```
 
-`getListQuery()` of the input returns the `where`, `orderBy` and `range` of the
+`getListQuery()` of the context returns the `where`, `orderBy` and `range` of the
 list with the filters and the `order` of the URL, for queries over its rows,
 such as a summary or an export:
 
@@ -329,7 +329,7 @@ async 'get summary'({ em, getListQuery }) {
 
 ## Custom actions
 
-Custom actions query through `find()` of their input, so that they see the same
+Custom actions query through `find()` of their context, so that they see the same
 rows as the default handlers. `find()` merges its options with the controller's
 `find`, as `defineListHandler()` does, so its rows stay within the controller's
 `where`:
@@ -341,7 +341,7 @@ async 'get :id/related'({ getRecord, find }) {
 }
 ```
 
-Other queries go through the request's entity manager, `em` of the input. During
+Other queries go through the request's entity manager, `em` of the context. During
 a write, this is the transaction's entity manager. Middleware and other code
 that has Hono's context read it as `c.var.em`:
 
@@ -371,8 +371,8 @@ defineModelController({
   path: 'pages/:pageId/child-pages',
   entity: Page,
   authorize: ['admin', 'pages'],
-  find: c => ({ where: { parentPage: Number(c.req.param('pageId')) } }),
-  deserialize: (c, json) => ({
+  find: ({ c }) => ({ where: { parentPage: Number(c.req.param('pageId')) } }),
+  deserialize: ({ json, c }) => ({
     ...json,
     parentPage: Number(c.req.param('pageId'))
   }),

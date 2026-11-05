@@ -17,8 +17,10 @@ export const test = defineScenario({
     // reload the list when cancelling back from an item form.
     Item: {
       path: 'widgets/:widgetId/items',
-      find: c => ({ where: { widget: Number(c.req.param('widgetId')) } }),
-      deserialize: (c, json) => ({
+      find: ({ c }) => ({
+        where: { widget: Number(c.req.param('widgetId')) }
+      }),
+      deserialize: ({ json, c }) => ({
         ...(json as object),
         widget: Number(c.req.param('widgetId'))
       })

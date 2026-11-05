@@ -23,8 +23,8 @@ export interface CreatePasswordResetOptions {
   confirmUrl: string
   // Sends the email. The response doesn't wait for it, so its failures don't
   // change the response, and go to `onError`.
-  send(c: Context, user: any, url: string): unknown
-  onError?(c: Context, error: unknown): void
+  send(context: { c: Context; user: any; url: string }): unknown
+  onError?(context: { error: unknown; c: Context }): void
 }
 
 export type PasswordReset = ReturnType<typeof createPasswordReset>
@@ -71,7 +71,9 @@ export function createPasswordReset({
       const now = Date.now()
       if (isThrottled(getUserIdentifier(source, user), now)) return
       const url = confirmUrl.replace('{token}', createToken(source, user, now))
-      Promise.try(() => send(c, user, url)).catch(error => onError?.(c, error))
+      Promise.try(() => send({ c, user, url })).catch(error =>
+        onError?.({ error, c })
+      )
     },
 
     // The user of a token that hasn't expired and is signed with one of the

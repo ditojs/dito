@@ -9,7 +9,7 @@ export type {
   DitoEnv,
   DitoVariables,
   Handler,
-  HandlerInput,
+  HandlerContext,
   Middleware,
   MixinDefinition,
   Transaction,

@@ -46,7 +46,7 @@ export function createUsersApi<U extends TestUser>({
   // Leaves out the hidden `hash`.
   const source = createEntityUserSource(entity, {
     em: orm.em,
-    serialize: (c, user) => wrap(user).toObject()
+    serialize: ({ user }) => wrap(user).toObject()
   })
   const sessions = createSessions({
     adapter: createMikroAdapter(orm),
@@ -79,7 +79,7 @@ export function createUsersApi<U extends TestUser>({
       }
     ],
     middleware: [sessions.middleware],
-    getUser: c => getSessionUser(c, source),
+    getUser: ({ c }) => getSessionUser(c, source),
     authentication: features
   }
 }

@@ -34,17 +34,17 @@ With `vite`, Vite handles the requests through the Node request and response of
 
 ### AdminOptions
 
-| Key              | Type                                                               | Description                                                                                                                                                       |
-| ---------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `base`           | `string`                                                           | The path of the admin, such as `/admin`.                                                                                                                          |
-| `dist`           | `string`                                                           | The built admin, served without `vite`.                                                                                                                           |
-| `api`            | `object`                                                           | `dito.api` in the browser, such as `url` and `users`.                                                                                                             |
-| `settings`       | `object`                                                           | `dito.settings` in the browser.                                                                                                                                   |
-| `authentication` | `AuthenticationFeatures`                                           | `dito.authentication`: the `features` of [`defineUserActions()`](../server/auth.md#defineuseractions), which tell the login and account views what to offer.      |
-| `middleware`     | `Middleware \| Middleware[]`                                       | Hono middleware that `getUser` and `authorize` need, such as the session middleware. It runs only on the requests that `authorize` checks.                        |
-| `getUser`        | `(c) => User \| null \| Promise<…>`                                | The signed-in user of the request, such as the one of [`getSessionUser()`](../server/auth.md#getsessionuser). `authorize` reads it as `c.var.user`.               |
-| `authorize`      | `true \| string \| string[] \| (c) => boolean \| Promise<boolean>` | Who may load the admin's views. It takes the values of an action's [`authorize`](../server/controllers.md#authorize). Without it, anyone may.                     |
-| `vite`           | `InlineConfig \| string`                                           | The Vite config of development, or the path of its file, such as one that exports [`defineAdminViteConfig()`](vite.md). With it, Vite serves the admin's sources. |
+| Key              | Type                                                                         | Description                                                                                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `base`           | `string`                                                                     | The path of the admin, such as `/admin`.                                                                                                                          |
+| `dist`           | `string`                                                                     | The built admin, served without `vite`.                                                                                                                           |
+| `api`            | `object`                                                                     | `dito.api` in the browser, such as `url` and `users`.                                                                                                             |
+| `settings`       | `object`                                                                     | `dito.settings` in the browser.                                                                                                                                   |
+| `authentication` | `AuthenticationFeatures`                                                     | `dito.authentication`: the `features` of [`defineUserActions()`](../server/auth.md#defineuseractions), which tell the login and account views what to offer.      |
+| `middleware`     | `Middleware \| Middleware[]`                                                 | Hono middleware that `getUser` and `authorize` need, such as the session middleware. It runs only on the requests that `authorize` checks.                        |
+| `getUser`        | `({ c }) => User \| null \| Promise<…>`                                      | The signed-in user of the request, such as the one of [`getSessionUser()`](../server/auth.md#getsessionuser). `authorize` reads it as `c.var.user`.               |
+| `authorize`      | `true \| string \| string[] \| ({ c, user }) => boolean \| Promise<boolean>` | Who may load the admin's views. It takes the values of an action's [`authorize`](../server/controllers.md#authorize). Without it, anyone may.                     |
+| `vite`           | `InlineConfig \| string`                                                     | The Vite config of development, or the path of its file, such as one that exports [`defineAdminViteConfig()`](vite.md). With it, Vite serves the admin's sources. |
 
 ```js
 const admin = createAdmin({
@@ -55,7 +55,7 @@ const admin = createAdmin({
   api: { url: '/api/admin', users: { path: 'admins' } },
   authentication: adminUsers.features,
   middleware: adminSessions.middleware,
-  getUser: c => getSessionUser(c, adminSource),
+  getUser: ({ c }) => getSessionUser(c, adminSource),
   authorize: 'admin'
 })
 app.route('/admin', admin)

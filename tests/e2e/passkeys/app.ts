@@ -37,7 +37,7 @@ export function createApi(orm: TestOrm) {
         resendAfter: 0,
         // The tests open the token of the links on the admin's own URL:
         confirmUrl: 'http://localhost/admin/#password-reset={token}',
-        send: (_c, _user, url) => {
+        send: ({ url }) => {
           sentPasswordResets.push(url)
         }
       })

@@ -27,7 +27,7 @@ const api = createApi({
   controllers: [users.controller, ...controllers],
   adapter,
   middleware: [sessions.middleware],
-  getUser: c => getSessionUser(c, adminSource)
+  getUser: ({ c }) => getSessionUser(c, adminSource)
 })
 
 const app = new Hono()

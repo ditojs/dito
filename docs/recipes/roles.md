@@ -30,7 +30,7 @@ UserSchema.setClass(User)
 
 // In the user source of `@ditojs/auth`, which reads `id`, `hash` and
 // `roles` from the users:
-serialize: (c, user) => ({
+serialize: ({ user }) => ({
   id: user.id,
   username: user.username,
   roles: user.roles
@@ -105,7 +105,7 @@ admin's views:
 createAdmin({
   ...options,
   middleware: sessions.middleware,
-  getUser: c => getSessionUser(c, source),
+  getUser: ({ c }) => getSessionUser(c, source),
   authorize: ['editor', 'desk', 'admin']
 })
 ```

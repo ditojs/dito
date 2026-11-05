@@ -26,7 +26,7 @@ import { z } from 'zod'
 })
 ```
 
-The output of the schemas becomes `query` and `body` of the handler's input, and
+The output of the schemas becomes `query` and `body` of the handler's context, and
 `c.req.valid('query')` and `c.req.valid('json')`, so transforms and defaults
 apply. `defineAction()` gives them their types in the handler.
 

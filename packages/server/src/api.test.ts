@@ -17,7 +17,7 @@ import {
   type ApiConfig,
   type ControllerDefinition,
   type DitoContext,
-  type HandlerInput,
+  type HandlerContext,
   type Middleware,
   type Transaction,
   type User
@@ -209,7 +209,7 @@ describe('routing', () => {
   })
 
   it('answers HEAD as GET without a body', async () => {
-    const handler = vi.fn(({ c }: HandlerInput) => {
+    const handler = vi.fn(({ c }: HandlerContext) => {
       c.header('X-Total', '2')
       return ['a', 'b']
     })
@@ -558,7 +558,7 @@ describe('composition', () => {
           await next()
         },
         connect: c => `db ${c.var.session}`,
-        getUser: async c => ({ id: String(c.var.session), roles: [] })
+        getUser: async ({ c }) => ({ id: String(c.var.session), roles: [] })
       }
     )
     expect(await json(api, 'GET', '/api/fonts')).toEqual(['db em', 'em', 'em'])
@@ -670,7 +670,7 @@ describe('authorize', () => {
 
   it('calls a function with the context', async () => {
     const api = setup(
-      [controller({ authorize: c => c.req.header('X-Key') === 'yes' })],
+      [controller({ authorize: ({ c }) => c.req.header('X-Key') === 'yes' })],
       { user: null }
     )
     expect((await request(api, 'GET', '/api/fonts')).status).toBe(401)
@@ -684,9 +684,9 @@ describe('authorize', () => {
     const api = setup(
       [
         controller({
-          authorize: ({ req, var: { user } }) => (
+          authorize: ({ c, user }) => (
             !!user?.roles.includes('admin') ||
-            req.param('id') === String(user?.id)
+            c.req.param('id') === String(user?.id)
           ),
           actions: { 'get :id': () => 'row' }
         })
@@ -1565,8 +1565,8 @@ describe('errors', () => {
       status: 500
     })
     expect(onError).toHaveBeenCalledTimes(1)
-    expect(onError.mock.calls[0]![0]).toBe(error)
-    const c: DitoContext = onError.mock.calls[0]![1]
+    const { error: logged, c } = onError.mock.calls[0]![0]
+    expect(logged).toBe(error)
     expect(c.req.url).toBe('https://example.com/api/fonts/4/publish')
     expect(c.req.param('id')).toBe('4')
     expect((await request(api, 'GET', '/api/fonts/missing')).status).toBe(404)
@@ -1601,7 +1601,7 @@ describe('errors', () => {
     expect(response.status).toBe(503)
     expect(response.data.message).toBe('GET of 4')
     expect(toHttpError.mock.calls[0]![0]).toBe(error)
-    expect(onError.mock.calls[0]![0]).toBe(error)
+    expect(onError.mock.calls[0]![0].error).toBe(error)
   })
 
   it('keeps the headers on error responses, but not those of the data', async () => {
@@ -1699,7 +1699,7 @@ describe('errors', () => {
     const failed = await app.request('/fail')
     expect(failed.status).toBe(500)
     expect(onError).toHaveBeenCalledTimes(1)
-    expect(onError.mock.calls[0]![0]).toMatchObject({ message: 'Boom' })
+    expect(onError.mock.calls[0]![0].error).toMatchObject({ message: 'Boom' })
   })
 
   describe('logging by default', () => {
@@ -1776,7 +1776,7 @@ describe('controllers of a module', () => {
 
 describe('types', () => {
   it('passes the input and context of any action to helpers', () => {
-    const getName = ({ user, params, c }: HandlerInput) => (
+    const getName = ({ user, params, c }: HandlerContext) => (
       user?.id ?? params.name ?? c.req.path
     )
     defineController({

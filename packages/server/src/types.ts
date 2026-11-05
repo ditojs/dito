@@ -5,8 +5,8 @@ import type { HttpError } from './errors.ts'
 // A controller is a plain object with one map of `actions`, keyed
 // `'verb path'`, such as `get`, `get :id` or `post :id/publish`. A path that
 // starts with `:id` is a member action. Paths use Hono's syntax. A handler gets
-// one object, the input of the request, with Hono's context as `c` and the
-// handler beneath as `next`. Middleware reads Dito's variables from `c.var`.
+// one object, its context, with Hono's context as `c` and the handler beneath
+// as `next`. Middleware reads Dito's variables from `c.var`.
 
 export type Verb = 'get' | 'post' | 'put' | 'patch' | 'delete'
 
@@ -53,9 +53,9 @@ export type DitoContext<Query = any, Body = any> = Context<
   { out: { query: Query; json: Body } }
 >
 
-// The input of a handler, built for each request and each layer. It also holds
-// the app's own variables, such as a session.
-export interface HandlerInput<Query = Record<string, any>, Body = any>
+// The context of a handler, built for each request and each layer. It also
+// holds the app's own variables, such as a session.
+export interface HandlerContext<Query = Record<string, any>, Body = any>
   extends DitoVariables {
   // The result of the `query` schema, else the first value of each
   // parameter.
@@ -65,7 +65,7 @@ export interface HandlerInput<Query = Record<string, any>, Body = any>
   // Hono's context.
   c: DitoContext<Query, Body>
   // Runs the handler of the same key in the layer beneath, and returns its
-  // result. That handler sees the changes that this one makes to its input.
+  // result. That handler sees the changes that this one makes to its context.
   next: () => Promise<unknown>
 }
 
@@ -73,17 +73,20 @@ export interface HandlerInput<Query = Record<string, any>, Body = any>
 export type Middleware = MiddlewareHandler<DitoEnv>
 
 // `true` lets anyone in. Roles grant access if the user has any of them. A
-// function gets the context, and reads the id of a member action with
-// `c.req.param('id')`.
+// function gets Hono's context and the user, and reads the id of a member
+// action with `c.req.param('id')`.
 export type Authorize =
   | true
   | string
   | string[]
-  | ((c: DitoContext) => boolean | Promise<boolean>)
+  | ((context: {
+      c: DitoContext
+      user: User | null
+    }) => boolean | Promise<boolean>)
 
 // A handler returns data, which Dito sends as JSON, or a `Response`.
 export type Handler<Query = Record<string, any>, Body = any> = (
-  input: HandlerInput<Query, Body>
+  context: HandlerContext<Query, Body>
 ) => unknown
 
 type Output<S, Default> = S extends z.ZodType ? z.output<S> : Default
@@ -101,7 +104,7 @@ export interface ActionSettings {
 }
 
 // An action with schemas, from `defineAction()`, which types `query` and `body`
-// of the input from them.
+// of the handler's context from them.
 export interface ActionDefinition<
   Q extends z.ZodType | undefined = undefined,
   B extends z.ZodType | undefined = undefined
@@ -168,7 +171,10 @@ export interface Adapter {
 }
 
 // Called with each error with a status of 500 or above, for the app's logs.
-export type ErrorLogger = (error: unknown, c: Context) => void | Promise<void>
+export type ErrorLogger = (context: {
+  error: unknown
+  c: Context
+}) => void | Promise<void>
 
 export interface ApiConfig {
   // A list, or an object such as a module namespace, of which only the
@@ -178,7 +184,7 @@ export interface ApiConfig {
   middleware?: Middleware | Middleware[]
   adapter?: Adapter
   // The signed-in user of the request, or null.
-  getUser?: (c: DitoContext) => User | null | Promise<User | null>
+  getUser?: (context: { c: DitoContext }) => User | null | Promise<User | null>
   // By default, logs through `c.var.logger`, else `console`.
   onError?: ErrorLogger
 }

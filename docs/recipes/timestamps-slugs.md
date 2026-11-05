@@ -50,7 +50,7 @@ Some values depend on the request, such as the user who changed a book. Add them
 to the body in the controller's `deserialize`, which runs before these checks:
 
 ```js
-deserialize: (c, json) => ({ ...json, changedBy: c.var.user.id })
+deserialize: ({ json, c }) => ({ ...json, changedBy: c.var.user.id })
 ```
 
 See also:

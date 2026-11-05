@@ -50,13 +50,13 @@ them.
 
 ### ApiConfig
 
-| Key           | Type                                           | Description                                                                                                                                                                             |
-| ------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `controllers` | `ControllerDefinition[] \| object`             | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, all other values are ignored. |
-| `middleware`  | `Middleware \| Middleware[]`                   | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.em` and `c.var.user`.                                                            |
-| `adapter`     | [`Adapter`](#adapter)                          | The database, [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined and no action runs in a transaction.                                              |
-| `getUser`     | `(c) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                |
-| `onError`     | `(error, c) => void \| Promise<void>`          | Called with each error with a status of 500 or above, for the app's logs. By default, logs through `c.var.logger`, else `console`. See [Errors](errors.md).                             |
+| Key           | Type                                               | Description                                                                                                                                                                             |
+| ------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `controllers` | `ControllerDefinition[] \| object`                 | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, all other values are ignored. |
+| `middleware`  | `Middleware \| Middleware[]`                       | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.em` and `c.var.user`.                                                            |
+| `adapter`     | [`Adapter`](#adapter)                              | The database, [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined and no action runs in a transaction.                                              |
+| `getUser`     | `({ c }) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                |
+| `onError`     | `({ error, c }) => void \| Promise<void>`          | Called with each error with a status of 500 or above, for the app's logs. By default, logs through `c.var.logger`, else `console`. See [Errors](errors.md).                             |
 
 ### The request
 
@@ -74,7 +74,7 @@ For each request of an action, Hono and Dito:
 8. open the transaction of the adapter, for writes unless `transacted: false`, and for
    reads with `transacted: true`;
 9. run the `middleware` of the layers and of the action;
-10. run the handler with its input, and send the result, see
+10. run the handler with its context, and send the result, see
     [Handler](controllers.md#handler).
 
 Errors go to the API's error handler, which works like
@@ -83,10 +83,10 @@ Errors go to the API's error handler, which works like
 `await next()` of middleware returns, with the error in `c.error`. The
 transaction rolls back when `c.error` is set.
 
-### The handler's input
+### The handler's context
 
 ```ts
-interface HandlerInput<Query, Body> extends DitoVariables {
+interface HandlerContext<Query, Body> extends DitoVariables {
   query: Query
   body: Body
   params: Record<string, string>
@@ -95,7 +95,7 @@ interface HandlerInput<Query, Body> extends DitoVariables {
 }
 ```
 
-Dito builds the input for each request and each layer:
+Dito builds the context for each request and each layer:
 
 | Key      | Description                                                                                                                                                                                                                                                                                                      |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -106,11 +106,11 @@ Dito builds the input for each request and each layer:
 | `em`     | The database handle of the request, from `connect()` of the `adapter`, such as a fork of the entity manager. During a transaction, the transaction's handle.                                                                                                                                                     |
 | `action` | The key of the action that runs, such as `'get'` or `'post :id/publish'`.                                                                                                                                                                                                                                        |
 | `c`      | [Hono's context](controllers.md#ditocontext) of the request.                                                                                                                                                                                                                                                     |
-| `next`   | Runs the handler beneath, and returns its result. That handler sees the changes that this one makes to its input, such as a new `body`.                                                                                                                                                                          |
+| `next`   | Runs the handler beneath, and returns its result. That handler sees the changes that this one makes to its context, such as a new `body`.                                                                                                                                                                        |
 
 `user`, `em`, `action` and `body` are also Hono variables, `c.var.user` and so
 on, which middleware and `authorize` read. They read parameters with
-`c.req.param()`, such as `c.req.param('id')`. The input also holds all other
+`c.req.param()`, such as `c.req.param('id')`. The context also holds all other
 variables, such as `getRecord()`, `find()` and `list()` of [model
 controllers](mikro.md#definemodelcontroller), and a session that middleware sets
 with `c.set()`. Apps type their own by augmenting `DitoVariables`:
@@ -127,7 +127,7 @@ declare module '@ditojs/server' {
 
 ```ts
 interface Adapter {
-  connect?(c: DitoContext): unknown
+  connect?(c: DitoContext): DitoVariables['em'] | Promise<DitoVariables['em']>
   transaction?: Transaction
   toHttpError?(error: unknown, c: DitoContext): HttpError | undefined
 }

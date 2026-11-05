@@ -15,13 +15,15 @@ const getDb = useTestDatabase()
 let db: Kysely<any>
 let ada: TestUser
 let customers: ReturnType<typeof createSource>
-let send: Mock<(c: unknown, user: unknown, url: string) => unknown>
-let onError: Mock<(c: unknown, error: unknown) => void>
+let send: Mock<
+  (context: { c: unknown; user: unknown; url: string }) => unknown
+>
+let onError: Mock<(context: { error: unknown; c: unknown }) => void>
 let client: ReturnType<typeof createClient>
 let other: ReturnType<typeof createClient>
 
 const getToken = () => {
-  const url: string = send.mock.calls.at(-1)![2]
+  const url: string = send.mock.calls.at(-1)![0].url
   return url.slice(url.indexOf('#password-reset=') + 16)
 }
 
@@ -72,7 +74,7 @@ describe('passwordReset()', () => {
     )
     expect((await request('nobody@example.com')).status).toBe(204)
     expect(send).toHaveBeenCalledTimes(1)
-    expect(send.mock.calls[0]![1]).toBe(ada)
+    expect(send.mock.calls[0]![0].user).toBe(ada)
     expect(await request(undefined)).toMatchObject({
       status: 400,
       data: {
@@ -91,7 +93,7 @@ describe('passwordReset()', () => {
     send.mockRejectedValueOnce(error)
     expect((await request('ada@example.com')).status).toBe(204)
     await vi.waitFor(() => expect(onError).toHaveBeenCalled())
-    expect(onError.mock.calls[0][1]).toBe(error)
+    expect(onError.mock.calls[0]![0].error).toBe(error)
   })
 
   it('sends one link per minute and user', async () => {
@@ -194,7 +196,7 @@ describe('passwordReset()', () => {
     // HMAC-SHA256 over `["Customer-1",time,hash,lastLogin,username]`:
     const user = { ...ada, hash: 'hash', lastLogin: new Date() }
     feature.sendLink({} as any, customers, user)
-    expect(send.mock.calls[0]![2]).toBe(
+    expect(send.mock.calls[0]![0].url).toBe(
       'MQ.mjuohs00.K7uAn90VappUNf7Z2Ago4lWBx3WDX6AYby1XYSmjCr8'
     )
   })
@@ -211,7 +213,7 @@ describe('passwordReset()', () => {
       send
     })
     older.sendLink({} as any, customers, ada)
-    const token = send.mock.calls[0]![2]
+    const token = send.mock.calls[0]![0].url
     expect(await rotated.findUser({} as any, customers, token)).toBe(ada)
     expect(
       await createPasswordReset({ secrets, confirmUrl: '{token}', send })

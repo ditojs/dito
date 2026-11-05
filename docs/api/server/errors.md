@@ -88,7 +88,7 @@ throw new HttpError(403, {
 
 ```ts
 createErrorHandler({
-  onError?: (error: unknown, c: Context) => void | Promise<void>,
+  onError?: ({ error, c }: { error: unknown; c: Context }) => void | Promise<void>,
   toHttpError?: (error: unknown, c: Context) => HttpError | undefined
 }?): ErrorHandler
 ```
@@ -115,7 +115,7 @@ error, such as cookies and those of `cors()`, but not `Content-*`, `ETag`,
 ```js
 app.onError(createErrorHandler())
 // With a logger of the app:
-app.onError(createErrorHandler({ onError: error => logger.error(error) }))
+app.onError(createErrorHandler({ onError: ({ error }) => logger.error(error) }))
 ```
 
 Hono only handles `Error`s, so throw an `HttpError`, not a `Response`.

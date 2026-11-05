@@ -7,6 +7,8 @@ import {
 } from '@ditojs/server'
 import { convertQueryValue, queryValidation } from '@ditojs/server/internal'
 import { asArray, isEmpty, isString, mapConcurrently } from '@ditojs/utils'
+import type { EntityManager } from '@mikro-orm/sql'
+import { getEntityManager } from './createMikroAdapter.ts'
 import { runSchema } from './validation.ts'
 
 // Filters of lists: `defineFilter()` types any filter, and the others read the
@@ -20,11 +22,12 @@ import { runSchema } from './validation.ts'
 // a MikroORM `where`, or undefined to skip it. A schema alone is short for
 // `{ [name]: value }`. Several arguments give the schema an array.
 
-export type FilterWhere<Value = any> = (
-  value: Value,
-  c: DitoContext,
+export type FilterWhere<Value = any> = (context: {
+  value: Value
   name: string
-) => object | undefined | Promise<object | undefined>
+  c: DitoContext
+  em: EntityManager
+}) => object | undefined | Promise<object | undefined>
 
 export type Filter =
   | z.ZodType
@@ -48,7 +51,7 @@ export function defineTextFilter(properties: string[] = []): Filter {
       z.string(),
       z.tuple([z.enum(operators).or(z.literal('')), z.string()])
     ]),
-    where(value: string | [string, string], c, name) {
+    where({ value, name }: { value: string | [string, string]; name: string }) {
       const [operator, text] = isString(value) ? ['', value] : value
       if (!text) return undefined
       const escaped = text.replace(/[\\%_]/g, '\\$&')
@@ -75,7 +78,7 @@ export function defineDateRangeFilter(property?: string): Filter {
   const date = z.iso.datetime({ offset: true }).or(z.literal(''))
   return {
     schema: z.union([date, z.tuple([date]), z.tuple([date, date])]),
-    where(value: string | string[], c, name) {
+    where({ value, name }: { value: string | string[]; name: string }) {
       const [from, to] = asArray(value)
       const range = {
         ...(from && { $gte: new Date(from) }),
@@ -99,7 +102,7 @@ export async function getFilterWheres(
     }
     // Not `instanceof`, which fails with two copies of Zod.
     return 'safeParseAsync' in filter
-      ? { name, value, schema: filter, where: toWhere(name) }
+      ? { name, value, schema: filter, where: toWhere }
       : { name, value, ...filter }
   })
   const issues: ValidationIssue[] = []
@@ -119,14 +122,15 @@ export async function getFilterWheres(
       type: 'FilterValidation'
     })
   }
+  const em = getEntityManager(c)
   const wheres = await mapConcurrently(parsed, ({ name, value, where }) =>
-    where(value, c, name)
+    where({ value, name, c, em })
   )
   return wheres.filter(where => where !== undefined)
 }
 
 // MikroORM reads `relation.id` as a nested `where`, not as a dotted key.
-const toWhere = (name: string) => (value: unknown) =>
+const toWhere: FilterWhere = ({ value, name }) =>
   name
     .split('.')
     .reduceRight<unknown>((where, key) => ({ [key]: where }), value) as object
