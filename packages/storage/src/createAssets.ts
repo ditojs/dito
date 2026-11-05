@@ -23,8 +23,8 @@ export interface CreateAssetsOptions {
   adapter: { getKysely(): Kysely<any> }
   paths: AssetPath[]
   storages: StorageRegistry
-  // The `deleteUnusedAfter` of `runJobs()`, in milliseconds. By default,
-  // `false` skips the release.
+  // The `deleteUnusedAfter` of `runJobs()`, in milliseconds, unless a call
+  // passes its own. By default, `false` skips the release.
   deleteUnusedAfter?: number | false
 }
 
@@ -114,15 +114,20 @@ export function createAssets({
     },
 
     // Scans the references and releases the files unreferenced for longer
-    // than `deleteUnusedAfter`.
-    runJobs({ dryRun, now }: { dryRun?: boolean; now?: Date } = {}) {
+    // than `deleteUnusedAfter`, of the call or else of the options.
+    runJobs(
+      options: {
+        dryRun?: boolean
+        now?: Date
+        deleteUnusedAfter?: number | false
+      } = {}
+    ) {
       return runAssetJobs({
+        ...options,
         db: adapter.getKysely(),
         paths,
         storages,
-        deleteUnusedAfter,
-        dryRun,
-        now
+        deleteUnusedAfter: options.deleteUnusedAfter ?? deleteUnusedAfter
       })
     }
   }

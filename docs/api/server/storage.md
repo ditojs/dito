@@ -179,7 +179,7 @@ rolls back, and the release deletes them.
 | `store(storage, { name, type?, data })`             | Stores a file that the server creates, see [Stored files](#stored-files).                            |
 | `import(table, data)`                               | Imports the files of a row's data, see [Asset jobs](#asset-jobs). Returns `data`.                    |
 | `findReferences({ tables?, storage?, keys?, c? }?)` | Lists the files that rows reference, see [Asset jobs](#asset-jobs).                                  |
-| `runJobs({ dryRun?, now? }?)`                       | Runs the scan and the release, see [Asset jobs](#asset-jobs).                                        |
+| `runJobs({ dryRun?, now?, deleteUnusedAfter? }?)`   | Runs the scan and the release, see [Asset jobs](#asset-jobs).                                        |
 | `paths`, `storages`                                 | The options.                                                                                         |
 
 ```js
@@ -272,8 +272,10 @@ create table asset (
 );
 ```
 
-`assets.runJobs({ dryRun?, now? })` runs the scan, then the release unless
-`deleteUnusedAfter` is `false`, and returns `{ scan, released }`:
+`assets.runJobs({ dryRun?, now?, deleteUnusedAfter? })` runs the scan, then the
+release unless `deleteUnusedAfter` is `false`, and returns `{ scan, released }`.
+The `deleteUnusedAfter` of the call overrides the one of `createAssets()`: `false`
+only scans, and `0` releases all unreferenced files now:
 
 - The scan finds the files that rows reference at the asset paths, sets
   `unreferenced_since` of the unreferenced files, clears it for the referenced

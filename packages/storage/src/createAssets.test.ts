@@ -99,6 +99,23 @@ describe('createAssets()', () => {
     expect(released).toEqual([{ key: 'old', storage: 'covers' }])
   })
 
+  it('takes `deleteUnusedAfter` per call of `runJobs()`', async () => {
+    const assets = createBookAssets()
+    await addAsset('old', { since: old })
+    await addAsset('new', { since: now })
+    const release = async (deleteUnusedAfter?: number | false) => {
+      const { released } = await assets.runJobs({
+        dryRun: true,
+        now,
+        deleteUnusedAfter
+      })
+      return released.map(asset => asset.key).sort()
+    }
+    expect(await release()).toEqual(['old'])
+    expect(await release(false)).toEqual([])
+    expect(await release(0)).toEqual(['new', 'old'])
+  })
+
   describe('in a request', () => {
     // Runs `fn` in a write of an API with transactions, which rolls back
     // when `fn` throws.
