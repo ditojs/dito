@@ -26,8 +26,8 @@ import { runSchema } from './schema-json.ts'
 // skip it. A schema alone is short for `{ [name]: value }`. Several arguments
 // give the schema an array.
 
-type FilterWhere = (
-  value: any,
+export type FilterWhere<Value = any> = (
+  value: Value,
   c: DitoContext,
   name: string
 ) => object | undefined | Promise<object | undefined>

@@ -58,7 +58,7 @@ it, see [Writes](writes.md). These rules of the entity matter for Dito:
 ## Controllers
 
 ```js
-import { defineModelController } from '@ditojs/mikro'
+import { defineFilter, defineModelController } from '@ditojs/mikro'
 import { q } from '@ditojs/server/zod'
 import { z } from 'zod'
 
@@ -75,7 +75,10 @@ export const articles = defineModelController({
   }),
   filters: {
     author: q.integer(),
-    tag: { schema: z.string(), where: name => ({ tags: { name } }) }
+    tag: defineFilter({
+      schema: z.string(),
+      where: name => ({ tags: { name } })
+    })
   },
   actions: {
     'get': { authorize: true },
@@ -216,21 +219,26 @@ reveals something about the values of a column.
 - a schema, which validates the value
 - a `where`, which turns the value into a MikroORM `where`
 
+`defineFilter()` types the `where` by the output of the schema:
+
 ```js
 filters: {
-  // Short for { schema: q.integer(), where: id => ({ author: id }) }.
+  // A schema alone filters by the property of the name, `author`.
   author: q.integer(),
-  tag: { schema: z.string(), where: name => ({ tags: { name } }) },
-  status: {
+  tag: defineFilter({
+    schema: z.string(),
+    where: name => ({ tags: { name } })
+  }),
+  status: defineFilter({
     schema: z.enum(['draft', 'published', 'all']),
     where: status =>
       status === 'all' ? undefined : { published: status === 'published' }
-  },
+  }),
   // A filter's `where` gets Hono's context too.
-  mine: {
+  mine: defineFilter({
     schema: q.boolean(),
     where: (mine, c) => (mine ? { author: c.var.user.id } : undefined)
-  }
+  })
 }
 ```
 

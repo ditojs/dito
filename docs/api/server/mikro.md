@@ -6,6 +6,7 @@ import {
   defineListHandler,
   defineChoices,
   crud,
+  defineFilter,
   defineTextFilter,
   defineDateRangeFilter,
   setRecord,
@@ -370,18 +371,37 @@ is short for a filter whose `where` returns `{ [name]: value }`. The list joins
 ```js
 filters: {
   author: q.integer(),
-  tag: { schema: z.string(), where: name => ({ tags: { name } }) },
-  status: {
+  tag: defineFilter({
+    schema: z.string(),
+    where: name => ({ tags: { name } })
+  }),
+  status: defineFilter({
     schema: z.enum(['draft', 'published', 'all']),
     where: status =>
       status === 'all' ? undefined : { published: status === 'published' }
-  }
+  })
 }
 ```
 
 Filters that apply to every query, such as soft deletes or tenants, are
 MikroORM's [entity filters](https://mikro-orm.io/docs/filters) with
 `default: true`.
+
+### defineFilter()
+
+```ts
+defineFilter<S extends z.ZodType>(filter: {
+  schema: S
+  where: (
+    value: z.output<S>,
+    c: DitoContext,
+    name: string
+  ) => object | undefined | Promise<object | undefined>
+}): Filter
+```
+
+Returns the filter as it is. It only types the `value` of `where` by the output
+of the schema.
 
 ### defineTextFilter()
 

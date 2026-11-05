@@ -20,6 +20,7 @@ import {
   crud,
   defineChoices,
   defineDateRangeFilter,
+  defineFilter,
   defineListHandler,
   defineModelController,
   defineTextFilter,
@@ -323,6 +324,24 @@ describe('get', () => {
       'Bea'
     )
     expect(names(json)).toEqual(['Burns'])
+  })
+
+  it('types `where` by the schema of `defineFilter()`', async () => {
+    const api = setup(
+      books({
+        filters: {
+          below: defineFilter({
+            schema: q.integer(),
+            where: id => {
+              expectTypeOf(id).toEqualTypeOf<number>()
+              return { id: { $lt: id } }
+            }
+          })
+        }
+      })
+    )
+    const { json } = await request(api, 'GET', '/api/books?filter=below:2')
+    expect(json.map((book: Book) => book.id)).toEqual([1])
   })
 
   it('combines the filters with `find.where`, also on the same key', async () => {

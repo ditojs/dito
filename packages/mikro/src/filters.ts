@@ -1,11 +1,20 @@
 import { asArray, isEmpty, isString } from '@ditojs/utils'
 import { z } from 'zod'
-import type { Filter } from './list.ts'
+import type { Filter, FilterWhere } from './list.ts'
 
-// Server filters for the admin's `text` and `date-range` list filters. The
-// admin sends `filter=name:"text"`, or `filter=name:"operator","text"` with
-// operators, and `filter=name:"from","to"` for date ranges.
-// Without properties, a filter applies to the property of its name.
+// Filters of lists: `defineFilter()` types any filter, and the others read the
+// admin's `text` and `date-range` list filters. The admin sends
+// `filter=name:"text"`, or `filter=name:"operator","text"` with operators, and
+// `filter=name:"from","to"` for date ranges. Without properties, a filter
+// applies to the property of its name.
+
+// Types `where` by the output of `schema`.
+export function defineFilter<S extends z.ZodType>(filter: {
+  schema: S
+  where: FilterWhere<z.output<S>>
+}): Filter {
+  return filter
+}
 
 const operators = ['contains', 'equals', 'starts-with', 'ends-with'] as const
 

@@ -13,7 +13,11 @@ export { crud, defineChoices, defineListHandler } from './crud.ts'
 export { setRecord } from './model-request.ts'
 export { assignRecord, createRecord } from './write.ts'
 export type { Find, FindShape } from './find.ts'
-export { defineDateRangeFilter, defineTextFilter } from './filters.ts'
+export {
+  defineDateRangeFilter,
+  defineFilter,
+  defineTextFilter
+} from './filters.ts'
 export type { Filter } from './list.ts'
 export { parseListQuery, type ListQuery } from './list-query.ts'
 export { defineMikroConfig, getAssetPaths } from './config.ts'
