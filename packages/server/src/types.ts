@@ -49,7 +49,7 @@ export type DitoContext<Query = any, Body = any> = Context<
 
 // The input of a handler, built for each request and each layer. It also holds
 // the app's own variables, such as a session.
-export interface DitoInput<Query = Record<string, any>, Body = any>
+export interface HandlerInput<Query = Record<string, any>, Body = any>
   extends DitoVariables {
   // The result of the `query` schema, else the first value of each
   // parameter.
@@ -77,7 +77,7 @@ export type Authorize =
 
 // A handler returns data, which Dito sends as JSON, or a `Response`.
 export type Handler<Query = Record<string, any>, Body = any> = (
-  input: DitoInput<Query, Body>
+  input: HandlerInput<Query, Body>
 ) => unknown
 
 type Output<S, Default> = S extends z.ZodType ? z.output<S> : Default
@@ -91,11 +91,11 @@ export interface ActionSettings {
   middleware?: Middleware | Middleware[]
   // Writes run in a transaction unless this is false, for actions that run
   // their own. Reads run in one if this is true.
-  transaction?: boolean
+  transacted?: boolean
 }
 
-// An action with schemas, from `action()`, which types `query` and `body` of
-// the input from them.
+// An action with schemas, from `defineAction()`, which types `query` and `body`
+// of the input from them.
 export interface ActionDefinition<
   Q extends z.ZodType | undefined = undefined,
   B extends z.ZodType | undefined = undefined

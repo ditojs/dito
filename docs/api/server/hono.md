@@ -14,7 +14,7 @@ Dito APIs are [Hono](https://hono.dev) apps, which the app routes in its own
 ## hostMiddleware()
 
 ```ts
-hostMiddleware(options?: HostOptions): MiddlewareHandler[]
+hostMiddleware(options?: HostMiddlewareOptions): MiddlewareHandler[]
 ```
 
 Returns Hono's standard middleware for a host, for
@@ -70,12 +70,12 @@ serve(app: Hono, options?: ServeOptions): Promise<{ server, close }>
 ```
 
 Listens on Node, and returns the Node server and `close()`. `close()` stops
-the server, then runs `onClose`. It fails after `shutdownTimeout`. SIGINT and
+the server, then runs `onClose`. It fails after `closeTimeout`. SIGINT and
 SIGTERM call `close()` and exit the process.
 
-| Option            | Type                          | Description                                                                   |
-| ----------------- | ----------------------------- | ----------------------------------------------------------------------------- |
-| `port`            | `number \| string`            | Default: a free port.                                                         |
-| `host`            | `string`                      | The host to listen on.                                                        |
-| `shutdownTimeout` | `number`                      | The milliseconds `close()` may take. `0`, the default, waits without a limit. |
-| `onClose`         | `() => void \| Promise<void>` | Runs after the server has stopped, such as `orm.close()`.                     |
+| Option         | Type                          | Description                                                                   |
+| -------------- | ----------------------------- | ----------------------------------------------------------------------------- |
+| `port`         | `number \| string`            | Default: a free port.                                                         |
+| `host`         | `string`                      | The host to listen on.                                                        |
+| `closeTimeout` | `number`                      | The milliseconds `close()` may take. `0`, the default, waits without a limit. |
+| `onClose`      | `() => void \| Promise<void>` | Runs after the server has stopped, such as `orm.close()`.                     |

@@ -4,14 +4,14 @@ A controller is a plain object with a `path` and a map of `actions`. Each key of
 `actions` is a route, with the verb and the path below the controller's path:
 
 ```js
-import { action, defineController } from '@ditojs/server'
+import { defineAction, defineController } from '@ditojs/server'
 import { z } from 'zod'
 
 export const newsletters = defineController({
   path: 'newsletters',
   authorize: true,
   actions: {
-    'put subscribe': action({
+    'put subscribe': defineAction({
       body: z.object({ email: z.email() }),
       handler: ({ body: { email } }) => subscribe(email)
     })
@@ -154,12 +154,12 @@ the handlers beneath it, but not for the handlers above it.
 An action's `query` and `body` are [Zod schemas](validation.md). Dito
 validates the request with them before the handler runs, and invalid input
 responds with 400 and the issues. Their output becomes `query` and `body` of the
-input. `action()` gives them their types in the handler:
+input. `defineAction()` gives them their types in the handler:
 
 ```js
 import { q } from '@ditojs/server/zod'
 
-'get search': action({
+'get search': defineAction({
   query: z.object({ term: z.string(), limit: q.integer().default(20) }),
   handler: ({ db, query: { term, limit } }) => search(db, term, limit)
 })
@@ -192,7 +192,7 @@ export const readable = defineMixin({
 // The authorization and transaction of the admin's controllers.
 export const admin = defineMixin({
   authorize: ['superuser', 'admin'],
-  transaction: true
+  transacted: true
 })
 ```
 
@@ -315,15 +315,15 @@ body of a write from `c.var.body`, the same object that the handler gets.
 ## Transactions
 
 Writes run in the API's `transaction`, and reads don't. An action, a controller
-or a mixin can change this with `transaction`:
+or a mixin can change this with `transacted`:
 
 ```js
 // The admin has GET actions that write, so its reads run in one too.
-export const admin = defineMixin({ transaction: true })
+export const admin = defineMixin({ transacted: true })
 
 // An action that runs its own transactions.
 actions: {
-  'post import': { transaction: false, handler: importInBatches }
+  'post import': { transacted: false, handler: importInBatches }
 }
 ```
 

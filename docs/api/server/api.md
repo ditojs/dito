@@ -40,7 +40,7 @@ pattern, plain parameters, and last wildcards and patterns of any text. So
 const app = new Hono()
 app.route('/api/admin', createApi({ controllers: adminControllers }))
 app.route('/api', createApi({ controllers }))
-app.onError(errorHandler())
+app.onError(createErrorHandler())
 app.notFound(notFound)
 ```
 
@@ -71,22 +71,22 @@ For each request of an action, Hono and Dito:
 6. validate the query and the body with the action's schemas, through
    `validator()` of `hono/validator`;
 7. set `c.var.body` for writes, so invalid JSON fails before the transaction;
-8. open the transaction of `db`, for writes unless `transaction: false`, and for
-   reads with `transaction: true`;
+8. open the transaction of `db`, for writes unless `transacted: false`, and for
+   reads with `transacted: true`;
 9. run the `middleware` of the layers and of the action;
 10. run the handler with its input, and send the result, see
     [Handler](controllers.md#handler).
 
 Errors go to the API's error handler, which works like
-[`errorHandler()`](errors.md#errorhandler), with `onError` and `toHttpError()`
-of `db`. Hono handles an error where it is thrown, so the `await next()` of
-middleware returns, with the error in `c.error`. The transaction rolls back when
-`c.error` is set.
+[`createErrorHandler()`](errors.md#createerrorhandler), with `onError` and
+`toHttpError()` of `db`. Hono handles an error where it is thrown, so the
+`await next()` of middleware returns, with the error in `c.error`. The
+transaction rolls back when `c.error` is set.
 
 ### The handler's input
 
 ```ts
-interface DitoInput<Query, Body> extends DitoVariables {
+interface HandlerInput<Query, Body> extends DitoVariables {
   query: Query
   body: Body
   params: Record<string, string>

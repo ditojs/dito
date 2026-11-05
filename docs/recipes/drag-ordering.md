@@ -88,7 +88,7 @@ custom action stores the order:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
-import { action } from '@ditojs/server'
+import { defineAction } from '@ditojs/server'
 import { defineController } from '@ditojs/mikro'
 import { z } from 'zod'
 
@@ -115,7 +115,7 @@ export const genres = defineController({
     'get :id': { authorize: true },
     'patch :id': true,
     'delete :id': true,
-    'post order': action({
+    'post order': defineAction({
       body: z.array(z.object({ id: z.int(), position: z.int() })),
       async handler({ body, find }) {
         const positions = new Map(body.map(({ id, position }) => [id, position]))

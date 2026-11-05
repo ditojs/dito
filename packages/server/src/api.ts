@@ -9,7 +9,7 @@ import {
   HttpError,
   bodyValidation,
   createValidationError,
-  errorHandler,
+  createErrorHandler,
   queryValidation
 } from './errors.ts'
 import type {
@@ -17,7 +17,7 @@ import type {
   Authorize,
   DitoContext,
   DitoEnv,
-  DitoInput,
+  HandlerInput,
   Middleware,
   Transaction
 } from './types.ts'
@@ -69,7 +69,7 @@ export function createApi({
     ]
     app.on(method, path, ...(handlers as [Middleware]))
   }
-  app.onError(errorHandler(onError, db.toHttpError))
+  app.onError(createErrorHandler({ onError, toHttpError: db.toHttpError }))
   return app
 }
 
@@ -100,7 +100,7 @@ function getMiddleware(
       await next()
     })
   }
-  if (transaction && (action.transaction ?? verb !== 'get')) {
+  if (transaction && (action.transacted ?? verb !== 'get')) {
     // Hono handles errors where they are thrown, and `next()` resolves with
     // `c.error` set. Throwing it again rolls the transaction back.
     middleware.push(async (c, next) => {
@@ -142,7 +142,7 @@ function validate(target: 'query' | 'json', schema: z.ZodType) {
 }
 
 async function respond(c: DitoContext, action: ResolvedAction) {
-  const input: Omit<DitoInput, 'next'> = {
+  const input: Omit<HandlerInput, 'next'> = {
     // The variables of Dito and of the app, such as a session's.
     ...c.var,
     query: action.query ? c.req.valid('query') : c.req.query(),

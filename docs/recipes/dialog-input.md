@@ -10,7 +10,7 @@ book.
 On the server, a custom action validates its body and creates the book:
 
 ```js
-import { action } from '@ditojs/server'
+import { defineAction } from '@ditojs/server'
 import { createRecord, defineController } from '@ditojs/mikro'
 import { z } from 'zod'
 
@@ -25,7 +25,7 @@ export const books = defineController({
     'get :id': true,
     'patch :id': true,
     'delete :id': true,
-    'post import': action({
+    'post import': defineAction({
       body: z.object({
         isbn: z.string().regex(/^97[89]\d{10}$/),
         stock: z.int().min(0).default(1)

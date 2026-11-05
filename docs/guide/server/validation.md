@@ -13,11 +13,11 @@ peer of `@ditojs/server`.
 ## Actions
 
 ```js
-import { action } from '@ditojs/server'
+import { defineAction } from '@ditojs/server'
 import { q } from '@ditojs/server/zod'
 import { z } from 'zod'
 
-'post :id/review': action({
+'post :id/review': defineAction({
   query: z.object({ notify: q.boolean().optional() }),
   body: z.strictObject({
     rating: z.int().min(1).max(5),
@@ -29,7 +29,7 @@ import { z } from 'zod'
 
 The output of the schemas becomes `query` and `body` of the handler's input, and
 `c.req.valid('query')` and `c.req.valid('json')`, so transforms and defaults
-apply. `action()` gives them their types in the handler.
+apply. `defineAction()` gives them their types in the handler.
 
 Query values are strings, and repeated parameters arrive as arrays. The
 [`q` schemas](../../api/server/controllers.md#ditojsserverzod) of

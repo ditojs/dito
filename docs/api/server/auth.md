@@ -151,10 +151,10 @@ members, log in through the app's own actions, which call
 - need the session middleware;
 - check the login themselves, as the controller sets `authorize: true`;
 - run outside the API's transactions, as the controller sets
-  `transaction: false`. TOTP opens a transaction of its own, so failed codes
+  `transacted: false`. TOTP opens a transaction of its own, so failed codes
   stay counted.
 
-A controller that mixes in `controller` and sets `authorize` or `transaction`
+A controller that mixes in `controller` and sets `authorize` or `transacted`
 replaces these settings, also for the mixed-in actions. Set them on its own
 actions instead.
 

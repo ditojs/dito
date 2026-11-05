@@ -5,7 +5,7 @@ import {
   HttpError,
   bodyValidation,
   createValidationError,
-  errorHandler,
+  createErrorHandler,
   notFound,
   queryValidation
 } from '@ditojs/server'
@@ -15,7 +15,7 @@ Errors respond with JSON. An `HttpError` is meant for the client, which receives
 its message and data. Other errors respond with 500 and the title of the status,
 as their message may hold internals. Errors with a status of 500 or above go to
 the `onError` hook of [`createApi()`](api.md#apiconfig) and
-[`errorHandler()`](#errorhandler), which logs them by default.
+[`createErrorHandler()`](#createerrorhandler), which logs them by default.
 
 ## The body
 
@@ -86,13 +86,13 @@ throw new HttpError(403, {
 })
 ```
 
-## errorHandler()
+## createErrorHandler()
 
 ```ts
-errorHandler(
+createErrorHandler({
   onError?: (error: unknown, c: Context) => void | Promise<void>,
   toHttpError?: (error: unknown, c: Context) => HttpError | undefined
-): ErrorHandler
+}?): ErrorHandler
 ```
 
 The error handler for Hono's `app.onError()`, for the errors outside of Dito
@@ -115,9 +115,9 @@ error, such as cookies and those of `cors()`, but not `Content-*`, `ETag`,
 `Cache-Control` and `Location`, which describe the data.
 
 ```js
-app.onError(errorHandler())
+app.onError(createErrorHandler())
 // With a logger of the app:
-app.onError(errorHandler(error => logger.error(error)))
+app.onError(createErrorHandler({ onError: error => logger.error(error) }))
 ```
 
 Hono only handles `Error`s, so throw an `HttpError`, not a `Response`.
@@ -130,10 +130,10 @@ notFound: NotFoundHandler
 
 The handler of Hono's `app.notFound()`, for the paths that no API handles. It
 throws `new HttpError(404)`, which Hono sends to `app.onError()`, so the app
-needs [`errorHandler()`](#errorhandler) too.
+needs [`createErrorHandler()`](#createerrorhandler) too.
 
 ```js
-app.onError(errorHandler())
+app.onError(createErrorHandler())
 app.notFound(notFound)
 ```
 

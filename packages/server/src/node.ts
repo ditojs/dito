@@ -11,7 +11,7 @@ export interface ServeOptions {
   host?: string
   // The milliseconds that `close()` may take before it fails. 0 waits
   // without a limit.
-  shutdownTimeout?: number
+  closeTimeout?: number
   // Runs after the server has stopped, to stop the app.
   onClose?: () => void | Promise<void>
 }
@@ -20,7 +20,7 @@ export interface ServeOptions {
 // process once the server has stopped.
 export async function serve(
   app: Hono<any, any, any>,
-  { port, host, shutdownTimeout = 0, onClose }: ServeOptions = {}
+  { port, host, closeTimeout = 0, onClose }: ServeOptions = {}
 ) {
   const server = createAdaptorServer({ fetch: app.fetch })
   server.listen(Number(port ?? 0), host)
@@ -35,7 +35,7 @@ export async function serve(
     )
     await onClose?.()
   }
-  const close = () => (closing ??= withTimeout(stop(), shutdownTimeout))
+  const close = () => (closing ??= withTimeout(stop(), closeTimeout))
   // A failed close is an unhandled rejection, which Node prints before it
   // exits. A second signal ends the process, as the listeners are removed.
   const onSignal = () => close().then(() => process.exit(0))

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { action } from '@ditojs/server'
+import { defineAction } from '@ditojs/server'
 import { assignRecord, getEntityManager } from '@ditojs/mikro'
 import { defineScenario } from '../../utils/fixture-app.js'
 import { Page } from './models/Page.js'
@@ -14,7 +14,7 @@ export const test = defineScenario({
     Page: {
       actions: {
         // Stores the order of the pages that the order button sends.
-        'post order': action({
+        'post order': defineAction({
           body: z.array(
             z.looseObject({ id: z.number(), order: z.number().nullable() })
           ),

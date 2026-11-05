@@ -1,7 +1,7 @@
 # Controllers
 
 ```js
-import { defineController, defineMixin, action } from '@ditojs/server'
+import { defineAction, defineController, defineMixin } from '@ditojs/server'
 ```
 
 A controller is a plain object with a `path`, a map of `actions` keyed
@@ -24,16 +24,16 @@ namespace.
 
 ### ControllerDefinition
 
-| Key           | Type                         | Description                                                                                                                                                                 |
-| ------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `path`        | `string`                     | The path below the API, such as `book-categories`, without leading, trailing or double slashes. It may hold parameters, such as `pages/:pageId/child-pages`, but not `:id`. |
-| `actions`     | [`Actions`](#actions)        | The routes of the controller.                                                                                                                                               |
-| `mixins`      | `MixinDefinition[]`          | The [mixins](#mixins) of the controller.                                                                                                                                    |
-| `authorize`   | [`authorize`](#authorize)    | Who may run the actions.                                                                                                                                                    |
-| `middleware`  | `Middleware \| Middleware[]` | Hono middleware of every action of the controller.                                                                                                                          |
-| `transaction` | `boolean`                    | See [ActionSettings](#actionsettings).                                                                                                                                      |
+| Key          | Type                         | Description                                                                                                                                                                 |
+| ------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `path`       | `string`                     | The path below the API, such as `book-categories`, without leading, trailing or double slashes. It may hold parameters, such as `pages/:pageId/child-pages`, but not `:id`. |
+| `actions`    | [`Actions`](#actions)        | The routes of the controller.                                                                                                                                               |
+| `mixins`     | `MixinDefinition[]`          | The [mixins](#mixins) of the controller.                                                                                                                                    |
+| `authorize`  | [`authorize`](#authorize)    | Who may run the actions.                                                                                                                                                    |
+| `middleware` | `Middleware \| Middleware[]` | Hono middleware of every action of the controller.                                                                                                                          |
+| `transacted` | `boolean`                    | See [ActionSettings](#actionsettings).                                                                                                                                      |
 
-`authorize`, `middleware` and `transaction` are the
+`authorize`, `middleware` and `transacted` are the
 [action settings](#actionsettings).
 
 ## defineMixin()
@@ -71,22 +71,22 @@ set, with `true` or an object.
 
 ### Action objects
 
-| Key           | Type                         | Description                                                                                                                     |
-| ------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `handler`     | [`Handler`](#handler)        | The handler. Without it, the action routes the handler beneath.                                                                 |
-| `query`       | `z.ZodType`                  | Validates the query. Repeated parameters arrive as arrays. Its output becomes `query` of the input, and `c.req.valid('query')`. |
-| `body`        | `z.ZodType`                  | Validates the JSON body. Its output becomes `body` of the input, and `c.req.valid('json')`.                                     |
-| `authorize`   | [`authorize`](#authorize)    | Who may run the action.                                                                                                         |
-| `middleware`  | `Middleware \| Middleware[]` | Hono middleware of this action only, such as caching headers.                                                                   |
-| `transaction` | `boolean`                    | Whether the action runs in a transaction.                                                                                       |
+| Key          | Type                         | Description                                                                                                                     |
+| ------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `handler`    | [`Handler`](#handler)        | The handler. Without it, the action routes the handler beneath.                                                                 |
+| `query`      | `z.ZodType`                  | Validates the query. Repeated parameters arrive as arrays. Its output becomes `query` of the input, and `c.req.valid('query')`. |
+| `body`       | `z.ZodType`                  | Validates the JSON body. Its output becomes `body` of the input, and `c.req.valid('json')`.                                     |
+| `authorize`  | [`authorize`](#authorize)    | Who may run the action.                                                                                                         |
+| `middleware` | `Middleware \| Middleware[]` | Hono middleware of this action only, such as caching headers.                                                                   |
+| `transacted` | `boolean`                    | Whether the action runs in a transaction.                                                                                       |
 
 Schemas are [Zod](https://zod.dev) schemas, which run through `validator()` of
 `hono/validator`. Invalid input responds with 400 and the issues of the schema, see [Validation errors](errors.md#validation-errors).
 
-## action()
+## defineAction()
 
 ```ts
-action(definition)
+defineAction(definition)
 ```
 
 Returns the [action object](#action-objects). In TypeScript, it types `query`
@@ -94,7 +94,7 @@ and `body` of the handler's input, and `c.req.valid('query' | 'json')`, from the
 output of its schemas.
 
 ```js
-'post :id/publish': action({
+'post :id/publish': defineAction({
   body: z.object({ date: z.iso.datetime() }),
   handler: ({ body: { date }, params: { id } }) => publish(id, new Date(date))
 })
@@ -103,7 +103,7 @@ output of its schemas.
 ## Handler
 
 ```ts
-type Handler = (input: DitoInput) => unknown
+type Handler = (input: HandlerInput) => unknown
 ```
 
 A handler gets the [input](api.md#the-handlers-input) of the request,
@@ -112,7 +112,7 @@ needs. `c` is Hono's context. `next()` runs the handler that this one replaces,
 and returns its result.
 
 ```js
-'get subscribe': action({
+'get subscribe': defineAction({
   query: z.object({ emailAddress: z.email() }),
   handler: ({ query: { emailAddress } }) => subscribe(emailAddress)
 })
@@ -129,17 +129,17 @@ a returned `Response` unless it sets them itself.
 
 The settings that actions, controllers and mixins share.
 
-| Key           | Type                         | Description                                                                                                                                   |
-| ------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `authorize`   | [`authorize`](#authorize)    | Who may run the action.                                                                                                                       |
-| `middleware`  | `Middleware \| Middleware[]` | Joined in layer order, with the action's own last.                                                                                            |
-| `transaction` | `boolean`                    | Writes run in the API's `transaction` unless this is `false`. Use `false` for actions that run their own. Reads run in one if this is `true`. |
+| Key          | Type                         | Description                                                                                                                                   |
+| ------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `authorize`  | [`authorize`](#authorize)    | Who may run the action.                                                                                                                       |
+| `middleware` | `Middleware \| Middleware[]` | Joined in layer order, with the action's own last.                                                                                            |
+| `transacted` | `boolean`                    | Writes run in the API's `transaction` unless this is `false`. Use `false` for actions that run their own. Reads run in one if this is `true`. |
 
 A setting comes from the last definition of the action that sets it, in layer
 order. Without one, it comes from the last layer that sets it. So a setting on
 an action, also on a mixin's action, overrides every layer. A mixin with
 `actions` only counts as a layer for its own actions, so its `authorize` and
-`transaction` don't reach the actions of the controller. A mixin without
+`transacted` don't reach the actions of the controller. A mixin without
 `actions` holds settings for all of them.
 
 ## authorize
@@ -226,7 +226,7 @@ Use `q` for what the URL sends, and `z` for bodies and everything else.
 Each one can be `.optional()` or have a `.default()`.
 
 ```js
-'get search': action({
+'get search': defineAction({
   query: z.object({ term: q.string(), limit: q.integer().default(20) }),
   handler: ({ db, query: { term, limit } }) => search(db, term, limit)
 })

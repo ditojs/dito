@@ -90,9 +90,9 @@ describe('serve()', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('fails to close after `shutdownTimeout`', async () => {
+  it('fails to close after `closeTimeout`', async () => {
     const { close } = await serve(new Hono(), {
-      shutdownTimeout: 10,
+      closeTimeout: 10,
       onClose: () => new Promise(resolve => setTimeout(resolve, 100))
     })
     await expect(close()).rejects.toThrow(

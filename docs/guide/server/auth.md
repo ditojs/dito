@@ -118,7 +118,7 @@ users with TOTP. `get self` responds with the user, or `null`. See
 
 The actions check the login themselves, as the controller sets
 `authorize: true`. They run outside the API's transactions, as it sets
-`transaction: false`. TOTP opens a transaction of its own, so failed codes stay
+`transacted: false`. TOTP opens a transaction of its own, so failed codes stay
 counted when a request fails. A controller that mixes it in and sets these
 settings replaces them for the mixed-in actions too.
 

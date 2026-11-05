@@ -2,27 +2,28 @@ export type {
   ActionSettings,
   Actions,
   ApiConfig,
+  Authorize,
   ControllerDefinition,
   DbAdapter,
   DitoContext,
   DitoEnv,
-  DitoInput,
   DitoVariables,
   Handler,
+  HandlerInput,
   Middleware,
   MixinDefinition,
   Transaction,
   User
 } from './types.ts'
-export { defineController, defineMixin, action } from './define.ts'
+export { defineAction, defineController, defineMixin } from './define.ts'
 export { createApi, sendFile, type SendFileOptions } from './api.ts'
 export { getLayers } from './compose.ts'
-export { hostMiddleware, type HostOptions } from './host.ts'
+export { hostMiddleware, type HostMiddlewareOptions } from './host.ts'
 export {
   HttpError,
   bodyValidation,
+  createErrorHandler,
   createValidationError,
-  errorHandler,
   notFound,
   queryValidation,
   type ValidationErrorOptions,

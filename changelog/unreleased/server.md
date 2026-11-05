@@ -1,7 +1,7 @@
 ### Behaviour changes
 
 - **server:** Dito.js 7 replaces the Koa and Objection.js server: `Application`, `Model`, `QueryBuilder`, `Validator`, the controller classes, services, storages, the CLI and logging are removed. See [Upgrading to 7.x](docs/upgrading-to-7.x.md) for each change, and for the steps to move an app.
-- **server:** `@ditojs/server` is a core on [Hono](https://hono.dev). `createApi({ controllers, middleware, db, getUser, onError })` returns a Hono app, which the app routes with `app.route('/api', api)`. There is no configuration. An API handles only the paths of its actions, so apps add `app.notFound(notFound)` and `app.onError(errorHandler())` for Dito's JSON errors.
+- **server:** `@ditojs/server` is a core on [Hono](https://hono.dev). `createApi({ controllers, middleware, db, getUser, onError })` returns a Hono app, which the app routes with `app.route('/api', api)`. There is no configuration. An API handles only the paths of its actions, so apps add `app.notFound(notFound)` and `app.onError(createErrorHandler())` for Dito's JSON errors.
 - **server:** Controllers are plain objects from `defineController()`, with one `actions` map keyed `'verb path'`. A path that starts with `:id` is a member action, and paths use Hono's syntax. `true` routes a default handler, a function replaces the handler beneath it and runs it as `next()`, and an object without `handler` adds settings. Default handlers are off unless a layer sets them.
 - **server:** Handlers get one object, `handler(input)`, with `query`, `body`, `params`, `user`, `db`, `action`, the app's own Hono variables, Hono's context `c` and `next()`. Middleware is Hono middleware, `(c, next)`, and reads the same values from `c.var`. Apps type their own variables by augmenting `DitoVariables`.
 - **server:** Handlers return data or a `Response`. Data responds with 200 and `undefined` with 204, unless the handler sets another status with `c.status()`. Hono doesn't send a thrown `Response`: throw an `HttpError`, or return the `Response`.
@@ -17,7 +17,7 @@
 
 ### New
 
-- **server:** Schemas of actions, filters and column types are Zod schemas. `action({ query, body, handler })` types `query` and `body` of the handler's input. `@ditojs/server/zod` has `q`, Zod schemas for query values.
+- **server:** Schemas of actions, filters and column types are Zod schemas. `defineAction({ query, body, handler })` types `query` and `body` of the handler's input. `@ditojs/server/zod` has `q`, Zod schemas for query values.
 - **server:** `c.var.body` holds the body of a write, parsed once, for middleware and the handler. `sendFile(c, body, { filename, type, inline })` responds with a file, also a stream.
 - **server:** `hostMiddleware()` returns Hono's `secureHeaders()`, `csrf()` for requests with `Origin`, and `bodyLimit()`, and optionally `cors()` and `etag()`.
 - **server:** `@ditojs/server/node` has `serve()`, a Node server that stops on signals, `forwarded(proxy)` for apps behind reverse proxies, and `getClientAddress(c)`.

@@ -14,7 +14,7 @@ type Option<T extends (...args: any[]) => unknown> =
   | boolean
   | NonNullable<Parameters<T>[0]>
 
-export interface HostOptions {
+export interface HostMiddlewareOptions {
   // On by default. It only checks requests with `Origin`: browsers send it,
   // and an attack needs a browser.
   csrf?: Option<typeof csrf>
@@ -42,7 +42,7 @@ export function hostMiddleware({
   cors: corsOptions = false,
   etag: etagOptions = false,
   bodyLimit: bodyLimitOptions = true
-}: HostOptions = {}) {
+}: HostMiddlewareOptions = {}) {
   const options = <T>(value: true | T) => (value === true ? undefined : value)
   const middleware: MiddlewareHandler[] = []
   if (secureHeadersOptions) {

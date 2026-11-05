@@ -281,7 +281,7 @@ can work on the entities first:
 ```js
 import { assignRecord, createRecord } from '@ditojs/mikro'
 
-'put reservation': action({
+'put reservation': defineAction({
   body: reservationSchema,
   async handler({ db: em, body, session }) {
     const current = await findReservation(em, session)

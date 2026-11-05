@@ -109,11 +109,11 @@ export function defineController<T extends object>(
       )
       .map(key => [key, wrap])
   )
-  const { authorize, transaction } = def
+  const { authorize, transacted } = def
   return defineServerController({
     path,
     authorize,
-    transaction,
+    transacted,
     mixins: [base, def],
     actions
   })

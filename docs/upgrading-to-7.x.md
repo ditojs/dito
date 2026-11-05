@@ -51,7 +51,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `$parseJson()`, `$formatJson()`, read-only properties, `$validateGraph()`              | `deserialize`, `serialize` and `beforeSerialize` of the controller, rules as functions run by a mixin                                                                                       | medium                  |
 | Graph writes: `upsertGraph()`, `relate`, `#id`, `#ref`                                 | Nested writes of owned relations, `createRecord()`, `assignRecord()`                                                                                                                        | medium                  |
 | `Controller`, `ModelController`, `RelationController`, `collection`, `member`, `allow` | `defineController()` with one `actions` map, mixins, `crud`                                                                                                                                 | high                    |
-| Controller hooks, `parameters`, `returns`, `transacted`                                | Handlers that call `next()`, middleware of mixins, `query` and `body` schemas, `transaction: true`                                                                                          | high                    |
+| Controller hooks, `parameters`, `returns`, `transacted`                                | Handlers that call `next()`, middleware of mixins, `query` and `body` schemas, `transacted: true`                                                                                           | high                    |
 | Koa's `ctx` in handlers and middleware                                                 | The handler's input, `{ query, body, params, user, db, action, record, find, list, c, next }`, with Hono's context `c`, see [step 8](#8-rewrite-the-controllers)                            | high                    |
 | `ResponseError` and its subclasses, `app.logError()`                                   | `HttpError`, `toHttpError()` of the `db` adapter, and the `onError` hook, which logs by default                                                                                             | low                     |
 | Koa middleware, `config.http`                                                          | Hono middleware on the host: `hostMiddleware()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`                                                               | low                     |
@@ -324,7 +324,7 @@ export class EditorController extends ModelController {
 // Dito.js 7
 export const editor = defineMixin({
   authorize: ['admin', 'editor'],
-  transaction: true,
+  transacted: true,
   mixins: [crud]
 })
 ```
@@ -441,8 +441,8 @@ One `actions` map holds every route, keyed `'verb path'`, see
   default `put` and no write on the whole collection. Bulk writes are custom
   actions, such as `'post order'`.
 - `parameters` and `returns` become the Zod schemas `query` and `body`,
-  which `action()` types. `q` of `@ditojs/server/zod` has schemas for query
-  values, such as `q.integer()`, and `q.array(item)` for repeated keys.
+  which `defineAction()` types. `q` of `@ditojs/server/zod` has schemas for
+  query values, such as `q.integer()`, and `q.array(item)` for repeated keys.
 
 #### Handlers and the context
 
@@ -504,7 +504,7 @@ Relation controllers don't exist. A nested route is a controller of its own,
 with a path such as `books/:bookId/chapters`. It inherits nothing from a parent,
 so it sets its own `authorize` and checks that the parent row may be read.
 
-A mixin with `actions` keeps its `authorize` and `transaction` on these actions.
+A mixin with `actions` keeps its `authorize` and `transacted` on these actions.
 A mixin without `actions` holds settings for all actions of the controller.
 
 #### Writes
@@ -585,10 +585,10 @@ const api = createApi({
 const app = new Hono({ strict: false })
 app.use(forwarded(config.server.proxy ?? false), ...hostMiddleware())
 app.use('/assets/public/*', serveStorage(storages.get('public')))
-app.onError(errorHandler())
+app.onError(createErrorHandler())
 app.notFound(notFound)
 app.route('/api', api)
-await serve(app, { port, shutdownTimeout: 5000, onClose: () => orm.close() })
+await serve(app, { port, closeTimeout: 5000, onClose: () => orm.close() })
 ```
 
 - `controllers` is a list, or a module namespace, in which only the results of
@@ -612,7 +612,8 @@ await serve(app, { port, shutdownTimeout: 5000, onClose: () => orm.close() })
   the middleware of an API runs on all paths below it.
 - An API handles only the paths of its actions and its own errors.
   `app.notFound(notFound)` sends Dito's JSON 404 for the other paths, and
-  `app.onError(errorHandler())` handles the errors of the host's own middleware.
+  `app.onError(createErrorHandler())` handles the errors of the host's own
+  middleware.
 
 #### Sessions and users
 
@@ -772,7 +773,7 @@ app.route('/admin', admin)
 `order=name desc`, the 201 with `Location` of the default `post`, the
 `{ count }` of `delete :id`, the error JSON with validation errors as 400, and
 integer ids. GET actions may write. A GET action that writes sets its own
-`authorize`, and `transaction: true`.
+`authorize`, and `transacted: true`.
 
 These things change. The admin of Dito.js 7 already handles them:
 

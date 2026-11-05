@@ -1,10 +1,10 @@
-// Type checks of `action()` inside `defineController()`, which `tsc` runs.
+// Type checks of `defineAction()` in `defineController()`, which `tsc` runs.
 import { z } from 'zod'
-import { action, defineController } from '../src/index.ts'
+import { defineAction, defineController } from '../src/index.ts'
 defineController({
   path: 'x',
   actions: {
-    'post a': action({
+    'post a': defineAction({
       body: z.object({ t: z.string() }),
       handler: ({ body, query, c }) => {
         const t: string = body.t
@@ -13,7 +13,7 @@ defineController({
         return t + q.x + valid
       }
     }),
-    'get b': action({
+    'get b': defineAction({
       query: z.object({ n: z.number() }),
       handler: ({ query: { n }, c }) => n.toFixed() + c.req.valid('query').n
     })

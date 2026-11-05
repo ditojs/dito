@@ -7,7 +7,7 @@ import { createAdaptorServer } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import {
   createApi,
-  errorHandler,
+  createErrorHandler,
   notFound,
   type ControllerDefinition,
   type DitoContext,
@@ -105,7 +105,7 @@ export async function createTestApp(
     if (testApp.logErrors) console.error(error)
   }
   const app = new Hono()
-  app.onError(errorHandler(logError))
+  app.onError(createErrorHandler({ onError: logError }))
   if (handlers.length) app.use(...handlers)
 
   let admin: AdminServer | null = null

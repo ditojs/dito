@@ -29,7 +29,7 @@ export function defineMixin(def: MixinDefinition) {
 // Infers the types of `query` and `body` of the handler's input, and of
 // `c.req.valid()`, from the schemas. `NoInfer` keeps the type that the result
 // is assigned to from changing the schemas.
-export function action<
+export function defineAction<
   Q extends z.ZodType | undefined = undefined,
   B extends z.ZodType | undefined = undefined
 >(def: ActionDefinition<Q, B>): ActionDefinition<NoInfer<Q>, NoInfer<B>> {

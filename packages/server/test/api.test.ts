@@ -5,12 +5,12 @@ import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import {
-  action,
   createApi,
+  createErrorHandler,
   createValidationError,
+  defineAction,
   defineController,
   defineMixin,
-  errorHandler,
   hostMiddleware,
   HttpError,
   notFound,
@@ -20,7 +20,7 @@ import {
   type ControllerDefinition,
   type DbAdapter,
   type DitoContext,
-  type DitoInput,
+  type HandlerInput,
   type Middleware,
   type MixinDefinition,
   type Transaction,
@@ -67,7 +67,7 @@ function setup(
       ...config
     })
   )
-  app.onError(errorHandler())
+  app.onError(createErrorHandler())
   app.notFound(notFound)
   return app
 }
@@ -191,7 +191,7 @@ describe('routing', () => {
     )
     app.get('/page', c => c.text('page'))
     // Hono sends the errors of `notFound()` to `onError()`.
-    app.onError(errorHandler())
+    app.onError(createErrorHandler())
     app.notFound(notFound)
     expect(await (await app.request('/reset')).json()).toBe('reset')
     expect(await (await app.request('/page')).text()).toBe('page')
@@ -214,7 +214,7 @@ describe('routing', () => {
   })
 
   it('answers HEAD as GET without a body', async () => {
-    const handler = vi.fn(({ c }: DitoInput) => {
+    const handler = vi.fn(({ c }: HandlerInput) => {
       c.header('X-Total', '2')
       return ['a', 'b']
     })
@@ -465,7 +465,7 @@ describe('composition', () => {
         post: () => 'created'
       }
     })
-    const mixin = defineMixin({ authorize: 'editor', transaction: false })
+    const mixin = defineMixin({ authorize: 'editor', transacted: false })
     const define = (def: Partial<ControllerDefinition>) =>
       setup([{ path: 'fonts', mixins: [base, mixin], ...def }], {
         user: editor,
@@ -591,7 +591,7 @@ describe('composition', () => {
 describe('settings of mixins', () => {
   const open = defineMixin({
     authorize: true,
-    transaction: false,
+    transacted: false,
     actions: { 'post shared': () => 'mixin', 'post own': () => 'mixin' }
   })
 
@@ -750,7 +750,7 @@ describe('authorize', () => {
 
   it('checks a write that a mixin sets with an object', () => {
     const base = defineMixin({ actions: { post: () => 'ok' } })
-    const mixin = defineMixin({ actions: { post: { transaction: false } } })
+    const mixin = defineMixin({ actions: { post: { transacted: false } } })
     expect(() =>
       setup([{ path: 'fonts', mixins: [base, mixin], actions: { post: true } }])
     ).toThrow(`'post' has no \`authorize\` in 'fonts'`)
@@ -770,7 +770,7 @@ describe('validation', () => {
         path: 'fonts',
         authorize: true,
         actions: {
-          'patch :id': action({
+          'patch :id': defineAction({
             query: z.object({ draft: z.enum(['yes', 'no']) }),
             body: z.object({
               sets: z.array(z.object({ name: z.string() }))
@@ -833,7 +833,7 @@ describe('validation', () => {
       {
         path: 'newsletter',
         actions: {
-          'get subscribe': action({
+          'get subscribe': defineAction({
             query: z.object({ emailAddress: z.email() }),
             handler: ({ query: { emailAddress } }) => {
               subscribed.push(emailAddress)
@@ -854,7 +854,7 @@ describe('validation', () => {
       {
         path: 'fonts',
         actions: {
-          'get': action({
+          'get': defineAction({
             query: z.object({
               tag: z.array(z.string()),
               page: z.string().optional()
@@ -862,7 +862,7 @@ describe('validation', () => {
             handler: ({ query }) => query
           }),
           'get plain': ({ query }) => query,
-          'get ids': action({
+          'get ids': defineAction({
             query: z.object({ id: zodModule.q.array(zodModule.q.integer()) }),
             handler: ({ query }) => query
           })
@@ -1027,7 +1027,7 @@ describe('validation', () => {
         path: 'fonts',
         authorize: true,
         actions: {
-          post: action({
+          post: defineAction({
             body: z.object({ name: z.string().trim() }),
             handler: ({ body }) => ({ body })
           })
@@ -1062,8 +1062,8 @@ describe('transactions', () => {
           actions: {
             'get': ({ db }) => db ?? null,
             'post': ({ db }) => db,
-            'get fresh': { transaction: true, handler: ({ db }) => db },
-            'post log': { transaction: false, handler: () => null }
+            'get fresh': { transacted: true, handler: ({ db }) => db },
+            'post log': { transacted: false, handler: () => null }
           }
         }
       ],
@@ -1082,14 +1082,14 @@ describe('transactions', () => {
     expect(log).toEqual(['middleware none'])
   })
 
-  it('takes `transaction` from the action, else the last layer', async () => {
+  it('takes `transacted` from the action, else the last layer', async () => {
     const { transaction, log } = createTransaction()
-    const mixin = defineMixin({ transaction: false })
+    const mixin = defineMixin({ transacted: false })
     const api = setup(
       [
         {
           path: 'fonts',
-          transaction: true,
+          transacted: true,
           actions: { get: ({ db }) => db }
         },
         {
@@ -1098,7 +1098,7 @@ describe('transactions', () => {
           mixins: [mixin],
           actions: {
             'post': () => null,
-            'post import': { transaction: true, handler: ({ db }) => db }
+            'post import': { transacted: true, handler: ({ db }) => db }
           }
         }
       ],
@@ -1598,7 +1598,7 @@ describe('errors', () => {
     )
   })
 
-  it('answers the errors of the host with `errorHandler()`', async () => {
+  it('answers the errors of the host with `createErrorHandler()`', async () => {
     const onError = vi.fn()
     const app = new Hono()
     app.use(async (c, next) => {
@@ -1607,7 +1607,7 @@ describe('errors', () => {
       if (c.req.path === '/denied') throw new HttpError(403)
       await next()
     })
-    app.onError(errorHandler(onError))
+    app.onError(createErrorHandler({ onError }))
     const denied = await app.request('/denied')
     expect(denied.status).toBe(403)
     expect(await denied.json()).toEqual({ message: 'Forbidden', status: 403 })
@@ -1631,7 +1631,7 @@ describe('errors', () => {
         c.set('logger', logger)
         await next()
       })
-      app.onError(errorHandler())
+      app.onError(createErrorHandler())
       app.get('/host', fail)
       app.route(
         '/api',
@@ -1658,7 +1658,7 @@ describe('errors', () => {
     it('logs through `console` without a logger', async () => {
       const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const app = new Hono()
-      app.onError(errorHandler())
+      app.onError(createErrorHandler())
       app.get('/', fail)
       await app.request('/')
       expect(spy).toHaveBeenCalledWith(error)
@@ -1762,7 +1762,7 @@ describe('sendFile()', () => {
 describe('hostMiddleware()', () => {
   const host = (...args: Parameters<typeof hostMiddleware>) => {
     const app = new Hono()
-    app.onError(errorHandler())
+    app.onError(createErrorHandler())
     app.use(...hostMiddleware(...args))
     app.all('/', async c => c.text((await c.req.text()) || 'text'))
     return app
@@ -1837,14 +1837,14 @@ describe('hostMiddleware()', () => {
 
 describe('types', () => {
   it('passes the input and context of any action to helpers', () => {
-    const getName = ({ user, params, c }: DitoInput) => (
+    const getName = ({ user, params, c }: HandlerInput) => (
       user?.id ?? params.name ?? c.req.path
     )
     defineController({
       path: 'fonts',
       actions: {
         'get by/:name': getName,
-        'get page': action({
+        'get page': defineAction({
           query: z.object({ page: z.coerce.number().optional() }),
           body: z.object({ name: z.string() }),
           handler: getName

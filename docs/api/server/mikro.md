@@ -46,7 +46,7 @@ default handlers of the keys that the definition or its mixins set, such as
 `'get': true`, and the middleware that sets `record()`, `find()`, `list()` and
 `listQuery()`. After the handlers of each key, the controller flushes and
 serializes, inside the transaction and the middleware. `authorize`,
-`transaction`, the schemas and the middleware come from the definition and its
+`transacted`, the schemas and the middleware come from the definition and its
 mixins.
 
 ### MikroControllerDefinition

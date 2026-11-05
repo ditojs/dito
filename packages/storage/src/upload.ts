@@ -1,6 +1,6 @@
 import picomatch from 'picomatch'
 import { camelize } from '@ditojs/utils'
-import { HttpError, action, type MixinDefinition } from '@ditojs/server'
+import { HttpError, defineAction, type MixinDefinition } from '@ditojs/server'
 import type { AssetFileObject } from './Storage.ts'
 import { getDataPath } from './asset-path.ts'
 import { storeAsset } from './assets.ts'
@@ -38,8 +38,8 @@ export function uploadRoutes({
   }))
   return {
     actions: {
-      'post upload/:path{.+}': action({
-        transaction: false,
+      'post upload/:path{.+}': defineAction({
+        transacted: false,
         handler: async ({ params, c }) => {
           const path = params.path
             .split('/')

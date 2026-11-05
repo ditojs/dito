@@ -5,9 +5,9 @@ import { asArray } from '@ditojs/utils'
 import {
   HttpError,
   createApi,
+  createErrorHandler,
   createValidationError,
   defineMixin,
-  errorHandler,
   notFound,
   type ControllerDefinition
 } from '@ditojs/server'
@@ -61,7 +61,7 @@ function setup(...controllers: ControllerDefinition[]) {
         onError: () => {}
       })
     )
-    .onError(errorHandler())
+    .onError(createErrorHandler())
     .notFound(notFound)
 }
 
@@ -2107,7 +2107,7 @@ describe('writes', () => {
   })
 
   it('flushes writes without a transaction, also for results that are no rows', async () => {
-    const api = setup(books({ transaction: false }))
+    const api = setup(books({ transacted: false }))
     const { status, json } = await request(api, 'DELETE', '/api/books/3')
     expect(status).toBe(200)
     expect(json).toEqual({ count: 1 })

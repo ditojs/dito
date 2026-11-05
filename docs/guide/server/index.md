@@ -46,7 +46,7 @@ A catalog with books, served at `/api/books`:
 import { defineEntity, p } from '@mikro-orm/core'
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Hono } from 'hono'
-import { createApi, errorHandler, notFound } from '@ditojs/server'
+import { createApi, createErrorHandler, notFound } from '@ditojs/server'
 import { serve } from '@ditojs/server/node'
 import { defineController, mikroDb, mikroOptions } from '@ditojs/mikro'
 
@@ -90,7 +90,7 @@ const app = new Hono()
 app.route('/api', api)
 // JSON errors outside of the API too, such as for unknown paths.
 app.notFound(notFound)
-app.onError(errorHandler())
+app.onError(createErrorHandler())
 await serve(app, { port: 8080, onClose: () => orm.close() })
 ```
 

@@ -14,7 +14,7 @@ middleware. `@ditojs/mikro` connects MikroORM, with `db: mikroDb(orm)`.
 
 ```js
 import { Hono } from 'hono'
-import { createApi, defineController, action } from '@ditojs/server'
+import { createApi, defineAction, defineController } from '@ditojs/server'
 import { serve } from '@ditojs/server/node'
 import { z } from 'zod'
 
@@ -22,7 +22,7 @@ const greetings = defineController({
   path: 'greetings',
   actions: {
     'get': () => ({ hello: 'world' }),
-    'post': action({
+    'post': defineAction({
       authorize: true,
       body: z.object({ name: z.string() }),
       handler: ({ body: { name } }) => ({ hello: name })
@@ -36,8 +36,8 @@ await serve(app, { port: 8080 })
 ```
 
 - `@ditojs/server`: `createApi()`, `defineController()`, `defineMixin()`,
-  `action()`, `sendFile()`, `hostMiddleware()`, `HttpError`, `errorHandler()`,
-  `notFound` and `createValidationError()`.
+  `defineAction()`, `sendFile()`, `hostMiddleware()`, `HttpError`,
+  `createErrorHandler()`, `notFound` and `createValidationError()`.
 - `@ditojs/server/node`: `serve()`, and `forwarded()` and `getClientAddress()`
   for apps behind reverse proxies. Needs `@hono/node-server`, an optional peer.
 - `@ditojs/server/zod`: `q`, Zod schemas for query values.

@@ -6,7 +6,7 @@ import type {
   Actions,
   Authorize,
   ControllerDefinition,
-  DitoInput,
+  HandlerInput,
   Middleware,
   MixinDefinition,
   Verb
@@ -20,7 +20,7 @@ import type {
 // counts as a layer for its own actions, so its settings stay on them.
 
 // Runs the handlers of an action, on the input without `next`.
-type ActionRun = (input: Omit<DitoInput, 'next'>) => Promise<unknown>
+type ActionRun = (input: Omit<HandlerInput, 'next'>) => Promise<unknown>
 
 export interface ResolvedAction {
   // The key in `actions`, such as `post :id/publish`, and its verb and path.
@@ -31,7 +31,7 @@ export interface ResolvedAction {
   query: z.ZodType | undefined
   body: z.ZodType | undefined
   authorize: Authorize | undefined
-  transaction: boolean | undefined
+  transacted: boolean | undefined
   middleware: Middleware[]
   run: ActionRun
 }
@@ -112,7 +112,7 @@ function resolveActions(controllerPath: string, layers: MixinDefinition[]) {
       query: findLast(defs.map(def => def.query)),
       body: findLast(defs.map(def => def.body)),
       authorize,
-      transaction: setting('transaction'),
+      transacted: setting('transacted'),
       middleware: [
         ...layers.flatMap(layer => asArray(layer.middleware)),
         ...defs.flatMap(def => asArray(def.middleware))
@@ -121,7 +121,7 @@ function resolveActions(controllerPath: string, layers: MixinDefinition[]) {
         (beneath, handler) => async input => {
           // Each handler has its own `next`. The layer beneath starts from
           // this input, so that a handler can change `input.body` for it.
-          const own: DitoInput = { ...input, next: () => beneath(own) }
+          const own: HandlerInput = { ...input, next: () => beneath(own) }
           return handler(own as never)
         },
         async () => undefined

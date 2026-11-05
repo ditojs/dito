@@ -37,10 +37,10 @@ segments first, also across controllers: `get subscribe` matches before
 `get :id`. The API handles only the paths of its
 actions and leaves the others to the app, so it also works at `/`. For paths
 that nothing matches, the app adds Dito's JSON 404, see
-[`errorHandler()`](../../api/server/errors.md#errorhandler):
+[`createErrorHandler()`](../../api/server/errors.md#createerrorhandler):
 
 ```js
-app.onError(errorHandler())
+app.onError(createErrorHandler())
 app.notFound(notFound)
 ```
 
@@ -52,12 +52,12 @@ The app keeps its own `Hono` instance, so any Hono middleware works with it.
 ```js
 import { Hono } from 'hono'
 import { serveStatic } from '@hono/node-server/serve-static'
-import { errorHandler, hostMiddleware, notFound } from '@ditojs/server'
+import { createErrorHandler, hostMiddleware, notFound } from '@ditojs/server'
 import { forwarded, serve } from '@ditojs/server/node'
 
 const app = new Hono()
 app.use(forwarded(true), ...hostMiddleware())
-app.onError(errorHandler())
+app.onError(createErrorHandler())
 app.notFound(notFound)
 app.use(
   '/assets/*',
@@ -70,7 +70,7 @@ app.route('/api', api)
 
 const { close } = await serve(app, {
   port: 8080,
-  shutdownTimeout: 5000,
+  closeTimeout: 5000,
   onClose: () => orm.close()
 })
 ```
@@ -81,8 +81,9 @@ const { close } = await serve(app, {
   with `app.use()`. Multipart bodies have no limit there: the reverse proxy sets
   it, such as `client_max_body_size` in nginx.
 - Each API sends its own errors as Dito's error JSON.
-  [`errorHandler()`](../../api/server/errors.md#errorhandler) does the same for
-  the errors of the app's own middleware, such as the 403 of `csrf()`.
+  [`createErrorHandler()`](../../api/server/errors.md#createerrorhandler) does
+  the same for the errors of the app's own middleware, such as the 403 of
+  `csrf()`.
 - `serve()` listens on Node. On SIGINT and SIGTERM it stops the server, then
   runs `onClose`.
 - Hono treats `/api/books/` and `/api/books` as different paths, so a path with
@@ -145,8 +146,8 @@ Handlers get the entity manager as `db` of their input, which is the
 transaction's while one runs. Middleware and other code that has Hono's context
 use `getEntityManager(c)` of `@ditojs/mikro`.
 
-Writes run in a transaction unless their action sets `transaction: false`. Reads
-run in one only if they set `transaction: true`. The transaction covers the
+Writes run in a transaction unless their action sets `transacted: false`. Reads
+run in one only if they set `transacted: true`. The transaction covers the
 middleware of the controller, its mixins and the action, so middleware that
 throws after `next()` rolls the write back. The API's own `middleware` runs
 outside of the transaction.

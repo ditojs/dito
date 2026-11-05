@@ -2,9 +2,9 @@ import type { Context } from 'hono'
 import { z } from 'zod'
 import { isPlainObject, isString } from '@ditojs/utils'
 import {
-  action,
   bodyValidation,
   createValidationError,
+  defineAction,
   defineMixin,
   HttpError,
   type Actions,
@@ -28,7 +28,7 @@ import type { User, UserSource } from './types.ts'
 // The login, session and security actions of the admin, which need the
 // middleware of `createSessions()`. Each handler checks the login and the
 // confirmed access it needs itself, so the controller sets `authorize: true`.
-// It also sets `transaction: false`, as TOTP opens a transaction of its own, so
+// It also sets `transacted: false`, as TOTP opens a transaction of its own, so
 // that failed codes stay counted when the request fails. The app adds CSRF
 // protection.
 
@@ -136,7 +136,7 @@ export function usersRoutes<U extends User>({
   }
 
   const actions: Actions = {
-    'post login': action({
+    'post login': defineAction({
       body: anyBody,
       handler: async ({ body: { username, password }, c }) => {
         if (!username || !password) {
@@ -176,7 +176,7 @@ export function usersRoutes<U extends User>({
 
     // Confirms the access of the logged-in user with the password, and the
     // code of users with TOTP, or with a passkey.
-    'post confirm-access': action({
+    'post confirm-access': defineAction({
       body: anyBody,
       handler: async ({ body: { password, code, passkey }, c }) => {
         const user = await checkAuthentication(c)
@@ -200,7 +200,7 @@ export function usersRoutes<U extends User>({
       }
     }),
 
-    'post password': action({
+    'post password': defineAction({
       body: z.object({ password }),
       handler: async ({ body, c }) => {
         const user = await checkConfirmedAccess(c)
@@ -211,7 +211,7 @@ export function usersRoutes<U extends User>({
     ...(passwordReset && {
       // Responds the same way whether the user exists or not, so that the
       // response doesn't reveal which usernames exist.
-      'post password-reset': action({
+      'post password-reset': defineAction({
         body: z.object({ username: required('username') }),
         handler: async ({ body: { username }, c }) => {
           const user = await source.findByUsername(c, username)
@@ -220,7 +220,7 @@ export function usersRoutes<U extends User>({
       }),
 
       // The new hash ends the link and the user's other sessions.
-      'post password-reset-confirm': action({
+      'post password-reset-confirm': defineAction({
         body: z.object({ token: required('token'), password }),
         handler: async ({ body, c }) => {
           const user = await passwordReset.findUser(c, source, body.token)
@@ -234,7 +234,7 @@ export function usersRoutes<U extends User>({
       'post passkey-login-options': ({ c }) =>
         passkeys.createAuthenticationOptions(c),
 
-      'post passkey-login': action({
+      'post passkey-login': defineAction({
         body: anyBody,
         handler: async ({ body, c }) => login(c, await verifyPasskey(c, body))
       }),
@@ -259,7 +259,7 @@ export function usersRoutes<U extends User>({
         )
       },
 
-      'post passkeys': action({
+      'post passkeys': defineAction({
         body: anyBody,
         handler: async ({ body, c }) => {
           const user = await checkConfirmedAccess(c)
@@ -286,7 +286,7 @@ export function usersRoutes<U extends User>({
     ...(totp && {
       // The second step of the password logins of users with TOTP, with a TOTP
       // code or a backup code.
-      'post login-code': action({
+      'post login-code': defineAction({
         body: anyBody,
         handler: async ({ body: { code }, c }) => {
           const session = getSession(c)
@@ -327,7 +327,7 @@ export function usersRoutes<U extends User>({
         return totp.createSecret(c, user)
       },
 
-      'post totp-confirm': action({
+      'post totp-confirm': defineAction({
         body: anyBody,
         handler: async ({ body: { code }, c }) => {
           const user = await checkConfirmedAccess(c)
@@ -353,7 +353,7 @@ export function usersRoutes<U extends User>({
   const controller: ControllerDefinition = {
     path,
     authorize: true,
-    transaction: false,
+    transacted: false,
     actions
   }
   const features = {

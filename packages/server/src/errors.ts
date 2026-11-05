@@ -7,8 +7,8 @@ import type { DbAdapter, ErrorLogger, HttpErrorBody } from './types.ts'
 // errors with a numeric `status`, such as those of http-errors, respond with
 // that status, and with their message when `expose` is true, by default below
 // 500. All other errors respond with 500. Errors with a status of 500 or above
-// go to the `onError` hook of `createApi()` and `errorHandler()`, which by
-// default logs them through `c.var.logger`, any object with `error()`, else
+// go to the `onError` hook of `createApi()` and `createErrorHandler()`, which
+// by default logs them through `c.var.logger`, any object with `error()`, else
 // `console`.
 
 const titles: Record<number, string> = {
@@ -160,10 +160,13 @@ const dataHeaders = /^(content-(?!security-)|etag$|cache-control$|location$)/
 // the errors with a status of 500 or above. The response keeps the headers that
 // were set before the error, such as cookies and those of `cors()`, except the
 // ones that describe the data.
-export function errorHandler(
-  onError: ErrorLogger = logError,
+export function createErrorHandler({
+  onError = logError,
+  toHttpError
+}: {
+  onError?: ErrorLogger
   toHttpError?: DbAdapter['toHttpError']
-): ErrorHandler {
+} = {}): ErrorHandler {
   return async (error, c) => {
     const httpError = toStatusError(toHttpError?.(error, c as never) ?? error)
     const body = (httpError ?? new HttpError(500)).toJSON()
@@ -181,7 +184,7 @@ export function errorHandler(
   }
 }
 
-// The handler of `app.notFound()`. `errorHandler()` handles its error.
+// The handler of `app.notFound()`. `createErrorHandler()` handles its error.
 export const notFound: NotFoundHandler = () => {
   throw new HttpError(404)
 }
