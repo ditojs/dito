@@ -19,8 +19,9 @@ import { getEntities } from './metadata.ts'
 // leaves out.
 //
 // `assets` says where a JSON column holds files, for `getAssetPaths()`: `path`
-// is the data path inside the value, with `*` and `**` wildcards, and `storage`
-// the storage of the files. A column of files needs no schema:
+// is the data path inside the value, with `*` and `**` wildcards, `storage`
+// the storage of the files, and `maxSize` the size limit of their uploads in
+// bytes. A column of files needs no schema:
 //
 //   images: p.type(
 //     defineJsonType({ assets: [{ path: '', storage: 'public' }] })
@@ -35,6 +36,7 @@ import { getEntities } from './metadata.ts'
 export interface JsonTypeAsset {
   path: string
   storage: string
+  maxSize?: number
 }
 
 export interface JsonTypeOptions<

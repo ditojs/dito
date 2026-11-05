@@ -515,7 +515,7 @@ It doesn't flush.
 ```ts
 defineJsonType<S extends z.ZodType>(options: {
   schema?: S
-  assets?: { path: string; storage: string }[]
+  assets?: { path: string; storage: string; maxSize?: number }[]
 }): Type<z.output<S>>
 ```
 
@@ -548,6 +548,8 @@ Returns the custom type of a JSON column, for `p.type()`.
 - `path` is the data path inside the value. It takes `*` and `**` wildcards, and
   `''` for the value itself.
 - `storage` is the name of the storage.
+- `maxSize` is the size limit of its uploads in bytes, see
+  [Uploads](storage.md#uploads).
 
 ## getAssetPaths()
 

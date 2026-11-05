@@ -26,6 +26,8 @@ export interface CreateAssetsOptions {
   // The `deleteUnusedAfter` of `runJobs()`, in milliseconds, unless a call
   // passes its own. By default, `false` skips the release.
   deleteUnusedAfter?: number | false
+  // The `maxSize` of the uploads without their own, in bytes.
+  maxSize?: number
 }
 
 export interface DefineUploadsOptions {
@@ -37,7 +39,8 @@ export function createAssets({
   adapter,
   paths,
   storages,
-  deleteUnusedAfter = false
+  deleteUnusedAfter = false,
+  maxSize
 }: CreateAssetsOptions) {
   // Throws for the storages that the registry doesn't have.
   for (const path of paths) storages.get(path.storage)
@@ -65,15 +68,19 @@ export function createAssets({
         : [undefined, table]
       const tableUploads = paths
         .filter(path => path.table === name)
-        .map(({ column, path, storage }) => ({
+        .map(({ column, path, storage, maxSize }) => ({
           path: getDataPath(column, path),
-          storage
+          storage,
+          maxSize
         }))
       if (name && tableUploads.length + uploads.length === 0) {
         throw new Error(`No asset paths for table '${name}'`)
       }
       return uploadRoutes({
-        uploads: [...tableUploads, ...uploads],
+        uploads: [...tableUploads, ...uploads].map(upload => ({
+          ...upload,
+          maxSize: upload.maxSize ?? maxSize
+        })),
         storages,
         db: getDb
       })

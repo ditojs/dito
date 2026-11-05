@@ -146,6 +146,8 @@ interface AssetPath {
   // The data path of the files in the column's JSON value, '' for the column.
   path: string
   storage: string
+  // The size limit of the uploads, in bytes, see Uploads.
+  maxSize?: number
 }
 ```
 
@@ -167,6 +169,7 @@ createAssets(options: {
   paths: AssetPath[]
   storages: StorageRegistry
   deleteUnusedAfter?: number | false
+  maxSize?: number
 }): Assets
 ```
 
@@ -195,6 +198,7 @@ paths and storages.
   [`createMikroAdapter(orm)`](mikro.md#createmikroadapter).
 - `deleteUnusedAfter` is in milliseconds. By default, it is `false`, which skips
   the release.
+- `maxSize` is the size limit of the uploads that don't set their own.
 - `createAssets()` throws for asset paths whose storage `storages` doesn't have.
   `defineUploads()` does the same for `uploads`.
 
@@ -262,6 +266,9 @@ assets.defineUploads({ uploads: [{ path: 'avatar', storage: 'public' }] })
 The action takes a `multipart/form-data` body and stores all its files.
 
 - Other bodies respond with 415.
+- Bodies over the upload's `maxSize` respond with 413. A `Content-Length` over it
+  responds before the body is read. Without one, reading stops at the limit.
+- The multipart body is a few hundred bytes larger than its files.
 - [`hostMiddleware()`](hono.md#hostmiddleware) sets no limit on multipart bodies.
 - It inserts the `asset` rows of the files. They stay unreferenced until a scan
   finds them.
@@ -274,6 +281,7 @@ The action takes a `multipart/form-data` body and stores all its files.
 | --------- | -------- | --------------------------------------------------------------------------------------------------------- |
 | `path`    | `string` | A glob of camelCase data paths, with `*` for one segment and `**` for several segments, such as `avatar`. |
 | `storage` | `string` | The name of the storage of the files.                                                                     |
+| `maxSize` | `number` | Optional, the size limit of the multipart body, in bytes.                                                 |
 
 ### Stored files
 

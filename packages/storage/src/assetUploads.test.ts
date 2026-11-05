@@ -138,6 +138,75 @@ describe('defineUploads()', () => {
     expect(response.status).toBe(415)
   })
 
+  describe('maxSize', () => {
+    // A cover limit of 300 bytes leaves room for the multipart framing around
+    // a small file, the default of 1000 bytes for a larger one.
+    function setupLimits() {
+      const limits = createAssets({
+        adapter,
+        paths: uploadPaths.map(path =>
+          path.column === 'cover' ? { ...path, maxSize: 300 } : path
+        ),
+        storages,
+        maxSize: 1000
+      })
+      const uploads = [{ path: 'drafts/*', storage: 'archive' }]
+      return createApi({
+        controllers: [
+          {
+            path: 'books',
+            authorize: true,
+            mixins: [limits.defineUploads('book', { uploads })]
+          }
+        ],
+        adapter: handleAdapter,
+        onError: () => {}
+      })
+    }
+
+    const small = () => new File(['a'], 'a.txt')
+    const large = () => new File(['a'.repeat(500)], 'a.txt')
+
+    it('answers uploads over the limit with 413 and stores nothing', async () => {
+      const api = setupLimits()
+      const response = await upload(api, 'cover', large())
+      expect(response.status).toBe(413)
+      expect(await response.json()).toMatchObject({
+        status: 413,
+        message: 'Content Too Large'
+      })
+      expect(await getAssets()).toEqual([])
+      // Uploads under the limit go through:
+      const [uploaded] = await (await upload(api, 'cover', small())).json()
+      expect(await covers.listKeys()).toEqual([uploaded.key])
+      expect(await getAssets()).toEqual([
+        { key: uploaded.key, unreferenced_since: expect.any(Date) }
+      ])
+    })
+
+    it('applies the default of `createAssets()`', async () => {
+      const api = setupLimits()
+      for (const route of ['back-cover', 'drafts/1']) {
+        expect((await upload(api, route, large())).status).toBe(200)
+        const huge = new File(['a'.repeat(1000)], 'a.txt')
+        expect((await upload(api, route, huge)).status).toBe(413)
+      }
+      expect(await archive.listKeys()).toHaveLength(2)
+    })
+
+    it('checks `Content-Length` before reading the body', async () => {
+      const body = new FormData()
+      body.append('file', small())
+      const response = await request(setupLimits(), '/books/upload/cover', {
+        method: 'POST',
+        headers: { 'Content-Length': '301' },
+        body
+      })
+      expect(response.status).toBe(413)
+      expect(await getAssets()).toEqual([])
+    })
+  })
+
   it('commits the asset rows without a transaction', async () => {
     const response = await upload(
       setup({ fail: true }),

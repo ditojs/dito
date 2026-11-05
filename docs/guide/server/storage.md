@@ -144,10 +144,10 @@ Controllers without asset paths pass `uploads` without a table.
 An upload without a type from the client gets the type detected from its data.
 Without one, its type is `application/octet-stream`.
 
-The reverse proxy limits the size of uploads, see
-[`hostMiddleware()`](../../api/server/hono.md#hostmiddleware). The server reads
-each upload whole into memory. S3 storages send it in one `PutObject`. So keep
-the proxy's limit within the server's memory.
+The server reads each upload whole into memory. S3 storages send it in one
+`PutObject`. So limit the size of uploads with `maxSize`, see
+[Uploads](../../api/server/storage.md#uploads). The reverse proxy can limit all
+of them too, see [`hostMiddleware()`](../../api/server/hono.md#hostmiddleware).
 
 ## Writes
 
