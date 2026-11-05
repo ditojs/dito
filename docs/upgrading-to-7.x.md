@@ -622,8 +622,9 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   [`UserSource`](api/server/auth.md#usersource) itself.
 - [`defineUserActions()`](api/server/auth.md#defineuseractions) serves the
   admin's users. It returns a mixin for the `mixins` of the users controller.
-  Its `get features` tells the admin what to offer. Other users, such as a site's members, log in through the app's
-  own actions, see [Other users](guide/server/auth.md#other-users).
+  Its `get features` tells the admin what to offer. Other users, such as a
+  site's members, log in through the app's own actions, see
+  [Other users](guide/server/auth.md#other-users).
 - `post login` and `post password-reset` name the user as `username` in the
   body, whatever the property is.
 - `get session` becomes `get self`.
