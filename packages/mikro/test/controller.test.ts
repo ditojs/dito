@@ -645,6 +645,21 @@ describe('get :id', () => {
     expect(status).toBe(404)
   })
 
+  it('gives handlers the entity of the controller', async () => {
+    const api = setup(
+      books({
+        actions: {
+          'get table': ({ entity, db }) => ({
+            isBook: entity === Book,
+            table: db.getMetadata(entity).tableName
+          })
+        }
+      })
+    )
+    const { json } = await request(api, 'GET', '/api/books/table')
+    expect(json).toEqual({ isBook: true, table: 'book' })
+  })
+
   it('leaves ids that are no primary key to `load`', async () => {
     const api = setup(
       books({

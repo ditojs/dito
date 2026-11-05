@@ -204,9 +204,9 @@ not with a leading `*`.
 
 Dito sets its variables in Hono's context: `c.var.user`, `c.var.db`,
 `c.var.action`, the key of the action, and `c.var.body` for writes. Model
-controllers add `c.var.id`, `c.var.getRecord()`, `c.var.find()`, `c.var.list()`
-and `c.var.getListQuery()`. Middleware sets the app's own with `c.set()`, such
-as the session. Handlers get them all in their input:
+controllers add `c.var.id`, `c.var.entity`, `c.var.getRecord()`, `c.var.find()`,
+`c.var.list()` and `c.var.getListQuery()`. Middleware sets the app's own with
+`c.set()`, such as the session. Handlers get them all in their input:
 
 ```js
 const api = createApi({

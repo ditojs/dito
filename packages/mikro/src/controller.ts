@@ -14,7 +14,11 @@ import { defaults } from './crud.ts'
 import { checkFind, type Find } from './find.ts'
 import type { Filter } from './list.ts'
 import { toPrimaryKey } from './meta.ts'
-import { ModelRequest, type ModelDefinition } from './model-request.ts'
+import {
+  ModelRequest,
+  getModelRequest,
+  type ModelDefinition
+} from './model-request.ts'
 import { respond } from './respond.ts'
 
 // A model controller on a MikroORM entity. `defineModelController()` puts a
@@ -88,7 +92,7 @@ export function defineModelController<T extends object>(
         if (id === undefined && !load) throw new HttpError(404)
         c.set('id', id ?? param)
       }
-      c.set('modelRequest', request)
+      c.set('entity', model.entity)
       c.set('getRecord', request.record.bind(request))
       c.set('find', request.find.bind(request))
       c.set('list', request.list.bind(request))
@@ -100,8 +104,8 @@ export function defineModelController<T extends object>(
   // The wrappers have no settings, so the settings of the layers apply. Keys
   // without a handler stay without one, so that `createApi()` rejects them.
   // The controller's own settings go on the top layer, which holds all actions.
-  const wrap: Handler = async ({ modelRequest, next }) =>
-    respond(modelRequest, await next())
+  const wrap: Handler = async ({ c, next }) =>
+    respond(getModelRequest(c)!, await next())
   const actions = Object.fromEntries(
     [...keys]
       .filter(key =>

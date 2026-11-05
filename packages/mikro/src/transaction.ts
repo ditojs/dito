@@ -5,6 +5,7 @@ import type { EntityManager } from '@mikro-orm/sql'
 import type { Kysely } from 'kysely'
 import { hasMikroConfig } from './config.ts'
 import { toHttpError } from './errors.ts'
+import { getModelRequest } from './model-request.ts'
 
 // The `MikroORM` of any driver and any entities.
 interface Orm {
@@ -36,7 +37,7 @@ export function createMikroAdapter(
       }
     },
     toHttpError: (error, c) =>
-      toHttpError(error, c.var.modelRequest?.meta, c.req.method),
+      toHttpError(error, getModelRequest(c)?.meta, c.req.method),
     // A Kysely on the ORM's pool, outside of any transaction, for sessions,
     // credentials and jobs. `orm.em.getKysely()` joins the current
     // transaction, a fork doesn't.

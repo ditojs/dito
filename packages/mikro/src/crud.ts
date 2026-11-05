@@ -1,6 +1,6 @@
 import { defineMixin, type Actions, type Handler } from '@ditojs/server'
 import { checkFind, type FindShape } from './find.ts'
-import type { ModelRequest } from './model-request.ts'
+import { getModelRequest, type ModelRequest } from './model-request.ts'
 import { assignRecord, createRecord } from './write.ts'
 
 // The default handlers of a model controller. An action gets one by setting
@@ -9,7 +9,8 @@ export const defaults: Actions = {
   'get': ({ list }) => list(),
 
   // The new row becomes the request's record.
-  async 'post'({ body, modelRequest }) {
+  async 'post'({ body, c }) {
+    const modelRequest = getModelRequest(c)!
     const { em, entity } = modelRequest
     const data = await deserialize(modelRequest, body)
     const row = await createRecord(em, entity, data)
@@ -19,13 +20,15 @@ export const defaults: Actions = {
 
   'get :id': ({ getRecord }) => getRecord(),
 
-  async 'patch :id'({ body, getRecord, modelRequest }) {
+  async 'patch :id'({ body, getRecord, c }) {
+    const modelRequest = getModelRequest(c)!
     const row = await getRecord()
     const data = await deserialize(modelRequest, body, row)
     return assignRecord(modelRequest.em, row, data)
   },
 
-  async 'delete :id'({ getRecord, modelRequest: { em } }) {
+  async 'delete :id'({ getRecord, c }) {
+    const { em } = getModelRequest(c)!
     em.remove(await getRecord())
     await em.flush()
     return { count: 1 }

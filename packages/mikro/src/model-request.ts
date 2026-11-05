@@ -41,8 +41,9 @@ declare module '@ditojs/server' {
     // the primary key, so a number for integer keys. An id that doesn't fit
     // responds with 404, and stays a string with `load`, such as `self`.
     id: any
-    // In model controllers: the request's `ModelRequest`.
-    modelRequest: ModelRequest
+    // In model controllers: the entity class of the controller. Its metadata is
+    // `db.getMetadata(entity)`.
+    entity: EntityClass<any>
     // In model controllers: loads the record of the id once per request. On
     // other actions, it returns the record that a handler set with
     // `setRecord()`, such as the row that the default `post` creates.
@@ -80,6 +81,11 @@ export interface ModelDefinition<T extends object = any>
   deserializers: NonNullable<MixinDefinition['deserialize']>[]
 }
 
+// The request of each context of a model controller, for Dito's own handlers.
+const requests = new WeakMap<Context, ModelRequest>()
+
+export const getModelRequest = (c: Context) => requests.get(c)
+
 export class ModelRequest<T extends object = any> {
   c: DitoContext
   definition: ModelDefinition<T>
@@ -100,6 +106,7 @@ export class ModelRequest<T extends object = any> {
     this.em = getEntityManager(c)
     this.meta = this.em.getMetadata().get(definition.entity)
     this.key = getPrimaryKey(this.meta)
+    requests.set(c, this)
   }
 
   record() {
@@ -184,5 +191,5 @@ export class ModelRequest<T extends object = any> {
 // Sets the record that `getRecord()` returns, such as the row that a `post`
 // creates.
 export function setRecord(c: Context, record: unknown) {
-  c.var.modelRequest.setRecord(record)
+  getModelRequest(c)!.setRecord(record)
 }

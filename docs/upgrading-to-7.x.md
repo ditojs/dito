@@ -466,6 +466,7 @@ variables from it, such as `c.var.user`.
 | `ctx.params`                                 | `params` of the input; `c.req.param(name)`                                              |
 | `ctx.memberId`                               | `id` of the input in model controllers, a number for integer keys; else `params.id`     |
 | `this.getMember(ctx)`, `super.get(ctx)`      | `getRecord()` of the input; `c.var.getRecord()`; `next()`                               |
+| `this.modelClass`, `modelClass.tableName`    | `entity` of the input in model controllers; `db.getMetadata(entity).tableName`          |
 | `ctx.status`, `ctx.set()`                    | `c.status()`, `c.header()`                                                              |
 | `ctx.type`, `ctx.body =`, `ctx.attachment()` | A returned `Response`, such as `c.body()` or [`sendFile()`](api/server/api.md#sendfile) |
 | `ctx.state.user`                             | `user` of the input, `{ id, roles }`; `c.var.user`                                      |

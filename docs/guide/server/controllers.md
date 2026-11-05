@@ -96,6 +96,7 @@ A handler gets one argument, the input of the request, a plain object:
 | `user`           | `{ id, roles }` of the signed-in user, or `null`.                                                             |
 | `action`         | The key of the action, such as `'post :id/publish'`.                                                          |
 | `id`             | In model controllers, the id of a member action.                                                              |
+| `entity`         | In model controllers, the entity class. `db.getMetadata(entity)` has its metadata.                            |
 | `getRecord()`    | In model controllers, the record of a member action.                                                          |
 | `find(options?)` | The controller's records, through its `find`, see [find()](entities.md#custom-actions).                       |
 | `list(options?)` | The controller's list, see [Lists](entities.md#lists).                                                        |
