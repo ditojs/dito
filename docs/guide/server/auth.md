@@ -9,19 +9,19 @@ its users in its own entities, and describes them to auth in a user source.
 
 ```js
 import { Hono } from 'hono'
-import { createSessions, sessionUser } from '@ditojs/auth'
+import { createSessions, getSessionUser } from '@ditojs/auth'
 
 export const adminSessions = createSessions({
   db: () => getRootKysely(orm),
   secrets: config.keys,
-  name: 'admin.sess',
+  cookieName: 'admin.sess',
   maxAge: 24 * 60 * 60 * 1000
 })
 
 const api = createApi({
   controllers,
   middleware: [adminSessions.middleware],
-  getUser: sessionUser(adminSource)
+  getUser: c => getSessionUser(c, adminSource)
 })
 
 const app = new Hono()
@@ -32,8 +32,8 @@ app.route('/api/admin', api)
 which reads the session. It loads the session into `c.var.session` before the
 action. After the action, it saves the session if it changed, even when the
 action throws, and adds its cookie to the response. `getSession(c)` returns the
-session, also in the app's own Hono routes. `sessionUser(source)` is the
-`getUser` of the API, which returns the id and roles of the session's user.
+session, also in the app's own Hono routes. `getSessionUser(c, source)` returns
+the id and roles of the session's user, for the `getUser` of the API.
 
 Sessions use their own database handle, `db()`, because they load before the
 action's transaction and save after it. `deleteExpiredSessions(kysely)` deletes
@@ -83,25 +83,25 @@ password change ends the user's other sessions.
 
 ## The users controller
 
-`usersRoutes()` returns a controller with the actions of the admin's users, and
-the features that the controller offers, which the admin reads:
+`defineUserActions()` returns a controller with the actions of the admin's
+users, and the features that the controller offers, which the admin reads:
 
 ```js
 import { z } from 'zod'
 import { defineController } from '@ditojs/server'
-import { createCredentials, usersRoutes } from '@ditojs/auth'
-import { passkeys } from '@ditojs/auth/passkeys'
-import { totp } from '@ditojs/auth/totp'
+import { createCredentials, defineUserActions } from '@ditojs/auth'
+import { createPasskeys } from '@ditojs/auth/passkeys'
+import { createTotp } from '@ditojs/auth/totp'
 
-const users = usersRoutes({
+const users = defineUserActions({
   path: 'admins',
   source: adminSource,
   // New passwords, 8 characters at least by default:
   password: z.string().min(12),
   credentials: createCredentials(() => getRootKysely(orm)),
   features: {
-    passkeys: passkeys({ rpName: 'Book Catalog' }),
-    totp: totp({ issuer: 'Book Catalog', secret: config.totpSecret })
+    passkeys: createPasskeys({ rpName: 'Book Catalog' }),
+    totp: createTotp({ issuer: 'Book Catalog', secret: config.totpSecret })
   }
 })
 
@@ -115,7 +115,8 @@ It routes `post login`, `post logout`, `get self`, `post confirm-access` and
 `post password`, and the actions of its features. Logins post `username` and
 `password`, and respond with `{ user }`, or with `{ codeRequired: true }` for
 users with TOTP. `get self` responds with the user, or `null`. See
-[`usersRoutes()`](../../api/server/auth.md#usersroutes) for all actions.
+[`defineUserActions()`](../../api/server/auth.md#defineuseractions) for all
+actions.
 
 The actions check the login themselves, as the controller sets
 `authorize: true`. They run outside the API's transactions, as it sets
@@ -140,20 +141,20 @@ actions: {
 
 ### Password writes
 
-[`passwordWrites()`](../../api/server/auth.md#passwordwrites) is a mixin for the
-model controller of the users. It routes `post` and `patch :id`, where the body
-sets `password`, which the user stores as `hash`. Users who change their own
-password stay logged in, and their other sessions end.
+[`definePasswordWrites()`](../../api/server/auth.md#definepasswordwrites) is a
+mixin for the model controller of the users. It routes `post` and `patch :id`,
+where the body sets `password`, which the user stores as `hash`. Users who
+change their own password stay logged in, and their other sessions end.
 
 ```js
-import { passwordWrites } from '@ditojs/auth'
+import { definePasswordWrites } from '@ditojs/auth'
 import { defineModelController } from '@ditojs/mikro'
 
 export const admins = defineModelController({
   path: 'admins',
   entity: Admin,
   authorize: 'admin',
-  mixins: [passwordWrites({ source: adminSource })],
+  mixins: [definePasswordWrites({ source: adminSource })],
   actions: { 'get': true, 'get :id': true, 'delete :id': true }
 })
 ```
@@ -176,27 +177,29 @@ await deleteUserCredentials(getRootKysely(orm), adminSource, ids)
 
 ### Passkeys
 
-`passkeys({ rpName, domain?, origins? })` from `@ditojs/auth/passkeys` adds
-logins with passkeys, and the actions to list, add and remove passkeys. It needs
-`credentials` and the packages `@simplewebauthn/server` and `aaguids`. The
+`createPasskeys({ rpName, domain?, origins? })` from `@ditojs/auth/passkeys`
+adds logins with passkeys, and the actions to list, add and remove passkeys. It
+needs `credentials` and the packages `@simplewebauthn/server` and `aaguids`. The
 passkeys belong to the request's host and origin, unless `domain` and `origins`
-say otherwise, see [`passkeys()`](../../api/server/auth.md#passkeys).
+say otherwise, see
+[`createPasskeys()`](../../api/server/auth.md#createpasskeys).
 
 ### Two-factor authentication
 
-`totp({ issuer, secret })` from `@ditojs/auth/totp` adds codes from an
+`createTotp({ issuer, secret })` from `@ditojs/auth/totp` adds codes from an
 authenticator app, with backup codes. Users with TOTP enter a code after the
 password. `secret` is a long random string of the app, which encrypts the TOTP
-secrets in the `credential` table. `totp()` needs `credentials` and the package
-`otpauth`.
+secrets in the `credential` table. `createTotp()` needs `credentials` and the
+package `otpauth`.
 
 ### Password reset
 
-`passwordReset({ secrets, confirmUrl, send })` adds `post password-reset`, which
-emails a link, and `post password-reset-confirm`, which sets the new password:
+`createPasswordReset({ secrets, confirmUrl, send })` adds `post password-reset`,
+which emails a link, and `post password-reset-confirm`, which sets the new
+password:
 
 ```js
-passwordReset: passwordReset({
+passwordReset: createPasswordReset({
   secrets: config.keys,
   confirmUrl: 'https://example.com/admin/#password-reset={token}',
   send: (c, user, url) => mailer.send(user.email, 'Reset your password', url)
@@ -251,17 +254,17 @@ actions: {
 
 ## Users outside of Dito
 
-`createAdmin()` takes the session middleware and `sessionUser()` as
+`createAdmin()` takes the session middleware and `getSessionUser()` as
 `createApi()` does, and checks the roles of the user in `authorize`:
 
 ```js
 createAdmin({
   ...options,
   middleware: adminSessions.middleware,
-  getUser: sessionUser(adminSource),
+  getUser: c => getSessionUser(c, adminSource),
   authorize: 'admin'
 })
 ```
 
 The app's own Hono routes run the session middleware with `app.use()`, and read
-the user with the function that `sessionUser()` returns.
+the user with `getSessionUser()`.

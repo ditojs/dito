@@ -1,7 +1,7 @@
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
 import { defineMixin, HttpError, type Handler } from '@ditojs/server'
-import { passwordWrites, verifyPassword } from '../src/index.ts'
+import { definePasswordWrites, verifyPassword } from '../src/index.ts'
 import {
   createSource,
   createUser,
@@ -16,7 +16,7 @@ let db: Kysely<any>
 let ada: TestUser
 let users: TestUser[]
 let admins: ReturnType<typeof createSource>
-// The bodies that reach the handlers beneath `passwordWrites()`.
+// The bodies that reach the handlers beneath `definePasswordWrites()`.
 let bodies: unknown[]
 
 beforeEach(async () => {
@@ -52,14 +52,14 @@ function createApp(password?: z.ZodType<string>) {
       {
         path: 'users',
         authorize: true,
-        mixins: [crud, passwordWrites({ source: admins, password })]
+        mixins: [crud, definePasswordWrites({ source: admins, password })]
       }
     ]
   })
   return api
 }
 
-describe('passwordWrites()', () => {
+describe('definePasswordWrites()', () => {
   it('hashes the password of new users', async () => {
     const client = createClient(createApp().fetch)
     const { status } = await client.post('/users', {
@@ -145,7 +145,7 @@ describe('passwordWrites()', () => {
         {
           path: 'users',
           authorize: true,
-          mixins: [crud, passwordWrites({ source: admins }), failing]
+          mixins: [crud, definePasswordWrites({ source: admins }), failing]
         }
       ]
     })

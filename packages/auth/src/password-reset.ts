@@ -9,13 +9,13 @@ import type { User, UserSource } from './types.ts'
 // ends the link, including the change that the link itself makes. The first
 // secret signs, and all of them verify, so secrets can rotate.
 
-export interface PasswordResetOptions {
+export interface CreatePasswordResetOptions {
   secrets: string[]
   // In milliseconds, one hour by default.
   expiresAfter?: number
   // The time in milliseconds before a user gets another link, one minute by
   // default. Requests in between respond the same way, but send nothing.
-  throttle?: number
+  resendAfter?: number
   // The link, with a `{token}` placeholder.
   confirmUrl: string
   // Sends the email. The response doesn't wait for it, so its failures don't
@@ -24,14 +24,16 @@ export interface PasswordResetOptions {
   onError?(c: Context, error: unknown): void
 }
 
-export function passwordReset({
+export type PasswordReset = ReturnType<typeof createPasswordReset>
+
+export function createPasswordReset({
   secrets,
   expiresAfter = 60 * 60 * 1000,
-  throttle = 60 * 1000,
+  resendAfter = 60 * 1000,
   confirmUrl,
   send,
   onError
-}: PasswordResetOptions) {
+}: CreatePasswordResetOptions) {
   if (!confirmUrl.includes('{token}')) {
     throw new Error(`Invalid password reset, 'confirmUrl' needs '{token}'.`)
   }
@@ -50,10 +52,10 @@ export function passwordReset({
     return `${id}.${time.toString(36)}.${signature}`
   }
 
-  // Forgets the users whose throttle ended, so the map stays small.
+  // Forgets the users whose `resendAfter` ended, so the map stays small.
   function isThrottled(identifier: string, now: number) {
     for (const [key, time] of sentAt) {
-      if (now - time >= throttle) sentAt.delete(key)
+      if (now - time >= resendAfter) sentAt.delete(key)
     }
     if (sentAt.has(identifier)) return true
     sentAt.set(identifier, now)
@@ -62,7 +64,7 @@ export function passwordReset({
 
   return {
     // Sends the link without waiting for it.
-    request(c: Context, source: UserSource<any>, user: User) {
+    sendLink(c: Context, source: UserSource<any>, user: User) {
       const now = Date.now()
       if (isThrottled(getUserIdentifier(source, user), now)) return
       const url = confirmUrl.replace('{token}', createToken(source, user, now))

@@ -40,9 +40,9 @@ With `vite`, Vite handles the requests through the Node request and response of
 | `dist`           | `string`                                                           | The built admin, served without `vite`.                                                                                                                |
 | `api`            | `object`                                                           | `dito.api` in the browser, such as `url` and `users`.                                                                                                  |
 | `settings`       | `object`                                                           | `dito.settings` in the browser.                                                                                                                        |
-| `authentication` | `AuthenticationFeatures`                                           | `dito.authentication`: the `features` of [`usersRoutes()`](auth.md#usersroutes), which tell the login and account views what to offer.                 |
+| `authentication` | `AuthenticationFeatures`                                           | `dito.authentication`: the `features` of [`defineUserActions()`](auth.md#defineuseractions), which tell the login and account views what to offer.     |
 | `middleware`     | `Middleware \| Middleware[]`                                       | Hono middleware that `getUser` and `authorize` need, such as the session middleware. It runs only on the requests that `authorize` checks.             |
-| `getUser`        | `(c) => User \| null \| Promise<…>`                                | The signed-in user of the request, such as the one of [`sessionUser()`](auth.md#sessionuser). `authorize` reads it as `c.var.user`.                    |
+| `getUser`        | `(c) => User \| null \| Promise<…>`                                | The signed-in user of the request, such as the one of [`getSessionUser()`](auth.md#getsessionuser). `authorize` reads it as `c.var.user`.              |
 | `authorize`      | `true \| string \| string[] \| (c) => boolean \| Promise<boolean>` | Who may load the admin's views. It takes the values of an action's [`authorize`](controllers.md#authorize). Without it, anyone may.                    |
 | `vite`           | `InlineConfig \| string`                                           | The Vite config of development, or the path of its file, such as one that exports `defineAdminViteConfig()`. With it, Vite serves the admin's sources. |
 
@@ -55,7 +55,7 @@ const admin = createAdmin({
   api: { url: '/api/admin', users: { path: 'admins' } },
   authentication: adminUsers.features,
   middleware: adminSessions.middleware,
-  getUser: sessionUser(adminSource),
+  getUser: c => getSessionUser(c, adminSource),
   authorize: 'admin'
 })
 app.route('/admin', admin)

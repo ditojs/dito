@@ -5,18 +5,18 @@ import {
   createSessions,
   deleteExpiredSessions,
   getSession,
-  sessionUser,
+  getSessionUser,
   readSignedCookie,
-  usersRoutes,
-  passwordWrites,
+  defineUserActions,
+  definePasswordWrites,
   createCredentials,
   deleteUserCredentials,
-  passwordReset,
+  createPasswordReset,
   hashPassword,
   verifyPassword
 } from '@ditojs/auth'
-import { passkeys } from '@ditojs/auth/passkeys'
-import { totp } from '@ditojs/auth/totp'
+import { createPasskeys } from '@ditojs/auth/passkeys'
+import { createTotp } from '@ditojs/auth/totp'
 ```
 
 Sessions in signed cookies, and the actions of the admin's users: login, logout,
@@ -33,18 +33,18 @@ Peer dependencies: `@ditojs/server`, `hono`, `kysely` and `zod`, plus
 ## createSessions()
 
 ```ts
-createSessions(options: SessionsOptions): {
-  name: string
+createSessions(options: CreateSessionsOptions): {
+  cookieName: string
   middleware: MiddlewareHandler
 }
 ```
 
-| Option    | Type                | Description                                                                                        |
-| --------- | ------------------- | -------------------------------------------------------------------------------------------------- |
-| `db`      | `() => Kysely<any>` | The database of the `session` table, outside of the requests' transactions.                        |
-| `secrets` | `string[]`          | The secrets that sign the cookie. The first one signs, and all of them verify, so they can rotate. |
-| `name`    | `string`            | The cookie name, such as `admin.sess`.                                                             |
-| `maxAge`  | `number`            | The lifetime of a session, in milliseconds. Browsers cap cookies at 400 days.                      |
+| Option       | Type                | Description                                                                                        |
+| ------------ | ------------------- | -------------------------------------------------------------------------------------------------- |
+| `db`         | `() => Kysely<any>` | The database of the `session` table, outside of the requests' transactions.                        |
+| `secrets`    | `string[]`          | The secrets that sign the cookie. The first one signs, and all of them verify, so they can rotate. |
+| `cookieName` | `string`            | The cookie name, such as `admin.sess`.                                                             |
+| `maxAge`     | `number`            | The lifetime of a session, in milliseconds. Browsers cap cookies at 400 days.                      |
 
 The app creates the `session` table:
 
@@ -70,13 +70,13 @@ session. It loads the session into `c.var.session` before the action. After the
 action, it saves the session if it changed, even when the action throws, and
 adds its `Set-Cookie` header to the response, also to error responses.
 [`createAdmin()`](admin-server.md#adminoptions) takes the middleware and the
-`getUser` of [`sessionUser()`](#sessionuser), as `createApi()` does:
+`getUser` of [`getSessionUser()`](#getsessionuser), as `createApi()` does:
 
 ```js
 createAdmin({
   ...options,
   middleware: adminSessions.middleware,
-  getUser: sessionUser(adminSource),
+  getUser: c => getSessionUser(c, adminSource),
   authorize: 'admin'
 })
 ```
@@ -106,14 +106,14 @@ getSession(c: Context): Session
 Returns the session of the request, in actions and in the app's own Hono routes.
 Throws if the middleware of `createSessions()` didn't run.
 
-## sessionUser()
+## getSessionUser()
 
 ```ts
-sessionUser(source: UserSource): (c: Context) => Promise<User | null>
+getSessionUser(c: Context, source: UserSource): Promise<User | null>
 ```
 
-Returns a `getUser` function for `createApi()`, which returns `{ id, roles }` of
-the session's user, if the user belongs to `source`.
+Returns `{ id, roles }` of the session's user, if the user belongs to `source`,
+for the `getUser` of `createApi()`: `getUser: c => getSessionUser(c, admins)`.
 
 ## readSignedCookie()
 
@@ -125,10 +125,10 @@ Returns the value of the cookie `name` if one of `secrets` signed it, or `null`.
 Use it with the secrets of `createSessions()` for the app's own cookies, which
 it writes with `setSignedCookie(c, name, value, secrets[0])` of `hono/cookie`.
 
-## usersRoutes()
+## defineUserActions()
 
 ```ts
-usersRoutes<U>(options: UsersRoutesOptions<U>): {
+defineUserActions<U>(options: DefineUserActionsOptions<U>): {
   controller: ControllerDefinition
   features: {
     hasPasskeys: boolean
@@ -163,7 +163,7 @@ actions instead.
 | `path`           | `string`                               | The path of the users, such as `admins`.                                                                                       |
 | `source`         | [`UserSource`](#usersource)            | The users.                                                                                                                     |
 | `credentials`    | `Credentials`                          | From [`createCredentials()`](#createcredentials). Needed for passkeys and TOTP.                                                |
-| `features`       | `{ passkeys?, totp?, passwordReset? }` | From [`passkeys()`](#passkeys), [`totp()`](#totp) and [`passwordReset()`](#passwordreset).                                     |
+| `features`       | `{ passkeys?, totp?, passwordReset? }` | From [`createPasskeys()`](#createpasskeys), [`createTotp()`](#createtotp) and [`createPasswordReset()`](#createpasswordreset). |
 | `password`       | `ZodType<string>`                      | The schema of new passwords, in `post password` and `post password-reset-confirm`. Default: a string of at least 8 characters. |
 | `reconfirmAfter` | `number`                               | How long a confirmed access lasts, in milliseconds. Default: ten minutes.                                                      |
 | `afterLogin`     | `(c, user) => unknown`                 | Runs after each login, such as to set a cookie.                                                                                |
@@ -188,10 +188,10 @@ result, such as `post logout` and `post password`, respond with 204. Users
 change their other values, such as their email, through an action of the app,
 such as `patch self`, see [Account settings](../../guide/admin/views.md).
 
-## passwordWrites()
+## definePasswordWrites()
 
 ```ts
-passwordWrites<U>(options: {
+definePasswordWrites<U>(options: {
   source: UserSource<U>
   password?: ZodType<string>
 }): MixinDefinition
@@ -211,7 +211,7 @@ defineModelController({
   path: 'admins',
   entity: Admin,
   authorize: 'admin',
-  mixins: [passwordWrites({ source: adminSource })],
+  mixins: [definePasswordWrites({ source: adminSource })],
   actions: { 'get': true, 'get :id': true }
 })
 ```
@@ -280,10 +280,14 @@ No foreign keys tie the credentials to their users. When the app deletes users,
 it calls `deleteUserCredentials(db, source, ids)`, also in the transaction of
 the deletion.
 
-## passkeys()
+## createPasskeys()
 
 ```ts
-passkeys(options: { rpName: string, domain?: string, origins?: string[] }): Passkeys
+createPasskeys(options: {
+  rpName: string
+  domain?: string
+  origins?: string[]
+}): Passkeys
 ```
 
 From `@ditojs/auth/passkeys`. Enables passkeys, as discoverable WebAuthn
@@ -293,10 +297,10 @@ runs the `forwarded()` middleware of `@ditojs/server/node`, so that the
 request's URL is the public one. An admin on another host than the API sets
 `origins`, such as `['https://admin.example.com']`.
 
-## totp()
+## createTotp()
 
 ```ts
-totp(options: { issuer: string, secret: string }): Totp
+createTotp(options: { issuer: string, secret: string }): Totp
 ```
 
 From `@ditojs/auth/totp`. Enables time-based one-time codes, with backup codes.
@@ -304,24 +308,24 @@ From `@ditojs/auth/totp`. Enables time-based one-time codes, with backup codes.
 string of the app, from which the keys that encrypt the TOTP secrets are
 derived. Ten wrong codes in a row lock the codes for 15 minutes.
 
-## passwordReset()
+## createPasswordReset()
 
 ```ts
-passwordReset(options: PasswordResetOptions): PasswordReset
+createPasswordReset(options: CreatePasswordResetOptions): PasswordReset
 ```
 
 | Option         | Type                        | Description                                                                          |
 | -------------- | --------------------------- | ------------------------------------------------------------------------------------ |
 | `secrets`      | `string[]`                  | The secrets that sign the tokens, such as the ones of the sessions. The first signs. |
 | `expiresAfter` | `number`                    | In milliseconds. Default: one hour.                                                  |
-| `throttle`     | `number`                    | The time before a user gets another link, in milliseconds. Default: one minute.      |
+| `resendAfter`  | `number`                    | The time before a user gets another link, in milliseconds. Default: one minute.      |
 | `confirmUrl`   | `string`                    | The link, with a `{token}` placeholder.                                              |
 | `send`         | `(c, user, url) => unknown` | Sends the email. The response doesn't wait for it.                                   |
 | `onError`      | `(c, error) => void`        | Gets the errors of `send`.                                                           |
 
 Enables password resets by email. `post password-reset` responds the same way
-whether the user exists or not, and even when the throttle holds the link back.
-The throttle counts per process. Tokens hold the user's id and their time,
+whether the user exists or not, and even when `resendAfter` holds the link back.
+`resendAfter` counts per process. Tokens hold the user's id and their time,
 signed with HMAC-SHA256 over these and the user's hash, last login and username.
 So a login, a password change or a username change makes the link invalid,
 including the password change that the link itself makes.

@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely'
 import * as webAuthn from '@simplewebauthn/server'
-import { passkeys } from '../src/passkeys.ts'
+import { createPasskeys } from '../src/passkeys.ts'
 import {
   createSource,
   createUser,
@@ -49,7 +49,7 @@ beforeEach(async () => {
   const { api } = setup({
     db,
     source: createSource('Admin', [ada, bob]),
-    features: { passkeys: passkeys({ rpName: 'Dito' }) }
+    features: { passkeys: createPasskeys({ rpName: 'Dito' }) }
   })
   client = createClient(api.fetch)
 })
@@ -140,7 +140,7 @@ describe('passkeys()', () => {
       db,
       source: createSource('Admin', [ada]),
       features: {
-        passkeys: passkeys({
+        passkeys: createPasskeys({
           rpName: 'Dito',
           origins: ['https://admin.example.com']
         })

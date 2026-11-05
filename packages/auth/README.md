@@ -13,20 +13,20 @@ users in its own entities and finds them through a user source.
 
 ```js
 import { Hono } from 'hono'
-import { createSessions, sessionUser, usersRoutes } from '@ditojs/auth'
+import { createSessions, defineUserActions, getSessionUser } from '@ditojs/auth'
 
 const sessions = createSessions({
   db: () => kysely,
   secrets,
-  name: 'admin.sess',
+  cookieName: 'admin.sess',
   maxAge
 })
-const users = usersRoutes({ path: 'admins', source: adminSource })
+const users = defineUserActions({ path: 'admins', source: adminSource })
 
 const api = createApi({
   controllers: [users.controller, ...controllers],
   middleware: [sessions.middleware],
-  getUser: sessionUser(adminSource)
+  getUser: c => getSessionUser(c, adminSource)
 })
 
 const app = new Hono()

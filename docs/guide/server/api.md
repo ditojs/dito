@@ -13,7 +13,7 @@ const api = createApi({
   controllers: [books, authors, loans],
   middleware: [sessions.middleware],
   db: createMikroAdapter(orm),
-  getUser: sessionUser(admins)
+  getUser: c => getSessionUser(c, admins)
 })
 app.route('/api/admin', api)
 ```
@@ -119,13 +119,13 @@ const adminApi = createApi({
   controllers: adminControllers,
   middleware: [adminSessions.middleware],
   db: createMikroAdapter(orm),
-  getUser: sessionUser(adminSource)
+  getUser: c => getSessionUser(c, adminSource)
 })
 const frontApi = createApi({
   controllers: frontControllers,
   middleware: [memberSessions.middleware],
   db: createMikroAdapter(orm),
-  getUser: sessionUser(memberSource)
+  getUser: c => getSessionUser(c, memberSource)
 })
 
 app.route('/api/admin', adminApi)
@@ -163,11 +163,11 @@ old migrations with knex's CLI until the Migrator takes over, see
 `getUser(c)` returns the user of a request as `{ id, roles }`, or `null`. Dito
 sets it as `c.var.user`, which handlers read as `user` of their input, and
 `authorize` checks its roles. With the sessions of `@ditojs/auth`, use
-`sessionUser(source)`, see [Users and sessions](auth.md):
+`getSessionUser(c, source)`, see [Users and sessions](auth.md):
 
 ```js
 middleware: [adminSessions.middleware],
-getUser: sessionUser(adminSource)
+getUser: c => getSessionUser(c, adminSource)
 ```
 
 `getUser` runs after the API's `middleware`, so the session is loaded by then.

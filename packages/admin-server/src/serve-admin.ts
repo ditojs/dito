@@ -26,7 +26,7 @@ export interface AdminOptions {
   api?: Record<string, unknown>
   // `dito.settings` in the browser.
   settings?: Record<string, unknown>
-  // `dito.authentication`: the `features` of `usersRoutes()`.
+  // `dito.authentication`: the `features` of `defineUserActions()`.
   authentication?: AuthenticationFeatures
   // Middleware that `getUser` and `authorize` need, such as the session
   // middleware. It runs only on the requests that `authorize` checks.

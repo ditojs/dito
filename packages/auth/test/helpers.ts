@@ -5,10 +5,10 @@ import { createApi, type ControllerDefinition } from '@ditojs/server'
 import {
   createCredentials,
   createSessions,
+  defineUserActions,
   hashPassword,
-  usersRoutes,
-  type UserSource,
-  type UsersRoutesOptions
+  type DefineUserActionsOptions,
+  type UserSource
 } from '../src/index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Credential, Session } from '../../../tests/utils/entities.ts'
@@ -70,26 +70,26 @@ export async function createUser(
 export function setup({
   db,
   source,
-  name = 'admin.sess',
+  cookieName = 'admin.sess',
   secrets: cookieSecrets = secrets,
   controllers = [],
   ...options
 }: {
   db: Kysely<any>
   source: UserSource<TestUser>
-  name?: string
+  cookieName?: string
   secrets?: string[]
   // More controllers of the API, next to the users routes.
   controllers?: ControllerDefinition[]
-} & Partial<UsersRoutesOptions<TestUser>>) {
+} & Partial<DefineUserActionsOptions<TestUser>>) {
   const sessions = createSessions({
     db: () => db,
     secrets: cookieSecrets,
-    name,
+    cookieName,
     maxAge: 24 * 60 * 60 * 1000
   })
   const credentials = createCredentials(() => db)
-  const users = usersRoutes({
+  const users = defineUserActions({
     path: 'admins',
     source,
     credentials,

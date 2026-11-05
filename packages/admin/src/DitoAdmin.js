@@ -123,8 +123,8 @@ export default class DitoAdmin {
   }
 }
 
-// The resources of the routes of `usersRoutes()` on the server, under `path`,
-// such as 'admins'.
+// The resources of the routes of `defineUserActions()` on the server, under
+// `path`, such as 'admins'.
 function getUsersResources(path) {
   const users = { type: 'collection', path }
   const getResource = (path, method) => ({ path, method, parent: users })

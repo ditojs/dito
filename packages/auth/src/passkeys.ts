@@ -15,7 +15,7 @@ import type { User, UserSource } from './types.ts'
 // credential id as `key`, named after their provider. The challenges are kept
 // in the session of the request, and each can be used once.
 
-export interface PasskeysOptions {
+export interface CreatePasskeysOptions {
   // The name that the browser shows, such as the app's name.
   rpName: string
   // The domain that the passkeys belong to. By default, the request's host.
@@ -25,7 +25,13 @@ export interface PasskeysOptions {
   origins?: string[]
 }
 
-export function passkeys({ rpName, domain, origins }: PasskeysOptions) {
+export type Passkeys = ReturnType<typeof createPasskeys>
+
+export function createPasskeys({
+  rpName,
+  domain,
+  origins
+}: CreatePasskeysOptions) {
   const getDomain = (c: Context) => domain ?? new URL(c.req.url).hostname
 
   const getExpectations = (c: Context) => ({

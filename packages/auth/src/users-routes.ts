@@ -18,11 +18,11 @@ import {
   parseUserIdentifier
 } from './authentication.ts'
 import type { Credentials } from './credentials.ts'
-import type { passkeys } from './passkeys.ts'
-import type { passwordReset } from './password-reset.ts'
+import type { Passkeys } from './passkeys.ts'
+import type { PasswordReset } from './password-reset.ts'
 import { hashPassword, verifyPassword } from './passwords.ts'
 import { getSession } from './sessions.ts'
-import type { totp } from './totp.ts'
+import type { Totp } from './totp.ts'
 import type { User, UserSource } from './types.ts'
 
 // The login, session and security actions of the admin, which need the
@@ -32,7 +32,7 @@ import type { User, UserSource } from './types.ts'
 // that failed codes stay counted when the request fails. The app adds CSRF
 // protection.
 
-export interface UsersRoutesOptions<U extends User> {
+export interface DefineUserActionsOptions<U extends User> {
   // The path of the users under the API's prefix, such as `admins`.
   path: string
   source: UserSource<U>
@@ -40,9 +40,9 @@ export interface UsersRoutesOptions<U extends User> {
   credentials?: Credentials
   features?: {
     // From `@ditojs/auth/passkeys` and `@ditojs/auth/totp`.
-    passkeys?: ReturnType<typeof passkeys>
-    totp?: ReturnType<typeof totp>
-    passwordReset?: ReturnType<typeof passwordReset>
+    passkeys?: Passkeys
+    totp?: Totp
+    passwordReset?: PasswordReset
   }
   // The schema of new passwords, at least 8 characters by default.
   password?: z.ZodType<string>
@@ -70,7 +70,7 @@ const defaultPassword = z
 // or puts in the `mixins` of a controller of its own, and the `features` that
 // tell the admin what to offer, as `dito.authentication`. A model controller
 // doesn't fit, as it would flush and serialize the answers of the actions.
-export function usersRoutes<U extends User>({
+export function defineUserActions<U extends User>({
   path,
   source,
   credentials,
@@ -78,7 +78,7 @@ export function usersRoutes<U extends User>({
   password = defaultPassword,
   reconfirmAfter = 10 * 60 * 1000,
   afterLogin
-}: UsersRoutesOptions<U>) {
+}: DefineUserActionsOptions<U>) {
   if ((passkeys || totp) && !credentials) {
     throw new Error('Unable to use passkeys or TOTP without credentials.')
   }
@@ -92,7 +92,7 @@ export function usersRoutes<U extends User>({
     getSession(c).checkConfirmedAccess(source)
 
   const hasTotp = async (c: Context, user: U) => (
-    !!credentials && !!(await credentials.first(source, user, 'totp'))
+    !!credentials && !!(await credentials.findFirst(source, user, 'totp'))
   )
 
   // Users with TOTP always need a code, even when the app doesn't use TOTP.
@@ -215,7 +215,7 @@ export function usersRoutes<U extends User>({
         body: z.object({ username: required('username') }),
         handler: async ({ body: { username }, c }) => {
           const user = await source.findByUsername(c, username)
-          if (user) passwordReset.request(c, source, user)
+          if (user) passwordReset.sendLink(c, source, user)
         }
       }),
 
@@ -278,7 +278,7 @@ export function usersRoutes<U extends User>({
         const user = await checkConfirmedAccess(c)
         const { data: id } = credentialId.safeParse(params.id)
         if (!id) throw new HttpError(404)
-        const count = await credentials!.remove(source, user, 'passkey', id)
+        const count = await credentials!.delete(source, user, 'passkey', id)
         if (count === 0) throw new HttpError(404)
       }
     }),
@@ -312,7 +312,7 @@ export function usersRoutes<U extends User>({
 
       'get totp': async ({ c }) => {
         const user = await checkAuthentication(c)
-        const credential = await credentials!.first(source, user, 'totp')
+        const credential = await credentials!.findFirst(source, user, 'totp')
         return {
           enabled: !!credential,
           backupCodes: credential?.data.backupCodes.length ?? 0
@@ -345,7 +345,7 @@ export function usersRoutes<U extends User>({
 
       'delete totp': async ({ c }) => {
         const user = await checkConfirmedAccess(c)
-        await credentials!.remove(source, user, 'totp')
+        await credentials!.delete(source, user, 'totp')
       }
     })
   }
@@ -376,7 +376,7 @@ export interface PasswordWritesOptions<U extends User> {
 // the body responds with 400. Users who change their own password keep their
 // session, and their other sessions end. The controller writes the hash with
 // the user that the handler beneath returns.
-export function passwordWrites<U extends User>({
+export function definePasswordWrites<U extends User>({
   source,
   password = defaultPassword
 }: PasswordWritesOptions<U>) {

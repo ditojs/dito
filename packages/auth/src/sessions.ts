@@ -23,7 +23,7 @@ declare module 'hono' {
   }
 }
 
-export interface SessionsOptions {
+export interface CreateSessionsOptions {
   // The database of the `session` table. Sessions load before and save after
   // the actions, so they don't use the request's transaction.
   db: () => Kysely<any>
@@ -31,7 +31,7 @@ export interface SessionsOptions {
   // verify, so secrets can rotate.
   secrets: string[]
   // The cookie name, such as `admin.sess`.
-  name: string
+  cookieName: string
   // In milliseconds.
   maxAge: number
 }
@@ -54,7 +54,7 @@ export class Session {
   value: SessionValue
   #c: Context
   #loaded: Loaded
-  #options: SessionsOptions
+  #options: CreateSessionsOptions
   // The value as loaded, to tell whether it changed.
   #json: string
   #regenerate = false
@@ -62,7 +62,7 @@ export class Session {
   #fingerprint: string | null = null
   #users = new Map<string, Promise<User | null>>()
 
-  constructor(c: Context, loaded: Loaded, options: SessionsOptions) {
+  constructor(c: Context, loaded: Loaded, options: CreateSessionsOptions) {
     this.value = loaded.value
     this.#c = c
     this.#loaded = loaded
@@ -159,7 +159,7 @@ export class Session {
   // that a parallel request ended stays ended, and its cookie stays as it is,
   // as a parallel login may have replaced it.
   async commit() {
-    const { db, secrets, name, maxAge } = this.#options
+    const { db, secrets, cookieName, maxAge } = this.#options
     const c = this.#c
     const secure = new URL(c.req.url).protocol === 'https:'
     let { id } = this.#loaded
@@ -168,7 +168,7 @@ export class Session {
     }
     if (this.#destroy) {
       if (id) await destroy(db(), id)
-      deleteCookie(c, name, { secure })
+      deleteCookie(c, cookieName, { secure })
       return
     }
     if (this.#regenerate && id) {
@@ -196,7 +196,7 @@ export class Session {
         .values({ id, ...values })
         .execute()
     }
-    await setSignedCookie(c, name, id, secrets[0], {
+    await setSignedCookie(c, cookieName, id, secrets[0], {
       expires,
       sameSite: 'Lax',
       secure,
@@ -207,15 +207,15 @@ export class Session {
 
 export type Sessions = ReturnType<typeof createSessions>
 
-export function createSessions(options: SessionsOptions) {
-  const { db, secrets, name } = options
+export function createSessions(options: CreateSessionsOptions) {
+  const { db, secrets, cookieName } = options
   if (secrets.length === 0) {
     throw new Error('Unable to sign cookies without secrets.')
   }
 
   // The session of the request's cookie, if it hasn't expired.
   async function load(c: Context): Promise<Loaded> {
-    const id = await readSignedCookie(c, secrets, name)
+    const id = await readSignedCookie(c, secrets, cookieName)
     const row = id
       ? await db()
           .selectFrom('session')
@@ -242,7 +242,7 @@ export function createSessions(options: SessionsOptions) {
     }
   }
 
-  return { name, middleware }
+  return { cookieName, middleware }
 }
 
 // The value of a cookie that one of `secrets` signed, or null. `secrets` are
@@ -276,13 +276,11 @@ export function getSession(c: Context) {
   return session
 }
 
-// The `getUser` of `createApi()`: the id and roles of the source's user, as
-// `getUser: sessionUser(admins)`.
-export function sessionUser(source: UserSource<any>) {
-  return async (c: Context) => {
-    const user = await getSession(c).getUser(source)
-    return user ? { id: user.id, roles: user.roles ?? [] } : null
-  }
+// The id and roles of the source's user, for the `getUser` of `createApi()`,
+// as `getUser: c => getSessionUser(c, admins)`.
+export async function getSessionUser(c: Context, source: UserSource<any>) {
+  const user = await getSession(c).getUser(source)
+  return user ? { id: user.id, roles: user.roles ?? [] } : null
 }
 
 function destroy(db: Kysely<any>, id: string) {

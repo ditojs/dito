@@ -23,7 +23,7 @@ import type { User, UserSource } from './types.ts'
 // the codes for 15 minutes. `secret` is a long random string of the app, from
 // which HKDF derives the keys.
 
-export interface TotpOptions {
+export interface CreateTotpOptions {
   // The name that authenticator apps show, such as the app's name.
   issuer: string
   secret: string
@@ -36,7 +36,9 @@ const backupCodeCount = 10
 const ivLength = 12
 const tagLength = 16
 
-export function totp({ issuer, secret: key }: TotpOptions) {
+export type Totp = ReturnType<typeof createTotp>
+
+export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
   if (!key) throw new Error('Unable to use TOTP without a secret.')
   // The time step of a valid code, or null. It accepts the previous and the
   // next code too, for clocks that drift.
@@ -77,7 +79,7 @@ export function totp({ issuer, secret: key }: TotpOptions) {
       }
       const identifier = getUserIdentifier(source, user)
       const conflict = () => authError('TOTP is already set up', 409)
-      if (await credentials.first(source, user, 'totp')) throw conflict()
+      if (await credentials.findFirst(source, user, 'totp')) throw conflict()
       const { secret } = pendingTotp
       const step = getCodeStep(secret, code)
       // Wrong codes don't count, as the user already knows the secret.
@@ -100,7 +102,7 @@ export function totp({ issuer, secret: key }: TotpOptions) {
           }
         })
       } catch (error) {
-        if (await credentials.first(source, user, 'totp')) throw conflict()
+        if (await credentials.findFirst(source, user, 'totp')) throw conflict()
         throw error
       }
       delete session.pendingTotp
@@ -119,7 +121,7 @@ export function totp({ issuer, secret: key }: TotpOptions) {
     ) {
       const identifier = getUserIdentifier(source, user)
       const verify = async (trx: Kysely<any>) => {
-        const totp = await credentials.first(source, user, 'totp', trx)
+        const totp = await credentials.findFirst(source, user, 'totp', trx)
         if (!totp) return { isValid: false, isLocked: false }
         const { data } = totp
         if (data.lockedUntil > Date.now()) {

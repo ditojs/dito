@@ -3,16 +3,17 @@ export {
   createSessions,
   deleteExpiredSessions,
   getSession,
+  getSessionUser,
   readSignedCookie,
-  sessionUser,
+  type CreateSessionsOptions,
   type Session,
-  type Sessions,
-  type SessionsOptions
+  type Sessions
 } from './sessions.ts'
 export * from './passwords.ts'
 export * from './credentials.ts'
 export {
-  passwordReset,
-  type PasswordResetOptions
+  createPasswordReset,
+  type CreatePasswordResetOptions,
+  type PasswordReset
 } from './password-reset.ts'
 export * from './users-routes.ts'

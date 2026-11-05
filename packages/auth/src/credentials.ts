@@ -50,7 +50,7 @@ export function createCredentials(db: () => Kysely<any>) {
     },
 
     // With `trx`, it locks the row in that transaction.
-    async first(
+    async findFirst(
       source: UserSource<any>,
       user: User,
       type: string,
@@ -118,7 +118,7 @@ export function createCredentials(db: () => Kysely<any>) {
 
     // Deletes the user's credentials of `type`, or only the one with `id`.
     // Resolves to the number of deleted rows.
-    async remove(
+    async delete(
       source: UserSource<any>,
       user: User,
       type: string,

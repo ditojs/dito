@@ -92,7 +92,7 @@ export const loans = {
 A string in `authorize` names a role. An array lets in users with any of its
 roles. An action's own `authorize` replaces the controller's.
 
-`sessionUser()` passes the `roles` of the session's user to `authorize`.
+`getSessionUser()` passes the `roles` of the session's user to `authorize`.
 `serialize()` sends them to the admin, whose `user.hasRole()` reads them. So the
 admin only shows what the server allows.
 
@@ -105,7 +105,7 @@ admin's views:
 createAdmin({
   ...options,
   middleware: sessions.middleware,
-  getUser: sessionUser(source),
+  getUser: c => getSessionUser(c, source),
   authorize: ['editor', 'desk', 'admin']
 })
 ```

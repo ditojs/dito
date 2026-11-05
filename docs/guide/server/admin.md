@@ -9,7 +9,7 @@ loads Vite.
 ```js
 import path from 'node:path'
 import { createAdmin } from '@ditojs/admin-server'
-import { sessionUser } from '@ditojs/auth'
+import { getSessionUser } from '@ditojs/auth'
 
 const admin = createAdmin({
   base: '/admin',
@@ -22,7 +22,7 @@ const admin = createAdmin({
   authentication: users.features,
   // The session middleware loads the session that `getUser` reads.
   middleware: adminSessions.middleware,
-  getUser: sessionUser(adminSource),
+  getUser: c => getSessionUser(c, adminSource),
   authorize: ['admin', 'editor']
 })
 

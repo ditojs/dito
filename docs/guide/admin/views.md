@@ -285,8 +285,8 @@ The Security dialog of the account menu changes the password through
 `'post password'` of the users controller, which needs no `patch`, see
 [Confirmed access](../server/auth.md#confirmed-access).
 
-On the server, the app routes `patch self` in its users controller, next to
-the actions of `usersRoutes()` of `@ditojs/auth`. It writes only the values
+On the server, the app routes `patch self` in its users controller, next to the
+actions of `defineUserActions()` of `@ditojs/auth`. It writes only the values
 that users may change themselves, e.g. not their roles or password:
 
 ```js

@@ -73,7 +73,7 @@ describe('DitoAdmin', () => {
     assertType<ConstructorParameters<typeof DitoAdmin>>([
       '#app',
       {
-        // @ts-expect-error: They use the names of `usersRoutes()`.
+        // @ts-expect-error: They use the names of `defineUserActions()`.
         api: { users: { login: { path: 'sign-in' } } }
       }
     ])

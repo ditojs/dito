@@ -4,10 +4,10 @@ import { defineEntity, p } from '@mikro-orm/core'
 import { createApi } from '@ditojs/server'
 import {
   createSessions,
+  definePasswordWrites,
+  defineUserActions,
+  getSessionUser,
   hashPassword,
-  passwordWrites,
-  sessionUser,
-  usersRoutes,
   verifyPassword
 } from '../../auth/src/index.ts'
 import {
@@ -19,7 +19,7 @@ import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Session } from '../../../tests/utils/entities.ts'
 import { createClient } from '../../../tests/utils/client.ts'
 
-// `createEntityUserSource()` and `passwordWrites()` of auth on a model
+// `createEntityUserSource()` and `definePasswordWrites()` of auth on a model
 // controller.
 
 const MemberSchema = defineEntity({
@@ -48,7 +48,7 @@ const source = createEntityUserSource(Member, {
 const sessions = createSessions({
   db: () => db as Kysely<any>,
   secrets: ['secret sauce'],
-  name: 'member.sess',
+  cookieName: 'member.sess',
   maxAge: 60_000
 })
 
@@ -57,14 +57,14 @@ const app = new Hono().route(
   createApi({
     db: createMikroAdapter(orm),
     middleware: [sessions.middleware],
-    getUser: sessionUser(source),
+    getUser: c => getSessionUser(c, source),
     controllers: [
-      usersRoutes({ path: 'auth', source }).controller,
+      defineUserActions({ path: 'auth', source }).controller,
       defineModelController({
         path: 'members',
         entity: Member,
         authorize: true,
-        mixins: [passwordWrites({ source })]
+        mixins: [definePasswordWrites({ source })]
       })
     ]
   })

@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely'
 import type { Mock } from 'vitest'
-import { passwordReset } from '../src/index.ts'
+import { createPasswordReset } from '../src/index.ts'
 import {
   createSource,
   createUser,
@@ -34,10 +34,10 @@ beforeEach(async () => {
   onError = vi.fn()
   const { api } = setup({
     db,
-    name: 'customer.sess',
+    cookieName: 'customer.sess',
     source: customers,
     features: {
-      passwordReset: passwordReset({
+      passwordReset: createPasswordReset({
         secrets,
         confirmUrl: 'https://example.com/admin/#password-reset={token}',
         send,
@@ -59,10 +59,10 @@ const request = (username: unknown) =>
 describe('passwordReset()', () => {
   it('needs a placeholder for the token', () => {
     expect(() =>
-      passwordReset({ secrets, confirmUrl: 'https://example.com', send })
+      createPasswordReset({ secrets, confirmUrl: 'https://example.com', send })
     ).toThrow(`'confirmUrl' needs '{token}'`)
     expect(() =>
-      passwordReset({ secrets: [], confirmUrl: '{token}', send })
+      createPasswordReset({ secrets: [], confirmUrl: '{token}', send })
     ).toThrow('Unable to sign tokens without secrets.')
   })
 
@@ -185,7 +185,7 @@ describe('passwordReset()', () => {
   })
 
   it('signs the values of the user with the first secret', () => {
-    const feature = passwordReset({
+    const feature = createPasswordReset({
       secrets: [...secrets, 'older secret'],
       confirmUrl: '{token}',
       send
@@ -193,28 +193,28 @@ describe('passwordReset()', () => {
     vi.setSystemTime(Date.UTC(2026, 0, 1))
     // HMAC-SHA256 over `["Customer-1",time,hash,lastLogin,username]`:
     const user = { ...ada, hash: 'hash', lastLogin: new Date() }
-    feature.request({} as any, customers, user)
+    feature.sendLink({} as any, customers, user)
     expect(send.mock.calls[0]![2]).toBe(
       'MQ.mjuohs00.K7uAn90VappUNf7Z2Ago4lWBx3WDX6AYby1XYSmjCr8'
     )
   })
 
   it('accepts tokens of older secrets', async () => {
-    const older = passwordReset({
+    const older = createPasswordReset({
       secrets: ['older'],
       confirmUrl: '{token}',
       send
     })
-    const rotated = passwordReset({
+    const rotated = createPasswordReset({
       secrets: ['newer', 'older'],
       confirmUrl: '{token}',
       send
     })
-    older.request({} as any, customers, ada)
+    older.sendLink({} as any, customers, ada)
     const token = send.mock.calls[0]![2]
     expect(await rotated.findUser({} as any, customers, token)).toBe(ada)
     expect(
-      await passwordReset({ secrets, confirmUrl: '{token}', send })
+      await createPasswordReset({ secrets, confirmUrl: '{token}', send })
         .findUser({} as any, customers, token)
     ).toBe(null)
   })

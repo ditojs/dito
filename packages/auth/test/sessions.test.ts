@@ -8,8 +8,8 @@ import { getPasswordFingerprint } from '../src/authentication.ts'
 import {
   deleteExpiredSessions,
   getSession,
-  readSignedCookie,
-  sessionUser
+  getSessionUser,
+  readSignedCookie
 } from '../src/index.ts'
 import {
   createSource,
@@ -414,7 +414,7 @@ describe('sessions', () => {
       new Hono().use(admin.sessions.middleware).route(
         '/',
         createApi({
-          getUser: sessionUser(source),
+          getUser: c => getSessionUser(c, source),
           controllers: [
             defineController({
               path: 'me',

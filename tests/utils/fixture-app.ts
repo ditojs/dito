@@ -70,7 +70,7 @@ export interface ScenarioOptions {
    * `scenarioController()`, or `false` for entities without one. */
   controllers?: Record<string, ScenarioControllerOptions | false>
   /** The routes of users to log in with, instead of the stubbed session,
-   * such as the ones of `usersRoutes()`. */
+   * such as the ones of `defineUserActions()`. */
   users?: (orm: TestOrm) => TestApi
   /** Merged into the admin's api config, e.g. `users` to log in through
    * `users` instead of the stubbed session. */

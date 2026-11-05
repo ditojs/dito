@@ -56,7 +56,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `ResponseError` and its subclasses, `app.logError()`                                   | `HttpError`, `toHttpError()` of the `db` adapter, and the `onError` hook, which logs by default                                                                                                             | low                     |
 | Koa middleware, `config.http`                                                          | Hono middleware on the host: `hostMiddleware()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`                                                                               | low                     |
 | `app.proxy`, `config.server.proxy`                                                     | `forwarded(proxy)` of `@ditojs/server/node`, and `getClientAddress(c)` for the client's address                                                                                                             | low                     |
-| `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createSessions()`, `sessionUser()`, `usersRoutes()`, `passwordWrites()`, `passkeys()`, `totp()`, and `createEntityUserSource()` of `@ditojs/mikro`                                         | medium                  |
+| `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createSessions()`, `getSessionUser()`, `defineUserActions()`, `definePasswordWrites()`, `createPasskeys()`, `createTotp()`, and `createEntityUserSource()` of `@ditojs/mikro`              | medium                  |
 | `config.storages`, model `assets`, `AssetFile`, asset counts in hooks                  | `@ditojs/storage`: `createStorages()`, asset paths, `createAssets()`, `serveStorage()`                                                                                                                      | medium                  |
 | `AdminController`, `config.admin`, the admin's build                                   | `createAdmin()` and `defineAdminViteConfig()` of `@ditojs/admin-server`                                                                                                                                     | low                     |
 | Tests on `app.knex` and models                                                         | Tests on an entity manager of the ORM, and `app.request()` of Hono                                                                                                                                          | medium                  |
@@ -580,7 +580,7 @@ const api = createApi({
   controllers,
   middleware: [sessions.middleware],
   db: createMikroAdapter(orm),
-  getUser: sessionUser(adminSource)
+  getUser: c => getSessionUser(c, adminSource)
 })
 
 const app = new Hono({ strict: false })
@@ -622,17 +622,17 @@ await serve(app, { port, closeTimeout: 5000, onClose: () => orm.close() })
 `@ditojs/auth`. The `session` and `credential` tables stay the same, so passkeys
 and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 
-- `createSessions({ db: () => kysely, secrets, name, maxAge })` returns the
-  session `middleware`, and `sessionUser(source)` the `getUser` of
-  `createApi()`.
+- `createSessions({ db: () => kysely, secrets, cookieName, maxAge })` returns
+  the session `middleware`, and `getSessionUser(c, source)` the user for the
+  `getUser` of `createApi()`.
 - [`createEntityUserSource()`](api/server/mikro.md#createentityusersource)
   describes the users of an entity. It takes `usernameProperty` as before. For
   users that no entity holds, the app writes the
   [`UserSource`](api/server/auth.md#usersource) itself.
-- [`usersRoutes()`](api/server/auth.md#usersroutes) serves the admin's users,
-  with `credentials: createCredentials(() => kysely)`. Its `controller` goes
-  into `controllers`, and its `features` to the admin. Other users, such as a
-  site's members, log in through the app's own actions, see
+- [`defineUserActions()`](api/server/auth.md#defineuseractions) serves the
+  admin's users, with `credentials: createCredentials(() => kysely)`. Its
+  `controller` goes into `controllers`, and its `features` to the admin. Other
+  users, such as a site's members, log in through the app's own actions, see
   [Other users](guide/server/auth.md#other-users).
 - `post login` and `post password-reset` name the user as `username` in the
   body, whatever the property is. `get session` becomes `get self`, which
@@ -640,8 +640,8 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 - `self` in member routes, such as `PATCH users/self`, isn't built in. A
   controller that keeps it sets `load`, which gets the id as a string, see
   [Handlers and the context](#handlers-and-the-context).
-- `passwordWrites()` doesn't ask for confirmed access. An app that asked for it
-  on password changes calls `checkConfirmedAccess()` in its own action.
+- `definePasswordWrites()` doesn't ask for confirmed access. An app that asked
+  for it on password changes calls `checkConfirmedAccess()` in its own action.
 - Actions that change security settings call `checkConfirmedAccess()`, see
   [Confirmed access](guide/server/auth.md#confirmed-access). Clients answer its
   403 with `confirmationRequired: true` through `post confirm-access`.
@@ -656,16 +656,16 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   ended stays ended. `refreshFingerprint()` applies when the session saves after
   a request without an error, so a failed write keeps the old hash and the
   fingerprint that matches it.
-- [`passwordWrites({ source })`](api/server/auth.md#passwordwrites) is a mixin
-  for the model controller of the users, which hashes the `password` of the
-  body.
-- `PasskeyService` and `TotpService` become `passkeys()` and `totp()` of
-  `@ditojs/auth/passkeys` and `@ditojs/auth/totp`. Passkeys expect the request's
-  origin, so an app behind a proxy runs `forwarded()`. An admin on another host
-  than its API sets `origins`.
+- [`definePasswordWrites({ source })`](api/server/auth.md#definepasswordwrites)
+  is a mixin for the model controller of the users, which hashes the `password`
+  of the body.
+- `PasskeyService` and `TotpService` become `createPasskeys()` and
+  `createTotp()` of `@ditojs/auth/passkeys` and `@ditojs/auth/totp`. Passkeys
+  expect the request's origin, so an app behind a proxy runs `forwarded()`. An
+  admin on another host than its API sets `origins`.
 - `config.app.authentication.passwordReset` becomes
-  [`passwordReset()`](api/server/auth.md#passwordreset), with times in
-  milliseconds.
+  [`createPasswordReset()`](api/server/auth.md#createpasswordreset), with times
+  in milliseconds.
 - When the app deletes users, it calls
   `deleteUserCredentials(kysely, source, ids)`, as no foreign keys tie
   credentials to users.
@@ -735,7 +735,7 @@ const admin = createAdmin({
   api: { url: '/api/admin', users: { path: 'admins' } },
   authentication: users.features,
   middleware: sessions.middleware,
-  getUser: sessionUser(adminSource),
+  getUser: c => getSessionUser(c, adminSource),
   authorize: 'admin'
 })
 app.route('/admin', admin)

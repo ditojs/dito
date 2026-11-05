@@ -19,7 +19,7 @@ const admin = createAdmin({
   api: { url: '/api/admin' },
   // Only admins may load the admin's views.
   middleware: sessions.middleware,
-  getUser: sessionUser(adminSource),
+  getUser: c => getSessionUser(c, adminSource),
   authorize: 'admin'
 })
 // The admin is a Hono app, routed at its base.

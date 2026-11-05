@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely'
 import { TOTP } from 'otpauth'
-import { totp } from '../src/totp.ts'
+import { createTotp } from '../src/totp.ts'
 import {
   createSource,
   createUser,
@@ -38,7 +38,7 @@ beforeEach(async () => {
   const { api } = setup({
     db,
     source: createSource('Admin', [ada]),
-    features: { totp: totp({ issuer: 'Dito', secret: 'a long secret' }) }
+    features: { totp: createTotp({ issuer: 'Dito', secret: 'a long secret' }) }
   })
   client = createClient(api.fetch)
 })

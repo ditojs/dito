@@ -1,9 +1,13 @@
 import type { EntityManager } from '@mikro-orm/core'
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
-import { createCredentials, hashPassword, passwordReset } from '@ditojs/auth'
-import { passkeys } from '@ditojs/auth/passkeys'
-import { totp } from '@ditojs/auth/totp'
+import {
+  createCredentials,
+  createPasswordReset,
+  hashPassword
+} from '@ditojs/auth'
+import { createPasskeys } from '@ditojs/auth/passkeys'
+import { createTotp } from '@ditojs/auth/totp'
 import type { TestOrm } from '../../utils/database.js'
 import { Credential, Session } from '../../utils/entities.js'
 import { createUsersApi } from '../../utils/users.js'
@@ -27,12 +31,12 @@ export function createApi(orm: TestOrm) {
     ),
     features: {
       // The passkeys belong to the domain of the requests, `localhost`:
-      passkeys: passkeys({ rpName: 'Example' }),
-      totp: totp({ issuer: 'Example', secret: 'totp-secret' }),
-      passwordReset: passwordReset({
+      passkeys: createPasskeys({ rpName: 'Example' }),
+      totp: createTotp({ issuer: 'Example', secret: 'totp-secret' }),
+      passwordReset: createPasswordReset({
         secrets,
         // The tests ask for several links for one user in a row.
-        throttle: 0,
+        resendAfter: 0,
         // The tests open the token of the links on the admin's own URL:
         confirmUrl: 'http://localhost/admin/#password-reset={token}',
         send: (_c, _user, url) => {

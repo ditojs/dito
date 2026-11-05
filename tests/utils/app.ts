@@ -36,7 +36,7 @@ export interface TestApi {
   controllers: ControllerDefinition[]
   middleware?: Middleware[]
   getUser?: (c: DitoContext) => User | null | Promise<User | null>
-  // The features of `usersRoutes()`, which the admin offers.
+  // The features of `defineUserActions()`, which the admin offers.
   authentication?: AuthenticationFeatures
 }
 

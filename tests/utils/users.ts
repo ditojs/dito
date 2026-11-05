@@ -3,10 +3,10 @@ import type { EntityClass } from '@mikro-orm/core'
 import { wrap } from '@mikro-orm/core'
 import {
   createSessions,
+  defineUserActions,
   getSession,
-  sessionUser,
-  usersRoutes,
-  type UsersRoutesOptions
+  getSessionUser,
+  type DefineUserActionsOptions
 } from '@ditojs/auth'
 import {
   assignRecord,
@@ -17,9 +17,9 @@ import { HttpError, type Handler } from '@ditojs/server'
 import type { TestApi } from './app.js'
 import type { TestOrm } from './database.js'
 
-// The users of a scenario that logs in: `usersRoutes()` of `@ditojs/auth` at
-// `users`, on the rows of a user entity, with sessions in the `session` table
-// of `Session` in `./entities.ts`.
+// The users of a scenario that logs in: `defineUserActions()` of `@ditojs/auth`
+// at `users`, on the rows of a user entity, with sessions in the `session`
+// table of `Session` in `./entities.ts`.
 
 export interface TestUser {
   id: number
@@ -30,7 +30,7 @@ export interface TestUser {
 }
 
 export interface UsersApiOptions<U extends TestUser> extends Omit<
-  UsersRoutesOptions<U>,
+  DefineUserActionsOptions<U>,
   'path' | 'source'
 > {
   orm: TestOrm
@@ -52,10 +52,10 @@ export function createUsersApi<U extends TestUser>({
   const sessions = createSessions({
     db: () => orm.em.getKysely() as unknown as Kysely<any>,
     secrets,
-    name: 'dito.sess',
+    cookieName: 'dito.sess',
     maxAge: 24 * 60 * 60 * 1000
   })
-  const { controller, features } = usersRoutes({
+  const { controller, features } = defineUserActions({
     path: 'users',
     source,
     ...options
@@ -81,7 +81,7 @@ export function createUsersApi<U extends TestUser>({
       }
     ],
     middleware: [sessions.middleware],
-    getUser: sessionUser(source),
+    getUser: c => getSessionUser(c, source),
     authentication: features
   }
 }
