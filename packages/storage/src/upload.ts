@@ -2,9 +2,8 @@ import picomatch from 'picomatch'
 import { camelize } from '@ditojs/utils'
 import { HttpError, defineAction, type MixinDefinition } from '@ditojs/server'
 import type { AssetFile } from './Storage.ts'
-import { getDataPath } from './asset-path.ts'
 import { storeAsset } from './assets.ts'
-import type { AssetDb, AssetOptions } from './assets-feature.ts'
+import type { AssetDb } from './assets-feature.ts'
 import type { StorageRegistry } from './registry.ts'
 
 // The upload action of the Dito admin's upload component:
@@ -86,19 +85,4 @@ export function uploadRoutes({
       })
     }
   }
-}
-
-// The upload action of the asset paths of `table`, with the camelCase column
-// followed by the path of each, such as `pages/*/images`.
-export function assetUploads({ table, paths, ...options }: AssetOptions) {
-  const uploads = paths
-    .filter(path => path.table === table)
-    .map(({ column, path, storage }) => ({
-      path: getDataPath(column, path),
-      storage
-    }))
-  if (uploads.length === 0) {
-    throw new Error(`No asset paths for table '${table}'`)
-  }
-  return uploadRoutes({ uploads, ...options })
 }

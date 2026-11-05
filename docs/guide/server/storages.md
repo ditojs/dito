@@ -87,8 +87,8 @@ The value at a path is one file or an array of files.
 
 ## The assets of an app
 
-`createAssets()` binds the asset paths and storages once, and returns the
-functions that the sections below use:
+`createAssets()` binds the adapter, the asset paths and the storages once, and
+returns the methods that the sections below use:
 
 ```js
 import { getAssetPaths } from '@ditojs/mikro'
@@ -96,6 +96,7 @@ import { createAssets } from '@ditojs/storage'
 import * as entities from './entities/index.js'
 
 export const assets = createAssets({
+  adapter,
   paths: getAssetPaths(entities),
   storages,
   deleteUnusedAfter: 24 * 60 * 60 * 1000
@@ -103,42 +104,38 @@ export const assets = createAssets({
 ```
 
 The mixins use the Kysely of `c.var.db`, so that the `asset` rows of imported
-files commit with the write's transaction. Without an entity manager there, the
-`db` option is a function of `c` that returns a Kysely. Uploads run without a transaction and
-commit their rows at once. Each method calls a function that the package also
-exports, such as `assets()`, `assetUploads()` or `runAssetJobs()`.
+files commit with the write's transaction. Uploads run without a transaction and
+commit their rows at once. The other methods use `adapter.getKysely()`, outside
+of the requests' transactions.
 
 ## Uploads
 
 The admin's upload component sends each file as `multipart/form-data` to the
 upload action, under the data path of its field, such as
 `POST books/upload/chapters/3/images`, and keeps the file object of the
-response. `assets.mixin(table)` adds the upload action of a table and the
-handling of its writes. The action picks the storage of the first asset path
-that matches the data path:
+response. `assets.defineUploads(table)` adds the upload action of a table, and
+`assets.defineWrites(table)` the handling of its writes. The action picks the
+storage of the first asset path that matches the data path:
 
 ```js
 defineModelController({
   path: 'books',
   entity: Book,
   authorize: ['admin', 'editor'],
-  mixins: [assets.mixin('book')],
+  mixins: [assets.defineWrites('book'), assets.defineUploads('book')],
   actions: { 'get': true, 'post': true, 'get :id': true, 'patch :id': true }
 })
 ```
 
-Controllers that write a table without uploads use
-`assets.mixin('book', { uploads: false })`.
+Controllers that write a table without uploads only use `defineWrites()`.
 
-For upload fields that no asset path describes, `uploadRoutes()` adds the upload
-action with its own list of globs:
+For upload fields that no asset path describes, `uploads` adds globs of its own,
+also without a table for controllers without asset paths:
 
 ```js
-uploadRoutes({
-  uploads: [{ path: 'avatar', storage: 'public' }],
-  storages,
-  db: getKysely
-})
+const uploads = [{ path: 'notes', storage: 'public' }]
+assets.defineUploads('book', { uploads })
+assets.defineUploads({ uploads: [{ path: 'avatar', storage: 'public' }] })
 ```
 
 An upload without a type from the client gets the type detected from its data,
@@ -172,23 +169,23 @@ the references. A job scans the data at the asset paths:
 
 ```js
 setInterval(async () => {
-  const { scan, released } = await assets.runJobs(adapter.getKysely())
+  const { scan, released } = await assets.runJobs()
   logger.info({ scan, released }, 'Asset jobs')
 }, 60 * 60 * 1000)
 ```
 
-`scanAssets()` sets and clears `unreferenced_since`. `releaseAssets()` deletes
-the files and rows of assets that no row referenced for longer than
-`deleteUnusedAfter`, in milliseconds. Without `deleteUnusedAfter`, nothing is
-deleted. A scan runs before each release, so files that rows reference again
-stay. An upload counts as unreferenced until its form is saved, so keep
-`deleteUnusedAfter` longer than a form stays open.
+The scan sets and clears `unreferenced_since`. The release deletes the files and
+rows of assets that no row referenced for longer than `deleteUnusedAfter`, in
+milliseconds. Without `deleteUnusedAfter`, nothing is deleted. A scan runs
+before each release, so files that rows reference again stay. An upload counts
+as unreferenced until its form is saved, so keep `deleteUnusedAfter` longer than
+a form stays open.
 
 - Files that the server creates, such as generated PDFs, go through
-  `assets.store(db, 'documents', { name, data })`, which stores them and inserts
+  `assets.store('documents', { name, data })`, which stores them and inserts
   their rows.
-- Seeds that insert rows directly call `assets.import(db, table, data)` first.
+- Seeds that insert rows directly call `assets.import(table, data)` first.
   It stores the files that the rows reference by URL, such as `file://` URLs of
   seed data.
-- `assets.references(db, { tables, storage, keys })` lists where rows reference
+- `assets.findReferences({ tables, storage, keys })` lists where rows reference
   files, such as for an admin view of the assets.

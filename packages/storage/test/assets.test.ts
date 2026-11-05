@@ -8,25 +8,26 @@ import {
   HttpError,
   createApi,
   defineController,
+  type Adapter,
   type DitoContext,
   type Transaction
 } from '@ditojs/server'
 import {
   DiskStorage,
   StorageRegistry,
-  assetUploads,
-  assets,
   createAssets,
-  findAssetReferences,
-  importAssets,
-  releaseAssets,
-  runAssetJobs,
-  scanAssets,
-  storeAsset,
-  uploadRoutes,
   type AssetFile,
   type AssetPath
 } from '../src/index.ts'
+import { assets, importAssets } from '../src/assets-feature.ts'
+import {
+  findAssetReferences,
+  releaseAssets,
+  runAssetJobs,
+  scanAssets,
+  storeAsset
+} from '../src/assets.ts'
+import { uploadRoutes } from '../src/upload.ts'
 import { findAssetFiles } from '../src/asset-path.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 
@@ -306,6 +307,23 @@ const kyselyTransaction: Transaction = (c, fn) =>
       c.set('db', previous)
     }
   })
+
+// The adapter of `createAssets()`, and one of `createApi()` whose request
+// handles have a Kysely, as the entity managers of `@ditojs/mikro` do.
+const adapter = { getKysely: () => db }
+const handleAdapter: Adapter = {
+  connect: () => ({ getKysely: () => db }),
+  transaction: (c, fn) =>
+    db.transaction().execute(async trx => {
+      const previous = c.var.db
+      c.set('db', { getKysely: () => trx })
+      try {
+        return await fn()
+      } finally {
+        c.set('db', previous)
+      }
+    })
+}
 
 describe('assets()', () => {
   let received: any
@@ -714,20 +732,24 @@ describe('importAssets()', () => {
   })
 })
 
-describe('assetUploads()', () => {
+describe('defineUploads()', () => {
   const uploadPaths: AssetPath[] = [
     ...paths,
     { table: 'book', column: 'back_cover', path: '', storage: 'archive' },
     { table: 'shelf', column: 'label', path: '', storage: 'archive' }
   ]
+  const bookAssets = () =>
+    createAssets({ adapter, paths: uploadPaths, storages })
 
   function setup({ fail = false } = {}) {
-    const options = { table: 'book', paths: uploadPaths, storages, db: getDb }
     const books = defineController({
       path: 'books',
       authorize: true,
-      // `assets()` leaves the multipart bodies of the uploads alone.
-      mixins: [assets(options), assetUploads(options)],
+      // `defineWrites()` leaves the multipart bodies of the uploads alone.
+      mixins: [
+        bookAssets().defineWrites('book'),
+        bookAssets().defineUploads('book')
+      ],
       ...(fail && {
         middleware: async (_c, next) => {
           await next()
@@ -737,7 +759,7 @@ describe('assetUploads()', () => {
     })
     return createApi({
       controllers: [books],
-      adapter: { connect: () => db, transaction: kyselyTransaction },
+      adapter: handleAdapter,
       getUser: async () => null,
       onError: () => {}
     })
@@ -873,44 +895,76 @@ describe('assetUploads()', () => {
   })
 
   it('needs `authorize` on the controller', () => {
-    const mixin = assetUploads({ table: 'book', paths, storages, db: getDb })
+    const mixin = bookAssets().defineUploads('book')
     expect(() =>
       createApi({ controllers: [{ path: 'books', mixins: [mixin] }] })
     ).toThrow(`'post upload/:path{.+}' has no \`authorize\` in 'books'`)
   })
 
   it('throws for tables without asset paths', () => {
-    expect(() =>
-      assetUploads({ table: 'author', paths, storages, db: getDb })
-    ).toThrow(`No asset paths for table 'author'`)
+    expect(() => bookAssets().defineUploads('author')).toThrow(
+      `No asset paths for table 'author'`
+    )
+  })
+
+  it('adds uploads without asset paths, also without a table', async () => {
+    const uploads = [{ path: 'drafts/*', storage: 'archive' }]
+    const api = createApi({
+      controllers: [
+        {
+          path: 'books',
+          authorize: true,
+          mixins: [bookAssets().defineUploads('book', { uploads })]
+        },
+        {
+          path: 'notes',
+          authorize: true,
+          mixins: [bookAssets().defineUploads({ uploads })]
+        }
+      ],
+      adapter: handleAdapter,
+      onError: () => {}
+    })
+    for (const [route, status] of [
+      ['books/upload/cover', 200],
+      ['books/upload/drafts/1', 200],
+      ['notes/upload/drafts/1', 200],
+      ['notes/upload/cover', 404]
+    ] as const) {
+      const body = new FormData()
+      body.append('file', new File(['a'], 'a.txt'))
+      const response = await request(api, `/${route}`, { method: 'POST', body })
+      expect(response.status).toBe(status)
+    }
   })
 })
 
 describe('createAssets()', () => {
   const createBookAssets = () =>
     createAssets({
+      adapter,
       paths,
       storages,
-      db: getDb,
       deleteUnusedAfter: 24 * 60 * 60 * 1000
     })
 
-  function setup(uploads?: boolean) {
+  function setup() {
+    const assets = createBookAssets()
     const books = defineController({
       path: 'books',
       authorize: true,
-      mixins: [createBookAssets().mixin('book', { uploads })],
+      mixins: [assets.defineWrites('book'), assets.defineUploads('book')],
       actions: { post: async ({ body }) => body }
     })
     return createApi({
       controllers: [books],
-      adapter: { connect: () => db, transaction: kyselyTransaction },
+      adapter: handleAdapter,
       getUser: async () => null,
       onError: () => {}
     })
   }
 
-  it('mixes in the uploads and the asset handling of writes', async () => {
+  it('handles the uploads and the files of writes', async () => {
     const api = setup()
     const body = new FormData()
     body.append('file', new File(['Front'], 'front.txt'))
@@ -929,40 +983,8 @@ describe('createAssets()', () => {
     expect(await written.json()).toEqual({ cover: stored })
   })
 
-  it('takes the Kysely of `c.var.db` by default', async () => {
-    const books = defineController({
-      path: 'books',
-      authorize: true,
-      mixins: [createAssets({ paths, storages }).mixin('book')]
-    })
-    const api = createApi({
-      controllers: [books],
-      adapter: {
-        connect: () => ({ getKysely: () => db }),
-        transaction: (c, fn) => fn()
-      },
-      getUser: async () => null,
-      onError: () => {}
-    })
-    const body = new FormData()
-    body.append('file', new File(['Front'], 'front.txt'))
-    const response = await request(api, '/books/upload/cover', {
-      method: 'POST',
-      body
-    })
-    expect((await response.json())[0]).toMatchObject({ name: 'front.txt' })
-  })
-
-  it('leaves the uploads out with `uploads: false`', async () => {
-    const response = await request(setup(false), '/books/upload/cover', {
-      method: 'POST',
-      body: new FormData()
-    })
-    expect(response.status).toBe(404)
-  })
-
   it('stores files in storages by name', async () => {
-    const file = await createBookAssets().store(db, 'archive', {
+    const file = await createBookAssets().store('archive', {
       name: 'report.txt',
       data: Buffer.from('Report')
     })
@@ -975,7 +997,7 @@ describe('createAssets()', () => {
   it('imports the files of a row', async () => {
     const source = await addImport('source.txt', 'Source')
     const data = { cover: { key: 'seed', url: `file://${source}` } }
-    await createBookAssets().import(db, 'book', data)
+    await createBookAssets().import('book', data)
     expect(await getKeys()).toEqual([data.cover.key])
   })
 
@@ -985,9 +1007,9 @@ describe('createAssets()', () => {
     await addAsset('used')
     await addAsset('old', { since: old })
     expect(
-      (await assets.references(db, { keys: ['used'] })).map(ref => ref.id)
+      (await assets.findReferences({ keys: ['used'] })).map(ref => ref.id)
     ).toEqual([1])
-    const { released } = await assets.runJobs(db, { dryRun: true, now })
+    const { released } = await assets.runJobs({ dryRun: true, now })
     expect(released).toEqual([{ key: 'old', storage: 'covers' }])
   })
 })

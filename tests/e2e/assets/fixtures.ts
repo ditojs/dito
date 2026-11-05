@@ -4,15 +4,7 @@ import path from 'path'
 import { expect, type Page } from '@playwright/test'
 import type { EntityClass } from '@mikro-orm/postgresql'
 import type { Kysely } from 'kysely'
-import {
-  assets,
-  assetUploads,
-  createStorages,
-  runAssetJobs,
-  scanAssets,
-  type AssetPath
-} from '@ditojs/storage'
-import { getKysely } from '@ditojs/mikro'
+import { createAssets, createStorages, type AssetPath } from '@ditojs/storage'
 import { serveFolder } from '../../utils/app.js'
 import { Asset } from '../../utils/entities.js'
 import { db, defineScenario, getOrm } from '../../utils/fixture-app.js'
@@ -49,28 +41,30 @@ const storages = createStorages({
 export const getStorage = () => storages.get('test')
 
 // The Kysely instance of the ORM, for the work outside of requests.
-const getDb = () => getOrm().em.getKysely() as unknown as Kysely<any>
+const adapter = {
+  getKysely: () => getOrm().em.getKysely() as unknown as Kysely<any>
+}
+const assets = createAssets({ adapter, paths: assetPaths, storages })
 
 /** Finds the unreferenced files, as the nightly scan does. */
-export function scan() {
-  return scanAssets({ db: getDb(), paths: assetPaths })
+export async function scan() {
+  return (await assets.runJobs()).scan
 }
 
 /** Scans, and releases the files that no row references any more. */
 export function deleteUnusedAssets() {
-  return runAssetJobs({
-    db: getDb(),
+  return createAssets({
+    adapter,
     paths: assetPaths,
     storages,
     deleteUnusedAfter: 0
-  })
+  }).runJobs()
 }
 
 // The mixins of an entity with files, which check and import the files of
 // its writes, and take uploads.
 function assetMixins(table: string) {
-  const options = { table, paths: assetPaths, storages, db: getKysely }
-  return [assets(options), assetUploads(options)]
+  return [assets.defineWrites(table), assets.defineUploads(table)]
 }
 
 // Serves uploaded files at /uploads, and the fixture files at /fixtures for

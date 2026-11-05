@@ -1,9 +1,9 @@
 import type { Kysely } from 'kysely'
 import { isString } from '@ditojs/utils'
-import type { MixinDefinition } from '@ditojs/server'
+import type { DitoContext, MixinDefinition } from '@ditojs/server'
 import type { Storage, StoreOptions } from './Storage.ts'
-import type { AssetPath } from './asset-path.ts'
-import { assets, importAssets, type AssetDb } from './assets-feature.ts'
+import { getDataPath, type AssetPath } from './asset-path.ts'
+import { assets, importAssets } from './assets-feature.ts'
 import {
   findAssetReferences,
   runAssetJobs,
@@ -11,51 +11,76 @@ import {
   type FindAssetReferencesOptions
 } from './assets.ts'
 import type { StorageRegistry } from './registry.ts'
-import { assetUploads } from './upload.ts'
+import { uploadRoutes, type AssetUpload } from './upload.ts'
 
-// Binds the asset functions to an app's asset paths and storages. Each method
-// calls one of the exported functions, which apps can call instead.
+// Binds the asset handling to an app's adapter, asset paths and storages. The
+// mixins use the Kysely of the request's handle, `c.var.db`, so that the
+// `asset` rows of a write commit with its transaction. The other methods use
+// the Kysely of the adapter, outside of the requests' transactions.
 
 export interface CreateAssetsOptions {
+  // The adapter of the API, such as `createMikroAdapter(orm)`.
+  adapter: { getKysely(): Kysely<any> }
   paths: AssetPath[]
   storages: StorageRegistry
-  // The Kysely of a request, for the mixins. By default, the one of
-  // `c.var.db`, which is the request's entity manager with `@ditojs/mikro`.
-  db?: AssetDb
   // The `deleteUnusedAfter` of `runJobs()`, in milliseconds. By default,
   // `false` skips the release.
   deleteUnusedAfter?: number | false
 }
 
+export interface DefineUploadsOptions {
+  // Uploads of fields that no asset path describes, with globs as `path`.
+  uploads?: AssetUpload[]
+}
+
 export function createAssets({
+  adapter,
   paths,
   storages,
-  db = c => (c.var.db as { getKysely(): Kysely<any> }).getKysely(),
   deleteUnusedAfter = false
 }: CreateAssetsOptions) {
+  const getDb = (c: DitoContext) =>
+    (c.var.db as { getKysely(): Kysely<any> }).getKysely()
+
   return {
     paths,
     storages,
 
-    // The `assets()` mixin of the table's writes, and with `uploads` the
-    // upload action of `assetUploads()`.
-    mixin(table: string, { uploads = true } = {}): MixinDefinition {
-      const options = { table, paths, storages, db }
-      return {
-        mixins: uploads
-          ? [assets(options), assetUploads(options)]
-          : [assets(options)]
+    // Handles the files in the bodies of the table's writes.
+    defineWrites(table: string): MixinDefinition {
+      return assets({ table, paths, storages, db: getDb })
+    },
+
+    // The upload action of the table's asset paths, with the camelCase column
+    // followed by the path of each, such as `pages/*/images`, and of `uploads`.
+    // Without a table, only of `uploads`.
+    defineUploads(
+      table: string | DefineUploadsOptions,
+      options: DefineUploadsOptions = {}
+    ): MixinDefinition {
+      const [name, { uploads = [] }] = isString(table)
+        ? [table, options]
+        : [undefined, table]
+      const tableUploads = paths
+        .filter(path => path.table === name)
+        .map(({ column, path, storage }) => ({
+          path: getDataPath(column, path),
+          storage
+        }))
+      if (name && tableUploads.length + uploads.length === 0) {
+        throw new Error(`No asset paths for table '${name}'`)
       }
+      return uploadRoutes({
+        uploads: [...tableUploads, ...uploads],
+        storages,
+        db: getDb
+      })
     },
 
     // Stores a file that the server creates, and inserts its `asset` row.
-    store(
-      database: Kysely<any>,
-      storage: string | Storage,
-      options: StoreOptions
-    ) {
+    store(storage: string | Storage, options: StoreOptions) {
       return storeAsset(
-        database,
+        adapter.getKysely(),
         isString(storage) ? storages.get(storage) : storage,
         options
       )
@@ -63,25 +88,27 @@ export function createAssets({
 
     // Imports the files that `data`, a row of `table`, references, such as the
     // files of seed data.
-    import<T extends object>(database: Kysely<any>, table: string, data: T) {
-      return importAssets(data, { table, paths, storages, db: database })
+    import<T extends object>(table: string, data: T) {
+      return importAssets(data, {
+        table,
+        paths,
+        storages,
+        db: adapter.getKysely()
+      })
     },
 
-    references(
-      database: Kysely<any>,
+    // Lists the files that the rows reference at the asset paths.
+    findReferences(
       options: Omit<FindAssetReferencesOptions, 'db' | 'paths'> = {}
     ) {
-      return findAssetReferences({ ...options, db: database, paths })
+      return findAssetReferences({ ...options, db: adapter.getKysely(), paths })
     },
 
     // Scans the references and releases the files unreferenced for longer
     // than `deleteUnusedAfter`.
-    runJobs(
-      database: Kysely<any>,
-      { dryRun, now }: { dryRun?: boolean; now?: Date } = {}
-    ) {
+    runJobs({ dryRun, now }: { dryRun?: boolean; now?: Date } = {}) {
       return runAssetJobs({
-        db: database,
+        db: adapter.getKysely(),
         paths,
         storages,
         deleteUnusedAfter,

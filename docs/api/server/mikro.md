@@ -493,7 +493,8 @@ reads their definitions, so it needs no ORM. Table and column names follow
 MikroORM's default naming strategy unless a property sets its own.
 
 ```js
-const assets = createAssets({ paths: getAssetPaths(entities), storages, db })
+const paths = getAssetPaths(entities)
+const assets = createAssets({ adapter, paths, storages })
 ```
 
 ## defineMikroConfig()

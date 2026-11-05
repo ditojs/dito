@@ -694,25 +694,25 @@ chapters: p
   .nullable(),
 
 export const assets = createAssets({
+  adapter,
   paths: getAssetPaths(entities),
   storages,
   deleteUnusedAfter: 24 * 60 * 60 * 1000
 })
 ```
 
-- `mixins: [assets.mixin('book')]` replaces `assets = true` of a controller, and
-  `assets.runJobs(adapter.getKysely())` runs on a timer of the app.
+- `mixins: [assets.defineWrites('book'), assets.defineUploads('book')]`
+  replaces `assets = true` of a controller, and `assets.runJobs()` runs on a
+  timer of the app.
   `serveStorage()` of `@ditojs/storage/node` serves public disk storages.
 - `S3Storage` comes from the main entry of the package. The `PutObject` options
   of S3 storages, such as `acl` and `cacheControl`, become a `params` object,
   such as `{ ACL: 'public-read', CacheControl: 'max-age=31536000' }`.
-- `assets.mixin(table)` joins the mixins `assets()` and `assetUploads()`, which
-  take `{ table, paths, storages, db }`, where `db` is a function of `c` such as
-  `getKysely`. `{ uploads: false }` leaves out the uploads.
-- Each controller has one upload action, `post upload/:path{.+}`, which picks
-  the storage of the first asset path that matches the data path.
-  `uploadRoutes()` takes a list of `AssetUpload`s, `{ path, storage }` with a
-  glob as `path`, for fields that no asset path describes.
+- Each controller has one upload action, `post upload/:path{.+}`, from
+  `assets.defineUploads(table)`, which picks the storage of the first asset path
+  that matches the data path. Its `uploads` option takes a list of
+  `AssetUpload`s, `{ path, storage }` with a glob as `path`, for fields that no
+  asset path describes.
 - File objects are plain objects of the type `AssetFile`, without signatures. A
   write accepts a file when its key has an `asset` row in the storage of its
   path, and takes the file's properties from the row. It imports other files
@@ -720,16 +720,15 @@ export const assets = createAssets({
 - `allowedImports` match the origin and path of a URL, without its query and
   hash. URLs with credentials never match, and imports don't follow redirects.
 - Code that creates files, such as `AssetFile.create()` in scripts, calls
-  `assets.store(db, storage, { name, type, data })`, or `storeAsset()`. It
-  stores the file and inserts its row, which stays unreferenced until a scan
-  finds the file. Uploads run without a transaction, so their rows commit at
-  once.
+  `assets.store(storage, { name, type, data })`. It stores the file and inserts
+  its row, which stays unreferenced until a scan finds the file. Uploads run
+  without a transaction, so their rows commit at once.
 - The `asset` table has no `count`. Scans of the data replace the hooks on each
   write, and set `unreferenced_since`. `deleteUnusedAfter` is in milliseconds.
   Uploads of forms that aren't saved yet count as unreferenced, so keep it longer
   than a form stays open.
-- `scanAssets()` reports `referenced`, `unreferenced` and `missing`.
-  `assets.runJobs(db, { dryRun: true })` shows what a run would delete.
+- The scan of `assets.runJobs()` reports `referenced`, `unreferenced` and
+  `missing`. `assets.runJobs({ dryRun: true })` shows what a run would delete.
 
 #### Admin server
 
@@ -816,7 +815,8 @@ Dito.js 6 still writes `count`, and `@ditojs/storage` needs the new server:
 1. Empty the `session` table with `await knex('session').del()`. Sessions sign
    their cookie with Hono's signed cookies and can't read the cookies of Koa, so
    every user logs in again once.
-2. If the app stores files, run `scanAssets()` once. It inserts the `asset` rows
+2. If the app stores files, run the scan of `assets.runJobs()` once, without
+   `deleteUnusedAfter`. It inserts the `asset` rows
    that Dito.js 6 never wrote, such as those of files from scripts. Without
    them, writes that keep such a file respond with 400. Rows of files that no
    storage holds do no harm, as the jobs ignore files that are gone.
@@ -824,7 +824,7 @@ Dito.js 6 still writes `count`, and `@ditojs/storage` needs the new server:
    ```js
    import { Kysely, PostgresDialect } from 'kysely'
    import pg from 'pg'
-   import { scanAssets } from '@ditojs/storage'
+   import { createAssets } from '@ditojs/storage'
    import { assets } from '../server/storages.js'
 
    // The scan writes in its own transaction, on its own connection.
@@ -837,7 +837,9 @@ Dito.js 6 still writes `count`, and `@ditojs/storage` needs the new server:
        })
      })
      try {
-       await scanAssets({ db, paths: assets.paths })
+       const { paths, storages } = assets
+       const adapter = { getKysely: () => db }
+       await createAssets({ adapter, paths, storages }).runJobs()
      } finally {
        await db.destroy()
      }

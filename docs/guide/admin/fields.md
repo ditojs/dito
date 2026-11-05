@@ -220,8 +220,8 @@ cover: {
 }
 ```
 
-On the server, the storage of the field is named in the `assetUploads()` and
-`assets()` mixins of the controller. See
+On the server, the storage of the field is named in the asset paths of
+`assets.defineUploads()` and `assets.defineWrites()` of the controller. See
 [Storages and files](../server/storages.md). Saving waits for running uploads.
 
 ## Derived values

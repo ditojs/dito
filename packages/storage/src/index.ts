@@ -14,36 +14,17 @@ export {
   type StorageDefinition
 } from './registry.ts'
 export type { AssetPath } from './asset-path.ts'
-export {
-  assetUploads,
-  uploadRoutes,
-  type AssetUpload,
-  type UploadRoutesOptions
-} from './upload.ts'
-export {
-  assets,
-  importAssets,
-  type AssetDb,
-  type AssetOptions
-} from './assets-feature.ts'
+export type { AssetUpload } from './upload.ts'
 export {
   createAssets,
   type Assets,
-  type CreateAssetsOptions
+  type CreateAssetsOptions,
+  type DefineUploadsOptions
 } from './create-assets.ts'
-export {
-  findAssetReferences,
-  releaseAssets,
-  runAssetJobs,
-  scanAssets,
-  storeAsset,
-  type AssetKey,
-  type AssetReference,
-  type FindAssetReferencesOptions,
-  type ReleaseAssetsOptions,
-  type ReleasedAsset,
-  type RunAssetJobsOptions,
-  type ScanAssetsOptions,
-  type ScanAssetsReport,
-  type UnreferencedAsset
+export type {
+  AssetKey,
+  AssetReference,
+  ReleasedAsset,
+  ScanAssetsReport,
+  UnreferencedAsset
 } from './assets.ts'

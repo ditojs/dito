@@ -24,6 +24,7 @@ export const storages = createStorages({
 })
 
 export const assets = createAssets({
+  adapter,
   paths: getAssetPaths(entities),
   storages,
   deleteUnusedAfter: 24 * 60 * 60 * 1000
@@ -59,7 +60,7 @@ export const books = defineModelController({
   path: 'books',
   entity: Book,
   authorize: ['editor', 'admin'],
-  mixins: [assets.mixin('book')],
+  mixins: [assets.defineWrites('book'), assets.defineUploads('book')],
   actions: {
     'get': true,
     'post': true,
@@ -81,7 +82,7 @@ app.use('/covers/*', serveStorage(storages.get('covers')))
 app.use('/sample-pages/*', serveStorage(storages.get('samplePages')))
 
 setInterval(
-  () => assets.runJobs(adapter.getKysely()),
+  () => assets.runJobs(),
   60 * 60 * 1000
 )
 ```
@@ -115,13 +116,13 @@ export const bookForm = {
 
 ## Why
 
-Upload fields send each file to the controller's upload action under their
-data path, here `POST books/upload/cover` and `POST books/upload/samplePages`.
-The action takes hyphenated paths such as `sample-pages` too. `assets.mixin()`
-adds the action, which picks the storage of the asset path that matches. It
-stores the file, inserts its `asset` row and responds with its file object
-(`key`, `name`, `type`, `size`, `url`, and `width` and `height` of images). The
-field holds this object as its value.
+Upload fields send each file to the controller's upload action under their data
+path, here `POST books/upload/cover` and `POST books/upload/samplePages`. The
+action takes hyphenated paths such as `sample-pages` too.
+`assets.defineUploads()` adds the action, which picks the storage of the asset
+path that matches. It stores the file, inserts its `asset` row and responds with
+its file object (`key`, `name`, `type`, `size`, `url`, and `width` and `height`
+of images). The field holds this object as its value.
 
 Saving the book stores the file objects in plain JSON columns. The mixin
 accepts the files that the `asset` table holds, and takes their properties

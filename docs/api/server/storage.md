@@ -8,15 +8,6 @@ import {
   StorageRegistry,
   DiskStorage,
   S3Storage,
-  assetUploads,
-  uploadRoutes,
-  assets,
-  storeAsset,
-  importAssets,
-  scanAssets,
-  releaseAssets,
-  findAssetReferences,
-  runAssetJobs,
   getUniqueKey
 } from '@ditojs/storage'
 import { serveStorage } from '@ditojs/storage/node'
@@ -104,17 +95,7 @@ the options of its definition, plus `name`.
 `DiskStorage` also has `getFilePath(file)`, the path of the file on disk. Keys
 that lead outside the storage folder throw an error.
 
-`store()` doesn't insert an `asset` row. Files that the server creates, such as
-generated PDFs, need one, so that the jobs track them. `storeAsset()` stores the
-file and inserts its row, and removes the file again when the insert fails:
-
-```js
-const file = await storeAsset(db, storages.get('documents'), {
-  name: 'notice.pdf',
-  type: 'application/pdf',
-  data: pdf
-})
-```
+`store()` doesn't insert an `asset` row, see [Stored files](#stored-files).
 
 ## serveStorage()
 
@@ -165,116 +146,62 @@ interface AssetPath {
 An asset path says where a table stores files. `path` takes `*` for one segment
 and `**` for any number of segments. A value at the path is one file or an array
 of files. In request bodies, the column appears as its camelCase property, such
-as `cover_image` as `coverImage`. The functions below take the app's list of
+as `cover_image` as `coverImage`. `createAssets()` takes the app's list of
 asset paths. With MikroORM, declare them on the columns, see
 [`getAssetPaths()`](mikro.md#getassetpaths).
-
-`assets()`, `assetUploads()` and `importAssets()` take the same options:
-
-| Option     | Type              | Description                                                                                                                                                                                                 |
-| ---------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `table`    | `string`          | The table whose asset paths are used.                                                                                                                                                                       |
-| `paths`    | `AssetPath[]`     | The app's asset paths.                                                                                                                                                                                      |
-| `storages` | `StorageRegistry` | The storages.                                                                                                                                                                                               |
-| `db`       | `AssetDb`         | A function of Hono's `c` that returns the request's Kysely, such as `getKysely` of `@ditojs/mikro`, so that the `asset` rows of a write commit with its transaction. `importAssets()` takes a plain Kysely. |
 
 ## createAssets()
 
 ```ts
 createAssets(options: {
+  adapter: { getKysely(): Kysely<any> }
   paths: AssetPath[]
   storages: StorageRegistry
-  db?: AssetDb
   deleteUnusedAfter?: number | false
 }): Assets
 ```
 
-Returns an object that binds the options that the functions below share. Its
-methods call these functions, which apps can call instead. Except for `mixin()`,
-they take a Kysely as `db`, since they also run outside of requests.
-`db` is a function of `c` for the mixins, by default `c.var.db.getKysely()`, the
-Kysely of the request's entity manager. `deleteUnusedAfter` is in milliseconds.
-By default, `false` skips the release.
+Returns the asset handling of an app, bound to its adapter, asset paths and
+storages. `adapter` is the one of `createApi()`, such as
+[`createMikroAdapter(orm)`](mikro.md#createmikroadapter). The mixins use the
+Kysely of the request's handle, `c.var.db.getKysely()`, so that the `asset` rows
+of a write commit with its transaction. The other methods use
+`adapter.getKysely()`, outside of the requests' transactions.
+`deleteUnusedAfter` is in milliseconds. By default, `false` skips the release.
 
-| Member                                          | Description                                                                              |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `mixin(table, { uploads = true }?)`             | A mixin of [`assets()`](#assets) and, with `uploads`, [`assetUploads()`](#assetuploads). |
-| `store(db, storage, { name, type?, data })`     | [`storeAsset()`](#asset-jobs), with the storage's name or the storage.                   |
-| `import(db, table, data)`                       | [`importAssets()`](#asset-jobs) of a row's data. Returns `data`.                         |
-| `references(db, { tables?, storage?, keys? }?)` | [`findAssetReferences()`](#asset-jobs).                                                  |
-| `runJobs(db, { dryRun?, now? }?)`               | [`runAssetJobs()`](#asset-jobs) with `deleteUnusedAfter`.                                |
-| `paths`, `storages`                             | The options.                                                                             |
+| Member                                          | Description                                                                                          |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `defineWrites(table)`                           | A mixin that handles the files in the bodies of the table's writes, see [Writes](#writes).           |
+| `defineUploads(table?, { uploads? }?)`          | A mixin with the upload action of the table's asset paths and of `uploads`, see [Uploads](#uploads). |
+| `store(storage, { name, type?, data })`         | Stores a file that the server creates, see [Stored files](#stored-files).                            |
+| `import(table, data)`                           | Imports the files of a row's data, see [Asset jobs](#asset-jobs). Returns `data`.                    |
+| `findReferences({ tables?, storage?, keys? }?)` | Lists the files that rows reference, see [Asset jobs](#asset-jobs).                                  |
+| `runJobs({ dryRun?, now? }?)`                   | Runs the scan and the release, see [Asset jobs](#asset-jobs).                                        |
+| `paths`, `storages`                             | The options.                                                                                         |
 
 ```js
 const assets = createAssets({
+  adapter,
   paths: getAssetPaths(entities),
   storages,
   deleteUnusedAfter: 24 * 60 * 60 * 1000
 })
 
-defineModelController({ path: 'books', mixins: [assets.mixin('book')], ... })
-
-const file = await assets.store(db, 'documents', {
-  name: 'notice.pdf',
-  data: pdf
+defineModelController({
+  path: 'books',
+  mixins: [assets.defineWrites('book'), assets.defineUploads('book')],
+  ...
 })
-await assets.runJobs(db, { dryRun: true })
+
+const file = await assets.store('documents', { name: 'notice.pdf', data: pdf })
+await assets.runJobs({ dryRun: true })
 ```
 
-## assetUploads()
+### Writes
 
-```ts
-assetUploads(options: AssetOptions): MixinDefinition
-```
-
-Returns a mixin with the upload action of the asset paths of `table`:
-`post upload/:path{.+}`, such as `POST upload/cover-image` or
-`POST upload/chapters/3/images`. The action camelizes each segment of the path
-and stores the files in the storage of the first asset path whose camelCase
-column, followed by its path, matches it, such as `chapters/*/images`. Other
-paths respond with 404. The action inserts the `asset` rows of the files,
-unreferenced until a scan finds them, and responds with the file objects. It
-runs without a transaction, so the rows commit at once, and a release removes
-the files that no write references. It needs `authorize` on the controller or a
-layer.
-
-## uploadRoutes()
-
-```ts
-uploadRoutes(options: {
-  uploads: AssetUpload[]
-  storages: StorageRegistry
-  db: AssetDb
-}): MixinDefinition
-```
-
-Returns the same action as `assetUploads()` from a list of uploads, for upload
-fields that no asset path describes. The action takes a `multipart/form-data`
-body and stores all its files. Other bodies respond with 415.
-[`hostMiddleware()`](hono.md#hostmiddleware) sets no limit on multipart bodies.
-
-| Option    | Type     | Description                                                                                               |
-| --------- | -------- | --------------------------------------------------------------------------------------------------------- |
-| `path`    | `string` | A glob of camelCase data paths, with `*` for one segment and `**` for several segments, such as `avatar`. |
-| `storage` | `string` | The name of the storage of the files.                                                                     |
-
-```js
-uploadRoutes({
-  uploads: [{ path: 'avatar', storage: 'public' }],
-  storages,
-  db: getKysely
-})
-```
-
-## assets()
-
-```ts
-assets(options: AssetOptions): MixinDefinition
-```
-
-Returns a mixin that handles the files at the asset paths in the JSON body of a
-controller's writes, `c.var.body`. For each file, it looks up the `asset` row of
-its key:
+`defineWrites(table)` handles the files at the table's asset paths in the JSON
+body of a controller's writes, `c.var.body`. For each file, it looks up the
+`asset` row of its key:
 
 - A row in the storage of the asset path: the file gets the properties of the
   stored file, from the row's `file`, so clients can't change them.
@@ -288,6 +215,42 @@ its key:
 It changes the files in place, so the handler reads the stored files in its
 `body`. It marks the files as used. When the write fails, it removes the
 imported files again.
+
+### Uploads
+
+`defineUploads(table, { uploads })` returns a mixin with the upload action
+`post upload/:path{.+}`, such as `POST upload/cover-image` or
+`POST upload/chapters/3/images`. The action camelizes each segment of the path
+and stores the files in the storage of the first upload that matches it: the
+table's asset paths, with the camelCase column followed by the path, such as
+`chapters/*/images`, then `uploads`. Other paths respond with 404. A table
+without asset paths and `uploads` throws. `defineUploads({ uploads })` takes
+only `uploads`, for controllers without asset paths.
+
+The action takes a `multipart/form-data` body and stores all its files. Other
+bodies respond with 415. [`hostMiddleware()`](hono.md#hostmiddleware) sets no
+limit on multipart bodies. It inserts the `asset` rows of the files,
+unreferenced until a scan finds them, and responds with the file objects. It
+runs without a transaction, so the rows commit at once, and a release removes
+the files that no write references. It needs `authorize` on the controller or a
+layer.
+
+| Upload    | Type     | Description                                                                                               |
+| --------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| `path`    | `string` | A glob of camelCase data paths, with `*` for one segment and `**` for several segments, such as `avatar`. |
+| `storage` | `string` | The name of the storage of the files.                                                                     |
+
+```js
+assets.defineUploads({ uploads: [{ path: 'avatar', storage: 'public' }] })
+```
+
+### Stored files
+
+`store()` of a storage doesn't insert an `asset` row. Files that the server
+creates, such as generated PDFs, need one, so that the jobs track them.
+`assets.store(storage, { name, type?, data })` stores the file in the storage,
+by its name or the storage itself, inserts its row, unreferenced until a scan
+finds it, and removes the file again when the insert fails.
 
 ## Asset jobs
 
@@ -306,11 +269,24 @@ create table asset (
 );
 ```
 
-| Function                                                                  | Description                                                                                                                                                                                                                                                                                                                                                                |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scanAssets({ db, paths, dryRun?, now? })`                                | Finds the files that rows reference at the asset paths, sets `unreferenced_since` of the unreferenced files, clears it for the referenced ones, and inserts the rows of referenced files that have none. Returns a report: `referenced`, the files that rows reference again, `unreferenced`, all unreferenced files with their `since`, and `missing`, the inserted rows. |
-| `releaseAssets({ db, storages, deleteUnusedAfter, now? })`                | Deletes the files and rows of assets that have been unreferenced for longer than `deleteUnusedAfter`, in milliseconds.                                                                                                                                                                                                                                                     |
-| `runAssetJobs({ db, paths, storages, deleteUnusedAfter, dryRun?, now? })` | Runs the scan, then the release unless `deleteUnusedAfter` is `false`. `deleteUnusedAfter` is in milliseconds. Returns `{ scan, released }`. A dry run writes and deletes nothing, and returns the unreferenced files of the scan that the release would delete as `released`.                                                                                             |
-| `findAssetReferences({ db, paths, tables?, storage?, keys? })`            | Lists the files that rows reference, with their table, id, column and data path. With `keys`, only the references of these files.                                                                                                                                                                                                                                          |
-| `storeAsset(db, storage, { name, type?, data })`                          | Stores a file that the server creates and inserts its `asset` row, unreferenced until a scan finds it.                                                                                                                                                                                                                                                                     |
-| `importAssets(data, { table, paths, storages, db })`                      | Imports the files that a row's data references but no `asset` row holds, such as the `file://` files of seed data, as `assets()` does. Skips files from other sources.                                                                                                                                                                                                     |
+`assets.runJobs({ dryRun?, now? })` runs the scan, then the release unless
+`deleteUnusedAfter` is `false`, and returns `{ scan, released }`:
+
+- The scan finds the files that rows reference at the asset paths, sets
+  `unreferenced_since` of the unreferenced files, clears it for the referenced
+  ones, and inserts the rows of referenced files that have none. Its report has
+  `referenced`, the files that rows reference again, `unreferenced`, all
+  unreferenced files with their `since`, `missing`, the inserted rows, and
+  `rowCount`.
+- The release deletes the files and rows of assets that have been unreferenced
+  for longer than `deleteUnusedAfter`.
+- A dry run writes and deletes nothing, and returns the unreferenced files of
+  the scan that the release would delete as `released`.
+
+`assets.findReferences({ tables?, storage?, keys? })` lists the files that rows
+reference, with their table, id, column and data path. With `keys`, only the
+references of these files.
+
+`assets.import(table, data)` imports the files that a row's data references but
+no `asset` row holds, such as the `file://` files of seed data, as
+`defineWrites()` does. It skips files from other sources.
