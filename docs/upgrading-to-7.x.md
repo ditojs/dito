@@ -476,7 +476,7 @@ and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
 | `ctx.type`, `ctx.body =`, `ctx.attachment()` | A returned `Response`, such as `c.body()` or [`sendFile()`](api/server/api.md#sendfile) |
 | `ctx.state.user`                             | `user` of the context, `{ id, roles }`; `c.var.user`                                    |
 | `ctx.state.*`                                | `c.set()` and `c.var`, also in the context, typed by augmenting `DitoVariables`         |
-| `ctx.transaction`                            | `em` of the context, the transaction's handle during one; `c.var.em`                    |
+| `ctx.transaction`                            | `em` of the context, the transaction's entity manager during one; `c.var.em`            |
 | `ctx.ip`                                     | `getClientAddress(c)` of `@ditojs/server/node`                                          |
 | `ctx.session`                                | `session` of the context, or `getSession(c)` of `@ditojs/auth`                          |
 | `ctx.action`                                 | `action` of the context, the key such as `'post :id/publish'`; `c.var.action`           |

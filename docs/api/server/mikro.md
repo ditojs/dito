@@ -63,7 +63,7 @@ The keys of [`ControllerDefinition`](controllers.md#controllerdefinition), and:
 | Key          | Handler                                                                                                                                                                                           |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `get`        | [`defineListHandler()`](#definelisthandler): the list, see [Lists](#lists).                                                                                                                       |
-| `post`       | Runs `deserialize`, then [`createRecord()`](#createrecord). The new record becomes `getRecord()`. Answers 201 with `Location`, even when a layer replaces the handler and returns the new entity. |
+| `post`       | Runs `deserialize`, then [`createRecord()`](#createrecord). The new record becomes `getRecord()`. Answers 201 with `Location`, even when a layer replaces the handler and returns the new record. |
 | `get :id`    | Returns `getRecord()`.                                                                                                                                                                            |
 | `patch :id`  | Runs `deserialize` with the record, then [`assignRecord()`](#assignrecord).                                                                                                                       |
 | `delete :id` | Removes the record with `em.remove()`, flushes, and responds with `{ count: 1 }`.                                                                                                                 |
@@ -115,7 +115,7 @@ in the guide.
   it loads the controller's records in the result again in one query, in the
   shape of `find`, with the values that formulas and triggers set.
 - The controller's records in a result go through `beforeSerialize` and
-  `serialize`, see [Output](#output). Other entities go out through MikroORM's
+  `serialize`, see [Output](#output). Records of other entities go out through MikroORM's
   `serialize()`, with the relations that are loaded. Nothing goes out through
   `toJSON()`.
 

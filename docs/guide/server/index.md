@@ -25,6 +25,25 @@ come from these packages:
 Schemas of queries, bodies, filters and column types are
 [Zod](https://zod.dev) schemas.
 
+## Terms
+
+The server docs use each of these words in one sense only:
+
+| Term          | Meaning                                                                                                                                                                   |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| entity        | A MikroORM entity class, such as `Book`.                                                                                                                                  |
+| record        | A loaded row, an instance of an entity.                                                                                                                                   |
+| list          | The result of a list action, such as `GET /books`: an array of records, or `{ results, total }`.                                                                          |
+| record action | An action whose path starts with `:id`, such as `get :id` or `post :id/publish`.                                                                                          |
+| collection    | The controller's path, such as `/books`. Dito.js 6 used the word for the actions without `:id`.                                                                           |
+| layer         | One part of a controller: each mixin, and the controller itself. A model controller adds a base layer beneath them.                                                       |
+| mixin         | A reusable part of a controller: a controller without a `path`.                                                                                                           |
+| `next()`      | Runs the handler of the same action in the layer beneath, and returns the result of that layer.                                                                           |
+| adapter       | The database of an API: `createMikroAdapter(orm)` of `@ditojs/mikro`.                                                                                                     |
+| `em`          | The request's entity manager, which the adapter creates. During a transaction, it is the transaction's entity manager.                                                    |
+| `c`           | Hono's context of the request.                                                                                                                                            |
+| context       | The one object that every callback gets, such as `{ query, body, params, c, next }` of a handler or `{ record, json, c }` of `serialize`. It holds Hono's context as `c`. |
+
 ## Installation
 
 ```sh

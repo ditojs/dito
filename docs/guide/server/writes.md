@@ -285,7 +285,7 @@ see [`defineMikroConfig()`](../../api/server/mikro.md#definemikroconfig).
 Custom handlers write a body the same way as `post` and `patch :id`, with
 `createRecord()` and `assignRecord()`. These functions run the checks of the
 body and the ids, and handle `#id` and `#ref`. They don't flush, so the handler
-can work on the entities first:
+can work on the records first:
 
 ```js
 import { assignRecord, createRecord } from '@ditojs/mikro'

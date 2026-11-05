@@ -101,7 +101,7 @@ A handler gets one object, its context:
 | `find(options?)` | The controller's records, through its `find`, see [find()](entities.md#custom-actions).                       |
 | `list(options?)` | The controller's list, see [Lists](entities.md#lists).                                                        |
 | `getListQuery()` | The `where`, `orderBy` and `range` of the list, see [getListQuery()](../../api/server/mikro.md#getlistquery). |
-| `em`             | The request's database handle, or the transaction's.                                                          |
+| `em`             | The request's entity manager, or the transaction's.                                                           |
 | `c`              | Hono's context.                                                                                               |
 | `next()`         | Runs the handler beneath, and returns its result.                                                             |
 

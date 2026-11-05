@@ -185,8 +185,8 @@ Records go out in the shape of `find`:
   name it too, such as `author.bio`.
 - `exclude: ['author']` leaves out the relation.
 
-Entities that aren't records of the controller, such as those that a custom
-action returns, go out with the relations that are loaded. Put secrets in
+Records that aren't the controller's, such as those that a custom action
+returns, go out with the relations that are loaded. Put secrets in
 `.hidden()` properties, so that no response sends them.
 
 ## Lists

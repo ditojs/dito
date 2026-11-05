@@ -4,6 +4,8 @@ Dito.js Server is a set of packages. The core builds APIs as
 [Hono](https://hono.dev) apps, and the other packages add MikroORM, files, users
 and the admin. These pages list their exports. The
 [server guide](../../guide/server/index.md) explains how they work together.
+Its [Terms](../../guide/server/index.md#terms) say what the words of these pages
+mean.
 
 | Package           | Pages                                                                                       | Description                                                                                            |
 | ----------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |

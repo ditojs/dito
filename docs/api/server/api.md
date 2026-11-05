@@ -107,7 +107,7 @@ Dito builds the context for each request and each layer:
 | `body`   | For writes, the result of the action's `body` schema, or else the JSON body. An empty body and a body without `Content-Type` are `{}`, so a JSON body without it is dropped, and invalid JSON responds with 400. Bodies of other types, such as form data, are `undefined`, and handlers read them from `c.req`. |
 | `params` | The parameters of the path, by name, such as `params.id` of a record action.                                                                                                                                                                                                                                     |
 | `user`   | The signed-in user, or `null`.                                                                                                                                                                                                                                                                                   |
-| `em`     | The database handle of the request, from `connect()` of the `adapter`, such as a fork of the entity manager. During a transaction, the transaction's handle.                                                                                                                                                     |
+| `em`     | The request's entity manager, from `connect()` of the `adapter`. During a transaction, the transaction's entity manager.                                                                                                                                                                                         |
 | `action` | The key of the action that runs, such as `'get'` or `'post :id/publish'`.                                                                                                                                                                                                                                        |
 | `c`      | [Hono's context](controllers.md#ditocontext) of the request.                                                                                                                                                                                                                                                     |
 | `next`   | Runs the handler beneath, and returns its result. That handler sees the changes that this one makes to its context, such as a new `body`.                                                                                                                                                                        |
@@ -138,7 +138,7 @@ interface Adapter {
 ```
 
 The object that [`createMikroAdapter()`](mikro.md#createmikroadapter) returns.
-`connect()` returns the database handle of a request, which becomes `c.var.em`.
+`connect()` returns the request's entity manager, which becomes `c.var.em`.
 `transaction` runs the actions that need one. Without it, no action runs in a
 transaction. `toHttpError()` maps the database's errors to an `HttpError`, and
 returns `undefined` for others.
@@ -150,7 +150,7 @@ type Transaction = <T>(c: DitoContext, fn: () => Promise<T>) => Promise<T>
 ```
 
 Runs `fn` in a transaction, and rolls it back when `fn` throws. While `fn` runs,
-`c.var.em` is the transaction's handle.
+`c.var.em` is the transaction's entity manager.
 
 ## sendFile()
 

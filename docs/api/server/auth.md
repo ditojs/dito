@@ -233,7 +233,7 @@ The users of one kind, such as admins or members.
 [`createEntityUserSource()`](mikro.md#createentityusersource) returns one for an
 entity, or the app implements it. Auth reads `id`, `username`, `hash`, `roles`
 and `lastLogin` of its users. The functions get Hono's context `c`, which holds
-the API's database handle in `c.var.em`.
+the request's entity manager in `c.var.em`.
 
 - `name` names the users in sessions and credentials, as `'<name>-<id>'`.
 - The source loads `hash`, as sessions keep its fingerprint and end when it

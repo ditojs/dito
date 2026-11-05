@@ -194,7 +194,7 @@ onError: ({ error }) => logger.error(error)
 See [Errors](../../api/server/errors.md). For request logs, use the logger of
 the host, such as hono-pino.
 
-Log the values of entities, or `wrap(entity).toObject()`, not the entities
+Log the values of records, or `wrap(record).toObject()`, not the records
 themselves. Pino's `redact` copies the objects on its paths by assignment. This
 runs MikroORM's setters on the copy, which can add the copy to loaded
 collections. Name `redact` paths by their keys, such as `req.headers["cookie"]`,
