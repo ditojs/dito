@@ -12,7 +12,7 @@ lists the subgenres of a genre through a filter:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
-import { defineController } from '@ditojs/mikro'
+import { defineModelController } from '@ditojs/mikro'
 import { q } from '@ditojs/server/zod'
 
 const GenreSchema = defineEntity({
@@ -26,7 +26,7 @@ const GenreSchema = defineEntity({
 export class Genre extends GenreSchema.class {}
 GenreSchema.setClass(Genre)
 
-export const genres = defineController({
+export const genres = defineModelController({
   path: 'genres',
   entity: Genre,
   find: { orderBy: { name: 'asc' } },

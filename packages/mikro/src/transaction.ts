@@ -3,7 +3,7 @@ import type { DbAdapter, DitoEnv } from '@ditojs/server'
 import type { EntityManager as CoreEntityManager } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
 import type { Kysely } from 'kysely'
-import { hasMikroOptions } from './config.ts'
+import { hasMikroConfig } from './config.ts'
 import { toHttpError } from './errors.ts'
 
 // The `MikroORM` of any driver and any entities.
@@ -13,9 +13,9 @@ interface Orm {
 
 // The `db` of `createApi()`. Each request gets a fork of the entity manager as
 // `c.var.db`, which is the transaction's entity manager during a transaction.
-export function mikroDb(orm: Orm): DbAdapter {
-  if (!hasMikroOptions(orm.em)) {
-    throw new Error('Create the ORM with the options of `mikroOptions()`.')
+export function createMikroAdapter(orm: Orm): DbAdapter {
+  if (!hasMikroConfig(orm.em)) {
+    throw new Error('Create the ORM with the config of `defineMikroConfig()`.')
   }
   return {
     connect: () => orm.em.fork(),

@@ -3,11 +3,11 @@ import { MikroORM } from '@mikro-orm/postgresql'
 import { z } from 'zod'
 import {
   assetsJson,
+  createMikroAdapter,
   createRecord,
+  defineMikroConfig,
   getAssetPaths,
   getRootKysely,
-  mikroDb,
-  mikroOptions,
   schemaJson
 } from '../src/index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
@@ -68,25 +68,29 @@ describe('getAssetPaths()', () => {
 
 const { orm, sql, drop } = await createTestDatabase(
   [Book, BookShelf],
-  mikroOptions
+  defineMikroConfig
 )
 
 afterAll(drop)
 
-describe('`mikroOptions()`', () => {
+describe('`defineMikroConfig()`', () => {
   beforeEach(() => sql('truncate book restart identity'))
 
   const stored = async () => (await sql('select specs from book'))[0].specs
 
   it('takes a module of entities', () => {
     const module = { Book, helper: () => {}, states: ['a'] }
-    expect(mikroOptions({ entities: module }).entities).toEqual([Book])
+    expect(defineMikroConfig({ entities: module }).entities).toEqual([Book])
   })
 
-  it('is what `mikroDb()` needs', () => {
+  it('is what `createMikroAdapter()` needs', () => {
     const options = { dbName: 'dito_mikro_options', entities: [Book] }
-    expect(() => mikroDb(new MikroORM(options))).toThrow(/`mikroOptions\(\)`/)
-    expect(() => mikroDb(new MikroORM(mikroOptions(options)))).not.toThrow()
+    expect(() => createMikroAdapter(new MikroORM(options))).toThrow(
+      /`defineMikroConfig\(\)`/
+    )
+    expect(() =>
+      createMikroAdapter(new MikroORM(defineMikroConfig(options)))
+    ).not.toThrow()
   })
 
   it('reads outside of a transaction with `getRootKysely()`', async () => {
@@ -159,7 +163,7 @@ describe('`mikroOptions()`', () => {
     ReaderSchema.setClass(Reader)
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const orm = await MikroORM.init(
-      mikroOptions({ dbName: 'unused', entities: [Reader, Title, Loan] })
+      defineMikroConfig({ dbName: 'unused', entities: [Reader, Title, Loan] })
     )
     await orm.close()
     expect(warn).toHaveBeenCalledOnce()

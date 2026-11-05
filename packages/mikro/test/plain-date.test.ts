@@ -1,5 +1,5 @@
 import { defineEntity, p } from '@mikro-orm/core'
-import { createRecord, mikroOptions } from '../src/index.ts'
+import { createRecord, defineMikroConfig } from '../src/index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 
 const EventSchema = defineEntity({
@@ -13,7 +13,7 @@ const EventSchema = defineEntity({
 class Event extends EventSchema.class {}
 EventSchema.setClass(Event)
 
-const { orm, sql, drop } = await createTestDatabase([Event], mikroOptions)
+const { orm, sql, drop } = await createTestDatabase([Event], defineMikroConfig)
 
 afterAll(drop)
 
@@ -27,7 +27,7 @@ const stored = async () => {
   return row.day
 }
 
-describe('`date` columns with `mikroOptions()`', () => {
+describe('`date` columns with `defineMikroConfig()`', () => {
   it('stores a `Date` as its local day', async () => {
     const em = orm.em.fork()
     em.create(Event, { day: date as never })

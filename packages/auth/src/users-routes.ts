@@ -109,7 +109,7 @@ export function usersRoutes<U extends User>({
     await source.patch(c, user, { lastLogin: new Date() })
     session.confirmAccess(source, user, reconfirmAfter)
     await afterLogin?.(c, user)
-    return { user: await source.toJSON(c, user) }
+    return { user: await source.serialize(c, user) }
   }
 
   // Returns the user of the passkey that signed the challenge in the session.
@@ -171,7 +171,7 @@ export function usersRoutes<U extends User>({
     // The logged-in user, or null.
     'get self': async ({ c }) => {
       const user = await getSession(c).getUser(source)
-      return user ? source.toJSON(c, user) : null
+      return user ? source.serialize(c, user) : null
     },
 
     // Confirms the access of the logged-in user with the password, and the

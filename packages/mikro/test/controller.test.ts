@@ -15,17 +15,17 @@ import { q } from '@ditojs/server/zod'
 import { OptimisticLockError, type FilterOptions } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
 import {
-  choices,
-  crud,
-  dateRangeFilter,
   assignRecord,
-  defineController,
-  listHandler,
-  textFilter,
+  createMikroAdapter,
+  crud,
+  defineChoices,
+  defineDateRangeFilter,
+  defineListHandler,
+  defineModelController,
+  defineTextFilter,
   getEntityManager,
-  mikroDb,
   type FindShape,
-  type MikroControllerDefinition
+  type ModelControllerDefinition
 } from '../src/index.ts'
 import { mergeFind } from '../src/find.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
@@ -52,7 +52,7 @@ function setup(...controllers: ControllerDefinition[]) {
       '/api',
       createApi({
         controllers,
-        db: mikroDb(orm),
+        db: createMikroAdapter(orm),
         // The user of the `X-User` header, with that name as its role.
         getUser: async c => {
           const name = c.req.header('X-User')
@@ -83,8 +83,8 @@ const request = async (
 function books({
   actions,
   ...overrides
-}: Partial<MikroControllerDefinition<Book>> = {}) {
-  return defineController({
+}: Partial<ModelControllerDefinition<Book>> = {}) {
+  return defineModelController({
     path: 'books',
     authorize: true,
     entity: Book,
@@ -133,8 +133,8 @@ function books({
 
       // The `updatedAt` the client loaded. A newer one in the database
       // responds with 409.
-      async 'patch :id'({ record, body, next }) {
-        const book = await record<Book>()
+      async 'patch :id'({ getRecord, body, next }) {
+        const book = await getRecord<Book>()
         const { updatedAt } = body
         if (updatedAt && +new Date(updatedAt) !== +book.updatedAt) {
           throw new HttpError(409, {
@@ -144,8 +144,8 @@ function books({
         return next()
       },
 
-      async 'post :id/publish'({ record }) {
-        const book = await record<Book>()
+      async 'post :id/publish'({ getRecord }) {
+        const book = await getRecord<Book>()
         if (book.parts.length === 0) {
           throw createValidationError([
             { path: ['parts'], message: 'has no parts' }
@@ -397,7 +397,7 @@ describe('get', () => {
   it('applies entity filters to the page and the total', async () => {
     await sql(`insert into author (name, deleted) values ('Cy', true)`)
     const api = setup(
-      defineController({
+      defineModelController({
         path: 'authors',
         authorize: true,
         entity: Author,
@@ -413,7 +413,7 @@ describe('get', () => {
 
   it('refuses to order by lazy properties', async () => {
     const api = setup(
-      defineController({
+      defineModelController({
         path: 'authors',
         authorize: true,
         entity: Author,
@@ -484,12 +484,12 @@ describe('get', () => {
     expect(names(json)).toEqual(['Arcadia', 'Circuits'])
   })
 
-  it('lists all rows in `choices()`, past the limit of lists', async () => {
+  it('lists all rows in `defineChoices()`, past the limit of lists', async () => {
     await sql(
       `insert into book (name, created_at, updated_at)
        select 'Many ' || n, now(), now() from generate_series(1, 1000) n`
     )
-    const api = setup(books({ mixins: [choices({ fields: ['name'] })] }))
+    const api = setup(books({ mixins: [defineChoices({ fields: ['name'] })] }))
     const { json } = await request(api, 'GET', '/api/books/choices')
     await sql(`delete from book where name like 'Many %'`)
     expect(json.length).toBeGreaterThan(1000)
@@ -501,8 +501,8 @@ describe('get', () => {
       books({
         find: {},
         actions: {
-          'get all': listHandler({ fields: ['name'], maxRows: Infinity }),
-          'get few': listHandler({ maxRows: count - 1 }),
+          'get all': defineListHandler({ fields: ['name'], maxRows: Infinity }),
+          'get few': defineListHandler({ maxRows: count - 1 }),
           'get ids': async ({ list }) => {
             const rows = await list({
               where: { published: true },
@@ -512,7 +512,7 @@ describe('get', () => {
             return (rows as Book[]).map(({ id }) => id)
           }
         },
-        mixins: [choices({ fields: ['name'] })]
+        mixins: [defineChoices({ fields: ['name'] })]
       })
     )
     for (const path of ['all', 'choices']) {
@@ -633,9 +633,9 @@ describe('get :id', () => {
           getEntityManager(c).findOne(Book, id === 'self' ? 1 : +id),
         actions: {
           'get :id': true,
-          'get :id/id': async ({ id, record }) => ({
+          'get :id/id': async ({ id, getRecord }) => ({
             id,
-            name: (await record()).name
+            name: (await getRecord()).name
           })
         }
       })
@@ -702,7 +702,7 @@ describe('find', () => {
       controllers: [
         books({ find: () => ({ disableIdentityMap: true }) })
       ],
-      db: mikroDb(orm),
+      db: createMikroAdapter(orm),
       onError: error => {
         errors.push(error)
       }
@@ -715,7 +715,7 @@ describe('find', () => {
   })
 })
 
-describe('listHandler', () => {
+describe('defineListHandler', () => {
   it('lists the choices of a select, with the filters of the list', async () => {
     const api = setup(
       books({
@@ -725,7 +725,7 @@ describe('listHandler', () => {
           exclude: ['notes']
         },
         mixins: [
-          choices({
+          defineChoices({
             fields: ['id', 'name', 'notes', 'authors.name'],
             populate: ['authors'],
             orderBy: { name: 'desc' }
@@ -761,7 +761,7 @@ describe('listHandler', () => {
           orderBy: { name: 'asc' }
         }),
         actions: {
-          'get published': listHandler({ where: { published: true } })
+          'get published': defineListHandler({ where: { published: true } })
         }
       })
     )
@@ -786,7 +786,7 @@ describe('listHandler', () => {
       books({
         find: { populate: ['parts'], exclude: ['notes', 'parts.order'] },
         actions: {
-          'get all': listHandler({ fields: ['*'], populate: ['parts'] })
+          'get all': defineListHandler({ fields: ['*'], populate: ['parts'] })
         }
       })
     )
@@ -807,7 +807,7 @@ describe('listHandler', () => {
     const api = setup(
       books({
         find: { fields: ['name'] },
-        mixins: [choices({ fields: ['id', 'name', 'notes'] })]
+        mixins: [defineChoices({ fields: ['id', 'name', 'notes'] })]
       })
     )
     const { json } = await request(api, 'GET', '/api/books/choices?order=id')
@@ -828,7 +828,7 @@ describe('listHandler', () => {
           exclude: ['parts.name', 'notes']
         },
         mixins: [
-          choices({
+          defineChoices({
             fields: ['name', 'notes', 'parts'],
             populate: ['parts.chapters']
           })
@@ -849,7 +849,7 @@ describe('listHandler', () => {
   })
 
   it('refuses the options that the base controls', () => {
-    expect(() => listHandler({ limit: 1 })).toThrow(
+    expect(() => defineListHandler({ limit: 1 })).toThrow(
       "`find` can't set `limit`, which the base controls"
     )
   })
@@ -860,10 +860,10 @@ describe('list filters', () => {
     books({
       find: { orderBy: { id: 'asc' } },
       filters: {
-        name: textFilter(),
-        text: textFilter('name', 'notes'),
-        createdAt: dateRangeFilter(),
-        since: dateRangeFilter('releasedAt')
+        name: defineTextFilter(),
+        text: defineTextFilter(['name', 'notes']),
+        createdAt: defineDateRangeFilter(),
+        since: defineDateRangeFilter('releasedAt')
       }
     })
   )
@@ -907,15 +907,15 @@ describe('list filters', () => {
   })
 })
 
-describe('c.var.listQuery()', () => {
+describe('c.var.getListQuery()', () => {
   it('returns the `where` and `orderBy` of the list', async () => {
     const api = setup(
       books({
         find: { where: { published: true }, orderBy: { name: 'desc' } },
-        filters: { name: textFilter() },
+        filters: { name: defineTextFilter() },
         actions: {
-          async 'get summary'({ db, listQuery }) {
-            const { where, orderBy, range } = await listQuery()
+          async 'get summary'({ db, getListQuery }) {
+            const { where, orderBy, range } = await getListQuery()
             const rows = await db.find(Book, where, {
               fields: ['id'],
               orderBy
@@ -992,8 +992,8 @@ describe('mergeFind()', () => {
 })
 
 describe('output', () => {
-  const parts = (find: MikroControllerDefinition<Part>['find']) =>
-    defineController({
+  const parts = (find: ModelControllerDefinition<Part>['find']) =>
+    defineModelController({
       path: 'parts',
       authorize: true,
       entity: Part,
@@ -1024,13 +1024,13 @@ describe('output', () => {
 
   it('sends a relation as `{ id }` where a handler loaded it', async () => {
     const api = setup(
-      defineController({
+      defineModelController({
         path: 'parts',
         authorize: true,
         entity: Part,
         actions: {
-          'get :id': async ({ record, db: em }) => {
-            const part = await record<Part>()
+          'get :id': async ({ getRecord, db: em }) => {
+            const part = await getRecord<Part>()
             await em.populate(part, ['book', 'chapters'] as never[])
             return part
           }
@@ -1048,7 +1048,7 @@ describe('output', () => {
     const get = async (find?: FindShape) =>
       (await request(setup(books({ find })), 'GET', '/api/books/1')).json
     const api = setup(
-      defineController({
+      defineModelController({
         path: 'parts',
         authorize: true,
         entity: Part,
@@ -1067,8 +1067,8 @@ describe('output', () => {
     const records = setup(
       books({
         actions: {
-          'get :id': async ({ record, db: em }) => {
-            const book = await record<Book>()
+          'get :id': async ({ getRecord, db: em }) => {
+            const book = await getRecord<Book>()
             await em.find(Info, {})
             expect(book.info).toBeDefined()
             return book
@@ -1185,7 +1185,7 @@ describe('output', () => {
     await sql('update award set judge_id = 1, jury_id = 1')
     const awards = (find: FindShape) =>
       setup(
-        defineController({
+        defineModelController({
           path: 'awards',
           authorize: true,
           entity: Award,
@@ -1213,7 +1213,7 @@ describe('output', () => {
     await sql('update award set author_id = (select min(id) from author)')
     const awards = (fields: string[]) =>
       setup(
-        defineController({
+        defineModelController({
           path: 'awards',
           authorize: true,
           entity: Award,
@@ -1284,7 +1284,7 @@ describe('output', () => {
 
   it('filters by `relation.id`', async () => {
     const api = setup(
-      defineController({
+      defineModelController({
         path: 'parts',
         authorize: true,
         entity: Part,
@@ -1363,13 +1363,13 @@ describe('default handlers', () => {
     const errors: unknown[] = []
     const api = createApi({
       controllers: [
-        defineController({
+        defineModelController({
           path: 'pairs',
           entity: Pair,
           actions: { get: true }
         })
       ],
-      db: mikroDb(orm),
+      db: createMikroAdapter(orm),
       onError: error => {
         errors.push(error)
       }
@@ -1383,7 +1383,7 @@ describe('default handlers', () => {
 
   it('applies the settings of the controller to the actions of mixins', async () => {
     const api = setup(
-      defineController({
+      defineModelController({
         path: 'books',
         entity: Book,
         authorize: true,
@@ -1399,7 +1399,7 @@ describe('default handlers', () => {
 
   it('routes all five with `crud`', async () => {
     const api = setup(
-      defineController({
+      defineModelController({
         path: 'books',
         entity: Book,
         authorize: true,
@@ -1418,7 +1418,7 @@ describe('default handlers', () => {
 
   it('routes only the ones that the controller sets', async () => {
     const api = setup(
-      defineController({
+      defineModelController({
         path: 'books',
         entity: Book,
         actions: { 'get :id': ({ next }) => next() }
@@ -1571,7 +1571,7 @@ describe('writes', () => {
 
   it('takes `{ id }` for a relation to one row, as the output sends it', async () => {
     const parts = setup(
-      defineController({
+      defineModelController({
         path: 'parts',
         authorize: true,
         entity: Part,
@@ -1600,7 +1600,7 @@ describe('writes', () => {
 
   it('ignores `<name>Id` in a body, as any unknown key', async () => {
     const parts = setup(
-      defineController({
+      defineModelController({
         path: 'parts',
         authorize: true,
         entity: Part,
@@ -1624,7 +1624,7 @@ describe('writes', () => {
 
   it('takes back a loaded row', async () => {
     const parts = setup(
-      defineController({
+      defineModelController({
         path: 'parts',
         authorize: true,
         entity: Part,
@@ -1695,7 +1695,7 @@ describe('writes', () => {
     await sql(`update award set author_id = 1`)
     await sql(`update author set deleted = true where id = 1`)
     const awards = setup(
-      defineController({
+      defineModelController({
         path: 'awards',
         authorize: true,
         entity: Award,
@@ -2181,13 +2181,13 @@ describe('find()', () => {
 })
 
 describe('wrapping the default handlers', () => {
-  it('reads the new row with `record()` after `next()` on `post`', async () => {
+  it('reads the new row with `getRecord()` after `next()` on `post`', async () => {
     const api = setup(
       books({
         actions: {
-          async post({ record, next }) {
+          async post({ getRecord, next }) {
             await next()
-            const book = await record<Book>()
+            const book = await getRecord<Book>()
             book.notes = `Created ${book.name}`
             return book
           }
@@ -2203,7 +2203,7 @@ describe('wrapping the default handlers', () => {
     const api = setup(
       books({
         actions: {
-          async 'patch :id'({ record, db, next }) {
+          async 'patch :id'({ getRecord, db, next }) {
             const book = (await next()) as Book
             await db.populate(book, ['awards'])
             if (book.name.length < 3 && book.awards.length > 0) {
@@ -2234,13 +2234,13 @@ describe('wrapping the default handlers', () => {
     expect(json).not.toHaveProperty('awards')
   })
 
-  it('loads the record once through `record()`', async () => {
+  it('loads the record once through `getRecord()`', async () => {
     const loaded: unknown[] = []
     const api = setup(
       books({
         actions: {
-          async 'patch :id'({ record, next }) {
-            loaded.push(await record())
+          async 'patch :id'({ getRecord, next }) {
+            loaded.push(await getRecord())
             const book = await next()
             loaded.push(book)
             return book
@@ -2253,13 +2253,13 @@ describe('wrapping the default handlers', () => {
     expect(loaded[1]).toBe(loaded[0])
   })
 
-  it('returns the row that `post` creates from `record()`', async () => {
+  it('returns the row that `post` creates from `getRecord()`', async () => {
     const records: unknown[] = []
     const api = setup(
       books({
         middleware: async (c, next) => {
           const response = await next()
-          if (c.req.method === 'POST') records.push(await c.var.record())
+          if (c.req.method === 'POST') records.push(await c.var.getRecord())
           return response
         }
       })
@@ -2324,8 +2324,8 @@ describe('layers', () => {
       actions: {
         'patch :id': {
           authorize: 'admin',
-          async handler({ record, db }) {
-            const row = await record<Book>()
+          async handler({ getRecord, db }) {
+            const row = await getRecord<Book>()
             row.notes = `by ${db.isInTransaction() ? 'transaction' : 'none'}`
             return row
           }
@@ -2459,15 +2459,15 @@ describe('layers', () => {
     expect((await request(api, 'GET', '/api/books/1')).status).toBe(404)
   })
 
-  it('throws for `record()` outside member actions', async () => {
+  it('throws for `getRecord()` outside member actions', async () => {
     const errors: unknown[] = []
     const api = new Hono().route(
       '/api',
       createApi({
         controllers: [
-          books({ actions: { 'get one': ({ record }) => record() } })
+          books({ actions: { 'get one': ({ getRecord }) => getRecord() } })
         ],
-        db: mikroDb(orm),
+        db: createMikroAdapter(orm),
         onError: error => {
           errors.push(error)
         }
@@ -2476,7 +2476,7 @@ describe('layers', () => {
     expect((await request(api, 'GET', '/api/books/one')).status).toBe(500)
     expect(errors[0]).toMatchObject({
       message: (
-        'record() has no record here: only member actions load one, and ' +
+        'getRecord() has no record here: only member actions load one, and ' +
         'other actions need a handler that calls `setRecord()`'
       )
     })
@@ -2604,7 +2604,7 @@ describe('transactions', () => {
   })
 })
 
-describe('mikroDb()', () => {
+describe('createMikroAdapter()', () => {
   it('maps the errors of MikroORM before `onError`', async () => {
     const onError = vi.fn()
     const error = new Error('Failed')
@@ -2622,7 +2622,7 @@ describe('mikroDb()', () => {
           }
         }
       ],
-      db: mikroDb(orm),
+      db: createMikroAdapter(orm),
       onError
     })
     const locked = await request(api, 'GET', '/items/locked')
@@ -2641,7 +2641,7 @@ describe('mikroDb()', () => {
       controllers: [
         { path: 'items', actions: { get: ({ db }) => db !== orm.em } }
       ],
-      db: mikroDb(orm)
+      db: createMikroAdapter(orm)
     })
     expect((await request(api, 'GET', '/items')).json).toBe(true)
   })

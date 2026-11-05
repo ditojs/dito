@@ -303,7 +303,7 @@ import { adminSource } from './auth.js'
     if (!user) throw new HttpError(401)
     await assignRecord(db, user, { email })
     await db.flush()
-    return adminSource.toJSON(c, user)
+    return adminSource.serialize(c, user)
   }
 }
 ```

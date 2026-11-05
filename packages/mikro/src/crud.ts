@@ -17,16 +17,16 @@ export const defaults: Actions = {
     return row
   },
 
-  'get :id': ({ record }) => record(),
+  'get :id': ({ getRecord }) => getRecord(),
 
-  async 'patch :id'({ body, record, modelRequest }) {
-    const row = await record()
+  async 'patch :id'({ body, getRecord, modelRequest }) {
+    const row = await getRecord()
     const data = await deserialize(modelRequest, body, row)
     return assignRecord(modelRequest.em, row, data)
   },
 
-  async 'delete :id'({ record, modelRequest: { em } }) {
-    em.remove(await record())
+  async 'delete :id'({ getRecord, modelRequest: { em } }) {
+    em.remove(await getRecord())
     await em.flush()
     return { count: 1 }
   }
@@ -44,7 +44,7 @@ export const crud = defineMixin({
 })
 
 // The handler of a list, see `c.var.list`.
-export function listHandler<T extends object = any>(
+export function defineListHandler<T extends object = any>(
   find: FindShape<T> = {}
 ): Handler {
   checkFind(find)
@@ -52,11 +52,13 @@ export function listHandler<T extends object = any>(
 }
 
 // A mixin with the list `get choices`, for the options of a select, such as
-// `choices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })`. A select
-// shows all rows, so its list has no row limit unless `find` sets one.
-export function choices<T extends object = any>(find: FindShape<T>) {
+// `defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })`.
+// A select shows all rows, so its list has no row limit unless `find` sets one.
+export function defineChoices<T extends object = any>(find: FindShape<T>) {
   return defineMixin({
-    actions: { 'get choices': listHandler({ maxRows: Infinity, ...find }) }
+    actions: {
+      'get choices': defineListHandler({ maxRows: Infinity, ...find })
+    }
   })
 }
 

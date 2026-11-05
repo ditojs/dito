@@ -30,7 +30,7 @@ UserSchema.setClass(User)
 
 // In the user source of `@ditojs/auth`, which reads `id`, `hash` and
 // `roles` from the users:
-toJSON: (c, user) => ({
+serialize: (c, user) => ({
   id: user.id,
   username: user.username,
   roles: user.roles
@@ -40,9 +40,9 @@ toJSON: (c, user) => ({
 The controllers authorize by the roles:
 
 ```js
-import { defineController } from '@ditojs/mikro'
+import { defineModelController } from '@ditojs/mikro'
 
-export const books = defineController({
+export const books = defineModelController({
   path: 'books',
   entity: Book,
   // For all actions without their own setting:
@@ -56,7 +56,7 @@ export const books = defineController({
   }
 })
 
-export const loans = defineController({
+export const loans = defineModelController({
   path: 'loans',
   entity: Loan,
   authorize: ['desk', 'admin'],
@@ -93,7 +93,7 @@ A string in `authorize` names a role. An array lets in users with any of its
 roles. An action's own `authorize` replaces the controller's.
 
 `sessionUser()` passes the `roles` of the session's user to `authorize`.
-`toJSON()` sends them to the admin, whose `user.hasRole()` reads them. So the
+`serialize()` sends them to the admin, whose `user.hasRole()` reads them. So the
 admin only shows what the server allows.
 
 A view's `if` also blocks opening the view by its URL. But the admin's checks

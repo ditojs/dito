@@ -4,8 +4,8 @@ import type { MiddlewareHandler } from 'hono'
 import { hyphenate } from '@ditojs/utils'
 import type { ControllerDefinition } from '@ditojs/server'
 import {
-  defineController,
-  type MikroControllerDefinition
+  defineModelController,
+  type ModelControllerDefinition
 } from '@ditojs/mikro'
 import type {
   EntityClass,
@@ -20,7 +20,7 @@ import { waitForUrl } from './net.js'
 // The settings of a scenario's entity controller, which go over the defaults
 // of `scenarioController()`.
 export type ScenarioControllerOptions = Partial<
-  Omit<MikroControllerDefinition, 'entity'>
+  Omit<ModelControllerDefinition, 'entity'>
 >
 
 /**
@@ -33,7 +33,7 @@ export function scenarioController(
   entity: EntityClass<any>,
   { actions, ...options }: ScenarioControllerOptions = {}
 ): ControllerDefinition {
-  return defineController({
+  return defineModelController({
     path: hyphenate(`${entity.name}s`),
     authorize: true,
     ...options,

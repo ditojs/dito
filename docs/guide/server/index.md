@@ -48,7 +48,11 @@ import { MikroORM } from '@mikro-orm/postgresql'
 import { Hono } from 'hono'
 import { createApi, createErrorHandler, notFound } from '@ditojs/server'
 import { serve } from '@ditojs/server/node'
-import { defineController, mikroDb, mikroOptions } from '@ditojs/mikro'
+import {
+  createMikroAdapter,
+  defineMikroConfig,
+  defineModelController
+} from '@ditojs/mikro'
 
 const BookSchema = defineEntity({
   name: 'Book',
@@ -61,7 +65,7 @@ const BookSchema = defineEntity({
 export class Book extends BookSchema.class {}
 BookSchema.setClass(Book)
 
-const books = defineController({
+const books = defineModelController({
   path: 'books',
   entity: Book,
   authorize: 'editor',
@@ -76,14 +80,14 @@ const books = defineController({
 })
 
 const orm = await MikroORM.init(
-  mikroOptions({ entities: [Book], dbName: 'catalog', user: 'catalog' })
+  defineMikroConfig({ entities: [Book], dbName: 'catalog', user: 'catalog' })
 )
 // Creates the tables of the entities. Apps with data use migrations.
 await orm.schema.update()
 
 const api = createApi({
   controllers: [books],
-  db: mikroDb(orm)
+  db: createMikroAdapter(orm)
 })
 
 const app = new Hono()
@@ -109,7 +113,7 @@ database. Invalid data responds with 400 and an error for each field.
 4. The action's schemas check the query and the JSON body.
 5. Writes open a transaction.
 6. The middleware of the controller, its mixins and the action runs. A model
-   controller's base sets `record()` and `find()` first.
+   controller's base sets `getRecord()` and `find()` first.
 7. The handler runs with its input, such as `{ query, body, params, user, db }`.
    Dito saves its result, serializes it and sends it as JSON.
 

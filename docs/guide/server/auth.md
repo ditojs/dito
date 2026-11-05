@@ -49,21 +49,21 @@ with `setSignedCookie()` of `hono/cookie` and the first secret.
 ## User sources
 
 A user source tells auth how to find and change users, and how to send them to
-clients. `entityUserSource()` of `@ditojs/mikro` makes one for a MikroORM
+clients. `createEntityUserSource()` of `@ditojs/mikro` makes one for a MikroORM
 entity:
 
 ```js
-import { entityUserSource } from '@ditojs/mikro'
+import { createEntityUserSource } from '@ditojs/mikro'
 
-export const adminSource = entityUserSource(Admin, {
+export const adminSource = createEntityUserSource(Admin, {
   // For the queries outside of the API, such as `createAdmin()`'s `authorize`.
   em: () => orm.em,
   // The property of the username, `username` by default.
-  username: 'username',
+  usernameProperty: 'username',
   // Inactive admins don't log in.
   where: { isActive: true },
   // What the admin and `get self` get: properties, or a function `(c, user)`.
-  toJSON: ['id', 'username', 'roles'],
+  serialize: ['id', 'username', 'roles'],
   // Values computed from the user, added to the properties.
   computed: { initials: admin => admin.username.slice(0, 2) }
 })
@@ -73,7 +73,8 @@ It finds users with the request's entity manager, else with a fork of `em`.
 `patch()` writes the new `hash` or the `lastLogin` of a login at once, without
 flushing the request's other changes, and sets them on the user. An app can also
 write the object itself, with `name`, `findById(c, id)`,
-`findByUsername(c, username)`, `patch(c, user, values)` and `toJSON(c, user)`.
+`findByUsername(c, username)`, `patch(c, user, values)` and
+`serialize(c, user)`.
 
 Auth reads `id`, `username`, `hash`, `roles` and `lastLogin` from the users.
 `name`, the entity's name, names the users in sessions and credentials, such as
@@ -146,9 +147,9 @@ password stay logged in, and their other sessions end.
 
 ```js
 import { passwordWrites } from '@ditojs/auth'
-import { defineController } from '@ditojs/mikro'
+import { defineModelController } from '@ditojs/mikro'
 
-export const admins = defineController({
+export const admins = defineModelController({
   path: 'admins',
   entity: Admin,
   authorize: 'admin',
@@ -239,7 +240,7 @@ actions: {
       throw new HttpError(401, { message: 'Password or email is incorrect' })
     }
     getSession(c).login(memberSource, member)
-    return { user: memberSource.toJSON(c, member) }
+    return { user: memberSource.serialize(c, member) }
   },
 
   'post logout': ({ c }) => {

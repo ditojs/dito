@@ -9,9 +9,9 @@ A controller is a plain object with a `path`, a map of `actions` keyed
 its actions, settings and middleware to the controllers that list it. See
 [Controllers](../../guide/server/controllers.md) in the guide.
 
-Model controllers, from
-[`defineController()` of `@ditojs/mikro`](mikro.md#definecontroller), take the
-same options and add their own, such as `serialize` and `deserialize`.
+Model controllers, from [`defineModelController()` of
+`@ditojs/mikro`](mikro.md#definemodelcontroller), take the same options and add
+their own, such as `serialize` and `deserialize`.
 
 ## defineController()
 

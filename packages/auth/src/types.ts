@@ -12,8 +12,9 @@ export interface User {
   lastLogin?: Date | string | null
 }
 
-// The users of one kind, such as admins or customers. `entityUserSource()` of
-// `@ditojs/mikro` returns one for an entity, or the app implements it.
+// The users of one kind, such as admins or customers.
+// `createEntityUserSource()` of `@ditojs/mikro` returns one for an entity, or
+// the app implements it.
 // `name` names the users in sessions and credentials, as `'<name>-<id>'`, such
 // as `Admin-1`.
 export interface UserSource<U extends User = User> {
@@ -31,5 +32,5 @@ export interface UserSource<U extends User = User> {
     user: U,
     values: { hash?: string; lastLogin?: Date }
   ): Promise<void>
-  toJSON(c: Context, user: U): unknown
+  serialize(c: Context, user: U): unknown
 }

@@ -2,12 +2,12 @@
 
 ```js
 import {
-  defineController,
-  listHandler,
-  choices,
+  defineModelController,
+  defineListHandler,
+  defineChoices,
   crud,
-  textFilter,
-  dateRangeFilter,
+  defineTextFilter,
+  defineDateRangeFilter,
   setRecord,
   parseListQuery,
   createRecord,
@@ -16,12 +16,12 @@ import {
   SchemaJson,
   assetsJson,
   getAssetPaths,
-  mikroOptions,
-  mikroDb,
+  defineMikroConfig,
+  createMikroAdapter,
   getEntityManager,
   getKysely,
   getRootKysely,
-  entityUserSource
+  createEntityUserSource
 } from '@ditojs/mikro'
 ```
 
@@ -34,22 +34,24 @@ later, `kysely`, `hono`, `zod` and `@ditojs/server`. See
 Entities need a single primary key. For an entity with a composite key or none,
 the controller throws on its first request.
 
-## defineController()
+## defineModelController()
 
 ```ts
-defineController<T>(definition: MikroControllerDefinition<T>): ControllerDefinition
+defineModelController<T>(
+  definition: ModelControllerDefinition<T>
+): ControllerDefinition
 ```
 
 Returns a [controller](controllers.md#controllerdefinition) of an entity. It
 puts a base layer before the definition and its mixins. The base holds the
 default handlers of the keys that the definition or its mixins set, such as
-`'get': true`, and the middleware that sets `record()`, `find()`, `list()` and
-`listQuery()`. After the handlers of each key, the controller flushes and
+`'get': true`, and the middleware that sets `getRecord()`, `find()`, `list()`
+and `getListQuery()`. After the handlers of each key, the controller flushes and
 serializes, inside the transaction and the middleware. `authorize`,
 `transacted`, the schemas and the middleware come from the definition and its
 mixins.
 
-### MikroControllerDefinition
+### ModelControllerDefinition
 
 The keys of [`ControllerDefinition`](controllers.md#controllerdefinition), and:
 
@@ -62,13 +64,13 @@ The keys of [`ControllerDefinition`](controllers.md#controllerdefinition), and:
 
 ### Default handlers
 
-| Key          | Handler                                                                                                                                                                                        |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get`        | [`listHandler()`](#listhandler): the list, see [Lists](#lists).                                                                                                                                |
-| `post`       | Runs `deserialize`, then [`createRecord()`](#createrecord). The new record becomes `record()`. Answers 201 with `Location`, even when a layer replaces the handler and returns the new entity. |
-| `get :id`    | Returns `record()`.                                                                                                                                                                            |
-| `patch :id`  | Runs `deserialize` with the record, then [`assignRecord()`](#assignrecord).                                                                                                                    |
-| `delete :id` | Removes the record with `em.remove()`, flushes, and responds with `{ count: 1 }`.                                                                                                              |
+| Key          | Handler                                                                                                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get`        | [`defineListHandler()`](#definelisthandler): the list, see [Lists](#lists).                                                                                                                       |
+| `post`       | Runs `deserialize`, then [`createRecord()`](#createrecord). The new record becomes `getRecord()`. Answers 201 with `Location`, even when a layer replaces the handler and returns the new entity. |
+| `get :id`    | Returns `getRecord()`.                                                                                                                                                                            |
+| `patch :id`  | Runs `deserialize` with the record, then [`assignRecord()`](#assignrecord).                                                                                                                       |
+| `delete :id` | Removes the record with `em.remove()`, flushes, and responds with `{ count: 1 }`.                                                                                                                 |
 
 There is no default `put`, and no default write on the whole list. Custom
 actions handle these, such as `'post order'`. The [`crud`](#crud) mixin routes
@@ -79,17 +81,17 @@ all five.
 The base sets these variables in the handler's input and in `c.var`, for the
 handlers and the middleware of the layers. `authorize` runs before them.
 
-| Variable      | Description                                                                                                                                                                                                                                  |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`          | The id of a member action, converted by the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. With `load`, it stays a string, such as `self`. `params.id` is always the string of the path.          |
-| `record()`    | Loads the record of the id once per request, through `load` or `find`. A missing record responds with 404. On other actions, it returns the record that a handler set with [`setRecord()`](#setrecord), such as the one that `post` creates. |
-| `find()`      | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                |
-| `list()`      | Runs the list of the controller, see [list()](#list).                                                                                                                                                                                        |
-| `listQuery()` | Returns the `where`, `orderBy` and `range` of the list, see [listQuery()](#listquery).                                                                                                                                                       |
+| Variable         | Description                                                                                                                                                                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | The id of a member action, converted by the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. With `load`, it stays a string, such as `self`. `params.id` is always the string of the path.          |
+| `getRecord()`    | Loads the record of the id once per request, through `load` or `find`. A missing record responds with 404. On other actions, it returns the record that a handler set with [`setRecord()`](#setrecord), such as the one that `post` creates. |
+| `find()`         | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                |
+| `list()`         | Runs the list of the controller, see [list()](#list).                                                                                                                                                                                        |
+| `getListQuery()` | Returns the `where`, `orderBy` and `range` of the list, see [getListQuery()](#getlistquery).                                                                                                                                                 |
 
 ### Serialize and deserialize
 
-`defineController()` adds these keys to controllers and mixins:
+`defineModelController()` adds these keys to controllers and mixins:
 
 ```ts
 beforeSerialize?: (c: DitoContext, records: any[]) => unknown
@@ -108,7 +110,7 @@ in the guide.
 
 ### What the base does
 
-- Without `load`, `record()` loads the record with `em.findOne()` through the
+- Without `load`, `getRecord()` loads the record with `em.findOne()` through the
   controller's `find`, so rows that `find.where` hides respond with 404. An id
   fits the primary key if it is an integer within the range of the column, or a
   UUID, which the base converts to lower case.
@@ -217,38 +219,39 @@ primary key breaks ties. `order` takes the columns that the list's rows return,
 or those of the controller's own list.
 
 A list returns at most 1000 rows, or the `maxRows` of its find, such as
-`listHandler({ maxRows: 50 })`. `Infinity` lifts the limit. A larger `range`
-responds with 400. So does a list without `range` that has more rows.
+`defineListHandler({ maxRows: 50 })`. `Infinity` lifts the limit. A larger
+`range` responds with 400. So does a list without `range` that has more rows.
 
-## listHandler()
+## defineListHandler()
 
 ```ts
-listHandler(find?: FindShape): Handler
+defineListHandler(find?: FindShape): Handler
 ```
 
 Returns the handler of a list, `({ list }) => list(find)`. The default `get` is
-`listHandler()`.
+`defineListHandler()`.
 
 ```js
 actions: {
   // The root pages only.
-  'get': listHandler({ where: { parentPage: null } })
+  'get': defineListHandler({ where: { parentPage: null } })
 }
 ```
 
-## choices()
+## defineChoices()
 
 ```ts
-choices(find: FindShape): MixinDefinition
+defineChoices(find: FindShape): MixinDefinition
 ```
 
 Returns a mixin that routes `get choices`, a list for the options of a select.
-It is `'get choices': listHandler({ maxRows: Infinity, ...find })`, so it shows
-all the rows of the list, as a select needs, and takes the same filters. A `find` with `fields` names the relations that it
-sends in its paths or its own `populate`.
+It is `'get choices': defineListHandler({ maxRows: Infinity, ...find })`, so it
+shows all the rows of the list, as a select needs, and takes the same filters. A
+`find` with `fields` names the relations that it sends in its paths or its own
+`populate`.
 
 ```js
-mixins: [choices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
+mixins: [defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
 // GET /book-categories/choices → [{ id, name }, …]
 ```
 
@@ -274,13 +277,13 @@ merged shape. `query` replaces the list parameters of the URL.
 With `range`, a request gets `{ results, total }` from `list()` instead of the
 rows.
 
-## listQuery()
+## getListQuery()
 
 ```ts
-listQuery(find?: FindShape & { query?: URLSearchParams | Record<string, string | string[]> }): Promise<{ where: object; orderBy: object[]; range: [number, number] | null }>
+getListQuery(find?: FindShape & { query?: URLSearchParams | Record<string, string | string[]> }): Promise<{ where: object; orderBy: object[]; range: [number, number] | null }>
 ```
 
-`listQuery()` of the handler's input, and `c.var.listQuery()`. Returns the
+`getListQuery()` of the handler's input, and `c.var.getListQuery()`. Returns the
 `where`, `orderBy` and `range` that [`list()`](#list) uses for the same
 arguments: `find.where` with the filters, `order` or else `find.orderBy`, with
 the primary key last, and the `range` of the request. It fails with 400 as the
@@ -289,8 +292,8 @@ exports. MikroORM's default entity filters apply to these queries, but the
 `filters` of `find` don't.
 
 ```js
-async 'get export'({ db, listQuery, c }) {
-  const { where, orderBy } = await listQuery()
+async 'get export'({ db, getListQuery, c }) {
+  const { where, orderBy } = await getListQuery()
   const rows = await db.find(Order, where, { orderBy })
   return sendFile(c, toCsv(rows), { filename: 'loans.csv' })
 }
@@ -306,7 +309,7 @@ A mixin that routes the five [default handlers](#default-handlers). Writes still
 need `authorize`.
 
 ```js
-defineController({
+defineModelController({
   path: 'tags',
   entity: Tag,
   authorize: 'editor',
@@ -320,7 +323,7 @@ defineController({
 setRecord(c: Context, record: unknown): void
 ```
 
-Sets the record that `record()` returns, such as the one that a custom `post`
+Sets the record that `getRecord()` returns, such as the one that a custom `post`
 creates.
 
 ## parseListQuery()
@@ -383,10 +386,10 @@ Filters that apply to every query, such as soft deletes or tenants, are
 MikroORM's [entity filters](https://mikro-orm.io/docs/filters) with
 `default: true`.
 
-### textFilter()
+### defineTextFilter()
 
 ```ts
-textFilter(...properties: string[]): Filter
+defineTextFilter(properties?: string[]): Filter
 ```
 
 Reads what the admin's `text` filter sends: `filter=name:"text"`, or
@@ -396,10 +399,10 @@ ignoring case. The operators are `contains`, the default, `equals`,
 `starts-with` and `ends-with`. `%` and `_` in the text match themselves. An
 empty text skips the filter.
 
-### dateRangeFilter()
+### defineDateRangeFilter()
 
 ```ts
-dateRangeFilter(property?: string): Filter
+defineDateRangeFilter(property?: string): Filter
 ```
 
 Reads what the admin's `date-range` filter sends:
@@ -410,8 +413,8 @@ skip the filter.
 
 ```js
 filters: {
-  name: textFilter('firstName', 'lastName'),
-  createdAt: dateRangeFilter()
+  name: defineTextFilter(['firstName', 'lastName']),
+  createdAt: defineDateRangeFilter()
 }
 ```
 
@@ -495,15 +498,15 @@ items: schemaJson(itemsSchema, {
 const assets = createAssets({ paths: getAssetPaths(entities), storages, db })
 ```
 
-## mikroOptions()
+## defineMikroConfig()
 
 ```ts
-mikroOptions<T>(options: T): T
+defineMikroConfig<T>(options: T): T
 ```
 
 Adds what Dito's entities need to the options of `new MikroORM()`, which
-[`mikroDb()`](#mikrodb) requires. `entities` can also be a module of entities,
-whose other exports it leaves out:
+[`createMikroAdapter()`](#createmikroadapter) requires. `entities` can also be a
+module of entities, whose other exports it leaves out:
 
 - `p.date()` columns hold the local day. MikroORM's own type sends a `Date` as a
   UTC time, which Postgres cuts to the UTC day, and does the same with a string
@@ -524,13 +527,13 @@ whose other exports it leaves out:
 It keeps the app's own `subscribers` and `discovery` hooks.
 
 ```js
-const orm = new MikroORM(mikroOptions({ dbName, entities }))
+const orm = new MikroORM(defineMikroConfig({ dbName, entities }))
 ```
 
-## mikroDb()
+## createMikroAdapter()
 
 ```ts
-mikroDb(orm: MikroORM): DbAdapter
+createMikroAdapter(orm: MikroORM): DbAdapter
 ```
 
 Returns the `db` of [`createApi()`](api.md#dbadapter).
@@ -544,8 +547,8 @@ Returns the `db` of [`createApi()`](api.md#dbadapter).
   [Database errors](#database-errors).
 
 ```js
-const orm = new MikroORM(mikroOptions({ entities }))
-app.route('/api', createApi({ controllers, db: mikroDb(orm) }))
+const orm = new MikroORM(defineMikroConfig({ entities }))
+app.route('/api', createApi({ controllers, db: createMikroAdapter(orm) }))
 ```
 
 ## getEntityManager()
@@ -575,14 +578,14 @@ getRootKysely(orm: MikroORM): Kysely<any>
 Returns a Kysely on the ORM's pool, outside of any transaction, for sessions,
 credentials and jobs. `orm.em.getKysely()` joins the current transaction instead.
 
-## entityUserSource()
+## createEntityUserSource()
 
 ```ts
-entityUserSource<U>(entity: EntityClass<U>, options: {
+createEntityUserSource<U>(entity: EntityClass<U>, options: {
   em?: EntityManager | (() => EntityManager)
-  username?: string
+  usernameProperty?: string
   where?: object
-  toJSON: string[] | ((c, user: U) => unknown)
+  serialize: string[] | ((c, user: U) => unknown)
   computed?: Record<string, (user: U) => unknown>
 }): UserSource<U>
 ```
@@ -591,10 +594,10 @@ Returns the [`UserSource`](auth.md#usersource) of `@ditojs/auth` for an entity.
 It queries with the request's entity manager, else with a fork of `em`, such as
 in session middleware outside of the API.
 
-- `username` is the property of the username, `username` by default.
+- `usernameProperty` is the property of the username, `username` by default.
 - `where` is a condition that users also need to meet, such as
   `{ isActive: true }`.
-- `toJSON` lists the properties that clients get, plus `computed`, or is a
+- `serialize` lists the properties that clients get, plus `computed`, or is a
   function that returns the JSON.
 
 `findById()` finds no user for an id that doesn't fit the primary key. `patch()`
@@ -603,7 +606,8 @@ flushing the request's other changes.
 
 ## Database errors
 
-`mikroDb()` maps the errors of MikroORM and Postgres to these responses:
+`createMikroAdapter()` maps the errors of MikroORM and Postgres to these
+responses:
 
 | Error                           | Response                                                                      |
 | ------------------------------- | ----------------------------------------------------------------------------- |

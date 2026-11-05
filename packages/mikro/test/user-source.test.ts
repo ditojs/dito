@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 import { defineEntity, p } from '@mikro-orm/core'
-import { entityUserSource } from '../src/user-source.ts'
+import { createEntityUserSource } from '../src/user-source.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 
 const AccountSchema = defineEntity({
@@ -33,11 +33,11 @@ const { orm, drop } = await createTestDatabase([Account, Device])
 
 afterAll(drop)
 
-const source = entityUserSource(Account, {
+const source = createEntityUserSource(Account, {
   em: () => orm.em,
-  username: 'email',
+  usernameProperty: 'email',
   where: { isActive: true },
-  toJSON: ['id', 'email'],
+  serialize: ['id', 'email'],
   computed: { domain: user => user.email.split('@')[1] }
 })
 
@@ -57,12 +57,12 @@ beforeEach(async () => {
   await em.flush()
 })
 
-describe('entityUserSource()', () => {
+describe('createEntityUserSource()', () => {
   it('reads ids by the type of the primary key', async () => {
-    const devices = entityUserSource(Device, {
+    const devices = createEntityUserSource(Device, {
       em: () => orm.em,
-      username: 'label',
-      toJSON: ['id']
+      usernameProperty: 'label',
+      serialize: ['id']
     })
     const id = '6f9619ff-8b86-4d01-b42d-00c04fc964ff'
     const em = orm.em.fork()
@@ -118,24 +118,24 @@ describe('entityUserSource()', () => {
 
   it('returns the fields and computed values as JSON', async () => {
     const user = (await source.findById(outside, String(active.id)))!
-    expect(source.toJSON(outside, user)).toEqual({
+    expect(source.serialize(outside, user)).toEqual({
       id: active.id,
       email: 'a@example.com',
       domain: 'example.com'
     })
   })
 
-  it('takes a function as `toJSON`', async () => {
-    const custom = entityUserSource(Account, {
+  it('takes a function as `serialize`', async () => {
+    const custom = createEntityUserSource(Account, {
       em: orm.em,
-      toJSON: (c, user) => ({ email: user.email })
+      serialize: (c, user) => ({ email: user.email })
     })
     const user = (await custom.findById(outside, String(active.id)))!
-    expect(custom.toJSON(outside, user)).toEqual({ email: 'a@example.com' })
+    expect(custom.serialize(outside, user)).toEqual({ email: 'a@example.com' })
   })
 
   it('needs `em` outside of the API', async () => {
-    const custom = entityUserSource(Account, { toJSON: ['id'] })
+    const custom = createEntityUserSource(Account, { serialize: ['id'] })
     await expect(custom.findById(outside, '1')).rejects.toThrow(
       'needs `em` outside of the API'
     )

@@ -50,13 +50,13 @@ them.
 
 ### ApiConfig
 
-| Key           | Type                                           | Description                                                                                                                                                 |
-| ------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `controllers` | `ControllerDefinition[] \| object`             | The controllers, from `defineController()` of `@ditojs/server` or `@ditojs/mikro`. In an object, such as a module namespace, all other values are ignored.  |
-| `middleware`  | `Middleware \| Middleware[]`                   | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.db` and `c.var.user`.                                |
-| `db`          | [`DbAdapter`](#dbadapter)                      | The database, [`mikroDb(orm)`](mikro.md#mikrodb). Without it, `db` is undefined and no action runs in a transaction.                                        |
-| `getUser`     | `(c) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                    |
-| `onError`     | `(error, c) => void \| Promise<void>`          | Called with each error with a status of 500 or above, for the app's logs. By default, logs through `c.var.logger`, else `console`. See [Errors](errors.md). |
+| Key           | Type                                           | Description                                                                                                                                                                             |
+| ------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `controllers` | `ControllerDefinition[] \| object`             | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, all other values are ignored. |
+| `middleware`  | `Middleware \| Middleware[]`                   | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.db` and `c.var.user`.                                                            |
+| `db`          | [`DbAdapter`](#dbadapter)                      | The database, [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `db` is undefined and no action runs in a transaction.                                              |
+| `getUser`     | `(c) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                |
+| `onError`     | `(error, c) => void \| Promise<void>`          | Called with each error with a status of 500 or above, for the app's logs. By default, logs through `c.var.logger`, else `console`. See [Errors](errors.md).                             |
 
 ### The request
 
@@ -111,9 +111,9 @@ Dito builds the input for each request and each layer:
 `user`, `db`, `action` and `body` are also Hono variables, `c.var.user` and so
 on, which middleware and `authorize` read. They read parameters with
 `c.req.param()`, such as `c.req.param('id')`. The input also holds all other
-variables, such as `record()`, `find()` and `list()` of
-[model controllers](mikro.md#definecontroller), and a session that middleware
-sets with `c.set()`. Apps type their own by augmenting `DitoVariables`:
+variables, such as `getRecord()`, `find()` and `list()` of [model
+controllers](mikro.md#definemodelcontroller), and a session that middleware sets
+with `c.set()`. Apps type their own by augmenting `DitoVariables`:
 
 ```ts
 declare module '@ditojs/server' {
@@ -133,7 +133,7 @@ interface DbAdapter {
 }
 ```
 
-The object that [`mikroDb()`](mikro.md#mikrodb) returns.
+The object that [`createMikroAdapter()`](mikro.md#createmikroadapter) returns.
 `connect()` returns the database handle of a request, which becomes `c.var.db`.
 `transaction` runs the actions that need one. Without it, no action runs in a
 transaction. `toHttpError()` maps the database's errors to an `HttpError`, and

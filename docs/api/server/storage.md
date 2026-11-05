@@ -212,7 +212,7 @@ const assets = createAssets({
   deleteUnusedAfter: 24 * 60 * 60 * 1000
 })
 
-defineController({ path: 'books', mixins: [assets.mixin('book')], ... })
+defineModelController({ path: 'books', mixins: [assets.mixin('book')], ... })
 
 const file = await assets.store(db, 'documents', {
   name: 'notice.pdf',

@@ -207,7 +207,7 @@ session stays and their other sessions end, see `refreshFingerprint()` of
 [`Session`](#session).
 
 ```js
-defineController({
+defineModelController({
   path: 'admins',
   entity: Admin,
   authorize: 'admin',
@@ -224,7 +224,7 @@ interface UserSource<U> {
   findById(c, id: string): Promise<U | null | undefined>
   findByUsername(c, username: string): Promise<U | null | undefined>
   patch(c, user: U, values: { hash?: string, lastLogin?: Date }): Promise<void>
-  toJSON(c, user: U): unknown
+  serialize(c, user: U): unknown
 }
 
 interface User {
@@ -237,10 +237,10 @@ interface User {
 ```
 
 The users of one kind, such as admins or members.
-[`entityUserSource()`](mikro.md#entityusersource) returns one for an entity, or
-the app implements it. Auth reads `id`, `username`, `hash`, `roles` and
-`lastLogin` of its users. The functions get Hono's context `c`, which holds the
-API's database handle in `c.var.db`.
+[`createEntityUserSource()`](mikro.md#createentityusersource) returns one for an
+entity, or the app implements it. Auth reads `id`, `username`, `hash`, `roles`
+and `lastLogin` of its users. The functions get Hono's context `c`, which holds
+the API's database handle in `c.var.db`.
 
 - `name` names the users in sessions and credentials, as `'<name>-<id>'`.
 - The source loads `hash`, as sessions keep its fingerprint and end when it
@@ -248,7 +248,7 @@ API's database handle in `c.var.db`.
 - `findById()` resolves to `null` for ids it can't read.
 - `patch()` stores the values and sets them on the user: a new `hash`, or the
   `lastLogin` of a login.
-- `toJSON()` returns what the actions send.
+- `serialize()` returns what the actions send.
 
 ## createCredentials()
 

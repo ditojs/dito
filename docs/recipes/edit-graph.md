@@ -11,7 +11,7 @@ controller's `find` loads them with the author:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
-import { defineController, listHandler } from '@ditojs/mikro'
+import { defineListHandler, defineModelController } from '@ditojs/mikro'
 
 const BookSchema = defineEntity({
   name: 'Book',
@@ -31,14 +31,14 @@ const BookSchema = defineEntity({
 export class Book extends BookSchema.class {}
 BookSchema.setClass(Book)
 
-export const books = defineController({
+export const books = defineModelController({
   path: 'books',
   entity: Book,
   authorize: ['editor', 'admin'],
   find: { populate: ['author', 'chapters'] },
   actions: {
     // The list loads the author only.
-    'get': listHandler({ populate: ['author'] }),
+    'get': defineListHandler({ populate: ['author'] }),
     'post': true,
     'get :id': true,
     'patch :id': true,
@@ -95,8 +95,9 @@ The author is a row of its own, so the select sends `{ id }` to link it. One
 flush in the request's transaction writes it all. The inlined list has no
 `resource`, so its chapters are part of the book's data and are saved with it.
 
-`find` applies to the list of books too. The list's `listHandler()` replaces
-its `populate`, so that the list leaves out the chapters and stays small.
+`find` applies to the list of books too. The list's `defineListHandler()`
+replaces its `populate`, so that the list leaves out the chapters and stays
+small.
 
 See also: [Writes](../guide/server/writes.md),
 [Nested rows](../guide/server/writes.md#nested-rows),

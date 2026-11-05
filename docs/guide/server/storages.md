@@ -111,7 +111,7 @@ handling of its writes. The action picks the storage of the first asset path
 that matches the data path:
 
 ```js
-defineController({
+defineModelController({
   path: 'books',
   entity: Book,
   authorize: ['admin', 'editor'],

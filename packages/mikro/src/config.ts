@@ -27,8 +27,8 @@ import { SchemaJson, runSchema } from './schema-json.ts'
 // keys. Pivot entities with an id of their own log a warning. `entities` can be
 // a module of them, like in `getAssetPaths()`.
 //
-//   const orm = new MikroORM(mikroOptions({ dbName, entities }))
-export function mikroOptions<T extends Partial<Options<any, any, any>>>(
+//   const orm = new MikroORM(defineMikroConfig({ dbName, entities }))
+export function defineMikroConfig<T extends Partial<Options<any, any, any>>>(
   options: Omit<T, 'entities'> & { entities?: T['entities'] | object }
 ): T {
   const {
@@ -59,8 +59,8 @@ export function mikroOptions<T extends Partial<Options<any, any, any>>>(
   return result as T
 }
 
-// Whether `mikroOptions()` created the entity manager's ORM.
-export const hasMikroOptions = (em: EntityManager) =>
+// Whether `defineMikroConfig()` created the entity manager's ORM.
+export const hasMikroConfig = (em: EntityManager) =>
   [...em.getEventManager().getSubscribers()].some(
     subscriber => subscriber instanceof RemovedRows
   )

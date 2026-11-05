@@ -20,7 +20,7 @@ export const newsletters = defineController({
 ```
 
 This routes `PUT /newsletters/subscribe` below the path of the API. The
-controllers of [entities](entities.md) come from `defineController()` of
+controllers of [entities](entities.md) come from `defineModelController()` of
 `@ditojs/mikro`, and also take `entity`, `find` and `filters`.
 
 ## Actions
@@ -52,15 +52,15 @@ A controller's `path` may hold parameters too, such as
 A path that starts with `:id` is a member action. Its handlers read the id in
 `params.id`, and middleware with `c.req.param('id')`. In a model controller,
 `id` of the input is the id converted to the type of the primary key, a number
-for integer keys. An id that doesn't fit responds with 404. `record()` loads the
-record through the controller's `find`, once per request. If there is no such
-record, it responds with 404:
+for integer keys. An id that doesn't fit responds with 404. `getRecord()` loads
+the record through the controller's `find`, once per request. If there is no
+such record, it responds with 404:
 
 ```js
 actions: {
   'get :id': true,
-  async 'post :id/publish'({ record }) {
-    const book = await record()
+  async 'post :id/publish'({ getRecord }) {
+    const book = await getRecord()
     book.publishedAt = new Date()
     return book
   }
@@ -89,20 +89,20 @@ publishes one.
 
 A handler gets one argument, the input of the request, a plain object:
 
-| Key              | Description                                                                                             |
-| ---------------- | ------------------------------------------------------------------------------------------------------- |
-| `query`, `body`  | The query and the JSON body, validated by the action's schemas.                                         |
-| `params`         | The parameters of the path.                                                                             |
-| `user`           | `{ id, roles }` of the signed-in user, or `null`.                                                       |
-| `action`         | The key of the action, such as `'post :id/publish'`.                                                    |
-| `id`             | In model controllers, the id of a member action.                                                        |
-| `record()`       | In model controllers, the record of a member action.                                                    |
-| `find(options?)` | The controller's records, through its `find`, see [find()](entities.md#custom-actions).                 |
-| `list(options?)` | The controller's list, see [Lists](entities.md#lists).                                                  |
-| `listQuery()`    | The `where`, `orderBy` and `range` of the list, see [listQuery()](../../api/server/mikro.md#listquery). |
-| `db`             | The request's database handle, or the transaction's.                                                    |
-| `c`              | Hono's context.                                                                                         |
-| `next()`         | Runs the handler beneath, and returns its result.                                                       |
+| Key              | Description                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- |
+| `query`, `body`  | The query and the JSON body, validated by the action's schemas.                                               |
+| `params`         | The parameters of the path.                                                                                   |
+| `user`           | `{ id, roles }` of the signed-in user, or `null`.                                                             |
+| `action`         | The key of the action, such as `'post :id/publish'`.                                                          |
+| `id`             | In model controllers, the id of a member action.                                                              |
+| `getRecord()`    | In model controllers, the record of a member action.                                                          |
+| `find(options?)` | The controller's records, through its `find`, see [find()](entities.md#custom-actions).                       |
+| `list(options?)` | The controller's list, see [Lists](entities.md#lists).                                                        |
+| `getListQuery()` | The `where`, `orderBy` and `range` of the list, see [getListQuery()](../../api/server/mikro.md#getlistquery). |
+| `db`             | The request's database handle, or the transaction's.                                                          |
+| `c`              | Hono's context.                                                                                               |
+| `next()`         | Runs the handler beneath, and returns its result.                                                             |
 
 It also holds the variables that the app's middleware sets with `c.set()`, such
 as a session. Handlers destructure what they need.
@@ -111,9 +111,9 @@ A handler returns data, which Dito sends as JSON, or a `Response`, which Dito
 sends as it is. Hono's context makes responses of other types:
 
 ```js
-'get :id/pdf': async ({ record, c }) => {
+'get :id/pdf': async ({ getRecord, c }) => {
   c.header('Content-Type', 'application/pdf')
-  return c.body(await renderPdf(await record()))
+  return c.body(await renderPdf(await getRecord()))
 }
 ```
 
@@ -136,8 +136,8 @@ this one replaces, and returns its result:
 actions: {
   // Stores a PDF of the book after the default handler assigned the body.
   'patch :id': async ({ db, next }) => storePdf(db, await next()),
-  async 'delete :id'({ record, next }) {
-    const book = await record()
+  async 'delete :id'({ getRecord, next }) {
+    const book = await getRecord()
     if (book.published) {
       throw new HttpError(409, { message: 'Published books stay.' })
     }
@@ -211,10 +211,10 @@ controller, in this order. Mixins list the mixins they need in their own
 For presets, write a function that returns a controller:
 
 ```js
-import { crud, defineController } from '@ditojs/mikro'
+import { crud, defineModelController } from '@ditojs/mikro'
 
 export function defineAdminController(definition) {
-  return defineController({
+  return defineModelController({
     ...definition,
     mixins: [admin, crud, audit(definition.entity), ...(definition.mixins ?? [])]
   })
@@ -239,7 +239,7 @@ and mixins:
 | `c => boolean`           | Whom the function lets in: only a returned `true` grants access. It may be async, and reads the id with `c.req.param('id')`. |
 
 ```js
-defineController({
+defineModelController({
   path: 'loans',
   entity: Loan,
   authorize: 'admin',
@@ -260,10 +260,10 @@ defineController({
 ```
 
 `authorize` functions get Hono's context, and read Dito's variables from
-`c.var`. They run before the middleware of the layers, which sets `record()`, so
-they load what they check themselves. A denied request responds with 401 without
-a user, and with 403 with one. An action's own `authorize` replaces the one of
-its layers.
+`c.var`. They run before the middleware of the layers, which sets `getRecord()`,
+so they load what they check themselves. A denied request responds with 401
+without a user, and with 403 with one. An action's own `authorize` replaces the
+one of its layers.
 
 Every write needs `authorize`. A `post`, `put`, `patch` or `delete` action
 without it, on the action or on a layer, makes `createApi()` throw. Use
@@ -271,14 +271,14 @@ without it, on the action or on a layer, makes `createApi()` throw. Use
 lets anyone in.
 
 The controller's [`find`](entities.md#find) leaves out the rows that a user may
-not see, so `record()` and the default handlers respond with 404 for them.
+not see, so `getRecord()` and the default handlers respond with 404 for them.
 
 ## Middleware
 
 Middleware is Hono middleware, which runs before the handler. It can be set on
 the API, the controller, a mixin or an action. It gets Hono's context `c` and
 `next`, and reads Dito's variables from `c.var`, such as `c.var.user`, and in
-the layers of a model controller `await c.var.record()`. Any Hono middleware
+the layers of a model controller `await c.var.getRecord()`. Any Hono middleware
 works:
 
 ```js
@@ -298,7 +298,7 @@ export function validated(check) {
     async middleware(c, next) {
       await next()
       if (c.req.method !== 'GET' && !c.error) {
-        const issues = await check(c, await c.var.record())
+        const issues = await check(c, await c.var.getRecord())
         if (issues.length) throw createValidationError(issues)
       }
     }
@@ -330,9 +330,9 @@ actions: {
 ## Serialize and deserialize
 
 Model controllers and their mixins take `serialize` and `deserialize`, see
-[`defineController()`](../../api/server/mikro.md#serialize-and-deserialize) of
-`@ditojs/mikro`. `serialize(c, record, json)` shapes each outgoing record of the
-controller, also records in arrays and plain objects such as
+[`defineModelController()`](../../api/server/mikro.md#serialize-and-deserialize)
+of `@ditojs/mikro`. `serialize(c, record, json)` shapes each outgoing record of
+the controller, also records in arrays and plain objects such as
 `{ results, total }`, and records from custom actions. Use it for computed
 values that the entity's `find` can't express:
 

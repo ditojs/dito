@@ -269,7 +269,7 @@ A tree of rows of one entity, such as child pages with `orphanRemoval`, needs
 
 Custom handlers delete with `em.remove(record)` and a flush. The rows that the
 record owns go with it, and the rows that refer to it follow their delete rules,
-see [`mikroOptions()`](../../api/server/mikro.md#mikrooptions).
+see [`defineMikroConfig()`](../../api/server/mikro.md#definemikroconfig).
 
 ## Writes in custom handlers
 

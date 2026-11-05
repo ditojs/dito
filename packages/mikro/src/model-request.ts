@@ -11,7 +11,7 @@ import type {
   EntityProperty
 } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
-import type { MikroControllerDefinition } from './controller.ts'
+import type { ModelControllerDefinition } from './controller.ts'
 import {
   checkFind,
   mergeFind,
@@ -31,8 +31,9 @@ import { getEntityManager } from './transaction.ts'
 
 // One request of a model controller, created by the middleware of the base
 // layer. That middleware runs inside the transaction, so `em` is the
-// transaction's. `c.var.record`, `c.var.find`, `c.var.list` and
-// `c.var.listQuery` are its methods.
+// transaction's. Its methods `record()`, `find()`, `list()` and `listQuery()`
+// are `c.var.getRecord()`, `c.var.find()`, `c.var.list()` and
+// `c.var.getListQuery()`.
 
 declare module '@ditojs/server' {
   interface DitoVariables {
@@ -45,7 +46,7 @@ declare module '@ditojs/server' {
     // In model controllers: loads the record of the id once per request. On
     // other actions, it returns the record that a handler set with
     // `setRecord()`, such as the row that the default `post` creates.
-    record: <T = any>() => Promise<T>
+    getRecord: <T = any>() => Promise<T>
     // In model controllers: queries the records of the controller, through its
     // `find` merged with `find`, without the row limit of lists.
     find: <T = any>(find?: FindShape) => Promise<T[]>
@@ -59,7 +60,7 @@ declare module '@ditojs/server' {
     // In model controllers: the `where` and `orderBy` of the list that `list()`
     // would load, with its filters and `order`, and the `range` of the request,
     // for queries over its rows, such as summaries and exports.
-    listQuery: (find?: ListFind) => Promise<{
+    getListQuery: (find?: ListFind) => Promise<{
       where: object
       orderBy: object[]
       range: ListQuery['range']
@@ -71,7 +72,7 @@ type ListFind<T extends object = any> = FindShape<T> & { query?: ListParams }
 
 // What the requests of a controller share.
 export interface ModelDefinition<T extends object = any>
-  extends Pick<MikroControllerDefinition<T>, 'entity' | 'load'> {
+  extends Pick<ModelControllerDefinition<T>, 'entity' | 'load'> {
   find: Find<T>
   filters: Record<string, Filter>
   beforeSerializers: NonNullable<MixinDefinition['beforeSerialize']>[]
@@ -153,7 +154,7 @@ export class ModelRequest<T extends object = any> {
     const id = c.req.param('id')
     if (id === undefined) {
       throw new Error(
-        'record() has no record here: only member actions load one, and ' +
+        'getRecord() has no record here: only member actions load one, and ' +
         'other actions need a handler that calls `setRecord()`'
       )
     }
@@ -180,7 +181,7 @@ export class ModelRequest<T extends object = any> {
   }
 }
 
-// Sets the record that `record()` returns, such as the row that a `post`
+// Sets the record that `getRecord()` returns, such as the row that a `post`
 // creates.
 export function setRecord(c: Context, record: unknown) {
   c.var.modelRequest.setRecord(record)

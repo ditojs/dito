@@ -7,12 +7,12 @@ database and the user of a request.
 
 ```js
 import { createApi } from '@ditojs/server'
-import { mikroDb } from '@ditojs/mikro'
+import { createMikroAdapter } from '@ditojs/mikro'
 
 const api = createApi({
   controllers: [books, authors, loans],
   middleware: [sessions.middleware],
-  db: mikroDb(orm),
+  db: createMikroAdapter(orm),
   getUser: sessionUser(admins)
 })
 app.route('/api/admin', api)
@@ -29,7 +29,7 @@ things too:
 ```js
 import * as controllers from './controllers/index.js'
 
-const api = createApi({ controllers, db: mikroDb(orm) })
+const api = createApi({ controllers, db: createMikroAdapter(orm) })
 ```
 
 Hono runs the first route that matches, so Dito adds the routes with static
@@ -118,13 +118,13 @@ of the API at `/api`:
 const adminApi = createApi({
   controllers: adminControllers,
   middleware: [adminSessions.middleware],
-  db: mikroDb(orm),
+  db: createMikroAdapter(orm),
   getUser: sessionUser(adminSource)
 })
 const frontApi = createApi({
   controllers: frontControllers,
   middleware: [memberSessions.middleware],
-  db: mikroDb(orm),
+  db: createMikroAdapter(orm),
   getUser: sessionUser(memberSource)
 })
 
@@ -134,12 +134,12 @@ app.route('/api', frontApi)
 
 ## The database
 
-`db` is `mikroDb(orm)` of `@ditojs/mikro`. It forks the entity manager for each
-request, runs the action in a transaction of the fork, and maps MikroORM's
-errors:
+`db` is `createMikroAdapter(orm)` of `@ditojs/mikro`. It forks the entity
+manager for each request, runs the action in a transaction of the fork, and maps
+MikroORM's errors:
 
 ```js
-db: mikroDb(orm)
+db: createMikroAdapter(orm)
 ```
 
 Handlers get the entity manager as `db` of their input, which is the
@@ -204,9 +204,9 @@ not with a leading `*`.
 
 Dito sets its variables in Hono's context: `c.var.user`, `c.var.db`,
 `c.var.action`, the key of the action, and `c.var.body` for writes. Model
-controllers add `c.var.id`, `c.var.record()`, `c.var.find()`, `c.var.list()` and
-`c.var.listQuery()`. Middleware sets the app's own with `c.set()`, such as the
-session. Handlers get them all in their input:
+controllers add `c.var.id`, `c.var.getRecord()`, `c.var.find()`, `c.var.list()`
+and `c.var.getListQuery()`. Middleware sets the app's own with `c.set()`, such
+as the session. Handlers get them all in their input:
 
 ```js
 const api = createApi({

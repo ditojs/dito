@@ -12,7 +12,7 @@ the controller loads both relations:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
-import { defineController } from '@ditojs/mikro'
+import { defineModelController } from '@ditojs/mikro'
 
 const BookSchema = defineEntity({
   name: 'Book',
@@ -30,7 +30,7 @@ const BookSchema = defineEntity({
 export class Book extends BookSchema.class {}
 BookSchema.setClass(Book)
 
-export const books = defineController({
+export const books = defineModelController({
   path: 'books',
   entity: Book,
   authorize: ['editor', 'admin'],

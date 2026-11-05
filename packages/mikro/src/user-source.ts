@@ -13,24 +13,24 @@ export interface EntityUserSourceOptions<U extends object> {
   // outside of the API's requests.
   em?: EntityManager | (() => EntityManager)
   // The property of the username. Default: `username`.
-  username?: string
+  usernameProperty?: string
   // The condition that users must also meet to be found, such as
   // `{ isActive: true }`.
   where?: object
   // The properties of the user that the admin and `get self` get, or a
   // function that returns the JSON.
-  toJSON: string[] | ((c: Context, user: U) => unknown)
-  // Values computed from the user, added to the properties of `toJSON`.
+  serialize: string[] | ((c: Context, user: U) => unknown)
+  // Values computed from the user, added to the properties of `serialize`.
   computed?: Record<string, (user: U) => unknown>
 }
 
-export function entityUserSource<U extends { id: number | string }>(
+export function createEntityUserSource<U extends { id: number | string }>(
   entity: EntityClass<U>,
   {
     em,
-    username = 'username',
+    usernameProperty = 'username',
     where,
-    toJSON,
+    serialize,
     computed = {}
   }: EntityUserSourceOptions<U>
 ) {
@@ -39,7 +39,7 @@ export function entityUserSource<U extends { id: number | string }>(
     const root = isFunction(em) ? em() : em
     if (!root) {
       throw new Error(
-        `entityUserSource(${entity.name}) needs \`em\` outside of the API`
+        `createEntityUserSource(${entity.name}) needs \`em\` outside of the API`
       )
     }
     return root.fork()
@@ -64,7 +64,7 @@ export function entityUserSource<U extends { id: number | string }>(
       return value === undefined ? null : findOne(em, { [key.name]: value })
     },
     async findByUsername(c: Context, value: string): Promise<U | null> {
-      return findOne(getEm(c), { [username]: value })
+      return findOne(getEm(c), { [usernameProperty]: value })
     },
     // Writes the values at once and sets them on the user, without flushing
     // the request's other changes.
@@ -75,11 +75,11 @@ export function entityUserSource<U extends { id: number | string }>(
       await em.nativeUpdate(entity, where as never, values)
       Object.assign(user, values)
     },
-    toJSON(c: Context, user: U) {
-      if (!isArray(toJSON)) return toJSON(c, user)
+    serialize(c: Context, user: U) {
+      if (!isArray(serialize)) return serialize(c, user)
       const record = user as Record<string, unknown>
       return {
-        ...Object.fromEntries(toJSON.map(key => [key, record[key]])),
+        ...Object.fromEntries(serialize.map(key => [key, record[key]])),
         ...mapValues(computed, get => get(user))
       }
     }

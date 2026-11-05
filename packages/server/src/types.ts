@@ -149,7 +149,7 @@ export interface HttpErrorBody {
   errors?: Record<string, { message: string; keyword?: string }[]>
 }
 
-// The database of an API, such as `mikroDb(orm)`.
+// The database of an API, such as `createMikroAdapter(orm)`.
 export interface DbAdapter {
   // The database handle of a request, as `c.var.db`.
   connect?: (c: DitoContext) => unknown

@@ -10,7 +10,7 @@ import {
 } from '@ditojs/auth'
 import {
   assignRecord,
-  entityUserSource,
+  createEntityUserSource,
   getEntityManager
 } from '@ditojs/mikro'
 import { HttpError, type Handler } from '@ditojs/server'
@@ -45,9 +45,9 @@ export function createUsersApi<U extends TestUser>({
   ...options
 }: UsersApiOptions<U>): TestApi {
   // Leaves out the hidden `hash`.
-  const source = entityUserSource(entity, {
+  const source = createEntityUserSource(entity, {
     em: orm.em,
-    toJSON: (c, user) => wrap(user).toObject()
+    serialize: (c, user) => wrap(user).toObject()
   })
   const sessions = createSessions({
     db: () => orm.em.getKysely() as unknown as Kysely<any>,
@@ -68,7 +68,7 @@ export function createUsersApi<U extends TestUser>({
     const em = getEntityManager(c)
     await assignRecord(em, user, values)
     await em.flush()
-    return source.toJSON(c, user)
+    return source.serialize(c, user)
   }
   return {
     controllers: [

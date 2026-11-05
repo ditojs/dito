@@ -17,12 +17,12 @@ import { toPrimaryKey } from './meta.ts'
 import { ModelRequest, type ModelDefinition } from './model-request.ts'
 import { respond } from './respond.ts'
 
-// A model controller on a MikroORM entity. `defineController()` puts a base
-// layer before the definition and its mixins, with the default handlers of the
-// keys that they set and the middleware that creates the `ModelRequest`. The
-// controller wraps the handlers of each key: after them, `respond()` flushes
-// the writes once and serializes the result, inside the transaction and the
-// middleware. So a handler can check the graph before the flush. A delete
+// A model controller on a MikroORM entity. `defineModelController()` puts a
+// base layer before the definition and its mixins, with the default handlers of
+// the keys that they set and the middleware that creates the `ModelRequest`.
+// The controller wraps the handlers of each key: after them, `respond()`
+// flushes the writes once and serializes the result, inside the transaction and
+// the middleware. So a handler can check the graph before the flush. A delete
 // flushes in its handler.
 
 declare module '@ditojs/server' {
@@ -42,7 +42,7 @@ declare module '@ditojs/server' {
   }
 }
 
-export interface MikroControllerDefinition<T extends object = any>
+export interface ModelControllerDefinition<T extends object = any>
   extends ControllerDefinition {
   entity: EntityClass<T>
   // What lists, records and the responses of writes load and return, or a
@@ -56,8 +56,8 @@ export interface MikroControllerDefinition<T extends object = any>
   load?: (c: DitoContext, id: string) => Promise<T | null | undefined>
 }
 
-export function defineController<T extends object>(
-  definition: MikroControllerDefinition<T>
+export function defineModelController<T extends object>(
+  definition: ModelControllerDefinition<T>
 ): ControllerDefinition {
   const { path, entity, find = {}, filters = {}, load, ...def } = definition
   if (!isFunction(find)) checkFind(find)
@@ -89,10 +89,10 @@ export function defineController<T extends object>(
         c.set('id', id ?? param)
       }
       c.set('modelRequest', request)
-      c.set('record', request.record.bind(request))
+      c.set('getRecord', request.record.bind(request))
       c.set('find', request.find.bind(request))
       c.set('list', request.list.bind(request))
-      c.set('listQuery', request.listQuery.bind(request))
+      c.set('getListQuery', request.listQuery.bind(request))
       await next()
     }
   }

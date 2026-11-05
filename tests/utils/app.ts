@@ -14,7 +14,7 @@ import {
   type Middleware,
   type User
 } from '@ditojs/server'
-import { mikroDb } from '@ditojs/mikro'
+import { createMikroAdapter } from '@ditojs/mikro'
 import type { Options } from '@mikro-orm/postgresql'
 import {
   createAdmin,
@@ -126,7 +126,7 @@ export async function createTestApp(
     createApi({
       controllers,
       middleware,
-      ...(orm && { db: mikroDb(orm) }),
+      ...(orm && { db: createMikroAdapter(orm) }),
       getUser,
       onError: logError
     })

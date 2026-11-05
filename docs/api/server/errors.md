@@ -169,5 +169,5 @@ the query and the body, for code that checks these itself:
 
 ## Database errors
 
-`mikroDb()` of `@ditojs/mikro` maps the errors of MikroORM and Postgres to an
-`HttpError`, see [Database errors](mikro.md#database-errors).
+`createMikroAdapter()` of `@ditojs/mikro` maps the errors of MikroORM and
+Postgres to an `HttpError`, see [Database errors](mikro.md#database-errors).

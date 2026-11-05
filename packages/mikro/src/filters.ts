@@ -11,7 +11,7 @@ const operators = ['contains', 'equals', 'starts-with', 'ends-with'] as const
 
 // Rows where one of `properties` holds the text, case-insensitively.
 // `contains` is the default operator. An empty text skips the filter.
-export function textFilter(...properties: string[]): Filter {
+export function defineTextFilter(properties: string[] = []): Filter {
   return {
     schema: z.union([
       z.string(),
@@ -40,7 +40,7 @@ export function textFilter(...properties: string[]): Filter {
 
 // Rows whose date lies between two ISO date-times, either of which may be
 // empty.
-export function dateRangeFilter(property?: string): Filter {
+export function defineDateRangeFilter(property?: string): Filter {
   const date = z.iso.datetime({ offset: true }).or(z.literal(''))
   return {
     schema: z.union([date, z.tuple([date]), z.tuple([date, date])]),

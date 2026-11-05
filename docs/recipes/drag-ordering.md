@@ -89,7 +89,7 @@ custom action stores the order:
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
 import { defineAction } from '@ditojs/server'
-import { defineController } from '@ditojs/mikro'
+import { defineModelController } from '@ditojs/mikro'
 import { z } from 'zod'
 
 const GenreSchema = defineEntity({
@@ -103,7 +103,7 @@ const GenreSchema = defineEntity({
 export class Genre extends GenreSchema.class {}
 GenreSchema.setClass(Genre)
 
-export const genres = defineController({
+export const genres = defineModelController({
   path: 'genres',
   entity: Genre,
   // Anyone may read. The rest is for editors.

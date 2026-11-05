@@ -51,18 +51,18 @@ it, see [Writes](writes.md). These rules of the entity matter for Dito:
   with their parent, see [Nested rows](writes.md#nested-rows).
 - A foreign key's `.deleteRule()` decides what deleting a record does to the
   rows that refer to it, see [Deletes](writes.md#deletes).
-- With [`mikroOptions()`](../../api/server/mikro.md#mikrooptions), `p.date()`
-  stores a `Date` as its local day, and new rows get the defaults of their
-  `schemaJson()` schemas.
+- With [`defineMikroConfig()`](../../api/server/mikro.md#definemikroconfig),
+  `p.date()` stores a `Date` as its local day, and new rows get the defaults of
+  their `schemaJson()` schemas.
 
 ## Controllers
 
 ```js
-import { defineController } from '@ditojs/mikro'
+import { defineModelController } from '@ditojs/mikro'
 import { q } from '@ditojs/server/zod'
 import { z } from 'zod'
 
-export const articles = defineController({
+export const articles = defineModelController({
   path: 'articles',
   entity: Article,
   // Anyone may read. The writes are for editors.
@@ -99,9 +99,9 @@ The controller routes the default handlers of the keys that it sets:
 The `crud` mixin routes all five:
 
 ```js
-import { crud, defineController } from '@ditojs/mikro'
+import { crud, defineModelController } from '@ditojs/mikro'
 
-defineController({
+defineModelController({
   path: 'tags',
   entity: Tag,
   authorize: 'editor',
@@ -158,7 +158,7 @@ export const articleFront = {
 }
 
 // controllers/front/articles.js
-defineController({
+defineModelController({
   path: 'articles',
   entity: Article,
   find: articleFront,
@@ -243,19 +243,19 @@ A filter's name may differ from the property, such as `author` for a property
 `book.author`, so that clients keep their URLs. A name with a dot, such as
 `author.id`, filters by that path when the filter is a schema alone.
 
-`textFilter()` and `dateRangeFilter()` read what the `text` and `date-range`
-filters of the admin send. Without properties, they apply to the property of the
-filter's name:
+`defineTextFilter()` and `defineDateRangeFilter()` read what the `text` and
+`date-range` filters of the admin send. Without properties, they apply to the
+property of the filter's name:
 
 ```js
-import { dateRangeFilter, textFilter } from '@ditojs/mikro'
+import { defineDateRangeFilter, defineTextFilter } from '@ditojs/mikro'
 
 filters: {
-  title: textFilter(),
+  title: defineTextFilter(),
   // Matches in any of the properties.
-  name: textFilter('firstName', 'lastName'),
-  createdAt: dateRangeFilter(),
-  published: dateRangeFilter('publishedAt')
+  name: defineTextFilter(['firstName', 'lastName']),
+  createdAt: defineDateRangeFilter(),
+  published: defineDateRangeFilter('publishedAt')
 }
 ```
 
@@ -264,35 +264,36 @@ MikroORM's [entity filters](https://mikro-orm.io/docs/filters).
 
 ### Other lists
 
-`listHandler(find)` returns the handler of a list with its own `find`. This
-`find` is merged with the controller's: both `where`s apply, and its other
+`defineListHandler(find)` returns the handler of a list with its own `find`.
+This `find` is merged with the controller's: both `where`s apply, and its other
 options, such as `fields` and `populate`, replace the controller's. A `find`
 with `fields` leaves out the controller's `populate`, so it names the relations
 that it sends in its paths or its own `populate`. The list applies the
 controller's filters, `order` and `range`:
 
 ```js
-import { listHandler } from '@ditojs/mikro'
+import { defineListHandler } from '@ditojs/mikro'
 
 actions: {
   // The root pages only.
-  'get': listHandler({ where: { parentPage: null } }),
+  'get': defineListHandler({ where: { parentPage: null } }),
   // The latest edition of each book.
-  'get latest': listHandler({ where: { isLatest: true } })
+  'get latest': defineListHandler({ where: { isLatest: true } })
 }
 ```
 
-For the options of a select, use `choices()`. This mixin routes `get choices`:
+For the options of a select, use `defineChoices()`. This mixin routes
+`get choices`:
 
 ```js
-import { choices } from '@ditojs/mikro'
+import { defineChoices } from '@ditojs/mikro'
 
-mixins: [choices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
+mixins: [defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
 // GET /book-categories/choices → [{ id, name }, …]
 ```
 
 `maxRows: Infinity` lifts the limit of 1000 rows, for selects that list more:
-`choices({ fields: ['id', 'name'], maxRows: Infinity })`.
+`defineChoices({ fields: ['id', 'name'], maxRows: Infinity })`.
 
 `list(find)` of the handler's input runs the same list in a custom handler, such
 as to load more data for its rows. Its `query` option replaces the list
@@ -307,13 +308,13 @@ async 'get'({ list, c }) {
 }
 ```
 
-`listQuery()` of the input returns the `where`, `orderBy` and `range` of the
+`getListQuery()` of the input returns the `where`, `orderBy` and `range` of the
 list with the filters and the `order` of the URL, for queries over its rows,
 such as a summary or an export:
 
 ```js
-async 'get summary'({ db, listQuery }) {
-  const { where } = await listQuery()
+async 'get summary'({ db, getListQuery }) {
+  const { where } = await getListQuery()
   return { total: await db.count(Article, where) }
 }
 ```
@@ -322,12 +323,12 @@ async 'get summary'({ db, listQuery }) {
 
 Custom actions query through `find()` of their input, so that they see the same
 rows as the default handlers. `find()` merges its options with the controller's
-`find`, as `listHandler()` does, so its rows stay within the controller's
+`find`, as `defineListHandler()` does, so its rows stay within the controller's
 `where`:
 
 ```js
-async 'get :id/related'({ record, find }) {
-  const article = await record()
+async 'get :id/related'({ getRecord, find }) {
+  const article = await getRecord()
   return find({ where: { tags: { $in: article.tags.getIdentifiers() } } })
 }
 ```
@@ -337,8 +338,8 @@ a write, this is the transaction's entity manager. Middleware and other code
 that has Hono's context get it with `getEntityManager(c)`:
 
 ```js
-async 'post :id/publish'({ record, db }) {
-  const edition = await record()
+async 'post :id/publish'({ getRecord, db }) {
+  const edition = await getRecord()
   await db.nativeUpdate(
     Edition,
     { id: { $ne: edition.id } },
@@ -358,7 +359,7 @@ of its `find`.
 A controller's `path` may hold parameters, which route nested resources:
 
 ```js
-defineController({
+defineModelController({
   path: 'pages/:pageId/child-pages',
   entity: Page,
   authorize: ['admin', 'pages'],

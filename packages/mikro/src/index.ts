@@ -1,21 +1,22 @@
 // Model controllers on MikroORM entities, and the parts an app needs to run
 // them:
 //
-//   const api = createApi({ controllers, db: mikroDb(orm), getUser })
+//   const db = createMikroAdapter(orm)
+//   const api = createApi({ controllers, db, getUser })
 //   app.route('/api', api)
 
 export {
-  defineController,
-  type MikroControllerDefinition
+  defineModelController,
+  type ModelControllerDefinition
 } from './controller.ts'
-export { choices, crud, listHandler } from './crud.ts'
+export { crud, defineChoices, defineListHandler } from './crud.ts'
 export { setRecord } from './model-request.ts'
 export { assignRecord, createRecord } from './write.ts'
 export type { Find, FindShape } from './find.ts'
-export { dateRangeFilter, textFilter } from './filters.ts'
+export { defineDateRangeFilter, defineTextFilter } from './filters.ts'
 export type { Filter } from './list.ts'
 export { parseListQuery, type ListQuery } from './list-query.ts'
-export { getAssetPaths, mikroOptions } from './config.ts'
+export { defineMikroConfig, getAssetPaths } from './config.ts'
 export {
   SchemaJson,
   assetsJson,
@@ -24,12 +25,12 @@ export {
   type SchemaJsonOptions
 } from './schema-json.ts'
 export {
+  createMikroAdapter,
   getEntityManager,
   getKysely,
-  getRootKysely,
-  mikroDb
+  getRootKysely
 } from './transaction.ts'
 export {
-  entityUserSource,
+  createEntityUserSource,
   type EntityUserSourceOptions
 } from './user-source.ts'

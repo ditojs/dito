@@ -48,7 +48,7 @@ export function createSource(
     patch: async (c, user, values) => {
       Object.assign(user, values)
     },
-    toJSON: (c, { hash, ...user }) => user
+    serialize: (c, { hash, ...user }) => user
   }
 }
 

@@ -10,7 +10,8 @@ Released in 2018 under the MIT license, with support by https://lineto.com/
 app, which the host routes with `app.route()`. Handlers get one object, the
 input of the request, `{ query, body, params, user, db, action, c, next }`. `c`
 is Hono's context, and `next()` runs the handler beneath. Middleware is Hono
-middleware. `@ditojs/mikro` connects MikroORM, with `db: mikroDb(orm)`.
+middleware. `@ditojs/mikro` connects MikroORM, with
+`db: createMikroAdapter(orm)`.
 
 ```js
 import { Hono } from 'hono'

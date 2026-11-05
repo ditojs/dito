@@ -10,12 +10,17 @@ import {
   usersRoutes,
   verifyPassword
 } from '../../auth/src/index.ts'
-import { defineController, entityUserSource, mikroDb } from '../src/index.ts'
+import {
+  createEntityUserSource,
+  createMikroAdapter,
+  defineModelController
+} from '../src/index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Session } from '../../../tests/utils/entities.ts'
 import { createClient } from '../../../tests/utils/client.ts'
 
-// `entityUserSource()` and `passwordWrites()` of auth on a model controller.
+// `createEntityUserSource()` and `passwordWrites()` of auth on a model
+// controller.
 
 const MemberSchema = defineEntity({
   name: 'Member',
@@ -35,9 +40,9 @@ const { orm, db, drop } = await createTestDatabase([Member, Session])
 
 afterAll(drop)
 
-const source = entityUserSource(Member, {
+const source = createEntityUserSource(Member, {
   em: orm.em,
-  toJSON: ['id', 'username']
+  serialize: ['id', 'username']
 })
 
 const sessions = createSessions({
@@ -50,12 +55,12 @@ const sessions = createSessions({
 const app = new Hono().route(
   '/',
   createApi({
-    db: mikroDb(orm),
+    db: createMikroAdapter(orm),
     middleware: [sessions.middleware],
     getUser: sessionUser(source),
     controllers: [
       usersRoutes({ path: 'auth', source }).controller,
-      defineController({
+      defineModelController({
         path: 'members',
         entity: Member,
         authorize: true,
@@ -91,7 +96,7 @@ const login = async () => {
 const self = async (client: ReturnType<typeof createClient>) =>
   (await client.get('/auth/self')).data
 
-describe('entityUserSource() with auth', () => {
+describe('createEntityUserSource() with auth', () => {
   it('logs in and stores the time of the login', async () => {
     expect(await self(await login())).toEqual({ id: 1, username: 'ada' })
     expect((await load(ada.id)).lastLogin).toBeInstanceOf(Date)

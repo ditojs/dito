@@ -35,7 +35,7 @@ actions and the file handling:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
-import { assetsJson, defineController } from '@ditojs/mikro'
+import { assetsJson, defineModelController } from '@ditojs/mikro'
 import { assets } from './storages.js'
 
 const BookSchema = defineEntity({
@@ -51,7 +51,7 @@ const BookSchema = defineEntity({
 export class Book extends BookSchema.class {}
 BookSchema.setClass(Book)
 
-export const books = defineController({
+export const books = defineModelController({
   path: 'books',
   entity: Book,
   authorize: ['editor', 'admin'],

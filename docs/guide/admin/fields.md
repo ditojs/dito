@@ -87,13 +87,13 @@ sent when saving, which the server links. `relate: 'code'` relates by
 another key than `id`. The server links rows by their primary key, so this key
 must be the primary key of the related entity.
 
-Options only need the keys they show and relate by. Load them from a narrow
-list instead of the full items. On the server, `choices()` of `@ditojs/mikro`
+Options only need the keys they show and relate by. Load them from a narrow list
+instead of the full items. On the server, `defineChoices()` of `@ditojs/mikro`
 adds such a list to a controller as `get choices`:
 
 ```js
 // In the authors controller:
-mixins: [choices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
+mixins: [defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
 ```
 
 ```js

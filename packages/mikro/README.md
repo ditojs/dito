@@ -10,15 +10,15 @@ entities. A controller's `find` decides what it loads and returns, and its
 `filters` decide what lists may narrow. Writes are checked against the entity's
 metadata.
 
-`mikroDb(orm)` connects the app to the ORM. It forks an entity manager per
-request, runs transactions and maps MikroORM's errors.
+`createMikroAdapter(orm)` connects the app to the ORM. It forks an entity
+manager per request, runs transactions and maps MikroORM's errors.
 
 ```js
 import { createApi } from '@ditojs/server'
-import { defineController, mikroDb } from '@ditojs/mikro'
+import { createMikroAdapter, defineModelController } from '@ditojs/mikro'
 import { q } from '@ditojs/server/zod'
 
-export const books = defineController({
+export const books = defineModelController({
   path: 'books',
   entity: Book,
   authorize: 'editor',
@@ -32,7 +32,10 @@ export const books = defineController({
   }
 })
 
-app.route('/api', createApi({ controllers: [books], db: mikroDb(orm) }))
+app.route(
+  '/api',
+  createApi({ controllers: [books], db: createMikroAdapter(orm) })
+)
 ```
 
 See

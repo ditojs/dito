@@ -11,10 +11,10 @@ On the server, a custom action validates its body and creates the book:
 
 ```js
 import { defineAction } from '@ditojs/server'
-import { createRecord, defineController } from '@ditojs/mikro'
+import { createRecord, defineModelController } from '@ditojs/mikro'
 import { z } from 'zod'
 
-export const books = defineController({
+export const books = defineModelController({
   path: 'books',
   entity: Book,
   authorize: ['editor', 'admin'],
