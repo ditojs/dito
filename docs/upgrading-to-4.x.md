@@ -827,10 +827,10 @@ defineType({
   [Assets](upgrading-to-5.x.md#assets).
 - Since 4.8, the router answers 404 for paths that no method routes, also for
   `OPTIONS` and methods other than `GET`, where 3.5 answered 200, 405 or 501.
-  405 and 501 remain for paths that other methods route, see
-  [`find()`](api/router.md#find). HEAD requests run the GET route of their
-  path: GET handlers with side effects check `ctx.method`. Routes with `*` or
-  `**` inside a segment, e.g. `/files/*.json`, throw when added.
+  405 and 501 remain for paths that other methods route. HEAD requests run the
+  GET route of their path: GET handlers with side effects check `ctx.method`.
+  Routes with `*` or `**` inside a segment, e.g. `/files/*.json`, throw when
+  added.
 - Since 4.8, the generated join tables of many-to-many relations name their
   columns with the new `capitalize()`, so key properties with a digit before a
   letter get other column names, e.g. `bookIsbn13code` instead of

@@ -111,8 +111,8 @@ unless one of its models reads the `id` of a join table.
 
 ### 3. Swap the dependencies
 
-1. Remove `@ditojs/server` 6, `@ditojs/schema`, `objection`, `koa` and its
-   middleware. The admin holds the validators that it used from
+1. Remove `@ditojs/server` 6, `@ditojs/schema`, `@ditojs/router`, `objection`,
+   `koa` and its middleware. The admin holds the validators that it used from
    `@ditojs/schema`.
 2. Add `@ditojs/server` and `@ditojs/mikro`, and `@ditojs/storage`,
    `@ditojs/auth` and `@ditojs/admin-server` if the app needs them.

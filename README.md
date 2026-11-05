@@ -35,7 +35,6 @@ the MIT license.
 | [`@ditojs/admin`](packages/admin)               | The admin interface.                                                                               |
 | [`@ditojs/ui`](packages/ui)                     | The Vue components that the admin is built with.                                                   |
 | [`@ditojs/utils`](packages/utils)               | Helpers for Node.js and browsers.                                                                  |
-| [`@ditojs/router`](packages/router)             | An HTTP router.                                                                                    |
 
 ## Documentation
 

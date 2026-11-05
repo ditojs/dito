@@ -11,6 +11,7 @@
 - **admin:** Requests reject with an `ApiError`, which has the fields of the JSON body, the `status` and the `response`. Code that read `error.response.data` reads the fields on the error. See [Upgrading to 7.x](docs/upgrading-to-7.x.md#10-update-the-admin-the-clients-and-the-tests).
 - **admin:** The `api` config is plain data. `request`, `getApiUrl`, `isApiUrl`, `normalizePath`, `denormalizePath` and `resources` aren't options any more, and `admin.api` has `request()` and `getApiUrl()`. `normalizePaths` is gone: views and sources are routed under their hyphenated names. `users` takes only `path`, and the admin loads its user from `get self`.
 - **schema:** `@ditojs/schema` is removed. The admin holds the validators that it uses.
+- **router:** `@ditojs/router` is removed. Hono routes the actions.
 - **admin:** Sources in forms show the permission error for 403 responses, as they do for 401 responses.
 - **admin:** Resource paths are joined without a trailing slash when a resource's path is empty.
 - **admin:** List scopes set list filters with `filter`, and the order with `order`: `{ label, hint, filter, order, defaultScope }`. The admin sends them as `filter=name:args` and `order`, and keeps `?scope=` in its own URL only.

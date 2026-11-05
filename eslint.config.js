@@ -72,12 +72,6 @@ export default [
     }
   },
   {
-    files: ['packages/router/**/*'],
-    languageOptions: {
-      globals: globalsNode
-    }
-  },
-  {
     files: ['packages/utils/**/*'],
     languageOptions: {
       globals: globalsNode

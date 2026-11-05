@@ -14,7 +14,6 @@ Dito.js is a declarative web framework with two main components: **Dito.js Serve
 - **packages/admin/**: Vue.js admin interface with forms, types, and schema components
 - **packages/ui/**: Shared Vue.js UI components and styles
 - **packages/utils/**: Utility functions for arrays, objects, strings, dates, etc.
-- **packages/router/**: Lightweight routing library
 - **packages/build/**: Shared build configuration
 
 ## Common Commands
