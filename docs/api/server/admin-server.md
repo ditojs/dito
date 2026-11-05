@@ -11,7 +11,7 @@ development, with a `vite` config, it serves the sources through Vite in
 middleware mode. Only development loads Vite.
 
 Peer dependencies: `hono`, `@hono/node-server`, and for building or developing
-the admin `vite`, `@vitejs/plugin-vue` and `@ditojs/build`. See
+the admin `vite`, `@vitejs/plugin-vue` and `autoprefixer`. See
 [Serving the admin](../../guide/server/admin.md) in the guide.
 
 ## createAdmin()

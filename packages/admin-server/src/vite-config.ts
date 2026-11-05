@@ -24,7 +24,7 @@ export async function defineAdminViteConfig(
 ): Promise<InlineConfig> {
   // The build tools are only needed to build or develop the admin.
   const { default: createVuePlugin } = await import('@vitejs/plugin-vue')
-  const { getPostCssConfig } = await import('@ditojs/build')
+  const { default: autoprefixer } = await import('autoprefixer')
   const { mode = 'production' } = options
   const isDevelopment = mode === 'development'
   const root = path.resolve(options.root)
@@ -93,7 +93,7 @@ export async function defineAdminViteConfig(
             }
           },
       css: {
-        postcss: getPostCssConfig(),
+        postcss: { plugins: [autoprefixer()] },
         devSourcemap: isDevelopment
       },
       optimizeDeps: {

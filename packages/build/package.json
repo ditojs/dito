@@ -1,6 +1,7 @@
 {
   "name": "@ditojs/build",
-  "version": "6.6.1",
+  "version": "6.6.0",
+  "private": true,
   "type": "module",
   "repository": "https://github.com/ditojs/dito/tree/main/packages/build",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
@@ -12,11 +13,6 @@
     },
     "./package.json": "./package.json"
   },
-  "files": [
-    "src/",
-    "!src/**/*.test.js",
-    "!src/**/__snapshots__/"
-  ],
   "bin": {
     "inline-assets": "./src/cli/inline-assets.js"
   },

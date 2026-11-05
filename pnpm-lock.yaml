@@ -477,9 +477,6 @@ importers:
         specifier: workspace:^
         version: link:../utils
     devDependencies:
-      '@ditojs/build':
-        specifier: workspace:^
-        version: link:../build
       '@ditojs/server':
         specifier: workspace:^
         version: link:../server
@@ -492,6 +489,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: ^6.0.9
         version: 6.0.9(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))(vue@3.5.43(typescript@6.0.3))
+      autoprefixer:
+        specifier: ^10.6.1
+        version: 10.6.1(postcss@8.5.29)
       hono:
         specifier: ^4.13.14
         version: 4.13.16

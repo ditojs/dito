@@ -30,7 +30,7 @@ jobs:
           --filter ./packages/ui --filter ./packages/admin run build
       - run: >-
           pnpm exec pkg-pr-new publish --pnpm --comment=off
-          ./packages/utils ./packages/build
+          ./packages/utils
           ./packages/server ./packages/mikro ./packages/storage
           ./packages/auth ./packages/admin-server
           ./packages/ui ./packages/admin

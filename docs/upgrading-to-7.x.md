@@ -111,9 +111,10 @@ unless one of its models reads the `id` of a join table.
 
 ### 3. Swap the dependencies
 
-1. Remove `@ditojs/server` 6, `@ditojs/schema`, `@ditojs/router`, `objection`,
-   `koa` and its middleware. The admin holds the validators that it used from
-   `@ditojs/schema`.
+1. Remove `@ditojs/server` 6, `@ditojs/schema`, `@ditojs/router`,
+   `@ditojs/build`, `objection`, `koa` and its middleware. The admin holds the
+   validators that it used from `@ditojs/schema`, and building the admin needs
+   `autoprefixer` instead of `@ditojs/build`.
 2. Add `@ditojs/server` and `@ditojs/mikro`, and `@ditojs/storage`,
    `@ditojs/auth` and `@ditojs/admin-server` if the app needs them.
 3. Add `@mikro-orm/core`, `@mikro-orm/postgresql`, `kysely`, `hono`,

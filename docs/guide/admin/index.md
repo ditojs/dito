@@ -80,7 +80,7 @@ export default defineAdminViteConfig({
 
 The second argument of `defineAdminViteConfig(options, config)` takes Vite
 options to merge, e.g. `resolve` aliases. Building and development need the
-peer dependencies `vite`, `@vitejs/plugin-vue` and `@ditojs/build`.
+peer dependencies `vite`, `@vitejs/plugin-vue` and `autoprefixer`.
 
 ## The admin entry
 
