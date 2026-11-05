@@ -304,12 +304,8 @@ filters: {
 - Paths in `fields`, such as `author.name`, populate their relations and send
   them nested, as `author: { name }`, instead of flat names such as
   `authorName`. Where a label needs a flat value, add a `.formula()` property.
-- `author.*` stands for the columns of the relation that aren't lazy. To load a
-  lazy property, name it too.
 - Responses send each relation to one row as `{ id }`, such as
-  `author: { id: 12 }`, or `null`, unless `find` populates it. With `fields`, a
-  row has it only when `fields` names the relation, `author.id` or `*`.
-  `exclude: ['author']` leaves it out.
+  `author: { id: 12 }`, unless `find` populates it.
 - Writes take the relation, `{ author: { id: 12 } }`, so a client can send back
   what it loaded. There are no `<name>Id` keys: a body with `authorId` has an
   unknown key, which writes ignore.
@@ -341,8 +337,8 @@ export const editor = defineMixin({
 
 [`crud`](api/server/mikro.md#crud) of `@ditojs/mikro` routes the five default
 handlers. When two layers set the same action key, the later one's handler runs
-the earlier one's as `next()`. A setting comes from the last action definition
-that has it, else from the last layer that has it.
+the earlier one's as `next()`. See [Mixins](api/server/controllers.md#mixins)
+for how the layers combine their settings.
 
 Hooks that ran after an action become a handler that calls `next()`, or
 middleware of a mixin. Both run inside the transaction, so an error after
@@ -451,10 +447,9 @@ One `actions` map holds every route, keyed `'verb path'`, see
   default `put` and no write on the whole collection. Bulk writes are custom
   actions, such as `'post order'`.
 - `parameters` and `returns` become the Zod schemas `query` and `body`,
-  which `defineAction()` types. The `query` schema is plain Zod: Dito converts
-  the strings of the query to the numbers, booleans, dates and arrays that it
-  expects, as Dito.js 6 did for `parameters`, see
-  [Query values](api/server/controllers.md#query-values).
+  which `defineAction()` types. The `query` schema is plain Zod. Dito converts
+  the strings of the query to the types that it expects, as Dito.js 6 did for
+  `parameters`, see [Query values](api/server/controllers.md#query-values).
 
 #### Handlers and the context
 
@@ -484,78 +479,68 @@ and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
 | `ctx.action`                                 | `action` of the context, the key such as `'post :id/publish'`; `c.var.action`           |
 | `ctx.action.type`                            | `params.id !== undefined` for record actions; `c.req.method`                            |
 
-- Handlers return data or a `Response`. Data responds with 200 and `undefined`
-  responds with 204, also for `post`. A custom `post` that creates calls
-  `c.status(201)` itself.
-- In model controllers, the base converts the id by the primary key, and an id
-  that doesn't fit responds with 404. With `load`, an id such as `self` stays a
-  string. `params.id` and `c.req.param('id')` are the string of the path.
-- `c.var.body` holds the body of a write for the middleware of actions and
-  layers: the result of the `body` schema, else the JSON body. Dito reads it
-  before the transaction, so invalid JSON responds with 400 without one.
+- Handlers return data or a `Response`, see
+  [Handler](api/server/controllers.md#handler). `undefined` responds with 204,
+  also for `post`. A custom `post` that creates calls `c.status(201)` itself.
+- In model controllers, the base converts the id by the primary key, see
+  [Variables](api/server/mikro.md#variables). An id such as `self` needs `load`.
+  `params.id` and `c.req.param('id')` are the string of the path.
+- Middleware of actions and layers reads the body of a write as `c.var.body`.
 - Hono doesn't send a thrown `Response`. Throw an `HttpError`, or return the
   `Response`.
-- Middleware is Hono middleware, on the host, in `createApi({ middleware })`, or
-  on controllers, mixins and actions.
-- Middleware reads the request's entity manager as `c.var.em`, and its Kysely
-  as `c.var.em.getKysely()`, for queries that MikroORM doesn't build.
+- Middleware is Hono middleware. It goes on the host, in
+  `createApi({ middleware })`, or on controllers, mixins and actions.
+- Middleware reads the request's entity manager as `c.var.em`. Its Kysely,
+  `c.var.em.getKysely()`, runs the queries that MikroORM doesn't build.
   `import '@ditojs/mikro/types'` types `em` as MikroORM's `EntityManager`.
 
 #### Authorization
 
-`authorize` takes `true`, a role, a list of roles, or a function of `c`, see
-[authorize](api/server/controllers.md#authorize). If a `post`, `put`, `patch` or
-`delete` action has no `authorize`, on itself or on a layer, `createApi()`
-throws. Front controllers that let anyone write set `authorize: true`.
+`authorize` takes `true`, a role, a list of roles, or a function, see
+[authorize](api/server/controllers.md#authorize). Every write needs it. Front
+controllers that let anyone write set `authorize: true`.
 
-`$authorize()` and `handleAuthorization()` become a function of `c`, which reads
-`c.var.user` and `c.req.param('id')`. It runs before the body is read, before
-the transaction and before `getRecord()` is set, so it loads what it checks
-itself. Only `true` grants access. A function that returned a truthy value, such
-as a user or a count, returns a boolean. `$self` and `$owner` become such
-functions.
+`$authorize()` and `handleAuthorization()` become a function that gets
+`{ c, user }`. It reads the id with `c.req.param('id')`. It runs before the body
+is read, and before `getRecord()` is set. So it loads what it checks itself.
+Only `true` grants access. A function that returned a truthy value, such as a
+user or a count, returns a boolean. `$self` and `$owner` become such functions.
 
 Relation controllers don't exist. A nested route is a controller of its own,
-with a path such as `books/:bookId/chapters`. It inherits nothing from a parent,
-so it sets its own `authorize` and checks that the parent row may be read.
+with a path such as `books/:bookId/chapters`. It inherits nothing from a parent.
+So it sets its own `authorize`, and checks that the parent row may be read.
 
-A mixin with `actions` keeps its `authorize` and `transacted` on these actions.
-A mixin without `actions` holds settings for all actions of the controller.
+A mixin with `actions` keeps its settings for its own actions, see
+[ActionSettings](api/server/controllers.md#actionsettings).
 
 #### Writes
 
-A write runs the action's `body` schema, `deserialize`, the checks of the body,
-the ORM call, the app's rules and one flush. Then the base loads the written
-rows again in one query, with the values that formulas and triggers set. See
-[Writes](guide/server/writes.md).
+A write runs the action's `body` schema, `deserialize`, the checks of the body
+and the app's rules, see [Writes](guide/server/writes.md). Then it flushes once.
 
-- **The checks of the body replace Ajv.** They read the entity's metadata, drop
-  the properties that clients can't write, and check JSON types, the ids of
-  relations, and the schemas of custom types and `defineJsonType()` columns.
-  Postgres checks the rest, such as lengths, and its errors respond with 400.
-  For stricter rules, give the action a Zod `body` schema, such as
-  `'post': { body: postSchema }`, as the writes of a website need. The messages
-  name the expected type, such as `expected int` for integer columns.
-- **`deserialize({ json, record, c })`** decides what a user may write. It replaces
-  `$parseJson()`, the read-only rules of properties, and the `before:*:patch`
-  hooks that changed the body. Custom handlers don't run it.
+- **The checks of the body replace Ajv.** They read the entity's metadata, see
+  [The checks of a body](guide/server/writes.md#the-checks-of-a-body). Postgres
+  checks the rest, such as lengths. For stricter rules, give the action a Zod
+  `body` schema, such as `'post': { body: postSchema }`. The writes of a website
+  need one. The messages name the expected type, such as `expected int` for
+  integer columns.
+- **`deserialize({ json, record, c })`** decides what a user may write. It
+  replaces `$parseJson()`, the read-only rules of properties, and the
+  `before:*:patch` hooks that changed the body. Custom handlers don't run it.
 - **Graphs.** `graph: true`, `upsertGraph()`, `relate` and `unrelate` are gone.
-  Owned relations, with `orphanRemoval`, are written nested, and on a PATCH, the
-  array is the full set. Other relations link by id. Only new rows carry `#id`,
-  and links to them are `{ '#ref': key }`. `#dbRef` becomes an id or `{ id }`.
+  Owned relations, with `orphanRemoval`, are written nested, see
+  [Nested rows](guide/server/writes.md#nested-rows). Other relations link by id.
+  `#id` and `#ref` stay, but only new rows carry `#id`. `#dbRef` becomes an id
+  or `{ id }`.
 - **Custom handlers** write a body with `createRecord(em, entity, data)` and
-  `assignRecord(em, record, data)`, which run the same checks and don't flush.
-  The base flushes once after the handler.
-- **Deletes.** Call `em.remove(record)` and flush. With `defineMikroConfig()`,
-  owned rows go with the record and foreign keys follow their delete rules, so
-  declare them on the entities. Trees of one entity need
-  `.deleteRule('cascade')` on their foreign key. A delete that a foreign key
-  refuses responds with 409, see [Database
-  errors](api/server/mikro.md#database-errors).
+  `assignRecord(em, record, data)`, see
+  [Writes in custom handlers](guide/server/writes.md#writes-in-custom-handlers).
+- **Deletes.** Call `em.remove(record)` and flush. Declare the delete rules of
+  the foreign keys on the entities, see [Deletes](guide/server/writes.md#deletes).
 
-`serialize({ record, json, c })` replaces `$formatJson()` and the hooks that changed
-responses. `beforeSerialize({ records, c })` runs once per response with all the
-records, so that a mixin loads what they need in one query. See
+`serialize({ record, json, c })` replaces `$formatJson()` and the hooks that
+changed responses. `beforeSerialize({ records, c })` lets a mixin load what the
+records need in one query. See
 [Serialize and deserialize](guide/server/controllers.md#serialize-and-deserialize).
 
 #### Errors
@@ -570,17 +555,14 @@ records, so that a mixin loads what they need in one query. See
 | `ControllerError`, `ModelError`, `QueryBuilderError`, `RelationError`, `GraphError`, `NotImplementedError` | Plain `Error`s, which respond with 500                            |
 | `app.logError()`                                                                                           | The `onError` hook, which logs by default                         |
 
-Errors respond with the JSON of Dito.js 6:
-`{ type, message, status, code, errors }`. Field errors are keyed by the path of
-the value, such as `chapters/8/title`, each with a `message` and a `keyword`,
-such as Zod's `invalid_type`. Other options of `HttpError` go into the body.
-Errors with a numeric `status`, as Dito.js 6 and http-errors throw them, still
-respond with that status, so the app can move its error classes one by one. See
-[Errors](api/server/errors.md).
+Errors respond with the JSON of Dito.js 6, `{ type, message, status, code,
+errors }`, see [Errors](api/server/errors.md). Field errors have a `message` and
+a `keyword`, such as Zod's `invalid_type`. Errors with a numeric `status`, as
+Dito.js 6 and http-errors throw them, still respond with that status. So the
+app can move its error classes one by one.
 
-The response of an error keeps the headers that were set before it, except those
-that describe the data. The `onError` hook gets the original error, also a
-database error, not the `HttpError` of the response.
+The `onError` hook gets the original error, also a database error, not the
+`HttpError` of the response.
 
 ### 9. Host the app
 
@@ -606,84 +588,69 @@ app.route('/api', api)
 await serve(app, { port, closeTimeout: 5000, onClose: () => orm.close() })
 ```
 
-- `controllers` is a list, or a module namespace, in which only the results of
-  `defineController()` count.
 - `config.http` becomes the options of
   [`hostMiddleware()`](api/server/hono.md#hostmiddleware). Add it before
   `app.route()`. As in Dito.js 6, `csrf()` only checks requests with `Origin`.
-  Multipart bodies have no limit here: the reverse proxy sets it, such as
-  `client_max_body_size` in nginx. Dito.js 6 streamed uploads in parts of 8 MB
-  and had `limits` per upload. Now each upload is read whole into memory and
-  sent in one `PutObject`, so keep the proxy's limit within the server's memory.
+- Dito.js 6 streamed uploads in parts of 8 MB, and had `limits` per upload. Now
+  the reverse proxy limits the size of uploads. Each upload is read whole into
+  memory, and sent in one `PutObject`. So keep the proxy's limit within the
+  server's memory.
 - `cors` works differently. Dito.js 6 echoed the request's origin. Hono's
   `cors()` allows any origin by default, without credentials. With
   `credentials: true`, it needs the allowed `origin`.
 - `app.proxy` becomes [`forwarded(proxy)`](api/server/hono.md#forwarded), the
-  first middleware, so that `csrf()` compares the origin with the public URL.
-  `proxy` is the number of trusted proxies, or `true` for one.
-- Routes with a trailing slash respond with 404 unless the host is
+  first middleware. Then `csrf()` compares the origin with the public URL.
+- Routes with a trailing slash respond with 404, unless the host is
   `new Hono({ strict: false })`. The admin sends some paths with one.
-- Route the APIs at deeper paths first, such as `/api/admin` before `/api`, as
-  the middleware of an API runs on all paths below it.
-- An API handles only the paths of its actions and its own errors.
-  `app.notFound(notFound)` sends Dito's JSON 404 for the other paths, and
-  `app.onError(createErrorHandler())` handles the errors of the host's own
-  middleware.
+- Route the APIs at deeper paths first, see
+  [Several APIs in one host](guide/server/api.md#several-apis-in-one-host).
+- An API handles only the paths of its actions, and its own errors. The host
+  handles the rest with `notFound` and `createErrorHandler()`, as above.
 
 #### Sessions and users
 
 `UsersController`, `UserMixin`, `SessionMixin` and `CredentialMixin` become
-`@ditojs/auth`. The `session` and `credential` tables stay the same, so passkeys
+`@ditojs/auth`. The `session` and `credential` tables stay the same. So passkeys
 and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 
-- `createSessions({ adapter, secrets, cookieName, maxAge })` returns
-  the session `middleware`, and `getSessionUser(c, source)` the user for the
-  `getUser` of `createApi()`.
+- [`createSessions()`](api/server/auth.md#createsessions) returns the session
+  `middleware`. `getSessionUser(c, source)` returns the user for the `getUser`
+  of `createApi()`.
 - [`createEntityUserSource()`](api/server/mikro.md#createentityusersource)
   describes the users of an entity. It takes `usernameProperty` as before. For
   users that no entity holds, the app writes the
   [`UserSource`](api/server/auth.md#usersource) itself.
 - [`defineUserActions()`](api/server/auth.md#defineuseractions) serves the
-  admin's users, with `credentials: createCredentials({ adapter })`. Its
-  `controller` goes into `controllers`, and its `features` to the admin. Other
-  users, such as a site's members, log in through the app's own actions, see
-  [Other users](guide/server/auth.md#other-users).
+  admin's users. Its `controller` goes into `controllers`, and its `features` go
+  to the admin. Other users, such as a site's members, log in through the app's
+  own actions, see [Other users](guide/server/auth.md#other-users).
 - `post login` and `post password-reset` name the user as `username` in the
-  body, whatever the property is. `get session` becomes `get self`, which
-  responds with the user, or `null`.
+  body, whatever the property is.
+- `get session` becomes `get self`.
 - `self` in record actions, such as `PATCH users/self`, isn't built in. A
-  controller that keeps it sets `load`, which gets the id as a string, see
-  [Handlers and the context](#handlers-and-the-context).
+  controller that keeps it sets `load`, which gets the id as a string.
 - `definePasswordWrites()` doesn't ask for confirmed access. An app that asked
   for it on password changes calls `checkConfirmedAccess()` in its own action.
 - Actions that change security settings call `checkConfirmedAccess()`, see
-  [Confirmed access](guide/server/auth.md#confirmed-access). Clients answer its
-  403 with `confirmationRequired: true` through `post confirm-access`.
-- Responses have no `success` or `authenticated`. A login responds with
-  `{ user }`, or `{ codeRequired: true }`. `post confirm-access` responds with
-  `{ codeRequired: true }`, or 204 once it confirms the access. Other actions
-  without a result, such as `post logout`, respond with 204.
+  [Confirmed access](guide/server/auth.md#confirmed-access).
+- Responses have no `success` or `authenticated`. The actions respond as in
+  [`defineUserActions()`](api/server/auth.md#defineuseractions).
 - `post password` checks new passwords with the `password` schema of the user
-  source, at least 8 characters by default.
-- The session saves after the action if it changed, even when the action throws,
-  so used challenges and codes stay used. A session that a parallel request
-  ended stays ended. `refreshFingerprint()` applies when the session saves after
-  a request without an error, so a failed write keeps the old hash and the
-  fingerprint that matches it.
-- [`definePasswordWrites({ source })`](api/server/auth.md#definepasswordwrites)
-  is a mixin for the model controller of the users, which hashes the `password`
-  of the body.
-- `PasskeyService` and `TotpService` become `createPasskeys()` and
-  `createTotp()` of `@ditojs/auth/passkeys` and `@ditojs/auth/totp`. Passkeys
-  expect the request's origin, so an app behind a proxy runs `forwarded()`. An
-  admin on another host than its API sets `origins`.
+  source.
+- The session saves after the action if it changed, even when the action throws.
+  So used challenges and codes stay used. A session that a parallel request
+  ended stays ended.
+- `refreshFingerprint()` applies when the session saves after a request without
+  an error. So a failed write keeps the old hash, and the fingerprint that
+  matches it.
+- `PasskeyService` and `TotpService` become
+  [`createPasskeys()`](api/server/auth.md#createpasskeys) and
+  [`createTotp()`](api/server/auth.md#createtotp).
 - `config.app.authentication.passwordReset` becomes
   [`createPasswordReset()`](api/server/auth.md#createpasswordreset), with times
   in milliseconds.
-- When the app deletes users, it calls
-  `credentials.deleteUsers(source, ids)`, as no foreign keys tie credentials to
-  users.
-- `sessions.readSignedCookie(c, name)` reads the app's own signed cookies.
+- When the app deletes users, it calls `credentials.deleteUsers()`, see
+  [Credentials](guide/server/auth.md#credentials).
 
 #### Storage
 
@@ -710,39 +677,31 @@ export const assets = createAssets({
 ```
 
 - `mixins: [assets.defineWrites('book'), assets.defineUploads('book')]`
-  replaces `assets = true` of a controller, and `assets.runJobs()` runs on a
-  timer of the app.
-  `serveStorage()` of `@ditojs/storage/node` serves public disk storages.
-- `S3Storage` comes from the main entry of the package. The `PutObject` options
-  of S3 storages, such as `acl` and `cacheControl`, become a `params` object,
-  such as `{ ACL: 'public-read', CacheControl: 'max-age=31536000' }`.
-- Each controller has one upload action, `post upload/:path{.+}`, from
-  `assets.defineUploads(table)`, which picks the storage of the first asset path
-  that matches the data path. Its `uploads` option takes a list of
-  `AssetUpload`s, `{ path, storage }` with a glob as `path`, for fields that no
-  asset path describes.
+  replaces `assets = true` of a controller.
+- `assets.runJobs()` runs on a timer of the app.
+- `serveStorage()` of `@ditojs/storage/node` serves public disk storages.
+- `S3Storage` comes from the main entry of the package.
+- The `PutObject` options of S3 storages, such as `acl` and `cacheControl`,
+  become a `params` object, such as
+  `{ ACL: 'public-read', CacheControl: 'max-age=31536000' }`.
+- Each controller has one upload action, `post upload/:path{.+}`, see
+  [Uploads](api/server/storage.md#uploads). Its `uploads` option takes the
+  fields that no asset path describes.
 - File objects are plain objects of the type `AssetFile`, without signatures. A
-  write accepts a file when its key has an `asset` row in the storage of its
-  path, and takes the file's properties from the row. It imports other files
-  from their `url` when the storage allows it, or responds with 400.
+  write accepts the files that the `asset` table holds, see
+  [Writes](api/server/storage.md#writes).
 - `allowedImports` match the origin and path of a URL, without its query and
-  hash. URLs with credentials never match, and imports don't follow redirects.
+  hash.
 - Code that creates files, such as `AssetFile.create()` in scripts, calls
-  `assets.store(storage, { name, type, data })`. It stores the file and inserts
-  its row, which stays unreferenced until a scan finds the file. Uploads run
-  without a transaction, so their rows commit at once.
+  [`assets.store()`](api/server/storage.md#stored-files).
 - The `asset` table has no `count`. Scans of the data replace the hooks on each
-  write, and set `unreferenced_since`. `deleteUnusedAfter` is in milliseconds.
-  Uploads of forms that aren't saved yet count as unreferenced, so keep it longer
-  than a form stays open.
-- The scan of `assets.runJobs()` reports `referenced`, `unreferenced` and
-  `missing`. `assets.runJobs({ dryRun: true })` shows what a run would delete.
+  write, see [Tracking files](guide/server/storages.md#tracking-files).
 
 #### Admin server
 
 `AdminController` and `config.admin` become
-[`createAdmin()`](api/admin/server.md#createadmin), which returns a Hono
-app. See [Serving the admin](guide/server/admin.md).
+[`createAdmin()`](api/admin/server.md#createadmin), which returns a Hono app.
+See [Serving the admin](guide/server/admin.md).
 
 ```js
 const admin = createAdmin({
@@ -758,14 +717,12 @@ const admin = createAdmin({
 app.route('/admin', admin)
 ```
 
-- `vite`, a config or the path of its file, runs Vite in middleware mode on the
-  Node request of `@hono/node-server`, so the host runs on `serve()`. Without
-  it, the admin serves the build of `dist`.
-- `middleware`, `getUser` and `authorize` work as in `createApi()`. `authorize`
-  protects the admin's views, which the build puts below `views/`, and other
-  chunks below `assets/`.
-- The admin's build splits off only the chunk of the views, not the `core`,
-  `vendor` and `common` chunks of Dito.js 6.
+- With `vite`, the host runs on `serve()`. Without it, the admin serves the
+  build of `dist`.
+- `authorize` protects the admin's views, which the build puts below `views/`.
+  Other chunks go below `assets/`.
+- The admin's build splits off only the chunk of the views. The `core`, `vendor`
+  and `common` chunks of Dito.js 6 are gone.
 - `defineAdminViteConfig()` of `@ditojs/admin/vite` builds the admin, on
   Vite 8. `build.rollupOptions` of an app's config become
   `build.rolldownOptions`.

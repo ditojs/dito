@@ -39,13 +39,10 @@ const app = new Hono()
 app.route('/api/admin', api)
 ```
 
-`adminSessions.middleware` is Hono middleware.
-
-- The API runs it before `getUser`, which reads the session.
-- It loads the session into `c.var.session` before the action.
-- After the action, it saves the session if it changed. It does this even when
-  the action throws.
-- It adds its cookie to the response.
+`adminSessions.middleware` is Hono middleware. The API runs it before `getUser`,
+which reads the session. It loads the session before the action, and saves it
+after the action, see
+[`createSessions()`](../../api/server/auth.md#createsessions).
 
 `getSession(c)` returns the session, also in the app's own Hono routes.
 `getSessionUser(c, source)` returns the id and roles of the session's user, for
@@ -56,14 +53,9 @@ because they load before the action, and save after it.
 `adminSessions.deleteExpired()` deletes the expired rows. Call it from a timer
 of the app.
 
-The cookie holds the session's id, signed with Hono's signed cookies.
-
-- The first of `secrets` signs, and all of them verify. So a new secret goes
-  first. The old one stays until its sessions have expired.
-- Session cookies are `SameSite=Lax` and `HttpOnly`. On https, they are also
-  `Secure`.
-- `adminSessions.readSignedCookie(c, name)` reads the app's own cookies. The app
-  signs them with `setSignedCookie()` of `hono/cookie` and the first secret.
+The cookie holds the session's id, signed with Hono's signed cookies. The first
+of `secrets` signs, and all of them verify. So to rotate the secrets, a new
+secret goes first. The old one stays until its sessions have expired.
 
 ## User sources
 
@@ -146,14 +138,9 @@ reads.
 See [`defineUserActions()`](../../api/server/auth.md#defineuseractions) for all
 actions.
 
-The controller sets two settings:
-
-- `authorize: true`, as the actions check the login themselves;
-- `transacted: false`, as the actions run outside the API's transactions. TOTP
-  opens a transaction of its own, so failed codes stay counted when a request
-  fails.
-
-A controller that mixes it in and sets these settings replaces them for the
+The controller sets `authorize: true` and `transacted: false`, see
+[`defineUserActions()`](../../api/server/auth.md#defineuseractions). A
+controller that mixes it in, and sets these settings, replaces them for the
 mixed-in actions too.
 
 ```js
@@ -291,17 +278,9 @@ the app's own actions. They have a session of their own.
 
 ## Users outside of Dito
 
-```js
-createAdmin({
-  ...options,
-  middleware: adminSessions.middleware,
-  getUser: ({ c }) => getSessionUser(c, adminSource),
-  authorize: 'admin'
-})
-```
-
 `createAdmin()` takes the session middleware and `getSessionUser()`, as
-`createApi()` does. It checks the roles of the user in `authorize`.
+`createApi()` does. It checks the roles of the user in `authorize`, see
+[Serving the admin](admin.md).
 
 The app's own Hono routes run the session middleware with `app.use()`. They read
 the user with `getSessionUser()`.

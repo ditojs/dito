@@ -86,16 +86,7 @@ The cookie holds the id of the session, signed with Hono's
 - It adds its `Set-Cookie` header to the response, also to error responses.
 
 [`createAdmin()`](../admin/server.md#adminoptions) takes the middleware, and the
-`getUser` of [`getSessionUser()`](#getsessionuser), as `createApi()` does:
-
-```js
-createAdmin({
-  ...options,
-  middleware: adminSessions.middleware,
-  getUser: ({ c }) => getSessionUser(c, adminSource),
-  authorize: 'admin'
-})
-```
+`getUser` of [`getSessionUser()`](#getsessionuser), as `createApi()` does.
 
 ## Session
 

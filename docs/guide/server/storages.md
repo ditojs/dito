@@ -9,11 +9,6 @@
   properties from the table. So clients can't make up files or change their
   URLs.
 
-The package reads and writes its own tables through
-[Kysely](https://kysely.dev). In a request, it uses the Kysely of `c.var.em`.
-Outside of requests, it uses the Kysely that the adapter's `getKysely()`
-returns, such as that of `createMikroAdapter(orm)` of `@ditojs/mikro`.
-
 ## Storages
 
 ```js
@@ -108,11 +103,10 @@ export const assets = createAssets({
 `createAssets()` binds the adapter, the asset paths and the storages once. It
 returns the methods that the sections below use.
 
-- The mixins use the Kysely of `c.var.em`. So the `asset` rows of imported files
-  commit with the write's transaction.
-- Uploads run without a transaction, and commit their rows at once.
-- The other methods use `adapter.getKysely()`, outside of the requests'
-  transactions.
+The package reads and writes its tables through [Kysely](https://kysely.dev).
+The `asset` rows of a write commit with the write's transaction. All other rows
+commit at once. See [`createAssets()`](../../api/server/storage.md#createassets)
+for the Kysely that each method uses.
 
 ## Uploads
 
@@ -150,27 +144,18 @@ Controllers without asset paths pass `uploads` without a table.
 An upload without a type from the client gets the type detected from its data.
 Without one, its type is `application/octet-stream`.
 
-`hostMiddleware()` sets no limit on multipart bodies. The reverse proxy limits
-the size of uploads, such as with `client_max_body_size` in nginx. The server
-reads each upload whole into memory. S3 storages send it in one `PutObject`. So
-keep that limit within the server's memory.
+The reverse proxy limits the size of uploads, see
+[`hostMiddleware()`](../../api/server/hono.md#hostmiddleware). The server reads
+each upload whole into memory. S3 storages send it in one `PutObject`. So keep
+the proxy's limit within the server's memory.
 
 ## Writes
 
-The mixin handles the files in the body of a controller's writes:
-
-- A file whose key the `asset` table holds in its storage gets the properties of
-  the stored file, whatever the client sent.
-- A file of another storage is copied under a new key.
-- A file without an `asset` row is imported from its `url` under a new key. This
-  needs the URL to match the storage's `allowedImports`. Otherwise, the write
-  responds with 400.
-- The patterns of `allowedImports` match the origin and path of the URL. URLs
-  with credentials and redirects respond with 400 as well.
-- Any other value at an asset path, such as an object without a string `key`,
-  responds with 400.
-
-Responses send the file objects as the rows hold them.
+`defineWrites()` handles the files in the body of a controller's writes. A file
+that the `asset` table holds gets the properties of the stored file, whatever
+the client sent. Other files are imported from their `url`, when the storage's
+`allowedImports` match it. See [Writes](../../api/server/storage.md#writes) for
+all cases.
 
 ## Tracking files
 

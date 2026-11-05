@@ -232,7 +232,7 @@ Lists take these query parameters:
 
 The list applies `find.where`, the filters and MikroORM's entity filters. They
 apply to the rows and to the total. Without `order`, the order of `find.orderBy`
-applies. The primary key breaks ties. `order` takes the columns that the list's
+applies. The primary key breaks ties, so that pages don't overlap. `order` takes the columns that the list's
 rows return, or those of the controller's own list.
 
 A list returns at most 1000 rows. The `maxRows` of its `find` changes the

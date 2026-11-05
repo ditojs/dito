@@ -170,21 +170,10 @@ constant next to the entity.
 
 ### What goes out
 
-Records go out in the shape of `find`:
-
-- Populated relations are nested rows. So are the relations of the paths in
-  `fields`, such as `author` of `author.name`.
-- Other relations to one row go out as `{ id }`, such as `author: { id: 12 }`.
-  An empty one goes out as `null`. Nested rows have the relation to their parent
-  too.
-- With `fields`, such a relation only goes out when `fields` names it, as
-  `author.id` or `*`.
-- Relations to many rows that `find` doesn't populate aren't sent, even when a
-  handler loaded them.
-- `fields` narrows the columns. The primary key always goes out.
-- `author.*` stands for the columns of the relation that aren't lazy. To load a
-  lazy one, name it too, such as `author.bio`.
-- `exclude: ['author']` leaves out the relation.
+Records go out in the shape of `find`. Populated relations, and the relations
+of the paths in `fields`, such as `author` of `author.name`, are nested rows.
+Other relations to one row go out as `{ id }`, such as `author: { id: 12 }`. See
+[Output](../../api/server/mikro.md#output) for all rules.
 
 Records that aren't the controller's, such as those that a custom action
 returns, go out with the relations that are loaded. Put secrets in `.hidden()`
@@ -204,13 +193,9 @@ The `get` list takes these query parameters:
 | `order=name dir`   | Orders by a column or `relation.id` that the rows return, `asc` or `desc`. Repeat it to order by several. |
 | `range=start,end`  | Responds with the rows from `start` to `end`, both included, as `{ results, total }`.                     |
 
-- Without `range`, the list responds with an array.
-- A list returns at most 1000 rows, or the `maxRows` of its `find`.
-- A larger `range` responds with 400. So does a list without `range` that has
-  more rows.
-- The primary key breaks ties in the order, so that pages don't overlap.
-- `order` only takes columns that the user's rows return. The order alone would
-  reveal something about the values of a column.
+Without `range`, the list responds with an array. A list returns at most 1000
+rows, or the `maxRows` of its `find`. See [Lists](../../api/server/mikro.md#lists)
+for the limits and the order.
 
 ### Filters
 
@@ -285,13 +270,10 @@ actions: {
 ```
 
 `defineListHandler(find)` returns the handler of a list with its own `find`.
-This `find` is merged with the controller's:
-
-- Both `where`s apply.
-- Its other options, such as `fields` and `populate`, replace the controller's.
-- A `find` with `fields` leaves out the controller's `populate`. So it names the
-  relations that it sends, in its paths or in its own `populate`.
-- The list applies the controller's filters, `order` and `range`.
+This `find` is merged with the controller's, as in
+[`find()`](../../api/server/mikro.md#find-1). Both `where`s apply. Its other
+options replace the controller's. The list applies the controller's filters,
+`order` and `range`.
 
 ```js
 import { defineChoices } from '@ditojs/mikro'

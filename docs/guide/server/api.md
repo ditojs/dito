@@ -82,8 +82,6 @@ The app keeps its own `Hono` instance, so any Hono middleware works with it.
   `etag()`.
 - An app that wants its own middleware leaves `hostMiddleware()` out, and calls
   Hono's middleware with `app.use()`.
-- `bodyLimit()` sets no limit on multipart bodies. The reverse proxy limits
-  them, such as with `client_max_body_size` in nginx.
 - Each API sends its own errors as Dito's error JSON.
   [`createErrorHandler()`](../../api/server/errors.md#createerrorhandler) does
   the same for the errors of the app's own middleware, such as the 403 of
@@ -153,11 +151,8 @@ Handlers get the entity manager as `em` of their context. While a transaction
 runs, it is the transaction's. Middleware and other code that has `c` read it as
 `c.var.em`. `import '@ditojs/mikro/types'` types it.
 
-Writes run in a transaction, unless their action sets `transacted: false`. Reads
-only run in one if they set `transacted: true`. The transaction covers the
-middleware of the controller, of its mixins and of the action. So middleware
-that throws after `next()` rolls the write back. The API's own `middleware` runs
-outside of the transaction.
+Writes run in a transaction, and reads don't, see
+[Transactions](controllers.md#transactions).
 
 The app handles MikroORM's setup, with its
 [migrations](https://mikro-orm.io/docs/migrations) and

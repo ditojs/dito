@@ -175,14 +175,8 @@ arrays that the schema expects, see
 schema, `query` holds the first value of each parameter. `c.req.queries()` holds
 all of them.
 
-Without a `body` schema, the `body` of writes is the JSON body.
-
-- An empty body is `{}`.
-- A JSON body without `Content-Type` is `{}` too, as it is dropped. A `PATCH`
-  then changes nothing.
-- Invalid JSON responds with 400.
-- Dito doesn't read bodies of other types, and `body` is `undefined`. Handlers
-  read them from `c.req`, such as uploads with `c.req.formData()`.
+Without a `body` schema, the `body` of writes is the JSON body, see
+[The body](../../api/server/api.md#the-body) for empty bodies and other types.
 
 ## Mixins
 
@@ -269,17 +263,12 @@ set it:
 | `'editor'`, `['a', 'b']`   | Users with any of the roles.                                                                |
 | `({ c, user }) => boolean` | Whom the function lets in. Only a returned `true` grants access. The function may be async. |
 
-- A function reads the id with `c.req.param('id')`, and Dito's variables from
-  `c.var`.
-- It runs before the middleware of the layers, which sets `getRecord()`. So it
-  loads what it checks itself.
-- A denied request responds with 401 without a user, and with 403 with one.
-- An action's own `authorize` replaces the one of its layers.
+A function reads the id with `c.req.param('id')`. It runs before the middleware
+of the layers, which sets `getRecord()`. So it loads what it checks itself, as
+`get :id/notice` does above. An action's own `authorize` replaces the one of
+its layers.
 
-Every write needs `authorize`. A `post`, `put`, `patch` or `delete` action
-without it, on the action or on a layer, makes `createApi()` throw. Use
-`authorize: true` to open a write to anyone. A GET action without `authorize`
-lets anyone in.
+Every write needs `authorize`. `authorize: true` opens a write to anyone. See [authorize](../../api/server/controllers.md#authorize) for all rules.
 
 The controller's [`find`](entities.md#find) leaves out the rows that a user may
 not see. So `getRecord()` and the default handlers respond with 404 for them.
@@ -337,7 +326,9 @@ actions: {
 ```
 
 Writes run in the API's `transaction`, and reads don't. An action, a controller
-or a mixin can change this with `transacted`.
+or a mixin can change this with `transacted`. The transaction covers the
+middleware of the controller, of its mixins and of the action. The API's own
+`middleware` runs outside of it.
 
 ## Serialize and deserialize
 

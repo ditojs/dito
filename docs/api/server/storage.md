@@ -231,13 +231,14 @@ file, it looks up the `asset` row of its key:
 - If there is no row, the file is imported from its `url` under a new key. This
   needs the storage's `allowedImports` to match the URL. Otherwise, the write
   responds with 400.
+- Imports don't follow redirects. A redirect responds with 400.
 - An import gives up after 30 seconds.
 - Other values at an asset path, such as an object without a string `key`,
   respond with 400 and `BodyValidation` errors.
 
 It changes the files in place, so the handler reads the stored files in its
 `body`. It marks the files as used. When the write fails, it removes the
-imported files again.
+imported files again. Responses send the file objects as the rows hold them.
 
 ### Uploads
 

@@ -149,10 +149,10 @@ The `body` of a write without a `body` schema follows these rules:
 
 - An empty body is `{}`.
 - A body without `Content-Type` is `{}` too. So a JSON body without it is
-  dropped.
+  dropped, and a `PATCH` then changes nothing.
 - Invalid JSON responds with 400.
 - Bodies of other types, such as form data, are `undefined`. Handlers read them
-  from `c.req`.
+  from `c.req`, such as uploads with `c.req.formData()`.
 
 ### Adapter
 
