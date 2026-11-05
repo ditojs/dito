@@ -77,7 +77,8 @@ import {
   hyphenate,
   camelize,
   labelize,
-  isUrl
+  isUrl,
+  isAbsoluteUrl
 } from '@ditojs/utils'
 
 // @vue/component
@@ -185,6 +186,8 @@ const DitoMarkupType = {
     }
 
     const onClickLink = async editor => {
+      // Links within the site keep their path, all others need a domain:
+      const isPath = href => /^[/?#]/.test(href)
       // The dialog returns the focus to what was focused before it: the editor,
       // not the button. `editor.commands.focus()` would wait for a frame:
       editor.view.focus()
@@ -195,7 +198,9 @@ const DitoMarkupType = {
             type: 'text',
             label: 'Link',
             autofocus: true,
-            validate: ({ value }) => isUrl(value) || 'is not a valid URL'
+            validate: ({ value }) => (
+              isPath(value) || isUrl(value) || 'is not a valid URL'
+            )
           },
           title: {
             type: 'text',
@@ -216,10 +221,8 @@ const DitoMarkupType = {
       if (attributes) {
         let { href, title } = attributes
         if (href) {
-          // Prefix unparsable URLs with a default protocol:
-          try {
-            new URL(href)
-          } catch {
+          // Prefix links without scheme with a default protocol:
+          if (!isPath(href) && !isAbsoluteUrl(href)) {
             href = `https://${href}`
           }
           editor.commands.setLink({ href, title })
