@@ -18,15 +18,13 @@ import { getProperty, isLoadedColumn, isOwningToOne } from './meta.ts'
 import type { ModelRequest } from './model-request.ts'
 import { runSchema } from './schema-json.ts'
 
-// Lists take the parameters `filter=name:args`, `scope=name`, `order=name desc`
-// and `range=0,49`, which responds with `{ results, total }` instead of an
-// array.
+// Lists take the parameters `filter=name:args`, `order=name desc` and
+// `range=0,49`, which responds with `{ results, total }` instead of an array.
 //
 // Each value of `filter=name:args` is validated against the schema of its
 // filter, and `where` turns the result into a MikroORM `where`, or undefined to
 // skip it. A schema alone is short for `{ [name]: value }`. Several arguments
-// give the schema an array. `scope=name`, which the scope buttons of admin
-// lists send, is short for `filter=name:true`.
+// give the schema an array.
 
 type FilterWhere = (
   value: any,

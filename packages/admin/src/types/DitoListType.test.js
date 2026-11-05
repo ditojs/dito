@@ -2050,7 +2050,7 @@ describe('DitoListType', () => {
         scope: 'all',
         page: '2'
       })
-      expect(getLoadQueries()).toEqual([{ scope: 'all', range: '4,5' }])
+      expect(getLoadQueries()).toEqual([{ range: '4,5' }])
     })
 
     it('changes the scope through the route and resets the page', async () => {
@@ -2062,10 +2062,7 @@ describe('DitoListType', () => {
         scope: 'drafts',
         page: '0'
       })
-      expect(getLoadQueries().at(-1)).toEqual({
-        scope: 'drafts',
-        range: '0,1'
-      })
+      expect(getLoadQueries().at(-1)).toEqual({ range: '0,1' })
       expect(scopeButton.attributes('aria-pressed')).toBe('true')
     })
 
@@ -2079,9 +2076,100 @@ describe('DitoListType', () => {
         order: 'title asc'
       })
       expect(getLoadQueries().at(-1)).toEqual({
-        scope: 'all',
         order: 'title asc',
         range: '0,1'
+      })
+    })
+  })
+
+  describe('scopes', () => {
+    async function mountScopedBooksView(path) {
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            field: {
+              type: 'list',
+              resource: { path: 'books' },
+              scopes: {
+                all: {},
+                newest: { filter: { published: true }, order: 'title desc' },
+                oldest: { filter: { published: true }, order: 'title asc' }
+              },
+              columns: { title: { sortable: true, defaultSort: 'desc' } }
+            }
+          }
+        },
+        request: () => ({ data: [] })
+      })
+      await admin.navigate(path)
+      const buttons = admin.wrapper.findAll('.dito-scopes button')
+      const getLoadQuery = () => admin.request.mock.calls.at(-1)[0].query
+      const getPressed = () =>
+        buttons.map(button => button.attributes('aria-pressed'))
+      return { admin, buttons, getLoadQuery, getPressed }
+    }
+
+    it('sends the filters and the order of the scope', async () => {
+      const { admin, buttons, getLoadQuery } = await mountScopedBooksView(
+        '/books?filter=title:"contains","Emma"'
+      )
+      await buttons[2].trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.query).toEqual({
+        scope: 'oldest',
+        filter: 'title:"contains","Emma"'
+      })
+      expect(getLoadQuery()).toEqual({
+        filter: ['title:"contains","Emma"', 'published:true'],
+        order: 'title asc'
+      })
+      await buttons[0].trigger('click')
+      await flushPromises()
+      expect(getLoadQuery()).toEqual({
+        filter: ['title:"contains","Emma"'],
+        order: 'title desc'
+      })
+    })
+
+    it('keeps the scope when sorting by a column', async () => {
+      const { admin, buttons, getLoadQuery, getPressed } =
+        await mountScopedBooksView('/books')
+      await buttons[2].trigger('click')
+      await flushPromises()
+      await admin.wrapper.find('.dito-table-head button').trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.query).toEqual({
+        scope: 'oldest',
+        order: 'title desc'
+      })
+      expect(getLoadQuery()).toEqual({
+        filter: ['published:true'],
+        order: 'title desc'
+      })
+      expect(getPressed()).toEqual(['false', 'false', 'true'])
+    })
+
+    it('tells apart scopes with the same filters', async () => {
+      const { buttons, getLoadQuery, getPressed } =
+        await mountScopedBooksView('/books')
+      await buttons[1].trigger('click')
+      await flushPromises()
+      expect(getPressed()).toEqual(['false', 'true', 'false'])
+      await buttons[2].trigger('click')
+      await flushPromises()
+      expect(getPressed()).toEqual(['false', 'false', 'true'])
+      expect(getLoadQuery().order).toBe('title asc')
+    })
+
+    it('restores the scope of the route', async () => {
+      const { getLoadQuery, getPressed } = await mountScopedBooksView(
+        '/books?scope=newest'
+      )
+      expect(getPressed()).toEqual(['false', 'true', 'false'])
+      expect(getLoadQuery()).toEqual({
+        filter: ['published:true'],
+        order: 'title desc'
       })
     })
   })

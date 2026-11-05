@@ -878,7 +878,10 @@ describe('useSource()', () => {
             books: {
               type: 'list',
               resource: { path: 'books' },
-              scopes: { all: {}, recent: { defaultScope: true } },
+              scopes: {
+                all: {},
+                recent: { filter: { recent: true }, defaultScope: true }
+              },
               columns: { title: {} }
             }
           }
@@ -887,7 +890,10 @@ describe('useSource()', () => {
       })
       expect(getComponent('books').listQuery.query.scope).toBe('recent')
       expect(request).toHaveBeenCalledWith(
-        expect.objectContaining({ url: '/books', query: { scope: 'recent' } })
+        expect.objectContaining({
+          url: '/books',
+          query: { filter: ['recent:true'] }
+        })
       )
     })
 

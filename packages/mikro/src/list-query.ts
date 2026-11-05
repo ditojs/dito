@@ -12,8 +12,7 @@ export type ListParams = URLSearchParams | Record<string, string | string[]>
 export interface ListQuery {
   // `filter=name:args` by name, with the arguments as JSON, such as
   // `filter=title:"contains","Emma"`. Filters read strings, and a filter with
-  // several arguments gets an array of them, in order. `scope=name` is short
-  // for `filter=name:true`.
+  // several arguments gets an array of them, in order.
   filter: Record<string, string | string[]>
   // `order=name desc`
   order: { property: string; direction: 'asc' | 'desc' }[]
@@ -44,9 +43,6 @@ export function parseListQuery(c: Context, params?: ListParams): ListQuery {
       const args = parseArguments(json)
       check(propertyPattern.test(name) && !!args, key, value)
       query.filter[name] = toFilterValue(args!)
-    } else if (key === 'scope') {
-      check(propertyPattern.test(value), key, value)
-      query.filter[value] = 'true'
     } else if (key === 'order') {
       const [property = '', direction = 'asc', ...rest] = value
         .trim()

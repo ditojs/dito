@@ -29,7 +29,11 @@ export default {
       getLabelText: useSchemaValue(props.context).getLabelText,
 
       selectScope(scope) {
-        props.listQuery.update({ scope: scope.name }, { resetPage: true })
+        // Remove the order of columns, so that the scope's order applies:
+        props.listQuery.update(
+          { scope: scope.name, order: undefined },
+          { resetPage: true }
+        )
       }
     }
   }

@@ -254,21 +254,6 @@ describe('get', () => {
     expect(Object.keys(twice.json.errors)).toEqual(['name'])
   })
 
-  it('applies the filter `name` for `scope=name`', async () => {
-    const list = (query: string) => request(api, 'GET', `/api/books?${query}`)
-    expect(names((await list('scope=published')).json)).toEqual([
-      'Arcadia',
-      'Circuits'
-    ])
-    expect(
-      names((await list('scope=published&filter=name:"ir"')).json)
-    ).toEqual(['Circuits'])
-    expect(await list('scope=none')).toMatchObject({
-      status: 400,
-      json: { message: `Unknown filter 'none'` }
-    })
-  })
-
   it('validates each filter, and answers all errors at once', async () => {
     const { status, json } = await request(
       api,

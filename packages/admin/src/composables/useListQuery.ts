@@ -1,6 +1,6 @@
 import { computed, markRaw, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { isString } from '@ditojs/utils'
+import { asArray, isString } from '@ditojs/utils'
 import { ListQuery } from '../utils/ListQuery.js'
 import { getNamedSchemas } from '../utils/schema/lookup.js'
 import { isListSource } from '../utils/schema/structure.js'
@@ -39,6 +39,9 @@ export function useListQuery(
     return values.find(scope => scope.defaultScope) ?? values[0] ?? null
   })
 
+  const getScope = (name?: string) =>
+    name ? scopes.value?.[name] : defaultScope.value
+
   const defaultOrder = computed(() => {
     for (const column of Object.values(columns.value ?? {})) {
       const { defaultSort } = column
@@ -55,11 +58,15 @@ export function useListQuery(
       router,
       getRoute: () => router.currentRoute.value,
       getSourceStore: () => props.store,
-      getDefaultQuery: () => ({
-        scope: defaultScope.value?.name,
-        page: props.schema.page,
-        order: defaultOrder.value
-      }),
+      // The order of the scope applies until a column sets one:
+      getDefaultQuery: (query: Record<string, string>) => {
+        const scope = getScope(query.scope)
+        return {
+          scope: scope?.name,
+          page: props.schema.page,
+          order: scope?.order ?? defaultOrder.value
+        }
+      },
       isInRoute,
       onChange
     })
@@ -108,11 +115,22 @@ export function useListQuery(
     scopes,
     paginationRange,
 
-    // Pass the pagination as range, so that the server counts the results:
+    // Pass the pagination as range, so that the server counts the results,
+    // and the filters of the scope along with those of the panel:
     getRequestQuery() {
       const range = paginationRange.value
-      const { page, ...query } = listQuery.query
-      return { ...query, ...(range && { range: range.join(',') }) }
+      const { page, scope, filter, ...query } = listQuery.query
+      const filters = [
+        ...asArray(filter),
+        ...Object.entries(getScope(scope)?.filter ?? {}).map(
+          ([name, value]) => `${name}:${JSON.stringify(value)}`
+        )
+      ]
+      return {
+        ...query,
+        ...(filters.length && { filter: filters }),
+        ...(range && { range: range.join(',') })
+      }
     }
   }
 }

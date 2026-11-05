@@ -19,8 +19,9 @@ export const widgets = createWidgetView<EntityDTO<Widget>>(
     },
     scopes: {
       all: { label: 'All' },
-      published: { label: 'Published' },
-      unpublished: { label: 'Unpublished' }
+      published: { label: 'Published', filter: { published: true } },
+      unpublished: { label: 'Unpublished', filter: { published: false } },
+      reversed: { label: 'Reversed', order: 'name desc' }
     },
     filters: {
       search: {

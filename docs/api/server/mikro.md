@@ -208,7 +208,6 @@ Lists take these query parameters:
 | Parameter          | Example              | Description                                                                                                                                                                                                                                                                  |
 | ------------------ | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `filter=name:args` | `filter=author.id:3` | A [filter](#filters) of the controller, with its arguments as JSON. Several arguments give an array. Unknown filters respond with 400.                                                                                                                                       |
-| `scope=name`       | `scope=published`    | Short for `filter=name:true`, which the scope buttons of admin lists send.                                                                                                                                                                                                   |
 | `order=name dir`   | `order=name desc`    | Orders by a column of the entity, or by `relation.id`, the foreign key of a relation to one row, which needs no join. The rows must return the column, so that the order reveals nothing about hidden values. Repeat it for several columns. Other columns respond with 400. |
 | `range=start,end`  | `range=0,49`         | Responds with `{ results, total }` instead of an array, with the rows from `start` to `end`, both included. `total` counts the rows after the filters.                                                                                                                       |
 
@@ -338,7 +337,7 @@ interface ListQuery {
 }
 ```
 
-Parses `filter=`, `scope=`, `order=` and `range=` of the URL, or of `params`.
+Parses `filter=`, `order=` and `range=` of the URL, or of `params`.
 Invalid values respond with 400.
 
 ## Filters

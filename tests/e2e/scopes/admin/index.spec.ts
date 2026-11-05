@@ -41,4 +41,21 @@ test.describe('scopes', () => {
     await expect(list.list.getRow('Alpha')).toBeVisible()
     await expect(list.list.getRow('Beta')).toBeHidden()
   })
+
+  test('a reload keeps the scope', async ({ page, url }) => {
+    const list = new DitoListView(page, url, 'Widget')
+    await list.navigate('/widgets')
+    await list.list.selectScope('Unpublished')
+    await expect(list.list.getRow('Alpha')).toBeHidden()
+    await page.reload()
+    await expect(list.list.getRow('Beta')).toBeVisible()
+    await expect(list.list.getRow('Alpha')).toBeHidden()
+  })
+
+  test('Reversed scope orders the rows', async ({ page, url }) => {
+    const list = new DitoListView(page, url, 'Widget')
+    await list.navigate('/widgets')
+    await list.list.selectScope('Reversed')
+    await expect(list.list.rows.first()).toContainText('Beta')
+  })
 })

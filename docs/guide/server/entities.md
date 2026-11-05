@@ -198,7 +198,6 @@ GET /articles?filter=author:12&order=createdAt desc&range=0,49
 | Parameter          | Description                                                                                               |
 | ------------------ | --------------------------------------------------------------------------------------------------------- |
 | `filter=name:args` | A filter of the controller, with its arguments as JSON. Several arguments give an array.                  |
-| `scope=name`       | Short for `filter=name:true`.                                                                             |
 | `order=name dir`   | Orders by a column or `relation.id` that the rows return, `asc` or `desc`. Repeat it to order by several. |
 | `range=start,end`  | Responds with the rows from `start` to `end`, both included, as `{ results, total }`.                     |
 

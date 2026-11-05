@@ -92,8 +92,8 @@ export class ListQuery {
     return hasChanged
   }
 
-  withDefaults(query) {
-    return removeEmptyValues({ ...this.getDefaultQuery(), ...query })
+  withDefaults(query = {}) {
+    return removeEmptyValues({ ...this.getDefaultQuery(query), ...query })
   }
 }
 

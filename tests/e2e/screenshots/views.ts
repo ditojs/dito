@@ -23,9 +23,9 @@ export const projects = createWidgetView<ProjectItem>(
     },
     scopes: {
       all: { label: 'All' },
-      planned: { label: 'Planned' },
-      active: { label: 'Active' },
-      done: { label: 'Done' }
+      planned: { label: 'Planned', filter: { status: 'Planned' } },
+      active: { label: 'Active', filter: { status: 'Active' } },
+      done: { label: 'Done', filter: { status: 'Done' } }
     },
     filters: {
       search: {
@@ -385,9 +385,9 @@ export const projects = createWidgetView<ProjectItem>(
 )
 
 // Further views in a sub-menu, for screenshots of the menus, each listing the
-// projects of one scope.
-function createScopeView(
-  scope: 'planned' | 'done',
+// projects of one status.
+function createStatusView(
+  status: 'Planned' | 'Done',
   listOptions: Partial<ListSchema<ProjectItem>> = {}
 ) {
   return createWidgetView<ProjectItem>(
@@ -396,7 +396,7 @@ function createScopeView(
     {},
     {
       columns: { name: { label: 'Name' } },
-      scopes: { [scope]: { defaultScope: true } },
+      scopes: { [status]: { filter: { status } } },
       ...listOptions
     }
   )
@@ -408,14 +408,18 @@ export const reports = {
   items: {
     planned: {
       // A list and scopes wider than narrow windows, with a button below:
-      ...createScopeView('planned', {
+      ...createStatusView('Planned', {
         creatable: true,
         paginate: 20,
         scopes: {
           all: { label: 'All Projects' },
-          planned: { label: 'Planned Projects', defaultScope: true },
-          active: { label: 'Active Projects' },
-          done: { label: 'Done Projects' }
+          planned: {
+            label: 'Planned Projects',
+            filter: { status: 'Planned' },
+            defaultScope: true
+          },
+          active: { label: 'Active Projects', filter: { status: 'Active' } },
+          done: { label: 'Done Projects', filter: { status: 'Done' } }
         },
         columns: {
           name: { label: 'Name' },
@@ -429,7 +433,7 @@ export const reports = {
       }),
       label: 'Planned Projects'
     },
-    done: { ...createScopeView('done'), label: 'Done Projects' }
+    done: { ...createStatusView('Done'), label: 'Done Projects' }
   }
 } as const
 

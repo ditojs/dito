@@ -13,6 +13,7 @@
 - **schema:** `@ditojs/schema` is removed. The admin holds the validators that it uses.
 - **admin:** Sources in forms show the permission error for 403 responses, as they do for 401 responses.
 - **admin:** Resource paths are joined without a trailing slash when a resource's path is empty.
+- **admin:** List scopes set list filters with `filter`, and the order with `order`: `{ label, hint, filter, order, defaultScope }`. The admin sends them as `filter=name:args` and `order`, and keeps `?scope=` in its own URL only.
 
 ### New
 

@@ -67,9 +67,9 @@ the item's form, every callback can read the label as `context.itemLabel`, see
 
 ## Scopes and filters
 
-`scopes` adds buttons that switch the `scope` query parameter of the list.
-`filters` adds a filter panel to the sidebar. Its values are sent as
-`filter=name:args` query parameters:
+`scopes` adds buttons that set list filters and the order. `filters` adds a
+filter panel to the sidebar. Both send their values as `filter=name:args` query
+parameters:
 
 ```js
 books: {
@@ -77,7 +77,12 @@ books: {
   resource: 'books',
   scopes: {
     all: { label: 'All' },
-    published: { label: 'Published', defaultScope: true }
+    published: {
+      label: 'Published',
+      filter: { published: true },
+      order: 'publishedAt desc',
+      defaultScope: true
+    }
   },
   filters: {
     title: { filter: 'text', operators: ['contains', 'starts-with'] },
@@ -92,16 +97,11 @@ The server's controller needs a filter for each name, see
 inputs as JSON arguments, e.g. `filter=title:"contains","Emma"`, so the server's
 filter gets an array. Changing a scope or a filter goes back to the first page.
 
-`scope=name` is short for `filter=name:true`, so the server's controller needs a
-filter for each scope too:
-
-```js
-// In the books controller:
-filters: {
-  all: { schema: q.boolean(), where: () => undefined },
-  published: q.boolean()
-}
-```
+The first scope, or the one with `defaultScope: true`, is selected by default.
+A scope sends its `filter` values along with those of the panel, and its
+`order` as the list's order, which a click on a column header overrides.
+Without `order`, the list's `defaultSort` applies. The selected scope is kept as
+`?scope=name` in the admin's URL, which the admin doesn't send to the server.
 
 ## Items in the data
 

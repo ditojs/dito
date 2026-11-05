@@ -617,9 +617,11 @@ export interface SourceSettings<$Item> {
    */
   columns?: Columns<$Item> | (keyof $Item)[]
   /**
-   * Scope names as defined on the model. When set, the
-   * admin renders scope buttons allowing the user to
-   * switch between them while editing.
+   * Buttons that set list filters and the order. `filter` holds the
+   * filter values of a scope by filter name, sent as `filter=name:args`,
+   * and `order` the order in the format of the `order` query parameter,
+   * as in `'title desc'`. The first scope, or the one with
+   * `defaultScope: true`, is selected by default.
    */
   scopes?:
     | string[]
@@ -628,6 +630,8 @@ export interface SourceSettings<$Item> {
           | {
               label?: string
               hint?: string
+              filter?: Record<string, unknown>
+              order?: string
               defaultScope?: boolean
             }
           | string

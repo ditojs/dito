@@ -274,8 +274,11 @@ filters: {
   controller routes the shapes that its clients need instead, such as
   `'get :id/full'`, and `choices()` routes the options of a select at
   `get choices`.
-- `?scope=name` is short for `?filter=name:true`, so each scope of an admin list
-  needs a filter of that name on the controller.
+- List `scopes` of the admin keep their name and `defaultScope`, but each scope
+  now sets list filters with `filter`, and optionally the order with `order`,
+  such as `published: { label: 'Published', filter: { published: true } }`. The
+  controller needs a filter of each name. `?scope=` stays in the admin's URL
+  only, and isn't sent to the server.
 - Dito.js 6's filter types `text` and `date-range` become `textFilter()` and
   `dateRangeFilter()`, which read what the admin's filters send.
 - Custom actions query through `find(options)` of the handler's input, or
@@ -775,8 +778,8 @@ These things change. The admin of Dito.js 7 already handles them:
 
 - Filters read their arguments as strings: `filter=published:true` gives
   `'true'`, and several arguments give an array of strings.
-- `?fields=` is gone. Select options come from `choices` routes, and
-  `?scope=name` applies the filter `name`.
+- `?fields=` and `?scope=` are gone. Select options come from `choices` routes,
+  and scopes of admin lists send their filters.
 - Joined values are nested rows instead of flat names.
 - There are no `<name>Id` keys. A client that read or wrote `authorId` uses
   `author.id`: responses send `author: { id: 12 }`, writes send the same, and

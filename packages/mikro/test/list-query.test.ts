@@ -53,13 +53,8 @@ describe('parseListQuery()', () => {
     expect(Object.keys(json.filter)).toEqual(['__proto__', 'toString'])
   })
 
-  it('reads `scope=name` as `filter=name:true`', async () => {
-    const { json } = await parse('scope=published&scope=recent')
-    expect(json.filter).toEqual({ published: 'true', recent: 'true' })
-  })
-
-  it('ignores the `fields` of Dito 6', async () => {
-    const { status, json } = await parse('fields=id')
+  it('ignores the `fields` and `scope` of Dito 6', async () => {
+    const { status, json } = await parse('fields=id&scope=published')
     expect(status).toBe(200)
     expect(json).toEqual({ filter: {}, order: [], range: null })
   })
@@ -100,7 +95,6 @@ describe('parseListQuery()', () => {
 
   it.each([
     'filter=a-b:1',
-    'scope=a-b',
     'filter=a',
     'filter=a:b',
     'filter=a:1],[2',
