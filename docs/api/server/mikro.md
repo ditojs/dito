@@ -12,9 +12,7 @@ import {
   parseListQuery,
   createRecord,
   assignRecord,
-  schemaJson,
-  SchemaJson,
-  assetsJson,
+  defineJsonType,
   getAssetPaths,
   defineMikroConfig,
   createMikroAdapter,
@@ -450,51 +448,52 @@ are the full set, and relations link by id. In loan, it:
 
 It doesn't flush.
 
-## schemaJson()
+## defineJsonType()
 
 ```ts
-schemaJson<S extends z.ZodType>(
-  schema: S,
-  options?: { assets?: { path: string; storage: string }[] }
-): PropertyBuilder
-class SchemaJson<S> extends JsonType {
-  constructor(schema?: S, options?: { assets?: ColumnAsset[] })
-  get schema(): S | undefined
-  readonly assets: ColumnAsset[]
-}
+defineJsonType<S extends z.ZodType>(options: {
+  schema?: S
+  assets?: { path: string; storage: string }[]
+}): Type<z.output<S>>
 ```
 
-`schemaJson(schema)` is `p.json<Output>().type(new SchemaJson(schema))`. It
-declares a JSON column whose value the
+Returns the custom type of a JSON column, for `p.type()`. The column's type
+follows the schema's output, and is `any` without a schema. The
 [checks of a body](../../guide/server/writes.md#the-checks-of-a-body) validate
-with `schema`. The column's type follows the schema's output. A schema that
-throws responds with 400 at the property, with the code `custom`. Any custom
-type can carry a schema in a `schema` getter, see
+the column's value with `schema`. A schema that throws responds with 400 at the
+property, with the code `custom`. Any custom type can carry a schema in a
+`schema` getter, see
 [Rules on values](../../guide/server/writes.md#rules-on-values).
 
-## assetsJson() and getAssetPaths()
+`assets` says where the column holds files. `path` is the data path inside the
+value, with `*` and `**` wildcards, `''` for the value itself, and `storage` the
+name of the storage. A column can hold several.
+
+```js
+specs: p.type(defineJsonType({ schema: specsSchema })).nullable(),
+images: p
+  .type(defineJsonType({ assets: [{ path: '', storage: 'public' }] }))
+  .nullable(),
+items: p.type(
+  defineJsonType({
+    schema: itemsSchema,
+    assets: [{ path: '**/file', storage: 'public' }]
+  })
+)
+```
+
+## getAssetPaths()
 
 ```ts
-assetsJson(storage: string, path = ''): PropertyBuilder
 getAssetPaths(entities: object): AssetPath[]
 ```
 
-`assetsJson()` declares a JSON column that holds files. `path` is the data path
-inside the value, with `*` and `**` wildcards, and `storage` the name of the
-storage. A column with a schema names its files in the `assets` option of
-`schemaJson()`, as it can have several.
-
-`getAssetPaths()` returns the asset paths of these columns
+Returns the asset paths of the `assets` of [`defineJsonType()`](#definejsontype)
 for `@ditojs/storage`. It takes an array of entities or a module of them, and
 reads their definitions, so it needs no ORM. Table and column names follow
 MikroORM's default naming strategy unless a property sets its own.
 
 ```js
-images: assetsJson('public').nullable(),
-items: schemaJson(itemsSchema, {
-  assets: [{ path: '**/file', storage: 'public' }]
-})
-
 const assets = createAssets({ paths: getAssetPaths(entities), storages, db })
 ```
 
@@ -513,7 +512,7 @@ module of entities, whose other exports it leaves out:
   with a time. These columns store both as the day of the server's time zone, in
   writes, in `em.create()` and in queries. They take and return `YYYY-MM-DD`
   strings as they are.
-- New rows get the defaults of their `schemaJson()` schemas, also with
+- New rows get the defaults of their `defineJsonType()` schemas, also with
   `em.create()`. Updates write the value as sent.
 - `em.remove()` deletes what the schema says. A flush loads the rows that go
   with a removed row, through `orphanRemoval` or a cascade of removes, so they

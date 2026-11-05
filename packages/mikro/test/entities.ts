@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { StringType, defineEntity, p } from '@mikro-orm/core'
 import type { AssetFile } from '@ditojs/storage'
-import { schemaJson } from '../src/index.ts'
+import { defineJsonType } from '../src/index.ts'
 
 // A string column whose schema is async: a code of upper-case letters.
 const codeSchema = z
@@ -30,12 +30,16 @@ const BookSchema = defineEntity({
     name: p.string(),
     notes: p.text().nullable(),
     published: p.boolean().default(false),
-    specs: schemaJson(
-      z.strictObject({
-        pages: z.number().optional(),
-        tags: z.array(z.string()).optional()
-      })
-    ).nullable(),
+    specs: p
+      .type(
+        defineJsonType({
+          schema: z.strictObject({
+            pages: z.number().optional(),
+            tags: z.array(z.string()).optional()
+          })
+        })
+      )
+      .nullable(),
     documents: p.json<AssetFile[]>().nullable(),
     // Never part of a response.
     secret: p.string().nullable().hidden(),
@@ -95,7 +99,12 @@ const ChapterSchema = defineEntity({
     name: p.string(),
     order: p.integer().nullable(),
     code: p.string().type(new CodeType()).nullable(),
-    keywords: schemaJson(z.array(z.object({ tag: z.string().length(4) })))
+    keywords: p
+      .type(
+        defineJsonType({
+          schema: z.array(z.object({ tag: z.string().length(4) }))
+        })
+      )
       .nullable(),
     part: () => p.manyToOne(Part)
   }

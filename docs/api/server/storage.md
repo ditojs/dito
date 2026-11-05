@@ -167,7 +167,7 @@ and `**` for any number of segments. A value at the path is one file or an array
 of files. In request bodies, the column appears as its camelCase property, such
 as `cover_image` as `coverImage`. The functions below take the app's list of
 asset paths. With MikroORM, declare them on the columns, see
-[`getAssetPaths()`](mikro.md#assetsjson-and-getassetpaths).
+[`getAssetPaths()`](mikro.md#getassetpaths).
 
 `assets()`, `assetUploads()` and `importAssets()` take the same options:
 

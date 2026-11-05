@@ -18,11 +18,9 @@ export type { Filter } from './list.ts'
 export { parseListQuery, type ListQuery } from './list-query.ts'
 export { defineMikroConfig, getAssetPaths } from './config.ts'
 export {
-  SchemaJson,
-  assetsJson,
-  schemaJson,
-  type ColumnAsset,
-  type SchemaJsonOptions
+  defineJsonType,
+  type JsonTypeAsset,
+  type JsonTypeOptions
 } from './schema-json.ts'
 export {
   createMikroAdapter,

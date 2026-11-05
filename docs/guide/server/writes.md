@@ -59,18 +59,27 @@ fields, give the action a `body` schema, see
 ### Rules on values
 
 Put the rules of a value on its column's custom type, as a
-[Zod schema](validation.md). `schemaJson()` declares a JSON column with a
+[Zod schema](validation.md). `defineJsonType()` declares a JSON column with a
 schema:
 
 ```js
 import { z } from 'zod'
-import { schemaJson } from '@ditojs/mikro'
+import { defineJsonType } from '@ditojs/mikro'
 
 properties: {
-  specs: schemaJson(
-    z.object({ weight: z.number().positive(), unit: z.enum(['g', 'kg']) })
-  ).nullable(),
-  articles: schemaJson(z.array(articleSchema)).onCreate(() => [])
+  specs: p
+    .type(
+      defineJsonType({
+        schema: z.object({
+          weight: z.number().positive(),
+          unit: z.enum(['g', 'kg'])
+        })
+      })
+    )
+    .nullable(),
+  articles: p
+    .type(defineJsonType({ schema: z.array(articleSchema) }))
+    .onCreate(() => [])
 }
 ```
 

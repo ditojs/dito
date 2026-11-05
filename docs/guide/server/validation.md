@@ -46,11 +46,16 @@ the column's custom type as a schema, see
 
 ```js
 import { z } from 'zod'
-import { schemaJson } from '@ditojs/mikro'
+import { defineJsonType } from '@ditojs/mikro'
 
 properties: {
-  dimensions: schemaJson(
-    z.object({ width: z.number().positive(), height: z.number().positive() })
+  dimensions: p.type(
+    defineJsonType({
+      schema: z.object({
+        width: z.number().positive(),
+        height: z.number().positive()
+      })
+    })
   )
 }
 ```

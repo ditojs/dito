@@ -11,7 +11,7 @@ the sessions and to the admin:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
-import { schemaJson } from '@ditojs/mikro'
+import { defineJsonType } from '@ditojs/mikro'
 import { z } from 'zod'
 
 const roleNames = z.array(z.enum(['editor', 'desk', 'admin']))
@@ -22,7 +22,7 @@ const UserSchema = defineEntity({
     id: p.integer().primary(),
     username: p.string().unique(),
     hash: p.string().nullable().hidden(),
-    roles: schemaJson(roleNames).onCreate(() => [])
+    roles: p.type(defineJsonType({ schema: roleNames })).onCreate(() => [])
   }
 })
 export class User extends UserSchema.class {}

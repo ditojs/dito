@@ -35,7 +35,7 @@ actions and the file handling:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
-import { assetsJson, defineModelController } from '@ditojs/mikro'
+import { defineJsonType, defineModelController } from '@ditojs/mikro'
 import { assets } from './storages.js'
 
 const BookSchema = defineEntity({
@@ -44,8 +44,12 @@ const BookSchema = defineEntity({
     id: p.integer().primary(),
     title: p.string(),
     // JSON columns of files, in these storages:
-    cover: assetsJson('covers').nullable(),
-    samplePages: assetsJson('samplePages').onCreate(() => [])
+    cover: p
+      .type(defineJsonType({ assets: [{ path: '', storage: 'covers' }] }))
+      .nullable(),
+    samplePages: p
+      .type(defineJsonType({ assets: [{ path: '', storage: 'samplePages' }] }))
+      .onCreate(() => [])
   }
 })
 export class Book extends BookSchema.class {}

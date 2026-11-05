@@ -47,7 +47,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `useApp()`, `ctx.app`                                                                  | Imports of the app's modules                                                                                                                                                                                | low                     |
 | Models: `properties`, `relations`, `TimestampedModel`, model hooks                     | MikroORM entities with `defineEntity()`, `onCreate()`, `onUpdate()`, MikroORM's hooks                                                                                                                       | high                    |
 | Model scopes, modifiers, `static filters`, `allowScope`, `allowFilter`                 | `find` and `filters` of the controllers, `defineTextFilter()`, `defineDateRangeFilter()`                                                                                                                    | high                    |
-| JSON schemas of JSON columns, the `Validator`'s formats, keywords and types            | `schemaJson()` with Zod schemas, converted by hand, see [step 5](#5-turn-models-into-entities)                                                                                                              | medium                  |
+| JSON schemas of JSON columns, the `Validator`'s formats, keywords and types            | `defineJsonType()` with Zod schemas, converted by hand, see [step 5](#5-turn-models-into-entities)                                                                                                          | medium                  |
 | `$parseJson()`, `$formatJson()`, read-only properties, `$validateGraph()`              | `deserialize`, `serialize` and `beforeSerialize` of the controller, rules as functions run by a mixin                                                                                                       | medium                  |
 | Graph writes: `upsertGraph()`, `relate`, `#id`, `#ref`                                 | Nested writes of owned relations, `createRecord()`, `assignRecord()`                                                                                                                                        | medium                  |
 | `Controller`, `ModelController`, `RelationController`, `collection`, `member`, `allow` | `defineController()` and `defineModelController()` with one `actions` map, mixins, `crud`                                                                                                                   | high                    |
@@ -210,7 +210,7 @@ builders, see [Entities and controllers](guide/server/entities.md).
 - Rules of a whole graph, `$validateGraph()`, become plain functions that return
   issues, see
   [Rules on rows and graphs](guide/server/writes.md#rules-on-rows-and-graphs).
-- Model `assets` become [`assetsJson()` columns](#storage).
+- Model `assets` become the [`assets` of `defineJsonType()`](#storage).
 - Entities have a single primary key. Only pivot entities have composite keys.
 - Hide fields with `.hidden()`. For fields that only some users see, use
   `exclude` in a `find` function. Serialization `groups` aren't supported.
@@ -220,12 +220,18 @@ builders, see [Entities and controllers](guide/server/entities.md).
   `@ditojs/mikro` keeps the local day.
 
 **JSON columns.** Convert the JSON schemas of JSON columns to Zod by hand, and
-pass them to `schemaJson()`. The formats and
+pass them to `defineJsonType()`. The formats and
 keywords of other columns become a custom type with a `schema` getter, see
 [Rules on values](guide/server/writes.md#rules-on-values).
 
 ```js
-meta: schemaJson(z.object({ featured: z.boolean().default(false) })).nullable()
+meta: p
+  .type(
+    defineJsonType({
+      schema: z.object({ featured: z.boolean().default(false) })
+    })
+  )
+  .nullable()
 ```
 
 Dito.js 6 filled in the defaults of its schemas on insert.
@@ -517,7 +523,7 @@ rows again in one query, with the values that formulas and triggers set. See
 
 - **The checks of the body replace Ajv.** They read the entity's metadata, drop
   the properties that clients can't write, and check JSON types, the ids of
-  relations, and the schemas of custom types and `schemaJson()` columns.
+  relations, and the schemas of custom types and `defineJsonType()` columns.
   Postgres checks the rest, such as lengths, and its errors respond with 400.
   For stricter rules, give the action a Zod `body` schema, such as
   `'post': { body: postSchema }`, as the writes of a website need. The messages
@@ -680,8 +686,12 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 export const storages = createStorages(config.storages)
 
 // In the properties of the entity, instead of `static assets`:
-cover: assetsJson('public').nullable(),
-chapters: assetsJson('public', '*/images').nullable(),
+cover: p
+  .type(defineJsonType({ assets: [{ path: '', storage: 'public' }] }))
+  .nullable(),
+chapters: p
+  .type(defineJsonType({ assets: [{ path: '*/images', storage: 'public' }] }))
+  .nullable(),
 
 export const assets = createAssets({
   paths: getAssetPaths(entities),

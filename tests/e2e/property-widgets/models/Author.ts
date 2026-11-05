@@ -1,5 +1,5 @@
 import { defineEntity, IntegerType, p, StringType } from '@mikro-orm/core'
-import { schemaJson } from '@ditojs/mikro'
+import { defineJsonType } from '@ditojs/mikro'
 import { z } from 'zod'
 
 // The server checks the lengths of names and titles, which the admin doesn't,
@@ -41,8 +41,12 @@ const AuthorSchema = defineEntity({
     email: p.string().type(new EmailType()).nullable(),
     isFeatured: p.boolean().default(false),
     rank: p.integer().type(new RankType()).nullable(),
-    awards: schemaJson(z.array(awardSchema)).nullable(),
-    address: schemaJson(z.object({ city: z.string().optional() })).nullable()
+    awards: p.type(defineJsonType({ schema: z.array(awardSchema) })).nullable(),
+    address: p
+      .type(
+        defineJsonType({ schema: z.object({ city: z.string().optional() }) })
+      )
+      .nullable()
   }
 })
 export class Author extends AuthorSchema.class {}

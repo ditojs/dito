@@ -1,5 +1,5 @@
 import { defineEntity, p, StringType } from '@mikro-orm/core'
-import { schemaJson } from '@ditojs/mikro'
+import { defineJsonType } from '@ditojs/mikro'
 import { z } from 'zod'
 
 // Titles must start with an uppercase letter. Only the server knows this rule,
@@ -21,28 +21,42 @@ const BookSchema = defineEntity({
     subtitle: p.string().type(new TitleType()).nullable(),
     edition: p.string().nullable(),
     publisher: p.string().nullable(),
-    meta: schemaJson(z.object({ note: optionalTitle })).nullable(),
+    meta: p
+      .type(defineJsonType({ schema: z.object({ note: optionalTitle }) }))
+      .nullable(),
     credits: p.json<{ editor?: string | null }>().nullable(),
-    tags: schemaJson(z.array(z.object({ name: optionalTitle }))).onCreate(
-      () => []
-    ),
-    chapters: schemaJson(
-      z.array(
-        z.object({
-          title: optionalTitle,
-          summary: z.string().nullish(),
-          sections: z.array(z.object({ title: optionalTitle })).nullish()
+    tags: p
+      .type(
+        defineJsonType({ schema: z.array(z.object({ name: optionalTitle })) })
+      )
+      .onCreate(
+        () => []
+      ),
+    chapters: p
+      .type(
+        defineJsonType({
+          schema: z.array(
+            z.object({
+              title: optionalTitle,
+              summary: z.string().nullish(),
+              sections: z.array(z.object({ title: optionalTitle })).nullish()
+            })
+          )
         })
       )
-    ).onCreate(() => []),
-    volumes: schemaJson(
-      z.array(
-        z.object({
-          title: optionalTitle,
-          parts: z.array(z.object({ title: optionalTitle })).nullish()
+      .onCreate(() => []),
+    volumes: p
+      .type(
+        defineJsonType({
+          schema: z.array(
+            z.object({
+              title: optionalTitle,
+              parts: z.array(z.object({ title: optionalTitle })).nullish()
+            })
+          )
         })
       )
-    ).onCreate(() => [])
+      .onCreate(() => [])
   }
 })
 export class Book extends BookSchema.class {}

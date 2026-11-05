@@ -325,8 +325,8 @@ class Run {
     return (type === 'date' && parsePlainDate(value as string)) || value
   }
 
-  // Runs the schema of a custom type, such as that of `schemaJson()`, on the
-  // value as sent. Its output isn't written.
+  // Runs the schema of a custom type, such as that of `defineJsonType()`, on
+  // the value as sent. Its output isn't written.
   async checkSchema(schema: z.ZodType, value: unknown, path: Path) {
     const { issues = [] } = await runSchema(schema, value)
     for (const issue of issues) {

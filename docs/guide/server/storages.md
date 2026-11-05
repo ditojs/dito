@@ -54,18 +54,25 @@ app.use('/assets/public/*', serveStorage(storages.get('public')))
 
 ## Asset paths
 
-Entities say which columns hold files. `assetsJson()` declares a JSON column of
-files, and `schemaJson()` takes the same with its `assets` option:
+Entities say which columns hold files, with the `assets` of `defineJsonType()`,
+also next to a `schema`:
 
 ```js
-import { assetsJson, schemaJson } from '@ditojs/mikro'
+import { defineJsonType } from '@ditojs/mikro'
 
 // In the properties of entities:
-cover: assetsJson('public').nullable(),
-chapters: assetsJson('public', '*/images').nullable(),
-content: schemaJson(contentSchema, {
-  assets: [{ path: '**/file', storage: 'public' }]
-})
+cover: p
+  .type(defineJsonType({ assets: [{ path: '', storage: 'public' }] }))
+  .nullable(),
+chapters: p
+  .type(defineJsonType({ assets: [{ path: '*/images', storage: 'public' }] }))
+  .nullable(),
+content: p.type(
+  defineJsonType({
+    schema: contentSchema,
+    assets: [{ path: '**/file', storage: 'public' }]
+  })
+)
 ```
 
 `getAssetPaths(entities)` collects them as asset paths, a list of `table`,

@@ -1,14 +1,13 @@
-import { defineEntity, p } from '@mikro-orm/core'
+import { defineEntity, p, type RequiredEntityData } from '@mikro-orm/core'
 import { MikroORM } from '@mikro-orm/postgresql'
 import { z } from 'zod'
 import {
-  assetsJson,
   createMikroAdapter,
   createRecord,
+  defineJsonType,
   defineMikroConfig,
   getAssetPaths,
-  getRootKysely,
-  schemaJson
+  getRootKysely
 } from '../src/index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 
@@ -22,14 +21,25 @@ const BookSchema = defineEntity({
   tableName: 'book',
   properties: {
     id: p.integer().primary(),
-    specs: schemaJson(specsSchema, {
-      assets: [
-        { path: '**/file', storage: 'public' },
-        { path: '*/files', storage: 'private' }
-      ]
-    }).nullable(),
-    coverImages: assetsJson('public').nullable(),
-    samples: assetsJson('private', '*/file').nullable(),
+    specs: p
+      .type(
+        defineJsonType({
+          schema: specsSchema,
+          assets: [
+            { path: '**/file', storage: 'public' },
+            { path: '*/files', storage: 'private' }
+          ]
+        })
+      )
+      .nullable(),
+    coverImages: p
+      .type(defineJsonType({ assets: [{ path: '', storage: 'public' }] }))
+      .nullable(),
+    samples: p
+      .type(
+        defineJsonType({ assets: [{ path: '*/file', storage: 'private' }] })
+      )
+      .nullable(),
     notes: p.json().nullable()
   }
 })
@@ -40,7 +50,9 @@ const ShelfSchema = defineEntity({
   name: 'BookShelf',
   properties: {
     id: p.integer().primary(),
-    photo: assetsJson('public').nullable()
+    photo: p
+      .type(defineJsonType({ assets: [{ path: '', storage: 'public' }] }))
+      .nullable()
   }
 })
 class BookShelf extends ShelfSchema.class {}
@@ -63,6 +75,18 @@ describe('getAssetPaths()', () => {
     expect(getAssetPaths({ Book, BookShelf, count: 1, name: 'x' })).toEqual(
       paths
     )
+  })
+})
+
+describe('defineJsonType()', () => {
+  it('keeps nullable columns with a schema optional in `em.create()`', () => {
+    expectTypeOf<{}>().toExtend<Pick<RequiredEntityData<Book>, 'specs'>>()
+  })
+
+  it('keeps nullable columns without a schema optional too', () => {
+    expectTypeOf<{}>().toExtend<
+      Pick<RequiredEntityData<Book>, 'coverImages'>
+    >()
   })
 })
 

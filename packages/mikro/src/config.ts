@@ -19,11 +19,11 @@ import {
 } from '@mikro-orm/core'
 import { isArray } from '@ditojs/utils'
 import { PlainDate } from './plain-date.ts'
-import { SchemaJson, runSchema } from './schema-json.ts'
+import { SchemaJsonType, runSchema } from './schema-json.ts'
 
 // The options of `new MikroORM()` for entities of Dito: `p.date()` columns keep
-// the local day, new rows get the defaults of their `schemaJson()` schemas, and
-// `em.remove()` deletes owned rows and follows the delete rules of foreign
+// the local day, new rows get the defaults of their `defineJsonType()` schemas,
+// and `em.remove()` deletes owned rows and follows the delete rules of foreign
 // keys. Pivot entities with an id of their own log a warning. `entities` can be
 // a module of them, like in `getAssetPaths()`.
 //
@@ -184,7 +184,7 @@ class SchemaDefaults implements EventSubscriber {
       const { customType } = prop
       const value = entity[prop.name]
       if (
-        customType instanceof SchemaJson &&
+        customType instanceof SchemaJsonType &&
         customType.schema &&
         value != null
       ) {
@@ -227,7 +227,7 @@ export function getAssetPaths(entities: object) {
     const table = meta.tableName ?? naming.classToTableName(meta.className)
     return Object.entries(meta.properties).flatMap(([name, prop]) => {
       const type = prop.customType ?? prop.type
-      if (!(type instanceof SchemaJson)) return []
+      if (!(type instanceof SchemaJsonType)) return []
       const column = prop.fieldNames?.[0] ?? naming.propertyToColumnName(name)
       return type.assets.map(asset => ({ table, column, ...asset }))
     })

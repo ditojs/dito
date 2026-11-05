@@ -1,5 +1,5 @@
 import { defineEntity, p } from '@mikro-orm/core'
-import { schemaJson } from '@ditojs/mikro'
+import { defineJsonType } from '@ditojs/mikro'
 import { z } from 'zod'
 
 export interface Chapter {
@@ -14,7 +14,9 @@ const VolumeSchema = defineEntity({
   properties: {
     id: p.integer().primary(),
     name: p.string(),
-    prices: schemaJson(z.array(z.number().min(0))).nullable(),
+    prices: p
+      .type(defineJsonType({ schema: z.array(z.number().min(0)) }))
+      .nullable(),
     chapters: p.json<Chapter[]>().nullable()
   }
 })
