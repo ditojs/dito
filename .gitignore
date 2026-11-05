@@ -4,7 +4,8 @@
 *.local.*
 node_modules/
 /coverage
-/.claude
+/.claude/*
+!/.claude/skills/
 node-compile-cache/
 .worktrees/
 test-results/
