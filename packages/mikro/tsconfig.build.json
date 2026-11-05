@@ -9,5 +9,6 @@
     "types": ["node"]
   },
   // `@ditojs/storage` resolves to its sources, which need their declarations.
-  "include": ["src", "../storage/src/leather.d.ts"]
+  "include": ["src", "../storage/src/leather.d.ts"],
+  "exclude": ["src/**/*.test.ts", "src/test"]
 }

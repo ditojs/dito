@@ -49,7 +49,9 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "!src/**/*.test.ts",
+    "!src/test/"
   ],
   "publishConfig": {
     "exports": {

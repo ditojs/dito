@@ -4,5 +4,5 @@
     "types": ["vitest/globals", "node"]
   },
   // The tests import the sources of `@ditojs/storage`, with its declarations.
-  "include": ["src", "test", "../storage/src/*.d.ts"]
+  "include": ["src", "../storage/src/*.d.ts"]
 }
