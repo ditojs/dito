@@ -19,7 +19,7 @@ export {
   defineTextFilter
 } from './filters.ts'
 export type { Filter } from './list.ts'
-export { parseListQuery, type ListQuery } from './list-query.ts'
+export type { ListQuery } from './list-query.ts'
 export { defineMikroConfig, getAssetPaths } from './config.ts'
 export {
   defineJsonType,

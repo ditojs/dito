@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./node": "./src/node.ts",
     "./zod": "./src/zod.ts",
+    "./internal": "./src/internal.ts",
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -44,6 +45,10 @@
       "./zod": {
         "types": "./dist/zod.d.ts",
         "import": "./dist/zod.js"
+      },
+      "./internal": {
+        "types": "./dist/internal.d.ts",
+        "import": "./dist/internal.js"
       },
       "./package.json": "./package.json"
     },

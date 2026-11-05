@@ -1,5 +1,5 @@
 import { createApi } from '@ditojs/server'
-import { parseListQuery } from '../src/index.ts'
+import { parseListQuery } from '../src/list-query.ts'
 
 const api = createApi({
   controllers: [
@@ -79,8 +79,7 @@ describe('parseListQuery()', () => {
         {
           path: 'books',
           actions: {
-            get: ({ c }) =>
-              parseListQuery(c, { filter: 'a:1,2', range: '0,9' })
+            get: ({ c }) => parseListQuery(c, { filter: 'a:1,2', range: '0,9' })
           }
         }
       ]

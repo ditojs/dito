@@ -1,13 +1,13 @@
 import {
   HttpError,
   defineController as defineServerController,
-  getLayers,
   type Actions,
   type ControllerDefinition,
   type DitoContext,
   type Handler,
   type MixinDefinition
 } from '@ditojs/server'
+import { getLayers } from '@ditojs/server/internal'
 import { isFunction, isPlainObject, pickBy } from '@ditojs/utils'
 import type { EntityClass } from '@mikro-orm/core'
 import { defaults } from './crud.ts'

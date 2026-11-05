@@ -2,7 +2,6 @@ import type { Context } from 'hono'
 import { z } from 'zod'
 import { isPlainObject, isString } from '@ditojs/utils'
 import {
-  bodyValidation,
   createValidationError,
   defineAction,
   defineMixin,
@@ -11,6 +10,7 @@ import {
   type ControllerDefinition,
   type Handler
 } from '@ditojs/server'
+import { bodyValidation } from '@ditojs/server/internal'
 import {
   authError,
   authenticationTimeout,

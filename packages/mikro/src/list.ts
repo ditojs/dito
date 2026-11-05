@@ -2,10 +2,10 @@ import type { z } from 'zod'
 import {
   HttpError,
   createValidationError,
-  queryValidation,
   type DitoContext,
   type ValidationIssue
 } from '@ditojs/server'
+import { queryValidation } from '@ditojs/server/internal'
 import { asArray, mapConcurrently } from '@ditojs/utils'
 import {
   ReferenceKind,

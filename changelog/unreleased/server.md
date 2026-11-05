@@ -25,7 +25,7 @@
 - **mikro:** `fields` alone defines what goes out. Dotted paths populate their relations, and a relation to one row goes out as `{ id }`. Writes take `{ relation: { id } }`, and `order` and filters name `relation.id`. Serialization `groups` aren't supported.
 - **mikro:** Handlers get `getRecord()`, `find()`, `list()` and `getListQuery()`, also as `c.var.getRecord()` and so on. A `load` option replaces how `getRecord()` loads, `maxRows` of a find limits its lists, and the `crud` mixin routes the five default handlers.
 - **mikro:** `serialize`, `beforeSerialize` and `deserialize` shape the records of a controller.
-- **mikro:** The package also has `setRecord()`, `parseListQuery()`, `createRecord()`, `assignRecord()`, `defineJsonType()`, `createEntityUserSource()`, and `createMikroAdapter()`, the `adapter` of `createApi()`.
+- **mikro:** The package also has `setRecord()`, `createRecord()`, `assignRecord()`, `defineJsonType()`, `createEntityUserSource()`, and `createMikroAdapter()`, the `adapter` of `createApi()`.
 - **mikro:** Handlers get the request's entity manager as `db` of their input. `getEntityManager(c)` returns it in middleware, filters and `find` functions, and `getKysely(c)` its Kysely.
 - **mikro:** `createMikroAdapter(orm)` also has `getKysely()`, a Kysely on the ORM's pool outside of any transaction, for sessions, credentials and jobs.
 - **storage:** `@ditojs/storage` has the disk and S3 storages, `createStorages()`, and `createAssets()`, which binds the adapter, paths and storages of an app, with the mixins `defineWrites(table)` and `defineUploads(table, { uploads })`, and `store()`, `import()`, `findReferences()` and `runJobs()`. `serveStorage()` of `@ditojs/storage/node` serves disk storages.

@@ -3,11 +3,9 @@
 ```js
 import {
   HttpError,
-  bodyValidation,
-  createValidationError,
   createErrorHandler,
-  notFound,
-  queryValidation
+  createValidationError,
+  notFound
 } from '@ditojs/server'
 ```
 
@@ -162,10 +160,6 @@ throw createValidationError([
 | `type`    | `string`  | Default: `ModelValidation`.                                   |
 | `status`  | `number`  | Default: 400.                                                 |
 | `cause`   | `unknown` | The error that caused this one, for the app's logs. Not sent. |
-
-`queryValidation` and `bodyValidation` are the options of Dito's own errors for
-the query and the body, for code that checks these itself:
-`createValidationError(issues, bodyValidation)`.
 
 ## Database errors
 

@@ -9,11 +9,11 @@ import {
 } from '@ditojs/utils'
 import {
   HttpError,
-  bodyValidation,
   createValidationError,
   type DitoContext,
   type MixinDefinition
 } from '@ditojs/server'
+import { bodyValidation } from '@ditojs/server/internal'
 import {
   resolveFileUrl,
   type AssetFile,

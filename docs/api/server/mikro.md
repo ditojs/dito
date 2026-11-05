@@ -10,7 +10,6 @@ import {
   defineTextFilter,
   defineDateRangeFilter,
   setRecord,
-  parseListQuery,
   createRecord,
   assignRecord,
   defineJsonType,
@@ -324,13 +323,9 @@ setRecord(c: Context, record: unknown): void
 Sets the record that `getRecord()` returns, such as the one that a custom `post`
 creates.
 
-## parseListQuery()
+## ListQuery
 
 ```ts
-parseListQuery(
-  c: Context,
-  params?: URLSearchParams | Record<string, string | string[]>
-): ListQuery
 interface ListQuery {
   filter: Record<string, string | string[]>
   order: { property: string; direction: 'asc' | 'desc' }[]
@@ -338,8 +333,8 @@ interface ListQuery {
 }
 ```
 
-Parses `filter=`, `order=` and `range=` of the URL, or of `params`.
-Invalid values respond with 400.
+The parsed `filter=`, `order=` and `range=` of a list's URL. Invalid values
+respond with 400.
 
 ## Filters
 
