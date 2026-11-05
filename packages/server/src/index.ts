@@ -16,7 +16,12 @@ export type {
   User
 } from './types.ts'
 export { defineAction, defineController, defineMixin } from './define.ts'
-export { createApi, sendFile, type SendFileOptions } from './api.ts'
+export {
+  createApi,
+  isAuthorized,
+  sendFile,
+  type SendFileOptions
+} from './api.ts'
 export { getLayers } from './compose.ts'
 export { hostMiddleware, type HostMiddlewareOptions } from './host.ts'
 export {

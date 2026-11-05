@@ -1,7 +1,12 @@
 # Controllers
 
 ```js
-import { defineAction, defineController, defineMixin } from '@ditojs/server'
+import {
+  defineAction,
+  defineController,
+  defineMixin,
+  isAuthorized
+} from '@ditojs/server'
 ```
 
 A controller is a plain object with a `path`, a map of `actions` keyed
@@ -164,6 +169,10 @@ A denied request responds with 401 without a user, and with 403 with one.
 Every write action needs `authorize` on itself or on a layer. Otherwise,
 `createApi()` throws. Use `authorize: true` to open a write to anyone. GET
 actions without `authorize` let anyone in.
+
+`isAuthorized(c, authorize)` resolves to whether `authorize` lets the user of
+`c.var.user` in. `createApi()` and
+[`createAdmin()`](admin-server.md#createadmin) check with it, and apps can too.
 
 ## Middleware
 

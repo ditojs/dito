@@ -119,13 +119,22 @@ function getMiddleware(
 
 function authorize(value: Exclude<Authorize, true>): Middleware {
   return async (c, next) => {
-    const { user } = c.var
-    const isAuthorized = isFunction(value)
-      ? (await value(c)) === true
-      : !!user && asArray(value).some(role => user.roles.includes(role))
-    if (!isAuthorized) throw new HttpError(user ? 403 : 401)
+    if (!(await isAuthorized(c, value))) {
+      throw new HttpError(c.var.user ? 403 : 401)
+    }
     await next()
   }
+}
+
+// Whether `authorize` lets the user of `c.var.user` in, for `createApi()` and
+// `createAdmin()`: `true` lets anyone in, roles need a user with one of them,
+// and a function decides by returning `true`.
+export async function isAuthorized(c: DitoContext, authorize: Authorize) {
+  const { user } = c.var
+  return isFunction(authorize)
+    ? (await authorize(c)) === true
+    : authorize === true ||
+      (!!user && asArray(authorize).some(role => user.roles.includes(role)))
 }
 
 function validate(target: 'query' | 'json', schema: z.ZodType) {

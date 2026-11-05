@@ -9,11 +9,11 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@ditojs/server": "workspace:^",
     "@ditojs/utils": "workspace:^"
   },
   "devDependencies": {
     "@ditojs/build": "workspace:^",
+    "@ditojs/server": "workspace:^",
     "@hono/node-server": "^2.1.5",
     "@types/node": "^26.6.4",
     "@vitejs/plugin-vue": "^6.0.9",
@@ -22,6 +22,7 @@
   },
   "peerDependencies": {
     "@ditojs/build": "workspace:^",
+    "@ditojs/server": "workspace:^",
     "@hono/node-server": "^2.1.5",
     "@vitejs/plugin-vue": "^6.0.9",
     "hono": "^4.13.14",

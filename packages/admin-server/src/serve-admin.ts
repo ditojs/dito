@@ -6,8 +6,8 @@ import type { HttpBindings } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { RESPONSE_ALREADY_SENT } from '@hono/node-server/utils/response'
 import type { InlineConfig, ViteDevServer } from 'vite'
-import { asArray, assignDeeply, isFunction, isString } from '@ditojs/utils'
-import type { Authorize, User } from '@ditojs/server'
+import { asArray, assignDeeply, isString } from '@ditojs/utils'
+import { isAuthorized, type Authorize, type User } from '@ditojs/server'
 import { normalizeBase } from './normalize-base.ts'
 
 // Serves the Dito admin as a Hono app, which the host routes at `base` with
@@ -81,10 +81,7 @@ export function createAdmin(options: AdminOptions): AdminServer {
     app.use('/views/*', ...asArray(middleware), async (c, next) => {
       const user = (await getUser?.(c)) ?? null
       c.set('user', user)
-      const isAuthorized = isFunction(authorize)
-        ? (await authorize(c)) === true
-        : !!user && asArray(authorize).some(role => user.roles.includes(role))
-      if (isAuthorized) return next()
+      if (await isAuthorized(c, authorize)) return next()
       return user ? c.text('Forbidden', 403) : c.text('Unauthorized', 401)
     })
   }

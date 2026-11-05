@@ -473,9 +473,6 @@ importers:
 
   packages/admin-server:
     dependencies:
-      '@ditojs/server':
-        specifier: workspace:^
-        version: link:../server
       '@ditojs/utils':
         specifier: workspace:^
         version: link:../utils
@@ -483,6 +480,9 @@ importers:
       '@ditojs/build':
         specifier: workspace:^
         version: link:../build
+      '@ditojs/server':
+        specifier: workspace:^
+        version: link:../server
       '@hono/node-server':
         specifier: ^2.1.5
         version: 2.1.5(hono@4.13.16)
