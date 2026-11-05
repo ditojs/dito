@@ -10,10 +10,11 @@ export type ListParams = URLSearchParams | Record<string, string | string[]>
 
 // The parsed list parameters.
 export interface ListQuery {
-  // `filter=name:args` by name, with the arguments as JSON, such as
+  // `filter=name:args` in order, with the arguments as JSON, such as
   // `filter=title:"contains","Emma"`. Filters read strings, and a filter with
-  // several arguments gets an array of them, in order.
-  filter: Record<string, string | string[]>
+  // several arguments gets an array of them, in order. A repeated name, such as
+  // that of a scope and of the filter panel, narrows the list further.
+  filter: { name: string; value: string | string[] }[]
   // `order=name desc`
   order: { property: string; direction: 'asc' | 'desc' }[]
   // `range=0,49`, inclusive. A list with a range responds with
@@ -25,8 +26,7 @@ const propertyPattern = /^\w+(\.\w+)*$/
 
 export function parseListQuery(c: Context, params?: ListParams): ListQuery {
   const query: ListQuery = {
-    // No prototype, so that names such as `__proto__` stay plain keys.
-    filter: Object.create(null),
+    filter: [],
     order: [],
     range: null
   }
@@ -42,7 +42,7 @@ export function parseListQuery(c: Context, params?: ListParams): ListQuery {
       const [, name = '', json = ''] = value.match(/^(.*?):(.*)$/s) ?? []
       const args = parseArguments(json)
       check(propertyPattern.test(name) && !!args, key, value)
-      query.filter[name] = toFilterValue(args!)
+      query.filter.push({ name, value: toFilterValue(args!) })
     } else if (key === 'order') {
       const [property = '', direction = 'asc', ...rest] = value
         .trim()

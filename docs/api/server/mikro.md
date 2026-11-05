@@ -327,7 +327,7 @@ creates.
 
 ```ts
 interface ListQuery {
-  filter: Record<string, string | string[]>
+  filter: { name: string; value: string | string[] }[]
   order: { property: string; direction: 'asc' | 'desc' }[]
   range: [number, number] | null
 }
@@ -363,7 +363,8 @@ which only an array schema accepts. Invalid values respond with 400, with
 `name`, Hono's context `c` and the request's entity manager `em`.
 It returns a MikroORM `where`, or `undefined` to skip the filter. A schema alone
 is short for a filter whose `where` returns `{ [name]: value }`. The list joins
-`find.where` and the filters with `$and`.
+`find.where` and the filters with `$and`, also a filter that the URL repeats,
+such as that of a scope and of the filter panel.
 
 ```js
 filters: {

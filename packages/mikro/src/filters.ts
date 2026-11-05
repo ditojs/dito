@@ -9,6 +9,7 @@ import { convertQueryValue, queryValidation } from '@ditojs/server/internal'
 import { asArray, isEmpty, isString, mapConcurrently } from '@ditojs/utils'
 import type { EntityManager } from '@mikro-orm/sql'
 import { getEntityManager } from './createMikroAdapter.ts'
+import type { ListQuery } from './listQuery.ts'
 import { runSchema } from './validation.ts'
 
 // Filters of lists: `defineFilter()` types any filter, and the others read the
@@ -93,9 +94,9 @@ export function defineDateRangeFilter(property?: string): Filter {
 export async function getFilterWheres(
   c: DitoContext,
   filters: Record<string, Filter>,
-  values: Record<string, string | string[]>
+  values: ListQuery['filter']
 ): Promise<object[]> {
-  const entries = Object.entries(values).map(([name, value]) => {
+  const entries = values.map(({ name, value }) => {
     const filter = Object.hasOwn(filters, name) ? filters[name] : undefined
     if (!filter) {
       throw new HttpError(400, { message: `Unknown filter '${name}'` })

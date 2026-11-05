@@ -228,6 +228,8 @@ describe('get', () => {
       'Circuits'
     ])
     expect(await get('filter=status:"draft"')).toEqual(['Burns'])
+    // A repeated filter narrows the list, such as a scope's and the panel's:
+    expect(await get('filter=name:"ir"&filter=name:"u"')).toEqual(['Circuits'])
     expect(await get('filter=status:"all"')).toEqual([
       'Arcadia',
       'Burns',
