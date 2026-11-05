@@ -12,7 +12,7 @@ import { isFunction, isPlainObject, pickBy } from '@ditojs/utils'
 import type { EntityClass } from '@mikro-orm/core'
 import { defaults } from './crud.ts'
 import { checkFind, type Find } from './find.ts'
-import type { Filter } from './list.ts'
+import type { Filter } from './filters.ts'
 import { toPrimaryKey } from './meta.ts'
 import {
   ModelRequest,
@@ -52,7 +52,7 @@ export interface ModelControllerDefinition<T extends object = any>
   // What lists, records and the responses of writes load and return, or a
   // function of the context that returns it.
   find?: Find<T>
-  // The filters of the list, `filter=name:args`, see `list.ts`.
+  // The filters of the list, `filter=name:args`, see `filters.ts`.
   filters?: Record<string, Filter>
   // Loads the record of a member action, in place of the controller's `find`
   // with the id. It gets the id as sent, also one that isn't a key, such as

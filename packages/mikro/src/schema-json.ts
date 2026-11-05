@@ -1,10 +1,12 @@
 import type { z } from 'zod'
-import type { ValidationIssue } from '@ditojs/server'
 import {
+  EntitySchema,
   JsonType,
+  UnderscoreNamingStrategy,
   type Platform,
   type TransformContext
 } from '@mikro-orm/core'
+import { getEntities } from './meta.ts'
 
 // A write runs the `schema` of a column's custom type, a Zod schema, on the
 // value, see `write.ts`. The schema only validates, and the value is
@@ -80,21 +82,22 @@ export function defineJsonType<S extends z.ZodType | undefined = undefined>(
   return new SchemaJsonType<S extends z.ZodType ? z.output<S> : any>(options)
 }
 
-// The result for a schema that throws, without the error's message, which may
-// hold internals.
-const failedSchema = {
-  issues: [{ code: 'custom', message: 'Invalid input' }]
-}
-
-// Runs a schema, whose custom checks may throw or reject.
-export async function runSchema(
-  schema: z.ZodType,
-  value: unknown
-): Promise<{ value?: unknown; issues?: readonly ValidationIssue[] }> {
-  try {
-    const { data, error } = await schema.safeParseAsync(value)
-    return error ? { issues: error.issues } : { value: data }
-  } catch {
-    return failedSchema
-  }
+// The asset paths of `@ditojs/storage`, from the `assets` of the JSON columns
+// of `entities`, classes or a module of them. It reads the definitions, so it
+// needs no ORM. Names follow MikroORM's default naming strategy.
+export function getAssetPaths(entities: object) {
+  const naming = new UnderscoreNamingStrategy()
+  return getEntities(entities).flatMap(entity => {
+    const { meta } =
+      entity instanceof EntitySchema
+        ? entity
+        : EntitySchema.REGISTRY.get(entity)!
+    const table = meta.tableName ?? naming.classToTableName(meta.className)
+    return Object.entries(meta.properties).flatMap(([name, prop]) => {
+      const type = prop.customType ?? prop.type
+      if (!(type instanceof SchemaJsonType)) return []
+      const column = prop.fieldNames?.[0] ?? naming.propertyToColumnName(name)
+      return type.assets.map(asset => ({ table, column, ...asset }))
+    })
+  })
 }

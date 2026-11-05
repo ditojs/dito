@@ -19,7 +19,8 @@ import {
   type Find,
   type FindShape
 } from './find.ts'
-import { findRows, getListQuery, type Filter } from './list.ts'
+import type { Filter } from './filters.ts'
+import { findRows, getListQuery } from './list.ts'
 import {
   parseListQuery,
   type ListParams,
@@ -27,7 +28,7 @@ import {
 } from './list-query.ts'
 import { getPrimaryKey } from './meta.ts'
 import { getOutput, type Output } from './serialize.ts'
-import { getEntityManager } from './transaction.ts'
+import { getEntityManager } from './createMikroAdapter.ts'
 
 // One request of a model controller, created by the middleware of the base
 // layer. That middleware runs inside the transaction, so `em` is the

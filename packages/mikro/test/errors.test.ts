@@ -12,7 +12,7 @@ import {
 } from '@mikro-orm/core'
 import { defineEntity, p } from '@mikro-orm/core'
 import { HttpError } from '@ditojs/server'
-import { toHttpError } from '../src/errors.ts'
+import { toHttpError } from '../src/databaseErrors.ts'
 import { Chapter, Book, Part, entities } from './entities.ts'
 
 // A page owns its child pages, which share its table.

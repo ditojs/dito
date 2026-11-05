@@ -1,40 +1,18 @@
-import type { z } from 'zod'
-import {
-  HttpError,
-  createValidationError,
-  type DitoContext,
-  type ValidationIssue
-} from '@ditojs/server'
-import { convertQueryValue, queryValidation } from '@ditojs/server/internal'
-import { asArray, mapConcurrently } from '@ditojs/utils'
+import { HttpError } from '@ditojs/server'
+import { asArray } from '@ditojs/utils'
 import {
   ReferenceKind,
   type EntityMetadata,
   type FindOptions
 } from '@mikro-orm/core'
+import { getFilterWheres } from './filters.ts'
 import type { FindShape } from './find.ts'
 import type { ListQuery } from './list-query.ts'
 import { getProperty, isLoadedColumn, isOwningToOne } from './meta.ts'
 import type { ModelRequest } from './model-request.ts'
-import { runSchema } from './schema-json.ts'
 
 // Lists take the parameters `filter=name:args`, `order=name desc` and
 // `range=0,49`, which responds with `{ results, total }` instead of an array.
-//
-// Each value of `filter=name:args` is converted by the schema of its filter, as
-// query values are, and validated against it, and `where` turns the result into
-// a MikroORM `where`, or undefined to skip it. A schema alone is short for
-// `{ [name]: value }`. Several arguments give the schema an array.
-
-export type FilterWhere<Value = any> = (
-  value: Value,
-  c: DitoContext,
-  name: string
-) => object | undefined | Promise<object | undefined>
-
-export type Filter =
-  | z.ZodType
-  | { schema: z.ZodType; where: FilterWhere }
 
 // The most rows a list returns, unless its `find` says otherwise.
 const defaultMaxRows = 1000
@@ -147,48 +125,3 @@ function getOrderName(meta: EntityMetadata, shape: FindShape, name: string) {
   )
   return isColumn && isShown ? prop.name : undefined
 }
-
-// The `where` of each filter in `values`, without the skipped ones.
-async function getFilterWheres(
-  c: DitoContext,
-  filters: Record<string, Filter>,
-  values: Record<string, string | string[]>
-): Promise<object[]> {
-  const entries = Object.entries(values).map(([name, value]) => {
-    const filter = Object.hasOwn(filters, name) ? filters[name] : undefined
-    if (!filter) {
-      throw new HttpError(400, { message: `Unknown filter '${name}'` })
-    }
-    // Not `instanceof`, which fails with two copies of Zod.
-    return 'safeParseAsync' in filter
-      ? { name, value, schema: filter, where: toWhere(name) }
-      : { name, value, ...filter }
-  })
-  const issues: ValidationIssue[] = []
-  const parsed = await mapConcurrently(entries, async entry => {
-    const result = await runSchema(
-      entry.schema,
-      convertQueryValue(entry.schema, entry.value)
-    )
-    for (const issue of result.issues ?? []) {
-      issues.push({ ...issue, path: [entry.name, ...(issue.path ?? [])] })
-    }
-    return { ...entry, value: result.issues ? undefined : result.value }
-  })
-  if (issues.length) {
-    throw createValidationError(issues, {
-      ...queryValidation,
-      type: 'FilterValidation'
-    })
-  }
-  const wheres = await mapConcurrently(parsed, ({ name, value, where }) =>
-    where(value, c, name)
-  )
-  return wheres.filter(where => where !== undefined)
-}
-
-// MikroORM reads `relation.id` as a nested `where`, not as a dotted key.
-const toWhere = (name: string) => (value: unknown) =>
-  name
-    .split('.')
-    .reduceRight<unknown>((where, key) => ({ [key]: where }), value) as object

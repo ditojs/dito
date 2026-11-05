@@ -16,13 +16,14 @@ export type { Find, FindShape } from './find.ts'
 export {
   defineDateRangeFilter,
   defineFilter,
-  defineTextFilter
+  defineTextFilter,
+  type Filter
 } from './filters.ts'
-export type { Filter } from './list.ts'
 export type { ListQuery } from './list-query.ts'
-export { defineMikroConfig, getAssetPaths } from './config.ts'
+export { defineMikroConfig } from './defineMikroConfig.ts'
 export {
   defineJsonType,
+  getAssetPaths,
   type JsonTypeAsset,
   type JsonTypeOptions
 } from './schema-json.ts'
@@ -30,7 +31,7 @@ export {
   createMikroAdapter,
   getEntityManager,
   getKysely
-} from './transaction.ts'
+} from './createMikroAdapter.ts'
 export {
   createEntityUserSource,
   type EntityUserSourceOptions

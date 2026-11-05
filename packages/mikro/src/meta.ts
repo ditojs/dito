@@ -1,5 +1,6 @@
 import { isArray, isPlainObject, isString } from '@ditojs/utils'
 import {
+  EntitySchema,
   Reference,
   ReferenceKind,
   Utils,
@@ -49,6 +50,14 @@ export function getLoaded(entity: Row, prop: EntityProperty): Row[] {
   }
   return value ? [Reference.unwrapReference(value)] : []
 }
+
+// Leaves out what else a module of entities exports.
+export const getEntities = (entities: object) =>
+  isArray(entities) ? entities : Object.values(entities).filter(isEntity)
+
+const isEntity = (value: unknown) => (
+  value instanceof EntitySchema || EntitySchema.REGISTRY.has(value as never)
+)
 
 // Whether a list loads the column of the property.
 export const isLoadedColumn = (prop: EntityProperty) => (

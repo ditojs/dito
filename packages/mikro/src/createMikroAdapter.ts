@@ -3,8 +3,8 @@ import type { Adapter, DitoEnv } from '@ditojs/server'
 import type { EntityManager as CoreEntityManager } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
 import type { Kysely } from 'kysely'
-import { hasMikroConfig } from './config.ts'
-import { toHttpError } from './errors.ts'
+import { toHttpError } from './databaseErrors.ts'
+import { hasMikroConfig } from './defineMikroConfig.ts'
 import { getModelRequest } from './model-request.ts'
 
 // The `MikroORM` of any driver and any entities.

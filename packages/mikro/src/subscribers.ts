@@ -1,77 +1,20 @@
 import {
   Cascade,
   ChangeSetType,
-  DateType,
-  EntitySchema,
   ReferenceKind,
-  UnderscoreNamingStrategy,
   Utils,
   wrap,
-  type EntityMetadata,
   type ChangeSet,
+  type EntityMetadata,
   type EntityProperty,
   type EventArgs,
-  type EntityManager,
   type EventSubscriber,
-  type FlushEventArgs,
-  type MetadataStorage,
-  type Options
+  type FlushEventArgs
 } from '@mikro-orm/core'
-import { isArray } from '@ditojs/utils'
-import { PlainDate } from './plain-date.ts'
-import { SchemaJsonType, runSchema } from './schema-json.ts'
+import { SchemaJsonType } from './schema-json.ts'
+import { runSchema } from './validation.ts'
 
-// The options of `new MikroORM()` for entities of Dito: `p.date()` columns keep
-// the local day, new rows get the defaults of their `defineJsonType()` schemas,
-// and `em.remove()` deletes owned rows and follows the delete rules of foreign
-// keys. Pivot entities with an id of their own log a warning. `entities` can be
-// a module of them, like in `getAssetPaths()`.
-//
-//   const orm = new MikroORM(defineMikroConfig({ dbName, entities }))
-export function defineMikroConfig<T extends Partial<Options<any, any, any>>>(
-  options: Omit<T, 'entities'> & { entities?: T['entities'] | object }
-): T {
-  const {
-    discovery,
-    subscribers = [],
-    entities
-  } = options as Partial<Options<any, any, any>>
-  const result: Partial<Options<any, any, any>> = {
-    ...options,
-    ...(entities && { entities: getEntities(entities) }),
-    subscribers: [...subscribers, new SchemaDefaults(), new RemovedRows()],
-    discovery: {
-      ...discovery,
-      onMetadata(meta, platform) {
-        for (const prop of Object.values(meta.properties)) {
-          if ((prop.type as unknown) === DateType) {
-            prop.type = PlainDate as never
-          }
-        }
-        return discovery?.onMetadata?.(meta, platform)
-      },
-      afterDiscovered(storage, platform) {
-        warnOfPivotIds(storage)
-        return discovery?.afterDiscovered?.(storage, platform)
-      }
-    }
-  }
-  return result as T
-}
-
-// Whether `defineMikroConfig()` created the entity manager's ORM.
-export const hasMikroConfig = (em: EntityManager) =>
-  [...em.getEventManager().getSubscribers()].some(
-    subscriber => subscriber instanceof RemovedRows
-  )
-
-// Leaves out what else a module of entities exports.
-const getEntities = (entities: object) =>
-  isArray(entities) ? entities : Object.values(entities).filter(isEntity)
-
-const isEntity = (value: unknown) => (
-  value instanceof EntitySchema || EntitySchema.REGISTRY.has(value as never)
-)
+// The event subscribers of `defineMikroConfig()`.
 
 // Makes `em.remove()` delete what the schema says. MikroORM deletes owned rows
 // only when they are loaded, so a flush loads them first. And it sets the
@@ -79,7 +22,7 @@ const isEntity = (value: unknown) => (
 // their delete rule says, so a flush puts them back. The database then applies
 // the rule and may refuse the delete, which leaves the rows as they were. Only
 // `set null` stays with MikroORM, on the rows that the remove keeps.
-class RemovedRows implements EventSubscriber {
+export class RemovedRows implements EventSubscriber {
   async beforeFlush({ em, uow }: FlushEventArgs) {
     for (const entity of uow.getRemoveStack()) {
       const wrapped = wrap(entity, true)
@@ -178,7 +121,7 @@ function getOwnedPaths(
 // Fills the defaults of the schemas of new rows. The write check only
 // validates, so this parses the values again and keeps the output: a new value,
 // as MikroORM compares the values before and after hooks.
-class SchemaDefaults implements EventSubscriber {
+export class SchemaDefaults implements EventSubscriber {
   async beforeCreate({ entity, meta }: EventArgs<any>) {
     for (const prop of meta.props) {
       const { customType } = prop
@@ -193,43 +136,4 @@ class SchemaDefaults implements EventSubscriber {
       }
     }
   }
-}
-
-// With an id of its own, a pivot table is ordered by it, its kept pairs lose
-// their other columns on writes, and upserts write pairs twice.
-function warnOfPivotIds(storage: MetadataStorage) {
-  for (const meta of storage.getAll().values()) {
-    for (const prop of meta.relations) {
-      if (prop.kind !== ReferenceKind.MANY_TO_MANY || !prop.owner) continue
-      const pivot = storage.get(prop.pivotEntity)
-      // The id of a generated pivot is the choice of `fixedOrder`.
-      const isDefined = EntitySchema.REGISTRY.has(pivot.class)
-      if (isDefined && pivot.primaryKeys.length < 2) {
-        console.warn(
-          `The pivot of ${meta.className}.${prop.name} needs a composite ` +
-          `primary key instead of an id of its own.`
-        )
-      }
-    }
-  }
-}
-
-// The asset paths of `@ditojs/storage`, from the `assets` of the JSON columns
-// of `entities`, classes or a module of them. It reads the definitions, so it
-// needs no ORM. Names follow MikroORM's default naming strategy.
-export function getAssetPaths(entities: object) {
-  const naming = new UnderscoreNamingStrategy()
-  return getEntities(entities).flatMap(entity => {
-    const { meta } =
-      entity instanceof EntitySchema
-        ? entity
-        : EntitySchema.REGISTRY.get(entity)!
-    const table = meta.tableName ?? naming.classToTableName(meta.className)
-    return Object.entries(meta.properties).flatMap(([name, prop]) => {
-      const type = prop.customType ?? prop.type
-      if (!(type instanceof SchemaJsonType)) return []
-      const column = prop.fieldNames?.[0] ?? naming.propertyToColumnName(name)
-      return type.assets.map(asset => ({ table, column, ...asset }))
-    })
-  })
 }

@@ -29,7 +29,7 @@ import {
   toPrimaryKey,
   type Row
 } from './meta.ts'
-import { runSchema } from './schema-json.ts'
+import { runSchema } from './validation.ts'
 
 // The writes of the controller's `post` and `patch :id`, also for custom
 // handlers. `createRecord()` and `assignRecord()` keep the properties
