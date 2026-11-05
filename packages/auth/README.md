@@ -16,7 +16,7 @@ import { Hono } from 'hono'
 import { createSessions, defineUserActions, getSessionUser } from '@ditojs/auth'
 
 const sessions = createSessions({
-  db: () => kysely,
+  adapter,
   secrets,
   cookieName: 'admin.sess',
   maxAge
@@ -25,6 +25,7 @@ const users = defineUserActions({ path: 'admins', source: adminSource })
 
 const api = createApi({
   controllers: [users.controller, ...controllers],
+  adapter,
   middleware: [sessions.middleware],
   getUser: c => getSessionUser(c, adminSource)
 })

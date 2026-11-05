@@ -18,7 +18,6 @@ import {
   createMikroAdapter,
   getEntityManager,
   getKysely,
-  getRootKysely,
   createEntityUserSource
 } from '@ditojs/mikro'
 ```
@@ -532,7 +531,7 @@ const orm = new MikroORM(defineMikroConfig({ dbName, entities }))
 ## createMikroAdapter()
 
 ```ts
-createMikroAdapter(orm: MikroORM): Adapter
+createMikroAdapter(orm: MikroORM): Adapter & { getKysely(): Kysely<any> }
 ```
 
 Returns the `adapter` of [`createApi()`](api.md#adapter).
@@ -544,6 +543,9 @@ Returns the `adapter` of [`createApi()`](api.md#adapter).
   action throws, the transaction rolls back.
 - `toHttpError()` maps MikroORM's errors, see
   [Database errors](#database-errors).
+- `getKysely()` returns a Kysely on the ORM's pool, outside of any
+  transaction, for sessions, credentials and jobs. `orm.em.getKysely()` joins
+  the current transaction instead.
 
 ```js
 const orm = new MikroORM(defineMikroConfig({ entities }))
@@ -567,15 +569,6 @@ getKysely(c: Context): Kysely<any>
 
 Returns the Kysely instance of the request's entity manager, which runs in its
 transaction, for queries that MikroORM doesn't build.
-
-## getRootKysely()
-
-```ts
-getRootKysely(orm: MikroORM): Kysely<any>
-```
-
-Returns a Kysely on the ORM's pool, outside of any transaction, for sessions,
-credentials and jobs. `orm.em.getKysely()` joins the current transaction instead.
 
 ## createEntityUserSource()
 

@@ -14,7 +14,9 @@ interface Orm {
 // The `adapter` of `createApi()`. Each request gets a fork of the entity
 // manager as `c.var.db`, which is the transaction's entity manager during a
 // transaction.
-export function createMikroAdapter(orm: Orm): Adapter {
+export function createMikroAdapter(
+  orm: Orm
+): Adapter & { getKysely(): Kysely<any> } {
   if (!hasMikroConfig(orm.em)) {
     throw new Error('Create the ORM with the config of `defineMikroConfig()`.')
   }
@@ -34,7 +36,14 @@ export function createMikroAdapter(orm: Orm): Adapter {
       }
     },
     toHttpError: (error, c) =>
-      toHttpError(error, c.var.modelRequest?.meta, c.req.method)
+      toHttpError(error, c.var.modelRequest?.meta, c.req.method),
+    // A Kysely on the ORM's pool, outside of any transaction, for sessions,
+    // credentials and jobs. `orm.em.getKysely()` joins the current
+    // transaction, a fork doesn't.
+    getKysely: () =>
+      (
+        orm.em.fork() as unknown as EntityManager
+      ).getKysely() as unknown as Kysely<any>
   }
 }
 
@@ -45,11 +54,3 @@ export const getEntityManager = (c: Context<DitoEnv>) =>
 // The Kysely of the request's entity manager, which runs in its transaction.
 export const getKysely = (c: Context<DitoEnv>) =>
   getEntityManager(c).getKysely() as unknown as Kysely<any>
-
-// A Kysely on the ORM's pool, outside of any transaction, for sessions,
-// credentials and jobs. `orm.em.getKysely()` joins the current transaction, a
-// fork doesn't.
-export const getRootKysely = (orm: Orm) =>
-  (
-    orm.em.fork() as unknown as EntityManager
-  ).getKysely() as unknown as Kysely<any>

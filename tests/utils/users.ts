@@ -1,4 +1,3 @@
-import type { Kysely } from 'kysely'
 import type { EntityClass } from '@mikro-orm/core'
 import { wrap } from '@mikro-orm/core'
 import {
@@ -11,6 +10,7 @@ import {
 import {
   assignRecord,
   createEntityUserSource,
+  createMikroAdapter,
   getEntityManager
 } from '@ditojs/mikro'
 import { HttpError, type Handler } from '@ditojs/server'
@@ -50,7 +50,7 @@ export function createUsersApi<U extends TestUser>({
     serialize: (c, user) => wrap(user).toObject()
   })
   const sessions = createSessions({
-    db: () => orm.em.getKysely() as unknown as Kysely<any>,
+    adapter: createMikroAdapter(orm),
     secrets,
     cookieName: 'dito.sess',
     maxAge: 24 * 60 * 60 * 1000

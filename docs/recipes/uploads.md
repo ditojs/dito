@@ -81,7 +81,7 @@ app.use('/covers/*', serveStorage(storages.get('covers')))
 app.use('/sample-pages/*', serveStorage(storages.get('samplePages')))
 
 setInterval(
-  () => assets.runJobs(getRootKysely(orm)),
+  () => assets.runJobs(adapter.getKysely()),
   60 * 60 * 1000
 )
 ```

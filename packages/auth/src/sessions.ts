@@ -24,9 +24,10 @@ declare module 'hono' {
 }
 
 export interface CreateSessionsOptions {
-  // The database of the `session` table. Sessions load before and save after
-  // the actions, so they don't use the request's transaction.
-  db: () => Kysely<any>
+  // The adapter of the API, such as `createMikroAdapter(orm)`, for the
+  // `session` table. Sessions load before and save after the actions, so they
+  // use its Kysely outside of the request's transaction.
+  adapter: { getKysely(): Kysely<any> }
   // The secrets that sign the cookie. The first one signs, and all of them
   // verify, so secrets can rotate.
   secrets: string[]
@@ -159,7 +160,8 @@ export class Session {
   // that a parallel request ended stays ended, and its cookie stays as it is,
   // as a parallel login may have replaced it.
   async commit() {
-    const { db, secrets, cookieName, maxAge } = this.#options
+    const { adapter, secrets, cookieName, maxAge } = this.#options
+    const db = adapter.getKysely()
     const c = this.#c
     const secure = new URL(c.req.url).protocol === 'https:'
     let { id } = this.#loaded
@@ -167,12 +169,12 @@ export class Session {
       this.value.passport.passwordFingerprint = this.#fingerprint
     }
     if (this.#destroy) {
-      if (id) await destroy(db(), id)
+      if (id) await destroy(db, id)
       deleteCookie(c, cookieName, { secure })
       return
     }
     if (this.#regenerate && id) {
-      await destroy(db(), id)
+      await destroy(db, id)
       id = null
     }
     const isChanged = (
@@ -183,7 +185,7 @@ export class Session {
     const expires = new Date(Date.now() + maxAge)
     const values = { value: JSON.stringify(this.value), expires_at: expires }
     if (id) {
-      const { numUpdatedRows } = await db()
+      const { numUpdatedRows } = await db
         .updateTable('session')
         .set(values)
         .where('id', '=', id)
@@ -191,7 +193,7 @@ export class Session {
       if (numUpdatedRows === 0n) return
     } else {
       id = randomUUID()
-      await db()
+      await db
         .insertInto('session')
         .values({ id, ...values })
         .execute()
@@ -208,7 +210,7 @@ export class Session {
 export type Sessions = ReturnType<typeof createSessions>
 
 export function createSessions(options: CreateSessionsOptions) {
-  const { db, secrets, cookieName } = options
+  const { adapter, secrets, cookieName } = options
   if (secrets.length === 0) {
     throw new Error('Unable to sign cookies without secrets.')
   }
@@ -217,7 +219,8 @@ export function createSessions(options: CreateSessionsOptions) {
   async function load(c: Context): Promise<Loaded> {
     const id = await readSignedCookie(c, secrets, cookieName)
     const row = id
-      ? await db()
+      ? await adapter
+          .getKysely()
           .selectFrom('session')
           .select('value')
           .where('id', '=', id)

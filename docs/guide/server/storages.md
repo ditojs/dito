@@ -8,8 +8,8 @@ files or change their URLs.
 
 The package reads and writes its own tables through
 [Kysely](https://kysely.dev). In a request, that's the Kysely of `c.var.db`,
-outside of requests the one that `getRootKysely(orm)` of `@ditojs/mikro`
-returns.
+outside of requests the one that `getKysely()` of the adapter returns, such as
+`createMikroAdapter(orm)` of `@ditojs/mikro`.
 
 ## Storages
 
@@ -172,7 +172,7 @@ the references. A job scans the data at the asset paths:
 
 ```js
 setInterval(async () => {
-  const { scan, released } = await assets.runJobs(getRootKysely(orm))
+  const { scan, released } = await assets.runJobs(adapter.getKysely())
   logger.info({ scan, released }, 'Asset jobs')
 }, 60 * 60 * 1000)
 ```

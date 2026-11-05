@@ -36,7 +36,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `dito db:seed` and `seeds/`                                                            | MikroORM's [seeder](https://mikro-orm.io/docs/seeding), or a script with an entity manager                                                                                                                       | medium                  |
 | `dito console`                                                                         | A REPL script of ten lines, see [step 4](#4-set-up-the-orm-the-services-and-the-scripts)                                                                                                                         | low                     |
 | `dito db:list_asset_config`, `db:recount_assets`                                       | The asset paths of the app, and `assets.runJobs()`                                                                                                                                                               | low                     |
-| `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `deleteExpiredSessions(kysely)` of `@ditojs/auth` on a timer of the app                                                                                                                                          | low                     |
+| `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `deleteExpiredSessions(adapter.getKysely())` of `@ditojs/auth` on a timer of the app                                                                                                                             | low                     |
 | `new Application()`, `app.execute()`, `start()`, `stop()`                              | `new Hono()` as the host, the controllers in one `createApi()` per area, routed with `app.route()`, and `serve()` of `@ditojs/server/node`, which stops on signals                                               | medium                  |
 | `config` and its sections                                                              | The app's own config module, whose sections the app passes to `hostMiddleware()`, `createSessions()`, `createStorages()` and `createAdmin()`                                                                     | low                     |
 | `config.knex`, `app.knex`, `normalizeDbNames`                                          | `new MikroORM(defineMikroConfig({ dbName, host, user, password }))`, passed to `createApi({ adapter: createMikroAdapter(orm) })`; MikroORM maps camelCase names to snake_case by default; `getKysely(c)` for SQL | low                     |
@@ -129,11 +129,11 @@ parts.
 
 **The ORM.** Create it from the knex config. MikroORM maps camelCase properties
 to snake_case columns by default, as `normalizeDbNames` did. The sessions,
-credentials and asset jobs of step 9 use `kysely`:
+credentials and asset jobs of step 9 use its `adapter`:
 
 ```js
 // server/orm.js
-import { defineMikroConfig, getRootKysely } from '@ditojs/mikro'
+import { createMikroAdapter, defineMikroConfig } from '@ditojs/mikro'
 import { MikroORM } from '@mikro-orm/postgresql'
 import config from '../config/index.js'
 import * as entities from './entities/index.js'
@@ -152,7 +152,7 @@ export const orm = new MikroORM(
   })
 )
 
-export const kysely = getRootKysely(orm)
+export const adapter = createMikroAdapter(orm)
 ```
 
 **Services** become modules of the app. Each module exports functions such as
@@ -628,7 +628,7 @@ await serve(app, { port, closeTimeout: 5000, onClose: () => orm.close() })
 `@ditojs/auth`. The `session` and `credential` tables stay the same, so passkeys
 and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 
-- `createSessions({ db: () => kysely, secrets, cookieName, maxAge })` returns
+- `createSessions({ adapter, secrets, cookieName, maxAge })` returns
   the session `middleware`, and `getSessionUser(c, source)` the user for the
   `getUser` of `createApi()`.
 - [`createEntityUserSource()`](api/server/mikro.md#createentityusersource)
@@ -636,7 +636,7 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   users that no entity holds, the app writes the
   [`UserSource`](api/server/auth.md#usersource) itself.
 - [`defineUserActions()`](api/server/auth.md#defineuseractions) serves the
-  admin's users, with `credentials: createCredentials(() => kysely)`. Its
+  admin's users, with `credentials: createCredentials({ adapter })`. Its
   `controller` goes into `controllers`, and its `features` to the admin. Other
   users, such as a site's members, log in through the app's own actions, see
   [Other users](guide/server/auth.md#other-users).
@@ -673,8 +673,8 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   [`createPasswordReset()`](api/server/auth.md#createpasswordreset), with times
   in milliseconds.
 - When the app deletes users, it calls
-  `deleteUserCredentials(kysely, source, ids)`, as no foreign keys tie
-  credentials to users.
+  `deleteUserCredentials(adapter.getKysely(), source, ids)`, as no foreign keys
+  tie credentials to users.
 - `readSignedCookie(c, secrets, name)` reads the app's own signed cookies.
 
 #### Storage
@@ -701,8 +701,8 @@ export const assets = createAssets({
 ```
 
 - `mixins: [assets.mixin('book')]` replaces `assets = true` of a controller, and
-  `assets.runJobs(kysely)` runs on a timer of the app. `serveStorage()` of
-  `@ditojs/storage/node` serves public disk storages.
+  `assets.runJobs(adapter.getKysely())` runs on a timer of the app.
+  `serveStorage()` of `@ditojs/storage/node` serves public disk storages.
 - `S3Storage` comes from the main entry of the package. The `PutObject` options
   of S3 storages, such as `acl` and `cacheControl`, become a `params` object,
   such as `{ ACL: 'public-read', CacheControl: 'max-age=31536000' }`.

@@ -6,8 +6,7 @@ import {
   createRecord,
   defineJsonType,
   defineMikroConfig,
-  getAssetPaths,
-  getRootKysely
+  getAssetPaths
 } from '../src/index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 
@@ -117,13 +116,14 @@ describe('`defineMikroConfig()`', () => {
     ).not.toThrow()
   })
 
-  it('reads outside of a transaction with `getRootKysely()`', async () => {
+  it('reads outside of a transaction with `adapter.getKysely()`', async () => {
+    const adapter = createMikroAdapter(orm)
     await orm.em.fork().transactional(async em => {
       await em.insert(Book, { specs: {} } as never)
-      const read = (db: ReturnType<typeof getRootKysely>) =>
+      const read = (db: ReturnType<typeof adapter.getKysely>) =>
         db.selectFrom('book').selectAll().execute()
       expect(await read(em.getKysely() as never)).toHaveLength(1)
-      expect(await read(getRootKysely(orm))).toHaveLength(0)
+      expect(await read(adapter.getKysely())).toHaveLength(0)
     })
   })
 

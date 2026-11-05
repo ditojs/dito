@@ -1,5 +1,4 @@
 import type { EntityManager } from '@mikro-orm/core'
-import type { Kysely } from 'kysely'
 import { z } from 'zod'
 import {
   createCredentials,
@@ -8,6 +7,7 @@ import {
 } from '@ditojs/auth'
 import { createPasskeys } from '@ditojs/auth/passkeys'
 import { createTotp } from '@ditojs/auth/totp'
+import { createMikroAdapter } from '@ditojs/mikro'
 import type { TestOrm } from '../../utils/database.js'
 import { Credential, Session } from '../../utils/entities.js'
 import { createUsersApi } from '../../utils/users.js'
@@ -26,9 +26,7 @@ export function createApi(orm: TestOrm) {
     entity: User,
     secrets,
     password: z.string().min(6, 'must be at least 6 characters long'),
-    credentials: createCredentials(
-      () => orm.em.getKysely() as unknown as Kysely<any>
-    ),
+    credentials: createCredentials({ adapter: createMikroAdapter(orm) }),
     features: {
       // The passkeys belong to the domain of the requests, `localhost`:
       passkeys: createPasskeys({ rpName: 'Example' }),

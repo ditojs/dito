@@ -39,12 +39,12 @@ createSessions(options: CreateSessionsOptions): {
 }
 ```
 
-| Option       | Type                | Description                                                                                        |
-| ------------ | ------------------- | -------------------------------------------------------------------------------------------------- |
-| `db`         | `() => Kysely<any>` | The database of the `session` table, outside of the requests' transactions.                        |
-| `secrets`    | `string[]`          | The secrets that sign the cookie. The first one signs, and all of them verify, so they can rotate. |
-| `cookieName` | `string`            | The cookie name, such as `admin.sess`.                                                             |
-| `maxAge`     | `number`            | The lifetime of a session, in milliseconds. Browsers cap cookies at 400 days.                      |
+| Option       | Type                           | Description                                                                                                                                                              |
+| ------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `adapter`    | `{ getKysely(): Kysely<any> }` | The adapter of the API, such as [`createMikroAdapter(orm)`](mikro.md#createmikroadapter), whose Kysely holds the `session` table, outside of the requests' transactions. |
+| `secrets`    | `string[]`                     | The secrets that sign the cookie. The first one signs, and all of them verify, so they can rotate.                                                                       |
+| `cookieName` | `string`                       | The cookie name, such as `admin.sess`.                                                                                                                                   |
+| `maxAge`     | `number`                       | The lifetime of a session, in milliseconds. Browsers cap cookies at 400 days.                                                                                            |
 
 The app creates the `session` table:
 
@@ -63,7 +63,7 @@ The cookie holds the id, signed with Hono's
 `deleteExpiredSessions(db)` deletes the expired rows. The app runs it on a
 timer.
 
-Returns the cookie `name` and the session `middleware`. `middleware` is Hono
+Returns the `cookieName` and the session `middleware`. `middleware` is Hono
 middleware, which the app passes to the `middleware` of `createApi()`, or uses
 in its own Hono routes. The API runs it before `getUser`, which reads the
 session. It loads the session into `c.var.session` before the action. After the
@@ -253,13 +253,16 @@ the API's database handle in `c.var.db`.
 ## createCredentials()
 
 ```ts
-createCredentials(db: () => Kysely<any>): Credentials
+createCredentials(options: {
+  adapter: { getKysely(): Kysely<any> }
+}): Credentials
 deleteUserCredentials(db: Kysely<any>, source: UserSource, ids: unknown[]): Promise<void>
 ```
 
 Returns the store of the users' passkeys and TOTP secrets, in the `credential`
-table that all sources share, with `data` as JSON. `db` returns the root Kysely
-instance, like the one of `createSessions()`. The app creates the table:
+table that all sources share, with `data` as JSON. It uses the Kysely of the
+`adapter` outside of the requests' transactions, like `createSessions()`. The
+app creates the table:
 
 ```sql
 create table credential (

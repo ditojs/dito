@@ -10,9 +10,12 @@ its users in its own entities, and describes them to auth in a user source.
 ```js
 import { Hono } from 'hono'
 import { createSessions, getSessionUser } from '@ditojs/auth'
+import { createMikroAdapter } from '@ditojs/mikro'
+
+export const adapter = createMikroAdapter(orm)
 
 export const adminSessions = createSessions({
-  db: () => getRootKysely(orm),
+  adapter,
   secrets: config.keys,
   cookieName: 'admin.sess',
   maxAge: 24 * 60 * 60 * 1000
@@ -20,6 +23,7 @@ export const adminSessions = createSessions({
 
 const api = createApi({
   controllers,
+  adapter,
   middleware: [adminSessions.middleware],
   getUser: c => getSessionUser(c, adminSource)
 })
@@ -35,8 +39,8 @@ action throws, and adds its cookie to the response. `getSession(c)` returns the
 session, also in the app's own Hono routes. `getSessionUser(c, source)` returns
 the id and roles of the session's user, for the `getUser` of the API.
 
-Sessions use their own database handle, `db()`, because they load before the
-action's transaction and save after it. `deleteExpiredSessions(kysely)` deletes
+Sessions use `adapter.getKysely()`, outside of the action's transaction, because
+they load before it and save after it. `deleteExpiredSessions(kysely)` deletes
 the expired rows. Call it from a timer of the app.
 
 The cookie holds the session's id, signed with Hono's signed cookies. The first
@@ -98,7 +102,7 @@ const users = defineUserActions({
   source: adminSource,
   // New passwords, 8 characters at least by default:
   password: z.string().min(12),
-  credentials: createCredentials(() => getRootKysely(orm)),
+  credentials: createCredentials({ adapter }),
   features: {
     passkeys: createPasskeys({ rpName: 'Book Catalog' }),
     totp: createTotp({ issuer: 'Book Catalog', secret: config.totpSecret })
@@ -166,13 +170,13 @@ of a transaction.
 ### Credentials
 
 Passkeys and TOTP keep their secrets in the `credential` table, through
-`createCredentials(() => getRootKysely(orm))`. No foreign keys tie them to their
+`createCredentials({ adapter })`. No foreign keys tie them to their
 users, so an action that deletes users deletes their credentials too:
 
 ```js
 import { deleteUserCredentials } from '@ditojs/auth'
 
-await deleteUserCredentials(getRootKysely(orm), adminSource, ids)
+await deleteUserCredentials(adapter.getKysely(), adminSource, ids)
 ```
 
 ### Passkeys

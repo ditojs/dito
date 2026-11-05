@@ -25,8 +25,7 @@ export {
 export {
   createMikroAdapter,
   getEntityManager,
-  getKysely,
-  getRootKysely
+  getKysely
 } from './transaction.ts'
 export {
   createEntityUserSource,

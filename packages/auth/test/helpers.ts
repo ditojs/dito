@@ -82,13 +82,14 @@ export function setup({
   // More controllers of the API, next to the users routes.
   controllers?: ControllerDefinition[]
 } & Partial<DefineUserActionsOptions<TestUser>>) {
+  const adapter = { getKysely: () => db }
   const sessions = createSessions({
-    db: () => db,
+    adapter,
     secrets: cookieSecrets,
     cookieName,
     maxAge: 24 * 60 * 60 * 1000
   })
-  const credentials = createCredentials(() => db)
+  const credentials = createCredentials({ adapter })
   const users = defineUserActions({
     path: 'admins',
     source,

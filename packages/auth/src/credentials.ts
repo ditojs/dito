@@ -20,9 +20,15 @@ export interface Credential {
 
 export type Credentials = ReturnType<typeof createCredentials>
 
-// `db` returns the root Kysely instance. Credentials don't use the request's
-// transaction, so TOTP failures stay counted when the request fails.
-export function createCredentials(db: () => Kysely<any>) {
+export interface CreateCredentialsOptions {
+  // The adapter of the API, such as `createMikroAdapter(orm)`. Credentials use
+  // its Kysely outside of the request's transaction, so TOTP failures stay
+  // counted when the request fails.
+  adapter: { getKysely(): Kysely<any> }
+}
+
+export function createCredentials({ adapter }: CreateCredentialsOptions) {
+  const db = () => adapter.getKysely()
   const query = (
     database: Kysely<any>,
     source: UserSource<any>,

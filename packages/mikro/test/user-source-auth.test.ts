@@ -46,7 +46,7 @@ const source = createEntityUserSource(Member, {
 })
 
 const sessions = createSessions({
-  db: () => db as Kysely<any>,
+  adapter: { getKysely: () => db as Kysely<any> },
   secrets: ['secret sauce'],
   cookieName: 'member.sess',
   maxAge: 60_000
