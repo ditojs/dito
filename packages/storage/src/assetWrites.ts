@@ -17,15 +17,15 @@ import { bodyValidation } from '@ditojs/server/internal'
 import {
   resolveFileUrl,
   type AssetFile,
-  type Storage
+  type Storage,
+  type StoreOptions
 } from './Storage.ts'
 import {
   findAssetFiles,
   findInvalidFiles,
   type AssetPath
-} from './asset-path.ts'
-import { insertAsset } from './assets.ts'
-import type { StorageRegistry } from './registry.ts'
+} from './assetPaths.ts'
+import type { StorageRegistry } from './StorageRegistry.ts'
 
 // Handles the files in the JSON body of a controller's writes, at the asset
 // paths of its table. A file is accepted when the `asset` table holds its key
@@ -287,4 +287,44 @@ async function fetchFile(url: string) {
       ? error
       : importError((error as Error).message)
   }
+}
+
+// Inserts the `asset` row of a new file, unreferenced until a scan finds it.
+// If `db` is outside the transaction of the write that references the file
+// and that write rolls back, the release deletes the file later.
+export async function insertAsset(
+  db: Kysely<any>,
+  file: AssetFile,
+  storage: Storage
+) {
+  const now = new Date()
+  await db
+    .insertInto('asset')
+    .values({
+      key: file.key,
+      file,
+      storage: storage.name,
+      unreferenced_since: now,
+      created_at: now,
+      updated_at: now
+    })
+    .execute()
+}
+
+// Stores a file and inserts its `asset` row, so that the jobs track it, such
+// as a PDF that the server creates. When the insert fails, it removes the
+// file again.
+export async function storeAsset(
+  db: Kysely<any>,
+  storage: Storage,
+  options: StoreOptions
+) {
+  const file = await storage.store(options)
+  try {
+    await insertAsset(db, file, storage)
+  } catch (error) {
+    await storage.removeFile(file).catch(() => {})
+    throw error
+  }
+  return file
 }

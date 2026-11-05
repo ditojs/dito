@@ -2,9 +2,8 @@ import picomatch from 'picomatch'
 import { camelize } from '@ditojs/utils'
 import { HttpError, defineAction, type MixinDefinition } from '@ditojs/server'
 import type { AssetFile } from './Storage.ts'
-import { storeAsset } from './assets.ts'
-import type { AssetDb } from './assets-feature.ts'
-import type { StorageRegistry } from './registry.ts'
+import { storeAsset, type AssetDb } from './assetWrites.ts'
+import type { StorageRegistry } from './StorageRegistry.ts'
 
 // The upload action of the Dito admin's upload component:
 // `post upload/<data path>`, such as `upload/pages/3/images`. It camelizes each

@@ -19,16 +19,15 @@ import {
   type AssetFile,
   type AssetPath
 } from '../src/index.ts'
-import { assets, importAssets } from '../src/assets-feature.ts'
+import { assets, importAssets, storeAsset } from '../src/assetWrites.ts'
 import {
   findAssetReferences,
   releaseAssets,
   runAssetJobs,
-  scanAssets,
-  storeAsset
-} from '../src/assets.ts'
-import { uploadRoutes } from '../src/upload.ts'
-import { findAssetFiles } from '../src/asset-path.ts'
+  scanAssets
+} from '../src/assetJobs.ts'
+import { uploadRoutes } from '../src/assetUploads.ts'
+import { findAssetFiles } from '../src/assetPaths.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 
 let db: Kysely<any>

@@ -2,16 +2,15 @@ import type { Kysely } from 'kysely'
 import { isString } from '@ditojs/utils'
 import type { DitoContext, MixinDefinition } from '@ditojs/server'
 import type { Storage, StoreOptions } from './Storage.ts'
-import { getDataPath, type AssetPath } from './asset-path.ts'
-import { assets, importAssets } from './assets-feature.ts'
+import { getDataPath, type AssetPath } from './assetPaths.ts'
 import {
   findAssetReferences,
   runAssetJobs,
-  storeAsset,
   type FindAssetReferencesOptions
-} from './assets.ts'
-import type { StorageRegistry } from './registry.ts'
-import { uploadRoutes, type AssetUpload } from './upload.ts'
+} from './assetJobs.ts'
+import { assets, importAssets, storeAsset } from './assetWrites.ts'
+import type { StorageRegistry } from './StorageRegistry.ts'
+import { uploadRoutes, type AssetUpload } from './assetUploads.ts'
 
 // Binds the asset handling to an app's adapter, asset paths and storages. The
 // mixins use the Kysely of the request's handle, `c.var.db`, so that the
