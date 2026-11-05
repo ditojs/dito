@@ -5,6 +5,7 @@ import type { z } from 'zod'
 import { asArray, isArray, isFunction } from '@ditojs/utils'
 import { resolveController, type ResolvedAction } from './compose.ts'
 import { isController } from './define.ts'
+import { convertQuery } from './query.ts'
 import {
   HttpError,
   bodyValidation,
@@ -138,8 +139,10 @@ export async function isAuthorized(c: DitoContext, authorize: Authorize) {
 }
 
 function validate(target: 'query' | 'json', schema: z.ZodType) {
-  return validator(target, async value => {
-    const { data, error } = await schema.safeParseAsync(value)
+  return validator(target, async (value, c) => {
+    const { data, error } = await schema.safeParseAsync(
+      target === 'query' ? convertQuery(schema, c.req.queries()) : value
+    )
     if (error) {
       throw createValidationError(
         error.issues,

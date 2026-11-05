@@ -352,10 +352,10 @@ type Filter =
     }
 ```
 
-Each filter validates its value with a Zod schema. Query values are
-strings, so schemas of numbers, booleans and dates need to parse them, as the
-[`q` schemas](controllers.md#ditojsserverzod) do. A repeated filter gives an
-array, which only an array schema accepts. Invalid values respond with 400, with
+Each filter validates its value with a Zod schema. Dito converts the strings of
+the arguments to what the schema expects, as for
+[query values](controllers.md#query-values). Several arguments give an array,
+which only an array schema accepts. Invalid values respond with 400, with
 `errors` keyed by the filter's name. A schema that throws gives the code
 `custom` and the message `Invalid input`.
 
@@ -366,7 +366,7 @@ is short for a filter whose `where` returns `{ [name]: value }`. The list joins
 
 ```js
 filters: {
-  author: q.integer(),
+  author: z.number().int(),
   tag: defineFilter({
     schema: z.string(),
     where: name => ({ tags: { name } })

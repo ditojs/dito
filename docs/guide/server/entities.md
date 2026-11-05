@@ -59,7 +59,6 @@ it, see [Writes](writes.md). These rules of the entity matter for Dito:
 
 ```js
 import { defineFilter, defineModelController } from '@ditojs/mikro'
-import { q } from '@ditojs/server/zod'
 import { z } from 'zod'
 
 export const articles = defineModelController({
@@ -74,7 +73,7 @@ export const articles = defineModelController({
     orderBy: { createdAt: 'desc' }
   }),
   filters: {
-    author: q.integer(),
+    author: z.number().int(),
     tag: defineFilter({
       schema: z.string(),
       where: name => ({ tags: { name } })
@@ -224,7 +223,7 @@ reveals something about the values of a column.
 ```js
 filters: {
   // A schema alone filters by the property of the name, `author`.
-  author: q.integer(),
+  author: z.number().int(),
   tag: defineFilter({
     schema: z.string(),
     where: name => ({ tags: { name } })
@@ -236,15 +235,16 @@ filters: {
   }),
   // A filter's `where` gets Hono's context too.
   mine: defineFilter({
-    schema: q.boolean(),
+    schema: z.boolean(),
     where: (mine, c) => (mine ? { author: c.var.user.id } : undefined)
   })
 }
 ```
 
-Query values are strings, so the schemas of numbers, booleans and dates parse
-them, such as `q.integer()` and `q.boolean()` of `@ditojs/server/zod`. A `where`
-that returns `undefined` skips the filter. Unknown filters and invalid values
+Dito converts the strings of the arguments to the numbers, booleans and dates
+that the schema expects, see
+[Query values](../../api/server/controllers.md#query-values). A `where` that
+returns `undefined` skips the filter. Unknown filters and invalid values
 respond with 400.
 
 A filter's name may differ from the property, such as `author` for a property

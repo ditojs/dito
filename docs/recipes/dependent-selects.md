@@ -13,7 +13,7 @@ lists the subgenres of a genre through a filter:
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
 import { defineModelController } from '@ditojs/mikro'
-import { q } from '@ditojs/server/zod'
+import { z } from 'zod'
 
 const GenreSchema = defineEntity({
   name: 'Genre',
@@ -31,7 +31,7 @@ export const genres = defineModelController({
   entity: Genre,
   find: { orderBy: { name: 'asc' } },
   // `GET /genres?filter=parent:3` lists the subgenres of genre 3.
-  filters: { parent: q.integer() },
+  filters: { parent: z.number().int() },
   actions: { 'get': true, 'get :id': true }
 })
 ```
@@ -40,14 +40,17 @@ The books controller filters books by a genre or one of its subgenres. It uses
 the `genres` relation of `Book`:
 
 ```js
-import { q } from '@ditojs/server/zod'
 import { z } from 'zod'
 
 // In the books controller:
 filters: {
   genre: {
-    // The ids of the genre and the subgenre, which may be empty.
-    schema: z.tuple([q.integer(), q.integer().or(z.literal(''))]),
+    // The ids of the genre and the subgenre, which may be empty. Tuples get
+    // the strings of the arguments, so they coerce them.
+    schema: z.tuple([
+      z.coerce.number().int(),
+      z.literal('').or(z.coerce.number().int())
+    ]),
     where: ([genre, subgenre]) => {
       // The subgenre if it is set, else the genre:
       const id = subgenre || genre

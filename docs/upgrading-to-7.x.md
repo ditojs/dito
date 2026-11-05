@@ -269,7 +269,7 @@ find: { populate: ['author'], orderBy: { createdAt: 'desc' } },
 filters: {
   title: defineTextFilter(),
   createdAt: defineDateRangeFilter(),
-  'author.id': q.integer()
+  'author.id': z.number().int()
 }
 // GET /posts/choices?filter=author.id:12
 ```
@@ -447,8 +447,10 @@ One `actions` map holds every route, keyed `'verb path'`, see
   default `put` and no write on the whole collection. Bulk writes are custom
   actions, such as `'post order'`.
 - `parameters` and `returns` become the Zod schemas `query` and `body`,
-  which `defineAction()` types. `q` of `@ditojs/server/zod` has schemas for
-  query values, such as `q.integer()`, and `q.array(item)` for repeated keys.
+  which `defineAction()` types. The `query` schema is plain Zod: Dito converts
+  the strings of the query to the numbers, booleans, dates and arrays that it
+  expects, as Dito.js 6 did for `parameters`, see
+  [Query values](api/server/controllers.md#query-values).
 
 #### Handlers and the context
 

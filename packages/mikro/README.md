@@ -16,14 +16,14 @@ manager per request, runs transactions and maps MikroORM's errors.
 ```js
 import { createApi } from '@ditojs/server'
 import { createMikroAdapter, defineModelController } from '@ditojs/mikro'
-import { q } from '@ditojs/server/zod'
+import { z } from 'zod'
 
 export const books = defineModelController({
   path: 'books',
   entity: Book,
   authorize: 'editor',
   find: { populate: ['author'], orderBy: { title: 'asc' } },
-  filters: { author: q.integer() },
+  filters: { author: z.number().int() },
   actions: {
     'get': { authorize: true },
     'post': true,

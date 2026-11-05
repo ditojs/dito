@@ -158,17 +158,17 @@ responds with 400 and the issues. Their output becomes `query` and `body` of the
 input. `defineAction()` gives them their types in the handler:
 
 ```js
-import { q } from '@ditojs/server/zod'
-
 'get search': defineAction({
-  query: z.object({ term: z.string(), limit: q.integer().default(20) }),
+  query: z.object({ term: z.string(), limit: z.number().int().default(20) }),
   handler: ({ db, query: { term, limit } }) => search(db, term, limit)
 })
 ```
 
-Query values are strings, so numbers, booleans and dates need the parsing
-schemas of `q`. Without a `query` schema, `query` holds the first value of each
-parameter. `c.req.queries()` holds all of them.
+Dito converts the strings of query values to the numbers, booleans, dates and
+arrays that the schema expects, see [Query
+values](../../api/server/controllers.md#query-values). Without a `query` schema,
+`query` holds the first value of each parameter. `c.req.queries()` holds all of
+them.
 
 Without a `body` schema, the `body` of writes is the JSON body. An empty body is
 `{}`, and so is a JSON body without `Content-Type`, which is dropped: a `PATCH`

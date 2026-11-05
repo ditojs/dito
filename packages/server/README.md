@@ -41,7 +41,6 @@ await serve(app, { port: 8080 })
   `createErrorHandler()`, `notFound` and `createValidationError()`.
 - `@ditojs/server/node`: `serve()`, and `forwarded()` and `getClientAddress()`
   for apps behind reverse proxies. Needs `@hono/node-server`, an optional peer.
-- `@ditojs/server/zod`: `q`, Zod schemas for query values.
 
 See the
 [server guide](https://github.com/ditojs/dito/blob/main/docs/guide/server/index.md)

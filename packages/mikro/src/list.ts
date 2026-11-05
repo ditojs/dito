@@ -5,7 +5,7 @@ import {
   type DitoContext,
   type ValidationIssue
 } from '@ditojs/server'
-import { queryValidation } from '@ditojs/server/internal'
+import { convertQueryValue, queryValidation } from '@ditojs/server/internal'
 import { asArray, mapConcurrently } from '@ditojs/utils'
 import {
   ReferenceKind,
@@ -21,10 +21,10 @@ import { runSchema } from './schema-json.ts'
 // Lists take the parameters `filter=name:args`, `order=name desc` and
 // `range=0,49`, which responds with `{ results, total }` instead of an array.
 //
-// Each value of `filter=name:args` is validated against the schema of its
-// filter, and `where` turns the result into a MikroORM `where`, or undefined to
-// skip it. A schema alone is short for `{ [name]: value }`. Several arguments
-// give the schema an array.
+// Each value of `filter=name:args` is converted by the schema of its filter, as
+// query values are, and validated against it, and `where` turns the result into
+// a MikroORM `where`, or undefined to skip it. A schema alone is short for
+// `{ [name]: value }`. Several arguments give the schema an array.
 
 export type FilterWhere<Value = any> = (
   value: Value,
@@ -166,7 +166,10 @@ async function getFilterWheres(
   })
   const issues: ValidationIssue[] = []
   const parsed = await mapConcurrently(entries, async entry => {
-    const result = await runSchema(entry.schema, entry.value)
+    const result = await runSchema(
+      entry.schema,
+      convertQueryValue(entry.schema, entry.value)
+    )
     for (const issue of result.issues ?? []) {
       issues.push({ ...issue, path: [entry.name, ...(issue.path ?? [])] })
     }

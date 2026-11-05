@@ -17,7 +17,7 @@
 
 ### New
 
-- **server:** Schemas of actions, filters and column types are Zod schemas. `defineAction({ query, body, handler })` types `query` and `body` of the handler's input. `@ditojs/server/zod` has `q`, Zod schemas for query values.
+- **server:** Schemas of actions, filters and column types are Zod schemas. `defineAction({ query, body, handler })` types `query` and `body` of the handler's input. Dito converts the strings of query values and filter arguments to the numbers, booleans, dates and arrays that their schemas expect, through the schemas' JSON Schema. A repeated key of a single value responds with 400. Unions, transforms and other types get the strings.
 - **server:** `c.var.body` holds the body of a write, parsed once, for middleware and the handler. `sendFile(c, body, { filename, type, inline })` responds with a file, also a stream.
 - **server:** `hostMiddleware()` returns Hono's `secureHeaders()`, `csrf()` for requests with `Origin`, and `bodyLimit()`, and optionally `cors()` and `etag()`.
 - **server:** `@ditojs/server/node` has `serve()`, a Node server that stops on signals, `forwarded(proxy)` for apps behind reverse proxies, and `getClientAddress(c)`.
@@ -36,4 +36,3 @@
 - **auth:** The body of `post login` and `post password-reset` names the user as `username`. Logins respond with `{ user }` or `{ codeRequired: true }`, and `get self` replaces `get session`. New passwords need at least 8 characters by default.
 - **admin-server:** `createAdmin()` serves the admin as a Hono app, with Vite in development and the build of `dist` otherwise. `authorize` protects the views, which the build puts below `views/`. `defineAdminViteConfig()` from `@ditojs/admin-server/vite` builds the admin on Vite 8, whose options are `build.rolldownOptions`.
 - **mikro:** `defineMikroConfig()` makes `p.date()` columns keep the local day, fills the defaults of `defineJsonType()` schemas in new rows, and warns of pivot entities with an id of their own. The `assets` of `defineJsonType()` and `getAssetPaths()` declare asset paths on the entities.
-- **server:** `q.array(item, { max })` limits repeated keys.

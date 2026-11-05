@@ -213,30 +213,33 @@ Hono's context of a Dito request, `c`, with the variables of
 [`DitoVariables`](api.md#the-handlers-input) in `c.var`. `c.req.valid('query')`
 and `c.req.valid('json')` have the types of the action's schemas.
 
-## `@ditojs/server/zod`
+## Query values
 
-```js
-import { q } from '@ditojs/server/zod'
-```
+Query values arrive as strings. Before the `query` schema of an action, or the
+schema of a list filter, validates them, Dito converts each value to what the
+schema expects at its key:
 
-`z` is the export of `zod`. `q` holds Zod schemas for query values, which arrive as
-strings: `z.number()` refuses `?id=12`, and `q.integer()` turns it into `12`.
-Use `q` for what the URL sends, and `z` for bodies and everything else.
+| The schema expects     | Dito converts                                                                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A number or an integer | `Number(value)`. The empty string stays a string, so the schema rejects it.                                                                             |
+| A boolean              | `true` and `1` to `true`, `false` and `0` to `false`. Other values stay strings.                                                                        |
+| A `Date`               | `new Date(value)`. Invalid dates stay strings.                                                                                                          |
+| An array               | All values of a repeated key, `?a=1&a=2`, and a single value as an array of one. Each item is converted by the item's type. `.max()` limits the values. |
+| A single value         | A repeated key responds with 400, at the key.                                                                                                           |
 
-| Schema                   | Accepts                                                                                                               |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `q.boolean()`            | `true`, `1`, `false`, `0`, as a boolean.                                                                              |
-| `q.number()`             | A number, not the empty string.                                                                                       |
-| `q.integer()`            | An integer, not the empty string.                                                                                     |
-| `q.string()`             | Any string.                                                                                                           |
-| `q.date()`               | A date, as a `Date`, not the empty string.                                                                            |
-| `q.array(item, { max })` | Repeated keys, `?a=1&a=2`, each as `item`. A single value is an array of one item. `max` limits the number of values. |
-
-Each one can be `.optional()` or have a `.default()`.
+Dito looks through `.optional()`, `.nullable()` and `.default()`. Unions,
+transforms, tuples and all other types get the strings as they are, so their
+schemas parse them themselves, such as with `z.coerce.number()`. There are no
+comma-separated lists and no nested keys.
 
 ```js
 'get search': defineAction({
-  query: z.object({ term: q.string(), limit: q.integer().default(20) }),
+  query: z.object({
+    term: z.string(),
+    limit: z.number().int().default(20),
+    published: z.boolean().optional(),
+    tags: z.array(z.string()).max(10).optional()
+  }),
   handler: ({ db, query: { term, limit } }) => search(db, term, limit)
 })
 ```

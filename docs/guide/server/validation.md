@@ -14,11 +14,10 @@ peer of `@ditojs/server`.
 
 ```js
 import { defineAction } from '@ditojs/server'
-import { q } from '@ditojs/server/zod'
 import { z } from 'zod'
 
 'post :id/review': defineAction({
-  query: z.object({ notify: q.boolean().optional() }),
+  query: z.object({ notify: z.boolean().optional() }),
   body: z.strictObject({
     rating: z.int().min(1).max(5),
     text: z.string().max(2000)
@@ -31,9 +30,9 @@ The output of the schemas becomes `query` and `body` of the handler's input, and
 `c.req.valid('query')` and `c.req.valid('json')`, so transforms and defaults
 apply. `defineAction()` gives them their types in the handler.
 
-Query values are strings, and repeated parameters arrive as arrays. The
-[`q` schemas](../../api/server/controllers.md#ditojsserverzod) of
-`@ditojs/server/zod` parse them.
+Query values are strings. Dito converts them to the numbers, booleans, dates and
+arrays that the schema expects, see
+[Query values](../../api/server/controllers.md#query-values).
 
 ## Columns
 

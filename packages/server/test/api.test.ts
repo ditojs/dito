@@ -4,6 +4,7 @@ import { setCookie } from 'hono/cookie'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
+import * as utils from '@ditojs/utils'
 import {
   createApi,
   createErrorHandler,
@@ -26,7 +27,6 @@ import {
   type Transaction,
   type User
 } from '../src/index.ts'
-import * as zodModule from '../src/zod.ts'
 import { createClient } from '../../../tests/utils/client.ts'
 
 declare module '../src/index.ts' {
@@ -863,7 +863,7 @@ describe('validation', () => {
           }),
           'get plain': ({ query }) => query,
           'get ids': defineAction({
-            query: z.object({ id: zodModule.q.array(zodModule.q.integer()) }),
+            query: z.object({ id: z.array(z.number().int()) }),
             handler: ({ query }) => query
           })
         }
@@ -1044,6 +1044,95 @@ describe('validation', () => {
       { path: 'fonts', authorize: true, actions: { 'patch :id': () => 'ok' } }
     ])
     expect((await request(api, 'PATCH', '/api/fonts/1', [1])).status).toBe(200)
+  })
+})
+
+describe('query values', () => {
+  // Answers the parsed query, with dates as their ISO strings.
+  const setupQuery = (query: z.ZodType) =>
+    setup([
+      {
+        path: 'fonts',
+        actions: { get: defineAction({ query, handler: ({ query }) => query }) }
+      }
+    ])
+
+  const get = async (api: Hono, search: string) => {
+    const { status, data } = await request(api, 'GET', `/api/fonts?${search}`)
+    return status === 200 ? data : { status, errors: data.errors }
+  }
+
+  it('converts numbers and integers, but not empty strings', async () => {
+    const api = setupQuery(
+      z.object({ size: z.number().optional(), page: z.number().int() })
+    )
+    expect(await get(api, 'size=1.5&page=2')).toEqual({ size: 1.5, page: 2 })
+    expect(await get(api, 'page=1.5')).toMatchObject({ status: 400 })
+    expect(await get(api, 'page=')).toMatchObject({
+      status: 400,
+      errors: { page: [{ keyword: 'invalid_type' }] }
+    })
+    expect(await get(api, 'page=abc')).toMatchObject({ status: 400 })
+  })
+
+  it('converts booleans, and rejects other values', async () => {
+    const api = setupQuery(z.object({ draft: z.boolean() }))
+    expect(await get(api, 'draft=true')).toEqual({ draft: true })
+    expect(await get(api, 'draft=1')).toEqual({ draft: true })
+    expect(await get(api, 'draft=false')).toEqual({ draft: false })
+    expect(await get(api, 'draft=0')).toEqual({ draft: false })
+    expect(await get(api, 'draft=yes')).toMatchObject({ status: 400 })
+  })
+
+  it('converts dates, and rejects invalid ones', async () => {
+    const api = setupQuery(
+      z.object({ since: z.date().transform(date => date.toISOString()) })
+    )
+    expect(await get(api, 'since=2026-10-30T12:00:00Z')).toEqual({
+      since: '2026-10-30T12:00:00.000Z'
+    })
+    expect(await get(api, 'since=never')).toMatchObject({ status: 400 })
+  })
+
+  it('makes arrays of single and repeated values', async () => {
+    const api = setupQuery(
+      z.object({ id: z.array(z.number().int()).max(2).optional() })
+    )
+    expect(await get(api, 'id=1')).toEqual({ id: [1] })
+    expect(await get(api, 'id=1&id=2')).toEqual({ id: [1, 2] })
+    expect(await get(api, 'id=1&id=2&id=3')).toMatchObject({ status: 400 })
+    expect(await get(api, '')).toEqual({})
+  })
+
+  it('rejects repeated values of single values at their key', async () => {
+    const api = setupQuery(z.object({ page: z.number().int() }))
+    expect(await get(api, 'page=1&page=2')).toMatchObject({
+      status: 400,
+      errors: { page: [{ keyword: 'invalid_type' }] }
+    })
+  })
+
+  it('looks through optional, nullable and default values', async () => {
+    const api = setupQuery(
+      z.object({
+        page: z.number().int().default(1),
+        size: z.number().nullable().optional(),
+        draft: z.boolean().default(false)
+      })
+    )
+    expect(await get(api, '')).toEqual({ page: 1, draft: false })
+    expect(await get(api, 'page=3&size=2&draft=1')).toEqual({
+      page: 3,
+      size: 2,
+      draft: true
+    })
+  })
+
+  it('leaves the strings of unions as they are', async () => {
+    const api = setupQuery(
+      z.object({ value: z.union([z.number(), z.string()]) })
+    )
+    expect(await get(api, 'value=12')).toEqual({ value: '12' })
   })
 })
 
@@ -1686,7 +1775,7 @@ describe('controllers of a module', () => {
     expect(await (await api.request('/fonts')).json()).toBe('fonts')
     expect((await api.request('/plain')).status).toBe(404)
     // A module namespace is such an object, here without controllers.
-    expect(() => createApi({ controllers: zodModule })).not.toThrow()
+    expect(() => createApi({ controllers: utils })).not.toThrow()
   })
 })
 

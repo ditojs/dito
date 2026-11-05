@@ -11,7 +11,6 @@ import {
   notFound,
   type ControllerDefinition
 } from '@ditojs/server'
-import { q } from '@ditojs/server/zod'
 import { OptimisticLockError, type FilterOptions } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
 import {
@@ -103,7 +102,7 @@ function books({
         schema: z.string(),
         where: text => ({ name: { $ilike: `%${text}%` } })
       },
-      published: q.boolean(),
+      published: z.boolean(),
       // Books by the names of their authors, repeated for several.
       author: {
         schema: z.union([z.string(), z.array(z.string())]),
@@ -303,7 +302,7 @@ describe('get', () => {
       books({
         filters: {
           mine: {
-            schema: q.boolean(),
+            schema: z.boolean(),
             async where(mine, c) {
               if (!mine) return undefined
               const author = await getEntityManager(c).findOneOrFail(
@@ -326,12 +325,38 @@ describe('get', () => {
     expect(names(json)).toEqual(['Burns'])
   })
 
+  it('converts the arguments of filters by their schemas', async () => {
+    const api = setup(
+      books({
+        filters: {
+          ids: defineFilter({
+            schema: z.array(z.number().int()),
+            where: ids => ({ id: { $in: ids } })
+          }),
+          below: defineFilter({
+            schema: z.number().int(),
+            where: id => ({ id: { $lt: id } })
+          })
+        }
+      })
+    )
+    const ids = async (search: string) =>
+      (await request(api, 'GET', `/api/books?${search}`)).json.map(
+        (book: Book) => book.id
+      )
+    expect(await ids('filter=ids:1,3')).toEqual([1, 3])
+    expect(await ids('filter=ids:2')).toEqual([2])
+    expect(await ids('filter=below:2')).toEqual([1])
+    const { status } = await request(api, 'GET', '/api/books?filter=below:1,2')
+    expect(status).toBe(400)
+  })
+
   it('types `where` by the schema of `defineFilter()`', async () => {
     const api = setup(
       books({
         filters: {
           below: defineFilter({
-            schema: q.integer(),
+            schema: z.number().int(),
             where: id => {
               expectTypeOf(id).toEqualTypeOf<number>()
               return { id: { $lt: id } }
