@@ -4,8 +4,8 @@ import {
   Storage,
   getUniqueKey,
   type AssetFile,
-  type StorageOptions,
-  type StoreData
+  type FileData,
+  type StorageOptions
 } from './index.ts'
 
 // A storage that keeps files in memory, to test the shared `Storage` logic.
@@ -16,7 +16,7 @@ class MemoryStorage extends Storage {
     return this.getUrl(file.key)
   }
 
-  async addFile(file: AssetFile, data: StoreData) {
+  async addFile(file: AssetFile, data: FileData) {
     this.dataByKey.set(
       file.key,
       Buffer.isBuffer(data) ? data : await buffer(data)

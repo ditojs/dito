@@ -31,15 +31,15 @@ export interface StorageOptions {
   allowedImports?: string[]
 }
 
-// The data of a stored file, whole or as a stream of chunks, such as a Node
+// The data of a file, whole or as a stream of chunks, such as a Node
 // `Readable` or a web `ReadableStream`.
-export type StoreData = Buffer | AsyncIterable<Uint8Array>
+export type FileData = Buffer | AsyncIterable<Uint8Array>
 
 export interface StoreOptions {
   name: string
   // Detected from the data when missing.
   type?: string
-  data: StoreData
+  data: FileData
 }
 
 export abstract class Storage {
@@ -111,7 +111,7 @@ export abstract class Storage {
   }
 
   // Writes the data of the file under its key.
-  abstract addFile(file: AssetFile, data: StoreData): Promise<void>
+  abstract addFile(file: AssetFile, data: FileData): Promise<void>
   abstract removeFile(file: AssetFile): Promise<void>
   abstract readFile(file: AssetFile): Promise<Buffer>
   abstract listKeys(): Promise<string[]>
@@ -148,7 +148,7 @@ function getImportSource(value: string) {
 // need more than the head, and are stored without dimensions when larger.
 const headLength = 8 * 1024 * 1024
 
-async function* getChunks(data: StoreData) {
+async function* getChunks(data: FileData) {
   yield* Buffer.isBuffer(data) ? [data] : data
 }
 

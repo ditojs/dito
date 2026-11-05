@@ -3,8 +3,8 @@ import path from 'node:path'
 import {
   Storage,
   type AssetFile,
-  type StorageOptions,
-  type StoreData
+  type FileData,
+  type StorageOptions
 } from './Storage.ts'
 
 // Stores files in a folder. With `nestedFolders`, each file goes into two
@@ -53,7 +53,7 @@ export class DiskStorage extends Storage {
     return this.getUrl(this.#getNestedFolder(file.key), file.key)
   }
 
-  async addFile(file: AssetFile, data: StoreData) {
+  async addFile(file: AssetFile, data: FileData) {
     const filePath = this.getFilePath(file)
     await fs.mkdir(path.dirname(filePath), { recursive: true })
     try {

@@ -4,8 +4,8 @@ import { isIP } from 'node:net'
 import {
   Storage,
   type AssetFile,
-  type StorageOptions,
-  type StoreData
+  type FileData,
+  type StorageOptions
 } from './Storage.ts'
 
 // Stores files as objects in an S3 bucket, under their keys. The aws-lite
@@ -99,7 +99,7 @@ export class S3Storage extends Storage {
   // Puts files of one part in one request, and uploads larger ones in parts
   // with our own loop, as `S3.Upload()` of aws-lite can't take streams of
   // unknown length yet (aws-lite issue #222).
-  async addFile(file: AssetFile, data: StoreData) {
+  async addFile(file: AssetFile, data: FileData) {
     const s3 = await this.getClient()
     const object = { Bucket: this.bucket, Key: file.key }
     const params = { ...object, ...this.params, ContentType: file.type }
@@ -175,7 +175,7 @@ export class S3Storage extends Storage {
 const partSize = 8 * 1024 * 1024
 
 // Splits the data into parts of `partSize`, and a last one with the rest.
-async function* getParts(data: StoreData) {
+async function* getParts(data: FileData) {
   let chunks: Uint8Array[] = []
   let length = 0
   for await (const chunk of Buffer.isBuffer(data) ? [data] : data) {
