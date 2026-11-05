@@ -39,7 +39,7 @@ app.route(
 ```
 
 See
-[Entities and controllers](https://github.com/ditojs/dito/blob/main/docs/guide/server/entities.md),
+[Entities and controllers](https://github.com/ditojs/dito/blob/main/docs/guide/server/mikro.md),
 [Writes](https://github.com/ditojs/dito/blob/main/docs/guide/server/writes.md)
 and the
 [API reference](https://github.com/ditojs/dito/blob/main/docs/api/server/mikro.md).

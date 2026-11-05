@@ -56,4 +56,4 @@ deserialize: ({ json, c }) => ({ ...json, changedBy: c.var.user.id })
 See also:
 [The checks of a body](../guide/server/writes.md#the-checks-of-a-body),
 [Serialize and deserialize](../guide/server/controllers.md#serialize-and-deserialize),
-[Entities](../guide/server/entities.md#entities).
+[Entities](../guide/server/mikro.md#entities).

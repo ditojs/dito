@@ -135,7 +135,7 @@ that no book used for a day, such as uploads that were never saved.
 `thumbnails` shows images by their `url`; `thumbnailUrl` can point to a
 resized version instead.
 
-See also: [Storages and files](../guide/server/storages.md),
+See also: [Storages and files](../guide/server/storage.md),
 [Asset paths](../api/server/storage.md#asset-paths),
 [createAssets()](../api/server/storage.md#createassets),
 [`upload`](../api/admin/schemas.md#upload).

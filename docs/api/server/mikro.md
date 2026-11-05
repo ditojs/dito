@@ -24,7 +24,7 @@ import '@ditojs/mikro/types'
 `@ditojs/mikro` builds model controllers on [MikroORM](https://mikro-orm.io) 7
 entities. It supports PostgreSQL only. Its peer dependencies are
 `@mikro-orm/core` and `@mikro-orm/sql` 7.2 or later, `kysely`, `hono`, `zod` and
-`@ditojs/server`. See [Entities and controllers](../../guide/server/entities.md)
+`@ditojs/server`. See [Entities and controllers](../../guide/server/mikro.md)
 and [Writes](../../guide/server/writes.md) in the guide.
 
 Entities need a single primary key. If an entity has a composite key or none,

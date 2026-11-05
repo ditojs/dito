@@ -93,7 +93,7 @@ books: {
 ```
 
 The server's controller needs a filter for each name, see
-[Filters](../server/entities.md#filters). A filter sends the values of its
+[Filters](../server/mikro.md#filters). A filter sends the values of its
 inputs as JSON arguments, e.g. `filter=title:"contains","Emma"`, so the server's
 filter gets an array. Changing a scope or a filter goes back to the first page.
 

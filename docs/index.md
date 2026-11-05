@@ -26,10 +26,10 @@ Start here to learn how the pieces fit together.
 - [Introduction and installation](guide/server/index.md)
 - [API](guide/server/api.md)
 - [Controllers](guide/server/controllers.md)
-- [Entities and controllers](guide/server/entities.md) and
+- [Entities and controllers](guide/server/mikro.md) and
   [writes](guide/server/writes.md)
 - [Validation](guide/server/validation.md)
-- [Storages and files](guide/server/storages.md)
+- [Storages and files](guide/server/storage.md)
 - [Users and sessions](guide/server/auth.md)
 - [Serving the admin](guide/server/admin.md)
 

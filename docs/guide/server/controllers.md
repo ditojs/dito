@@ -20,7 +20,7 @@ A controller is a plain object with a `path` and a map of `actions`. Each key of
 `actions` is a route, with the verb and the path below the controller's path.
 This example routes `PUT /newsletters/subscribe` below the path of the API.
 
-The controllers of [entities](entities.md) come from `defineModelController()`
+The controllers of [entities](mikro.md) come from `defineModelController()`
 of `@ditojs/mikro`. They also take `entity`, `find` and `filters`.
 
 ## Actions
@@ -102,8 +102,8 @@ A handler gets one object, its context:
 | `id`             | In model controllers, the id of a record action.                                                              |
 | `entity`         | In model controllers, the entity. `em.getMetadata(entity)` returns its metadata.                              |
 | `getRecord()`    | In model controllers, the record of a record action.                                                          |
-| `find(options?)` | The controller's records, through its `find`, see [find()](entities.md#custom-actions).                       |
-| `list(options?)` | The controller's list, see [Lists](entities.md#lists).                                                        |
+| `find(options?)` | The controller's records, through its `find`, see [find()](mikro.md#custom-actions).                          |
+| `list(options?)` | The controller's list, see [Lists](mikro.md#lists).                                                           |
 | `getListQuery()` | The `where`, `orderBy` and `range` of the list, see [getListQuery()](../../api/server/mikro.md#getlistquery). |
 | `em`             | The request's entity manager, or the transaction's.                                                           |
 | `c`              | Hono's context.                                                                                               |
@@ -270,7 +270,7 @@ its layers.
 
 Every write needs `authorize`. `authorize: true` opens a write to anyone. See [authorize](../../api/server/controllers.md#authorize) for all rules.
 
-The controller's [`find`](entities.md#find) leaves out the rows that a user may
+The controller's [`find`](mikro.md#find) leaves out the rows that a user may
 not see. So `getRecord()` and the default handlers respond with 404 for them.
 
 ## Middleware
@@ -385,7 +385,7 @@ what the records need with one query, which `serialize` then reads.
 
 Each `serialize` gets the result of the one before. They run in layer order,
 the mixins first. The first one gets the record's JSON in the shape of `find`,
-see [What goes out](entities.md#what-goes-out). `deserialize` runs in the
+see [What goes out](mikro.md#what-goes-out). `deserialize` runs in the
 reverse order:
 
 1. the controller, which sees the body as the client sent it;

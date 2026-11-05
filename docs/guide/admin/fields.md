@@ -120,7 +120,7 @@ genres: {
 }
 ```
 
-See [Other lists](../server/entities.md#other-lists) in the server guide.
+See [Other lists](../server/mikro.md#other-lists) in the server guide.
 `url` is resolved against the API's URL,
 unlike `resource`, which resolves relative to the nearest form or list, see
 [Buttons](./buttons.md#click-handlers). `cache: 'global'` keeps the response
@@ -222,7 +222,7 @@ cover: {
 
 On the server, the storage of the field is named in the asset paths of
 `assets.defineUploads()` and `assets.defineWrites()` of the controller. See
-[Storages and files](../server/storages.md). Saving waits for running uploads.
+[Storages and files](../server/storage.md). Saving waits for running uploads.
 
 ## Derived values
 

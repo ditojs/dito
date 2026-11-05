@@ -200,7 +200,7 @@ server.on('exit', () => orm.close())
 ### 5. Turn models into entities
 
 Write one MikroORM entity for each model, with `defineEntity()` and the `p`
-builders, see [Entities and controllers](guide/server/entities.md).
+builders, see [Entities and controllers](guide/server/mikro.md).
 
 - Don't declare foreign key properties such as `authorId`. The relation holds
   the column.
@@ -655,7 +655,7 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 #### Storage
 
 `config.storages` and model `static assets` become `@ditojs/storage`. See
-[Storages and files](guide/server/storages.md).
+[Storages and files](guide/server/storage.md).
 
 ```js
 export const storages = createStorages(config.storages)
@@ -695,7 +695,7 @@ export const assets = createAssets({
 - Code that creates files, such as `AssetFile.create()` in scripts, calls
   [`assets.store()`](api/server/storage.md#stored-files).
 - The `asset` table has no `count`. Scans of the data replace the hooks on each
-  write, see [Tracking files](guide/server/storages.md#tracking-files).
+  write, see [Tracking files](guide/server/storage.md#tracking-files).
 
 #### Admin server
 

@@ -139,4 +139,4 @@ See also:
 [The options object](../api/admin/schemas.md#the-options-object),
 [Filters](../api/admin/schemas.md#filters),
 [Server filters](../api/server/mikro.md#filters),
-[Lists](../guide/server/entities.md#lists).
+[Lists](../guide/server/mikro.md#lists).

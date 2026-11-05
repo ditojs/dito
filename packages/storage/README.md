@@ -27,6 +27,6 @@ const assets = createAssets({
 ```
 
 See
-[Storages and files](https://github.com/ditojs/dito/blob/main/docs/guide/server/storages.md)
+[Storages and files](https://github.com/ditojs/dito/blob/main/docs/guide/server/storage.md)
 and the
 [API reference](https://github.com/ditojs/dito/blob/main/docs/api/server/storage.md).

@@ -140,9 +140,9 @@ lists all steps.
 - [API](api.md): `createApi()`, hosting, the database, users and errors.
 - [Controllers](controllers.md): actions, handlers, mixins, authorization and
   middleware.
-- [Entities and controllers](entities.md): MikroORM controllers, `find`, lists
+- [Entities and controllers](mikro.md): MikroORM controllers, `find`, lists
   and filters.
 - [Writes](writes.md): the checks of a body, nested rows, relations and deletes.
 - [Validation](validation.md): schemas of queries, bodies and columns.
-- [Storages and files](storages.md), [Users and sessions](auth.md),
+- [Storages and files](storage.md), [Users and sessions](auth.md),
   [Serving the admin](admin.md).
