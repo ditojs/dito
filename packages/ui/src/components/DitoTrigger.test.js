@@ -246,7 +246,7 @@ describe('DitoTrigger', () => {
         layOutTrigger(wrapper, 500)
         const popup = layOutPopup(wrapper, 100)
         observers[0].notify()
-        expect(popup.style.left).toBe('-30px')
+        expect(popup.style.left).toBe('470px')
         expect(popup.style.getPropertyValue('--dito-popup-shift')).toBe('0px')
         wrapper.unmount()
       })
@@ -258,13 +258,13 @@ describe('DitoTrigger', () => {
         const popup = layOutPopup(wrapper, 100)
         observers[0].notify()
         // Centered, it would reach 20px past the window's right edge:
-        expect(popup.style.left).toBe('-50px')
+        expect(popup.style.left).toBe(`${window.innerWidth - 100}px`)
         expect(popup.style.getPropertyValue('--dito-popup-shift')).toBe(
           '-20px'
         )
         layOutTrigger(wrapper, 10)
         observers[0].notify()
-        expect(popup.style.left).toBe('-10px')
+        expect(popup.style.left).toBe('0px')
         expect(popup.style.getPropertyValue('--dito-popup-shift')).toBe('20px')
         wrapper.unmount()
       })

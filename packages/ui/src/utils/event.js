@@ -3,8 +3,8 @@ import { asArray } from '@ditojs/utils'
 // Adds the `events` handlers to all `targets`, and returns an object with a
 // `remove()` method that removes them again. When a `signal` is passed, the
 // handlers are also removed when it aborts, and not added at all when it
-// already has.
-export function addEvents(targets, events, { signal } = {}) {
+// already has. Other `options` are passed on to `addEventListener()`.
+export function addEvents(targets, events, { signal, ...options } = {}) {
   targets =
     targets instanceof NodeList
       ? Array.from(targets)
@@ -20,7 +20,10 @@ export function addEvents(targets, events, { signal } = {}) {
     })
     for (const [type, handler] of Object.entries(events)) {
       for (const target of targets) {
-        target.addEventListener(type, handler, { signal: controller.signal })
+        target.addEventListener(type, handler, {
+          ...options,
+          signal: controller.signal
+        })
       }
     }
   }

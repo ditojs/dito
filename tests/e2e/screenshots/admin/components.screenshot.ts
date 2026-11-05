@@ -151,7 +151,10 @@ test.describe('component screenshots', () => {
 
   test('datetime picker', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
-    await page.getByLabel('Meeting', { exact: true }).click()
+    // Click on the date, as the time shows the time panel instead:
+    await page
+      .getByLabel('Meeting', { exact: true })
+      .click({ position: { x: 20, y: 10 } })
     await expectScreenshot(page, 'datetime-picker.png')
   })
 

@@ -32,14 +32,14 @@ function setBounds(element, { left, top, width, height }) {
   element.getBoundingClientRect = () => ({ left, top, width, height })
 }
 
-function mountTrigger(props = {}) {
+function mountTrigger(props = {}, parent = document.body) {
   return mount(DitoTrigger, {
     props: { matchTargetWidth: false, ...props },
     slots: {
       trigger: '<button class="open">Open</button>',
       popup: '<div class="content">Chapters</div>'
     },
-    attachTo: document.body
+    attachTo: parent
   })
 }
 
@@ -69,8 +69,12 @@ async function getPosition(props, bounds) {
   const popup = layOut(wrapper, bounds)
   await showPopup(wrapper)
   const { left, top } = popup.style
+  const trigger = wrapper.find('.dito-trigger').element.getBoundingClientRect()
   wrapper.unmount()
-  return { left: parseFloat(left), top: parseFloat(top) }
+  return {
+    left: parseFloat(left) - trigger.left,
+    top: parseFloat(top) - trigger.top
+  }
 }
 
 describe('DitoTrigger positioning', () => {
@@ -207,6 +211,34 @@ describe('DitoTrigger positioning', () => {
         )
       ).toEqual({ left: 0, top: innerHeight - 30 })
     })
+  })
+
+  it('positions the popup in window coordinates', async () => {
+    const wrapper = mountTrigger({ placement: 'bottom-left' })
+    const popup = layOut(wrapper)
+    await showPopup(wrapper)
+    expect(popup.style.left).toBe('100px')
+    expect(popup.style.top).toBe('120px')
+    wrapper.unmount()
+  })
+
+  it('follows the trigger when a panel that contains it scrolls', async () => {
+    const panel = document.createElement('div')
+    document.body.appendChild(panel)
+    const wrapper = mountTrigger({ placement: 'bottom-left' }, panel)
+    const popup = layOut(wrapper)
+    await showPopup(wrapper)
+    expect(popup.style.top).toBe('120px')
+    setBounds(wrapper.find('.dito-trigger').element, {
+      left: 100,
+      top: 60,
+      width: 50,
+      height: 20
+    })
+    panel.dispatchEvent(new Event('scroll'))
+    expect(popup.style.top).toBe('80px')
+    wrapper.unmount()
+    panel.remove()
   })
 
   it('positions the popup relative to the trigger for other targets', async () => {
