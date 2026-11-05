@@ -3,7 +3,8 @@ import path from 'node:path'
 import {
   Storage,
   type AssetFile,
-  type StorageOptions
+  type StorageOptions,
+  type StoreData
 } from './Storage.ts'
 
 // Stores files in a folder. With `nestedFolders`, each file goes into two
@@ -52,10 +53,16 @@ export class DiskStorage extends Storage {
     return this.getUrl(this.#getNestedFolder(file.key), file.key)
   }
 
-  async addFile(file: AssetFile, data: Buffer) {
+  async addFile(file: AssetFile, data: StoreData) {
     const filePath = this.getFilePath(file)
     await fs.mkdir(path.dirname(filePath), { recursive: true })
-    await fs.writeFile(filePath, data)
+    try {
+      await fs.writeFile(filePath, data)
+    } catch (error) {
+      // Leave no partial file behind when the data fails to stream:
+      await fs.rm(filePath, { force: true })
+      throw error
+    }
   }
 
   async removeFile(file: AssetFile) {

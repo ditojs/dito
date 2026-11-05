@@ -1,9 +1,11 @@
 import path from 'node:path'
+import { buffer } from 'node:stream/consumers'
 import {
   Storage,
   getUniqueKey,
   type AssetFile,
-  type StorageOptions
+  type StorageOptions,
+  type StoreData
 } from './index.ts'
 
 // A storage that keeps files in memory, to test the shared `Storage` logic.
@@ -14,8 +16,11 @@ class MemoryStorage extends Storage {
     return this.getUrl(file.key)
   }
 
-  async addFile(file: AssetFile, data: Buffer) {
-    this.dataByKey.set(file.key, data)
+  async addFile(file: AssetFile, data: StoreData) {
+    this.dataByKey.set(
+      file.key,
+      Buffer.isBuffer(data) ? data : await buffer(data)
+    )
   }
 
   async removeFile(file: AssetFile) {
@@ -193,6 +198,25 @@ describe('Storage: store()', () => {
     const file = await storage.store({ name: 'cover.png', data })
     expect(file.width).toBe(320)
     expect(file.height).toBe(200)
+    expect(storage.dataByKey.get(file.key)).toEqual(data)
+  })
+
+  it('reads the type and the dimensions of streamed data', async () => {
+    const storage = createStorage()
+    const data = Buffer.concat([
+      createPngHeader(320, 200),
+      Buffer.from('rest of the image')
+    ])
+    async function* createData() {
+      for (let i = 0; i < data.length; i += 4) yield data.subarray(i, i + 4)
+    }
+    const file = await storage.store({ name: 'cover', data: createData() })
+    expect(file).toMatchObject({
+      type: 'image/png',
+      size: data.length,
+      width: 320,
+      height: 200
+    })
     expect(storage.dataByKey.get(file.key)).toEqual(data)
   })
 

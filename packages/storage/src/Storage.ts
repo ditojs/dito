@@ -31,11 +31,15 @@ export interface StorageOptions {
   allowedImports?: string[]
 }
 
+// The data of a stored file, whole or as a stream of chunks, such as a Node
+// `Readable` or a web `ReadableStream`.
+export type StoreData = Buffer | AsyncIterable<Uint8Array>
+
 export interface StoreOptions {
   name: string
   // Detected from the data when missing.
   type?: string
-  data: Buffer
+  data: StoreData
 }
 
 export abstract class Storage {
@@ -57,23 +61,37 @@ export abstract class Storage {
   }
 
   // Stores data under a new key, and returns its file object, with the width
-  // and height of images and videos.
+  // and height of images and videos. The type and the dimensions are read from
+  // the head of the data, and the rest streams through to `addFile()`.
   async store({ name, type, data }: StoreOptions): Promise<AssetFile> {
+    const chunks = getChunks(data)
+    const head = await readHead(chunks)
     // Multipart bodies give untyped files `application/octet-stream`, so
     // detect the type of those as well.
     type = (
       (type !== 'application/octet-stream' && type) ||
-      (await detectType(data)) ||
+      (await detectType(head)) ||
       'application/octet-stream'
     )
+    let size = head.byteLength
     const file: AssetFile = {
       key: getUniqueKey(name),
       name,
       type,
-      size: data.byteLength,
-      ...(/^(image|video)\//.test(type) ? readDimensions(data) : null)
+      size,
+      ...(/^(image|video)\//.test(type) ? readDimensions(head) : null)
     }
-    await this.addFile(file, data)
+    await this.addFile(
+      file,
+      (async function* () {
+        yield head
+        for await (const chunk of chunks) {
+          size += chunk.byteLength
+          yield chunk
+        }
+      })()
+    )
+    file.size = size
     const url = this.getFileUrl(file)
     if (url) file.url = url
     return file
@@ -93,7 +111,7 @@ export abstract class Storage {
   }
 
   // Writes the data of the file under its key.
-  abstract addFile(file: AssetFile, data: Buffer): Promise<void>
+  abstract addFile(file: AssetFile, data: StoreData): Promise<void>
   abstract removeFile(file: AssetFile): Promise<void>
   abstract readFile(file: AssetFile): Promise<Buffer>
   abstract listKeys(): Promise<string[]>
@@ -124,6 +142,28 @@ function getImportSource(value: string) {
   } catch {
     return null
   }
+}
+
+// NOTE: Videos with their index at the end, which isn't optimized for the web,
+// need more than the head, and are stored without dimensions when larger.
+const headLength = 8 * 1024 * 1024
+
+async function* getChunks(data: StoreData) {
+  yield* Buffer.isBuffer(data) ? [data] : data
+}
+
+// Reads the first chunks of the data, at least `headLength` bytes of it, or
+// all of it when shorter.
+async function readHead(chunks: AsyncGenerator<Uint8Array>) {
+  const head: Uint8Array[] = []
+  let length = 0
+  while (length < headLength) {
+    const { value, done } = await chunks.next()
+    if (done) break
+    head.push(value)
+    length += value.byteLength
+  }
+  return Buffer.concat(head)
 }
 
 function readDimensions(data: Buffer) {

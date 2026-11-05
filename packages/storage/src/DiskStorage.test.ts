@@ -127,6 +127,42 @@ describe('DiskStorage', () => {
     })
   })
 
+  it('streams data to the file instead of holding it whole', async () => {
+    const storage = createDiskStorage()
+    const megabyte = 1024 * 1024
+    let writtenBeforeEnd = 0
+    async function* createData() {
+      for (let i = 0; i < 20; i++) {
+        if (i === 19) {
+          const [key] = await storage.listKeys()
+          const stats = await fs.stat(storage.getFilePath({ key }))
+          writtenBeforeEnd = stats.size
+        }
+        yield Buffer.alloc(megabyte, i)
+      }
+    }
+    const file = await storage.store({ name: 'large.bin', data: createData() })
+    // Everything but the last chunk is on disk before the data ends:
+    expect(writtenBeforeEnd).toBe(19 * megabyte)
+    expect(file.size).toBe(20 * megabyte)
+    const data = await storage.readFile(file)
+    expect(data.length).toBe(20 * megabyte)
+    expect(data[19 * megabyte]).toBe(19)
+  })
+
+  it('removes partial files when the data fails', async () => {
+    const storage = createDiskStorage()
+    async function* createData() {
+      // More than the head that `store()` reads before writing:
+      yield Buffer.alloc(9 * 1024 * 1024)
+      throw new Error('Connection lost')
+    }
+    await expect(
+      storage.store({ name: 'a.txt', data: createData() })
+    ).rejects.toThrow('Connection lost')
+    expect(await storage.listKeys()).toEqual([])
+  })
+
   it('passes errors when the folder cannot be created', async () => {
     const storage = createDiskStorage()
     // A file where the storage folder should be makes `mkdir()` fail.

@@ -4,7 +4,8 @@ import { isIP } from 'node:net'
 import {
   Storage,
   type AssetFile,
-  type StorageOptions
+  type StorageOptions,
+  type StoreData
 } from './Storage.ts'
 
 // Stores files as objects in an S3 bucket, under their keys. The aws-lite
@@ -33,6 +34,10 @@ type S3Method = (params: Record<string, any>) => Promise<any>
 // The methods of aws-lite's S3 client that the storage calls.
 export interface S3Client {
   PutObject: S3Method
+  CreateMultipartUpload: S3Method
+  UploadPart: S3Method
+  CompleteMultipartUpload: S3Method
+  AbortMultipartUpload: S3Method
   GetObject: S3Method
   DeleteObject: S3Method
   ListObjectsV2: S3Method
@@ -91,15 +96,48 @@ export class S3Storage extends Storage {
     return this.getUrl(file.key)
   }
 
-  async addFile(file: AssetFile, data: Buffer) {
+  // Puts files of one part in one request, and uploads larger ones in parts
+  // with our own loop, as `S3.Upload()` of aws-lite can't take streams of
+  // unknown length yet (aws-lite issue #222).
+  async addFile(file: AssetFile, data: StoreData) {
     const s3 = await this.getClient()
-    await s3.PutObject({
-      Bucket: this.bucket,
-      Key: file.key,
-      ...this.params,
-      ContentType: file.type,
-      Body: data
-    })
+    const object = { Bucket: this.bucket, Key: file.key }
+    const params = { ...object, ...this.params, ContentType: file.type }
+    const parts = getParts(data)
+    const { value: first = Buffer.alloc(0) } = await parts.next()
+    const second = await parts.next()
+    if (second.done) {
+      await s3.PutObject({ ...params, Body: first })
+    } else {
+      const { UploadId } = await s3.CreateMultipartUpload(params)
+      try {
+        const Parts: { PartNumber: number; ETag: string }[] = []
+        const uploadPart = async (Body: Buffer) => {
+          const PartNumber = Parts.length + 1
+          const { ETag } = await s3.UploadPart({
+            ...object,
+            UploadId,
+            PartNumber,
+            Body
+          })
+          Parts.push({ PartNumber, ETag })
+        }
+        await uploadPart(first)
+        await uploadPart(second.value)
+        for await (const part of parts) {
+          await uploadPart(part)
+        }
+        await s3.CompleteMultipartUpload({
+          ...object,
+          UploadId,
+          MultipartUpload: { Parts }
+        })
+      } catch (error) {
+        // Throw the error of the upload, not the one of its abort:
+        await s3.AbortMultipartUpload({ ...object, UploadId }).catch(() => {})
+        throw error
+      }
+    }
   }
 
   async removeFile(file: AssetFile) {
@@ -131,5 +169,26 @@ export class S3Storage extends Storage {
       params.ContinuationToken = result.NextContinuationToken
     } while (result.IsTruncated)
     return keys
+  }
+}
+
+const partSize = 8 * 1024 * 1024
+
+// Splits the data into parts of `partSize`, and a last one with the rest.
+async function* getParts(data: StoreData) {
+  let chunks: Uint8Array[] = []
+  let length = 0
+  for await (const chunk of Buffer.isBuffer(data) ? [data] : data) {
+    chunks.push(chunk)
+    length += chunk.byteLength
+    while (length >= partSize) {
+      const buffer = Buffer.concat(chunks)
+      yield buffer.subarray(0, partSize)
+      chunks = [buffer.subarray(partSize)]
+      length -= partSize
+    }
+  }
+  if (length > 0) {
+    yield Buffer.concat(chunks)
   }
 }

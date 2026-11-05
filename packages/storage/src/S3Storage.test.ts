@@ -16,6 +16,12 @@ beforeEach(() => {
     objects.set(Key, { ...getObjectParams(params), Body: Buffer.from(Body) })
     return {}
   })
+  testing.mock('S3.CreateMultipartUpload', () => ({ UploadId: 'upload' }))
+  testing.mock('S3.UploadPart', ({ PartNumber }: any) => ({
+    ETag: `"part-${PartNumber}"`
+  }))
+  testing.mock('S3.CompleteMultipartUpload', () => ({}))
+  testing.mock('S3.AbortMultipartUpload', () => ({}))
   testing.mock('S3.GetObject', ({ Key }: any) => {
     const { Body, ContentType } = objects.get(Key)
     return { Body, ContentType }
@@ -136,6 +142,78 @@ describe('S3Storage', () => {
       expect(file.url).toBe(
         `https://library-covers.sos-ch-dk-2.exo.io/${file.key}`
       )
+    })
+
+    it('uploads data larger than one part in parts of 8 MB', async () => {
+      const storage = createS3Storage()
+      const megabyte = 1024 * 1024
+      async function* createData() {
+        for (let i = 0; i < 20; i++) yield Buffer.alloc(megabyte, i)
+      }
+      const file = await storage.store({
+        name: 'large.bin',
+        data: createData()
+      })
+      expect(file.size).toBe(20 * megabyte)
+      expect(getRequests('PutObject')).toEqual([])
+      expect(getRequests('CreateMultipartUpload')).toMatchObject([
+        {
+          Bucket: 'library-covers',
+          Key: file.key,
+          ACL: 'public-read',
+          ContentType: 'application/octet-stream'
+        }
+      ])
+      const parts = getRequests('UploadPart')
+      expect(parts.map(({ Body }) => Body.length)).toEqual([
+        8 * megabyte,
+        8 * megabyte,
+        4 * megabyte
+      ])
+      expect(parts.map(({ Body }) => Body[0])).toEqual([0, 8, 16])
+      expect(parts[0]).toMatchObject({ Key: file.key, UploadId: 'upload' })
+      expect(getRequests('CompleteMultipartUpload')).toMatchObject([
+        {
+          Key: file.key,
+          UploadId: 'upload',
+          MultipartUpload: {
+            Parts: [
+              { PartNumber: 1, ETag: '"part-1"' },
+              { PartNumber: 2, ETag: '"part-2"' },
+              { PartNumber: 3, ETag: '"part-3"' }
+            ]
+          }
+        }
+      ])
+      expect(getRequests('AbortMultipartUpload')).toEqual([])
+    })
+
+    it('puts streamed data of one part in one request', async () => {
+      const storage = createS3Storage()
+      async function* createData() {
+        yield Buffer.from('Fr')
+        yield Buffer.from('ont')
+      }
+      const file = await storage.store({ name: 'a.txt', data: createData() })
+      expect(file.size).toBe(5)
+      expect(objects.get(file.key).Body).toEqual(Buffer.from('Front'))
+      expect(getRequests('CreateMultipartUpload')).toEqual([])
+    })
+
+    it('aborts uploads in parts when the data fails', async () => {
+      const storage = createS3Storage()
+      async function* createData() {
+        yield Buffer.alloc(17 * 1024 * 1024)
+        throw new Error('Connection lost')
+      }
+      await expect(
+        storage.store({ name: 'large.bin', data: createData() })
+      ).rejects.toThrow('Connection lost')
+      expect(getRequests('UploadPart')).toHaveLength(2)
+      expect(getRequests('CompleteMultipartUpload')).toEqual([])
+      expect(getRequests('AbortMultipartUpload')).toMatchObject([
+        { Bucket: 'library-covers', UploadId: 'upload' }
+      ])
     })
 
     it('reads files raw', async () => {

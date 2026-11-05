@@ -3,7 +3,8 @@ export {
   getUniqueKey,
   type AssetFile,
   type StorageOptions,
-  type StoreOptions
+  type StoreOptions,
+  type StoreData
 } from './Storage.ts'
 export { DiskStorage, type DiskStorageOptions } from './DiskStorage.ts'
 export { S3Storage, type S3Client, type S3StorageOptions } from './S3Storage.ts'
