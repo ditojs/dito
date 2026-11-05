@@ -100,6 +100,19 @@ describe('serve()', () => {
     )
   })
 
+  it('takes `closeTimeout` as a duration', async () => {
+    const { close } = await serve(new Hono(), {
+      closeTimeout: '10ms',
+      onClose: () => new Promise(resolve => setTimeout(resolve, 100))
+    })
+    await expect(close()).rejects.toThrow(
+      'Timeout reached while stopping the server (10ms)'
+    )
+    await expect(serve(new Hono(), { closeTimeout: 'soon' })).rejects.toThrow(
+      `Invalid duration: 'soon'`
+    )
+  })
+
   it('closes and exits on SIGTERM', async () => {
     const exit = vi.spyOn(process, 'exit').mockImplementation(() => undefined!)
     const onClose = vi.fn()

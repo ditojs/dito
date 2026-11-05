@@ -26,13 +26,9 @@ import {
 setupAssetTests()
 
 describe('createAssets()', () => {
-  const createBookAssets = () =>
-    createAssets({
-      adapter,
-      paths,
-      storages,
-      deleteUnusedAfter: 24 * 60 * 60 * 1000
-    })
+  const createBookAssets = (
+    deleteUnusedAfter: number | string = 24 * 60 * 60 * 1000
+  ) => createAssets({ adapter, paths, storages, deleteUnusedAfter })
 
   function setup() {
     const assets = createBookAssets()
@@ -113,7 +109,7 @@ describe('createAssets()', () => {
     const assets = createBookAssets()
     await addAsset('old', { since: old })
     await addAsset('new', { since: now })
-    const release = async (deleteUnusedAfter?: number | false) => {
+    const release = async (deleteUnusedAfter?: number | string | false) => {
       const { released } = await assets.runJobs({
         dryRun: true,
         now,
@@ -124,6 +120,28 @@ describe('createAssets()', () => {
     expect(await release()).toEqual(['old'])
     expect(await release(false)).toEqual([])
     expect(await release(0)).toEqual(['new', 'old'])
+    expect(await release('0s')).toEqual(['new', 'old'])
+    expect(await release('60 days')).toEqual([])
+  })
+
+  it('takes `deleteUnusedAfter` as a duration', async () => {
+    await addAsset('old', { since: old })
+    await addAsset('new', { since: now })
+    const { released } = await createBookAssets('24h').runJobs({
+      dryRun: true,
+      now
+    })
+    expect(released.map(asset => asset.key)).toEqual(['old'])
+  })
+
+  it('throws for invalid durations and sizes', () => {
+    expect(() => createBookAssets('soon')).toThrow(`Invalid duration: 'soon'`)
+    expect(() =>
+      createAssets({ adapter, paths, storages, maxSize: 'large' })
+    ).toThrow(`Invalid file size: 'large'`)
+    expect(() =>
+      createBookAssets().runJobs({ deleteUnusedAfter: 'later' })
+    ).toThrow(`Invalid duration: 'later'`)
   })
 
   describe('in a request', () => {

@@ -16,7 +16,7 @@ entry point, `@ditojs/utils`, an ES module with TypeScript types.
 | [Arrays](#arrays)                             | `flatten()`, `shuffle()`                                                                                                                                                                                                                                                                                        |
 | [Objects](#objects)                           | `clone()`, `equals()`, `groupBy()`, `mapKeys()`, `mapValues()`, `mergeDeeply()`, `assignDeeply()`, `pick()`, `pickBy()`                                                                                                                                                                                         |
 | [Strings](#strings)                           | `camelize()`, `capitalize()`, `decamelize()`, `hyphenate()`, `underscore()`, `labelize()`, `deindent()`, `escapeRegExp()`, `getCommonPrefix()`, `getCommonOffset()`, `isAbsoluteUrl()`, `isUrl()`, `isDomain()`, `isHostname()`, `isEmail()`, `isCreditCard()`                                                  |
-| [Dates and numbers](#dates-and-numbers)       | `format()`, `formatDate()`, `defaultFormats`, `formatPlainDate()`, `parsePlainDate()`, `formatFileSize()`, `parseFileSize()`                                                                                                                                                                                    |
+| [Dates and numbers](#dates-and-numbers)       | `format()`, `formatDate()`, `defaultFormats`, `formatPlainDate()`, `parsePlainDate()`, `formatFileSize()`, `parseFileSize()`, `parseDuration()`                                                                                                                                                                 |
 | [Data paths](#data-paths)                     | `parseDataPath()`, `normalizeDataPath()`, `resolveDataPath()`, `getValueAtDataPath()`, `getEntriesAtDataPath()`, `setValueAtDataPath()`, `setEntriesAtDataPath()`                                                                                                                                               |
 | [HTML](#html)                                 | `html`, `isHtml()`, `asHtml()`, `escapeHtml()`, `stripHtml()`                                                                                                                                                                                                                                                   |
 | [Functions](#functions)                       | `deprecate()`, `toAsync()`, `toCallback()`, `toPromiseCallback()`                                                                                                                                                                                                                                               |
@@ -409,8 +409,8 @@ rejects.
 import { format, formatDate, formatPlainDate } from '@ditojs/utils'
 ```
 
-Formatting with the `Intl` API, and conversion of plain dates and file
-sizes.
+Formatting with the `Intl` API, and conversion of plain dates, file sizes and
+durations.
 
 ### format()
 
@@ -550,6 +550,27 @@ are bytes.
 parseFileSize('500mb') // 500000000
 parseFileSize('1.5 MiB') // 1572864
 parseFileSize('1 MB', { base: 2 }) // 1048576
+```
+
+### parseDuration()
+
+```js
+parseDuration(input)
+```
+
+Parses a duration into milliseconds, as the server's duration options do,
+such as `maxAge` of [`createSessions()`](server/auth.md#createsessions).
+Numbers and strings without a unit are milliseconds.
+
+- The units are `ms`, `s`, `m`, `h`, `d` and `w`, or their long forms in the
+  singular or plural, such as `'2 days'`, case-insensitive.
+- Amounts take decimals, and units combine, such as `'1.5h'` or `'1h30m'`.
+- It throws for input that it can't interpret, and for unknown units.
+
+```js
+parseDuration('24h') // 86400000
+parseDuration('1h30m') // 5400000
+parseDuration('2 days') // 172800000
 ```
 
 ## Data paths

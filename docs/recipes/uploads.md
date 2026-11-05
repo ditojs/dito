@@ -27,7 +27,7 @@ export const assets = createAssets({
   adapter,
   paths: getAssetPaths(entities),
   storages,
-  deleteUnusedAfter: 24 * 60 * 60 * 1000
+  deleteUnusedAfter: '24h'
 })
 ```
 

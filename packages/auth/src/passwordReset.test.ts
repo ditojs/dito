@@ -201,6 +201,38 @@ describe('passwordReset()', () => {
     )
   })
 
+  it('takes durations as `expiresAfter` and `resendAfter`', async () => {
+    const feature = createPasswordReset({
+      secrets,
+      confirmUrl: '{token}',
+      send,
+      expiresAfter: '2m',
+      resendAfter: '30s'
+    })
+    feature.sendLink({} as any, customers, ada)
+    feature.sendLink({} as any, customers, ada)
+    expect(send).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(30 * 1000)
+    feature.sendLink({} as any, customers, ada)
+    expect(send).toHaveBeenCalledTimes(2)
+    const token = send.mock.calls[1]![0].url
+    vi.advanceTimersByTime(119 * 1000)
+    expect(await feature.findUser({} as any, customers, token)).toBe(ada)
+    vi.advanceTimersByTime(1000)
+    expect(await feature.findUser({} as any, customers, token)).toBe(null)
+  })
+
+  it('throws for invalid durations', () => {
+    expect(() =>
+      createPasswordReset({
+        secrets,
+        confirmUrl: '{token}',
+        send,
+        expiresAfter: 'a while'
+      })
+    ).toThrow(`Invalid duration: 'a while'`)
+  })
+
   it('accepts tokens of older secrets', async () => {
     const older = createPasswordReset({
       secrets: ['older'],

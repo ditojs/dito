@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { Context, MiddlewareHandler } from 'hono'
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
 import type { Kysely } from 'kysely'
-import { isEmpty } from '@ditojs/utils'
+import { isEmpty, parseDuration } from '@ditojs/utils'
 import { authError } from './authentication.ts'
 import {
   getUserIdentifier,
@@ -33,7 +33,12 @@ export interface CreateSessionsOptions {
   secrets: string[]
   // The cookie name, such as `admin.sess`.
   cookieName: string
-  // In milliseconds.
+  // In milliseconds or as a duration such as `'24h'`.
+  maxAge: number | string
+}
+
+// The options with `maxAge` parsed.
+interface SessionOptions extends CreateSessionsOptions {
   maxAge: number
 }
 
@@ -55,7 +60,7 @@ export class Session {
   value: SessionValue
   #c: Context
   #loaded: Loaded
-  #options: CreateSessionsOptions
+  #options: SessionOptions
   // The value as loaded, to tell whether it changed.
   #json: string
   #regenerate = false
@@ -63,7 +68,7 @@ export class Session {
   #fingerprint: string | null = null
   #users = new Map<string, Promise<User | null>>()
 
-  constructor(c: Context, loaded: Loaded, options: CreateSessionsOptions) {
+  constructor(c: Context, loaded: Loaded, options: SessionOptions) {
     this.value = loaded.value
     this.#c = c
     this.#loaded = loaded
@@ -211,6 +216,7 @@ export type Sessions = ReturnType<typeof createSessions>
 
 export function createSessions(options: CreateSessionsOptions) {
   const { adapter, secrets, cookieName } = options
+  const sessionOptions = { ...options, maxAge: parseDuration(options.maxAge) }
   if (secrets.length === 0) {
     throw new Error('Unable to sign cookies without secrets.')
   }
@@ -255,7 +261,7 @@ export function createSessions(options: CreateSessionsOptions) {
   // the session even when the action throws, so used challenges and codes
   // stay used.
   const middleware: MiddlewareHandler = async (c, next) => {
-    const session = new Session(c, await load(c), options)
+    const session = new Session(c, await load(c), sessionOptions)
     c.set('session', session)
     try {
       await next()

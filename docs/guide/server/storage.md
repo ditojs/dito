@@ -96,7 +96,7 @@ export const assets = createAssets({
   adapter,
   paths: getAssetPaths(entities),
   storages,
-  deleteUnusedAfter: 24 * 60 * 60 * 1000
+  deleteUnusedAfter: '24h'
 })
 ```
 
@@ -172,7 +172,7 @@ the references. A job scans the data at the asset paths instead.
 
 - The scan sets and clears `unreferenced_since`.
 - The release deletes the files and rows of assets that no row referenced for
-  longer than `deleteUnusedAfter`, in milliseconds.
+  longer than `deleteUnusedAfter`.
 - Without `deleteUnusedAfter`, nothing is deleted.
 - A scan runs before each release. So files that rows reference again stay.
 - An upload counts as unreferenced until its form is saved. So keep

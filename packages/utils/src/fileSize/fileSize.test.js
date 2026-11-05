@@ -65,10 +65,10 @@ describe('parseFileSize()', () => {
   })
 
   it('throws on invalid input', () => {
-    expect(() => parseFileSize('MB')).toThrow()
-    expect(() => parseFileSize('10 XB')).toThrow()
+    expect(() => parseFileSize('MB')).toThrow(`Invalid file size: 'MB'`)
+    expect(() => parseFileSize('10 XB')).toThrow(`Invalid file size unit: 'XB'`)
     expect(() => parseFileSize('10 MB 5')).toThrow(
-      `Can't interpret file size: 10 MB 5`
+      `Invalid file size: '10 MB 5'`
     )
   })
 })

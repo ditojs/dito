@@ -298,6 +298,33 @@ describe('sessions', () => {
     )
   })
 
+  it('takes durations as `maxAge` and `reconfirmAfter`', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    const { api } = setup({
+      db,
+      source: admins,
+      maxAge: '1h',
+      reconfirmAfter: '1m'
+    })
+    const client = createClient(api.fetch)
+    await client.post('/admins/login', { username: 'ada', password: 'secret' })
+    const row = await db
+      .selectFrom('session')
+      .select(['value', 'expires_at'])
+      .executeTakeFirstOrThrow()
+    expect(Date.parse(row.expires_at)).toBe(Date.now() + 60 * 60 * 1000)
+    expect(row.value.confirmedAccess.expires).toBe(Date.now() + 60 * 1000)
+  })
+
+  it('throws for invalid durations', () => {
+    expect(() => setup({ db, source: admins, maxAge: 'long' })).toThrow(
+      `Invalid duration: 'long'`
+    )
+    expect(() => setup({ db, source: admins, reconfirmAfter: 'soon' })).toThrow(
+      `Invalid duration: 'soon'`
+    )
+  })
+
   it('needs secrets', () => {
     expect(() => setup({ db, source: admins, secrets: [] })).toThrow(
       'Unable to sign cookies without secrets.'

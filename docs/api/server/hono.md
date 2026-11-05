@@ -81,9 +81,9 @@ Listens on Node, and returns the Node server and `close()`.
 - `close()` fails after `closeTimeout`.
 - SIGINT and SIGTERM call `close()`, and exit the process.
 
-| Option         | Type                          | Description                                                                   |
-| -------------- | ----------------------------- | ----------------------------------------------------------------------------- |
-| `port`         | `number \| string`            | Default: a free port.                                                         |
-| `host`         | `string`                      | The host to listen on.                                                        |
-| `closeTimeout` | `number`                      | The milliseconds `close()` may take. `0`, the default, waits without a limit. |
-| `onClose`      | `() => void \| Promise<void>` | Runs after the server has stopped, such as `orm.close()`.                     |
+| Option         | Type                          | Description                                                                                                                                                                      |
+| -------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `port`         | `number \| string`            | Default: a free port.                                                                                                                                                            |
+| `host`         | `string`                      | The host to listen on.                                                                                                                                                           |
+| `closeTimeout` | `number \| string`            | The time `close()` may take, in milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). `0`, the default, waits without a limit. |
+| `onClose`      | `() => void \| Promise<void>` | Runs after the server has stopped, such as `orm.close()`.                                                                                                                        |

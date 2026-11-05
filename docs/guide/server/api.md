@@ -69,7 +69,7 @@ app.route('/api', api)
 
 const { close } = await serve(app, {
   port: 8080,
-  closeTimeout: 5000,
+  closeTimeout: '5s',
   onClose: () => orm.close()
 })
 ```

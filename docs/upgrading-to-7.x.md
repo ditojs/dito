@@ -586,7 +586,7 @@ app.use('/assets/public/*', serveStorage(storages.get('public')))
 app.onError(createErrorHandler())
 app.notFound(notFound)
 app.route('/api', api)
-await serve(app, { port, closeTimeout: 5000, onClose: () => orm.close() })
+await serve(app, { port, closeTimeout: '5s', onClose: () => orm.close() })
 ```
 
 - `config.http` becomes the options of
@@ -673,7 +673,7 @@ export const assets = createAssets({
   adapter,
   paths: getAssetPaths(entities),
   storages,
-  deleteUnusedAfter: 24 * 60 * 60 * 1000
+  deleteUnusedAfter: '24h'
 })
 ```
 

@@ -45,12 +45,12 @@ createSessions(options: CreateSessionsOptions): {
 }
 ```
 
-| Option       | Type                           | Description                                                                                                                                                            |
-| ------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `adapter`    | `{ getKysely(): Kysely<any> }` | The adapter of the API, such as [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Its Kysely holds the `session` table, outside of the requests' transactions. |
-| `secrets`    | `string[]`                     | The secrets that sign the cookie. The first one signs, and all of them verify, so they can rotate.                                                                     |
-| `cookieName` | `string`                       | The cookie name, such as `admin.sess`.                                                                                                                                 |
-| `maxAge`     | `number`                       | The lifetime of a session, in milliseconds. Browsers cap cookies at 400 days.                                                                                          |
+| Option       | Type                           | Description                                                                                                                                                             |
+| ------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `adapter`    | `{ getKysely(): Kysely<any> }` | The adapter of the API, such as [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Its Kysely holds the `session` table, outside of the requests' transactions.  |
+| `secrets`    | `string[]`                     | The secrets that sign the cookie. The first one signs, and all of them verify, so they can rotate.                                                                      |
+| `cookieName` | `string`                       | The cookie name, such as `admin.sess`.                                                                                                                                  |
+| `maxAge`     | `number \| string`             | The lifetime of a session, in milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Browsers cap cookies at 400 days. |
 
 The app creates the `session` table:
 
@@ -158,13 +158,13 @@ A controller that mixes it in and sets `authorize` or `transacted` replaces
 these settings, also for the mixed-in actions. Set them on its own actions
 instead.
 
-| Option           | Type                                   | Description                                                                                                                    |
-| ---------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `source`         | [`UserSource`](#usersource)            | The users.                                                                                                                     |
-| `credentials`    | `Credentials`                          | From [`createCredentials()`](#createcredentials). Needed for passkeys and TOTP.                                                |
-| `features`       | `{ passkeys?, totp?, passwordReset? }` | From [`createPasskeys()`](#createpasskeys), [`createTotp()`](#createtotp) and [`createPasswordReset()`](#createpasswordreset). |
-| `reconfirmAfter` | `number`                               | How long a confirmed access lasts, in milliseconds. Default: ten minutes.                                                      |
-| `afterLogin`     | `({ c, user }) => unknown`             | Runs after each login, such as to set a cookie.                                                                                |
+| Option           | Type                                   | Description                                                                                                                                                         |
+| ---------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`         | [`UserSource`](#usersource)            | The users.                                                                                                                                                          |
+| `credentials`    | `Credentials`                          | From [`createCredentials()`](#createcredentials). Needed for passkeys and TOTP.                                                                                     |
+| `features`       | `{ passkeys?, totp?, passwordReset? }` | From [`createPasskeys()`](#createpasskeys), [`createTotp()`](#createtotp) and [`createPasswordReset()`](#createpasswordreset).                                      |
+| `reconfirmAfter` | `number \| string`                     | How long a confirmed access lasts, in milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Default: ten minutes. |
+| `afterLogin`     | `({ c, user }) => unknown`             | Runs after each login, such as to set a cookie.                                                                                                                     |
 
 The actions, under the controller's path:
 
@@ -337,14 +337,14 @@ From `@ditojs/auth/totp`. Enables time-based one-time codes, with backup codes.
 createPasswordReset(options: CreatePasswordResetOptions): PasswordReset
 ```
 
-| Option         | Type                            | Description                                                                          |
-| -------------- | ------------------------------- | ------------------------------------------------------------------------------------ |
-| `secrets`      | `string[]`                      | The secrets that sign the tokens, such as the ones of the sessions. The first signs. |
-| `expiresAfter` | `number`                        | In milliseconds. Default: one hour.                                                  |
-| `resendAfter`  | `number`                        | The time before a user gets another link, in milliseconds. Default: one minute.      |
-| `confirmUrl`   | `string`                        | The link, with a `{token}` placeholder.                                              |
-| `send`         | `({ c, user, url }) => unknown` | Sends the email. The response doesn't wait for it.                                   |
-| `onError`      | `({ error, c }) => void`        | Gets the errors of `send`.                                                           |
+| Option         | Type                            | Description                                                                                                                                          |
+| -------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `secrets`      | `string[]`                      | The secrets that sign the tokens, such as the ones of the sessions. The first signs.                                                                 |
+| `expiresAfter` | `number \| string`              | How long a link lasts, in milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Default: one hour. |
+| `resendAfter`  | `number \| string`              | The time before a user gets another link, as `expiresAfter`. Default: one minute.                                                                    |
+| `confirmUrl`   | `string`                        | The link, with a `{token}` placeholder.                                                                                                              |
+| `send`         | `({ c, user, url }) => unknown` | Sends the email. The response doesn't wait for it.                                                                                                   |
+| `onError`      | `({ error, c }) => void`        | Gets the errors of `send`.                                                                                                                           |
 
 Enables password resets by email.
 

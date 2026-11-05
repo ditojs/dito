@@ -72,6 +72,7 @@ export function setup({
   source,
   cookieName = 'admin.sess',
   secrets: cookieSecrets = secrets,
+  maxAge = 24 * 60 * 60 * 1000,
   controllers = [],
   ...options
 }: {
@@ -79,6 +80,7 @@ export function setup({
   source: UserSource<TestUser>
   cookieName?: string
   secrets?: string[]
+  maxAge?: number | string
   // More controllers of the API, next to the users routes.
   controllers?: ControllerDefinition[]
 } & Partial<DefineUserActionsOptions<TestUser>>) {
@@ -87,7 +89,7 @@ export function setup({
     adapter,
     secrets: cookieSecrets,
     cookieName,
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge
   })
   const credentials = createCredentials({ adapter })
   const users = {

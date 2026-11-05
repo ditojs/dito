@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import type { Context } from 'hono'
+import { parseDuration } from '@ditojs/utils'
 import {
   getUserIdentifier,
   type User,
@@ -14,11 +15,11 @@ import {
 
 export interface CreatePasswordResetOptions {
   secrets: string[]
-  // In milliseconds, one hour by default.
-  expiresAfter?: number
-  // The time in milliseconds before a user gets another link, one minute by
+  // In milliseconds or as a duration such as `'24h'`, one hour by default.
+  expiresAfter?: number | string
+  // The time before a user gets another link, as `expiresAfter`, one minute by
   // default. Requests in between respond the same way, but send nothing.
-  resendAfter?: number
+  resendAfter?: number | string
   // The link, with a `{token}` placeholder.
   confirmUrl: string
   // Sends the email. The response doesn't wait for it, so its failures don't
@@ -31,12 +32,13 @@ export type PasswordReset = ReturnType<typeof createPasswordReset>
 
 export function createPasswordReset({
   secrets,
-  expiresAfter = 60 * 60 * 1000,
-  resendAfter = 60 * 1000,
   confirmUrl,
   send,
-  onError
+  onError,
+  ...options
 }: CreatePasswordResetOptions) {
+  const expiresAfter = parseDuration(options.expiresAfter ?? '1h')
+  const resendAfter = parseDuration(options.resendAfter ?? '1m')
   if (!confirmUrl.includes('{token}')) {
     throw new Error(`Invalid password reset, 'confirmUrl' needs '{token}'.`)
   }

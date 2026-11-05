@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 import { z } from 'zod'
-import { isString } from '@ditojs/utils'
+import { isString, parseDuration } from '@ditojs/utils'
 import {
   defineAction,
   defineMixin,
@@ -43,8 +43,8 @@ export interface DefineUserActionsOptions<U extends User> {
     totp?: Totp
     passwordReset?: PasswordReset
   }
-  // In milliseconds, ten minutes by default.
-  reconfirmAfter?: number
+  // In milliseconds or as a duration such as `'24h'`, ten minutes by default.
+  reconfirmAfter?: number | string
   afterLogin?: (context: { c: Context; user: U }) => unknown
 }
 
@@ -67,9 +67,10 @@ export function defineUserActions<U extends User>({
   source,
   credentials,
   features: { passkeys, totp, passwordReset } = {},
-  reconfirmAfter = 10 * 60 * 1000,
-  afterLogin
+  afterLogin,
+  ...options
 }: DefineUserActionsOptions<U>) {
+  const reconfirmAfter = parseDuration(options.reconfirmAfter ?? '10m')
   if ((passkeys || totp) && !credentials) {
     throw new Error('Unable to use passkeys or TOTP without credentials.')
   }

@@ -79,6 +79,7 @@ exports[`index > exports all symbols 1`] = `
   "mixin": [Function],
   "normalizeDataPath": [Function],
   "parseDataPath": [Function],
+  "parseDuration": [Function],
   "parseFileSize": [Function],
   "parsePlainDate": [Function],
   "pick": [Function],

@@ -25,7 +25,7 @@ export const adminSessions = createSessions({
   adapter,
   secrets: config.keys,
   cookieName: 'admin.sess',
-  maxAge: 24 * 60 * 60 * 1000
+  maxAge: '24h'
 })
 
 const api = createApi({

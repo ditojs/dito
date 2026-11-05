@@ -2,6 +2,7 @@ import { once } from 'node:events'
 import { createAdaptorServer } from '@hono/node-server'
 import { getConnInfo } from '@hono/node-server/conninfo'
 import type { Context, Hono, MiddlewareHandler } from 'hono'
+import { parseDuration } from '@ditojs/utils'
 
 // Runs a Hono app on Node: `serve()` with a graceful close, and `forwarded()`
 // and `getClientAddress()` for apps behind reverse proxies.
@@ -9,9 +10,9 @@ import type { Context, Hono, MiddlewareHandler } from 'hono'
 export interface ServeOptions {
   port?: number | string
   host?: string
-  // The milliseconds that `close()` may take before it fails. 0 waits
-  // without a limit.
-  closeTimeout?: number
+  // The time that `close()` may take before it fails, in milliseconds or as a
+  // duration such as `'10s'`. 0 waits without a limit.
+  closeTimeout?: number | string
   // Runs after the server has stopped, to stop the app.
   onClose?: () => void | Promise<void>
 }
@@ -22,6 +23,7 @@ export async function serve(
   app: Hono<any, any, any>,
   { port, host, closeTimeout = 0, onClose }: ServeOptions = {}
 ) {
+  const timeout = parseDuration(closeTimeout)
   const server = createAdaptorServer({ fetch: app.fetch })
   server.listen(Number(port ?? 0), host)
   await once(server, 'listening')
@@ -35,7 +37,7 @@ export async function serve(
     )
     await onClose?.()
   }
-  const close = () => (closing ??= withTimeout(stop(), closeTimeout))
+  const close = () => (closing ??= withTimeout(stop(), timeout))
   // A failed close is an unhandled rejection, which Node prints before it
   // exits. A second signal ends the process, as the listeners are removed.
   const onSignal = () => close().then(() => process.exit(0))

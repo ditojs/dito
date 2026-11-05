@@ -31,7 +31,7 @@ export function parseFileSize(input, { base = 10 } = {}) {
   )
   const amount = parseFloat(amountString?.replace(',', '.'))
   if (!isFinite(amount)) {
-    throw new Error(`Can't interpret file size: ${input}`)
+    throw new Error(`Invalid file size: '${input}'`)
   }
   const multiplier = getMultiplier(/^[kmgtpezy]ib?$/i.test(unit) ? 2 : base)
   const bitMatch = unit.replace(/^bits?$/, 'b').match(/^([KMGTPEZY]?)b$/)
@@ -51,7 +51,7 @@ export function parseFileSize(input, { base = 10 } = {}) {
   if (exponent >= 0) {
     return Math.round(amount * multiplier ** exponent)
   }
-  throw new Error(`Invalid file size unit: ${unit}`)
+  throw new Error(`Invalid file size unit: '${unit}'`)
 }
 
 function getMultiplier(base) {

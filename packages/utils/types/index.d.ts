@@ -1011,6 +1011,16 @@ export function parseFileSize(
   options?: { base?: 2 | 10 }
 ): number
 
+/* -------------------------------- duration -------------------------------- */
+
+/**
+ * Parses a duration into milliseconds, such as `'24h'`, `'1h30m'` or
+ * `'2 days'`, with the units `ms`, `s`, `m`, `h`, `d` and `w` or their long
+ * forms. Numbers and strings without a unit are milliseconds. Throws for
+ * durations that it can't interpret.
+ */
+export function parseDuration(input: number | string): number
+
 /* -------------------------- typescript utilities -------------------------- */
 export interface ArrayLike<T> {
   readonly length: number

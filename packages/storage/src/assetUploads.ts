@@ -42,7 +42,7 @@ export function uploadRoutes({
   const matchers = uploads.map(({ path, storage, maxSize }) => ({
     isMatch: picomatch(path),
     storage,
-    maxSize: maxSize != null ? parseFileSize(maxSize) : undefined
+    maxSize: parseMaxSize(maxSize)
   }))
   return {
     actions: {
@@ -121,4 +121,8 @@ export function uploadRoutes({
 async function* readFile(stream: Readable & { truncated?: boolean }) {
   yield* stream.iterator({ destroyOnReturn: false })
   if (stream.truncated) throw new HttpError(413)
+}
+
+export function parseMaxSize(maxSize: number | string | undefined) {
+  return maxSize != null ? parseFileSize(maxSize) : undefined
 }

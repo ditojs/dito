@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely'
-import { isString } from '@ditojs/utils'
+import { isString, parseDuration } from '@ditojs/utils'
 import type { DitoContext, MixinDefinition } from '@ditojs/server'
 import type { Storage, StoreOptions } from './Storage.ts'
 import { getDataPath, type AssetPath } from './assetPaths.ts'
@@ -10,7 +10,7 @@ import {
 } from './assetJobs.ts'
 import { assets, importAssets, storeAsset } from './assetWrites.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
-import { uploadRoutes, type AssetUpload } from './assetUploads.ts'
+import { parseMaxSize, uploadRoutes, type AssetUpload } from './assetUploads.ts'
 
 // Binds the asset handling to an app's adapter, asset paths and storages. The
 // mixins use the Kysely of the request's handle, `c.var.em`, so that the
@@ -23,9 +23,10 @@ export interface CreateAssetsOptions {
   adapter: { getKysely(): Kysely<any> }
   paths: AssetPath[]
   storages: StorageRegistry
-  // The `deleteUnusedAfter` of `runJobs()`, in milliseconds, unless a call
-  // passes its own. By default, `false` skips the release.
-  deleteUnusedAfter?: number | false
+  // The `deleteUnusedAfter` of `runJobs()`, in milliseconds or as a duration
+  // such as `'24h'`, unless a call passes its own. By default, `false` skips
+  // the release.
+  deleteUnusedAfter?: number | string | false
   // The `maxSize` of the uploads without their own, see `AssetUpload`.
   maxSize?: number | string
 }
@@ -44,6 +45,11 @@ export function createAssets({
 }: CreateAssetsOptions) {
   // Throws for the storages that the registry doesn't have.
   for (const path of paths) storages.get(path.storage)
+  // The defaults of the jobs and uploads, which throw for invalid values here:
+  const defaults = {
+    deleteUnusedAfter: parseDeleteUnusedAfter(deleteUnusedAfter),
+    maxSize: parseMaxSize(maxSize)
+  }
   const getDb = (c: DitoContext) =>
     (c.var.em as { getKysely(): Kysely<any> }).getKysely()
 
@@ -79,7 +85,7 @@ export function createAssets({
       return uploadRoutes({
         uploads: [...tableUploads, ...uploads].map(upload => ({
           ...upload,
-          maxSize: upload.maxSize ?? maxSize
+          maxSize: upload.maxSize ?? defaults.maxSize
         })),
         storages,
         db: getDb
@@ -128,7 +134,7 @@ export function createAssets({
       options: {
         dryRun?: boolean
         now?: Date
-        deleteUnusedAfter?: number | false
+        deleteUnusedAfter?: number | string | false
       } = {}
     ) {
       return runAssetJobs({
@@ -136,10 +142,18 @@ export function createAssets({
         db: adapter.getKysely(),
         paths,
         storages,
-        deleteUnusedAfter: options.deleteUnusedAfter ?? deleteUnusedAfter
+        deleteUnusedAfter: parseDeleteUnusedAfter(
+          options.deleteUnusedAfter ?? defaults.deleteUnusedAfter
+        )
       })
     }
   }
 }
 
 export type Assets = ReturnType<typeof createAssets>
+
+function parseDeleteUnusedAfter(
+  deleteUnusedAfter: number | string | false
+): number | false {
+  return deleteUnusedAfter === false ? false : parseDuration(deleteUnusedAfter)
+}

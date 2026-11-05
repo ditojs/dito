@@ -225,10 +225,10 @@ describe('defineUploads()', () => {
 
     it('throws for invalid sizes', () => {
       expect(() => setupLimits({ coverSize: '300 bananas' })).toThrow(
-        'Invalid file size unit: bananas'
+        `Invalid file size unit: 'bananas'`
       )
       expect(() => setupLimits({ defaultSize: 'large' })).toThrow(
-        `Can't interpret file size: large`
+        `Invalid file size: 'large'`
       )
     })
   })
