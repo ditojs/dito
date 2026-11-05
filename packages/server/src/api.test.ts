@@ -13,14 +13,12 @@ import {
   defineMixin,
   HttpError,
   notFound,
-  type ActionSettings,
   type Adapter,
   type ApiConfig,
   type ControllerDefinition,
   type DitoContext,
   type HandlerInput,
   type Middleware,
-  type MixinDefinition,
   type Transaction,
   type User
 } from './index.ts'

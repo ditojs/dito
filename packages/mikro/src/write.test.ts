@@ -4,7 +4,6 @@ import { assignRecord, createRecord } from './index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Book, entities } from './test/entities.ts'
 import {
-  Volume,
   Library,
   loadLibrary,
   libraryEntities

@@ -1,10 +1,9 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import type { Context, MiddlewareHandler } from 'hono'
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
 import type { Kysely } from 'kysely'
 import { isEmpty } from '@ditojs/utils'
 import { authError } from './authentication.ts'
-import { getPasswordFingerprint } from './passwords.ts'
 import {
   getUserIdentifier,
   parseUserIdentifier,
@@ -286,4 +285,10 @@ export async function getSessionUser(c: Context, source: UserSource<any>) {
 
 function destroy(db: Kysely<any>, id: string) {
   return db.deleteFrom('session').where('id', '=', id).execute()
+}
+
+// Sessions keep a hash of the password hash, so a password change ends the
+// other sessions of the user.
+export function getPasswordFingerprint(hash: string | null | undefined) {
+  return hash ? createHash('sha256').update(hash).digest('base64url') : null
 }

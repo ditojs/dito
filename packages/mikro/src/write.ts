@@ -3,7 +3,6 @@ import { createValidationError, type ValidationIssue } from '@ditojs/server'
 import {
   isArray,
   isBoolean,
-  isNumber,
   isPlainObject,
   isString,
   mapConcurrently,
@@ -24,7 +23,6 @@ import {
   integerBits,
   isOwned,
   isOwningToOne,
-  isRelation,
   isToMany,
   toPrimaryKey,
   type Row

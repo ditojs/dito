@@ -156,7 +156,7 @@ describe('assets()', () => {
   it('waits for a release of a file that the write uses', async () => {
     await covers.addFile(file('released'), Buffer.from('Cover'))
     await addAsset('released', { since: old })
-    let response: Promise<Response>
+    let response: ReturnType<typeof post>
     await db.transaction().execute(async trx => {
       await releaseAssets({ db: trx, storages, deleteUnusedAfter: 0 })
       response = post(setup(), { cover: file('released') })

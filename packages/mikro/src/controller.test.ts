@@ -1946,9 +1946,11 @@ describe('writes', () => {
       ]
     })
     expect(status).toBe(200)
-    const names = json.parts[0].chapters.map(({ name }) => name)
+    const names = json.parts[0].chapters.map((it: any) => it.name)
     expect(names).toContain(chapter.name)
-    expect(json.parts[0].chapters.map(({ id }) => id)).not.toContain(chapter.id)
+    expect(json.parts[0].chapters.map((it: any) => it.id)).not.toContain(
+      chapter.id
+    )
   })
 
   // MikroORM inserts first, as it can't see the unique value of the row that

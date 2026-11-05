@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { isPlainObject, isString } from '@ditojs/utils'
@@ -38,12 +37,6 @@ export async function verifyPassword(
     (await bcrypt.compare(password, compared)) &&
     !!hash
   )
-}
-
-// Sessions keep a hash of the password hash, so a password change ends the
-// other sessions of the user.
-export function getPasswordFingerprint(hash: string | null | undefined) {
-  return hash ? createHash('sha256').update(hash).digest('base64url') : null
 }
 
 export interface PasswordWritesOptions<U extends User> {
