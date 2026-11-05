@@ -183,7 +183,8 @@ a form stays open.
 
 - Files that the server creates, such as generated PDFs, go through
   `assets.store('documents', { name, data })`, which stores them and inserts
-  their rows.
+  their rows. The rows commit at once, also in a request that rolls back, so
+  that the release deletes the files that no row references.
 - Seeds that insert rows directly call `assets.import(table, data)` first.
   It stores the files that the rows reference by URL, such as `file://` URLs of
   seed data.

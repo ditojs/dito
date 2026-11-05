@@ -1,5 +1,10 @@
-import { createApi, defineController } from '@ditojs/server'
-import { createAssets } from './index.ts'
+import {
+  HttpError,
+  createApi,
+  defineController,
+  type DitoContext
+} from '@ditojs/server'
+import { createAssets, type AssetFile } from './index.ts'
 import {
   setupAssetTests,
   db,
@@ -92,5 +97,53 @@ describe('createAssets()', () => {
     ).toEqual([1])
     const { released } = await assets.runJobs({ dryRun: true, now })
     expect(released).toEqual([{ key: 'old', storage: 'covers' }])
+  })
+
+  describe('in a request', () => {
+    // Runs `fn` in a write of an API with transactions, which rolls back
+    // when `fn` throws.
+    async function write(fn: (c: DitoContext) => unknown) {
+      const api = createApi({
+        controllers: [
+          defineController({
+            path: 'jobs',
+            authorize: true,
+            actions: { post: ({ c }) => fn(c) }
+          })
+        ],
+        adapter: handleAdapter,
+        onError: () => {}
+      })
+      return request(api, '/jobs', { method: 'POST' })
+    }
+
+    it('keeps the rows of stored files when the write rolls back', async () => {
+      const assets = createBookAssets()
+      let stored: AssetFile | undefined
+      const response = await write(async () => {
+        const report = { name: 'report.txt', data: Buffer.from('Report') }
+        stored = await assets.store('archive', report)
+        throw new HttpError(409)
+      })
+      expect(response.status).toBe(409)
+      expect(await getKeys()).toEqual([stored!.key])
+      const { released } = await assets.runJobs({ deleteUnusedAfter: 0 })
+      expect(released).toMatchObject([{ key: stored!.key, storage: 'archive' }])
+      await expect(archive.readFile(stored!)).rejects.toThrow()
+    })
+
+    it('finds the references in the transaction of the request', async () => {
+      const assets = createBookAssets()
+      const response = await write(async c => {
+        await c.var.em
+          .getKysely()
+          .insertInto('book')
+          .values({ id: 1, cover: JSON.stringify(file('used')) })
+          .execute()
+        return assets.findReferences({ c })
+      })
+      const references = await response.json()
+      expect(references.map((ref: { id: number }) => ref.id)).toEqual([1])
+    })
   })
 })

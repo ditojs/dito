@@ -165,19 +165,22 @@ Returns the asset handling of an app, bound to its adapter, asset paths and
 storages. `adapter` is the one of `createApi()`, such as
 [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). The mixins use the
 Kysely of the request's handle, `c.var.em.getKysely()`, so that the `asset` rows
-of a write commit with its transaction. The other methods use
-`adapter.getKysely()`, outside of the requests' transactions.
+of a write commit with its transaction. `findReferences({ c })` reads in the
+request's transaction, so it sees the request's own changes. The other methods
+use `adapter.getKysely()`, outside of the requests' transactions: the rows of
+`store()` and `import()` commit at once, as their files stay when a request
+rolls back, and the release deletes them.
 `deleteUnusedAfter` is in milliseconds. By default, `false` skips the release.
 
-| Member                                          | Description                                                                                          |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `defineWrites(table)`                           | A mixin that handles the files in the bodies of the table's writes, see [Writes](#writes).           |
-| `defineUploads(table?, { uploads? }?)`          | A mixin with the upload action of the table's asset paths and of `uploads`, see [Uploads](#uploads). |
-| `store(storage, { name, type?, data })`         | Stores a file that the server creates, see [Stored files](#stored-files).                            |
-| `import(table, data)`                           | Imports the files of a row's data, see [Asset jobs](#asset-jobs). Returns `data`.                    |
-| `findReferences({ tables?, storage?, keys? }?)` | Lists the files that rows reference, see [Asset jobs](#asset-jobs).                                  |
-| `runJobs({ dryRun?, now? }?)`                   | Runs the scan and the release, see [Asset jobs](#asset-jobs).                                        |
-| `paths`, `storages`                             | The options.                                                                                         |
+| Member                                              | Description                                                                                          |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `defineWrites(table)`                               | A mixin that handles the files in the bodies of the table's writes, see [Writes](#writes).           |
+| `defineUploads(table?, { uploads? }?)`              | A mixin with the upload action of the table's asset paths and of `uploads`, see [Uploads](#uploads). |
+| `store(storage, { name, type?, data })`             | Stores a file that the server creates, see [Stored files](#stored-files).                            |
+| `import(table, data)`                               | Imports the files of a row's data, see [Asset jobs](#asset-jobs). Returns `data`.                    |
+| `findReferences({ tables?, storage?, keys?, c? }?)` | Lists the files that rows reference, see [Asset jobs](#asset-jobs).                                  |
+| `runJobs({ dryRun?, now? }?)`                       | Runs the scan and the release, see [Asset jobs](#asset-jobs).                                        |
+| `paths`, `storages`                                 | The options.                                                                                         |
 
 ```js
 const assets = createAssets({

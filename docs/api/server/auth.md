@@ -273,8 +273,8 @@ create table credential (
 ```
 
 No foreign keys tie the credentials to their users. When the app deletes users,
-it calls `credentials.deleteUsers(source, ids, trx?)`, with the transaction of
-the deletion as `trx`.
+it calls `credentials.deleteUsers(source, ids, { c? })`, with the request's `c`
+to delete in the transaction of the deletion.
 
 ## createPasskeys()
 

@@ -14,8 +14,9 @@ import { uploadRoutes, type AssetUpload } from './assetUploads.ts'
 
 // Binds the asset handling to an app's adapter, asset paths and storages. The
 // mixins use the Kysely of the request's handle, `c.var.em`, so that the
-// `asset` rows of a write commit with its transaction. The other methods use
-// the Kysely of the adapter, outside of the requests' transactions.
+// `asset` rows of a write commit with its transaction. `findReferences()` reads
+// in the request's transaction when it gets its `c`. The other methods use the
+// Kysely of the adapter, outside of the requests' transactions.
 
 export interface CreateAssetsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`.
@@ -77,6 +78,8 @@ export function createAssets({
     },
 
     // Stores a file that the server creates, and inserts its `asset` row.
+    // The row commits at once, as the file stays when a request rolls back,
+    // so that the release deletes it.
     store(storage: string | Storage, options: StoreOptions) {
       return storeAsset(
         adapter.getKysely(),
@@ -86,7 +89,7 @@ export function createAssets({
     },
 
     // Imports the files that `data`, a row of `table`, references, such as the
-    // files of seed data.
+    // files of seed data. The rows commit at once, as in `store()`.
     import<T extends object>(table: string, data: T) {
       return importAssets(data, {
         table,
@@ -97,10 +100,17 @@ export function createAssets({
     },
 
     // Lists the files that the rows reference at the asset paths.
-    findReferences(
-      options: Omit<FindAssetReferencesOptions, 'db' | 'paths'> = {}
-    ) {
-      return findAssetReferences({ ...options, db: adapter.getKysely(), paths })
+    findReferences({
+      c,
+      ...options
+    }: Omit<FindAssetReferencesOptions, 'db' | 'paths'> & {
+      c?: DitoContext
+    } = {}) {
+      return findAssetReferences({
+        ...options,
+        db: c ? getDb(c) : adapter.getKysely(),
+        paths
+      })
     },
 
     // Scans the references and releases the files unreferenced for longer

@@ -1,3 +1,4 @@
+import type { Context } from 'hono'
 import type { Kysely } from 'kysely'
 import type { User, UserSource } from './users.ts'
 
@@ -141,15 +142,18 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
     },
 
     // Deletes the credentials of the users with `ids`. The app calls it when it
-    // deletes users, as no foreign keys do. With `trx`, it runs in that
-    // transaction.
+    // deletes users, as no foreign keys do. With the request's `c`, it runs in
+    // the request's transaction.
     async deleteUsers(
       source: UserSource<any>,
       ids: unknown[],
-      trx?: Kysely<any>
+      { c }: { c?: Context } = {}
     ) {
       if (ids.length === 0) return
-      await (trx ?? db())
+      const kysely = c
+        ? (c.var.em as { getKysely(): Kysely<any> }).getKysely()
+        : db()
+      await kysely
         .deleteFrom('credential')
         .where('user_model', '=', source.name)
         .where('user_id', 'in', ids.map(String))

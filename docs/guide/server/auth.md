@@ -177,7 +177,7 @@ Passkeys and TOTP keep their secrets in the `credential` table, through
 action that deletes users deletes their credentials too:
 
 ```js
-await credentials.deleteUsers(adminSource, ids)
+await credentials.deleteUsers(adminSource, ids, { c })
 ```
 
 ### Passkeys
