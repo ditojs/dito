@@ -4,9 +4,9 @@ import type { InlineConfig } from 'vite'
 import { assignDeeply } from '@ditojs/utils'
 import { normalizeBase } from './normalize-base.ts'
 
-// The Vite config of the admin, for its build and for `serveAdmin()` in
+// The Vite config of the admin, for its build and for `createAdmin()` in
 // development. The app's own config file can call it to build the admin, and
-// pass the result to `serveAdmin()` as `vite`.
+// pass the result to `createAdmin()` as `vite`.
 
 export interface AdminViteOptions {
   // The admin's sources, with `index.html` and `views/`.
@@ -73,7 +73,7 @@ export async function defineAdminViteConfig(
             rolldownOptions: {
               output: {
                 // The views get their own chunk below `views/`, which
-                // `authorize` of `serveAdmin()` protects. The chunk leaves out
+                // `authorize` of `createAdmin()` protects. The chunk leaves out
                 // the modules that the views import, so the login, which loads
                 // first, doesn't need it. That needs the strict execution
                 // order.

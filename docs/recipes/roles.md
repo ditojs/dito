@@ -98,11 +98,11 @@ admin only shows what the server allows.
 
 A view's `if` also blocks opening the view by its URL. But the admin's checks
 only affect the interface. The server's `authorize` settings protect the data.
-The `authorize` of `serveAdmin()` must let users of all three roles load the
+The `authorize` of `createAdmin()` must let users of all three roles load the
 admin's views:
 
 ```js
-serveAdmin({
+createAdmin({
   ...options,
   middleware: sessions.middleware,
   getUser: sessionUser(source),

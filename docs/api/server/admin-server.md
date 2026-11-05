@@ -1,7 +1,7 @@
 # Admin server
 
 ```js
-import { serveAdmin } from '@ditojs/admin-server'
+import { createAdmin } from '@ditojs/admin-server'
 import { defineAdminViteConfig } from '@ditojs/admin-server/vite'
 ```
 
@@ -14,10 +14,10 @@ Peer dependencies: `hono`, `@hono/node-server`, and for building or developing
 the admin `vite`, `@vitejs/plugin-vue` and `@ditojs/build`. See
 [Serving the admin](../../guide/server/admin.md) in the guide.
 
-## serveAdmin()
+## createAdmin()
 
 ```ts
-serveAdmin(options: AdminOptions): Hono & { close(): Promise<void> }
+createAdmin(options: AdminOptions): Hono & { close(): Promise<void> }
 ```
 
 Returns a Hono app that serves the admin. The host routes it at `base` with
@@ -47,7 +47,7 @@ With `vite`, Vite handles the requests through the Node request and response of
 | `vite`           | `InlineConfig \| string`                                           | The Vite config of development, or the path of its file, such as one that exports `defineAdminViteConfig()`. With it, Vite serves the admin's sources. |
 
 ```js
-const admin = serveAdmin({
+const admin = createAdmin({
   base: '/admin',
   dist: path.resolve('dist/admin'),
   vite:
@@ -86,7 +86,7 @@ keep what needs protection below `views/`. Vite's own urls, such as `/@fs/`,
 aren't protected, so only use `vite` in development.
 
 An `admin.vite.config.js` builds the admin with it. As a function, the same file
-also works for `serveAdmin()` in development, which loads it with the mode
+also works for `createAdmin()` in development, which loads it with the mode
 `development`:
 
 ```js

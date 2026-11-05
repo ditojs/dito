@@ -9,6 +9,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@ditojs/server": "workspace:^",
     "@ditojs/utils": "workspace:^"
   },
   "devDependencies": {

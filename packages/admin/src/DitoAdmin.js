@@ -22,7 +22,7 @@ const knownOptions = ['login', 'spinner', 'account']
 
 export default class DitoAdmin {
   constructor(el, {
-    // The `dito` object of `serveAdmin()`:
+    // The `dito` object of `createAdmin()`:
     dito: ditoObject = globalThis.dito ?? {},
     api,
     views = {},

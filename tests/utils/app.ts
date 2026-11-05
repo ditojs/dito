@@ -17,7 +17,7 @@ import {
 import { mikroDb } from '@ditojs/mikro'
 import type { Options } from '@mikro-orm/postgresql'
 import {
-  serveAdmin,
+  createAdmin,
   type AdminServer,
   type AuthenticationFeatures
 } from '@ditojs/admin-server'
@@ -112,7 +112,7 @@ export async function createTestApp(
   if (options.admin) {
     const { name, views, api } = options.admin
     const vite = await getViteConfig(name, views)
-    admin = serveAdmin({
+    admin = createAdmin({
       base: '/admin',
       api: { url: `${prefix}/`, ...api },
       authentication,

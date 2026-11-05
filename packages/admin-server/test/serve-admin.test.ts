@@ -4,7 +4,7 @@ import path from 'node:path'
 import type { AddressInfo } from 'node:net'
 import { Hono, type Context, type Next } from 'hono'
 import { createAdaptorServer } from '@hono/node-server'
-import { serveAdmin, type AdminServer } from '../src/serve-admin.ts'
+import { createAdmin, type AdminServer } from '../src/serve-admin.ts'
 
 // Routes the admin at `/admin` of a host app, as apps do.
 function route(admin: AdminServer) {
@@ -22,7 +22,7 @@ const authentication = {
   hasPasswordReset: false
 }
 
-describe('serveAdmin() in production', () => {
+describe('createAdmin() in production', () => {
   let dist: string
 
   beforeAll(async () => {
@@ -40,8 +40,8 @@ describe('serveAdmin() in production', () => {
 
   afterAll(() => fs.rm(dist, { recursive: true }))
 
-  function createAdmin(options = {}) {
-    const admin = serveAdmin({
+  function setupAdmin(options = {}) {
+    const admin = createAdmin({
       base: '/admin/',
       dist,
       api,
@@ -53,7 +53,7 @@ describe('serveAdmin() in production', () => {
   }
 
   it('serves the built files', async () => {
-    const response = await createAdmin().request(
+    const response = await setupAdmin().request(
       '/admin/assets/core-Ab12_x-Z.js'
     )
     expect(response.status).toBe(200)
@@ -65,13 +65,13 @@ describe('serveAdmin() in production', () => {
   })
 
   it('checks files outside of the build folders again on each load', async () => {
-    const response = await createAdmin().request('/admin/favicon.svg')
+    const response = await setupAdmin().request('/admin/favicon.svg')
     expect(response.headers.get('content-type')).toMatch(/^image\/svg\+xml/)
     expect(response.headers.get('cache-control')).toBe('no-cache')
   })
 
   it('answers the routes of the admin with index.html', async () => {
-    const admin = createAdmin()
+    const admin = setupAdmin()
     for (const url of [
       '/admin',
       '/admin/',
@@ -87,7 +87,7 @@ describe('serveAdmin() in production', () => {
   })
 
   it('answers missing files with 404', async () => {
-    const admin = createAdmin()
+    const admin = setupAdmin()
     expect((await admin.request('/admin/missing.js')).status).toBe(404)
     expect((await admin.request('/admin/%2e%2e/secret.js')).status).toBe(404)
     expect((await admin.request('/other')).status).toBe(404)
@@ -95,12 +95,12 @@ describe('serveAdmin() in production', () => {
   })
 
   it('answers other methods than GET and HEAD with 404', async () => {
-    const response = await createAdmin().request('/admin/', { method: 'POST' })
+    const response = await setupAdmin().request('/admin/', { method: 'POST' })
     expect(response.status).toBe(404)
   })
 
   it('answers HEAD requests without a body', async () => {
-    const response = await createAdmin().request(
+    const response = await setupAdmin().request(
       '/admin/assets/core-Ab12_x-Z.js',
       {
         method: 'HEAD'
@@ -112,7 +112,7 @@ describe('serveAdmin() in production', () => {
   })
 
   it('sends the dito object as dito.js', async () => {
-    const response = await createAdmin().request('/admin/dito.js')
+    const response = await setupAdmin().request('/admin/dito.js')
     expect(response.headers.get('content-type')).toMatch(/^text\/javascript/)
     const code = await response.text()
     expect(code).toMatch(/^window\.dito = /)
@@ -125,7 +125,7 @@ describe('serveAdmin() in production', () => {
   })
 
   it('sends no authentication features by default', async () => {
-    const admin = createAdmin({ authentication: undefined })
+    const admin = setupAdmin({ authentication: undefined })
     const code = await (await admin.request('/admin/dito.js')).text()
     expect(JSON.parse(code.replace(/^window\.dito = /, ''))).toMatchObject({
       authentication: {
@@ -138,7 +138,7 @@ describe('serveAdmin() in production', () => {
   })
 
   it('authorizes the views with a function', async () => {
-    const admin = createAdmin({
+    const admin = setupAdmin({
       authorize: (c: Context) => c.req.header('x-user') === 'admin'
     })
     expect((await admin.request('/admin/views/views-Cd34_y-W.js')).status).toBe(
@@ -154,13 +154,13 @@ describe('serveAdmin() in production', () => {
   })
 
   it('grants access only when the function returns `true`', async () => {
-    const admin = createAdmin({ authorize: () => 'yes' })
+    const admin = setupAdmin({ authorize: () => 'yes' })
     const response = await admin.request('/admin/views/views-Cd34_y-W.js')
     expect(response.status).toBe(401)
   })
 
   it('protects the views in any case', async () => {
-    const admin = createAdmin({ authorize: () => false })
+    const admin = setupAdmin({ authorize: () => false })
     for (const folder of ['VIEWS', 'Views', encodeURI('viewſ')]) {
       const response = await admin.request(
         `/admin/${folder}/views-Cd34_y-W.js`
@@ -170,7 +170,7 @@ describe('serveAdmin() in production', () => {
   })
 
   it('authorizes the views by the roles of the user', async () => {
-    const admin = createAdmin({
+    const admin = setupAdmin({
       // Sets the role that `getUser` reads, as a session middleware would.
       middleware: async (c: Context, next: Next) => {
         c.set('role' as never, c.req.header('x-role') as never)
@@ -196,7 +196,7 @@ describe('serveAdmin() in production', () => {
 
   it('runs the middleware only on the requests it authorizes', async () => {
     const paths: string[] = []
-    const admin = createAdmin({
+    const admin = setupAdmin({
       middleware: async (c: Context, next: Next) => {
         paths.push(c.req.path)
         await next()
@@ -211,7 +211,7 @@ describe('serveAdmin() in production', () => {
   })
 
   it('gives a function of authorize the user as c.var.user', async () => {
-    const admin = createAdmin({
+    const admin = setupAdmin({
       getUser: () => ({ roles: ['admin'] }),
       authorize: (c: Context) => c.var.user?.roles.includes('admin')
     })
@@ -221,7 +221,7 @@ describe('serveAdmin() in production', () => {
   })
 })
 
-describe('serveAdmin() in development', () => {
+describe('createAdmin() in development', () => {
   let admin: AdminServer
   let server: ReturnType<typeof createAdaptorServer>
   let origin: string
@@ -230,7 +230,7 @@ describe('serveAdmin() in development', () => {
   const request = (path: string) => fetch(`${origin}${path}`)
 
   beforeAll(async () => {
-    admin = serveAdmin({
+    admin = createAdmin({
       base: '/admin',
       api,
       authentication,

@@ -6,8 +6,8 @@ function getLoadedModules(mode: 'production' | 'development') {
   const index = path.join(import.meta.dirname, '../src/serve-admin.ts')
   const root = path.join(import.meta.dirname, 'fixture')
   return getResolvedUrls(`
-    const { serveAdmin } = await import(${JSON.stringify(index)})
-    const admin = serveAdmin({
+    const { createAdmin } = await import(${JSON.stringify(index)})
+    const admin = createAdmin({
       base: '/admin',
       dist: ${JSON.stringify(root)},
       vite: ${JSON.stringify(mode)} === 'development'

@@ -56,7 +56,7 @@ entity:
 import { entityUserSource } from '@ditojs/mikro'
 
 export const adminSource = entityUserSource(Admin, {
-  // For the queries outside of the API, such as `serveAdmin()`'s `authorize`.
+  // For the queries outside of the API, such as `createAdmin()`'s `authorize`.
   em: () => orm.em,
   // The property of the username, `username` by default.
   username: 'username',
@@ -250,11 +250,11 @@ actions: {
 
 ## Users outside of Dito
 
-`serveAdmin()` takes the session middleware and `sessionUser()` as `createApi()`
-does, and checks the roles of the user in `authorize`:
+`createAdmin()` takes the session middleware and `sessionUser()` as
+`createApi()` does, and checks the roles of the user in `authorize`:
 
 ```js
-serveAdmin({
+createAdmin({
   ...options,
   middleware: adminSessions.middleware,
   getUser: sessionUser(adminSource),

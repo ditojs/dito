@@ -11,9 +11,9 @@ sources through Vite in middleware mode. `@ditojs/admin-server/vite` has the
 Vite config that builds the admin.
 
 ```js
-import { serveAdmin } from '@ditojs/admin-server'
+import { createAdmin } from '@ditojs/admin-server'
 
-const admin = serveAdmin({
+const admin = createAdmin({
   base: '/admin',
   dist: 'dist/admin',
   api: { url: '/api/admin' },

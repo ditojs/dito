@@ -10,7 +10,7 @@ option and member.
 
 ## How the pieces fit
 
-- The server serves the admin with `serveAdmin()` of `@ditojs/admin-server`.
+- The server serves the admin with `createAdmin()` of `@ditojs/admin-server`.
   It passes the admin the global `dito` object with `api`, `settings` and
   `authentication`.
 - The admin's entry module creates a `DitoAdmin` with your views.
@@ -21,15 +21,15 @@ option and member.
 
 ## Server setup
 
-`serveAdmin()` serves the admin under a path, next to the app's API, see
+`createAdmin()` serves the admin under a path, next to the app's API, see
 [Serving the admin](../server/admin.md):
 
 ```js
 import path from 'node:path'
-import { serveAdmin } from '@ditojs/admin-server'
+import { createAdmin } from '@ditojs/admin-server'
 import { defineAdminViteConfig } from '@ditojs/admin-server/vite'
 
-const admin = serveAdmin({
+const admin = createAdmin({
   base: '/admin',
   // Where the production build of the admin goes:
   dist: path.resolve('dist/admin'),
@@ -62,7 +62,7 @@ at `/api/users`. Its `features` go to `authentication`. See
 `forceDragFallback`, see
 [AdminContext](../../api/admin/admin.md#settings).
 
-With `vite`, `serveAdmin()` serves the admin's sources through Vite with hot
+With `vite`, `createAdmin()` serves the admin's sources through Vite with hot
 reloading. Without it, it serves the build in `dist`. To build, add
 `admin.vite.config.js` to the app's root folder and run
 `vite build --config admin.vite.config.js`:
@@ -112,7 +112,7 @@ peer dependencies `vite`, `@vitejs/plugin-vue` and `@ditojs/build`.
 `index.html`. The script loads the global `dito` object from `/admin/dito.js`.
 This object is the default of the `dito` option of `DitoAdmin`. The `api`
 option is merged over `dito.api`, so settings that belong to code, like
-functions, go here. `api.users` could also go in the `api` of `serveAdmin()`:
+functions, go here. `api.users` could also go in the `api` of `createAdmin()`:
 
 ```js
 // src/admin/index.js

@@ -7,6 +7,7 @@ import { serveStatic } from '@hono/node-server/serve-static'
 import { RESPONSE_ALREADY_SENT } from '@hono/node-server/utils/response'
 import type { InlineConfig, ViteDevServer } from 'vite'
 import { asArray, assignDeeply, isFunction, isString } from '@ditojs/utils'
+import type { Authorize, User } from '@ditojs/server'
 import { normalizeBase } from './normalize-base.ts'
 
 // Serves the Dito admin as a Hono app, which the host routes at `base` with
@@ -32,27 +33,17 @@ export interface AdminOptions {
   middleware?: MiddlewareHandler | MiddlewareHandler[]
   // The signed-in user of the request, or null. `authorize` reads it as
   // `c.var.user`.
-  getUser?: (c: Context) => AdminUser | null | Promise<AdminUser | null>
+  getUser?: (c: Context) => User | null | Promise<User | null>
   // Who may load the admin's views: `true` for anyone, a role or a list of
   // roles, of which the user needs one, or a function of `c`. Denied requests
   // get 401, or 403 with a user. Without it, anyone may.
-  authorize?: AdminAuthorize
+  authorize?: Authorize
   // The Vite config of development, or the path of its file, such as one
   // that exports `defineAdminViteConfig()` from `@ditojs/admin-server/vite`.
   // With it, Vite serves the admin's sources. The HMR websocket listens on
   // its `server.port`, by default a free one.
   vite?: InlineConfig | string
 }
-
-export interface AdminUser {
-  roles: string[]
-}
-
-export type AdminAuthorize =
-  | true
-  | string
-  | string[]
-  | ((c: Context) => boolean | Promise<boolean>)
 
 export interface AuthenticationFeatures {
   hasPasskeys: boolean
@@ -62,7 +53,7 @@ export interface AuthenticationFeatures {
 }
 
 interface AdminEnv {
-  Variables: { user: AdminUser | null }
+  Variables: { user: User | null }
 }
 
 export type AdminServer = Hono<AdminEnv> & {
@@ -70,7 +61,7 @@ export type AdminServer = Hono<AdminEnv> & {
   close: () => Promise<void>
 }
 
-export function serveAdmin(options: AdminOptions): AdminServer {
+export function createAdmin(options: AdminOptions): AdminServer {
   const { middleware, getUser, authorize } = options
   const base = normalizeBase(options.base)
   const app = new Hono<AdminEnv>()

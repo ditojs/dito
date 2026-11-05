@@ -149,7 +149,7 @@ export async function mountAdmin({
     }
     return request(options)
   })
-  // `serveAdmin()` provides the `dito` object as `window.dito` too:
+  // `createAdmin()` provides the `dito` object as `window.dito` too:
   window.dito = { base: '/', settings, authentication }
   stubRequests()
   const dito = new DitoAdmin(element, {

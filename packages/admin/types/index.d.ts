@@ -171,7 +171,7 @@ export interface ApiResource {
 /**
  * Configuration for the admin's API layer. Merged from three
  * sources in order of priority: the constructor `api` parameter,
- * `dito.api` (passed from `serveAdmin()` on the server), and
+ * `dito.api` (passed from `createAdmin()` on the server), and
  * built-in defaults.
  */
 export interface ApiConfig {
@@ -3159,7 +3159,7 @@ export class DitoAdmin<
     options?: AdminOptions & {
       /**
        * The base, api, settings and authentication passed from
-       * `serveAdmin()`.
+       * `createAdmin()`.
        *
        * @defaultValue `globalThis.dito`
        */

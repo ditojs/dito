@@ -69,11 +69,11 @@ in its own Hono routes. The API runs it before `getUser`, which reads the
 session. It loads the session into `c.var.session` before the action. After the
 action, it saves the session if it changed, even when the action throws, and
 adds its `Set-Cookie` header to the response, also to error responses.
-[`serveAdmin()`](admin-server.md#adminoptions) takes the middleware and the
+[`createAdmin()`](admin-server.md#adminoptions) takes the middleware and the
 `getUser` of [`sessionUser()`](#sessionuser), as `createApi()` does:
 
 ```js
-serveAdmin({
+createAdmin({
   ...options,
   middleware: adminSessions.middleware,
   getUser: sessionUser(adminSource),

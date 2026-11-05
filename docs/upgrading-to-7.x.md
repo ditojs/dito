@@ -38,7 +38,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `dito db:list_asset_config`, `db:recount_assets`                                       | The asset paths of the app, and `assets.runJobs()`                                                                                                                                          | low                     |
 | `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `deleteExpiredSessions(kysely)` of `@ditojs/auth` on a timer of the app                                                                                                                     | low                     |
 | `new Application()`, `app.execute()`, `start()`, `stop()`                              | `new Hono()` as the host, the controllers in one `createApi()` per area, routed with `app.route()`, and `serve()` of `@ditojs/server/node`, which stops on signals                          | medium                  |
-| `config` and its sections                                                              | The app's own config module, whose sections the app passes to `hostMiddleware()`, `createSessions()`, `createStorages()` and `serveAdmin()`                                                 | low                     |
+| `config` and its sections                                                              | The app's own config module, whose sections the app passes to `hostMiddleware()`, `createSessions()`, `createStorages()` and `createAdmin()`                                                | low                     |
 | `config.knex`, `app.knex`, `normalizeDbNames`                                          | `new MikroORM(mikroOptions({ dbName, host, user, password }))`, passed to `createApi({ db: mikroDb(orm) })`; MikroORM maps camelCase names to snake_case by default; `getKysely(c)` for SQL | low                     |
 | The `typeParsers` of knex, such as numeric to float                                    | `p.decimal('number')` and `p.bigint('number')` on the entity                                                                                                                                | low                     |
 | `Service`, `config.services`, `app.services`                                           | The app's own modules, started and stopped around `serve()`, see [step 4](#4-set-up-the-orm-the-services-and-the-scripts)                                                                   | low, or medium for many |
@@ -58,7 +58,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `app.proxy`, `config.server.proxy`                                                     | `forwarded(proxy)` of `@ditojs/server/node`, and `getClientAddress(c)` for the client's address                                                                                             | low                     |
 | `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createSessions()`, `sessionUser()`, `usersRoutes()`, `passwordWrites()`, `passkeys()`, `totp()`, and `entityUserSource()` of `@ditojs/mikro`                               | medium                  |
 | `config.storages`, model `assets`, `AssetFile`, asset counts in hooks                  | `@ditojs/storage`: `createStorages()`, asset paths, `createAssets()`, `serveStorage()`                                                                                                      | medium                  |
-| `AdminController`, `config.admin`, the admin's build                                   | `serveAdmin()` and `defineAdminViteConfig()` of `@ditojs/admin-server`                                                                                                                      | low                     |
+| `AdminController`, `config.admin`, the admin's build                                   | `createAdmin()` and `defineAdminViteConfig()` of `@ditojs/admin-server`                                                                                                                     | low                     |
 | Tests on `app.knex` and models                                                         | Tests on an entity manager of the ORM, and `app.request()` of Hono                                                                                                                          | medium                  |
 
 ## Migrating an app
@@ -723,11 +723,11 @@ export const assets = createAssets({
 #### Admin server
 
 `AdminController` and `config.admin` become
-[`serveAdmin()`](api/server/admin-server.md#serveadmin), which returns a Hono
+[`createAdmin()`](api/server/admin-server.md#createadmin), which returns a Hono
 app. See [Serving the admin](guide/server/admin.md).
 
 ```js
-const admin = serveAdmin({
+const admin = createAdmin({
   base: '/admin',
   dist: path.resolve('dist/admin'),
   vite: isDevelopment ? 'admin.vite.config.js' : undefined,

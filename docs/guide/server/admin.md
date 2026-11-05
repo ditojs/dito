@@ -8,10 +8,10 @@ loads Vite.
 
 ```js
 import path from 'node:path'
-import { serveAdmin } from '@ditojs/admin-server'
+import { createAdmin } from '@ditojs/admin-server'
 import { sessionUser } from '@ditojs/auth'
 
-const admin = serveAdmin({
+const admin = createAdmin({
   base: '/admin',
   dist: path.resolve('dist/admin'),
   // Only development loads the file and the build tools.
@@ -38,7 +38,7 @@ await serve(app, { onClose: () => admin.close() })
 - `authentication` is the `features` of the
   [users controller](auth.md#the-users-controller), which tells the login and
   account views what to offer.
-- `serveAdmin()` returns a Hono app, which the host routes at `base`.
+- `createAdmin()` returns a Hono app, which the host routes at `base`.
 - `middleware`, `getUser` and `authorize` work as in
   [`createApi()`](controllers.md#authorization). `authorize` decides whether a
   request may load the admin's views. `middleware` runs only on those requests.
@@ -64,4 +64,4 @@ vite build --config admin.vite.config.js
 ```
 
 The second argument is merged into the config. In development, pass the file's
-path to `serveAdmin()` as `vite`, which loads it with the mode `development`.
+path to `createAdmin()` as `vite`, which loads it with the mode `development`.
