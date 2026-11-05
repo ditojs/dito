@@ -358,6 +358,16 @@ describe('DitoMarkupType', () => {
       )
     })
 
+    it('keeps links that are paths within the site', async () => {
+      const { admin, findField, data } = await mountLinkSchema('<p>Emma</p>')
+      const dialog = await openLinkDialog(admin, findField('body'))
+      await enterValue(dialog.find('input[name="href"]'), '/typefaces/emma')
+      await dialog.find('form').trigger('submit')
+      await vi.waitFor(() =>
+        expect(data.body).toBe('<p><a href="/typefaces/emma">Emma</a></p>')
+      )
+    })
+
     it('edits the attributes of existing links', async () => {
       const { admin, findField, data } = await mountLinkSchema(
         '<p><a href="https://example.com" title="Old">Emma</a></p>'
