@@ -22,7 +22,7 @@ app.use(
   ...hostMiddleware({
     csrf: { origin: 'https://example.com' },
     cors: { origin: 'https://example.com' },
-    bodyLimit: { maxSize: 5 * 1024 * 1024 }
+    bodyLimit: { maxSize: '5mb' }
   })
 )
 ```
@@ -34,13 +34,13 @@ Returns Hono's standard middleware for a host, for
 - `true` adds it with its defaults;
 - an object adds it with these options.
 
-| Option          | Default | Description                                                                                                                                                                                                                                                                       |
-| --------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `secureHeaders` | `true`  | Hono's `secureHeaders()`.                                                                                                                                                                                                                                                         |
-| `cors`          | `false` | Hono's `cors()`.                                                                                                                                                                                                                                                                  |
-| `etag`          | `false` | Hono's `etag()`.                                                                                                                                                                                                                                                                  |
-| `csrf`          | `true`  | Hono's `csrf()`. It only checks requests with `Origin`. Browsers send `Origin`, and other clients can't carry an attack. `csrf()` lets `application/json` pass, which forms can't send.                                                                                           |
-| `bodyLimit`     | `true`  | Hono's `bodyLimit()`. Its `maxSize` is 1 MB unless the options set one. Multipart bodies have no limit here: uploads limit each file with `maxSize`, see [Uploads](storage.md#uploads). The reverse proxy can limit the whole body, such as with `client_max_body_size` in nginx. |
+| Option          | Default | Description                                                                                                                                                                                                                                                                                                                                                                                 |
+| --------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `secureHeaders` | `true`  | Hono's `secureHeaders()`.                                                                                                                                                                                                                                                                                                                                                                   |
+| `cors`          | `false` | Hono's `cors()`.                                                                                                                                                                                                                                                                                                                                                                            |
+| `etag`          | `false` | Hono's `etag()`.                                                                                                                                                                                                                                                                                                                                                                            |
+| `csrf`          | `true`  | Hono's `csrf()`. It only checks requests with `Origin`. Browsers send `Origin`, and other clients can't carry an attack. `csrf()` lets `application/json` pass, which forms can't send.                                                                                                                                                                                                     |
+| `bodyLimit`     | `true`  | Hono's `bodyLimit()`. Its `maxSize` is 1 MB unless the options set one, in bytes or as a string with a unit, such as `'5mb'`, see [`parseFileSize()`](../utils.md#parsefilesize). Multipart bodies have no limit here: uploads limit each file with `maxSize`, see [Uploads](storage.md#uploads). The reverse proxy can limit the whole body, such as with `client_max_body_size` in nginx. |
 
 The middleware runs in the order of the table. So the responses of `csrf()` and
 `bodyLimit()` have the headers of the others.

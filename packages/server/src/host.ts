@@ -5,6 +5,7 @@ import { csrf } from 'hono/csrf'
 import { etag } from 'hono/etag'
 import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
+import { parseFileSize } from '@ditojs/utils'
 
 // Hono's standard middleware for a host, for `app.use(...hostMiddleware())`.
 // Each option is `false`, `true` for the defaults of that middleware, or its
@@ -24,9 +25,16 @@ export interface HostMiddlewareOptions {
   cors?: Option<typeof cors>
   // Off by default.
   etag?: Option<typeof etag>
-  // 1 MB by default. Multipart bodies, such as uploads, have no limit.
-  bodyLimit?: boolean | Partial<Parameters<typeof bodyLimit>[0]>
+  // 1 MB by default, with `maxSize` in bytes or as a string with a unit, such
+  // as `'5mb'`. Multipart bodies, such as uploads, have no limit.
+  bodyLimit?: boolean | BodyLimitOptions
 }
+
+type BodyLimitOptions = Partial<
+  Omit<Parameters<typeof bodyLimit>[0], 'maxSize'> & {
+    maxSize: number | string
+  }
+>
 
 const defaultBodyLimit = 1024 * 1024
 
@@ -57,21 +65,20 @@ export function hostMiddleware({
     )
   }
   if (bodyLimitOptions) {
-    const { maxSize, onError } = {
-      maxSize: defaultBodyLimit,
-      onError: overBodyLimit,
-      ...options(bodyLimitOptions)
-    }
+    const { maxSize: size = defaultBodyLimit, onError = overBodyLimit } = (
+      options(bodyLimitOptions) ?? {}
+    )
+    const maxSize = parseFileSize(size)
     const limit = bodyLimit({ maxSize, onError })
     middleware.push(async (c, next) => {
       if (c.req.header('Content-Type')?.startsWith('multipart/')) return next()
-      const size = c.req.header('Content-Length')
-      if (size === undefined) return limit(c, next)
+      const length = c.req.header('Content-Length')
+      if (length === undefined) return limit(c, next)
       // `bodyLimit()` reads `c.req.raw.body`, after which `@hono/node-server`
       // resets the connection of a body that nothing read. The next request
       // of a keep-alive connection would fail. So bodies of a known size don't
       // go through it.
-      return Number(size) > maxSize ? onError(c) : next()
+      return Number(length) > maxSize ? onError(c) : next()
     })
   }
   return middleware

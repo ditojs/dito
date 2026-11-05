@@ -60,6 +60,16 @@ describe('hostMiddleware()', () => {
     expect((await post(open, plain, large)).status).toBe(200)
   })
 
+  it('takes sizes with units as the body limit', async () => {
+    const plain = { 'Content-Type': 'text/plain' }
+    const app = host({ bodyLimit: { maxSize: '1kb' } })
+    expect((await post(app, plain, 'x'.repeat(1000))).status).toBe(200)
+    expect((await post(app, plain, 'x'.repeat(1001))).status).toBe(413)
+    expect(() => hostMiddleware({ bodyLimit: { maxSize: 'large' } })).toThrow(
+      `Invalid file size: 'large'`
+    )
+  })
+
   it('adds `cors` and `etag` when asked', async () => {
     const off = await host().request('/')
     expect(off.headers.has('ETag')).toBe(false)
