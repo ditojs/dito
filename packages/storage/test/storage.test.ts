@@ -2,7 +2,7 @@ import path from 'node:path'
 import {
   Storage,
   getUniqueKey,
-  type AssetFileObject,
+  type AssetFile,
   type StorageOptions
 } from '../src/index.ts'
 
@@ -10,19 +10,19 @@ import {
 class MemoryStorage extends Storage {
   dataByKey = new Map<string, Buffer>()
 
-  override getFileUrl(file: AssetFileObject) {
+  override getFileUrl(file: AssetFile) {
     return this.getUrl(file.key)
   }
 
-  async addFile(file: AssetFileObject, data: Buffer) {
+  async addFile(file: AssetFile, data: Buffer) {
     this.dataByKey.set(file.key, data)
   }
 
-  async removeFile(file: AssetFileObject) {
+  async removeFile(file: AssetFile) {
     this.dataByKey.delete(file.key)
   }
 
-  async readFile(file: AssetFileObject) {
+  async readFile(file: AssetFile) {
     return this.dataByKey.get(file.key)!
   }
 

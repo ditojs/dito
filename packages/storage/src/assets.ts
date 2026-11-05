@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely'
 import { mapConcurrently } from '@ditojs/utils'
-import type { AssetFileObject, Storage, StoreOptions } from './Storage.ts'
+import type { AssetFile, Storage, StoreOptions } from './Storage.ts'
 import {
   findAssetFiles,
   getDataPath,
@@ -34,7 +34,7 @@ export interface ScanAssetsReport {
   // their rows.
   missing: AssetKey[]
   // The number of rows read.
-  rows: number
+  rowCount: number
   // In milliseconds.
   duration: number
 }
@@ -55,9 +55,9 @@ export async function scanAssets({
 }: ScanAssetsOptions): Promise<ScanAssetsReport> {
   const start = performance.now()
   const references = new Map<string, AssetReference>()
-  let rows = 0
+  let rowCount = 0
   for await (const rowReferences of readReferences(db, paths)) {
-    rows++
+    rowCount++
     for (const reference of rowReferences) {
       if (!references.has(reference.key)) {
         references.set(reference.key, reference)
@@ -114,7 +114,7 @@ export async function scanAssets({
     referenced,
     unreferenced,
     missing: missing.map(({ key, storage }) => ({ key, storage })),
-    rows,
+    rowCount,
     duration: Math.round(performance.now() - start)
   }
 }
@@ -124,7 +124,7 @@ export interface ReleaseAssetsOptions {
   storages: StorageRegistry
   // How long an asset stays unreferenced before it is released, in
   // milliseconds.
-  after: number
+  deleteUnusedAfter: number
   now?: Date
 }
 
@@ -134,17 +134,21 @@ export interface ReleasedAsset extends AssetKey {
 }
 
 // Deletes the files and `asset` rows of the assets that the scans found
-// unreferenced for longer than `after`. A scan needs to run in between, so
-// that files which rows reference again aren't released.
+// unreferenced for longer than `deleteUnusedAfter`. A scan needs to run in
+// between, so that files which rows reference again aren't released.
 export async function releaseAssets({
   db,
   storages,
-  after,
+  deleteUnusedAfter,
   now = new Date()
 }: ReleaseAssetsOptions): Promise<ReleasedAsset[]> {
   const assets = await db
     .deleteFrom('asset')
-    .where('unreferenced_since', '<=', new Date(now.getTime() - after))
+    .where(
+      'unreferenced_since',
+      '<=',
+      new Date(now.getTime() - deleteUnusedAfter)
+    )
     .returning(['key', 'storage', 'file'])
     .execute()
   // Remove the files after the delete, so that a failed delete keeps them.
@@ -171,7 +175,7 @@ export async function releaseAssets({
 // and that write rolls back, the release deletes the file later.
 export async function insertAsset(
   db: Kysely<any>,
-  file: AssetFileObject,
+  file: AssetFile,
   storage: Storage
 ) {
   const now = new Date()
@@ -210,7 +214,8 @@ export interface RunAssetJobsOptions {
   db: Kysely<any>
   paths: AssetPath[]
   storages: StorageRegistry
-  // The `after` of `releaseAssets()`. With `false`, the release is skipped.
+  // The `deleteUnusedAfter` of `releaseAssets()`. With `false`, the release is
+  // skipped.
   deleteUnusedAfter: number | false
   // Writes and deletes nothing, and returns the assets that the release
   // would delete as `released`.
@@ -237,14 +242,14 @@ export async function runAssetJobs({
       ? scan.unreferenced
           .filter(({ since }) => since.getTime() <= before)
           .map(({ key, storage }) => ({ key, storage }))
-      : await releaseAssets({ db, storages, after: deleteUnusedAfter, now })
+      : await releaseAssets({ db, storages, deleteUnusedAfter, now })
   }
   return { scan, released }
 }
 
 export interface AssetReference {
   key: string
-  file: AssetFileObject
+  file: AssetFile
   table: string
   id: unknown
   column: string

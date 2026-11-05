@@ -1,7 +1,7 @@
 import picomatch from 'picomatch'
 import { camelize } from '@ditojs/utils'
 import { HttpError, defineAction, type MixinDefinition } from '@ditojs/server'
-import type { AssetFileObject } from './Storage.ts'
+import type { AssetFile } from './Storage.ts'
 import { getDataPath } from './asset-path.ts'
 import { storeAsset } from './assets.ts'
 import type { AssetDb, AssetOptions } from './assets-feature.ts'
@@ -62,7 +62,7 @@ export function uploadRoutes({
             })
           }
           const storage = storages.get(upload.storage)
-          const files: AssetFileObject[] = []
+          const files: AssetFile[] = []
           try {
             for (const value of body.values()) {
               if (value instanceof File) {

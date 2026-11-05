@@ -3,7 +3,7 @@
 import { isIP } from 'node:net'
 import {
   Storage,
-  type AssetFileObject,
+  type AssetFile,
   type StorageOptions
 } from './Storage.ts'
 
@@ -87,11 +87,11 @@ export class S3Storage extends Storage {
     return new URL(endpoint ?? `https://s3.${region}.amazonaws.com`)
   }
 
-  override getFileUrl(file: AssetFileObject) {
+  override getFileUrl(file: AssetFile) {
     return this.getUrl(file.key)
   }
 
-  async addFile(file: AssetFileObject, data: Buffer) {
+  async addFile(file: AssetFile, data: Buffer) {
     const s3 = await this.getClient()
     await s3.PutObject({
       Bucket: this.bucket,
@@ -102,12 +102,12 @@ export class S3Storage extends Storage {
     })
   }
 
-  async removeFile(file: AssetFileObject) {
+  async removeFile(file: AssetFile) {
     const s3 = await this.getClient()
     await s3.DeleteObject({ Bucket: this.bucket, Key: file.key })
   }
 
-  async readFile(file: AssetFileObject): Promise<Buffer> {
+  async readFile(file: AssetFile): Promise<Buffer> {
     const s3 = await this.getClient()
     const { Body } = await s3.GetObject({
       Bucket: this.bucket,

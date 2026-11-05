@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import {
   Storage,
-  type AssetFileObject,
+  type AssetFile,
   type StorageOptions
 } from './Storage.ts'
 
@@ -33,7 +33,7 @@ export class DiskStorage extends Storage {
     this.nestedFolders = nestedFolders
   }
 
-  getFilePath(file: AssetFileObject) {
+  getFilePath(file: AssetFile) {
     const filePath = path.resolve(
       this.path,
       this.#getNestedFolder(file.key),
@@ -48,21 +48,21 @@ export class DiskStorage extends Storage {
     return filePath
   }
 
-  override getFileUrl(file: AssetFileObject) {
+  override getFileUrl(file: AssetFile) {
     return this.getUrl(this.#getNestedFolder(file.key), file.key)
   }
 
-  async addFile(file: AssetFileObject, data: Buffer) {
+  async addFile(file: AssetFile, data: Buffer) {
     const filePath = this.getFilePath(file)
     await fs.mkdir(path.dirname(filePath), { recursive: true })
     await fs.writeFile(filePath, data)
   }
 
-  async removeFile(file: AssetFileObject) {
+  async removeFile(file: AssetFile) {
     await fs.unlink(this.getFilePath(file))
   }
 
-  async readFile(file: AssetFileObject) {
+  async readFile(file: AssetFile) {
     return fs.readFile(this.getFilePath(file))
   }
 

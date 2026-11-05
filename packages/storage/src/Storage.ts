@@ -12,7 +12,7 @@ import { isString } from '@ditojs/utils'
 
 // A stored file as it appears in JSON data: the storage key, and the name,
 // type and size of the file.
-export interface AssetFileObject {
+export interface AssetFile {
   key: string
   name?: string
   type?: string
@@ -58,7 +58,7 @@ export abstract class Storage {
 
   // Stores data under a new key, and returns its file object, with the width
   // and height of images and videos.
-  async store({ name, type, data }: StoreOptions): Promise<AssetFileObject> {
+  async store({ name, type, data }: StoreOptions): Promise<AssetFile> {
     // Multipart bodies give untyped files `application/octet-stream`, so
     // detect the type of those as well.
     type = (
@@ -66,7 +66,7 @@ export abstract class Storage {
       (await detectType(data)) ||
       'application/octet-stream'
     )
-    const file: AssetFileObject = {
+    const file: AssetFile = {
       key: getUniqueKey(name),
       name,
       type,
@@ -79,7 +79,7 @@ export abstract class Storage {
     return file
   }
 
-  getFileUrl(_file: AssetFileObject): string | undefined {
+  getFileUrl(_file: AssetFile): string | undefined {
     return undefined
   }
 
@@ -93,9 +93,9 @@ export abstract class Storage {
   }
 
   // Writes the data of the file under its key.
-  abstract addFile(file: AssetFileObject, data: Buffer): Promise<void>
-  abstract removeFile(file: AssetFileObject): Promise<void>
-  abstract readFile(file: AssetFileObject): Promise<Buffer>
+  abstract addFile(file: AssetFile, data: Buffer): Promise<void>
+  abstract removeFile(file: AssetFile): Promise<void>
+  abstract readFile(file: AssetFile): Promise<Buffer>
   abstract listKeys(): Promise<string[]>
 }
 

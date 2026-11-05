@@ -1,6 +1,6 @@
 // tests/utils/entities.ts
 import { defineEntity, p } from '@mikro-orm/core'
-import type { AssetFileObject } from '@ditojs/storage'
+import type { AssetFile } from '@ditojs/storage'
 
 // The tables that `@ditojs/auth` and `@ditojs/storage` read and write through
 // Kysely, as entities, so that the schema generator creates them for the
@@ -43,7 +43,7 @@ const AssetSchema = defineEntity({
   properties: {
     id: p.integer().primary(),
     key: p.string().unique(),
-    file: p.json<AssetFileObject>(),
+    file: p.json<AssetFile>(),
     storage: p.string(),
     unreferencedSince: p.datetime().nullable(),
     createdAt: p.datetime().nullable(),

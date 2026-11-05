@@ -1,10 +1,10 @@
 import { defineEntity, p } from '@mikro-orm/core'
-import type { AssetFileObject } from '@ditojs/storage'
+import type { AssetFile } from '@ditojs/storage'
 
 export interface Section {
   items: {
     items: {
-      image: AssetFileObject | null
+      image: AssetFile | null
     }[]
   }[]
 }

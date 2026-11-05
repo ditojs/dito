@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { StringType, defineEntity, p } from '@mikro-orm/core'
-import type { AssetFileObject } from '@ditojs/storage'
+import type { AssetFile } from '@ditojs/storage'
 import { schemaJson } from '../src/index.ts'
 
 // A string column whose schema is async: a code of upper-case letters.
@@ -36,7 +36,7 @@ const BookSchema = defineEntity({
         tags: z.array(z.string()).optional()
       })
     ).nullable(),
-    documents: p.json<AssetFileObject[]>().nullable(),
+    documents: p.json<AssetFile[]>().nullable(),
     // Never part of a response.
     secret: p.string().nullable().hidden(),
     rating: p.integer().nullable(),

@@ -703,10 +703,10 @@ export const assets = createAssets({
   the storage of the first asset path that matches the data path.
   `uploadRoutes()` takes a list of `AssetUpload`s, `{ path, storage }` with a
   glob as `path`, for fields that no asset path describes.
-- File objects have no signatures, and `AssetFile` is gone. A write accepts a
-  file when its key has an `asset` row in the storage of its path, and takes the
-  file's properties from the row. It imports other files from their `url` when
-  the storage allows it, or responds with 400.
+- File objects are plain objects of the type `AssetFile`, without signatures. A
+  write accepts a file when its key has an `asset` row in the storage of its
+  path, and takes the file's properties from the row. It imports other files
+  from their `url` when the storage allows it, or responds with 400.
 - `allowedImports` match the origin and path of a URL, without its query and
   hash. URLs with credentials never match, and imports don't follow redirects.
 - Code that creates files, such as `AssetFile.create()` in scripts, calls

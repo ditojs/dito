@@ -8,7 +8,7 @@ import {
   normalizeDataPath,
   parseDataPath
 } from '@ditojs/utils'
-import type { AssetFileObject } from './Storage.ts'
+import type { AssetFile } from './Storage.ts'
 
 // Where a table stores files: a column, and the data path of the files inside
 // its JSON value, with `*` for one segment and `**` for any number of them.
@@ -28,8 +28,8 @@ export interface AssetPath {
 // Values without a string `key` are skipped.
 export function findAssetFiles(value: unknown, path: string) {
   return findValues(value, path).filter(
-    (entry): entry is { file: AssetFileObject; path: string } =>
-      isAssetFileObject(entry.file)
+    (entry): entry is { file: AssetFile; path: string } =>
+      isAssetFile(entry.file)
   )
 }
 
@@ -37,7 +37,7 @@ export function findAssetFiles(value: unknown, path: string) {
 // Requests can't store these, as the `asset` table doesn't check them.
 export function findInvalidFiles(value: unknown, path: string) {
   return findValues(value, path)
-    .filter(({ file }) => file != null && !isAssetFileObject(file))
+    .filter(({ file }) => file != null && !isAssetFile(file))
     .map(({ path }) => path)
 }
 
@@ -65,6 +65,6 @@ export function getDataPath(column: string, path: string) {
   return normalizeDataPath([camelize(column), ...parseDataPath(path)])
 }
 
-function isAssetFileObject(value: unknown): value is AssetFileObject {
+function isAssetFile(value: unknown): value is AssetFile {
   return isObject(value) && isString(value.key)
 }

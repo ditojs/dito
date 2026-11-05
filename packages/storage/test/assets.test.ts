@@ -24,7 +24,7 @@ import {
   scanAssets,
   storeAsset,
   uploadRoutes,
-  type AssetFileObject,
+  type AssetFile,
   type AssetPath
 } from '../src/index.ts'
 import { findAssetFiles } from '../src/asset-path.ts'
@@ -97,7 +97,7 @@ beforeEach(async () => {
 
 afterEach(() => fs.rm(basePath, { recursive: true, force: true }))
 
-const file = (key: string): AssetFileObject => ({ key, name: `${key}.png` })
+const file = (key: string): AssetFile => ({ key, name: `${key}.png` })
 
 // Writes a file to the folder that `covers` imports from.
 async function addImport(name: string, data: string) {
@@ -211,7 +211,7 @@ describe('scanAssets()', () => {
         { key: 'e', storage: 'covers', since: old }
       ],
       missing: [{ key: 'c', storage: 'covers' }],
-      rows: 2
+      rowCount: 2
     })
     expect(await getAssets()).toEqual([
       { key: 'a', unreferenced_since: null },
@@ -258,7 +258,7 @@ describe('releaseAssets()', () => {
     const released = await releaseAssets({
       db,
       storages,
-      after: 12 * 60 * 60 * 1000,
+      deleteUnusedAfter: 12 * 60 * 60 * 1000,
       now
     })
     expect(released.sort((a, b) => a.key.localeCompare(b.key))).toEqual([
@@ -398,7 +398,7 @@ describe('assets()', () => {
     await addAsset('released', { since: old })
     let response: Promise<Response>
     await db.transaction().execute(async trx => {
-      await releaseAssets({ db: trx, storages, after: 0 })
+      await releaseAssets({ db: trx, storages, deleteUnusedAfter: 0 })
       response = post(setup(), { cover: file('released') })
       await new Promise(resolve => setTimeout(resolve, 100))
     })
@@ -759,7 +759,7 @@ describe('assetUploads()', () => {
     )
     expect(response.status).toBe(200)
     expect(response.headers.get('Content-Type')).toMatch(/^application\/json/)
-    const files: AssetFileObject[] = await response.json()
+    const files: AssetFile[] = await response.json()
     expect(files).toEqual([
       {
         key: expect.stringMatching(/^[0-9a-f-]{36}\.txt$/),

@@ -1,7 +1,7 @@
 export {
   Storage,
   getUniqueKey,
-  type AssetFileObject,
+  type AssetFile,
   type StorageOptions,
   type StoreOptions
 } from './Storage.ts'

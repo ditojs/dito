@@ -16,7 +16,7 @@ import {
 } from '@ditojs/server'
 import {
   resolveFileUrl,
-  type AssetFileObject,
+  type AssetFile,
   type Storage
 } from './Storage.ts'
 import {
@@ -50,7 +50,7 @@ export interface AssetOptions<Db = AssetDb> {
 
 // A file object and the storage of its asset path.
 interface StorageFile {
-  file: AssetFileObject
+  file: AssetFile
   storage: Storage
 }
 
@@ -184,7 +184,7 @@ async function importFiles(
       if (!stored) return
       for (const { file } of group) {
         for (const key of Object.keys(file)) {
-          delete file[key as keyof AssetFileObject]
+          delete file[key as keyof AssetFile]
         }
         Object.assign(file, stored)
       }
@@ -226,7 +226,7 @@ async function importFiles(
 async function importFile(
   db: Kysely<any>,
   { file, storage }: StorageFile,
-  asset: { storage: string; file: AssetFileObject } | undefined,
+  asset: { storage: string; file: AssetFile } | undefined,
   { storages, imported, skipDisallowed }: ImportOptions
 ) {
   if (!asset && !storage.isImportSourceAllowed(file.url)) {
