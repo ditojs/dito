@@ -164,7 +164,8 @@ export interface Adapter {
   connect?: (
     c: DitoContext
   ) => DitoVariables['em'] | Promise<DitoVariables['em']>
-  // Runs the actions that need a transaction. Without it, none runs in one.
+  // Runs the actions that need a transaction. Without it, none runs in one,
+  // and `createApi()` throws for actions with `transacted: true`.
   transaction?: Transaction
   // The `HttpError` of a database error, or undefined for other errors.
   toHttpError?: (error: unknown, c: DitoContext) => HttpError | undefined

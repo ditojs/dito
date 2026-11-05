@@ -53,6 +53,16 @@ describe('createAdmin() in production', () => {
     return { request: route(admin) }
   }
 
+  it('throws without a build to serve', () => {
+    expect(() => createAdmin({ base: '/admin' })).toThrow(
+      'Unable to serve the admin without `vite` or `dist`'
+    )
+    const missing = path.join(dist, 'missing')
+    expect(() => createAdmin({ base: '/admin', dist: missing })).toThrow(
+      `Unable to find the admin's build in '${missing}'`
+    )
+  })
+
   it('serves the built files', async () => {
     const response = await setupAdmin().request(
       '/admin/assets/core-Ab12_x-Z.js'

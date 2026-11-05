@@ -58,6 +58,10 @@ them.
 | `getUser`     | `({ c }) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                |
 | `onError`     | `({ error, c }) => void \| Promise<void>`          | Called with each error with a status of 500 or above, for the app's logs. By default, logs through `c.var.logger`, else `console`. See [Errors](errors.md).                             |
 
+`createApi()` throws for an action whose `authorize` holds roles without
+`getUser`, as no user could have them. It also throws for an action with
+`transacted: true` when the adapter has no `transaction`.
+
 ### The request
 
 For each request of an action, Hono and Dito:

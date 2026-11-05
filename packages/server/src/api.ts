@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono'
 import { validator } from 'hono/validator'
 import type { z } from 'zod'
-import { asArray, isArray, isFunction } from '@ditojs/utils'
+import { asArray, isArray, isFunction, isString } from '@ditojs/utils'
 import {
   compareRanks,
   rank,
@@ -53,10 +53,26 @@ export function createApi({
     : Object.values(controllers).filter(isController)
   const actions = definitions.flatMap(definition => {
     const controller = resolveController(definition)
-    return controller.actions.map(action => ({
-      action,
-      path: `/${[controller.path, action.path].filter(Boolean).join('/')}`
-    }))
+    return controller.actions.map(action => {
+      const { key, authorize, transacted } = action
+      const where = `'${key}' in '${controller.path}'`
+      // Without `getUser`, there is no user whose roles could match.
+      if (!getUser && (isString(authorize) || isArray(authorize))) {
+        throw new Error(
+          `Unable to check the roles of ${where} without \`getUser\``
+        )
+      }
+      if (transacted && !adapter.transaction) {
+        throw new Error(
+          `Unable to run ${where} in a transaction: the adapter has no ` +
+          '`transaction`'
+        )
+      }
+      return {
+        action,
+        path: `/${[controller.path, action.path].filter(Boolean).join('/')}`
+      }
+    })
   })
   // Hono runs the first route that matches, so static segments go before
   // parameters, also across controllers: `get subscribe` before `get :id`.

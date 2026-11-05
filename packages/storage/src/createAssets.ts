@@ -39,6 +39,8 @@ export function createAssets({
   storages,
   deleteUnusedAfter = false
 }: CreateAssetsOptions) {
+  // Throws for the storages that the registry doesn't have.
+  for (const path of paths) storages.get(path.storage)
   const getDb = (c: DitoContext) =>
     (c.var.em as { getKysely(): Kysely<any> }).getKysely()
 

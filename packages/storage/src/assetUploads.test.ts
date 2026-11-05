@@ -192,6 +192,13 @@ describe('defineUploads()', () => {
     )
   })
 
+  it('throws for uploads of unknown storages', () => {
+    const uploads = [{ path: 'drafts/*', storage: 'unknown' }]
+    expect(() => bookAssets().defineUploads({ uploads })).toThrow(
+      `Unknown storage 'unknown'`
+    )
+  })
+
   it('adds uploads without asset paths, also without a table', async () => {
     const uploads = [{ path: 'drafts/*', storage: 'archive' }]
     const api = createApi({

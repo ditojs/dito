@@ -171,6 +171,8 @@ use `adapter.getKysely()`, outside of the requests' transactions: the rows of
 `store()` and `import()` commit at once, as their files stay when a request
 rolls back, and the release deletes them.
 `deleteUnusedAfter` is in milliseconds. By default, `false` skips the release.
+`createAssets()` throws for asset paths whose storage `storages` doesn't have,
+and `defineUploads()` does the same for `uploads`.
 
 | Member                                              | Description                                                                                          |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |

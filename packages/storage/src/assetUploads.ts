@@ -30,6 +30,8 @@ export function uploadRoutes({
   storages,
   db
 }: UploadRoutesOptions): MixinDefinition {
+  // Throws for the storages that the registry doesn't have.
+  for (const upload of uploads) storages.get(upload.storage)
   const matchers = uploads.map(({ path, storage }) => ({
     isMatch: picomatch(path),
     storage

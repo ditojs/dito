@@ -27,7 +27,8 @@ Returns a Hono app that serves the admin. The host routes it at `base` with
 Without `vite`, the app serves the built files of `dist` to GET and HEAD
 requests. Browsers cache the build's files below `assets/` and `views/` for
 good, and check other files again on each load. Paths without an extension get
-`index.html`.
+`index.html`. Without `vite` and `dist`, or with a `dist` that doesn't exist,
+`createAdmin()` throws.
 
 With `vite`, Vite handles the requests through the Node request and response of
 `@hono/node-server`, so the app needs that Node server. `close()` stops Vite.

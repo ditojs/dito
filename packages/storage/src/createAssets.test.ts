@@ -50,6 +50,16 @@ describe('createAssets()', () => {
     })
   }
 
+  it('throws for asset paths of unknown storages', () => {
+    expect(() =>
+      createAssets({
+        adapter,
+        paths: [{ table: 'book', column: 'cover', path: '', storage: 'x' }],
+        storages
+      })
+    ).toThrow(`Unknown storage 'x'`)
+  })
+
   it('handles the uploads and the files of writes', async () => {
     const api = setup()
     const body = new FormData()

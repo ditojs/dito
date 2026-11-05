@@ -15,6 +15,7 @@ import {
   notFound,
   type Adapter,
   type ApiConfig,
+  type Authorize,
   type ControllerDefinition,
   type DitoContext,
   type HandlerContext,
@@ -756,6 +757,22 @@ describe('authorize', () => {
       ])
     ).not.toThrow()
   })
+
+  it('needs `getUser` for roles', () => {
+    const fonts = (authorize: Authorize): ControllerDefinition => ({
+      path: 'fonts',
+      authorize,
+      actions: { get: () => [] }
+    })
+    for (const authorize of ['admin', ['admin', 'editor']]) {
+      expect(() => setup([fonts(authorize)], { getUser: undefined })).toThrow(
+        `Unable to check the roles of 'get' in 'fonts' without \`getUser\``
+      )
+    }
+    expect(() =>
+      setup([fonts(({ user }) => !user)], { getUser: undefined })
+    ).not.toThrow()
+  })
 })
 
 describe('validation', () => {
@@ -1164,6 +1181,19 @@ describe('transactions', () => {
     log.length = 0
     await request(api, 'POST', '/api/fonts/log')
     expect(log).toEqual(['middleware none'])
+  })
+
+  it('needs the `transaction` of the adapter for `transacted: true`', () => {
+    const fonts = (transacted: boolean): ControllerDefinition => ({
+      path: 'fonts',
+      authorize: true,
+      actions: { get: { transacted, handler: () => [] }, post: () => null }
+    })
+    expect(() => setup([fonts(true)])).toThrow(
+      `Unable to run 'get' in 'fonts' in a transaction: the adapter has no ` +
+      '`transaction`'
+    )
+    expect(() => setup([fonts(false)])).not.toThrow()
   })
 
   it('takes `transacted` from the action, else the last layer', async () => {

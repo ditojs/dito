@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import net from 'node:net'
 import type { AddressInfo } from 'node:net'
@@ -20,7 +21,8 @@ import { normalizeBase } from './normalizeBase.ts'
 export interface AdminOptions {
   // The path the admin is served at, such as `/admin`.
   base: string
-  // The built admin, served without `vite`.
+  // The built admin, served without `vite`. `createAdmin()` throws if it
+  // doesn't exist.
   dist?: string
   // `dito.api` in the browser, such as `url` and `users`.
   api?: Record<string, unknown>
@@ -103,6 +105,14 @@ export function createAdmin(options: AdminOptions): AdminServer {
       await (await vite.catch(() => null))?.close()
     }
   } else {
+    const root = options.dist && path.resolve(options.dist)
+    if (!root || !fs.existsSync(root)) {
+      throw new Error(
+        options.dist
+          ? `Unable to find the admin's build in '${options.dist}'`
+          : 'Unable to serve the admin without `vite` or `dist`'
+      )
+    }
     app.get(
       '*',
       async (c, next) => {
@@ -119,7 +129,7 @@ export function createAdmin(options: AdminOptions): AdminServer {
         )
       },
       serveStatic({
-        root: path.resolve(options.dist!),
+        root,
         // Paths without an extension are routes of the admin.
         rewriteRequestPath: pathname => {
           const file = pathname.slice(base.length)
