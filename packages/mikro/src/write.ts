@@ -101,7 +101,7 @@ export async function assignRecord<T extends object>(
   const { row } = check
   // Load the owned rows to match them by id, and the many-to-many collections,
   // which MikroORM else writes as new pivot rows, losing their other columns:
-  const paths = [...getPopulatePaths(meta, row)]
+  const paths = [...check.populate]
   if (paths.length) await em.populate(record, paths as never)
   const records = matchOwnedRows(meta, check, record)
   // Ids that the record already links need no check.
@@ -125,6 +125,9 @@ class BodyCheck {
   ids: RelationId[] = []
   refs: Ref[] = []
   newRowsByKey = new Map<string, NewRow>()
+  // The owned and many-to-many relations that the body sets, at any depth, as
+  // dotted paths such as `chapters.sections`.
+  populate = new Set<string>()
 
   addIssue(message: string, path: Path, code = 'invalid_value') {
     this.issues.push({ path, code, message })
@@ -215,6 +218,10 @@ class BodyCheck {
     path: Path,
     isNew: boolean
   ): unknown {
+    const isManyToMany = prop.kind === ReferenceKind.MANY_TO_MANY
+    if (value !== null && (isOwned(prop) || isManyToMany)) {
+      this.populate.add(path.filter(isString).join('.'))
+    }
     if (isToMany(prop)) {
       if (!isArray(value)) return this.addTypeIssue('array', value, path)
       const items: unknown[] = value.map((item, index) =>
@@ -478,29 +485,6 @@ function isRequired(prop: EntityProperty) {
     !prop.onCreate &&
     (prop.kind === ReferenceKind.SCALAR || isOwningToOne(prop))
   )
-}
-
-// Collect the owned and many-to-many relations that `row` sets, at any depth,
-// such as `chapters.sections`:
-function getPopulatePaths(
-  meta: EntityMetadata,
-  row: Row,
-  prefix = '',
-  paths = new Set<string>()
-) {
-  for (const prop of meta.props) {
-    const value = row[prop.name]
-    if (value != null) {
-      const path = `${prefix}${prop.name}`
-      if (prop.kind === ReferenceKind.MANY_TO_MANY || isOwned(prop)) {
-        paths.add(path)
-      }
-      for (const child of getOwnedRows(prop, value)) {
-        getPopulatePaths(prop.targetMeta!, child, `${path}.`, paths)
-      }
-    }
-  }
-  return paths
 }
 
 // Match the owned rows with ids to the loaded rows of `record`, at any depth:
