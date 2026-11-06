@@ -9,8 +9,15 @@ import {
   type MixinDefinition
 } from '@ditojs/server'
 import { getLayers } from '@ditojs/server/internal'
-import { isFunction, isPlainObject, mapValues, pickBy } from '@ditojs/utils'
+import {
+  asArray,
+  isFunction,
+  isPlainObject,
+  mapValues,
+  pickBy
+} from '@ditojs/utils'
 import type { EntityClass } from '@mikro-orm/core'
+import { every } from 'hono/combine'
 import { defaultActions } from './crud.ts'
 import { checkFind, type Find } from './find.ts'
 import type { Filter } from './filters.ts'
@@ -60,13 +67,23 @@ export interface ModelControllerDefinition<T extends object = any>
   }) => Promise<T | null | undefined>
 }
 
-// Handlers around the default actions of an entity, by action key.
-const guards = new WeakMap<EntityClass<any>, Actions>()
+type Guard = Pick<MixinDefinition, 'actions' | 'middleware'>
 
-// Run `actions` around the default actions of every model controller of
-// `entity`. They add no routes, and their `next` runs the default action.
-export function guardEntity(entity: EntityClass<any>, actions: Actions) {
-  guards.set(entity, actions)
+// The guards of an entity by name. Model controllers read them per request, so
+// a guard also reaches the controllers that were defined before it.
+const guardsByEntity = new WeakMap<EntityClass<any>, Map<string, Guard>>()
+
+// Guard every model controller of `entity`, without adding routes. The
+// `actions` of `guard` run around the default actions, and their `next` runs
+// the default action. Its `middleware` runs on all actions of the controllers.
+// A guard replaces the one of the same name.
+export function guardEntity(
+  entity: EntityClass<any>,
+  name: string,
+  guard: Guard
+) {
+  const guards = guardsByEntity.get(entity) ?? new Map<string, Guard>()
+  guardsByEntity.set(entity, guards.set(name, guard))
 }
 
 export function defineModelController<T extends object>(
@@ -94,14 +111,21 @@ export function defineModelController<T extends object>(
     actions: mapValues(
       pickBy(defaultActions, (value, key) => keys.has(key)),
       (action, key) => (input: HandlerContext) => {
-        const guard = guards.get(entity)?.[key as keyof Actions]
-        if (!isFunction(guard)) return (action as Handler)(input)
-        // The guard may change `body` for the action.
-        const context = {
-          ...input,
-          next: () => (action as Handler)(context)
-        }
-        return guard(context)
+        const handlers = getGuards(entity)
+          .map(guard => guard.actions?.[key as keyof Actions])
+          .filter(isFunction)
+        const run = handlers.reduceRight<Handler>(
+          (beneath, handler) => input => {
+            // The guard may change `body` for the handler beneath.
+            const context = {
+              ...input,
+              next: async () => beneath(context)
+            }
+            return handler(context)
+          },
+          action as Handler
+        )
+        return run(input)
       }
     ),
 
@@ -118,7 +142,11 @@ export function defineModelController<T extends object>(
       c.set('find', request.find.bind(request))
       c.set('list', request.list.bind(request))
       c.set('getListQuery', request.getListQuery.bind(request))
-      await next()
+      const guards = getGuards(entity)
+      await every(...guards.flatMap(guard => asArray(guard.middleware)))(
+        c,
+        next
+      )
     }
   }
 
@@ -144,6 +172,10 @@ export function defineModelController<T extends object>(
     mixins: [base, def],
     actions
   })
+}
+
+function getGuards(entity: EntityClass<any>) {
+  return [...(guardsByEntity.get(entity)?.values() ?? [])]
 }
 
 function hasHandler(actions: Actions = {}, key: string) {

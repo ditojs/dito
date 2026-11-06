@@ -569,6 +569,7 @@ Returns the asset paths that the `assets` of
 
 - It takes an array of entities, or a module of them.
 - It reads their definitions, so it needs no ORM.
+- Each path has its `entity`, next to the `table` and the `column`.
 - Table and column names follow MikroORM's default naming strategy, unless a
   property sets its own.
 
@@ -632,12 +633,21 @@ Returns the `adapter` of [`createApi()`](api.md#adapter):
 ## guardEntity()
 
 ```ts
-guardEntity(entity: EntityClass, actions: Actions): void
+guardEntity(entity: EntityClass, name: string, guard: { actions?, middleware? }): void
 ```
 
-Runs `actions` around the default actions of every model controller of `entity`,
-such as `{ 'patch :id': handler }`. They add no routes, and `next()` runs the
-default action.
+Guards every model controller of `entity`, without adding routes.
+
+- `actions` run around the default actions, such as
+  `{ 'patch :id': handler }`, and `next()` runs the default action.
+- `middleware` runs on all actions of the controllers, before their mixins'
+  middleware.
+- A guard replaces the one of the same `name`. Guards of other names stack.
+- Controllers read the guards per request, so a guard also reaches the
+  controllers that were defined before it.
+
+`createUsers()` of `@ditojs/auth` protects its users this way, and
+`createAssets()` of `@ditojs/storage` tracks files.
 
 ## useEm()
 

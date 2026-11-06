@@ -16,13 +16,16 @@ export { getInput, getContainer } from '../../utils/admin.js'
 
 export const fixturesDir = path.resolve(import.meta.dirname, 'fixtures')
 
+const assetWidget = { entity: AssetWidget, table: 'asset_widget' }
+
 // Where the tables store their files, by the snake case names of their tables
 // and columns.
 export const assetPaths: AssetPath[] = [
-  { table: 'asset_widget', column: 'files', path: '', storage: 'test' },
-  { table: 'asset_widget', column: 'file', path: '', storage: 'test' },
-  { table: 'asset_widget', column: 'files_small', path: '', storage: 'test' },
+  { ...assetWidget, column: 'files', path: '', storage: 'test' },
+  { ...assetWidget, column: 'file', path: '', storage: 'test' },
+  { ...assetWidget, column: 'files_small', path: '', storage: 'test' },
   {
+    entity: NestedAssetWidget,
     table: 'nested_asset_widget',
     column: 'sections',
     path: '*/items/*/items/*/image',
@@ -61,20 +64,16 @@ export function deleteUnusedAssets() {
   }).runJobs()
 }
 
-// The mixins of an entity with files, which check and import the files of
-// its writes, and take uploads.
-function assetMixins(table: string) {
-  return [assets.defineWrites(table), assets.defineUploads(table)]
-}
-
 // Serves uploaded files at /uploads, and the fixture files at /fixtures for
 // the HTTP import tests.
 export const test = defineScenario({
   dirname: import.meta.dirname,
   entities: [AssetWidget, NestedAssetWidget, Asset],
   controllers: {
-    AssetWidget: { mixins: assetMixins('asset_widget') },
-    NestedAssetWidget: { mixins: assetMixins('nested_asset_widget') },
+    AssetWidget: { mixins: [assets.defineUploads('asset_widget')] },
+    NestedAssetWidget: {
+      mixins: [assets.defineUploads('nested_asset_widget')]
+    },
     Asset: false
   },
   handlers: [

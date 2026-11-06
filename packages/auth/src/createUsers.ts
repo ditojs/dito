@@ -51,7 +51,7 @@ export function createUsers<U extends User>(
   })
   const credentials = createCredentials({ adapter })
   // All model controllers of the entity hash passwords and protect their users.
-  guardEntity(entity, defineUserWrites<U>({ source, credentials }).actions!)
+  guardEntity(entity, 'users', defineUserWrites<U>({ source, credentials }))
 
   return {
     ...source,

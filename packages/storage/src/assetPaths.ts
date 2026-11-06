@@ -9,10 +9,13 @@ import {
   parseDataPath,
   parseFileSize
 } from '@ditojs/utils'
+import type { EntityClass } from '@mikro-orm/core'
 import { isValidKey, type AssetFile } from './Storage.ts'
 
 // Where a table stores files, one file or an array of them per value:
 export interface AssetPath {
+  // The entity of the table, whose model controllers track the files.
+  entity: EntityClass<any>
   table: string
   column: string
   // The data path of the files inside the column's JSON value, with `*` for

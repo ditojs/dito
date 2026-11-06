@@ -18,6 +18,7 @@ import {
   type Api,
   request,
   paths,
+  bookPath,
   getAssets,
   adapter,
   handleAdapter
@@ -28,8 +29,14 @@ setupAssetTests()
 describe('defineUploads()', () => {
   const uploadPaths: AssetPath[] = [
     ...paths,
-    { table: 'book', column: 'back_cover', path: '', storage: 'archive' },
-    { table: 'shelf', column: 'label', path: '', storage: 'archive' }
+    { ...bookPath, column: 'back_cover', path: '', storage: 'archive' },
+    {
+      entity: class Shelf {},
+      table: 'shelf',
+      column: 'label',
+      path: '',
+      storage: 'archive'
+    }
   ]
   const bookAssets = () =>
     createAssets({ adapter, paths: uploadPaths, storages })
@@ -38,11 +45,7 @@ describe('defineUploads()', () => {
     const books = defineController({
       path: 'books',
       authorize: true,
-      // `defineWrites()` leaves the multipart bodies of the uploads alone.
-      mixins: [
-        bookAssets().defineWrites('book'),
-        bookAssets().defineUploads('book')
-      ],
+      mixins: [bookAssets().defineUploads('book')],
       ...(fail && {
         middleware: async (_c, next) => {
           await next()

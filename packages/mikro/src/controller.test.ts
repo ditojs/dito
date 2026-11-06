@@ -23,6 +23,7 @@ import {
   defineListHandler,
   defineModelController,
   defineTextFilter,
+  guardEntity,
   type FindShape,
   type ModelControllerDefinition
 } from './index.ts'
@@ -2711,6 +2712,48 @@ describe('createMikroAdapter()', () => {
     expect((await request(api, 'GET', '/items/failed')).status).toBe(500)
     expect(onError).toHaveBeenCalledOnce()
     expect(onError.mock.calls[0]![0].error).toBe(error)
+  })
+
+  it('runs the guards of an entity, without adding routes', async () => {
+    const calls: string[] = []
+    const addGuard = (name: string, call: string) =>
+      guardEntity(Info, name, {
+        middleware: async (_c, next) => {
+          calls.push(`${call} middleware`)
+          await next()
+        },
+        actions: {
+          get: ({ next }) => {
+            calls.push(`${call} action`)
+            return next()
+          },
+          post: () => {
+            throw new Error('Unused guard')
+          }
+        }
+      })
+    // Controllers read the guards per request:
+    const api = setup(
+      defineModelController({
+        path: 'infos',
+        entity: Info,
+        actions: { 'get': true, 'get count': ({ em }) => em.count(Info) }
+      })
+    )
+    addGuard('first', 'replaced')
+    addGuard('first', 'first')
+    addGuard('second', 'second')
+    expect((await request(api, 'GET', '/api/infos')).status).toBe(200)
+    expect(calls).toEqual([
+      'first middleware',
+      'second middleware',
+      'first action',
+      'second action'
+    ])
+    calls.length = 0
+    await request(api, 'GET', '/api/infos/count')
+    expect(calls).toEqual(['first middleware', 'second middleware'])
+    expect((await request(api, 'POST', '/api/infos', {})).status).toBe(404)
   })
 
   it('gives each request a fork of the entity manager', async () => {

@@ -26,10 +26,14 @@ export type Api = ReturnType<typeof createApi>
 export const request = (api: Api, url: string, init?: RequestInit) =>
   api.fetch(new Request(new URL(url, 'http://localhost'), init))
 
+class Book {}
+
+export const bookPath = { entity: Book, table: 'book' }
+
 export const paths: AssetPath[] = [
-  { table: 'book', column: 'cover', path: '', storage: 'covers' },
-  { table: 'book', column: 'pages', path: '*/images', storage: 'covers' },
-  { table: 'book', column: 'notes', path: '**.file', storage: 'covers' }
+  { ...bookPath, column: 'cover', path: '', storage: 'covers' },
+  { ...bookPath, column: 'pages', path: '*/images', storage: 'covers' },
+  { ...bookPath, column: 'notes', path: '**.file', storage: 'covers' }
 ]
 
 export const getDb = (c: DitoContext) => c.var.em as Kysely<any>

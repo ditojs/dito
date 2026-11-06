@@ -81,7 +81,6 @@ describe('defineAssetWrites()', () => {
       authorize: true,
       mixins: [
         defineAssetWrites({
-          table: 'book',
           paths: normalizeAssetPaths(assetPaths),
           storages,
           getDb

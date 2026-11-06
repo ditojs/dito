@@ -74,9 +74,9 @@ content: p.type(
 Entities say which columns hold files, with the `assets` of `defineJsonType()`.
 A column can have `assets` next to a `schema`.
 
-`getAssetPaths(entities)` collects them as asset paths. An asset path has a
-`table`, a `column`, a `path` and a `storage`. The uploads, the writes and the
-jobs below read them. `path` is the data path of the files inside the column's
+`getAssetPaths(entities)` collects them as asset paths. An asset path has an
+`entity`, a `table`, a `column`, a `path` and a `storage`. The uploads, the
+writes and the jobs below read them. `path` is the data path of the files inside the column's
 JSON value:
 
 - `''` stands for the column itself.
@@ -115,7 +115,7 @@ defineModelController({
   path: 'books',
   entity: Book,
   authorize: ['admin', 'editor'],
-  mixins: [assets.defineWrites('book'), assets.defineUploads('book')],
+  mixins: [assets.defineUploads('book')],
   actions: { 'get': true, 'post': true, 'get :id': true, 'patch :id': true }
 })
 ```
@@ -125,12 +125,10 @@ upload action. It sends it under the data path of its field, such as
 `POST books/upload/chapters/3/images`. It keeps the file object of the
 response.
 
-- `assets.defineUploads(table)` adds the upload action of a table.
-- `assets.defineWrites(table)` adds the handling of its writes.
+- `assets.defineUploads(table)` adds the upload action of a table. It throws
+  for tables without asset paths.
 - The action picks the storage of the first asset path that matches the data
   path.
-
-Controllers that write a table without uploads only use `defineWrites()`.
 
 ```js
 const uploads = [{ path: 'notes', storage: 'public' }]
@@ -151,8 +149,9 @@ of them too, see [`honoMiddleware()`](../../api/server/hono.md#honomiddleware).
 
 ## Writes
 
-`defineWrites()` handles the files in the body of a controller's writes. A file
-that the `asset` table holds gets the properties of the stored file, whatever
+Every model controller of an entity with asset paths handles the files in the
+bodies of its writes, with no mixin. This adds no routes. A file that the `asset`
+table holds gets the properties of the stored file, whatever
 the client sent. Other files are imported from their `url`, when the storage's
 `allowedImports` match it. See [Writes](../../api/server/storage.md#writes) for
 all cases.

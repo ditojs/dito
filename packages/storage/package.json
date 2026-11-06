@@ -9,6 +9,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@ditojs/mikro": "workspace:^",
     "@ditojs/utils": "workspace:^",
     "@types/busboy": "^1.5.5",
     "@types/picomatch": "^4.0.3",
@@ -22,6 +23,7 @@
     "@aws-lite/s3": "^0.2.7",
     "@ditojs/server": "workspace:^",
     "@hono/node-server": "^2.1.5",
+    "@mikro-orm/core": "^7.2.7",
     "@types/node": "^26.6.4",
     "hono": "^4.13.14",
     "kysely": "0.29.8"
@@ -31,6 +33,7 @@
     "@aws-lite/s3": "^0.2.7",
     "@ditojs/server": "workspace:^",
     "@hono/node-server": "^2.1.5",
+    "@mikro-orm/core": "^7.2.5",
     "hono": "^4.13.14",
     "kysely": "^0.29.6"
   },

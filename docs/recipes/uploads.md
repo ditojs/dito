@@ -31,8 +31,8 @@ export const assets = createAssets({
 })
 ```
 
-Declare the file columns on the entity. Give the controller the upload
-actions and the file handling:
+Declare the file columns on the entity, and give the controller the upload
+actions. All model controllers of the entity track its files:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
@@ -60,7 +60,7 @@ export const books = defineModelController({
   path: 'books',
   entity: Book,
   authorize: ['editor', 'admin'],
-  mixins: [assets.defineWrites('book'), assets.defineUploads('book')],
+  mixins: [assets.defineUploads('book')],
   actions: {
     'get': true,
     'post': true,

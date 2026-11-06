@@ -12,6 +12,7 @@ import {
   storages,
   request,
   paths,
+  bookPath,
   file,
   addImport,
   addBook,
@@ -30,49 +31,14 @@ describe('createAssets()', () => {
     deleteUnusedAfter: number | string = 24 * 60 * 60 * 1000
   ) => createAssets({ adapter, paths, storages, deleteUnusedAfter })
 
-  function setup() {
-    const assets = createBookAssets()
-    const books = defineController({
-      path: 'books',
-      authorize: true,
-      mixins: [assets.defineWrites('book'), assets.defineUploads('book')],
-      actions: { post: async ({ body }) => body }
-    })
-    return createApi({
-      controllers: [books],
-      adapter: handleAdapter,
-      getUser: async () => null,
-      onError: () => {}
-    })
-  }
-
   it('throws for asset paths of unknown storages', () => {
     expect(() =>
       createAssets({
         adapter,
-        paths: [{ table: 'book', column: 'cover', path: '', storage: 'x' }],
+        paths: [{ ...bookPath, column: 'cover', path: '', storage: 'x' }],
         storages
       })
     ).toThrow(`Unknown storage 'x'`)
-  })
-
-  it('handles the uploads and the files of writes', async () => {
-    const api = setup()
-    const body = new FormData()
-    body.append('file', new File(['Front'], 'front.txt'))
-    const response = await request(api, '/books/upload/cover', {
-      method: 'POST',
-      body
-    })
-    const [stored] = await response.json()
-    expect(stored).toMatchObject({ name: 'front.txt', size: 5 })
-    const written = await request(api, '/books', {
-      method: 'POST',
-      body: JSON.stringify({ cover: { key: stored.key } }),
-      headers: { 'Content-Type': 'application/json' }
-    })
-    expect(written.status).toBe(200)
-    expect(await written.json()).toEqual({ cover: stored })
   })
 
   it('stores files in storages by name', async () => {

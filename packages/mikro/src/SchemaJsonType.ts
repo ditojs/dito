@@ -78,7 +78,12 @@ export function getAssetPaths(entities: object) {
       const type = prop.customType ?? prop.type
       if (!(type instanceof SchemaJsonType)) return []
       const column = prop.fieldNames?.[0] ?? naming.propertyToColumnName(name)
-      return type.assets.map(asset => ({ table, column, ...asset }))
+      return type.assets.map(asset => ({
+        entity: meta.class,
+        table,
+        column,
+        ...asset
+      }))
     })
   })
 }

@@ -33,8 +33,7 @@ import type { StorageRegistry } from './StorageRegistry.ts'
 // `asset` rows of a write commit with its transaction:
 export type AssetDb = (c: DitoContext) => Kysely<any>
 
-export interface AssetOptions {
-  table: string
+interface AssetOptions {
   paths: NormalizedAssetPath[]
   storages: StorageRegistry
 }
@@ -66,12 +65,10 @@ const importConcurrency = 8
 // row from their `url` when the storage allows it. Change the files of the
 // body in place, so that handlers read the stored files.
 export function defineAssetWrites({
-  table,
   paths,
   storages,
   getDb
 }: AssetOptions & { getDb: AssetDb }): MixinDefinition {
-  const tablePaths = paths.filter(path => path.table === table)
   return {
     middleware: async (c, next) => {
       const imported: AssetPathFile[] = []
@@ -81,8 +78,8 @@ export function defineAssetWrites({
           imported.map(({ file, storage }) => storage.removeFile(file))
         )
       if (writeMethods.includes(c.req.method)) {
-        checkFiles(c.var.body, tablePaths)
-        const files = findFiles(c.var.body, tablePaths, storages)
+        checkFiles(c.var.body, paths)
+        const files = findFiles(c.var.body, paths, storages)
         if (files.length > 0) {
           const db = getDb(c)
           try {
@@ -266,7 +263,12 @@ async function importFile(
 // `file://` files, and skip sources that the storage doesn't allow:
 export async function importAssets<T extends object>(
   data: T,
-  { table, paths, storages, db }: AssetOptions & { db: Kysely<any> }
+  {
+    table,
+    paths,
+    storages,
+    db
+  }: AssetOptions & { table: string; db: Kysely<any> }
 ) {
   const tablePaths = paths.filter(path => path.table === table)
   const files = findFiles(data, tablePaths, storages)

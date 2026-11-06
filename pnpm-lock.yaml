@@ -657,6 +657,9 @@ importers:
 
   packages/storage:
     dependencies:
+      '@ditojs/mikro':
+        specifier: workspace:^
+        version: link:../mikro
       '@ditojs/utils':
         specifier: workspace:^
         version: link:../utils
@@ -691,6 +694,9 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.5
         version: 2.1.5(hono@4.13.16)
+      '@mikro-orm/core':
+        specifier: ^7.2.7
+        version: 7.2.7
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4

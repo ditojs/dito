@@ -58,12 +58,19 @@ class BookShelf extends ShelfSchema.class {}
 ShelfSchema.setClass(BookShelf)
 
 const paths = [
-  { table: 'book', column: 'specs', path: '**/file', storage: 'public' },
-  { table: 'book', column: 'specs', path: '*/files', storage: 'private' },
-  { table: 'book', column: 'cover_images', path: '', storage: 'public' },
-  { table: 'book', column: 'samples', path: '*/file', storage: 'private' },
-  { table: 'book_shelf', column: 'photo', path: '', storage: 'public' }
+  { column: 'specs', path: '**/file', storage: 'public' },
+  { column: 'specs', path: '*/files', storage: 'private' },
+  { column: 'cover_images', path: '', storage: 'public' },
+  { column: 'samples', path: '*/file', storage: 'private' }
 ]
+  .map(path => ({ entity: Book, table: 'book', ...path }))
+  .concat({
+    entity: BookShelf,
+    table: 'book_shelf',
+    column: 'photo',
+    path: '',
+    storage: 'public'
+  })
 
 describe('getAssetPaths()', () => {
   it('reads the paths from definitions, without an ORM', () => {

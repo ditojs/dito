@@ -1,5 +1,6 @@
 import { tryGetContext } from 'hono/context-storage'
 import type { Kysely } from 'kysely'
+import { guardEntity } from '@ditojs/mikro'
 import { isString, parseDuration } from '@ditojs/utils'
 import type { DitoContext, MixinDefinition } from '@ditojs/server'
 import type { Storage, StoreOptions } from './Storage.ts'
@@ -53,23 +54,19 @@ export function createAssets({
   const defaultDeleteUnusedAfter = parseDeleteUnusedAfter(deleteUnusedAfter)
   const defaultMaxSize = parseMaxSize(maxSize)
   const normalizedPaths = normalizeAssetPaths(paths, defaultMaxSize)
-  // The mixins use the Kysely of the request, so that the `asset` rows of a
-  // write commit with its transaction. The other methods run outside of the
-  // requests' transactions.
+  // Writes and uploads use the Kysely of the request, so that the `asset` rows
+  // of a write commit with its transaction. The other methods run outside of
+  // the requests' transactions.
   const getDb = (c: DitoContext) => adapter.getKysely(c)
+  // All model controllers of the entities track the files of their writes:
+  const pathsByEntity = Map.groupBy(normalizedPaths, path => path.entity)
+  for (const [entity, paths] of pathsByEntity) {
+    guardEntity(entity, 'assets', defineAssetWrites({ paths, storages, getDb }))
+  }
 
   return {
     paths,
     storages,
-
-    defineWrites(table: string): MixinDefinition {
-      return defineAssetWrites({
-        table,
-        paths: normalizedPaths,
-        storages,
-        getDb
-      })
-    },
 
     // Define the upload action of the table's asset paths, with the camelCase
     // column followed by the path of each, such as `pages/*/images`, and of
@@ -88,7 +85,7 @@ export function createAssets({
           storage,
           maxSize
         }))
-      if (name && tableUploads.length + uploads.length === 0) {
+      if (name && tableUploads.length === 0) {
         throw new Error(`No asset paths for table '${name}'`)
       }
       return defineAssetUploads({

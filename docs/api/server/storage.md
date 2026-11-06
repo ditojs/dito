@@ -183,7 +183,7 @@ const assets = createAssets({
 
 defineModelController({
   path: 'books',
-  mixins: [assets.defineWrites('book'), assets.defineUploads('book')],
+  mixins: [assets.defineUploads('book')],
   ...
 })
 
@@ -202,11 +202,15 @@ paths and storages.
 - `maxSize` is the size limit of the asset paths and uploads that don't set
   their own.
 - `createAssets()` throws for asset paths whose storage `storages` doesn't have.
-  `defineUploads()` does the same for `uploads`.
+  `defineUploads()` does the same for `uploads`, and throws for a table without
+  asset paths.
+- All model controllers of the entities of the asset paths track their files,
+  see [Writes](#writes). This also holds for controllers that were defined
+  before `createAssets()` runs.
 
 The `asset` rows go through two Kyselys:
 
-- The mixins use the Kysely of the request's entity manager,
+- Writes and uploads use the Kysely of the request's entity manager,
   `c.var.em.getKysely()`. So the `asset` rows of a write commit with its
   transaction.
 - `findReferences()` joins the transaction of the running request too. So it
@@ -217,7 +221,6 @@ The `asset` rows go through two Kyselys:
 
 | Member                                            | Description                                                                                          |
 | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `defineWrites(table)`                             | A mixin that handles the files in the bodies of the table's writes, see [Writes](#writes).           |
 | `defineUploads(table?, { uploads? }?)`            | A mixin with the upload action of the table's asset paths and of `uploads`, see [Uploads](#uploads). |
 | `store(storage, { name, type?, data })`           | Stores a file that the server creates, see [Stored files](#stored-files).                            |
 | `import(table, data)`                             | Imports the files of a row's data, see [Asset jobs](#asset-jobs). Returns `data`.                    |
@@ -227,9 +230,10 @@ The `asset` rows go through two Kyselys:
 
 ### Writes
 
-`defineWrites(table)` handles the files in the JSON body of a controller's
-writes, `c.var.body`. These are the files at the table's asset paths. For each
-file, it looks up the `asset` row of its key:
+Every model controller of an entity with asset paths handles the files in the
+JSON body of its writes, `c.var.body`, also of its own actions. It does this
+through [`guardEntity()`](mikro.md#guardentity), with no mixin and no routes.
+These are the files at the entity's asset paths. For each file, it looks up the `asset` row of its key:
 
 - If the row is in the storage of the asset path, the file gets the properties
   of the stored file, from the row's `file`. So clients can't change them.
@@ -347,5 +351,5 @@ reference, with their table, id, column and data path. With `keys`, it only
 lists the references of these files.
 
 `assets.import(table, data)` imports the files that a row's data references but
-no `asset` row holds, such as the `file://` files of seed data. It does this as
-`defineWrites()` does. It skips files from other sources.
+no `asset` row holds, such as the `file://` files of seed data, as
+[writes](#writes) do. It skips files from other sources.

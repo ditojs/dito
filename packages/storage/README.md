@@ -8,7 +8,8 @@ Released in 2018 under the MIT license, with support by https://lineto.com/
 `@ditojs/storage` keeps files on disk or in S3 for Dito.js apps.
 
 - It has upload actions for the admin.
-- It tracks stored files in an `asset` table, by scanning the data.
+- It tracks stored files in an `asset` table, by scanning the data, for all
+  model controllers of the entities.
 - It reads its tables through Kysely.
 
 ```js
