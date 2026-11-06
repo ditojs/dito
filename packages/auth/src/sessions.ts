@@ -31,6 +31,9 @@ export interface CreateSessionsOptions {
   cookieName: string
   // In milliseconds or as a duration such as `'24h'`.
   maxAge: number | string
+  // The source of the users. The sessions then have `getUser()`, for the
+  // `getUser` of `createApi()`.
+  users?: UserSource<any>
 }
 
 // The options with `maxAge` parsed.
@@ -216,7 +219,7 @@ export class Session {
 export type Sessions = ReturnType<typeof createSessions>
 
 export function createSessions(options: CreateSessionsOptions) {
-  const { adapter, secrets, cookieName } = options
+  const { adapter, secrets, cookieName, users } = options
   const sessionOptions = { ...options, maxAge: parseDuration(options.maxAge) }
   if (secrets.length === 0) {
     throw new Error('Unable to sign cookies without secrets.')
@@ -271,7 +274,13 @@ export function createSessions(options: CreateSessionsOptions) {
     }
   }
 
-  return { cookieName, middleware, readSignedCookie, deleteExpired }
+  return {
+    cookieName,
+    middleware,
+    readSignedCookie,
+    deleteExpired,
+    getUser: users && (({ c }: { c: Context }) => getSessionUser(c, users))
+  }
 }
 
 // The session of the request, from the middleware of `createSessions()`.

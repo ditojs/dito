@@ -116,7 +116,7 @@ export function createValidationError(
   })
 }
 
-// Hosts also pass it to `app.onError()`, for the errors outside of APIs, such
+// Apps also pass it to `app.onError()`, for the errors outside of APIs, such
 // as those of their own middleware.
 export function createErrorHandler({
   onError = logError,
@@ -146,10 +146,10 @@ export function createErrorHandler({
   }
 }
 
-// For `app.notFound()`, with the error going to `createErrorHandler()`.
-export const notFound: NotFoundHandler = () => {
-  throw new HttpError(404)
-}
+// For `app.notFound()`. It responds instead of throwing, so that the middleware
+// that runs last still gets the response after `next()`.
+export const notFound: NotFoundHandler = c =>
+  c.json(new HttpError(404).toJSON(), 404)
 
 function getFieldErrors(issues: readonly ValidationIssue[]) {
   const errors: NonNullable<HttpErrorBody['errors']> = {}
@@ -184,7 +184,6 @@ function convertStatusError(error: unknown) {
       : undefined
 }
 
-function logError({ error, c }: { error: unknown; c: Context }) {
-  const { logger = console } = c.var as { logger?: Pick<Console, 'error'> }
-  logger.error(error)
+function logError({ error }: { error: unknown }) {
+  console.error(error)
 }

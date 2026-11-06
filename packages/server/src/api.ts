@@ -26,17 +26,24 @@ import type {
 // matches go on to the app's `notFound()`.
 export function createApi({
   controllers,
+  sessions,
   middleware,
   adapter = {},
-  getUser,
+  getUser = sessions?.getUser,
   onError
 }: ApiConfig) {
   const app = new Hono<DitoEnv>()
-  app.use(...asArray(middleware), async (c, next) => {
-    if (adapter.connect) c.set('em', await adapter.connect(c))
-    c.set('user', (await getUser?.({ c })) ?? null)
-    await next()
-  })
+  // Runs on the actions only, so that APIs routed at `/api` and `/api/admin`
+  // don't run each other's middleware, in any order.
+  const setup: Middleware[] = [
+    ...asArray(sessions?.middleware),
+    ...asArray(middleware),
+    async (c, next) => {
+      if (adapter.connect) c.set('em', await adapter.connect(c))
+      c.set('user', (await getUser?.({ c })) ?? null)
+      await next()
+    }
+  ]
   const routeShapes = new Set<string>()
   const definitions = isArray(controllers)
     ? controllers
@@ -74,6 +81,7 @@ export function createApi({
     }
     routeShapes.add(shape)
     const handlers: Middleware[] = [
+      ...setup,
       ...getMiddleware(action, adapter.transaction),
       async c => respond(c, action)
     ]

@@ -8,7 +8,7 @@ Released in 2018 under the MIT license, with support by https://lineto.com/
 `@ditojs/server` is the core of Dito.js Server, built on
 [Hono](https://hono.dev).
 
-- `createApi()` turns a list of controllers into a Hono app. The host routes it
+- `createApi()` turns a list of controllers into a Hono app. The app routes it
   with `app.route()`.
 - Handlers get one object, their context,
   `{ query, body, params, user, em, action, c, next }`. `c` is Hono's context.
@@ -40,10 +40,11 @@ await serve(app, { port: 8080 })
 ```
 
 - `@ditojs/server`: `createApi()`, `defineController()`, `defineMixin()`,
-  `defineAction()`, `sendFile()`, `hostMiddleware()`, `HttpError`,
+  `defineAction()`, `sendFile()`, `createHono()`, `honoMiddleware()`,
+  `forwarded()`, `HttpError`,
   `createErrorHandler()`, `notFound` and `createValidationError()`.
-- `@ditojs/server/node`: `serve()`, and `forwarded()` and `getClientAddress()`
-  for apps behind reverse proxies. Needs `@hono/node-server`, an optional peer.
+- `@ditojs/server/node`: `serve()` and `getClientAddress()`. Needs
+  `@hono/node-server`, an optional peer.
 
 See the
 [server guide](https://github.com/ditojs/dito/blob/main/docs/guide/server/index.md)

@@ -38,7 +38,7 @@ interface SetupOptions extends Partial<ApiConfig>, Adapter {
   user?: User | null
 }
 
-// The host app, which routes the API below `/api`. `connect` and
+// The Hono app, which routes the API below `/api`. `connect` and
 // `transaction` go to the adapter, whose `toHttpError()` maps
 // `RangeError`, which stands for an error of the ORM.
 function setup(
@@ -186,8 +186,6 @@ describe('routing', () => {
       })
     )
     app.get('/page', c => c.text('page'))
-    // Hono sends the errors of `notFound()` to `onError()`.
-    app.onError(createErrorHandler())
     app.notFound(notFound)
     expect(await (await app.request('/reset')).json()).toBe('reset')
     expect(await (await app.request('/page')).text()).toBe('page')
@@ -196,17 +194,45 @@ describe('routing', () => {
     expect(await response.json()).toEqual({ message: 'Not Found', status: 404 })
   })
 
-  it('answers the routes of deeper APIs first', async () => {
+  it('lets the last middleware of the app see the 404 of unknown paths', async () => {
     const app = new Hono()
+    app.use(async (c, next) => {
+      c.header('X-Before', 'yes')
+      await next()
+      c.header('X-After', String(c.res.status))
+    })
+    app.route('/api', createApi({ controllers: [] }))
+    app.notFound(notFound)
+    const { status, headers } = await app.request('/api/books')
+    expect(status).toBe(404)
+    expect([headers.get('X-Before'), headers.get('X-After')]).toEqual([
+      'yes',
+      '404'
+    ])
+  })
+
+  it('runs the middleware of an API on its own actions only', async () => {
+    const log: string[] = []
     const api = (name: string) =>
       createApi({
-        controllers: [{ path: 'items', actions: { get: () => name } }]
+        controllers: [{ path: 'items', actions: { get: () => name } }],
+        middleware: async (_c, next) => {
+          log.push(name)
+          await next()
+        }
       })
-    app.route('/api/admin', api('admin'))
-    app.route('/api', api('main'))
-    expect(await (await app.request('/api/admin/items')).json()).toBe('admin')
-    expect(await (await app.request('/api/items')).json()).toBe('main')
-    expect((await app.request('/api/admin/other')).status).toBe(404)
+    const paths = ['/api/admin', '/api']
+    for (const order of [paths, paths.toReversed()]) {
+      const app = new Hono()
+      for (const path of order) {
+        app.route(path, api(path === '/api' ? 'main' : 'admin'))
+      }
+      log.length = 0
+      expect(await (await app.request('/api/admin/items')).json()).toBe('admin')
+      expect(await (await app.request('/api/items')).json()).toBe('main')
+      expect((await app.request('/api/admin/other')).status).toBe(404)
+      expect(log).toEqual(['admin', 'main'])
+    }
   })
 
   it('answers HEAD as GET without a body', async () => {
@@ -1775,7 +1801,7 @@ describe('errors', () => {
     )
   })
 
-  it('answers the errors of the host with `createErrorHandler()`', async () => {
+  it('answers the errors of the app with `createErrorHandler()`', async () => {
     const onError = vi.fn()
     const app = new Hono()
     app.use(async (c, next) => {
@@ -1795,52 +1821,36 @@ describe('errors', () => {
     expect(onError.mock.calls[0]![0].error).toMatchObject({ message: 'Boom' })
   })
 
-  describe('logging by default', () => {
+  it('logs with `console.error()` by default, in the API and the app', async () => {
     const error = new Error('Boom')
     const fail = () => {
       throw error
     }
-
-    it('logs through `c.var.logger`, in the API and the host', async () => {
-      const logger = { error: vi.fn() }
-      const app = new Hono<{ Variables: { logger: typeof logger } }>()
-      app.use(async (c, next) => {
-        c.set('logger', logger)
-        await next()
-      })
-      app.onError(createErrorHandler())
-      app.get('/host', fail)
-      app.route(
-        '/api',
-        createApi({
-          controllers: [
-            {
-              path: 'fonts',
-              actions: {
-                'get': fail,
-                'get denied': () => {
-                  throw new HttpError(403)
-                }
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const app = new Hono()
+    app.onError(createErrorHandler())
+    app.get('/app', fail)
+    app.route(
+      '/api',
+      createApi({
+        controllers: [
+          {
+            path: 'fonts',
+            actions: {
+              'get': fail,
+              'get denied': () => {
+                throw new HttpError(403)
               }
             }
-          ]
-        })
-      )
-      await app.request('/host')
-      await app.request('/api/fonts')
-      await app.request('/api/fonts/denied')
-      expect(logger.error.mock.calls).toEqual([[error], [error]])
-    })
-
-    it('logs through `console` without a logger', async () => {
-      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const app = new Hono()
-      app.onError(createErrorHandler())
-      app.get('/', fail)
-      await app.request('/')
-      expect(spy).toHaveBeenCalledWith(error)
-      spy.mockRestore()
-    })
+          }
+        ]
+      })
+    )
+    await app.request('/app')
+    await app.request('/api/fonts')
+    await app.request('/api/fonts/denied')
+    expect(spy.mock.calls).toEqual([[error], [error]])
+    spy.mockRestore()
   })
 })
 

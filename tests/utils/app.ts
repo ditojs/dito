@@ -156,7 +156,7 @@ export async function createTestApp(
       testApp.server = null
       testApp.url = null
     }
-    await admin?.close()
+    await admin?.stop()
     await database?.drop()
   }
 

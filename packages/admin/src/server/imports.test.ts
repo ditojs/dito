@@ -19,7 +19,7 @@ function getLoadedModules(mode: 'production' | 'development') {
     if (${JSON.stringify(mode)} === 'production') {
       await admin.fetch(new Request('http://localhost/admin/index.html'))
     }
-    await admin.close()
+    await admin.stop()
   `)
 }
 

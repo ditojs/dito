@@ -22,8 +22,14 @@ export interface CreateAdminOptions {
   api?: Record<string, unknown>
   // `dito.settings` in the browser.
   settings?: Record<string, unknown>
-  // Middleware that `getUser` and `authorize` need, such as the session
-  // middleware. It runs only on the requests that `authorize` checks.
+  // The sessions that `getUser` and `authorize` need, such as those of
+  // `createSessions()`. Their middleware runs only on the requests that
+  // `authorize` checks, and `getUser` defaults to theirs.
+  sessions?: {
+    middleware: MiddlewareHandler
+    getUser?: (context: { c: Context }) => User | null | Promise<User | null>
+  }
+  // Other middleware of these requests.
   middleware?: MiddlewareHandler | MiddlewareHandler[]
   // The signed-in user of the request, or null. `authorize` reads it as
   // `c.var.user`.
@@ -48,11 +54,18 @@ interface AdminEnv {
 
 export type AdminServer = Hono<AdminEnv> & {
   // Stops Vite in development.
-  close: () => Promise<void>
+  stop: () => Promise<void>
 }
 
 export function createAdmin(options: CreateAdminOptions): AdminServer {
-  const { middleware, getUser, authorize, api = {}, settings = {} } = options
+  const {
+    sessions,
+    middleware,
+    getUser = sessions?.getUser,
+    authorize,
+    api = {},
+    settings = {}
+  } = options
   const base = normalizeBase(options.base)
   const isProtected = authorize !== undefined && authorize !== true
   // Without `getUser`, there is no user whose roles could match.
@@ -61,7 +74,7 @@ export function createAdmin(options: CreateAdminOptions): AdminServer {
   }
   const getFilePath = (pathname: string) => pathname.slice(base.length)
   const app = new Hono<AdminEnv>()
-  let close = async () => {}
+  let stop = async () => {}
 
   const dito = { base, api, settings }
   const script = `window.dito = ${JSON.stringify(dito, null, 2)}`
@@ -86,7 +99,8 @@ export function createAdmin(options: CreateAdminOptions): AdminServer {
       }
       await next()
     })
-    app.use('/views/*', ...asArray(middleware), async (c, next) => {
+    const handlers = [...asArray(sessions?.middleware), ...asArray(middleware)]
+    app.use('/views/*', ...handlers, async (c, next) => {
       const user = (await getUser?.({ c })) ?? null
       c.set('user', user)
       if (await isAuthorized(c, authorize)) return next()
@@ -107,7 +121,7 @@ export function createAdmin(options: CreateAdminOptions): AdminServer {
       ;(await vite).middlewares(incoming, outgoing)
       return RESPONSE_ALREADY_SENT
     })
-    close = async () => {
+    stop = async () => {
       await (await vite.catch(() => null))?.close()
     }
   } else {
@@ -149,7 +163,7 @@ export function createAdmin(options: CreateAdminOptions): AdminServer {
     )
   }
 
-  return Object.assign(app, { close })
+  return Object.assign(app, { stop })
 }
 
 const buildFilePattern = /^\/(assets|views)\/[^/]+\.\w+$/

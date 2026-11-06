@@ -171,21 +171,36 @@ export interface Adapter {
   toHttpError?: (error: unknown, c: DitoContext) => HttpError | undefined
 }
 
+// Runs next to the server, such as a mailer or a scheduler. `stop()` ends once
+// its work is done, as the database may close right after it.
+export interface Service {
+  start?: () => void | Promise<void>
+  stop?: () => void | Promise<void>
+}
+
 // Called with each error with a status of 500 or above, for the app's logs.
 export type ErrorLogger = (context: {
   error: unknown
   c: Context
 }) => void | Promise<void>
 
+export interface ApiSessions {
+  middleware: Middleware
+  getUser?: ApiConfig['getUser']
+}
+
 export interface ApiConfig {
   // A list, or an object such as a module namespace, of which only the
   // results of `defineController()` count.
   controllers: ControllerDefinition[] | Record<string, unknown>
-  // Middleware of every action, before the user is read, such as sessions.
+  // The sessions of the API, such as those of `createSessions()`. Their
+  // middleware runs first, and `getUser` defaults to theirs.
+  sessions?: ApiSessions
+  // Middleware of every action, before the user is read.
   middleware?: Middleware | Middleware[]
   adapter?: Adapter
   // The signed-in user of the request, or null.
   getUser?: (context: { c: DitoContext }) => User | null | Promise<User | null>
-  // By default, logs through `c.var.logger`, else `console`.
+  // By default, logs with `console.error()`.
   onError?: ErrorLogger
 }

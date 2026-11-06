@@ -3,6 +3,7 @@ export type {
   Actions,
   Adapter,
   ApiConfig,
+  ApiSessions,
   Authorize,
   ControllerDefinition,
   DitoContext,
@@ -12,13 +13,20 @@ export type {
   HandlerContext,
   Middleware,
   MixinDefinition,
+  Service,
   Transaction,
   User
 } from './types.ts'
 export { defineAction, defineController, defineMixin } from './define.ts'
 export { createApi, isAuthorized } from './api.ts'
 export { sendFile, type SendFileOptions } from './sendFile.ts'
-export { hostMiddleware, type HostMiddlewareOptions } from './host.ts'
+export {
+  createHono,
+  forwarded,
+  honoMiddleware,
+  type CreateHonoOptions,
+  type HonoMiddlewareOptions
+} from './hono.ts'
 export {
   HttpError,
   createErrorHandler,

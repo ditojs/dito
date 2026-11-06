@@ -291,7 +291,7 @@ describe('createAdmin() in development', () => {
 
   afterAll(async () => {
     await new Promise(resolve => server.close(resolve))
-    await admin.close()
+    await admin.stop()
     // Vite's optimizer may still write its cache when it closes.
     await fs.rm(path.join(os.tmpdir(), `dito-admin-vite-${process.pid}`), {
       recursive: true,

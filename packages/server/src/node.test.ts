@@ -1,8 +1,14 @@
 import type { AddressInfo } from 'node:net'
 import { Hono } from 'hono'
 import { csrf } from 'hono/csrf'
-import { createApi, hostMiddleware } from './index.ts'
-import { forwarded, getClientAddress, serve } from './node.ts'
+import {
+  createApi,
+  createHono,
+  forwarded,
+  honoMiddleware,
+  HttpError
+} from './index.ts'
+import { getClientAddress, serve } from './node.ts'
 
 function getUrl(server: { address(): unknown }) {
   const { port } = server.address() as AddressInfo
@@ -39,12 +45,12 @@ const headers = {
   'X-Forwarded-For': '203.0.113.7, 10.0.0.1'
 }
 
-describe('hostMiddleware() on Node', () => {
+describe('honoMiddleware() on Node', () => {
   // Answers `/secret` with 401, without reading the body.
-  const host = (proxy?: boolean) => {
+  const hono = (proxy?: boolean) => {
     const app = new Hono()
     if (proxy) app.use(forwarded(proxy))
-    app.use(...hostMiddleware())
+    app.use(...honoMiddleware())
     app.post('/secret', c => c.text('Unauthorized', 401))
     app.get('/', c => c.text('ok'))
     return app
@@ -57,7 +63,7 @@ describe('hostMiddleware() on Node', () => {
     status: number,
     proxy?: boolean
   ) {
-    await withServer(host(proxy), async url => {
+    await withServer(hono(proxy), async url => {
       for (let i = 0; i < 30; i++) {
         const response = await fetch(`${url}/secret`, {
           method: 'POST',
@@ -87,12 +93,80 @@ describe('hostMiddleware() on Node', () => {
   })
 })
 
+describe('createHono()', () => {
+  it('routes paths with a trailing slash, and answers errors as JSON', async () => {
+    const hono = createHono()
+    hono.get('/books', c => c.text('books'))
+    hono.get('/fail', () => {
+      throw new HttpError(409, { message: 'Taken' })
+    })
+    expect(await (await hono.request('/books/')).text()).toBe('books')
+    const missing = await hono.request('/authors')
+    expect(await missing.json()).toEqual({ message: 'Not Found', status: 404 })
+    const failed = await hono.request('/fail')
+    expect(await failed.json()).toEqual({ message: 'Taken', status: 409 })
+  })
+
+  it('reads the public URL before `csrf()` checks the origin', async () => {
+    const post = (hono: Hono) =>
+      hono.request('http://backend/books', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Origin': 'https://shop.test',
+          'X-Forwarded-Proto': 'https',
+          'X-Forwarded-Host': 'shop.test'
+        }
+      })
+    const hono = (proxy?: boolean) => {
+      const hono = createHono({ proxy })
+      hono.post('/books', c => c.text(c.req.url))
+      return hono
+    }
+    expect(await (await post(hono(true))).text()).toBe(
+      'https://shop.test/books'
+    )
+    expect((await post(hono())).status).toBe(403)
+  })
+
+  it('takes the options of `honoMiddleware()`', async () => {
+    const hono = createHono({ etag: true, secureHeaders: false })
+    hono.get('/books', c => c.text('books'))
+    const response = await hono.request('/books')
+    expect(response.headers.has('ETag')).toBe(true)
+    expect(response.headers.has('X-Content-Type-Options')).toBe(false)
+  })
+})
+
 describe('serve()', () => {
-  it('serves the app until `close()`, and then runs `onClose`', async () => {
+  it('runs the services around the server, in reverse on `close()`', async () => {
+    const log: string[] = []
+    const service = (name: string) => ({
+      start: () => void log.push(`${name} start`),
+      stop: () => void log.push(`${name} stop`)
+    })
+    const { server, close } = await serve(new Hono(), {
+      host: '127.0.0.1',
+      services: [service('first'), {}, service('second')]
+    })
+    expect(server.listening).toBe(true)
+    await close()
+    expect(log).toEqual([
+      'first start',
+      'second start',
+      'second stop',
+      'first stop'
+    ])
+  })
+
+  it('serves the app until `close()`, and then stops the services', async () => {
     const app = new Hono()
     app.get('/', c => c.text('Hello'))
     const onClose = vi.fn()
-    const { server, close } = await serve(app, { host: '127.0.0.1', onClose })
+    const { server, close } = await serve(app, {
+      host: '127.0.0.1',
+      services: [{ stop: onClose }]
+    })
     expect(await (await fetch(getUrl(server))).text()).toBe('Hello')
     await close()
     expect(server.listening).toBe(false)
@@ -105,7 +179,9 @@ describe('serve()', () => {
   it('fails to close after `closeTimeout`', async () => {
     const { close } = await serve(new Hono(), {
       closeTimeout: 10,
-      onClose: () => new Promise(resolve => setTimeout(resolve, 100))
+      services: [
+        { stop: () => new Promise(resolve => setTimeout(resolve, 100)) }
+      ]
     })
     await expect(close()).rejects.toThrow(
       'Timeout reached while stopping the server (10ms)'
@@ -115,7 +191,9 @@ describe('serve()', () => {
   it('takes `closeTimeout` as a duration', async () => {
     const { close } = await serve(new Hono(), {
       closeTimeout: '10ms',
-      onClose: () => new Promise(resolve => setTimeout(resolve, 100))
+      services: [
+        { stop: () => new Promise(resolve => setTimeout(resolve, 100)) }
+      ]
     })
     await expect(close()).rejects.toThrow(
       'Timeout reached while stopping the server (10ms)'
@@ -129,7 +207,9 @@ describe('serve()', () => {
     const exit = vi.spyOn(process, 'exit').mockImplementation(() => undefined!)
     const onClose = vi.fn()
     const listeners = process.listenerCount('SIGTERM')
-    const { server } = await serve(new Hono(), { onClose })
+    const { server } = await serve(new Hono(), {
+      services: [{ stop: onClose }]
+    })
     expect(process.listenerCount('SIGTERM')).toBe(listeners + 1)
     process.emit('SIGTERM')
     await vi.waitFor(() => expect(exit).toHaveBeenCalledWith(0))
