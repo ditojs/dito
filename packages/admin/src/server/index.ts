@@ -7,7 +7,7 @@ import type { HttpBindings } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { RESPONSE_ALREADY_SENT } from '@hono/node-server/utils/response'
 import type { InlineConfig, ViteDevServer } from 'vite'
-import { asArray, assignDeeply, isString } from '@ditojs/utils'
+import { asArray, assignDeeply, isArray, isString } from '@ditojs/utils'
 import { isAuthorized, type Authorize, type User } from '@ditojs/server'
 import { normalizeBase } from './normalizeBase.ts'
 
@@ -57,6 +57,10 @@ export function createAdmin(options: AdminOptions): AdminServer {
   const { middleware, getUser, authorize } = options
   const base = normalizeBase(options.base)
   const isProtected = authorize !== undefined && authorize !== true
+  // Without `getUser`, there is no user whose roles could match.
+  if (!getUser && (isString(authorize) || isArray(authorize))) {
+    throw new Error('Unable to check the roles of the admin without `getUser`')
+  }
   const app = new Hono<AdminEnv>()
   let close = async () => {}
 

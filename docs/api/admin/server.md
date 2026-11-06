@@ -49,9 +49,9 @@ requests.
 - They check the other files again on each load.
 - Paths of missing files get `index.html`, except for scripts and styles, which
   respond with 404.
-- Without `vite` and without `dist`, `createAdmin()` throws. While `dist` has no
-  build, the admin answers 404, so that apps without it still start, such as in
-  tests.
+- Without `vite` and without `dist`, `createAdmin()` throws, as it does for roles
+  in `authorize` without `getUser`. While `dist` has no build, the admin answers
+  404, so that apps without it still start, such as in tests.
 
 With `vite`, Vite handles the requests through the Node request and response of
 `@hono/node-server`. So the app needs that Node server. `close()` stops Vite.

@@ -46,6 +46,14 @@ describe('createAdmin() in production', () => {
     return { request: route(admin) }
   }
 
+  it('needs `getUser` for roles', () => {
+    for (const authorize of ['admin', ['admin']]) {
+      expect(() => createAdmin({ base: '/admin', dist, authorize })).toThrow(
+        'Unable to check the roles of the admin without `getUser`'
+      )
+    }
+  })
+
   it('throws without vite or dist', () => {
     expect(() => createAdmin({ base: '/admin' })).toThrow(
       'Unable to serve the admin without `vite` or `dist`'
@@ -270,6 +278,7 @@ describe('createAdmin() in development', () => {
     admin = createAdmin({
       base: '/admin',
       api,
+      getUser: async () => null,
       authorize: 'admin',
       vite: path.join(import.meta.dirname, '../test/admin.vite.config.ts')
     })
