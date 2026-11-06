@@ -24,6 +24,7 @@ Start here to learn how the pieces fit together.
 ### Server
 
 - [Introduction and installation](guide/server/index.md)
+- [The kit](guide/server/kit.md)
 - [API](guide/server/api.md)
 - [Controllers](guide/server/controllers.md)
 - [Entities and controllers](guide/server/mikro.md) and

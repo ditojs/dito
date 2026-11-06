@@ -13,6 +13,7 @@ mean.
 | `@ditojs/mikro`   | [MikroORM](mikro.md)                                                                        | Model controllers on MikroORM entities: `find`, filters, lists and writes, and `createMikroAdapter()`. |
 | `@ditojs/storage` | [Storage](storage.md)                                                                       | Disk and S3 storages, uploads, and the tracking of stored files.                                       |
 | `@ditojs/auth`    | [Auth](auth.md)                                                                             | Sessions, logins, passkeys, TOTP, password reset and confirmed access.                                 |
+| `@ditojs/kit`     | [Kit](kit.md)                                                                               | `createApp()`, which sets up an app from the other packages, and a playground.                         |
 
 All packages are ES modules written in TypeScript. Anything not documented here
 is internal. The admin's [`@ditojs/admin/server`](../admin/server.md) serves the

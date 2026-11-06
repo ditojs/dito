@@ -3,7 +3,6 @@
 ```js
 import path from 'node:path'
 import { createAdmin } from '@ditojs/admin/server'
-import { getSessionUser } from '@ditojs/auth'
 
 const admin = createAdmin({
   base: '/admin',
@@ -13,15 +12,13 @@ const admin = createAdmin({
     process.env.NODE_ENV === 'development' ? 'admin.vite.config.js' : undefined,
   api: { url: '/api/admin', users: { path: 'admins' } },
   settings: { language: 'en' },
-  // The session middleware loads the session that `getUser` reads.
-  middleware: adminSessions.middleware,
-  getUser: ({ c }) => getSessionUser(c, adminSource),
+  sessions: adminSessions,
   authorize: ['admin', 'editor']
 })
 
 app.route('/admin', admin)
 // Stops Vite in development.
-await serve(app, { onClose: () => admin.close() })
+await serve(app, { services: [admin] })
 ```
 
 `@ditojs/admin/server` serves the [Dito.js Admin](../admin/index.md) under a
@@ -41,8 +38,8 @@ The options:
 - The admin loads the capabilities of the
   [users controller](auth.md#the-users-controller) at `api.users` when it
   starts. They tell the login and account views what to offer.
-- `createAdmin()` returns a Hono app, which the host routes at `base`.
-- `middleware`, `getUser` and `authorize` work as in
+- `createAdmin()` returns a Hono app, which the app routes at `base`.
+- `sessions`, `middleware`, `getUser` and `authorize` work as in
   [`createApi()`](controllers.md#authorization).
 - `authorize` decides whether a request may load the admin's views.
   `middleware` runs only on those requests. Other requests, such as the

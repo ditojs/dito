@@ -113,7 +113,7 @@ app.use('/assets/public/*', serveStorage(storages.get('public')))
 From `@ditojs/storage/node`. Returns Hono middleware that serves the folder of a
 disk storage, with `serveStatic()` of `@hono/node-server`.
 
-- The host routes it at the path of the storage's `url`.
+- The app routes it at the path of the storage's `url`.
 - The path of the route is cut from the request's path.
 - Missing files go on to the next handler.
 - Storages other than disk storages throw.
@@ -274,7 +274,7 @@ The action takes a `multipart/form-data` body and stores all its files.
   another.
 - Files over the upload's `maxSize` respond with 413, and none of the body's
   files are stored. The same goes for bodies that the client aborts.
-- [`hostMiddleware()`](hono.md#hostmiddleware) sets no limit on multipart bodies.
+- [`honoMiddleware()`](hono.md#honomiddleware) sets no limit on multipart bodies.
 - It inserts the `asset` rows of the files. They stay unreferenced until a scan
   finds them.
 - It responds with the file objects.

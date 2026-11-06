@@ -71,7 +71,7 @@ export const books = defineModelController({
 })
 ```
 
-The host serves the folders at the storages' URLs, with `serveStorage()`. A
+The app serves the folders at the storages' URLs, with `serveStorage()`. A
 timer deletes the files that no book uses:
 
 ```js

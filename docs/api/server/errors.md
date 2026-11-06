@@ -121,9 +121,7 @@ First, `toHttpError()` maps the error, such as with the adapter's
 - Other errors respond with 500 and the title of the status.
 
 `onError` gets the errors with a status of 500 or above, as they were thrown.
-By default, it logs them with `c.var.logger.error()`. `c.var.logger` is any
-object with `error()` that the app's middleware sets. Without it, `onError`
-logs with `console.error()`.
+By default, it logs them with `console.error()`.
 
 The response keeps the headers that were set before the error, such as cookies
 and those of `cors()`. It drops the headers that describe the data:

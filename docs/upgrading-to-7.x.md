@@ -29,37 +29,37 @@ This table lists each part of Dito.js 6 that an app relies on, what replaces it,
 and how much work the move is. Low means a change of configuration or a few
 lines, medium one module of the app, and high every model or every controller.
 
-| Dito.js 6                                                                              | Dito.js 7                                                                                                                                                                                                          | Work                    |
-| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
-| `dito db:migrate`, `db:rollback`, `db:reset`, `db:unlock`, `db:create_migration`       | MikroORM's Migrator, whose `create()` writes migrations from the entities, see [step 11](#11-move-the-migrations-to-mikroorm)                                                                                      | medium, once            |
-| The app's knex migrations, until step 11                                               | knex's own CLI, as a bridge, see [step 1](#1-run-the-migrations-with-knexs-cli)                                                                                                                                    | low                     |
-| `dito db:seed` and `seeds/`                                                            | MikroORM's [seeder](https://mikro-orm.io/docs/seeding), or a script with an entity manager                                                                                                                         | medium                  |
-| `dito console`                                                                         | A REPL script of ten lines, see [step 4](#4-set-up-the-orm-the-services-and-the-scripts)                                                                                                                           | low                     |
-| `dito db:list_asset_config`, `db:recount_assets`                                       | The asset paths of the app, and `assets.runJobs()`                                                                                                                                                                 | low                     |
-| `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `sessions.deleteExpired()` of `@ditojs/auth` on a timer of the app                                                                                                                                                 | low                     |
-| `new Application()`, `app.execute()`, `start()`, `stop()`                              | `new Hono()` as the host, the controllers in one `createApi()` per area, routed with `app.route()`, and `serve()` of `@ditojs/server/node`, which stops on signals                                                 | medium                  |
-| `config` and its sections                                                              | The app's own config module, whose sections the app passes to `hostMiddleware()`, `createSessions()`, `createStorages()` and `createAdmin()`                                                                       | low                     |
-| `config.knex`, `app.knex`, `normalizeDbNames`                                          | `new MikroORM(defineMikroConfig({ dbName, host, user, password }))`, passed to `createApi({ adapter: createMikroAdapter(orm) })`; MikroORM maps camelCase names to snake_case by default; `em.getKysely()` for SQL | low                     |
-| The `typeParsers` of knex, such as numeric to float                                    | `p.decimal('number')` and `p.bigint('number')` on the entity                                                                                                                                                       | low                     |
-| `Service`, `config.services`, `app.services`                                           | The app's own modules, started and stopped around `serve()`, see [step 4](#4-set-up-the-orm-the-services-and-the-scripts)                                                                                          | low, or medium for many |
-| `app.on()`, `before:start` and the other events                                        | Plain calls, or an `EventEmitter` of the app                                                                                                                                                                       | low                     |
-| `config.log`, `config.logger`, `app.logger`, `ctx.logger`                              | The host's logger, such as hono-pino, which errors go through by default; MikroORM's `debug` for SQL                                                                                                               | low                     |
-| `useApp()`, `ctx.app`                                                                  | Imports of the app's modules                                                                                                                                                                                       | low                     |
-| Models: `properties`, `relations`, `TimestampedModel`, model hooks                     | MikroORM entities with `defineEntity()`, `onCreate()`, `onUpdate()`, MikroORM's hooks                                                                                                                              | high                    |
-| Model scopes, modifiers, `static filters`, `allowScope`, `allowFilter`                 | `find` and `filters` of the controllers, `defineTextFilter()`, `defineDateRangeFilter()`                                                                                                                           | high                    |
-| JSON schemas of JSON columns, the `Validator`'s formats, keywords and types            | `defineJsonType()` with Zod schemas, converted by hand, see [step 5](#5-turn-models-into-entities)                                                                                                                 | medium                  |
-| `$parseJson()`, `$formatJson()`, read-only properties, `$validateGraph()`              | `deserialize`, `serialize` and `beforeSerialize` of the controller, rules as functions run by a mixin                                                                                                              | medium                  |
-| Graph writes: `upsertGraph()`, `relate`, `#id`, `#ref`                                 | Nested writes of owned relations, `createRecord()`, `assignRecord()`                                                                                                                                               | medium                  |
-| `Controller`, `ModelController`, `RelationController`, `collection`, `member`, `allow` | `defineController()` and `defineModelController()` with one `actions` map, mixins, `crud`                                                                                                                          | high                    |
-| Controller hooks, `parameters`, `returns`, `transacted`                                | Handlers that call `next()`, middleware of mixins, `query` and `body` schemas, `transacted: true`                                                                                                                  | high                    |
-| Koa's `ctx` in handlers and middleware                                                 | The handler's context, `{ query, body, params, user, em, action, getRecord, find, list, c, next }`, with Hono's context `c`, see [step 8](#8-rewrite-the-controllers)                                              | high                    |
-| `ResponseError` and its subclasses, `app.logError()`                                   | `HttpError`, `toHttpError()` of the adapter, and the `onError` hook, which logs by default                                                                                                                         | low                     |
-| Koa middleware, `config.http`                                                          | Hono middleware on the host: `hostMiddleware()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`                                                                                      | low                     |
-| `app.proxy`, `config.server.proxy`                                                     | `forwarded(proxy)` of `@ditojs/server/node`, and `getClientAddress(c)` for the client's address                                                                                                                    | low                     |
-| `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createSessions()`, `getSessionUser()`, `defineUserActions()`, `definePasswordWrites()`, `createPasskeys()`, `createTotp()`, and `createEntityUserSource()` of `@ditojs/mikro`                     | medium                  |
-| `config.storages`, model `assets`, `AssetFile`, asset counts in hooks                  | `@ditojs/storage`: `createStorages()`, asset paths, `createAssets()`, `serveStorage()`                                                                                                                             | medium                  |
-| `AdminController`, `config.admin`, the admin's build                                   | `createAdmin()` of `@ditojs/admin/server` and `defineAdminViteConfig()` of `@ditojs/admin/vite`                                                                                                                    | low                     |
-| Tests on `app.knex` and models                                                         | Tests on an entity manager of the ORM, and `app.request()` of Hono                                                                                                                                                 | medium                  |
+| Dito.js 6                                                                              | Dito.js 7                                                                                                                                                                                        | Work                    |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
+| `dito db:migrate`, `db:rollback`, `db:reset`, `db:unlock`, `db:create_migration`       | MikroORM's Migrator, whose `create()` writes migrations from the entities, see [step 11](#11-move-the-migrations-to-mikroorm)                                                                    | medium, once            |
+| The app's knex migrations, until step 11                                               | knex's own CLI, as a bridge, see [step 1](#1-run-the-migrations-with-knexs-cli)                                                                                                                  | low                     |
+| `dito db:seed` and `seeds/`                                                            | MikroORM's [seeder](https://mikro-orm.io/docs/seeding), or a script with an entity manager                                                                                                       | medium                  |
+| `dito console`                                                                         | A REPL script of ten lines, or `runPlayground()` of `@ditojs/kit/playground` for piped code, see [step 4](#4-create-the-app)                                                                     | low                     |
+| `dito db:list_asset_config`, `db:recount_assets`                                       | The asset paths of the app, and `assets.runJobs()`                                                                                                                                               | low                     |
+| `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `sessions.deleteExpired()` of `@ditojs/auth` on a timer of the app                                                                                                                               | low                     |
+| `new Application()`, `app.execute()`, `start()`, `stop()`                              | `createApp()` of `@ditojs/kit`, with `app.routeApi()` for the controllers of each area and `app.start()`, which stops on signals. Without the kit: `createHono()`, `createApi()` and `serve()`   | low                     |
+| `config` and its sections                                                              | The app's own config module, whose sections are the options of `createApp()`                                                                                                                     | low                     |
+| `config.knex`, `app.knex`, `normalizeDbNames`                                          | The `database` option of `createApp()`, with MikroORM's `dbName`, `host`, `user` and `password`, and `app.orm`; MikroORM maps camelCase names to snake_case by default; `em.getKysely()` for SQL | low                     |
+| The `typeParsers` of knex, such as numeric to float                                    | `p.decimal('number')` and `p.bigint('number')` on the entity                                                                                                                                     | low                     |
+| `Service`, `config.services`, `app.services`                                           | Objects of the app with `start()` and `stop()`, passed to `app.start({ services })`, see [step 9](#9-host-the-app)                                                                               | low, or medium for many |
+| `app.on()`, `before:start` and the other events                                        | Plain calls, or an `EventEmitter` of the app                                                                                                                                                     | low                     |
+| `config.log`, `config.logger`, `app.logger`, `ctx.logger`                              | The `logger` option of `createApp()`, `app.logger`, and `c.var.logger` in requests; MikroORM's `debug` for SQL                                                                                   | low                     |
+| `useApp()`, `ctx.app`                                                                  | Imports of the app's modules, such as the `app` of `createApp()`                                                                                                                                 | low                     |
+| Models: `properties`, `relations`, `TimestampedModel`, model hooks                     | MikroORM entities with `defineEntity()`, `onCreate()`, `onUpdate()`, MikroORM's hooks                                                                                                            | high                    |
+| Model scopes, modifiers, `static filters`, `allowScope`, `allowFilter`                 | `find` and `filters` of the controllers, `defineTextFilter()`, `defineDateRangeFilter()`                                                                                                         | high                    |
+| JSON schemas of JSON columns, the `Validator`'s formats, keywords and types            | `defineJsonType()` with Zod schemas, converted by hand, see [step 5](#5-turn-models-into-entities)                                                                                               | medium                  |
+| `$parseJson()`, `$formatJson()`, read-only properties, `$validateGraph()`              | `deserialize`, `serialize` and `beforeSerialize` of the controller, rules as functions run by a mixin                                                                                            | medium                  |
+| Graph writes: `upsertGraph()`, `relate`, `#id`, `#ref`                                 | Nested writes of owned relations, `createRecord()`, `assignRecord()`                                                                                                                             | medium                  |
+| `Controller`, `ModelController`, `RelationController`, `collection`, `member`, `allow` | `defineController()` and `defineModelController()` with one `actions` map, mixins, `crud`                                                                                                        | high                    |
+| Controller hooks, `parameters`, `returns`, `transacted`                                | Handlers that call `next()`, middleware of mixins, `query` and `body` schemas, `transacted: true`                                                                                                | high                    |
+| Koa's `ctx` in handlers and middleware                                                 | The handler's context, `{ query, body, params, user, em, action, getRecord, find, list, c, next }`, with Hono's context `c`, see [step 8](#8-rewrite-the-controllers)                            | high                    |
+| `ResponseError` and its subclasses, `app.logError()`                                   | `HttpError`, `toHttpError()` of the adapter, and the `onError` hook, which logs by default                                                                                                       | low                     |
+| Koa middleware, `config.http`                                                          | The `http` option of `createApp()`, for `honoMiddleware()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`; other Hono middleware on `app.hono`                    | low                     |
+| `app.proxy`, `config.server.proxy`                                                     | `http.proxy` of `createApp()`, and `getClientAddress(c)` for the client's address                                                                                                                | low                     |
+| `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createSessions()`, `getSessionUser()`, `defineUserActions()`, `definePasswordWrites()`, `createPasskeys()`, `createTotp()`, and `createEntityUserSource()` of `@ditojs/mikro`   | medium                  |
+| `config.storages`, model `assets`, `AssetFile`, asset counts in hooks                  | `@ditojs/storage`: `createStorages()`, asset paths, `createAssets()`, `serveStorage()`                                                                                                           | medium                  |
+| `AdminController`, `config.admin`, the admin's build                                   | `createAdmin()` of `@ditojs/admin/server` and `defineAdminViteConfig()` of `@ditojs/admin/vite`                                                                                                  | low                     |
+| Tests on `app.knex` and models                                                         | Tests on an entity manager of the ORM, and `app.request()` of Hono                                                                                                                               | medium                  |
 
 ## Migrating an app
 
@@ -116,87 +116,73 @@ unless one of its models reads the `id` of a join table.
    validators that it used from `@ditojs/schema`. Building the admin needs
    `vite`, `@vitejs/plugin-vue` and `autoprefixer`, which came with
    `@ditojs/build`.
-2. Add `@ditojs/server` and `@ditojs/mikro`, and `@ditojs/storage` and
-   `@ditojs/auth` if the app needs them. `@ditojs/admin` serves and builds the
-   admin, in `@ditojs/admin/server` and `@ditojs/admin/vite`.
+2. Add `@ditojs/kit`, `@ditojs/server`, `@ditojs/mikro`, `@ditojs/storage` and
+   `@ditojs/auth`. `@ditojs/admin` serves and builds the admin, in
+   `@ditojs/admin/server` and `@ditojs/admin/vite`.
 3. Add `@mikro-orm/core`, `@mikro-orm/postgresql`, `kysely`, `hono`,
    `@hono/node-server` and `zod`.
 
 All server packages are written in TypeScript and need Node.js 24. See
 [Server packages](api/server/index.md).
 
-### 4. Set up the ORM, the services and the scripts
+### 4. Create the app
 
-Dito.js 7 has no app object, no services and no CLI, so the app owns these
-parts.
-
-**The ORM.** Create it from the knex config. MikroORM maps camelCase properties
-to snake_case columns by default, as `normalizeDbNames` did. The sessions,
-credentials and asset jobs of step 9 use its `adapter`:
+`createApp()` of `@ditojs/kit` replaces `Application`, with the sections of the
+app's config as its options. See [The kit](guide/server/kit.md).
 
 ```js
-// server/orm.js
-import { createMikroAdapter, defineMikroConfig } from '@ditojs/mikro'
-import { MikroORM } from '@mikro-orm/postgresql'
+// server/app.js
+import { createApp } from '@ditojs/kit'
 import config from '../config/index.js'
 import * as entities from './entities/index.js'
 
 const { connection, pool } = config.knex
 
-export const orm = new MikroORM(
-  defineMikroConfig({
-    entities,
+export const app = createApp({
+  entities,
+  database: {
     dbName: connection.database,
     host: connection.host,
     port: connection.port,
     user: connection.user,
     password: connection.password,
     pool
-  })
-)
-
-export const adapter = createMikroAdapter(orm)
-```
-
-**Services** become modules of the app. Each module exports functions such as
-`start()` and `stop()`, and imports the config and the ORM instead of reading
-them from `this.app`. The server calls them around `serve()`:
-
-```js
-// server/index.js
-import * as mailer from './services/mailer.js'
-import * as scheduler from './services/scheduler.js'
-
-const services = [mailer, scheduler]
-await Promise.all(services.map(service => service.start()))
-await serve(app, {
-  port: config.server.port,
-  async onClose() {
-    await Promise.all(services.map(service => service.stop()))
-    await orm.close()
-  }
+  },
+  server: config.server,
+  http: config.http,
+  logger: config.logger,
+  secrets: config.app.keys,
+  storages: config.storages
 })
 ```
 
-**Logging** moves to the host. `config.logger` and `ctx.logger` become a logger
-of the app, such as pino with hono-pino as middleware of the host.
-`config.log.sql` becomes MikroORM's `debug` option. See
-[Errors and logging](guide/server/api.md#errors-and-logging), also for how to
-use pino's `redact` with entities.
+Controllers and services import `app`, instead of reading `this.app` and
+`ctx.app`. [Step 9](#9-host-the-app) routes and starts them.
 
-**The console** of `dito console` becomes a REPL script:
+- MikroORM maps camelCase properties to snake_case columns by default, as
+  `normalizeDbNames` did.
+- `config.log.sql` becomes MikroORM's `debug` in `database`.
+- `config.logger` holds pino's options. `prettyPrint` becomes pino's `transport`,
+  and the app installs `pino-pretty`.
+- `app.logger` replaces `ctx.logger`.
+- `config.log.requests` goes. Each API action logs one line.
+- `dito console` becomes a REPL script:
 
-```js
-// scripts/console.js
-import repl from 'node:repl'
-import { orm } from '../server/orm.js'
-import * as entities from '../server/entities/index.js'
+  ```js
+  // scripts/console.js
+  import repl from 'node:repl'
+  import { app } from '../server/app.js'
+  import * as entities from '../server/entities/index.js'
 
-const server = repl.start({ prompt: 'app > ' })
-server.setupHistory('.console_history', () => {})
-Object.assign(server.context, entities, { orm, em: orm.em.fork() })
-server.on('exit', () => orm.close())
-```
+  const { orm } = app
+  const server = repl.start({ prompt: 'app > ' })
+  server.setupHistory('.console_history', () => {})
+  Object.assign(server.context, entities, { orm, em: orm.em.fork() })
+  server.on('exit', () => app.close())
+  ```
+
+An app can leave the kit out, see
+[Hosting with Hono](guide/server/api.md#hosting-with-hono).
 
 ### 5. Turn models into entities
 
@@ -494,7 +480,7 @@ and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
   [Variables](api/server/mikro.md#variables) for `id`.
 - Hono doesn't send a thrown `Response`. Throw an `HttpError`, or return the
   `Response`.
-- Middleware is Hono middleware. It goes on the host, in
+- Middleware is Hono middleware. It goes on the Hono app, in
   `createApi({ middleware })`, or on controllers, mixins and actions.
 - Middleware reads the request's entity manager as `c.var.em`. Its Kysely,
   `c.var.em.getKysely()`, runs the queries that MikroORM doesn't build.
@@ -575,46 +561,48 @@ The `onError` hook gets the original error, also a database error, not the
 
 ### 9. Host the app
 
-Replace the `Application` with a host, so that the app runs again. The app's own
-`Hono` app is the host, and the controllers go into one `createApi()` per area,
-each with its own sessions and users. See
-[Hosting with Hono](guide/server/api.md#hosting-with-hono).
+Each area of the app is an API of its own, with its own sessions and users.
 
 ```js
-const api = createApi({
-  controllers,
-  middleware: [sessions.middleware],
-  adapter,
-  getUser: ({ c }) => getSessionUser(c, adminSource)
+// server/index.js
+import { app } from './app.js'
+import * as controllers from './controllers/index.js'
+import * as mailer from './services/mailer.js'
+import * as scheduler from './services/scheduler.js'
+import { adminSource } from './users.js'
+
+const sessions = app.createSessions({
+  cookieName: 'admin.sess',
+  maxAge: 24 * 60 * 60 * 1000,
+  users: adminSource
 })
 
-const app = new Hono({ strict: false })
-app.use(forwarded(config.server.proxy ?? false), ...hostMiddleware())
-app.use('/assets/public/*', serveStorage(storages.get('public')))
-app.onError(createErrorHandler())
-app.notFound(notFound)
-app.route('/api', api)
-await serve(app, { port, closeTimeout: '5s', onClose: () => orm.close() })
+app.routeApi('/api', { controllers, sessions })
+await app.start({ services: [mailer, scheduler] })
 ```
 
-- `config.http` becomes the options of
-  [`hostMiddleware()`](api/server/hono.md#hostmiddleware). Add it before
-  `app.route()`. As in Dito.js 6, `csrf()` only checks requests with `Origin`.
-- `hostMiddleware()` leaves `cors` and `etag` off unless its options turn them
+- `controllers` is a list, or a module namespace, in which only the results of
+  `defineController()` count.
+- Services become modules or objects with `start()` and `stop()`, see
+  [Services](guide/server/kit.md#services).
+- `app.on()` and events such as `before:start` become plain calls around
+  `app.start()`.
+- `config.http` is the `http` option of `createApp()`, the options of
+  [`honoMiddleware()`](api/server/hono.md#honomiddleware). As in Dito.js 6,
+  `csrf()` only checks requests with `Origin`.
+- `honoMiddleware()` leaves `cors` and `etag` off unless its options turn them
   on. Dito.js 6 had both on by default.
 - Sizes with units count in powers of 1000: `bodyLimit: { maxSize: '1mb' }` is
   1,000,000 bytes. Dito.js 6 read `'1mb'` as 1 MiB, 1,048,576 bytes.
 - `cors` works differently. Dito.js 6 echoed the request's origin. Hono's
   `cors()` allows any origin by default, without credentials. With
   `credentials: true`, it needs the allowed `origin`.
-- `app.proxy` becomes [`forwarded(proxy)`](api/server/hono.md#forwarded), the
-  first middleware. Then `csrf()` compares the origin with the public URL.
-- Routes with a trailing slash respond with 404, unless the host is
-  `new Hono({ strict: false })`. The admin sends some paths with one.
-- Route the APIs at deeper paths first, see
-  [Several APIs in one host](guide/server/api.md#several-apis-in-one-host).
-- An API handles only the paths of its actions, and its own errors. The host
-  handles the rest with `notFound` and `createErrorHandler()`, as above.
+- `app.proxy` is the `proxy` option of `http`, the number of trusted proxies,
+  or `true` for one.
+- The app's own middleware goes on `app.hono` before the routes:
+  `app.hono.use(middleware)`.
+- `app.hono` sends Dito's JSON errors, also for unknown paths, and routes paths
+  with a trailing slash like those without one.
 
 #### Sessions and users
 
@@ -622,9 +610,8 @@ await serve(app, { port, closeTimeout: '5s', onClose: () => orm.close() })
 `@ditojs/auth`. The `session` and `credential` tables stay the same. So passkeys
 and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 
-- [`createSessions()`](api/server/auth.md#createsessions) returns the session
-  `middleware`. `getSessionUser(c, source)` returns the user for the `getUser`
-  of `createApi()`.
+- `app.createSessions({ cookieName, maxAge, users })` returns the sessions of an
+  API, which `app.routeApi()` takes as `sessions`.
 - [`createEntityUserSource()`](api/server/mikro.md#createentityusersource)
   describes the users of an entity. It takes `usernameProperty` as before. For
   users that no entity holds, the app writes the
@@ -679,8 +666,6 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 [Storages and files](guide/server/storage.md).
 
 ```js
-export const storages = createStorages(config.storages)
-
 // In the properties of the entity, instead of `static assets`:
 cover: p
   .type(defineJsonType({ assets: [{ path: '', storage: 'public' }] }))
@@ -689,14 +674,15 @@ chapters: p
   .type(defineJsonType({ assets: [{ path: '*/images', storage: 'public' }] }))
   .nullable(),
 
-export const assets = createAssets({
-  adapter,
-  paths: getAssetPaths(entities),
-  storages,
-  deleteUnusedAfter: '24h'
-})
+// In `createApp()`:
+storages: config.storages,
+assets: { deleteUnusedAfter: '24h' }
 ```
 
+- `app.storages` holds the storages, and `app.assets` the asset handling of
+  the asset paths that the entities declare. Without the kit, these are
+  `createStorages()` and `createAssets()`.
+- `app.hono` serves a disk storage at the path of its `url`.
 - `mixins: [assets.defineWrites('book'), assets.defineUploads('book')]`
   replaces `assets = true` of a controller.
 - `assets.runJobs()` runs on a timer of the app.
@@ -734,14 +720,13 @@ const admin = createAdmin({
   dist: path.resolve('dist/admin'),
   vite: isDevelopment ? 'admin.vite.config.js' : undefined,
   api: { url: '/api/admin', users: { path: 'admins' } },
-  middleware: sessions.middleware,
-  getUser: ({ c }) => getSessionUser(c, adminSource),
+  sessions,
   authorize: 'admin'
 })
-app.route('/admin', admin)
+app.hono.route('/admin', admin)
 ```
 
-- With `vite`, the host runs on `serve()`. Without it, the admin serves the
+- With `vite`, the app runs on `serve()`. Without it, the admin serves the
   build of `dist`. `createAdmin()` throws if the build is missing.
 - `authorize` protects the admin's views, which the build puts below `views/`.
   Other chunks go below `assets/`.

@@ -16,7 +16,7 @@ user source.
 
 ```js
 import { Hono } from 'hono'
-import { createSessions, getSessionUser } from '@ditojs/auth'
+import { createSessions } from '@ditojs/auth'
 import { createMikroAdapter } from '@ditojs/mikro'
 
 export const adapter = createMikroAdapter(orm)
@@ -25,28 +25,22 @@ export const adminSessions = createSessions({
   adapter,
   secrets: config.keys,
   cookieName: 'admin.sess',
-  maxAge: '24h'
+  maxAge: '24h',
+  users: adminSource
 })
 
-const api = createApi({
-  controllers,
-  adapter,
-  middleware: [adminSessions.middleware],
-  getUser: ({ c }) => getSessionUser(c, adminSource)
-})
+const api = createApi({ controllers, adapter, sessions: adminSessions })
 
 const app = new Hono()
 app.route('/api/admin', api)
 ```
 
-`adminSessions.middleware` is Hono middleware. The API runs it before `getUser`,
-which reads the session. It loads the session before the action, and saves it
-after the action, see
+The API loads the session before the action, reads its user, and saves the
+session after the action, see
 [`createSessions()`](../../api/server/auth.md#createsessions).
 
 `getSession(c)` returns the session, also in the app's own Hono routes.
-`getSessionUser(c, source)` returns the id and roles of the session's user, for
-the `getUser` of the API.
+`getSessionUser(c, source)` returns the id and roles of the session's user.
 
 Sessions use `adapter.getKysely()`, outside of the action's transaction. This is
 because they load before the action, and save after it.
@@ -287,8 +281,7 @@ the app's own actions. They have a session of their own.
 
 ## Users outside of Dito
 
-`createAdmin()` takes the session middleware and `getSessionUser()`, as
-`createApi()` does. It checks the roles of the user in `authorize`, see
+`createAdmin()` takes `sessions`, as `createApi()` does. It checks the roles of the user in `authorize`, see
 [Serving the admin](admin.md).
 
 The app's own Hono routes run the session middleware with `app.use()`. They read

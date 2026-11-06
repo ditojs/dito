@@ -20,7 +20,7 @@ The entry needs the optional peer dependencies `@ditojs/server`, `hono` and
 ## createAdmin()
 
 ```ts
-createAdmin(options: CreateAdminOptions): Hono & { close(): Promise<void> }
+createAdmin(options: CreateAdminOptions): Hono & { stop(): Promise<void> }
 ```
 
 ```js
@@ -30,14 +30,13 @@ const admin = createAdmin({
   vite:
     process.env.NODE_ENV === 'development' ? 'admin.vite.config.js' : undefined,
   api: { url: '/api/admin', users: { path: 'admins' } },
-  middleware: adminSessions.middleware,
-  getUser: ({ c }) => getSessionUser(c, adminSource),
+  sessions: adminSessions,
   authorize: 'admin'
 })
 app.route('/admin', admin)
 ```
 
-Returns a Hono app that serves the admin. The host routes it at `base` with
+Returns a Hono app that serves the admin. The app routes it at `base` with
 `app.route(base, admin)`. The admin's config, the `dito` object, is served as
 `<base>/dito.js`.
 
@@ -54,7 +53,7 @@ requests.
   404, so that apps without it still start, such as in tests.
 
 With `vite`, Vite handles the requests through the Node request and response of
-`@hono/node-server`. So the app needs that Node server. `close()` stops Vite.
+`@hono/node-server`. So the app needs that Node server. `stop()` stops Vite.
 
 ### CreateAdminOptions
 
@@ -64,6 +63,7 @@ With `vite`, Vite handles the requests through the Node request and response of
 | `dist`       | `string`                                                                     | The built admin, served without `vite`.                                                                                                                           |
 | `api`        | `object`                                                                     | `dito.api` in the browser, such as `url` and `users`.                                                                                                             |
 | `settings`   | `object`                                                                     | `dito.settings` in the browser.                                                                                                                                   |
+| `sessions`   | `{ middleware, getUser? }`                                                   | The sessions, such as those of [`createSessions()`](../server/auth.md#createsessions). `getUser` defaults to theirs.                                              |
 | `middleware` | `Middleware \| Middleware[]`                                                 | Hono middleware that `getUser` and `authorize` need, such as the session middleware. It runs only on the requests that `authorize` checks.                        |
 | `getUser`    | `({ c }) => User \| null \| Promise<…>`                                      | The signed-in user of the request, such as the one of [`getSessionUser()`](../server/auth.md#getsessionuser). `authorize` reads it as `c.var.user`.               |
 | `authorize`  | `true \| string \| string[] \| ({ c, user }) => boolean \| Promise<boolean>` | Who may load the admin's views. It takes the values of an action's [`authorize`](../server/controllers.md#authorize). Without it, anyone may.                     |

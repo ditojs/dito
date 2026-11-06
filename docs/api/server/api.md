@@ -4,7 +4,7 @@
 import { createApi, sendFile } from '@ditojs/server'
 ```
 
-An API is a list of controllers in one [Hono](https://hono.dev) app. The host
+An API is a list of controllers in one [Hono](https://hono.dev) app. The app
 routes it with `app.route()`. `api.fetch()` takes a web-standard `Request`. So
 an API runs anywhere a `fetch` handler runs:
 
@@ -66,6 +66,7 @@ other paths.
 | Key           | Type                                               | Description                                                                                                                                                                              |
 | ------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `controllers` | `ControllerDefinition[] \| object`                 | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, Dito ignores all other values. |
+| `sessions`    | `{ middleware, getUser? }`                         | The sessions of [`createSessions()`](auth.md#createsessions). Their middleware runs first, and `getUser` defaults to theirs.                                                             |
 | `middleware`  | `Middleware \| Middleware[]`                       | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.em` and `c.var.user`.                                                             |
 | `adapter`     | [`Adapter`](#adapter)                              | The database: [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined, and no action runs in a transaction.                                              |
 | `getUser`     | `({ c }) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                 |

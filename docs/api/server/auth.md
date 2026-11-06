@@ -42,6 +42,7 @@ createSessions(options: CreateSessionsOptions): {
   middleware: MiddlewareHandler
   readSignedCookie(c: Context, name: string): Promise<string | null>
   deleteExpired(): Promise<void>
+  getUser?({ c }): Promise<User | null>
 }
 ```
 
@@ -51,6 +52,7 @@ createSessions(options: CreateSessionsOptions): {
 | `secrets`    | `string[]`                     | The secrets that sign the cookie. The first one signs, and all of them verify, so they can rotate.                                                                      |
 | `cookieName` | `string`                       | The cookie name, such as `admin.sess`.                                                                                                                                  |
 | `maxAge`     | `number \| string`             | The lifetime of a session, in milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Browsers cap cookies at 400 days. |
+| `users`      | `UserSource`                   | The source of the users. The sessions then have `getUser()`.                                                                                                            |
 
 The app creates the `session` table:
 
@@ -75,6 +77,7 @@ The cookie holds the id of the session, signed with Hono's
 | `middleware`                | The session middleware, see below.                                                                                                                                                                           |
 | `readSignedCookie(c, name)` | Returns the value of the cookie `name` if one of `secrets` signed it, else `null`. It reads the app's own cookies, which the app writes with `setSignedCookie(c, name, value, secrets[0])` of `hono/cookie`. |
 | `deleteExpired()`           | Deletes the expired rows. The app runs it on a timer.                                                                                                                                                        |
+| `getUser({ c })`            | The user of the request's session, for the `getUser` of `createApi()`. With `users`.                                                                                                                         |
 
 `middleware` is Hono middleware. The app passes it to the `middleware` of
 `createApi()`, or uses it in its own Hono routes.
@@ -326,7 +329,7 @@ credentials.
 - `origins` defaults to the request's origin.
 
 An app behind a proxy runs the `forwarded()` middleware of
-`@ditojs/server/node`, so that the request's URL is the public one. An admin on
+`@ditojs/server`, so that the request's URL is the public one. An admin on
 another host than the API sets `origins`, such as
 `['https://admin.example.com']`.
 

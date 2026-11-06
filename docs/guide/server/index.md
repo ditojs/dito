@@ -21,6 +21,7 @@ come from these packages:
 | `@ditojs/storage` | File storages on disk and in S3, uploads, and the tracking of stored files.                                                  |
 | `@ditojs/auth`    | Sessions, logins, passkeys, TOTP and password reset.                                                                         |
 | `@ditojs/admin`   | The [Dito.js Admin](../admin/index.md), with `@ditojs/admin/server` that serves it.                                          |
+| `@ditojs/kit`     | `createApp()` sets up an app from these packages in one call, with a logger, services and a playground.                      |
 
 Schemas of queries, bodies, filters and column types are
 [Zod](https://zod.dev) schemas.
@@ -47,16 +48,15 @@ The server docs use each of these words in one sense only:
 ## Installation
 
 ```sh
-pnpm add @ditojs/server @ditojs/mikro @mikro-orm/core @mikro-orm/postgresql hono @hono/node-server zod
+pnpm add @ditojs/kit @ditojs/server @ditojs/mikro @ditojs/auth @ditojs/storage @mikro-orm/core @mikro-orm/postgresql hono @hono/node-server kysely zod
 ```
 
-The other packages are optional:
+`@ditojs/admin` adds the admin. `@ditojs/utils` holds the shared helpers of the
+packages, such as `html`.
 
-- `@ditojs/auth` for users and sessions;
-- `@ditojs/storage` for files;
-- `@ditojs/admin` for the admin.
-
-`@ditojs/utils` holds their shared helpers, such as `html`.
+The [kit](kit.md) is optional. An app that sets itself up needs only
+`@ditojs/server` and `@ditojs/mikro`, with `@ditojs/auth` for users and sessions
+and `@ditojs/storage` for files where it uses them.
 
 The packages are ES modules and need Node.js 24 or later. They are written in
 TypeScript and ship their types.
@@ -67,15 +67,8 @@ A catalog with books, served at `/api/books`:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
-import { MikroORM } from '@mikro-orm/postgresql'
-import { Hono } from 'hono'
-import { createApi, createErrorHandler, notFound } from '@ditojs/server'
-import { serve } from '@ditojs/server/node'
-import {
-  createMikroAdapter,
-  defineMikroConfig,
-  defineModelController
-} from '@ditojs/mikro'
+import { createApp } from '@ditojs/kit'
+import { defineModelController } from '@ditojs/mikro'
 
 const BookSchema = defineEntity({
   name: 'Book',
@@ -102,23 +95,16 @@ const books = defineModelController({
   }
 })
 
-const orm = await MikroORM.init(
-  defineMikroConfig({ entities: [Book], dbName: 'catalog', user: 'catalog' })
-)
-// Creates the tables of the entities. Apps with data use migrations.
-await orm.schema.update()
-
-const api = createApi({
-  controllers: [books],
-  adapter: createMikroAdapter(orm)
+const app = createApp({
+  entities: [Book],
+  database: { dbName: 'catalog', user: 'catalog' },
+  server: { port: 8080 }
 })
+// Creates the tables of the entities. Apps with data use migrations.
+await app.orm.schema.update()
 
-const app = new Hono()
-app.route('/api', api)
-// JSON errors outside of the API too, such as for unknown paths.
-app.notFound(notFound)
-app.onError(createErrorHandler())
-await serve(app, { port: 8080, onClose: () => orm.close() })
+app.routeApi('/api', { controllers: [books] })
+await app.start()
 ```
 
 This serves `GET` and `POST /api/books`, and `GET`, `PATCH` and
@@ -137,6 +123,8 @@ lists all steps.
 
 ## Next steps
 
+- [The kit](kit.md): `createApp()`, services, logging, scripts, and the same
+  setup without the kit.
 - [API](api.md): `createApi()`, hosting, the database, users and errors.
 - [Controllers](controllers.md): actions, handlers, mixins, authorization and
   middleware.
