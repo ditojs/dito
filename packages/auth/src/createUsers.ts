@@ -38,10 +38,11 @@ export function createUsers<U extends AuthUser>(
   // All model controllers of the entity hash passwords and protect their users.
   adapter.wrapEntity(entity, defineUserWrites<U>({ source, credentials }))
 
-  const { patch: _, ...publicSource } = source
-
   return {
-    ...publicSource,
+    password: source.password,
+    findById: source.findById,
+    findByUsername: source.findByUsername,
+    serialize: source.serialize,
     verifyLogin: (username: unknown, password: unknown) =>
       verifyLogin(source, username, password),
     login: (user: U) => login(source, user),

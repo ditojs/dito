@@ -663,9 +663,9 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 - The session saves after the action if it changed, even when the action throws.
   So used challenges and codes stay used. A session that a parallel request
   ended stays ended.
-- `refreshFingerprint()` applies when the session saves after a request without
-  an error. So a failed write keeps the old hash, and the fingerprint that
-  matches it.
+- `users.setPassword()` keeps the session of the user when the session saves
+  after a request without an error. So a failed write keeps the old hash, and
+  the fingerprint that matches it.
 - `PasskeyService` and `TotpService` become the options
   [`passkeys`](api/server/auth.md#passkeys) and
   [`totp`](api/server/auth.md#totp) of `users.defineActions()`.

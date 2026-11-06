@@ -70,7 +70,6 @@ export type Session = Pick<
   | 'login'
   | 'logout'
   | 'getUser'
-  | 'refreshFingerprint'
   | 'checkConfirmedAccess'
 >
 

@@ -71,7 +71,6 @@ users throw when they load users of an entity that doesn't.
 | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `findById(id)`                           | Resolves to the user with the id, a string, or `null`, also for an id that doesn't fit the primary key.                                                                                                           |
 | `findByUsername(username)`               | Resolves to the user with the username, or `null`.                                                                                                                                                                |
-| `getUsername(user)`                      | Returns the value of `usernameProperty` of the user.                                                                                                                                                              |
 | `verifyLogin(username, password)`        | Resolves to the user, or `null` for a wrong username or password. Unknown users take as long as known ones, so the response time doesn't reveal which usernames exist.                                            |
 | `login(user)`                            | Logs the stored user in to the session of the running request, and sets `lastLogin`, which ends password reset links. It throws if that session belongs to other users.                                           |
 | `setPassword(user, password)`            | Sets `hash` on the user, also on a new user that isn't stored yet. The caller flushes. Users in the session of the request stay logged in, if the request succeeds, and their other sessions end.                 |
@@ -82,8 +81,6 @@ users throw when they load users of an entity that doesn't.
 | `setSignedCookie(name, value, options?)` | Sets a cookie that `readSignedCookie()` reads, signed with the first of `secrets`, for the app's own cookies. It is `secure` on HTTPS, and `expires` with the session's lifetime, unless `options` say otherwise. |
 | `deleteSignedCookie(name, options?)`     | Deletes the cookie. A cookie with its own `path` or `domain` needs them in `options` too.                                                                                                                         |
 | `defineActions(options?)`                | Returns the mixin with the actions of the users, see [`defineActions()`](#defineactions).                                                                                                                         |
-| `name`                                   | The name of the entity, which names the users in sessions and credentials, as `'<name>-<id>'`.                                                                                                                    |
-| `usernameProperty`                       | The option of the same name.                                                                                                                                                                                      |
 | `password`                               | The option of the same name.                                                                                                                                                                                      |
 
 The finding and writing methods use the entity manager of the running request,
@@ -149,14 +146,13 @@ as JSON. No foreign keys tie the credentials to their users. So
 The session of a request, from [`useSession()`](#usesession), `session` of the
 handler's context, or `c.var.session`. The package exports the type `Session`.
 
-| Member                     | Description                                                                                                                                                                 |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                    | The session's data, which handlers change in place.                                                                                                                         |
-| `login(user)`              | Logs the user in, with the fingerprint of their password. It doesn't record the login, as for an admin who acts as another user. Logins use `login()` of the users.         |
-| `logout()`                 | Clears the session.                                                                                                                                                         |
-| `getUser()`                | Returns the user of the session, an entity, else `null`. It loads the user once per request. It returns `null` if the user changed the password since the login.            |
-| `refreshFingerprint(user)` | Keeps the session valid after the user changed the password, if the request succeeds. The user's other sessions end.                                                        |
-| `checkConfirmedAccess()`   | Resolves to the user. Without a login, it throws 401. Without confirmed access, it throws 403 with `confirmationRequired: true`. Use it for actions such as changing roles. |
+| Member                   | Description                                                                                                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                  | The session's data, which handlers change in place.                                                                                                                         |
+| `login(user)`            | Logs the user in, with the fingerprint of their password. It doesn't record the login, as for an admin who acts as another user. Logins use `login()` of the users.         |
+| `logout()`               | Clears the session.                                                                                                                                                         |
+| `getUser()`              | Returns the user of the session, an entity, else `null`. It loads the user once per request. It returns `null` if the user changed the password since the login.            |
+| `checkConfirmedAccess()` | Resolves to the user. Without a login, it throws 401. Without confirmed access, it throws 403 with `confirmationRequired: true`. Use it for actions such as changing roles. |
 
 ## useSession()
 
@@ -319,7 +315,7 @@ session middleware, of these users or of others.
   [`Session`](#session). A request without a session user skips this check, so
   the controller's `authorize` asks for a user.
 - When users change their own password, their session stays, and their other
-  sessions end. See `refreshFingerprint()` of [`Session`](#session).
+  sessions end, as with `setPassword()` of [the users](#the-users).
 - `delete :id` deletes the credentials of the user in the request's transaction.
 
 ## User
@@ -348,5 +344,4 @@ an entity:
 - `users.login()` and the actions set `lastLogin`, which ends password reset
   links. An entity without this property doesn't record logins.
 
-The username is the value of `usernameProperty`, which auth reads with
-`getUsername()`.
+The username is the value of `usernameProperty`.
