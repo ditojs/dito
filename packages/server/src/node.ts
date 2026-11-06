@@ -25,11 +25,14 @@ export async function serve(
   const timeout = parseDuration(closeTimeout)
   for (const service of services) await service.start?.()
   const server = createAdaptorServer({ fetch: app.fetch })
+  const stopServices = async () => {
+    for (const service of services.toReversed()) await service.stop?.()
+  }
   server.listen(Number(port ?? 0), host)
   try {
     await once(server, 'listening')
   } catch (error) {
-    for (const service of services.toReversed()) await service.stop?.()
+    await stopServices()
     throw error
   }
 
@@ -40,7 +43,7 @@ export async function serve(
     await new Promise<void>((resolve, reject) =>
       server.close(error => (error ? reject(error) : resolve()))
     )
-    for (const service of services.toReversed()) await service.stop?.()
+    await stopServices()
   }
   const close = () => (closing ??= addTimeout(shutDown(), timeout))
   // A failed close is an unhandled rejection, which Node prints before it
