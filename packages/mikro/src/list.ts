@@ -5,11 +5,11 @@ import { getFilterWheres } from './filters.ts'
 import type { FindShape } from './find.ts'
 import type { ListQuery } from './listQuery.ts'
 import { getProperty, isLoadedColumn, isOwningToOne } from './metadata.ts'
-import type { ModelRequest, Query } from './ModelRequest.ts'
+import type { ModelRequest, ResolvedFind } from './ModelRequest.ts'
 
 const defaultMaxRows = 1000
 
-type List<T extends object> = Query<T> & { query: ListQuery }
+type List<T extends object> = ResolvedFind<T> & { query: ListQuery }
 
 // `order` may use the columns of the list's `find` and of the controller's, so
 // that a list that returns fewer columns, such as only the ids, orders as the
@@ -18,6 +18,7 @@ export async function getListQuery<T extends object>(
   { c, meta, definition }: ModelRequest<T>,
   { where, options, shape, own, query }: List<T>
 ) {
+  const { range } = query
   const wheres = await getFilterWheres(c, definition.filters, query.filter)
   const key = meta.primaryKeys[0]!
   const orderBy = query.order.length
@@ -36,7 +37,7 @@ export async function getListQuery<T extends object>(
     where: { $and: [where, ...wheres] } as object,
     // The id breaks ties, so that pages don't overlap.
     orderBy: [...orderBy, { [key]: 'asc' }] as object[],
-    range: query.range
+    ...(range && { limit: range[1] - range[0] + 1, offset: range[0] })
   }
 }
 
@@ -46,22 +47,18 @@ export async function findRows<T extends object>(
 ) {
   const { em, entity } = request
   const { maxRows = defaultMaxRows } = list.shape
-  const { where, orderBy, range } = await getListQuery(request, list)
-  const options = { ...list.options, orderBy }
-  if (range) {
-    const [start, end] = range
-    if (end - start + 1 > maxRows) {
+  const { where, ...rest } = await getListQuery(request, list)
+  const options = { ...list.options, ...rest }
+  const { limit } = rest
+  if (limit) {
+    if (limit > maxRows) {
       throw new HttpError(400, {
-        message: `Invalid range '${start},${end}': a list answers at most ${
+        message: `Invalid range '${list.query.range}': a list answers at most ${
           maxRows
         } rows`
       })
     }
-    const [results, total] = await em.findAndCount(entity, where, {
-      ...options,
-      offset: start,
-      limit: end - start + 1
-    })
+    const [results, total] = await em.findAndCount(entity, where, options)
     return { results, total }
   }
   if (maxRows === Infinity) return em.find(entity, where, options)

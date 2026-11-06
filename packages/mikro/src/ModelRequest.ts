@@ -20,11 +20,7 @@ import {
 } from './find.ts'
 import type { Filter } from './filters.ts'
 import { findRows, getListQuery } from './list.ts'
-import {
-  parseListQuery,
-  type ListParams,
-  type ListQuery
-} from './listQuery.ts'
+import { parseListQuery } from './listQuery.ts'
 import { getPrimaryKey } from './metadata.ts'
 import { getOutput, type Output } from './serialize.ts'
 
@@ -45,25 +41,23 @@ declare module '@ditojs/server' {
     find: <T = any>(find?: FindShape) => Promise<T[]>
     // In model controllers: the list of the controller, through its `find`
     // merged with `find`, with the filters, `order`, `range` and row limit of
-    // `findRows()`. `query` replaces the list parameters of the URL, such as
-    // `{ range: '0,49' }`. The records go out in the merged shape.
+    // `findRows()`. The records go out in the merged shape.
     list: <T = any>(
-      find?: ListFind
+      find?: FindShape
     ) => Promise<T[] | { results: T[]; total: number }>
-    // In model controllers: the `where` and `orderBy` of the list that `list()`
-    // would load, with its filters and `order`, and the `range` of the request,
-    // for queries over its rows, such as summaries and exports.
-    getListQuery: (find?: ListFind) => Promise<{
+    // In model controllers: the arguments of `em.find()` for the rows that
+    // `list()` would load, with its filters, `order` and `range`, for queries
+    // over its rows, such as summaries and exports.
+    getListQuery: (find?: FindShape) => Promise<{
       where: object
       orderBy: object[]
-      range: ListQuery['range']
+      limit?: number
+      offset?: number
     }>
   }
 }
 
-type ListFind<T extends object = any> = FindShape<T> & { query?: ListParams }
-
-export type Query<T extends object> = ReturnType<typeof splitFind<T>> & {
+export type ResolvedFind<T extends object> = ReturnType<typeof splitFind<T>> & {
   own: FindShape<T>
   shape: FindShape<T>
   output: Output
@@ -94,7 +88,7 @@ export class ModelRequest<T extends object = any> {
   // The output of the last list, whose records go out in its shape.
   output?: Output
   #find?: Promise<FindShape<T>>
-  #query?: Promise<Query<T>>
+  #resolvedFind?: Promise<ResolvedFind<T>>
   #record?: Promise<T>
 
   constructor(c: DitoContext, definition: ModelDefinition<T>) {
@@ -116,30 +110,30 @@ export class ModelRequest<T extends object = any> {
   }
 
   async find(find?: FindShape<T>) {
-    const { where, options } = await this.getQuery(find)
+    const { where, options } = await this.getResolvedFind(find)
     return this.em.find(this.entity, where, options) as Promise<any[]>
   }
 
-  async list(find?: ListFind<T>) {
+  async list(find?: FindShape<T>) {
     const list = await this.#getList(find)
     this.output = list.output
     return findRows(this, list) as Promise<any>
   }
 
-  async getListQuery(find?: ListFind<T>) {
+  async getListQuery(find?: FindShape<T>) {
     return getListQuery(this, await this.#getList(find))
   }
 
-  // Without `extra`, the query is the same for the whole request:
-  getQuery(extra?: FindShape<T>) {
+  // Without `extra`, the result is the same for the whole request:
+  getResolvedFind(extra?: FindShape<T>) {
     return extra
-      ? this.#createQuery(extra)
-      : (this.#query ??= this.#createQuery())
+      ? this.#createResolvedFind(extra)
+      : (this.#resolvedFind ??= this.#createResolvedFind())
   }
 
-  // The controller's `find` merged with `extra`, as a query and its output. A
-  // `find` function runs once per request.
-  async #createQuery(extra?: FindShape<T>): Promise<Query<T>> {
+  // The controller's `find` merged with `extra`, split for `em.find()`, and its
+  // output. A `find` function runs once per request.
+  async #createResolvedFind(extra?: FindShape<T>): Promise<ResolvedFind<T>> {
     const { meta } = this
     const { find } = this.definition
     this.#find ??= resolveFind(find, this.c)
@@ -160,7 +154,7 @@ export class ModelRequest<T extends object = any> {
         'sets the record that it returns'
       )
     }
-    const { where, options } = await this.getQuery()
+    const { where, options } = await this.getResolvedFind()
     const record = await this.em.findOne(
       this.entity,
       { $and: [where, { [this.key.name]: this.c.var.id }] } as never,
@@ -170,10 +164,10 @@ export class ModelRequest<T extends object = any> {
     return record as T
   }
 
-  async #getList({ query, ...extra }: ListFind<T> = {}) {
+  async #getList(find?: FindShape<T>) {
     return {
-      ...(await this.getQuery(extra)),
-      query: parseListQuery(this.c, query)
+      ...(await this.getResolvedFind(find)),
+      query: parseListQuery(this.c)
     }
   }
 }

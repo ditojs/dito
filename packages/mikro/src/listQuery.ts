@@ -1,8 +1,5 @@
 import type { Context } from 'hono'
 import { HttpError } from '@ditojs/server'
-import { asArray } from '@ditojs/utils'
-
-export type ListParams = URLSearchParams | Record<string, string | string[]>
 
 // The parsed list parameters.
 export interface ListQuery {
@@ -21,21 +18,13 @@ export interface ListQuery {
 // Filters and properties are words joined by dots:
 const propertyPattern = /^\w+(\.\w+)*$/
 
-// `params` replaces the parameters of the URL, such as the `query` of `list()`.
-export function parseListQuery(c: Context, params?: ListParams): ListQuery {
+export function parseListQuery(c: Context): ListQuery {
   const query: ListQuery = {
     filter: [],
     order: [],
     range: null
   }
-  const entries = params
-    ? params instanceof URLSearchParams
-      ? params
-      : Object.entries(params).flatMap(([key, value]) =>
-          asArray(value).map(item => [key, item] as const)
-        )
-    : new URL(c.req.url).searchParams
-  for (const [key, value] of entries) {
+  for (const [key, value] of new URL(c.req.url).searchParams) {
     if (key === 'filter') {
       const [, name = '', json = ''] = value.match(/^(.*?):(.*)$/s) ?? []
       const args = parseArguments(json)

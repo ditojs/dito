@@ -1002,35 +1002,32 @@ describe('list filters', () => {
 })
 
 describe('c.var.getListQuery()', () => {
-  it('returns the `where` and `orderBy` of the list', async () => {
+  it('returns the options of `em.find()` for the list', async () => {
     const api = setup(
       books({
         find: { where: { published: true }, orderBy: { name: 'desc' } },
         filters: { name: defineTextFilter() },
         actions: {
           async 'get summary'({ em, getListQuery }) {
-            const { where, orderBy, range } = await getListQuery()
+            const { where, ...options } = await getListQuery()
             const rows = await em.find(Book, where, {
-              fields: ['id'],
-              orderBy
+              ...options,
+              fields: ['id']
             })
-            return {
-              ids: rows.map(row => row.id),
-              count: rows.length,
-              range
-            }
+            const { limit, offset } = options
+            return { ids: rows.map(row => row.id), limit, offset }
           }
         }
       })
     )
     const summary = (query = '') =>
       request(api, 'GET', `/api/books/summary${query}`)
-    expect((await summary()).json).toEqual({
-      ids: [3, 1],
-      count: 2,
-      range: null
+    expect((await summary()).json).toEqual({ ids: [3, 1] })
+    expect((await summary('?range=1,1')).json).toEqual({
+      ids: [1],
+      limit: 1,
+      offset: 1
     })
-    expect((await summary('?range=0,9')).json.range).toEqual([0, 9])
     expect((await summary('?order=name')).json.ids).toEqual([1, 3])
     expect((await summary('?filter=name:"circ"')).json.ids).toEqual([3])
     expect((await summary('?filter=other:1')).status).toBe(400)
@@ -2563,7 +2560,7 @@ describe('layers', () => {
         mixins: [mixin],
         beforeSerialize: record('controller'),
         actions: {
-          'get page': ({ list }) => list({ query: { range: '0,1' } }),
+          'get page': ({ list }) => list(),
           'get none': () => [],
           'get count': () => ({ count: 1 })
         }
@@ -2584,7 +2581,7 @@ describe('layers', () => {
     ])
 
     calls.length = 0
-    const page = await request(api, 'GET', '/api/books/page')
+    const page = await request(api, 'GET', '/api/books/page?range=0,1')
     expect(page.json.results).toHaveLength(2)
     expect(calls[0]).toEqual(['mixin', [1, 2]])
 
@@ -2642,24 +2639,6 @@ describe('layers', () => {
         'sets the record that it returns'
       )
     })
-  })
-
-  it('replaces the list parameters with the `query` of `list()`', async () => {
-    const api = setup(
-      books({
-        actions: {
-          'get first': ({ list }) =>
-            list({ query: { range: '0,0', order: 'name desc' } })
-        }
-      })
-    )
-    const { json } = await request(
-      api,
-      'GET',
-      '/api/books/first?range=0,9&filter=name:"x"'
-    )
-    expect(json.total).toBe(3)
-    expect(json.results.map((row: Book) => row.name)).toEqual(['Circuits'])
   })
 })
 

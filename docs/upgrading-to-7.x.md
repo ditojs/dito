@@ -287,8 +287,8 @@ filters: {
   and `range`. `defineList(find)` returns such a list as a handler.
 - Both keep to the rows of the controller's `find`. Only `where` and `filters`
   merge. The other options replace the controller's.
-- `getListQuery()` of the context returns the `where`, `orderBy` and `range` of
-  the list. Use it for summaries and exports over its rows.
+- `getListQuery()` of the context returns the `where`, `orderBy`, `limit` and
+  `offset` of the list. Use it for summaries and exports over its rows.
 
 `fields` alone defines what goes out, see [Output](api/server/mikro.md#output):
 

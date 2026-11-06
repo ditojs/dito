@@ -80,25 +80,6 @@ describe('parseListQuery()', () => {
     })
   })
 
-  it('reads `params` in place of the URL', async () => {
-    const api = createApi({
-      controllers: [
-        {
-          path: 'books',
-          actions: {
-            get: ({ c }) => parseListQuery(c, { filter: 'a:1,2', range: '0,9' })
-          }
-        }
-      ]
-    })
-    const response = await api.request('/books?range=5,6&order=name')
-    expect(await response.json()).toEqual({
-      filter: [{ name: 'a', value: ['1', '2'] }],
-      order: [],
-      range: [0, 9]
-    })
-  })
-
   it.each([
     'filter=a-b:1',
     'filter=a',

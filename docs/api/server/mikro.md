@@ -89,7 +89,7 @@ base sets them.
 | `getRecord()`    | Loads the record of the id through `find`, once per request. A missing record responds with 404. After a `post`, it returns the record that the action returned.                                                                                                              |
 | `find()`         | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                                                 |
 | `list()`         | Runs the list of the controller, see [list()](#list).                                                                                                                                                                                                                         |
-| `getListQuery()` | Returns the `where`, `orderBy` and `range` of the list, see [getListQuery()](#getlistquery).                                                                                                                                                                                  |
+| `getListQuery()` | Returns the arguments of `em.find()` for the list, see [getListQuery()](#getlistquery).                                                                                                                                                                                       |
 
 ### Serialize and deserialize
 
@@ -277,7 +277,7 @@ or in its own `populate`.
 ## list()
 
 ```ts
-list<T>(find?: FindShape<T> & { query?: URLSearchParams | Record<string, string | string[]> }): Promise<T[] | { results: T[]; total: number }>
+list<T>(find?: FindShape<T>): Promise<T[] | { results: T[]; total: number }>
 ```
 
 ```js
@@ -295,32 +295,31 @@ of the controller:
 - the controller's filters, and `order` and `range`;
 - the row limit.
 
-The rows go out in the merged shape. `query` replaces the list parameters of
-the URL. When the request has `range`, `list()` returns `{ results, total }`
-instead of the rows.
+The rows go out in the merged shape. When the request has `range`, `list()`
+returns `{ results, total }` instead of the rows.
 
 ## getListQuery()
 
 ```ts
-getListQuery(find?: FindShape & { query?: URLSearchParams | Record<string, string | string[]> }): Promise<{ where: object; orderBy: object[]; range: [number, number] | null }>
+getListQuery(find?: FindShape): Promise<{ where: object; orderBy: object[]; limit?: number; offset?: number }>
 ```
 
 ```js
 async 'get export'({ em, getListQuery, c }) {
-  const { where, orderBy } = await getListQuery()
-  const rows = await em.find(Loan, where, { orderBy })
+  const { where, ...options } = await getListQuery()
+  const rows = await em.find(Loan, where, options)
   return sendFile(c, toCsv(rows), { filename: 'loans.csv' })
 }
 ```
 
 `getListQuery()` is a variable of the handler's context and of `c.var`. It
-returns the `where`, `orderBy` and `range` that [`list()`](#list) uses for the
-same arguments:
+returns what [`list()`](#list) passes to `em.find()` for the same arguments:
 
 - `where` is `find.where` joined with the filters;
 - `orderBy` is the `order` of the request, else `find.orderBy`, with the primary
   key last;
-- `range` is the `range` of the request.
+- `limit` and `offset` come from the `range` of the request. Without one, they
+  are missing.
 
 It fails with 400 where the list does. Use it for queries over the rows of the
 list, such as summaries and exports. MikroORM's default entity filters apply to

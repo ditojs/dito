@@ -297,8 +297,7 @@ async 'get'({ list, c }) {
 ```
 
 `list(find)` of the handler's context runs the same list in a custom handler,
-such as to load more data for its rows. Its `query` option replaces the list
-parameters of the URL.
+such as to load more data for its rows.
 
 ```js
 async 'get summary'({ em, getListQuery }) {
@@ -307,9 +306,10 @@ async 'get summary'({ em, getListQuery }) {
 }
 ```
 
-`getListQuery()` of the context returns the `where`, `orderBy` and `range` of
-the list, with the filters and the `order` of the URL. Use it for queries over
-the rows of the list, such as a summary or an export.
+`getListQuery()` of the context returns the `where`, `orderBy`, `limit` and
+`offset` of the list, with the filters, the `order` and the `range` of the URL.
+So `em.find(Article, where, options)` loads the rows of the list. Use it for
+queries over these rows, such as a summary or an export.
 
 ## Custom actions
 

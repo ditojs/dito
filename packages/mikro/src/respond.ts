@@ -22,7 +22,7 @@ export async function respond(request: ModelRequest, result: unknown) {
   const rows = records.map(getRow)
   const jsonByRow = new Map<object, unknown>()
   const getOutput = async () => (
-    request.output ?? (await request.getQuery()).output
+    request.output ?? (await request.getResolvedFind()).output
   )
   if (rows.length) {
     for (const beforeSerialize of definition.beforeSerializers) {
@@ -51,7 +51,7 @@ async function reload(request: ModelRequest, records: object[]) {
   const reloaded = new Map<object, object>()
   if (records.length) {
     const { em, entity, key } = request
-    const { options } = await request.getQuery()
+    const { options } = await request.getResolvedFind()
     const getId = (row: object) => (row as Record<string, unknown>)[key.name]
     const where = { [key.name]: { $in: records.map(getId) } }
     // A refresh in `em` would leave the columns outside of the shape out of its
