@@ -1,5 +1,6 @@
 import type { Adapter, DitoContext } from '@ditojs/server'
 import type { EntityManager } from '@mikro-orm/sql'
+import { tryGetContext } from 'hono/context-storage'
 import type { Kysely } from 'kysely'
 import { toHttpError } from './databaseErrors.ts'
 import { hasMikroConfig } from './defineMikroConfig.ts'
@@ -47,3 +48,11 @@ export function createMikroAdapter(
 
 // The entity manager of the request, typed also without `@ditojs/mikro/types`.
 export const getEntityManager = (c: DitoContext) => c.var.em as EntityManager
+
+// The entity manager of the running request, which is the transaction's during
+// a transaction. Jobs and scripts have no request, and use a fork of `orm.em`.
+export function useEm() {
+  const c = tryGetContext()
+  if (!c?.var.em) throw new Error('Unable to use `em` outside of a request.')
+  return getEntityManager(c)
+}

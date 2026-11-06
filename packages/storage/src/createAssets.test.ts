@@ -185,7 +185,7 @@ describe('createAssets()', () => {
           .insertInto('book')
           .values({ id: 1, cover: JSON.stringify(file('used')) })
           .execute()
-        return assets.findReferences({ c })
+        return assets.findReferences()
       })
       const references = await response.json()
       expect(references.map((ref: { id: number }) => ref.id)).toEqual([1])

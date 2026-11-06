@@ -1,4 +1,5 @@
 import { Hono, type Context } from 'hono'
+import { contextStorage } from 'hono/context-storage'
 import type { z } from 'zod'
 import { asArray, isArray, isFunction, isString } from '@ditojs/utils'
 import { resolveController, type ResolvedAction } from './compose.ts'
@@ -36,6 +37,7 @@ export function createApi({
   // Runs on the actions only, so that APIs routed at `/api` and `/api/admin`
   // don't run each other's middleware, in any order.
   const setup: Middleware[] = [
+    contextStorage(),
     ...asArray(sessions?.middleware),
     ...asArray(middleware),
     async (c, next) => {

@@ -1,3 +1,4 @@
+import { tryGetContext } from 'hono/context-storage'
 import type { Kysely } from 'kysely'
 import { isString, parseDuration } from '@ditojs/utils'
 import type { DitoContext, MixinDefinition } from '@ditojs/server'
@@ -23,7 +24,7 @@ import { defineAssetUploads, type AssetUpload } from './assetUploads.ts'
 
 export interface CreateAssetsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`.
-  adapter: { getKysely(): Kysely<any> }
+  adapter: { getKysely(c?: DitoContext): Kysely<any> }
   paths: AssetPath[]
   storages: StorageRegistry
   // The `deleteUnusedAfter` of `runJobs()`, in milliseconds or as a duration
@@ -52,11 +53,10 @@ export function createAssets({
   const defaultDeleteUnusedAfter = parseDeleteUnusedAfter(deleteUnusedAfter)
   const defaultMaxSize = parseMaxSize(maxSize)
   const normalizedPaths = normalizeAssetPaths(paths, defaultMaxSize)
-  // The mixins use the Kysely of the request's handle, so that the `asset`
-  // rows of a write commit with its transaction. The other methods use the
-  // Kysely of the adapter, outside of the requests' transactions.
-  const getDb = (c: DitoContext) =>
-    (c.var.em as { getKysely(): Kysely<any> }).getKysely()
+  // The mixins use the Kysely of the request, so that the `asset` rows of a
+  // write commit with its transaction. The other methods run outside of the
+  // requests' transactions.
+  const getDb = (c: DitoContext) => adapter.getKysely(c)
 
   return {
     paths,
@@ -125,16 +125,13 @@ export function createAssets({
       })
     },
 
-    // Read in the request's transaction when called with its `c`:
-    findReferences({
-      c,
-      ...options
-    }: Omit<FindAssetReferencesOptions, 'db' | 'paths'> & {
-      c?: DitoContext
-    } = {}) {
+    // Read in the transaction of the running request, if there is one:
+    findReferences(
+      options: Omit<FindAssetReferencesOptions, 'db' | 'paths'> = {}
+    ) {
       return findAssetReferences({
         ...options,
-        db: c ? getDb(c) : adapter.getKysely(),
+        db: adapter.getKysely(tryGetContext()),
         paths
       })
     },

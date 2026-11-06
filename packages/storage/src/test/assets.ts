@@ -139,7 +139,9 @@ export const now = new Date('2026-10-30T12:00:00Z')
 
 // The adapter of `createAssets()`, and one of `createApi()` whose request
 // handles have a Kysely, as the entity managers of `@ditojs/mikro` do.
-export const adapter = { getKysely: () => db }
+export const adapter = {
+  getKysely: (c?: DitoContext) => (c ? (c.var.em as any).getKysely() : db)
+}
 export const handleAdapter: Adapter = {
   connect: () => ({ getKysely: () => db }),
   transaction: (c, fn) =>

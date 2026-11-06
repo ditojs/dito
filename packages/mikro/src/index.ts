@@ -22,7 +22,7 @@ export {
   type JsonTypeAsset,
   type JsonTypeOptions
 } from './SchemaJsonType.ts'
-export { createMikroAdapter } from './createMikroAdapter.ts'
+export { createMikroAdapter, useEm } from './createMikroAdapter.ts'
 export {
   createEntityUserSource,
   type EntityUserSourceOptions

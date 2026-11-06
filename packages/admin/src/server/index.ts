@@ -3,6 +3,7 @@ import path from 'node:path'
 import net from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { Hono, type Context, type MiddlewareHandler } from 'hono'
+import { contextStorage } from 'hono/context-storage'
 import type { HttpBindings } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { RESPONSE_ALREADY_SENT } from '@hono/node-server/utils/response'
@@ -99,7 +100,11 @@ export function createAdmin(options: CreateAdminOptions): AdminServer {
       }
       await next()
     })
-    const handlers = [...asArray(sessions?.middleware), ...asArray(middleware)]
+    const handlers = [
+      contextStorage(),
+      ...asArray(sessions?.middleware),
+      ...asArray(middleware)
+    ]
     app.use('/views/*', ...handlers, async (c, next) => {
       const user = (await getUser?.({ c })) ?? null
       c.set('user', user)
