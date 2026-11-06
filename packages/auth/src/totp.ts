@@ -56,7 +56,7 @@ export function createTotp({
         secret,
         expires: Date.now() + authenticationTimeout
       }
-      const label = user.username ?? undefined
+      const label = credentials.source.getUsername(user)
       const uri = new TOTP({ issuer, label, secret }).toString()
       return { uri, secret }
     },

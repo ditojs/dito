@@ -336,7 +336,6 @@ session middleware, of these users or of others.
 ```ts
 interface User {
   id: number | string
-  username?: string | null
   hash?: string | null
   roles?: string[] | null
   lastLogin?: Date | string | null
@@ -348,7 +347,11 @@ The values that auth reads from the users of an entity.
 - `hash` is the bcrypt hash, or `null` for users without a password. Sessions
   keep its fingerprint, and end when it changes.
 - `roles` go to `authorize`.
-- A login sets `lastLogin`, which ends password reset links.
+- A login sets `lastLogin`, which ends password reset links. An entity without
+  this property doesn't record logins.
+
+The username is the value of `usernameProperty`, which auth reads with
+`getUsername()`.
 
 ## Passwords
 

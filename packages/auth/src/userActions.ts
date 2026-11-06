@@ -90,7 +90,9 @@ export function defineUserActions<U extends User>({
     const session = getSession(c)
     session.login(user)
     try {
-      await source.patch(user, { lastLogin: new Date() })
+      if ('lastLogin' in user) {
+        await source.patch(user, { lastLogin: new Date() })
+      }
       session.confirmAccess(user, reconfirmAfter)
       await afterLogin?.({ c, user })
       return { user: await source.serialize(user) }
@@ -241,7 +243,7 @@ export function defineUserActions<U extends User>({
         const user = await checkConfirmedAccess(c)
         return passkeys.createRegistrationOptions(
           c,
-          user.username ?? '',
+          source.getUsername(user),
           await credentials.list(user, 'passkey')
         )
       },

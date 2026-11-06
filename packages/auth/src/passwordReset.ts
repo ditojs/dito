@@ -102,7 +102,7 @@ function getSignedValues(source: UserSource<any>, user: User, time: number) {
     time,
     user.hash ?? null,
     user.lastLogin ?? null,
-    user.username ?? null
+    source.getUsername(user)
   ])
 }
 

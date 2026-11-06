@@ -49,6 +49,7 @@ export function createSource(
     findByUsername: async username => (
       users.find(user => user.username === username) ?? null
     ),
+    getUsername: user => user.username,
     patch: async (user, values) => {
       Object.assign(user, values)
     },

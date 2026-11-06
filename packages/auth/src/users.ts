@@ -3,12 +3,12 @@ import type { createEntityUserSource } from '@ditojs/mikro/internal'
 // The values that auth reads from users.
 export interface User {
   id: number | string
-  username?: string | null
   // The bcrypt hash, or null for users without a password. Sources load it,
   // as sessions end when it changes.
   hash?: string | null
   roles?: string[] | null
-  // A login changes it, which ends password reset links.
+  // A login changes it, which ends password reset links. Entities without this
+  // property don't record logins.
   lastLogin?: Date | string | null
 }
 
