@@ -11,7 +11,6 @@ export { S3Storage, type S3Client, type S3StorageOptions } from './S3Storage.ts'
 export {
   StorageRegistry,
   createStorages,
-  type CreateStoragesOptions,
   type StorageDefinition
 } from './StorageRegistry.ts'
 export type { AssetField } from './assetFields.ts'

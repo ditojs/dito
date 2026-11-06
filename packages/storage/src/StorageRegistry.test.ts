@@ -16,13 +16,10 @@ const s3 = {
 
 describe('createStorages()', () => {
   it('creates disk and S3 storages by name', () => {
-    const storages = createStorages(
-      {
-        covers: { type: 'disk', path: 'storage/covers', url: '/covers/' },
-        archive: { type: 's3', ...s3 }
-      },
-      { basePath: '/app' }
-    )
+    const storages = createStorages({
+      covers: { type: 'disk', path: '/app/storage/covers', url: '/covers/' },
+      archive: { type: 's3', ...s3 }
+    })
     const covers = storages.get('covers') as DiskStorage
     expect(covers).toBeInstanceOf(DiskStorage)
     expect(covers.name).toBe('covers')

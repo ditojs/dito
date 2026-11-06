@@ -1,4 +1,3 @@
-import path from 'node:path'
 import type { Storage } from './Storage.ts'
 import { DiskStorage, type DiskStorageOptions } from './DiskStorage.ts'
 import { S3Storage, type S3StorageOptions } from './S3Storage.ts'
@@ -6,12 +5,6 @@ import { S3Storage, type S3StorageOptions } from './S3Storage.ts'
 export type StorageDefinition =
   | ({ type: 'disk' } & Omit<DiskStorageOptions, 'name'>)
   | ({ type: 's3' } & Omit<S3StorageOptions, 'name'>)
-
-export interface CreateStoragesOptions {
-  // The folder that the `path` of disk storages resolves against. Default: the
-  // working directory.
-  basePath?: string
-}
 
 export class StorageRegistry extends Map<string, Storage> {
   constructor(storages: Iterable<Storage> = []) {
@@ -26,31 +19,19 @@ export class StorageRegistry extends Map<string, Storage> {
   }
 }
 
-export function createStorages(
-  definitions: Record<string, StorageDefinition>,
-  { basePath = process.cwd() }: CreateStoragesOptions = {}
-) {
+export function createStorages(definitions: Record<string, StorageDefinition>) {
   return new StorageRegistry(
     Object.entries(definitions).map(([name, definition]) =>
-      createStorage(name, definition, basePath)
+      createStorage(name, definition)
     )
   )
 }
 
-function createStorage(
-  name: string,
-  definition: StorageDefinition,
-  basePath: string
-): Storage {
+function createStorage(name: string, definition: StorageDefinition): Storage {
   const { type } = definition
   switch (type) {
     case 'disk':
-      return new DiskStorage({
-        ...definition,
-        name,
-        // A missing path is left to the storage, which throws.
-        path: definition.path && path.resolve(basePath, definition.path)
-      })
+      return new DiskStorage({ ...definition, name })
     case 's3':
       return new S3Storage({ ...definition, name })
     default:

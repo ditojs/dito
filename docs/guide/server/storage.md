@@ -14,30 +14,27 @@
 ```js
 import { createStorages } from '@ditojs/storage'
 
-export const storages = createStorages(
-  {
-    public: {
-      type: 'disk',
-      path: 'storage/public',
-      url: '/assets/public/'
-    },
-    downloads: {
-      type: 's3',
-      bucket: 'downloads',
-      url: 'https://downloads.example.com/',
-      // `credentials` holds the app's keys, such as `{ accessKeyId, … }`.
-      s3: { region: 'eu-central-1', credentials },
-      params: { ACL: 'public-read' }
-    }
+export const storages = createStorages({
+  public: {
+    type: 'disk',
+    path: 'storage/public',
+    url: '/assets/public/'
   },
-  { basePath: import.meta.dirname }
-)
+  downloads: {
+    type: 's3',
+    bucket: 'downloads',
+    url: 'https://downloads.example.com/',
+    // `credentials` holds the app's keys, such as `{ accessKeyId, … }`.
+    s3: { region: 'eu-central-1', credentials },
+    params: { ACL: 'public-read' }
+  }
+})
 ```
 
 `createStorages()` builds the app's storages from plain definitions, keyed by
 name.
 
-- Disk paths resolve against `basePath`.
+- Disk paths resolve against the working directory.
 - The `params` of S3 storages go to each `PutObject` request.
 - S3 storages need the optional peers `@aws-lite/client` and `@aws-lite/s3`.
   They load when a storage first needs them.

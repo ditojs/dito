@@ -29,10 +29,7 @@ the guide.
 ## createStorages()
 
 ```ts
-createStorages(
-  definitions: Record<string, StorageDefinition>,
-  options?: { basePath?: string }
-): StorageRegistry
+createStorages(definitions: Record<string, StorageDefinition>): StorageRegistry
 ```
 
 ```js
@@ -45,8 +42,7 @@ const storages = createStorages({
 Builds the storages from plain definitions keyed by name, such as those of an
 app's config. It returns them in a registry.
 
-- The `path` of disk storages resolves against `basePath`, which defaults to the
-  working directory.
+- The `path` of disk storages resolves against the working directory.
 - S3 storages load the aws-lite client when they first need it.
 
 ### StorageRegistry
