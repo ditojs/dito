@@ -145,22 +145,21 @@ actions: {
 A controller that lists the mixin in its `mixins` can replace or wrap its
 actions, as with any mixin.
 
-### User writes
+### User records
 
 ```js
-import { defineModelController } from '@ditojs/mikro'
+import { crud, defineModelController } from '@ditojs/mikro'
 
 export const adminRecords = defineModelController({
   path: 'admins',
   entity: Admin,
   authorize: 'admin',
-  mixins: [admins.defineWrites()],
-  actions: { 'get': true, 'get :id': true }
+  mixins: [crud]
 })
 ```
 
-[`users.defineWrites()`](../../api/server/auth.md#definewrites) is the mixin of
-the users' model controller. It routes `post`, `patch :id` and `delete :id`.
+Every model controller of the entity of `createUsers()` protects its
+[user records](../../api/server/auth.md#user-records). It needs no mixin.
 
 - The body of `post` and `patch :id` sets `password`, which the user stores as
   `hash`.
@@ -179,7 +178,7 @@ would also run outside of a transaction.
 ### Credentials
 
 Passkeys and TOTP keep their secrets in the `credential` table. No foreign keys
-tie them to their users. So `defineWrites()` deletes them with their user.
+tie them to their users. So deleting a user through a model controller deletes them too.
 
 ### Passkeys
 
@@ -231,7 +230,7 @@ whether the user exists or not.
 A login confirms the user's access for ten minutes. The option `reconfirmAfter`
 of `defineActions()` sets this time. Actions that change security settings, such
 as roles, need confirmed access. `post password` and the
-[user writes](#user-writes) check it themselves.
+[user records](#user-records) check it themselves.
 
 Without confirmed access, the action responds with 403 and
 `confirmationRequired: true`. The admin then asks for the password, and posts it

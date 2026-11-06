@@ -2,6 +2,7 @@
 // them.
 export {
   defineModelController,
+  guardEntity,
   type ModelControllerDefinition
 } from './controller.ts'
 export { crud, defineChoices, defineListHandler } from './crud.ts'

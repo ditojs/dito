@@ -6,7 +6,7 @@ import {
   hashPassword,
   verifyPassword
 } from '../../auth/src/index.ts'
-import { createMikroAdapter, defineModelController } from './index.ts'
+import { createMikroAdapter, crud, defineModelController } from './index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Credential, Session } from '../../../tests/utils/entities.ts'
 import { createClient } from '../../../tests/utils/client.ts'
@@ -49,7 +49,7 @@ const app = new Hono().route(
         path: 'members',
         entity: Member,
         authorize: true,
-        mixins: [members.defineWrites()]
+        mixins: [crud]
       })
     ]
   })
@@ -151,7 +151,7 @@ describe('defineUserWrites() with confirmed access', () => {
           path: 'members',
           entity: Member,
           authorize: true,
-          mixins: [members.defineWrites()],
+          mixins: [crud],
           load: ({ c, id }) =>
             c.var.em.findOne(
               Member,
@@ -187,5 +187,27 @@ describe('defineUserWrites() with confirmed access', () => {
     expect((await patch(bob.id, { username: 'bob', roles: [] })).status).toBe(
       200
     )
+  })
+})
+
+describe('createUsers() on read-only controllers', () => {
+  it('adds no routes to the model controllers of the entity', async () => {
+    const readOnly = new Hono().route(
+      '/',
+      createApi({
+        adapter: createMikroAdapter(orm),
+        sessions: members,
+        controllers: [
+          defineModelController({
+            path: 'members',
+            entity: Member,
+            authorize: true,
+            actions: { get: true }
+          })
+        ]
+      })
+    )
+    const response = await readOnly.request('/members/1', { method: 'DELETE' })
+    expect(response.status).toBe(404)
   })
 })

@@ -2,6 +2,7 @@ import type { EntityClass, EntityManager } from '@mikro-orm/core'
 import {
   createEntityUserSource,
   createMikroAdapter,
+  guardEntity,
   type EntityUserSourceOptions
 } from '@ditojs/mikro'
 import { createCredentials } from './credentials.ts'
@@ -49,6 +50,8 @@ export function createUsers<U extends User>(
     users: source
   })
   const credentials = createCredentials({ adapter })
+  // All model controllers of the entity hash passwords and protect their users.
+  guardEntity(entity, defineUserWrites<U>({ source, credentials }).actions!)
 
   return {
     ...source,
@@ -65,11 +68,6 @@ export function createUsers<U extends User>(
         credentials,
         passwordReset: passwordReset && { ...passwordReset, secrets }
       })
-    },
-
-    // The mixin of the users' model controller.
-    defineWrites() {
-      return defineUserWrites<U>({ source, credentials })
     }
   }
 }

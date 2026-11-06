@@ -56,7 +56,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `ResponseError` and its subclasses, `app.logError()`                                   | `HttpError`, `toHttpError()` of the adapter, and the `onError` hook, which logs by default                                                                                                       | low                     |
 | Koa middleware, `config.http`                                                          | The `http` option of `createApp()`, for `honoMiddleware()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`; other Hono middleware on `app.hono`                    | low                     |
 | `app.proxy`, `config.server.proxy`                                                     | `http.proxy` of `createApp()`, and `getClientAddress(c)` for the client's address                                                                                                                | low                     |
-| `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createUsers()`, with `users.defineActions()`, `users.defineWrites()` and `useSession()`                                                                                         | medium                  |
+| `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createUsers()`, with `users.defineActions()` and `useSession()`                                                                                                                 | medium                  |
 | `config.storages`, model `assets`, `AssetFile`, asset counts in hooks                  | `@ditojs/storage`: `createStorages()`, asset paths, `createAssets()`, `serveStorage()`                                                                                                           | medium                  |
 | `AdminController`, `config.admin`, the admin's build                                   | `createAdmin()` of `@ditojs/admin/server` and `defineAdminViteConfig()` of `@ditojs/admin/vite`                                                                                                  | low                     |
 | Tests on `app.knex` and models                                                         | Tests on an entity manager of the ORM, and `app.request()` of Hono                                                                                                                               | medium                  |
@@ -622,7 +622,7 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 - Actions that change security settings call
   `session.checkConfirmedAccess()`, see
   [Confirmed access](guide/server/auth.md#confirmed-access).
-- [`users.defineWrites()`](api/server/auth.md#definewrites) replaces the
+- [User records](api/server/auth.md#user-records) replace the
   password handling of `UserMixin` on the users' model controller. Writes that
   change a password or a username need confirmed access of the session's user,
   as `post password` does, also for other users, as in Dito.js 6.
@@ -636,7 +636,8 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   password that wasn't empty.
 - The `password` schema of `createUsers()` replaces the `password` property of
   the model, such as `createUsers(Admin, { password })`. The actions of
-  `users.defineActions()` and `users.defineWrites()` check new passwords with it.
+  `users.defineActions()` and the model controllers of the users check new
+  passwords with it.
 - The session saves after the action if it changed, even when the action throws.
   So used challenges and codes stay used. A session that a parallel request
   ended stays ended.
@@ -650,7 +651,7 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   [`passwordReset`](api/server/auth.md#password-reset) of
   `users.defineActions()`. The `secrets` of `createUsers()` replace `app.keys`,
   and `send` replaces `sendPasswordReset()`.
-- `users.defineWrites()` deletes the credentials of deleted users, see
+- Model controllers of the users delete the credentials of deleted users, see
   [Credentials](guide/server/auth.md#credentials). The app creates the
   `credential` table also without passkeys and TOTP.
 

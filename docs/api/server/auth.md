@@ -64,7 +64,7 @@ sessions and credentials. The app passes the result as `sessions` to
 | `computed`         | `Record<string, ({ user }) => unknown>` | Values computed from the user, added to the properties of `serialize`.                                                                                                   |
 | `where`            | `object`                                | A condition that users also need to meet to be found, such as `{ isActive: true }`.                                                                                      |
 | `usernameProperty` | `string`                                | The property of the username. Default: `username`.                                                                                                                       |
-| `password`         | `ZodType<string>`                       | The schema of new passwords, in the actions of [`defineActions()`](#defineactions) and in [`defineWrites()`](#definewrites). Default: a string of at least 8 characters. |
+| `password`         | `ZodType<string>`                       | The schema of new passwords, in the actions of [`defineActions()`](#defineactions) and in the [user records](#user-records). Default: a string of at least 8 characters. |
 
 The entity hides `hash` with `.hidden()`, so that no response sends it. The
 users throw when they load users of an entity that doesn't.
@@ -84,7 +84,6 @@ users throw when they load users of an entity that doesn't.
 | `readSignedCookie(c, name)` | Returns the value of the cookie `name` if one of `secrets` signed it, else `null`. It reads the app's own cookies, which the app writes with `setSignedCookie(c, name, value, secrets[0])` of `hono/cookie`. |
 | `deleteExpiredSessions()`   | Deletes the expired rows of the `session` table. The app runs it on a timer.                                                                                                                                 |
 | `defineActions(options?)`   | Returns the mixin with the actions of the users, see [`defineActions()`](#defineactions).                                                                                                                    |
-| `defineWrites()`            | Returns the mixin of the users' model controller, see [`defineWrites()`](#definewrites).                                                                                                                     |
 | `name`                      | The name of the entity, which names the users in sessions and credentials, as `'<name>-<id>'`.                                                                                                               |
 | `usernameProperty`          | The option of the same name.                                                                                                                                                                                 |
 | `password`                  | The option of the same name.                                                                                                                                                                                 |
@@ -138,7 +137,7 @@ The cookie holds the id of the session, signed with Hono's
 
 The `credential` table holds the users' passkeys and TOTP secrets, with `data`
 as JSON. No foreign keys tie the credentials to their users. So
-[`defineWrites()`](#definewrites) deletes them with their user.
+[User records](#user-records) delete them with their user.
 
 ## Session
 
@@ -293,30 +292,18 @@ tokens.
   and username. So a login, a password change or a username change makes the
   link invalid. This includes the password change that the link itself makes.
 
-## defineWrites()
+## User records
 
-```ts
-users.defineWrites(): MixinDefinition
-```
-
-```js
-defineModelController({
-  path: 'admins',
-  entity: Admin,
-  authorize: 'admin',
-  mixins: [admins.defineWrites()],
-  actions: { 'get': true, 'get :id': true }
-})
-```
-
-The mixin of the users' model controller. It routes `post`, `patch :id` and
-`delete :id`, so the controller offers them. The API needs a session middleware,
-of these users or of others.
+`createUsers()` guards the default actions `post`, `patch :id` and `delete :id`
+of every model controller of its entity, see
+[`guardEntity()`](mikro.md#guardentity). The controllers need no mixin, and the
+guards add no routes. An action with its own handler gets them when it calls
+`next()`. The API needs a session middleware, of these users or of others.
 
 - The body of `post` and `patch :id` sets `password`.
-- The handler beneath gets the body without `password`.
-- The mixin sets the hash of the password as `hash` on the user that the
-  handler returns. The model controller writes it.
+- The default action gets the body without `password`.
+- The hash of the password goes to `hash` on the user, which the model
+  controller writes.
 - The `password` schema of the users checks new passwords.
 - A `hash` in the body responds with 400.
 - In `patch :id`, changing a password or a username in `usernameProperty` needs

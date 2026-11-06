@@ -5,10 +5,11 @@ import {
   type ControllerDefinition,
   type DitoContext,
   type Handler,
+  type HandlerContext,
   type MixinDefinition
 } from '@ditojs/server'
 import { getLayers } from '@ditojs/server/internal'
-import { isFunction, isPlainObject, pickBy } from '@ditojs/utils'
+import { isFunction, isPlainObject, mapValues, pickBy } from '@ditojs/utils'
 import type { EntityClass } from '@mikro-orm/core'
 import { defaultActions } from './crud.ts'
 import { checkFind, type Find } from './find.ts'
@@ -59,6 +60,15 @@ export interface ModelControllerDefinition<T extends object = any>
   }) => Promise<T | null | undefined>
 }
 
+// Handlers around the default actions of an entity, by action key.
+const guards = new WeakMap<EntityClass<any>, Actions>()
+
+// Run `actions` around the default actions of every model controller of
+// `entity`. They add no routes, and their `next` runs the default action.
+export function guardEntity(entity: EntityClass<any>, actions: Actions) {
+  guards.set(entity, actions)
+}
+
 export function defineModelController<T extends object>(
   definition: ModelControllerDefinition<T>
 ): ControllerDefinition {
@@ -81,7 +91,19 @@ export function defineModelController<T extends object>(
     layers.flatMap(({ actions = {} }) => Object.keys(actions))
   )
   const base: MixinDefinition = {
-    actions: pickBy(defaultActions, (value, key) => keys.has(key)),
+    actions: mapValues(
+      pickBy(defaultActions, (value, key) => keys.has(key)),
+      (action, key) => (input: HandlerContext) => {
+        const guard = guards.get(entity)?.[key as keyof Actions]
+        if (!isFunction(guard)) return (action as Handler)(input)
+        // The guard may change `body` for the action.
+        const context = {
+          ...input,
+          next: () => (action as Handler)(context)
+        }
+        return guard(context)
+      }
+    ),
 
     async middleware(c, next) {
       const request = new ModelRequest<any>(c, model)

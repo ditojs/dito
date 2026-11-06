@@ -23,11 +23,11 @@ export interface UserSource<U extends User = User> {
   // login.
   patch(user: U, values: { hash?: string; lastLogin?: Date }): Promise<void>
   serialize(user: U): unknown
-  // The property of the username in the bodies of writes, for
-  // `users.defineWrites()`. Default: `username`.
+  // The property of the username in the bodies of the users' model
+  // controllers. Default: `username`.
   usernameProperty?: string
-  // The schema of new passwords, for `users.defineActions()` and
-  // `users.defineWrites()`. At least 8 characters by default.
+  // The schema of new passwords, for `users.defineActions()` and the users'
+  // model controllers. At least 8 characters by default.
   password?: z.ZodType<string>
 }
 

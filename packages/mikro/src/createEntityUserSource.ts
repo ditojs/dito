@@ -19,8 +19,8 @@ export interface EntityUserSourceOptions<U extends object> {
   serialize: string[] | ((context: { user: U }) => unknown)
   // Values computed from the user, added to the properties of `serialize`.
   computed?: Record<string, (context: { user: U }) => unknown>
-  // The schema of new passwords, for `users.defineActions()` and
-  // `users.defineWrites()`. At least 8 characters by default.
+  // The schema of new passwords, for `users.defineActions()` and the users'
+  // model controllers. At least 8 characters by default.
   password?: z.ZodType<string>
 }
 

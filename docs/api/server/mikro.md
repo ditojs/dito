@@ -629,6 +629,16 @@ Returns the `adapter` of [`createApi()`](api.md#adapter):
   Sessions, credentials and jobs use it. `orm.em.getKysely()` joins the current
   transaction instead.
 
+## guardEntity()
+
+```ts
+guardEntity(entity: EntityClass, actions: Actions): void
+```
+
+Runs `actions` around the default actions of every model controller of `entity`,
+such as `{ 'patch :id': handler }`. They add no routes, and `next()` runs the
+default action.
+
 ## useEm()
 
 ```ts
