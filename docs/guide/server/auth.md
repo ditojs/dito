@@ -94,8 +94,7 @@ where no handler runs, such as in the app's own Hono routes.
 
 Sessions use the database outside of the action's transaction. This is because
 they load before the action, and save after it.
-`deleteExpiredSessions(adapter)` deletes the expired rows. The `jobs` of the
-[kit](kit.md#jobs) run it, or the app's own schedule.
+The `jobs` of the [kit](kit.md#jobs) delete the expired rows.
 
 The cookie holds the session's id, signed with Hono's signed cookies. The first
 of `secrets` signs, and all of them verify. So to rotate the secrets, a new

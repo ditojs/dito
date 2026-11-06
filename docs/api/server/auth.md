@@ -300,15 +300,6 @@ tokens.
   and username. So a login, a password change or a username change makes the
   link invalid. This includes the password change that the link itself makes.
 
-## deleteExpiredSessions()
-
-```ts
-deleteExpiredSessions(adapter: Adapter): Promise<void>
-```
-
-Deletes the expired rows of the `session` table, of all users. The `jobs` of the
-kit run it.
-
 ## User records
 
 `createUsers()` wraps the default actions `post`, `patch :id` and `delete :id` of

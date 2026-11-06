@@ -19,12 +19,8 @@ import {
   getAssetFields,
   type MikroAdapter
 } from '@ditojs/mikro'
-import {
-  createUsers,
-  deleteExpiredSessions,
-  type CreateUsersOptions,
-  type Users
-} from '@ditojs/auth'
+import { createUsers, type CreateUsersOptions, type Users } from '@ditojs/auth'
+import { deleteExpiredSessions } from '@ditojs/auth/internal'
 import {
   createAssets,
   createStorages,

@@ -5,6 +5,7 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./internal": "./src/internal.ts",
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -46,6 +47,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./internal": {
+        "types": "./dist/internal.d.ts",
+        "import": "./dist/internal.js"
       },
       "./package.json": "./package.json"
     },
