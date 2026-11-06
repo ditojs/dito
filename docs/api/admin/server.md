@@ -45,8 +45,10 @@ Without `vite`, the app serves the built files of `dist` to GET and HEAD
 requests.
 
 - Browsers cache the build's files below `assets/` and `views/` for good.
+  Shared caches, such as CDNs, don't keep the views that `authorize` protects.
 - They check the other files again on each load.
-- Paths without an extension get `index.html`.
+- Paths of missing files get `index.html`, except for scripts and styles, which
+  respond with 404.
 - Without `vite` and without `dist`, `createAdmin()` throws. It also throws when
   `dist` doesn't exist.
 

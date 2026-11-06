@@ -57,13 +57,15 @@ export type AdminServer = Hono<AdminEnv> & {
 export function createAdmin(options: AdminOptions): AdminServer {
   const { middleware, getUser, authorize } = options
   const base = normalizeBase(options.base)
+  const isProtected = authorize !== undefined && authorize !== true
   const app = new Hono<AdminEnv>()
   let close = async () => {}
 
   app.get('/dito.js', getConfigScript(base, options))
-  if (authorize !== undefined && authorize !== true) {
-    // Case-insensitive file systems serve the views in any case, which the
-    // route of `authorize` doesn't match.
+  if (isProtected) {
+    // Case-insensitive file systems serve the views in any case, and Windows
+    // also as `views.` or `views::$INDEX_ALLOCATION`, which the route of
+    // `authorize` doesn't match.
     app.use('*', async (c, next) => {
       const file = c.req.path.slice(base.length)
       if (viewsPath.test(file) && !file.startsWith('/views/')) {
@@ -111,20 +113,29 @@ export function createAdmin(options: AdminOptions): AdminServer {
         // The build's files never change, as their names hold their hash.
         // The others are checked again on each load. `onFound` of
         // `serveStatic()` can't set headers, as it runs after the response is
-        // created.
+        // created. Shared caches don't keep protected views.
+        const file = c.req.path.slice(base.length)
         c.header(
           'Cache-Control',
-          buildFile.test(c.req.path.slice(base.length))
-            ? 'public, max-age=31536000, immutable'
+          c.res.status === 200 && buildFile.test(file)
+            ? isProtected && viewsPath.test(file)
+              ? 'private, max-age=31536000, immutable'
+              : 'public, max-age=31536000, immutable'
             : 'no-cache'
         )
       },
       serveStatic({
         root,
-        // Paths without an extension are routes of the admin.
+        // Paths of other files than scripts and styles are routes of the
+        // admin, unless the file exists.
         rewriteRequestPath: pathname => {
           const file = pathname.slice(base.length)
-          return path.extname(file) ? file : '/index.html'
+          const stats = fs.statSync(path.join(root, file), {
+            throwIfNoEntry: false
+          })
+          return stats?.isFile() || /\.(js|css)$/.test(file)
+            ? file
+            : '/index.html'
         }
       })
     )
@@ -135,7 +146,7 @@ export function createAdmin(options: AdminOptions): AdminServer {
 
 const buildFile = /^\/(assets|views)\/[^/]+\.\w+$/
 // With the `u` flag, it also matches the `ſ` that file systems read as `s`.
-const viewsPath = /^\/views\//iu
+const viewsPath = /^\/views[/.:]/iu
 
 async function startVite(
   configOrFile: InlineConfig | string

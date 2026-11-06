@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import type { InlineConfig } from 'vite'
@@ -30,7 +31,11 @@ export async function defineAdminViteConfig(
   const root = path.resolve(options.root)
   // The base with one slash on each side, such as `/admin/`, or `/`:
   const base = `${normalizeBase(options.base)}/`
-  const views = path.join(root, 'views')
+  // The views as the ids of Vite name them: by their real path, with forward
+  // slashes also on Windows.
+  const views = path
+    .join(fs.realpathSync(root), 'views', path.sep)
+    .replaceAll(path.sep, '/')
   const linkedSources = isDevelopment ? getLinkedSources(root) : {}
 
   return assignDeeply(
@@ -62,6 +67,19 @@ export async function defineAdminViteConfig(
           enforce: 'pre',
           resolveId: (id: string) => linkedSources[id],
           load: (id: string) => (id === emptyModule ? '' : null)
+        },
+        {
+          // Without the chunk of the views, `authorize` of `createAdmin()`
+          // would protect nothing.
+          name: 'check-views-chunk',
+          apply: 'build',
+          generateBundle(_options: unknown, bundle: Record<string, unknown>) {
+            if (!Object.keys(bundle).some(file => file.startsWith('views/'))) {
+              throw new Error(
+                'Unable to build the views into a chunk of their own'
+              )
+            }
+          }
         }
       ],
       build: isDevelopment

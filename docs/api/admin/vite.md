@@ -52,6 +52,7 @@ The build puts the views into a chunk of their own, below `views/`:
   below `views/`.
 - Vite's own URLs, such as `/@fs/`, aren't protected. So only use `vite` in
   development.
+- A build that gives the views no chunk fails.
 
 In development, Vite opens the HMR websocket on its `server.port`. By default,
 this is a free port.

@@ -96,11 +96,15 @@ The server's controller needs a filter for each name, see
 [Filters](../server/mikro.md#filters). A filter sends the values of its
 inputs as JSON arguments, e.g. `filter=title:"contains","Emma"`, so the server's
 filter gets an array. Changing a scope or a filter goes back to the first page.
+Only the last field of a custom filter with `fields` may hold an array: its
+items become arguments of their own, and would move the arguments of the fields
+after it.
 
 The first scope, or the one with `defaultScope: true`, is selected by default.
 A scope sends its `filter` values along with those of the panel, and its
 `order` as the list's order, which a click on a column header overrides.
-Without `order`, the list's `defaultSort` applies. The selected scope is kept as
+Without `order`, the list's `defaultSort` applies. A change of scope drops the
+order of a column header. The selected scope is kept as
 `?scope=name` in the admin's URL, which the admin doesn't send to the server.
 
 ## Items in the data

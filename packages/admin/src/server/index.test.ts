@@ -68,6 +68,22 @@ describe('createAdmin() in production', () => {
     expect(await response.text()).toBe('export {}')
   })
 
+  it('caches only the files that it finds', async () => {
+    const response = await setupAdmin().request('/admin/assets/missing.js')
+    expect(response.status).toBe(404)
+    expect(response.headers.get('cache-control')).toBe('no-cache')
+  })
+
+  it('caches protected views only in the browser', async () => {
+    const response = await setupAdmin({ authorize: () => true }).request(
+      '/admin/views/views-Cd34_y-W.js'
+    )
+    expect(response.status).toBe(200)
+    expect(response.headers.get('cache-control')).toBe(
+      'private, max-age=31536000, immutable'
+    )
+  })
+
   it('checks files outside of the build folders again on each load', async () => {
     const response = await setupAdmin().request('/admin/favicon.svg')
     expect(response.headers.get('content-type')).toMatch(/^image\/svg\+xml/)
@@ -80,7 +96,8 @@ describe('createAdmin() in production', () => {
       '/admin',
       '/admin/',
       '/admin/fonts/12/edit',
-      '/admin/assets/12'
+      '/admin/assets/12',
+      '/admin/fonts/Sans.Bold'
     ]) {
       const response = await admin.request(url)
       expect(response.status).toBe(200)
@@ -156,6 +173,30 @@ describe('createAdmin() in production', () => {
         `/admin/${folder}/views-Cd34_y-W.js`
       )
       expect(response.status).toBe(404)
+    }
+  })
+
+  it('protects the views also by the names that Windows resolves', async () => {
+    // Windows reads `views.` and `views::$INDEX_ALLOCATION` as `views`, which
+    // these folders stand in for on other systems:
+    const folders = ['views.', 'views::$INDEX_ALLOCATION']
+    for (const folder of folders) {
+      await fs.cp(path.join(dist, 'views'), path.join(dist, folder), {
+        recursive: true
+      })
+    }
+    try {
+      const admin = setupAdmin({ authorize: () => false })
+      for (const folder of folders) {
+        const response = await admin.request(
+          `/admin/${encodeURIComponent(folder)}/views-Cd34_y-W.js`
+        )
+        expect(response.status).toBe(404)
+      }
+    } finally {
+      for (const folder of folders) {
+        await fs.rm(path.join(dist, folder), { recursive: true })
+      }
     }
   })
 
@@ -265,7 +306,7 @@ describe('createAdmin() in development', () => {
     const response = await request('/admin/index.js')
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toMatch(/javascript/)
-    expect(await response.text()).toContain('views/index.js')
+    expect(await response.text()).toContain('views/books.js')
   })
 
   it('sends dito.js itself', async () => {
@@ -278,7 +319,7 @@ describe('createAdmin() in development', () => {
   })
 
   it('authorizes the sources of the views', async () => {
-    expect((await request('/admin/views/index.js')).status).toBe(401)
+    expect((await request('/admin/views/books.js')).status).toBe(401)
     expect((await request('/admin/shared.js')).status).toBe(200)
   })
 
