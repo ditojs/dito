@@ -34,7 +34,7 @@ declare module '@ditojs/server' {
   interface DitoVariables {
     // In model controllers: the id of a record action, converted to the type of
     // the primary key, so a number for integer keys. An id that doesn't fit
-    // responds with 404, and stays a string with `load`, such as `self`.
+    // responds with 404.
     id: any
     // In model controllers: the entity class of the controller. Its metadata is
     // `em.getMetadata(entity)`.
@@ -72,7 +72,7 @@ export type Query<T extends object> = ReturnType<typeof splitFind<T>> & {
 }
 
 export interface ModelDefinition<T extends object = any>
-  extends Pick<ModelControllerDefinition<T>, 'entity' | 'load'> {
+  extends Pick<ModelControllerDefinition<T>, 'entity'> {
   find: Find<T>
   filters: Record<string, Filter>
   beforeSerializers: NonNullable<MixinDefinition['beforeSerialize']>[]
@@ -160,27 +160,20 @@ export class ModelRequest<T extends object = any> {
   }
 
   async #loadRecord() {
-    const { c } = this
-    const { load } = this.definition
-    const id = c.req.param('id')
-    if (id === undefined) {
+    if (this.c.req.param('id') === undefined) {
       throw new Error(
         'Unable to get the record: only record actions load one, and `post` ' +
         'sets the record that it returns'
       )
     }
-    const record = load ? await load({ c, id }) : await this.#findRecord()
-    if (record == null) throw new HttpError(404)
-    return record
-  }
-
-  async #findRecord() {
     const { where, options } = await this.getQuery()
-    return this.em.findOne(
+    const record = await this.em.findOne(
       this.entity,
       { $and: [where, { [this.key.name]: this.c.var.id }] } as never,
       options
-    ) as Promise<T | null>
+    )
+    if (record == null) throw new HttpError(404)
+    return record as T
   }
 
   async #getList({ query, ...extra }: ListFind<T> = {}) {

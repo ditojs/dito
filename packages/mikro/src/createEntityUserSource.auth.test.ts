@@ -152,11 +152,7 @@ describe('defineUserWrites() with confirmed access', () => {
           entity: Member,
           authorize: true,
           mixins: [crud],
-          load: ({ c, id }) =>
-            c.var.em.findOne(
-              Member,
-              Number(id === 'self' ? c.var.user!.id : id)
-            )
+          resolveId: ({ c, id }) => (id === 'self' ? c.var.user!.id : id)
         })
       ]
     })

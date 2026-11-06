@@ -56,12 +56,12 @@ mixins.
 
 The keys of [`ControllerDefinition`](controllers.md#controllerdefinition), and:
 
-| Key       | Type                                             | Description                                                                                                                                                                                              |
-| --------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `entity`  | `EntityClass`                                    | The entity of the controller.                                                                                                                                                                            |
-| `find`    | [`Find`](#find)                                  | What the controller loads and returns. It can also be a function that returns it.                                                                                                                        |
-| `filters` | `Record<string, Filter>`                         | The filters that lists take in `filter=name:args`, see [Filters](#filters).                                                                                                                              |
-| `load`    | `({ c, id }) => Promise<T \| null \| undefined>` | Loads the record of a record action, in place of the default, which loads it through `find`. It gets the id as sent, also one that isn't a key, such as `self`. `null` or `undefined` responds with 404. |
+| Key         | Type                     | Description                                                                                                                                                                    |
+| ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `entity`    | `EntityClass`            | The entity of the controller.                                                                                                                                                  |
+| `find`      | [`Find`](#find)          | What the controller loads and returns. It can also be a function that returns it.                                                                                              |
+| `filters`   | `Record<string, Filter>` | The filters that lists take in `filter=name:args`, see [Filters](#filters).                                                                                                    |
+| `resolveId` | `({ c, id }) => unknown` | Resolves the id of a record action before it becomes the primary key, for aliases such as `self`. It gets the id as sent. A result that doesn't fit the key responds with 404. |
 
 ### Default handlers
 
@@ -83,14 +83,14 @@ The base sets these variables in the handler's context and in `c.var`. The
 handlers and the middleware of all layers read them. `authorize` runs before the
 base sets them.
 
-| Variable         | Description                                                                                                                                                                                                                                         |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | The id of a record action, converted to the type of the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. With `load`, the id stays a string, such as `self`. `params.id` is always the string of the path. |
-| `entity`         | The entity of the controller. `em.getMetadata(entity)` returns its metadata, such as its `tableName`.                                                                                                                                               |
-| `getRecord()`    | Loads the record of the id through `load` or `find`, once per request. A missing record responds with 404. After a `post`, it returns the record that the action returned, such as the one that `post` creates.                                     |
-| `find()`         | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                       |
-| `list()`         | Runs the list of the controller, see [list()](#list).                                                                                                                                                                                               |
-| `getListQuery()` | Returns the `where`, `orderBy` and `range` of the list, see [getListQuery()](#getlistquery).                                                                                                                                                        |
+| Variable         | Description                                                                                                                                                                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | The id of a record action, converted to the type of the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. [`resolveId`](#options) can resolve aliases such as `self`. `params.id` is always the string of the path. |
+| `entity`         | The entity of the controller. `em.getMetadata(entity)` returns its metadata, such as its `tableName`.                                                                                                                                                       |
+| `getRecord()`    | Loads the record of the id through `find`, once per request. A missing record responds with 404. After a `post`, it returns the record that the action returned.                                                                                            |
+| `find()`         | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                               |
+| `list()`         | Runs the list of the controller, see [list()](#list).                                                                                                                                                                                                       |
+| `getListQuery()` | Returns the `where`, `orderBy` and `range` of the list, see [getListQuery()](#getlistquery).                                                                                                                                                                |
 
 ### Serialize and deserialize
 
@@ -117,8 +117,8 @@ in the guide.
 
 ### What the base does
 
-- Without `load`, `getRecord()` loads the record with `em.findOne()` through the
-  controller's `find`. So a record that `find.where` hides responds with 404.
+- `getRecord()` loads the record with `em.findOne()` through the controller's
+  `find`. So a record that `find.where` hides responds with 404.
 - An id fits the primary key if it is an integer within the range of the column,
   or a UUID. The base converts UUIDs to lower case.
 - After the handler of a write, the base flushes the entity manager once. Then

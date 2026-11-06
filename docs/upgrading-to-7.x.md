@@ -618,7 +618,8 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   body, whatever the property is.
 - `get session` becomes `get self`.
 - `self` in record actions, such as `PATCH users/self`, isn't built in. A
-  controller that keeps it sets `load`, which gets the id as a string.
+  controller that keeps it sets `resolveId`, which gets the id as a string and
+  returns the id to use.
 - Actions that change security settings call
   `session.checkConfirmedAccess()`, see
   [Confirmed access](guide/server/auth.md#confirmed-access).

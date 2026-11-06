@@ -70,8 +70,7 @@ export function defineUserWrites<U extends User>({
 
   // Changing a password needs confirmed access of the session's user, also for
   // other users and users of other sources, and so does a username, as password
-  // resets go to it. The record of the model controller has the current one,
-  // also for ids of its `load` such as `self`:
+  // resets go to it. The record of the model controller has the current one:
   const isSecurityChange = async (
     c: Context,
     body: Record<string, unknown>
@@ -114,9 +113,8 @@ export function defineUserWrites<U extends User>({
     return user
   }
 
-  // Read the record first, as the handler beneath deletes it. Its id also
-  // resolves aliases of `load` such as `self`. The credentials go in the
-  // request's transaction, together with the user.
+  // Read the record first, as the handler beneath deletes it. The credentials
+  // go in the request's transaction, together with the user.
   const deleteHandler: Handler = async ({ c, next }) => {
     const getRecord: () => Promise<U | null> = c.get('getRecord')
     const user = await getRecord()

@@ -691,10 +691,10 @@ describe('get :id', () => {
     expect(json).toEqual({ isBook: true, table: 'book' })
   })
 
-  it('leaves ids that are no primary key to `load`', async () => {
+  it('resolves aliases of ids through `resolveId`', async () => {
     const api = setup(
       books({
-        load: ({ c, id }) => c.var.em.findOne(Book, id === 'self' ? 1 : +id),
+        resolveId: ({ id }) => (id === 'self' ? 1 : id),
         actions: {
           'get :id': true,
           'get :id/id': async ({ id, getRecord }) => ({
@@ -706,9 +706,17 @@ describe('get :id', () => {
     )
     const get = (path: string) => request(api, 'GET', `/api/books/${path}`)
     expect((await get('self')).json.name).toBe('Arcadia')
-    expect((await get('self/id')).json).toEqual({ id: 'self', name: 'Arcadia' })
+    expect((await get('self/id')).json).toEqual({ id: 1, name: 'Arcadia' })
     expect((await get('1/id')).json).toEqual({ id: 1, name: 'Arcadia' })
     expect((await get('9')).status).toBe(404)
+    expect((await get('other')).status).toBe(404)
+  })
+
+  it('responds with 404 for a `resolveId` without a result', async () => {
+    const api = setup(
+      books({ resolveId: () => undefined, actions: { 'get :id': true } })
+    )
+    expect((await request(api, 'GET', '/api/books/1')).status).toBe(404)
   })
 })
 
@@ -2540,21 +2548,6 @@ describe('layers', () => {
       order: { row, rows: [row] },
       other: 'other'
     })
-  })
-
-  it('loads the record through `load`', async () => {
-    const api = setup(
-      books({
-        load: async ({ c, id }) =>
-          id === 'first'
-            ? c.var.em.findOne(Book, { name: 'Arcadia' })
-            : null,
-        find: { fields: ['name'] }
-      })
-    )
-    const first = await request(api, 'GET', '/api/books/first')
-    expect(first.json).toEqual({ id: 1, name: 'Arcadia' })
-    expect((await request(api, 'GET', '/api/books/1')).status).toBe(404)
   })
 
   it('throws for `getRecord()` outside record actions', async () => {

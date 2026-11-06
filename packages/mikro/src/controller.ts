@@ -58,13 +58,10 @@ export interface ModelControllerDefinition<T extends object = any>
   find?: Find<T>
   // The filters of the list, `filter=name:args`.
   filters?: Record<string, Filter>
-  // Loads the record of a record action, in place of the controller's `find`
-  // with the id. It gets the id as sent, also one that isn't a key, such as
-  // `self`. `null` or `undefined` responds with 404.
-  load?: (context: {
-    c: DitoContext
-    id: string
-  }) => Promise<T | null | undefined>
+  // Resolves the id of a record action before it becomes the primary key, for
+  // aliases such as `self`. It gets the id as sent. A result that doesn't fit
+  // the key responds with 404.
+  resolveId?: (context: { c: DitoContext; id: string }) => unknown
 }
 
 type Guard = Pick<MixinDefinition, 'actions' | 'middleware'>
@@ -89,7 +86,14 @@ export function guardEntity(
 export function defineModelController<T extends object>(
   definition: ModelControllerDefinition<T>
 ): ControllerDefinition {
-  const { path, entity, find = {}, filters = {}, load, ...def } = definition
+  const {
+    path,
+    entity,
+    find = {},
+    filters = {},
+    resolveId = ({ id }) => id,
+    ...def
+  } = definition
   if (!isFunction(find)) checkFind(find)
 
   const layers = getLayers(def)
@@ -97,7 +101,6 @@ export function defineModelController<T extends object>(
     entity,
     find,
     filters,
-    load,
     beforeSerializers: layers.flatMap(layer => layer.beforeSerialize ?? []),
     serializers: layers.flatMap(layer => layer.serialize ?? []),
     // The reverse of `serialize`: the controller first.
@@ -133,9 +136,12 @@ export function defineModelController<T extends object>(
       const request = new ModelRequest<any>(c, model)
       const param = c.req.param('id')
       if (param !== undefined) {
-        const id = toPrimaryKey(request.key, param)
-        if (id === undefined && !load) throw new HttpError(404)
-        c.set('id', id ?? param)
+        const id = toPrimaryKey(
+          request.key,
+          await resolveId({ c, id: param })
+        )
+        if (id === undefined) throw new HttpError(404)
+        c.set('id', id)
       }
       c.set('entity', model.entity)
       c.set('getRecord', request.getRecord.bind(request))
