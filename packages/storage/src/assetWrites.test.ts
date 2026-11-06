@@ -5,7 +5,7 @@ import {
   HttpError,
   createApi,
   defineController,
-  type Transaction
+  type Transact
 } from '@ditojs/server'
 import {
   defineAssetWrites,
@@ -61,7 +61,7 @@ describe('storeAsset()', () => {
 })
 
 // Sets `c.var.em` to the transaction during `fn`, as ORM packages do.
-const kyselyTransaction: Transaction = (c, fn) =>
+const kyselyTransaction: Transact = (c, fn) =>
   db.transaction().execute(async trx => {
     const previous = c.var.em
     c.set('em', trx)
@@ -105,7 +105,6 @@ describe('defineAssetWrites()', () => {
     return createApi({
       controllers: [books],
       adapter: { connect: () => db, transact: kyselyTransaction },
-      getUser: async () => null,
       onError: () => {}
     })
   }

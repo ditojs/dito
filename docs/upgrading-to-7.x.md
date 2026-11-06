@@ -697,7 +697,7 @@ assets: { deleteUnusedAfter: '24h' }
   `createStorages()` and `createAssets()`.
 - `app.hono` serves a disk storage at the path of its `url`.
 - Model controllers track the files of their entity with no mixin.
-  `mixins: [assets.defineUploads('book')]` adds the upload action, and replaces
+  `mixins: [assets.defineUploads()]` adds the upload action, and replaces
   `assets = true` of a controller.
 - `jobs: { assets: '1h' }` of `createApp()` runs `assets.runJobs()`. Without the
   kit, the app runs it in its own schedule.

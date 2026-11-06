@@ -60,7 +60,7 @@ export const books = defineModelController({
   path: 'books',
   entity: Book,
   authorize: ['editor', 'admin'],
-  mixins: [assets.defineUploads('book')],
+  mixins: [assets.defineUploads()],
   actions: {
     'get': true,
     'post': true,

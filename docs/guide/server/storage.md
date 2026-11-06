@@ -115,7 +115,7 @@ defineModelController({
   path: 'books',
   entity: Book,
   authorize: ['admin', 'editor'],
-  mixins: [assets.defineUploads('book')],
+  mixins: [assets.defineUploads()],
   actions: { 'get': true, 'post': true, 'get :id': true, 'patch :id': true }
 })
 ```
@@ -125,19 +125,18 @@ upload action. It sends it under the data path of its field, such as
 `POST books/upload/chapters/3/images`. It keeps the file object of the
 response.
 
-- `assets.defineUploads(table)` adds the upload action of a table. It throws
-  for tables without asset paths.
-- The action picks the storage of the first asset path that matches the data
-  path.
+- `assets.defineUploads()` adds the upload action. One mixin fits all
+  controllers, so an app can keep it in a constant.
+- The action picks the storage of the first asset path of the controller's
+  entity that matches the data path. Paths that none matches respond with 404.
 
 ```js
 const uploads = [{ path: 'notes', storage: 'public' }]
-assets.defineUploads('book', { uploads })
-assets.defineUploads({ uploads: [{ path: 'avatar', storage: 'public' }] })
+assets.defineUploads({ uploads })
 ```
 
 For upload fields that no asset path describes, `uploads` adds globs of its own.
-Controllers without asset paths pass `uploads` without a table.
+Controllers without an entity only have these.
 
 An upload without a type from the client gets the type detected from its data.
 Without one, its type is `application/octet-stream`.

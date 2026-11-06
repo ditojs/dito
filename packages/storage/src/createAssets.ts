@@ -1,5 +1,5 @@
 import { tryGetContext } from 'hono/context-storage'
-import { isString, parseDuration } from '@ditojs/utils'
+import { parseDuration } from '@ditojs/utils'
 import type { Adapter, MixinDefinition } from '@ditojs/server'
 import type { StoreOptions } from './Storage.ts'
 import {
@@ -19,7 +19,11 @@ import {
   storeAsset
 } from './assetWrites.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
-import { defineAssetUploads, type AssetUpload } from './assetUploads.ts'
+import {
+  defineAssetUploads,
+  type AssetUpload,
+  type NormalizedAssetUpload
+} from './assetUploads.ts'
 
 export interface CreateAssetsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`.
@@ -58,11 +62,20 @@ export function createAssets({
   const { getKysely } = adapter
   // All model controllers of the entities track the files of their writes:
   const pathsByEntity = Map.groupBy(normalizedPaths, path => path.entity)
+  const uploadsByEntity = new Map<object, NormalizedAssetUpload[]>()
   for (const [entity, paths] of pathsByEntity) {
     if (entity) {
       adapter.wrapEntity?.(
         entity,
         defineAssetWrites({ paths, storages, getKysely })
+      )
+      uploadsByEntity.set(
+        entity,
+        paths.map(({ column, path, storage, maxSize }) => ({
+          path: getDataPath(column, path),
+          storage,
+          maxSize
+        }))
       )
     }
   }
@@ -71,34 +84,19 @@ export function createAssets({
     paths,
     storages,
 
-    // Define the upload action of the table's asset paths, with the camelCase
-    // column followed by the path of each, such as `pages/*/images`, and of
-    // `uploads`. Without a table, only of `uploads`.
-    defineUploads(
-      table: string | DefineUploadsOptions,
-      options: DefineUploadsOptions = {}
-    ): MixinDefinition {
-      const name = isString(table) ? table : undefined
-      const { uploads = [] } = isString(table) ? options : table
+    // Define the upload action of the asset paths of the controller's entity,
+    // with the camelCase column followed by the path of each, such as
+    // `pages/*/images`, and of `uploads`.
+    defineUploads({
+      uploads = []
+    }: DefineUploadsOptions = {}): MixinDefinition {
       for (const upload of uploads) storages.get(upload.storage)
-      const tableUploads = normalizedPaths
-        .filter(path => path.table === name)
-        .map(({ column, path, storage, maxSize }) => ({
-          path: getDataPath(column, path),
-          storage,
-          maxSize
-        }))
-      if (name && tableUploads.length === 0) {
-        throw new Error(`No asset paths for table '${name}'`)
-      }
       return defineAssetUploads({
-        uploads: [
-          ...tableUploads,
-          ...uploads.map(upload => ({
-            ...upload,
-            maxSize: parseMaxSize(upload.maxSize) ?? defaultMaxSize
-          }))
-        ],
+        uploads: uploads.map(upload => ({
+          ...upload,
+          maxSize: parseMaxSize(upload.maxSize) ?? defaultMaxSize
+        })),
+        uploadsByEntity,
         storages,
         getKysely
       })

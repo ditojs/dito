@@ -184,7 +184,7 @@ const assets = createAssets({
 
 defineModelController({
   path: 'books',
-  mixins: [assets.defineUploads('book')],
+  mixins: [assets.defineUploads()],
   ...
 })
 
@@ -203,8 +203,7 @@ paths and storages.
 - `maxSize` is the size limit of the asset paths and uploads that don't set
   their own.
 - `createAssets()` throws for asset paths whose storage `storages` doesn't have.
-  `defineUploads()` does the same for `uploads`, and throws for a table without
-  asset paths.
+  `defineUploads()` does the same for `uploads`.
 - All model controllers of the entities of the asset paths track their files,
   see [Writes](#writes). This also holds for controllers that were defined
   before `createAssets()` runs.
@@ -222,7 +221,7 @@ The `asset` rows go through two Kyselys:
 
 | Member                                            | Description                                                                                           |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `defineUploads(table?, { uploads? }?)`            | A mixin with the upload action of the table's asset paths and of `uploads`, see [Uploads](#uploads).  |
+| `defineUploads({ uploads? }?)`                    | A mixin with the upload action of the entity's asset paths and of `uploads`, see [Uploads](#uploads). |
 | `store(storage, { name, type?, data })`           | Stores a file that the server creates in the storage of that name, see [Stored files](#stored-files). |
 | `import(table, data)`                             | Imports the files of a row's data, see [Asset jobs](#asset-jobs). Returns `data`.                     |
 | `findReferences({ tables?, storage?, keys? }?)`   | Lists the files that rows reference, see [Asset jobs](#asset-jobs).                                   |
@@ -260,18 +259,19 @@ imported files again. Responses send the file objects as the rows hold them.
 assets.defineUploads({ uploads: [{ path: 'avatar', storage: 'public' }] })
 ```
 
-`defineUploads(table, { uploads })` returns a mixin with the upload action
+`defineUploads({ uploads })` returns a mixin with the upload action
 `post upload/:path{.+}`, such as `POST upload/cover-image` or
-`POST upload/chapters/3/images`.
+`POST upload/chapters/3/images`. An app calls it once, and lists the mixin in the
+controllers that take uploads. Uploads stay explicit: controllers without the
+mixin have no upload route.
 
 - The action camelizes each segment of the path.
 - It stores the files in the storage of the first upload that matches the path.
-- It looks at the table's asset paths first, as the camelCase column followed by
-  the path, such as `chapters/*/images`. Then it looks at `uploads`.
+- It looks at the asset paths of `c.var.entity` first, the entity of the model
+  controller, as the camelCase column followed by the path, such as
+  `chapters/*/images`. Then it looks at `uploads`.
 - Other paths respond with 404.
-- A table without asset paths and without `uploads` throws.
-- `defineUploads({ uploads })` takes only `uploads`, for controllers without
-  asset paths.
+- Controllers without an entity only have `uploads`.
 
 The action takes a `multipart/form-data` body and stores all its files.
 

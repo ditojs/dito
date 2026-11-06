@@ -30,6 +30,17 @@ const BookSchema = defineEntity({
 class Book extends BookSchema.class {}
 BookSchema.setClass(Book)
 
+const ShelfSchema = defineEntity({
+  name: 'Shelf',
+  tableName: 'shelf',
+  properties: {
+    id: p.integer().primary(),
+    label: assetColumn()
+  }
+})
+class Shelf extends ShelfSchema.class {}
+ShelfSchema.setClass(Shelf)
+
 const AssetSchema = defineEntity({
   name: 'Asset',
   tableName: 'asset',
@@ -71,12 +82,12 @@ const store = (name: string): Promise<AssetFile> =>
   assets.store('covers', { name, data: Buffer.from(name) })
 
 beforeAll(async () => {
-  database = await createTestDatabase([Book, AssetSchema])
+  database = await createTestDatabase([Book, Shelf, AssetSchema])
   basePath = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-assets-'))
   adapter = createMikroAdapter(database.orm)
   assets = createAssets({
     adapter,
-    paths: getAssetPaths([Book]),
+    paths: getAssetPaths([Book, Shelf]),
     storages: createStorages({
       covers: { type: 'disk', path: basePath, url: '/covers/' }
     })
@@ -84,7 +95,6 @@ beforeAll(async () => {
   api = createApi({
     controllers: [books],
     adapter,
-    getUser: async () => null,
     onError: () => {}
   })
 })
@@ -144,11 +154,10 @@ describe('tracking the files of model controllers', () => {
           path: 'books',
           entity: Book,
           authorize: true,
-          mixins: [crud, assets.defineUploads('book')]
+          mixins: [crud, assets.defineUploads()]
         })
       ],
       adapter,
-      getUser: async () => null,
       onError: () => {}
     })
     const body = new FormData()
@@ -163,9 +172,35 @@ describe('tracking the files of model controllers', () => {
     expect(file).toMatchObject({ name: 'front.txt', size: 5 })
   })
 
-  it('throws in `defineUploads()` for tables without paths', () => {
-    expect(() => assets.defineUploads('shelf')).toThrow(
-      `No asset paths for table 'shelf'`
-    )
+  it('finds the paths of the controller in one `defineUploads()`', async () => {
+    const mixin = assets.defineUploads()
+    const uploads = createApi({
+      controllers: [
+        defineModelController({
+          path: 'books',
+          entity: Book,
+          authorize: true,
+          mixins: [crud, mixin]
+        }),
+        defineModelController({
+          path: 'shelves',
+          entity: Shelf,
+          authorize: true,
+          mixins: [crud, mixin]
+        })
+      ],
+      adapter,
+      onError: () => {}
+    })
+    const upload = (url: string) => {
+      const body = new FormData()
+      body.append('file', new File(['Front'], 'front.txt'))
+      return uploads.fetch(
+        new Request(`http://localhost/${url}`, { method: 'POST', body })
+      )
+    }
+    expect((await upload('books/upload/cover')).status).toBe(200)
+    expect((await upload('shelves/upload/label')).status).toBe(200)
+    expect((await upload('shelves/upload/cover')).status).toBe(404)
   })
 })

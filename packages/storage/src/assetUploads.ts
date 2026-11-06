@@ -29,6 +29,8 @@ export interface NormalizedAssetUpload extends Omit<AssetUpload, 'maxSize'> {
 
 export interface DefineAssetUploadsOptions {
   uploads: NormalizedAssetUpload[]
+  // The uploads of the asset paths of model controllers.
+  uploadsByEntity: Map<object, NormalizedAssetUpload[]>
   storages: StorageRegistry
   getKysely: Adapter['getKysely']
 }
@@ -36,16 +38,22 @@ export interface DefineAssetUploadsOptions {
 // Define the action of the Dito admin's upload component,
 // `post upload/<data path>`, such as `upload/pages/3/images`, which stores the
 // files in the storage of the first upload whose glob matches the camelized
-// path:
+// path. It tries the uploads of the entity of the model controller first:
 export function defineAssetUploads({
   uploads,
+  uploadsByEntity,
   storages,
   getKysely
 }: DefineAssetUploadsOptions): MixinDefinition {
-  const matchers = uploads.map(upload => ({
-    ...upload,
-    isMatch: picomatch(upload.path)
-  }))
+  const createMatchers = (uploads: NormalizedAssetUpload[]) =>
+    uploads.map(upload => ({ ...upload, isMatch: picomatch(upload.path) }))
+  const matchers = createMatchers(uploads)
+  const matchersByEntity = new Map(
+    [...uploadsByEntity].map(([entity, uploads]) => [
+      entity,
+      createMatchers(uploads)
+    ])
+  )
   return {
     actions: {
       'post upload/:path{.+}': defineAction({
@@ -57,7 +65,10 @@ export function defineAssetUploads({
             .split('/')
             .map(segment => camelize(segment))
             .join('/')
-          const upload = matchers.find(({ isMatch }) => isMatch(path))
+          const upload = [
+            ...(matchersByEntity.get(c.var.entity) ?? []),
+            ...matchers
+          ].find(({ isMatch }) => isMatch(path))
           if (!upload) throw new HttpError(404)
           const contentType = c.req.header('Content-Type') ?? ''
           if (!contentType.startsWith('multipart/form-data')) {

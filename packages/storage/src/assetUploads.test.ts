@@ -1,5 +1,10 @@
 import fs from 'node:fs/promises'
-import { createApi, defineController } from '@ditojs/server'
+import {
+  createApi,
+  defineController,
+  type DitoContext,
+  type Middleware
+} from '@ditojs/server'
 import {
   DiskStorage,
   StorageRegistry,
@@ -41,22 +46,27 @@ describe('defineUploads()', () => {
   const bookAssets = () =>
     createAssets({ adapter, paths: uploadPaths, storages })
 
+  // Sets the variable of model controllers.
+  const setBook = (c: DitoContext) => c.set('entity', bookPath.entity)
+  const bookMiddleware: Middleware = async (c, next) => {
+    setBook(c)
+    await next()
+  }
+
   function setup({ fail = false } = {}) {
     const books = defineController({
       path: 'books',
       authorize: true,
-      mixins: [bookAssets().defineUploads('book')],
-      ...(fail && {
-        middleware: async (_c, next) => {
-          await next()
-          throw new Error('Failed request')
-        }
-      })
+      mixins: [bookAssets().defineUploads()],
+      middleware: async (c, next) => {
+        setBook(c)
+        await next()
+        if (fail) throw new Error('Failed request')
+      }
     })
     return createApi({
       controllers: [books],
       adapter: handleAdapter,
-      getUser: async () => null,
       onError: () => {}
     })
   }
@@ -173,7 +183,8 @@ describe('defineUploads()', () => {
           {
             path: 'books',
             authorize: true,
-            mixins: [limits.defineUploads('book', { uploads })]
+            middleware: bookMiddleware,
+            mixins: [limits.defineUploads({ uploads })]
           }
         ],
         adapter: handleAdapter,
@@ -355,6 +366,7 @@ describe('defineUploads()', () => {
           mixins: [
             defineAssetUploads({
               uploads: [{ path: 'cover', storage: 'covers' }],
+              uploadsByEntity: new Map(),
               storages: new StorageRegistry([counting]),
               getKysely: () => db
             })
@@ -383,6 +395,7 @@ describe('defineUploads()', () => {
           mixins: [
             defineAssetUploads({
               uploads: [{ path: 'cover', storage: 'covers' }],
+              uploadsByEntity: new Map(),
               storages: new StorageRegistry([broken]),
               getKysely: () => db
             })
@@ -423,6 +436,7 @@ describe('defineUploads()', () => {
           mixins: [
             defineAssetUploads({
               uploads: [{ path: 'cover', storage: 'covers' }],
+              uploadsByEntity: new Map(),
               storages,
               // A schema without `asset` table makes the inserts fail.
               getKysely: () => db.withSchema('missing')
@@ -443,17 +457,11 @@ describe('defineUploads()', () => {
   })
 
   it('needs `authorize` on the controller', () => {
-    const mixin = bookAssets().defineUploads('book')
+    const mixin = bookAssets().defineUploads()
     expect(() =>
       createApi({ controllers: [{ path: 'books', mixins: [mixin] }] })
     ).toThrow(
       `Invalid action without \`authorize\`: 'post upload/:path{.+}' in 'books'.`
-    )
-  })
-
-  it('throws for tables without asset paths', () => {
-    expect(() => bookAssets().defineUploads('author')).toThrow(
-      `No asset paths for table 'author'`
     )
   })
 
@@ -464,14 +472,15 @@ describe('defineUploads()', () => {
     )
   })
 
-  it('adds uploads without asset paths, also without a table', async () => {
+  it('adds uploads without asset paths, also without an entity', async () => {
     const uploads = [{ path: 'drafts/*', storage: 'archive' }]
     const api = createApi({
       controllers: [
         {
           path: 'books',
           authorize: true,
-          mixins: [bookAssets().defineUploads('book', { uploads })]
+          middleware: bookMiddleware,
+          mixins: [bookAssets().defineUploads({ uploads })]
         },
         {
           path: 'notes',
