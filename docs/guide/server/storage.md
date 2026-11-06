@@ -163,7 +163,8 @@ jobs: {
 
 Each `asset` row has `unreferenced_since`, the time since no row references the
 file. Files that no row references for a while are deleted. Writes don't track
-the references. A job scans the data at the asset fields instead. The
+the references. A job scans the data at the asset fields instead, and keeps the
+files of the last hour, as a write may be about to reference them. The
 [kit](kit.md#jobs) runs it. Without the kit, the app calls `assets.runJobs()` in
 its own schedule.
 

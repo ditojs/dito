@@ -36,7 +36,7 @@ describe('defineUserWrites() with credentials', () => {
         defineMixin({
           actions: {
             async 'delete :id'({ c, next }) {
-              c.set('getRecord', async () => user)
+              c.set('getRecord', async <T>() => user as T)
               const result = await next()
               // Rolls the transaction back:
               if (isFailing) throw new HttpError(409)

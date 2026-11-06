@@ -41,8 +41,8 @@ const ShelfSchema = defineEntity({
 class Shelf extends ShelfSchema.class {}
 ShelfSchema.setClass(Shelf)
 
-// A library holds no files itself. Its owned rooms hold rooms and shelves of
-// their own, whose plans are files.
+// A library holds no files itself. It owns rooms, which own rooms of their own,
+// and the plan of a room is a file.
 const LibrarySchema = defineEntity({
   name: 'Library',
   tableName: 'library',

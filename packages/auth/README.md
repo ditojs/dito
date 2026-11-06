@@ -19,7 +19,7 @@ import { createUsers } from '@ditojs/auth'
 const admins = createUsers(Admin, {
   adapter,
   secrets,
-  session: { cookieName: 'admin.sess', maxAge },
+  session: { expiresAfter: '24h' },
   serialize: ['id', 'username']
 })
 

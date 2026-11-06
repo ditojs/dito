@@ -696,11 +696,13 @@ assets: { deleteUnusedAfter: '24h' }
   the asset fields that the entities declare. Without the kit, these are
   `createStorages()` and `createAssets()`.
 - `app.hono` serves a disk storage at the path of its `url`.
-- Model controllers track the files of their entity with no mixin.
+- Model controllers track the files of their entity and of its owned rows with
+  no mixin.
   `mixins: [assets.defineUploads()]` adds the upload action, and replaces
   `assets = true` of a controller.
 - `jobs: { assets: '1h' }` of `createApp()` runs `assets.runJobs()`. Without the
-  kit, the app runs it in its own schedule.
+  kit, the app runs it in its own schedule. Its release keeps `asset` rows
+  younger than an hour, also with `deleteUnusedAfter: 0`.
 - `serveStorage()` of `@ditojs/storage/node` serves public disk storages.
 - `S3Storage` comes from the main entry of the package.
 - The `PutObject` options of S3 storages, such as `acl` and `cacheControl`,
