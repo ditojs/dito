@@ -4,7 +4,6 @@ import {
   type DitoContext,
   type MixinDefinition
 } from '@ditojs/server'
-import { isFunction } from '@ditojs/utils'
 import type {
   EntityClass,
   EntityMetadata,
@@ -13,8 +12,8 @@ import type {
 import type { EntityManager } from '@mikro-orm/sql'
 import type { ModelControllerDefinition } from './controller.ts'
 import {
-  checkFind,
   mergeFind,
+  resolveFind,
   splitFind,
   type Find,
   type FindShape
@@ -144,11 +143,7 @@ export class ModelRequest<T extends object = any> {
   async #createQuery(extra?: FindShape<T>): Promise<Query<T>> {
     const { meta } = this
     const { find } = this.definition
-    this.#find ??= isFunction(find)
-      ? Promise.resolve(find({ c: this.c, user: this.c.var.user })).then(
-          checkFind
-        )
-      : Promise.resolve(find)
+    this.#find ??= resolveFind(find, this.c)
     const own = await this.#find
     const shape = extra ? mergeFind(own, extra) : own
     return {

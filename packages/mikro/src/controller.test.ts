@@ -9,7 +9,8 @@ import {
   createValidationError,
   defineMixin,
   notFound,
-  type ControllerDefinition
+  type ControllerDefinition,
+  type DitoContext
 } from '@ditojs/server'
 import { OptimisticLockError, type FilterOptions } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
@@ -789,6 +790,27 @@ describe('find', () => {
 })
 
 describe('defineListHandler', () => {
+  it('takes `find` as a function of the context', async () => {
+    const getFind = ({ c }: { c: DitoContext }) => ({
+      where: { name: c.req.query('name') },
+      fields: ['name']
+    })
+    const api = setup(
+      books({
+        mixins: [defineChoices(getFind)],
+        actions: { 'get named': defineListHandler(getFind) }
+      })
+    )
+    for (const action of ['named', 'choices']) {
+      const { json } = await request(
+        api,
+        'GET',
+        `/api/books/${action}?name=Arcadia`
+      )
+      expect(json).toEqual([{ id: 1, name: 'Arcadia' }])
+    }
+  })
+
   it('lists the choices of a select, with the filters of the list', async () => {
     const api = setup(
       books({

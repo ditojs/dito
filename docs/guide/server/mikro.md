@@ -269,8 +269,8 @@ actions: {
 }
 ```
 
-`defineListHandler(find)` returns the handler of a list with its own `find`.
-This `find` is merged with the controller's, as in
+`defineListHandler(find)` returns the handler of a list with its own `find`, a
+shape or a function, as on the controller. This `find` is merged with the controller's, as in
 [`find()`](../../api/server/mikro.md#find-1). Both `where`s apply. Its other
 options replace the controller's. The list applies the controller's filters,
 `order` and `range`.

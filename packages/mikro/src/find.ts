@@ -1,5 +1,5 @@
 import type { DitoContext, User } from '@ditojs/server'
-import { isPlainObject } from '@ditojs/utils'
+import { isFunction, isPlainObject } from '@ditojs/utils'
 import {
   ReferenceKind,
   type EntityMetadata,
@@ -34,6 +34,15 @@ export function checkFind<T extends object>(find: FindShape<T>) {
     }
   }
   return find
+}
+
+export async function resolveFind<T extends object>(
+  find: Find<T>,
+  c: DitoContext
+) {
+  return isFunction(find)
+    ? checkFind(await find({ c, user: c.var.user }))
+    : find
 }
 
 // MikroORM can't take `fields` and `exclude` together, so `fields` wins.

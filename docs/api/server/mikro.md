@@ -83,14 +83,14 @@ The base sets these variables in the handler's context and in `c.var`. The
 handlers and the middleware of all layers read them. `authorize` runs before the
 base sets them.
 
-| Variable         | Description                                                                                                                                                                                                                                                 |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | The id of a record action, converted to the type of the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. [`resolveId`](#options) can resolve aliases such as `self`. `params.id` is always the string of the path. |
-| `entity`         | The entity of the controller. `em.getMetadata(entity)` returns its metadata, such as its `tableName`.                                                                                                                                                       |
-| `getRecord()`    | Loads the record of the id through `find`, once per request. A missing record responds with 404. After a `post`, it returns the record that the action returned.                                                                                            |
-| `find()`         | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                               |
-| `list()`         | Runs the list of the controller, see [list()](#list).                                                                                                                                                                                                       |
-| `getListQuery()` | Returns the `where`, `orderBy` and `range` of the list, see [getListQuery()](#getlistquery).                                                                                                                                                                |
+| Variable         | Description                                                                                                                                                                                                                                                                   |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | The id of a record action, converted to the type of the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. [`resolveId`](#modelcontrollerdefinition) can resolve aliases such as `self`. `params.id` is always the string of the path. |
+| `entity`         | The entity of the controller. `em.getMetadata(entity)` returns its metadata, such as its `tableName`.                                                                                                                                                                         |
+| `getRecord()`    | Loads the record of the id through `find`, once per request. A missing record responds with 404. After a `post`, it returns the record that the action returned.                                                                                                              |
+| `find()`         | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                                                 |
+| `list()`         | Runs the list of the controller, see [list()](#list).                                                                                                                                                                                                                         |
+| `getListQuery()` | Returns the `where`, `orderBy` and `range` of the list, see [getListQuery()](#getlistquery).                                                                                                                                                                                  |
 
 ### Serialize and deserialize
 
@@ -243,7 +243,7 @@ responds with 400 too.
 ## defineListHandler()
 
 ```ts
-defineListHandler(find?: FindShape): Handler
+defineListHandler(find?: Find): Handler
 ```
 
 ```js
@@ -253,13 +253,14 @@ actions: {
 }
 ```
 
-Returns the handler of a list, `({ list }) => list(find)`. The default `get` is
+Returns the handler of a list, `({ list }) => list(find)`. As on the controller,
+`find` can be a function `({ c, user })`. The default `get` is
 `defineListHandler()`.
 
 ## defineChoices()
 
 ```ts
-defineChoices(find: FindShape): MixinDefinition
+defineChoices(find: Find): MixinDefinition
 ```
 
 ```js
@@ -268,8 +269,8 @@ mixins: [defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
 ```
 
 Returns a mixin that routes `get choices`, a list for the options of a select.
-The action is `'get choices': defineListHandler({ maxRows: Infinity, ...find })`.
-So it returns all rows of the list, as a select needs, and takes the same
+The action is `'get choices': defineListHandler({ maxRows: Infinity, ...find })`,
+also with `find` as a function. So it returns all rows of the list, as a select needs, and takes the same
 filters. A `find` with `fields` names the relations that it sends, in its paths
 or in its own `populate`.
 
