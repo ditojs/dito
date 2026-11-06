@@ -44,7 +44,8 @@ export abstract class Storage {
 
   constructor({ name, url, allowedImports = [] }: StorageOptions) {
     this.name = name
-    this.url = url
+    // `new URL()` drops the last segment of a base without a trailing slash.
+    this.url = url && !url.endsWith('/') ? `${url}/` : url
     this.#isAllowedImport = picomatch(allowedImports.map(resolveFileUrl))
   }
 

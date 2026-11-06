@@ -62,7 +62,7 @@ All storages:
 | Key              | Type             | Description                                                                                          |
 | ---------------- | ---------------- | ---------------------------------------------------------------------------------------------------- |
 | `type`           | `'disk' \| 's3'` | The kind of storage.                                                                                 |
-| `url`            | `string`         | The base URL of the stored files, ending in `/`.                                                     |
+| `url`            | `string`         | The base URL of the stored files. It gets a trailing `/` if it has none.                             |
 | `allowedImports` | `string[]`       | Glob patterns of URLs from which files may be imported, such as `['https://images.example.com/**']`. |
 
 Disk storages:

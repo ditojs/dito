@@ -100,6 +100,14 @@ describe('Storage: urls', () => {
     )
   })
 
+  it('adds the trailing slash of a base url without one', () => {
+    const storage = createStorage({ url: 'https://cdn.example.com/f' })
+    expect(storage.getFileUrl({ key: 'a.txt' })).toBe(
+      'https://cdn.example.com/f/a.txt'
+    )
+    expect(createStorage({ url: '/assets' }).url).toBe('/assets/')
+  })
+
   it('joins file urls with a base url without origin', () => {
     const storage = createStorage({ url: '/assets/public/' })
     expect(storage.getFileUrl({ key: 'a.txt' })).toBe('/assets/public/a.txt')
