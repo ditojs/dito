@@ -60,11 +60,13 @@ export function createAssets({
   // All model controllers of the entities track the files of their writes:
   const pathsByEntity = Map.groupBy(normalizedPaths, path => path.entity)
   for (const [entity, paths] of pathsByEntity) {
-    guardEntity(
-      entity,
-      'assets',
-      defineAssetWrites({ paths, storages, getDatabase })
-    )
+    if (entity) {
+      guardEntity(
+        entity,
+        'assets',
+        defineAssetWrites({ paths, storages, getDatabase })
+      )
+    }
   }
 
   return {

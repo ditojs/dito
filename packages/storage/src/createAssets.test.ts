@@ -41,6 +41,13 @@ describe('createAssets()', () => {
     ).toThrow(`Unknown storage 'x'`)
   })
 
+  it('takes paths without an entity, for the jobs of a migration', () => {
+    const { entity, ...path } = paths[0]!
+    expect(() =>
+      createAssets({ adapter, paths: [path], storages })
+    ).not.toThrow()
+  })
+
   it('stores files in storages by name', async () => {
     const file = await createBookAssets().store('archive', {
       name: 'report.txt',
