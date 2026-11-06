@@ -8,7 +8,6 @@ import {
 import { convertQueryValue, queryValidation } from '@ditojs/server/internal'
 import { asArray, isEmpty, isString, mapConcurrently } from '@ditojs/utils'
 import type { EntityManager } from '@mikro-orm/sql'
-import { getEntityManager } from './createMikroAdapter.ts'
 import type { ListQuery } from './listQuery.ts'
 import { runSchema } from './validation.ts'
 
@@ -115,7 +114,7 @@ export async function getFilterWheres(
       type: 'FilterValidation'
     })
   }
-  const em = getEntityManager(c)
+  const { em } = c.var
   const wheres = await mapConcurrently(parsed, ({ name, value, where }) =>
     where({ value, name, c, em })
   )

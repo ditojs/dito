@@ -1,11 +1,9 @@
-import { tryGetContext } from 'hono/context-storage'
 import { z } from 'zod'
 import {
   serialize as serializeEntity,
   type EntityClass,
   type EntityManager
 } from '@mikro-orm/core'
-import type { DitoEnv } from '@ditojs/server'
 import { isFunction, mapValues } from '@ditojs/utils'
 import type { MikroAdapter } from './createMikroAdapter.ts'
 import { getPrimaryKey, toPrimaryKey } from './metadata.ts'
@@ -46,9 +44,6 @@ export function createEntityUserSource<U extends { id: number | string }>(
     password = defaultPasswordSchema
   }: CreateEntityUserSourceOptions<U>
 ) {
-  // Outside of the API, such as in session middleware, query with a fork:
-  const getEm = () => adapter.getEm(tryGetContext<DitoEnv>())
-
   // `hash` needs to be hidden, or it would go out with the users in each
   // response that holds them:
   const getMetadata = (em: EntityManager) => {
@@ -76,13 +71,13 @@ export function createEntityUserSource<U extends { id: number | string }>(
     password,
     // Ids that don't fit the key, such as those of tampered tokens, find none.
     async findById(id: string): Promise<U | null> {
-      const em = getEm()
+      const em = adapter.getEm()
       const key = getKey(em)
       const value = toPrimaryKey(key, id)
       return value === undefined ? null : findOne(em, { [key.name]: value })
     },
     async findByUsername(username: string): Promise<U | null> {
-      return findOne(getEm(), { [usernameProperty]: username })
+      return findOne(adapter.getEm(), { [usernameProperty]: username })
     },
     getUsername(user: U) {
       return user[usernameProperty as keyof U] as string
@@ -90,7 +85,7 @@ export function createEntityUserSource<U extends { id: number | string }>(
     // Write the values at once and set them on `user`, without flushing the
     // request's other changes:
     async patch(user: U, values: object) {
-      const em = getEm()
+      const em = adapter.getEm()
       const { name } = getKey(em)
       const where = { [name]: user[name as keyof U] }
       await em.nativeUpdate(entity, where as never, values)

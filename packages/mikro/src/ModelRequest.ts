@@ -25,7 +25,6 @@ import {
   type ListParams,
   type ListQuery
 } from './listQuery.ts'
-import { getEntityManager } from './createMikroAdapter.ts'
 import { getPrimaryKey } from './metadata.ts'
 import { getOutput, type Output } from './serialize.ts'
 
@@ -102,7 +101,7 @@ export class ModelRequest<T extends object = any> {
     this.c = c
     this.definition = definition
     this.entity = definition.entity
-    this.em = getEntityManager(c)
+    this.em = c.var.em
     this.meta = this.em.getMetadata().get(definition.entity)
     this.key = getPrimaryKey(this.meta)
     requests.set(c, this)

@@ -612,8 +612,9 @@ Returns the `adapter` of [`createApi()`](api.md#adapter):
   Sessions, credentials and jobs use it. With the `c` of a request, it runs in
   the request's transaction. `orm.em.getKysely()` joins the current
   transaction instead.
-- `getEm(c?)` returns the entity manager of the request `c`. Without one, it
-  returns a fork of `orm.em`.
+- `getEm()` returns the entity manager of the running request. Outside of a
+  request, it returns a fork of `orm.em`. [`useEm()`](#useem) throws there
+  instead.
 
 ## useEm()
 

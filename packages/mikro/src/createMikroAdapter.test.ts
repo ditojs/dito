@@ -34,4 +34,13 @@ describe('the transaction helpers', () => {
     expect(getKysely(c)).toBe('fork')
     expect(getKysely({ var: {} } as any)).not.toBe('fork')
   })
+
+  it('forks the entity manager outside of a request', () => {
+    const orm = new MikroORM(
+      defineMikroConfig({ dbName: 'dito_mikro_types', entities: [Item] })
+    )
+    const em = createMikroAdapter(orm).getEm()
+    expect(em).not.toBe(orm.em)
+    expect(em.name).toBe(orm.em.name)
+  })
 })
