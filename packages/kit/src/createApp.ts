@@ -19,6 +19,8 @@ import {
   getAssetFields,
   type MikroAdapter
 } from '@ditojs/mikro'
+// Types `em` in the apps of the kit, which all run on MikroORM.
+import '@ditojs/mikro/types'
 import { createUsers, type CreateUsersOptions, type Users } from '@ditojs/auth'
 import { deleteExpiredSessions } from '@ditojs/auth/internal'
 import {

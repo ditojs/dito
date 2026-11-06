@@ -9,7 +9,8 @@ import {
 import type { CookieOptions } from 'hono/utils/cookie'
 import type { Kysely } from 'kysely'
 import { isEmpty, parseDuration } from '@ditojs/utils'
-import type { Adapter } from '@ditojs/server'
+import type { MikroAdapter } from '@ditojs/mikro'
+import type { DitoEnv } from '@ditojs/server'
 import { createAuthError } from './authentication.ts'
 import {
   getUserIdentifier,
@@ -20,8 +21,8 @@ import {
 
 // Sessions in the `session` table, with their id in a signed cookie.
 
-declare module 'hono' {
-  interface ContextVariableMap {
+declare module '@ditojs/server' {
+  interface DitoVariables {
     session: Session
   }
 }
@@ -30,7 +31,7 @@ export interface CreateSessionsOptions<U extends AuthUser = any> {
   // The adapter of the API, such as `createMikroAdapter(orm)`, for the
   // `session` table. Sessions load before and save after the actions, so they
   // use its Kysely outside of the request's transaction.
-  adapter: Adapter
+  adapter: Pick<MikroAdapter, 'getKysely'>
   // The secrets that sign the cookie. The first one signs, and all of them
   // verify, so secrets can rotate.
   secrets: string[]
@@ -320,7 +321,9 @@ export function createSessions<U extends AuthUser>(
 
 // Delete the expired sessions of all users, who share the `session` table. The
 // `jobs` of the kit run this.
-export async function deleteExpiredSessions(adapter: Adapter) {
+export async function deleteExpiredSessions(
+  adapter: Pick<MikroAdapter, 'getKysely'>
+) {
   await adapter
     .getKysely()
     .deleteFrom('session')
@@ -339,7 +342,7 @@ export function getSession(c: Context) {
 
 // The session of the running request, if there is one.
 export function findSession() {
-  return tryGetContext()?.var.session as RequestSession | undefined
+  return tryGetContext<DitoEnv>()?.var.session as RequestSession | undefined
 }
 
 // The session of the running request.

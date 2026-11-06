@@ -31,14 +31,12 @@ import {
 } from './ModelRequest.ts'
 import { respond } from './respond.ts'
 
-declare module 'hono' {
-  interface ContextVariableMap {
+declare module '@ditojs/server' {
+  interface DitoVariables {
     // The wrappers of the adapter, from its `connect()`.
     wrappersByEntity: Map<object, EntityWrapper[]>
   }
-}
 
-declare module '@ditojs/server' {
   interface MixinDefinition {
     // Called once per response of a model controller, in layer order, with the
     // outgoing records, before `serialize`. It can load what the records need

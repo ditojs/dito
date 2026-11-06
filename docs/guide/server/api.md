@@ -140,7 +140,7 @@ Handlers get the entity manager as `em` of their context. While a transaction
 runs, it is the transaction's. Middleware and other code that has `c` read it as
 `c.var.em`. Functions that a handler calls get it from
 [`useEm()`](../../api/server/mikro.md#useem), without passing it on.
-`import '@ditojs/mikro/types'` types it.
+The kit types it. Without the kit, `import '@ditojs/mikro/types'` does.
 
 Writes run in a transaction, and reads don't, see
 [Transactions](controllers.md#transactions).

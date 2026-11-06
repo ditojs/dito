@@ -493,7 +493,8 @@ and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
   `users: { middleware, getUser }`.
 - Middleware reads the request's entity manager as `c.var.em`. Its Kysely,
   `c.var.em.getKysely()`, runs the queries that MikroORM doesn't build.
-  `import '@ditojs/mikro/types'` types `em` as MikroORM's `EntityManager`.
+  The kit types `em` as MikroORM's `EntityManager`. Without the kit,
+  `import '@ditojs/mikro/types'` does.
 
 #### Authorization
 
@@ -748,6 +749,10 @@ const admin = createAdmin({
 })
 app.hono.route('/admin', admin)
 ```
+
+With the kit, [`app.routeAdmin()`](api/server/kit.md#app) does this in one call.
+It takes the same options without `base`, uses `vite` only with a `NODE_ENV` of
+`development`, and stops Vite with `app.close()`.
 
 - With `vite`, the app runs on `serve()`. Without it, the admin serves the
   build of `dist`. `createAdmin()` throws if the build is missing.

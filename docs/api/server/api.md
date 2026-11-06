@@ -158,8 +158,9 @@ The context also holds all other variables:
 - `onError`, the one of the API, for errors that no response reports;
 - the app's own, such as a session that middleware sets with `c.set()`.
 
-Packages and apps type their variables by augmenting `DitoVariables`. The
-variables of Hono's `ContextVariableMap` are part of the context too:
+Packages and apps type their variables by augmenting `DitoVariables`. Dito's own
+packages always do. The variables of Hono's `ContextVariableMap` are part of the
+context too, for code that only knows Hono:
 
 ```ts
 declare module '@ditojs/server' {

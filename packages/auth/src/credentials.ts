@@ -1,5 +1,6 @@
 import type { Kysely } from 'kysely'
-import type { Adapter, DitoContext } from '@ditojs/server'
+import type { MikroAdapter } from '@ditojs/mikro'
+import type { DitoContext } from '@ditojs/server'
 import type { AuthUser, UserSource } from './users.ts'
 
 // The passkeys and TOTP secrets of users in the `credential` table.
@@ -26,7 +27,7 @@ export interface CreateCredentialsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`. Credentials use
   // its Kysely outside of the request's transaction, so TOTP failures stay
   // counted when the request fails.
-  adapter: Adapter
+  adapter: Pick<MikroAdapter, 'getKysely'>
   // The source of the users of these credentials.
   source: UserSource<any>
 }

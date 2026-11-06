@@ -11,7 +11,7 @@ import {
   type ControllerDefinition,
   type DitoContext
 } from '@ditojs/server'
-import type { EntityWrapper } from '@ditojs/server/internal'
+import type { EntityWrapper } from './createMikroAdapter.ts'
 import { OptimisticLockError, type FilterOptions } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
 import {

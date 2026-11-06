@@ -659,7 +659,7 @@ import '@ditojs/mikro/types'
 
 Types `em` of the handlers and `c.var.em` as MikroORM's `EntityManager` of
 `@mikro-orm/sql`, for apps written in TypeScript. One import anywhere in the app
-types them everywhere. `em.getKysely()` returns the Kysely of the request's
+types them everywhere. `@ditojs/kit` imports it for its apps. `em.getKysely()` returns the Kysely of the request's
 entity manager, which runs in its transaction. Use it for queries that MikroORM
 doesn't build.
 
