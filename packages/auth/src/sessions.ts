@@ -270,13 +270,17 @@ export function createSessions(options: CreateSessionsOptions) {
       : { id: null, value: {} }
   }
 
-  // The Hono middleware, which runs before the API, as `app.use()`.
+  // The Hono middleware, which runs before the API, as `app.use()`. An action
+  // can run it too, with `c.var.session` as another user's session up to the
+  // end of the action. The previous session comes back after that.
   const middleware: MiddlewareHandler = async (c, next) => {
+    const previous = c.var.session
     const session = new RequestSession(c, await load(c), sessionOptions)
     c.set('session', session)
     try {
       await next()
     } finally {
+      c.set('session', previous)
       // Save also when the action throws, so used challenges and codes stay
       // used:
       await session.commit()

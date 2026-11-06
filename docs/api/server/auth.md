@@ -100,6 +100,11 @@ the app's own Hono routes run it with `app.use()`.
 - After the action, it saves the session if it changed. It does this even when
   the action throws.
 - It adds its `Set-Cookie` header to the response, also to error responses.
+- It restores the previous `c.var.session` when it ends.
+
+The last point lets one action run with the session of other users, through
+`middleware: members.middleware`. The action logs in a member, while the admin's
+session is saved as usual.
 
 Sessions and credentials use a Kysely outside of the requests' transactions. So
 sessions save after a failed request, and failed TOTP codes stay counted.

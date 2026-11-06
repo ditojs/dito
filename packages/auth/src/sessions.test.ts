@@ -535,6 +535,59 @@ describe('sessions', () => {
     ])
   })
 
+  it('restores the session after the middleware of other users', async () => {
+    const { sessions: memberSessions } = setup({
+      db,
+      source: createSource('Member', [bob]),
+      cookieName: 'member.sess'
+    })
+    let restored: unknown
+    const { api } = setup({
+      db,
+      source: admins,
+      controllers: [
+        defineController({
+          path: 'members',
+          authorize: true,
+          actions: {
+            'post impersonate': {
+              middleware: [
+                async (c, next) => {
+                  const session = getSession(c)
+                  session.value.impersonating = true
+                  await next()
+                  restored = c.var.session === session
+                },
+                memberSessions.middleware
+              ],
+              handler: ({ c }) => {
+                getSession(c).login(bob)
+              }
+            }
+          }
+        })
+      ]
+    })
+    const client = createClient(api.fetch)
+    await client.post('/admins/login', { username: 'ada', password: 'secret' })
+    await client.post('/members/impersonate')
+    expect(restored).toBe(true)
+    expect(client.jar.has('member.sess')).toBe(true)
+    const values = (await db.selectFrom('session').select('value').execute())
+      .map(row => row.value)
+    expect(values).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          passport: expect.objectContaining({ user: 'Admin-1' }),
+          impersonating: true
+        }),
+        expect.objectContaining({
+          passport: expect.objectContaining({ user: 'Member-2' })
+        })
+      ])
+    )
+  })
+
   it('reads signed cookies of all secrets', async () => {
     const { sessions } = setup({ db, source: admins, secrets: ['new', 'old'] })
     const app = new Hono().get('/', async c =>
