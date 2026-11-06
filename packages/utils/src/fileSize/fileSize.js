@@ -24,11 +24,12 @@ export function formatFileSize(size, { base = 10 } = {}) {
 }
 
 // IEC units like `'10 MiB'` always use base 2. Bit units are case-sensitive
-// (`Kb` = kilobit), the byte units aren't.
+// (`Kb` = kilobit), the byte units aren't. The amount takes one decimal mark,
+// a dot or a comma, and no thousands separators.
 export function parseFileSize(input, { base = 10 } = {}) {
-  const [, amountString, unit] = (
-    String(input).match(/^([\d.,]*)\s*(\D*)$/) || []
-  )
+  const [, amountString, unit] = String(input)
+    .trim()
+    .match(/^(\d*[.,]?\d*)\s*(\D*)$/) || []
   const amount = parseFloat(amountString?.replace(',', '.'))
   if (!isFinite(amount)) {
     throw new Error(`Invalid file size: '${input}'`)
