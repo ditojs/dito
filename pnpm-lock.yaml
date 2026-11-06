@@ -514,7 +514,7 @@ importers:
         specifier: ^4.13.14
         version: 4.13.16
       kysely:
-        specifier: ^0.29.8
+        specifier: 0.29.8
         version: 0.29.8
       otpauth:
         specifier: ^9.5.2
@@ -624,7 +624,7 @@ importers:
         specifier: ^4.13.14
         version: 4.13.16
       kysely:
-        specifier: ^0.29.8
+        specifier: 0.29.8
         version: 0.29.8
       zod:
         specifier: ^4.6.7
@@ -692,7 +692,7 @@ importers:
         specifier: ^4.13.14
         version: 4.13.16
       kysely:
-        specifier: ^0.29.8
+        specifier: 0.29.8
         version: 0.29.8
 
   packages/ui:
@@ -766,7 +766,7 @@ importers:
         specifier: ^3.0.3
         version: 3.0.3
       kysely:
-        specifier: ^0.29.8
+        specifier: 0.29.8
         version: 0.29.8
       otpauth:
         specifier: ^9.5.2
