@@ -135,7 +135,9 @@ describe('definePasswordWrites()', () => {
     expect((await second.get('/admins/self')).data).toBe(null)
   })
 
-  it('needs confirmed access to change passwords and usernames', async () => {
+  // Usernames are compared with the record of a model controller, so their
+  // tests run with `@ditojs/mikro`.
+  it('needs confirmed access to change passwords', async () => {
     // A login confirms the access for no time.
     const client = createClient(
       createApp(undefined, { reconfirmAfter: 0 }).fetch
@@ -150,21 +152,11 @@ describe('definePasswordWrites()', () => {
     expect(await patch(1, { password: 'new secret' })).toMatchObject(
       confirmationRequired
     )
-    expect(await patch(1, { username: 'ad' })).toMatchObject(
-      confirmationRequired
-    )
-    expect((await patch(1, { username: 'ada', roles: [] })).status).toBe(200)
     expect(await patch(2, { password: '12345678' })).toMatchObject(
       confirmationRequired
     )
-    expect(await patch(2, { username: 'b' })).toMatchObject(
-      confirmationRequired
-    )
-    expect((await patch(2, { username: 'bob' })).status).toBe(200)
-    expect(bodies).toEqual([
-      { username: 'ada', roles: [] },
-      { username: 'bob' }
-    ])
+    expect((await patch(2, { roles: [] })).status).toBe(200)
+    expect(bodies).toEqual([{ roles: [] }])
   })
 
   it('keeps the session when the write fails', async () => {

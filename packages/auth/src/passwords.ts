@@ -39,6 +39,11 @@ export async function verifyPassword(
   )
 }
 
+// What the model controllers of `@ditojs/mikro` set, without importing it.
+interface ModelVariables {
+  getRecord: () => Promise<Record<string, unknown> | null>
+}
+
 export interface DefinePasswordWritesOptions<U extends User> {
   // Its `password` checks the new passwords.
   source: UserSource<U>
@@ -60,21 +65,19 @@ export function definePasswordWrites<U extends User>({
   })
 
   // Changing a password needs confirmed access, also of other users, and so
-  // does a username, as password resets go to it:
+  // does a username, as password resets go to it. The record of the model
+  // controller has the current one, also for ids of its `load` such as `self`:
   const isSecurityChange = async (
     c: Context,
-    id: string,
     body: Record<string, unknown>
   ) => {
     const username = body[usernameProperty]
     if (body.password === undefined && username === undefined) return false
     if (!(await getSession(c).getUser(source))) return false
     if (body.password !== undefined) return true
-    const user = await source.findById(c, id)
-    return (
-      username !==
-      (user as Record<string, unknown> | null)?.[usernameProperty]
-    )
+    const getRecord: ModelVariables['getRecord'] = c.get('getRecord')
+    const record = await getRecord()
+    return username !== record?.[usernameProperty]
   }
 
   const handler: Handler = async input => {
@@ -84,7 +87,7 @@ export function definePasswordWrites<U extends User>({
     if (!result.success) {
       throw createValidationError(result.error.issues, bodyValidation)
     }
-    if (params.id && (await isSecurityChange(c, params.id, input.body))) {
+    if (params.id && (await isSecurityChange(c, input.body))) {
       await getSession(c).checkConfirmedAccess(source)
     }
     const { password } = result.data

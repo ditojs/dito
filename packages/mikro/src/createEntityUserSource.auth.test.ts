@@ -149,3 +149,59 @@ describe('createEntityUserSource() with auth', () => {
     expect(status).toBe(400)
   })
 })
+
+describe('definePasswordWrites() with confirmed access', () => {
+  // A login confirms the access for no time, and `self` is the logged-in user.
+  const app = new Hono().route(
+    '/',
+    createApi({
+      adapter: createMikroAdapter(orm),
+      middleware: [sessions.middleware],
+      getUser: ({ c }) => getSessionUser(c, source),
+      controllers: [
+        {
+          path: 'auth',
+          mixins: [defineUserActions({ source, reconfirmAfter: 0 })]
+        },
+        defineModelController({
+          path: 'members',
+          entity: Member,
+          authorize: true,
+          mixins: [definePasswordWrites({ source })],
+          load: ({ c, id }) =>
+            c.var.em.findOne(
+              Member,
+              Number(id === 'self' ? c.var.user!.id : id)
+            )
+        })
+      ]
+    })
+  )
+
+  it('needs it to change usernames, also of other users', async () => {
+    const em = orm.em.fork()
+    const bob = em.create(Member, { username: 'bob', hash: null, roles: [] })
+    await em.flush()
+    const client = createClient(app.fetch)
+    await client.post('/auth/login', { username: 'ada', password: 'secret' })
+    const patch = (id: number | string, body: object) =>
+      client.request('PATCH', `/members/${id}`, body)
+    const confirmationRequired = {
+      status: 403,
+      data: { confirmationRequired: true }
+    }
+    expect(await patch('self', { username: 'ad' })).toMatchObject(
+      confirmationRequired
+    )
+    expect(await patch(bob.id, { username: 'b' })).toMatchObject(
+      confirmationRequired
+    )
+    // Forms send the unchanged username with their other values:
+    expect((await patch('self', { username: 'ada', roles: [] })).status).toBe(
+      200
+    )
+    expect((await patch(bob.id, { username: 'bob', roles: [] })).status).toBe(
+      200
+    )
+  })
+})
