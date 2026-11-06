@@ -66,7 +66,7 @@ other paths.
 | Key           | Type                                               | Description                                                                                                                                                                              |
 | ------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `controllers` | `ControllerDefinition[] \| object`                 | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, Dito ignores all other values. |
-| `sessions`    | `{ middleware, getUser? }`                         | The sessions of [`createSessions()`](auth.md#createsessions). Their middleware runs first, and `getUser` defaults to theirs.                                                             |
+| `sessions`    | `{ middleware, getUser? }`                         | The users of [`createUsers()`](auth.md#createusers). Their middleware runs first, and `getUser` defaults to theirs.                                                                      |
 | `middleware`  | `Middleware \| Middleware[]`                       | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.em` and `c.var.user`.                                                             |
 | `adapter`     | [`Adapter`](#adapter)                              | The database: [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined, and no action runs in a transaction.                                              |
 | `getUser`     | `({ c }) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                 |
@@ -77,20 +77,22 @@ other paths.
 For each request of an action, Hono and Dito:
 
 1. match the route. `HEAD` runs the `GET` action and sends no body;
-2. run the API's `middleware`;
-3. set `c.var.em` with `connect()` of the adapter;
-4. set `c.var.user` with `getUser`;
-5. set `c.var.action`, the key of the action;
-6. check the action's `authorize`, which responds with 401 without a user, and
+2. run Hono's `contextStorage()`, for functions such as
+   [`useEm()`](mikro.md#useem) and [`useSession()`](auth.md#usesession);
+3. run the middleware of `sessions`, and the API's `middleware`;
+4. set `c.var.em` with `connect()` of the adapter;
+5. set `c.var.user` with `getUser`;
+6. set `c.var.action`, the key of the action;
+7. check the action's `authorize`, which responds with 401 without a user, and
    with 403 with one;
-7. validate the query and the body with the action's schemas, through
+8. validate the query and the body with the action's schemas, through
    `validator()` of `hono/validator`;
-8. set `c.var.body` for writes, so that invalid JSON fails before the
+9. set `c.var.body` for writes, so that invalid JSON fails before the
    transaction;
-9. open the adapter's transaction, for writes unless `transacted: false`, and for
-   reads with `transacted: true`;
-10. run the `middleware` of the layers and of the action;
-11. run the handler with its context, and send the result, see
+10. open the adapter's transaction, for writes unless `transacted: false`, and for
+    reads with `transacted: true`;
+11. run the `middleware` of the layers and of the action;
+12. run the handler with its context, and send the result, see
     [Handler](controllers.md#handler).
 
 Errors go to the API's error handler. It works like

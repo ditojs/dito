@@ -39,19 +39,13 @@ import * as controllers from './controllers/index.js'
 import * as mailer from './services/mailer.js'
 import { admins } from './users.js'
 
-const sessions = app.createSessions({
-  cookieName: 'admin.sess',
-  maxAge: 24 * 60 * 60 * 1000,
-  users: admins
-})
-
-app.routeApi('/api', { controllers, sessions })
+app.routeApi('/api', { controllers, sessions: admins })
 app.hono.route(
   '/admin',
   createAdmin({
     base: '/admin',
     dist: 'dist/admin',
-    sessions,
+    sessions: admins,
     authorize: 'admin'
   })
 )
@@ -60,9 +54,28 @@ await app.start({ services: [mailer] })
 
 - `app.routeApi()` routes an API on the app's database. The user of a request is
   the one of its session.
+- `sessions` takes the users of `app.createUsers()`, see [Users](#users).
 - `app.start()` runs until `app.close()`, SIGINT or SIGTERM.
 - `app.hono` takes the app's own middleware and other Hono apps, such as the
   [admin](admin.md). Middleware goes before the routes.
+
+## Users
+
+```js
+// server/users.js
+import { app } from './app.js'
+import { Admin } from './entities/index.js'
+
+export const admins = app.createUsers(Admin, {
+  session: { cookieName: 'admin.sess', maxAge: '24h' },
+  serialize: ['id', 'username', 'roles']
+})
+```
+
+`app.createUsers(entity, options)` calls
+[`createUsers()`](../../api/server/auth.md#createusers) with the app's ORM and
+`secrets`. The controllers import the users for their mixins, see
+[Users and sessions](auth.md).
 
 ## Services
 

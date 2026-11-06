@@ -6,7 +6,7 @@ import { createMikroAdapter } from '@ditojs/mikro'
 
 const api = createApi({
   controllers: [books, authors, loans],
-  sessions,
+  sessions: admins,
   adapter: createMikroAdapter(orm)
 })
 app.route('/api/admin', api)
@@ -125,12 +125,12 @@ Requests without these headers keep their own URL and address.
 ```js
 const adminApi = createApi({
   controllers: adminControllers,
-  sessions: adminSessions,
+  sessions: admins,
   adapter: createMikroAdapter(orm)
 })
 const frontApi = createApi({
   controllers: frontControllers,
-  sessions: memberSessions,
+  sessions: members,
   adapter: createMikroAdapter(orm)
 })
 
@@ -156,7 +156,9 @@ The `adapter` is `createMikroAdapter(orm)` of `@ditojs/mikro`:
 
 Handlers get the entity manager as `em` of their context. While a transaction
 runs, it is the transaction's. Middleware and other code that has `c` read it as
-`c.var.em`. `import '@ditojs/mikro/types'` types it.
+`c.var.em`. Functions that a handler calls get it from
+[`useEm()`](../../api/server/mikro.md#useem), without passing it on.
+`import '@ditojs/mikro/types'` types it.
 
 Writes run in a transaction, and reads don't, see
 [Transactions](controllers.md#transactions).
@@ -170,7 +172,7 @@ old migrations with knex's CLI until the Migrator takes over, see
 ## Users
 
 ```js
-sessions: adminSessions
+sessions: admins
 ```
 
 `getUser({ c })` returns the user of a request as `{ id, roles }`, or `null`.
@@ -179,7 +181,7 @@ sessions: adminSessions
 - Handlers read it as `user` of their context.
 - `authorize` checks its roles.
 
-`sessions` come from `createSessions({ users })` of `@ditojs/auth`, see
+`sessions` takes the users of `createUsers()` of `@ditojs/auth`, see
 [Users and sessions](auth.md). They load the session and read its user.
 
 ## Errors and logging

@@ -286,31 +286,30 @@ The Security dialog of the account menu changes the password through
 [Confirmed access](../server/auth.md#confirmed-access).
 
 On the server, the app routes `patch self` in its users controller, next to the
-actions of `defineUserActions()` of `@ditojs/auth`. It writes only the values
+actions of `users.defineActions()` of `@ditojs/auth`. It writes only the values
 that users may change themselves, e.g. not their roles or password:
 
 ```js
-import { getSession } from '@ditojs/auth'
 import { assignRecord } from '@ditojs/mikro'
 import { HttpError } from '@ditojs/server'
-import { adminSource } from './auth.js'
+import { admins } from './users.js'
 
 // In the actions of the users controller:
 'patch self': {
   authorize: true,
-  async handler({ body: { email }, em, c }) {
-    const user = await getSession(c).getUser(adminSource)
+  async handler({ body: { email }, em, session }) {
+    const user = await session.getUser()
     if (!user) throw new HttpError(401)
     await assignRecord(em, user, { email })
     await em.flush()
-    return adminSource.serialize(c, user)
+    return admins.serialize(user)
   }
 }
 ```
 
 A change of the username needs confirmed access, as password reset links go
-to it: `getSession(c).checkConfirmedAccess(adminSource)` returns the user, or
-makes the admin ask for it.
+to it: `session.checkConfirmedAccess()` returns the user, or makes the admin ask
+for it.
 
 ## Panels and tabs
 

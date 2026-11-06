@@ -12,7 +12,7 @@ const admin = createAdmin({
     process.env.NODE_ENV === 'development' ? 'admin.vite.config.js' : undefined,
   api: { url: '/api/admin', users: { path: 'admins' } },
   settings: { language: 'en' },
-  sessions: adminSessions,
+  sessions: admins,
   authorize: ['admin', 'editor']
 })
 

@@ -339,7 +339,8 @@ async 'post :id/publish'({ getRecord, em }) {
 
 Other queries go through the request's entity manager, `em` of the context.
 During a write, this is the transaction's entity manager. Middleware and other
-code that has `c` read it as `c.var.em`.
+code that has `c` read it as `c.var.em`. Other functions that a handler calls
+get it from [`useEm()`](../../api/server/mikro.md#useem).
 
 A handler changes the records and returns them. After the handler, the base
 flushes the entity manager once. Then it sends the controller's records in the

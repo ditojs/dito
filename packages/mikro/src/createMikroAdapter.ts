@@ -40,9 +40,10 @@ export function createMikroAdapter(
       toHttpError(error, getModelRequest(c)?.meta, c.req.method),
     // A Kysely on the ORM's pool, outside of any transaction, for sessions,
     // credentials and jobs. `orm.em.getKysely()` joins the current
-    // transaction, a fork doesn't. With `c`, it runs in the request's
-    // transaction.
-    getKysely: c => (c ? getEntityManager(c) : orm.em.fork()).getKysely()
+    // transaction, a fork doesn't. With the `c` of an API's request, it runs in
+    // the request's transaction.
+    getKysely: c =>
+      (c?.var.em ? getEntityManager(c) : orm.em.fork()).getKysely()
   }
 }
 

@@ -16,6 +16,7 @@ import {
   getAssetPaths,
   defineMikroConfig,
   createMikroAdapter,
+  useEm,
   createEntityUserSource
 } from '@ditojs/mikro'
 import '@ditojs/mikro/types'
@@ -628,6 +629,31 @@ Returns the `adapter` of [`createApi()`](api.md#adapter):
   Sessions, credentials and jobs use it. `orm.em.getKysely()` joins the current
   transaction instead.
 
+## useEm()
+
+```ts
+useEm(): EntityManager
+```
+
+```js
+import { useEm } from '@ditojs/mikro'
+
+function countBooks() {
+  return useEm().count(Book)
+}
+```
+
+Returns the entity manager of the running request. During a transaction, this is
+the transaction's entity manager. It is the same as `em` of the handler's
+context, and `c.var.em`.
+
+It throws outside of a request, and in the `middleware` of `createApi()`, which
+runs before the API sets `c.var.em`. Jobs and scripts have no request, and use a
+fork of `orm.em`.
+
+`createApi()` and `createAdmin()` run Hono's `contextStorage()`, which `useEm()`
+needs.
+
 ## @ditojs/mikro/types
 
 ```js
@@ -644,18 +670,21 @@ doesn't build.
 
 ```ts
 createEntityUserSource<U>(entity: EntityClass<U>, options: {
-  em?: EntityManager | (() => EntityManager)
+  orm: { em: EntityManager }
   usernameProperty?: string
   where?: object
-  serialize: string[] | (({ c, user }) => unknown)
+  serialize: string[] | (({ user }) => unknown)
   computed?: Record<string, ({ user }) => unknown>
   password?: ZodType<string>
-}): UserSource<U>
+})
 ```
 
-Returns the [`UserSource`](auth.md#usersource) of `@ditojs/auth` for an entity.
+Returns the methods that find, change and serialize the users of an entity.
+[`createUsers()`](auth.md#createusers) of `@ditojs/auth` calls it, and adds them
+to its result. Apps use `createUsers()`.
+
 It queries with the request's entity manager. Outside of a request, such as in
-session middleware outside of the API, it queries with a fork of `em`.
+session middleware outside of the API, it queries with a fork of `orm.em`.
 
 | Option             | Description                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------------- |

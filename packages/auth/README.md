@@ -7,34 +7,32 @@ Released in 2018 under the MIT license, with support by https://lineto.com/
 
 `@ditojs/auth` adds sessions and users to Dito.js apps.
 
-- Its Hono middleware keeps sessions in signed cookies and a `session` table.
-- Its controller has login, logout, confirmed access, and password change and
-  reset.
-- Passkeys come from `@ditojs/auth/passkeys`, and TOTP from `@ditojs/auth/totp`.
-- The app stores its users in its own entities, and finds them through a user
-  source.
+- `createUsers()` sets up one kind of users on an entity, with sessions in
+  signed cookies and a `session` table.
+- Its actions have login, logout, confirmed access, password change and reset,
+  passkeys and TOTP.
 
 ```js
 import { Hono } from 'hono'
 import { createApi, defineController } from '@ditojs/server'
-import { createSessions, defineUserActions, getSessionUser } from '@ditojs/auth'
+import { createUsers } from '@ditojs/auth'
 
-const sessions = createSessions({
-  adapter,
+const admins = createUsers(Admin, {
+  orm,
   secrets,
-  cookieName: 'admin.sess',
-  maxAge
+  session: { cookieName: 'admin.sess', maxAge },
+  serialize: ['id', 'username']
 })
+
 const users = defineController({
   path: 'admins',
-  mixins: [defineUserActions({ source: adminSource })]
+  mixins: [admins.defineActions()]
 })
 
 const api = createApi({
   controllers: [users, ...controllers],
   adapter,
-  middleware: [sessions.middleware],
-  getUser: ({ c }) => getSessionUser(c, adminSource)
+  sessions: admins
 })
 
 const app = new Hono()

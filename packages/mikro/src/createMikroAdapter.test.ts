@@ -21,4 +21,15 @@ describe('the transaction helpers', () => {
       toHttpError: expect.any(Function)
     })
   })
+
+  it('reads outside of a transaction without the `em` of a request', () => {
+    const fork = { getKysely: () => 'fork' }
+    const adapter = createMikroAdapter(
+      new MikroORM(defineMikroConfig({ dbName: 'dito_mikro_types' }))
+    )
+    const { getKysely } = adapter
+    const c = { var: { em: fork } } as any
+    expect(getKysely(c)).toBe('fork')
+    expect(getKysely({ var: {} } as any)).not.toBe('fork')
+  })
 })

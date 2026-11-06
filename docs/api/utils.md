@@ -560,7 +560,7 @@ parseDuration(input)
 ```
 
 Parses a duration into milliseconds, as the server's duration options do,
-such as `maxAge` of [`createSessions()`](server/auth.md#createsessions).
+such as `maxAge` of [`createUsers()`](server/auth.md#createusers).
 Numbers and strings without a unit are milliseconds.
 
 - The units are `ms`, `s`, `m`, `h`, `d` and `w`, or their long forms in the

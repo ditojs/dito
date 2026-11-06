@@ -6,8 +6,8 @@ their roles, and the server has to enforce the same rules.
 
 ## Solution
 
-On the server, users store their roles. The user source passes the roles to
-the sessions and to the admin:
+On the server, users store their roles. `createUsers()` passes the roles to the
+sessions and to the admin:
 
 ```js
 import { defineEntity, p } from '@mikro-orm/core'
@@ -28,8 +28,8 @@ const UserSchema = defineEntity({
 export class User extends UserSchema.class {}
 UserSchema.setClass(User)
 
-// In the user source of `@ditojs/auth`, which reads `id`, `hash` and
-// `roles` from the users:
+// In the options of `createUsers()` of `@ditojs/auth`, which reads `id`,
+// `hash` and `roles` from the users:
 serialize: ({ user }) => ({
   id: user.id,
   username: user.username,
@@ -92,7 +92,7 @@ export const loans = {
 A string in `authorize` names a role. An array lets in users with any of its
 roles. An action's own `authorize` replaces the controller's.
 
-`getSessionUser()` passes the `roles` of the session's user to `authorize`.
+`getUser` of the users passes the `roles` of the session's user to `authorize`.
 `serialize()` sends them to the admin, whose `user.hasRole()` reads them. So the
 admin only shows what the server allows.
 
@@ -104,8 +104,7 @@ admin's views:
 ```js
 createAdmin({
   ...options,
-  middleware: sessions.middleware,
-  getUser: ({ c }) => getSessionUser(c, source),
+  sessions: users,
   authorize: ['editor', 'desk', 'admin']
 })
 ```

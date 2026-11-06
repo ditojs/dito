@@ -21,24 +21,24 @@ Sets up an app. Only `entities` and `database` are required.
 | `server`   | `{ port, host, closeTimeout }`      | The options of [`serve()`](hono.md#serve).                                                                                                                        |
 | `http`     | `CreateHonoOptions`                 | The options of [`createHono()`](hono.md#createhono).                                                                                                              |
 | `logger`   | pino's `LoggerOptions`              | Logs have no `pid` and `hostname` unless `base` sets them.                                                                                                        |
-| `secrets`  | `string[]`                          | Sign the cookies of the sessions. The first one signs, and all of them verify.                                                                                    |
+| `secrets`  | `string[]`                          | Sign the cookies of the sessions and the password reset links. The first one signs, and all of them verify.                                                       |
 | `storages` | `Record<string, StorageDefinition>` | See [`createStorages()`](storage.md#createstorages). A disk storage is served at the path of its `url`. A `url` without a path, such as a host of its own, isn't. |
 | `assets`   | `{ deleteUnusedAfter }`             | See [`createAssets()`](storage.md#createassets).                                                                                                                  |
 
 ### App
 
-| Member                    | Description                                                           |
-| ------------------------- | --------------------------------------------------------------------- |
-| `hono`                    | The Hono app, for the app's own middleware and routes.                |
-| `orm`                     | The `MikroORM` of the entities.                                       |
-| `adapter`                 | See [`createMikroAdapter()`](mikro.md#createmikroadapter).            |
-| `logger`                  | The logger of the current request, else the app's.                    |
-| `storages`                | The storages by name.                                                 |
-| `assets`                  | See [`createAssets()`](storage.md#createassets).                      |
-| `createSessions(options)` | [Sessions](auth.md#createsessions) on the app's database and secrets. |
-| `routeApi(path, options)` | Routes a [`createApi()`](api.md#createapi) on the app's database.     |
-| `start({ services })`     | Calls [`serve()`](hono.md#serve), and resolves to the Node server.    |
-| `close()`                 | Stops the server and the services if they run, then closes the ORM.   |
+| Member                         | Description                                                                  |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| `hono`                         | The Hono app, for the app's own middleware and routes.                       |
+| `orm`                          | The `MikroORM` of the entities.                                              |
+| `adapter`                      | See [`createMikroAdapter()`](mikro.md#createmikroadapter).                   |
+| `logger`                       | The logger of the current request, else the app's.                           |
+| `storages`                     | The storages by name.                                                        |
+| `assets`                       | See [`createAssets()`](storage.md#createassets).                             |
+| `createUsers(entity, options)` | [Users](auth.md#createusers) of an entity on the app's database and secrets. |
+| `routeApi(path, options)`      | Routes a [`createApi()`](api.md#createapi) on the app's database.            |
+| `start({ services })`          | Calls [`serve()`](hono.md#serve), and resolves to the Node server.           |
+| `close()`                      | Stops the server and the services if they run, then closes the ORM.          |
 
 ## runPlayground()
 

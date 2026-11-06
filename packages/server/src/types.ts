@@ -193,7 +193,7 @@ export interface ApiConfig {
   // A list, or an object such as a module namespace, of which only the
   // results of `defineController()` count.
   controllers: ControllerDefinition[] | Record<string, unknown>
-  // The sessions of the API, such as those of `createSessions()`. Their
+  // The sessions of the API, such as those of `createUsers()`. Their
   // middleware runs first, and `getUser` defaults to theirs.
   sessions?: ApiSessions
   // Middleware of every action, before the user is read.

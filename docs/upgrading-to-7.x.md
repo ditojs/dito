@@ -36,7 +36,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `dito db:seed` and `seeds/`                                                            | MikroORM's [seeder](https://mikro-orm.io/docs/seeding), or a script with an entity manager                                                                                                       | medium                  |
 | `dito console`                                                                         | A REPL script of ten lines, or `runPlayground()` of `@ditojs/kit/playground` for piped code, see [step 4](#4-create-the-app)                                                                     | low                     |
 | `dito db:list_asset_config`, `db:recount_assets`                                       | The asset paths of the app, and `assets.runJobs()`                                                                                                                                               | low                     |
-| `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `sessions.deleteExpired()` of `@ditojs/auth` on a timer of the app                                                                                                                               | low                     |
+| `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `users.deleteExpiredSessions()` of `@ditojs/auth` on a timer of the app                                                                                                                          | low                     |
 | `new Application()`, `app.execute()`, `start()`, `stop()`                              | `createApp()` of `@ditojs/kit`, with `app.routeApi()` for the controllers of each area and `app.start()`, which stops on signals. Without the kit: `createHono()`, `createApi()` and `serve()`   | low                     |
 | `config` and its sections                                                              | The app's own config module, whose sections are the options of `createApp()`                                                                                                                     | low                     |
 | `config.knex`, `app.knex`, `normalizeDbNames`                                          | The `database` option of `createApp()`, with MikroORM's `dbName`, `host`, `user` and `password`, and `app.orm`; MikroORM maps camelCase names to snake_case by default; `em.getKysely()` for SQL | low                     |
@@ -56,7 +56,7 @@ lines, medium one module of the app, and high every model or every controller.
 | `ResponseError` and its subclasses, `app.logError()`                                   | `HttpError`, `toHttpError()` of the adapter, and the `onError` hook, which logs by default                                                                                                       | low                     |
 | Koa middleware, `config.http`                                                          | The `http` option of `createApp()`, for `honoMiddleware()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`; other Hono middleware on `app.hono`                    | low                     |
 | `app.proxy`, `config.server.proxy`                                                     | `http.proxy` of `createApp()`, and `getClientAddress(c)` for the client's address                                                                                                                | low                     |
-| `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createSessions()`, `getSessionUser()`, `defineUserActions()`, `defineUserWrites()`, `createPasskeys()`, `createTotp()`, and `createEntityUserSource()` of `@ditojs/mikro`       | medium                  |
+| `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createUsers()`, with `users.defineActions()`, `users.defineWrites()` and `useSession()`                                                                                         | medium                  |
 | `config.storages`, model `assets`, `AssetFile`, asset counts in hooks                  | `@ditojs/storage`: `createStorages()`, asset paths, `createAssets()`, `serveStorage()`                                                                                                           | medium                  |
 | `AdminController`, `config.admin`, the admin's build                                   | `createAdmin()` of `@ditojs/admin/server` and `defineAdminViteConfig()` of `@ditojs/admin/vite`                                                                                                  | low                     |
 | Tests on `app.knex` and models                                                         | Tests on an entity manager of the ORM, and `app.request()` of Hono                                                                                                                               | medium                  |
@@ -453,25 +453,25 @@ and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
 `c.var.user`. Every other callback, such as `authorize`, gets one object with
 `c` and what it needs, such as `({ c, user })`.
 
-| Dito.js 6 (Koa)                              | Dito.js 7                                                                               |
-| -------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `ctx.request`, `ctx.headers`                 | `c.req`; `c.req.header(name)`, and `c.req.raw`, the `Request`                           |
-| `ctx.href`, `ctx.url`, `ctx.path`            | `c.req.url`, the full URL; `c.req.path`                                                 |
-| `ctx.query`                                  | `query` of the context, the output of the `query` schema                                |
-| `ctx.request.body`                           | `body` of the context; `c.var.body` in middleware                                       |
-| `ctx.params`                                 | `params` of the context; `c.req.param(name)`                                            |
-| `ctx.memberId`                               | `id` of the context in model controllers, a number for integer keys; else `params.id`   |
-| `this.getMember(ctx)`, `super.get(ctx)`      | `getRecord()` of the context; `c.var.getRecord()`; `next()`                             |
-| `this.modelClass`, `modelClass.tableName`    | `entity` of the context in model controllers; `em.getMetadata(entity).tableName`        |
-| `ctx.status`, `ctx.set()`                    | `c.status()`, `c.header()`                                                              |
-| `ctx.type`, `ctx.body =`, `ctx.attachment()` | A returned `Response`, such as `c.body()` or [`sendFile()`](api/server/api.md#sendfile) |
-| `ctx.state.user`                             | `user` of the context, `{ id, roles }`; `c.var.user`                                    |
-| `ctx.state.*`                                | `c.set()` and `c.var`, also in the context, typed by augmenting `DitoVariables`         |
-| `ctx.transaction`                            | `em` of the context, the transaction's entity manager during one; `c.var.em`            |
-| `ctx.ip`                                     | `getClientAddress(c)` of `@ditojs/server/node`                                          |
-| `ctx.session`                                | `session` of the context, or `getSession(c)` of `@ditojs/auth`                          |
-| `ctx.action`                                 | `action` of the context, the key such as `'post :id/publish'`; `c.var.action`           |
-| `ctx.action.type`                            | `params.id !== undefined` for record actions; `c.req.method`                            |
+| Dito.js 6 (Koa)                              | Dito.js 7                                                                                                  |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `ctx.request`, `ctx.headers`                 | `c.req`; `c.req.header(name)`, and `c.req.raw`, the `Request`                                              |
+| `ctx.href`, `ctx.url`, `ctx.path`            | `c.req.url`, the full URL; `c.req.path`                                                                    |
+| `ctx.query`                                  | `query` of the context, the output of the `query` schema                                                   |
+| `ctx.request.body`                           | `body` of the context; `c.var.body` in middleware                                                          |
+| `ctx.params`                                 | `params` of the context; `c.req.param(name)`                                                               |
+| `ctx.memberId`                               | `id` of the context in model controllers, a number for integer keys; else `params.id`                      |
+| `this.getMember(ctx)`, `super.get(ctx)`      | `getRecord()` of the context; `c.var.getRecord()`; `next()`                                                |
+| `this.modelClass`, `modelClass.tableName`    | `entity` of the context in model controllers; `em.getMetadata(entity).tableName`                           |
+| `ctx.status`, `ctx.set()`                    | `c.status()`, `c.header()`                                                                                 |
+| `ctx.type`, `ctx.body =`, `ctx.attachment()` | A returned `Response`, such as `c.body()` or [`sendFile()`](api/server/api.md#sendfile)                    |
+| `ctx.state.user`                             | `user` of the context, `{ id, roles }`; `c.var.user`                                                       |
+| `ctx.state.*`                                | `c.set()` and `c.var`, also in the context, typed by augmenting `DitoVariables`                            |
+| `ctx.transaction`                            | `em` of the context, the transaction's entity manager during one; `c.var.em`; `useEm()` of `@ditojs/mikro` |
+| `ctx.ip`                                     | `getClientAddress(c)` of `@ditojs/server/node`                                                             |
+| `ctx.session`                                | `session` of the context, or `useSession()` of `@ditojs/auth`                                              |
+| `ctx.action`                                 | `action` of the context, the key such as `'post :id/publish'`; `c.var.action`                              |
+| `ctx.action.type`                            | `params.id !== undefined` for record actions; `c.req.method`                                               |
 
 - Handlers return data or a `Response`, see
   [Handler](api/server/controllers.md#handler). `undefined` responds with 204,
@@ -569,15 +569,9 @@ import { app } from './app.js'
 import * as controllers from './controllers/index.js'
 import * as mailer from './services/mailer.js'
 import * as scheduler from './services/scheduler.js'
-import { adminSource } from './users.js'
+import { admins } from './users.js'
 
-const sessions = app.createSessions({
-  cookieName: 'admin.sess',
-  maxAge: 24 * 60 * 60 * 1000,
-  users: adminSource
-})
-
-app.routeApi('/api', { controllers, sessions })
+app.routeApi('/api', { controllers, sessions: admins })
 await app.start({ services: [mailer, scheduler] })
 ```
 
@@ -610,15 +604,14 @@ await app.start({ services: [mailer, scheduler] })
 `@ditojs/auth`. The `session` and `credential` tables stay the same. So passkeys
 and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 
-- `app.createSessions({ cookieName, maxAge, users })` returns the sessions of an
-  API, which `app.routeApi()` takes as `sessions`.
-- [`createEntityUserSource()`](api/server/mikro.md#createentityusersource)
-  describes the users of an entity. It takes `usernameProperty` as before. For
-  users that no entity holds, the app writes the
-  [`UserSource`](api/server/auth.md#usersource) itself.
-- [`defineUserActions()`](api/server/auth.md#defineuseractions) serves the
-  admin's users. It returns a mixin for the `mixins` of the users controller.
-  Its `get capabilities` tells the admin what to offer. Other users, such as a
+- `app.createUsers(entity, { session: { cookieName, maxAge }, serialize })`
+  returns the users of an entity, which `app.routeApi()` and `createAdmin()`
+  take as `sessions`. Without the kit, the app calls
+  [`createUsers()`](api/server/auth.md#createusers) with `orm` and `secrets`. It
+  takes `usernameProperty` as before.
+- [`users.defineActions()`](api/server/auth.md#defineactions) serves the admin's
+  users. It returns a mixin for the `mixins` of the users controller. Its
+  `get capabilities` tells the admin what to offer. Other users, such as a
   site's members, log in through the app's own actions, see
   [Other users](guide/server/auth.md#other-users).
 - `post login` and `post password-reset` name the user as `username` in the
@@ -627,38 +620,39 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 - `self` in record actions, such as `PATCH users/self`, isn't built in. A
   controller that keeps it sets `load`, which gets the id as a string.
 - Actions that change security settings call
-  `getSession(c).checkConfirmedAccess(source)`, see
+  `session.checkConfirmedAccess()`, see
   [Confirmed access](guide/server/auth.md#confirmed-access).
-- Writes of `defineUserWrites()` that change a password or a username need
-  confirmed access, as `post password` does, also for other users of the
-  source, as in Dito.js 6.
-- The entity of `createEntityUserSource()` hides `hash` with `.hidden()`, as
-  `UserMixin` did. Otherwise the source throws when it loads a user.
+- [`users.defineWrites()`](api/server/auth.md#definewrites) replaces the
+  password handling of `UserMixin` on the users' model controller. Writes that
+  change a password or a username need confirmed access of the session's user,
+  as `post password` does, also for other users, as in Dito.js 6.
+- The entity of `createUsers()` hides `hash` with `.hidden()`, as `UserMixin`
+  did. Otherwise `createUsers()` throws when it loads a user.
 - `config.app.authentication.reconfirmAccessAfter` becomes `reconfirmAfter` of
-  `defineUserActions()`.
+  `users.defineActions()`.
 - Responses have no `success` or `authenticated`. The actions respond as in
-  [`defineUserActions()`](api/server/auth.md#defineuseractions).
+  [`users.defineActions()`](api/server/auth.md#defineactions).
 - New passwords need at least 8 characters by default. Dito.js 6 took any
   password that wasn't empty.
-- The `password` schema of the user source replaces the `password` property of
-  the model, such as `createEntityUserSource(Admin, { password })`. The actions
-  of `defineUserActions()` and `defineUserWrites()` check new passwords
-  with it.
+- The `password` schema of `createUsers()` replaces the `password` property of
+  the model, such as `createUsers(Admin, { password })`. The actions of
+  `users.defineActions()` and `users.defineWrites()` check new passwords with it.
 - The session saves after the action if it changed, even when the action throws.
   So used challenges and codes stay used. A session that a parallel request
   ended stays ended.
 - `refreshFingerprint()` applies when the session saves after a request without
   an error. So a failed write keeps the old hash, and the fingerprint that
   matches it.
-- `PasskeyService` and `TotpService` become
-  [`createPasskeys()`](api/server/auth.md#createpasskeys) and
-  [`createTotp()`](api/server/auth.md#createtotp).
-- `config.app.authentication.passwordReset` becomes
-  [`createPasswordReset()`](api/server/auth.md#createpasswordreset). It takes
-  `secrets` instead of `app.keys`, and `send` instead of
-  `sendPasswordReset()`.
-- The controller that deletes users passes `credentials` to
-  `defineUserWrites()`, see [Credentials](guide/server/auth.md#credentials).
+- `PasskeyService` and `TotpService` become the options
+  [`passkeys`](api/server/auth.md#passkeys) and
+  [`totp`](api/server/auth.md#totp) of `users.defineActions()`.
+- `config.app.authentication.passwordReset` becomes the option
+  [`passwordReset`](api/server/auth.md#password-reset) of
+  `users.defineActions()`. The `secrets` of `createUsers()` replace `app.keys`,
+  and `send` replaces `sendPasswordReset()`.
+- `users.defineWrites()` deletes the credentials of deleted users, see
+  [Credentials](guide/server/auth.md#credentials). The app creates the
+  `credential` table also without passkeys and TOTP.
 
 #### Storage
 
@@ -720,7 +714,7 @@ const admin = createAdmin({
   dist: path.resolve('dist/admin'),
   vite: isDevelopment ? 'admin.vite.config.js' : undefined,
   api: { url: '/api/admin', users: { path: 'admins' } },
-  sessions,
+  sessions: admins,
   authorize: 'admin'
 })
 app.hono.route('/admin', admin)

@@ -23,5 +23,5 @@ Entries are read by the people who upgrade apps, so keep them short:
   it. Link the docs or the upgrade guide for details, instead of describing
   edge cases or how the code works.
 - Name the option, method or class that changed, e.g. `nullable: false` or
-  `getSession(c)`.
+  `useSession()`.
 - Changes of the same topic can share one entry, with sub-items.

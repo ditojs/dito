@@ -24,7 +24,7 @@ export interface CreateAdminOptions {
   // `dito.settings` in the browser.
   settings?: Record<string, unknown>
   // The sessions that `getUser` and `authorize` need, such as those of
-  // `createSessions()`. Their middleware runs only on the requests that
+  // `createUsers()`. Their middleware runs only on the requests that
   // `authorize` checks, and `getUser` defaults to theirs.
   sessions?: {
     middleware: MiddlewareHandler
