@@ -178,7 +178,10 @@ export interface Adapter {
   // and `createApi()` throws for actions with `transacted: true`.
   transact?: Transact
   // The `HttpError` of a database error, or undefined for other errors.
-  toHttpError?: (error: unknown, c: DitoContext) => HttpError | undefined
+  toHttpError?: (context: {
+    error: unknown
+    c: DitoContext
+  }) => HttpError | undefined
   // Wraps all model controllers of `entity` on this adapter. For Dito's own
   // packages.
   wrapEntity?: (entity: object, wrapper: EntityWrapper) => void

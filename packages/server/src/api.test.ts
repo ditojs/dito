@@ -63,7 +63,7 @@ function setup(
       adapter: {
         connect,
         transact,
-        toHttpError: error =>
+        toHttpError: ({ error }) =>
           error instanceof RangeError
             ? new HttpError(422, { type: 'OutOfRange', message: error.message })
             : undefined
@@ -1749,7 +1749,7 @@ describe('errors', () => {
 
   it('passes the context to `toHttpError()` of the adapter', async () => {
     const toHttpError = vi.fn(
-      (_error: unknown, c: DitoContext) =>
+      ({ c }: { error: unknown; c: DitoContext }) =>
         new HttpError(503, {
           message: `${c.req.method} of ${c.req.param('id')}`
         })
@@ -1772,7 +1772,7 @@ describe('errors', () => {
     const response = await request(api, 'GET', '/api/fonts/4')
     expect(response.status).toBe(503)
     expect(response.data.message).toBe('GET of 4')
-    expect(toHttpError.mock.calls[0]![0]).toBe(error)
+    expect(toHttpError.mock.calls[0]![0].error).toBe(error)
     expect(onError.mock.calls[0]![0].error).toBe(error)
   })
 

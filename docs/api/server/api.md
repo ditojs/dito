@@ -187,7 +187,7 @@ interface Adapter {
   getKysely(c?: DitoContext): Kysely<any>
   connect?(c: DitoContext): DitoVariables['em'] | Promise<DitoVariables['em']>
   transact?: Transact
-  toHttpError?(error: unknown, c: DitoContext): HttpError | undefined
+  toHttpError?({ error, c }): HttpError | undefined
 }
 ```
 

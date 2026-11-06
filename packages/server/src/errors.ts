@@ -126,7 +126,7 @@ export function createErrorHandler({
   toHttpError?: Adapter['toHttpError']
 } = {}): ErrorHandler {
   return async (error, c) => {
-    const httpError = convertStatusError(toHttpError?.(error, c) ?? error)
+    const httpError = convertStatusError(toHttpError?.({ error, c }) ?? error)
     const body = (httpError ?? new HttpError(500)).toJSON()
     if (body.status >= 500) await onError({ error, c })
     const response = Response.json(body, { status: body.status })
