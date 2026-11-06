@@ -347,20 +347,23 @@ The scan:
   referenced ones;
 - inserts the rows of referenced files that have none.
 
-Its report has these keys:
+Its report, the type `ScanAssetsReport`, has these keys:
 
 - `referenced`, the files that rows reference again;
 - `unreferenced`, all unreferenced files with their `since` and `createdAt`;
 - `missing`, the inserted rows;
-- `rowCount`.
+- `rowCount`;
+- `duration`, in milliseconds.
 
 The release deletes the files and rows of assets that have been unreferenced for
-longer than `deleteUnusedAfter`, once they are an hour old. A dry run writes and deletes nothing. It
-returns as `released` the unreferenced files that the release would delete.
+longer than `deleteUnusedAfter`, once they are an hour old. A dry run writes and
+deletes nothing. It returns as `released` the unreferenced files that the release
+would delete. `released` holds the type `ReleasedAsset`, with its `key`, its
+`storage`, and an `error` if the file couldn't be removed.
 
 `assets.findReferences({ tables?, storage?, keys? })` lists the files that rows
-reference, with their table, id, column and data path. With `keys`, it only
-lists the references of these files.
+reference, with their table, id, column and data path, as the type
+`AssetReference`. With `keys`, it only lists the references of these files.
 
 `assets.import(table, data)` imports the files that a row's data references but
 no `asset` row holds, such as the `file://` files of seed data, as

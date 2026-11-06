@@ -3,23 +3,20 @@ export {
   getUniqueKey,
   type AssetFile,
   type FileData,
-  type StorageOptions,
-  type StoreOptions
+  type StorageOptions
 } from './Storage.ts'
-export { DiskStorage, type DiskStorageOptions } from './DiskStorage.ts'
-export { S3Storage, type S3Client, type S3StorageOptions } from './S3Storage.ts'
+export { DiskStorage } from './DiskStorage.ts'
+export { S3Storage } from './S3Storage.ts'
 export {
   StorageRegistry,
   createStorages,
   type StorageDefinition
 } from './StorageRegistry.ts'
 export type { AssetField } from './assetFields.ts'
-export type { AssetUpload } from './assetUploads.ts'
 export {
   createAssets,
   type Assets,
-  type CreateAssetsOptions,
-  type DefineUploadsOptions
+  type CreateAssetsOptions
 } from './createAssets.ts'
 export type {
   Asset,

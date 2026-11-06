@@ -41,7 +41,7 @@ export interface CreateAssetsOptions {
   maxSize?: number | string
 }
 
-export interface DefineUploadsOptions {
+interface DefineUploadsOptions {
   // Uploads of fields that no asset field describes, with globs as `dataPath`.
   uploads?: AssetUpload[]
 }

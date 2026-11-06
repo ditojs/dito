@@ -17,7 +17,6 @@ export { defineMikroConfig } from './defineMikroConfig.ts'
 export {
   defineJsonType,
   getAssetFields,
-  type JsonTypeAsset,
   type DefineJsonTypeOptions
 } from './SchemaJsonType.ts'
 export {

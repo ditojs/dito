@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { DiskStorage, type DiskStorageOptions } from './index.ts'
+import { DiskStorage, type DiskStorageOptions } from './DiskStorage.ts'
 
 let basePath: string
 
