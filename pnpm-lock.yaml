@@ -491,9 +491,6 @@ importers:
 
   packages/auth:
     dependencies:
-      '@ditojs/mikro':
-        specifier: workspace:^
-        version: link:../mikro
       '@ditojs/utils':
         specifier: workspace:^
         version: link:../utils
@@ -510,6 +507,9 @@ importers:
         specifier: ^9.5.2
         version: 9.5.2
     devDependencies:
+      '@ditojs/mikro':
+        specifier: workspace:^
+        version: link:../mikro
       '@ditojs/server':
         specifier: workspace:^
         version: link:../server
@@ -663,9 +663,6 @@ importers:
 
   packages/storage:
     dependencies:
-      '@ditojs/mikro':
-        specifier: workspace:^
-        version: link:../mikro
       '@ditojs/utils':
         specifier: workspace:^
         version: link:../utils
@@ -694,6 +691,9 @@ importers:
       '@aws-lite/s3':
         specifier: ^0.2.7
         version: 0.2.7
+      '@ditojs/mikro':
+        specifier: workspace:^
+        version: link:../mikro
       '@ditojs/server':
         specifier: workspace:^
         version: link:../server
