@@ -530,8 +530,9 @@ and the app's rules, see [Writes](guide/server/writes.md). Then it flushes once.
   check lengths, empty required strings and the digits of decimals. Postgres
   checks the rest, such as the ranges of numbers. For stricter rules, give the
   action a Zod `body` schema, such as `'post': { body: postSchema }`. The writes
-  of a website need one. The messages name the expected type, such as
-  `expected int` for integer columns.
+  of a website need one. The checks are Zod schemas from the metadata, so the
+  messages are Zod's, such as `Invalid input: expected number, received string`.
+  Dates are ISO 8601 strings with an offset, or plain dates.
 - **`deserialize({ json, record, c })`** decides what a user may write. It
   replaces `$parseJson()`, the read-only rules of properties, and the
   `before:*:patch` hooks that changed the body. Custom handlers don't run it.

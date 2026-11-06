@@ -213,7 +213,7 @@ describe('the checks of a body', () => {
       count: 'Invalid input: expected int, received number',
       ratio: 'Invalid input: expected number, received string',
       flag: 'Invalid input: expected boolean, received string',
-      at: 'Invalid input: expected date, received string',
+      at: 'Invalid input: expected date',
       state: 'Invalid option: expected one of "draft"|"live"'
     })
     const sample = await createRecord(em, Sample, {
@@ -231,7 +231,7 @@ describe('the checks of a body', () => {
   it('names integers in the errors of integer columns', async () => {
     const em = orm.em.fork()
     expect(await issues(createRecord(em, Sample, { count: '1' }))).toEqual({
-      count: 'Invalid input: expected int, received string'
+      count: 'Invalid input: expected number, received string'
     })
   })
 
@@ -314,7 +314,7 @@ describe('the checks of a body', () => {
     ).toEqual({
       'tags/1': 'Invalid input: expected string, received object',
       'sizes/1': 'Invalid input: expected int, received number',
-      'sizes/2': 'Invalid input: expected int, received string',
+      'sizes/2': 'Invalid input: expected number, received string',
       'states/1': 'Invalid option: expected one of "draft"|"live"'
     })
     // The schema of a custom type checks arrays whose items are valid.

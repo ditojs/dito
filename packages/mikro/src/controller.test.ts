@@ -2019,7 +2019,7 @@ describe('writes', () => {
   it('stores dates that it takes as ISO strings', async () => {
     const releasedAt = '2020-01-01T00:00:00.000Z'
     const { json } = await request(api, 'PATCH', '/api/books/2', {
-      releasedAt: '2020-01-01T01:00:00+0100'
+      releasedAt: '2020-01-01T01:00:00+01:00'
     })
     expect(json.releasedAt).toBe(releasedAt)
     const [row] = await sql('select released_at from book where id = 2')

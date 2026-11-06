@@ -46,6 +46,10 @@ They keep what a client may write. They check what Postgres can't check well:
   items of array columns. Without this, `em.create()` would turn a string such
   as `"false"` into `true` for a boolean. `em.assign()` would throw at the first
   wrong value, without its path in the body.
+- The checks of a column are a Zod schema from its metadata, so the messages
+  are Zod's, such as `Invalid input: expected number, received string`.
+- Dates are ISO 8601 strings: a date-time with an offset such as `Z` or
+  `+02:00`, or a plain date such as `2026-05-14`, which is local midnight.
 - Decimals in string mode take numbers and numeric strings.
 - They check the `length` of strings, in characters.
 - They check that decimals have no more integer digits than their `precision`
@@ -114,6 +118,8 @@ email: p.string().type(new EmailType())
 - It is a getter, because MikroORM deep-copies custom types with the metadata.
 - The checks run the schema at the property's path, wherever the property
   appears in a body.
+- The schema runs on the values that pass the column's checks. A decimal in
+  string mode arrives as a number.
 - The schema only validates. The value is written as sent, without the schema's
   transforms and defaults.
 

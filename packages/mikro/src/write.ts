@@ -2,16 +2,12 @@ import type { z } from 'zod'
 import { createValidationError, type ValidationIssue } from '@ditojs/server'
 import {
   isArray,
-  isBoolean,
   isPlainObject,
   isString,
   mapConcurrently,
   parsePlainDate
 } from '@ditojs/utils'
 import {
-  ArrayType,
-  DecimalType,
-  EnumArrayType,
   ReferenceKind,
   wrap,
   type EntityMetadata,
@@ -23,14 +19,19 @@ import {
   getLoadedRows,
   getOwnedRows,
   getPrimaryKey,
-  integerBits,
   isOwned,
   isOwningToOne,
   isToMany,
   toPrimaryKey,
   type Row
 } from './metadata.ts'
+import { getColumnSchema, getType, isRequired } from './columnSchema.ts'
 import { runSchema } from './validation.ts'
+
+type StandardIssue = Pick<ValidationIssue, 'message'> & {
+  path?: readonly any[]
+  code?: unknown
+}
 
 // The writes of the default `post` and `patch :id`, also for custom handlers.
 
@@ -56,21 +57,6 @@ interface Ref {
 interface NewRow {
   meta: EntityMetadata
   row: Row
-}
-
-// MikroORM converts some values silently, such as any string to `true` for a
-// boolean:
-const scalarChecks: Record<string, (value: unknown) => boolean> = {
-  string: isString,
-  number: Number.isFinite,
-  int: Number.isInteger,
-  boolean: isBoolean,
-  date: value => isString(value) && !isNaN(Date.parse(value)),
-  // Decimals in string mode take numbers too.
-  decimal: value => (
-    Number.isFinite(value) ||
-    (isString(value) && value.trim() !== '' && Number.isFinite(Number(value)))
-  )
 }
 
 const writableProps = new WeakMap<EntityMetadata, EntityProperty[]>()
@@ -146,14 +132,14 @@ class BodyCheck {
     )
   }
 
-  addOptionIssue(items: unknown[], path: Path) {
-    const options = items.map(item => JSON.stringify(item)).join('|')
-    this.addIssue(`Invalid option: expected one of ${options}`, path)
-  }
-
-  addSizeIssue(code: 'too_big' | 'too_small', expected: string, path: Path) {
-    const size = code === 'too_big' ? 'Too big' : 'Too small'
-    this.addIssue(`${size}: expected ${expected}`, path, code)
+  addIssues(issues: readonly StandardIssue[], path: Path) {
+    for (const issue of issues) {
+      this.issues.push({
+        path: [...path, ...(issue.path ?? [])],
+        message: issue.message,
+        code: isString(issue.code) ? issue.code : 'custom'
+      })
+    }
   }
 
   cleanRow(meta: EntityMetadata, data: unknown, path: Path, parent?: string) {
@@ -273,88 +259,21 @@ class BodyCheck {
     return id
   }
 
-  // Check the bounds that the column declares, which Postgres would refuse
-  // without naming a field. Postgres checks the ranges of numbers itself.
+  // The schema of the column only validates. The value is written as sent.
   cleanScalar(prop: EntityProperty, value: unknown, path: Path) {
-    if (prop.customType instanceof ArrayType) {
-      return this.cleanArray(prop, value, path)
-    }
-    const type = getType(prop)
-    const { items, length, precision, scale = 0 } = prop
-    if (scalarChecks[type]?.(value) === false) {
-      return this.addTypeIssue(type, value, path)
-    }
-    if (prop.enum && items && !items.includes(value as never)) {
-      return this.addOptionIssue(items, path)
-    }
-    if (prop.customType instanceof DecimalType && precision) {
-      // Postgres rounds the fraction to the scale, but refuses more integer
-      // digits than the precision leaves:
-      const limit = 10 ** (precision - scale)
-      const number = Number(value)
-      if (number >= limit) {
-        return this.addSizeIssue('too_big', `number to be <${limit}`, path)
-      }
-      if (number <= -limit) {
-        return this.addSizeIssue('too_small', `number to be >${-limit}`, path)
-      }
-    } else if (type === 'string' && isString(value)) {
-      // Postgres counts the characters of a string, not its UTF-16 units.
-      if (length && [...value].length > length) {
-        const expected = `string to have <=${length} characters`
-        return this.addSizeIssue('too_big', expected, path)
-      }
-      // As the `required` of Dito.js 6, a required string can't be empty.
-      if (value === '' && isRequired(prop)) {
-        const expected = 'string to have >=1 characters'
-        return this.addSizeIssue('too_small', expected, path)
-      }
-    }
-    this.checkCustomSchema(prop, value, path)
+    const schema = getColumnSchema(prop)
+    this.schemaChecks.push(this.checkSchema(schema, value, path))
     // A plain date, such as `2026-05-14`, is local midnight, which
     // `new Date()` would read as UTC midnight.
-    return (type === 'date' && parsePlainDate(value as string)) || value
+    return (
+      (getType(prop) === 'date' && parsePlainDate(value as string)) ||
+      value
+    )
   }
 
-  cleanArray(prop: EntityProperty, value: unknown, path: Path) {
-    if (!isArray(value)) return this.addTypeIssue('array', value, path)
-    const type = getItemType(prop)
-    const { items } = prop
-    const { length } = this.issues
-    for (const [index, item] of value.entries()) {
-      const itemPath = [...path, index]
-      if (!scalarChecks[type]!(item)) {
-        this.addTypeIssue(type, item, itemPath)
-      } else if (
-        prop.customType instanceof EnumArrayType &&
-        items &&
-        !items.includes(item as never)
-      ) {
-        this.addOptionIssue(items, itemPath)
-      }
-    }
-    // As for scalars, only valid values go through the custom type's schema.
-    if (this.issues.length === length) {
-      this.checkCustomSchema(prop, value, path)
-    }
-    return value
-  }
-
-  checkCustomSchema(prop: EntityProperty, value: unknown, path: Path) {
-    const { schema } = (prop.customType ?? {}) as { schema?: z.ZodType }
-    if (schema) this.schemaChecks.push(this.checkSchema(schema, value, path))
-  }
-
-  // The schema only validates the value as sent. Its output isn't written.
   async checkSchema(schema: z.ZodType, value: unknown, path: Path) {
     const { issues = [] } = await runSchema(schema, value)
-    for (const issue of issues) {
-      this.issues.push({
-        path: [...path, ...(issue.path ?? [])],
-        message: issue.message,
-        code: isString(issue.code) ? issue.code : 'custom'
-      })
-    }
+    this.addIssues(issues as StandardIssue[], path)
   }
 }
 
@@ -367,43 +286,6 @@ async function clean(meta: EntityMetadata, data: unknown) {
   // Without a row, there is nothing to match.
   if (!check.row) throw createValidationError(check.issues)
   return check
-}
-
-// The type of a property, as `scalarChecks` and messages name it.
-function getType(prop: EntityProperty) {
-  const { runtimeType } = prop
-  const isDecimalString = (
-    prop.customType instanceof DecimalType &&
-    runtimeType === 'string'
-  )
-  const isInteger = (
-    runtimeType === 'number' &&
-    (prop.columnTypes?.[0] ?? '') in integerBits
-  )
-  return isOwningToOne(prop)
-    ? 'id'
-    : isOwned(prop)
-      ? 'object'
-      : runtimeType === 'Date'
-        ? 'date'
-        : isDecimalString
-          ? 'decimal'
-          : isInteger
-            ? 'int'
-            : runtimeType
-}
-
-// MikroORM gives all array columns the type `string[]`, so read the type of the
-// column, such as `int[]`:
-function getItemType(prop: EntityProperty) {
-  const column = (prop.columnTypes?.[0] ?? '').replace(/(\(.*\))?\[\]$/, '')
-  return column in integerBits
-    ? 'int'
-    : /^(numeric|decimal|real|double|float)/.test(column)
-      ? 'number'
-      : /^bool/.test(column)
-        ? 'boolean'
-        : 'string'
 }
 
 function isWritable(prop: EntityProperty, meta: EntityMetadata) {
@@ -437,16 +319,6 @@ function getWritableProps(meta: EntityMetadata) {
     writableProps.set(meta, props)
   }
   return props
-}
-
-function isRequired(prop: EntityProperty) {
-  return (
-    !prop.nullable &&
-    prop.default === undefined &&
-    prop.defaultRaw === undefined &&
-    !prop.onCreate &&
-    (prop.kind === ReferenceKind.SCALAR || isOwningToOne(prop))
-  )
 }
 
 // Match the owned rows to the loaded rows of `record` by their keys, at any
@@ -512,7 +384,7 @@ function matchRows(meta: EntityMetadata, check: BodyCheck, record?: object) {
             : 'is not allowed in a new row'
           check.addIssue(message, [...childPath, key.name])
         }
-        // `em.assign()` creates a new pair, which `setRefs()` can't reach.
+        // A new pair is keyed by a stored row, and holds no refs.
         if (!found && isPivot) {
           for (const ref of check.refs) {
             if (ref.row === child) {
