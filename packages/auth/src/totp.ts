@@ -11,11 +11,7 @@ import type { Context } from 'hono'
 import { createAuthError, authenticationTimeout } from './authentication.ts'
 import type { Credentials } from './credentials.ts'
 import { getSession } from './sessions.ts'
-import {
-  getUserIdentifier,
-  type User,
-  type UserSource
-} from './users.ts'
+import { getUserIdentifier, type User } from './users.ts'
 
 // TOTP as a credential of type `totp`, with its secret encrypted.
 
@@ -62,21 +58,16 @@ export function createTotp(
       return { uri, secret }
     },
 
-    async confirmSecret(
-      c: Context,
-      source: UserSource<any>,
-      user: User,
-      code: unknown
-    ) {
+    async confirmSecret(c: Context, user: User, code: unknown) {
       const { value } = getSession(c)
       const { pendingTotp } = value
       if (!(pendingTotp?.expires > Date.now())) {
         throw createAuthError('Missing or expired TOTP confirmation', 400)
       }
-      const identifier = getUserIdentifier(source, user)
+      const identifier = getUserIdentifier(credentials.source, user)
       const createConflictError = () =>
         createAuthError('TOTP is already set up', 409)
-      if (await credentials.findFirst(source, user, 'totp')) {
+      if (await credentials.findFirst(user, 'totp')) {
         throw createConflictError()
       }
       const { secret } = pendingTotp
@@ -89,7 +80,7 @@ export function createTotp(
         return `${code.slice(0, 5)}-${code.slice(5)}`
       })
       try {
-        await credentials.insert(source, user, 'totp', {
+        await credentials.insert(user, 'totp', {
           // The key is unique per source, so one of two concurrent
           // confirmations fails.
           key: `totp-${identifier}`,
@@ -101,7 +92,7 @@ export function createTotp(
           }
         })
       } catch (error) {
-        if (await credentials.findFirst(source, user, 'totp')) {
+        if (await credentials.findFirst(user, 'totp')) {
           throw createConflictError()
         }
         throw error
@@ -113,16 +104,10 @@ export function createTotp(
     // Lock the credential in a transaction of its own, against concurrent
     // requests that use the same code or miss a failure, and so that failures
     // stay counted when the request fails.
-    async verifyCode(
-      source: UserSource<any>,
-      user: User,
-      code: unknown
-    ) {
-      const identifier = getUserIdentifier(source, user)
+    async verifyCode(user: User, code: unknown) {
+      const identifier = getUserIdentifier(credentials.source, user)
       const verify = async (trx: Kysely<any>) => {
-        const totp = await credentials.findFirst(source, user, 'totp', {
-          trx
-        })
+        const totp = await credentials.findFirst(user, 'totp', { trx })
         if (!totp) return { isValid: false, isLocked: false }
         const { data } = totp
         if (data.lockedUntil > Date.now()) {

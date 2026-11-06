@@ -45,12 +45,16 @@ beforeEach(async () => {
   verifyRegistration.mockReset()
   verifyAuthentication.mockReset()
   db = getDb()
-  credentials = createCredentials({ adapter: { getKysely: () => db } })
   ada = await createUser(1, 'ada', 'secret')
   bob = await createUser(2, 'bob', 'secret')
+  const source = createSource('Admin', [ada, bob])
+  credentials = createCredentials({
+    adapter: { getKysely: () => db },
+    source
+  })
   const { api } = setup({
     db,
-    source: createSource('Admin', [ada, bob]),
+    source,
     credentials,
     passkeys: { rpName: 'Dito' }
   })

@@ -9,7 +9,7 @@ import type { Context } from 'hono'
 import { createAuthError, authenticationTimeout } from './authentication.ts'
 import type { Credential, Credentials } from './credentials.ts'
 import { getSession } from './sessions.ts'
-import type { User, UserSource } from './users.ts'
+import type { User } from './users.ts'
 
 // Passkeys as discoverable WebAuthn credentials of type `passkey`.
 
@@ -99,12 +99,7 @@ export function createPasskeys(
       return options
     },
 
-    async verifyRegistration(
-      c: Context,
-      source: UserSource<any>,
-      user: User,
-      response: any
-    ) {
+    async verifyRegistration(c: Context, user: User, response: any) {
       const challenge = consumeChallenge(c, 'registration')
       const { verified, registrationInfo } = await Promise.try(() =>
         verifyRegistrationResponse({
@@ -120,7 +115,7 @@ export function createPasskeys(
         throw createAuthError('Passkey is incorrect', 400)
       }
       const { credential, aaguid } = registrationInfo
-      return credentials.insert(source, user, 'passkey', {
+      return credentials.insert(user, 'passkey', {
         key: credential.id,
         // Name the passkey after its provider. Anonymous providers send an
         // all-zero AAGUID, which isn't listed.

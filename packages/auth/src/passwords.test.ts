@@ -1,8 +1,10 @@
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
 import { defineMixin, HttpError, type Handler } from '@ditojs/server'
+import { createCredentials } from './credentials.ts'
 import { defineUserWrites, verifyPassword } from './passwords.ts'
 import type { DefineUserActionsOptions } from './userActions.ts'
+import type { UserSource } from './users.ts'
 import {
   createSource,
   createUser,
@@ -45,8 +47,14 @@ const crud = defineMixin({
   }
 })
 
+function defineWrites(source: UserSource<TestUser>) {
+  const adapter = { getKysely: () => db }
+  const credentials = createCredentials({ adapter, source })
+  return defineUserWrites({ source, credentials })
+}
+
 function createApp(
-  password?: z.ZodType<string>,
+  password = admins.password,
   options?: Partial<DefineUserActionsOptions<TestUser>>
 ) {
   const source = { ...admins, password }
@@ -58,7 +66,7 @@ function createApp(
       {
         path: 'users',
         authorize: true,
-        mixins: [crud, defineUserWrites({ source })]
+        mixins: [crud, defineWrites(source)]
       }
     ]
   })
@@ -108,7 +116,7 @@ describe('defineUserWrites()', () => {
           authorize: true,
           mixins: [
             crud,
-            defineUserWrites({ source: createSource('Customer', users) })
+            defineWrites(createSource('Customer', users))
           ]
         }
       ]
@@ -202,7 +210,7 @@ describe('defineUserWrites()', () => {
         {
           path: 'users',
           authorize: true,
-          mixins: [crud, defineUserWrites({ source: admins }), failing]
+          mixins: [crud, defineWrites(admins), failing]
         }
       ]
     })

@@ -14,11 +14,7 @@ import {
   createPasswordReset,
   type CreatePasswordResetOptions
 } from './passwordReset.ts'
-import {
-  defaultPasswordSchema,
-  hashPassword,
-  verifyPassword
-} from './passwords.ts'
+import { hashPassword, verifyPassword } from './passwords.ts'
 import { getSession } from './sessions.ts'
 import { createTotp, type CreateTotpOptions } from './totp.ts'
 import {
@@ -34,8 +30,7 @@ import {
 export interface DefineUserActionsOptions<U extends User> {
   // Its `password` checks the new passwords.
   source: UserSource<U>
-  // Needed for passkeys and TOTP.
-  credentials?: Credentials
+  credentials: Credentials
   passkeys?: CreatePasskeysOptions
   totp?: CreateTotpOptions
   passwordReset?: CreatePasswordResetOptions
@@ -61,17 +56,14 @@ export function defineUserActions<U extends User>({
   ...options
 }: DefineUserActionsOptions<U>) {
   const reconfirmAfter = parseDuration(options.reconfirmAfter ?? '10m')
-  if ((options.passkeys || options.totp) && !credentials) {
-    throw new Error('Unable to use passkeys or TOTP without credentials.')
-  }
   const passkeys = options.passkeys
-    ? createPasskeys(options.passkeys, credentials!)
+    ? createPasskeys(options.passkeys, credentials)
     : null
-  const totp = options.totp ? createTotp(options.totp, credentials!) : null
+  const totp = options.totp ? createTotp(options.totp, credentials) : null
   const passwordReset = options.passwordReset
     ? createPasswordReset(options.passwordReset)
     : null
-  const { password = defaultPasswordSchema } = source
+  const { password } = source
   const checkAuthentication = async (c: Context) => {
     const user = await getSession(c).getUser<U>()
     if (!user) throw createAuthError('Unauthorized Access')
@@ -81,12 +73,10 @@ export function defineUserActions<U extends User>({
   const checkConfirmedAccess = (c: Context) =>
     getSession(c).checkConfirmedAccess<U>()
 
-  // Users with TOTP need a code whenever the app passes `credentials`. Without
-  // the TOTP feature, they get the error of a wrong password, which doesn't
-  // reveal that the password was right.
-  const hasTotp = async (user: U) => (
-    !!credentials && !!(await credentials.findFirst(source, user, 'totp'))
-  )
+  // Users with TOTP need a code. Without the TOTP feature, they get the error
+  // of a wrong password, which doesn't reveal that the password was right.
+  const hasTotp = async (user: U) =>
+    !!(await credentials.findFirst(user, 'totp'))
 
   const login = async (c: Context, user: U) => {
     const session = getSession(c)
@@ -107,7 +97,7 @@ export function defineUserActions<U extends User>({
   const verifyPasskey = async (c: Context, response: any) => {
     const key = response?.id
     const credential = isString(key)
-      ? await credentials!.findByKey(source, 'passkey', key)
+      ? await credentials.findByKey('passkey', key)
       : null
     const user = credential
       ? await source.findById(credential.userId)
@@ -188,7 +178,7 @@ export function defineUserActions<U extends User>({
         } else if (await hasTotp(user)) {
           if (!totp) throw createAuthError('Password is incorrect')
           if (!code) return { codeRequired: true }
-          await totp.verifyCode(source, user, code)
+          await totp.verifyCode(user, code)
         }
         getSession(c).confirmAccess(user, reconfirmAfter)
       }
@@ -235,7 +225,7 @@ export function defineUserActions<U extends User>({
 
       'get passkeys': async ({ c }) => {
         const user = await checkAuthentication(c)
-        const list = await credentials!.list(source, user, 'passkey')
+        const list = await credentials.list(user, 'passkey')
         return list.map(toPasskey)
       },
 
@@ -244,7 +234,7 @@ export function defineUserActions<U extends User>({
         return passkeys.createRegistrationOptions(
           c,
           user.username ?? '',
-          await credentials!.list(source, user, 'passkey')
+          await credentials.list(user, 'passkey')
         )
       },
 
@@ -252,12 +242,7 @@ export function defineUserActions<U extends User>({
         body: anyBody,
         handler: async ({ body, c }) => {
           const user = await checkConfirmedAccess(c)
-          const credential = await passkeys.verifyRegistration(
-            c,
-            source,
-            user,
-            body
-          )
+          const credential = await passkeys.verifyRegistration(c, user, body)
           return toPasskey(credential)
         }
       }),
@@ -266,7 +251,7 @@ export function defineUserActions<U extends User>({
         const user = await checkConfirmedAccess(c)
         const { data: id } = credentialId.safeParse(params.id)
         if (!id) throw new HttpError(404)
-        const count = await credentials!.delete(source, user, 'passkey', id)
+        const count = await credentials.delete(user, 'passkey', id)
         if (count === 0) throw new HttpError(404)
       }
     }),
@@ -287,7 +272,7 @@ export function defineUserActions<U extends User>({
           }
           const user = await source.findById(parsed.id)
           if (!user) throw createAuthError('Code is incorrect')
-          await totp.verifyCode(source, user, code)
+          await totp.verifyCode(user, code)
           delete session.value.pendingLogin
           return login(c, user)
         }
@@ -295,7 +280,7 @@ export function defineUserActions<U extends User>({
 
       'get totp': async ({ c }) => {
         const user = await checkAuthentication(c)
-        const credential = await credentials!.findFirst(source, user, 'totp')
+        const credential = await credentials.findFirst(user, 'totp')
         return {
           enabled: !!credential,
           backupCodes: credential?.data.backupCodes.length ?? 0
@@ -314,7 +299,7 @@ export function defineUserActions<U extends User>({
         body: anyBody,
         handler: async ({ body: { code }, c }) => {
           const user = await checkConfirmedAccess(c)
-          const backupCodes = await totp.confirmSecret(c, source, user, code)
+          const backupCodes = await totp.confirmSecret(c, user, code)
           // The backup codes are stored hashed, so users see them only here.
           return { backupCodes }
         }
@@ -322,7 +307,7 @@ export function defineUserActions<U extends User>({
 
       'delete totp': async ({ c }) => {
         const user = await checkConfirmedAccess(c)
-        await credentials!.delete(source, user, 'totp')
+        await credentials.delete(user, 'totp')
       }
     })
   }

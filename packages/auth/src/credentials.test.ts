@@ -15,21 +15,6 @@ import {
 
 const getDb = useTestDatabase()
 
-describe('createCredentials()', () => {
-  it('deletes the credentials of a user', async () => {
-    const ada = await createUser(1, 'ada', null)
-    const bob = await createUser(2, 'bob', null)
-    const admins = createSource('Admin', [ada, bob])
-    const db = getDb()
-    const credentials = createCredentials({ adapter: { getKysely: () => db } })
-    await credentials.insert(admins, ada, 'totp', { data: {} })
-    await credentials.insert(admins, bob, 'totp', { data: {} })
-    await credentials.deleteUser(admins, ada)
-    expect(await credentials.findFirst(admins, ada, 'totp')).toBe(null)
-    expect(await credentials.findFirst(admins, bob, 'totp')).not.toBe(null)
-  })
-})
-
 describe('defineUserWrites() with credentials', () => {
   // The API of a controller that deletes `user`, as a model controller does,
   // and fails after that if `isFailing` is set.
@@ -39,7 +24,8 @@ describe('defineUserWrites() with credentials', () => {
     const credentials = createCredentials({
       adapter: {
         getKysely: c => (c ? (c.var.em as any).getKysely() : db)
-      }
+      },
+      source: admins
     })
     const users = defineController({
       path: 'users',
@@ -74,24 +60,27 @@ describe('defineUserWrites() with credentials', () => {
       },
       onError: () => {}
     })
-    return { api, admins, credentials }
+    return { api, credentials }
   }
 
   it('deletes the credentials of a deleted user', async () => {
     const ada = await createUser(1, 'ada', null)
-    const { api, admins, credentials } = createUsersApi(ada, false)
-    await credentials.insert(admins, ada, 'totp', { data: {} })
+    const bob = await createUser(2, 'bob', null)
+    const { api, credentials } = createUsersApi(ada, false)
+    await credentials.insert(ada, 'totp', { data: {} })
+    await credentials.insert(bob, 'totp', { data: {} })
     const response = await api.request('/users/1', { method: 'DELETE' })
     expect(response.status).toBe(200)
-    expect(await credentials.findFirst(admins, ada, 'totp')).toBe(null)
+    expect(await credentials.findFirst(ada, 'totp')).toBe(null)
+    expect(await credentials.findFirst(bob, 'totp')).not.toBe(null)
   })
 
   it('deletes in the transaction of the request', async () => {
     const ada = await createUser(1, 'ada', null)
-    const { api, admins, credentials } = createUsersApi(ada, true)
-    await credentials.insert(admins, ada, 'totp', { data: {} })
+    const { api, credentials } = createUsersApi(ada, true)
+    await credentials.insert(ada, 'totp', { data: {} })
     const response = await api.request('/users/1', { method: 'DELETE' })
     expect(response.status).toBe(409)
-    expect(await credentials.findFirst(admins, ada, 'totp')).not.toBe(null)
+    expect(await credentials.findFirst(ada, 'totp')).not.toBe(null)
   })
 })

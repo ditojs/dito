@@ -36,13 +36,8 @@ export function createUsers<U extends User>(
   { adapter, secrets, session, ...options }: CreateUsersOptions<U>
 ) {
   const source = createEntityUserSource<U>(entity, { ...options, adapter })
-  const sessions = createSessions({
-    ...session,
-    adapter,
-    secrets,
-    users: source
-  })
-  const credentials = createCredentials({ adapter })
+  const sessions = createSessions({ ...session, adapter, secrets, source })
+  const credentials = createCredentials({ adapter, source })
   // All model controllers of the entity hash passwords and protect their users.
   adapter.wrapEntity(entity, defineUserWrites<U>({ source, credentials }))
 
@@ -52,7 +47,6 @@ export function createUsers<U extends User>(
     getUser: sessions.getUser,
     readSignedCookie: sessions.readSignedCookie,
     setSignedCookie: sessions.setSignedCookie,
-    deleteExpiredSessions: sessions.deleteExpired,
 
     // The login, session and security actions, for a controller of their own.
     defineActions({ passwordReset, ...rest }: DefineActionsOptions<U> = {}) {

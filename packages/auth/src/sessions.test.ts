@@ -5,7 +5,11 @@ import type { Kysely } from 'kysely'
 import { HttpError, createApi, defineController } from '@ditojs/server'
 import * as passwords from './passwords.ts'
 import { createCredentials } from './credentials.ts'
-import { getPasswordFingerprint, getSession } from './sessions.ts'
+import {
+  deleteExpiredSessions,
+  getPasswordFingerprint,
+  getSession
+} from './sessions.ts'
 import {
   createSource,
   createUser,
@@ -441,7 +445,8 @@ describe('sessions', () => {
     'TOTP: $totp, password reset: $passwordReset',
     async ({ passkeys, totp, passwordReset }) => {
       const credentials = createCredentials({
-        adapter: { getKysely: () => db }
+        adapter: { getKysely: () => db },
+        source: admins
       })
       const { api } = setup({
         db,
@@ -634,7 +639,7 @@ describe('sessions', () => {
         { id: 'endless', value: '{}', expires_at: null }
       ])
       .execute()
-    await setup({ db, source: admins }).sessions.deleteExpired()
+    await deleteExpiredSessions({ getKysely: () => db })
     expect((await sessionIds()).sort()).toEqual(['endless', 'new'])
   })
 })

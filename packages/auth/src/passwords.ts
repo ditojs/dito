@@ -16,11 +16,6 @@ import type { User, UserSource } from './users.ts'
 const hashRounds = 10
 let dummyHash: Promise<string> | null = null
 
-// The schema of new passwords, unless the user source has its own.
-export const defaultPasswordSchema = z
-  .string({ error: 'The password is required.' })
-  .min(8, 'The password needs at least 8 characters.')
-
 export function hashPassword(password: string) {
   return bcrypt.hash(password, hashRounds)
 }
@@ -40,16 +35,11 @@ export async function verifyPassword(
   )
 }
 
-// What the model controllers of `@ditojs/mikro` set, without importing it.
-interface ModelVariables {
-  getRecord: () => Promise<Record<string, unknown> | null>
-}
-
 export interface DefineUserWritesOptions<U extends User> {
   // Its `password` checks the new passwords.
   source: UserSource<U>
-  // Routes `delete :id`, which deletes the credentials of the user too.
-  credentials?: Credentials
+  // `delete :id` deletes the credentials of the user too.
+  credentials: Credentials
 }
 
 // The mixin of a users' model controller that stores `password` as `hash`.
@@ -57,10 +47,7 @@ export function defineUserWrites<U extends User>({
   source,
   credentials
 }: DefineUserWritesOptions<U>) {
-  const {
-    password = defaultPasswordSchema,
-    usernameProperty = 'username'
-  } = source
+  const { password, usernameProperty } = source
   const schema = z.object({
     password: password.optional(),
     hash: z
@@ -79,9 +66,8 @@ export function defineUserWrites<U extends User>({
     if (body.password === undefined && username === undefined) return false
     if (!(await getSession(c).getUser())) return false
     if (body.password !== undefined) return true
-    const getRecord: ModelVariables['getRecord'] = c.get('getRecord')
-    const record = await getRecord()
-    return username !== record?.[usernameProperty]
+    const record = await c.var.getRecord()
+    return username !== record[usernameProperty]
   }
 
   const handler: Handler = async input => {
@@ -116,14 +102,9 @@ export function defineUserWrites<U extends User>({
   // Read the record first, as the handler beneath deletes it. The credentials
   // go in the request's transaction, together with the user.
   const deleteHandler: Handler = async ({ c, next }) => {
-    const getRecord: () => Promise<U | null> = c.get('getRecord')
-    const user = await getRecord()
+    const user = await c.var.getRecord<U>()
     const result = await next()
-    if (user) {
-      await credentials!.deleteUser(source, user, {
-        trx: credentials!.getKysely(c)
-      })
-    }
+    await credentials.deleteUser(user, c)
     return result
   }
 
@@ -131,7 +112,7 @@ export function defineUserWrites<U extends User>({
     actions: {
       'post': handler,
       'patch :id': handler,
-      ...(credentials && { 'delete :id': deleteHandler })
+      'delete :id': deleteHandler
     }
   })
 }

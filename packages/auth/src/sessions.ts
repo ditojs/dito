@@ -39,7 +39,7 @@ export interface CreateSessionsOptions {
   // In milliseconds or as a duration such as `'24h'`.
   maxAge: number | string
   // The source of the users that log in to these sessions.
-  users: UserSource<any>
+  source: UserSource<any>
 }
 
 // The options with `maxAge` parsed.
@@ -103,7 +103,7 @@ export class RequestSession {
   }
 
   get source() {
-    return this.#options.users
+    return this.#options.source
   }
 
   login(user: User) {
@@ -134,7 +134,7 @@ export class RequestSession {
     const { passport } = this.value
     const parsed = parseUserIdentifier(passport?.user)
     if (!passport || parsed?.name !== source.name) return null
-    const user: User | null | undefined = await source.findById(parsed.id)
+    const user: User | null = await source.findById(parsed.id)
     if (
       user &&
       passport.passwordFingerprint === getPasswordFingerprint(user.hash)
@@ -184,7 +184,6 @@ export class RequestSession {
     const { adapter, secrets, cookieName, maxAge } = this.#options
     const database = adapter.getKysely()
     const c = this.#c
-    const secure = isSecure(c)
     let id = this.#id
     // A failed write keeps the old hash, and so the old fingerprint:
     if (this.#refreshedFingerprint && this.value.passport && !c.error) {
@@ -192,7 +191,7 @@ export class RequestSession {
     }
     if (this.#destroying) {
       if (id) await deleteSession(database, id)
-      deleteCookie(c, cookieName, { secure })
+      deleteCookie(c, cookieName, { secure: isSecure(c) })
       return
     }
     if (this.#regenerating && id) {
@@ -223,15 +222,11 @@ export class RequestSession {
         .execute()
     }
     await setHonoSignedCookie(c, cookieName, id, secrets[0], {
-      expires,
-      sameSite: 'Lax',
-      secure,
-      httpOnly: true
+      ...getCookieDefaults(c),
+      expires
     })
   }
 }
-
-export type Sessions = ReturnType<typeof createSessions>
 
 export function createSessions(options: CreateSessionsOptions) {
   const { adapter, secrets, cookieName } = options
@@ -259,20 +254,9 @@ export function createSessions(options: CreateSessionsOptions) {
     options?: CookieOptions
   ) {
     return setHonoSignedCookie(c, name, value, secrets[0], {
-      sameSite: 'Lax',
-      secure: isSecure(c),
-      httpOnly: true,
+      ...getCookieDefaults(c),
       ...options
     })
-  }
-
-  // Delete the expired sessions. The `jobs` of the kit run this.
-  async function deleteExpired() {
-    await adapter
-      .getKysely()
-      .deleteFrom('session')
-      .where('expires_at', '<', new Date())
-      .execute()
   }
 
   // The session of the request's cookie, if it hasn't expired.
@@ -310,17 +294,25 @@ export function createSessions(options: CreateSessionsOptions) {
   }
 
   return {
-    cookieName,
     middleware,
     readSignedCookie,
     setSignedCookie,
-    deleteExpired,
     // The id and roles of the session's user, for `createApi()`.
     async getUser({ c }: { c: Context }) {
       const user = await getSession(c).getUser()
       return user ? { id: user.id, roles: user.roles ?? [] } : null
     }
   }
+}
+
+// Delete the expired sessions of all users, who share the `session` table. The
+// `jobs` of the kit run this.
+export async function deleteExpiredSessions(adapter: Adapter) {
+  await adapter
+    .getKysely()
+    .deleteFrom('session')
+    .where('expires_at', '<', new Date())
+    .execute()
 }
 
 // The session of the request, from the middleware of `createSessions()`.
@@ -339,6 +331,10 @@ export function useSession(): Session {
 
 function isSecure(c: Context) {
   return new URL(c.req.url).protocol === 'https:'
+}
+
+function getCookieDefaults(c: Context): CookieOptions {
+  return { sameSite: 'Lax', secure: isSecure(c), httpOnly: true }
 }
 
 function deleteSession(database: Kysely<any>, id: string) {

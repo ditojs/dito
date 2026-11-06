@@ -19,6 +19,7 @@ import {
 } from '@ditojs/mikro'
 import {
   createUsers,
+  deleteExpiredSessions,
   type CreateUsersOptions,
   type User,
   type Users
@@ -130,10 +131,8 @@ export function createApp({
     storages,
     ...assetsOptions
   })
-  // All users share the `session` table, so one of them deletes for all.
-  let deleteExpiredSessions: (() => Promise<void>) | undefined
   const jobServices = [
-    createJob(jobs.sessions, logger, () => deleteExpiredSessions?.()),
+    createJob(jobs.sessions, logger, () => deleteExpiredSessions(adapter)),
     createJob(jobs.assets, logger, async () =>
       logger.info(await assets.runJobs(), 'Asset jobs')
     )
@@ -152,9 +151,7 @@ export function createApp({
     },
 
     createUsers(entity, options) {
-      const users = createUsers(entity, { ...options, adapter, secrets })
-      deleteExpiredSessions ??= users.deleteExpiredSessions
-      return users
+      return createUsers(entity, { ...options, adapter, secrets })
     },
 
     routeApi(path, options) {

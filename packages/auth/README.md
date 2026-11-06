@@ -17,7 +17,7 @@ import { createApi, createHono, defineController } from '@ditojs/server'
 import { createUsers } from '@ditojs/auth'
 
 const admins = createUsers(Admin, {
-  orm,
+  adapter,
   secrets,
   session: { cookieName: 'admin.sess', maxAge },
   serialize: ['id', 'username']

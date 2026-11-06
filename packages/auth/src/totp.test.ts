@@ -36,10 +36,14 @@ beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['Date'] })
   db = getDb()
   ada = await createUser(1, 'ada', 'secret')
-  const credentials = createCredentials({ adapter: { getKysely: () => db } })
+  const source = createSource('Admin', [ada])
+  const credentials = createCredentials({
+    adapter: { getKysely: () => db },
+    source
+  })
   const { api } = setup({
     db,
-    source: createSource('Admin', [ada]),
+    source,
     credentials,
     totp: { issuer: 'Dito', secret: 'a long secret' }
   })
@@ -174,16 +178,18 @@ describe('totp()', () => {
 
   it('counts failures also when the request rolls back', async () => {
     await setUpTotp()
-    const credentials = createCredentials({ adapter: { getKysely: () => db } })
+    const credentials = createCredentials({
+      adapter: { getKysely: () => db },
+      source: createSource('Admin', [ada])
+    })
     const totp = createTotp(
       { issuer: 'Dito', secret: 'a long secret' },
       credentials
     )
-    const admins = createSource('Admin', [ada])
     const rollback = new Error('Rolled back')
     await expect(
       db.transaction().execute(async () => {
-        await expect(totp.verifyCode(admins, ada, '000000')).rejects.toThrow()
+        await expect(totp.verifyCode(ada, '000000')).rejects.toThrow()
         throw rollback
       })
     ).rejects.toBe(rollback)

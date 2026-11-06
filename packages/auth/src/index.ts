@@ -5,5 +5,9 @@ export {
   type DefineActionsOptions,
   type Users
 } from './createUsers.ts'
-export { useSession, type Session } from './sessions.ts'
+export {
+  deleteExpiredSessions,
+  useSession,
+  type Session
+} from './sessions.ts'
 export { hashPassword, verifyPassword } from './passwords.ts'

@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely'
-import type { Adapter } from '@ditojs/server'
+import type { Adapter, DitoContext } from '@ditojs/server'
 import type { User, UserSource } from './users.ts'
 
 // The passkeys and TOTP secrets of users in the `credential` table.
@@ -27,15 +27,16 @@ export interface CreateCredentialsOptions {
   // its Kysely outside of the request's transaction, so TOTP failures stay
   // counted when the request fails.
   adapter: Adapter
+  // The source of the users of these credentials.
+  source: UserSource<any>
 }
 
-export function createCredentials({ adapter }: CreateCredentialsOptions) {
+export function createCredentials({
+  adapter,
+  source
+}: CreateCredentialsOptions) {
   const { getKysely } = adapter
-  const selectCredentials = (
-    database: Kysely<any>,
-    source: UserSource<any>,
-    type: string
-  ) =>
+  const selectCredentials = (database: Kysely<any>, type: string) =>
     database
       .selectFrom('credential')
       .selectAll()
@@ -43,14 +44,11 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       .where('type', '=', type)
 
   return {
+    source,
     getKysely,
 
-    async list(
-      source: UserSource<any>,
-      user: User,
-      type: string
-    ): Promise<Credential[]> {
-      const rows = await selectCredentials(getKysely(), source, type)
+    async list(user: User, type: string): Promise<Credential[]> {
+      const rows = await selectCredentials(getKysely(), type)
         .where('user_id', '=', String(user.id))
         .orderBy('id')
         .execute()
@@ -59,12 +57,11 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
 
     // Lock the row in the transaction `trx`, if given.
     async findFirst(
-      source: UserSource<any>,
       user: User,
       type: string,
       { trx }: { trx?: Kysely<any> } = {}
     ): Promise<Credential | null> {
-      const row = await selectCredentials(trx ?? getKysely(), source, type)
+      const row = await selectCredentials(trx ?? getKysely(), type)
         .where('user_id', '=', String(user.id))
         .orderBy('id')
         .$if(!!trx, query => query.forUpdate())
@@ -72,19 +69,14 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       return row ? toCredential(row) : null
     },
 
-    async findByKey(
-      source: UserSource<any>,
-      type: string,
-      key: string
-    ): Promise<Credential | null> {
-      const row = await selectCredentials(getKysely(), source, type)
+    async findByKey(type: string, key: string): Promise<Credential | null> {
+      const row = await selectCredentials(getKysely(), type)
         .where('key', '=', key)
         .executeTakeFirst()
       return row ? toCredential(row) : null
     },
 
     async insert(
-      source: UserSource<any>,
       user: User,
       type: string,
       {
@@ -126,12 +118,7 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
 
     // Delete the user's credentials of `type`, or only the one with `id`, and
     // resolve to the number of deleted rows.
-    async delete(
-      source: UserSource<any>,
-      user: User,
-      type: string,
-      id?: number
-    ) {
+    async delete(user: User, type: string, id?: number) {
       const result = await getKysely()
         .deleteFrom('credential')
         .where('user_model', '=', source.name)
@@ -142,13 +129,10 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       return Number(result.numDeletedRows)
     },
 
-    // No foreign keys delete the credentials of deleted users.
-    async deleteUser(
-      source: UserSource<any>,
-      user: User,
-      { trx = getKysely() }: { trx?: Kysely<any> } = {}
-    ) {
-      await trx
+    // No foreign keys delete the credentials of deleted users, so delete them
+    // in the transaction of the request.
+    async deleteUser(user: User, c: DitoContext) {
+      await getKysely(c)
         .deleteFrom('credential')
         .where('user_model', '=', source.name)
         .where('user_id', '=', String(user.id))

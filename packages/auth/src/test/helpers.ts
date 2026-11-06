@@ -2,6 +2,7 @@ import type { Kysely } from 'kysely'
 import { Hono } from 'hono'
 import { generateSignedCookie } from 'hono/cookie'
 import { createApi, type ControllerDefinition } from '@ditojs/server'
+import { defaultPasswordSchema } from '@ditojs/mikro/internal'
 import { createCredentials } from '../credentials.ts'
 import { hashPassword } from '../passwords.ts'
 import { createSessions } from '../sessions.ts'
@@ -42,9 +43,12 @@ export function createSource(
 ): UserSource<TestUser> {
   return {
     name,
-    findById: async id => users.find(user => String(user.id) === id),
-    findByUsername: async username =>
-      users.find(user => user.username === username),
+    usernameProperty: 'username',
+    password: defaultPasswordSchema,
+    findById: async id => users.find(user => String(user.id) === id) ?? null,
+    findByUsername: async username => (
+      users.find(user => user.username === username) ?? null
+    ),
     patch: async (user, values) => {
       Object.assign(user, values)
     },
@@ -91,9 +95,9 @@ export function setup({
     secrets: cookieSecrets,
     cookieName,
     maxAge,
-    users: source
+    source
   })
-  credentials ??= createCredentials({ adapter })
+  credentials ??= createCredentials({ adapter, source })
   const users = {
     path: 'admins',
     mixins: [defineUserActions({ source, credentials, ...options })]
