@@ -46,7 +46,7 @@ export function createMikroAdapter(orm: Orm): MikroAdapter {
         c.set('em', em)
       }
     },
-    toHttpError: (error, c) =>
+    toHttpError: ({ error, c }) =>
       toHttpError(error, getModelRequest(c)?.meta, c.req.method),
     // A Kysely on the ORM's pool, outside of any transaction, for sessions,
     // credentials and jobs. `orm.em.getKysely()` joins the current
