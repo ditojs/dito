@@ -6,13 +6,11 @@ import { z } from 'zod'
 import * as utils from '@ditojs/utils'
 import {
   createApi,
-  createErrorHandler,
   createValidationError,
   defineAction,
   defineController,
   defineMixin,
   HttpError,
-  notFound,
   type Adapter,
   type ApiConfig,
   type Authorize,
@@ -23,6 +21,7 @@ import {
   type Transaction,
   type User
 } from './index.ts'
+import { createErrorHandler, notFound } from './errors.ts'
 import { createClient } from '../../../tests/utils/client.ts'
 
 declare module './index.ts' {

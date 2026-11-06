@@ -66,14 +66,10 @@ const { close } = await serve(hono, {
 ```
 
 - [`createHono()`](../../api/server/hono.md#createhono) returns a `Hono` app
-  with [`forwarded()`](../../api/server/hono.md#forwarded),
-  [`honoMiddleware()`](../../api/server/hono.md#honomiddleware) and Dito's JSON
-  errors, in the order that they need. It takes the options of
-  `honoMiddleware()`.
-- `honoMiddleware()` returns Hono's `secureHeaders()`, `csrf()` and
-  `bodyLimit()`, and optionally `cors()` and `etag()`. Multipart bodies have no
-  limit there: the reverse proxy sets it, such as `client_max_body_size` in
-  nginx.
+  with Hono's `secureHeaders()`, `csrf()` and `bodyLimit()`, and optionally
+  `cors()` and `etag()`, and Dito's JSON errors, in the order that they need.
+  Multipart bodies have no limit there: the reverse proxy sets it, such as
+  `client_max_body_size` in nginx.
 - Each API sends its own errors as Dito's error JSON. The Hono app does the
   same for the errors of its own middleware, such as the 403 of `csrf()`, and for
   unknown paths.
@@ -82,34 +78,14 @@ const { close } = await serve(hono, {
 - `serve()` listens on Node. On SIGINT and SIGTERM it stops the server and its
   `services`.
 
-An app that wants other middleware, or another order, creates its own `Hono` app:
-
-```js
-import { Hono } from 'hono'
-import {
-  createErrorHandler,
-  forwarded,
-  honoMiddleware,
-  notFound
-} from '@ditojs/server'
-
-// Without `strict: false`, a path with a trailing slash responds with 404.
-const hono = new Hono({ strict: false })
-hono.onError(createErrorHandler())
-hono.notFound(notFound)
-// First, so that `csrf()` compares the origin with the public URL.
-hono.use(forwarded(true), ...honoMiddleware())
-```
-
 Other runtimes call the app's `fetch()` directly, such as
 `Bun.serve({ fetch: hono.fetch })`. A test calls `await api.request('/books')`.
 
 ## Behind a proxy
 
 Behind reverse proxies, such as nginx or a load balancer, the `proxy` option of
-`createHono()` sets how many proxies the app trusts. `true` means one. It adds
-[`forwarded(proxy)`](../../api/server/hono.md#forwarded) as the first
-middleware. With it:
+`createHono()` sets how many proxies the app trusts. `true` means one, see
+[Proxies](../../api/server/hono.md#proxies). With it:
 
 - `c.req.url` is the public URL, from the first `X-Forwarded-Proto` and
   `X-Forwarded-Host`. Hono's `csrf()` and the APIs see this URL.
@@ -195,7 +171,7 @@ unique violation to 409. Then the API sends each error as JSON:
 
 Errors with a status of 500 or above go to `onError({ error, c })`. By default,
 it logs them with `console.error()`. Apps with a logger pass their own hook to
-`createApi()` and `createErrorHandler()`:
+`createApi()` and `createHono()`:
 
 ```js
 const onError = ({ error }) => logger.error(error)

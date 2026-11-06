@@ -54,8 +54,8 @@ lines, medium one module of the app, and high every model or every controller.
 | Controller hooks, `parameters`, `returns`, `transacted`                                | Handlers that call `next()`, middleware of mixins, `query` and `body` schemas, `transacted: true`                                                                                                | high                    |
 | Koa's `ctx` in handlers and middleware                                                 | The handler's context, `{ query, body, params, user, em, action, getRecord, find, list, c, next }`, with Hono's context `c`, see [step 8](#8-rewrite-the-controllers)                            | high                    |
 | `ResponseError` and its subclasses, `app.logError()`                                   | `HttpError`, `toHttpError()` of the adapter, and the `onError` hook, which logs by default                                                                                                       | low                     |
-| Koa middleware, `config.http`                                                          | The `http` option of `createApp()`, for `honoMiddleware()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`; other Hono middleware on `app.hono`                    | low                     |
-| `app.proxy`, `config.server.proxy`                                                     | `http.proxy` of `createApp()`, and `getClientAddress(c)` for the client's address                                                                                                                | low                     |
+| Koa middleware, `config.http`                                                          | The `server` option of `createApp()`, for `createHono()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`; other Hono middleware on `app.hono`                      | low                     |
+| `app.proxy`, `config.server.proxy`                                                     | `server.proxy` of `createApp()`, and `getClientAddress(c)` for the client's address                                                                                                              | low                     |
 | `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createUsers()`, with `users.defineActions()` and `useSession()`                                                                                                                 | medium                  |
 | `config.storages`, model `assets`, `AssetFile`, asset counts in hooks                  | `@ditojs/storage`: `createStorages()`, asset paths, `createAssets()`, `serveStorage()`                                                                                                           | medium                  |
 | `AdminController`, `config.admin`, the admin's build                                   | `createAdmin()` of `@ditojs/admin/server` and `defineAdminViteConfig()` of `@ditojs/admin/vite`                                                                                                  | low                     |
@@ -148,8 +148,7 @@ export const app = createApp({
     password: connection.password,
     pool
   },
-  server: config.server,
-  http: config.http,
+  server: { ...config.server, ...config.http },
   logger: config.logger,
   secrets: config.app.keys,
   storages: config.storages
@@ -581,17 +580,17 @@ await app.start({ services: [mailer, scheduler] })
   [Services](guide/server/kit.md#services).
 - `app.on()` and events such as `before:start` become plain calls around
   `app.start()`.
-- `config.http` is the `http` option of `createApp()`, the options of
-  [`honoMiddleware()`](api/server/hono.md#honomiddleware). As in Dito.js 6,
-  `csrf()` only checks requests with `Origin`.
-- `honoMiddleware()` leaves `cors` and `etag` off unless its options turn them
+- `config.http` goes in the `server` option of `createApp()`, with the options
+  of [`createHono()`](api/server/hono.md#createhono). As in Dito.js 6, `csrf()`
+  only checks requests with `Origin`.
+- `createHono()` leaves `cors` and `etag` off unless its options turn them
   on. Dito.js 6 had both on by default.
 - Sizes with units count in powers of 1000: `bodyLimit: { maxSize: '1mb' }` is
   1,000,000 bytes. Dito.js 6 read `'1mb'` as 1 MiB, 1,048,576 bytes.
 - `cors` works differently. Dito.js 6 echoed the request's origin. Hono's
   `cors()` allows any origin by default, without credentials. With
   `credentials: true`, it needs the allowed `origin`.
-- `app.proxy` is the `proxy` option of `http`, the number of trusted proxies,
+- `app.proxy` is the `proxy` option of `server`, the number of trusted proxies,
   or `true` for one.
 - The app's own middleware goes on `app.hono` before the routes:
   `app.hono.use(middleware)`.

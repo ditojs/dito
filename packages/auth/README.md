@@ -13,8 +13,7 @@ Released in 2018 under the MIT license, with support by https://lineto.com/
   passkeys and TOTP.
 
 ```js
-import { Hono } from 'hono'
-import { createApi, defineController } from '@ditojs/server'
+import { createApi, createHono, defineController } from '@ditojs/server'
 import { createUsers } from '@ditojs/auth'
 
 const admins = createUsers(Admin, {
@@ -35,7 +34,7 @@ const api = createApi({
   users: admins
 })
 
-const app = new Hono()
+const app = createHono()
 app.route('/api/admin', api)
 ```
 

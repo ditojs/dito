@@ -40,8 +40,7 @@ export const admins = createUsers(Admin, {
 app passes them to the API as `users`:
 
 ```js
-import { Hono } from 'hono'
-import { createApi } from '@ditojs/server'
+import { createApi, createHono } from '@ditojs/server'
 import { createMikroAdapter } from '@ditojs/mikro'
 
 const api = createApi({
@@ -50,7 +49,7 @@ const api = createApi({
   users: admins
 })
 
-const app = new Hono()
+const app = createHono()
 app.route('/api/admin', api)
 ```
 

@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
-import { createErrorHandler, honoMiddleware } from './index.ts'
+import { createErrorHandler } from './errors.ts'
+import { honoMiddleware } from './hono.ts'
 
 describe('honoMiddleware()', () => {
   const hono = (...args: Parameters<typeof honoMiddleware>) => {

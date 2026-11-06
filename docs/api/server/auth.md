@@ -256,8 +256,8 @@ Enables passkeys, as discoverable WebAuthn credentials.
 - `domain` defaults to the request's host.
 - `origins` defaults to the request's origin.
 
-An app behind a proxy runs the `forwarded()` middleware of
-`@ditojs/server`, so that the request's URL is the public one. An admin on
+An app behind a proxy sets `proxy` of `createHono()`, so that the request's URL
+is the public one. An admin on
 another host than the API sets `origins`, such as
 `['https://admin.example.com']`.
 

@@ -24,7 +24,7 @@ import type {
 
 // A request runs the API's `middleware`, sets `c.var.em` and `c.var.user`, then
 // runs the middleware of its action, and last the handler. Paths that no action
-// matches go on to the app's `notFound()`.
+// matches go on to the app.
 export function createApi({
   controllers,
   users,

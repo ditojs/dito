@@ -1,12 +1,7 @@
 # Errors
 
 ```js
-import {
-  HttpError,
-  createErrorHandler,
-  createValidationError,
-  notFound
-} from '@ditojs/server'
+import { HttpError, createValidationError } from '@ditojs/server'
 ```
 
 Errors respond with JSON.
@@ -16,7 +11,7 @@ Errors respond with JSON.
   may hold internals.
 - Errors with a status of 500 or above go to the `onError` hook of
   [`createApi()`](api.md#apiconfig) and of
-  [`createErrorHandler()`](#createerrorhandler). By default, the hook logs them.
+  [`createHono()`](hono.md#createhono). By default, the hook logs them.
 
 ## The body
 
@@ -91,27 +86,9 @@ throw new HttpError(403, {
 Its properties are `status`, `message`, `type`, `code`, `errors` and `data`.
 `toJSON()` returns [the body](#the-body).
 
-## createErrorHandler()
+## How errors respond
 
-```ts
-createErrorHandler({
-  onError?: ({ error, c }: { error: unknown; c: Context }) => void | Promise<void>,
-  toHttpError?: (error: unknown, c: DitoContext) => HttpError | undefined
-}?): ErrorHandler
-```
-
-```js
-app.onError(createErrorHandler())
-// With a logger of the app:
-app.onError(createErrorHandler({ onError: ({ error }) => logger.error(error) }))
-```
-
-The error handler for Hono's `app.onError()`. It handles the errors outside of
-Dito APIs, such as those of the app's own routes and middleware. A Dito API
-handles its own errors the same way.
-
-First, `toHttpError()` maps the error, such as with the adapter's
-`toHttpError()`. Then:
+First, `toHttpError()` of the adapter maps the error. Then:
 
 - An `HttpError` responds with [its body](#the-body).
 - An error with a numeric `status` between 400 and 599 responds with that
@@ -128,21 +105,6 @@ and those of `cors()`. It drops the headers that describe the data:
 `Content-*`, `ETag`, `Cache-Control` and `Location`.
 
 Hono only handles `Error`s. So throw an `HttpError`, not a `Response`.
-
-## notFound
-
-```ts
-notFound: NotFoundHandler
-```
-
-```js
-app.onError(createErrorHandler())
-app.notFound(notFound)
-```
-
-The handler of Hono's `app.notFound()`, for the paths that no API handles. It
-throws `new HttpError(404)`. Hono sends this error to `app.onError()`, so the
-app needs [`createErrorHandler()`](#createerrorhandler) too.
 
 ## createValidationError()
 

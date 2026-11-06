@@ -19,6 +19,7 @@ describe('sendFile()', () => {
         sendFile(c, 'data', { filename: `Font's (Bold)*.otf` }),
       'get unknown': ({ c }) =>
         sendFile(c, 'data', { filename: 'data.unknown' }),
+      'get plain': ({ c }) => sendFile(c, 'data'),
       'get image': ({ c }) =>
         sendFile(c, 'data', { type: 'image/png', inline: true }),
       'get stream': ({ c }) =>
@@ -38,6 +39,14 @@ describe('sendFile()', () => {
     expect(response.headers.get('Content-Disposition')).toBe(
       `attachment; filename="export.csv"; filename*=UTF-8''export.csv`
     )
+  })
+
+  it('answers as an attachment without options', async () => {
+    const response = await app.request('/api/files/plain')
+    expect(response.headers.get('Content-Type')).toBe(
+      'application/octet-stream'
+    )
+    expect(response.headers.get('Content-Disposition')).toBe('attachment')
   })
 
   it('answers inline with a type, and encodes the name', async () => {

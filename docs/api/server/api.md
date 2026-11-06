@@ -21,11 +21,9 @@ createApi(config: ApiConfig): Hono<DitoEnv>
 ```
 
 ```js
-const app = new Hono()
+const app = createHono()
 app.route('/api/admin', createApi({ controllers: adminControllers }))
 app.route('/api', createApi({ controllers }))
-app.onError(createErrorHandler())
-app.notFound(notFound)
 ```
 
 Resolves the controllers and their mixins, and adds their routes to one new Hono
@@ -58,7 +56,7 @@ So `get subscribe` matches before `get :id{[0-9]+}`, and that before
 `get :slug`.
 
 An API handles only the paths of its actions, and leaves the others to the app.
-So it also works at `/`. The app's [`notFound`](errors.md#notfound) handles the
+So it also works at `/`. The app of [`createHono()`](hono.md#createhono) handles the
 other paths.
 
 ### ApiConfig
@@ -95,9 +93,9 @@ For each request of an action, Hono and Dito:
 12. run the handler with its context, and send the result, see
     [Handler](controllers.md#handler).
 
-Errors go to the API's error handler. It works like
-[`createErrorHandler()`](errors.md#createerrorhandler), with the API's `onError`
-and the adapter's `toHttpError()`. Hono handles an error where it is thrown. So
+Errors go to the API's error handler, see
+[How errors respond](errors.md#how-errors-respond), with the API's `onError` and
+the adapter's `toHttpError()`. Hono handles an error where it is thrown. So
 the `await next()` of middleware returns, and `c.error` holds the error. The
 transaction rolls back when `c.error` is set.
 

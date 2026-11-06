@@ -14,7 +14,7 @@ type Option<T extends (...args: any[]) => unknown> =
   | boolean
   | NonNullable<Parameters<T>[0]>
 
-export interface HonoMiddlewareOptions {
+interface HonoMiddlewareOptions {
   // On by default. It only checks requests with `Origin`: browsers send it,
   // and an attack needs a browser.
   csrf?: Option<typeof csrf>
@@ -41,7 +41,7 @@ const rejectLargeBody = () => {
   throw new HTTPException(413, { message: 'Payload Too Large' })
 }
 
-// Hono's standard middleware, for `app.use(...honoMiddleware())`.
+// Hono's standard middleware.
 export function honoMiddleware({
   csrf: csrfOptions = true,
   secureHeaders: secureHeadersOptions = true,
@@ -89,8 +89,7 @@ export function honoMiddleware({
 }
 
 export interface CreateHonoOptions extends HonoMiddlewareOptions {
-  // The number of trusted reverse proxies, as in `forwarded()`. None by
-  // default.
+  // The number of trusted reverse proxies, and `true` for one. None by default.
   proxy?: boolean | number
   // As in `createApi()`, for the errors outside of APIs.
   onError?: ErrorLogger
@@ -115,8 +114,8 @@ export function createHono({
   return hono
 }
 
-// Middleware for apps behind reverse proxies, with `proxy` as the number of
-// trusted proxies, and `true` for one.
+// Read the public URL and the client's address of apps behind reverse proxies,
+// with `proxy` as the number of trusted proxies, and `true` for one.
 export function forwarded(proxy: boolean | number = true): MiddlewareHandler {
   const hops = proxy === true ? 1 : proxy || 0
   return async (c, next) => {

@@ -278,7 +278,7 @@ The action takes a `multipart/form-data` body and stores all its files.
   another.
 - Files over the upload's `maxSize` respond with 413, and none of the body's
   files are stored. The same goes for bodies that the client aborts.
-- [`honoMiddleware()`](hono.md#honomiddleware) sets no limit on multipart bodies.
+- [`createHono()`](hono.md#createhono) sets no limit on multipart bodies.
 - It inserts the `asset` rows of the files. They stay unreferenced until a scan
   finds them.
 - It responds with the file objects.

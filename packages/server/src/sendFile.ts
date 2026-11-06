@@ -13,7 +13,7 @@ export interface SendFileOptions {
 export function sendFile(
   c: Context,
   body: BodyInit | AsyncIterable<Uint8Array>,
-  { filename, type, inline }: SendFileOptions
+  { filename, type, inline }: SendFileOptions = {}
 ) {
   return c.body(body as never, 200, {
     'Content-Type': (

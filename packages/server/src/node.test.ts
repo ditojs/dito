@@ -1,13 +1,8 @@
 import type { AddressInfo } from 'node:net'
 import { Hono } from 'hono'
 import { csrf } from 'hono/csrf'
-import {
-  createApi,
-  createHono,
-  forwarded,
-  honoMiddleware,
-  HttpError
-} from './index.ts'
+import { forwarded, honoMiddleware } from './hono.ts'
+import { createApi, createHono, HttpError } from './index.ts'
 import { getClientAddress, serve } from './node.ts'
 
 function getUrl(server: { address(): unknown }) {

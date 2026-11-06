@@ -9,7 +9,7 @@ Released in 2018 under the MIT license, with support by https://lineto.com/
 [Hono](https://hono.dev).
 
 - `createApi()` turns a list of controllers into a Hono app. The app routes it
-  with `app.route()`.
+  in the app of `createHono()`.
 - Handlers get one object, their context,
   `{ query, body, params, user, em, action, c, next }`. `c` is Hono's context.
   `next()` runs the handler beneath, and returns its result.
@@ -17,8 +17,12 @@ Released in 2018 under the MIT license, with support by https://lineto.com/
 - `@ditojs/mikro` connects MikroORM, with `adapter: createMikroAdapter(orm)`.
 
 ```js
-import { Hono } from 'hono'
-import { createApi, defineAction, defineController } from '@ditojs/server'
+import {
+  createApi,
+  createHono,
+  defineAction,
+  defineController
+} from '@ditojs/server'
 import { serve } from '@ditojs/server/node'
 import { z } from 'zod'
 
@@ -34,15 +38,14 @@ const greetings = defineController({
   }
 })
 
-const app = new Hono()
+const app = createHono()
 app.route('/api', createApi({ controllers: [greetings] }))
 await serve(app, { port: 8080 })
 ```
 
 - `@ditojs/server`: `createApi()`, `defineController()`, `defineMixin()`,
-  `defineAction()`, `sendFile()`, `createHono()`, `honoMiddleware()`,
-  `forwarded()`, `HttpError`,
-  `createErrorHandler()`, `notFound` and `createValidationError()`.
+  `defineAction()`, `sendFile()`, `createHono()`, `HttpError` and
+  `createValidationError()`.
 - `@ditojs/server/node`: `serve()` and `getClientAddress()`. Needs
   `@hono/node-server`, an optional peer.
 

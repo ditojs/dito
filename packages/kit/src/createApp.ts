@@ -40,10 +40,10 @@ export interface CreateAppOptions {
   entities: object
   // The options of MikroORM, such as `dbName`, `host`, `user` and `password`.
   database: Omit<Options, 'entities'>
-  // The `port`, `host` and `closeTimeout` of `serve()`.
-  server?: Omit<ServeOptions, 'services'>
-  // The options of `createHono()`.
-  http?: Omit<CreateHonoOptions, 'onError' | 'middleware'>
+  // The `port`, `host` and `closeTimeout` of `serve()`, and the options of
+  // `createHono()`.
+  server?: Omit<ServeOptions, 'services'> &
+    Omit<CreateHonoOptions, 'onError' | 'middleware'>
   // The options of pino. The logs have no pid and hostname by default.
   logger?: LoggerOptions
   // The secrets that sign the cookies and the password reset links.
@@ -99,8 +99,7 @@ const logError: ApiConfig['onError'] = ({ error, c }) =>
 export function createApp({
   entities,
   database,
-  server,
-  http,
+  server: { port, host, closeTimeout, ...honoOptions } = {},
   logger: loggerOptions,
   secrets = [],
   storages: definitions = {},
@@ -112,7 +111,7 @@ export function createApp({
   const adapter = createMikroAdapter(orm)
   const storages = createStorages(definitions)
   const hono = createHono({
-    ...http,
+    ...honoOptions,
     onError: logError,
     middleware: [contextStorage(), createRequestLogger(logger)]
   })
@@ -164,7 +163,9 @@ export function createApp({
     async start({ services = [] } = {}) {
       // The ORM stops last, as services stop in reverse order.
       served = await serve(hono, {
-        ...server,
+        port,
+        host,
+        closeTimeout,
         services: [{ stop: () => orm.close() }, ...jobServices, ...services]
       })
       return served.server

@@ -46,7 +46,8 @@ export async function serve(
   return { server, close }
 }
 
-// The client's address: the one that `forwarded()` read, else the socket's.
+// The client's address: the one of `X-Forwarded-For` with the `proxy` option of
+// `createHono()`, else the socket's.
 export function getClientAddress(c: Context): string | undefined {
   return (
     c.var.clientAddress ??

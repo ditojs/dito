@@ -5,10 +5,9 @@ import { asArray } from '@ditojs/utils'
 import {
   HttpError,
   createApi,
-  createErrorHandler,
+  createHono,
   createValidationError,
   defineMixin,
-  notFound,
   type ControllerDefinition,
   type DitoContext
 } from '@ditojs/server'
@@ -48,22 +47,19 @@ afterAll(drop)
 
 // Sets up an API with the parts that an app wires in, below `/api`.
 function setup(...controllers: ControllerDefinition[]) {
-  return new Hono()
-    .route(
-      '/api',
-      createApi({
-        controllers,
-        adapter: createMikroAdapter(orm),
-        // The user of the `X-User` header, with that name as its role.
-        getUser: async ({ c }) => {
-          const name = c.req.header('X-User')
-          return name ? { id: name, roles: [name] } : null
-        },
-        onError: () => {}
-      })
-    )
-    .onError(createErrorHandler())
-    .notFound(notFound)
+  return createHono().route(
+    '/api',
+    createApi({
+      controllers,
+      adapter: createMikroAdapter(orm),
+      // The user of the `X-User` header, with that name as its role.
+      getUser: async ({ c }) => {
+        const name = c.req.header('X-User')
+        return name ? { id: name, roles: [name] } : null
+      },
+      onError: () => {}
+    })
+  )
 }
 
 const request = async (

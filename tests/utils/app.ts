@@ -7,8 +7,7 @@ import { createAdaptorServer } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import {
   createApi,
-  createErrorHandler,
-  notFound,
+  createHono,
   type ControllerDefinition,
   type DitoContext,
   type Middleware,
@@ -97,9 +96,13 @@ export async function createTestApp(
   const logError = ({ error }: { error: unknown }) => {
     if (testApp.logErrors) console.error(error)
   }
-  const app = new Hono()
-  app.onError(createErrorHandler({ onError: logError }))
-  if (handlers.length) app.use(...handlers)
+  const app = createHono({
+    onError: logError,
+    middleware: handlers,
+    secureHeaders: false,
+    csrf: false,
+    bodyLimit: false
+  })
 
   let admin: AdminServer | null = null
   if (options.admin) {
@@ -123,7 +126,6 @@ export async function createTestApp(
       onError: logError
     })
   )
-  app.notFound(notFound)
 
   const testApp: TestApp = {
     orm,

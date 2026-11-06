@@ -1,5 +1,4 @@
-import { Hono } from 'hono'
-import { createApi, createErrorHandler, notFound } from '@ditojs/server'
+import { createApi, createHono } from '@ditojs/server'
 import {
   assignRecord,
   createMikroAdapter,
@@ -203,7 +202,7 @@ describe('assignRecord()', () => {
 })
 
 describe('the controller', () => {
-  const api = new Hono()
+  const api = createHono()
     .route(
       '/api',
       createApi({
@@ -228,8 +227,6 @@ describe('the controller', () => {
         onError: () => {}
       })
     )
-    .onError(createErrorHandler())
-    .notFound(notFound)
 
   const request = (method: string, path: string, body?: unknown) =>
     createClient(api.fetch).request(method, path, body)

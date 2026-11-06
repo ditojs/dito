@@ -8,8 +8,7 @@ import * as entities from './entities/index.js'
 export const app = createApp({
   entities,
   database: { dbName: 'catalog', user: 'catalog' },
-  server: { port: 8080 },
-  http: { proxy: true },
+  server: { port: 8080, proxy: true },
   secrets: [process.env.SECRET],
   storages: {
     covers: { type: 'disk', path: 'storage/covers', url: '/covers/' }

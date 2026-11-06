@@ -14,7 +14,6 @@ export {
   defineTextFilter,
   type Filter
 } from './filters.ts'
-export type { ListQuery } from './listQuery.ts'
 export { defineMikroConfig } from './defineMikroConfig.ts'
 export {
   defineJsonType,

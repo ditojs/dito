@@ -145,7 +145,7 @@ Without one, its type is `application/octet-stream`.
 The server streams each upload into its storage, and S3 storages upload files
 over 8 MB in parts. `maxSize` limits the size of each file, see
 [Uploads](../../api/server/storage.md#uploads). The reverse proxy can limit all
-of them too, see [`honoMiddleware()`](../../api/server/hono.md#honomiddleware).
+of them too, see [`createHono()`](../../api/server/hono.md#createhono).
 
 ## Writes
 

@@ -344,19 +344,6 @@ defineModelController({
 A mixin that routes the five [default handlers](#default-handlers). Writes
 still need `authorize`.
 
-## ListQuery
-
-```ts
-interface ListQuery {
-  filter: { name: string; value: string | string[] }[]
-  order: { property: string; direction: 'asc' | 'desc' }[]
-  range: [number, number] | null
-}
-```
-
-The parsed `filter=`, `order=` and `range=` parameters of a list's URL. Invalid
-values respond with 400.
-
 ## Filters
 
 ```ts
