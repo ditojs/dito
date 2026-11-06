@@ -5,6 +5,7 @@ import {
   type EntityClass,
   type EntityManager
 } from '@mikro-orm/core'
+import type { DitoEnv } from '@ditojs/server'
 import { isFunction, mapValues } from '@ditojs/utils'
 import { getPrimaryKey, toPrimaryKey } from './metadata.ts'
 
@@ -41,7 +42,9 @@ export function createEntityUserSource<U extends { id: number | string }>(
   }: CreateEntityUserSourceOptions<U>
 ) {
   // Outside of the API, such as in session middleware, query with a fork:
-  const getEm = (): EntityManager => tryGetContext()?.var.em ?? orm.em.fork()
+  const getEm = (): EntityManager => (
+    tryGetContext<DitoEnv>()?.var.em ?? orm.em.fork()
+  )
 
   // `hash` needs to be hidden, or it would go out with the users in each
   // response that holds them:
