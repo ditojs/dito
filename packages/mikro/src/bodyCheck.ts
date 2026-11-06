@@ -226,6 +226,16 @@ export class BodyCheck {
   }
 }
 
+// Refuse a body that isn't an object, such as `null` or form data, before the
+// layers of `deserialize` read it:
+export function checkBody(body: unknown): asserts body is Row {
+  if (!isPlainObject(body)) {
+    const check = new BodyCheck()
+    check.addTypeIssue('object', body, [])
+    throw createValidationError(check.issues)
+  }
+}
+
 // Keep the properties that a client may write, and check the values that
 // Postgres can't check well:
 export async function clean(meta: EntityMetadata, data: unknown) {

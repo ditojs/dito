@@ -1,5 +1,6 @@
 import { defineMixin, type Actions, type Handler } from '@ditojs/server'
 import { isFunction } from '@ditojs/utils'
+import { checkBody } from './bodyCheck.ts'
 import { checkFind, resolveFind, type Find } from './find.ts'
 import { getModelRequest, type ModelRequest } from './ModelRequest.ts'
 import { assignRecord, createRecord } from './records.ts'
@@ -70,6 +71,7 @@ async function deserialize(
   json: unknown,
   record?: unknown
 ) {
+  checkBody(json)
   let data = json
   for (const layer of definition.deserializers) {
     data = await layer({ json: data, record, c })

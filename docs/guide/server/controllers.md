@@ -363,6 +363,7 @@ deserialize({ json, c }) {
 - A handler that wraps the default one with `next()` gets it too.
 - Custom handlers don't run it.
 - It decides what this user may write. It removes or adds fields, or throws.
+- `json` is always an object. Any other body responds with 400 before it runs.
 - Fields that it removes are dropped without an error.
 
 ```js

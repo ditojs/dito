@@ -54,10 +54,10 @@ declare module '@ditojs/server' {
     // order of `serialize`. It gets the body, or the result of the previous
     // layer, and on updates the current record. Returns the data to write.
     deserialize?: (context: {
-      json: unknown
+      json: Record<string, any>
       record?: any
       c: DitoContext
-    }) => unknown
+    }) => Record<string, any> | Promise<Record<string, any>>
   }
 }
 

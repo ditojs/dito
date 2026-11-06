@@ -92,7 +92,7 @@ function books({
     },
     // Clients can't publish through a write.
     deserialize: ({ json }) => {
-      const { published, ...rest } = json as Record<string, unknown>
+      const { published, ...rest } = json
       return rest
     },
     filters: {
@@ -2069,18 +2069,15 @@ describe('writes', () => {
   it('runs `deserialize` with the record before the check', async () => {
     const records: unknown[] = []
     const mixin = defineMixin({
-      deserialize: ({ json }) => ({
-        ...(json as object),
-        notes: `by mixin`
-      })
+      deserialize: ({ json }) => ({ ...json, notes: `by mixin` })
     })
     const api = setup(
       books({
         mixins: [mixin],
         deserialize: ({ json, record }) => {
           records.push(record)
-          const { createdAt, ...rest } = json as Record<string, unknown>
-          return { ...rest, name: (rest.name as string).toUpperCase() }
+          const { createdAt, ...rest } = json
+          return { ...rest, name: rest.name.toUpperCase() }
         }
       })
     )
@@ -2104,7 +2101,7 @@ describe('writes', () => {
   it('checks what `deserialize` returns', async () => {
     const api = setup(
       books({
-        deserialize: ({ json }) => ({ ...(json as object), notes: 5 })
+        deserialize: ({ json }) => ({ ...json, notes: 5 })
       })
     )
     const { status, json } = await request(api, 'POST', '/api/books', {
@@ -2113,6 +2110,39 @@ describe('writes', () => {
     expect(status).toBe(400)
     expect(Object.keys(json.errors)).toEqual(['notes'])
   })
+
+  it.each([
+    ['null', 'null', 'application/json'],
+    ['an array', '[]', 'application/json'],
+    ['a string', '"Eve"', 'application/json'],
+    ['form data', 'name=Eve', 'application/x-www-form-urlencoded']
+  ])(
+    'answers 400 for %s before `deserialize` runs',
+    async (received, body, type) => {
+      const deserialize = vi.fn(({ json }) => json)
+      const api = setup(
+        defineModelController({
+          path: 'books',
+          authorize: true,
+          entity: Book,
+          mixins: [crud],
+          deserialize
+        })
+      )
+      const init = { method: 'POST', body, headers: { 'Content-Type': type } }
+      const posted = await api.request('/api/books', init)
+      const patched = await api.request('/api/books/2', {
+        ...init,
+        method: 'PATCH'
+      })
+      for (const response of [posted, patched]) {
+        expect(response.status).toBe(400)
+        const { errors } = await response.json()
+        expect(errors[''][0].message).toMatch('expected object')
+      }
+      expect(deserialize).not.toHaveBeenCalled()
+    }
+  )
 
   it('answers 409 for a stale save', async () => {
     const { status, json } = await request(api, 'PATCH', '/api/books/1', {
@@ -2423,7 +2453,7 @@ describe('layers', () => {
         deserialize: ({ json, record }) => {
           order.push(name)
           records.push(record)
-          return { ...(json as object), notes: name }
+          return { ...json, notes: name }
         }
       })
     const api = setup(
@@ -2501,7 +2531,7 @@ describe('layers', () => {
         for (const row of records) lengths.set(row.id, row.name.length)
       },
       serialize: ({ record, json }) => ({
-        ...(json as object),
+        ...json,
         length: lengths.get(record.id)
       })
     })

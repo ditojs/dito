@@ -98,7 +98,7 @@ base sets them.
 ```ts
 beforeSerialize?: ({ records, c }) => unknown
 serialize?: ({ record, json, c }) => unknown
-deserialize?: ({ json, record, c }) => unknown
+deserialize?: ({ json, record, c }) => object
 ```
 
 - `beforeSerialize` runs once per response, before `serialize`. The layers run
@@ -108,7 +108,8 @@ deserialize?: ({ json, record, c }) => unknown
 - `serialize` shapes each outgoing record of the controller. The layers run it
   in layer order.
 - `deserialize` shapes the body of the default `post` and `patch :id`. The
-  layers run it in the reverse order.
+  layers run it in the reverse order. `json` is always an object: any other
+  body, such as `null` or form data, responds with 400 before the first layer.
 
 See
 [Serialize and deserialize](../../guide/server/controllers.md#serialize-and-deserialize)
