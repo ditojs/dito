@@ -33,10 +33,10 @@ export interface UserSource<U extends User = User> {
   ): Promise<void>
   serialize(c: Context, user: U): unknown
   // The property of the username in the bodies of writes, for
-  // `definePasswordWrites()`. Default: `username`.
+  // `defineUserWrites()`. Default: `username`.
   usernameProperty?: string
   // The schema of new passwords, for `defineUserActions()` and
-  // `definePasswordWrites()`. At least 8 characters by default.
+  // `defineUserWrites()`. At least 8 characters by default.
   password?: z.ZodType<string>
 }
 

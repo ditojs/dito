@@ -14,8 +14,6 @@ import type { User, UserSource } from './users.ts'
 // Passkeys as discoverable WebAuthn credentials of type `passkey`.
 
 export interface CreatePasskeysOptions {
-  // The credentials that hold the passkeys, from `createCredentials()`.
-  credentials: Credentials
   // The name that the browser shows, as the app's name.
   rpName: string
   // The domain that the passkeys belong to. By default, the request's host.
@@ -28,7 +26,6 @@ export interface CreatePasskeysOptions {
 export type Passkeys = ReturnType<typeof createPasskeys>
 
 export function createPasskeys({
-  credentials,
   rpName,
   domain,
   origins
@@ -40,7 +37,8 @@ export function createPasskeys({
     expectedOrigin: origins ?? new URL(c.req.url).origin
   })
 
-  return {
+  // `defineUserActions()` passes its credentials.
+  return (credentials: Credentials) => ({
     async createAuthenticationOptions(c: Context) {
       // Passkeys are discoverable, so the browser offers them without a
       // username.
@@ -136,7 +134,7 @@ export function createPasskeys({
         }
       })
     }
-  }
+  })
 }
 
 // Keep the challenges of registrations and authentications apart, so that

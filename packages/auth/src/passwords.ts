@@ -8,6 +8,7 @@ import {
   type Handler
 } from '@ditojs/server'
 import { bodyValidation } from '@ditojs/server/internal'
+import type { Credentials } from './credentials.ts'
 import { getSession } from './sessions.ts'
 import type { User, UserSource } from './users.ts'
 
@@ -44,15 +45,18 @@ interface ModelVariables {
   getRecord: () => Promise<Record<string, unknown> | null>
 }
 
-export interface DefinePasswordWritesOptions<U extends User> {
+export interface DefineUserWritesOptions<U extends User> {
   // Its `password` checks the new passwords.
   source: UserSource<U>
+  // Routes `delete :id`, which deletes the credentials of the user too.
+  credentials?: Credentials
 }
 
 // The mixin of a users' model controller that stores `password` as `hash`.
-export function definePasswordWrites<U extends User>({
-  source
-}: DefinePasswordWritesOptions<U>) {
+export function defineUserWrites<U extends User>({
+  source,
+  credentials
+}: DefineUserWritesOptions<U>) {
   const {
     password = defaultPasswordSchema,
     usernameProperty = 'username'
@@ -105,10 +109,26 @@ export function definePasswordWrites<U extends User>({
     return user
   }
 
+  // Read the record first, as the handler beneath deletes it. Its id also
+  // resolves aliases of `load` such as `self`. The credentials go in the
+  // request's transaction, together with the user.
+  const deleteHandler: Handler = async ({ c, next }) => {
+    const getRecord: () => Promise<U | null> = c.get('getRecord')
+    const user = await getRecord()
+    const result = await next()
+    if (user) {
+      await credentials!.deleteUser(source, user, {
+        trx: credentials!.getKysely(c)
+      })
+    }
+    return result
+  }
+
   return defineMixin({
     actions: {
       'post': handler,
-      'patch :id': handler
+      'patch :id': handler,
+      ...(credentials && { 'delete :id': deleteHandler })
     }
   })
 }

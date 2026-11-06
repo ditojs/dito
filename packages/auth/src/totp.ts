@@ -20,8 +20,6 @@ import {
 // TOTP as a credential of type `totp`, with its secret encrypted.
 
 export interface CreateTotpOptions {
-  // The credentials that hold the TOTP secrets, from `createCredentials()`.
-  credentials: Credentials
   // The name that authenticator apps show, such as the app's name.
   issuer: string
   // A long random string of the app, from which HKDF derives the keys.
@@ -38,11 +36,7 @@ const tagLength = 16
 
 export type Totp = ReturnType<typeof createTotp>
 
-export function createTotp({
-  credentials,
-  issuer,
-  secret: key
-}: CreateTotpOptions) {
+export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
   if (!key) throw new Error('Unable to use TOTP without a secret.')
   // Accept the previous and the next code too, for clocks that drift.
   function getCodeStep(secret: string, code: unknown) {
@@ -52,7 +46,8 @@ export function createTotp({
     return delta !== null ? totp.counter({ timestamp }) + delta : null
   }
 
-  return {
+  // `defineUserActions()` passes its credentials.
+  return (credentials: Credentials) => ({
     // Keep the secret in the session until the user confirms it with a code.
     createSecret(c: Context, user: User) {
       const { base32: secret } = new Secret()
@@ -123,7 +118,9 @@ export function createTotp({
     ) {
       const identifier = getUserIdentifier(source, user)
       const verify = async (trx: Kysely<any>) => {
-        const totp = await credentials.findFirst(source, user, 'totp', trx)
+        const totp = await credentials.findFirst(source, user, 'totp', {
+          trx
+        })
         if (!totp) return { isValid: false, isLocked: false }
         const { data } = totp
         if (data.lockedUntil > Date.now()) {
@@ -153,7 +150,7 @@ export function createTotp({
             },
             ...(isTotpCode && { lastUsedAt: new Date() })
           },
-          trx
+          { trx }
         )
         return { isValid, isLocked }
       }
@@ -166,7 +163,7 @@ export function createTotp({
       if (isLocked) throw createAuthError('Too many attempts', 400)
       if (!isValid) throw createAuthError('Code is incorrect')
     }
-  }
+  })
 }
 
 function deriveKey(key: string, use: string) {

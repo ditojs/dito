@@ -31,10 +31,10 @@ export function createApi(orm: TestOrm, { passkeys = true, totp = true } = {}) {
     credentials,
     // The passkeys belong to the domain of the requests, `localhost`:
     passkeys: passkeys
-      ? createPasskeys({ credentials, rpName: 'Example' })
+      ? createPasskeys({ rpName: 'Example' })
       : undefined,
     totp: totp
-      ? createTotp({ credentials, issuer: 'Example', secret: 'totp-secret' })
+      ? createTotp({ issuer: 'Example', secret: 'totp-secret' })
       : undefined,
     passwordReset: createPasswordReset({
       secrets,

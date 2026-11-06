@@ -8,15 +8,14 @@ export {
   type Sessions
 } from './sessions.ts'
 export {
-  definePasswordWrites,
+  defineUserWrites,
   hashPassword,
   verifyPassword,
-  type DefinePasswordWritesOptions
+  type DefineUserWritesOptions
 } from './passwords.ts'
 export {
   createCredentials,
   type CreateCredentialsOptions,
-  type Credential,
   type Credentials
 } from './credentials.ts'
 export {

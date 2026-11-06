@@ -4,7 +4,7 @@ import { defineEntity, p } from '@mikro-orm/core'
 import { createApi } from '@ditojs/server'
 import {
   createSessions,
-  definePasswordWrites,
+  defineUserWrites,
   defineUserActions,
   getSessionUser,
   hashPassword,
@@ -19,7 +19,7 @@ import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Session } from '../../../tests/utils/entities.ts'
 import { createClient } from '../../../tests/utils/client.ts'
 
-// `createEntityUserSource()` and `definePasswordWrites()` of auth on a model
+// `createEntityUserSource()` and `defineUserWrites()` of auth on a model
 // controller.
 
 const MemberSchema = defineEntity({
@@ -64,7 +64,7 @@ const app = new Hono().route(
         path: 'members',
         entity: Member,
         authorize: true,
-        mixins: [definePasswordWrites({ source })]
+        mixins: [defineUserWrites({ source })]
       })
     ]
   })
@@ -150,7 +150,7 @@ describe('createEntityUserSource() with auth', () => {
   })
 })
 
-describe('definePasswordWrites() with confirmed access', () => {
+describe('defineUserWrites() with confirmed access', () => {
   // A login confirms the access for no time, and `self` is the logged-in user.
   const app = new Hono().route(
     '/',
@@ -167,7 +167,7 @@ describe('definePasswordWrites() with confirmed access', () => {
           path: 'members',
           entity: Member,
           authorize: true,
-          mixins: [definePasswordWrites({ source })],
+          mixins: [defineUserWrites({ source })],
           load: ({ c, id }) =>
             c.var.em.findOne(
               Member,

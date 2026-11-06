@@ -53,7 +53,7 @@ beforeEach(async () => {
     db,
     source: createSource('Admin', [ada, bob]),
     credentials,
-    passkeys: createPasskeys({ credentials, rpName: 'Dito' })
+    passkeys: createPasskeys({ rpName: 'Dito' })
   })
   client = createClient(api.fetch)
 })
@@ -145,7 +145,6 @@ describe('passkeys()', () => {
       source: createSource('Admin', [ada]),
       credentials,
       passkeys: createPasskeys({
-        credentials,
         rpName: 'Dito',
         origins: ['https://admin.example.com']
       })

@@ -55,16 +55,16 @@ const credentialId = z.coerce
 export function defineUserActions<U extends User>({
   source,
   credentials,
-  passkeys,
-  totp,
   passwordReset,
   afterLogin,
   ...options
 }: DefineUserActionsOptions<U>) {
   const reconfirmAfter = parseDuration(options.reconfirmAfter ?? '10m')
-  if ((passkeys || totp) && !credentials) {
+  if ((options.passkeys || options.totp) && !credentials) {
     throw new Error('Unable to use passkeys or TOTP without credentials.')
   }
+  const passkeys = options.passkeys?.(credentials!)
+  const totp = options.totp?.(credentials!)
   const { password = defaultPasswordSchema } = source
   const checkAuthentication = async (c: Context) => {
     const user = await getSession(c).getUser(source)

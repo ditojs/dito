@@ -82,7 +82,7 @@ entity.
 - `patch()` writes the new `hash`, or the `lastLogin` of a login, at once. It
   doesn't flush the request's other changes. It sets the values on the user.
 - The source's `password` checks new passwords. It does this in the users
-  controller, and in the password writes below.
+  controller, and in the user writes below.
 
 The entity hides `hash`, such as with `p.string().nullable().hidden()`, so that
 no response sends it. The source throws when it loads users of an entity that
@@ -113,9 +113,8 @@ export const adminUsers = defineController({
     defineUserActions({
       source: adminSource,
       credentials,
-      passkeys: createPasskeys({ credentials, rpName: 'Book Catalog' }),
+      passkeys: createPasskeys({ rpName: 'Book Catalog' }),
       totp: createTotp({
-        credentials,
         issuer: 'Book Catalog',
         secret: config.totpSecret
       })
@@ -157,27 +156,28 @@ actions: {
 A controller that lists the mixin in its `mixins` can replace or wrap its
 actions, as with any mixin.
 
-### Password writes
+### User writes
 
 ```js
-import { definePasswordWrites } from '@ditojs/auth'
+import { defineUserWrites } from '@ditojs/auth'
 import { defineModelController } from '@ditojs/mikro'
 
 export const admins = defineModelController({
   path: 'admins',
   entity: Admin,
   authorize: 'admin',
-  mixins: [definePasswordWrites({ source: adminSource })],
-  actions: { 'get': true, 'get :id': true, 'delete :id': true }
+  mixins: [defineUserWrites({ source: adminSource, credentials })],
+  actions: { 'get': true, 'get :id': true }
 })
 ```
 
-[`definePasswordWrites()`](../../api/server/auth.md#definepasswordwrites) is a
+[`defineUserWrites()`](../../api/server/auth.md#defineuserwrites) is a
 mixin for the model controller of the users. It routes `post` and `patch :id`.
 Their body sets `password`, which the user stores as `hash`. Changing a password
 or username needs [confirmed access](#confirmed-access), also of other users,
 as password reset links go to the username. Users who change their own password
-stay logged in, and their other sessions end.
+stay logged in, and their other sessions end. With `credentials`, it also routes
+`delete :id`, and deletes the credentials of the user.
 
 This controller is separate from the one of `defineUserActions()`, and doesn't
 mix it in. If
@@ -186,17 +186,14 @@ outside of a transaction.
 
 ### Credentials
 
-```js
-await credentials.deleteUsers(adminSource, ids, { c })
-```
-
 Passkeys and TOTP keep their secrets in the `credential` table, through
-`createCredentials({ adapter })`. No foreign keys tie them to their users. So an
-action that deletes users deletes their credentials too, as above.
+`createCredentials({ adapter })`. No foreign keys tie them to their users. So
+`defineUserWrites()` gets `credentials` to delete them with their user, as
+above.
 
 ### Passkeys
 
-`createPasskeys({ credentials, rpName, domain?, origins? })` from
+`createPasskeys({ rpName, domain?, origins? })` from
 `@ditojs/auth/passkeys` adds logins with passkeys. It also adds the actions to
 list, add and remove passkeys.
 
@@ -207,7 +204,7 @@ list, add and remove passkeys.
 
 ### Two-factor authentication
 
-`createTotp({ credentials, issuer, secret })` from `@ditojs/auth/totp` adds
+`createTotp({ issuer, secret })` from `@ditojs/auth/totp` adds
 codes from an authenticator app, with backup codes.
 
 - Users with TOTP enter a code after the password, while `defineUserActions()`
@@ -247,7 +244,7 @@ per minute. The response is the same whether the user exists or not.
 
 A login confirms the user's access for ten minutes. `reconfirmAfter` sets this
 time. Actions that change security settings, such as roles, need confirmed
-access. `post password` and the [password writes](#password-writes) check it
+access. `post password` and the [user writes](#user-writes) check it
 themselves.
 
 Without confirmed access, the action responds with 403 and

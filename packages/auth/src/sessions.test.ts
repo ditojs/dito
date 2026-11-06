@@ -455,10 +455,10 @@ describe('sessions', () => {
         source: admins,
         credentials,
         passkeys: passkeys
-          ? createPasskeys({ credentials, rpName: 'Dito' })
+          ? createPasskeys({ rpName: 'Dito' })
           : undefined,
         totp: totp
-          ? createTotp({ credentials, issuer: 'Dito', secret: 'a long secret' })
+          ? createTotp({ issuer: 'Dito', secret: 'a long secret' })
           : undefined,
         passwordReset: passwordReset
           ? createPasswordReset({

@@ -30,7 +30,7 @@ export interface CreateCredentialsOptions {
 }
 
 export function createCredentials({ adapter }: CreateCredentialsOptions) {
-  const getKysely = () => adapter.getKysely()
+  const getKysely = (c?: Context) => adapter.getKysely(c)
   const selectCredentials = (
     database: Kysely<any>,
     source: UserSource<any>,
@@ -62,7 +62,7 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       source: UserSource<any>,
       user: User,
       type: string,
-      trx?: Kysely<any>
+      { trx }: { trx?: Kysely<any> } = {}
     ): Promise<Credential | null> {
       const row = await selectCredentials(trx ?? getKysely(), source, type)
         .where('user_id', '=', String(user.id))
@@ -112,7 +112,7 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
     async update(
       id: number,
       { data, lastUsedAt }: { data: unknown; lastUsedAt?: Date },
-      trx = getKysely()
+      { trx = getKysely() }: { trx?: Kysely<any> } = {}
     ) {
       await trx
         .updateTable('credential')
@@ -142,19 +142,16 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       return Number(result.numDeletedRows)
     },
 
-    // The app calls it when it deletes users, as no foreign keys do. With the
-    // request's `c`, it runs in the request's transaction.
-    async deleteUsers(
+    // No foreign keys delete the credentials of deleted users.
+    async deleteUser(
       source: UserSource<any>,
-      ids: unknown[],
-      { c }: { c?: Context } = {}
+      user: User,
+      { trx = getKysely() }: { trx?: Kysely<any> } = {}
     ) {
-      if (ids.length === 0) return
-      await adapter
-        .getKysely(c)
+      await trx
         .deleteFrom('credential')
         .where('user_model', '=', source.name)
-        .where('user_id', 'in', ids.map(String))
+        .where('user_id', '=', String(user.id))
         .execute()
     }
   }

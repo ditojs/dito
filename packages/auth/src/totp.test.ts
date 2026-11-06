@@ -41,7 +41,7 @@ beforeEach(async () => {
     db,
     source: createSource('Admin', [ada]),
     credentials,
-    totp: createTotp({ credentials, issuer: 'Dito', secret: 'a long secret' })
+    totp: createTotp({ issuer: 'Dito', secret: 'a long secret' })
   })
   client = createClient(api.fetch)
 })

@@ -6,7 +6,7 @@ import {
   getSession,
   getSessionUser,
   defineUserActions,
-  definePasswordWrites,
+  defineUserWrites,
   createCredentials,
   createPasswordReset,
   hashPassword,
@@ -96,16 +96,14 @@ The cookie holds the id of the session, signed with Hono's
 The session of a request, from `getSession(c)` or `c.var.session`. The package
 exports the type `Session`, not the class.
 
-| Member                                  | Description                                                                                                                                                                     |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                                 | The session's data, which handlers change in place.                                                                                                                             |
-| `login(source, user)`                   | Logs the user in, with the fingerprint of their password.                                                                                                                       |
-| `logout()`                              | Clears the session.                                                                                                                                                             |
-| `regenerate()`                          | Gives the session a new id when it's saved.                                                                                                                                     |
-| `getUser(source)`                       | Returns the user of the session if it belongs to `source`, else `null`. It loads the user once per request. It returns `null` if the user changed the password since the login. |
-| `refreshFingerprint(source, user)`      | Keeps the session valid after the user changed the password, if the request succeeds. The user's other sessions end.                                                            |
-| `confirmAccess(source, user, duration)` | Confirms the user's access for `duration` milliseconds.                                                                                                                         |
-| `checkConfirmedAccess(source)`          | Resolves to the user. Without a login, it throws 401. Without confirmed access, it throws 403 with `confirmationRequired: true`. Use it for actions such as changing roles.     |
+| Member                             | Description                                                                                                                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                            | The session's data, which handlers change in place.                                                                                                                             |
+| `login(source, user)`              | Logs the user in, with the fingerprint of their password.                                                                                                                       |
+| `logout()`                         | Clears the session.                                                                                                                                                             |
+| `getUser(source)`                  | Returns the user of the session if it belongs to `source`, else `null`. It loads the user once per request. It returns `null` if the user changed the password since the login. |
+| `refreshFingerprint(source, user)` | Keeps the session valid after the user changed the password, if the request succeeds. The user's other sessions end.                                                            |
+| `checkConfirmedAccess(source)`     | Resolves to the user. Without a login, it throws 401. Without confirmed access, it throws 403 with `confirmationRequired: true`. Use it for actions such as changing roles.     |
 
 ## getSession()
 
@@ -201,11 +199,12 @@ Their bodies and responses:
 Users change their other values, such as their email, through an action of the
 app, such as `patch self`, see [Account settings](../../guide/admin/views.md).
 
-## definePasswordWrites()
+## defineUserWrites()
 
 ```ts
-definePasswordWrites<U>(options: {
+defineUserWrites<U>(options: {
   source: UserSource<U>
+  credentials?: Credentials
 }): MixinDefinition
 ```
 
@@ -214,7 +213,7 @@ defineModelController({
   path: 'admins',
   entity: Admin,
   authorize: 'admin',
-  mixins: [definePasswordWrites({ source: adminSource })],
+  mixins: [defineUserWrites({ source: adminSource })],
   actions: { 'get': true, 'get :id': true }
 })
 ```
@@ -234,6 +233,9 @@ A mixin for the model controller of the users. It routes `post` and
   [`Session`](#session).
 - When users change their own password, their session stays, and their other
   sessions end. See `refreshFingerprint()` of [`Session`](#session).
+- With `credentials`, the mixin also routes `delete :id`, so the controller
+  offers it, and deletes the credentials of the user in the request's
+  transaction.
 
 ## UserSource
 
@@ -271,16 +273,16 @@ request's entity manager in `c.var.em`.
   `lastLogin` of a login.
 - `serialize()` returns what the actions send.
 - `usernameProperty` names the username in the bodies of
-  `definePasswordWrites()`. Default: `username`.
+  `defineUserWrites()`. Default: `username`.
 - `password` is the schema of new passwords, in the actions of
-  `defineUserActions()` and in `definePasswordWrites()`. By default, a new
+  `defineUserActions()` and in `defineUserWrites()`. By default, a new
   password is a string of at least 8 characters.
 
 ## createCredentials()
 
 ```ts
 createCredentials(options: {
-  adapter: { getKysely(): Kysely<any> }
+  adapter: { getKysely(c?: Context): Kysely<any> }
 }): Credentials
 ```
 
@@ -304,15 +306,13 @@ create table credential (
 );
 ```
 
-No foreign keys tie the credentials to their users. So when the app deletes
-users, it calls `credentials.deleteUsers(source, ids, { c? })`. With the
-request's `c`, it deletes in the transaction of the deletion.
+No foreign keys tie the credentials to their users. So the controller that
+deletes users passes them to [`defineUserWrites()`](#defineuserwrites).
 
 ## createPasskeys()
 
 ```ts
 createPasskeys(options: {
-  credentials: Credentials
   rpName: string
   domain?: string
   origins?: string[]
@@ -322,8 +322,6 @@ createPasskeys(options: {
 From `@ditojs/auth/passkeys`. Enables passkeys, as discoverable WebAuthn
 credentials.
 
-- `credentials` hold the passkeys, from
-  [`createCredentials()`](#createcredentials).
 - `rpName` is the name that the browser shows.
 - `domain` defaults to the request's host.
 - `origins` defaults to the request's origin.
@@ -337,7 +335,6 @@ another host than the API sets `origins`, such as
 
 ```ts
 createTotp(options: {
-  credentials: Credentials
   issuer: string
   secret: string
 }): Totp
@@ -345,8 +342,6 @@ createTotp(options: {
 
 From `@ditojs/auth/totp`. Enables time-based one-time codes, with backup codes.
 
-- `credentials` hold the TOTP secrets, from
-  [`createCredentials()`](#createcredentials).
 - `issuer` is the name that authenticator apps show.
 - `secret` is a long random string of the app. The keys that encrypt the TOTP
   secrets are derived from it.
