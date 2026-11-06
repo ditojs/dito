@@ -108,8 +108,10 @@ jobs: {
 
 `jobs` says how often the recurring jobs run: deleting the expired sessions, and
 [`assets.runJobs()`](storage.md#tracking-files). They start with `app.start()`
-and stop with `app.close()`. The logger gets the result of each run of the asset jobs. Without
-an interval, a job doesn't run. See [Jobs](../../api/server/kit.md#jobs).
+and stop with `app.close()`. The logger gets the result of each run of the asset
+jobs. Once the app has users, the sessions job runs every hour unless `sessions`
+says otherwise. `false` turns it off. Other jobs need an interval. See
+[Jobs](../../api/server/kit.md#jobs).
 
 ## Logging
 

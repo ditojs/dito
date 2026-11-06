@@ -287,6 +287,38 @@ describe('createApp()', () => {
     expect(results).toHaveLength(length)
   })
 
+  it('deletes the expired sessions every hour once the app has users', async () => {
+    const { host, user, dbName } = database.orm.config.getAll()
+    const getIntervals = async (
+      jobs: JobsOptions | undefined,
+      withUsers: boolean
+    ) => {
+      const app = createApp({
+        entities,
+        database: { host, user, dbName },
+        server: { host: '127.0.0.1' },
+        logger: { level: 'silent' },
+        secrets,
+        jobs
+      })
+      if (withUsers) {
+        app.createUsers(Admin, {
+          session: { cookieName: 'admin.sess', maxAge: 60_000 }
+        })
+      }
+      const setInterval = vi.spyOn(globalThis, 'setInterval')
+      await app.start()
+      const intervals = setInterval.mock.calls.map(([, interval]) => interval)
+      setInterval.mockRestore()
+      await app.close()
+      return intervals
+    }
+    expect(await getIntervals(undefined, true)).toEqual([3_600_000])
+    expect(await getIntervals({ sessions: 5 }, true)).toEqual([5])
+    expect(await getIntervals({ sessions: false }, true)).toEqual([])
+    expect(await getIntervals(undefined, false)).toEqual([])
+  })
+
   it('runs no jobs without an interval', async () => {
     const { host, user, dbName } = database.orm.config.getAll()
     const app = createApp({

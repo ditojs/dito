@@ -61,10 +61,11 @@ export interface CreateAppOptions {
 
 export interface JobsOptions {
   // How often to delete the expired sessions, in milliseconds or as a duration
-  // such as `'1h'`. By default, `false` doesn't run the job.
+  // such as `'1h'`. The default is `'1h'` once `createUsers()` was called. With
+  // `false`, or without users, the job doesn't run.
   sessions?: number | string | false
-  // How often to run `assets.runJobs()`, in the same way. The logger gets the
-  // result of each run.
+  // How often to run `assets.runJobs()`, in the same way, but off by default.
+  // The logger gets the result of each run.
   assets?: number | string | false
 }
 
@@ -132,12 +133,7 @@ export function createApp({
     storages,
     ...assetsOptions
   })
-  const jobServices = [
-    createJob(jobs.sessions, logger, () => deleteExpiredSessions(adapter)),
-    createJob(jobs.assets, logger, async () =>
-      logger.info(await assets.runJobs(), 'Asset jobs')
-    )
-  ]
+  let hasUsers = false
   let served: Awaited<ReturnType<typeof serve>> | undefined
 
   return {
@@ -152,6 +148,7 @@ export function createApp({
     },
 
     createUsers(entity, options) {
+      hasUsers = true
       return createUsers(entity, { ...options, adapter, secrets })
     },
 
@@ -160,12 +157,25 @@ export function createApp({
     },
 
     async start({ services = [] } = {}) {
+      const sessionsJob = createJob(
+        jobs.sessions ?? (hasUsers && '1h'),
+        logger,
+        () => deleteExpiredSessions(adapter)
+      )
+      const assetsJob = createJob(jobs.assets, logger, async () =>
+        logger.info(await assets.runJobs(), 'Asset jobs')
+      )
       // The ORM stops last, as services stop in reverse order.
       served = await serve(hono, {
         port,
         host,
         closeTimeout,
-        services: [{ stop: () => orm.close() }, ...jobServices, ...services]
+        services: [
+          { stop: () => orm.close() },
+          sessionsJob,
+          assetsJob,
+          ...services
+        ]
       })
       return served.server
     },

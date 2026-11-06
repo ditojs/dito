@@ -47,8 +47,9 @@ Sets up an app. Only `entities` and `database` are required.
 | `sessions` | `number \| string \| false` | How often to delete the expired sessions.                                                             |
 | `assets`   | `number \| string \| false` | How often to run [`assets.runJobs()`](storage.md#asset-jobs). The logger gets the result of each run. |
 
-The intervals are in milliseconds, or durations such as `'1h'`. By default, the
-jobs don't run.
+The intervals are in milliseconds, or durations such as `'1h'`. `false` turns a
+job off. `sessions` defaults to `'1h'` once `app.createUsers()` was called, and
+`assets` doesn't run by default.
 
 - The jobs start with `app.start()`, before the services, and stop after them.
 - The first run comes one interval after the start.
