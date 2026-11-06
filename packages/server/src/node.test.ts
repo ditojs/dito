@@ -1,6 +1,7 @@
 import type { AddressInfo } from 'node:net'
 import { Hono } from 'hono'
 import { csrf } from 'hono/csrf'
+import { createErrorHandler } from './errors.ts'
 import { forwarded, honoMiddleware } from './hono.ts'
 import { createApi, createHono, HttpError } from './index.ts'
 import { getClientAddress, serve } from './node.ts'
@@ -44,6 +45,7 @@ describe('honoMiddleware() on Node', () => {
   // Answers `/secret` with 401, without reading the body.
   const hono = (proxy?: boolean) => {
     const app = new Hono()
+    app.onError(createErrorHandler())
     if (proxy) app.use(forwarded(proxy))
     app.use(...honoMiddleware())
     app.post('/secret', c => c.text('Unauthorized', 401))

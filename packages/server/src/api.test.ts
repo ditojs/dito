@@ -1177,7 +1177,12 @@ describe('query values', () => {
       status: 400,
       errors: { page: [{ keyword: 'invalid_type' }] }
     })
-    expect(await get(api, 'page=abc')).toMatchObject({ status: 400 })
+    expect(await get(api, 'page=abc')).toMatchObject({
+      status: 400,
+      errors: {
+        page: [{ message: expect.stringContaining('received string') }]
+      }
+    })
   })
 
   it('converts booleans, and rejects other values', async () => {

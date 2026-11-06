@@ -75,7 +75,8 @@ function convertValue(schema: JsonSchema, value: string) {
   const { type } = getType(schema)
   if (type === 'number' || type === 'integer') {
     // `Number('')` is 0, so empty strings stay strings.
-    return value.trim() === '' ? value : Number(value)
+    const number = Number(value)
+    return value.trim() === '' || isNaN(number) ? value : number
   } else if (type === 'boolean') {
     return Object.hasOwn(booleans, value) ? booleans[value] : value
   } else if (type === 'Date') {
