@@ -1,6 +1,8 @@
 import { tryGetContext } from 'hono/context-storage'
 import { parseDuration } from '@ditojs/utils'
-import type { Adapter, MixinDefinition } from '@ditojs/server'
+import type { EntityMetadata } from '@mikro-orm/core'
+import type { MixinDefinition } from '@ditojs/server'
+import type { MikroAdapter } from '@ditojs/mikro'
 import type { StoreOptions } from './Storage.ts'
 import {
   getDataPath,
@@ -27,7 +29,7 @@ import {
 
 export interface CreateAssetsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`.
-  adapter: Adapter
+  adapter: MikroAdapter
   fields: AssetField[]
   storages: StorageRegistry
   // The `deleteUnusedAfter` of `runJobs()`, in milliseconds or as a duration
@@ -60,15 +62,10 @@ export function createAssets({
   // of a write commit with its transaction. The other methods run outside of
   // the requests' transactions.
   const { getKysely } = adapter
-  // All model controllers of the entities track the files of their writes:
   const fieldsByEntity = Map.groupBy(normalizedFields, field => field.entity)
   const uploadsByEntity = new Map<object, NormalizedAssetUpload[]>()
   for (const [entity, fields] of fieldsByEntity) {
     if (entity) {
-      adapter.wrapEntity?.(
-        entity,
-        defineAssetWrites({ fields, storages, getKysely })
-      )
       uploadsByEntity.set(
         entity,
         fields.map(({ column, dataPath, storage, maxSize }) => ({
@@ -76,6 +73,29 @@ export function createAssets({
           storage,
           maxSize
         }))
+      )
+    }
+  }
+  function hasFiles(meta: EntityMetadata, visited = new Set()): boolean {
+    visited.add(meta)
+    return (
+      fieldsByEntity.has(meta.class) ||
+      meta.relations.some(
+        ({ orphanRemoval, targetMeta }) => (
+          orphanRemoval &&
+          !visited.has(targetMeta) &&
+          hasFiles(targetMeta!, visited)
+        )
+      )
+    )
+  }
+  // All model controllers of the entities track the files of their writes, and
+  // so do those of the entities that own rows with files:
+  for (const meta of adapter.getEm().getMetadata().getAll().values()) {
+    if (hasFiles(meta)) {
+      adapter.wrapEntity(
+        meta.class,
+        defineAssetWrites({ meta, fieldsByEntity, storages, getKysely })
       )
     }
   }

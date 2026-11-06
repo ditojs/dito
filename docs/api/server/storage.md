@@ -166,7 +166,7 @@ them on the columns, see [`getAssetFields()`](mikro.md#getassetfields).
 
 ```ts
 createAssets(options: {
-  adapter: Adapter
+  adapter: MikroAdapter
   fields: AssetField[]
   storages: StorageRegistry
   deleteUnusedAfter?: number | string | false
@@ -195,8 +195,9 @@ await assets.runJobs({ dryRun: true })
 Returns the asset handling of an app. It is bound to the app's adapter, asset
 fields and storages.
 
-- `adapter` is the adapter of `createApi()`, such as
-  [`createMikroAdapter(orm)`](mikro.md#createmikroadapter).
+- `adapter` is the adapter of `createApi()`,
+  [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). The ORM needs to know
+  its entities, as `createAssets()` reads their relations.
 - `deleteUnusedAfter` is in milliseconds, or a duration string such as `'24h'`,
   see [`parseDuration()`](../utils.md#parseduration). By default, it is `false`,
   which skips the release.
@@ -205,7 +206,8 @@ fields and storages.
 - `createAssets()` throws for asset fields whose storage `storages` doesn't have.
   `defineUploads()` does the same for `uploads`.
 - All model controllers of the entities of the asset fields track their files,
-  see [Writes](#writes). This also holds for controllers that were defined
+  and so do those of the entities that own rows with files, see
+  [Writes](#writes). This also holds for controllers that were defined
   before `createAssets()` runs.
 
 The `asset` rows go through two Kyselys:
@@ -234,7 +236,12 @@ Every model controller of an entity with asset fields handles the files in the
 JSON body of its writes, `c.var.body`, also of its own actions. It does this
 through the `adapter` of `createAssets()`, with no mixin and no routes, so the
 API takes the same adapter.
-These are the files at the entity's asset fields. For each file, it looks up the `asset` row of its key:
+
+These are the files at the entity's asset fields, and at the asset fields of the
+rows of its [owned relations](../../guide/server/writes.md#nested-rows), at any
+depth. So a controller of an entity without asset fields also handles them, if
+it owns rows that have some. For each file, it looks up the `asset` row of its
+key:
 
 - If the row is in the storage of the asset field, the file gets the properties
   of the stored file, from the row's `file`. So clients can't change them.
@@ -247,7 +254,8 @@ These are the files at the entity's asset fields. For each file, it looks up the
 - A write imports up to 8 files at once.
 - Imports and copies over the asset field's `maxSize` respond with 413.
 - Other values at an asset field, such as an object without a valid `key`,
-  respond with 400 and `BodyValidation` errors.
+  respond with 400 and `BodyValidation` errors, at their place in the body, such
+  as `chapters/0/image`.
 
 It changes the files in place, so the handler reads the stored files in its
 `body`. It marks the files as used. When the write fails, it removes the

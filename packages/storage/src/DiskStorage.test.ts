@@ -37,7 +37,7 @@ describe('DiskStorage', () => {
     )
   })
 
-  it('resolves relative fields against the working directory', () => {
+  it('resolves relative paths against the working directory', () => {
     const storage = createDiskStorage({ path: 'uploads' })
     expect(storage.path).toBe(path.resolve('uploads'))
   })
@@ -97,7 +97,7 @@ describe('DiskStorage', () => {
     })
   })
 
-  it('keeps the fields of files inside the storage folder', async () => {
+  it('keeps the paths of files inside the storage folder', async () => {
     const storage = createDiskStorage({ nestedFolders: false })
     const outside = path.join(basePath, 'outside.txt')
     await fs.writeFile(outside, 'Outside')
@@ -113,7 +113,7 @@ describe('DiskStorage', () => {
     expect(await fs.readFile(outside, 'utf8')).toBe('Outside')
   })
 
-  it('keeps the fields of files of storages at the filesystem root', () => {
+  it('keeps the paths of files of storages at the filesystem root', () => {
     const storage = new DiskStorage({ name: 'root', path: '/' })
     expect(storage.getFilePath({ key: 'ab.txt' })).toBe(
       path.resolve('/', 'a', 'b', 'ab.txt')

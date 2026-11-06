@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { sql, type Kysely } from 'kysely'
 import type { Adapter, DitoContext, createApi } from '@ditojs/server'
+import { createMikroAdapter, type MikroAdapter } from '@ditojs/mikro'
 import {
   DiskStorage,
   StorageRegistry,
@@ -15,6 +16,7 @@ import { createTestDatabase } from '../../../../tests/utils/database.ts'
 // file calls `setupAssetTests()`, which creates them in its hooks.
 
 export let db: Kysely<any>
+export let adapter: MikroAdapter
 let drop: () => Promise<void>
 export let basePath: string
 export let covers: DiskStorage
@@ -40,7 +42,9 @@ export const getKysely = (c?: DitoContext) => c!.var.em as Kysely<any>
 
 export function setupAssetTests() {
   beforeAll(async () => {
-    ;({ db, drop } = await createTestDatabase())
+    const database = await createTestDatabase()
+    ;({ db, drop } = database)
+    adapter = createMikroAdapter(database.orm)
     await db.schema
       .createTable('asset')
       .addColumn('id', 'serial', col => col.primaryKey())
@@ -141,11 +145,8 @@ export const getKeys = async () => (await getAssets()).map(asset => asset.key)
 export const old = new Date('2026-10-01T00:00:00Z')
 export const now = new Date('2026-10-30T12:00:00Z')
 
-// The adapter of `createAssets()`, and one of `createApi()` whose request
-// handles have a Kysely, as the entity managers of `@ditojs/mikro` do.
-export const adapter = {
-  getKysely: (c?: DitoContext) => (c ? (c.var.em as any).getKysely() : db)
-}
+// The adapter of `createApi()`, whose request handles have a Kysely, as the
+// entity managers of `@ditojs/mikro` do.
 export const handleAdapter: Partial<Adapter> = {
   connect: () => ({ getKysely: () => db }),
   transact: (c, fn) =>

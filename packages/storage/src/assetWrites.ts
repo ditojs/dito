@@ -1,7 +1,9 @@
 import fs from 'node:fs'
 import type { Kysely } from 'kysely'
+import type { EntityMetadata } from '@mikro-orm/core'
 import {
   asArray,
+  isArray,
   isObject,
   mapConcurrently,
   normalizeDataPath,
@@ -29,13 +31,22 @@ import {
 } from './assetFields.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
 
-interface AssetOptions {
+// A row of a body, at `path`, with the fields of its entity:
+interface AssetRow {
+  row: Record<string, any>
   fields: NormalizedAssetField[]
+  path: (string | number)[]
+}
+
+interface DefineAssetWritesOptions extends Pick<Adapter, 'getKysely'> {
+  // The entity of the wrapped model controllers.
+  meta: Pick<EntityMetadata, 'class' | 'relations'>
+  fieldsByEntity: Map<unknown, NormalizedAssetField[]>
   storages: StorageRegistry
 }
 
 // A file at an asset field, with the storage and the size limit of the field:
-interface AssetPathFile {
+interface AssetFieldFile {
   file: AssetFile
   storage: Storage
   maxSize?: number
@@ -44,7 +55,7 @@ interface AssetPathFile {
 interface ImportOptions {
   storages: StorageRegistry
   // Collects the stored files, even of imports that fail later.
-  imported?: AssetPathFile[]
+  imported?: AssetFieldFile[]
   skipDisallowed?: boolean
 }
 
@@ -59,23 +70,26 @@ const importConcurrency = 8
 // Accept the files in the body that the `asset` table holds in the storage of
 // their field, copy files of other storages, and import files without `asset`
 // row from their `url` when the storage allows it. Change the files of the
-// body in place, so that handlers read the stored files.
+// body in place, so that handlers read the stored files. This covers the rows
+// of owned relations too, which a write sends with their parent.
 export function defineAssetWrites({
-  fields,
+  meta,
+  fieldsByEntity,
   storages,
   getKysely
-}: AssetOptions & Pick<Adapter, 'getKysely'>): MixinDefinition {
+}: DefineAssetWritesOptions): MixinDefinition {
   return {
     middleware: async (c, next) => {
-      const imported: AssetPathFile[] = []
+      const imported: AssetFieldFile[] = []
       // The transaction rolls the rows back, but not the files.
       const removeImported = () =>
         Promise.allSettled(
           imported.map(({ file, storage }) => storage.removeFile(file))
         )
       if (writeMethods.includes(c.req.method)) {
-        checkFiles(c.var.body, fields)
-        const files = findFiles(c.var.body, fields, storages)
+        const rows = getBodyRows(c.var.body, meta, fieldsByEntity)
+        checkFiles(rows)
+        const files = findFiles(rows, storages)
         if (files.length > 0) {
           const database = getKysely(c)
           try {
@@ -109,40 +123,64 @@ export function defineAssetWrites({
   }
 }
 
+// The rows of a body or of an owned relation, an array or a single row, and of
+// the owned relations inside them, at any depth.
+function getBodyRows(
+  value: unknown,
+  meta: DefineAssetWritesOptions['meta'],
+  fieldsByEntity: DefineAssetWritesOptions['fieldsByEntity'],
+  path: AssetRow['path'] = []
+): AssetRow[] {
+  const fields = fieldsByEntity.get(meta.class) ?? []
+  const owned = meta.relations.filter(prop => prop.orphanRemoval)
+  return asArray(value).flatMap((row, index) => {
+    if (isObject(row)) {
+      const rowPath = isArray(value) && path.length ? [...path, index] : path
+      return [
+        { row, fields, path: rowPath },
+        ...owned.flatMap(({ name, targetMeta }) =>
+          getBodyRows(row[name], targetMeta!, fieldsByEntity, [
+            ...rowPath,
+            name
+          ])
+        )
+      ]
+    } else {
+      return []
+    }
+  })
+}
+
 // Answer values at the asset fields that aren't files with 400, as
 // `findFiles()` leaves them out and the write would store them as they are.
-function checkFiles(body: unknown, fields: NormalizedAssetField[]) {
-  const issues = asArray(body).flatMap(item =>
-    isObject(item)
-      ? fields.flatMap(({ property, dataPath }) =>
-          findInvalidFiles(item[property], dataPath).map(filePath => ({
-            path: [
-              property,
-              ...parseDataPath(normalizeDataPath(filePath))
-            ],
-            message: 'Invalid input: expected a stored file'
-          }))
-        )
-      : []
+function checkFiles(rows: AssetRow[]) {
+  const issues = rows.flatMap(({ row, fields, path }) =>
+    fields.flatMap(({ property, dataPath }) =>
+      findInvalidFiles(row[property], dataPath).map(filePath => ({
+        path: [
+          ...path,
+          property,
+          ...parseDataPath(normalizeDataPath(filePath))
+        ],
+        message: 'Invalid input: expected a stored file'
+      }))
+    )
   )
   if (issues.length > 0) throw createValidationError(issues, bodyValidation)
 }
 
 function findFiles(
-  body: unknown,
-  fields: NormalizedAssetField[],
+  rows: AssetRow[],
   storages: StorageRegistry
-): AssetPathFile[] {
-  return asArray(body).flatMap(item =>
-    isObject(item)
-      ? fields.flatMap(({ property, dataPath, storage, maxSize }) =>
-          findAssetFiles(item[property], dataPath).map(({ file }) => ({
-            file,
-            storage: storages.get(storage),
-            maxSize
-          }))
-        )
-      : []
+): AssetFieldFile[] {
+  return rows.flatMap(({ row, fields }) =>
+    fields.flatMap(({ property, dataPath, storage, maxSize }) =>
+      findAssetFiles(row[property], dataPath).map(({ file }) => ({
+        file,
+        storage: storages.get(storage),
+        maxSize
+      }))
+    )
   )
 }
 
@@ -151,7 +189,7 @@ function findFiles(
 // `asset` table holds in their storage keep their key.
 async function importFiles(
   database: Kysely<any>,
-  files: AssetPathFile[],
+  files: AssetFieldFile[],
   options: ImportOptions
 ): Promise<string[]> {
   const getStorageKey = (storage: string, key: string) => `${storage}:${key}`
@@ -224,7 +262,7 @@ async function importFiles(
 // one from their `url` if the storage allows it:
 async function importFile(
   database: Kysely<any>,
-  { file, storage, maxSize }: AssetPathFile,
+  { file, storage, maxSize }: AssetFieldFile,
   asset: { storage: string; file: AssetFile } | undefined,
   { storages, imported, skipDisallowed }: ImportOptions
 ) {
@@ -264,10 +302,20 @@ export async function importAssets<T extends object>(
     fields,
     storages,
     database
-  }: AssetOptions & { table: string; database: Kysely<any> }
+  }: {
+    table: string
+    fields: NormalizedAssetField[]
+    storages: StorageRegistry
+    database: Kysely<any>
+  }
 ) {
   const tableFields = fields.filter(field => field.table === table)
-  const files = findFiles(data, tableFields, storages)
+  const rows = asArray(data).map((row: any) => ({
+    row,
+    fields: tableFields,
+    path: []
+  }))
+  const files = findFiles(rows, storages)
   await importFiles(database, files, { storages, skipDisallowed: true })
   return data
 }

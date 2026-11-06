@@ -24,6 +24,7 @@ import {
   type Api,
   request,
   fields,
+  bookField,
   getKysely,
   file,
   addImport,
@@ -81,7 +82,10 @@ describe('defineAssetWrites()', () => {
       authorize: true,
       mixins: [
         defineAssetWrites({
-          fields: normalizeAssetFields(setupFields),
+          meta: { class: bookField.entity, relations: [] },
+          fieldsByEntity: new Map([
+            [bookField.entity, normalizeAssetFields(setupFields)]
+          ]),
           storages,
           getKysely
         })

@@ -41,6 +41,41 @@ const ShelfSchema = defineEntity({
 class Shelf extends ShelfSchema.class {}
 ShelfSchema.setClass(Shelf)
 
+// A library holds no files itself. Its owned rooms hold rooms and shelves of
+// their own, whose plans are files.
+const LibrarySchema = defineEntity({
+  name: 'Library',
+  tableName: 'library',
+  properties: {
+    id: p.integer().primary(),
+    rooms: () =>
+      p
+        .oneToMany(Room)
+        .mappedBy(room => room.library)
+        .orphanRemoval()
+  }
+})
+class Library extends LibrarySchema.class {}
+LibrarySchema.setClass(Library)
+
+const RoomSchema = defineEntity({
+  name: 'Room',
+  tableName: 'room',
+  properties: {
+    id: p.integer().primary(),
+    plan: assetColumn(),
+    library: () => p.manyToOne(Library).nullable(),
+    parent: () => p.manyToOne(Room).nullable(),
+    rooms: () =>
+      p
+        .oneToMany(Room)
+        .mappedBy(room => room.parent)
+        .orphanRemoval()
+  }
+})
+class Room extends RoomSchema.class {}
+RoomSchema.setClass(Room)
+
 const AssetSchema = defineEntity({
   name: 'Asset',
   tableName: 'asset',
@@ -63,6 +98,14 @@ const books = defineModelController({
   mixins: [crud]
 })
 
+const libraries = defineModelController({
+  path: 'libraries',
+  entity: Library,
+  authorize: true,
+  find: { populate: ['rooms'] },
+  mixins: [crud]
+})
+
 let database: Awaited<ReturnType<typeof createTestDatabase>>
 let adapter: MikroAdapter
 let basePath: string
@@ -82,18 +125,24 @@ const store = (name: string): Promise<AssetFile> =>
   assets.store('covers', { name, data: Buffer.from(name) })
 
 beforeAll(async () => {
-  database = await createTestDatabase([Book, Shelf, AssetSchema])
+  database = await createTestDatabase([
+    Book,
+    Shelf,
+    Library,
+    Room,
+    AssetSchema
+  ])
   basePath = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-assets-'))
   adapter = createMikroAdapter(database.orm)
   assets = createAssets({
     adapter,
-    fields: getAssetFields([Book, Shelf]),
+    fields: getAssetFields([Book, Shelf, Library, Room]),
     storages: createStorages({
       covers: { type: 'disk', path: basePath, url: '/covers/' }
     })
   })
   api = createApi({
-    controllers: [books],
+    controllers: [books, libraries],
     adapter,
     onError: () => {}
   })
@@ -105,6 +154,55 @@ afterAll(async () => {
 })
 
 beforeEach(() => database.orm.schema.clear())
+
+describe('tracking the files of owned rows', () => {
+  const getRow = async (key: string) =>
+    database.db
+      .selectFrom('asset')
+      .select('unreferenced_since')
+      .where('key', '=', key)
+      .executeTakeFirst()
+
+  it('accepts stored files, with the values of their rows', async () => {
+    const { key } = await store('plan.txt')
+    const response = await write('POST', '/libraries', {
+      id: 1,
+      rooms: [{ plan: { key, name: 'Changed' } }]
+    })
+    expect(response.status).toBe(201)
+    const { rooms } = await response.json()
+    expect(rooms[0].plan).toMatchObject({ key, name: 'plan.txt' })
+  })
+
+  it('marks the files as used', async () => {
+    const { key } = await store('plan.txt')
+    expect((await getRow(key))?.unreferenced_since).not.toBe(null)
+    await write('POST', '/libraries', {
+      id: 1,
+      rooms: [{ plan: { key } }]
+    })
+    expect((await getRow(key))?.unreferenced_since).toBe(null)
+  })
+
+  it('answers files without a row with 400', async () => {
+    const response = await write('POST', '/libraries', {
+      id: 1,
+      rooms: [{ plan: { key: 'unknown.txt' } }]
+    })
+    expect(response.status).toBe(400)
+  })
+
+  it('answers values that are not files with 400, at any depth', async () => {
+    const response = await write('POST', '/libraries', {
+      id: 1,
+      rooms: [{ rooms: [{ plan: 'text' }] }]
+    })
+    expect(response.status).toBe(400)
+    expect((await response.json()).errors).toHaveProperty(
+      'rooms/0/rooms/0/plan'
+    )
+  })
+})
 
 describe('tracking the files of model controllers', () => {
   it('accepts stored files, on `post` and `patch`', async () => {
