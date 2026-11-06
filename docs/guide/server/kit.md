@@ -46,7 +46,15 @@ const sessions = app.createSessions({
 })
 
 app.routeApi('/api', { controllers, sessions })
-app.hono.route('/admin', createAdmin({ base: '/admin', dist: 'dist/admin' }))
+app.hono.route(
+  '/admin',
+  createAdmin({
+    base: '/admin',
+    dist: 'dist/admin',
+    sessions,
+    authorize: 'admin'
+  })
+)
 await app.start({ services: [mailer] })
 ```
 
