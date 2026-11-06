@@ -1,14 +1,14 @@
 import { Hono } from 'hono'
 import { defineEntity, p } from '@mikro-orm/core'
 import { createApi, HttpError } from '@ditojs/server'
-import { createUsers } from '../../auth/src/index.ts'
-import { hashPassword, verifyPassword } from '../../auth/src/passwords.ts'
-import { createMikroAdapter, crud, defineModelController } from './index.ts'
+import { createMikroAdapter, crud, defineModelController } from '@ditojs/mikro'
+import { createUsers } from './index.ts'
+import { hashPassword, verifyPassword } from './passwords.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Credential, Session } from '../../../tests/utils/entities.ts'
 import { createClient } from '../../../tests/utils/client.ts'
 
-// `createUsers()` of auth on a model controller.
+// `createUsers()` on a model controller.
 
 const MemberSchema = defineEntity({
   name: 'Member',
@@ -104,7 +104,7 @@ const login = async () => {
 const self = async (client: ReturnType<typeof createClient>) =>
   (await client.get('/auth/self')).data
 
-describe('createEntityUserSource() with auth', () => {
+describe('createUsers() on model controllers', () => {
   it('logs in and stores the time of the login', async () => {
     expect(await self(await login())).toEqual({ id: 1, username: 'ada' })
     expect((await load(ada.id)).lastLogin).toBeInstanceOf(Date)

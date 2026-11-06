@@ -1,5 +1,5 @@
 import type { User } from '@ditojs/server'
-import type { createEntityUserSource } from '@ditojs/mikro/internal'
+import type { createEntityUserSource } from './createEntityUserSource.ts'
 
 // The values of the user entities that auth reads, beside `id` and `roles`.
 export interface AuthUser extends User {

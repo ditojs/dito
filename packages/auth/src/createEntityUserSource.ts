@@ -5,10 +5,10 @@ import {
   type EntityManager
 } from '@mikro-orm/core'
 import { isFunction, mapValues } from '@ditojs/utils'
-import type { MikroAdapter } from './createMikroAdapter.ts'
-import { getPrimaryKey, toPrimaryKey } from './metadata.ts'
+import type { MikroAdapter } from '@ditojs/mikro'
+import { getPrimaryKey, toPrimaryKey } from '@ditojs/mikro/internal'
 
-// The users of one kind, for `@ditojs/auth`, which depends on this package.
+// The users of one kind, on an entity.
 
 export interface CreateEntityUserSourceOptions<U extends object> {
   // The adapter of the API, with its `session` and `credential` tables.

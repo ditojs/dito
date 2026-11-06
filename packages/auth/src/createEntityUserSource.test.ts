@@ -3,11 +3,11 @@ import { contextStorage } from 'hono/context-storage'
 import type { EntityManager } from '@mikro-orm/core'
 import { z } from 'zod'
 import { defineEntity, p } from '@mikro-orm/core'
+import { createMikroAdapter } from '@ditojs/mikro'
 import {
   createEntityUserSource,
   defaultPasswordSchema
 } from './createEntityUserSource.ts'
-import { createMikroAdapter } from './createMikroAdapter.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 
 const AccountSchema = defineEntity({

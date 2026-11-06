@@ -2,7 +2,7 @@ import type { EntityClass } from '@mikro-orm/core'
 import {
   createEntityUserSource,
   type CreateEntityUserSourceOptions
-} from '@ditojs/mikro/internal'
+} from './createEntityUserSource.ts'
 import { createCredentials } from './credentials.ts'
 import {
   defineUserWrites,
