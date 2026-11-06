@@ -82,7 +82,8 @@ export async function createRecord<T extends object>(
   data: unknown
 ): Promise<T> {
   const meta = em.getMetadata().get(entity)
-  const check = await clean(meta, data, true)
+  const check = await clean(meta, data)
+  matchRows(meta, check)
   await checkIds(em, check.ids)
   const record = em.create(entity, check.row as never)
   setRefs(meta, check, record)
@@ -97,13 +98,13 @@ export async function assignRecord<T extends object>(
   data: unknown
 ): Promise<T> {
   const meta = wrap(record, true).__meta
-  const check = await clean(meta, data, false)
+  const check = await clean(meta, data)
   const { row } = check
   // Load the owned rows to match them by id, and the many-to-many collections,
   // which MikroORM else writes as new pivot rows, losing their other columns:
   const paths = [...check.populate]
   if (paths.length) await em.populate(record, paths as never)
-  const records = matchOwnedRows(meta, check, record)
+  const records = matchRows(meta, check, record)
   // Ids that the record already links need no check.
   const isLinked = createIsLinked(records)
   await checkIds(
@@ -125,6 +126,8 @@ class BodyCheck {
   ids: RelationId[] = []
   refs: Ref[] = []
   newRowsByKey = new Map<string, NewRow>()
+  // The paths of the `#id` keys, by their rows, for `matchRows()`.
+  keyPaths = new Map<Row, Path>()
   // The owned and many-to-many relations that the body sets, at any depth, as
   // dotted paths such as `chapters.sections`.
   populate = new Set<string>()
@@ -153,13 +156,7 @@ class BodyCheck {
     this.addIssue(`${size}: expected ${expected}`, path, code)
   }
 
-  cleanRow(
-    meta: EntityMetadata,
-    data: unknown,
-    path: Path,
-    isNew: boolean,
-    parent?: string
-  ) {
+  cleanRow(meta: EntityMetadata, data: unknown, path: Path, parent?: string) {
     if (!isPlainObject(data)) return this.addTypeIssue('object', data, path)
     const row: Row = {}
     // The nesting sets the relation back to the parent row:
@@ -167,11 +164,8 @@ class BodyCheck {
     for (const prop of props) {
       const value = data[prop.name]
       if (value !== undefined) {
-        const valuePath = [...path, prop.name]
-        const cleaned = this.cleanValue(row, prop, value, valuePath, isNew)
+        const cleaned = this.cleanValue(row, prop, value, [...path, prop.name])
         if (cleaned !== undefined) row[prop.name] = cleaned
-      } else if (isNew && isRequired(prop)) {
-        this.addTypeIssue(getType(prop), value, [...path, prop.name])
       }
     }
     // A many-to-many relation writes the same rows as the owned rows of its
@@ -185,29 +179,18 @@ class BodyCheck {
         this.addIssue(message, [...path, prop.name])
       }
     }
-    if ('#id' in data) this.addRowKey(meta, row, data['#id'], path, isNew)
+    if ('#id' in data) this.addRowKey(meta, row, data['#id'], path)
     return row
   }
 
-  // Only new nested rows can carry `#id`.
-  addRowKey(
-    meta: EntityMetadata,
-    row: Row,
-    key: unknown,
-    path: Path,
-    isNew: boolean
-  ) {
+  addRowKey(meta: EntityMetadata, row: Row, key: unknown, path: Path) {
     const keyPath = [...path, '#id']
     if (!isString(key)) return this.addTypeIssue('string', key, keyPath)
-    const message = !isNew
-      ? 'is not allowed in a row with an id'
-      : !path.length
-        ? 'is only allowed in nested rows'
-        : this.newRowsByKey.has(key)
-          ? `is the key of another new row '${key}'`
-          : undefined
-    if (message) return this.addIssue(message, keyPath)
+    if (this.newRowsByKey.has(key)) {
+      return this.addIssue(`is the key of another new row '${key}'`, keyPath)
+    }
     this.newRowsByKey.set(key, { meta, row })
+    this.keyPaths.set(row, keyPath)
   }
 
   // Return undefined for values that stay out of the data.
@@ -215,8 +198,7 @@ class BodyCheck {
     row: Row,
     prop: EntityProperty,
     value: unknown,
-    path: Path,
-    isNew: boolean
+    path: Path
   ): unknown {
     const isManyToMany = prop.kind === ReferenceKind.MANY_TO_MANY
     if (value !== null && (isOwned(prop) || isManyToMany)) {
@@ -226,7 +208,7 @@ class BodyCheck {
       if (!isArray(value)) return this.addTypeIssue('array', value, path)
       const items: unknown[] = value.map((item, index) =>
         isOwned(prop)
-          ? this.cleanOwnedRow(prop, item, [...path, index], isNew)
+          ? this.cleanOwnedRow(prop, item, [...path, index])
           : this.cleanId(row, prop, item, [...path, index])
       )
       if (isOwned(prop)) {
@@ -245,47 +227,27 @@ class BodyCheck {
       // Null removes an owned row.
       return prop.nullable ? null : this.addTypeIssue(getType(prop), null, path)
     }
-    if (isOwned(prop)) {
-      return this.cleanOwnedRow(prop, value, path, isNew)
-    }
+    if (isOwned(prop)) return this.cleanOwnedRow(prop, value, path)
     return isOwningToOne(prop)
       ? this.cleanId(row, prop, value, path)
       : this.cleanScalar(prop, value, path)
   }
 
-  // In owned relations, a row with an id updates that row of the record, and a
-  // row without one is new.
-  cleanOwnedRow(
-    prop: EntityProperty,
-    value: unknown,
-    path: Path,
-    isParentNew: boolean
-  ) {
-    const target = prop.targetMeta!
-    const key = getRowKey(prop)
+  // An owned row carries its key, which `matchRows()` matches to a row of the
+  // record. The key of a pivot row is a writable relation, which `cleanRow()`
+  // reads. The id of other rows isn't writable, so read it here.
+  cleanOwnedRow(prop: EntityProperty, value: unknown, path: Path) {
     if (isPlainObject(value) && '#ref' in value) {
       return this.addIssue('is not allowed in owned rows', [...path, '#ref'])
     }
-    const id = isPlainObject(value) ? value[key.name] : undefined
-    const idPath = [...path, key.name]
-    // A pivot row is keyed by a relation to a stored row, which it requires.
-    // Only matching tells whether the row is new.
-    const isPivot = isOwningToOne(key)
-    const message = isPivot
-      ? isPlainObject(id) && '#ref' in id
-        ? 'is not allowed to reference a new row'
-        : undefined
-      : isParentNew && id != null
-        ? 'is not allowed in a new row'
-        : undefined
-    if (message) this.addIssue(message, idPath)
-    const isNew = isParentNew || (id == null && !isPivot)
-    const row = this.cleanRow(target, value, path, isNew, prop.mappedBy)
-    if (isPivot) {
-      if (row && !isNew && id === undefined) this.addTypeIssue('id', id, idPath)
-    } else if (row && !isNew) {
+    const row = this.cleanRow(prop.targetMeta!, value, path, prop.mappedBy)
+    const key = getRowKey(prop)
+    const id = (value as Row | undefined)?.[key.name]
+    if (row && !isOwningToOne(key) && id != null) {
       row[key.name] = toPrimaryKey(key, id)
-      if (row[key.name] === undefined) this.addTypeIssue('id', id, idPath)
+      if (row[key.name] === undefined) {
+        this.addTypeIssue('id', id, [...path, key.name])
+      }
     }
     return row
   }
@@ -398,12 +360,12 @@ class BodyCheck {
 
 // Keep the properties that a client may write, and check the values that
 // Postgres can't check well:
-async function clean(meta: EntityMetadata, data: unknown, isNew: boolean) {
+async function clean(meta: EntityMetadata, data: unknown) {
   const check = new BodyCheck()
-  check.row = check.cleanRow(meta, data, [], isNew)!
+  check.row = check.cleanRow(meta, data, [])!
   await Promise.all(check.schemaChecks)
-  checkRefs(check)
-  if (check.issues.length) throw createValidationError(check.issues)
+  // Without a row, there is nothing to match.
+  if (!check.row) throw createValidationError(check.issues)
   return check
 }
 
@@ -487,17 +449,42 @@ function isRequired(prop: EntityProperty) {
   )
 }
 
-// Match the owned rows with ids to the loaded rows of `record`, at any depth:
-// `em.assign()` matches by id alone, and would move a row of another record
-// into this one. Pivot rows that match no loaded row are new.
-function matchOwnedRows(
-  meta: EntityMetadata,
-  check: BodyCheck,
-  record: object
-) {
+// Match the owned rows to the loaded rows of `record` by their keys, at any
+// depth: `em.assign()` matches by id alone, and would move a row of another
+// record into this one. A row that matches none is new, as are all rows of a
+// create. Then run the checks that depend on which rows are new.
+function matchRows(meta: EntityMetadata, check: BodyCheck, record?: object) {
   const records = new Map<Row, Row>()
-  const match = (meta: EntityMetadata, row: Row, record: Row, path: Path) => {
-    records.set(row, record)
+  const match = (
+    meta: EntityMetadata,
+    row: Row,
+    record: Row | undefined,
+    path: Path,
+    parent?: string
+  ) => {
+    if (record) records.set(row, record)
+    const keyPath = check.keyPaths.get(row)
+    if (keyPath) {
+      const message = record
+        ? 'is not allowed in a row with an id'
+        : !path.length
+          ? 'is only allowed in nested rows'
+          : undefined
+      if (message) check.addIssue(message, keyPath)
+    }
+    if (!record) {
+      // The nesting sets the relation back to the parent row, and a ref stays
+      // out of the row until `setRefs()`.
+      const isSet = (prop: EntityProperty) => (
+        row[prop.name] !== undefined ||
+        check.refs.some(ref => ref.row === row && ref.prop === prop)
+      )
+      for (const prop of getWritableProps(meta).filter(isRequired)) {
+        if (prop.name !== parent && !isSet(prop)) {
+          check.addTypeIssue(getType(prop), undefined, [...path, prop.name])
+        }
+      }
+    }
     for (const prop of meta.props) {
       if (!isOwned(prop) || row[prop.name] == null) continue
       const target = prop.targetMeta!
@@ -505,43 +492,40 @@ function matchOwnedRows(
       const isPivot = isOwningToOne(key)
       const getKey = (item: Row) =>
         isPivot ? wrap(item[key.name], true).getPrimaryKey() : item[key.name]
-      const existing = new Map(
-        getLoadedRows(record, prop).map(item => [getKey(item), item])
-      )
+      const loaded = record ? getLoadedRows(record, prop) : []
+      const existing = new Map(loaded.map(item => [getKey(item), item]))
       const isMany = prop.kind === ReferenceKind.ONE_TO_MANY
       const children = getOwnedRows(prop, row[prop.name])
       for (const [index, child] of children.entries()) {
-        if (child[key.name] == null) continue
+        // A row that `cleanRow()` refused is an issue already.
+        if (!child) continue
         const childPath = [...path, prop.name, ...(isMany ? [index] : [])]
-        const found = existing.get(child[key.name])
+        const id = child[key.name]
+        const found = id == null ? undefined : existing.get(id)
         // MikroORM finds a pivot row by both of its keys.
-        if (isPivot) child[prop.mappedBy] = wrap(record, true).getPrimaryKey()
-        if (found) {
-          match(target, child, found, childPath)
-        } else if (isPivot) {
-          // A new pair, whose required columns `cleanRow()` didn't check.
-          for (const required of getWritableProps(target).filter(isRequired)) {
-            if (child[required.name] === undefined) {
-              const type = getType(required)
-              check.addTypeIssue(type, undefined, [...childPath, required.name])
-            }
-          }
-          // `em.assign()` creates the pair, which `setRefs()` can't reach.
+        if (isPivot && record) {
+          child[prop.mappedBy] = wrap(record, true).getPrimaryKey()
+        }
+        if (!found && id != null && !isPivot) {
+          const message = record
+            ? `is not a row of this ${meta.className}`
+            : 'is not allowed in a new row'
+          check.addIssue(message, [...childPath, key.name])
+        }
+        // `em.assign()` creates a new pair, which `setRefs()` can't reach.
+        if (!found && isPivot) {
           for (const ref of check.refs) {
             if (ref.row === child) {
               check.addIssue('is not allowed to reference a new row', ref.path)
             }
           }
-        } else {
-          check.addIssue(`is not a row of this ${meta.className}`, [
-            ...childPath,
-            key.name
-          ])
         }
+        match(target, child, found, childPath, prop.mappedBy)
       }
     }
   }
-  match(meta, check.row, record as Row, [])
+  match(meta, check.row, record as Row | undefined, [])
+  checkRefs(check)
   if (check.issues.length) throw createValidationError(check.issues)
   return records
 }
