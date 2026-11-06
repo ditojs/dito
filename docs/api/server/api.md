@@ -61,12 +61,12 @@ other paths.
 
 ### CreateApiOptions
 
-| Key           | Type                                      | Description                                                                                                                                                                              |
-| ------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `controllers` | `ControllerDefinition[] \| object`        | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, Dito ignores all other values. |
-| `users`       | [`users`](#users)                         | The users of the API, such as the result of [`createUsers()`](auth.md#createusers). Without it, the user is `null`.                                                                      |
-| `adapter`     | [`Adapter`](#adapter)                     | The database: [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined, and no action runs in a transaction.                                              |
-| `onError`     | `({ error, c }) => void \| Promise<void>` | Gets each error with a status of 500 or above, for the app's logs, not the response. By default, it logs through `console`. See [Errors](errors.md).                                     |
+| Key           | Type                                      | Description                                                                                                                                                                                              |
+| ------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `controllers` | `ControllerDefinition[] \| object`        | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, only plain objects with a string `path` count. |
+| `users`       | [`users`](#users)                         | The users of the API, such as the result of [`createUsers()`](auth.md#createusers). Without it, the user is `null`.                                                                                      |
+| `adapter`     | [`Adapter`](#adapter)                     | The database: [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined, and no action runs in a transaction.                                                              |
+| `onError`     | `({ error, c }) => void \| Promise<void>` | Gets each error with a status of 500 or above, for the app's logs, not the response. By default, it logs through `console`. See [Errors](errors.md).                                                     |
 
 ### users
 

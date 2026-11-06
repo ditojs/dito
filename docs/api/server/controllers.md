@@ -25,8 +25,8 @@ They take the same options, and add their own, such as `serialize` and
 defineController(definition: ControllerDefinition): ControllerDefinition
 ```
 
-Returns the definition, tagged so that `createApi()` finds it in a module
-namespace.
+Returns the definition as it is, and only gives it its types. A plain object
+with a string `path` works the same.
 
 ### ControllerDefinition
 

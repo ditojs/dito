@@ -201,8 +201,8 @@ export type ErrorLogger = (context: {
 }) => void | Promise<void>
 
 export interface CreateApiOptions {
-  // A list, or an object such as a module namespace, of which only the
-  // results of `defineController()` count.
+  // A list, or an object such as a module namespace, of which only the plain
+  // objects with a string `path` count.
   controllers: ControllerDefinition[] | Record<string, unknown>
   // The users of the API, such as the result of `createUsers()`.
   users?: {

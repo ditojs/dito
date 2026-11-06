@@ -1,9 +1,14 @@
 import { Hono, type Context } from 'hono'
 import { contextStorage } from 'hono/context-storage'
 import type { z } from 'zod'
-import { asArray, isArray, isFunction, isString } from '@ditojs/utils'
+import {
+  asArray,
+  isArray,
+  isFunction,
+  isPlainObject,
+  isString
+} from '@ditojs/utils'
 import { resolveController, type ResolvedAction } from './compose.ts'
-import { isController } from './define.ts'
 import { convertQuery } from './query.ts'
 import {
   HttpError,
@@ -13,6 +18,7 @@ import {
   queryValidation
 } from './errors.ts'
 import type {
+  ControllerDefinition,
   CreateApiOptions,
   Authorize,
   DitoContext,
@@ -46,7 +52,7 @@ export function createApi({
   const routeShapes = new Set<string>()
   const definitions = isArray(controllers)
     ? controllers
-    : Object.values(controllers).filter(isController)
+    : Object.values(controllers).filter(hasPath)
   const routes = definitions.flatMap(definition =>
     resolveController(definition).map(action => {
       const { key, authorize, transacted } = action
@@ -219,6 +225,11 @@ async function readBody(c: Context) {
   } catch {
     throw new HttpError(400, { message: 'The body is invalid JSON.' })
   }
+}
+
+// Tell controllers from the other exports of a module.
+function hasPath(value: unknown): value is ControllerDefinition {
+  return isPlainObject(value) && isString(value.path)
 }
 
 function getRouteShape(path: string) {

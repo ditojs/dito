@@ -1,24 +1,13 @@
 import type { z } from 'zod'
-import { isObject } from '@ditojs/utils'
 import type {
   ActionDefinition,
   ControllerDefinition,
   MixinDefinition
 } from './types.ts'
 
-// Mark the results of `defineController()`, so that `createApi()` can pick
-// them from the exports of a module.
-const controllerTag = Symbol.for('@ditojs/server/controller')
-
-// Tag the controller, and type it where it is written.
-export function defineController(
-  definition: ControllerDefinition
-): ControllerDefinition {
-  return { ...definition, [controllerTag]: true } as ControllerDefinition
-}
-
-export function isController(value: unknown): value is ControllerDefinition {
-  return isObject(value) && controllerTag in value
+// Only give the controller its types.
+export function defineController(definition: ControllerDefinition) {
+  return definition
 }
 
 // Only give the mixin its types.

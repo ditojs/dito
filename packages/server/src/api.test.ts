@@ -1880,7 +1880,7 @@ describe('errors', () => {
 })
 
 describe('controllers of a module', () => {
-  it('keeps the results of `defineController()`', async () => {
+  it('routes the plain objects with a string `path`', async () => {
     const fonts = defineController({
       path: 'fonts',
       actions: { get: () => 'fonts' }
@@ -1896,7 +1896,8 @@ describe('controllers of a module', () => {
     }
     const api = createApi({ controllers: module })
     expect(await (await api.request('/fonts')).json()).toBe('fonts')
-    expect((await api.request('/plain')).status).toBe(404)
+    expect(await (await api.request('/plain')).json()).toBe('plain')
+    expect((await api.request('/other')).status).toBe(404)
     // A module namespace is such an object, here without controllers.
     expect(() => createApi({ controllers: utils })).not.toThrow()
   })

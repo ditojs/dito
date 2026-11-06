@@ -576,8 +576,8 @@ app.routeApi('/api', { controllers, users: admins })
 await app.start({ services: [mailer, scheduler] })
 ```
 
-- `controllers` is a list, or a module namespace, in which only the results of
-  `defineController()` count.
+- `controllers` is a list, or a module namespace, in which only plain objects
+  with a string `path` count.
 - Services become modules or objects with `start()` and `stop()`, see
   [Services](guide/server/kit.md#services).
 - `app.on()` and events such as `before:start` become plain calls around

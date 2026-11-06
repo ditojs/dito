@@ -22,8 +22,8 @@ route, or a write without `authorize`. So errors show when the app starts, not
 on the first request.
 
 `controllers` is a list, or an object such as a module namespace. In an object,
-only the results of `defineController()` count. So the module can export other
-things too:
+only plain objects with a string `path` count. So the module can export other
+things too, such as mixins and helpers:
 
 ```js
 import * as controllers from './controllers/index.js'
