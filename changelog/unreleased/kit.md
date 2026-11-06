@@ -1,6 +1,6 @@
 ### New
 
-- **kit:** `@ditojs/kit` sets up an app in one call. `createApp({ entities, database, server, http, logger, secrets, storages, assets })` creates the ORM, the adapter, the logger, the storages, the assets, the credentials and the Hono app. `app.routeApi(path, { controllers, sessions })` routes an API, and `app.start({ services })` runs the services around the server. The kit is optional. See [The kit](docs/guide/server/kit.md).
+- **kit:** `@ditojs/kit` sets up an app in one call. `createApp({ entities, database, server, http, logger, secrets, storages, assets })` creates the ORM, the adapter, the logger, the storages, the assets and the Hono app. `app.routeApi(path, { controllers, sessions })` routes an API, and `app.start({ services })` runs the services around the server. The kit is optional. See [The kit](docs/guide/server/kit.md).
 - **kit:** `runPlayground()` runs piped code with the entities, the `orm` and an `em` in scope.
 - **server:** `createHono()` returns the Hono app that routes the APIs, with `forwarded()`, `honoMiddleware()` and Dito's JSON errors in the order that they need. It routes paths with a trailing slash like those without one.
 - **server:** Errors log with `console.error()` by default, and no longer through `c.var.logger`. Apps with a logger pass `onError` to `createApi()` and `createErrorHandler()`. The logger of the kit does this for its apps.
