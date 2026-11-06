@@ -65,8 +65,9 @@ The entity hides `hash`, such as with `p.string().nullable().hidden()`, so that
 no response sends it. The users throw when they load users of an entity that
 doesn't.
 
-Auth reads `id`, `username`, `hash`, `roles` and `lastLogin` from the users. The
-entity's name names the users in sessions and credentials, such as `Admin-1`.
+Auth reads `id`, `hash`, `roles`, `lastLogin` and the `usernameProperty` from the
+users. An entity without `lastLogin` doesn't record logins. The entity's name
+names the users in sessions and credentials, such as `Admin-1`.
 
 ## Sessions
 
@@ -253,7 +254,7 @@ actions: {
   async 'post login'({ body: { email, password }, session }) {
     const member = await members.findByUsername(email)
     if (!(await verifyPassword(password, member?.hash))) {
-      throw new HttpError(401, { message: 'Password or email is incorrect' })
+      throw new HttpError(401, 'Password or email is incorrect')
     }
     session.login(member)
     return { user: members.serialize(member) }

@@ -142,7 +142,7 @@ actions: {
   async 'delete :id'({ getRecord, next }) {
     const book = await getRecord()
     if (book.published) {
-      throw new HttpError(409, { message: 'Published books stay.' })
+      throw new HttpError(409, 'Published books stay.')
     }
     return next()
   }

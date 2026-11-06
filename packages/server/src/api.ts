@@ -223,7 +223,7 @@ async function readBody(c: Context) {
   try {
     return JSON.parse(text)
   } catch {
-    throw new HttpError(400, { message: 'The body is invalid JSON.' })
+    throw new HttpError(400, 'The body is invalid JSON.')
   }
 }
 

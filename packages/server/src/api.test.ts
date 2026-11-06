@@ -1367,7 +1367,7 @@ describe('transactions', () => {
           middleware: async (_c, next) => {
             await next()
             log.push('middleware throws')
-            throw new HttpError(409, { message: 'Stale' })
+            throw new HttpError(409, 'Stale')
           },
           actions: {
             post: () => {
@@ -1598,6 +1598,14 @@ describe('errors', () => {
       }
     }
   ])
+
+  it('takes the message of an HttpError as a string', async () => {
+    const error = new HttpError(404, 'Unknown code')
+    expect(error.toJSON()).toMatchObject({
+      status: 404,
+      message: 'Unknown code'
+    })
+  })
 
   it('answers an HttpError as JSON', async () => {
     const taken = await request(api, 'GET', '/api/fonts/taken')

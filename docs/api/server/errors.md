@@ -62,12 +62,13 @@ See [Validation](../../guide/server/validation.md) in the guide.
 ## HttpError
 
 ```ts
-new HttpError(status: number, options?: object)
+new HttpError(status: number, options?: string | object)
 ```
 
 ```js
 throw new HttpError(404)
-throw new HttpError(409, { message: 'The book is already on loan.' })
+throw new HttpError(409, 'The book is already on loan.')
+throw new HttpError(409, { message: 'The book is on loan.', code: 'on-loan' })
 throw new HttpError(403, {
   message: 'Please confirm your password.',
   confirmationRequired: true

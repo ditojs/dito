@@ -224,7 +224,9 @@ meta: p
 ```
 
 Dito.js 6 filled in the defaults of its schemas on insert.
-[`defineMikroConfig()`](api/server/mikro.md#definemikroconfig) keeps this.
+[`defineMikroConfig()`](api/server/mikro.md#definemikroconfig) keeps this. The
+writes of a body also store the output of these schemas on updates, with their
+defaults and transforms.
 
 **Many-to-many relations.** A join table with columns of its own becomes a pivot
 entity, with `p.manyToOne(Post).primary()` on both foreign keys.
@@ -543,7 +545,7 @@ records need in one query. See
 
 | Dito.js 6                                                                                                  | Dito.js 7                                                         |
 | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `ResponseError(message, { status })`                                                                       | `new HttpError(status, { message })`                              |
+| `ResponseError(message, { status })`                                                                       | `new HttpError(status, message)`                                  |
 | `NotFoundError`                                                                                            | `new HttpError(404)`                                              |
 | `AuthorizationError`, `AuthenticationError`                                                                | `new HttpError(403)`, `new HttpError(401)`                        |
 | `ValidationError`                                                                                          | `createValidationError(issues, { message, type, status, cause })` |

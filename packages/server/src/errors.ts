@@ -47,10 +47,10 @@ export class HttpError extends Error {
   errors: HttpErrorBody['errors']
   data: Record<string, unknown>
 
-  constructor(
-    status: number,
-    { message, type, code, errors, cause, ...data }: HttpErrorOptions = {}
-  ) {
+  constructor(status: number, options: string | HttpErrorOptions = {}) {
+    const { message, type, code, errors, cause, ...data } = isString(options)
+      ? { message: options }
+      : options
     super(
       message ??
       titles[status] ??
