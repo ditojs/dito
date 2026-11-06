@@ -15,6 +15,7 @@ export interface Asset {
 
 export interface UnreferencedAsset extends Asset {
   since: Date
+  createdAt: Date | null
 }
 
 export interface ScanAssetsReport {
@@ -64,17 +65,28 @@ export async function scanAssets({
 
   const assets = await database
     .selectFrom('asset')
-    .select(['key', 'storage', 'unreferenced_since'])
+    .select(['key', 'storage', 'unreferenced_since', 'created_at'])
     .orderBy('key')
     .execute()
   const referenced: Asset[] = []
   const unreferenced: UnreferencedAsset[] = []
-  for (const { key, storage, unreferenced_since: since } of assets) {
+  for (const asset of assets) {
+    const {
+      key,
+      storage,
+      unreferenced_since: since,
+      created_at: created
+    } = asset
     if (references.has(key)) {
       if (since) referenced.push({ key, storage })
     } else {
       // Some drivers, such as MikroORM's, return dates as strings.
-      unreferenced.push({ key, storage, since: since ? new Date(since) : now })
+      unreferenced.push({
+        key,
+        storage,
+        since: since ? new Date(since) : now,
+        createdAt: created ? new Date(created) : null
+      })
     }
   }
   const known = new Set(assets.map(asset => asset.key))
@@ -121,11 +133,19 @@ export async function scanAssets({
   }
 }
 
+// New rows stay this long, in milliseconds, as a write may be about to
+// reference their file.
+const minimumReleaseAge = 60 * 60 * 1000
+
+const getCreatedBefore = (now: Date) =>
+  new Date(now.getTime() - minimumReleaseAge)
+
 export interface ReleaseAssetsOptions {
   database: Kysely<any>
   storages: StorageRegistry
   // Release the assets unreferenced since this time or earlier.
   before: Date
+  now?: Date
 }
 
 export interface ReleasedAsset extends Asset {
@@ -138,11 +158,18 @@ export interface ReleasedAsset extends Asset {
 export async function releaseAssets({
   database,
   storages,
-  before
+  before,
+  now = new Date()
 }: ReleaseAssetsOptions): Promise<ReleasedAsset[]> {
   const assets = await database
     .deleteFrom('asset')
     .where('unreferenced_since', '<=', before)
+    .where(({ eb, or }) =>
+      or([
+        eb('created_at', '<=', getCreatedBefore(now)),
+        eb('created_at', 'is', null)
+      ])
+    )
     .returning(['key', 'storage', 'file'])
     .execute()
   // Remove the files after the delete, so that a failed delete keeps them.
@@ -187,15 +214,32 @@ export async function runAssetJobs({
   dryRun = false,
   now = new Date()
 }: RunAssetJobsOptions) {
-  const scan = await scanAssets({ database, fields, dryRun, now })
+  let scan = await scanAssets({ database, fields, dryRun, now })
   let released: ReleasedAsset[] = []
   if (deleteUnusedAfter !== false) {
     const before = new Date(now.getTime() - deleteUnusedAfter)
-    released = dryRun
-      ? scan.unreferenced
-          .filter(({ since }) => since <= before)
-          .map(({ key, storage }) => ({ key, storage }))
-      : await releaseAssets({ database, storages, before })
+    if (dryRun) {
+      const createdBefore = getCreatedBefore(now)
+      released = scan.unreferenced
+        .filter(
+          ({ since, createdAt }) => (
+            since <= before && (!createdAt || createdAt <= createdBefore)
+          )
+        )
+        .map(({ key, storage }) => ({ key, storage }))
+    } else {
+      // A write that holds the lock of a row commits before the scan can mark
+      // the row, and the scan didn't see its reference. Scan again to see it.
+      // Rows that only this scan marks wait for the next run.
+      if (deleteUnusedAfter < minimumReleaseAge) {
+        scan = await scanAssets({
+          database,
+          fields,
+          now: new Date(now.getTime() + 1)
+        })
+      }
+      released = await releaseAssets({ database, storages, before, now })
+    }
   }
   return { scan, released }
 }

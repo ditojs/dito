@@ -145,7 +145,10 @@ describe('createAssets()', () => {
       })
       expect(response.status).toBe(409)
       expect(await getKeys()).toEqual([stored!.key])
-      const { released } = await assets.runJobs({ deleteUnusedAfter: 0 })
+      const { released } = await assets.runJobs({
+        deleteUnusedAfter: 0,
+        now: new Date(Date.now() + 2 * 60 * 60 * 1000)
+      })
       expect(released).toMatchObject([{ key: stored!.key, storage: 'archive' }])
       await expect(archive.readFile(stored!)).rejects.toThrow()
     })

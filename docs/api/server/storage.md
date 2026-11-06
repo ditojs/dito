@@ -335,7 +335,14 @@ release, and returns `{ scan, released }`.
 
 - The `deleteUnusedAfter` of the call overrides the one of `createAssets()`.
 - `false` only scans.
-- `0` releases all unreferenced files now.
+- `0` releases the unreferenced files without a delay, except for the rows of the
+  last hour.
+
+The release keeps rows younger than an hour by their `created_at`, whatever
+`deleteUnusedAfter` says, as a write may be about to reference their file. Rows
+without `created_at` count as old. With a `deleteUnusedAfter` below an hour, the
+job scans twice, so that it sees the writes that held the lock of a row during
+the first scan. The rows that only the second scan marks wait for the next run.
 
 The scan:
 
@@ -347,12 +354,12 @@ The scan:
 Its report has these keys:
 
 - `referenced`, the files that rows reference again;
-- `unreferenced`, all unreferenced files with their `since`;
+- `unreferenced`, all unreferenced files with their `since` and `createdAt`;
 - `missing`, the inserted rows;
 - `rowCount`.
 
 The release deletes the files and rows of assets that have been unreferenced for
-longer than `deleteUnusedAfter`. A dry run writes and deletes nothing. It
+longer than `deleteUnusedAfter`, once they are an hour old. A dry run writes and deletes nothing. It
 returns as `released` the unreferenced files that the release would delete.
 
 `assets.findReferences({ tables?, storage?, keys? })` lists the files that rows

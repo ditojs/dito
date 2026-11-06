@@ -1,3 +1,4 @@
+import { sql } from 'kysely'
 import {
   findAssetReferences,
   releaseAssets,
@@ -123,6 +124,64 @@ describe('runAssetJobs()', () => {
     storages,
     deleteUnusedAfter: 24 * 60 * 60 * 1000,
     now
+  })
+
+  const hour = 60 * 60 * 1000
+  const addRecentAsset = (key: string) =>
+    db
+      .insertInto('asset')
+      .values({
+        key,
+        file: file(key),
+        storage: 'covers',
+        unreferenced_since: old,
+        created_at: new Date(now.getTime() - hour + 1)
+      })
+      .execute()
+
+  it('keeps the rows younger than an hour', async () => {
+    await addRecentAsset('recent')
+    const { released } = await runAssetJobs({
+      ...options(),
+      deleteUnusedAfter: 0
+    })
+    expect(released.map(({ key }) => key)).not.toContain('recent')
+    expect(await getKeys()).toContain('recent')
+  })
+
+  it('leaves out the rows younger than an hour in a dry run', async () => {
+    await addRecentAsset('recent')
+    const { released } = await runAssetJobs({ ...options(), dryRun: true })
+    expect(released).toEqual([{ key: 'old', storage: 'covers' }])
+  })
+
+  it('sees a write that held the lock of a row during the scan', async () => {
+    await addAsset('locked')
+    let job: ReturnType<typeof runAssetJobs>
+    await db.transaction().execute(async trx => {
+      await trx
+        .selectFrom('asset')
+        .select('key')
+        .where('key', '=', 'locked')
+        .forUpdate()
+        .execute()
+      await trx
+        .insertInto('book')
+        .values({ id: 2, cover: JSON.stringify(file('locked')) })
+        .execute()
+      job = runAssetJobs({ ...options(), deleteUnusedAfter: 0 })
+      // The job reads the rows, then waits for the lock.
+      await vi.waitFor(async () => {
+        const { rows } = await sql`
+          select 1 from pg_stat_activity
+          where wait_event_type = 'Lock' and datname = current_database()
+        `.execute(db)
+        expect(rows).not.toEqual([])
+      })
+    })
+    const { released } = await job!
+    expect(released.map(({ key }) => key)).not.toContain('locked')
+    expect(await getKeys()).toContain('locked')
   })
 
   it('scans, then releases the unused assets', async () => {
