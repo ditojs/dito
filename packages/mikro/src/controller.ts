@@ -64,22 +64,23 @@ export interface ModelControllerDefinition<T extends object = any>
   resolveId?: (context: { c: DitoContext; id: string }) => unknown
 }
 
-type Guard = Pick<MixinDefinition, 'actions' | 'middleware'>
+export type EntityGuard = Pick<MixinDefinition, 'actions' | 'middleware'>
 
 // The guards of an entity by name. Model controllers read them per request, so
 // a guard also reaches the controllers that were defined before it.
-const guardsByEntity = new WeakMap<EntityClass<any>, Map<string, Guard>>()
+const guardsByEntity = new WeakMap<EntityClass<any>, Map<string, EntityGuard>>()
 
 // Guard every model controller of `entity`, without adding routes. The
 // `actions` of `guard` run around the default actions, and their `next` runs
 // the default action. Its `middleware` runs on all actions of the controllers.
-// A guard replaces the one of the same name.
+// A guard replaces the one of the same name. Guards belong to the entity, so
+// they apply to all apps of the process that share it.
 export function guardEntity(
   entity: EntityClass<any>,
   name: string,
-  guard: Guard
+  guard: EntityGuard
 ) {
-  const guards = guardsByEntity.get(entity) ?? new Map<string, Guard>()
+  const guards = guardsByEntity.get(entity) ?? new Map<string, EntityGuard>()
   guardsByEntity.set(entity, guards.set(name, guard))
 }
 

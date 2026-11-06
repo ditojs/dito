@@ -261,8 +261,7 @@ describe('createApp()', () => {
       secrets,
       jobs: {
         sessions: 5,
-        assets: '5ms',
-        afterAssets: result => void results.push(result)
+        assets: { every: '5ms', after: result => void results.push(result) }
       }
     })
     app.createUsers(Admin, {
@@ -287,18 +286,18 @@ describe('createApp()', () => {
 
   it('runs no jobs without an interval', async () => {
     const { host, user, dbName } = database.orm.config.getAll()
-    const afterAssets = vi.fn()
+    const after = vi.fn()
     const app = createApp({
       entities,
       database: { host, user, dbName },
       server: { host: '127.0.0.1' },
       logger: { level: 'silent' },
-      jobs: { assets: false, afterAssets }
+      jobs: { assets: { every: false, after } }
     })
     await app.start()
     await new Promise(resolve => setTimeout(resolve, 20))
     await app.close()
-    expect(afterAssets).not.toHaveBeenCalled()
+    expect(after).not.toHaveBeenCalled()
   })
 
   it('logs the errors of jobs and keeps running them', async () => {
@@ -316,9 +315,11 @@ describe('createApp()', () => {
         }
       },
       jobs: {
-        assets: 5,
-        afterAssets: () => {
-          throw new Error('Failed job')
+        assets: {
+          every: 5,
+          after: () => {
+            throw new Error('Failed job')
+          }
         }
       }
     })

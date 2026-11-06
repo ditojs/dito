@@ -19,7 +19,7 @@ import type {
   DitoEnv,
   HandlerContext,
   Middleware,
-  Transaction
+  Transact
 } from './types.ts'
 
 // A request runs the API's `middleware`, sets `c.var.em` and `c.var.user`, then
@@ -97,7 +97,7 @@ export function createApi({
 // transaction, and run the action's `middleware`, in this order.
 function getMiddleware(
   action: ResolvedAction,
-  transact: Transaction | undefined
+  transact: Transact | undefined
 ): Middleware[] {
   const { authorize, query, body, key, verb } = action
   const middleware: Middleware[] = [

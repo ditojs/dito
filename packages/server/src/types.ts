@@ -143,7 +143,7 @@ export interface ControllerDefinition extends MixinDefinition {
 
 // Runs `fn` in a transaction, with the transaction's handle as `c.var.em`,
 // and rolls back when `fn` throws.
-export type Transaction = <T>(
+export type Transact = <T>(
   c: DitoContext,
   fn: () => Promise<T>
 ) => Promise<T>
@@ -171,7 +171,7 @@ export interface Adapter {
   ) => DitoVariables['em'] | Promise<DitoVariables['em']>
   // Runs the actions that need a transaction. Without it, none runs in one,
   // and `createApi()` throws for actions with `transacted: true`.
-  transact?: Transaction
+  transact?: Transact
   // The `HttpError` of a database error, or undefined for other errors.
   toHttpError?: (error: unknown, c: DitoContext) => HttpError | undefined
 }

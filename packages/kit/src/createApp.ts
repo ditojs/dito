@@ -33,6 +33,7 @@ import {
 } from '@ditojs/storage'
 import { serveStorage } from '@ditojs/storage/node'
 import { parseDuration } from '@ditojs/utils'
+import { isPlainObject } from '@ditojs/utils'
 import { createRequestLogger } from './createRequestLogger.ts'
 
 export interface CreateAppOptions {
@@ -60,12 +61,16 @@ export interface JobsOptions {
   // How often to delete the expired sessions, in milliseconds or as a duration
   // such as `'1h'`. By default, `false` doesn't run the job.
   sessions?: number | string | false
-  // How often to run `assets.runJobs()`, in the same way.
-  assets?: number | string | false
-  // Gets the result of each run of `assets.runJobs()`, for the app's logs.
-  afterAssets?: (
-    result: Awaited<ReturnType<Assets['runJobs']>>
-  ) => unknown
+  // How often to run `assets.runJobs()`, in the same way, or `every` with
+  // `after`, which gets the result of each run, for the app's logs.
+  assets?:
+    | number
+    | string
+    | false
+    | {
+        every: number | string | false
+        after?: (result: Awaited<ReturnType<Assets['runJobs']>>) => unknown
+      }
 }
 
 export interface App {
@@ -134,11 +139,12 @@ export function createApp({
   })
   // All users share the `session` table, so one of them deletes for all.
   let deleteExpiredSessions: (() => Promise<void>) | undefined
+  const { every, after } = isPlainObject(jobs.assets)
+    ? jobs.assets
+    : { every: jobs.assets, after: undefined }
   const jobServices = [
     createJob(jobs.sessions, logger, () => deleteExpiredSessions?.()),
-    createJob(jobs.assets, logger, async () =>
-      jobs.afterAssets?.(await assets.runJobs())
-    )
+    createJob(every, logger, async () => after?.(await assets.runJobs()))
   ]
   let served: Awaited<ReturnType<typeof serve>> | undefined
 
@@ -195,14 +201,16 @@ function createJob(
       await job()
     } catch (error) {
       logger.error(error)
-    } finally {
-      running = undefined
     }
   }
   return {
     start() {
       if (interval) {
-        timer = setInterval(() => (running ??= run()), interval)
+        timer = setInterval(() => {
+          running ??= run().finally(() => {
+            running = undefined
+          })
+        }, interval)
       }
     },
 

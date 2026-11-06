@@ -17,7 +17,7 @@ export type {
   Middleware,
   MixinDefinition,
   Service,
-  Transaction,
+  Transact,
   User
 } from './types.ts'
 export { defineAction, defineController, defineMixin } from './define.ts'

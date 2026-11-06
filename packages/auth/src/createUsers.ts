@@ -1,4 +1,4 @@
-import type { EntityClass, EntityManager } from '@mikro-orm/core'
+import type { EntityClass } from '@mikro-orm/core'
 import {
   createEntityUserSource,
   createMikroAdapter,
@@ -18,7 +18,7 @@ import type { User } from './users.ts'
 export interface CreateUsersOptions<U extends object>
   extends Omit<CreateEntityUserSourceOptions<U>, 'orm'> {
   // The ORM with its `session` and `credential` tables.
-  orm: { em: EntityManager }
+  orm: Parameters<typeof createMikroAdapter>[0]
   // The secrets that sign the cookies and the password reset links. The first
   // one signs, and all of them verify, so secrets can rotate.
   secrets: string[]

@@ -331,3 +331,17 @@ describe('forwarded()', () => {
     })
   })
 })
+
+describe('serve()', () => {
+  it('stops the services when the port is taken', async () => {
+    const app = new Hono()
+    await withServer(app, async url => {
+      const stop = vi.fn()
+      const { port } = new URL(url)
+      await expect(
+        serve(app, { host: '127.0.0.1', port, services: [{ stop }] })
+      ).rejects.toThrow('EADDRINUSE')
+      expect(stop).toHaveBeenCalledOnce()
+    })
+  })
+})

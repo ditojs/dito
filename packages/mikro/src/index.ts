@@ -3,6 +3,7 @@
 export {
   defineModelController,
   guardEntity,
+  type EntityGuard,
   type ModelControllerDefinition
 } from './controller.ts'
 export { crud, defineChoices, defineList } from './crud.ts'

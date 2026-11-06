@@ -250,8 +250,8 @@ export function createSessions(options: CreateSessionsOptions) {
     return null
   }
 
-  // Set a cookie that `readSignedCookie()` reads, for the app's own cookies. It
-  // is `secure` on HTTPS, unless `options` say otherwise.
+  // Set a cookie that `readSignedCookie()` reads, for the app's own cookies,
+  // with the defaults of the session's cookie.
   function setSignedCookie(
     c: Context,
     name: string,
@@ -259,7 +259,9 @@ export function createSessions(options: CreateSessionsOptions) {
     options?: CookieOptions
   ) {
     return setHonoSignedCookie(c, name, value, secrets[0], {
+      sameSite: 'Lax',
       secure: isSecure(c),
+      httpOnly: true,
       ...options
     })
   }

@@ -26,7 +26,12 @@ export async function serve(
   for (const service of services) await service.start?.()
   const server = createAdaptorServer({ fetch: app.fetch })
   server.listen(Number(port ?? 0), host)
-  await once(server, 'listening')
+  try {
+    await once(server, 'listening')
+  } catch (error) {
+    for (const service of services.toReversed()) await service.stop?.()
+    throw error
+  }
 
   let closing: Promise<void> | undefined
   const shutDown = async () => {

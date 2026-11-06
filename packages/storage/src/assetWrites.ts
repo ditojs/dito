@@ -31,7 +31,7 @@ import type { StorageRegistry } from './StorageRegistry.ts'
 
 // Use the Kysely of the request, such as one on `c.var.em`, so that the
 // `asset` rows of a write commit with its transaction:
-export type AssetDatabase = (c: DitoContext) => Kysely<any>
+export type GetDatabase = (c: DitoContext) => Kysely<any>
 
 interface AssetOptions {
   paths: NormalizedAssetPath[]
@@ -68,7 +68,7 @@ export function defineAssetWrites({
   paths,
   storages,
   getDatabase
-}: AssetOptions & { getDatabase: AssetDatabase }): MixinDefinition {
+}: AssetOptions & { getDatabase: GetDatabase }): MixinDefinition {
   return {
     middleware: async (c, next) => {
       const imported: AssetPathFile[] = []

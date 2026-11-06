@@ -162,7 +162,7 @@ The `body` of a write, and the input of a `body` schema, follow these rules:
 interface Adapter {
   getKysely(c?: DitoContext): Kysely<any>
   connect?(c: DitoContext): DitoVariables['em'] | Promise<DitoVariables['em']>
-  transact?: Transaction
+  transact?: Transact
   toHttpError?(error: unknown, c: DitoContext): HttpError | undefined
 }
 ```
@@ -179,10 +179,10 @@ The object that [`createMikroAdapter()`](mikro.md#createmikroadapter) returns.
 - `toHttpError()` maps the database's errors to an `HttpError`. It returns
   `undefined` for other errors.
 
-### Transaction
+### Transact
 
 ```ts
-type Transaction = <T>(c: DitoContext, fn: () => Promise<T>) => Promise<T>
+type Transact = <T>(c: DitoContext, fn: () => Promise<T>) => Promise<T>
 ```
 
 Runs `fn` in a transaction. When `fn` throws, it rolls the transaction back.

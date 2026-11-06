@@ -5,7 +5,7 @@ import picomatch from 'picomatch'
 import { camelize } from '@ditojs/utils'
 import { HttpError, defineAction, type MixinDefinition } from '@ditojs/server'
 import type { AssetFile } from './Storage.ts'
-import { storeAsset, type AssetDatabase } from './assetWrites.ts'
+import { storeAsset, type GetDatabase } from './assetWrites.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
 
 export interface AssetUpload {
@@ -25,7 +25,7 @@ export interface NormalizedAssetUpload extends Omit<AssetUpload, 'maxSize'> {
 export interface DefineAssetUploadsOptions {
   uploads: NormalizedAssetUpload[]
   storages: StorageRegistry
-  getDatabase: AssetDatabase
+  getDatabase: GetDatabase
 }
 
 // Define the action of the Dito admin's upload component,
