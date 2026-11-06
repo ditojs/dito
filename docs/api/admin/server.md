@@ -20,7 +20,7 @@ The entry needs the optional peer dependencies `@ditojs/server`, `hono` and
 ## createAdmin()
 
 ```ts
-createAdmin(options: AdminOptions): Hono & { close(): Promise<void> }
+createAdmin(options: CreateAdminOptions): Hono & { close(): Promise<void> }
 ```
 
 ```js
@@ -56,7 +56,7 @@ requests.
 With `vite`, Vite handles the requests through the Node request and response of
 `@hono/node-server`. So the app needs that Node server. `close()` stops Vite.
 
-### AdminOptions
+### CreateAdminOptions
 
 | Key          | Type                                                                         | Description                                                                                                                                                       |
 | ------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |

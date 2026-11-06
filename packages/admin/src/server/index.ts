@@ -13,7 +13,7 @@ import { normalizeBase } from './normalizeBase.ts'
 
 // The admin as a Hono app, for the host to mount with `app.route(base, admin)`.
 
-export interface AdminOptions {
+export interface CreateAdminOptions {
   // The path the admin is served at, such as `/admin`.
   base: string
   // The built admin, served without `vite`.
@@ -51,7 +51,7 @@ export type AdminServer = Hono<AdminEnv> & {
   close: () => Promise<void>
 }
 
-export function createAdmin(options: AdminOptions): AdminServer {
+export function createAdmin(options: CreateAdminOptions): AdminServer {
   const { middleware, getUser, authorize, api = {}, settings = {} } = options
   const base = normalizeBase(options.base)
   const isProtected = authorize !== undefined && authorize !== true

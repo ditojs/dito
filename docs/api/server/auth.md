@@ -85,7 +85,7 @@ The cookie holds the id of the session, signed with Hono's
   the action throws.
 - It adds its `Set-Cookie` header to the response, also to error responses.
 
-[`createAdmin()`](../admin/server.md#adminoptions) takes the middleware, and the
+[`createAdmin()`](../admin/server.md#createadminoptions) takes the middleware, and the
 `getUser` of [`getSessionUser()`](#getsessionuser), as `createApi()` does.
 
 ## Session
