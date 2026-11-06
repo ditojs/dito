@@ -51,7 +51,10 @@ export function forwarded(proxy: boolean | number = true): MiddlewareHandler {
     if (hops) {
       const request = c.req.raw
       const url = getPublicUrl(request)
-      if (url !== request.url) c.req.raw = copyRequest(request, url)
+      // A copy would start to read the body, after which Node resets keep-alive
+      // connections of bodies that the app leaves unread.
+      if (url !== request.url)
+        Object.defineProperty(request, 'url', { value: url })
       // Each proxy adds the address that it received the request from, so the
       // client's is the one `hops` from the right:
       const addresses = getHeaderValues(request, 'X-Forwarded-For')
@@ -107,25 +110,4 @@ function getPublicUrl(request: Request) {
     url.host = host
   }
   return url.href
-}
-
-// Undici doesn't accept a request of `@hono/node-server` as `RequestInit`, so
-// copy its fields.
-function copyRequest(request: Request, url: string) {
-  const { method, headers, signal } = request
-  const hasBody = method !== 'GET' && method !== 'HEAD'
-  return new Request(url, {
-    method,
-    headers,
-    signal,
-    ...(hasBody && {
-      // Its `body` and `redirect` start to read the socket, after which Node
-      // resets keep-alive connections of bodies that the app leaves unread.
-      // An async iterable reads the body only once the app reads it.
-      body: (async function* () {
-        yield* request.body!
-      })(),
-      duplex: 'half'
-    })
-  } as RequestInit)
 }
