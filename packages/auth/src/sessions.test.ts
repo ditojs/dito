@@ -7,7 +7,12 @@ import * as passwords from './passwords.ts'
 import { createPasskeys } from './passkeys.ts'
 import { createTotp } from './totp.ts'
 import { getPasswordFingerprint } from './sessions.ts'
-import { createPasswordReset, getSession, getSessionUser } from './index.ts'
+import {
+  createCredentials,
+  createPasswordReset,
+  getSession,
+  getSessionUser
+} from './index.ts'
 import {
   createSource,
   createUser,
@@ -442,22 +447,26 @@ describe('sessions', () => {
     'serves the capabilities without a login, with passkeys: $passkeys, ' +
     'TOTP: $totp, password reset: $passwordReset',
     async ({ passkeys, totp, passwordReset }) => {
+      const credentials = createCredentials({
+        adapter: { getKysely: () => db }
+      })
       const { api } = setup({
         db,
         source: admins,
-        features: {
-          passkeys: passkeys ? createPasskeys({ rpName: 'Dito' }) : undefined,
-          totp: totp
-            ? createTotp({ issuer: 'Dito', secret: 'a long secret' })
-            : undefined,
-          passwordReset: passwordReset
-            ? createPasswordReset({
-                secrets,
-                confirmUrl: 'https://example.com/#password-reset={token}',
-                send: () => {}
-              })
-            : undefined
-        }
+        credentials,
+        passkeys: passkeys
+          ? createPasskeys({ credentials, rpName: 'Dito' })
+          : undefined,
+        totp: totp
+          ? createTotp({ credentials, issuer: 'Dito', secret: 'a long secret' })
+          : undefined,
+        passwordReset: passwordReset
+          ? createPasswordReset({
+              secrets,
+              confirmUrl: 'https://example.com/#password-reset={token}',
+              send: () => {}
+            })
+          : undefined
       })
       const client = createClient(api.fetch)
       expect((await client.get('/admins/capabilities')).data).toEqual({

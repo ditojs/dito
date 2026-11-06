@@ -14,6 +14,8 @@ import type { User, UserSource } from './users.ts'
 // Passkeys as discoverable WebAuthn credentials of type `passkey`.
 
 export interface CreatePasskeysOptions {
+  // The credentials that hold the passkeys, from `createCredentials()`.
+  credentials: Credentials
   // The name that the browser shows, as the app's name.
   rpName: string
   // The domain that the passkeys belong to. By default, the request's host.
@@ -26,6 +28,7 @@ export interface CreatePasskeysOptions {
 export type Passkeys = ReturnType<typeof createPasskeys>
 
 export function createPasskeys({
+  credentials,
   rpName,
   domain,
   origins
@@ -52,7 +55,6 @@ export function createPasskeys({
     // Consume the challenge also without a credential.
     async verifyAuthentication(
       c: Context,
-      credentials: Credentials,
       credential: Credential | null,
       response: any
     ) {
@@ -103,7 +105,6 @@ export function createPasskeys({
 
     async verifyRegistration(
       c: Context,
-      credentials: Credentials,
       source: UserSource<any>,
       user: User,
       response: any

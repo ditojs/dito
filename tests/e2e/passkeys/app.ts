@@ -22,29 +22,30 @@ const secrets = ['passkeys-secret']
 // credentials in the tables of `@ditojs/auth`. The admin's unit tests turn
 // passkeys and TOTP off, to see what the admin offers without them.
 export function createApi(orm: TestOrm, { passkeys = true, totp = true } = {}) {
+  const credentials = createCredentials({ adapter: createMikroAdapter(orm) })
   return createUsersApi({
     orm,
     entity: User,
     secrets,
     password: z.string().min(6, 'must be at least 6 characters long'),
-    credentials: createCredentials({ adapter: createMikroAdapter(orm) }),
-    features: {
-      // The passkeys belong to the domain of the requests, `localhost`:
-      passkeys: passkeys ? createPasskeys({ rpName: 'Example' }) : undefined,
-      totp: totp
-        ? createTotp({ issuer: 'Example', secret: 'totp-secret' })
-        : undefined,
-      passwordReset: createPasswordReset({
-        secrets,
-        // The tests ask for several links for one user in a row.
-        resendAfter: 0,
-        // The tests open the token of the links on the admin's own URL:
-        confirmUrl: 'http://localhost/admin/#password-reset={token}',
-        send: ({ url }) => {
-          sentPasswordResets.push(url)
-        }
-      })
-    }
+    credentials,
+    // The passkeys belong to the domain of the requests, `localhost`:
+    passkeys: passkeys
+      ? createPasskeys({ credentials, rpName: 'Example' })
+      : undefined,
+    totp: totp
+      ? createTotp({ credentials, issuer: 'Example', secret: 'totp-secret' })
+      : undefined,
+    passwordReset: createPasswordReset({
+      secrets,
+      // The tests ask for several links for one user in a row.
+      resendAfter: 0,
+      // The tests open the token of the links on the admin's own URL:
+      confirmUrl: 'http://localhost/admin/#password-reset={token}',
+      send: ({ url }) => {
+        sentPasswordResets.push(url)
+      }
+    })
   })
 }
 

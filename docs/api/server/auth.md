@@ -158,13 +158,15 @@ A controller that mixes it in and sets `authorize` or `transacted` replaces
 these settings, also for the mixed-in actions. Set them on its own actions
 instead.
 
-| Option           | Type                                   | Description                                                                                                                                                         |
-| ---------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source`         | [`UserSource`](#usersource)            | The users.                                                                                                                                                          |
-| `credentials`    | `Credentials`                          | From [`createCredentials()`](#createcredentials). Needed for passkeys and TOTP.                                                                                     |
-| `features`       | `{ passkeys?, totp?, passwordReset? }` | From [`createPasskeys()`](#createpasskeys), [`createTotp()`](#createtotp) and [`createPasswordReset()`](#createpasswordreset).                                      |
-| `reconfirmAfter` | `number \| string`                     | How long a confirmed access lasts, in milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Default: ten minutes. |
-| `afterLogin`     | `({ c, user }) => unknown`             | Runs after each login, such as to set a cookie.                                                                                                                     |
+| Option           | Type                        | Description                                                                                                                                                         |
+| ---------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`         | [`UserSource`](#usersource) | The users.                                                                                                                                                          |
+| `credentials`    | `Credentials`               | From [`createCredentials()`](#createcredentials). Needed for passkeys and TOTP.                                                                                     |
+| `passkeys`       | `Passkeys`                  | From [`createPasskeys()`](#createpasskeys).                                                                                                                         |
+| `totp`           | `Totp`                      | From [`createTotp()`](#createtotp).                                                                                                                                 |
+| `passwordReset`  | `PasswordReset`             | From [`createPasswordReset()`](#createpasswordreset).                                                                                                               |
+| `reconfirmAfter` | `number \| string`          | How long a confirmed access lasts, in milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Default: ten minutes. |
+| `afterLogin`     | `({ c, user }) => unknown`  | Runs after each login, such as to set a cookie.                                                                                                                     |
 
 The actions, under the controller's path:
 
@@ -306,6 +308,7 @@ request's `c`, it deletes in the transaction of the deletion.
 
 ```ts
 createPasskeys(options: {
+  credentials: Credentials
   rpName: string
   domain?: string
   origins?: string[]
@@ -315,6 +318,8 @@ createPasskeys(options: {
 From `@ditojs/auth/passkeys`. Enables passkeys, as discoverable WebAuthn
 credentials.
 
+- `credentials` hold the passkeys, from
+  [`createCredentials()`](#createcredentials).
 - `rpName` is the name that the browser shows.
 - `domain` defaults to the request's host.
 - `origins` defaults to the request's origin.
@@ -327,11 +332,17 @@ another host than the API sets `origins`, such as
 ## createTotp()
 
 ```ts
-createTotp(options: { issuer: string, secret: string }): Totp
+createTotp(options: {
+  credentials: Credentials
+  issuer: string
+  secret: string
+}): Totp
 ```
 
 From `@ditojs/auth/totp`. Enables time-based one-time codes, with backup codes.
 
+- `credentials` hold the TOTP secrets, from
+  [`createCredentials()`](#createcredentials).
 - `issuer` is the name that authenticator apps show.
 - `secret` is a long random string of the app. The keys that encrypt the TOTP
   secrets are derived from it.

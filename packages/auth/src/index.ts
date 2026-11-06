@@ -11,7 +11,7 @@ export {
   definePasswordWrites,
   hashPassword,
   verifyPassword,
-  type PasswordWritesOptions
+  type DefinePasswordWritesOptions
 } from './passwords.ts'
 export {
   createCredentials,

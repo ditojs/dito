@@ -119,10 +119,12 @@ export const adminUsers = defineController({
     defineUserActions({
       source: adminSource,
       credentials,
-      features: {
-        passkeys: createPasskeys({ rpName: 'Book Catalog' }),
-        totp: createTotp({ issuer: 'Book Catalog', secret: config.totpSecret })
-      }
+      passkeys: createPasskeys({ credentials, rpName: 'Book Catalog' }),
+      totp: createTotp({
+        credentials,
+        issuer: 'Book Catalog',
+        secret: config.totpSecret
+      })
     })
   ]
 })
@@ -131,7 +133,8 @@ export const adminUsers = defineController({
 `defineUserActions()` returns a mixin with the actions of the admin's users.
 
 - It routes `post login`, `post logout`, `get self`, `get capabilities`,
-  `post confirm-access` and `post password`, and the actions of its features.
+  `post confirm-access` and `post password`, and the actions of `passkeys`,
+  `totp` and `passwordReset`.
 - Logins post `username` and `password`. They respond with `{ user }`, or with
   `{ codeRequired: true }` for users with TOTP.
 - `get self` responds with the user, or `null`.
@@ -199,26 +202,25 @@ action that deletes users deletes their credentials too, as above.
 
 ### Passkeys
 
-`createPasskeys({ rpName, domain?, origins? })` from `@ditojs/auth/passkeys`
-adds logins with passkeys. It also adds the actions to list, add and remove
-passkeys.
+`createPasskeys({ credentials, rpName, domain?, origins? })` from
+`@ditojs/auth/passkeys` adds logins with passkeys. It also adds the actions to
+list, add and remove passkeys.
 
-- It needs `credentials`, and the packages `@simplewebauthn/server` and
-  `aaguids`.
+- It needs the packages `@simplewebauthn/server` and `aaguids`.
 - The passkeys belong to the request's host and origin, unless `domain` and
   `origins` say otherwise, see
   [`createPasskeys()`](../../api/server/auth.md#createpasskeys).
 
 ### Two-factor authentication
 
-`createTotp({ issuer, secret })` from `@ditojs/auth/totp` adds codes from an
-authenticator app, with backup codes.
+`createTotp({ credentials, issuer, secret })` from `@ditojs/auth/totp` adds
+codes from an authenticator app, with backup codes.
 
 - Users with TOTP enter a code after the password, while `defineUserActions()`
   gets `credentials`. Without them, these users log in without a code.
 - `secret` is a long random string of the app. It encrypts the TOTP secrets in
   the `credential` table.
-- `createTotp()` needs `credentials` and the package `otpauth`.
+- `createTotp()` needs the package `otpauth`.
 
 ### Password reset
 

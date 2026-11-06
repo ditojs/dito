@@ -20,6 +20,8 @@ import {
 // TOTP as a credential of type `totp`, with its secret encrypted.
 
 export interface CreateTotpOptions {
+  // The credentials that hold the TOTP secrets, from `createCredentials()`.
+  credentials: Credentials
   // The name that authenticator apps show, such as the app's name.
   issuer: string
   // A long random string of the app, from which HKDF derives the keys.
@@ -36,7 +38,11 @@ const tagLength = 16
 
 export type Totp = ReturnType<typeof createTotp>
 
-export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
+export function createTotp({
+  credentials,
+  issuer,
+  secret: key
+}: CreateTotpOptions) {
   if (!key) throw new Error('Unable to use TOTP without a secret.')
   // Accept the previous and the next code too, for clocks that drift.
   function getCodeStep(secret: string, code: unknown) {
@@ -61,7 +67,6 @@ export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
 
     async confirmSecret(
       c: Context,
-      credentials: Credentials,
       source: UserSource<any>,
       user: User,
       code: unknown
@@ -112,7 +117,6 @@ export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
     // requests that use the same code or miss a failure, and so that failures
     // stay counted when the request fails.
     async verifyCode(
-      credentials: Credentials,
       source: UserSource<any>,
       user: User,
       code: unknown
@@ -154,7 +158,7 @@ export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
         return { isValid, isLocked }
       }
       const { isValid, isLocked } = await credentials
-        .db()
+        .getKysely()
         .transaction()
         .execute(verify)
       // Report the lock already on the attempt that uses up the limit, so

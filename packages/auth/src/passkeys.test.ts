@@ -1,5 +1,6 @@
 import type { Kysely } from 'kysely'
 import * as webAuthn from '@simplewebauthn/server'
+import { createCredentials, type Credentials } from './credentials.ts'
 import { createPasskeys } from './passkeys.ts'
 import {
   createSource,
@@ -26,6 +27,7 @@ const aaguid = 'bada5566-a7aa-401f-bd96-45619a55120d'
 
 const getDb = useTestDatabase()
 let db: Kysely<any>
+let credentials: Credentials
 let ada: TestUser
 let bob: TestUser
 let client: ReturnType<typeof createClient>
@@ -44,12 +46,14 @@ beforeEach(async () => {
   verifyRegistration.mockReset()
   verifyAuthentication.mockReset()
   db = getDb()
+  credentials = createCredentials({ adapter: { getKysely: () => db } })
   ada = await createUser(1, 'ada', 'secret')
   bob = await createUser(2, 'bob', 'secret')
   const { api } = setup({
     db,
     source: createSource('Admin', [ada, bob]),
-    features: { passkeys: createPasskeys({ rpName: 'Dito' }) }
+    credentials,
+    passkeys: createPasskeys({ credentials, rpName: 'Dito' })
   })
   client = createClient(api.fetch)
 })
@@ -139,12 +143,12 @@ describe('passkeys()', () => {
     const { api } = setup({
       db,
       source: createSource('Admin', [ada]),
-      features: {
-        passkeys: createPasskeys({
-          rpName: 'Dito',
-          origins: ['https://admin.example.com']
-        })
-      }
+      credentials,
+      passkeys: createPasskeys({
+        credentials,
+        rpName: 'Dito',
+        origins: ['https://admin.example.com']
+      })
     })
     client = createClient(api.fetch)
     await client.post('/admins/login', { username: 'ada', password: 'secret' })

@@ -1,5 +1,6 @@
 import type { Kysely } from 'kysely'
 import { TOTP } from 'otpauth'
+import { createCredentials } from './credentials.ts'
 import { createTotp } from './totp.ts'
 import {
   createSource,
@@ -35,10 +36,12 @@ beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['Date'] })
   db = getDb()
   ada = await createUser(1, 'ada', 'secret')
+  const credentials = createCredentials({ adapter: { getKysely: () => db } })
   const { api } = setup({
     db,
     source: createSource('Admin', [ada]),
-    features: { totp: createTotp({ issuer: 'Dito', secret: 'a long secret' }) }
+    credentials,
+    totp: createTotp({ credentials, issuer: 'Dito', secret: 'a long secret' })
   })
   client = createClient(api.fetch)
 })

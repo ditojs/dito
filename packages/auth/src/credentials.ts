@@ -30,7 +30,7 @@ export interface CreateCredentialsOptions {
 }
 
 export function createCredentials({ adapter }: CreateCredentialsOptions) {
-  const db = () => adapter.getKysely()
+  const getKysely = () => adapter.getKysely()
   const selectCredentials = (
     database: Kysely<any>,
     source: UserSource<any>,
@@ -43,14 +43,14 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       .where('type', '=', type)
 
   return {
-    db,
+    getKysely,
 
     async list(
       source: UserSource<any>,
       user: User,
       type: string
     ): Promise<Credential[]> {
-      const rows = await selectCredentials(db(), source, type)
+      const rows = await selectCredentials(getKysely(), source, type)
         .where('user_id', '=', String(user.id))
         .orderBy('id')
         .execute()
@@ -64,7 +64,7 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       type: string,
       trx?: Kysely<any>
     ): Promise<Credential | null> {
-      const row = await selectCredentials(trx ?? db(), source, type)
+      const row = await selectCredentials(trx ?? getKysely(), source, type)
         .where('user_id', '=', String(user.id))
         .orderBy('id')
         .$if(!!trx, query => query.forUpdate())
@@ -77,7 +77,7 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       type: string,
       key: string
     ): Promise<Credential | null> {
-      const row = await selectCredentials(db(), source, type)
+      const row = await selectCredentials(getKysely(), source, type)
         .where('key', '=', key)
         .executeTakeFirst()
       return row ? toCredential(row) : null
@@ -93,7 +93,7 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
         data
       }: Pick<Credential, 'data'> & Partial<Pick<Credential, 'key' | 'name'>>
     ): Promise<Credential> {
-      const row = await db()
+      const row = await getKysely()
         .insertInto('credential')
         .values({
           type,
@@ -112,7 +112,7 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
     async update(
       id: number,
       { data, lastUsedAt }: { data: unknown; lastUsedAt?: Date },
-      trx = db()
+      trx = getKysely()
     ) {
       await trx
         .updateTable('credential')
@@ -132,7 +132,7 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       type: string,
       id?: number
     ) {
-      const result = await db()
+      const result = await getKysely()
         .deleteFrom('credential')
         .where('user_model', '=', source.name)
         .where('user_id', '=', String(user.id))
@@ -152,7 +152,7 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       if (ids.length === 0) return
       const kysely = c
         ? (c.var.em as { getKysely(): Kysely<any> }).getKysely()
-        : db()
+        : getKysely()
       await kysely
         .deleteFrom('credential')
         .where('user_model', '=', source.name)

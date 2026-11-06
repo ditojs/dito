@@ -39,7 +39,7 @@ export async function verifyPassword(
   )
 }
 
-export interface PasswordWritesOptions<U extends User> {
+export interface DefinePasswordWritesOptions<U extends User> {
   // Its `password` checks the new passwords.
   source: UserSource<U>
 }
@@ -47,7 +47,7 @@ export interface PasswordWritesOptions<U extends User> {
 // The mixin of a users' model controller that stores `password` as `hash`.
 export function definePasswordWrites<U extends User>({
   source
-}: PasswordWritesOptions<U>) {
+}: DefinePasswordWritesOptions<U>) {
   const {
     password = defaultPasswordSchema,
     usernameProperty = 'username'

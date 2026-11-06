@@ -33,12 +33,10 @@ export interface DefineUserActionsOptions<U extends User> {
   source: UserSource<U>
   // Needed for passkeys and TOTP.
   credentials?: Credentials
-  features?: {
-    // From `@ditojs/auth/passkeys` and `@ditojs/auth/totp`.
-    passkeys?: Passkeys
-    totp?: Totp
-    passwordReset?: PasswordReset
-  }
+  // From `@ditojs/auth/passkeys` and `@ditojs/auth/totp`.
+  passkeys?: Passkeys
+  totp?: Totp
+  passwordReset?: PasswordReset
   // In milliseconds or as a duration such as `'24h'`, ten minutes by default.
   reconfirmAfter?: number | string
   afterLogin?: (context: { c: Context; user: U }) => unknown
@@ -57,7 +55,9 @@ const credentialId = z.coerce
 export function defineUserActions<U extends User>({
   source,
   credentials,
-  features: { passkeys, totp, passwordReset } = {},
+  passkeys,
+  totp,
+  passwordReset,
   afterLogin,
   ...options
 }: DefineUserActionsOptions<U>) {
@@ -106,12 +106,7 @@ export function defineUserActions<U extends User>({
     const user = credential
       ? await source.findById(c, credential.userId)
       : null
-    await passkeys!.verifyAuthentication(
-      c,
-      credentials!,
-      user ? credential : null,
-      response
-    )
+    await passkeys!.verifyAuthentication(c, user ? credential : null, response)
     return user!
   }
 
@@ -187,7 +182,7 @@ export function defineUserActions<U extends User>({
         } else if (await hasTotp(user)) {
           if (!totp) throw createAuthError('Password is incorrect')
           if (!code) return { codeRequired: true }
-          await totp.verifyCode(credentials!, source, user, code)
+          await totp.verifyCode(source, user, code)
         }
         getSession(c).confirmAccess(source, user, reconfirmAfter)
       }
@@ -253,7 +248,6 @@ export function defineUserActions<U extends User>({
           const user = await checkConfirmedAccess(c)
           const credential = await passkeys.verifyRegistration(
             c,
-            credentials!,
             source,
             user,
             body
@@ -287,7 +281,7 @@ export function defineUserActions<U extends User>({
           }
           const user = await source.findById(c, parsed.id)
           if (!user) throw createAuthError('Code is incorrect')
-          await totp.verifyCode(credentials!, source, user, code)
+          await totp.verifyCode(source, user, code)
           delete session.value.pendingLogin
           return login(c, user)
         }
@@ -314,13 +308,7 @@ export function defineUserActions<U extends User>({
         body: anyBody,
         handler: async ({ body: { code }, c }) => {
           const user = await checkConfirmedAccess(c)
-          const backupCodes = await totp.confirmSecret(
-            c,
-            credentials!,
-            source,
-            user,
-            code
-          )
+          const backupCodes = await totp.confirmSecret(c, source, user, code)
           // The backup codes are stored hashed, so users see them only here.
           return { backupCodes }
         }

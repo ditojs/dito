@@ -74,6 +74,7 @@ export function setup({
   secrets: cookieSecrets = secrets,
   maxAge = 24 * 60 * 60 * 1000,
   controllers = [],
+  credentials,
   ...options
 }: {
   db: Kysely<any>
@@ -91,7 +92,7 @@ export function setup({
     cookieName,
     maxAge
   })
-  const credentials = createCredentials({ adapter })
+  credentials ??= createCredentials({ adapter })
   const users = {
     path: 'admins',
     mixins: [defineUserActions({ source, credentials, ...options })]

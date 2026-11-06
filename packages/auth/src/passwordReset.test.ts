@@ -38,14 +38,12 @@ beforeEach(async () => {
     db,
     cookieName: 'customer.sess',
     source: customers,
-    features: {
-      passwordReset: createPasswordReset({
-        secrets,
-        confirmUrl: 'https://example.com/admin/#password-reset={token}',
-        send,
-        onError
-      })
-    }
+    passwordReset: createPasswordReset({
+      secrets,
+      confirmUrl: 'https://example.com/admin/#password-reset={token}',
+      send,
+      onError
+    })
   })
   client = createClient(api.fetch)
   other = createClient(api.fetch)
