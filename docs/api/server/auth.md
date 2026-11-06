@@ -41,7 +41,7 @@ createUsers<U extends User>(
 const admins = createUsers(Admin, {
   adapter,
   secrets: config.keys,
-  session: { maxAge: '24h' },
+  session: { expiresAfter: '24h' },
   serialize: ['id', 'username', 'roles']
 })
 
@@ -53,17 +53,17 @@ sessions and credentials. The app passes the result as `users` to
 [`createApi()`](api.md#createapioptions), `app.routeApi()` and
 [`createAdmin()`](../admin/server.md#createadminoptions).
 
-| Option             | Type                                    | Description                                                                                                                                                              |
-| ------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `adapter`          | `MikroAdapter`                          | The [adapter](mikro.md#createmikroadapter) of the API, on the ORM with the `session` and `credential` tables.                                                            |
-| `secrets`          | `string[]`                              | The secrets that sign the cookies and the password reset links. The first one signs, and all of them verify, so they can rotate. `createUsers()` throws without any.     |
-| `session`          | `{ cookieName?, maxAge }`               | The name of the cookie, by default the lowercased entity name and `.sess`, such as `admin.sess`, and the lifetime of a session.                                          |
-| `session.maxAge`   | `number \| string`                      | In milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Browsers cap cookies at 400 days.                             |
-| `serialize`        | `string[] \| ({ user }) => unknown`     | The properties that clients get, plus `computed`, or a function that returns the JSON. By default, the entity's own serialization, without hidden properties.            |
-| `computed`         | `Record<string, ({ user }) => unknown>` | Values computed from the user, added to the properties of `serialize`.                                                                                                   |
-| `where`            | `object`                                | A condition that users also need to meet to be found, such as `{ isActive: true }`.                                                                                      |
-| `usernameProperty` | `string`                                | The property of the username. Default: `username`.                                                                                                                       |
-| `password`         | `ZodType<string>`                       | The schema of new passwords, in the actions of [`defineActions()`](#defineactions) and in the [user records](#user-records). Default: a string of at least 8 characters. |
+| Option                 | Type                                    | Description                                                                                                                                                              |
+| ---------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `adapter`              | `MikroAdapter`                          | The [adapter](mikro.md#createmikroadapter) of the API, on the ORM with the `session` and `credential` tables.                                                            |
+| `secrets`              | `string[]`                              | The secrets that sign the cookies and the password reset links. The first one signs, and all of them verify, so they can rotate. `createUsers()` throws without any.     |
+| `session`              | `{ cookieName?, expiresAfter }`         | The name of the cookie, by default the lowercased entity name and `.sess`, such as `admin.sess`, and the lifetime of a session.                                          |
+| `session.expiresAfter` | `number \| string`                      | In milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Browsers cap cookies at 400 days.                             |
+| `serialize`            | `string[] \| ({ user }) => unknown`     | The properties that clients get, plus `computed`, or a function that returns the JSON. By default, the entity's own serialization, without hidden properties.            |
+| `computed`             | `Record<string, ({ user }) => unknown>` | Values computed from the user, added to the properties of `serialize`.                                                                                                   |
+| `where`                | `object`                                | A condition that users also need to meet to be found, such as `{ isActive: true }`.                                                                                      |
+| `usernameProperty`     | `string`                                | The property of the username. Default: `username`.                                                                                                                       |
+| `password`             | `ZodType<string>`                       | The schema of new passwords, in the actions of [`defineActions()`](#defineactions) and in the [user records](#user-records). Default: a string of at least 8 characters. |
 
 The entity hides `hash` with `.hidden()`, so that no response sends it. The
 users throw when they load users of an entity that doesn't.

@@ -15,7 +15,7 @@ import type { AuthUser } from './users.ts'
 export interface CreateUsersOptions<U extends object>
   extends CreateEntityUserSourceOptions<U>,
     Pick<CreateSessionsOptions, 'secrets'> {
-  session: Pick<CreateSessionsOptions, 'cookieName' | 'maxAge'>
+  session: Pick<CreateSessionsOptions, 'cookieName' | 'expiresAfter'>
 }
 
 export type Users<U extends AuthUser = any> = ReturnType<typeof createUsers<U>>

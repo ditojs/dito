@@ -40,7 +40,7 @@ export function createUsersApi<U extends TestUser>({
   const users = createUsers(entity, {
     adapter,
     secrets,
-    session: { cookieName: 'dito.sess', maxAge: 24 * 60 * 60 * 1000 },
+    session: { cookieName: 'dito.sess', expiresAfter: '24h' },
     // Leaves out the hidden `hash`.
     serialize: ({ user }) => wrap(user).toObject(),
     password

@@ -36,7 +36,7 @@ const adapter = createMikroAdapter(orm)
 const members = createUsers(Member, {
   adapter,
   secrets: ['secret sauce'],
-  session: { cookieName: 'member.sess', maxAge: 60_000 },
+  session: { cookieName: 'member.sess', expiresAfter: 60_000 },
   serialize: ['id', 'username']
 })
 

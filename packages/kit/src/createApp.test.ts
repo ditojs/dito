@@ -99,7 +99,7 @@ describe('createApp()', () => {
     }
     for (const [prefix, { entity, role }] of Object.entries(areas)) {
       const users = app.createUsers(entity as typeof Admin, {
-        session: { cookieName: `${role}.sess`, maxAge: 60_000 },
+        session: { cookieName: `${role}.sess`, expiresAfter: 60_000 },
         serialize: ['id', 'username']
       })
       app.routeApi(prefix, {
@@ -268,7 +268,7 @@ describe('createApp()', () => {
       jobs: { sessions: 5, assets: '5ms' }
     })
     app.createUsers(Admin, {
-      session: { cookieName: 'admin.sess', maxAge: 60_000 }
+      session: { cookieName: 'admin.sess', expiresAfter: 60_000 }
     })
     await database.db
       .insertInto('session')
@@ -303,7 +303,7 @@ describe('createApp()', () => {
       })
       if (withUsers) {
         app.createUsers(Admin, {
-          session: { cookieName: 'admin.sess', maxAge: 60_000 }
+          session: { cookieName: 'admin.sess', expiresAfter: 60_000 }
         })
       }
       const setInterval = vi.spyOn(globalThis, 'setInterval')

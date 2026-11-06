@@ -318,12 +318,12 @@ describe('sessions', () => {
     )
   })
 
-  it('takes durations as `maxAge` and `reconfirmAfter`', async () => {
+  it('takes durations as `expiresAfter` and `reconfirmAfter`', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     const { api } = setup({
       db,
       source: admins,
-      maxAge: '1h',
+      expiresAfter: '1h',
       reconfirmAfter: '1m'
     })
     const client = createClient(api.fetch)
@@ -337,7 +337,7 @@ describe('sessions', () => {
   })
 
   it('throws for invalid durations', () => {
-    expect(() => setup({ db, source: admins, maxAge: 'long' })).toThrow(
+    expect(() => setup({ db, source: admins, expiresAfter: 'long' })).toThrow(
       `Invalid duration: 'long'`
     )
     expect(() => setup({ db, source: admins, reconfirmAfter: 'soon' })).toThrow(

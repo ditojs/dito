@@ -26,7 +26,7 @@ export const admins = createUsers(Admin, {
   // Sign the cookies and the password reset links.
   secrets: config.keys,
   // The cookie is `admin.sess`, unless `cookieName` says otherwise.
-  session: { maxAge: '24h' },
+  session: { expiresAfter: '24h' },
   // The property of the username, `username` by default.
   usernameProperty: 'username',
   // Inactive admins don't log in.
@@ -253,7 +253,7 @@ import { createUsers, verifyPassword } from '@ditojs/auth'
 export const members = createUsers(Member, {
   adapter,
   secrets: config.keys,
-  session: { maxAge: '30d' },
+  session: { expiresAfter: '30d' },
   usernameProperty: 'email',
   serialize: ['id', 'email']
 })

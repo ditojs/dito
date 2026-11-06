@@ -30,7 +30,7 @@ const send = vi.fn()
 const members = createUsers(Member, {
   adapter,
   secrets: ['secret sauce'],
-  session: { maxAge: 60_000 },
+  session: { expiresAfter: 60_000 },
   usernameProperty: 'email'
 })
 

@@ -609,7 +609,7 @@ await app.start({ services: [mailer, scheduler] })
 `@ditojs/auth`. The `session` and `credential` tables stay the same. So passkeys
 and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 
-- `app.createUsers(entity, { session: { maxAge }, serialize })` returns the
+- `app.createUsers(entity, { session: { expiresAfter }, serialize })` returns the
   users of an entity, which `app.routeApi()` and `createAdmin()` take as
   `users`. The cookie defaults to the lowercased entity name and `.sess`, and
   `session.cookieName` sets another one. Without the kit, the app calls

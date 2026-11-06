@@ -38,15 +38,15 @@ export interface CreateSessionsOptions<U extends AuthUser = any> {
   // such as `admin.sess`.
   cookieName?: string
   // In milliseconds or as a duration such as `'24h'`.
-  maxAge: number | string
+  expiresAfter: number | string
   // The source of the users that log in to these sessions.
   source: UserSource<U>
 }
 
-// The options with `cookieName` set and `maxAge` parsed.
+// The options with `cookieName` set and `expiresAfter` parsed.
 interface SessionOptions extends CreateSessionsOptions {
   cookieName: string
-  maxAge: number
+  expiresAfter: number
 }
 
 // The value of a session, stored as JSON. The app may add its own keys.
@@ -183,7 +183,7 @@ export class RequestSession {
 
   // Save the session and set the cookie, if anything changed.
   async commit() {
-    const { adapter, secrets, cookieName, maxAge } = this.#options
+    const { adapter, secrets, cookieName, expiresAfter } = this.#options
     const database = adapter.getKysely()
     const c = this.#c
     let id = this.#id
@@ -205,7 +205,7 @@ export class RequestSession {
       this.#regenerating
     )
     if (!hasChanged || (!id && isEmpty(this.value))) return
-    const expires = new Date(Date.now() + maxAge)
+    const expires = new Date(Date.now() + expiresAfter)
     const values = { value: JSON.stringify(this.value), expires_at: expires }
     if (id) {
       const { numUpdatedRows } = await database
@@ -242,7 +242,7 @@ export function createSessions<U extends AuthUser>(
   const sessionOptions = {
     ...options,
     cookieName,
-    maxAge: parseDuration(options.maxAge)
+    expiresAfter: parseDuration(options.expiresAfter)
   }
   if (secrets.length === 0) {
     throw new Error('Unable to sign cookies without secrets.')

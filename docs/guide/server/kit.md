@@ -66,7 +66,7 @@ import { app } from './app.js'
 import { Admin } from './entities/index.js'
 
 export const admins = app.createUsers(Admin, {
-  session: { maxAge: '24h' },
+  session: { expiresAfter: '24h' },
   serialize: ['id', 'username', 'roles']
 })
 ```
