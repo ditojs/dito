@@ -16,10 +16,13 @@ of users on an entity, with their sessions and credentials.
 
 ```js
 import { z } from 'zod'
+import { createMikroAdapter } from '@ditojs/mikro'
 import { createUsers } from '@ditojs/auth'
 
+export const adapter = createMikroAdapter(orm)
+
 export const admins = createUsers(Admin, {
-  orm,
+  adapter,
   // Sign the cookies and the password reset links.
   secrets: config.keys,
   session: { cookieName: 'admin.sess', maxAge: '24h' },
@@ -37,17 +40,12 @@ export const admins = createUsers(Admin, {
 ```
 
 [`createUsers()`](../../api/server/auth.md#createusers) returns the users. The
-app passes them to the API as `users`:
+app passes them to the API as `users`, with the same adapter:
 
 ```js
 import { createApi, createHono } from '@ditojs/server'
-import { createMikroAdapter } from '@ditojs/mikro'
 
-const api = createApi({
-  controllers,
-  adapter: createMikroAdapter(orm),
-  users: admins
-})
+const api = createApi({ controllers, adapter, users: admins })
 
 const app = createHono()
 app.route('/api/admin', api)
@@ -89,7 +87,7 @@ the session of the running request, also in functions that a handler calls.
 
 Sessions use the database outside of the action's transaction. This is because
 they load before the action, and save after it.
-`admins.deleteExpiredSessions()` deletes the expired rows. The `jobs` of the
+`deleteExpiredSessions(adapter)` deletes the expired rows. The `jobs` of the
 [kit](kit.md#jobs) run it, or the app's own schedule.
 
 The cookie holds the session's id, signed with Hono's signed cookies. The first
@@ -244,7 +242,7 @@ import { HttpError } from '@ditojs/server'
 import { createUsers, verifyPassword } from '@ditojs/auth'
 
 export const members = createUsers(Member, {
-  orm,
+  adapter,
   secrets: config.keys,
   session: { cookieName: 'member.sess', maxAge: '30d' },
   usernameProperty: 'email',

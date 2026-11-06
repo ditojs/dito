@@ -15,8 +15,7 @@ import {
   getAssetPaths,
   defineMikroConfig,
   createMikroAdapter,
-  useEm,
-  createEntityUserSource
+  useEm
 } from '@ditojs/mikro'
 import '@ditojs/mikro/types'
 ```
@@ -608,25 +607,8 @@ Returns the `adapter` of [`createApi()`](api.md#adapter):
   Sessions, credentials and jobs use it. With the `c` of a request, it runs in
   the request's transaction. `orm.em.getKysely()` joins the current
   transaction instead.
-
-## guardEntity()
-
-```ts
-guardEntity(entity: EntityClass, name: string, guard: { actions?, middleware? }): void
-```
-
-Guards every model controller of `entity`, without adding routes.
-
-- `actions` run around the default actions, such as
-  `{ 'patch :id': handler }`, and `next()` runs the default action.
-- `middleware` runs on all actions of the controllers, before their mixins'
-  middleware.
-- A guard replaces the one of the same `name`. Guards of other names stack.
-- Controllers read the guards per request, so a guard also reaches the
-  controllers that were defined before it.
-
-`createUsers()` of `@ditojs/auth` protects its users this way, and
-`createAssets()` of `@ditojs/storage` tracks files.
+- `getEm(c?)` returns the entity manager of the request `c`. Without one, it
+  returns a fork of `orm.em`.
 
 ## useEm()
 
@@ -664,40 +646,6 @@ Types `em` of the handlers and `c.var.em` as MikroORM's `EntityManager` of
 types them everywhere. `em.getKysely()` returns the Kysely of the request's
 entity manager, which runs in its transaction. Use it for queries that MikroORM
 doesn't build.
-
-## createEntityUserSource()
-
-```ts
-createEntityUserSource<U>(entity: EntityClass<U>, options: {
-  orm: { em: EntityManager }
-  usernameProperty?: string
-  where?: object
-  serialize?: string[] | (({ user }) => unknown)
-  computed?: Record<string, ({ user }) => unknown>
-  password?: ZodType<string>
-})
-```
-
-Returns the methods that find, change and serialize the users of an entity.
-[`createUsers()`](auth.md#createusers) of `@ditojs/auth` calls it, and adds them
-to its result. Apps use `createUsers()`.
-
-It queries with the request's entity manager. Outside of a request, such as in
-session middleware outside of the API, it queries with a fork of `orm.em`.
-
-| Option             | Description                                                                                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `usernameProperty` | The property of the username. Default: `username`.                                                                                                            |
-| `where`            | A condition that users also need to meet, such as `{ isActive: true }`.                                                                                       |
-| `serialize`        | The properties that clients get, plus `computed`, or a function that returns the JSON. By default, the entity's own serialization, without hidden properties. |
-| `password`         | The schema of new passwords. Default: a string of at least 8 characters.                                                                                      |
-
-The entity hides `hash` with `.hidden()`, so that no response sends it. The
-source throws when it loads users of an entity that doesn't.
-
-`findById()` finds no user for an id that doesn't fit the primary key.
-`patch()` writes the values with `nativeUpdate()` and sets them on the user. It
-doesn't flush the request's other changes.
 
 ## Database errors
 

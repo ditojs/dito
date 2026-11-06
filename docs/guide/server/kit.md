@@ -72,8 +72,8 @@ export const admins = app.createUsers(Admin, {
 ```
 
 `app.createUsers(entity, options)` calls
-[`createUsers()`](../../api/server/auth.md#createusers) with the app's ORM and
-`secrets`. The controllers import the users for their mixins, see
+[`createUsers()`](../../api/server/auth.md#createusers) with the app's adapter
+and `secrets`. The controllers import the users for their mixins, see
 [Users and sessions](auth.md).
 
 ## Services

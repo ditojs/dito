@@ -20,8 +20,8 @@ Storages keep files on disk or in S3, and handle uploads.
 - Jobs scan the data to find the files that no row references.
 - The package reads its tables through [Kysely](https://kysely.dev).
 
-The peer dependencies are `kysely`, `@ditojs/mikro`, `@ditojs/server`,
-`@mikro-orm/core` and `hono`. S3 storages
+The peer dependencies are `kysely`, `@ditojs/server`, `@mikro-orm/core` and
+`hono`. S3 storages
 also need `@aws-lite/client` and `@aws-lite/s3`, and `serveStorage()` needs
 `@hono/node-server`. See [Storages and files](../../guide/server/storage.md) in
 the guide.
@@ -233,7 +233,8 @@ The `asset` rows go through two Kyselys:
 
 Every model controller of an entity with asset paths handles the files in the
 JSON body of its writes, `c.var.body`, also of its own actions. It does this
-through [`guardEntity()`](mikro.md#guardentity), with no mixin and no routes.
+through the `adapter` of `createAssets()`, with no mixin and no routes, so the
+API takes the same adapter.
 These are the files at the entity's asset paths. For each file, it looks up the `asset` row of its key:
 
 - If the row is in the storage of the asset path, the file gets the properties

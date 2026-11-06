@@ -169,7 +169,8 @@ interface Adapter {
 
 The object that [`createMikroAdapter()`](mikro.md#createmikroadapter) returns.
 `createApi()` takes the parts that it needs, and `@ditojs/auth` and
-`@ditojs/storage` take it for `getKysely()`:
+`@ditojs/storage` take the same adapter for `getKysely()` and to wrap the model
+controllers of their entities:
 
 - `getKysely()` returns a Kysely outside of any transaction. With the `c` of a
   request, it runs in the request's transaction.

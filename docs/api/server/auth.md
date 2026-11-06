@@ -40,7 +40,7 @@ createUsers<U extends User>(
 
 ```js
 const admins = createUsers(Admin, {
-  orm,
+  adapter,
   secrets: config.keys,
   session: { cookieName: 'admin.sess', maxAge: '24h' },
   serialize: ['id', 'username', 'roles']
@@ -56,7 +56,7 @@ sessions and credentials. The app passes the result as `users` to
 
 | Option             | Type                                    | Description                                                                                                                                                              |
 | ------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `orm`              | `{ em: EntityManager }`                 | The ORM with the `session` and `credential` tables, set up with [`defineMikroConfig()`](mikro.md#definemikroconfig).                                                     |
+| `adapter`          | `MikroAdapter`                          | The [adapter](mikro.md#createmikroadapter) of the API, on the ORM with the `session` and `credential` tables.                                                            |
 | `secrets`          | `string[]`                              | The secrets that sign the cookies and the password reset links. The first one signs, and all of them verify, so they can rotate. `createUsers()` throws without any.     |
 | `session`          | `{ cookieName, maxAge }`                | The name of the cookie, such as `admin.sess`, and the lifetime of a session.                                                                                             |
 | `session.maxAge`   | `number \| string`                      | In milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Browsers cap cookies at 400 days.                             |
@@ -83,7 +83,6 @@ users throw when they load users of an entity that doesn't.
 | `getUser({ c })`                            | Resolves to `{ id, roles }` of the session's user, or `null`. `createApi()` and `createAdmin()` use it as their `getUser`.                                             |
 | `readSignedCookie(c, name)`                 | Returns the value of the cookie `name` if one of `secrets` signed it, else `null`. It reads the app's own cookies, which `setSignedCookie()` writes.                   |
 | `setSignedCookie(c, name, value, options?)` | Sets a cookie that `readSignedCookie()` reads, signed with the first of `secrets`, for the app's own cookies. It is `secure` on HTTPS, unless `options` say otherwise. |
-| `deleteExpiredSessions()`                   | Deletes the expired rows of the `session` table. The `jobs` of the kit run it.                                                                                         |
 | `defineActions(options?)`                   | Returns the mixin with the actions of the users, see [`defineActions()`](#defineactions).                                                                              |
 | `name`                                      | The name of the entity, which names the users in sessions and credentials, as `'<name>-<id>'`.                                                                         |
 | `usernameProperty`                          | The option of the same name.                                                                                                                                           |
@@ -298,13 +297,22 @@ tokens.
   and username. So a login, a password change or a username change makes the
   link invalid. This includes the password change that the link itself makes.
 
+## deleteExpiredSessions()
+
+```ts
+deleteExpiredSessions(adapter: Adapter): Promise<void>
+```
+
+Deletes the expired rows of the `session` table, of all users. The `jobs` of the
+kit run it.
+
 ## User records
 
-`createUsers()` guards the default actions `post`, `patch :id` and `delete :id`
-of every model controller of its entity, see
-[`guardEntity()`](mikro.md#guardentity). The controllers need no mixin, and the
-guards add no routes. An action with its own handler gets them when it calls
-`next()`. The API needs a session middleware, of these users or of others.
+`createUsers()` wraps the default actions `post`, `patch :id` and `delete :id` of
+every model controller of its entity, through its `adapter`, so the API takes
+the same adapter. The controllers need no mixin, and the wrappers add no routes.
+An action with its own handler gets them when it calls `next()`. The API needs a
+session middleware, of these users or of others.
 
 - The body of `post` and `patch :id` sets `password`.
 - The default action gets the body without `password`.

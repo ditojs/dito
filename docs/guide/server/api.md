@@ -99,15 +99,17 @@ Requests without these headers keep their own URL and address.
 ## Several APIs in one app
 
 ```js
+const adapter = createMikroAdapter(orm)
+
 const adminApi = createApi({
   controllers: adminControllers,
   users: admins,
-  adapter: createMikroAdapter(orm)
+  adapter
 })
 const frontApi = createApi({
   controllers: frontControllers,
   users: members,
-  adapter: createMikroAdapter(orm)
+  adapter
 })
 
 app.route('/api/admin', adminApi)
@@ -117,6 +119,8 @@ app.route('/api', frontApi)
 Each area of the app can be an API of its own, with its own path, sessions and
 users. The middleware of an API runs on its own actions only. So a request to
 `/api/admin` loads the admin session alone, in any order of the routes.
+The APIs share the adapter of `createUsers()` and `createAssets()`, which wrap
+the model controllers of their entities through it.
 
 ## The database
 
