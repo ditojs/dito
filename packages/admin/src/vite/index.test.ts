@@ -11,10 +11,12 @@ describe('defineAdminViteConfig()', () => {
   beforeAll(async () => {
     dist = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-admin-build-'))
     await build(
-      await defineAdminViteConfig(
-        { root, base: '/admin', dist },
-        { logLevel: 'silent' }
-      )
+      await defineAdminViteConfig({
+        root,
+        base: '/admin',
+        build: { outDir: dist },
+        logLevel: 'silent'
+      })
     )
   }, 30000)
 
@@ -25,10 +27,12 @@ describe('defineAdminViteConfig()', () => {
     const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-admin-root-'))
     try {
       await build(
-        await defineAdminViteConfig(
-          { root, base: '/admin', dist: path.join(folder, 'dist') },
-          { logLevel: 'silent' }
-        )
+        await defineAdminViteConfig({
+          root,
+          base: '/admin',
+          build: { outDir: path.join(folder, 'dist') },
+          logLevel: 'silent'
+        })
       )
       return await fs.readdir(path.join(folder, 'dist', 'views'))
     } finally {

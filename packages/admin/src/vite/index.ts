@@ -7,28 +7,29 @@ import { normalizeBase } from '../server/normalizeBase.ts'
 
 // The admin's Vite config, to build it and to develop it with `createAdmin()`.
 
-export interface AdminViteOptions {
+// Vite's config, merged into the admin's. `build.outDir` says where the build
+// writes the admin.
+export interface AdminViteConfig extends InlineConfig {
   // The admin's sources, with `index.html` and `views/`.
   root: string
   // The path the admin is served at, such as `/admin`.
   base: string
   mode?: 'production' | 'development'
-  // Where the build writes the admin, needed for production builds.
-  dist?: string
 }
 
-export async function defineAdminViteConfig(
-  options: AdminViteOptions,
-  config: InlineConfig = {}
-): Promise<InlineConfig> {
+export async function defineAdminViteConfig({
+  root: rootPath,
+  base: basePath,
+  mode = 'production',
+  ...config
+}: AdminViteConfig): Promise<InlineConfig> {
   // The build tools are only needed to build or develop the admin.
   const { default: createVuePlugin } = await import('@vitejs/plugin-vue')
   const { default: autoprefixer } = await import('autoprefixer')
-  const { mode = 'production' } = options
   const isDevelopment = mode === 'development'
-  const root = path.resolve(options.root)
+  const root = path.resolve(rootPath)
   // The base with one slash on each side, such as `/admin/`, or `/`:
-  const base = `${normalizeBase(options.base)}/`
+  const base = `${normalizeBase(basePath)}/`
   // The views as the ids of Vite name them: by their real path, with forward
   // slashes also on Windows.
   const viewsDirectory = path
@@ -82,7 +83,6 @@ export async function defineAdminViteConfig(
       build: isDevelopment
         ? {}
         : {
-            outDir: options.dist && path.resolve(options.dist),
             emptyOutDir: true,
             chunkSizeWarningLimit: 1000,
             rolldownOptions: {

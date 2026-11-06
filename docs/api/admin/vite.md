@@ -12,30 +12,33 @@ The entry needs the optional peer dependencies `vite`, `@vitejs/plugin-vue` and
 ## defineAdminViteConfig()
 
 ```ts
-defineAdminViteConfig(options: AdminViteOptions, config?: InlineConfig): Promise<InlineConfig>
+defineAdminViteConfig(config: AdminViteConfig): Promise<InlineConfig>
 ```
 
 ```js
+import path from 'node:path'
 import { defineAdminViteConfig } from '@ditojs/admin/vite'
 
 export default ({ mode }) =>
   defineAdminViteConfig({
     root: 'admin',
     base: '/admin',
-    dist: 'dist/admin',
-    mode
+    mode,
+    build: { outDir: path.resolve('dist/admin') }
   })
 ```
 
 Returns the Vite config of the admin, for its build and for its dev server. It
-deeply merges `config` into it.
+takes one Vite config, and deeply merges it into the admin's.
 
-| Option | Type                            | Description                       |
-| ------ | ------------------------------- | --------------------------------- |
-| `root` | `string`                        | The admin's sources.              |
-| `base` | `string`                        | The path of the admin.            |
-| `mode` | `'production' \| 'development'` | Default: `'production'`.          |
-| `dist` | `string`                        | Where the build writes the admin. |
+| Option | Type                            | Description              |
+| ------ | ------------------------------- | ------------------------ |
+| `root` | `string`                        | The admin's sources.     |
+| `base` | `string`                        | The path of the admin.   |
+| `mode` | `'production' \| 'development'` | Default: `'production'`. |
+
+Vite's `build.outDir` says where the build writes the admin. As in Vite, a
+relative path resolves against `root`.
 
 An `admin.vite.config.js` builds the admin with it. As a function, as above,
 the same file also works for [`createAdmin()`](server.md#createadmin) in

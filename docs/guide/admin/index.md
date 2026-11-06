@@ -66,17 +66,18 @@ reloading. Without it, it serves the build in `dist`. To build, add
 
 ```js
 // admin.vite.config.js
+import path from 'node:path'
 import { defineAdminViteConfig } from '@ditojs/admin/vite'
 
 export default defineAdminViteConfig({
   root: 'src/admin',
   base: '/admin',
-  dist: 'dist/admin'
+  build: { outDir: path.resolve('dist/admin') }
 })
 ```
 
-The second argument of `defineAdminViteConfig(options, config)` takes Vite
-options to merge, e.g. `resolve` aliases. Building and development need the
+`defineAdminViteConfig(config)` merges a Vite config into the admin's, with
+options such as `resolve` aliases. Building and development need the
 peer dependencies `vite`, `@vitejs/plugin-vue` and `autoprefixer`.
 
 ## The admin entry

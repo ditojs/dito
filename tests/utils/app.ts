@@ -167,34 +167,34 @@ export async function createTestApp(
 
 // The Vite config of the admin, with the scenario's views as `#views`.
 async function getViteConfig(name: string, views: string) {
-  const config = await defineAdminViteConfig(
-    { root: adminRoot, base: '/admin', mode: 'development' },
-    {
-      css: {
-        preprocessorOptions: {
-          scss: {
-            silenceDeprecations: ['import']
-          }
+  const config = await defineAdminViteConfig({
+    root: adminRoot,
+    base: '/admin',
+    mode: 'development',
+    css: {
+      preprocessorOptions: {
+        scss: {
+          silenceDeprecations: ['import']
         }
-      },
-      // Skip the depsOptimizer discovery scan so vite doesn't dispatch
-      // background `resolveId`/`load`/`transform` calls during startup. The
-      // scan's in-flight promises aren't canceled by `discover.cancel()` at
-      // teardown (vite 8) and make `pluginContainer.close()` hang on workers
-      // that never visit /admin/, such as programmatic-only workers. Vitest
-      // does the same for tests, see vitest commit e379f64.
-      optimizeDeps: { noDiscovery: true, include: [] },
-      // Each checkout, scenario and worker has its own cache, as their Vite
-      // servers optimize dependencies concurrently, and they share the admin
-      // root.
-      cacheDir: path.resolve(
-        import.meta.dirname,
-        '../node_modules/.vite-e2e',
-        name,
-        process.env.TEST_PARALLEL_INDEX ?? '0'
-      )
-    }
-  )
+      }
+    },
+    // Skip the depsOptimizer discovery scan so vite doesn't dispatch
+    // background `resolveId`/`load`/`transform` calls during startup. The
+    // scan's in-flight promises aren't canceled by `discover.cancel()` at
+    // teardown (vite 8) and make `pluginContainer.close()` hang on workers
+    // that never visit /admin/, such as programmatic-only workers. Vitest
+    // does the same for tests, see vitest commit e379f64.
+    optimizeDeps: { noDiscovery: true, include: [] },
+    // Each checkout, scenario and worker has its own cache, as their Vite
+    // servers optimize dependencies concurrently, and they share the admin
+    // root.
+    cacheDir: path.resolve(
+      import.meta.dirname,
+      '../node_modules/.vite-e2e',
+      name,
+      process.env.TEST_PARALLEL_INDEX ?? '0'
+    )
+  })
   const alias = config.resolve!.alias as { find: string; replacement: string }[]
   alias.push({ find: '#views', replacement: views })
   return config

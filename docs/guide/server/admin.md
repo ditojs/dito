@@ -48,13 +48,17 @@ The options:
 ## Building
 
 ```js
+import path from 'node:path'
 import { defineAdminViteConfig } from '@ditojs/admin/vite'
 
 export default ({ mode }) =>
-  defineAdminViteConfig(
-    { root: 'admin', base: '/admin', dist: 'dist/admin', mode },
-    { resolve: { dedupe: ['vue', 'vue-router'] } }
-  )
+  defineAdminViteConfig({
+    root: 'admin',
+    base: '/admin',
+    mode,
+    build: { outDir: path.resolve('dist/admin') },
+    resolve: { dedupe: ['vue', 'vue-router'] }
+  })
 ```
 
 ```sh

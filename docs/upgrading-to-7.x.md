@@ -729,8 +729,9 @@ app.hono.route('/admin', admin)
   Other chunks go below `assets/`.
 - The admin's build splits off only the chunk of the views. The `core`, `vendor`
   and `common` chunks of Dito.js 6 are gone.
-- `defineAdminViteConfig()` of `@ditojs/admin/vite` builds the admin, on
-  Vite 8. `build.rollupOptions` of an app's config become
+- `defineAdminViteConfig(config)` of `@ditojs/admin/vite` builds the admin, on
+  Vite 8. It takes one Vite config, with `root`, `base`, `mode` and
+  `build.outDir`. `build.rollupOptions` of an app's config become
   `build.rolldownOptions`.
 
 ### 10. Update the admin, the clients and the tests
