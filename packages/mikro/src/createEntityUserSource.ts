@@ -1,7 +1,11 @@
 import { tryGetContext } from 'hono/context-storage'
 import type { z } from 'zod'
-import type { EntityClass, EntityManager } from '@mikro-orm/core'
-import { isArray, mapValues } from '@ditojs/utils'
+import {
+  serialize as serializeEntity,
+  type EntityClass,
+  type EntityManager
+} from '@mikro-orm/core'
+import { isFunction, mapValues } from '@ditojs/utils'
 import { getPrimaryKey, toPrimaryKey } from './metadata.ts'
 
 // The `UserSource` of `@ditojs/auth`, which depends on this package.
@@ -15,8 +19,9 @@ export interface EntityUserSourceOptions<U extends object> {
   // `{ isActive: true }`.
   where?: object
   // The properties of the user that the admin and `get self` get, or a
-  // function that returns the JSON.
-  serialize: string[] | ((context: { user: U }) => unknown)
+  // function that returns the JSON. By default, the entity's own serialization,
+  // which leaves out hidden properties.
+  serialize?: string[] | ((context: { user: U }) => unknown)
   // Values computed from the user, added to the properties of `serialize`.
   computed?: Record<string, (context: { user: U }) => unknown>
   // The schema of new passwords, for `users.defineActions()` and the users'
@@ -82,12 +87,16 @@ export function createEntityUserSource<U extends { id: number | string }>(
     },
     serialize(user: U) {
       const record = user as Record<string, unknown>
-      return isArray(serialize)
-        ? {
-            ...Object.fromEntries(serialize.map(key => [key, record[key]])),
+      return isFunction(serialize)
+        ? serialize({ user })
+        : {
+            ...(
+              serialize
+                ? Object.fromEntries(serialize.map(key => [key, record[key]]))
+                : serializeEntity(user)
+            ),
             ...mapValues(computed, get => get({ user }))
           }
-        : serialize({ user })
     }
   }
 }

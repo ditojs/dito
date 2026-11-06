@@ -1,3 +1,6 @@
+import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { defineEntity, p } from '@mikro-orm/core'
 import { createApi } from '@ditojs/server'
 import {
@@ -8,9 +11,6 @@ import {
   getAssetPaths
 } from '@ditojs/mikro'
 import { createAssets, createStorages, type AssetFile } from './index.ts'
-import fs from 'node:fs/promises'
-import os from 'node:os'
-import path from 'node:path'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 
 const assetColumn = () =>

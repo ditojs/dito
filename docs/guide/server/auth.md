@@ -61,6 +61,8 @@ The users also find and change single users, and prepare them for clients:
 - `admins.patch(user, values)` writes the values at once, and sets them on the
   user. It doesn't flush the request's other changes.
 - `admins.serialize(user)` returns what `serialize` and `computed` describe.
+  Without `serialize`, it returns the entity's own serialization, which leaves
+  out hidden properties.
 
 The entity hides `hash`, such as with `p.string().nullable().hidden()`, so that
 no response sends it. The users throw when they load users of an entity that

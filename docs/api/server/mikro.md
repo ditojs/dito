@@ -693,7 +693,7 @@ createEntityUserSource<U>(entity: EntityClass<U>, options: {
   orm: { em: EntityManager }
   usernameProperty?: string
   where?: object
-  serialize: string[] | (({ user }) => unknown)
+  serialize?: string[] | (({ user }) => unknown)
   computed?: Record<string, ({ user }) => unknown>
   password?: ZodType<string>
 })
@@ -706,12 +706,12 @@ to its result. Apps use `createUsers()`.
 It queries with the request's entity manager. Outside of a request, such as in
 session middleware outside of the API, it queries with a fork of `orm.em`.
 
-| Option             | Description                                                                                        |
-| ------------------ | -------------------------------------------------------------------------------------------------- |
-| `usernameProperty` | The property of the username. Default: `username`.                                                 |
-| `where`            | A condition that users also need to meet, such as `{ isActive: true }`.                            |
-| `serialize`        | The properties that clients get, plus `computed`. It can also be a function that returns the JSON. |
-| `password`         | The schema of new passwords. Default: a string of at least 8 characters.                           |
+| Option             | Description                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `usernameProperty` | The property of the username. Default: `username`.                                                                                                            |
+| `where`            | A condition that users also need to meet, such as `{ isActive: true }`.                                                                                       |
+| `serialize`        | The properties that clients get, plus `computed`, or a function that returns the JSON. By default, the entity's own serialization, without hidden properties. |
+| `password`         | The schema of new passwords. Default: a string of at least 8 characters.                                                                                      |
 
 The entity hides `hash` with `.hidden()`, so that no response sends it. The
 source throws when it loads users of an entity that doesn't.

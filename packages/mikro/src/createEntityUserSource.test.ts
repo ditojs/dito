@@ -171,6 +171,22 @@ describe('createEntityUserSource()', () => {
     ).toBe(password)
   })
 
+  it('serializes the entity without hidden properties by default', async () => {
+    const source = createEntityUserSource(Account, {
+      orm,
+      usernameProperty: 'email',
+      computed: { label: ({ user }) => user.email.toUpperCase() }
+    })
+    const user = (await source.findByUsername('a@example.com'))!
+    expect(source.serialize(user)).toEqual({
+      id: user.id,
+      email: 'a@example.com',
+      lastLogin: null,
+      isActive: true,
+      label: 'A@EXAMPLE.COM'
+    })
+  })
+
   it('takes a function as `serialize`', async () => {
     const custom = createEntityUserSource(Account, {
       orm,
