@@ -84,6 +84,9 @@ export function createEntityUserSource<U extends { id: number | string }>(
     async findByUsername(username: string): Promise<U | null> {
       return findOne(getEm(), { [usernameProperty]: username })
     },
+    getUsername(user: U) {
+      return user[usernameProperty as keyof U] as string
+    },
     // Write the values at once and set them on `user`, without flushing the
     // request's other changes:
     async patch(user: U, values: object) {

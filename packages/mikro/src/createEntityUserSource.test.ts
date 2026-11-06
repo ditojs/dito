@@ -135,6 +135,10 @@ describe('createEntityUserSource()', () => {
     ).toBe(active.id)
   })
 
+  it('reads the username from `usernameProperty`', () => {
+    expect(source.getUsername(active)).toBe('a@example.com')
+  })
+
   it(`uses the request's entity manager`, async () => {
     const em = orm.em.fork()
     await inRequest(em, async () => {
