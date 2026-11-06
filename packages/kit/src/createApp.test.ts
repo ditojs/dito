@@ -68,7 +68,14 @@ describe('createApp()', () => {
         }
       },
       secrets,
-      storages: { covers: { type: 'disk', path: folder, url: '/covers/' } }
+      storages: {
+        covers: { type: 'disk', path: folder, url: '/covers/' },
+        remote: {
+          type: 'disk',
+          path: folder,
+          url: 'https://assets.example.com/'
+        }
+      }
     })
 
     // Each API has its own session cookie and its own users.
@@ -182,6 +189,11 @@ describe('createApp()', () => {
   it('serves the disk storages at their `url`', async () => {
     const response = await app.hono.request('/covers/cover.txt')
     expect(await response.text()).toBe('Cover')
+  })
+
+  it('serves no disk storage with a `url` without a path', async () => {
+    const response = await app.hono.request('/cover.txt')
+    expect(response.status).toBe(404)
   })
 
   it('answers as the app of `createHono()`', async () => {

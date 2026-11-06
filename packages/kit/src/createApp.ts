@@ -46,8 +46,8 @@ export interface CreateAppOptions {
   logger?: LoggerOptions
   // The secrets that sign the cookies of the sessions.
   secrets?: string[]
-  // The definitions of `createStorages()`. A disk storage with a `url` is
-  // served at the path of that url.
+  // The definitions of `createStorages()`. A disk storage is served at the path
+  // of its `url`. A `url` without a path, such as a host of its own, isn't.
   storages?: Record<string, StorageDefinition>
   assets?: Pick<CreateAssetsOptions, 'deleteUnusedAfter'>
 }
@@ -100,7 +100,9 @@ export function createApp({
   for (const storage of storages.values()) {
     if (storage instanceof DiskStorage && storage.url) {
       const { pathname } = new URL(storage.url, 'http://localhost')
-      hono.use(`${pathname.replace(/\/$/, '')}/*`, serveStorage(storage))
+      if (pathname !== '/') {
+        hono.use(`${pathname.replace(/\/$/, '')}/*`, serveStorage(storage))
+      }
     }
   }
   let served: Awaited<ReturnType<typeof serve>> | undefined

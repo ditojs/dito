@@ -14,16 +14,16 @@ createApp(options: CreateAppOptions): App
 
 Sets up an app. Only `entities` and `database` are required.
 
-| Option     | Type                                | Description                                                                                             |
-| ---------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `entities` | `object`                            | A list or a module of entities.                                                                         |
-| `database` | MikroORM's `Options`                | Goes through [`defineMikroConfig()`](mikro.md#definemikroconfig).                                       |
-| `server`   | `{ port, host, closeTimeout }`      | The options of [`serve()`](hono.md#serve).                                                              |
-| `http`     | `CreateHonoOptions`                 | The options of [`createHono()`](hono.md#createhono).                                                    |
-| `logger`   | pino's `LoggerOptions`              | Logs have no `pid` and `hostname` unless `base` sets them.                                              |
-| `secrets`  | `string[]`                          | Sign the cookies of the sessions. The first one signs, and all of them verify.                          |
-| `storages` | `Record<string, StorageDefinition>` | See [`createStorages()`](storage.md#createstorages). A disk storage with a `url` is served at its path. |
-| `assets`   | `{ deleteUnusedAfter }`             | See [`createAssets()`](storage.md#createassets).                                                        |
+| Option     | Type                                | Description                                                                                                                                                       |
+| ---------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `entities` | `object`                            | A list or a module of entities.                                                                                                                                   |
+| `database` | MikroORM's `Options`                | Goes through [`defineMikroConfig()`](mikro.md#definemikroconfig).                                                                                                 |
+| `server`   | `{ port, host, closeTimeout }`      | The options of [`serve()`](hono.md#serve).                                                                                                                        |
+| `http`     | `CreateHonoOptions`                 | The options of [`createHono()`](hono.md#createhono).                                                                                                              |
+| `logger`   | pino's `LoggerOptions`              | Logs have no `pid` and `hostname` unless `base` sets them.                                                                                                        |
+| `secrets`  | `string[]`                          | Sign the cookies of the sessions. The first one signs, and all of them verify.                                                                                    |
+| `storages` | `Record<string, StorageDefinition>` | See [`createStorages()`](storage.md#createstorages). A disk storage is served at the path of its `url`. A `url` without a path, such as a host of its own, isn't. |
+| `assets`   | `{ deleteUnusedAfter }`             | See [`createAssets()`](storage.md#createassets).                                                                                                                  |
 
 ### App
 
