@@ -13,7 +13,12 @@ export {
   verifyPassword,
   type PasswordWritesOptions
 } from './passwords.ts'
-export * from './credentials.ts'
+export {
+  createCredentials,
+  type CreateCredentialsOptions,
+  type Credential,
+  type Credentials
+} from './credentials.ts'
 export {
   createPasswordReset,
   type CreatePasswordResetOptions,

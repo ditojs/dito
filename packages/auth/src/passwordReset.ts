@@ -7,11 +7,7 @@ import {
   type UserSource
 } from './users.ts'
 
-// Stateless password reset links: the token holds the user's id and its
-// creation time, with an HMAC-SHA256 signature over these and the user's hash,
-// last login and username. So a login, a password change or a username change
-// ends the link, including the change that the link itself makes. The first
-// secret signs, and all of them verify, so secrets can rotate.
+// Stateless password reset links, signed with HMAC-SHA256.
 
 export interface CreatePasswordResetOptions {
   secrets: string[]
@@ -46,40 +42,38 @@ export function createPasswordReset({
     throw new Error('Unable to sign tokens without secrets.')
   }
   // The time of the last link by user, per process.
-  const sentAt = new Map<string, number>()
+  const sentAtByUser = new Map<string, number>()
 
   const sign = (data: string, secret: string) =>
     createHmac('sha256', secret).update(data).digest('base64url')
 
+  // The token holds the user's id and its creation time. The first secret
+  // signs, and all of them verify, so secrets can rotate.
   function createToken(source: UserSource<any>, user: User, time: number) {
     const id = Buffer.from(`${user.id}`).toString('base64url')
-    const signature = sign(getData(source, user, time), secrets[0])
+    const signature = sign(getSignedValues(source, user, time), secrets[0])
     return `${id}.${time.toString(36)}.${signature}`
   }
 
-  // Forgets the users whose `resendAfter` ended, so the map stays small.
-  function isThrottled(identifier: string, now: number) {
-    for (const [key, time] of sentAt) {
-      if (now - time >= resendAfter) sentAt.delete(key)
-    }
-    if (sentAt.has(identifier)) return true
-    sentAt.set(identifier, now)
-    return false
-  }
-
   return {
-    // Sends the link without waiting for it.
     sendLink(c: Context, source: UserSource<any>, user: User) {
       const now = Date.now()
-      if (isThrottled(getUserIdentifier(source, user), now)) return
-      const url = confirmUrl.replace('{token}', createToken(source, user, now))
-      Promise.try(() => send({ c, user, url })).catch(error =>
-        onError?.({ error, c })
-      )
+      const identifier = getUserIdentifier(source, user)
+      // Forget the users whose `resendAfter` ended, so the map stays small:
+      for (const [key, time] of sentAtByUser) {
+        if (now - time >= resendAfter) sentAtByUser.delete(key)
+      }
+      if (!sentAtByUser.has(identifier)) {
+        sentAtByUser.set(identifier, now)
+        const token = createToken(source, user, now)
+        const url = confirmUrl.replace('{token}', token)
+        Promise.try(() => send({ c, user, url })).catch(error =>
+          onError?.({ error, c })
+        )
+      }
     },
 
-    // The user of a token that hasn't expired and is signed with one of the
-    // secrets, or null.
+    // Resolve to null for tokens that expired or that no secret signed.
     async findUser<U extends User>(
       c: Context,
       source: UserSource<U>,
@@ -93,16 +87,19 @@ export function createPasswordReset({
       const id = Buffer.from(encodedId, 'base64url').toString()
       const user = id ? await source.findById(c, id) : null
       if (!user) return null
-      const data = getData(source, user, time)
-      return secrets.some(secret => isEqual(signature, sign(data, secret)))
-        ? user
-        : null
+      const values = getSignedValues(source, user, time)
+      const isSigned = secrets.some(secret =>
+        isTimingSafeEqual(signature, sign(values, secret))
+      )
+      return isSigned ? user : null
     }
   }
 }
 
-// Dates count as ISO strings, missing values as null.
-function getData(source: UserSource<any>, user: User, time: number) {
+// Sign the user's hash, last login and username too, so that a login, a
+// password change or a username change ends the link, including the change
+// that the link itself makes. Dates count as ISO strings.
+function getSignedValues(source: UserSource<any>, user: User, time: number) {
   return JSON.stringify([
     getUserIdentifier(source, user),
     time,
@@ -112,7 +109,7 @@ function getData(source: UserSource<any>, user: User, time: number) {
   ])
 }
 
-function isEqual(a: string, b: string) {
+function isTimingSafeEqual(a: string, b: string) {
   const bufferA = Buffer.from(a)
   const bufferB = Buffer.from(b)
   return bufferA.length === bufferB.length && timingSafeEqual(bufferA, bufferB)

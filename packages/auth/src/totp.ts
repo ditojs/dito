@@ -8,7 +8,7 @@ import {
 import type { Kysely } from 'kysely'
 import { Secret, TOTP } from 'otpauth'
 import type { Context } from 'hono'
-import { authError, authenticationTimeout } from './authentication.ts'
+import { createAuthError, authenticationTimeout } from './authentication.ts'
 import type { Credentials } from './credentials.ts'
 import { getSession } from './sessions.ts'
 import {
@@ -17,20 +17,18 @@ import {
   type UserSource
 } from './users.ts'
 
-// TOTP is stored as a credential of type `totp`, with the secret encrypted by
-// AES-256-GCM, the user's identifier as authenticated data, the last accepted
-// time step, and HMAC hashes of the backup codes. Ten wrong codes in a row lock
-// the codes for 15 minutes. `secret` is a long random string of the app, from
-// which HKDF derives the keys.
+// TOTP as a credential of type `totp`, with its secret encrypted.
 
 export interface CreateTotpOptions {
   // The name that authenticator apps show, such as the app's name.
   issuer: string
+  // A long random string of the app, from which HKDF derives the keys.
   secret: string
 }
 
+// Wrong codes in a row lock the codes for a while:
 const maxCodeFailures = 10
-const codeLockTime = 15 * 60 * 1000
+const codeLockDuration = 15 * 60 * 1000
 const backupCodeCount = 10
 // The lengths of the IV and the authentication tag of AES-256-GCM.
 const ivLength = 12
@@ -40,8 +38,7 @@ export type Totp = ReturnType<typeof createTotp>
 
 export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
   if (!key) throw new Error('Unable to use TOTP without a secret.')
-  // The time step of a valid code, or null. It accepts the previous and the
-  // next code too, for clocks that drift.
+  // Accept the previous and the next code too, for clocks that drift.
   function getCodeStep(secret: string, code: unknown) {
     const totp = new TOTP({ issuer, secret })
     const timestamp = Date.now()
@@ -50,8 +47,7 @@ export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
   }
 
   return {
-    // Creates a secret, with the URI for the QR code of authenticator apps,
-    // and keeps it in the session until the user confirms it with a code.
+    // Keep the secret in the session until the user confirms it with a code.
     createSecret(c: Context, user: User) {
       const { base32: secret } = new Secret()
       getSession(c).value.pendingTotp = {
@@ -63,8 +59,6 @@ export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
       return { uri, secret }
     },
 
-    // Stores the secret of the session once the user confirms it with a code,
-    // along with backup codes, which it returns.
     async confirmSecret(
       c: Context,
       credentials: Credentials,
@@ -72,18 +66,21 @@ export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
       user: User,
       code: unknown
     ) {
-      const session = getSession(c).value
-      const { pendingTotp } = session
+      const { value } = getSession(c)
+      const { pendingTotp } = value
       if (!(pendingTotp?.expires > Date.now())) {
-        throw authError('Missing or expired TOTP confirmation', 400)
+        throw createAuthError('Missing or expired TOTP confirmation', 400)
       }
       const identifier = getUserIdentifier(source, user)
-      const conflict = () => authError('TOTP is already set up', 409)
-      if (await credentials.findFirst(source, user, 'totp')) throw conflict()
+      const createConflictError = () =>
+        createAuthError('TOTP is already set up', 409)
+      if (await credentials.findFirst(source, user, 'totp')) {
+        throw createConflictError()
+      }
       const { secret } = pendingTotp
       const step = getCodeStep(secret, code)
       // Wrong codes don't count, as the user already knows the secret.
-      if (step === null) throw authError('Code is incorrect')
+      if (step === null) throw createAuthError('Code is incorrect')
       const backupCodes = Array.from({ length: backupCodeCount }, () => {
         // 40 random bits, as two groups of five hex digits.
         const code = randomBytes(5).toString('hex')
@@ -102,17 +99,18 @@ export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
           }
         })
       } catch (error) {
-        if (await credentials.findFirst(source, user, 'totp')) throw conflict()
+        if (await credentials.findFirst(source, user, 'totp')) {
+          throw createConflictError()
+        }
         throw error
       }
-      delete session.pendingTotp
+      delete value.pendingTotp
       return backupCodes
     },
 
-    // Verifies a TOTP code, or consumes a backup code. It runs in a
-    // transaction of its own that locks the credential, against concurrent
-    // requests that use the same code or miss a failure. The failures stay
-    // counted when the request fails.
+    // Lock the credential in a transaction of its own, against concurrent
+    // requests that use the same code or miss a failure, and so that failures
+    // stay counted when the request fails.
     async verifyCode(
       credentials: Credentials,
       source: UserSource<any>,
@@ -147,7 +145,7 @@ export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
                 : data.backupCodes,
               // The count starts anew once the lock ends.
               failures: isLocked ? 0 : failures,
-              lockedUntil: isLocked ? Date.now() + codeLockTime : null
+              lockedUntil: isLocked ? Date.now() + codeLockDuration : null
             },
             ...(isTotpCode && { lastUsedAt: new Date() })
           },
@@ -159,10 +157,10 @@ export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
         .db()
         .transaction()
         .execute(verify)
-      // The attempt that uses up the limit reports the lock too, so that
-      // clients don't ask for another code.
-      if (isLocked) throw authError('Too many attempts', 400)
-      if (!isValid) throw authError('Code is incorrect')
+      // Report the lock already on the attempt that uses up the limit, so
+      // clients don't ask for another code:
+      if (isLocked) throw createAuthError('Too many attempts', 400)
+      if (!isValid) throw createAuthError('Code is incorrect')
     }
   }
 }
@@ -171,9 +169,9 @@ function deriveKey(key: string, use: string) {
   return Buffer.from(hkdfSync('sha256', key, 'dito-credentials', use, 32))
 }
 
-// The IV and the authentication tag come before the encrypted value. The
-// user's identifier is authenticated data, so the value can't move to other
-// users.
+// Encrypt with AES-256-GCM, and put the IV and the authentication tag before
+// the value. The user's identifier is authenticated data, so the value can't
+// move to other users.
 function encrypt(key: string, value: string, identifier: string) {
   const iv = randomBytes(ivLength)
   const cipher = createCipheriv('aes-256-gcm', deriveKey(key, 'totp'), iv)

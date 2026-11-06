@@ -16,7 +16,7 @@ const hashRounds = 10
 let dummyHash: Promise<string> | null = null
 
 // The schema of new passwords, unless the user source has its own.
-export const defaultPassword = z
+export const defaultPasswordSchema = z
   .string({ error: 'The password is required.' })
   .min(8, 'The password needs at least 8 characters.')
 
@@ -24,18 +24,17 @@ export function hashPassword(password: string) {
   return bcrypt.hash(password, hashRounds)
 }
 
-// Compares against a dummy hash for unknown users and users without a password,
-// so that the response time doesn't reveal which usernames exist. Passwords
-// that aren't strings are wrong.
+// Compare against a dummy hash for unknown users and users without a password,
+// so that the response time doesn't reveal which usernames exist.
 export async function verifyPassword(
   password: unknown,
   hash: string | null | undefined
 ) {
   dummyHash ??= bcrypt.hash('', hashRounds)
-  const compared = hash || (await dummyHash)
+  const comparedHash = hash || (await dummyHash)
   return (
     isString(password) &&
-    (await bcrypt.compare(password, compared)) &&
+    (await bcrypt.compare(password, comparedHash)) &&
     !!hash
   )
 }
@@ -45,16 +44,14 @@ export interface PasswordWritesOptions<U extends User> {
   source: UserSource<U>
 }
 
-// A mixin for the `post` and `patch :id` of a model controller of the users:
-// the body sets `password`, which it stores as the user's `hash`. A `hash` in
-// the body responds with 400. Users who change their own password or username
-// need confirmed access, as in `post password`, since password resets go to the
-// username. They keep their session, and their other sessions end. The
-// controller writes the hash with the user that the handler beneath returns.
+// The mixin of a users' model controller that stores `password` as `hash`.
 export function definePasswordWrites<U extends User>({
   source
 }: PasswordWritesOptions<U>) {
-  const { password = defaultPassword, usernameProperty = 'username' } = source
+  const {
+    password = defaultPasswordSchema,
+    usernameProperty = 'username'
+  } = source
   const schema = z.object({
     password: password.optional(),
     hash: z
@@ -62,7 +59,8 @@ export function definePasswordWrites<U extends User>({
       .optional()
   })
 
-  // Whether the logged-in user changes their own password or username.
+  // Users need confirmed access to change their own password, and their
+  // username too, as password resets go to it:
   const isOwnSecurityChange = async (
     c: Context,
     id: string,
@@ -90,13 +88,16 @@ export function definePasswordWrites<U extends User>({
     if (params.id && (await isOwnSecurityChange(c, params.id, input.body))) {
       await getSession(c).checkConfirmedAccess(source)
     }
-    const { password: value, ...body } = input.body
-    if (value === undefined) return next()
-    // The handlers beneath get the body without the password.
+    const { password } = result.data
+    if (password === undefined) return next()
+    // The handlers beneath get the body without the password, and the
+    // controller writes the hash with the user that they return.
+    const { password: _, ...body } = input.body
     input.body = body
     const user = (await next()) as U | undefined
     if (user) {
-      user.hash = await hashPassword(result.data.password!)
+      user.hash = await hashPassword(password)
+      // The user keeps this session, and their other sessions end.
       getSession(c).refreshFingerprint(source, user)
     }
     return user

@@ -7,12 +7,12 @@ import {
   HttpError,
   type Actions
 } from '@ditojs/server'
-import { authError, authenticationTimeout } from './authentication.ts'
-import type { Credentials } from './credentials.ts'
+import { createAuthError, authenticationTimeout } from './authentication.ts'
+import type { Credential, Credentials } from './credentials.ts'
 import type { Passkeys } from './passkeys.ts'
 import type { PasswordReset } from './passwordReset.ts'
 import {
-  defaultPassword,
+  defaultPasswordSchema,
   hashPassword,
   verifyPassword
 } from './passwords.ts'
@@ -25,11 +25,7 @@ import {
   type UserSource
 } from './users.ts'
 
-// The login, session and security actions of the admin, which need the
-// middleware of `createSessions()`. Each handler checks the login and the
-// confirmed access it needs itself, so the mixin sets `authorize: true`.
-// It also sets `transacted: false`, as TOTP opens a transaction of its own, so
-// that failed codes stay counted when the request fails. The app adds CSRF
+// The login, session and security actions of the admin. The app adds CSRF
 // protection.
 
 export interface DefineUserActionsOptions<U extends User> {
@@ -55,14 +51,9 @@ const credentialId = z.coerce
   .int()
   .min(1)
   .max(2 ** 31 - 1)
-const required = (name: string) => {
-  const error = `The ${name} is required.`
-  return z.string({ error }).min(1, error)
-}
 
-// Returns the mixin of the actions, which the app puts in the `mixins` of a
-// controller of its own, such as the one at `admins`. A model controller
-// doesn't fit, as it would flush and serialize the answers of the actions.
+// The app puts the mixin in a controller of its own: a model controller would
+// flush and serialize the answers of the actions.
 export function defineUserActions<U extends User>({
   source,
   credentials,
@@ -74,35 +65,22 @@ export function defineUserActions<U extends User>({
   if ((passkeys || totp) && !credentials) {
     throw new Error('Unable to use passkeys or TOTP without credentials.')
   }
-  const { password = defaultPassword } = source
-  // What the admin offers, also before the login:
-  const features = {
-    hasPasskeys: !!passkeys,
-    hasTotp: !!totp,
-    hasPasswordChange: true,
-    hasPasswordReset: !!passwordReset
-  }
+  const { password = defaultPasswordSchema } = source
   const checkAuthentication = async (c: Context) => {
     const user = await getSession(c).getUser(source)
-    if (!user) throw authError('Unauthorized Access')
+    if (!user) throw createAuthError('Unauthorized Access')
     return user
   }
 
   const checkConfirmedAccess = (c: Context) =>
     getSession(c).checkConfirmedAccess(source)
 
-  const hasTotp = async (c: Context, user: U) => (
+  // Users with TOTP need a code whenever the app passes `credentials`. Without
+  // the TOTP feature, they get the error of a wrong password, which doesn't
+  // reveal that the password was right.
+  const hasTotp = async (user: U) => (
     !!credentials && !!(await credentials.findFirst(source, user, 'totp'))
   )
-
-  // Users with TOTP need a code while the app passes `credentials`, even when
-  // it doesn't use TOTP. They then get the error of a wrong password, which
-  // doesn't reveal that the password was right. Without `credentials`, users
-  // log in without a code.
-  const checkTotpService = (message: string) => {
-    if (!totp) throw authError(message)
-    return totp
-  }
 
   const login = async (c: Context, user: U) => {
     const session = getSession(c)
@@ -119,7 +97,7 @@ export function defineUserActions<U extends User>({
     }
   }
 
-  // Returns the user of the passkey that signed the challenge in the session.
+  // Resolve to the user of the passkey that signed the session's challenge.
   const verifyPasskey = async (c: Context, response: any) => {
     const key = response?.id
     const credential = isString(key)
@@ -147,17 +125,17 @@ export function defineUserActions<U extends User>({
       body: anyBody,
       handler: async ({ body: { username, password }, c }) => {
         if (!username || !password) {
-          throw authError('Missing credentials', 400)
+          throw createAuthError('Missing credentials', 400)
         }
         // Usernames that aren't strings are compared like unknown ones.
         const user = isString(username)
           ? await source.findByUsername(c, username)
           : null
         if (!((await verifyPassword(password, user?.hash)) && user)) {
-          throw authError('Password or username is incorrect')
+          throw createAuthError('Password or username is incorrect')
         }
-        if (await hasTotp(c, user)) {
-          checkTotpService('Password or username is incorrect')
+        if (await hasTotp(user)) {
+          if (!totp) throw createAuthError('Password or username is incorrect')
           // The login completes with a code, through `POST login-code`.
           const session = getSession(c)
           session.value.pendingLogin = {
@@ -181,7 +159,13 @@ export function defineUserActions<U extends User>({
       return user ? source.serialize(c, user) : null
     },
 
-    'get features': () => features,
+    // What the admin offers, also before the login:
+    'get features': () => ({
+      hasPasskeys: !!passkeys,
+      hasTotp: !!totp,
+      hasPasswordChange: true,
+      hasPasswordReset: !!passwordReset
+    }),
 
     // Confirms the access of the logged-in user with the password, and the
     // code of users with TOTP, or with a passkey.
@@ -196,14 +180,14 @@ export function defineUserActions<U extends User>({
             getUserIdentifier(source, passkeyUser) !==
             getUserIdentifier(source, user)
           ) {
-            throw authError('Passkey is incorrect')
+            throw createAuthError('Passkey is incorrect')
           }
         } else if (!(await verifyPassword(password, user.hash))) {
-          throw authError('Password is incorrect')
-        } else if (await hasTotp(c, user)) {
-          const feature = checkTotpService('Password is incorrect')
+          throw createAuthError('Password is incorrect')
+        } else if (await hasTotp(user)) {
+          if (!totp) throw createAuthError('Password is incorrect')
           if (!code) return { codeRequired: true }
-          await feature.verifyCode(credentials!, source, user, code)
+          await totp.verifyCode(credentials!, source, user, code)
         }
         getSession(c).confirmAccess(source, user, reconfirmAfter)
       }
@@ -221,7 +205,7 @@ export function defineUserActions<U extends User>({
       // Responds the same way whether the user exists or not, so that the
       // response doesn't reveal which usernames exist.
       'post password-reset': defineAction({
-        body: z.object({ username: required('username') }),
+        body: z.object({ username: createRequiredString('username') }),
         handler: async ({ body: { username }, c }) => {
           const user = await source.findByUsername(c, username)
           if (user) passwordReset.sendLink(c, source, user)
@@ -230,10 +214,10 @@ export function defineUserActions<U extends User>({
 
       // The new hash ends the link and the user's other sessions.
       'post password-reset-confirm': defineAction({
-        body: z.object({ token: required('token'), password }),
+        body: z.object({ token: createRequiredString('token'), password }),
         handler: async ({ body, c }) => {
           const user = await passwordReset.findUser(c, source, body.token)
-          if (!user) throw authError('Invalid or expired token', 400)
+          if (!user) throw createAuthError('Invalid or expired token', 400)
           await setPassword(c, user, body.password)
         }
       })
@@ -251,12 +235,7 @@ export function defineUserActions<U extends User>({
       'get passkeys': async ({ c }) => {
         const user = await checkAuthentication(c)
         const list = await credentials!.list(source, user, 'passkey')
-        return list.map(({ id, name, createdAt, lastUsedAt }) => ({
-          id,
-          name,
-          createdAt,
-          lastUsedAt
-        }))
+        return list.map(toPasskey)
       },
 
       'post passkey-options': async ({ c }) => {
@@ -272,14 +251,14 @@ export function defineUserActions<U extends User>({
         body: anyBody,
         handler: async ({ body, c }) => {
           const user = await checkConfirmedAccess(c)
-          const { id, name, createdAt } = await passkeys.verifyRegistration(
+          const credential = await passkeys.verifyRegistration(
             c,
             credentials!,
             source,
             user,
             body
           )
-          return { id, name, createdAt, lastUsedAt: null }
+          return toPasskey(credential)
         }
       }),
 
@@ -304,16 +283,11 @@ export function defineUserActions<U extends User>({
           if (!(
             parsed?.name === source.name && pendingLogin!.expires > Date.now()
           )) {
-            throw authError('Missing or expired login', 400)
+            throw createAuthError('Missing or expired login', 400)
           }
           const user = await source.findById(c, parsed.id)
-          if (!user) throw authError('Code is incorrect')
-          await checkTotpService('Code is incorrect').verifyCode(
-            credentials!,
-            source,
-            user,
-            code
-          )
+          if (!user) throw createAuthError('Code is incorrect')
+          await totp.verifyCode(credentials!, source, user, code)
           delete session.value.pendingLogin
           return login(c, user)
         }
@@ -330,8 +304,8 @@ export function defineUserActions<U extends User>({
 
       'post totp': async ({ c }) => {
         const user = await checkConfirmedAccess(c)
-        if (await hasTotp(c, user)) {
-          throw authError('TOTP is already set up', 409)
+        if (await hasTotp(user)) {
+          throw createAuthError('TOTP is already set up', 409)
         }
         return totp.createSecret(c, user)
       },
@@ -359,5 +333,17 @@ export function defineUserActions<U extends User>({
     })
   }
 
+  // Each handler checks the login and confirmed access that it needs, and
+  // TOTP opens a transaction of its own, so failed codes stay counted when the
+  // request fails:
   return defineMixin({ authorize: true, transacted: false, actions })
+}
+
+function createRequiredString(name: string) {
+  const error = `The ${name} is required.`
+  return z.string({ error }).min(1, error)
+}
+
+function toPasskey({ id, name, createdAt, lastUsedAt }: Credential) {
+  return { id, name, createdAt, lastUsedAt }
 }

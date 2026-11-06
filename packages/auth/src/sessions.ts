@@ -3,7 +3,7 @@ import type { Context, MiddlewareHandler } from 'hono'
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
 import type { Kysely } from 'kysely'
 import { isEmpty, parseDuration } from '@ditojs/utils'
-import { authError } from './authentication.ts'
+import { createAuthError } from './authentication.ts'
 import {
   getUserIdentifier,
   parseUserIdentifier,
@@ -11,11 +11,7 @@ import {
   type UserSource
 } from './users.ts'
 
-// Sessions in the `session` table: the signed cookie holds the id, and the row
-// holds `value` as JSON and `expires_at`. The middleware loads the session into
-// `c.var.session` before the action, and saves it after the action if it
-// changed. In the value, `passport` names the user and the fingerprint of their
-// password, and `confirmedAccess` the end of the confirmed access.
+// Sessions in the `session` table, with their id in a signed cookie.
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -42,15 +38,16 @@ interface SessionOptions extends CreateSessionsOptions {
   maxAge: number
 }
 
-// The value of a session. The app may add its own keys.
+// The value of a session, stored as JSON. The app may add its own keys.
 interface SessionValue {
   [key: string]: any
+  // The user and the fingerprint of their password.
   passport?: { user: string; passwordFingerprint: string | null }
   confirmedAccess?: { user: string; expires: number }
   pendingLogin?: { user: string; expires: number }
 }
 
-interface Loaded {
+interface LoadedSession {
   id: string | null
   value: SessionValue
 }
@@ -59,26 +56,30 @@ interface Loaded {
 export class Session {
   value: SessionValue
   #c: Context
-  #loaded: Loaded
+  #id: string | null
   #options: SessionOptions
   // The value as loaded, to tell whether it changed.
-  #json: string
-  #regenerate = false
-  #destroy = false
-  #fingerprint: string | null = null
-  #users = new Map<string, Promise<User | null>>()
+  #loadedJson: string
+  #regenerating = false
+  #destroying = false
+  #refreshedFingerprint: string | null = null
+  #usersBySource = new Map<string, Promise<User | null>>()
 
-  constructor(c: Context, loaded: Loaded, options: SessionOptions) {
-    this.value = loaded.value
+  constructor(
+    c: Context,
+    { id, value }: LoadedSession,
+    options: SessionOptions
+  ) {
+    this.value = value
     this.#c = c
-    this.#loaded = loaded
+    this.#id = id
     this.#options = options
-    this.#json = JSON.stringify(loaded.value)
+    this.#loadedJson = JSON.stringify(value)
   }
 
-  // Gives the session a new id when it's saved, against session fixation.
+  // Give the session a new id when it's saved, against session fixation.
   regenerate() {
-    this.#regenerate = true
+    this.#regenerating = true
   }
 
   login<U extends User>(source: UserSource<U>, user: U) {
@@ -86,24 +87,24 @@ export class Session {
       user: getUserIdentifier(source, user),
       passwordFingerprint: getPasswordFingerprint(user.hash)
     }
-    this.#regenerate = true
-    this.#destroy = false
-    this.#users = new Map([[source.name, Promise.resolve(user)]])
+    this.#regenerating = true
+    this.#destroying = false
+    this.#usersBySource = new Map([[source.name, Promise.resolve(user)]])
   }
 
-  // Clears the whole session, not just the user.
+  // Clear the whole session, not just the user.
   logout() {
     this.value = {}
-    this.#destroy = true
-    this.#users = new Map()
+    this.#destroying = true
+    this.#usersBySource = new Map()
   }
 
   // The user of the session if it belongs to `source`, once per request.
   getUser<U extends User>(source: UserSource<U>): Promise<U | null> {
-    let user = this.#users.get(source.name)
+    let user = this.#usersBySource.get(source.name)
     if (!user) {
       user = this.#findUser(source)
-      this.#users.set(source.name, user)
+      this.#usersBySource.set(source.name, user)
     }
     return user as Promise<U | null>
   }
@@ -127,12 +128,11 @@ export class Session {
     return null
   }
 
-  // Keeps the session of the request after the user changed the password,
-  // while the user's other sessions end. It applies when the session is saved
-  // after a request without an error, as a failed write keeps the old hash.
+  // Keep the session of the request after the user changed the password,
+  // while the user's other sessions end.
   refreshFingerprint(source: UserSource<any>, user: User) {
     if (this.value.passport?.user === getUserIdentifier(source, user)) {
-      this.#fingerprint = getPasswordFingerprint(user.hash)
+      this.#refreshedFingerprint = getPasswordFingerprint(user.hash)
     }
   }
 
@@ -143,62 +143,63 @@ export class Session {
     }
   }
 
-  // Resolves to the user. Without a login, it throws 401. Without confirmed
-  // access, it throws 403 with `confirmationRequired`, which makes the admin
+  // Resolve to the user, or throw 401 without a login, and 403 with
+  // `confirmationRequired` without confirmed access, which makes the admin
   // confirm the access and send the request again.
   async checkConfirmedAccess<U extends User>(source: UserSource<U>) {
     const user = await this.getUser(source)
-    if (!user) throw authError('Unauthorized Access')
+    if (!user) throw createAuthError('Unauthorized Access')
     const { confirmedAccess } = this.value
     if (!(
       confirmedAccess?.user === getUserIdentifier(source, user) &&
       confirmedAccess.expires > Date.now()
     )) {
-      throw authError('Confirmation required', 403, {
+      throw createAuthError('Confirmation required', 403, {
         confirmationRequired: true
       })
     }
     return user
   }
 
-  // Saves the session and sets the cookie, if anything changed. A session
-  // that a parallel request ended stays ended, and its cookie stays as it is,
-  // as a parallel login may have replaced it.
+  // Save the session and set the cookie, if anything changed.
   async commit() {
     const { adapter, secrets, cookieName, maxAge } = this.#options
-    const db = adapter.getKysely()
+    const database = adapter.getKysely()
     const c = this.#c
     const secure = new URL(c.req.url).protocol === 'https:'
-    let { id } = this.#loaded
-    if (this.#fingerprint && this.value.passport && !c.error) {
-      this.value.passport.passwordFingerprint = this.#fingerprint
+    let id = this.#id
+    // A failed write keeps the old hash, and so the old fingerprint:
+    if (this.#refreshedFingerprint && this.value.passport && !c.error) {
+      this.value.passport.passwordFingerprint = this.#refreshedFingerprint
     }
-    if (this.#destroy) {
-      if (id) await destroy(db, id)
+    if (this.#destroying) {
+      if (id) await deleteSession(database, id)
       deleteCookie(c, cookieName, { secure })
       return
     }
-    if (this.#regenerate && id) {
-      await destroy(db, id)
+    if (this.#regenerating && id) {
+      await deleteSession(database, id)
       id = null
     }
-    const isChanged = (
-      JSON.stringify(this.value) !== this.#json ||
-      this.#regenerate
+    const hasChanged = (
+      JSON.stringify(this.value) !== this.#loadedJson ||
+      this.#regenerating
     )
-    if (!isChanged || (!id && isEmpty(this.value))) return
+    if (!hasChanged || (!id && isEmpty(this.value))) return
     const expires = new Date(Date.now() + maxAge)
     const values = { value: JSON.stringify(this.value), expires_at: expires }
     if (id) {
-      const { numUpdatedRows } = await db
+      const { numUpdatedRows } = await database
         .updateTable('session')
         .set(values)
         .where('id', '=', id)
         .executeTakeFirst()
+      // A session that a parallel request ended stays ended, and its cookie
+      // as it is, as a parallel login may have replaced it:
       if (numUpdatedRows === 0n) return
     } else {
       id = randomUUID()
-      await db
+      await database
         .insertInto('session')
         .values({ id, ...values })
         .execute()
@@ -241,7 +242,7 @@ export function createSessions(options: CreateSessionsOptions) {
   }
 
   // The session of the request's cookie, if it hasn't expired.
-  async function load(c: Context): Promise<Loaded> {
+  async function load(c: Context): Promise<LoadedSession> {
     const id = await readSignedCookie(c, cookieName)
     const row = id
       ? await adapter
@@ -257,15 +258,15 @@ export function createSessions(options: CreateSessionsOptions) {
       : { id: null, value: {} }
   }
 
-  // The Hono middleware, which runs before the API, as `app.use()`. It saves
-  // the session even when the action throws, so used challenges and codes
-  // stay used.
+  // The Hono middleware, which runs before the API, as `app.use()`.
   const middleware: MiddlewareHandler = async (c, next) => {
     const session = new Session(c, await load(c), sessionOptions)
     c.set('session', session)
     try {
       await next()
     } finally {
+      // Save also when the action throws, so used challenges and codes stay
+      // used:
       await session.commit()
     }
   }
@@ -289,8 +290,8 @@ export async function getSessionUser(c: Context, source: UserSource<any>) {
   return user ? { id: user.id, roles: user.roles ?? [] } : null
 }
 
-function destroy(db: Kysely<any>, id: string) {
-  return db.deleteFrom('session').where('id', '=', id).execute()
+function deleteSession(database: Kysely<any>, id: string) {
+  return database.deleteFrom('session').where('id', '=', id).execute()
 }
 
 // Sessions keep a hash of the password hash, so a password change ends the

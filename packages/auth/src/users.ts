@@ -13,21 +13,19 @@ export interface User {
   lastLogin?: Date | string | null
 }
 
-// The users of one kind, such as admins or customers.
-// `createEntityUserSource()` of `@ditojs/mikro` returns one for an entity, or
-// the app implements it.
-// `name` names the users in sessions and credentials, as `'<name>-<id>'`, such
-// as `Admin-1`.
+// The users of one kind, from `createEntityUserSource()` of `@ditojs/mikro` or
+// implemented by the app.
 export interface UserSource<U extends User = User> {
+  // The users' prefix in sessions and credentials, as in `'<name>-<id>'`.
   name: string
-  // Resolves to null for ids it can't read, such as those of tampered tokens.
+  // Resolve to null for ids that it can't read, as from tampered tokens.
   findById(c: Context, id: string): Promise<U | null | undefined>
   findByUsername(
     c: Context,
     username: string
   ): Promise<U | null | undefined>
-  // Stores the values and sets them on `user`: the new hash, or the time of
-  // a login.
+  // Store the values and set them on `user`: the new hash, or the time of a
+  // login.
   patch(
     c: Context,
     user: U,
@@ -42,13 +40,13 @@ export interface UserSource<U extends User = User> {
   password?: z.ZodType<string>
 }
 
-// Sessions and credentials name users by their source and id, such as
-// `Admin-1`, so several sources can share them.
+// Sessions and credentials name users by their source and id, as `Admin-1`,
+// so several sources can share them.
 export function getUserIdentifier(source: UserSource<any>, user: User) {
   return `${source.name}-${user.id}`
 }
 
-// Splits at the first hyphen only, as ids may hold hyphens, such as UUIDs.
+// Split at the first hyphen only, as ids may hold hyphens, as UUIDs do.
 export function parseUserIdentifier(identifier: unknown) {
   const match = String(identifier).match(/^([^-]+)-(.+)$/)
   return match ? { name: match[1], id: match[2] } : null

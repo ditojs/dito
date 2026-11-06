@@ -6,17 +6,15 @@ import {
 } from '@simplewebauthn/server'
 import aaguids from 'aaguids'
 import type { Context } from 'hono'
-import { authError, authenticationTimeout } from './authentication.ts'
+import { createAuthError, authenticationTimeout } from './authentication.ts'
 import type { Credential, Credentials } from './credentials.ts'
 import { getSession } from './sessions.ts'
 import type { User, UserSource } from './users.ts'
 
-// Passkeys are discoverable WebAuthn credentials of type `passkey`, with the
-// credential id as `key`, named after their provider. The challenges are kept
-// in the session of the request, and each can be used once.
+// Passkeys as discoverable WebAuthn credentials of type `passkey`.
 
 export interface CreatePasskeysOptions {
-  // The name that the browser shows, such as the app's name.
+  // The name that the browser shows, as the app's name.
   rpName: string
   // The domain that the passkeys belong to. By default, the request's host.
   domain?: string
@@ -51,9 +49,7 @@ export function createPasskeys({
       return options
     },
 
-    // Verifies the response of `startAuthentication()` against the challenge
-    // in the session, and updates the counter of the passkey. The challenge
-    // is consumed also without a credential.
+    // Consume the challenge also without a credential.
     async verifyAuthentication(
       c: Context,
       credentials: Credentials,
@@ -61,7 +57,7 @@ export function createPasskeys({
       response: any
     ) {
       const challenge = consumeChallenge(c, 'authentication')
-      if (!credential) throw authError('Passkey is incorrect')
+      if (!credential) throw createAuthError('Passkey is incorrect')
       const { verified, authenticationInfo } = await Promise.try(() =>
         verifyAuthenticationResponse({
           response,
@@ -75,7 +71,7 @@ export function createPasskeys({
           }
         })
       ).catch(() => ({ verified: false, authenticationInfo: null }))
-      if (!verified) throw authError('Passkey is incorrect')
+      if (!verified) throw createAuthError('Passkey is incorrect')
       await credentials.update(credential.id, {
         data: { ...credential.data, counter: authenticationInfo!.newCounter },
         lastUsedAt: new Date()
@@ -105,8 +101,6 @@ export function createPasskeys({
       return options
     },
 
-    // Verifies the response of `startRegistration()` against the challenge in
-    // the session, and stores its passkey as a credential of the user.
     async verifyRegistration(
       c: Context,
       credentials: Credentials,
@@ -123,15 +117,16 @@ export function createPasskeys({
         })
       ).catch(error => {
         // Failed verifications are bad requests, not server errors.
-        throw authError(error.message, 400)
+        throw createAuthError(error.message, 400)
       })
       if (!verified || !registrationInfo) {
-        throw authError('Passkey is incorrect', 400)
+        throw createAuthError('Passkey is incorrect', 400)
       }
       const { credential, aaguid } = registrationInfo
       return credentials.insert(source, user, 'passkey', {
         key: credential.id,
-        // Anonymous providers send an all-zero AAGUID, which isn't listed.
+        // Name the passkey after its provider. Anonymous providers send an
+        // all-zero AAGUID, which isn't listed.
         name: aaguids[aaguid] ?? 'Passkey',
         data: {
           publicKey: Buffer.from(credential.publicKey).toString('base64url'),
@@ -143,8 +138,9 @@ export function createPasskeys({
   }
 }
 
-// Registrations and authentications keep their challenges apart, so
+// Keep the challenges of registrations and authentications apart, so that
 // confirming the access with a passkey doesn't end a pending registration.
+// Each challenge can be used once.
 function storeChallenge(
   c: Context,
   type: string,
@@ -157,10 +153,10 @@ function storeChallenge(
 }
 
 function consumeChallenge(c: Context, type: string) {
-  const session = getSession(c).value
+  const { value } = getSession(c)
   const key = `${type}Challenge`
-  const { challenge, expires } = session[key] ?? {}
-  delete session[key]
+  const { challenge, expires } = value[key] ?? {}
+  delete value[key]
   if (challenge && expires > Date.now()) return challenge as string
-  throw authError('Missing or expired passkey challenge', 400)
+  throw createAuthError('Missing or expired passkey challenge', 400)
 }

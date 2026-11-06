@@ -2,18 +2,19 @@ import type { Context } from 'hono'
 import type { Kysely } from 'kysely'
 import type { User, UserSource } from './users.ts'
 
-// The passkeys and TOTP secrets of users in the `credential` table, with `data`
-// as JSON. All sources share the table, so rows name their users by
-// `user_model` and `user_id`, a string, without foreign keys. A passkey's `key`
-// is its credential id, unique per source.
+// The passkeys and TOTP secrets of users in the `credential` table.
 
+// All sources share the table, so rows name their users by `user_model` and
+// `user_id`, a string, without foreign keys.
 export interface Credential {
   id: number
   type: string
   userModel: string
   userId: string
+  // A passkey's credential id, unique per source.
   key: string | null
   name: string | null
+  // Stored as JSON.
   data: any
   createdAt: Date | null
   lastUsedAt: Date | null
@@ -30,7 +31,7 @@ export interface CreateCredentialsOptions {
 
 export function createCredentials({ adapter }: CreateCredentialsOptions) {
   const db = () => adapter.getKysely()
-  const query = (
+  const selectCredentials = (
     database: Kysely<any>,
     source: UserSource<any>,
     type: string
@@ -49,24 +50,24 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       user: User,
       type: string
     ): Promise<Credential[]> {
-      const rows = await query(db(), source, type)
+      const rows = await selectCredentials(db(), source, type)
         .where('user_id', '=', String(user.id))
         .orderBy('id')
         .execute()
       return rows.map(toCredential)
     },
 
-    // With `trx`, it locks the row in that transaction.
+    // Lock the row in the transaction `trx`, if given.
     async findFirst(
       source: UserSource<any>,
       user: User,
       type: string,
       trx?: Kysely<any>
     ): Promise<Credential | null> {
-      const row = await query(trx ?? db(), source, type)
+      const row = await selectCredentials(trx ?? db(), source, type)
         .where('user_id', '=', String(user.id))
         .orderBy('id')
-        .$if(!!trx, qb => qb.forUpdate())
+        .$if(!!trx, query => query.forUpdate())
         .executeTakeFirst()
       return row ? toCredential(row) : null
     },
@@ -76,7 +77,7 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       type: string,
       key: string
     ): Promise<Credential | null> {
-      const row = await query(db(), source, type)
+      const row = await selectCredentials(db(), source, type)
         .where('key', '=', key)
         .executeTakeFirst()
       return row ? toCredential(row) : null
@@ -123,8 +124,8 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
         .execute()
     },
 
-    // Deletes the user's credentials of `type`, or only the one with `id`.
-    // Resolves to the number of deleted rows.
+    // Delete the user's credentials of `type`, or only the one with `id`, and
+    // resolve to the number of deleted rows.
     async delete(
       source: UserSource<any>,
       user: User,
@@ -136,14 +137,13 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
         .where('user_model', '=', source.name)
         .where('user_id', '=', String(user.id))
         .where('type', '=', type)
-        .$if(id !== undefined, qb => qb.where('id', '=', id!))
+        .$if(id !== undefined, query => query.where('id', '=', id!))
         .executeTakeFirst()
       return Number(result.numDeletedRows)
     },
 
-    // Deletes the credentials of the users with `ids`. The app calls it when it
-    // deletes users, as no foreign keys do. With the request's `c`, it runs in
-    // the request's transaction.
+    // The app calls it when it deletes users, as no foreign keys do. With the
+    // request's `c`, it runs in the request's transaction.
     async deleteUsers(
       source: UserSource<any>,
       ids: unknown[],

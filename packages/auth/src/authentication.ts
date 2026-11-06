@@ -5,7 +5,7 @@ import { HttpError } from '@ditojs/server'
 export const authenticationTimeout = 5 * 60 * 1000
 
 // The errors of the auth actions, whose message the admin shows.
-export function authError(
+export function createAuthError(
   message: string,
   status = 401,
   data: Record<string, unknown> = {}
