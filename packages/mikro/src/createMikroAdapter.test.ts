@@ -25,7 +25,9 @@ describe('the transaction helpers', () => {
   it('reads outside of a transaction without the `em` of a request', () => {
     const fork = { getKysely: () => 'fork' }
     const adapter = createMikroAdapter(
-      new MikroORM(defineMikroConfig({ dbName: 'dito_mikro_types' }))
+      new MikroORM(
+        defineMikroConfig({ dbName: 'dito_mikro_types', entities: [Item] })
+      )
     )
     const { getKysely } = adapter
     const c = { var: { em: fork } } as any
