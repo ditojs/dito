@@ -1,12 +1,7 @@
 # Auth
 
 ```js
-import {
-  createUsers,
-  useSession,
-  hashPassword,
-  verifyPassword
-} from '@ditojs/auth'
+import { createUsers, useSession } from '@ditojs/auth'
 ```
 
 `@ditojs/auth` keeps sessions in signed cookies. It also has the actions of the
@@ -77,7 +72,9 @@ users throw when they load users of an entity that doesn't.
 | `findById(id)`                           | Resolves to the user with the id, a string, or `null`, also for an id that doesn't fit the primary key.                                                                                                           |
 | `findByUsername(username)`               | Resolves to the user with the username, or `null`.                                                                                                                                                                |
 | `getUsername(user)`                      | Returns the value of `usernameProperty` of the user.                                                                                                                                                              |
-| `patch(user, values)`                    | Writes the values at once, and sets them on the user. It doesn't flush the request's other changes.                                                                                                               |
+| `verifyLogin(username, password)`        | Resolves to the user, or `null` for a wrong username or password. Unknown users take as long as known ones, so the response time doesn't reveal which usernames exist.                                            |
+| `login(user)`                            | Logs the stored user in to the session of the running request, and sets `lastLogin`, which ends password reset links. It throws if that session belongs to other users.                                           |
+| `setPassword(user, password)`            | Sets `hash` on the user, also on a new user that isn't stored yet. The caller flushes. Users in the session of the request stay logged in, if the request succeeds, and their other sessions end.                 |
 | `serialize(user)`                        | Returns what `serialize` and `computed` describe.                                                                                                                                                                 |
 | `middleware`                             | The session middleware, see [The middleware](#the-middleware).                                                                                                                                                    |
 | `getUser({ c })`                         | Resolves to the session's user, an entity, or `null`. `createApi()` and `createAdmin()` call it. Handlers read the same entity as `user`.                                                                         |
@@ -90,8 +87,9 @@ users throw when they load users of an entity that doesn't.
 | `password`                               | The option of the same name.                                                                                                                                                                                      |
 
 The finding and writing methods use the entity manager of the running request,
-else a fork of `orm.em`. The cookie methods use the running request, through
-Hono's `contextStorage()`, as [`useSession()`](#usesession) does.
+else a fork of `orm.em`. `login()` and the cookie methods use the running
+request, through Hono's `contextStorage()`, as [`useSession()`](#usesession)
+does. `setPassword()` also works outside of requests, such as in seeds.
 
 ### The middleware
 
@@ -154,7 +152,7 @@ handler's context, or `c.var.session`. The package exports the type `Session`.
 | Member                     | Description                                                                                                                                                                 |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `value`                    | The session's data, which handlers change in place.                                                                                                                         |
-| `login(user)`              | Logs the user in, with the fingerprint of their password.                                                                                                                   |
+| `login(user)`              | Logs the user in, with the fingerprint of their password. It doesn't record the login, as for an admin who acts as another user. Logins use `login()` of the users.         |
 | `logout()`                 | Clears the session.                                                                                                                                                         |
 | `getUser()`                | Returns the user of the session, an entity, else `null`. It loads the user once per request. It returns `null` if the user changed the password since the login.            |
 | `refreshFingerprint(user)` | Keeps the session valid after the user changed the password, if the request succeeds. The user's other sessions end.                                                        |
@@ -195,7 +193,7 @@ app lists it in the `mixins` of a controller of its own. A model controller
 doesn't fit, as it would flush and serialize the responses of the actions.
 
 Other users, such as a site's members, can also log in through the app's own
-actions. These call [`Session`](#session) and [`verifyPassword()`](#passwords).
+actions. These call `verifyLogin()` and `login()` of [the users](#the-users).
 
 The actions:
 
@@ -347,15 +345,8 @@ an entity:
 - `hash` is the bcrypt hash, or `null` for users without a password. Sessions
   keep its fingerprint, and end when it changes.
 - `roles` go to `authorize`. Without a value, the user has no roles.
-- A login sets `lastLogin`, which ends password reset links. An entity without
-  this property doesn't record logins.
+- `users.login()` and the actions set `lastLogin`, which ends password reset
+  links. An entity without this property doesn't record logins.
 
 The username is the value of `usernameProperty`, which auth reads with
 `getUsername()`.
-
-## Passwords
-
-| Function                         | Description                                                                                                                      |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `hashPassword(password)`         | Returns the bcrypt hash.                                                                                                         |
-| `verifyPassword(password, hash)` | Returns whether the password matches the hash. Without a hash, it compares against a dummy hash, so that it takes the same time. |

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { verifyPassword } from '@ditojs/auth'
+import { verifyPassword } from '@ditojs/auth/internal'
 import { Credential } from '../../../utils/entities.js'
 import { test, expect, getLocalUrl, db } from '../fixtures.js'
 import { User } from '../models/User.js'

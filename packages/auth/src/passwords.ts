@@ -9,7 +9,7 @@ import {
 } from '@ditojs/server'
 import { bodyValidation } from '@ditojs/server/internal'
 import type { Credentials } from './credentials.ts'
-import { getSession } from './sessions.ts'
+import { findSession, getSession } from './sessions.ts'
 import type { AuthUser, UserSource } from './users.ts'
 
 // The cost of the hashes, including the dummy one.
@@ -33,6 +33,49 @@ export async function verifyPassword(
     (await bcrypt.compare(password, comparedHash)) &&
     !!hash
   )
+}
+
+// Resolve to the user with the username and password, or to null. Usernames
+// that aren't strings are compared like unknown ones.
+export async function verifyLogin<U extends AuthUser>(
+  source: UserSource<U>,
+  username: unknown,
+  password: unknown
+) {
+  const user = isString(username)
+    ? await source.findByUsername(username)
+    : null
+  return (await verifyPassword(password, user?.hash)) ? user : null
+}
+
+// Log in a stored user. The time of the login ends password reset links.
+export async function login<U extends AuthUser>(
+  source: UserSource<U>,
+  user: U
+) {
+  const session = findSession()
+  if (session?.source.name !== source.name) {
+    throw new Error(`Unable to log in '${source.name}' without its session.`)
+  }
+  if ('lastLogin' in user) {
+    await source.patch(user, { lastLogin: new Date() })
+  }
+  session.login(user)
+}
+
+// Set the hash on the user, which may not be stored yet. The caller flushes.
+// The user keeps the session of the request, and their other sessions end. An
+// admin's session may write users of another source.
+export async function setPassword<U extends AuthUser>(
+  source: UserSource<U>,
+  user: U,
+  password: string
+) {
+  user.hash = await hashPassword(password)
+  const session = findSession()
+  if (session?.source.name === source.name) {
+    session.refreshFingerprint(user)
+  }
 }
 
 export interface DefineUserWritesOptions<U extends AuthUser> {
@@ -87,15 +130,7 @@ export function defineUserWrites<U extends AuthUser>({
     const { password: _, ...body } = input.body
     input.body = body
     const user = (await next()) as U | undefined
-    if (user) {
-      user.hash = await hashPassword(password)
-      // The user keeps this session, and their other sessions end. An admin's
-      // session may write users of another source.
-      const session = getSession(c)
-      if (session.source.name === source.name) {
-        session.refreshFingerprint(user)
-      }
-    }
+    if (user) await setPassword(source, user, password)
     return user
   }
 

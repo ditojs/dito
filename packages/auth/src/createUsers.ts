@@ -4,7 +4,12 @@ import {
   type CreateEntityUserSourceOptions
 } from '@ditojs/mikro/internal'
 import { createCredentials } from './credentials.ts'
-import { defineUserWrites } from './passwords.ts'
+import {
+  defineUserWrites,
+  login,
+  setPassword,
+  verifyLogin
+} from './passwords.ts'
 import { createSessions, type CreateSessionsOptions } from './sessions.ts'
 import {
   defineUserActions,
@@ -33,8 +38,15 @@ export function createUsers<U extends AuthUser>(
   // All model controllers of the entity hash passwords and protect their users.
   adapter.wrapEntity(entity, defineUserWrites<U>({ source, credentials }))
 
+  const { patch: _, ...publicSource } = source
+
   return {
-    ...source,
+    ...publicSource,
+    verifyLogin: (username: unknown, password: unknown) =>
+      verifyLogin(source, username, password),
+    login: (user: U) => login(source, user),
+    setPassword: (user: U, password: string) =>
+      setPassword(source, user, password),
     middleware: sessions.middleware,
     getUser: sessions.getUser,
     readSignedCookie: sessions.readSignedCookie,

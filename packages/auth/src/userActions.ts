@@ -14,7 +14,7 @@ import {
   createPasswordReset,
   type PasswordResetOptions
 } from './passwordReset.ts'
-import { hashPassword, verifyPassword } from './passwords.ts'
+import { login, setPassword, verifyLogin, verifyPassword } from './passwords.ts'
 import { getSession } from './sessions.ts'
 import { createTotp, type TotpOptions } from './totp.ts'
 import {
@@ -92,13 +92,10 @@ export function defineUserActions<U extends AuthUser>({
   const hasTotp = async (user: U) =>
     !!(await credentials.findFirst(user, 'totp'))
 
-  const login = async (c: Context, user: U) => {
+  const completeLogin = async (c: Context, user: U) => {
+    await login(source, user)
     const session = getSession(c)
-    session.login(user)
     try {
-      if ('lastLogin' in user) {
-        await source.patch(user, { lastLogin: new Date() })
-      }
       session.confirmAccess(user, reconfirmAfter)
       await afterLogin?.({ c, user })
       return { user: await source.serialize(user) }
@@ -122,9 +119,10 @@ export function defineUserActions<U extends AuthUser>({
     return user!
   }
 
-  const setPassword = async (c: Context, user: U, password: string) => {
-    await source.patch(user, { hash: await hashPassword(password) })
-    getSession(c).refreshFingerprint(user)
+  // The controller of these actions doesn't flush, so write the hash at once:
+  const changePassword = async (user: U, password: string) => {
+    await setPassword(source, user, password)
+    await source.patch(user, { hash: user.hash })
   }
 
   const actions: Actions = {
@@ -134,13 +132,8 @@ export function defineUserActions<U extends AuthUser>({
         if (!username || !password) {
           throw createAuthError('Missing credentials', 400)
         }
-        // Usernames that aren't strings are compared like unknown ones.
-        const user = isString(username)
-          ? await source.findByUsername(username)
-          : null
-        if (!((await verifyPassword(password, user?.hash)) && user)) {
-          throw createAuthError('Password or username is incorrect')
-        }
+        const user = await verifyLogin(source, username, password)
+        if (!user) throw createAuthError('Password or username is incorrect')
         if (await hasTotp(user)) {
           if (!totp) throw createAuthError('Password or username is incorrect')
           // The login completes with a code, through `POST login-code`.
@@ -152,7 +145,7 @@ export function defineUserActions<U extends AuthUser>({
           session.regenerate()
           return { codeRequired: true }
         }
-        return login(c, user)
+        return completeLogin(c, user)
       }
     }),
 
@@ -204,7 +197,7 @@ export function defineUserActions<U extends AuthUser>({
       body: z.object({ password }),
       handler: async ({ body, c }) => {
         const user = await checkConfirmedAccess(c)
-        await setPassword(c, user, body.password)
+        await changePassword(user, body.password)
       }
     }),
 
@@ -222,10 +215,10 @@ export function defineUserActions<U extends AuthUser>({
       // The new hash ends the link and the user's other sessions.
       'post password-reset-confirm': defineAction({
         body: z.object({ token: createRequiredString('token'), password }),
-        handler: async ({ body, c }) => {
+        handler: async ({ body }) => {
           const user = await passwordReset.findUser(body.token)
           if (!user) throw createAuthError('Invalid or expired token', 400)
-          await setPassword(c, user, body.password)
+          await changePassword(user, body.password)
         }
       })
     }),
@@ -236,7 +229,8 @@ export function defineUserActions<U extends AuthUser>({
 
       'post passkey-login': defineAction({
         body: anyBody,
-        handler: async ({ body, c }) => login(c, await verifyPasskey(c, body))
+        handler: async ({ body, c }) =>
+          completeLogin(c, await verifyPasskey(c, body))
       }),
 
       'get passkeys': async ({ c }) => {
@@ -290,7 +284,7 @@ export function defineUserActions<U extends AuthUser>({
           if (!user) throw createAuthError('Code is incorrect')
           await totp.verifyCode(user, code)
           delete session.value.pendingLogin
-          return login(c, user)
+          return completeLogin(c, user)
         }
       }),
 

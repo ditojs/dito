@@ -628,6 +628,9 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
   and `totp: { secret }`. Its `get capabilities` tells the admin what to offer. Other users, such as a
   site's members, log in through the app's own actions, see
   [Other users](guide/server/auth.md#other-users).
+- The app's own actions log users in with `users.verifyLogin()` and
+  `users.login()`, and set passwords with `users.setPassword()`, see
+  [The users](api/server/auth.md#the-users).
 - `post login` and `post password-reset` name the user as `username` in the
   body, whatever the property is.
 - `get session` becomes `get self`.

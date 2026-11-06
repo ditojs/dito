@@ -1,8 +1,14 @@
+import bcrypt from 'bcryptjs'
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
 import { defineMixin, HttpError, type Handler } from '@ditojs/server'
 import { createCredentials } from './credentials.ts'
-import { defineUserWrites, verifyPassword } from './passwords.ts'
+import {
+  defineUserWrites,
+  login,
+  verifyLogin,
+  verifyPassword
+} from './passwords.ts'
 import type { DefineUserActionsOptions } from './userActions.ts'
 import type { UserSource } from './users.ts'
 import {
@@ -232,5 +238,49 @@ describe('defineUserWrites()', () => {
     await admin.request('PATCH', '/users/2', { password: 'new secret' })
     expect((await admin.get('/admins/self')).data).not.toBe(undefined)
     expect((await bob.get('/admins/self')).data).toBe(undefined)
+  })
+})
+
+describe('verifyLogin()', () => {
+  it('resolves to the user of the username and password', async () => {
+    expect(await verifyLogin(admins, 'ada', 'secret')).toBe(ada)
+  })
+
+  it('resolves to null for wrong passwords', async () => {
+    expect(await verifyLogin(admins, 'ada', 'wrong')).toBe(null)
+    expect(await verifyLogin(admins, 'ada', 1234)).toBe(null)
+  })
+
+  it('compares unknown users like known ones', async () => {
+    const compare = vi.spyOn(bcrypt, 'compare')
+    expect(await verifyLogin(admins, 'nobody', 'secret')).toBe(null)
+    expect(await verifyLogin(admins, 1234, 'secret')).toBe(null)
+    expect(compare).toHaveBeenCalledTimes(2)
+    compare.mockRestore()
+  })
+
+  it('resolves to null for users without a password', async () => {
+    ada.hash = null
+    expect(await verifyLogin(admins, 'ada', 'secret')).toBe(null)
+  })
+})
+
+describe('login()', () => {
+  it('refuses users of another source', async () => {
+    const members = createSource('Member', users)
+    const { api } = setup({
+      db,
+      source: admins,
+      controllers: [
+        {
+          path: 'members',
+          authorize: true,
+          actions: { 'post login': () => login(members, ada) }
+        }
+      ]
+    })
+    const client = createClient(api.fetch)
+    expect((await client.post('/members/login')).status).toBe(500)
+    expect(ada.lastLogin).toBe(null)
   })
 })

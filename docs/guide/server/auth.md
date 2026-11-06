@@ -56,8 +56,13 @@ The users also find and change single users, and prepare them for clients:
 
 - `admins.findById(id)` and `admins.findByUsername(username)` use the request's
   entity manager, else a fork of `orm.em`.
-- `admins.patch(user, values)` writes the values at once, and sets them on the
-  user. It doesn't flush the request's other changes.
+- `admins.verifyLogin(username, password)` resolves to the user, or to `null`
+  for a wrong username or password. Unknown users take as long as known ones.
+- `admins.login(user)` logs the user in to the request's session, and sets
+  `lastLogin`, which ends password reset links.
+- `admins.setPassword(user, password)` sets `hash` on the user, also on a new
+  one, and the caller flushes. The user keeps the request's session, and their
+  other sessions end.
 - `admins.serialize(user)` returns what `serialize` and `computed` describe.
   Without `serialize`, it returns the entity's own serialization, which leaves
   out hidden properties.
@@ -245,7 +250,7 @@ to `post confirm-access`. Then it sends the request again.
 
 ```js
 import { HttpError } from '@ditojs/server'
-import { createUsers, verifyPassword } from '@ditojs/auth'
+import { createUsers } from '@ditojs/auth'
 
 export const members = createUsers(Member, {
   adapter,
@@ -256,12 +261,12 @@ export const members = createUsers(Member, {
 })
 
 actions: {
-  async 'post login'({ body: { email, password }, session }) {
-    const member = await members.findByUsername(email)
-    if (!(await verifyPassword(password, member?.hash))) {
+  async 'post login'({ body: { email, password } }) {
+    const member = await members.verifyLogin(email, password)
+    if (!member) {
       throw new HttpError(401, 'Password or email is incorrect')
     }
-    session.login(member)
+    await members.login(member)
     return { user: members.serialize(member) }
   },
 
@@ -274,7 +279,7 @@ actions: {
 Users other than the admin's, such as the members of a library, have a
 `createUsers()` of their own, and so a session of their own. Their API takes
 them as `users`. They log in through `members.defineActions()`, or through
-the app's own actions, as above.
+the app's own actions, as above. These actions don't ask for TOTP codes.
 
 ## Users outside of Dito
 

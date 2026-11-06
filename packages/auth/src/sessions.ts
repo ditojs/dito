@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import type { Context, MiddlewareHandler } from 'hono'
-import { getContext } from 'hono/context-storage'
+import { getContext, tryGetContext } from 'hono/context-storage'
 import {
   deleteCookie,
   getSignedCookie,
@@ -336,6 +336,11 @@ export function getSession(c: Context) {
     throw new Error('Unable to use sessions without their middleware.')
   }
   return session as RequestSession
+}
+
+// The session of the running request, if there is one.
+export function findSession() {
+  return tryGetContext()?.var.session as RequestSession | undefined
 }
 
 // The session of the running request.

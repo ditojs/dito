@@ -1,11 +1,8 @@
 import { Hono } from 'hono'
 import { defineEntity, p } from '@mikro-orm/core'
-import { createApi } from '@ditojs/server'
-import {
-  createUsers,
-  hashPassword,
-  verifyPassword
-} from '../../auth/src/index.ts'
+import { createApi, HttpError } from '@ditojs/server'
+import { createUsers } from '../../auth/src/index.ts'
+import { hashPassword, verifyPassword } from '../../auth/src/passwords.ts'
 import { createMikroAdapter, crud, defineModelController } from './index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Credential, Session } from '../../../tests/utils/entities.ts'
@@ -51,7 +48,31 @@ const app = new Hono().route(
         path: 'members',
         entity: Member,
         authorize: true,
-        mixins: [crud]
+        mixins: [crud],
+        actions: {
+          'post login': async ({ body: { username, password } }) => {
+            const member = await members.verifyLogin(username, password)
+            if (!member) throw new HttpError(401)
+            await members.login(member)
+            return member
+          },
+
+          'post register': async ({ body: { username, password }, em }) => {
+            const member = em.create(Member, {
+              username,
+              hash: null,
+              roles: []
+            })
+            await members.setPassword(member, password)
+            await em.flush()
+            await members.login(member)
+            return member
+          },
+
+          'post password': async ({ body: { password }, user }) => {
+            await members.setPassword(user as Member, password)
+          }
+        }
       })
     ]
   })
@@ -134,6 +155,71 @@ describe('createEntityUserSource() with auth', () => {
       { hash: 'x' }
     )
     expect(status).toBe(400)
+  })
+})
+
+describe('the login methods of the users', () => {
+  it('log in through the action of an app', async () => {
+    const client = createClient(app.fetch)
+    const { status } = await client.post('/members/login', {
+      username: 'ada',
+      password: 'secret'
+    })
+    expect(status).toBe(200)
+    expect(await self(client)).toEqual({ id: 1, username: 'ada' })
+    expect((await load(ada.id)).lastLogin).toBeInstanceOf(Date)
+  })
+
+  it('refuse wrong passwords', async () => {
+    const client = createClient(app.fetch)
+    const { status } = await client.post('/members/login', {
+      username: 'ada',
+      password: 'wrong'
+    })
+    expect(status).toBe(401)
+    expect((await load(ada.id)).lastLogin).toBe(null)
+  })
+
+  it('set the password of an unflushed user', async () => {
+    const client = createClient(app.fetch)
+    const { status } = await client.post('/members/register', {
+      username: 'bob',
+      password: '12345678'
+    })
+    expect(status).toBe(200)
+    expect(await self(client)).toMatchObject({ username: 'bob' })
+    const bob = await orm.em.fork().findOneOrFail(Member, { username: 'bob' })
+    expect(await verifyPassword('12345678', bob.hash)).toBe(true)
+  })
+
+  it('keep the session through a change of the own password', async () => {
+    const first = await login()
+    const second = await login()
+    const { status } = await first.post('/members/password', {
+      password: 'new secret'
+    })
+    expect(status).toBe(204)
+    expect(await verifyPassword('new secret', (await load(ada.id)).hash)).toBe(
+      true
+    )
+    expect(await self(first)).toEqual({ id: 1, username: 'ada' })
+    expect(await self(second)).toBe(undefined)
+  })
+
+  it('set passwords outside of requests', async () => {
+    const em = orm.em.fork()
+    const member = await em.findOneOrFail(Member, ada.id)
+    await members.setPassword(member, 'new secret')
+    await em.flush()
+    expect(await verifyPassword('new secret', (await load(ada.id)).hash)).toBe(
+      true
+    )
+  })
+
+  it('need the session of the users to log in', async () => {
+    await expect(members.login(ada)).rejects.toThrow(
+      `Unable to log in 'Member' without its session.`
+    )
   })
 })
 
