@@ -223,6 +223,9 @@ A mixin for the model controller of the users. It routes `post` and
 - The `password` schema of the source checks new passwords, see
   [`UserSource`](#usersource).
 - A `hash` in the body responds with 400.
+- When users change their own password, or their username in the source's
+  `usernameProperty`, they need confirmed access, as in `post password`. See
+  `checkConfirmedAccess()` of [`Session`](#session).
 - When users change their own password, their session stays, and their other
   sessions end. See `refreshFingerprint()` of [`Session`](#session).
 
@@ -235,6 +238,7 @@ interface UserSource<U> {
   findByUsername(c, username: string): Promise<U | null | undefined>
   patch(c, user: U, values: { hash?: string, lastLogin?: Date }): Promise<void>
   serialize(c, user: U): unknown
+  usernameProperty?: string
   password?: ZodType<string>
 }
 
@@ -260,6 +264,8 @@ request's entity manager in `c.var.em`.
 - `patch()` stores the values and sets them on the user: a new `hash`, or the
   `lastLogin` of a login.
 - `serialize()` returns what the actions send.
+- `usernameProperty` names the username in the bodies of
+  `definePasswordWrites()`. Default: `username`.
 - `password` is the schema of new passwords, in the actions of
   `defineUserActions()` and in `definePasswordWrites()`. By default, a new
   password is a string of at least 8 characters.
@@ -330,6 +336,9 @@ From `@ditojs/auth/totp`. Enables time-based one-time codes, with backup codes.
 - `secret` is a long random string of the app. The keys that encrypt the TOTP
   secrets are derived from it.
 - Ten wrong codes in a row lock the codes for 15 minutes.
+- Users with TOTP need a code while `defineUserActions()` gets `credentials`,
+  also when it doesn't get `totp`. Their logins then fail. Without
+  `credentials`, they log in without a code.
 
 ## createPasswordReset()
 

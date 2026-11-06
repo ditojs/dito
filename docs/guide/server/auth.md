@@ -90,9 +90,13 @@ entity.
 - The source's `password` checks new passwords. It does this in the users
   controller, and in the password writes below.
 
+The entity hides `hash`, such as with `p.string().nullable().hidden()`, so that
+no response sends it. The source throws when it loads users of an entity that
+doesn't.
+
 An app can also write the source itself. It has `name`, `findById(c, id)`,
-`findByUsername(c, username)`, `patch(c, user, values)`, `serialize(c, user)`
-and the schema `password`.
+`findByUsername(c, username)`, `patch(c, user, values)`, `serialize(c, user)`,
+`usernameProperty` and the schema `password`.
 
 Auth reads `id`, `username`, `hash`, `roles` and `lastLogin` from the users.
 `name`, the entity's name, names the users in sessions and credentials, such as
@@ -174,7 +178,9 @@ export const admins = defineModelController({
 [`definePasswordWrites()`](../../api/server/auth.md#definepasswordwrites) is a
 mixin for the model controller of the users. It routes `post` and `patch :id`.
 Their body sets `password`, which the user stores as `hash`. Users who change
-their own password stay logged in, and their other sessions end.
+their own password or username need [confirmed access](#confirmed-access), as
+password reset links go to the username. They stay logged in, and their other
+sessions end.
 
 This controller is separate from the one of `defineUserActions()`, and doesn't
 mix it in. If
@@ -208,7 +214,8 @@ passkeys.
 `createTotp({ issuer, secret })` from `@ditojs/auth/totp` adds codes from an
 authenticator app, with backup codes.
 
-- Users with TOTP enter a code after the password.
+- Users with TOTP enter a code after the password, while `defineUserActions()`
+  gets `credentials`. Without them, these users log in without a code.
 - `secret` is a long random string of the app. It encrypts the TOTP secrets in
   the `credential` table.
 - `createTotp()` needs `credentials` and the package `otpauth`.
@@ -244,7 +251,8 @@ per minute. The response is the same whether the user exists or not.
 
 A login confirms the user's access for ten minutes. `reconfirmAfter` sets this
 time. Actions that change security settings, such as roles, need confirmed
-access.
+access. `post password` and the [password writes](#password-writes) check it
+themselves.
 
 Without confirmed access, the action responds with 403 and
 `confirmationRequired: true`. The admin then asks for the password, and posts it

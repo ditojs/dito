@@ -51,17 +51,29 @@ export function createEntityUserSource<U extends { id: number | string }>(
     return root.fork()
   }
 
-  const getKey = (em: EntityManager) =>
-    getPrimaryKey(em.getMetadata().get(entity))
+  // The metadata of the entity, which needs to hide `hash`, as it would go out
+  // with the users in each response that holds them.
+  const getMetadata = (em: EntityManager) => {
+    const meta = em.getMetadata().get(entity)
+    if (meta.props.some(prop => prop.name === 'hash' && !prop.hidden)) {
+      throw new Error(
+        `Invalid user entity '${entity.name}': its 'hash' isn't hidden`
+      )
+    }
+    return meta
+  }
+
+  const getKey = (em: EntityManager) => getPrimaryKey(getMetadata(em))
 
   const findOne = (em: EntityManager, condition: object) =>
     em.findOne(
-      entity,
+      getMetadata(em).class,
       (where ? { $and: [condition, where] } : condition) as never
     )
 
   return {
     name: entity.name,
+    usernameProperty,
     password,
     // Ids that don't fit the key, such as those of tampered tokens, find none.
     async findById(c: Context, id: string): Promise<U | null> {

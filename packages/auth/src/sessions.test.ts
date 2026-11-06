@@ -248,6 +248,24 @@ describe('sessions', () => {
     expect(await passwords.verifyPassword(1234, ada.hash)).toBe(false)
   })
 
+  it('leaves no user in the session when the login fails later', async () => {
+    const { api } = setup({
+      db,
+      source: admins,
+      afterLogin: () => {
+        throw new HttpError(503)
+      }
+    })
+    const client = createClient(api.fetch)
+    const response = await client.post('/admins/login', {
+      username: 'ada',
+      password: 'secret'
+    })
+    expect(response.status).toBe(503)
+    expect((await client.get('/admins/self')).data).toBe(null)
+    expect(await sessionIds()).toEqual([])
+  })
+
   it('logs out and clears the session', async () => {
     const { api } = setup({ db, source: admins })
     const client = createClient(api.fetch)

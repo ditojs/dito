@@ -664,6 +664,9 @@ session middleware outside of the API, it queries with a fork of `em`.
 | `serialize`        | The properties that clients get, plus `computed`. It can also be a function that returns the JSON. |
 | `password`         | The schema of new passwords. Default: a string of at least 8 characters.                           |
 
+The entity hides `hash` with `.hidden()`, so that no response sends it. The
+source throws when it loads users of an entity that doesn't.
+
 `findById()` finds no user for an id that doesn't fit the primary key.
 `patch()` writes the values with `nativeUpdate()` and sets them on the user. It
 doesn't flush the request's other changes.

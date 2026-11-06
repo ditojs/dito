@@ -10,7 +10,7 @@ const AccountSchema = defineEntity({
   properties: {
     id: p.integer().primary(),
     email: p.string(),
-    hash: p.string().nullable(),
+    hash: p.string().nullable().hidden(),
     lastLogin: p.datetime().nullable(),
     isActive: p.boolean().default(true)
   }
@@ -24,13 +24,26 @@ const DeviceSchema = defineEntity({
   properties: {
     id: p.uuid().primary(),
     label: p.string(),
-    hash: p.string().nullable()
+    hash: p.string().nullable().hidden()
   }
 })
 class Device extends DeviceSchema.class {}
 DeviceSchema.setClass(Device)
 
-const { orm, drop } = await createTestDatabase([Account, Device])
+// A user entity that sends its hash out.
+const VisitorSchema = defineEntity({
+  name: 'Visitor',
+  tableName: 'visitor',
+  properties: {
+    id: p.integer().primary(),
+    username: p.string(),
+    hash: p.string().nullable()
+  }
+})
+class Visitor extends VisitorSchema.class {}
+VisitorSchema.setClass(Visitor)
+
+const { orm, drop } = await createTestDatabase([Account, Device, Visitor])
 
 afterAll(drop)
 
@@ -73,6 +86,16 @@ describe('createEntityUserSource()', () => {
     expect(await devices.findById(outside, '1')).toBeNull()
     await devices.patch(outside, device, { hash: 'h' })
     expect(await devices.findById(outside, id)).toMatchObject({ hash: 'h' })
+  })
+
+  it('refuses entities that send their hash out', async () => {
+    const visitors = createEntityUserSource(Visitor, {
+      em: () => orm.em,
+      serialize: ['id']
+    })
+    const message = `Invalid user entity 'Visitor': its 'hash' isn't hidden`
+    await expect(visitors.findById(outside, '1')).rejects.toThrow(message)
+    await expect(visitors.findByUsername(outside, 'a')).rejects.toThrow(message)
   })
 
   it('names the users by the entity', () => {

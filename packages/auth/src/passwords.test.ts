@@ -1,7 +1,11 @@
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
 import { defineMixin, HttpError, type Handler } from '@ditojs/server'
-import { definePasswordWrites, verifyPassword } from './index.ts'
+import {
+  definePasswordWrites,
+  verifyPassword,
+  type DefineUserActionsOptions
+} from './index.ts'
 import {
   createSource,
   createUser,
@@ -44,9 +48,13 @@ const crud = defineMixin({
   }
 })
 
-function createApp(password?: z.ZodType<string>) {
+function createApp(
+  password?: z.ZodType<string>,
+  options?: Partial<DefineUserActionsOptions<TestUser>>
+) {
   const source = { ...admins, password }
   const { api } = setup({
+    ...options,
     db,
     source: admins,
     controllers: [
@@ -125,6 +133,30 @@ describe('definePasswordWrites()', () => {
     expect(response.status).toBe(200)
     expect((await first.get('/admins/self')).data).not.toBe(null)
     expect((await second.get('/admins/self')).data).toBe(null)
+  })
+
+  it('needs confirmed access to change the own password and username', async () => {
+    // A login confirms the access for no time.
+    const client = createClient(
+      createApp(undefined, { reconfirmAfter: 0 }).fetch
+    )
+    await client.post('/admins/login', { username: 'ada', password: 'secret' })
+    const patch = (id: number, body: object) =>
+      client.request('PATCH', `/users/${id}`, body)
+    const confirmationRequired = {
+      status: 403,
+      data: { confirmationRequired: true }
+    }
+    expect(await patch(1, { password: 'new secret' })).toMatchObject(
+      confirmationRequired
+    )
+    expect(await patch(1, { username: 'ad' })).toMatchObject(
+      confirmationRequired
+    )
+    expect((await patch(1, { username: 'ada', roles: [] })).status).toBe(200)
+    expect((await patch(2, { username: 'bo', password: '12345678' })).status)
+      .toBe(200)
+    expect(bodies).toEqual([{ username: 'ada', roles: [] }, { username: 'bo' }])
   })
 
   it('keeps the session when the write fails', async () => {

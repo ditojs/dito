@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs'
+import type { Context } from 'hono'
 import { z } from 'zod'
 import { isPlainObject, isString } from '@ditojs/utils'
 import {
@@ -46,13 +47,14 @@ export interface PasswordWritesOptions<U extends User> {
 
 // A mixin for the `post` and `patch :id` of a model controller of the users:
 // the body sets `password`, which it stores as the user's `hash`. A `hash` in
-// the body responds with 400. Users who change their own password keep their
-// session, and their other sessions end. The controller writes the hash with
-// the user that the handler beneath returns.
+// the body responds with 400. Users who change their own password or username
+// need confirmed access, as in `post password`, since password resets go to the
+// username. They keep their session, and their other sessions end. The
+// controller writes the hash with the user that the handler beneath returns.
 export function definePasswordWrites<U extends User>({
   source
 }: PasswordWritesOptions<U>) {
-  const { password = defaultPassword } = source
+  const { password = defaultPassword, usernameProperty = 'username' } = source
   const schema = z.object({
     password: password.optional(),
     hash: z
@@ -60,12 +62,33 @@ export function definePasswordWrites<U extends User>({
       .optional()
   })
 
+  // Whether the logged-in user changes their own password or username.
+  const isOwnSecurityChange = async (
+    c: Context,
+    id: string,
+    body: Record<string, unknown>
+  ) => {
+    const username = body[usernameProperty]
+    if (body.password === undefined && username === undefined) return false
+    const user = await getSession(c).getUser(source)
+    return (
+      !!user &&
+      String(user.id) === id && (
+        body.password !== undefined ||
+        username !== (user as Record<string, unknown>)[usernameProperty]
+      )
+    )
+  }
+
   const handler: Handler = async input => {
-    const { c, next } = input
+    const { c, params, next } = input
     if (!isPlainObject(input.body)) return next()
     const result = await schema.safeParseAsync(input.body)
     if (!result.success) {
       throw createValidationError(result.error.issues, bodyValidation)
+    }
+    if (params.id && (await isOwnSecurityChange(c, params.id, input.body))) {
+      await getSession(c).checkConfirmedAccess(source)
     }
     const { password: value, ...body } = input.body
     if (value === undefined) return next()

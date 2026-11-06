@@ -95,9 +95,10 @@ export function defineUserActions<U extends User>({
     !!credentials && !!(await credentials.findFirst(source, user, 'totp'))
   )
 
-  // Users with TOTP always need a code, even when the app doesn't use TOTP.
-  // They then get the error of a wrong password, which doesn't reveal that the
-  // password was right.
+  // Users with TOTP need a code while the app passes `credentials`, even when
+  // it doesn't use TOTP. They then get the error of a wrong password, which
+  // doesn't reveal that the password was right. Without `credentials`, users
+  // log in without a code.
   const checkTotpService = (message: string) => {
     if (!totp) throw authError(message)
     return totp
@@ -106,10 +107,16 @@ export function defineUserActions<U extends User>({
   const login = async (c: Context, user: U) => {
     const session = getSession(c)
     session.login(source, user)
-    await source.patch(c, user, { lastLogin: new Date() })
-    session.confirmAccess(source, user, reconfirmAfter)
-    await afterLogin?.({ c, user })
-    return { user: await source.serialize(c, user) }
+    try {
+      await source.patch(c, user, { lastLogin: new Date() })
+      session.confirmAccess(source, user, reconfirmAfter)
+      await afterLogin?.({ c, user })
+      return { user: await source.serialize(c, user) }
+    } catch (error) {
+      // A failed login leaves no user in the session.
+      session.logout()
+      throw error
+    }
   }
 
   // Returns the user of the passkey that signed the challenge in the session.
