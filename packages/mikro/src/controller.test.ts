@@ -1086,6 +1086,18 @@ describe('output', () => {
     expect(json.book).not.toHaveProperty('secret')
   })
 
+  it('sends rows that share relations like single rows', async () => {
+    const api = setup(
+      parts({ populate: ['book.parts.book'], orderBy: { id: 'asc' } })
+    )
+    const { json: rows } = await request(api, 'GET', '/api/parts')
+    expect(rows.length).toBeGreaterThan(1)
+    for (const row of rows) {
+      const { json } = await request(api, 'GET', `/api/parts/${row.id}`)
+      expect(row).toEqual(json)
+    }
+  })
+
   it('sends a relation as `{ id }` where a handler loaded it', async () => {
     const api = setup(
       defineModelController({

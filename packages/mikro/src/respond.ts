@@ -1,7 +1,6 @@
 import { isArray, isPlainObject } from '@ditojs/utils'
-import { serialize } from '@mikro-orm/core'
 import type { ModelRequest } from './ModelRequest.ts'
-import { serializeResult } from './serialize.ts'
+import { serializeResult, serializeRows } from './serialize.ts'
 
 export async function respond(request: ModelRequest, result: unknown) {
   const { c, entity, definition } = request
@@ -18,15 +17,25 @@ export async function respond(request: ModelRequest, result: unknown) {
     }
   }
   const getRow = (row: object) => reloaded.get(row) ?? row
-  if (records.length) {
+  const rows = records.map(getRow)
+  const jsonByRow = new Map<object, unknown>()
+  const getOutput = async () => (
+    request.output ?? (await request.getQuery()).output
+  )
+  if (rows.length) {
     for (const beforeSerialize of definition.beforeSerializers) {
-      await beforeSerialize({ records: records.map(getRow), c })
+      await beforeSerialize({ records: rows, c })
     }
+    const items = serializeRows(rows, await getOutput())
+    rows.forEach((row, index) => jsonByRow.set(row, items[index]))
   }
   return serializeResult(result, isRecord, async record => {
-    const output = request.output ?? (await request.getQuery()).output
     const row = getRow(record as object)
-    let json: unknown = serialize(row, output)
+    // Entities in the result can hold records that `findRecords()` can't reach:
+    let json: unknown = (
+      jsonByRow.get(row) ??
+      serializeRows([row], await getOutput())[0]
+    )
     for (const layer of definition.serializers) {
       json = await layer({ record: row, json, c })
     }
