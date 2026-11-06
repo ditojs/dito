@@ -26,8 +26,7 @@ The app keeps its users in its own entities, and sets them up with
 The peer dependencies are `@ditojs/mikro`, `@ditojs/server`, `@mikro-orm/core`,
 `hono`, `kysely` and `zod`. See [Users and sessions](../../guide/server/auth.md) in the guide.
 
-The package exports the types `User`, `Session`, `Users`, `CreateUsersOptions`
-and `DefineUserActionsOptions`.
+The package exports the types `Session`, `Users`, `CreateUsersOptions` and `DefineUserActionsOptions`.
 
 ## createUsers()
 
@@ -81,7 +80,7 @@ users throw when they load users of an entity that doesn't.
 | `patch(user, values)`                       | Writes the values at once, and sets them on the user. It doesn't flush the request's other changes.                                                                    |
 | `serialize(user)`                           | Returns what `serialize` and `computed` describe.                                                                                                                      |
 | `middleware`                                | The session middleware, see [The middleware](#the-middleware).                                                                                                         |
-| `getUser({ c })`                            | Resolves to `{ id, roles }` of the session's user, or `null`. `createApi()` and `createAdmin()` use it as their `getUser`.                                             |
+| `getUser({ c })`                            | Resolves to the session's user, an entity, or `null`. `createApi()` and `createAdmin()` call it. Handlers read the same entity as `user`.                              |
 | `readSignedCookie(c, name)`                 | Returns the value of the cookie `name` if one of `secrets` signed it, else `null`. It reads the app's own cookies, which `setSignedCookie()` writes.                   |
 | `setSignedCookie(c, name, value, options?)` | Sets a cookie that `readSignedCookie()` reads, signed with the first of `secrets`, for the app's own cookies. It is `secure` on HTTPS, unless `options` say otherwise. |
 | `defineActions(options?)`                   | Returns the mixin with the actions of the users, see [`defineActions()`](#defineactions).                                                                              |
@@ -155,7 +154,7 @@ handler's context, or `c.var.session`. The package exports the type `Session`.
 | `value`                    | The session's data, which handlers change in place.                                                                                                                         |
 | `login(user)`              | Logs the user in, with the fingerprint of their password.                                                                                                                   |
 | `logout()`                 | Clears the session.                                                                                                                                                         |
-| `getUser()`                | Returns the user of the session, else `null`. It loads the user once per request. It returns `null` if the user changed the password since the login.                       |
+| `getUser()`                | Returns the user of the session, an entity, else `null`. It loads the user once per request. It returns `null` if the user changed the password since the login.            |
 | `refreshFingerprint(user)` | Keeps the session valid after the user changed the password, if the request succeeds. The user's other sessions end.                                                        |
 | `checkConfirmedAccess()`   | Resolves to the user. Without a login, it throws 401. Without confirmed access, it throws 403 with `confirmationRequired: true`. Use it for actions such as changing roles. |
 
@@ -333,20 +332,27 @@ session middleware, of these users or of others.
 
 ## User
 
+The user of a request is the entity. `c.var.user` and `user` of the handler's
+context hold it, as does `session.getUser()`, which also knows about the logins
+of the running request. Actions read the entity's own properties from it, and
+the request runs no further query for them.
+
+An entity returned from a handler goes out with its own serialization, without
+hidden properties. `users.serialize(user)` applies `serialize` and `computed`.
+
 ```ts
-interface User {
-  id: number | string
+interface AuthUser extends User {
   hash?: string | null
-  roles?: string[] | null
   lastLogin?: Date | string | null
 }
 ```
 
-The values that auth reads from the users of an entity.
+`User` of `@ditojs/server` has `id` and `roles`. Auth also reads these values of
+an entity:
 
 - `hash` is the bcrypt hash, or `null` for users without a password. Sessions
   keep its fingerprint, and end when it changes.
-- `roles` go to `authorize`.
+- `roles` go to `authorize`. Without a value, the user has no roles.
 - A login sets `lastLogin`, which ends password reset links. An entity without
   this property doesn't record logins.
 

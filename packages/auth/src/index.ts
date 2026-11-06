@@ -1,4 +1,3 @@
-export type { User } from './users.ts'
 export {
   createUsers,
   type CreateUsersOptions,

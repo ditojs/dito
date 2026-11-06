@@ -11,7 +11,7 @@ import type { Context } from 'hono'
 import { createAuthError, authenticationTimeout } from './authentication.ts'
 import type { Credentials } from './credentials.ts'
 import { getSession } from './sessions.ts'
-import { getUserIdentifier, type User } from './users.ts'
+import { getUserIdentifier, type AuthUser } from './users.ts'
 
 // TOTP as a credential of type `totp`, with its secret encrypted.
 
@@ -50,7 +50,7 @@ export function createTotp({
 
   return {
     // Keep the secret in the session until the user confirms it with a code.
-    createSecret(c: Context, user: User) {
+    createSecret(c: Context, user: AuthUser) {
       const { base32: secret } = new Secret()
       getSession(c).value.pendingTotp = {
         secret,
@@ -61,7 +61,7 @@ export function createTotp({
       return { uri, secret }
     },
 
-    async confirmSecret(c: Context, user: User, code: unknown) {
+    async confirmSecret(c: Context, user: AuthUser, code: unknown) {
       const { value } = getSession(c)
       const { pendingTotp } = value
       if (!(pendingTotp?.expires > Date.now())) {
@@ -107,7 +107,7 @@ export function createTotp({
     // Lock the credential in a transaction of its own, against concurrent
     // requests that use the same code or miss a failure, and so that failures
     // stay counted when the request fails.
-    async verifyCode(user: User, code: unknown) {
+    async verifyCode(user: AuthUser, code: unknown) {
       const identifier = getUserIdentifier(credentials.source, user)
       const verify = async (trx: Kysely<any>) => {
         const totp = await credentials.findFirst(user, 'totp', { trx })

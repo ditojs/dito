@@ -9,7 +9,8 @@ import {
   type CreateApiOptions,
   type CreateHonoOptions,
   type DitoEnv,
-  type Service
+  type Service,
+  type User
 } from '@ditojs/server'
 import { serve, type ServeOptions } from '@ditojs/server/node'
 import {
@@ -22,7 +23,6 @@ import {
   createUsers,
   deleteExpiredSessions,
   type CreateUsersOptions,
-  type User,
   type Users
 } from '@ditojs/auth'
 import {

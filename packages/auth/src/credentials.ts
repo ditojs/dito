@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely'
 import type { Adapter, DitoContext } from '@ditojs/server'
-import type { User, UserSource } from './users.ts'
+import type { AuthUser, UserSource } from './users.ts'
 
 // The passkeys and TOTP secrets of users in the `credential` table.
 
@@ -47,7 +47,7 @@ export function createCredentials({
     source,
     getKysely,
 
-    async list(user: User, type: string): Promise<Credential[]> {
+    async list(user: AuthUser, type: string): Promise<Credential[]> {
       const rows = await selectCredentials(getKysely(), type)
         .where('user_id', '=', String(user.id))
         .orderBy('id')
@@ -57,7 +57,7 @@ export function createCredentials({
 
     // Lock the row in the transaction `trx`, if given.
     async findFirst(
-      user: User,
+      user: AuthUser,
       type: string,
       { trx }: { trx?: Kysely<any> } = {}
     ): Promise<Credential | null> {
@@ -77,7 +77,7 @@ export function createCredentials({
     },
 
     async insert(
-      user: User,
+      user: AuthUser,
       type: string,
       {
         key = null,
@@ -118,7 +118,7 @@ export function createCredentials({
 
     // Delete the user's credentials of `type`, or only the one with `id`, and
     // resolve to the number of deleted rows.
-    async delete(user: User, type: string, id?: number) {
+    async delete(user: AuthUser, type: string, id?: number) {
       const result = await getKysely()
         .deleteFrom('credential')
         .where('user_model', '=', source.name)
@@ -131,7 +131,7 @@ export function createCredentials({
 
     // No foreign keys delete the credentials of deleted users, so delete them
     // in the transaction of the request.
-    async deleteUser(user: User, c: DitoContext) {
+    async deleteUser(user: AuthUser, c: DitoContext) {
       await getKysely(c)
         .deleteFrom('credential')
         .where('user_model', '=', source.name)

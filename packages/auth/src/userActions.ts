@@ -20,14 +20,14 @@ import { createTotp, type TotpOptions } from './totp.ts'
 import {
   getUserIdentifier,
   parseUserIdentifier,
-  type User,
+  type AuthUser,
   type UserSource
 } from './users.ts'
 
 // The login, session and security actions of the admin. The app adds CSRF
 // protection.
 
-export interface DefineUserActionsOptions<U extends User> {
+export interface DefineUserActionsOptions<U extends AuthUser> {
   passkeys?: PasskeysOptions
   totp?: TotpOptions
   passwordReset?: PasswordResetOptions<U>
@@ -36,7 +36,7 @@ export interface DefineUserActionsOptions<U extends User> {
   afterLogin?: (context: { c: Context; user: U }) => unknown
 }
 
-interface UserActionsOptions<U extends User>
+interface UserActionsOptions<U extends AuthUser>
   extends DefineUserActionsOptions<U> {
   // Its `password` checks the new passwords.
   source: UserSource<U>
@@ -54,7 +54,7 @@ const credentialId = z.coerce
 
 // The app puts the mixin in a controller of its own: a model controller would
 // flush and serialize the answers of the actions.
-export function defineUserActions<U extends User>({
+export function defineUserActions<U extends AuthUser>({
   source,
   credentials,
   secrets,

@@ -9,7 +9,7 @@ import type { Context } from 'hono'
 import { createAuthError, authenticationTimeout } from './authentication.ts'
 import type { Credential, Credentials } from './credentials.ts'
 import { getSession } from './sessions.ts'
-import type { User } from './users.ts'
+import type { AuthUser } from './users.ts'
 
 // Passkeys as discoverable WebAuthn credentials of type `passkey`.
 
@@ -103,7 +103,7 @@ export function createPasskeys({
       return options
     },
 
-    async verifyRegistration(c: Context, user: User, response: any) {
+    async verifyRegistration(c: Context, user: AuthUser, response: any) {
       const challenge = consumeChallenge(c, 'registration')
       const { verified, registrationInfo } = await Promise.try(() =>
         verifyRegistrationResponse({

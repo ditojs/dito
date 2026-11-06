@@ -87,11 +87,13 @@ Behind reverse proxies, such as nginx or a load balancer, the `proxy` option of
 `createHono()` sets how many proxies the app trusts. `true` means one, see
 [Proxies](../../api/server/hono.md#proxies). With it:
 
-- `c.req.url` is the public URL, from the first `X-Forwarded-Proto` and
+- `c.req.url` is the public URL, from `X-Forwarded-Proto` and
   `X-Forwarded-Host`. Hono's `csrf()` and the APIs see this URL.
-- `getClientAddress(c)` returns the entry of `X-Forwarded-For` that is `proxy`
-  hops from the right. Each proxy adds the address that it got the request
-  from.
+- `getClientAddress(c)` returns the client's address, from `X-Forwarded-For`.
+
+Dito reads the entry of each header that is `proxy` hops from the right, as each
+proxy adds its value on the right. Entries further left come from the client.
+
 - Without a proxy, `getClientAddress(c)` returns the socket's address.
 
 Requests without these headers keep their own URL and address.
@@ -155,8 +157,8 @@ old migrations with knex's CLI until the Migrator takes over, see
 users: admins
 ```
 
-`users` holds `getUser({ c })`, which returns the user of a request as
-`{ id, roles }`, or `null`, and optional `middleware`, such as the one that
+`users` holds `getUser({ c })`, which returns the user of a request, with an
+`id` and its `roles`, or `null`, and optional `middleware`, such as the one that
 loads a session.
 
 - Dito sets the user as `c.var.user`.
@@ -164,7 +166,8 @@ loads a session.
 - `authorize` checks its roles.
 
 The result of `createUsers()` of `@ditojs/auth` fits `users`, see
-[Users and sessions](auth.md). It loads the session and reads its user.
+[Users and sessions](auth.md). It loads the session and reads its user, which
+is the entity.
 
 ## Errors and logging
 

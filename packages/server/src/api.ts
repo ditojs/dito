@@ -152,7 +152,7 @@ export async function isAuthorized(c: DitoContext, authorize: Authorize) {
   return isFunction(authorize)
     ? (await authorize({ ...c.var, c })) === true
     : authorize === true ||
-      (!!user && asArray(authorize).some(role => user.roles.includes(role)))
+      (!!user && asArray(authorize).some(role => user.roles?.includes(role)))
 }
 
 function validate(target: 'query' | 'json', schema: z.ZodType): Middleware {

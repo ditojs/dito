@@ -3,13 +3,13 @@ import type { Context } from 'hono'
 import { parseDuration } from '@ditojs/utils'
 import {
   getUserIdentifier,
-  type User,
+  type AuthUser,
   type UserSource
 } from './users.ts'
 
 // Stateless password reset links, signed with HMAC-SHA256.
 
-export interface PasswordResetOptions<U extends User = any> {
+export interface PasswordResetOptions<U extends AuthUser = any> {
   // In milliseconds or as a duration such as `'24h'`, one hour by default.
   expiresAfter?: number | string
   // The time before a user gets another link, as `expiresAfter`, one minute by
@@ -23,13 +23,13 @@ export interface PasswordResetOptions<U extends User = any> {
   onError?(context: { error: unknown; c: Context }): void
 }
 
-interface CreatePasswordResetOptions<U extends User>
+interface CreatePasswordResetOptions<U extends AuthUser>
   extends PasswordResetOptions<U> {
   secrets: string[]
   source: UserSource<U>
 }
 
-export function createPasswordReset<U extends User>({
+export function createPasswordReset<U extends AuthUser>({
   secrets,
   source,
   confirmUrl,
@@ -96,7 +96,11 @@ export function createPasswordReset<U extends User>({
 // Sign the user's hash, last login and username too, so that a login, a
 // password change or a username change ends the link, including the change
 // that the link itself makes. Dates count as ISO strings.
-function getSignedValues(source: UserSource<any>, user: User, time: number) {
+function getSignedValues(
+  source: UserSource<any>,
+  user: AuthUser,
+  time: number
+) {
   return JSON.stringify([
     getUserIdentifier(source, user),
     time,

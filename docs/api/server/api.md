@@ -80,7 +80,8 @@ users?: {
 `users` is the only way to give an API its user. `middleware` is Hono middleware
 for every request of the API, such as the one that loads a session. It runs
 first, before Dito sets `c.var.em` and `c.var.user`. `getUser` returns the
-signed-in user, `{ id, roles }`, which becomes `c.var.user`.
+signed-in user, which becomes `c.var.user`. It has an `id`, and `roles` for
+`authorize`. A user without `roles` has none.
 
 Other middleware goes on the Hono app, or on the controllers and mixins.
 

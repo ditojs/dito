@@ -10,7 +10,7 @@ import {
   defineUserActions,
   type DefineUserActionsOptions
 } from './userActions.ts'
-import type { User } from './users.ts'
+import type { AuthUser } from './users.ts'
 
 export interface CreateUsersOptions<U extends object>
   extends CreateEntityUserSourceOptions<U>,
@@ -18,12 +18,12 @@ export interface CreateUsersOptions<U extends object>
   session: Pick<CreateSessionsOptions, 'cookieName' | 'maxAge'>
 }
 
-export type Users<U extends User = any> = ReturnType<typeof createUsers<U>>
+export type Users<U extends AuthUser = any> = ReturnType<typeof createUsers<U>>
 
 // One kind of users of an app: an entity with its sessions and credentials.
 // Sessions and credentials run outside of the requests' transactions, so that
 // sessions save after a failed request and TOTP failures stay counted.
-export function createUsers<U extends User>(
+export function createUsers<U extends AuthUser>(
   entity: EntityClass<U>,
   { adapter, secrets, session, ...options }: CreateUsersOptions<U>
 ) {

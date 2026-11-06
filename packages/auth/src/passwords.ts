@@ -10,7 +10,7 @@ import {
 import { bodyValidation } from '@ditojs/server/internal'
 import type { Credentials } from './credentials.ts'
 import { getSession } from './sessions.ts'
-import type { User, UserSource } from './users.ts'
+import type { AuthUser, UserSource } from './users.ts'
 
 // The cost of the hashes, including the dummy one.
 const hashRounds = 10
@@ -35,7 +35,7 @@ export async function verifyPassword(
   )
 }
 
-export interface DefineUserWritesOptions<U extends User> {
+export interface DefineUserWritesOptions<U extends AuthUser> {
   // Its `password` checks the new passwords.
   source: UserSource<U>
   // `delete :id` deletes the credentials of the user too.
@@ -43,7 +43,7 @@ export interface DefineUserWritesOptions<U extends User> {
 }
 
 // The mixin of a users' model controller that stores `password` as `hash`.
-export function defineUserWrites<U extends User>({
+export function defineUserWrites<U extends AuthUser>({
   source,
   credentials
 }: DefineUserWritesOptions<U>) {

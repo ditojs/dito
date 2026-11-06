@@ -14,7 +14,7 @@ import { createAuthError } from './authentication.ts'
 import {
   getUserIdentifier,
   parseUserIdentifier,
-  type User,
+  type AuthUser,
   type UserSource
 } from './users.ts'
 
@@ -26,7 +26,7 @@ declare module 'hono' {
   }
 }
 
-export interface CreateSessionsOptions {
+export interface CreateSessionsOptions<U extends AuthUser = any> {
   // The adapter of the API, such as `createMikroAdapter(orm)`, for the
   // `session` table. Sessions load before and save after the actions, so they
   // use its Kysely outside of the request's transaction.
@@ -39,7 +39,7 @@ export interface CreateSessionsOptions {
   // In milliseconds or as a duration such as `'24h'`.
   maxAge: number | string
   // The source of the users that log in to these sessions.
-  source: UserSource<any>
+  source: UserSource<U>
 }
 
 // The options with `maxAge` parsed.
@@ -83,7 +83,7 @@ export class RequestSession {
   #regenerating = false
   #destroying = false
   #refreshedFingerprint: string | null = null
-  #user: Promise<User | null> | null = null
+  #user: Promise<AuthUser | null> | null = null
 
   constructor(
     c: Context,
@@ -106,7 +106,7 @@ export class RequestSession {
     return this.#options.source
   }
 
-  login(user: User) {
+  login(user: AuthUser) {
     this.value.passport = {
       user: getUserIdentifier(this.source, user),
       passwordFingerprint: getPasswordFingerprint(user.hash)
@@ -124,7 +124,7 @@ export class RequestSession {
   }
 
   // The user of the session, once per request.
-  getUser<U extends User = any>(): Promise<U | null> {
+  getUser<U extends AuthUser = any>(): Promise<U | null> {
     this.#user ??= this.#findUser()
     return this.#user as Promise<U | null>
   }
@@ -134,7 +134,7 @@ export class RequestSession {
     const { passport } = this.value
     const parsed = parseUserIdentifier(passport?.user)
     if (!passport || parsed?.name !== source.name) return null
-    const user: User | null = await source.findById(parsed.id)
+    const user: AuthUser | null = await source.findById(parsed.id)
     if (
       user &&
       passport.passwordFingerprint === getPasswordFingerprint(user.hash)
@@ -148,13 +148,13 @@ export class RequestSession {
 
   // Keep the session of the request after the user changed the password,
   // while the user's other sessions end.
-  refreshFingerprint(user: User) {
+  refreshFingerprint(user: AuthUser) {
     if (this.value.passport?.user === getUserIdentifier(this.source, user)) {
       this.#refreshedFingerprint = getPasswordFingerprint(user.hash)
     }
   }
 
-  confirmAccess(user: User, duration: number) {
+  confirmAccess(user: AuthUser, duration: number) {
     this.value.confirmedAccess = {
       user: getUserIdentifier(this.source, user),
       expires: Date.now() + duration
@@ -164,7 +164,7 @@ export class RequestSession {
   // Resolve to the user, or throw 401 without a login, and 403 with
   // `confirmationRequired` without confirmed access, which makes the admin
   // confirm the access and send the request again.
-  async checkConfirmedAccess<U extends User = any>() {
+  async checkConfirmedAccess<U extends AuthUser = any>() {
     const user = await this.getUser<U>()
     if (!user) throw createAuthError('Unauthorized Access')
     const { confirmedAccess } = this.value
@@ -228,7 +228,9 @@ export class RequestSession {
   }
 }
 
-export function createSessions(options: CreateSessionsOptions) {
+export function createSessions<U extends AuthUser>(
+  options: CreateSessionsOptions<U>
+) {
   const { adapter, secrets, cookieName } = options
   const sessionOptions = { ...options, maxAge: parseDuration(options.maxAge) }
   if (secrets.length === 0) {
@@ -297,11 +299,8 @@ export function createSessions(options: CreateSessionsOptions) {
     middleware,
     readSignedCookie,
     setSignedCookie,
-    // The id and roles of the session's user, for `createApi()`.
-    async getUser({ c }: { c: Context }) {
-      const user = await getSession(c).getUser()
-      return user ? { id: user.id, roles: user.roles ?? [] } : null
-    }
+    // The session's user, for `createApi()` and `createAdmin()`.
+    getUser: ({ c }: { c: Context }) => getSession(c).getUser<U>()
   }
 }
 

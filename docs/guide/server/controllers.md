@@ -97,7 +97,7 @@ A handler gets one object, its context:
 | ---------------- | ------------------------------------------------------------------------------------------------------------- |
 | `query`, `body`  | The query and the JSON body, validated by the action's schemas.                                               |
 | `params`         | The parameters of the path.                                                                                   |
-| `user`           | `{ id, roles }` of the signed-in user, or `null`.                                                             |
+| `user`           | The signed-in user, or `null`.                                                                                |
 | `action`         | The key of the action, such as `'post :id/publish'`.                                                          |
 | `id`             | In model controllers, the id of a record action.                                                              |
 | `entity`         | In model controllers, the entity. `em.getMetadata(entity)` returns its metadata.                              |
@@ -350,7 +350,7 @@ can't express.
 
 ```js
 deserialize({ json, c }) {
-  return c.var.user?.roles.includes('admin')
+  return c.var.user?.roles?.includes('admin')
     ? json
     : omit(json, ['internalNotes'])
 }

@@ -47,6 +47,17 @@ const api = createApi({
           passwordReset: { confirmUrl: 'https://example.com/{token}', send }
         })
       ]
+    },
+    {
+      path: 'requests',
+      actions: {
+        'get user': async ({ user, session }) => ({
+          isEntity: user instanceof Member,
+          isSessionUser: user === (await session.getUser())
+        }),
+        'get self': ({ user }) => user,
+        'get editor': { authorize: 'editor', handler: () => 'ok' }
+      }
     }
   ]
 })
@@ -67,6 +78,34 @@ beforeEach(async () => {
 
 const login = () =>
   client.post('/members/login', { username: email, password: 'secret' })
+
+describe('the user of a request', () => {
+  it('is the entity of the session', async () => {
+    await login()
+    const { data } = await client.get('/requests/user')
+    expect(data).toEqual({ isEntity: true, isSessionUser: true })
+  })
+
+  it('leaves out the hash when a handler returns it', async () => {
+    await login()
+    const { data } = await client.get('/requests/self')
+    expect(data).toEqual({ id: 1, email, roles: [] })
+  })
+
+  it('has no roles without a value in `roles`', async () => {
+    await orm.em.fork().nativeUpdate(Member, { id: 1 }, { roles: null })
+    await login()
+    expect((await client.get('/requests/editor')).status).toBe(403)
+  })
+
+  it('reads the user once per request', async () => {
+    await login()
+    const findOne = vi.spyOn(orm.em.getDriver(), 'findOne')
+    await client.get('/requests/user')
+    expect(findOne).toHaveBeenCalledTimes(1)
+    findOne.mockRestore()
+  })
+})
 
 describe('createUsers() with `usernameProperty`', () => {
   it('logs in users of an entity without `lastLogin`', async () => {

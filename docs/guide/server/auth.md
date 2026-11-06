@@ -86,6 +86,11 @@ session after the action, see
 Handlers get the session as `session` of their context. `useSession()` returns
 the session of the running request, also in functions that a handler calls.
 
+Handlers read the signed-in user as `user` of their context, or `c.var.user`.
+It is the entity, which the session loads once per request. So they read its own
+properties without another query. `session.getUser()` gives the same entity
+where no handler runs, such as in the app's own Hono routes.
+
 Sessions use the database outside of the action's transaction. This is because
 they load before the action, and save after it.
 `deleteExpiredSessions(adapter)` deletes the expired rows. The `jobs` of the

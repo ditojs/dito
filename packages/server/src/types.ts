@@ -13,9 +13,11 @@ export type Verb = 'get' | 'post' | 'put' | 'patch' | 'delete'
 
 type ActionKey = Verb | `${Verb} ${string}`
 
+// The signed-in user of a request, such as the entity of `@ditojs/auth`. A user
+// without `roles` has none.
 export interface User {
   id: number | string
-  roles: string[]
+  roles?: string[] | null
 }
 
 // The handle of the database, which adapters type by augmenting
