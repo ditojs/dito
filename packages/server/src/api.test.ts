@@ -739,7 +739,7 @@ describe('authorize', () => {
       [
         controller({
           authorize: ({ c, user }) => (
-            !!user?.roles.includes('admin') ||
+            !!user?.roles?.includes('admin') ||
             c.req.param('id') === String(user?.id)
           ),
           actions: { 'get :id': () => 'row' }
