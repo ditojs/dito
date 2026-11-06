@@ -86,6 +86,11 @@ export function createApi({
     }
     routeShapes.add(shape)
     const handlers: Middleware[] = [
+      // Set it first, so that request logs also cover the failures of `setup`.
+      async (c, next) => {
+        c.set('action', action.key)
+        await next()
+      },
       ...setup,
       ...getMiddleware(action, adapter.transact),
       async c => respond(c, action)
@@ -96,19 +101,14 @@ export function createApi({
   return app
 }
 
-// Set `c.var.action`, authorize, validate the query and the body, open the
-// transaction, and run the action's `middleware`, in this order.
+// Authorize, validate the query and the body, open the transaction, and run
+// the action's `middleware`, in this order.
 function getMiddleware(
   action: ResolvedAction,
   transact: Transact | undefined
 ): Middleware[] {
-  const { authorize, query, body, key, verb } = action
-  const middleware: Middleware[] = [
-    async (c, next) => {
-      c.set('action', key)
-      await next()
-    }
-  ]
+  const { authorize, query, body, verb } = action
+  const middleware: Middleware[] = []
   // Reads without `authorize` let anyone in.
   if (authorize !== undefined && authorize !== true) {
     middleware.push(async (c, next) => {

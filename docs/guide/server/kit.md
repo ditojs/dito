@@ -120,8 +120,9 @@ logger: { level: 'info', transport: { target: 'pino-pretty' } }
 `logger` holds the options of [pino](https://getpino.io). Without `transport`,
 the logger writes JSON lines. The app installs `pino-pretty` itself.
 
-Each API action logs one line, such as `GET /books 200 12ms`. Files and unknown
-paths log nothing, as a reverse proxy logs them.
+Each API action logs one line, such as `GET /books 200 12ms`, also when it fails
+before the action runs. The line leaves out the query, as tokens travel in it.
+Files and unknown paths log nothing, as a reverse proxy logs them.
 
 `app.logger` adds the id of the current request, and responses send it as
 `X-Request-Id`. Errors with a status of 500 or above log with it too.

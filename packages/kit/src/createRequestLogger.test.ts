@@ -32,7 +32,7 @@ describe('createRequestLogger()', () => {
     const [reading, first, , second] = entries
     expect(reading).toMatchObject({ msg: 'Reading' })
     expect(reading!.requestId).toBe(first!.requestId)
-    expect(first!.msg).toMatch(/^GET \/books\?page=2 200 \d+ms$/)
+    expect(first!.msg).toMatch(/^GET \/books 200 \d+ms$/)
     expect(first!.requestId).toBe(response.headers.get('X-Request-Id'))
     expect(second!.requestId).not.toBe(first!.requestId)
   })

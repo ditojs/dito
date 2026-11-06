@@ -1599,6 +1599,21 @@ describe('errors', () => {
     }
   ])
 
+  it('sets `c.var.action` before the middleware of `users`', async () => {
+    const actions: string[] = []
+    const api = setup(
+      [{ path: 'fonts', actions: { 'get :id': () => 'font' } }],
+      {
+        middleware: async (c, next) => {
+          actions.push(c.var.action)
+          await next()
+        }
+      }
+    )
+    await request(api, 'GET', '/api/fonts/1')
+    expect(actions).toEqual(['get :id'])
+  })
+
   it('takes the message of an HttpError as a string', async () => {
     const error = new HttpError(404, 'Unknown code')
     expect(error.toJSON()).toMatchObject({

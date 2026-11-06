@@ -90,12 +90,12 @@ Other middleware goes on the Hono app, or on the controllers and mixins.
 For each request of an action, Hono and Dito:
 
 1. match the route. `HEAD` runs the `GET` action and sends no body;
-2. run Hono's `contextStorage()`, for functions such as
+2. set `c.var.action`, the key of the action;
+3. run Hono's `contextStorage()`, for functions such as
    [`useEm()`](mikro.md#useem) and [`useSession()`](auth.md#usesession);
-3. run the middleware of `users`;
-4. set `c.var.em` with `connect()` of the adapter;
-5. set `c.var.user` with `getUser` of `users`;
-6. set `c.var.action`, the key of the action;
+4. run the middleware of `users`;
+5. set `c.var.em` with `connect()` of the adapter;
+6. set `c.var.user` with `getUser` of `users`;
 7. check the action's `authorize`, which responds with 401 without a user, and
    with 403 with one;
 8. validate the query and the body with the action's schemas, through
