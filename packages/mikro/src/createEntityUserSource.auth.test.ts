@@ -31,8 +31,10 @@ const { orm, drop } = await createTestDatabase([Member, Session, Credential])
 
 afterAll(drop)
 
+const adapter = createMikroAdapter(orm)
+
 const members = createUsers(Member, {
-  orm,
+  adapter,
   secrets: ['secret sauce'],
   session: { cookieName: 'member.sess', maxAge: 60_000 },
   serialize: ['id', 'username']
@@ -41,7 +43,7 @@ const members = createUsers(Member, {
 const app = new Hono().route(
   '/',
   createApi({
-    adapter: createMikroAdapter(orm),
+    adapter,
     users: members,
     controllers: [
       { path: 'auth', mixins: [members.defineActions()] },
@@ -140,7 +142,7 @@ describe('defineUserWrites() with confirmed access', () => {
   const app = new Hono().route(
     '/',
     createApi({
-      adapter: createMikroAdapter(orm),
+      adapter,
       users: members,
       controllers: [
         {
@@ -191,7 +193,7 @@ describe('createUsers() on read-only controllers', () => {
     const readOnly = new Hono().route(
       '/',
       createApi({
-        adapter: createMikroAdapter(orm),
+        adapter,
         users: members,
         controllers: [
           defineModelController({

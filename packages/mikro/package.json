@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./types": "./src/types.ts",
+    "./internal": "./src/internal.ts",
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -48,6 +49,10 @@
       "./types": {
         "types": "./dist/types.d.ts",
         "import": "./dist/types.js"
+      },
+      "./internal": {
+        "types": "./dist/internal.d.ts",
+        "import": "./dist/internal.js"
       },
       "./package.json": "./package.json"
     },

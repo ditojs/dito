@@ -36,7 +36,7 @@ export const paths: AssetPath[] = [
   { ...bookPath, column: 'notes', path: '**.file', storage: 'covers' }
 ]
 
-export const getDatabase = (c: DitoContext) => c.var.em as Kysely<any>
+export const getKysely = (c?: DitoContext) => c!.var.em as Kysely<any>
 
 export function setupAssetTests() {
   beforeAll(async () => {

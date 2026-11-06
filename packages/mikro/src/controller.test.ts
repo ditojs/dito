@@ -11,6 +11,7 @@ import {
   type ControllerDefinition,
   type DitoContext
 } from '@ditojs/server'
+import type { EntityWrapper } from '@ditojs/server/internal'
 import { OptimisticLockError, type FilterOptions } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
 import {
@@ -23,8 +24,8 @@ import {
   defineList,
   defineModelController,
   defineTextFilter,
-  guardEntity,
   type FindShape,
+  type MikroAdapter,
   type ModelControllerDefinition
 } from './index.ts'
 import { mergeFind } from './find.ts'
@@ -2742,46 +2743,101 @@ describe('createMikroAdapter()', () => {
     expect(onError.mock.calls[0]![0].error).toBe(error)
   })
 
-  it('runs the guards of an entity, without adding routes', async () => {
+  describe('wrapEntity()', () => {
+    const createInfoApi = (adapter: MikroAdapter) =>
+      createApi({
+        controllers: [
+          defineModelController({
+            path: 'infos',
+            entity: Info,
+            actions: { 'get': true, 'get count': ({ em }) => em.count(Info) }
+          })
+        ],
+        adapter,
+        onError: () => {}
+      })
+
     const calls: string[] = []
-    const addGuard = (name: string, call: string) =>
-      guardEntity(Info, name, {
-        middleware: async (_c, next) => {
-          calls.push(`${call} middleware`)
-          await next()
+    const createWrapper = (name: string): EntityWrapper => ({
+      middleware: async (_c, next) => {
+        calls.push(`${name} middleware`)
+        await next()
+      },
+      actions: {
+        get: ({ next }) => {
+          calls.push(`${name} action`)
+          return next()
         },
+        post: () => {
+          throw new Error('Unused wrapper')
+        }
+      }
+    })
+
+    beforeEach(() => {
+      calls.length = 0
+    })
+
+    it('runs the wrappers, without adding routes', async () => {
+      const adapter = createMikroAdapter(orm)
+      // Controllers read the wrappers per request:
+      const api = createInfoApi(adapter)
+      adapter.wrapEntity(Info, createWrapper('first'))
+      adapter.wrapEntity(Info, createWrapper('second'))
+      expect((await request(api, 'GET', '/infos')).status).toBe(200)
+      expect(calls).toEqual([
+        'first middleware',
+        'second middleware',
+        'first action',
+        'second action'
+      ])
+      calls.length = 0
+      await request(api, 'GET', '/infos/count')
+      expect(calls).toEqual(['first middleware', 'second middleware'])
+      expect((await request(api, 'POST', '/infos', {})).status).toBe(404)
+    })
+
+    it('lets a wrapper change the body for the default action', async () => {
+      const adapter = createMikroAdapter(orm)
+      adapter.wrapEntity(Book, {
         actions: {
-          get: ({ next }) => {
-            calls.push(`${call} action`)
-            return next()
-          },
-          post: () => {
-            throw new Error('Unused guard')
+          post: context => {
+            context.body = { ...context.body, name: 'Changed' }
+            return context.next()
           }
         }
       })
-    // Controllers read the guards per request:
-    const api = setup(
-      defineModelController({
-        path: 'infos',
-        entity: Info,
-        actions: { 'get': true, 'get count': ({ em }) => em.count(Info) }
+      const api = createApi({
+        controllers: [
+          defineModelController({
+            path: 'books',
+            entity: Book,
+            authorize: true,
+            actions: { post: true }
+          })
+        ],
+        adapter,
+        getUser: async () => null,
+        onError: () => {}
       })
-    )
-    addGuard('first', 'replaced')
-    addGuard('first', 'first')
-    addGuard('second', 'second')
-    expect((await request(api, 'GET', '/api/infos')).status).toBe(200)
-    expect(calls).toEqual([
-      'first middleware',
-      'second middleware',
-      'first action',
-      'second action'
-    ])
-    calls.length = 0
-    await request(api, 'GET', '/api/infos/count')
-    expect(calls).toEqual(['first middleware', 'second middleware'])
-    expect((await request(api, 'POST', '/api/infos', {})).status).toBe(404)
+      const { json } = await request(api, 'POST', '/books', { name: 'Sent' })
+      expect(json.name).toBe('Changed')
+    })
+
+    it('keeps the wrappers to their adapter', async () => {
+      const adapter = createMikroAdapter(orm)
+      adapter.wrapEntity(Info, createWrapper('other'))
+      await request(createInfoApi(createMikroAdapter(orm)), 'GET', '/infos')
+      expect(calls).toEqual([])
+    })
+
+    it('returns the function that removes the wrapper', async () => {
+      const adapter = createMikroAdapter(orm)
+      const unwrap = adapter.wrapEntity(Info, createWrapper('removed'))
+      unwrap()
+      await request(createInfoApi(adapter), 'GET', '/infos')
+      expect(calls).toEqual([])
+    })
   })
 
   it('gives each request a fork of the entity manager', async () => {

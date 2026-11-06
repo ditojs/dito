@@ -8,7 +8,11 @@ import {
   type HandlerContext,
   type MixinDefinition
 } from '@ditojs/server'
-import { getLayers } from '@ditojs/server/internal'
+import {
+  chainHandlers,
+  getLayers,
+  type EntityWrapper
+} from '@ditojs/server/internal'
 import {
   asArray,
   isFunction,
@@ -28,6 +32,13 @@ import {
   type ModelDefinition
 } from './ModelRequest.ts'
 import { respond } from './respond.ts'
+
+declare module 'hono' {
+  interface ContextVariableMap {
+    // The wrappers of the adapter, from its `connect()`.
+    wrappersByEntity: Map<object, Set<EntityWrapper>>
+  }
+}
 
 declare module '@ditojs/server' {
   interface MixinDefinition {
@@ -64,26 +75,6 @@ export interface ModelControllerDefinition<T extends object = any>
   resolveId?: (context: { c: DitoContext; id: string }) => unknown
 }
 
-export type EntityGuard = Pick<MixinDefinition, 'actions' | 'middleware'>
-
-// The guards of an entity by name. Model controllers read them per request, so
-// a guard also reaches the controllers that were defined before it.
-const guardsByEntity = new WeakMap<EntityClass<any>, Map<string, EntityGuard>>()
-
-// Guard every model controller of `entity`, without adding routes. The
-// `actions` of `guard` run around the default actions, and their `next` runs
-// the default action. Its `middleware` runs on all actions of the controllers.
-// A guard replaces the one of the same name. Guards belong to the entity, so
-// they apply to all apps of the process that share it.
-export function guardEntity(
-  entity: EntityClass<any>,
-  name: string,
-  guard: EntityGuard
-) {
-  const guards = guardsByEntity.get(entity) ?? new Map<string, EntityGuard>()
-  guardsByEntity.set(entity, guards.set(name, guard))
-}
-
 export function defineModelController<T extends object>(
   definition: ModelControllerDefinition<T>
 ): ControllerDefinition {
@@ -115,21 +106,12 @@ export function defineModelController<T extends object>(
     actions: mapValues(
       pickBy(defaultActions, (value, key) => keys.has(key)),
       (action, key) => (input: HandlerContext) => {
-        const handlers = getGuards(entity)
-          .map(guard => guard.actions?.[key as keyof Actions])
+        const handlers = getWrappers(input.c, entity)
+          .map(wrapper => wrapper.actions?.[key as keyof Actions])
           .filter(isFunction)
-        const run = handlers.reduceRight<Handler>(
-          (beneath, handler) => input => {
-            // The guard may change `body` for the handler beneath.
-            const context = {
-              ...input,
-              next: async () => beneath(context)
-            }
-            return handler(context)
-          },
-          action as Handler
-        )
-        return run(input)
+        return handlers.length
+          ? chainHandlers([action as Handler, ...handlers.reverse()])(input)
+          : (action as Handler)(input)
       }
     ),
 
@@ -149,11 +131,10 @@ export function defineModelController<T extends object>(
       c.set('find', request.find.bind(request))
       c.set('list', request.list.bind(request))
       c.set('getListQuery', request.getListQuery.bind(request))
-      const guards = getGuards(entity)
-      await every(...guards.flatMap(guard => asArray(guard.middleware)))(
-        c,
-        next
+      const middleware = getWrappers(c, entity).flatMap(wrapper =>
+        asArray(wrapper.middleware)
       )
+      await (middleware.length ? every(...middleware)(c, next) : next())
     }
   }
 
@@ -181,8 +162,10 @@ export function defineModelController<T extends object>(
   })
 }
 
-function getGuards(entity: EntityClass<any>) {
-  return [...(guardsByEntity.get(entity)?.values() ?? [])]
+// Read the wrappers per request, as they also reach the controllers that were
+// defined before them.
+function getWrappers(c: DitoContext, entity: EntityClass<any>) {
+  return [...(c.var.wrappersByEntity.get(entity) ?? [])]
 }
 
 function hasHandler(actions: Actions = {}, key: string) {

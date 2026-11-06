@@ -1,5 +1,5 @@
 import { tryGetContext } from 'hono/context-storage'
-import type { z } from 'zod'
+import { z } from 'zod'
 import {
   serialize as serializeEntity,
   type EntityClass,
@@ -7,13 +7,14 @@ import {
 } from '@mikro-orm/core'
 import type { DitoEnv } from '@ditojs/server'
 import { isFunction, mapValues } from '@ditojs/utils'
+import type { MikroAdapter } from './createMikroAdapter.ts'
 import { getPrimaryKey, toPrimaryKey } from './metadata.ts'
 
-// The `UserSource` of `@ditojs/auth`, which depends on this package.
+// The users of one kind, for `@ditojs/auth`, which depends on this package.
 
 export interface CreateEntityUserSourceOptions<U extends object> {
-  // The ORM, for queries outside of the API's requests.
-  orm: { em: EntityManager }
+  // The adapter of the API, with its `session` and `credential` tables.
+  adapter: MikroAdapter
   // The property of the username. Default: `username`.
   usernameProperty?: string
   // The condition that users must also meet to be found, such as
@@ -30,21 +31,23 @@ export interface CreateEntityUserSourceOptions<U extends object> {
   password?: z.ZodType<string>
 }
 
+export const defaultPasswordSchema = z
+  .string({ error: 'The password is required.' })
+  .min(8, 'The password needs at least 8 characters.')
+
 export function createEntityUserSource<U extends { id: number | string }>(
   entity: EntityClass<U>,
   {
-    orm,
+    adapter,
     usernameProperty = 'username',
     where,
     serialize,
     computed = {},
-    password
+    password = defaultPasswordSchema
   }: CreateEntityUserSourceOptions<U>
 ) {
   // Outside of the API, such as in session middleware, query with a fork:
-  const getEm = (): EntityManager => (
-    tryGetContext<DitoEnv>()?.var.em ?? orm.em.fork()
-  )
+  const getEm = () => adapter.getEm(tryGetContext<DitoEnv>())
 
   // `hash` needs to be hidden, or it would go out with the users in each
   // response that holds them:
@@ -67,6 +70,7 @@ export function createEntityUserSource<U extends { id: number | string }>(
     )
 
   return {
+    // The users' prefix in sessions and credentials, as in `'<name>-<id>'`.
     name: entity.name,
     usernameProperty,
     password,
@@ -80,7 +84,8 @@ export function createEntityUserSource<U extends { id: number | string }>(
     async findByUsername(username: string): Promise<U | null> {
       return findOne(getEm(), { [usernameProperty]: username })
     },
-    // Write the values at once, without flushing the request's other changes:
+    // Write the values at once and set them on `user`, without flushing the
+    // request's other changes:
     async patch(user: U, values: object) {
       const em = getEm()
       const { name } = getKey(em)

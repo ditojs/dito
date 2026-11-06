@@ -1,7 +1,6 @@
 import { tryGetContext } from 'hono/context-storage'
-import { guardEntity } from '@ditojs/mikro'
 import { isString, parseDuration } from '@ditojs/utils'
-import type { Adapter, DitoContext, MixinDefinition } from '@ditojs/server'
+import type { Adapter, MixinDefinition } from '@ditojs/server'
 import type { StoreOptions } from './Storage.ts'
 import {
   getDataPath,
@@ -41,6 +40,10 @@ export interface DefineUploadsOptions {
   uploads?: AssetUpload[]
 }
 
+// The functions that remove the wrappers of the last `createAssets()` of each
+// adapter.
+const unwrapsByAdapter = new WeakMap<Adapter, (() => void)[]>()
+
 export function createAssets({
   adapter,
   paths,
@@ -56,18 +59,23 @@ export function createAssets({
   // Writes and uploads use the Kysely of the request, so that the `asset` rows
   // of a write commit with its transaction. The other methods run outside of
   // the requests' transactions.
-  const getDatabase = (c: DitoContext) => adapter.getKysely(c)
-  // All model controllers of the entities track the files of their writes:
+  const { getKysely } = adapter
+  // All model controllers of the entities track the files of their writes. A
+  // repeated call on an adapter replaces the wrappers:
+  for (const unwrap of unwrapsByAdapter.get(adapter) ?? []) unwrap()
   const pathsByEntity = Map.groupBy(normalizedPaths, path => path.entity)
+  const unwraps = []
   for (const [entity, paths] of pathsByEntity) {
-    if (entity) {
-      guardEntity(
-        entity,
-        'assets',
-        defineAssetWrites({ paths, storages, getDatabase })
+    if (entity && adapter.wrapEntity) {
+      unwraps.push(
+        adapter.wrapEntity(
+          entity,
+          defineAssetWrites({ paths, storages, getKysely })
+        )
       )
     }
   }
+  unwrapsByAdapter.set(adapter, unwraps)
 
   return {
     paths,
@@ -102,7 +110,7 @@ export function createAssets({
           }))
         ],
         storages,
-        getDatabase
+        getKysely
       })
     },
 

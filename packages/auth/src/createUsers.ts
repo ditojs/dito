@@ -1,10 +1,8 @@
 import type { EntityClass } from '@mikro-orm/core'
 import {
   createEntityUserSource,
-  createMikroAdapter,
-  guardEntity,
   type CreateEntityUserSourceOptions
-} from '@ditojs/mikro'
+} from '@ditojs/mikro/internal'
 import { createCredentials } from './credentials.ts'
 import type { CreatePasswordResetOptions } from './passwordReset.ts'
 import { defineUserWrites } from './passwords.ts'
@@ -16,12 +14,8 @@ import {
 import type { User } from './users.ts'
 
 export interface CreateUsersOptions<U extends object>
-  extends Omit<CreateEntityUserSourceOptions<U>, 'orm'> {
-  // The ORM with its `session` and `credential` tables.
-  orm: Parameters<typeof createMikroAdapter>[0]
-  // The secrets that sign the cookies and the password reset links. The first
-  // one signs, and all of them verify, so secrets can rotate.
-  secrets: string[]
+  extends CreateEntityUserSourceOptions<U>,
+    Pick<CreateSessionsOptions, 'secrets'> {
   session: Pick<CreateSessionsOptions, 'cookieName' | 'maxAge'>
 }
 
@@ -39,10 +33,9 @@ export type Users<U extends User = any> = ReturnType<typeof createUsers<U>>
 // sessions save after a failed request and TOTP failures stay counted.
 export function createUsers<U extends User>(
   entity: EntityClass<U>,
-  { orm, secrets, session, ...options }: CreateUsersOptions<U>
+  { adapter, secrets, session, ...options }: CreateUsersOptions<U>
 ) {
-  const source = createEntityUserSource<U>(entity, { ...options, orm })
-  const adapter = createMikroAdapter(orm)
+  const source = createEntityUserSource<U>(entity, { ...options, adapter })
   const sessions = createSessions({
     ...session,
     adapter,
@@ -51,7 +44,7 @@ export function createUsers<U extends User>(
   })
   const credentials = createCredentials({ adapter })
   // All model controllers of the entity hash passwords and protect their users.
-  guardEntity(entity, 'users', defineUserWrites<U>({ source, credentials }))
+  adapter.wrapEntity(entity, defineUserWrites<U>({ source, credentials }))
 
   return {
     ...source,

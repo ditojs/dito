@@ -123,21 +123,26 @@ function resolveActions(controllerPath: string, layers: MixinDefinition[]) {
         ...layers.flatMap(layer => asArray(layer.middleware)),
         ...definitions.flatMap(definition => asArray(definition.middleware))
       ],
-      run: handlers.reduce<ActionRun>(
-        (beneath, handler) => async context => {
-          // Each handler has its own `next`. The layer beneath starts from
-          // this context, so that a handler can change `context.body` for it.
-          const layerContext: HandlerContext = {
-            ...context,
-            next: () => beneath(layerContext)
-          }
-          return handler(layerContext)
-        },
-        async () => undefined
-      )
+      run: chainHandlers(handlers)
     })
   }
   return actions
+}
+
+// Chain the handlers into one, the last handler outermost.
+export function chainHandlers(handlers: Handler[]) {
+  return handlers.reduce<ActionRun>(
+    (beneath, handler) => async context => {
+      // Each handler has its own `next`. The layer beneath starts from this
+      // context, so that a handler can change `context.body` for it.
+      const layerContext: HandlerContext = {
+        ...context,
+        next: () => beneath(layerContext)
+      }
+      return handler(layerContext)
+    },
+    async () => undefined
+  )
 }
 
 // Paths have no empty segments, so no leading, trailing or double slashes.

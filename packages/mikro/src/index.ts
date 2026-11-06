@@ -2,8 +2,6 @@
 // them.
 export {
   defineModelController,
-  guardEntity,
-  type EntityGuard,
   type ModelControllerDefinition
 } from './controller.ts'
 export { crud, defineChoices, defineList } from './crud.ts'
@@ -22,8 +20,8 @@ export {
   type JsonTypeAsset,
   type DefineJsonTypeOptions
 } from './SchemaJsonType.ts'
-export { createMikroAdapter, useEm } from './createMikroAdapter.ts'
 export {
-  createEntityUserSource,
-  type CreateEntityUserSourceOptions
-} from './createEntityUserSource.ts'
+  createMikroAdapter,
+  useEm,
+  type MikroAdapter
+} from './createMikroAdapter.ts'

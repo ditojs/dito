@@ -174,7 +174,15 @@ export interface Adapter {
   transact?: Transact
   // The `HttpError` of a database error, or undefined for other errors.
   toHttpError?: (error: unknown, c: DitoContext) => HttpError | undefined
+  // Wraps all model controllers of `entity` on this adapter, and returns the
+  // function that removes the wrapper. For Dito's own packages.
+  wrapEntity?: (entity: object, wrapper: EntityWrapper) => () => void
 }
+
+// Wraps the model controllers of an entity, without adding routes. Its
+// `actions` run around the default actions, and their `next` runs the default
+// action. Its `middleware` runs on all actions of the controllers.
+export type EntityWrapper = Pick<MixinDefinition, 'actions' | 'middleware'>
 
 // Runs next to the server, such as a mailer or a scheduler. `stop()` ends once
 // its work is done, as the database may close right after it.

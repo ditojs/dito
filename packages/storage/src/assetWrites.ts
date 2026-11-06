@@ -10,7 +10,7 @@ import {
 import {
   HttpError,
   createValidationError,
-  type DitoContext,
+  type Adapter,
   type MixinDefinition
 } from '@ditojs/server'
 import { bodyValidation } from '@ditojs/server/internal'
@@ -28,10 +28,6 @@ import {
   type NormalizedAssetPath
 } from './assetPaths.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
-
-// Use the Kysely of the request, such as one on `c.var.em`, so that the
-// `asset` rows of a write commit with its transaction:
-export type GetDatabase = (c: DitoContext) => Kysely<any>
 
 interface AssetOptions {
   paths: NormalizedAssetPath[]
@@ -67,8 +63,8 @@ const importConcurrency = 8
 export function defineAssetWrites({
   paths,
   storages,
-  getDatabase
-}: AssetOptions & { getDatabase: GetDatabase }): MixinDefinition {
+  getKysely
+}: AssetOptions & Pick<Adapter, 'getKysely'>): MixinDefinition {
   return {
     middleware: async (c, next) => {
       const imported: AssetPathFile[] = []
@@ -81,7 +77,7 @@ export function defineAssetWrites({
         checkFiles(c.var.body, paths)
         const files = findFiles(c.var.body, paths, storages)
         if (files.length > 0) {
-          const database = getDatabase(c)
+          const database = getKysely(c)
           try {
             // Files that can't be accepted throw a 400.
             const unreferenced = await importFiles(database, files, {

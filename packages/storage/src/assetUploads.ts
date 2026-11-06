@@ -3,9 +3,14 @@ import { pipeline } from 'node:stream/promises'
 import busboy from 'busboy'
 import picomatch from 'picomatch'
 import { camelize } from '@ditojs/utils'
-import { HttpError, defineAction, type MixinDefinition } from '@ditojs/server'
+import {
+  HttpError,
+  defineAction,
+  type Adapter,
+  type MixinDefinition
+} from '@ditojs/server'
 import type { AssetFile } from './Storage.ts'
-import { storeAsset, type GetDatabase } from './assetWrites.ts'
+import { storeAsset } from './assetWrites.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
 
 export interface AssetUpload {
@@ -25,7 +30,7 @@ export interface NormalizedAssetUpload extends Omit<AssetUpload, 'maxSize'> {
 export interface DefineAssetUploadsOptions {
   uploads: NormalizedAssetUpload[]
   storages: StorageRegistry
-  getDatabase: GetDatabase
+  getKysely: Adapter['getKysely']
 }
 
 // Define the action of the Dito admin's upload component,
@@ -35,7 +40,7 @@ export interface DefineAssetUploadsOptions {
 export function defineAssetUploads({
   uploads,
   storages,
-  getDatabase
+  getKysely
 }: DefineAssetUploadsOptions): MixinDefinition {
   const matchers = uploads.map(upload => ({
     ...upload,
@@ -61,7 +66,7 @@ export function defineAssetUploads({
             })
           }
           const storage = storages.get(upload.storage)
-          const database = getDatabase(c)
+          const database = getKysely(c)
           const parser = busboy({
             headers: { 'content-type': contentType },
             limits: { fileSize: upload.maxSize }

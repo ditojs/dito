@@ -8,7 +8,8 @@ import {
   createMikroAdapter,
   defineJsonType,
   defineModelController,
-  getAssetPaths
+  getAssetPaths,
+  type MikroAdapter
 } from '@ditojs/mikro'
 import { createAssets, createStorages, type AssetFile } from './index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
@@ -52,6 +53,7 @@ const books = defineModelController({
 })
 
 let database: Awaited<ReturnType<typeof createTestDatabase>>
+let adapter: MikroAdapter
 let basePath: string
 let assets: ReturnType<typeof createAssets>
 let api: ReturnType<typeof createApi>
@@ -71,7 +73,7 @@ const store = (name: string): Promise<AssetFile> =>
 beforeAll(async () => {
   database = await createTestDatabase([Book, AssetSchema])
   basePath = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-assets-'))
-  const adapter = createMikroAdapter(database.orm)
+  adapter = createMikroAdapter(database.orm)
   assets = createAssets({
     adapter,
     paths: getAssetPaths([Book]),
@@ -145,7 +147,7 @@ describe('tracking the files of model controllers', () => {
           mixins: [crud, assets.defineUploads('book')]
         })
       ],
-      adapter: createMikroAdapter(database.orm),
+      adapter,
       getUser: async () => null,
       onError: () => {}
     })
@@ -159,6 +161,21 @@ describe('tracking the files of model controllers', () => {
     )
     const [file] = await response.json()
     expect(file).toMatchObject({ name: 'front.txt', size: 5 })
+  })
+
+  it('replaces the tracking of an earlier call on the adapter', async () => {
+    const wrapEntity = vi.spyOn(adapter, 'wrapEntity')
+    const storages = createStorages({
+      covers: { type: 'disk', path: basePath, url: '/covers/' }
+    })
+    const unwrap = vi.fn()
+    wrapEntity.mockReturnValueOnce(unwrap)
+    const options = { adapter, paths: getAssetPaths([Book]), storages }
+    createAssets(options)
+    expect(unwrap).not.toHaveBeenCalled()
+    createAssets(options)
+    expect(unwrap).toHaveBeenCalledOnce()
+    wrapEntity.mockRestore()
   })
 
   it('throws in `defineUploads()` for tables without paths', () => {

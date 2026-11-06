@@ -14,7 +14,8 @@ import { serve, type ServeOptions } from '@ditojs/server/node'
 import {
   createMikroAdapter,
   defineMikroConfig,
-  getAssetPaths
+  getAssetPaths,
+  type MikroAdapter
 } from '@ditojs/mikro'
 import {
   createUsers,
@@ -69,7 +70,7 @@ export interface App {
   // The Hono app, for the app's own middleware and routes.
   hono: Hono
   orm: MikroORM
-  adapter: ReturnType<typeof createMikroAdapter>
+  adapter: MikroAdapter
   // The logger of the current request, with its id, else the app's.
   logger: Logger
   storages: StorageRegistry
@@ -77,7 +78,7 @@ export interface App {
   // Users of an entity on the app's database, signed with its secrets.
   createUsers<U extends User>(
     entity: EntityClass<U>,
-    options: Omit<CreateUsersOptions<U>, 'orm' | 'secrets'>
+    options: Omit<CreateUsersOptions<U>, 'adapter' | 'secrets'>
   ): Users<U>
   // Routes an API on the app's database.
   routeApi(
@@ -151,7 +152,7 @@ export function createApp({
     },
 
     createUsers(entity, options) {
-      const users = createUsers(entity, { ...options, orm, secrets })
+      const users = createUsers(entity, { ...options, adapter, secrets })
       deleteExpiredSessions ??= users.deleteExpiredSessions
       return users
     },

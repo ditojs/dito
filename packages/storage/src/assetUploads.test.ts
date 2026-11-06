@@ -356,7 +356,7 @@ describe('defineUploads()', () => {
             defineAssetUploads({
               uploads: [{ path: 'cover', storage: 'covers' }],
               storages: new StorageRegistry([counting]),
-              getDatabase: () => db
+              getKysely: () => db
             })
           ]
         }
@@ -384,7 +384,7 @@ describe('defineUploads()', () => {
             defineAssetUploads({
               uploads: [{ path: 'cover', storage: 'covers' }],
               storages: new StorageRegistry([broken]),
-              getDatabase: () => db
+              getKysely: () => db
             })
           ]
         }
@@ -425,7 +425,7 @@ describe('defineUploads()', () => {
               uploads: [{ path: 'cover', storage: 'covers' }],
               storages,
               // A schema without `asset` table makes the inserts fail.
-              getDatabase: () => db.withSchema('missing')
+              getKysely: () => db.withSchema('missing')
             })
           ]
         }

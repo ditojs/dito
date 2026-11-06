@@ -20,8 +20,10 @@ import * as entities from './entities/index.js'
 const storages = createStorages({
   public: { type: 'disk', path: 'storage/public', url: '/assets/' }
 })
+// The API takes the same adapter.
+const adapter = createMikroAdapter(orm)
 const assets = createAssets({
-  adapter: createMikroAdapter(orm),
+  adapter,
   paths: getAssetPaths(entities),
   storages
 })

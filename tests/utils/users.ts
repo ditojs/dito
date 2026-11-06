@@ -2,7 +2,7 @@ import type { EntityClass } from '@mikro-orm/core'
 import { wrap } from '@mikro-orm/core'
 import type { z } from 'zod'
 import { createUsers, type DefineActionsOptions } from '@ditojs/auth'
-import { assignRecord } from '@ditojs/mikro'
+import { assignRecord, createMikroAdapter } from '@ditojs/mikro'
 import { HttpError, type Handler } from '@ditojs/server'
 import type { TestApi } from './app.js'
 import type { TestOrm } from './database.js'
@@ -36,8 +36,9 @@ export function createUsersApi<U extends TestUser>({
   password,
   ...options
 }: UsersApiOptions<U>): TestApi {
+  const adapter = createMikroAdapter(orm)
   const users = createUsers(entity, {
-    orm,
+    adapter,
     secrets,
     session: { cookieName: 'dito.sess', maxAge: 24 * 60 * 60 * 1000 },
     // Leaves out the hidden `hash`.
@@ -64,6 +65,7 @@ export function createUsersApi<U extends TestUser>({
       }
     ],
     middleware: [users.middleware],
-    getUser: users.getUser
+    getUser: users.getUser,
+    adapter
   }
 }

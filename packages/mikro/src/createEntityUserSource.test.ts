@@ -3,7 +3,11 @@ import { contextStorage } from 'hono/context-storage'
 import type { EntityManager } from '@mikro-orm/core'
 import { z } from 'zod'
 import { defineEntity, p } from '@mikro-orm/core'
-import { createEntityUserSource } from './createEntityUserSource.ts'
+import {
+  createEntityUserSource,
+  defaultPasswordSchema
+} from './createEntityUserSource.ts'
+import { createMikroAdapter } from './createMikroAdapter.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 
 const AccountSchema = defineEntity({
@@ -49,8 +53,10 @@ const { orm, drop } = await createTestDatabase([Account, Device, Visitor])
 
 afterAll(drop)
 
+const adapter = createMikroAdapter(orm)
+
 const source = createEntityUserSource(Account, {
-  orm,
+  adapter,
   usernameProperty: 'email',
   where: { isActive: true },
   serialize: ['id', 'email'],
@@ -84,7 +90,7 @@ beforeEach(async () => {
 describe('createEntityUserSource()', () => {
   it('reads ids by the type of the primary key', async () => {
     const devices = createEntityUserSource(Device, {
-      orm,
+      adapter,
       usernameProperty: 'label',
       serialize: ['id']
     })
@@ -100,7 +106,7 @@ describe('createEntityUserSource()', () => {
 
   it('refuses entities that send their hash out', async () => {
     const visitors = createEntityUserSource(Visitor, {
-      orm,
+      adapter,
       serialize: ['id']
     })
     const message = `Invalid user entity 'Visitor': its 'hash' isn't hidden`
@@ -164,16 +170,16 @@ describe('createEntityUserSource()', () => {
 
   it('holds the schema of new passwords', () => {
     const password = z.string().min(12)
-    expect(source.password).toBe(undefined)
+    expect(source.password).toBe(defaultPasswordSchema)
     expect(
-      createEntityUserSource(Account, { orm, serialize: ['id'], password })
+      createEntityUserSource(Account, { adapter, serialize: ['id'], password })
         .password
     ).toBe(password)
   })
 
   it('serializes the entity without hidden properties by default', async () => {
     const source = createEntityUserSource(Account, {
-      orm,
+      adapter,
       usernameProperty: 'email',
       computed: { label: ({ user }) => user.email.toUpperCase() }
     })
@@ -189,7 +195,7 @@ describe('createEntityUserSource()', () => {
 
   it('takes a function as `serialize`', async () => {
     const custom = createEntityUserSource(Account, {
-      orm,
+      adapter,
       serialize: ({ user }) => ({ email: user.email })
     })
     const user = (await custom.findById(String(active.id)))!

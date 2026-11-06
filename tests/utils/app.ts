@@ -13,7 +13,7 @@ import {
   type Middleware,
   type User
 } from '@ditojs/server'
-import { createMikroAdapter } from '@ditojs/mikro'
+import { createMikroAdapter, type MikroAdapter } from '@ditojs/mikro'
 import '@ditojs/mikro/types'
 import type { Options } from '@mikro-orm/postgresql'
 import { createAdmin, type AdminServer } from '@ditojs/admin/server'
@@ -32,6 +32,8 @@ export interface TestApi {
   controllers: ControllerDefinition[]
   middleware?: Middleware[]
   getUser?: (context: { c: DitoContext }) => User | null | Promise<User | null>
+  // The adapter of the API, by default one on the ORM.
+  adapter?: MikroAdapter
 }
 
 export interface TestAppOptions {
@@ -90,7 +92,8 @@ export async function createTestApp(
   const {
     controllers = [],
     middleware = [],
-    getUser
+    getUser,
+    adapter = orm ? createMikroAdapter(orm) : undefined
   } = options.api?.(orm!) ?? {}
 
   const logError = ({ error }: { error: unknown }) => {
@@ -121,7 +124,7 @@ export async function createTestApp(
     createApi({
       controllers,
       middleware,
-      ...(orm && { adapter: createMikroAdapter(orm) }),
+      adapter,
       getUser,
       onError: logError
     })

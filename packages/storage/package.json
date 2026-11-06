@@ -31,7 +31,6 @@
   "peerDependencies": {
     "@aws-lite/client": "^0.24.0",
     "@aws-lite/s3": "^0.2.7",
-    "@ditojs/mikro": "workspace:^",
     "@ditojs/server": "workspace:^",
     "@hono/node-server": "^2.1.5",
     "@mikro-orm/core": "^7.2.5",

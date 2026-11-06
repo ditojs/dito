@@ -24,7 +24,7 @@ import {
   type Api,
   request,
   paths,
-  getDatabase,
+  getKysely,
   file,
   addImport,
   addAsset,
@@ -83,7 +83,7 @@ describe('defineAssetWrites()', () => {
         defineAssetWrites({
           paths: normalizeAssetPaths(assetPaths),
           storages,
-          getDatabase
+          getKysely
         })
       ],
       actions: {
@@ -93,7 +93,7 @@ describe('defineAssetWrites()', () => {
           if (body.conflict) {
             // A failed query aborts the transaction, as a failed flush does.
             await sql`select * from missing`
-              .execute(getDatabase(c))
+              .execute(getKysely(c))
               .catch(() => {
                 throw new HttpError(409)
               })
