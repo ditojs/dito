@@ -38,7 +38,7 @@ export function createMikroAdapter(orm: Orm): MikroAdapter {
     transact: async (c, fn) => {
       const { em } = c.var
       try {
-        return await em.transactional(async trx => {
+        return await em.transactional(async (trx: EntityManager) => {
           c.set('em', trx)
           return fn()
         })

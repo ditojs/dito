@@ -1,7 +1,7 @@
 import type { EntityClass } from '@mikro-orm/core'
 import { wrap } from '@mikro-orm/core'
 import type { z } from 'zod'
-import { createUsers, type DefineActionsOptions } from '@ditojs/auth'
+import { createUsers, type DefineUserActionsOptions } from '@ditojs/auth'
 import { assignRecord, createMikroAdapter } from '@ditojs/mikro'
 import { HttpError, type Handler } from '@ditojs/server'
 import type { TestApi } from './app.js'
@@ -21,7 +21,7 @@ export interface TestUser {
 
 export interface UsersApiOptions<
   U extends TestUser
-> extends DefineActionsOptions<U> {
+> extends DefineUserActionsOptions<U> {
   orm: TestOrm
   entity: EntityClass<U>
   secrets: string[]
