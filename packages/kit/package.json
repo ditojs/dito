@@ -16,8 +16,8 @@
     "@ditojs/server": "workspace:^",
     "@ditojs/storage": "workspace:^",
     "@hono/node-server": "^2.1.5",
-    "@mikro-orm/core": "^7.2.5",
-    "@mikro-orm/postgresql": "^7.2.5",
+    "@mikro-orm/core": "^7.2.7",
+    "@mikro-orm/postgresql": "^7.2.7",
     "@types/node": "^26.6.4",
     "hono": "^4.13.14"
   },
