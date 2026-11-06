@@ -144,7 +144,7 @@ export function serializeResult(
     const { __meta: meta } = wrap(entity, true)
     const json: Row = serialize(entity, getOutput(meta, plainShape))
     const nested = new Set([...ancestors, entity])
-    for (const prop of meta.relations) {
+    for (const prop of meta.relations.filter(prop => !prop.hidden)) {
       const value = entity[prop.name]
       const isLoaded = Utils.isCollection(value)
         ? value.isInitialized()

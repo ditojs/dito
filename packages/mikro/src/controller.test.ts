@@ -1460,6 +1460,26 @@ describe('output', () => {
     })
     expect(json.count).toBe(1)
   })
+
+  it('leaves out hidden relations that are loaded', async () => {
+    await sql(`update award set judge_id = 1`)
+    const api = setup(
+      books({
+        actions: {
+          'get award': async ({ em }) => ({
+            award: await em.findOneOrFail(
+              Award,
+              { name: 'PEN' },
+              { populate: ['judge'] }
+            )
+          })
+        }
+      })
+    )
+    const { json } = await request(api, 'GET', '/api/books/award')
+    expect(json.award.name).toBe('PEN')
+    expect(json.award).not.toHaveProperty('judge')
+  })
 })
 
 describe('default handlers', () => {
