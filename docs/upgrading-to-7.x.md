@@ -34,14 +34,14 @@ lines, medium one module of the app, and high every model or every controller.
 | `dito db:migrate`, `db:rollback`, `db:reset`, `db:unlock`, `db:create_migration`       | MikroORM's Migrator, whose `create()` writes migrations from the entities, see [step 11](#11-move-the-migrations-to-mikroorm)                                                                    | medium, once            |
 | The app's knex migrations, until step 11                                               | knex's own CLI, as a bridge, see [step 1](#1-run-the-migrations-with-knexs-cli)                                                                                                                  | low                     |
 | `dito db:seed` and `seeds/`                                                            | MikroORM's [seeder](https://mikro-orm.io/docs/seeding), or a script with an entity manager                                                                                                       | medium                  |
-| `dito console`                                                                         | A REPL script of ten lines, or `runPlayground()` of `@ditojs/kit/playground` for piped code, see [step 4](#4-create-the-app)                                                                     | low                     |
+| `dito console`                                                                         | A REPL script of ten lines, or `runPlayground()` of `@ditojs/kit` for piped code, see [step 4](#4-create-the-app)                                                                                | low                     |
 | `dito db:list_asset_config`, `db:recount_assets`                                       | The asset fields of the app, and `assets.runJobs()`                                                                                                                                              | low                     |
 | `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `jobs: { sessions }` of `createApp()`                                                                                                                                                            | low                     |
 | `new Application()`, `app.execute()`, `start()`, `stop()`                              | `createApp()` of `@ditojs/kit`, with `app.routeApi()` for the controllers of each area and `app.start()`, which stops on signals. Without the kit: `createHono()`, `createApi()` and `serve()`   | low                     |
 | `config` and its sections                                                              | The app's own config module, whose sections are the options of `createApp()`                                                                                                                     | low                     |
 | `config.knex`, `app.knex`, `normalizeDbNames`                                          | The `database` option of `createApp()`, with MikroORM's `dbName`, `host`, `user` and `password`, and `app.orm`; MikroORM maps camelCase names to snake_case by default; `em.getKysely()` for SQL | low                     |
 | The `typeParsers` of knex, such as numeric to float                                    | `p.decimal('number')` and `p.bigint('number')` on the entity                                                                                                                                     | low                     |
-| `Service`, `config.services`, `app.services`                                           | Objects of the app with `start()` and `stop()`, passed to `app.start({ services })`, see [step 9](#9-host-the-app)                                                                               | low, or medium for many |
+| `Service`, `config.services`, `app.services`                                           | Objects of the app with `start()` and `stop()`, added with `app.addService()`, see [step 9](#9-host-the-app)                                                                                     | low, or medium for many |
 | `app.on()`, `before:start` and the other events                                        | Plain calls, or an `EventEmitter` of the app                                                                                                                                                     | low                     |
 | `config.log`, `config.logger`, `app.logger`, `ctx.logger`                              | The `logger` option of `createApp()`, `app.logger`, and `c.var.logger` in requests; MikroORM's `debug` for SQL                                                                                   | low                     |
 | `useApp()`, `ctx.app`                                                                  | Imports of the app's modules, such as the `app` of `createApp()`                                                                                                                                 | low                     |
@@ -577,19 +577,20 @@ Each area of the app is an API of its own, with its own sessions and users.
 // server/index.js
 import { app } from './app.js'
 import * as controllers from './controllers/index.js'
-import * as mailer from './services/mailer.js'
-import * as scheduler from './services/scheduler.js'
+import { mailer } from './services/mailer.js'
 import { admins } from './users.js'
 
 app.routeApi('/api', { controllers, users: admins })
-await app.start({ services: [mailer, scheduler] })
+app.addService('mailer', mailer)
+await app.start()
 ```
 
 - `controllers` is a list, or a module namespace, in which only plain objects
   with a string `path` count.
-- Services become modules or objects with `start()` and `stop()`, see
-  [Services](guide/server/kit.md#services). A failed start stops those that
-  started, in reverse order.
+- Services become objects with `start()` and `stop()`, see
+  [Services](guide/server/kit.md#services). `app.services.mailer` reads one by
+  name, and `app.isRunning` says whether they run. A failed start stops those
+  that started, in reverse order.
 - `app.on()` and events such as `before:start` become plain calls around
   `app.start()`.
 - `config.http` goes in the `server` option of `createApp()`, with the options

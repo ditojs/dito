@@ -27,18 +27,22 @@ Sets up an app. Only `entities` and `database` are required.
 
 ### App
 
-| Member                         | Description                                                                                                                               |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `hono`                         | The Hono app, for the app's own middleware and routes.                                                                                    |
-| `orm`                          | The `MikroORM` of the entities.                                                                                                           |
-| `adapter`                      | See [`createMikroAdapter()`](mikro.md#createmikroadapter).                                                                                |
-| `logger`                       | The logger of the current request, else the app's.                                                                                        |
-| `storages`                     | The storages by name.                                                                                                                     |
-| `assets`                       | See [`createAssets()`](storage.md#createassets).                                                                                          |
-| `createUsers(entity, options)` | [Users](auth.md#createusers) of an entity on the app's database and secrets.                                                              |
-| `routeApi(path, options)`      | Routes a [`createApi()`](api.md#createapi) on the app's database.                                                                         |
-| `start({ services })`          | Starts the jobs, calls [`serve()`](hono.md#serve), and resolves to the Node server. A failed start stops what started and closes the ORM. |
-| `close()`                      | Stops the server, the services and the jobs if they run, then closes the ORM.                                                             |
+| Member                         | Description                                                                                                                                                |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hono`                         | The Hono app, for the app's own middleware and routes.                                                                                                     |
+| `orm`                          | The `MikroORM` of the entities.                                                                                                                            |
+| `adapter`                      | See [`createMikroAdapter()`](mikro.md#createmikroadapter).                                                                                                 |
+| `logger`                       | The logger of the current request, else the app's.                                                                                                         |
+| `storages`                     | The storages by name.                                                                                                                                      |
+| `assets`                       | See [`createAssets()`](storage.md#createassets).                                                                                                           |
+| `services`                     | The services by name, such as `app.services.mailer`.                                                                                                       |
+| `isRunning`                    | True from after the services start until a shutdown has ended all requests, so that work that outlives them can fail with a clear message.                 |
+| `createUsers(entity, options)` | [Users](auth.md#createusers) of an entity on the app's database and secrets.                                                                               |
+| `routeApi(path, options)`      | Routes a [`createApi()`](api.md#createapi) on the app's database.                                                                                          |
+| `addService(name, service)`    | Adds a [service](hono.md#serve). Services start in this order and stop in reverse order. A name works once.                                                |
+| `startServices()`              | Starts the services alone, for scripts, until `close()`. A failed start stops them and closes the ORM.                                                     |
+| `start()`                      | Starts the services and the jobs, calls [`serve()`](hono.md#serve), and resolves to the Node server. A failed start stops what started and closes the ORM. |
+| `close()`                      | Stops the server, the jobs and the services if they run, then closes the ORM.                                                                              |
 
 ### Jobs
 
@@ -61,15 +65,16 @@ job off. `sessions` defaults to `'1h'` once `app.createUsers()` was called, and
 ```ts
 runPlayground(
   app: App,
-  options?: { services?: Service[], scope?: Record<string, unknown> }
+  options?: { scope?: Record<string, unknown> }
 ): Promise<void>
 ```
 
-Starts the `services`, and runs the standard input as the body of an async
-function. Then it stops the services in reverse order and closes the app last,
-also when the code or a start fails. The code has these variables:
+Starts the app's services, without its jobs and its server, and runs the
+standard input as the body of an async function. Then it closes the app, also
+when the code or a start fails. The code has these variables:
 
 - the entities by name;
 - `orm`;
 - `em`, an entity manager;
+- `services`, the services by name;
 - the keys of `scope`.

@@ -366,10 +366,11 @@ describe('createApp()', () => {
       server: { host: '127.0.0.1' },
       logger: { level: 'silent' }
     })
-    const failing = { start: () => Promise.reject(new Error('Failed')) }
-    await expect(
-      app.start({ services: [service('mailer'), failing] })
-    ).rejects.toThrow('Failed')
+    app.addService('mailer', service('mailer'))
+    app.addService('failing', {
+      start: () => Promise.reject(new Error('Failed'))
+    })
+    await expect(app.start()).rejects.toThrow('Failed')
     expect(log).toEqual(['mailer start', 'mailer stop'])
     expect(await app.orm.isConnected()).toBe(false)
     await app.close()
@@ -384,9 +385,9 @@ describe('createApp()', () => {
       logger: { level: 'silent' }
     })
     app.hono.get('/pages', c => c.text('Pages'))
-    const server = await app.start({
-      services: [service('mailer'), service('scheduler')]
-    })
+    app.addService('mailer', service('mailer'))
+    app.addService('scheduler', service('scheduler'))
+    const server = await app.start()
     const { port } = server.address() as AddressInfo
     const response = await fetch(`http://127.0.0.1:${port}/pages`)
     expect(await response.text()).toBe('Pages')
@@ -399,5 +400,80 @@ describe('createApp()', () => {
       'scheduler stop',
       'mailer stop'
     ])
+  })
+
+  it('reads the services by name, and adds each name once', async () => {
+    const { host, user, dbName } = database.orm.config.getAll()
+    const app = createApp({ entities, database: { host, user, dbName } })
+    const mailer = service('mailer')
+    app.addService('mailer', mailer)
+    expect(app.services.mailer).toBe(mailer)
+    expect(() => app.addService('mailer', service('other'))).toThrow(
+      `Unable to add service 'mailer' twice.`
+    )
+    await app.close()
+  })
+
+  it('runs from after the services start until the requests end', async () => {
+    const { host, user, dbName } = database.orm.config.getAll()
+    const app = createApp({
+      entities,
+      database: { host, user, dbName },
+      server: { host: '127.0.0.1' },
+      logger: { level: 'silent' }
+    })
+    const states: boolean[] = []
+    let release = () => {}
+    const released = new Promise<void>(resolve => {
+      release = resolve
+    })
+    app.hono.get('/slow', async c => {
+      await released
+      states.push(app.isRunning)
+      return c.text('Done')
+    })
+    app.addService('mailer', {
+      start: () => void states.push(app.isRunning),
+      stop: () => void states.push(app.isRunning)
+    })
+    expect(app.isRunning).toBe(false)
+    const server = await app.start()
+    expect(app.isRunning).toBe(true)
+    const { port } = server.address() as AddressInfo
+    const pending = fetch(`http://127.0.0.1:${port}/slow`)
+    await vi.waitFor(async () => {
+      const connections = await new Promise((resolve, reject) =>
+        server.getConnections((error, count) =>
+          error ? reject(error) : resolve(count)
+        )
+      )
+      expect(connections).toBe(1)
+    })
+    const closed = app.close()
+    release()
+    await (await pending).text()
+    await closed
+    expect(states).toEqual([false, true, false])
+    expect(app.isRunning).toBe(false)
+  })
+
+  it('starts the services alone, and stops them with `close()`', async () => {
+    const { host, user, dbName } = database.orm.config.getAll()
+    const app = createApp({
+      entities,
+      database: { host, user, dbName },
+      logger: { level: 'silent' },
+      jobs: { assets: 5 }
+    })
+    const runJobs = vi.spyOn(app.assets, 'runJobs')
+    app.addService('mailer', service('mailer'))
+    await app.startServices()
+    expect(app.isRunning).toBe(true)
+    await new Promise(resolve => setTimeout(resolve, 20))
+    expect(runJobs).not.toHaveBeenCalled()
+    await app.close()
+    expect(app.isRunning).toBe(false)
+    expect(log).toEqual(['mailer start', 'mailer stop'])
+    expect(await app.orm.isConnected()).toBe(false)
   })
 })

@@ -12,7 +12,7 @@ import {
   type Service,
   type User
 } from '@ditojs/server'
-import { serve, type ServeOptions } from '@ditojs/server/node'
+import { serve, startServices, type ServeOptions } from '@ditojs/server/node'
 import {
   createMikroAdapter,
   defineMikroConfig,
@@ -74,6 +74,11 @@ export interface App {
   logger: Logger
   storages: StorageRegistry
   assets: Assets
+  // The services by name, such as `app.services.mailer`.
+  services: Record<string, any>
+  // True from after the services start until a shutdown has ended all requests,
+  // so that work that outlives them can fail with a clear message.
+  readonly isRunning: boolean
   // Users of an entity on the app's database, signed with its secrets.
   createUsers<U extends User>(
     entity: EntityClass<U>,
@@ -84,11 +89,15 @@ export interface App {
     path: string,
     options: Omit<CreateApiOptions, 'adapter' | 'onError'>
   ): void
-  // Starts the jobs and the services in order, then serves `hono` until
-  // `close()`, SIGINT or SIGTERM. A failed start stops them and closes the ORM.
-  start(options?: { services?: Service[] }): Promise<ServerType>
-  // Stops the server, the services and the jobs if they run, then closes the
-  // ORM.
+  // Adds a service. Services start in this order and stop in reverse order.
+  addService(name: string, service: Service): void
+  // Starts the services alone, for scripts, until `close()`. A failed start
+  // stops them and closes the ORM.
+  startServices(): Promise<void>
+  // Starts the services and the jobs, then serves `hono` until `close()`,
+  // SIGINT or SIGTERM. A failed start stops them and closes the ORM.
+  start(): Promise<ServerType>
+  // Stops what runs, then closes the ORM.
   close(): Promise<void>
 }
 
@@ -129,8 +138,24 @@ export function createApp({
     storages,
     ...assetsOptions
   })
+  const services: App['services'] = {}
   let hasUsers = false
-  let served: Awaited<ReturnType<typeof serve>> | undefined
+  let isRunning = false
+  let stop = () => orm.close()
+
+  // The ORM closes last, as services stop in reverse order.
+  const getServices = (): Service[] => [
+    { stop: () => orm.close() },
+    ...Object.values<Service>(services),
+    {
+      start() {
+        isRunning = true
+      },
+      stop() {
+        isRunning = false
+      }
+    }
+  ]
 
   return {
     hono,
@@ -138,9 +163,14 @@ export function createApp({
     adapter,
     storages,
     assets,
+    services,
 
     get logger() {
       return tryGetContext<DitoEnv>()?.var.logger ?? logger
+    },
+
+    get isRunning() {
+      return isRunning
     },
 
     createUsers(entity, options) {
@@ -152,7 +182,18 @@ export function createApp({
       hono.route(path, createApi({ ...options, adapter, onError: logError }))
     },
 
-    async start({ services = [] } = {}) {
+    addService(name, service) {
+      if (Object.hasOwn(services, name)) {
+        throw new Error(`Unable to add service '${name}' twice.`)
+      }
+      services[name] = service
+    },
+
+    async startServices() {
+      stop = await startServices(getServices())
+    },
+
+    async start() {
       const sessionsJob = createJob(
         jobs.sessions ?? (hasUsers && '1h'),
         logger,
@@ -161,23 +202,18 @@ export function createApp({
       const assetsJob = createJob(jobs.assets, logger, async () =>
         logger.info(await assets.runJobs(), 'Asset jobs')
       )
-      // The ORM stops last, as services stop in reverse order.
-      served = await serve(hono, {
+      const served = await serve(hono, {
         port,
         host,
         closeTimeout,
-        services: [
-          { stop: () => orm.close() },
-          sessionsJob,
-          assetsJob,
-          ...services
-        ]
+        services: [...getServices(), sessionsJob, assetsJob]
       })
+      stop = served.close
       return served.server
     },
 
-    async close() {
-      await (served ? served.close() : orm.close())
+    close() {
+      return stop()
     }
   }
 }

@@ -35,7 +35,7 @@ This module imports no controllers and no services:
 import { createAdmin } from '@ditojs/admin/server'
 import { app } from './app.js'
 import * as controllers from './controllers/index.js'
-import * as mailer from './services/mailer.js'
+import { mailer } from './services/mailer.js'
 import { admins } from './users.js'
 
 app.routeApi('/api', { controllers, users: admins })
@@ -48,7 +48,8 @@ app.hono.route(
     authorize: 'admin'
   })
 )
-await app.start({ services: [mailer] })
+app.addService('mailer', mailer)
+await app.start()
 ```
 
 - `app.routeApi()` routes an API on the app's database. The user of a request is
@@ -82,20 +83,34 @@ and `secrets`. The controllers import the users for their mixins, see
 // server/services/mailer.js
 let transport
 
-export async function start() {
-  transport = await connect()
-}
+export const mailer = {
+  async start() {
+    transport = await connect()
+  },
 
-export async function stop() {
-  await transport.close()
+  async stop() {
+    await transport.close()
+  },
+
+  send(message) {
+    return transport.send(message)
+  }
 }
 ```
 
-A service has `start()`, `stop()` or both.
+```js
+app.addService('mailer', mailer)
+```
 
-- Services start in their order, before the server.
+A service has `start()`, `stop()` or both. Other code reads it by name, as
+`app.services.mailer`, so it doesn't have to import the module.
+
+- Services start in the order of `app.addService()`, before the server.
 - They stop in reverse order, after the server.
 - `stop()` waits for the service's work, as the database may close next.
+- `app.isRunning` is true from after they start until a shutdown has ended all
+  requests. Work that outlives the requests can check it, to fail with a clear
+  message.
 
 ## Jobs
 
@@ -142,8 +157,11 @@ await app.close()
 
 A script imports the app and closes it at the end.
 
-`runPlayground()` runs piped code, with the entities, `orm` and `em` in scope.
-Its `services` run around the code, and `scope` adds names:
+A script that needs the services calls `await app.startServices()` first, and
+`app.close()` stops them. Jobs and the server don't run.
+
+`runPlayground()` runs piped code, with the entities, `orm`, `em` and `services`
+in scope. The app's services run around the code, and `scope` adds names:
 
 ```js
 // scripts/playground.js
