@@ -28,7 +28,7 @@
 - **mikro:** `fields` alone defines what goes out. Dotted paths populate their relations, and a relation to one row goes out as `{ id }`. Writes take `{ relation: { id } }`, and `order` and filters name `relation.id`. Serialization `groups` aren't supported.
 - **mikro:** Handlers get the controller's `entity`, `getRecord()`, `find()`, `list()` and `getListQuery()`, also as `c.var.getRecord()` and so on. A `load` option replaces how `getRecord()` loads, `maxRows` of a find limits its lists, and the `crud` mixin routes the five default handlers.
 - **mikro:** `serialize({ record, json, c })`, `beforeSerialize({ records, c })` and `deserialize({ json, record, c })` shape the records of a controller. Filters get `where({ value, name, c, em })`, and `find` and `load` as functions `({ c, user })` and `({ c, id })`.
-- **mikro:** The package also has `setRecord()`, `createRecord()`, `assignRecord()`, `defineJsonType()`, `createEntityUserSource()`, and `createMikroAdapter()`, the `adapter` of `createApi()`.
+- **mikro:** The package also has `createRecord()`, `assignRecord()`, `defineJsonType()`, `createEntityUserSource()`, and `createMikroAdapter()`, the `adapter` of `createApi()`.
 - **mikro:** Handlers get the request's entity manager as `em` of their context, and middleware as `c.var.em`. `import '@ditojs/mikro/types'` types it as MikroORM's `EntityManager`.
 - **mikro:** `useEm()` returns the entity manager of the running request, and throws outside of one.
 - **mikro:** `createMikroAdapter(orm)` also has `getKysely()`, a Kysely on the ORM's pool outside of any transaction, for sessions, credentials and jobs.

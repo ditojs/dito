@@ -8,7 +8,7 @@ import { assignRecord, createRecord } from './records.ts'
 export const defaultActions: Actions = {
   'get': ({ list }) => list(),
 
-  // The new row becomes the request's record.
+  // The new row becomes the request's record, also for the handlers above.
   async 'post'({ body, c }) {
     const request = getModelRequest(c)!
     const { em, entity } = request

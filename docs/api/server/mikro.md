@@ -9,7 +9,6 @@ import {
   defineFilter,
   defineTextFilter,
   defineDateRangeFilter,
-  setRecord,
   createRecord,
   assignRecord,
   defineJsonType,
@@ -88,7 +87,7 @@ base sets them.
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`             | The id of a record action, converted to the type of the primary key: a number for integer keys. An id that doesn't fit the key responds with 404. With `load`, the id stays a string, such as `self`. `params.id` is always the string of the path. |
 | `entity`         | The entity of the controller. `em.getMetadata(entity)` returns its metadata, such as its `tableName`.                                                                                                                                               |
-| `getRecord()`    | Loads the record of the id through `load` or `find`, once per request. A missing record responds with 404. In other actions, it returns the record that a handler set with [`setRecord()`](#setrecord), such as the one that `post` creates.        |
+| `getRecord()`    | Loads the record of the id through `load` or `find`, once per request. A missing record responds with 404. After a `post`, it returns the record that the action returned, such as the one that `post` creates.                                     |
 | `find()`         | Queries the records of the controller, see [find()](#find-1).                                                                                                                                                                                       |
 | `list()`         | Runs the list of the controller, see [list()](#list).                                                                                                                                                                                               |
 | `getListQuery()` | Returns the `where`, `orderBy` and `range` of the list, see [getListQuery()](#getlistquery).                                                                                                                                                        |
@@ -343,15 +342,6 @@ defineModelController({
 
 A mixin that routes the five [default handlers](#default-handlers). Writes
 still need `authorize`.
-
-## setRecord()
-
-```ts
-setRecord(c: Context, record: unknown): void
-```
-
-Sets the record that `getRecord()` returns, such as the one that a custom `post`
-creates.
 
 ## ListQuery
 

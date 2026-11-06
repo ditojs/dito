@@ -6,7 +6,6 @@ export {
   type ModelControllerDefinition
 } from './controller.ts'
 export { crud, defineChoices, defineListHandler } from './crud.ts'
-export { setRecord } from './ModelRequest.ts'
 export { assignRecord, createRecord } from './records.ts'
 export type { Find, FindShape } from './find.ts'
 export {

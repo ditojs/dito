@@ -2350,6 +2350,23 @@ describe('wrapping the default handlers', () => {
     expect(records[0]).toMatchObject({ id: json.id, name: 'Eve' })
   })
 
+  it('returns the row of a replaced `post` from `getRecord()`', async () => {
+    let record: unknown
+    const api = setup(
+      books({
+        middleware: async (c, next) => {
+          await next()
+          record = await c.var.getRecord()
+        },
+        actions: {
+          post: ({ em }) => em.create(Book, { name: 'Fay' } as never)
+        }
+      })
+    )
+    const { json } = await request(api, 'POST', '/api/books')
+    expect(record).toMatchObject({ id: json.id, name: 'Fay' })
+  })
+
   it('sets `Location` for an entity of a replaced `post`', async () => {
     // Only the default handler responds with 201.
     const api = setup(
@@ -2557,8 +2574,8 @@ describe('layers', () => {
     expect((await request(api, 'GET', '/api/books/one')).status).toBe(500)
     expect(errors[0]).toMatchObject({
       message: (
-        'Unable to get the record: only record actions load one, and other ' +
-        'actions need a handler that calls `setRecord()`'
+        'Unable to get the record: only record actions load one, and `post` ' +
+        'sets the record that it returns'
       )
     })
   })

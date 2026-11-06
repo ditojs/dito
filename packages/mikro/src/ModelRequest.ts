@@ -39,9 +39,8 @@ declare module '@ditojs/server' {
     // In model controllers: the entity class of the controller. Its metadata is
     // `em.getMetadata(entity)`.
     entity: EntityClass<any>
-    // In model controllers: loads the record of the id once per request. On
-    // other actions, it returns the record that a handler set with
-    // `setRecord()`, such as the row that the default `post` creates.
+    // In model controllers: loads the record of the id once per request. After
+    // a `post`, it returns the record that the action created and returned.
     getRecord: <T = any>() => Promise<T>
     // In model controllers: queries the records of the controller, through its
     // `find` merged with `find`, without the row limit of lists.
@@ -166,8 +165,8 @@ export class ModelRequest<T extends object = any> {
     const id = c.req.param('id')
     if (id === undefined) {
       throw new Error(
-        'Unable to get the record: only record actions load one, and other ' +
-        'actions need a handler that calls `setRecord()`'
+        'Unable to get the record: only record actions load one, and `post` ' +
+        'sets the record that it returns'
       )
     }
     const record = load ? await load({ c, id }) : await this.#findRecord()
@@ -190,10 +189,4 @@ export class ModelRequest<T extends object = any> {
       query: parseListQuery(this.c, query)
     }
   }
-}
-
-// Set the record that `getRecord()` returns, such as the row that a `post`
-// creates:
-export function setRecord(c: Context, record: unknown) {
-  getModelRequest(c)!.setRecord(record)
 }

@@ -14,6 +14,7 @@ export async function respond(request: ModelRequest, result: unknown) {
     await request.em.flush()
     reloaded = await reload(request, records)
     if (c.var.action === 'post' && isRecord(result)) {
+      request.setRecord(result)
       setLocation(request, result)
     }
   }
