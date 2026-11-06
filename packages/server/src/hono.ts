@@ -6,7 +6,7 @@ import { etag } from 'hono/etag'
 import { secureHeaders } from 'hono/secure-headers'
 import { parseFileSize } from '@ditojs/utils'
 import { HttpError, createErrorHandler, notFound } from './errors.ts'
-import type { ErrorLogger } from './types.ts'
+import type { ReportError } from './types.ts'
 
 // `false`, `true` for the defaults of the middleware, or its options:
 type Option<T extends (...args: any[]) => unknown> =
@@ -91,7 +91,7 @@ export interface CreateHonoOptions extends HonoMiddlewareOptions {
   // The number of trusted reverse proxies, and `true` for one. None by default.
   proxy?: boolean | number
   // As in `createApi()`, for the errors outside of APIs.
-  onError?: ErrorLogger
+  onError?: ReportError
   // Runs before all other middleware.
   middleware?: MiddlewareHandler[]
 }

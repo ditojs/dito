@@ -9,7 +9,6 @@ export type {
   DitoContext,
   DitoEnv,
   DitoVariables,
-  ErrorLogger,
   Handler,
   HandlerContext,
   HttpErrorBody,

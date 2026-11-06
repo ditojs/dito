@@ -1,7 +1,7 @@
 import type { Context, ErrorHandler, NotFoundHandler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { isNumber, isString } from '@ditojs/utils'
-import type { Adapter, ErrorLogger, HttpErrorBody } from './types.ts'
+import type { Adapter, HttpErrorBody, ReportError } from './types.ts'
 
 // Errors respond with JSON: `{ type, message, status, code, errors }`. Those
 // with a status of 500 or above also go to `onError`.
@@ -122,7 +122,7 @@ export function createErrorHandler({
   onError = logError,
   toHttpError
 }: {
-  onError?: ErrorLogger
+  onError?: ReportError
   toHttpError?: Adapter['toHttpError']
 } = {}): ErrorHandler {
   return async (error, c) => {

@@ -200,7 +200,7 @@ export interface Service {
 }
 
 // Called with each error with a status of 500 or above, for the app's logs.
-export type ErrorLogger = (context: {
+export type ReportError = (context: {
   error: unknown
   c: Context
 }) => void | Promise<void>
@@ -218,5 +218,5 @@ export interface CreateApiOptions {
   }
   adapter?: Partial<Adapter>
   // By default, logs with `console.error()`.
-  onError?: ErrorLogger
+  onError?: ReportError
 }
