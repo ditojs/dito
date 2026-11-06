@@ -9,7 +9,7 @@ export interface Section {
   }[]
 }
 
-// The files of its sections are in `assetPaths` of the scenario's fixtures.
+// The files of its sections are in `assetFields` of the scenario's fixtures.
 const NestedAssetWidgetSchema = defineEntity({
   name: 'NestedAssetWidget',
   properties: {

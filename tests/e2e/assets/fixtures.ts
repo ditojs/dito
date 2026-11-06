@@ -4,7 +4,7 @@ import path from 'path'
 import { expect, type Page } from '@playwright/test'
 import type { EntityClass } from '@mikro-orm/postgresql'
 import type { Kysely } from 'kysely'
-import { createAssets, createStorages, type AssetPath } from '@ditojs/storage'
+import { createAssets, createStorages, type AssetField } from '@ditojs/storage'
 import { serveFolder } from '../../utils/app.js'
 import { Asset } from '../../utils/entities.js'
 import { db, defineScenario, getOrm } from '../../utils/fixture-app.js'
@@ -20,15 +20,15 @@ const assetWidget = { entity: AssetWidget, table: 'asset_widget' }
 
 // Where the tables store their files, by the snake case names of their tables
 // and columns.
-export const assetPaths: AssetPath[] = [
-  { ...assetWidget, column: 'files', path: '', storage: 'test' },
-  { ...assetWidget, column: 'file', path: '', storage: 'test' },
-  { ...assetWidget, column: 'files_small', path: '', storage: 'test' },
+export const assetFields: AssetField[] = [
+  { ...assetWidget, column: 'files', dataPath: '', storage: 'test' },
+  { ...assetWidget, column: 'file', dataPath: '', storage: 'test' },
+  { ...assetWidget, column: 'files_small', dataPath: '', storage: 'test' },
   {
     entity: NestedAssetWidget,
     table: 'nested_asset_widget',
     column: 'sections',
-    path: '*/items/*/items/*/image',
+    dataPath: '*/items/*/items/*/image',
     storage: 'test'
   }
 ]
@@ -47,7 +47,7 @@ export const getStorage = () => storages.get('test')
 const adapter = {
   getKysely: () => getOrm().em.getKysely() as unknown as Kysely<any>
 }
-const assets = createAssets({ adapter, paths: assetPaths, storages })
+const assets = createAssets({ adapter, fields: assetFields, storages })
 
 /** Finds the unreferenced files, as the nightly scan does. */
 export async function scan() {
@@ -58,7 +58,7 @@ export async function scan() {
 export function deleteUnusedAssets() {
   return createAssets({
     adapter,
-    paths: assetPaths,
+    fields: assetFields,
     storages,
     deleteUnusedAfter: 0
   }).runJobs()
@@ -70,10 +70,8 @@ export const test = defineScenario({
   dirname: import.meta.dirname,
   entities: [AssetWidget, NestedAssetWidget, Asset],
   controllers: {
-    AssetWidget: { mixins: [assets.defineUploads('asset_widget')] },
-    NestedAssetWidget: {
-      mixins: [assets.defineUploads('nested_asset_widget')]
-    },
+    AssetWidget: { mixins: [assets.defineUploads()] },
+    NestedAssetWidget: { mixins: [assets.defineUploads()] },
     Asset: false
   },
   handlers: [

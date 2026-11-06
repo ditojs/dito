@@ -28,8 +28,9 @@ import {
 } from './assetUploads.ts'
 
 export interface CreateAssetsOptions {
-  // The adapter of the API, such as `createMikroAdapter(orm)`.
-  adapter: MikroAdapter
+  // The adapter of the API, such as `createMikroAdapter(orm)`. For jobs alone,
+  // such as in a migration, `getKysely()` is enough.
+  adapter: Pick<MikroAdapter, 'getKysely'> & Partial<MikroAdapter>
   fields: AssetField[]
   storages: StorageRegistry
   // The `deleteUnusedAfter` of `runJobs()`, in milliseconds or as a duration
@@ -92,12 +93,14 @@ export function createAssets({
   }
   // All model controllers of the entities track the files of their writes, and
   // so do those of the entities that own rows with files:
-  for (const meta of adapter.getEm().getMetadata().getAll().values()) {
-    if (hasFiles(meta)) {
-      adapter.wrapEntity(
-        meta.class,
-        defineAssetWrites({ meta, fieldsByEntity, storages, getKysely })
-      )
+  if (adapter.wrapEntity) {
+    for (const meta of adapter.getEm!().getMetadata().getAll().values()) {
+      if (hasFiles(meta)) {
+        adapter.wrapEntity(
+          meta.class,
+          defineAssetWrites({ meta, fieldsByEntity, storages, getKysely })
+        )
+      }
     }
   }
 

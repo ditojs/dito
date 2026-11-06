@@ -1,7 +1,7 @@
 import { defineEntity, p } from '@mikro-orm/core'
 import type { AssetFile } from '@ditojs/storage'
 
-// The files of its columns are in `assetPaths` of the scenario's fixtures.
+// The files of its columns are in `assetFields` of the scenario's fixtures.
 const AssetWidgetSchema = defineEntity({
   name: 'AssetWidget',
   properties: {
