@@ -51,10 +51,9 @@ describe('parseFileSize()', () => {
     ['1 Ki', 1024],
     ['1.5 MiB', 1.5 * 1024 ** 2],
     ['2 GiB', 2 * 1024 ** 3],
-    ['8b', 1],
-    ['8 bits', 1],
-    ['1Kb', 125],
-    ['1Mb', 125000]
+    ['8b', 8],
+    ['1Kb', 1000],
+    ['10Mb', 1e7]
   ])('parses %o as %o bytes', (input, expected) => {
     expect(parseFileSize(input)).toBe(expected)
   })
@@ -62,11 +61,14 @@ describe('parseFileSize()', () => {
   it('supports base 2', () => {
     expect(parseFileSize('1 MB', { base: 2 })).toBe(1024 ** 2)
     expect(parseFileSize('1 MiB', { base: 2 })).toBe(1024 ** 2)
-    expect(parseFileSize('1Kb', { base: 2 })).toBe(128)
+    expect(parseFileSize('1Kb', { base: 2 })).toBe(1024)
   })
 
   it('throws on invalid input', () => {
     expect(() => parseFileSize('MB')).toThrow(`Invalid file size: 'MB'.`)
+    expect(() => parseFileSize('8 bits')).toThrow(
+      `Invalid file size unit: 'bits'.`
+    )
     expect(() => parseFileSize('10 XB')).toThrow(
       `Invalid file size unit: 'XB'.`
     )

@@ -540,10 +540,9 @@ admin's [upload fields](admin/schemas.md#upload) and of the server's
 [uploads](server/storage.md#uploads) do. Numbers and strings without a unit
 are bytes.
 
-- The byte units are case-insensitive: `'500mb'`, `'500 MB'` and `'500M'` are
+- Units are case-insensitive: `'500mb'`, `'500Mb'`, `'500 MB'` and `'500M'` are
   the same, in `base`.
 - IEC units, such as `'10 MiB'` or `'10Ki'`, always use base 2.
-- Bit units are case-sensitive: `'1Mb'` is a megabit, 125 000 bytes.
 - The amount takes one decimal mark, a dot or a comma: `'1,5 MB'` is
   `'1.5 MB'`. Thousands separators, as in `'1,000,000'`, throw.
 - It throws for input that it can't interpret, and for unknown units.

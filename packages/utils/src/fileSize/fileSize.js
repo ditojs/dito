@@ -23,9 +23,8 @@ export function formatFileSize(size, { base = 10 } = {}) {
   return `${size < 0 ? '-' : ''}${amount} ${unit}`
 }
 
-// IEC units like `'10 MiB'` always use base 2. Bit units are case-sensitive
-// (`Kb` = kilobit), the byte units aren't. The amount takes one decimal mark,
-// a dot or a comma, and no thousands separators.
+// IEC units like `'10 MiB'` always use base 2. Units are case-insensitive. The
+// amount takes one decimal mark, a dot or a comma, and no thousands separators.
 export function parseFileSize(input, { base = 10 } = {}) {
   const [, amountString, unit] = String(input)
     .trim()
@@ -35,11 +34,6 @@ export function parseFileSize(input, { base = 10 } = {}) {
     throw new Error(`Invalid file size: '${input}'.`)
   }
   const multiplier = getMultiplier(/^[kmgtpezy]ib?$/i.test(unit) ? 2 : base)
-  const bitMatch = unit.replace(/^bits?$/, 'b').match(/^([KMGTPEZY]?)b$/)
-  if (bitMatch) {
-    const exponent = prefixes.indexOf(bitMatch[1].replace('K', 'k'))
-    return Math.round(amount * multiplier ** exponent / 8)
-  }
   const exponent = prefixes.findIndex(
     prefix => (
       prefix.toLowerCase() ===

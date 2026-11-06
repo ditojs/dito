@@ -1003,8 +1003,8 @@ export function formatFileSize(
 
 /**
  * Parses a file size with a unit, such as `'500mb'` or `'10 MiB'`, into a
- * number of bytes. IEC units always use base 2, bit units such as `'1Mb'` are
- * case-sensitive. Throws for sizes that it can't interpret.
+ * number of bytes. IEC units always use base 2, and units are
+ * case-insensitive. Throws for sizes that it can't interpret.
  */
 export function parseFileSize(
   input: number | string,
