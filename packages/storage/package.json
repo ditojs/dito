@@ -24,7 +24,7 @@
     "@hono/node-server": "^2.1.5",
     "@types/node": "^26.6.4",
     "hono": "^4.13.14",
-    "kysely": "0.29.6"
+    "kysely": "^0.29.8"
   },
   "peerDependencies": {
     "@aws-lite/client": "^0.24.0",
