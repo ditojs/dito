@@ -18,7 +18,7 @@ import { getColumnSchema, getType } from './columnSchema.ts'
 import { runSchema } from './validation.ts'
 
 // The first pass of a write: reads a body with the entity's metadata, without
-// the database. See `write.ts` for what follows.
+// the database. See `records.ts` for what follows.
 
 type StandardIssue = Pick<ValidationIssue, 'message'> & {
   path?: readonly any[]

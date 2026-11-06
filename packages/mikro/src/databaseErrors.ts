@@ -10,7 +10,7 @@ import {
 import { isOwned } from './metadata.ts'
 
 // Postgres checks the types, ranges and lengths of the values that a write
-// sends, beyond what `write.ts` checks.
+// sends, beyond what `bodyCheck.ts` checks.
 
 const invalidMessage = 'The data is not valid for the database.'
 const conflictMessage = 'The data conflicts with rows in the database.'

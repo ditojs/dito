@@ -1,7 +1,7 @@
 import { defineMixin, type Actions, type Handler } from '@ditojs/server'
 import { checkFind, type FindShape } from './find.ts'
 import { getModelRequest, type ModelRequest } from './ModelRequest.ts'
-import { assignRecord, createRecord } from './write.ts'
+import { assignRecord, createRecord } from './records.ts'
 
 // An action gets its default handler by setting its key, in `actions` or
 // through the mixin `crud`.
