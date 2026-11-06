@@ -8,9 +8,10 @@ Dito.js is a declarative web framework with two main components: **Dito.js Serve
 
 ## Package Structure
 
-- **packages/server/**: The server core on Hono: `createApi()`, controllers, middleware and errors, and `@ditojs/server/node` with `serve()` and `forwarded()`
+- **packages/server/**: The server core on Hono: `createApi()`, controllers, middleware and errors, and `@ditojs/server/node` with `serve()`
 - **packages/mikro/**: Model controllers for MikroORM entities
 - **packages/storage/**, **packages/auth/**: Storages and assets, sessions and users
+- **packages/kit/**: `createApp()`, which sets up an app from the other server packages, with a logger, services and a playground
 - **packages/admin/**: Vue.js admin interface with forms, types, and schema components, and `@ditojs/admin/server` and `/vite` that serve and build it
 - **packages/ui/**: Shared Vue.js UI components and styles
 - **packages/utils/**: Utility functions for arrays, objects, strings, dates, etc.

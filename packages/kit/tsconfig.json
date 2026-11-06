@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vitest/globals", "node"]
+  },
+  // `@ditojs/storage` resolves to its sources, which need their declarations.
+  "include": ["src", "../storage/src/*.d.ts"]
+}
