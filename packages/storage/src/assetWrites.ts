@@ -9,10 +9,10 @@ import {
   normalizeDataPath,
   parseDataPath
 } from '@ditojs/utils'
+import type { MikroAdapter } from '@ditojs/mikro'
 import {
   HttpError,
   createValidationError,
-  type Adapter,
   type MixinDefinition
 } from '@ditojs/server'
 import { bodyValidation } from '@ditojs/server/internal'
@@ -38,7 +38,7 @@ interface AssetRow {
   path: (string | number)[]
 }
 
-interface DefineAssetWritesOptions extends Pick<Adapter, 'getKysely'> {
+interface DefineAssetWritesOptions extends Pick<MikroAdapter, 'getKysely'> {
   // The entity of the wrapped model controllers.
   meta: Pick<EntityMetadata, 'class' | 'relations'>
   fieldsByEntity: Map<unknown, NormalizedAssetField[]>

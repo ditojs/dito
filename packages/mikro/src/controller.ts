@@ -9,11 +9,7 @@ import {
   type MixinDefinition,
   type RequestContext
 } from '@ditojs/server'
-import {
-  chainHandlers,
-  getLayers,
-  type EntityWrapper
-} from '@ditojs/server/internal'
+import { chainHandlers, getLayers } from '@ditojs/server/internal'
 import {
   asArray,
   isFunction,
@@ -23,6 +19,7 @@ import {
 } from '@ditojs/utils'
 import type { EntityClass } from '@mikro-orm/core'
 import { every } from 'hono/combine'
+import type { EntityWrapper } from './createMikroAdapter.ts'
 import { defaultActions } from './crud.ts'
 import { checkFind, type Find } from './find.ts'
 import type { Filter } from './filters.ts'

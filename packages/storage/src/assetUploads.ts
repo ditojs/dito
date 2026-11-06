@@ -3,10 +3,10 @@ import { pipeline } from 'node:stream/promises'
 import busboy from 'busboy'
 import picomatch from 'picomatch'
 import { camelize } from '@ditojs/utils'
+import type { MikroAdapter } from '@ditojs/mikro'
 import {
   HttpError,
   defineAction,
-  type Adapter,
   type MixinDefinition
 } from '@ditojs/server'
 import type { AssetFile } from './Storage.ts'
@@ -32,7 +32,7 @@ export interface DefineAssetUploadsOptions {
   // The uploads of the asset fields of model controllers.
   uploadsByEntity: Map<object, NormalizedAssetUpload[]>
   storages: StorageRegistry
-  getKysely: Adapter['getKysely']
+  getKysely: MikroAdapter['getKysely']
 }
 
 // Define the action of the Dito admin's upload component,

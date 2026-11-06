@@ -598,7 +598,7 @@ It changes these things:
 ## createMikroAdapter()
 
 ```ts
-createMikroAdapter(orm: MikroORM): Adapter
+createMikroAdapter(orm: MikroORM): MikroAdapter
 ```
 
 ```js
@@ -606,7 +606,8 @@ const orm = new MikroORM(defineMikroConfig({ entities }))
 app.route('/api', createApi({ controllers, adapter: createMikroAdapter(orm) }))
 ```
 
-Returns the `adapter` of [`createApi()`](api.md#adapter):
+Returns the [`adapter`](api.md#adapter) of `createApi()`, with what
+`@ditojs/auth` and `@ditojs/storage` take from it too:
 
 - `connect()` forks the entity manager for each request. The fork becomes `em`
   of the handler's context, and `c.var.em`.
@@ -619,6 +620,8 @@ Returns the `adapter` of [`createApi()`](api.md#adapter):
   Sessions, credentials and jobs use it. With the `c` of a request, it runs in
   the request's transaction. `orm.em.getKysely()` joins the current
   transaction instead.
+- `wrapEntity(entity, wrapper)` wraps the model controllers of an entity. Dito's
+  own packages use it.
 - `getEm()` returns the entity manager of the running request. Outside of a
   request, it returns a fork of `orm.em`. [`useEm()`](#useem) throws there
   instead.

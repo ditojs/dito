@@ -1,7 +1,12 @@
-import type { Adapter, DitoEnv } from '@ditojs/server'
-import type { EntityWrapper } from '@ditojs/server/internal'
+import type {
+  Adapter,
+  DitoContext,
+  DitoEnv,
+  MixinDefinition
+} from '@ditojs/server'
 import type { EntityManager } from '@mikro-orm/sql'
 import { tryGetContext } from 'hono/context-storage'
+import type { Kysely } from 'kysely'
 import { toHttpError } from './databaseErrors.ts'
 import { hasMikroConfig } from './defineMikroConfig.ts'
 import { getModelRequest } from './ModelRequest.ts'
@@ -10,10 +15,21 @@ interface Orm {
   em: EntityManager
 }
 
+// Wraps the model controllers of an entity, without adding routes. Its
+// `actions` run around the default actions, and their `next` runs the default
+// action. Its `middleware` runs on all actions of the controllers.
+export type EntityWrapper = Pick<MixinDefinition, 'actions' | 'middleware'>
+
 export interface MikroAdapter extends Required<Adapter> {
   // The entity manager of the running request. Without one, such as in session
   // middleware or a job, a fork.
   getEm: () => EntityManager
+  // A Kysely outside of any transaction, for sessions, credentials and jobs.
+  // With the `c` of a request, it runs in the request's transaction.
+  getKysely: (c?: DitoContext) => Kysely<any>
+  // Wraps all model controllers of `entity` on this adapter. For Dito's own
+  // packages.
+  wrapEntity: (entity: object, wrapper: EntityWrapper) => void
 }
 
 // The `adapter` of `createApi()`. Each request gets a fork of the entity

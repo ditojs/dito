@@ -657,9 +657,6 @@ importers:
       hono:
         specifier: ^4.13.14
         version: 4.13.16
-      kysely:
-        specifier: 0.29.8
-        version: 0.29.8
       zod:
         specifier: ^4.6.7
         version: 4.6.7

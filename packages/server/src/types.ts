@@ -1,6 +1,5 @@
 import type { z } from 'zod'
 import type { Context, ContextVariableMap, MiddlewareHandler } from 'hono'
-import type { Kysely } from 'kysely'
 import type { HttpError } from './errors.ts'
 
 // A controller is a plain object with one map of `actions`, keyed
@@ -157,11 +156,8 @@ export type Transact = <T>(
 ) => Promise<T>
 
 // The database of an app, such as `createMikroAdapter(orm)`. An API uses the
-// parts that it finds, and auth and storage use `getKysely()`.
+// parts that it finds.
 export interface Adapter {
-  // A Kysely outside of any transaction, for sessions, credentials and jobs.
-  // With the `c` of a request, it runs in the request's transaction.
-  getKysely: (c?: DitoContext) => Kysely<any>
   // The database handle of a request, as `c.var.em`.
   connect?: (
     c: DitoContext
@@ -174,15 +170,7 @@ export interface Adapter {
     error: unknown
     c: DitoContext
   }) => HttpError | undefined
-  // Wraps all model controllers of `entity` on this adapter. For Dito's own
-  // packages.
-  wrapEntity?: (entity: object, wrapper: EntityWrapper) => void
 }
-
-// Wraps the model controllers of an entity, without adding routes. Its
-// `actions` run around the default actions, and their `next` runs the default
-// action. Its `middleware` runs on all actions of the controllers.
-export type EntityWrapper = Pick<MixinDefinition, 'actions' | 'middleware'>
 
 // Runs next to the server, such as a mailer or a scheduler. `stop()` ends once
 // its work is done, as the database may close right after it.
@@ -208,7 +196,7 @@ export interface CreateApiOptions {
     // The signed-in user of the request, or null.
     getUser: (context: { c: DitoContext }) => User | null | Promise<User | null>
   }
-  adapter?: Partial<Adapter>
+  adapter?: Adapter
   // By default, logs with `console.error()`.
   onError?: ReportError
 }
