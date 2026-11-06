@@ -65,8 +65,8 @@ export function defineJsonType<S extends z.ZodType | undefined = undefined>(
   return new SchemaJsonType<S extends z.ZodType ? z.output<S> : any>(options)
 }
 
-// The outputs of schemas that a write already holds, so that `SchemaDefaults`
-// leaves them alone. A parse needn't give the same output twice.
+// The outputs of the schemas of writes. `SchemaDefaults` skips them, since a
+// second parse can change a value.
 const parsedValues = new WeakSet<object>()
 
 const isContainer = (value: unknown): value is object => (
