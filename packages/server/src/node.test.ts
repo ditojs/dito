@@ -2,7 +2,7 @@ import type { AddressInfo } from 'node:net'
 import { Hono } from 'hono'
 import { csrf } from 'hono/csrf'
 import { createErrorHandler } from './errors.ts'
-import { forwarded, honoMiddleware } from './hono.ts'
+import { createForwardedMiddleware, createHonoMiddleware } from './hono.ts'
 import { createApi, createHono, HttpError } from './index.ts'
 import { getClientAddress, serve } from './node.ts'
 
@@ -24,7 +24,7 @@ async function withServer(app: Hono, fn: (url: string) => Promise<void>) {
 // An app that returns the URL, the body and the client's address.
 function echo(proxy?: boolean | number) {
   const app = new Hono()
-  if (proxy !== undefined) app.use(forwarded(proxy))
+  if (proxy !== undefined) app.use(createForwardedMiddleware(proxy))
   app.all('/*', async c =>
     c.json({
       url: c.req.url,
@@ -41,13 +41,13 @@ const headers = {
   'X-Forwarded-For': '203.0.113.7, 10.0.0.1'
 }
 
-describe('honoMiddleware() on Node', () => {
+describe('createHonoMiddleware() on Node', () => {
   // Answers `/secret` with 401, without reading the body.
   const hono = (proxy?: boolean) => {
     const app = new Hono()
     app.onError(createErrorHandler())
-    if (proxy) app.use(forwarded(proxy))
-    app.use(...honoMiddleware())
+    if (proxy) app.use(createForwardedMiddleware(proxy))
+    app.use(...createHonoMiddleware())
     app.post('/secret', c => c.text('Unauthorized', 401))
     app.get('/', c => c.text('ok'))
     return app
@@ -126,7 +126,7 @@ describe('createHono()', () => {
     expect((await post(hono())).status).toBe(403)
   })
 
-  it('takes the options of `honoMiddleware()`', async () => {
+  it('takes the options of `createHonoMiddleware()`', async () => {
     const hono = createHono({ etag: true, secureHeaders: false })
     hono.get('/books', c => c.text('books'))
     const response = await hono.request('/books')
@@ -217,7 +217,7 @@ describe('serve()', () => {
   })
 })
 
-describe('forwarded()', () => {
+describe('createForwardedMiddleware()', () => {
   it('passes the public URL, the body and the client address on Node', async () => {
     await withServer(echo(true), async url => {
       const response = await fetch(`${url}/api/items?a=1`, {
@@ -329,7 +329,7 @@ describe('forwarded()', () => {
       ]
     })
     const app = new Hono()
-    app.use(forwarded(true), csrf())
+    app.use(createForwardedMiddleware(true), csrf())
     app.route('/api', api)
     await withServer(app, async url => {
       const response = await fetch(`${url}/api/items`, {

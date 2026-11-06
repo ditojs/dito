@@ -41,7 +41,7 @@ const rejectLargeBody = () => {
 }
 
 // Hono's standard middleware.
-export function honoMiddleware({
+export function createHonoMiddleware({
   csrf: csrfOptions = true,
   secureHeaders: secureHeadersOptions = true,
   cors: corsOptions = false,
@@ -97,8 +97,8 @@ export interface CreateHonoOptions extends HonoMiddlewareOptions {
 }
 
 // The Hono app that routes the APIs with `hono.route()`. It has Dito's JSON
-// errors, also for unknown paths, and runs `forwarded()` before
-// `honoMiddleware()`, as `csrf()` compares the origin with the public URL.
+// errors, also for unknown paths. It reads the forwarded headers before the
+// standard middleware, as `csrf()` compares the origin with the public URL.
 export function createHono({
   proxy = false,
   onError,
@@ -109,13 +109,19 @@ export function createHono({
   const hono = new Hono({ strict: false })
   hono.onError(createErrorHandler({ onError }))
   hono.notFound(notFound)
-  hono.use(...middleware, forwarded(proxy), ...honoMiddleware(options))
+  hono.use(
+    ...middleware,
+    createForwardedMiddleware(proxy),
+    ...createHonoMiddleware(options)
+  )
   return hono
 }
 
 // Read the public URL and the client's address of apps behind reverse proxies,
 // with `proxy` as the number of trusted proxies, and `true` for one.
-export function forwarded(proxy: boolean | number = true): MiddlewareHandler {
+export function createForwardedMiddleware(
+  proxy: boolean | number = true
+): MiddlewareHandler {
   const hops = proxy === true ? 1 : proxy || 0
   return async (c, next) => {
     if (hops) {

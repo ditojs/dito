@@ -1,12 +1,12 @@
 import { Hono } from 'hono'
 import { createErrorHandler } from './errors.ts'
-import { honoMiddleware } from './hono.ts'
+import { createHonoMiddleware } from './hono.ts'
 
-describe('honoMiddleware()', () => {
-  const hono = (...args: Parameters<typeof honoMiddleware>) => {
+describe('createHonoMiddleware()', () => {
+  const hono = (...args: Parameters<typeof createHonoMiddleware>) => {
     const app = new Hono()
     app.onError(createErrorHandler())
-    app.use(...honoMiddleware(...args))
+    app.use(...createHonoMiddleware(...args))
     app.all('/', async c => c.text((await c.req.text()) || 'text'))
     return app
   }
@@ -66,7 +66,9 @@ describe('honoMiddleware()', () => {
     const app = hono({ bodyLimit: { maxSize: '1kb' } })
     expect((await post(app, plain, 'x'.repeat(1000))).status).toBe(200)
     expect((await post(app, plain, 'x'.repeat(1001))).status).toBe(413)
-    expect(() => honoMiddleware({ bodyLimit: { maxSize: 'large' } })).toThrow(
+    expect(() =>
+      createHonoMiddleware({ bodyLimit: { maxSize: 'large' } })
+    ).toThrow(
       `Invalid file size: 'large'.`
     )
   })
