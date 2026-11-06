@@ -42,7 +42,6 @@ describe('app.routeAdmin()', () => {
     })
 
   afterEach(() => {
-    vi.unstubAllEnvs()
     vi.mocked(createAdmin).mockClear()
   })
 
@@ -56,20 +55,7 @@ describe('app.routeAdmin()', () => {
     await app.close()
   })
 
-  it('leaves out `vite` outside of development', async () => {
-    const app = createAdminApp()
-    const vite = {
-      root,
-      configFile: false as const,
-      logLevel: 'silent' as const
-    }
-    app.routeAdmin('/admin', { dist: root, vite })
-    expect(vi.mocked(createAdmin).mock.calls[0]![0].vite).toBeUndefined()
-    await app.close()
-  })
-
   it('stops Vite with `close()`, also without a start', async () => {
-    vi.stubEnv('NODE_ENV', 'development')
     const app = createAdminApp()
     const vite = {
       root,

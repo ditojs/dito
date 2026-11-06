@@ -751,8 +751,7 @@ app.hono.route('/admin', admin)
 ```
 
 With the kit, [`app.routeAdmin()`](api/server/kit.md#app) does this in one call.
-It takes the same options without `base`, uses `vite` only with a `NODE_ENV` of
-`development`, and stops Vite with `app.close()`.
+It takes the same options without `base`, and stops Vite with `app.close()`.
 
 - With `vite`, the app runs on `serve()`. Without it, the admin serves the
   build of `dist`. `createAdmin()` throws if the build is missing.

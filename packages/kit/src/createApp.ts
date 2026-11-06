@@ -107,8 +107,7 @@ export interface App {
     path: string,
     options: Omit<CreateApiOptions, 'adapter' | 'onError'>
   ): void
-  // Routes the admin at `path`, which is its `base`. `close()` stops it. `vite`
-  // only applies with a `NODE_ENV` of `development`.
+  // Routes the admin at `path`, which is its `base`. `close()` stops it.
   routeAdmin(path: string, options: Omit<CreateAdminOptions, 'base'>): void
   // Adds a service. Services start in this order and stop in reverse order.
   addService(name: string, service: Service): void
@@ -252,12 +251,8 @@ export function createApp({
       hono.route(path, createApi({ ...options, adapter, onError: logError }))
     },
 
-    routeAdmin(path, { vite, ...options }) {
-      const admin = createAdmin({
-        ...options,
-        base: path,
-        vite: process.env.NODE_ENV === 'development' ? vite : undefined
-      })
+    routeAdmin(path, options) {
+      const admin = createAdmin({ ...options, base: path })
       hono.route(path, admin)
       admins.push(admin)
     },

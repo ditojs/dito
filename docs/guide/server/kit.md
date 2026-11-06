@@ -53,8 +53,7 @@ await app.start()
 - `users` takes the result of `app.createUsers()`, see [Users](#users).
 - `app.start()` runs until `app.close()`, SIGINT or SIGTERM.
 - `app.routeAdmin()` routes the [admin](admin.md), with its path as `base`.
-  `vite` only applies with a `NODE_ENV` of `development`, and `app.close()` stops
-  Vite. Relative paths are relative to the working directory.
+  `app.close()` stops Vite. Relative paths are relative to the working directory.
 - `app.hono` takes the app's own middleware and other Hono apps. Middleware goes
   before the routes.
 
