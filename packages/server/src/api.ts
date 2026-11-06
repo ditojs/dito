@@ -15,6 +15,7 @@ import {
   bodyValidation,
   createValidationError,
   createErrorHandler,
+  logError,
   queryValidation
 } from './errors.ts'
 import type {
@@ -35,7 +36,7 @@ export function createApi({
   controllers,
   users,
   adapter = {},
-  onError
+  onError = logError
 }: CreateApiOptions) {
   const app = new Hono<DitoEnv>()
   // Runs on the actions only, so that APIs routed at `/api` and `/api/admin`
@@ -44,6 +45,7 @@ export function createApi({
     contextStorage(),
     ...asArray(users?.middleware),
     async (c, next) => {
+      c.set('onError', onError)
       if (adapter.connect) c.set('em', await adapter.connect(c))
       c.set('user', (await users?.getUser({ c })) ?? null)
       await next()
@@ -86,7 +88,7 @@ export function createApi({
     }
     routeShapes.add(shape)
     const handlers: Middleware[] = [
-      // Set it first, so that request logs also cover the failures of `setup`.
+      // Set the action first, so that request logs cover failures of `setup`.
       async (c, next) => {
         c.set('action', action.key)
         await next()

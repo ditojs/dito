@@ -195,6 +195,6 @@ function convertStatusError(error: unknown) {
       : undefined
 }
 
-function logError({ error }: { error: unknown }) {
+export function logError({ error }: { error: unknown }) {
   console.error(error)
 }

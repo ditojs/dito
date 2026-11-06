@@ -287,7 +287,7 @@ Enables time-based one-time codes, with backup codes. Authenticator apps show th
 | `send`         | `({ c, user, url }) => unknown` | Sends the email. The response doesn't wait for it.                                                                                                   |
 | `expiresAfter` | `number \| string`              | How long a link lasts, in milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Default: one hour. |
 | `resendAfter`  | `number \| string`              | The time before a user gets another link, as `expiresAfter`. Default: one minute.                                                                    |
-| `onError`      | `({ error, c }) => void`        | Gets the errors of `send`.                                                                                                                           |
+| `onError`      | `({ error, c }) => void`        | Gets the errors of `send`. Default: the `onError` of the API.                                                                                        |
 
 Enables password resets by email. The `secrets` of `createUsers()` sign the
 tokens.

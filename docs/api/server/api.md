@@ -155,6 +155,7 @@ The context also holds all other variables:
 
 - `getRecord()`, `find()` and `list()` of
   [model controllers](mikro.md#definemodelcontroller);
+- `onError`, the one of the API, for errors that no response reports;
 - the app's own, such as a session that middleware sets with `c.set()`.
 
 Packages and apps type their variables by augmenting `DitoVariables`. The

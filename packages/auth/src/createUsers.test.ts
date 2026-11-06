@@ -26,6 +26,7 @@ afterAll(drop)
 
 const adapter = createMikroAdapter(orm)
 const send = vi.fn()
+const onError = vi.fn()
 
 const members = createUsers(Member, {
   adapter,
@@ -37,6 +38,7 @@ const members = createUsers(Member, {
 const api = createApi({
   adapter,
   users: members,
+  onError,
   controllers: [
     {
       path: 'members',
@@ -45,7 +47,11 @@ const api = createApi({
           name: 'Dito',
           passkeys: true,
           totp: { secret: 'a long secret' },
-          passwordReset: { confirmUrl: 'https://example.com/{token}', send }
+          passwordReset: {
+            confirmUrl: 'https://example.com/{token}',
+            resendAfter: 0,
+            send
+          }
         })
       ]
     },
@@ -88,6 +94,16 @@ describe('defineActions()', () => {
     expect(() => members.defineActions({ totp: { secret: 'long' } })).toThrow(
       'Unable to use TOTP without a `name`.'
     )
+  })
+})
+
+describe('password resets', () => {
+  it('logs failed emails through the API', async () => {
+    const error = new Error('Unable to send')
+    send.mockRejectedValueOnce(error)
+    await client.post('/members/password-reset', { username: email })
+    await vi.waitFor(() => expect(onError).toHaveBeenCalled())
+    expect(onError.mock.calls[0]![0].error).toBe(error)
   })
 })
 

@@ -35,6 +35,9 @@ interface DatabaseVariables {
 export interface DitoVariables extends DatabaseVariables {
   // The signed-in user, or null.
   user: User | null
+  // The `onError` of the API, for errors that no response reports, such as
+  // those of work that outlives the request.
+  onError: ReportError
   // The key of the action that runs, such as `get` or `post :id/publish`.
   action: string
   // The result of the `body` schema, else the JSON body of a write: `{}` when
@@ -200,7 +203,7 @@ export interface CreateApiOptions {
   controllers: ControllerDefinition[] | Record<string, unknown>
   // The users of the API, such as the result of `createUsers()`.
   users?: {
-    // Runs first on every action, such as the one that loads the session.
+    // Hono middleware that runs first on every action, to load a session.
     middleware?: Middleware | Middleware[]
     // The signed-in user of the request, or null.
     getUser: (context: { c: DitoContext }) => User | null | Promise<User | null>

@@ -18,7 +18,7 @@ export interface PasswordResetOptions<U extends AuthUser = any> {
   // The link, with a `{token}` placeholder.
   confirmUrl: string
   // Sends the email. The response doesn't wait for it, so its failures don't
-  // change the response, and go to `onError`.
+  // change the response, and go to `onError`, by default that of the API.
   send(context: { c: Context; user: U; url: string }): unknown
   onError?(context: { error: unknown; c: Context }): void
 }
@@ -69,7 +69,7 @@ export function createPasswordReset<U extends AuthUser>({
         const token = createToken(user, now)
         const url = confirmUrl.replace('{token}', token)
         Promise.try(() => send({ c, user, url })).catch(error =>
-          onError?.({ error, c })
+          (onError ?? c.var.onError)({ error, c })
         )
       }
     },
