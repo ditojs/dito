@@ -12,7 +12,7 @@ export interface ServeOptions {
   // duration such as `'10s'`. 0 waits without a limit.
   closeTimeout?: number | string
   // Start in this order before the server listens, and stop in reverse order
-  // after it has stopped.
+  // after it has stopped, or when the start fails.
   services?: Service[]
 }
 
@@ -23,13 +23,10 @@ export async function serve(
   { port, host, closeTimeout = 0, services = [] }: ServeOptions = {}
 ) {
   const timeout = parseDuration(closeTimeout)
-  for (const service of services) await service.start?.()
+  const stopServices = await startServices(services)
   const server = createAdaptorServer({ fetch: app.fetch })
-  const stopServices = async () => {
-    for (const service of services.toReversed()) await service.stop?.()
-  }
-  server.listen(Number(port ?? 0), host)
   try {
+    server.listen(Number(port ?? 0), host)
     await once(server, 'listening')
   } catch (error) {
     await stopServices()
@@ -52,6 +49,25 @@ export async function serve(
   process.on('SIGINT', onSignal)
   process.on('SIGTERM', onSignal)
   return { server, close }
+}
+
+// Start `services` in order, and resolve to a function that stops them in
+// reverse order. When one fails to start, stop those before it and throw.
+export async function startServices(services: Service[]) {
+  const started: Service[] = []
+  const stopServices = async () => {
+    for (const service of started.toReversed()) await service.stop?.()
+  }
+  try {
+    for (const service of services) {
+      await service.start?.()
+      started.push(service)
+    }
+  } catch (error) {
+    await stopServices()
+    throw error
+  }
+  return stopServices
 }
 
 // The client's address: the one of `X-Forwarded-For` with the `proxy` option of

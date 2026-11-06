@@ -326,6 +326,23 @@ describe('createApp()', () => {
     expect((errors[0] as Error).message).toBe('Failed job')
   })
 
+  it('stops what started and closes the ORM when a service fails', async () => {
+    const { host, user, dbName } = database.orm.config.getAll()
+    const app = createApp({
+      entities,
+      database: { host, user, dbName },
+      server: { host: '127.0.0.1' },
+      logger: { level: 'silent' }
+    })
+    const failing = { start: () => Promise.reject(new Error('Failed')) }
+    await expect(
+      app.start({ services: [service('mailer'), failing] })
+    ).rejects.toThrow('Failed')
+    expect(log).toEqual(['mailer start', 'mailer stop'])
+    expect(await app.orm.isConnected()).toBe(false)
+    await app.close()
+  })
+
   it('runs the services around the server, and closes the ORM', async () => {
     const { host, user, dbName } = database.orm.config.getAll()
     const app = createApp({

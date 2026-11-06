@@ -88,7 +88,7 @@ export interface App {
     options: Omit<CreateApiOptions, 'adapter' | 'onError'>
   ): void
   // Starts the jobs and the services in order, then serves `hono` until
-  // `close()`, SIGINT or SIGTERM.
+  // `close()`, SIGINT or SIGTERM. A failed start stops them and closes the ORM.
   start(options?: { services?: Service[] }): Promise<ServerType>
   // Stops the server, the services and the jobs if they run, then closes the
   // ORM.

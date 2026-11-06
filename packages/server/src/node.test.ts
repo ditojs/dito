@@ -333,6 +333,35 @@ describe('forwarded()', () => {
 })
 
 describe('serve()', () => {
+  it('stops the started services in reverse when a start fails', async () => {
+    const log: string[] = []
+    const service = (name: string) => ({
+      start: () => void log.push(`${name} start`),
+      stop: () => void log.push(`${name} stop`)
+    })
+    const failing = {
+      start: () => Promise.reject(new Error('Failed')),
+      stop: () => void log.push('failing stop')
+    }
+    await expect(
+      serve(new Hono(), {
+        host: '127.0.0.1',
+        services: [
+          service('first'),
+          service('second'),
+          failing,
+          service('last')
+        ]
+      })
+    ).rejects.toThrow('Failed')
+    expect(log).toEqual([
+      'first start',
+      'second start',
+      'second stop',
+      'first stop'
+    ])
+  })
+
   it('stops the services when the port is taken', async () => {
     const app = new Hono()
     await withServer(app, async url => {

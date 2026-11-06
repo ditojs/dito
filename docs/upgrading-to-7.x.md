@@ -581,7 +581,8 @@ await app.start({ services: [mailer, scheduler] })
 - `controllers` is a list, or a module namespace, in which only plain objects
   with a string `path` count.
 - Services become modules or objects with `start()` and `stop()`, see
-  [Services](guide/server/kit.md#services).
+  [Services](guide/server/kit.md#services). A failed start stops those that
+  started, in reverse order.
 - `app.on()` and events such as `before:start` become plain calls around
   `app.start()`.
 - `config.http` goes in the `server` option of `createApp()`, with the options

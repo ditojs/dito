@@ -139,7 +139,8 @@ await app.close()
 
 A script imports the app and closes it at the end.
 
-`runPlayground()` runs piped code, with the entities, `orm` and `em` in scope:
+`runPlayground()` runs piped code, with the entities, `orm` and `em` in scope.
+Its `services` run around the code, and `scope` adds names:
 
 ```js
 // scripts/playground.js

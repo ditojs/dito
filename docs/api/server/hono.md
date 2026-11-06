@@ -87,6 +87,7 @@ serve(app: Hono, options?: ServeOptions): Promise<{ server, close }>
 Starts the services, listens on Node, and returns the Node server and `close()`.
 
 - `close()` stops the server, then the services in reverse order.
+- A failed start stops the services that started, in reverse order, and rejects.
 - `close()` fails after `closeTimeout`.
 - SIGINT and SIGTERM call `close()`, and exit the process.
 
@@ -100,3 +101,15 @@ Starts the services, listens on Node, and returns the Node server and `close()`.
 A service is `{ start?, stop? }`, of functions that may be async, such as a
 mailer or a scheduler. Its `stop()` ends once its work is done, as another
 service may close the database next.
+
+## startServices()
+
+```ts
+startServices(services: Service[]): Promise<() => Promise<void>>
+```
+
+From `@ditojs/server/node`. Starts the services in order, and resolves to a
+function that stops them in reverse order. When one fails to start, it stops
+those before it and rejects. `serve()` and
+[`runPlayground()`](kit.md#runplayground) use it, as do scripts that need the
+services without a server.
