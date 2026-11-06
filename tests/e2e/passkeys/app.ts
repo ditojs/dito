@@ -21,8 +21,9 @@ export function createApi(orm: TestOrm, { passkeys = true, totp = true } = {}) {
     secrets,
     password: z.string().min(6, 'must be at least 6 characters long'),
     // The passkeys belong to the domain of the requests, `localhost`:
-    passkeys: passkeys ? { rpName: 'Example' } : undefined,
-    totp: totp ? { issuer: 'Example', secret: 'totp-secret' } : undefined,
+    name: 'Example',
+    passkeys,
+    totp: totp ? { secret: 'totp-secret' } : undefined,
     passwordReset: {
       // The tests ask for several links for one user in a row.
       resendAfter: 0,

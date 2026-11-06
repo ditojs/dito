@@ -123,9 +123,8 @@ export async function createTestApp(
     prefix || '/',
     createApi({
       controllers,
-      middleware,
+      users: { middleware, getUser: getUser ?? (() => null) },
       adapter,
-      getUser,
       onError: logError
     })
   )
@@ -210,7 +209,6 @@ export function stubSession(): MiddlewareHandler {
   const capabilities = {
     hasPasskeys: false,
     hasTotp: false,
-    hasPasswordChange: false,
     hasPasswordReset: false
   }
   return async (c, next) => {
