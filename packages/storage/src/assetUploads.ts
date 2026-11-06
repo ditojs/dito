@@ -6,17 +6,7 @@ import { camelize } from '@ditojs/utils'
 import { HttpError, defineAction, type MixinDefinition } from '@ditojs/server'
 import type { AssetFile } from './Storage.ts'
 import { storeAsset, type AssetDb } from './assetWrites.ts'
-import { parseMaxSize } from './assetPaths.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
-
-// The upload action of the Dito admin's upload component:
-// `post upload/<data path>`, such as `upload/pages/3/images`. It camelizes each
-// segment of the path, stores the files of the multipart body in the storage of
-// the first upload whose glob matches it, and responds with the file objects.
-// It runs without a transaction, which would stay open while the files are
-// written. A release removes the files that no write ends up referencing.
-// The files stream from the body into the storage, and files over the upload's
-// `maxSize` get 413.
 
 export interface AssetUpload {
   // A glob of camelCase data paths, such as `pages/*/images`.
@@ -28,27 +18,34 @@ export interface AssetUpload {
   maxSize?: number | string
 }
 
-export interface UploadRoutesOptions {
-  uploads: AssetUpload[]
-  storages: StorageRegistry
-  db: AssetDb
+export interface NormalizedAssetUpload extends Omit<AssetUpload, 'maxSize'> {
+  maxSize?: number
 }
 
-export function uploadRoutes({
+export interface DefineAssetUploadsOptions {
+  uploads: NormalizedAssetUpload[]
+  storages: StorageRegistry
+  getDb: AssetDb
+}
+
+// Define the action of the Dito admin's upload component,
+// `post upload/<data path>`, such as `upload/pages/3/images`, which stores the
+// files in the storage of the first upload whose glob matches the camelized
+// path:
+export function defineAssetUploads({
   uploads,
   storages,
-  db
-}: UploadRoutesOptions): MixinDefinition {
-  // Throws for the storages that the registry doesn't have.
-  for (const upload of uploads) storages.get(upload.storage)
-  const matchers = uploads.map(({ path, storage, maxSize }) => ({
-    isMatch: picomatch(path),
-    storage,
-    maxSize: parseMaxSize(maxSize)
+  getDb
+}: DefineAssetUploadsOptions): MixinDefinition {
+  const matchers = uploads.map(upload => ({
+    ...upload,
+    isMatch: picomatch(upload.path)
   }))
   return {
     actions: {
       'post upload/:path{.+}': defineAction({
+        // A transaction would stay open while the files are written. The
+        // release removes the files that no write ends up referencing.
         transacted: false,
         handler: async ({ params, c }) => {
           const path = params.path
@@ -64,7 +61,7 @@ export function uploadRoutes({
             })
           }
           const storage = storages.get(upload.storage)
-          const database = db(c)
+          const db = getDb(c)
           const parser = busboy({
             headers: { 'content-type': contentType },
             limits: { fileSize: upload.maxSize }
@@ -80,10 +77,10 @@ export function uploadRoutes({
               // would throw the error of an abort. Its store reads it later:
               stream.on('error', () => {})
               const result = (results.at(-1) ?? Promise.resolve()).then(() =>
-                storeAsset(database, storage, {
+                storeAsset(db, storage, {
                   name: filename,
                   type: mimeType,
-                  data: readFile(stream)
+                  data: readUploadData(stream)
                 })
               )
               // Read the rest of files that fail, so that parsing goes on
@@ -115,7 +112,7 @@ export function uploadRoutes({
             await Promise.allSettled(
               files.map(async file => {
                 await storage.removeFile(file)
-                await database
+                await db
                   .deleteFrom('asset')
                   .where('key', '=', file.key)
                   .execute()
@@ -130,9 +127,9 @@ export function uploadRoutes({
   }
 }
 
-// The data of a file of the multipart body, which fails with 413 when busboy
-// cut it at `maxSize`. Stopping early leaves the stream for busboy to drain:
-async function* readFile(stream: Readable & { truncated?: boolean }) {
+// Fail with 413 when busboy cut the file at `maxSize`. Stopping early leaves
+// the stream for busboy to drain:
+async function* readUploadData(stream: Readable & { truncated?: boolean }) {
   yield* stream.iterator({ destroyOnReturn: false })
   if (stream.truncated) throw new HttpError(413)
 }

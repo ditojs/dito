@@ -7,8 +7,13 @@ import {
   defineController,
   type Transaction
 } from '@ditojs/server'
-import { assets, importAssets, storeAsset } from './assetWrites.ts'
+import {
+  defineAssetWrites,
+  importAssets,
+  storeAsset
+} from './assetWrites.ts'
 import { releaseAssets } from './assetJobs.ts'
+import { normalizeAssetPaths } from './assetPaths.ts'
 import {
   setupAssetTests,
   db,
@@ -67,7 +72,7 @@ const kyselyTransaction: Transaction = (c, fn) =>
     }
   })
 
-describe('assets()', () => {
+describe('defineAssetWrites()', () => {
   let received: any
 
   function setup(assetPaths = paths) {
@@ -75,7 +80,12 @@ describe('assets()', () => {
       path: 'books',
       authorize: true,
       mixins: [
-        assets({ table: 'book', paths: assetPaths, storages, db: getDb })
+        defineAssetWrites({
+          table: 'book',
+          paths: normalizeAssetPaths(assetPaths),
+          storages,
+          getDb
+        })
       ],
       actions: {
         post: async ({ body, c }) => {
@@ -210,7 +220,7 @@ describe('assets()', () => {
     await addAsset('released', { since: old })
     let response: ReturnType<typeof post>
     await db.transaction().execute(async trx => {
-      await releaseAssets({ db: trx, storages, deleteUnusedAfter: 0 })
+      await releaseAssets({ db: trx, storages, before: new Date() })
       response = post(setup(), { cover: file('released') })
       await new Promise(resolve => setTimeout(resolve, 100))
     })
@@ -387,7 +397,12 @@ describe('importAssets()', () => {
       cover: { key: 'seed', name: 'source.txt', url },
       pages: [{ images: [{ key: 'seed', name: 'source.txt', url }] }]
     }
-    await importAssets(data, { table: 'book', paths, storages, db })
+    await importAssets(data, {
+      table: 'book',
+      paths: normalizeAssetPaths(paths),
+      storages,
+      db
+    })
     expect(data.cover.key).not.toBe('seed')
     expect(data.cover.url).toBe(`https://example.com/${data.cover.key}`)
     expect(data.pages[0].images[0]).toEqual(data.cover)
@@ -397,7 +412,12 @@ describe('importAssets()', () => {
 
   it('skips files from sources that aren`t allowed', async () => {
     const data = { cover: { key: 'seed', url: 'https://other.com/a.png' } }
-    await importAssets(data, { table: 'book', paths, storages, db })
+    await importAssets(data, {
+      table: 'book',
+      paths: normalizeAssetPaths(paths),
+      storages,
+      db
+    })
     expect(data.cover).toEqual({ key: 'seed', url: 'https://other.com/a.png' })
     expect(await getAssets()).toEqual([])
   })

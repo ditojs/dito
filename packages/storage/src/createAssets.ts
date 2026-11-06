@@ -2,21 +2,24 @@ import type { Kysely } from 'kysely'
 import { isString, parseDuration } from '@ditojs/utils'
 import type { DitoContext, MixinDefinition } from '@ditojs/server'
 import type { Storage, StoreOptions } from './Storage.ts'
-import { getDataPath, parseMaxSize, type AssetPath } from './assetPaths.ts'
+import {
+  getDataPath,
+  normalizeAssetPaths,
+  parseMaxSize,
+  type AssetPath
+} from './assetPaths.ts'
 import {
   findAssetReferences,
   runAssetJobs,
   type FindAssetReferencesOptions
 } from './assetJobs.ts'
-import { assets, importAssets, storeAsset } from './assetWrites.ts'
+import {
+  defineAssetWrites,
+  importAssets,
+  storeAsset
+} from './assetWrites.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
-import { uploadRoutes, type AssetUpload } from './assetUploads.ts'
-
-// Binds the asset handling to an app's adapter, asset paths and storages. The
-// mixins use the Kysely of the request's handle, `c.var.em`, so that the
-// `asset` rows of a write commit with its transaction. `findReferences()` reads
-// in the request's transaction when it gets its `c`. The other methods use the
-// Kysely of the adapter, outside of the requests' transactions.
+import { defineAssetUploads, type AssetUpload } from './assetUploads.ts'
 
 export interface CreateAssetsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`.
@@ -27,7 +30,7 @@ export interface CreateAssetsOptions {
   // such as `'24h'`, unless a call passes its own. By default, `false` skips
   // the release.
   deleteUnusedAfter?: number | string | false
-  // The `maxSize` of the asset paths and uploads without their own, see
+  // The `maxSize` of the asset paths and uploads without their own, as in
   // `AssetUpload`.
   maxSize?: number | string
 }
@@ -44,42 +47,41 @@ export function createAssets({
   deleteUnusedAfter = false,
   maxSize
 }: CreateAssetsOptions) {
-  // Throws for the storages that the registry doesn't have.
+  // Throw for unknown storages and invalid values here, not in the requests:
   for (const path of paths) storages.get(path.storage)
-  // The defaults of the jobs, writes and uploads, which throw for invalid
-  // values here:
-  const defaults = {
-    deleteUnusedAfter: parseDeleteUnusedAfter(deleteUnusedAfter),
-    maxSize: parseMaxSize(maxSize)
-  }
+  const defaultDeleteUnusedAfter = parseDeleteUnusedAfter(deleteUnusedAfter)
+  const defaultMaxSize = parseMaxSize(maxSize)
+  const normalizedPaths = normalizeAssetPaths(paths, defaultMaxSize)
+  // The mixins use the Kysely of the request's handle, so that the `asset`
+  // rows of a write commit with its transaction. The other methods use the
+  // Kysely of the adapter, outside of the requests' transactions.
   const getDb = (c: DitoContext) =>
     (c.var.em as { getKysely(): Kysely<any> }).getKysely()
-  // The asset paths with the default `maxSize`:
-  const limitedPaths = paths.map(path => ({
-    ...path,
-    maxSize: parseMaxSize(path.maxSize) ?? defaults.maxSize
-  }))
 
   return {
     paths,
     storages,
 
-    // Handles the files in the bodies of the table's writes.
     defineWrites(table: string): MixinDefinition {
-      return assets({ table, paths: limitedPaths, storages, db: getDb })
+      return defineAssetWrites({
+        table,
+        paths: normalizedPaths,
+        storages,
+        getDb
+      })
     },
 
-    // The upload action of the table's asset paths, with the camelCase column
-    // followed by the path of each, such as `pages/*/images`, and of `uploads`.
-    // Without a table, only of `uploads`.
+    // Define the upload action of the table's asset paths, with the camelCase
+    // column followed by the path of each, such as `pages/*/images`, and of
+    // `uploads`. Without a table, only of `uploads`.
     defineUploads(
       table: string | DefineUploadsOptions,
       options: DefineUploadsOptions = {}
     ): MixinDefinition {
-      const [name, { uploads = [] }] = isString(table)
-        ? [table, options]
-        : [undefined, table]
-      const tableUploads = limitedPaths
+      const name = isString(table) ? table : undefined
+      const { uploads = [] } = isString(table) ? options : table
+      for (const upload of uploads) storages.get(upload.storage)
+      const tableUploads = normalizedPaths
         .filter(path => path.table === name)
         .map(({ column, path, storage, maxSize }) => ({
           path: getDataPath(column, path),
@@ -89,19 +91,21 @@ export function createAssets({
       if (name && tableUploads.length + uploads.length === 0) {
         throw new Error(`No asset paths for table '${name}'`)
       }
-      return uploadRoutes({
-        uploads: [...tableUploads, ...uploads].map(upload => ({
-          ...upload,
-          maxSize: upload.maxSize ?? defaults.maxSize
-        })),
+      return defineAssetUploads({
+        uploads: [
+          ...tableUploads,
+          ...uploads.map(upload => ({
+            ...upload,
+            maxSize: parseMaxSize(upload.maxSize) ?? defaultMaxSize
+          }))
+        ],
         storages,
-        db: getDb
+        getDb
       })
     },
 
-    // Stores a file that the server creates, and inserts its `asset` row.
     // The row commits at once, as the file stays when a request rolls back,
-    // so that the release deletes it.
+    // so that the release deletes it:
     store(storage: string | Storage, options: StoreOptions) {
       return storeAsset(
         adapter.getKysely(),
@@ -110,18 +114,18 @@ export function createAssets({
       )
     },
 
-    // Imports the files that `data`, a row of `table`, references, such as the
-    // files of seed data. The rows commit at once, as in `store()`.
+    // Import the files of seed data, with rows that commit at once, as in
+    // `store()`:
     import<T extends object>(table: string, data: T) {
       return importAssets(data, {
         table,
-        paths: limitedPaths,
+        paths: normalizedPaths,
         storages,
         db: adapter.getKysely()
       })
     },
 
-    // Lists the files that the rows reference at the asset paths.
+    // Read in the request's transaction when called with its `c`:
     findReferences({
       c,
       ...options
@@ -135,8 +139,6 @@ export function createAssets({
       })
     },
 
-    // Scans the references and releases the files unreferenced for longer
-    // than `deleteUnusedAfter`, of the call or else of the options.
     runJobs(
       options: {
         dryRun?: boolean
@@ -149,9 +151,10 @@ export function createAssets({
         db: adapter.getKysely(),
         paths,
         storages,
-        deleteUnusedAfter: parseDeleteUnusedAfter(
-          options.deleteUnusedAfter ?? defaults.deleteUnusedAfter
-        )
+        deleteUnusedAfter:
+          options.deleteUnusedAfter != null
+            ? parseDeleteUnusedAfter(options.deleteUnusedAfter)
+            : defaultDeleteUnusedAfter
       })
     }
   }

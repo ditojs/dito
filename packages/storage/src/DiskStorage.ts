@@ -8,13 +8,11 @@ import {
   type StorageOptions
 } from './Storage.ts'
 
-// Stores files in a folder. With `nestedFolders`, each file goes into two
-// levels of folders named after the first two characters of its key, such as
-// `3/f/3f2b….png`, which keeps folders small with many files.
-
 export interface DiskStorageOptions extends StorageOptions {
   // The folder of the files, resolved against the working directory.
   path: string
+  // Put each file into two levels of folders named after the first two
+  // characters of its key, such as `3/f/3f2b….png`, to keep folders small.
   nestedFolders?: boolean
 }
 

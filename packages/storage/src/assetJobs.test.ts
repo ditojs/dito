@@ -85,7 +85,7 @@ describe('scanAssets()', () => {
 })
 
 describe('releaseAssets()', () => {
-  it('releases assets unreferenced for longer than `after`', async () => {
+  it('releases assets unreferenced since `before`', async () => {
     for (const key of ['old', 'new', 'used']) {
       await covers.addFile(file(key), Buffer.from(key))
     }
@@ -97,8 +97,7 @@ describe('releaseAssets()', () => {
     const released = await releaseAssets({
       db,
       storages,
-      deleteUnusedAfter: 12 * 60 * 60 * 1000,
-      now
+      before: new Date('2026-10-30T00:00:00Z')
     })
     expect(released.sort((a, b) => a.key.localeCompare(b.key))).toEqual([
       { key: 'gone', storage: 'covers' },

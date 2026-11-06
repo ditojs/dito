@@ -3,13 +3,11 @@
 import { isIP } from 'node:net'
 import {
   Storage,
+  getChunks,
   type AssetFile,
   type FileData,
   type StorageOptions
 } from './Storage.ts'
-
-// Stores files as objects in an S3 bucket, under their keys. The aws-lite
-// client is an optional peer, imported when the storage first needs it.
 
 export interface S3StorageOptions extends StorageOptions {
   bucket: string
@@ -31,7 +29,7 @@ export interface S3StorageOptions extends StorageOptions {
 
 type S3Method = (params: Record<string, any>) => Promise<any>
 
-// The methods of aws-lite's S3 client that the storage calls.
+// Only the methods of aws-lite's S3 client that the storage calls:
 export interface S3Client {
   PutObject: S3Method
   CreateMultipartUpload: S3Method
@@ -63,7 +61,7 @@ export class S3Storage extends Storage {
         : `${protocol}//${bucket}.${host}/`
   }
 
-  // The aws-lite S3 client, created on first use.
+  // aws-lite is an optional peer, so import it on first use:
   getClient(): Promise<S3Client> {
     return (this.#client ??= this.#createClient().catch(error => {
       this.#client = null
@@ -83,7 +81,7 @@ export class S3Storage extends Storage {
       sessionToken: credentials.sessionToken,
       plugins: [s3Plugin]
     })
-    // The S3 plugin adds `S3`, which the client's types don't know.
+    // The S3 plugin adds `S3`, which the client's types don't know:
     return (client as unknown as { S3: S3Client }).S3
   }
 
@@ -96,9 +94,9 @@ export class S3Storage extends Storage {
     return this.getUrl(file.key)
   }
 
-  // Puts files of one part in one request, and uploads larger ones in parts
-  // with our own loop, as `S3.Upload()` of aws-lite can't take streams of
-  // unknown length yet (aws-lite issue #222).
+  // Put files of one part in one request, and upload larger ones in parts with
+  // our own loop, as `S3.Upload()` of aws-lite can't take streams of unknown
+  // length yet (aws-lite issue #222).
   async addFile(file: AssetFile, data: FileData) {
     const s3 = await this.getClient()
     const object = { Bucket: this.bucket, Key: file.key }
@@ -174,12 +172,11 @@ export class S3Storage extends Storage {
 
 const partSize = 8 * 1024 * 1024
 
-// Splits the data into parts of `partSize`, and a last one with the rest. The
-// parts are views of the chunks, and only those of several chunks are copies.
+// Only parts of several chunks are copies, the others are views of the chunks.
 async function* getParts(data: FileData) {
   let chunks: Buffer[] = []
   let length = 0
-  for await (const chunk of Buffer.isBuffer(data) ? [data] : data) {
+  for await (const chunk of getChunks(data)) {
     let rest = Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength)
     while (length + rest.byteLength >= partSize) {
       const end = partSize - length

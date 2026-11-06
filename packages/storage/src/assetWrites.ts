@@ -2,7 +2,6 @@ import fs from 'node:fs'
 import type { Kysely } from 'kysely'
 import {
   asArray,
-  camelize,
   isObject,
   mapConcurrently,
   normalizeDataPath,
@@ -16,6 +15,7 @@ import {
 } from '@ditojs/server'
 import { bodyValidation } from '@ditojs/server/internal'
 import {
+  getChunks,
   resolveFileUrl,
   type AssetFile,
   type FileData,
@@ -25,34 +25,22 @@ import {
 import {
   findAssetFiles,
   findInvalidFiles,
-  parseMaxSize,
-  type AssetPath
+  type NormalizedAssetPath
 } from './assetPaths.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
 
-// Handles the files in the JSON body of a controller's writes, at the asset
-// paths of its table. A file is accepted when the `asset` table holds its key
-// in the storage of its path, and it then gets the properties of the stored
-// file. Files of other storages are copied, and files without an `asset` row
-// are imported from their `url` when the storage allows it. The mixin changes
-// the files of the body in place, so handlers read the stored files. Other
-// values at these paths respond with 400.
-
-// Returns the Kysely of the request, such as one on `c.var.em`, so that the
-// `asset` rows of a write commit with its transaction.
+// Use the Kysely of the request, such as one on `c.var.em`, so that the
+// `asset` rows of a write commit with its transaction:
 export type AssetDb = (c: DitoContext) => Kysely<any>
 
-// The options of `assets()`, `assetUploads()` and, with a plain Kysely as
-// `db`, `importAssets()`.
-export interface AssetOptions<Db = AssetDb> {
+export interface AssetOptions {
   table: string
-  paths: AssetPath[]
+  paths: NormalizedAssetPath[]
   storages: StorageRegistry
-  db: Db
 }
 
-// A file object, and the storage and the size limit of its asset path.
-interface StorageFile {
+// A file at an asset path, with the storage and the size limit of the path:
+interface AssetPathFile {
   file: AssetFile
   storage: Storage
   maxSize?: number
@@ -61,7 +49,7 @@ interface StorageFile {
 interface ImportOptions {
   storages: StorageRegistry
   // Collects the stored files, even of imports that fail later.
-  imported?: StorageFile[]
+  imported?: AssetPathFile[]
   skipDisallowed?: boolean
 }
 
@@ -73,44 +61,53 @@ const fetchTimeout = 30_000
 // How many files a write imports at once.
 const importConcurrency = 8
 
-export function assets({
+// Accept the files in the body that the `asset` table holds in the storage of
+// their path, copy files of other storages, and import files without `asset`
+// row from their `url` when the storage allows it. Change the files of the
+// body in place, so that handlers read the stored files.
+export function defineAssetWrites({
   table,
   paths,
   storages,
-  db
-}: AssetOptions): MixinDefinition {
+  getDb
+}: AssetOptions & { getDb: AssetDb }): MixinDefinition {
   const tablePaths = paths.filter(path => path.table === table)
   return {
     middleware: async (c, next) => {
-      if (!writeMethods.includes(c.req.method)) return next()
-      checkFiles(c.var.body, tablePaths)
-      const files = findFiles(c.var.body, tablePaths, storages)
-      if (files.length === 0) return next()
-      const database = db(c)
-      const imported: StorageFile[] = []
+      const imported: AssetPathFile[] = []
       // The transaction rolls the rows back, but not the files.
       const removeImported = () =>
         Promise.allSettled(
           imported.map(({ file, storage }) => storage.removeFile(file))
         )
-      try {
-        // Throws a 400 for files that it can't accept.
-        const unreferenced = await importFiles(database, files, {
-          storages,
-          imported
-        })
-        // A file in a body is used again, so a release must skip it.
-        const keys = [...unreferenced, ...imported.map(({ file }) => file.key)]
-        if (keys.length > 0) {
-          await database
-            .updateTable('asset')
-            .set({ unreferenced_since: null })
-            .where('key', 'in', keys)
-            .execute()
+      if (writeMethods.includes(c.req.method)) {
+        checkFiles(c.var.body, tablePaths)
+        const files = findFiles(c.var.body, tablePaths, storages)
+        if (files.length > 0) {
+          const db = getDb(c)
+          try {
+            // Files that can't be accepted throw a 400.
+            const unreferenced = await importFiles(db, files, {
+              storages,
+              imported
+            })
+            // A file in a body is used again, so a release must skip it.
+            const keys = [
+              ...unreferenced,
+              ...imported.map(({ file }) => file.key)
+            ]
+            if (keys.length > 0) {
+              await db
+                .updateTable('asset')
+                .set({ unreferenced_since: null })
+                .where('key', 'in', keys)
+                .execute()
+            }
+          } catch (error) {
+            await removeImported()
+            throw error
+          }
         }
-      } catch (error) {
-        await removeImported()
-        throw error
       }
       await next()
       // Hono handles the errors of later handlers and sets `c.error`.
@@ -119,21 +116,20 @@ export function assets({
   }
 }
 
-// Throws a 400 for values at the asset paths that aren't file objects, which
-// `findFiles()` leaves out and the write would store as they are.
-function checkFiles(body: unknown, paths: AssetPath[]) {
+// Answer values at the asset paths that aren't files with 400, as `findFiles()`
+// leaves them out and the write would store them as they are.
+function checkFiles(body: unknown, paths: NormalizedAssetPath[]) {
   const issues = asArray(body).flatMap(item =>
     isObject(item)
-      ? paths.flatMap(({ column, path }) => {
-          const property = camelize(column)
-          return findInvalidFiles(item[property], path).map(filePath => ({
+      ? paths.flatMap(({ property, path }) =>
+          findInvalidFiles(item[property], path).map(filePath => ({
             path: [
               property,
               ...parseDataPath(normalizeDataPath(filePath))
             ],
             message: 'Invalid input: expected a stored file'
           }))
-        })
+        )
       : []
   )
   if (issues.length > 0) throw createValidationError(issues, bodyValidation)
@@ -141,32 +137,31 @@ function checkFiles(body: unknown, paths: AssetPath[]) {
 
 function findFiles(
   body: unknown,
-  paths: AssetPath[],
+  paths: NormalizedAssetPath[],
   storages: StorageRegistry
-): StorageFile[] {
+): AssetPathFile[] {
   return asArray(body).flatMap(item =>
     isObject(item)
-      ? paths.flatMap(({ column, path, storage, maxSize }) =>
-          findAssetFiles(item[camelize(column)], path).map(({ file }) => ({
+      ? paths.flatMap(({ property, path, storage, maxSize }) =>
+          findAssetFiles(item[property], path).map(({ file }) => ({
             file,
             storage: storages.get(storage),
-            maxSize: parseMaxSize(maxSize)
+            maxSize
           }))
         )
       : []
   )
 }
 
-// Gives the files the properties of their stored files. Files that the `asset`
-// table holds in their storage keep their key, and others go through
-// `importFile()`. Returns the keys of the rows that the files use and that a
-// scan found unreferenced. The rows are locked after the imports, so that a
-// slow source holds no locks.
+// Give the files the properties of their stored files, and return the keys of
+// the rows that they use and that a scan found unreferenced. Files that the
+// `asset` table holds in their storage keep their key.
 async function importFiles(
   db: Kysely<any>,
-  files: StorageFile[],
+  files: AssetPathFile[],
   options: ImportOptions
 ): Promise<string[]> {
+  const getStorageKey = (storage: string, key: string) => `${storage}:${key}`
   const keys = [...new Set(files.map(({ file }) => file.key))]
   if (keys.length === 0) return []
   const assets = await db
@@ -175,9 +170,8 @@ async function importFiles(
     .where('key', 'in', keys)
     .execute()
   const assetsByKey = new Map(assets.map(asset => [asset.key, asset]))
-  const groups = Map.groupBy(
-    files,
-    ({ file, storage }) => `${storage.name}:${file.key}`
+  const groups = Map.groupBy(files, ({ file, storage }) =>
+    getStorageKey(storage.name, file.key)
   )
   // Wait for all imports before throwing, so that the caller removes every
   // imported file.
@@ -192,12 +186,13 @@ async function importFiles(
           asset?.storage === first.storage.name
             ? asset.file
             : await importFile(db, first, asset, options)
-        if (!stored) return
-        for (const { file } of group) {
-          for (const key of Object.keys(file)) {
-            delete file[key as keyof AssetFile]
+        if (stored) {
+          for (const { file } of group) {
+            for (const key of Object.keys(file)) {
+              delete file[key as keyof AssetFile]
+            }
+            Object.assign(file, stored)
           }
-          Object.assign(file, stored)
         }
       } catch (error) {
         errors.push(error)
@@ -206,24 +201,23 @@ async function importFiles(
     { concurrency: importConcurrency }
   )
   if (errors.length > 0) throw errors[0]
-  const used = assets.filter(({ key, storage }) =>
-    groups.has(`${storage}:${key}`)
-  )
-  if (used.length === 0) return []
-  const locked = await db
-    .selectFrom('asset')
-    .select(['key', 'unreferenced_since'])
-    .where(
-      'key',
-      'in',
-      used.map(({ key }) => key)
-    )
-    // A release that runs now would delete rows that this write references.
-    // The order keeps two writes from locking each other out.
-    .orderBy('key')
-    .forUpdate()
-    .execute()
-  if (locked.length < used.length) {
+  const usedKeys = assets
+    .filter(({ key, storage }) => groups.has(getStorageKey(storage, key)))
+    .map(({ key }) => key)
+  // Lock the rows only after the imports, so that a slow source holds no locks.
+  // A release that runs now would delete rows that this write references, and
+  // the order keeps two writes from locking each other out.
+  const locked =
+    usedKeys.length > 0
+      ? await db
+          .selectFrom('asset')
+          .select(['key', 'unreferenced_since'])
+          .where('key', 'in', usedKeys)
+          .orderBy('key')
+          .forUpdate()
+          .execute()
+      : []
+  if (locked.length < usedKeys.length) {
     throw new HttpError(400, {
       message: 'A file of the request was released in the meantime.'
     })
@@ -233,13 +227,11 @@ async function importFiles(
     .map(({ key }) => key)
 }
 
-// Stores a file under a new key and inserts its `asset` row: `asset` is the
-// row of a file in another storage, and files without one are fetched from
-// their `url` if the storage allows it. Other files throw, or are skipped with
-// `skipDisallowed`.
+// Copy files with the `asset` row of another storage, and fetch files without
+// one from their `url` if the storage allows it:
 async function importFile(
   db: Kysely<any>,
-  { file, storage, maxSize }: StorageFile,
+  { file, storage, maxSize }: AssetPathFile,
   asset: { storage: string; file: AssetFile } | undefined,
   { storages, imported, skipDisallowed }: ImportOptions
 ) {
@@ -270,13 +262,11 @@ async function importFile(
   return stored
 }
 
-// Imports the files that `data`, the values of a row of `table`, references
-// but that no `asset` row holds in their storage, such as the `file://` files
-// of seed data. Files from sources that the storage doesn't allow are skipped.
-// Requests do this through `assets()`. Seeds that insert rows call this first.
+// Seeds that insert rows import the files of their data first, such as
+// `file://` files, and skip sources that the storage doesn't allow:
 export async function importAssets<T extends object>(
   data: T,
-  { table, paths, storages, db }: AssetOptions<Kysely<any>>
+  { table, paths, storages, db }: AssetOptions & { db: Kysely<any> }
 ) {
   const tablePaths = paths.filter(path => path.table === table)
   const files = findFiles(data, tablePaths, storages)
@@ -284,12 +274,11 @@ export async function importAssets<T extends object>(
   return data
 }
 
-// Streams the data of an import, as `store()` reads it.
 async function* fetchFile(url: string) {
   if (url.startsWith('file://')) {
     yield* fs.createReadStream(new URL(resolveFileUrl(url)))
   } else {
-    const importError = (reason: unknown) =>
+    const createImportError = (reason: unknown) =>
       new HttpError(400, {
         message: `Unable to import asset from '${url}': ${reason}`
       })
@@ -299,29 +288,31 @@ async function* fetchFile(url: string) {
         redirect: 'manual',
         signal: AbortSignal.timeout(fetchTimeout)
       })
-      if (!response.ok || !response.body) throw importError(response.status)
+      if (!response.ok || !response.body) {
+        throw createImportError(response.status)
+      }
       yield* response.body
     } catch (error) {
       throw error instanceof HttpError
         ? error
-        : importError((error as Error).message)
+        : createImportError((error as Error).message)
     }
   }
 }
 
-// Fails with 413 as soon as the data grows over `maxSize`.
+// Fail with 413 as soon as the data grows over `maxSize`:
 async function* limitSize(data: FileData, maxSize: number) {
   let size = 0
-  for await (const chunk of Buffer.isBuffer(data) ? [data] : data) {
+  for await (const chunk of getChunks(data)) {
     size += chunk.byteLength
     if (size > maxSize) throw new HttpError(413)
     yield chunk
   }
 }
 
-// Inserts the `asset` row of a new file, unreferenced until a scan finds it.
-// If `db` is outside the transaction of the write that references the file
-// and that write rolls back, the release deletes the file later.
+// The row stays unreferenced until a scan finds the file. If `db` is outside
+// the transaction of the write that references the file and that write rolls
+// back, the release deletes the file later.
 export async function insertAsset(
   db: Kysely<any>,
   file: AssetFile,
@@ -341,9 +332,8 @@ export async function insertAsset(
     .execute()
 }
 
-// Stores a file and inserts its `asset` row, so that the jobs track it, such
-// as a PDF that the server creates. When the insert fails, it removes the
-// file again.
+// Insert the `asset` row of files that the server creates, such as PDFs, so
+// that the jobs track them:
 export async function storeAsset(
   db: Kysely<any>,
   storage: Storage,

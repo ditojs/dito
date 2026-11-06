@@ -8,7 +8,7 @@ import {
   type AssetPath,
   type FileData
 } from './index.ts'
-import { uploadRoutes } from './assetUploads.ts'
+import { defineAssetUploads } from './assetUploads.ts'
 import {
   setupAssetTests,
   db,
@@ -350,10 +350,10 @@ describe('defineUploads()', () => {
           path: 'books',
           authorize: true,
           mixins: [
-            uploadRoutes({
+            defineAssetUploads({
               uploads: [{ path: 'cover', storage: 'covers' }],
               storages: new StorageRegistry([counting]),
-              db: () => db
+              getDb: () => db
             })
           ]
         }
@@ -378,10 +378,10 @@ describe('defineUploads()', () => {
           path: 'books',
           authorize: true,
           mixins: [
-            uploadRoutes({
+            defineAssetUploads({
               uploads: [{ path: 'cover', storage: 'covers' }],
               storages: new StorageRegistry([broken]),
-              db: () => db
+              getDb: () => db
             })
           ]
         }
@@ -418,11 +418,11 @@ describe('defineUploads()', () => {
           path: 'books',
           authorize: true,
           mixins: [
-            uploadRoutes({
+            defineAssetUploads({
               uploads: [{ path: 'cover', storage: 'covers' }],
               storages,
               // A schema without `asset` table makes the inserts fail.
-              db: () => db.withSchema('missing')
+              getDb: () => db.withSchema('missing')
             })
           ]
         }

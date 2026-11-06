@@ -3,9 +3,6 @@ import type { Storage } from './Storage.ts'
 import { DiskStorage, type DiskStorageOptions } from './DiskStorage.ts'
 import { S3Storage, type S3StorageOptions } from './S3Storage.ts'
 
-// The storages of an app by name. `createStorages()` builds them from plain
-// definitions, such as the `storages` of an app's config.
-
 export type StorageDefinition =
   | ({ type: 'disk' } & Omit<DiskStorageOptions, 'name'>)
   | ({ type: 's3' } & Omit<S3StorageOptions, 'name'>)
@@ -21,7 +18,7 @@ export class StorageRegistry extends Map<string, Storage> {
     super([...storages].map(storage => [storage.name, storage]))
   }
 
-  // Throws for unknown names.
+  // Throw for unknown names:
   override get(name: string): Storage {
     const storage = super.get(name)
     if (!storage) throw new Error(`Unknown storage '${name}'`)
@@ -42,21 +39,20 @@ export function createStorages(
 
 function createStorage(
   name: string,
-  { type, ...options }: StorageDefinition,
+  definition: StorageDefinition,
   basePath: string
 ): Storage {
+  const { type } = definition
   switch (type) {
-    case 'disk': {
-      const { path: folder } = options as DiskStorageOptions
+    case 'disk':
       return new DiskStorage({
-        ...(options as DiskStorageOptions),
+        ...definition,
         name,
         // A missing path is left to the storage, which throws.
-        path: folder && path.resolve(basePath, folder)
+        path: definition.path && path.resolve(basePath, definition.path)
       })
-    }
     case 's3':
-      return new S3Storage({ ...(options as S3StorageOptions), name })
+      return new S3Storage({ ...definition, name })
     default:
       throw new Error(`Unknown type '${type}' of storage '${name}'`)
   }

@@ -11,25 +11,40 @@ import {
 } from '@ditojs/utils'
 import { isValidKey, type AssetFile } from './Storage.ts'
 
-// Where a table stores files: a column, and the data path of the files inside
-// its JSON value, with `*` for one segment and `**` for any number of them.
-// `''` is the column itself. A value at the path may be one file or an array of
-// files. In request bodies, the column is the camelCase property, such as
-// `cover_image` as `coverImage`.
-
+// Where a table stores files, one file or an array of them per value:
 export interface AssetPath {
   table: string
   column: string
+  // The data path of the files inside the column's JSON value, with `*` for
+  // one segment and `**` for any number of them, and `''` for the column.
   path: string
   // The name of the storage that holds the files.
   storage: string
-  // The size limit of the uploads, imports and copies of its files, see
+  // The size limit of the uploads, imports and copies of its files, as in
   // `AssetUpload`.
   maxSize?: number | string
 }
 
-// Finds the file objects at `path` inside `value`, with their data paths.
-// Values without a valid `key` are skipped.
+export interface NormalizedAssetPath extends Omit<AssetPath, 'maxSize'> {
+  // The column as the camelCase property of request bodies, such as
+  // `cover_image` as `coverImage`.
+  property: string
+  maxSize?: number
+}
+
+// Paths without their own `maxSize` get the default `maxSize`.
+export function normalizeAssetPaths(
+  paths: AssetPath[],
+  maxSize?: number
+): NormalizedAssetPath[] {
+  return paths.map(path => ({
+    ...path,
+    property: camelize(path.column),
+    maxSize: parseMaxSize(path.maxSize) ?? maxSize
+  }))
+}
+
+// Values without a valid `key` aren't files.
 export function findAssetFiles(value: unknown, path: string) {
   return findValues(value, path).filter(
     (entry): entry is { file: AssetFile; path: string } =>
@@ -37,8 +52,8 @@ export function findAssetFiles(value: unknown, path: string) {
   )
 }
 
-// The data paths of the values at `path` inside `value` that aren't files.
-// Requests can't store these, as the `asset` table doesn't check them.
+// Requests can't store values that aren't files, as the `asset` table doesn't
+// check them.
 export function findInvalidFiles(value: unknown, path: string) {
   return findValues(value, path)
     .filter(({ file }) => file != null && !isAssetFile(file))
@@ -64,7 +79,7 @@ function findValues(value: unknown, path: string) {
   return values
 }
 
-// The data path of `path` in a row, with the column as its camelCase property.
+// The column becomes its camelCase property, as in request bodies.
 export function getDataPath(column: string, path: string) {
   return normalizeDataPath([camelize(column), ...parseDataPath(path)])
 }

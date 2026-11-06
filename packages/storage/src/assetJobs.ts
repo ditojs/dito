@@ -8,12 +8,6 @@ import {
 } from './assetPaths.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
 
-// Tracks stored files in the `asset` table by scanning the data at the asset
-// paths, through Kysely. Each row holds the `key`, `file` and `storage` of a
-// stored file, and `unreferenced_since`, the time a scan first found no data
-// that references the file, or null. The scan inserts the rows of referenced
-// files that have none, since writes accept only files with a row.
-
 export interface AssetKey {
   key: string
   storage: string
@@ -42,11 +36,14 @@ export interface ScanAssetsReport {
 export interface ScanAssetsOptions {
   db: Kysely<any>
   paths: AssetPath[]
-  // Only reports the changes, and writes nothing.
+  // Report the changes, but write nothing.
   dryRun?: boolean
   now?: Date
 }
 
+// Set `unreferenced_since` of the `asset` rows to the time a scan first finds
+// no data that references their file, or to null. Insert the rows of
+// referenced files that have none, since writes accept only files with a row.
 export async function scanAssets({
   db,
   paths,
@@ -84,7 +81,7 @@ export async function scanAssets({
   const missing = [...references.values()].filter(({ key }) => !known.has(key))
 
   if (!dryRun) {
-    await inTransaction(db, async trx => {
+    const write = async (trx: Kysely<any>) => {
       await updateAssets(trx, referenced, null, now)
       await updateAssets(
         trx,
@@ -92,11 +89,11 @@ export async function scanAssets({
         now,
         now
       )
-      for (const chunk of chunkArray(missing)) {
+      for (const batch of getBatches(missing)) {
         await trx
           .insertInto('asset')
           .values(
-            chunk.map(({ key, storage, file }) => ({
+            batch.map(({ key, storage, file }) => ({
               key,
               file,
               storage,
@@ -107,7 +104,8 @@ export async function scanAssets({
           )
           .execute()
       }
-    })
+    }
+    await (db.isTransaction ? write(db) : db.transaction().execute(write))
   }
 
   return {
@@ -122,10 +120,8 @@ export async function scanAssets({
 export interface ReleaseAssetsOptions {
   db: Kysely<any>
   storages: StorageRegistry
-  // How long an asset stays unreferenced before it is released, in
-  // milliseconds.
-  deleteUnusedAfter: number
-  now?: Date
+  // Release the assets unreferenced since this time or earlier.
+  before: Date
 }
 
 export interface ReleasedAsset extends AssetKey {
@@ -133,22 +129,16 @@ export interface ReleasedAsset extends AssetKey {
   error?: unknown
 }
 
-// Deletes the files and `asset` rows of the assets that the scans found
-// unreferenced for longer than `deleteUnusedAfter`. A scan needs to run in
-// between, so that files which rows reference again aren't released.
+// A scan needs to run in between, so that files which rows reference again
+// aren't released.
 export async function releaseAssets({
   db,
   storages,
-  deleteUnusedAfter,
-  now = new Date()
+  before
 }: ReleaseAssetsOptions): Promise<ReleasedAsset[]> {
   const assets = await db
     .deleteFrom('asset')
-    .where(
-      'unreferenced_since',
-      '<=',
-      new Date(now.getTime() - deleteUnusedAfter)
-    )
+    .where('unreferenced_since', '<=', before)
     .returning(['key', 'storage', 'file'])
     .execute()
   // Remove the files after the delete, so that a failed delete keeps them.
@@ -174,18 +164,17 @@ export interface RunAssetJobsOptions {
   db: Kysely<any>
   paths: AssetPath[]
   storages: StorageRegistry
-  // The `deleteUnusedAfter` of `releaseAssets()`. With `false`, the release is
-  // skipped.
+  // How long an asset stays unreferenced before its release, in milliseconds.
+  // With `false`, the release is skipped.
   deleteUnusedAfter: number | false
-  // Writes and deletes nothing, and returns the assets that the release
-  // would delete as `released`.
+  // Write and delete nothing, and return the assets that the release would
+  // delete as `released`.
   dryRun?: boolean
   now?: Date
 }
 
-// Runs the scan and then the release, so that the release keeps the files
-// that rows reference again. The app logs the report and the errors of the
-// released assets.
+// Run the scan before the release, so that the release keeps the files that
+// rows reference again:
 export async function runAssetJobs({
   db,
   paths,
@@ -197,12 +186,12 @@ export async function runAssetJobs({
   const scan = await scanAssets({ db, paths, dryRun, now })
   let released: ReleasedAsset[] = []
   if (deleteUnusedAfter !== false) {
-    const before = now.getTime() - deleteUnusedAfter
+    const before = new Date(now.getTime() - deleteUnusedAfter)
     released = dryRun
       ? scan.unreferenced
-          .filter(({ since }) => since.getTime() <= before)
+          .filter(({ since }) => since <= before)
           .map(({ key, storage }) => ({ key, storage }))
-      : await releaseAssets({ db, storages, deleteUnusedAfter, now })
+      : await releaseAssets({ db, storages, before })
   }
   return { scan, released }
 }
@@ -232,8 +221,7 @@ export interface FindAssetReferencesOptions {
   keys?: string[]
 }
 
-// Lists the files that the rows reference at the asset paths. Each location in
-// a row belongs to the first asset path that reaches it.
+// Each location in a row belongs to the first asset path that reaches it.
 export async function findAssetReferences({
   db,
   paths,
@@ -259,8 +247,7 @@ export async function findAssetReferences({
   return references
 }
 
-// Yields the references of each row of the tables of `paths`, including the
-// empty ones of rows without files.
+// Yield the references of each row, also the empty ones of rows without files:
 async function* readReferences(db: Kysely<any>, paths: AssetPath[]) {
   const pathsByTable = Map.groupBy(paths, path => path.table)
   for (const [table, tablePaths] of pathsByTable) {
@@ -299,8 +286,7 @@ function getRowReferences(
 
 const pageSize = 10_000
 
-// Reads the asset columns of a table in pages by `id`, to keep memory low on
-// large tables.
+// Read the rows in pages by `id`, to keep memory low on large tables:
 async function* readRows(db: Kysely<any>, table: string, paths: AssetPath[]) {
   const columns = [...new Set(paths.map(path => path.column))]
   let lastId: unknown = null
@@ -324,28 +310,20 @@ async function updateAssets(
   since: Date | null,
   now: Date
 ) {
-  for (const chunk of chunkArray(assets.map(asset => asset.key))) {
+  for (const batch of getBatches(assets.map(asset => asset.key))) {
     await db
       .updateTable('asset')
       .set({ unreferenced_since: since, updated_at: now })
-      .where('key', 'in', chunk)
+      .where('key', 'in', batch)
       .execute()
   }
 }
 
-// Runs `fn` in a transaction, or in the transaction that `db` already is.
-function inTransaction<T>(
-  db: Kysely<any>,
-  fn: (trx: Kysely<any>) => Promise<T>
-) {
-  return db.isTransaction ? fn(db) : db.transaction().execute(fn)
-}
-
-// Keeps `in` lists and inserts below the parameter limit of Postgres.
-function chunkArray<T>(array: T[], size = 1000) {
-  const chunks: T[][] = []
+// Keep `in` lists and inserts below the parameter limit of Postgres:
+function getBatches<T>(array: T[], size = 1000) {
+  const batches: T[][] = []
   for (let i = 0; i < array.length; i += size) {
-    chunks.push(array.slice(i, i + size))
+    batches.push(array.slice(i, i + size))
   }
-  return chunks
+  return batches
 }

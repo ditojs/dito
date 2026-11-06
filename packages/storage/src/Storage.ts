@@ -6,12 +6,7 @@ import { fileTypeFromBuffer } from 'file-type'
 import { readMediaAttributes } from 'leather'
 import { isString } from '@ditojs/utils'
 
-// The base class of storages. Subclasses write, read, remove and list the
-// files in their backend, and `store()` adds what all storages share: unique
-// keys, the detection of types and dimensions, sizes and urls.
-
-// A stored file as it appears in JSON data: the storage key, and the name,
-// type and size of the file.
+// A stored file as it appears in JSON data:
 export interface AssetFile {
   key: string
   name?: string
@@ -54,15 +49,13 @@ export abstract class Storage {
   }
 
   isImportSourceAllowed(url: unknown) {
-    // Files of storages without `url` have no url to match.
-    if (!isString(url)) return false
-    const source = getImportSource(url)
+    // Files without a `url` have no source to import from.
+    const source = isString(url) ? getImportSource(url) : null
     return source !== null && this.#isAllowedImport(source)
   }
 
-  // Stores data under a new key, and returns its file object, with the width
-  // and height of images and videos. The type and the dimensions are read from
-  // the head of the data, and the rest streams through to `addFile()`.
+  // Read the type and the dimensions from the head of the data, and stream the
+  // rest through to `addFile()`:
   async store({ name, type, data }: StoreOptions): Promise<AssetFile> {
     const chunks = getChunks(data)
     const head = await readHead(chunks)
@@ -102,29 +95,28 @@ export abstract class Storage {
   }
 
   protected getUrl(...parts: string[]) {
-    if (!this.url) return undefined
+    const { url } = this
     const file = path.posix.join(...parts)
     // A base url without origin, such as `/assets/`, gives paths.
-    return URL.canParse(this.url)
-      ? new URL(file, this.url).toString()
-      : path.posix.join(this.url, file)
+    return url
+      ? URL.canParse(url)
+        ? new URL(file, url).toString()
+        : path.posix.join(url, file)
+      : undefined
   }
 
-  // Writes the data of the file under its key.
   abstract addFile(file: AssetFile, data: FileData): Promise<void>
   abstract removeFile(file: AssetFile): Promise<void>
   abstract readFile(file: AssetFile): Promise<Buffer>
   abstract listKeys(): Promise<string[]>
 }
 
-// A random UUID and the lower-cased extension of the name. `win32` also cuts
-// at backslashes, so that keys never hold separators.
+// `win32` also cuts at backslashes, so that keys never hold separators:
 export function getUniqueKey(name: string) {
   return `${crypto.randomUUID()}${path.win32.extname(name).toLowerCase()}`
 }
 
-// Whether a key has the form of the keys of `getUniqueKey()`, so that it
-// addresses no other file.
+// Only keys of the form of `getUniqueKey()` address no other file.
 export function isValidKey(key: string) {
   return /^[\w-]+(\.[^./\\]*)?$/.test(key)
 }
@@ -135,17 +127,18 @@ export function resolveFileUrl(url: string) {
     : url
 }
 
-// The part of a url that `allowedImports` match: its origin and path, without
-// the query and the hash that a `*` could match, and with all dot segments
-// resolved, also encoded ones. Returns null for invalid urls and for urls with
-// credentials.
+// Match `allowedImports` against the origin and path of a url, without the
+// query and the hash that a `*` could match, and with all dot segments
+// resolved, also encoded ones. Invalid urls and urls with credentials give
+// null.
 function getImportSource(value: string) {
   try {
     const url = new URL(resolveFileUrl(value))
-    if (url.username || url.password) return null
-    return url.protocol === 'file:'
-      ? `file://${fileURLToPath(url)}`
-      : `${url.origin}${url.pathname}`
+    return url.username || url.password
+      ? null
+      : url.protocol === 'file:'
+        ? `file://${fileURLToPath(url)}`
+        : `${url.origin}${url.pathname}`
   } catch {
     return null
   }
@@ -155,12 +148,11 @@ function getImportSource(value: string) {
 // need more than the head, and are stored without dimensions when larger.
 const headLength = 8 * 1024 * 1024
 
-async function* getChunks(data: FileData) {
+export async function* getChunks(data: FileData) {
   yield* Buffer.isBuffer(data) ? [data] : data
 }
 
-// Reads the first chunks of the data, at least `headLength` bytes of it, or
-// all of it when shorter.
+// Read at least `headLength` bytes, or all of the data when shorter:
 async function readHead(chunks: AsyncGenerator<Uint8Array>) {
   const head: Uint8Array[] = []
   let length = 0
