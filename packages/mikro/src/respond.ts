@@ -1,6 +1,7 @@
 import { isArray, isPlainObject } from '@ditojs/utils'
+import { serialize } from '@mikro-orm/core'
 import type { ModelRequest } from './ModelRequest.ts'
-import { serializeResult, serializeRows } from './serialize.ts'
+import { serializeResult } from './serialize.ts'
 
 export async function respond(request: ModelRequest, result: unknown) {
   const { c, entity, definition } = request
@@ -26,7 +27,7 @@ export async function respond(request: ModelRequest, result: unknown) {
     for (const beforeSerialize of definition.beforeSerializers) {
       await beforeSerialize({ records: rows, c })
     }
-    const items = serializeRows(rows, await getOutput())
+    const items = serialize(rows, await getOutput())
     rows.forEach((row, index) => jsonByRow.set(row, items[index]))
   }
   return serializeResult(result, isRecord, async record => {
@@ -34,7 +35,7 @@ export async function respond(request: ModelRequest, result: unknown) {
     // Entities in the result can hold records that `findRecords()` can't reach:
     let json: unknown = (
       jsonByRow.get(row) ??
-      serializeRows([row], await getOutput())[0]
+      serialize(row, await getOutput())
     )
     for (const layer of definition.serializers) {
       json = await layer({ record: row, json, c })

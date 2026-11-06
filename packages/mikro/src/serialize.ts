@@ -1,8 +1,6 @@
 import { isArray, isPlainObject, mapConcurrently } from '@ditojs/utils'
 import {
   Reference,
-  ReferenceKind,
-  SerializationContext,
   Utils,
   serialize,
   wrap,
@@ -114,27 +112,6 @@ function toFields(meta: EntityMetadata, fields: string[]) {
 // Entities that no controller's `find` shapes go out with their loaded
 // relations:
 const plainShape = {}
-
-// `serialize()` walks all loaded relations of the entity it gets, and rows that
-// share relations reach each other. One context walks them once for all rows.
-export function serializeRows(rows: object[], output: Output) {
-  const context = new SerializationContext()
-  for (const row of rows) {
-    SerializationContext.propagate(
-      context,
-      row,
-      (meta, name) => meta.properties[name]?.kind !== ReferenceKind.SCALAR
-    )
-  }
-  const items = rows.map(row => {
-    const json = serialize(row, output)
-    // Each row serializes like one on its own:
-    context.visited.clear()
-    return json
-  })
-  context.close()
-  return items
-}
 
 export function serializeResult(
   value: unknown,
