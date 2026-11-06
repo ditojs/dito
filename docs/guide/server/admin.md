@@ -22,7 +22,8 @@ await serve(app, { services: [admin] })
 ```
 
 `@ditojs/admin/server` serves the [Dito.js Admin](../admin/index.md) under a
-path.
+path. With the kit, [`app.routeAdmin()`](kit.md#routing-and-starting) does all of
+this in one call.
 
 - In production, it serves the built files. Production never loads Vite.
 - In development, given a Vite config, it runs Vite in middleware mode. The

@@ -580,6 +580,9 @@ importers:
         specifier: ^10.4.0
         version: 10.4.0
     devDependencies:
+      '@ditojs/admin':
+        specifier: workspace:^
+        version: link:../admin
       '@ditojs/auth':
         specifier: workspace:^
         version: link:../auth

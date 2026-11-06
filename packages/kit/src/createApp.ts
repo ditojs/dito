@@ -22,6 +22,11 @@ import {
 import { createUsers, type CreateUsersOptions, type Users } from '@ditojs/auth'
 import { deleteExpiredSessions } from '@ditojs/auth/internal'
 import {
+  createAdmin,
+  type AdminServer,
+  type CreateAdminOptions
+} from '@ditojs/admin/server'
+import {
   createAssets,
   createStorages,
   DiskStorage,
@@ -100,6 +105,9 @@ export interface App {
     path: string,
     options: Omit<CreateApiOptions, 'adapter' | 'onError'>
   ): void
+  // Routes the admin at `path`, which is its `base`. `close()` stops it. `vite`
+  // only applies with a `NODE_ENV` of `development`.
+  routeAdmin(path: string, options: Omit<CreateAdminOptions, 'base'>): void
   // Adds a service. Services start in this order and stop in reverse order.
   addService(name: string, service: Service): void
   // Adds a job, which starts after the services and stops before them. A job
@@ -155,11 +163,19 @@ export function createApp({
   })
   const services: App['services'] = {}
   const jobs: Record<string, Service> = {}
+  const admins: AdminServer[] = []
   const { sessions: sessionsJob = '1h', assets: assetsJob = false } = (
     jobsOptions || {}
   )
   let isRunning = false
-  let stop = () => orm.close()
+
+  // Vite runs from `routeAdmin()` on, also in apps that never start.
+  const closeResources = async () => {
+    for (const admin of admins) await admin.stop()
+    await orm.close()
+  }
+
+  let stop = closeResources
 
   const addJob: App['addJob'] = (name, definition) => {
     if (Object.hasOwn(jobs, name)) {
@@ -191,9 +207,9 @@ export function createApp({
     }
   })
 
-  // The ORM closes last, as services stop in reverse order.
+  // The resources close last, as services stop in reverse order.
   const getServices = (): Service[] => [
-    { stop: () => orm.close() },
+    { stop: closeResources },
     ...Object.values<Service>(services),
     {
       start() {
@@ -232,6 +248,16 @@ export function createApp({
 
     routeApi(path, options) {
       hono.route(path, createApi({ ...options, adapter, onError: logError }))
+    },
+
+    routeAdmin(path, { vite, ...options }) {
+      const admin = createAdmin({
+        ...options,
+        base: path,
+        vite: process.env.NODE_ENV === 'development' ? vite : undefined
+      })
+      hono.route(path, admin)
+      admins.push(admin)
     },
 
     addService(name, service) {

@@ -32,22 +32,18 @@ This module imports no controllers and no services:
 
 ```js
 // server/index.js
-import { createAdmin } from '@ditojs/admin/server'
 import { app } from './app.js'
 import * as controllers from './controllers/index.js'
 import { mailer } from './services/mailer.js'
 import { admins } from './users.js'
 
 app.routeApi('/api', { controllers, users: admins })
-app.hono.route(
-  '/admin',
-  createAdmin({
-    base: '/admin',
-    dist: 'dist/admin',
-    users: admins,
-    authorize: 'admin'
-  })
-)
+app.routeAdmin('/admin', {
+  dist: 'dist/admin',
+  vite: 'admin.vite.config.js',
+  users: admins,
+  authorize: 'admin'
+})
 app.addService('mailer', mailer)
 await app.start()
 ```
@@ -56,8 +52,11 @@ await app.start()
   the one of its session.
 - `users` takes the result of `app.createUsers()`, see [Users](#users).
 - `app.start()` runs until `app.close()`, SIGINT or SIGTERM.
-- `app.hono` takes the app's own middleware and other Hono apps, such as the
-  [admin](admin.md). Middleware goes before the routes.
+- `app.routeAdmin()` routes the [admin](admin.md), with its path as `base`.
+  `vite` only applies with a `NODE_ENV` of `development`, and `app.close()` stops
+  Vite. Relative paths are relative to the working directory.
+- `app.hono` takes the app's own middleware and other Hono apps. Middleware goes
+  before the routes.
 
 ## Users
 

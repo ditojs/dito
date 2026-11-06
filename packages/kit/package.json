@@ -12,6 +12,7 @@
     "pino": "^10.4.0"
   },
   "devDependencies": {
+    "@ditojs/admin": "workspace:^",
     "@ditojs/auth": "workspace:^",
     "@ditojs/mikro": "workspace:^",
     "@ditojs/server": "workspace:^",
@@ -23,6 +24,7 @@
     "hono": "^4.13.14"
   },
   "peerDependencies": {
+    "@ditojs/admin": "workspace:^",
     "@ditojs/auth": "workspace:^",
     "@ditojs/mikro": "workspace:^",
     "@ditojs/server": "workspace:^",
