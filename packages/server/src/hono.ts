@@ -3,10 +3,9 @@ import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { csrf } from 'hono/csrf'
 import { etag } from 'hono/etag'
-import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
 import { parseFileSize } from '@ditojs/utils'
-import { createErrorHandler, notFound } from './errors.ts'
+import { HttpError, createErrorHandler, notFound } from './errors.ts'
 import type { ErrorLogger } from './types.ts'
 
 // `false`, `true` for the defaults of the middleware, or its options:
@@ -38,7 +37,7 @@ type BodyLimitOptions = Partial<
 const defaultBodyLimit = 1024 * 1024
 
 const rejectLargeBody = () => {
-  throw new HTTPException(413, { message: 'Payload Too Large' })
+  throw new HttpError(413)
 }
 
 // Hono's standard middleware.
@@ -124,8 +123,9 @@ export function forwarded(proxy: boolean | number = true): MiddlewareHandler {
       const url = getPublicUrl(request, hops)
       // A copy would start to read the body, after which Node resets keep-alive
       // connections of bodies that the app leaves unread.
-      if (url !== request.url)
+      if (url !== request.url) {
         Object.defineProperty(request, 'url', { value: url })
+      }
       const address = getForwardedValue(request, 'X-Forwarded-For', hops)
       if (address) c.set('clientAddress', address)
     }

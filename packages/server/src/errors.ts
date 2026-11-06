@@ -116,8 +116,8 @@ export function createValidationError(
   })
 }
 
-// Apps also pass it to `app.onError()`, for the errors outside of APIs, such
-// as those of their own middleware.
+// Answer the errors of `createApi()` and `createHono()`, also those of the
+// app's own middleware.
 export function createErrorHandler({
   onError = logError,
   toHttpError
@@ -146,8 +146,8 @@ export function createErrorHandler({
   }
 }
 
-// For `app.notFound()`. It responds instead of throwing, so that the middleware
-// that runs last still gets the response after `next()`.
+// Answer unknown paths in `createHono()`. It responds instead of throwing, so
+// that the middleware that runs last still gets the response after `next()`.
 export const notFound: NotFoundHandler = c =>
   c.json(new HttpError(404).toJSON(), 404)
 
