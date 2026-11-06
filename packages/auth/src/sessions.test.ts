@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { Hono } from 'hono'
+import { contextStorage } from 'hono/context-storage'
 import { z } from 'zod'
 import type { Kysely } from 'kysely'
 import { HttpError, createApi, defineController } from '@ditojs/server'
@@ -591,9 +592,9 @@ describe('sessions', () => {
 
   it('reads signed cookies of all secrets', async () => {
     const { sessions } = setup({ db, source: admins, secrets: ['new', 'old'] })
-    const app = new Hono().get('/', async c =>
-      c.json(await sessions.readSignedCookie(c, 'flag'))
-    )
+    const app = new Hono()
+      .use(contextStorage())
+      .get('/', async c => c.json(await sessions.readSignedCookie('flag')))
     const read = async (cookie?: string) =>
       (
         await app.fetch(
@@ -612,18 +613,39 @@ describe('sessions', () => {
   it('sets signed cookies that `readSignedCookie()` reads', async () => {
     const { sessions } = setup({ db, source: admins, secrets: ['new', 'old'] })
     const app = new Hono()
+      .use(contextStorage())
       .post('/', async c => {
-        await sessions.setSignedCookie(c, 'flag', 'true', { maxAge: 60 })
+        await sessions.setSignedCookie('flag', 'true', { maxAge: 60 })
         return c.text('set')
       })
-      .get('/', async c => c.json(await sessions.readSignedCookie(c, 'flag')))
+      .get('/', async c => c.json(await sessions.readSignedCookie('flag')))
+      .delete('/', async c => {
+        sessions.deleteSignedCookie('flag')
+        return c.text('deleted')
+      })
     const client = createClient(app.fetch)
     const { cookies } = await client.post('/')
     expect(cookies[0]).toContain('Max-Age=60')
     expect(cookies[0]).toContain('Secure')
     expect((await client.get('/')).data).toBe('true')
+    await client.delete('/')
+    expect((await client.get('/')).data).toBe(null)
     const plain = await app.request('http://example.com/', { method: 'POST' })
     expect(plain.headers.get('Set-Cookie')).not.toContain('Secure')
+  })
+
+  it('ends signed cookies with the lifetime of the session', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.UTC(2026, 0, 1) })
+    const { sessions } = setup({ db, source: admins, expiresAfter: '1h' })
+    const app = new Hono().use(contextStorage()).post('/', async c => {
+      await sessions.setSignedCookie('flag', 'true')
+      return c.text('set')
+    })
+    const response = await app.request('/', { method: 'POST' })
+    expect(response.headers.get('Set-Cookie')).toContain(
+      'Expires=Thu, 01 Jan 2026 01:00:00 GMT'
+    )
+    vi.useRealTimers()
   })
 
   it('deletes expired sessions', async () => {

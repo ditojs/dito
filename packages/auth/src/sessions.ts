@@ -248,9 +248,8 @@ export function createSessions<U extends AuthUser>(
     throw new Error('Unable to sign cookies without secrets.')
   }
 
-  // The value of a cookie that one of `secrets` signed, or null, also for the
-  // app's own signed cookies.
-  async function readSignedCookie(c: Context, name: string) {
+  // The value of a cookie that one of `secrets` signed, or null.
+  async function readCookie(c: Context, name: string) {
     for (const secret of secrets) {
       const value = await getSignedCookie(c, secret, name)
       if (value) return value
@@ -258,23 +257,9 @@ export function createSessions<U extends AuthUser>(
     return null
   }
 
-  // Set a cookie that `readSignedCookie()` reads, for the app's own cookies,
-  // with the defaults of the session's cookie.
-  function setSignedCookie(
-    c: Context,
-    name: string,
-    value: string,
-    options?: CookieOptions
-  ) {
-    return setHonoSignedCookie(c, name, value, secrets[0], {
-      ...getCookieDefaults(c),
-      ...options
-    })
-  }
-
   // The session of the request's cookie, if it hasn't expired.
   async function load(c: Context): Promise<LoadedSession> {
-    const id = await readSignedCookie(c, cookieName)
+    const id = await readCookie(c, cookieName)
     const row = id
       ? await adapter
           .getKysely()
@@ -308,8 +293,27 @@ export function createSessions<U extends AuthUser>(
 
   return {
     middleware,
-    readSignedCookie,
-    setSignedCookie,
+
+    // The app's own cookies, in the running request:
+    readSignedCookie: (name: string) => readCookie(getContext(), name),
+
+    // Set a cookie with the defaults of the session's cookie, which also ends
+    // with the session's lifetime:
+    setSignedCookie(name: string, value: string, options?: CookieOptions) {
+      const c = getContext()
+      return setHonoSignedCookie(c, name, value, secrets[0], {
+        ...getCookieDefaults(c),
+        expires: new Date(Date.now() + sessionOptions.expiresAfter),
+        ...options
+      })
+    },
+
+    // Cookies with their own `path` or `domain` need these in `options` too.
+    deleteSignedCookie(name: string, options?: CookieOptions) {
+      const c = getContext()
+      deleteCookie(c, name, { secure: isSecure(c), ...options })
+    },
+
     // The session's user, for `createApi()` and `createAdmin()`.
     getUser: ({ c }: { c: Context }) => getSession(c).getUser<U>()
   }

@@ -39,6 +39,7 @@ export function createUsers<U extends AuthUser>(
     getUser: sessions.getUser,
     readSignedCookie: sessions.readSignedCookie,
     setSignedCookie: sessions.setSignedCookie,
+    deleteSignedCookie: sessions.deleteSignedCookie,
 
     // The login, session and security actions, for a controller of their own.
     defineActions(options: DefineUserActionsOptions<U> = {}) {

@@ -138,12 +138,10 @@ mixes it in, and sets these settings, replaces them for the mixed-in actions
 too.
 
 ```js
-import { deleteCookie } from 'hono/cookie'
-
 actions: {
   // Removes a cookie of the app, then logs out.
-  'post logout': ({ c, next }) => {
-    deleteCookie(c, 'preview_access')
+  'post logout': ({ next }) => {
+    admins.deleteSignedCookie('preview_access')
     return next()
   }
 }
