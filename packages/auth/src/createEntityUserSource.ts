@@ -82,6 +82,12 @@ export function createEntityUserSource<U extends { id: number | string }>(
     getUsername(user: U) {
       return user[usernameProperty as keyof U] as string
     },
+    // Ask the entity, as new or partly loaded users lack the keys of properties
+    // without a value:
+    hasProperty(name: string) {
+      const { props } = getMetadata(adapter.getEm())
+      return props.some(prop => prop.name === name)
+    },
     // Write the values at once and set them on `user`, without flushing the
     // request's other changes:
     async patch(user: U, values: object) {

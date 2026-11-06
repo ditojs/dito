@@ -57,7 +57,7 @@ export async function login<U extends AuthUser>(
   if (session?.source.name !== source.name) {
     throw new Error(`Unable to log in '${source.name}' without its session.`)
   }
-  if ('lastLogin' in user) {
+  if (source.hasProperty('lastLogin')) {
     await source.patch(user, { lastLogin: new Date() })
   }
   session.login(user)

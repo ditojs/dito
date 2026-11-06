@@ -147,6 +147,11 @@ describe('createEntityUserSource()', () => {
     })
   })
 
+  it('asks the entity for its properties', () => {
+    expect(source.hasProperty('lastLogin')).toBe(true)
+    expect(source.hasProperty('missing')).toBe(false)
+  })
+
   it('writes patches at once and sets them on the user', async () => {
     const em = orm.em.fork()
     const lastLogin = new Date()

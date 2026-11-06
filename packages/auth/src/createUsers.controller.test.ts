@@ -57,6 +57,15 @@ const app = new Hono().route(
             return member
           },
 
+          // Entities have the key through accessors on their class, so log in
+          // a plain object:
+          'post plain-login': async ({ body: { username }, em }) => {
+            const { id, hash, roles } = await em.findOneOrFail(Member, {
+              username
+            })
+            await members.login({ id, username, hash, roles } as Member)
+          },
+
           'post register': async ({ body: { username, password }, em }) => {
             const member = em.create(Member, {
               username,
@@ -107,6 +116,12 @@ const self = async (client: ReturnType<typeof createClient>) =>
 describe('createUsers() on model controllers', () => {
   it('logs in and stores the time of the login', async () => {
     expect(await self(await login())).toEqual({ id: 1, username: 'ada' })
+    expect((await load(ada.id)).lastLogin).toBeInstanceOf(Date)
+  })
+
+  it('stores the login of a user without the key `lastLogin`', async () => {
+    const client = createClient(app.fetch)
+    await client.post('/members/plain-login', { username: 'ada' })
     expect((await load(ada.id)).lastLogin).toBeInstanceOf(Date)
   })
 

@@ -50,6 +50,7 @@ export function createSource(
       users.find(user => user.username === username) ?? null
     ),
     getUsername: user => user.username,
+    hasProperty: name => name === 'lastLogin',
     patch: async (user, values) => {
       Object.assign(user, values)
     },
