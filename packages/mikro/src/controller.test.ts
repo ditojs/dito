@@ -54,9 +54,11 @@ function setup(...controllers: ControllerDefinition[]) {
       controllers,
       adapter: createMikroAdapter(orm),
       // The user of the `X-User` header, with that name as its role.
-      getUser: async ({ c }) => {
-        const name = c.req.header('X-User')
-        return name ? { id: name, roles: [name] } : null
+      users: {
+        getUser: async ({ c }) => {
+          const name = c.req.header('X-User')
+          return name ? { id: name, roles: [name] } : null
+        }
       },
       onError: () => {}
     })
@@ -2867,7 +2869,7 @@ describe('createMikroAdapter()', () => {
           })
         ],
         adapter,
-        getUser: async () => null,
+        users: { getUser: async () => null },
         onError: () => {}
       })
       const { json } = await request(api, 'POST', '/books', { name: 'Sent' })

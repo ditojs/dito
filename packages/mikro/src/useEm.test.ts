@@ -35,7 +35,7 @@ describe('useEm()', () => {
           }
         }
       ],
-      getUser: () => ({ id: 1, roles: [] })
+      users: { getUser: () => ({ id: 1, roles: [] }) }
     })
     await api.request('/books')
     await api.request('/books', { method: 'POST' })

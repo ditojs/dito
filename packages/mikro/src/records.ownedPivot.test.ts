@@ -223,7 +223,7 @@ describe('the controller', () => {
           })
         ],
         adapter: createMikroAdapter(orm),
-        getUser: async () => null,
+        users: { getUser: async () => null },
         onError: () => {}
       })
     )
