@@ -1,4 +1,5 @@
 import type { z } from 'zod'
+import { isArray, isObject } from '@ditojs/utils'
 import {
   EntitySchema,
   JsonType,
@@ -63,6 +64,23 @@ export function defineJsonType<S extends z.ZodType | undefined = undefined>(
 ) {
   return new SchemaJsonType<S extends z.ZodType ? z.output<S> : any>(options)
 }
+
+// The outputs of schemas that a write already holds, so that `SchemaDefaults`
+// leaves them alone. A parse needn't give the same output twice.
+const parsedValues = new WeakSet<object>()
+
+const isContainer = (value: unknown): value is object => (
+  isObject(value) || isArray(value)
+)
+
+export function setParsed(value: unknown) {
+  if (isContainer(value)) parsedValues.add(value)
+}
+
+// Only objects and arrays can hold defaults to fill.
+export const needsDefaults = (value: unknown) => (
+  isContainer(value) && !parsedValues.has(value)
+)
 
 // Read the definitions, so that no ORM is needed, and name tables and columns
 // as MikroORM's default naming strategy does:

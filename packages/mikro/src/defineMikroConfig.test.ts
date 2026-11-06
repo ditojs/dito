@@ -2,6 +2,7 @@ import { defineEntity, p, type RequiredEntityData } from '@mikro-orm/core'
 import { MikroORM } from '@mikro-orm/postgresql'
 import { z } from 'zod'
 import {
+  assignRecord,
   createMikroAdapter,
   createRecord,
   defineJsonType,
@@ -13,6 +14,11 @@ import { createTestDatabase } from '../../../tests/utils/database.ts'
 const specsSchema = z.object({
   pages: z.number().default(100),
   tags: z.array(z.string()).optional()
+})
+
+// Each parse raises the number, so a second parse shows.
+const editionType = defineJsonType({
+  schema: z.object({ number: z.number().transform(number => number + 1) })
 })
 
 const BookSchema = defineEntity({
@@ -39,11 +45,34 @@ const BookSchema = defineEntity({
         defineJsonType({ assets: [{ path: '*/file', storage: 'private' }] })
       )
       .nullable(),
-    notes: p.json().nullable()
+    notes: p.json().nullable(),
+    edition: p.type(editionType).nullable(),
+    label: p
+      .type(
+        defineJsonType({ schema: z.string().transform(text => `${text}!`) })
+      )
+      .nullable(),
+    prints: () =>
+      p
+        .oneToMany(Print)
+        .mappedBy(print => print.book)
+        .orphanRemoval()
   }
 })
 class Book extends BookSchema.class {}
 BookSchema.setClass(Book)
+
+const PrintSchema = defineEntity({
+  name: 'Print',
+  tableName: 'print',
+  properties: {
+    id: p.integer().primary(),
+    edition: p.type(editionType).nullable(),
+    book: () => p.manyToOne(Book)
+  }
+})
+class Print extends PrintSchema.class {}
+PrintSchema.setClass(Print)
 
 const ShelfSchema = defineEntity({
   name: 'BookShelf',
@@ -97,14 +126,14 @@ describe('defineJsonType()', () => {
 })
 
 const { orm, sql, drop } = await createTestDatabase(
-  [Book, BookShelf],
+  [Book, Print, BookShelf],
   defineMikroConfig
 )
 
 afterAll(drop)
 
 describe('`defineMikroConfig()`', () => {
-  beforeEach(() => sql('truncate book restart identity'))
+  beforeEach(() => sql('truncate book, print restart identity'))
 
   const stored = async () => (await sql('select specs from book'))[0].specs
 
@@ -150,6 +179,62 @@ describe('`defineMikroConfig()`', () => {
     await createRecord(em, Book, { specs: {} })
     await em.flush()
     expect(await stored()).toEqual({ pages: 100 })
+  })
+
+  it('stores the output of a schema on create and on update', async () => {
+    const em = orm.em.fork()
+    const book = await createRecord(em, Book, {
+      specs: {},
+      edition: { number: 1 },
+      label: 'New'
+    })
+    await em.flush()
+    const row = async () => (await sql('select * from book'))[0]
+    expect(await row()).toMatchObject({
+      specs: { pages: 100 },
+      edition: { number: 2 },
+      label: 'New!'
+    })
+    await assignRecord(em, book, {
+      specs: { tags: [] },
+      edition: { number: 5 },
+      label: 'Old'
+    })
+    await em.flush()
+    expect(await row()).toMatchObject({
+      specs: { pages: 100, tags: [] },
+      edition: { number: 6 },
+      label: 'Old!'
+    })
+  })
+
+  it('parses the values of nested rows of writes once', async () => {
+    const em = orm.em.fork()
+    const prints = async () =>
+      (await sql('select edition from print order by id')).map(
+        ({ edition }) => edition.number
+      )
+    const book = await createRecord(em, Book, {
+      prints: [{ edition: { number: 1 } }]
+    })
+    await em.flush()
+    expect(await prints()).toEqual([2])
+    await assignRecord(em, book, {
+      prints: [
+        { id: book.prints[0]!.id },
+        { edition: { number: 5 } }
+      ]
+    })
+    await em.flush()
+    expect(await prints()).toEqual([2, 6])
+  })
+
+  it('parses a value that a handler sets after the write', async () => {
+    const em = orm.em.fork()
+    const book = await createRecord(em, Book, { specs: {} })
+    book.specs = { tags: ['a'] } as never
+    await em.flush()
+    expect(await stored()).toEqual({ pages: 100, tags: ['a'] })
   })
 
   it('leaves existing rows alone', async () => {

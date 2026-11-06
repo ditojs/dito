@@ -120,8 +120,9 @@ email: p.string().type(new EmailType())
   appears in a body.
 - The schema runs on the values that pass the column's checks. A decimal in
   string mode arrives as a number.
-- The schema only validates. The value is written as sent, without the schema's
-  transforms and defaults.
+- The schema of a `defineJsonType()` column gives the value: `post` and
+  `patch :id` both store its output, with its defaults and transforms.
+- The schemas of other custom types only validate. The value is written as sent.
 
 ### Rules on rows and graphs
 

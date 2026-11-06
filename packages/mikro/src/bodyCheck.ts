@@ -1,6 +1,11 @@
-import type { z } from 'zod'
 import { createValidationError, type ValidationIssue } from '@ditojs/server'
-import { isArray, isPlainObject, isString, parsePlainDate } from '@ditojs/utils'
+import {
+  equals,
+  isArray,
+  isPlainObject,
+  isString,
+  parsePlainDate
+} from '@ditojs/utils'
 import {
   ReferenceKind,
   type EntityMetadata,
@@ -15,6 +20,7 @@ import {
   type Row
 } from './metadata.ts'
 import { getColumnSchema, getType } from './columnSchema.ts'
+import { SchemaJsonType, setParsed } from './SchemaJsonType.ts'
 import { runSchema } from './validation.ts'
 
 // The first pass of a write: reads a body with the entity's metadata, without
@@ -165,7 +171,7 @@ export class BodyCheck {
     if (isOwned(prop)) return this.cleanOwnedRow(prop, value, path)
     return isOwningToOne(prop)
       ? this.cleanId(row, prop, value, path)
-      : this.cleanScalar(prop, value, path)
+      : this.cleanScalar(row, prop, value, path)
   }
 
   // An owned row carries its key, which `matchRows()` matches to a row of the
@@ -208,10 +214,8 @@ export class BodyCheck {
     return id
   }
 
-  // The schema of the column only validates. The value is written as sent.
-  cleanScalar(prop: EntityProperty, value: unknown, path: Path) {
-    const schema = getColumnSchema(prop)
-    this.schemaChecks.push(this.checkSchema(schema, value, path))
+  cleanScalar(row: Row, prop: EntityProperty, value: unknown, path: Path) {
+    this.schemaChecks.push(this.checkSchema(row, prop, value, path))
     // A plain date, such as `2026-05-14`, is local midnight, which
     // `new Date()` would read as UTC midnight.
     return (
@@ -220,9 +224,24 @@ export class BodyCheck {
     )
   }
 
-  async checkSchema(schema: z.ZodType, value: unknown, path: Path) {
-    const { issues = [] } = await runSchema(schema, value)
-    this.addIssues(issues as StandardIssue[], path)
+  // A JSON column stores the output of its schema, with the schema's defaults
+  // and transforms. The schemas of other columns only validate.
+  async checkSchema(
+    row: Row,
+    prop: EntityProperty,
+    value: unknown,
+    path: Path
+  ) {
+    const result = await runSchema(getColumnSchema(prop), value)
+    if (result.issues) {
+      this.addIssues(result.issues as StandardIssue[], path)
+    } else if (prop.customType instanceof SchemaJsonType) {
+      // MikroORM compares JSON as text, so an output that only orders the keys
+      // differently would write a value that didn't change.
+      const output = equals(result.value, value) ? value : result.value
+      row[prop.name] = output
+      setParsed(output)
+    }
   }
 }
 

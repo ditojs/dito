@@ -573,8 +573,12 @@ It changes these things:
   with a time. These columns store both as the day in the server's time zone.
   This applies to writes, to `em.create()` and to queries. They take and return
   `YYYY-MM-DD` strings as they are.
-- New rows get the defaults of their `defineJsonType()` schemas, also with
-  `em.create()`. Updates write the value as sent.
+- `em.create()` gives new rows the defaults and transforms of their
+  `defineJsonType()` schemas. The writes of a body store the output of these
+  schemas themselves, see
+  [The checks of a body](../../guide/server/writes.md#the-checks-of-a-body). A
+  value that `em.assign()` or a handler sets on an existing row is written as it
+  is.
 - `em.remove()` deletes what the schema says. A flush loads the rows that go
   with a removed row, through `orphanRemoval` or a cascade of removes. So these
   rows needn't be loaded.

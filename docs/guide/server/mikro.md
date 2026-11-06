@@ -53,7 +53,8 @@ These rules of the entity matter for Dito:
   rows that refer to it, see [Deletes](writes.md#deletes).
 - With [`defineMikroConfig()`](../../api/server/mikro.md#definemikroconfig),
   `p.date()` stores a `Date` as its local day. New rows also get the defaults of
-  their `defineJsonType()` schemas.
+  their `defineJsonType()` schemas, and the writes of a body store the output of
+  these schemas.
 
 ## Controllers
 

@@ -11,7 +11,7 @@ import {
   type EventSubscriber,
   type FlushEventArgs
 } from '@mikro-orm/core'
-import { SchemaJsonType } from './SchemaJsonType.ts'
+import { SchemaJsonType, needsDefaults } from './SchemaJsonType.ts'
 import { runSchema } from './validation.ts'
 
 // Make `em.remove()` delete what the schema says, and let the database apply
@@ -117,9 +117,9 @@ function getOwnedPaths(
   return paths
 }
 
-// Fill the defaults of the schemas of new rows. The write check only validates,
-// so parse the values again and keep the output, as a new value, since MikroORM
-// compares the values before and after hooks.
+// Fill the defaults of the schemas of new rows from `em.create()`. Writes hold
+// the output of the schema already. Keep the output as a new value, since
+// MikroORM compares the values before and after hooks.
 export class SchemaDefaults implements EventSubscriber {
   async beforeCreate({ entity, meta }: EventArgs<any>) {
     for (const prop of meta.props) {
@@ -128,7 +128,7 @@ export class SchemaDefaults implements EventSubscriber {
       if (
         customType instanceof SchemaJsonType &&
         customType.schema &&
-        value != null
+        needsDefaults(value)
       ) {
         const result = await runSchema(customType.schema, value)
         if (!result.issues) entity[prop.name] = result.value
