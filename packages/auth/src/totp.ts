@@ -15,7 +15,7 @@ import { getUserIdentifier, type User } from './users.ts'
 
 // TOTP as a credential of type `totp`, with its secret encrypted.
 
-export interface CreateTotpOptions {
+export interface TotpOptions {
   // The name that authenticator apps show, such as the app's name.
   issuer: string
   // A long random string of the app, from which HKDF derives the keys.
@@ -30,12 +30,15 @@ const backupCodeCount = 10
 const ivLength = 12
 const tagLength = 16
 
-export type Totp = ReturnType<typeof createTotp>
-
-export function createTotp(
-  { issuer, secret: key }: CreateTotpOptions,
+interface CreateTotpOptions extends TotpOptions {
   credentials: Credentials
-) {
+}
+
+export function createTotp({
+  issuer,
+  secret: key,
+  credentials
+}: CreateTotpOptions) {
   if (!key) throw new Error('Unable to use TOTP without a secret.')
   // Accept the previous and the next code too, for clocks that drift.
   function getCodeStep(secret: string, code: unknown) {

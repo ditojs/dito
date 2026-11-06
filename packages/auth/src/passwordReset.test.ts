@@ -39,7 +39,6 @@ beforeEach(async () => {
     cookieName: 'customer.sess',
     source: customers,
     passwordReset: {
-      secrets,
       confirmUrl: 'https://example.com/admin/#password-reset={token}',
       send,
       onError
@@ -59,11 +58,13 @@ const request = (username: unknown) =>
 describe('passwordReset()', () => {
   it('needs a placeholder for the token', () => {
     expect(() =>
-      createPasswordReset({ secrets, confirmUrl: 'https://example.com', send })
+      createPasswordReset({
+        secrets,
+        source: customers,
+        confirmUrl: 'https://example.com',
+        send
+      })
     ).toThrow(`'confirmUrl' needs '{token}'`)
-    expect(() =>
-      createPasswordReset({ secrets: [], confirmUrl: '{token}', send })
-    ).toThrow('Unable to sign tokens without secrets.')
   })
 
   it('answers the same for unknown accounts', async () => {
@@ -187,13 +188,14 @@ describe('passwordReset()', () => {
   it('signs the values of the user with the first secret', () => {
     const feature = createPasswordReset({
       secrets: [...secrets, 'older secret'],
+      source: customers,
       confirmUrl: '{token}',
       send
     })
     vi.setSystemTime(Date.UTC(2026, 0, 1))
     // HMAC-SHA256 over `["Customer-1",time,hash,lastLogin,username]`:
     const user = { ...ada, hash: 'hash', lastLogin: new Date() }
-    feature.sendLink({} as any, customers, user)
+    feature.sendLink({} as any, user)
     expect(send.mock.calls[0]![0].url).toBe(
       'MQ.mjuohs00.K7uAn90VappUNf7Z2Ago4lWBx3WDX6AYby1XYSmjCr8'
     )
@@ -202,28 +204,30 @@ describe('passwordReset()', () => {
   it('takes durations as `expiresAfter` and `resendAfter`', async () => {
     const feature = createPasswordReset({
       secrets,
+      source: customers,
       confirmUrl: '{token}',
       send,
       expiresAfter: '2m',
       resendAfter: '30s'
     })
-    feature.sendLink({} as any, customers, ada)
-    feature.sendLink({} as any, customers, ada)
+    feature.sendLink({} as any, ada)
+    feature.sendLink({} as any, ada)
     expect(send).toHaveBeenCalledTimes(1)
     vi.advanceTimersByTime(30 * 1000)
-    feature.sendLink({} as any, customers, ada)
+    feature.sendLink({} as any, ada)
     expect(send).toHaveBeenCalledTimes(2)
     const token = send.mock.calls[1]![0].url
     vi.advanceTimersByTime(119 * 1000)
-    expect(await feature.findUser({} as any, customers, token)).toBe(ada)
+    expect(await feature.findUser(token)).toBe(ada)
     vi.advanceTimersByTime(1000)
-    expect(await feature.findUser({} as any, customers, token)).toBe(null)
+    expect(await feature.findUser(token)).toBe(null)
   })
 
   it('throws for invalid durations', () => {
     expect(() =>
       createPasswordReset({
         secrets,
+        source: customers,
         confirmUrl: '{token}',
         send,
         expiresAfter: 'a while'
@@ -234,20 +238,26 @@ describe('passwordReset()', () => {
   it('accepts tokens of older secrets', async () => {
     const older = createPasswordReset({
       secrets: ['older'],
+      source: customers,
       confirmUrl: '{token}',
       send
     })
     const rotated = createPasswordReset({
       secrets: ['newer', 'older'],
+      source: customers,
       confirmUrl: '{token}',
       send
     })
-    older.sendLink({} as any, customers, ada)
+    older.sendLink({} as any, ada)
     const token = send.mock.calls[0]![0].url
-    expect(await rotated.findUser({} as any, customers, token)).toBe(ada)
+    expect(await rotated.findUser(token)).toBe(ada)
     expect(
-      await createPasswordReset({ secrets, confirmUrl: '{token}', send })
-        .findUser({} as any, customers, token)
+      await createPasswordReset({
+        secrets,
+        source: customers,
+        confirmUrl: '{token}',
+        send
+      }).findUser(token)
     ).toBe(null)
   })
 })

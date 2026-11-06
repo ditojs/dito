@@ -9,14 +9,14 @@ import {
 } from '@ditojs/server'
 import { createAuthError, authenticationTimeout } from './authentication.ts'
 import type { Credential, Credentials } from './credentials.ts'
-import { createPasskeys, type CreatePasskeysOptions } from './passkeys.ts'
+import { createPasskeys, type PasskeysOptions } from './passkeys.ts'
 import {
   createPasswordReset,
-  type CreatePasswordResetOptions
+  type PasswordResetOptions
 } from './passwordReset.ts'
 import { hashPassword, verifyPassword } from './passwords.ts'
 import { getSession } from './sessions.ts'
-import { createTotp, type CreateTotpOptions } from './totp.ts'
+import { createTotp, type TotpOptions } from './totp.ts'
 import {
   getUserIdentifier,
   parseUserIdentifier,
@@ -28,15 +28,20 @@ import {
 // protection.
 
 export interface DefineUserActionsOptions<U extends User> {
-  // Its `password` checks the new passwords.
-  source: UserSource<U>
-  credentials: Credentials
-  passkeys?: CreatePasskeysOptions
-  totp?: CreateTotpOptions
-  passwordReset?: CreatePasswordResetOptions
+  passkeys?: PasskeysOptions
+  totp?: TotpOptions
+  passwordReset?: PasswordResetOptions<U>
   // In milliseconds or as a duration such as `'24h'`, ten minutes by default.
   reconfirmAfter?: number | string
   afterLogin?: (context: { c: Context; user: U }) => unknown
+}
+
+interface UserActionsOptions<U extends User>
+  extends DefineUserActionsOptions<U> {
+  // Its `password` checks the new passwords.
+  source: UserSource<U>
+  credentials: Credentials
+  secrets: string[]
 }
 
 const anyBody = z.record(z.string(), z.unknown())
@@ -52,16 +57,19 @@ const credentialId = z.coerce
 export function defineUserActions<U extends User>({
   source,
   credentials,
+  secrets,
   afterLogin,
   ...options
-}: DefineUserActionsOptions<U>) {
+}: UserActionsOptions<U>) {
   const reconfirmAfter = parseDuration(options.reconfirmAfter ?? '10m')
   const passkeys = options.passkeys
-    ? createPasskeys(options.passkeys, credentials)
+    ? createPasskeys({ ...options.passkeys, credentials })
     : null
-  const totp = options.totp ? createTotp(options.totp, credentials) : null
+  const totp = options.totp
+    ? createTotp({ ...options.totp, credentials })
+    : null
   const passwordReset = options.passwordReset
-    ? createPasswordReset(options.passwordReset)
+    ? createPasswordReset({ ...options.passwordReset, secrets, source })
     : null
   const { password } = source
   const checkAuthentication = async (c: Context) => {
@@ -199,7 +207,7 @@ export function defineUserActions<U extends User>({
         body: z.object({ username: createRequiredString('username') }),
         handler: async ({ body: { username }, c }) => {
           const user = await source.findByUsername(username)
-          if (user) passwordReset.sendLink(c, source, user)
+          if (user) passwordReset.sendLink(c, user)
         }
       }),
 
@@ -207,7 +215,7 @@ export function defineUserActions<U extends User>({
       'post password-reset-confirm': defineAction({
         body: z.object({ token: createRequiredString('token'), password }),
         handler: async ({ body, c }) => {
-          const user = await passwordReset.findUser(c, source, body.token)
+          const user = await passwordReset.findUser(body.token)
           if (!user) throw createAuthError('Invalid or expired token', 400)
           await setPassword(c, user, body.password)
         }

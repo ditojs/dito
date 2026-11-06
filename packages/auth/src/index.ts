@@ -2,9 +2,9 @@ export type { User } from './users.ts'
 export {
   createUsers,
   type CreateUsersOptions,
-  type DefineActionsOptions,
   type Users
 } from './createUsers.ts'
+export type { DefineUserActionsOptions } from './userActions.ts'
 export {
   deleteExpiredSessions,
   useSession,

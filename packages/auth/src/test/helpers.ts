@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { generateSignedCookie } from 'hono/cookie'
 import { createApi, type ControllerDefinition } from '@ditojs/server'
 import { defaultPasswordSchema } from '@ditojs/mikro/internal'
-import { createCredentials } from '../credentials.ts'
+import { createCredentials, type Credentials } from '../credentials.ts'
 import { hashPassword } from '../passwords.ts'
 import { createSessions } from '../sessions.ts'
 import {
@@ -88,7 +88,8 @@ export function setup({
   maxAge?: number | string
   // More controllers of the API, next to the users routes.
   controllers?: ControllerDefinition[]
-} & Partial<DefineUserActionsOptions<TestUser>>) {
+  credentials?: Credentials
+} & DefineUserActionsOptions<TestUser>) {
   const adapter = { getKysely: () => db }
   const sessions = createSessions({
     adapter,
@@ -100,7 +101,14 @@ export function setup({
   credentials ??= createCredentials({ adapter, source })
   const users = {
     path: 'admins',
-    mixins: [defineUserActions({ source, credentials, ...options })]
+    mixins: [
+      defineUserActions({
+        ...options,
+        source,
+        credentials,
+        secrets: cookieSecrets
+      })
+    ]
   }
   // The sessions run before the API, as in the app's host.
   const api = new Hono()

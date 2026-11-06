@@ -182,10 +182,11 @@ describe('totp()', () => {
       adapter: { getKysely: () => db },
       source: createSource('Admin', [ada])
     })
-    const totp = createTotp(
-      { issuer: 'Dito', secret: 'a long secret' },
+    const totp = createTotp({
+      issuer: 'Dito',
+      secret: 'a long secret',
       credentials
-    )
+    })
     const rollback = new Error('Rolled back')
     await expect(
       db.transaction().execute(async () => {

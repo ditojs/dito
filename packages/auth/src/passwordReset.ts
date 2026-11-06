@@ -9,8 +9,7 @@ import {
 
 // Stateless password reset links, signed with HMAC-SHA256.
 
-export interface CreatePasswordResetOptions {
-  secrets: string[]
+export interface PasswordResetOptions<U extends User = any> {
   // In milliseconds or as a duration such as `'24h'`, one hour by default.
   expiresAfter?: number | string
   // The time before a user gets another link, as `expiresAfter`, one minute by
@@ -20,26 +19,28 @@ export interface CreatePasswordResetOptions {
   confirmUrl: string
   // Sends the email. The response doesn't wait for it, so its failures don't
   // change the response, and go to `onError`.
-  send(context: { c: Context; user: any; url: string }): unknown
+  send(context: { c: Context; user: U; url: string }): unknown
   onError?(context: { error: unknown; c: Context }): void
 }
 
-export type PasswordReset = ReturnType<typeof createPasswordReset>
+interface CreatePasswordResetOptions<U extends User>
+  extends PasswordResetOptions<U> {
+  secrets: string[]
+  source: UserSource<U>
+}
 
-export function createPasswordReset({
+export function createPasswordReset<U extends User>({
   secrets,
+  source,
   confirmUrl,
   send,
   onError,
   ...options
-}: CreatePasswordResetOptions) {
+}: CreatePasswordResetOptions<U>) {
   const expiresAfter = parseDuration(options.expiresAfter ?? '1h')
   const resendAfter = parseDuration(options.resendAfter ?? '1m')
   if (!confirmUrl.includes('{token}')) {
     throw new Error(`Invalid password reset, 'confirmUrl' needs '{token}'.`)
-  }
-  if (secrets.length === 0) {
-    throw new Error('Unable to sign tokens without secrets.')
   }
   // The time of the last link by user, per process.
   const sentAtByUser = new Map<string, number>()
@@ -49,14 +50,14 @@ export function createPasswordReset({
 
   // The token holds the user's id and its creation time. The first secret
   // signs, and all of them verify, so secrets can rotate.
-  function createToken(source: UserSource<any>, user: User, time: number) {
+  function createToken(user: U, time: number) {
     const id = Buffer.from(`${user.id}`).toString('base64url')
     const signature = sign(getSignedValues(source, user, time), secrets[0])
     return `${id}.${time.toString(36)}.${signature}`
   }
 
   return {
-    sendLink(c: Context, source: UserSource<any>, user: User) {
+    sendLink(c: Context, user: U) {
       const now = Date.now()
       const identifier = getUserIdentifier(source, user)
       // Forget the users whose `resendAfter` ended, so the map stays small:
@@ -65,7 +66,7 @@ export function createPasswordReset({
       }
       if (!sentAtByUser.has(identifier)) {
         sentAtByUser.set(identifier, now)
-        const token = createToken(source, user, now)
+        const token = createToken(user, now)
         const url = confirmUrl.replace('{token}', token)
         Promise.try(() => send({ c, user, url })).catch(error =>
           onError?.({ error, c })
@@ -74,11 +75,7 @@ export function createPasswordReset({
     },
 
     // Resolve to null for tokens that expired or that no secret signed.
-    async findUser<U extends User>(
-      c: Context,
-      source: UserSource<U>,
-      token: unknown
-    ): Promise<U | null> {
+    async findUser(token: unknown): Promise<U | null> {
       const match = String(token).match(/^([\w-]*)\.([\da-z]+)\.([\w-]+)$/)
       if (!match) return null
       const [, encodedId, encodedTime, signature] = match

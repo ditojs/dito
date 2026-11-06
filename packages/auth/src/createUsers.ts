@@ -4,7 +4,6 @@ import {
   type CreateEntityUserSourceOptions
 } from '@ditojs/mikro/internal'
 import { createCredentials } from './credentials.ts'
-import type { CreatePasswordResetOptions } from './passwordReset.ts'
 import { defineUserWrites } from './passwords.ts'
 import { createSessions, type CreateSessionsOptions } from './sessions.ts'
 import {
@@ -17,13 +16,6 @@ export interface CreateUsersOptions<U extends object>
   extends CreateEntityUserSourceOptions<U>,
     Pick<CreateSessionsOptions, 'secrets'> {
   session: Pick<CreateSessionsOptions, 'cookieName' | 'maxAge'>
-}
-
-export interface DefineActionsOptions<U extends User> extends Omit<
-  DefineUserActionsOptions<U>,
-  'source' | 'credentials' | 'passwordReset'
-> {
-  passwordReset?: Omit<CreatePasswordResetOptions, 'secrets'>
 }
 
 export type Users<U extends User = any> = ReturnType<typeof createUsers<U>>
@@ -49,13 +41,8 @@ export function createUsers<U extends User>(
     setSignedCookie: sessions.setSignedCookie,
 
     // The login, session and security actions, for a controller of their own.
-    defineActions({ passwordReset, ...rest }: DefineActionsOptions<U> = {}) {
-      return defineUserActions<U>({
-        ...rest,
-        source,
-        credentials,
-        passwordReset: passwordReset && { ...passwordReset, secrets }
-      })
+    defineActions(options: DefineUserActionsOptions<U> = {}) {
+      return defineUserActions<U>({ ...options, source, credentials, secrets })
     }
   }
 }

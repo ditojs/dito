@@ -27,7 +27,7 @@ The peer dependencies are `@ditojs/mikro`, `@ditojs/server`, `@mikro-orm/core`,
 `hono`, `kysely` and `zod`. See [Users and sessions](../../guide/server/auth.md) in the guide.
 
 The package exports the types `User`, `Session`, `Users`, `CreateUsersOptions`
-and `DefineActionsOptions`.
+and `DefineUserActionsOptions`.
 
 ## createUsers()
 
@@ -179,7 +179,7 @@ they call. It throws if the middleware of the users didn't run.
 ## defineActions()
 
 ```ts
-users.defineActions(options?: DefineActionsOptions<U>): MixinDefinition
+users.defineActions(options?: DefineUserActionsOptions<U>): MixinDefinition
 ```
 
 ```js
