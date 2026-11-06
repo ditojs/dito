@@ -21,8 +21,7 @@ import { normalizeBase } from './normalizeBase.ts'
 export interface AdminOptions {
   // The path the admin is served at, such as `/admin`.
   base: string
-  // The built admin, served without `vite`. `createAdmin()` throws if it
-  // doesn't exist.
+  // The built admin, served without `vite`.
   dist?: string
   // `dito.api` in the browser, such as `url` and `users`.
   api?: Record<string, unknown>
@@ -98,14 +97,10 @@ export function createAdmin(options: AdminOptions): AdminServer {
       await (await vite.catch(() => null))?.close()
     }
   } else {
-    const root = options.dist && path.resolve(options.dist)
-    if (!root || !fs.existsSync(root)) {
-      throw new Error(
-        options.dist
-          ? `Unable to find the admin's build in '${options.dist}'`
-          : 'Unable to serve the admin without `vite` or `dist`'
-      )
+    if (!options.dist) {
+      throw new Error('Unable to serve the admin without `vite` or `dist`')
     }
+    const root = path.resolve(options.dist)
     app.get(
       '*',
       async (c, next) => {

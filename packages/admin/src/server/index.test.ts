@@ -46,14 +46,19 @@ describe('createAdmin() in production', () => {
     return { request: route(admin) }
   }
 
-  it('throws without a build to serve', () => {
+  it('throws without vite or dist', () => {
     expect(() => createAdmin({ base: '/admin' })).toThrow(
       'Unable to serve the admin without `vite` or `dist`'
     )
-    const missing = path.join(dist, 'missing')
-    expect(() => createAdmin({ base: '/admin', dist: missing })).toThrow(
-      `Unable to find the admin's build in '${missing}'`
-    )
+  })
+
+  it('answers 404 while dist has no build', async () => {
+    const admin = createAdmin({
+      base: '/admin',
+      dist: path.join(dist, 'missing')
+    })
+    const response = await route(admin)('/admin/')
+    expect(response.status).toBe(404)
   })
 
   it('serves the built files', async () => {
