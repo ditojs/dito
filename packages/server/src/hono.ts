@@ -121,33 +121,31 @@ export function forwarded(proxy: boolean | number = true): MiddlewareHandler {
   return async (c, next) => {
     if (hops) {
       const request = c.req.raw
-      const url = getPublicUrl(request)
+      const url = getPublicUrl(request, hops)
       // A copy would start to read the body, after which Node resets keep-alive
       // connections of bodies that the app leaves unread.
       if (url !== request.url)
         Object.defineProperty(request, 'url', { value: url })
-      // Each proxy adds the address that it received the request from, so the
-      // client's is the one `hops` from the right:
-      const addresses = getHeaderValues(request, 'X-Forwarded-For')
-      const address = addresses[Math.max(addresses.length - hops, 0)]
+      const address = getForwardedValue(request, 'X-Forwarded-For', hops)
       if (address) c.set('clientAddress', address)
     }
     await next()
   }
 }
 
-function getHeaderValues(request: Request, name: string) {
-  return (request.headers.get(name) ?? '')
+// Each proxy adds its value on the right, so the first trusted proxy's is the
+// one `hops` from the right. Values further left come from the client.
+function getForwardedValue(request: Request, name: string, hops: number) {
+  const values = (request.headers.get(name) ?? '')
     .split(',')
     .map(value => value.trim())
     .filter(Boolean)
+  return values[Math.max(values.length - hops, 0)]
 }
 
-// Take the public URL from the first values of `X-Forwarded-Proto` and
-// `X-Forwarded-Host`.
-function getPublicUrl(request: Request) {
-  const [proto] = getHeaderValues(request, 'X-Forwarded-Proto')
-  const [host] = getHeaderValues(request, 'X-Forwarded-Host')
+function getPublicUrl(request: Request, hops: number) {
+  const proto = getForwardedValue(request, 'X-Forwarded-Proto', hops)
+  const host = getForwardedValue(request, 'X-Forwarded-Host', hops)
   const url = new URL(request.url)
   // Take only `http` and `https`, and a plain host with an optional port:
   if (proto && /^https?$/i.test(proto)) url.protocol = proto

@@ -35,8 +35,8 @@ function echo(proxy?: boolean | number) {
 }
 
 const headers = {
-  'X-Forwarded-Proto': 'https, http',
-  'X-Forwarded-Host': 'shop.test, backend',
+  'X-Forwarded-Proto': 'http, https',
+  'X-Forwarded-Host': 'spoofed.test, shop.test',
   'X-Forwarded-For': '203.0.113.7, 10.0.0.1'
 }
 
@@ -231,14 +231,39 @@ describe('forwarded()', () => {
     })
   })
 
-  it('counts the hops of `X-Forwarded-For` from the right', async () => {
+  it('counts the hops of all headers from the right', async () => {
+    await withServer(echo(1), async url => {
+      const response = await fetch(url, { headers })
+      expect(await response.json()).toMatchObject({
+        url: 'https://shop.test/',
+        address: '10.0.0.1'
+      })
+    })
     await withServer(echo(2), async url => {
       const response = await fetch(url, { headers })
-      expect((await response.json()).address).toBe('203.0.113.7')
+      expect(await response.json()).toMatchObject({
+        url: 'http://spoofed.test/',
+        address: '203.0.113.7'
+      })
     })
+  })
+
+  it('takes the leftmost value with more hops than values', async () => {
     await withServer(echo(3), async url => {
       const response = await fetch(url, { headers })
-      expect((await response.json()).address).toBe('203.0.113.7')
+      expect(await response.json()).toMatchObject({
+        url: 'http://spoofed.test/',
+        address: '203.0.113.7'
+      })
+    })
+  })
+
+  it('takes the value of a proxy that replaces the header', async () => {
+    await withServer(echo(2), async url => {
+      const response = await fetch(url, {
+        headers: { 'X-Forwarded-Host': 'shop.test' }
+      })
+      expect((await response.json()).url).toContain('//shop.test')
     })
   })
 

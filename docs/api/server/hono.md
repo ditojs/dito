@@ -63,6 +63,8 @@ takes one of three values:
   `X-Forwarded-Host`. It ignores protocols other than `http` and `https`, and
   values other than a host with an optional port.
 - It reads the client's address from `X-Forwarded-For`.
+- In all three headers, it reads the entry that is `proxy` hops from the right,
+  or the leftmost one if there are fewer.
 - It runs before the standard middleware, as `csrf()` compares the origin with
   the public URL.
 
