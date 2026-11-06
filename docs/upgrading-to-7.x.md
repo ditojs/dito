@@ -642,9 +642,9 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 - Actions that change security settings call
   `getSession(c).checkConfirmedAccess(source)`, see
   [Confirmed access](guide/server/auth.md#confirmed-access).
-- Writes of `definePasswordWrites()` that change the password or the username
-  of the logged-in user need confirmed access, as `post password` does. Dito.js
-  6 asked for it also when users changed other users.
+- Writes of `definePasswordWrites()` that change a password or a username need
+  confirmed access, as `post password` does, also for other users of the
+  source, as in Dito.js 6.
 - The entity of `createEntityUserSource()` hides `hash` with `.hidden()`, as
   `UserMixin` did. Otherwise the source throws when it loads a user.
 - `config.app.authentication.reconfirmAccessAfter` becomes `reconfirmAfter` of

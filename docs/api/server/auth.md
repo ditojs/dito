@@ -225,9 +225,10 @@ A mixin for the model controller of the users. It routes `post` and
 - The `password` schema of the source checks new passwords, see
   [`UserSource`](#usersource).
 - A `hash` in the body responds with 400.
-- When users change their own password, or their username in the source's
-  `usernameProperty`, they need confirmed access, as in `post password`. See
-  `checkConfirmedAccess()` of [`Session`](#session).
+- Changing a password, or a username in the source's `usernameProperty`, needs
+  confirmed access of a user of the source, as in `post password`, also for
+  other users of the source. See `checkConfirmedAccess()` of
+  [`Session`](#session).
 - When users change their own password, their session stays, and their other
   sessions end. See `refreshFingerprint()` of [`Session`](#session).
 

@@ -59,22 +59,21 @@ export function definePasswordWrites<U extends User>({
       .optional()
   })
 
-  // Users need confirmed access to change their own password, and their
-  // username too, as password resets go to it:
-  const isOwnSecurityChange = async (
+  // Changing a password needs confirmed access, also of other users, and so
+  // does a username, as password resets go to it:
+  const isSecurityChange = async (
     c: Context,
     id: string,
     body: Record<string, unknown>
   ) => {
     const username = body[usernameProperty]
     if (body.password === undefined && username === undefined) return false
-    const user = await getSession(c).getUser(source)
+    if (!(await getSession(c).getUser(source))) return false
+    if (body.password !== undefined) return true
+    const user = await source.findById(c, id)
     return (
-      !!user &&
-      String(user.id) === id && (
-        body.password !== undefined ||
-        username !== (user as Record<string, unknown>)[usernameProperty]
-      )
+      username !==
+      (user as Record<string, unknown> | null)?.[usernameProperty]
     )
   }
 
@@ -85,7 +84,7 @@ export function definePasswordWrites<U extends User>({
     if (!result.success) {
       throw createValidationError(result.error.issues, bodyValidation)
     }
-    if (params.id && (await isOwnSecurityChange(c, params.id, input.body))) {
+    if (params.id && (await isSecurityChange(c, params.id, input.body))) {
       await getSession(c).checkConfirmedAccess(source)
     }
     const { password } = result.data

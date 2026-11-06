@@ -180,10 +180,10 @@ export const admins = defineModelController({
 
 [`definePasswordWrites()`](../../api/server/auth.md#definepasswordwrites) is a
 mixin for the model controller of the users. It routes `post` and `patch :id`.
-Their body sets `password`, which the user stores as `hash`. Users who change
-their own password or username need [confirmed access](#confirmed-access), as
-password reset links go to the username. They stay logged in, and their other
-sessions end.
+Their body sets `password`, which the user stores as `hash`. Changing a password
+or username needs [confirmed access](#confirmed-access), also of other users,
+as password reset links go to the username. Users who change their own password
+stay logged in, and their other sessions end.
 
 This controller is separate from the one of `defineUserActions()`, and doesn't
 mix it in. If
