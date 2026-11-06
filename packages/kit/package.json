@@ -8,6 +8,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@ditojs/utils": "workspace:^",
     "pino": "^10.4.0"
   },
   "devDependencies": {

@@ -98,6 +98,22 @@ A service has `start()`, `stop()` or both.
 - They stop in reverse order, after the server.
 - `stop()` waits for the service's work, as the database may close next.
 
+## Jobs
+
+```js
+jobs: {
+  sessions: '1h',
+  assets: '24h',
+  afterAssets: ({ scan, released }) =>
+    app.logger.info({ scan, released }, 'Asset jobs')
+}
+```
+
+`jobs` says how often the recurring jobs run: deleting the expired sessions, and
+[`assets.runJobs()`](storage.md#tracking-files). They start with `app.start()`
+and stop with `app.close()`. `afterAssets` gets the result of each run. Without
+an interval, a job doesn't run. See [Jobs](../../api/server/kit.md#jobs).
+
 ## Logging
 
 ```js

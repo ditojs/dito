@@ -682,7 +682,8 @@ assets: { deleteUnusedAfter: '24h' }
 - Model controllers track the files of their entity with no mixin.
   `mixins: [assets.defineUploads('book')]` adds the upload action, and replaces
   `assets = true` of a controller.
-- `assets.runJobs()` runs on a timer of the app.
+- `jobs: { assets: '1h' }` of `createApp()` runs `assets.runJobs()`. Without the
+  kit, the app runs it in its own schedule.
 - `serveStorage()` of `@ditojs/storage/node` serves public disk storages.
 - `S3Storage` comes from the main entry of the package.
 - The `PutObject` options of S3 storages, such as `acl` and `cacheControl`,

@@ -573,6 +573,9 @@ importers:
 
   packages/kit:
     dependencies:
+      '@ditojs/utils':
+        specifier: workspace:^
+        version: link:../utils
       pino:
         specifier: ^10.4.0
         version: 10.4.0

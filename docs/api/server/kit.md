@@ -24,21 +24,38 @@ Sets up an app. Only `entities` and `database` are required.
 | `secrets`  | `string[]`                          | Sign the cookies of the sessions and the password reset links. The first one signs, and all of them verify.                                                       |
 | `storages` | `Record<string, StorageDefinition>` | See [`createStorages()`](storage.md#createstorages). A disk storage is served at the path of its `url`. A `url` without a path, such as a host of its own, isn't. |
 | `assets`   | `{ deleteUnusedAfter }`             | See [`createAssets()`](storage.md#createassets).                                                                                                                  |
+| `jobs`     | `JobsOptions`                       | The jobs that run while the app runs, see [Jobs](#jobs).                                                                                                          |
 
 ### App
 
-| Member                         | Description                                                                  |
-| ------------------------------ | ---------------------------------------------------------------------------- |
-| `hono`                         | The Hono app, for the app's own middleware and routes.                       |
-| `orm`                          | The `MikroORM` of the entities.                                              |
-| `adapter`                      | See [`createMikroAdapter()`](mikro.md#createmikroadapter).                   |
-| `logger`                       | The logger of the current request, else the app's.                           |
-| `storages`                     | The storages by name.                                                        |
-| `assets`                       | See [`createAssets()`](storage.md#createassets).                             |
-| `createUsers(entity, options)` | [Users](auth.md#createusers) of an entity on the app's database and secrets. |
-| `routeApi(path, options)`      | Routes a [`createApi()`](api.md#createapi) on the app's database.            |
-| `start({ services })`          | Calls [`serve()`](hono.md#serve), and resolves to the Node server.           |
-| `close()`                      | Stops the server and the services if they run, then closes the ORM.          |
+| Member                         | Description                                                                         |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| `hono`                         | The Hono app, for the app's own middleware and routes.                              |
+| `orm`                          | The `MikroORM` of the entities.                                                     |
+| `adapter`                      | See [`createMikroAdapter()`](mikro.md#createmikroadapter).                          |
+| `logger`                       | The logger of the current request, else the app's.                                  |
+| `storages`                     | The storages by name.                                                               |
+| `assets`                       | See [`createAssets()`](storage.md#createassets).                                    |
+| `createUsers(entity, options)` | [Users](auth.md#createusers) of an entity on the app's database and secrets.        |
+| `routeApi(path, options)`      | Routes a [`createApi()`](api.md#createapi) on the app's database.                   |
+| `start({ services })`          | Starts the jobs, calls [`serve()`](hono.md#serve), and resolves to the Node server. |
+| `close()`                      | Stops the server, the services and the jobs if they run, then closes the ORM.       |
+
+### Jobs
+
+| Option        | Type                              | Description                                                      |
+| ------------- | --------------------------------- | ---------------------------------------------------------------- |
+| `sessions`    | `number \| string \| false`       | How often to delete the expired sessions.                        |
+| `assets`      | `number \| string \| false`       | How often to run [`assets.runJobs()`](storage.md#asset-jobs).    |
+| `afterAssets` | `({ scan, released }) => unknown` | Gets the result of each run of `assets.runJobs()`, for the logs. |
+
+The intervals are in milliseconds, or durations such as `'1h'`. By default, the
+jobs don't run.
+
+- The jobs start with `app.start()`, before the services, and stop after them.
+- The first run comes one interval after the start.
+- A job that still runs skips its next run, and `app.close()` waits for it.
+- A job that fails logs its error, and runs again after the next interval.
 
 ## runPlayground()
 

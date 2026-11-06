@@ -32,6 +32,7 @@ import {
   type StorageRegistry
 } from '@ditojs/storage'
 import { serveStorage } from '@ditojs/storage/node'
+import { parseDuration } from '@ditojs/utils'
 import { createRequestLogger } from './createRequestLogger.ts'
 
 export interface CreateAppOptions {
@@ -51,6 +52,20 @@ export interface CreateAppOptions {
   // of its `url`. A `url` without a path, such as a host of its own, isn't.
   storages?: Record<string, StorageDefinition>
   assets?: Pick<CreateAssetsOptions, 'deleteUnusedAfter'>
+  // The jobs that run while the app runs.
+  jobs?: JobsOptions
+}
+
+export interface JobsOptions {
+  // How often to delete the expired sessions, in milliseconds or as a duration
+  // such as `'1h'`. By default, `false` doesn't run the job.
+  sessions?: number | string | false
+  // How often to run `assets.runJobs()`, in the same way.
+  assets?: number | string | false
+  // Gets the result of each run of `assets.runJobs()`, for the app's logs.
+  afterAssets?: (
+    result: Awaited<ReturnType<Assets['runJobs']>>
+  ) => unknown
 }
 
 export interface App {
@@ -69,10 +84,11 @@ export interface App {
   ): Users<U>
   // Routes an API on the app's database.
   routeApi(path: string, options: Omit<ApiConfig, 'adapter' | 'onError'>): void
-  // Starts the services in order, then serves `hono` until `close()`, SIGINT or
-  // SIGTERM.
+  // Starts the jobs and the services in order, then serves `hono` until
+  // `close()`, SIGINT or SIGTERM.
   start(options?: { services?: Service[] }): Promise<ServerType>
-  // Stops the server and the services if they run, then closes the ORM.
+  // Stops the server, the services and the jobs if they run, then closes the
+  // ORM.
   close(): Promise<void>
 }
 
@@ -88,7 +104,8 @@ export function createApp({
   logger: loggerOptions,
   secrets = [],
   storages: definitions = {},
-  assets: assetsOptions
+  assets: assetsOptions,
+  jobs = {}
 }: CreateAppOptions): App {
   const logger = pino({ base: null, ...loggerOptions })
   const orm = new MikroORM(defineMikroConfig({ ...database, entities }))
@@ -107,6 +124,20 @@ export function createApp({
       }
     }
   }
+  const assets = createAssets({
+    adapter,
+    paths: getAssetPaths(entities),
+    storages,
+    ...assetsOptions
+  })
+  // All users share the `session` table, so one of them deletes for all.
+  let deleteExpiredSessions: (() => Promise<void>) | undefined
+  const jobServices = [
+    createJob(jobs.sessions, logger, () => deleteExpiredSessions?.()),
+    createJob(jobs.assets, logger, async () =>
+      jobs.afterAssets?.(await assets.runJobs())
+    )
+  ]
   let served: Awaited<ReturnType<typeof serve>> | undefined
 
   return {
@@ -114,19 +145,17 @@ export function createApp({
     orm,
     adapter,
     storages,
-    assets: createAssets({
-      adapter,
-      paths: getAssetPaths(entities),
-      storages,
-      ...assetsOptions
-    }),
+    assets,
 
     get logger() {
       return tryGetContext()?.var.logger ?? logger
     },
 
-    createUsers: (entity, options) =>
-      createUsers(entity, { ...options, orm, secrets }),
+    createUsers(entity, options) {
+      const users = createUsers(entity, { ...options, orm, secrets })
+      deleteExpiredSessions ??= users.deleteExpiredSessions
+      return users
+    },
 
     routeApi(path, options) {
       hono.route(path, createApi({ ...options, adapter, onError: logError }))
@@ -136,13 +165,46 @@ export function createApp({
       // The ORM stops last, as services stop in reverse order.
       served = await serve(hono, {
         ...server,
-        services: [{ stop: () => orm.close() }, ...services]
+        services: [{ stop: () => orm.close() }, ...jobServices, ...services]
       })
       return served.server
     },
 
     async close() {
       await (served ? served.close() : orm.close())
+    }
+  }
+}
+
+// Run `job` after each interval, unless it still runs. `stop()` waits for it,
+// as the ORM closes after the jobs.
+function createJob(
+  every: number | string | false | undefined,
+  logger: Logger,
+  job: () => unknown
+): Service {
+  const interval = every ? parseDuration(every) : 0
+  let timer: ReturnType<typeof setInterval> | undefined
+  let running: Promise<void> | undefined
+  const run = async () => {
+    try {
+      await job()
+    } catch (error) {
+      logger.error(error)
+    } finally {
+      running = undefined
+    }
+  }
+  return {
+    start() {
+      if (interval) {
+        timer = setInterval(() => (running ??= run()), interval)
+      }
+    },
+
+    async stop() {
+      clearInterval(timer)
+      await running
     }
   }
 }

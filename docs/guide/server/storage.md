@@ -159,15 +159,19 @@ all cases.
 ## Tracking files
 
 ```js
-setInterval(async () => {
-  const { scan, released } = await assets.runJobs()
-  logger.info({ scan, released }, 'Asset jobs')
-}, 60 * 60 * 1000)
+// In `createApp()`:
+jobs: {
+  assets: '1h',
+  afterAssets: ({ scan, released }) =>
+    app.logger.info({ scan, released }, 'Asset jobs')
+}
 ```
 
 Each `asset` row has `unreferenced_since`, the time since no row references the
 file. Files that no row references for a while are deleted. Writes don't track
-the references. A job scans the data at the asset paths instead.
+the references. A job scans the data at the asset paths instead. The
+[kit](kit.md#jobs) runs it. Without the kit, the app calls `assets.runJobs()` in
+its own schedule.
 
 - The scan sets and clears `unreferenced_since`.
 - The release deletes the files and rows of assets that no row referenced for

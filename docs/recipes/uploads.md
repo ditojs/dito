@@ -71,20 +71,16 @@ export const books = defineModelController({
 })
 ```
 
-The app serves the folders at the storages' URLs, with `serveStorage()`. A
-timer deletes the files that no book uses:
+The app serves the folders at the storages' URLs, with `serveStorage()`.
+`assets.runJobs()` deletes the files that no book uses. The `jobs` of the
+[kit](../guide/server/kit.md#jobs) run it, or the app's own schedule:
 
 ```js
 import { serveStorage } from '@ditojs/storage/node'
-import { assets, storages } from './storages.js'
+import { storages } from './storages.js'
 
 app.use('/covers/*', serveStorage(storages.get('covers')))
 app.use('/sample-pages/*', serveStorage(storages.get('samplePages')))
-
-setInterval(
-  () => assets.runJobs(),
-  60 * 60 * 1000
-)
 ```
 
 In the admin, upload fields edit the properties:

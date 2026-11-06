@@ -90,8 +90,8 @@ the session of the running request, also in functions that a handler calls.
 
 Sessions use the database outside of the action's transaction. This is because
 they load before the action, and save after it.
-`admins.deleteExpiredSessions()` deletes the expired rows. Call it from a timer
-of the app.
+`admins.deleteExpiredSessions()` deletes the expired rows. The `jobs` of the
+[kit](kit.md#jobs) run it, or the app's own schedule.
 
 The cookie holds the session's id, signed with Hono's signed cookies. The first
 of `secrets` signs, and all of them verify. So to rotate the secrets, a new

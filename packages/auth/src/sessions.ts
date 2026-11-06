@@ -244,7 +244,7 @@ export function createSessions(options: CreateSessionsOptions) {
     return null
   }
 
-  // Deletes the expired sessions. The app runs it on a timer.
+  // Delete the expired sessions. The `jobs` of the kit run this.
   async function deleteExpired() {
     await adapter
       .getKysely()

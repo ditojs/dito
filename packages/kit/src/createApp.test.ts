@@ -10,7 +10,7 @@ import { createApp, type App } from './index.ts'
 import { secrets } from '../../auth/src/test/helpers.ts'
 import { createClient } from '../../../tests/utils/client.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
-import { Credential, Session } from '../../../tests/utils/entities.ts'
+import { Asset, Credential, Session } from '../../../tests/utils/entities.ts'
 
 const BookSchema = defineEntity({
   name: 'Book',
@@ -40,7 +40,7 @@ const MemberSchema = defineEntity({
 class Member extends MemberSchema.class {}
 MemberSchema.setClass(Member)
 
-const entities = { Book, Admin, Member, Session, Credential }
+const entities = { Book, Admin, Member, Session, Credential, Asset }
 
 const books = (role: string) =>
   defineModelController({
@@ -216,6 +216,84 @@ describe('createApp()', () => {
     expect(await response.text()).toBe('Pages')
     const missing = await app.hono.request('/other')
     expect(await missing.json()).toEqual({ message: 'Not Found', status: 404 })
+  })
+
+  it('runs the jobs while the app runs', async () => {
+    const { host, user, dbName } = database.orm.config.getAll()
+    const results: unknown[] = []
+    const app = createApp({
+      entities,
+      database: { host, user, dbName },
+      server: { host: '127.0.0.1' },
+      logger: { level: 'silent' },
+      secrets,
+      jobs: {
+        sessions: 5,
+        assets: '5ms',
+        afterAssets: result => void results.push(result)
+      }
+    })
+    app.createUsers(Admin, {
+      session: { cookieName: 'admin.sess', maxAge: 60_000 }
+    })
+    await database.db
+      .insertInto('session')
+      .values({ id: 'old', value: '{}', expires_at: new Date(0) })
+      .execute()
+    await app.start()
+    await vi.waitFor(async () => {
+      expect(results.length).toBeGreaterThan(1)
+      expect(await database.db.selectFrom('session').selectAll().execute())
+        .toEqual([])
+    })
+    await app.close()
+    const { length } = results
+    expect(results[0]).toMatchObject({ scan: { rowCount: 0 }, released: [] })
+    await new Promise(resolve => setTimeout(resolve, 20))
+    expect(results).toHaveLength(length)
+  })
+
+  it('runs no jobs without an interval', async () => {
+    const { host, user, dbName } = database.orm.config.getAll()
+    const afterAssets = vi.fn()
+    const app = createApp({
+      entities,
+      database: { host, user, dbName },
+      server: { host: '127.0.0.1' },
+      logger: { level: 'silent' },
+      jobs: { assets: false, afterAssets }
+    })
+    await app.start()
+    await new Promise(resolve => setTimeout(resolve, 20))
+    await app.close()
+    expect(afterAssets).not.toHaveBeenCalled()
+  })
+
+  it('logs the errors of jobs and keeps running them', async () => {
+    const { host, user, dbName } = database.orm.config.getAll()
+    const errors: unknown[] = []
+    const app = createApp({
+      entities,
+      database: { host, user, dbName },
+      server: { host: '127.0.0.1' },
+      logger: {
+        hooks: {
+          logMethod(args) {
+            errors.push(args.at(-1))
+          }
+        }
+      },
+      jobs: {
+        assets: 5,
+        afterAssets: () => {
+          throw new Error('Failed job')
+        }
+      }
+    })
+    await app.start()
+    await vi.waitFor(() => expect(errors.length).toBeGreaterThan(1))
+    await app.close()
+    expect((errors[0] as Error).message).toBe('Failed job')
   })
 
   it('runs the services around the server, and closes the ORM', async () => {
