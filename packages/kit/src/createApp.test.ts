@@ -257,12 +257,15 @@ describe('createApp()', () => {
       entities,
       database: { host, user, dbName },
       server: { host: '127.0.0.1' },
-      logger: { level: 'silent' },
+      logger: {
+        hooks: {
+          logMethod(args) {
+            results.push(args[0])
+          }
+        }
+      },
       secrets,
-      jobs: {
-        sessions: 5,
-        assets: { every: '5ms', after: result => void results.push(result) }
-      }
+      jobs: { sessions: 5, assets: '5ms' }
     })
     app.createUsers(Admin, {
       session: { cookieName: 'admin.sess', maxAge: 60_000 }
@@ -286,18 +289,18 @@ describe('createApp()', () => {
 
   it('runs no jobs without an interval', async () => {
     const { host, user, dbName } = database.orm.config.getAll()
-    const after = vi.fn()
     const app = createApp({
       entities,
       database: { host, user, dbName },
       server: { host: '127.0.0.1' },
       logger: { level: 'silent' },
-      jobs: { assets: { every: false, after } }
+      jobs: { assets: false }
     })
+    const runJobs = vi.spyOn(app.assets, 'runJobs')
     await app.start()
     await new Promise(resolve => setTimeout(resolve, 20))
     await app.close()
-    expect(after).not.toHaveBeenCalled()
+    expect(runJobs).not.toHaveBeenCalled()
   })
 
   it('logs the errors of jobs and keeps running them', async () => {
@@ -314,15 +317,9 @@ describe('createApp()', () => {
           }
         }
       },
-      jobs: {
-        assets: {
-          every: 5,
-          after: () => {
-            throw new Error('Failed job')
-          }
-        }
-      }
+      jobs: { assets: 5 }
     })
+    vi.spyOn(app.assets, 'runJobs').mockRejectedValue(new Error('Failed job'))
     await app.start()
     await vi.waitFor(() => expect(errors.length).toBeGreaterThan(1))
     await app.close()

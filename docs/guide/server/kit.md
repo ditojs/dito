@@ -102,17 +102,13 @@ A service has `start()`, `stop()` or both.
 ```js
 jobs: {
   sessions: '1h',
-  assets: {
-    every: '24h',
-    after: ({ scan, released }) =>
-      app.logger.info({ scan, released }, 'Asset jobs')
-  }
+  assets: '24h'
 }
 ```
 
 `jobs` says how often the recurring jobs run: deleting the expired sessions, and
 [`assets.runJobs()`](storage.md#tracking-files). They start with `app.start()`
-and stop with `app.close()`. `after` gets the result of each run of the asset jobs. Without
+and stop with `app.close()`. The logger gets the result of each run of the asset jobs. Without
 an interval, a job doesn't run. See [Jobs](../../api/server/kit.md#jobs).
 
 ## Logging

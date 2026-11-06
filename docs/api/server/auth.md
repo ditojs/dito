@@ -23,8 +23,8 @@ The app keeps its users in its own entities, and sets them up with
 `session` and `credential` tables. Auth reads these tables through
 [Kysely](https://kysely.dev).
 
-The peer dependencies are `@ditojs/server`, `@mikro-orm/core`, `hono`, `kysely`
-and `zod`. See [Users and sessions](../../guide/server/auth.md) in the guide.
+The peer dependencies are `@ditojs/mikro`, `@ditojs/server`, `@mikro-orm/core`,
+`hono`, `kysely` and `zod`. See [Users and sessions](../../guide/server/auth.md) in the guide.
 
 The package exports the types `User`, `Session`, `Users`, `CreateUsersOptions`
 and `DefineActionsOptions`.
@@ -51,7 +51,7 @@ createApi({ controllers, adapter, users: admins })
 
 Sets up one kind of users, such as admins or members, on an entity, with their
 sessions and credentials. The app passes the result as `users` to
-[`createApi()`](api.md#apiconfig), `app.routeApi()` and
+[`createApi()`](api.md#createapioptions), `app.routeApi()` and
 [`createAdmin()`](../admin/server.md#createadminoptions).
 
 | Option             | Type                                    | Description                                                                                                                                                              |

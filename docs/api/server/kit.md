@@ -42,10 +42,10 @@ Sets up an app. Only `entities` and `database` are required.
 
 ### Jobs
 
-| Option     | Type                                             | Description                                                                                                      |
-| ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `sessions` | `number \| string \| false`                      | How often to delete the expired sessions.                                                                        |
-| `assets`   | `number \| string \| false \| { every, after? }` | How often to run [`assets.runJobs()`](storage.md#asset-jobs). `after` gets the result of each run, for the logs. |
+| Option     | Type                        | Description                                                                                           |
+| ---------- | --------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `sessions` | `number \| string \| false` | How often to delete the expired sessions.                                                             |
+| `assets`   | `number \| string \| false` | How often to run [`assets.runJobs()`](storage.md#asset-jobs). The logger gets the result of each run. |
 
 The intervals are in milliseconds, or durations such as `'1h'`. By default, the
 jobs don't run.

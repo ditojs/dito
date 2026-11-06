@@ -604,8 +604,9 @@ Returns the `adapter` of [`createApi()`](api.md#adapter):
   action throws, the transaction rolls back.
 - `toHttpError()` maps MikroORM's errors, see
   [Database errors](#database-errors).
-- `getKysely()` returns a Kysely on the ORM's pool, outside of any transaction.
-  Sessions, credentials and jobs use it. `orm.em.getKysely()` joins the current
+- `getKysely(c?)` returns a Kysely on the ORM's pool, outside of any transaction.
+  Sessions, credentials and jobs use it. With the `c` of a request, it runs in
+  the request's transaction. `orm.em.getKysely()` joins the current
   transaction instead.
 
 ## guardEntity()
@@ -646,8 +647,8 @@ the transaction's entity manager. It is the same as `em` of the handler's
 context, and `c.var.em`.
 
 It throws outside of a request, and in the `middleware` of `createApi()`, which
-runs before the API sets `c.var.em`. Jobs and scripts have no request, and use a
-fork of `orm.em`.
+runs before the API sets `c.var.em`. Jobs and scripts have no request, so they
+call `orm.em.fork()` themselves.
 
 `createApi()` and `createAdmin()` run Hono's `contextStorage()`, which `useEm()`
 needs.

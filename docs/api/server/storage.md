@@ -20,7 +20,8 @@ Storages keep files on disk or in S3, and handle uploads.
 - Jobs scan the data to find the files that no row references.
 - The package reads its tables through [Kysely](https://kysely.dev).
 
-The peer dependencies are `kysely`, `@ditojs/server` and `hono`. S3 storages
+The peer dependencies are `kysely`, `@ditojs/mikro`, `@ditojs/server`,
+`@mikro-orm/core` and `hono`. S3 storages
 also need `@aws-lite/client` and `@aws-lite/s3`, and `serveStorage()` needs
 `@hono/node-server`. See [Storages and files](../../guide/server/storage.md) in
 the guide.

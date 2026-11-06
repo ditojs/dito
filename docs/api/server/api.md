@@ -68,7 +68,7 @@ other paths.
 | `middleware`  | `Middleware \| Middleware[]`                       | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.em` and `c.var.user`.                                                             |
 | `adapter`     | [`Adapter`](#adapter)                              | The database: [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined, and no action runs in a transaction.                                              |
 | `getUser`     | `({ c }) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                 |
-| `onError`     | `({ error, c }) => void \| Promise<void>`          | Gets each error with a status of 500 or above, for the app's logs, not the response. By default, it logs through `c.var.logger`, else through `console`. See [Errors](errors.md).        |
+| `onError`     | `({ error, c }) => void \| Promise<void>`          | Gets each error with a status of 500 or above, for the app's logs, not the response. By default, it logs through `console`. See [Errors](errors.md).                                     |
 
 ### The request
 

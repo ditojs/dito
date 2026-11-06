@@ -420,7 +420,7 @@ describe('sessions', () => {
   it('serves self', async () => {
     const { api } = setup({ db, source: admins })
     const client = createClient(api.fetch)
-    expect((await client.get('/admins/self')).data).toBe(undefined)
+    expect((await client.get('/admins/self')).status).toBe(204)
     await client.post('/admins/login', { username: 'ada', password: 'secret' })
     expect((await client.get('/admins/self')).data).toEqual({
       id: 1,

@@ -161,11 +161,7 @@ all cases.
 ```js
 // In `createApp()`:
 jobs: {
-  assets: {
-    every: '1h',
-    after: ({ scan, released }) =>
-      app.logger.info({ scan, released }, 'Asset jobs')
-  }
+  assets: '1h'
 }
 ```
 
