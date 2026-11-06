@@ -129,8 +129,8 @@ export class SchemaGraph {
                   createTemporaryId()
               }
             } else if (isTemporaryId(id)) {
-              // The server wants '#id' / '#ref' pairs, unique
-              // per reference group, as they reference across the full graph:
+              // The server wants '#id' / '#ref' pairs, unique per reference
+              // group, as they reference across the full graph:
               const temporaryId = id.slice(1)
               value[source ? '#id' : '#ref'] = reference
                 ? `${reference}-${temporaryId}`

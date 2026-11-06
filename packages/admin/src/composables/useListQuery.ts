@@ -2,6 +2,7 @@ import { computed, markRaw, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { asArray, isString } from '@ditojs/utils'
 import { ListQuery } from '../utils/ListQuery.js'
+import { formatFilter } from '../utils/filter.js'
 import { getNamedSchemas } from '../utils/schema/lookup.js'
 import { isListSource } from '../utils/schema/structure.js'
 import type { Schema } from '../utils/types.ts'
@@ -123,7 +124,7 @@ export function useListQuery(
       const filters = [
         ...asArray(filter),
         ...Object.entries(getScope(scope)?.filter ?? {}).map(
-          ([name, value]) => `${name}:${JSON.stringify(value)}`
+          ([name, value]) => formatFilter(name, [value])
         )
       ]
       return {

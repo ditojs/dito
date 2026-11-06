@@ -21,10 +21,9 @@ export class ApiError extends Error {
 
 // Errors of responses without a message have none, e.g. of
 // `{ type: 'ServerError' }`:
-/** @returns {string | null} */
 export function getErrorMessage(error) {
   const message = error?.message
-  return isString(message) && message ? message : null
+  return isString(message) && message || null
 }
 
 export async function request(api, {
@@ -115,11 +114,11 @@ function omitContentType(headers) {
 
 // Only requests to the API receive its headers and, with CORS, its credentials:
 function getFetchOptions(api, url) {
-  const isApi = isApiUrl(api, url)
+  const isApiRequest = isApiUrl(api, url)
   return {
-    headers: { ...(isApi && api.headers) },
+    headers: { ...(isApiRequest && api.headers) },
     credentials:
-      isApi && api.cors?.credentials
+      isApiRequest && api.cors?.credentials
         ? 'include'
         : 'same-origin'
   }

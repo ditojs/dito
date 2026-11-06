@@ -5,9 +5,7 @@ import type { InlineConfig } from 'vite'
 import { assignDeeply } from '@ditojs/utils'
 import { normalizeBase } from '../server/normalizeBase.ts'
 
-// The Vite config of the admin, for its build and for `createAdmin()` in
-// development. The app's own config file can call it to build the admin, and
-// pass the result to `createAdmin()` as `vite`.
+// The admin's Vite config, to build it and to develop it with `createAdmin()`.
 
 export interface AdminViteOptions {
   // The admin's sources, with `index.html` and `views/`.
@@ -33,7 +31,7 @@ export async function defineAdminViteConfig(
   const base = `${normalizeBase(options.base)}/`
   // The views as the ids of Vite name them: by their real path, with forward
   // slashes also on Windows.
-  const views = path
+  const viewsDirectory = path
     .join(fs.realpathSync(root), 'views', path.sep)
     .replaceAll(path.sep, '/')
   const linkedSources = isDevelopment ? getLinkedSources(root) : {}
@@ -48,7 +46,7 @@ export async function defineAdminViteConfig(
       plugins: [
         createVuePlugin(),
         {
-          // Loads the `dito` object from `dito.js` before the main module.
+          // Load the `dito` object from `dito.js` before the main module.
           name: 'inject-dito-object',
           transformIndexHtml: {
             order: 'post',
@@ -61,8 +59,7 @@ export async function defineAdminViteConfig(
           }
         },
         {
-          // Resolves linked Dito.js packages to their sources, see
-          // `getLinkedSources()`.
+          // Resolve linked Dito.js packages to their sources:
           name: 'resolve-linked-sources',
           enforce: 'pre',
           resolveId: (id: string) => linkedSources[id],
@@ -90,11 +87,9 @@ export async function defineAdminViteConfig(
             chunkSizeWarningLimit: 1000,
             rolldownOptions: {
               output: {
-                // The views get their own chunk below `views/`, which
-                // `authorize` of `createAdmin()` protects. The chunk leaves out
-                // the modules that the views import, so the login, which loads
-                // first, doesn't need it. That needs the strict execution
-                // order.
+                // Give the views a chunk below `views/` for `authorize` of
+                // `createAdmin()`, without their imports, so that the login
+                // doesn't need it. This needs the strict execution order.
                 chunkFileNames: ({ name }: { name: string }) =>
                   `${name === 'views' ? 'views' : 'assets'}/[name]-[hash].js`,
                 strictExecutionOrder: true,
@@ -102,7 +97,7 @@ export async function defineAdminViteConfig(
                   groups: [
                     {
                       name: 'views',
-                      test: (id: string) => id.startsWith(views),
+                      test: (id: string) => id.startsWith(viewsDirectory),
                       includeDependenciesRecursively: false
                     }
                   ]
@@ -145,20 +140,20 @@ export async function defineAdminViteConfig(
 
 const emptyModule = '\0dito-empty-module'
 
-// When the app links Dito.js from a checkout, this resolves its admin and UI
-// to their sources, also for the app's own imports: their builds would be
+// When the app links Dito.js from a checkout, resolve its admin and UI to
+// their sources, also for the app's own imports: their builds would be
 // stale, and second copies next to the sources. The source components bring
 // their styles.
 function getLinkedSources(root: string): Record<string, string> {
-  const admin = createRequire(path.join(root, 'index.js')).resolve(
+  const adminSource = createRequire(path.join(root, 'index.js')).resolve(
     '@ditojs/admin/src'
   )
   // Installed packages resolve inside `node_modules`, also in pnpm's store.
-  return admin.split(path.sep).includes('node_modules')
+  return adminSource.split(path.sep).includes('node_modules')
     ? {}
     : {
-        '@ditojs/admin': admin,
-        '@ditojs/ui': createRequire(admin).resolve('@ditojs/ui/src'),
+        '@ditojs/admin': adminSource,
+        '@ditojs/ui': createRequire(adminSource).resolve('@ditojs/ui/src'),
         '@ditojs/admin/style.css': emptyModule,
         '@ditojs/ui/style.css': emptyModule
       }

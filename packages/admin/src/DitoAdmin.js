@@ -43,7 +43,7 @@ export default class DitoAdmin {
     // Defaults for the schemas of component types, nested per type, as objects
     // or functions that return them or modify the schema directly:
     api.defaults ||= {}
-    api.users = getUsersResources(api.users?.path)
+    api.users = createUsersResource(api.users?.path)
 
     api.headers = {
       'Content-Type': 'application/json',
@@ -124,15 +124,19 @@ export default class DitoAdmin {
 
 // The resources of the routes of `defineUserActions()` on the server, under
 // `path`, such as 'admins'.
-function getUsersResources(path) {
+function createUsersResource(path) {
   const users = { type: 'collection', path }
-  const getResource = (path, method) => ({ path, method, parent: users })
-  users.login = getResource('login', 'post')
-  users.logout = getResource('logout', 'post')
+  const createChild = (childPath, method) => ({
+    path: childPath,
+    method,
+    parent: users
+  })
+  users.login = createChild('login', 'post')
+  users.logout = createChild('logout', 'post')
   // The logged-in user, which the account settings load and patch:
-  users.self = getResource('self')
+  users.self = createChild('self')
   // What the users API offers, which the admin loads before the login:
-  users.features = getResource('features')
+  users.features = createChild('features')
   for (const name of [
     'password',
     'passwordReset',
@@ -144,11 +148,11 @@ function getUsersResources(path) {
     'totpConfirm',
     'confirmAccess'
   ]) {
-    users[name] = getResource(hyphenate(name), 'post')
+    users[name] = createChild(hyphenate(name), 'post')
   }
   // The passkeys and the TOTP of the logged-in user, which the security dialog
   // manages:
-  users.passkeys = { ...getResource('passkeys'), type: 'collection' }
-  users.totp = getResource('totp')
+  users.passkeys = { ...createChild('passkeys'), type: 'collection' }
+  users.totp = createChild('totp')
   return users
 }

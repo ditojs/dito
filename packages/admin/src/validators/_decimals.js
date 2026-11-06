@@ -1,16 +1,5 @@
 import { isNumber } from '@ditojs/utils'
 
-// Format numbers with all their decimals and without exponent, as
-// `String(1e-7)` is `'1e-7'`:
-const numberFormat = new Intl.NumberFormat('en', {
-  maximumFractionDigits: 100,
-  useGrouping: false
-})
-
-function hasUnlimitedDecimals(decimals) {
-  return decimals == null || decimals === '*'
-}
-
 export const decimals = {
   validate: (value, decimals) => {
     // `decimals: 0` allows no decimal point at all, only integers:
@@ -33,4 +22,15 @@ export const decimals = {
         : decimals === 1
           ? 'must be a number with at most one decimal place'
           : 'must be a whole number'
+}
+
+// Format numbers with all their decimals and without exponent, as
+// `String(1e-7)` is `'1e-7'`:
+const numberFormat = new Intl.NumberFormat('en', {
+  maximumFractionDigits: 100,
+  useGrouping: false
+})
+
+function hasUnlimitedDecimals(decimals) {
+  return decimals == null || decimals === '*'
 }

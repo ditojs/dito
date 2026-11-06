@@ -11,12 +11,7 @@ import { asArray, assignDeeply, isArray, isString } from '@ditojs/utils'
 import { isAuthorized, type Authorize, type User } from '@ditojs/server'
 import { normalizeBase } from './normalizeBase.ts'
 
-// Serves the Dito admin as a Hono app, which the host routes at `base` with
-// `app.route(base, admin)`. It serves the built files from `dist`, or with a
-// `vite` config the sources through Vite, which needs the Node server of
-// `@hono/node-server`. `middleware`, `getUser` and `authorize` work as in
-// `createApi()`, and protect the files below `views/`. Vite's own urls, such as
-// `/@fs/`, stay open, so only use `vite` in development.
+// The admin as a Hono app, for the host to mount with `app.route(base, admin)`.
 
 export interface AdminOptions {
   // The path the admin is served at, such as `/admin`.
@@ -33,14 +28,17 @@ export interface AdminOptions {
   // The signed-in user of the request, or null. `authorize` reads it as
   // `c.var.user`.
   getUser?: (context: { c: Context }) => User | null | Promise<User | null>
-  // Who may load the admin's views: `true` for anyone, a role or a list of
-  // roles, of which the user needs one, or a function of `c`. Denied requests
-  // get 401, or 403 with a user. Without it, anyone may.
+  // Who may load the files below `views/`, as in `createApi()`: `true` for
+  // anyone, a role or a list of roles, of which the user needs one, or a
+  // function of `c`. Denied requests get 401, or 403 with a user. Without it,
+  // anyone may.
   authorize?: Authorize
   // The Vite config of development, or the path of its file, such as one
   // that exports `defineAdminViteConfig()` from `@ditojs/admin/vite`.
-  // With it, Vite serves the admin's sources. The HMR websocket listens on
-  // its `server.port`, by default a free one.
+  // With it, Vite serves the admin's sources, which needs the Node server of
+  // `@hono/node-server`. Vite's own urls, such as `/@fs/`, stay open, so only
+  // use it in development. The HMR websocket listens on its `server.port`, by
+  // default a free one.
   vite?: InlineConfig | string
 }
 
@@ -54,24 +52,36 @@ export type AdminServer = Hono<AdminEnv> & {
 }
 
 export function createAdmin(options: AdminOptions): AdminServer {
-  const { middleware, getUser, authorize } = options
+  const { middleware, getUser, authorize, api = {}, settings = {} } = options
   const base = normalizeBase(options.base)
   const isProtected = authorize !== undefined && authorize !== true
   // Without `getUser`, there is no user whose roles could match.
   if (!getUser && (isString(authorize) || isArray(authorize))) {
-    throw new Error('Unable to check the roles of the admin without `getUser`')
+    throw new Error('Unable to check the roles of the admin without `getUser`.')
   }
+  const getFilePath = (pathname: string) => pathname.slice(base.length)
   const app = new Hono<AdminEnv>()
   let close = async () => {}
 
-  app.get('/dito.js', getConfigScript(base, options))
+  const dito = { base, api, settings }
+  const script = `window.dito = ${JSON.stringify(dito, null, 2)}`
+  app.get(
+    '/dito.js',
+    () =>
+      new Response(script, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Content-Type': 'text/javascript; charset=utf-8'
+        }
+      })
+  )
   if (isProtected) {
     // Case-insensitive file systems serve the views in any case, and Windows
     // also as `views.` or `views::$INDEX_ALLOCATION`, which the route of
     // `authorize` doesn't match.
     app.use('*', async (c, next) => {
-      const file = c.req.path.slice(base.length)
-      if (viewsPath.test(file) && !file.startsWith('/views/')) {
+      const file = getFilePath(c.req.path)
+      if (viewsPathPattern.test(file) && !file.startsWith('/views/')) {
         return c.text('Not Found', 404)
       }
       await next()
@@ -102,22 +112,21 @@ export function createAdmin(options: AdminOptions): AdminServer {
     }
   } else {
     if (!options.dist) {
-      throw new Error('Unable to serve the admin without `vite` or `dist`')
+      throw new Error('Unable to serve the admin without `vite` or `dist`.')
     }
     const root = path.resolve(options.dist)
     app.get(
       '*',
       async (c, next) => {
         await next()
-        // The build's files never change, as their names hold their hash.
-        // The others are checked again on each load. `onFound` of
-        // `serveStatic()` can't set headers, as it runs after the response is
-        // created. Shared caches don't keep protected views.
-        const file = c.req.path.slice(base.length)
+        // Hashed build files never change, and shared caches don't keep
+        // protected views. Set it here, as `onFound` of `serveStatic()` runs
+        // too late for headers.
+        const file = getFilePath(c.req.path)
         c.header(
           'Cache-Control',
-          c.res.status === 200 && buildFile.test(file)
-            ? isProtected && viewsPath.test(file)
+          c.res.status === 200 && buildFilePattern.test(file)
+            ? isProtected && viewsPathPattern.test(file)
               ? 'private, max-age=31536000, immutable'
               : 'public, max-age=31536000, immutable'
             : 'no-cache'
@@ -128,7 +137,7 @@ export function createAdmin(options: AdminOptions): AdminServer {
         // Paths of other files than scripts and styles are routes of the
         // admin, unless the file exists.
         rewriteRequestPath: pathname => {
-          const file = pathname.slice(base.length)
+          const file = getFilePath(pathname)
           const stats = fs.statSync(path.join(root, file), {
             throwIfNoEntry: false
           })
@@ -143,9 +152,9 @@ export function createAdmin(options: AdminOptions): AdminServer {
   return Object.assign(app, { close })
 }
 
-const buildFile = /^\/(assets|views)\/[^/]+\.\w+$/
+const buildFilePattern = /^\/(assets|views)\/[^/]+\.\w+$/
 // With the `u` flag, it also matches the `ſ` that file systems read as `s`.
-const viewsPath = /^\/views[/.:]/iu
+const viewsPathPattern = /^\/views[/.:]/iu
 
 async function startVite(
   configOrFile: InlineConfig | string
@@ -169,7 +178,7 @@ async function startVite(
     assignDeeply(
       {
         server: {
-          // Watches the Dito.js packages, although they're in `node_modules`.
+          // Watch the Dito.js packages, although they're in `node_modules`.
           watch: { ignored: ['!**/node_modules/@ditojs/**'] }
         }
       },
@@ -195,17 +204,4 @@ function getFreePort() {
       server.close(() => resolve(port))
     })
   })
-}
-
-function getConfigScript(base: string, options: AdminOptions) {
-  const { api = {}, settings = {} } = options
-  const dito = { base, api, settings }
-  const code = `window.dito = ${JSON.stringify(dito, null, 2)}`
-  return () =>
-    new Response(code, {
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Content-Type': 'text/javascript; charset=utf-8'
-      }
-    })
 }

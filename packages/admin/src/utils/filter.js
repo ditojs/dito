@@ -133,24 +133,23 @@ function getDataName(filterName) {
   return `$${filterName}`
 }
 
-// The server keys the validation errors of filters by filter name and
-// argument index, e.g. `title/1`, while the panel keys the filter data by data
-// name and component, `$title/text`. The server flattens the array of the last
-// component, so arguments past that component belong to its array:
-export function getFiltersDataErrors(errors, schema = null) {
+// Map the server's filter errors, keyed by filter name and argument index
+// (`title/1`), to the panel's data paths (`$title/text`):
+export function getFiltersDataErrors(errors, schema) {
   const dataErrors = {}
   for (const [dataPath, errs] of Object.entries(errors)) {
     const [token, key, ...rest] = parseDataPath(normalizeDataPath(dataPath))
     const dataName =
       !token || token.startsWith('$') ? token : getDataName(token)
     const keys = Object.keys(getComponentsForFilter(schema, dataName) ?? {})
+    // The server flattens the array of the last component, so arguments past
+    // it belong to that component:
+    const componentKey = /^\d+$/.test(key)
+      ? (keys[key] ?? keys.at(-1) ?? key)
+      : key
     const filtersDataPath = [
       dataName,
-      ...(
-        key !== undefined
-          ? [/^\d+$/.test(key) ? (keys[key] ?? keys.at(-1) ?? key) : key]
-          : []
-      ),
+      ...(componentKey !== undefined ? [componentKey] : []),
       ...rest
     ].join('/')
     dataErrors[filtersDataPath] = [
@@ -208,7 +207,7 @@ function createFiltersComponents(filters) {
 }
 
 function getComponentsForFilter(schema, dataName) {
-  const component = schema?.fields?.[dataName]
+  const component = schema.fields[dataName]
   return component?.form?.fields
 }
 
@@ -223,17 +222,16 @@ function formatFiltersData(schema, data) {
       )
       // Only apply filter if there are some arguments that aren't null:
       if (args.flat().some(value => value !== null)) {
-        filters.push(
-          `${
-            getFilterName(dataName)
-          }:${
-            args.map(JSON.stringify).join(',')
-          }`
-        )
+        filters.push(formatFilter(getFilterName(dataName), args))
       }
     }
   }
   return filters
+}
+
+// The format of the server's `filter` query, `title:"contains","Sea"`:
+export function formatFilter(name, args) {
+  return `${name}:${args.map(JSON.stringify).join(',')}`
 }
 
 function parseFiltersData(schema, query) {

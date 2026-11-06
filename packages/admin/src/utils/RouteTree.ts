@@ -248,7 +248,7 @@ export function getSourcePath(
   const segments = parseDataPath(componentPath)
   const name = segments.pop()
   return [
-    ...segments.map((segment: string) => hyphenate(segment)),
+    ...segments.map(hyphenate),
     getSchemaPath(schema, name)
   ].join('/')
 }
@@ -356,10 +356,6 @@ export function getItemKey(
     : ((item && getItemId(schema, item)) ?? String(index))
 }
 
-function getChildPath(schema: Schema) {
-  return getSchemaPath(schema, schema.name)
-}
-
 // Open the form of the item that `path` leads to below the source, the
 // deepest one that has a form, also among the children of trees, e.g.
 // `books/0` or `pages/0/subpages/1`:
@@ -420,11 +416,11 @@ export function claimSourceRoute(
       child &&
       param !== 'create' &&
       routesChildren(schema) &&
-      segments[0] === getChildPath(child)
+      segments[0] === getSchemaPath(child, child.name)
     ) {
       segments.shift()
       schema = child
-      sourcePath = `${formPath}/${getChildPath(child)}`
+      sourcePath = `${formPath}/${getSchemaPath(child, child.name)}`
       claimKey = appendDataPath(claimKey, child.name)
       const { data, key } = itemLocation
       location = {
@@ -474,7 +470,7 @@ export function getSourceFormRoute(
       segments[0] === child.name
     ) {
       segments.shift()
-      path += `/${getChildPath(child)}`
+      path += `/${getSchemaPath(child, child.name)}`
       schema = child
       value = item[child.name]
     } else {
@@ -515,7 +511,7 @@ function findItemPath(
               ? find(
                   child,
                   entry[child.name],
-                  `${formPath}/${getChildPath(child)}`,
+                  `${formPath}/${getSchemaPath(child, child.name)}`,
                   isTransient
                 )
               : null

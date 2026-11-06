@@ -418,13 +418,17 @@ describe('getFiltersDataErrors()', () => {
   })
 
   it('keys the errors of filters by their data names', () => {
+    const { panel } = createPanel()
     const titleErrors = [{ message: 'must be longer' }]
     const yearErrors = [{ message: 'must be a number' }]
     expect(
-      getFiltersDataErrors({
-        'title/text': titleErrors,
-        'year.from': yearErrors
-      })
+      getFiltersDataErrors(
+        {
+          'title/text': titleErrors,
+          'year.from': yearErrors
+        },
+        panel
+      )
     ).toEqual({
       '$title/text': titleErrors,
       '$year/from': yearErrors
@@ -432,8 +436,9 @@ describe('getFiltersDataErrors()', () => {
   })
 
   it('keeps paths that already start with a data name', () => {
+    const { panel } = createPanel()
     const errors = [{ message: 'must be shorter' }]
-    expect(getFiltersDataErrors({ '$title.text': errors })).toEqual({
+    expect(getFiltersDataErrors({ '$title.text': errors }, panel)).toEqual({
       '$title/text': errors
     })
   })
