@@ -2830,14 +2830,6 @@ describe('createMikroAdapter()', () => {
       await request(createInfoApi(createMikroAdapter(orm)), 'GET', '/infos')
       expect(calls).toEqual([])
     })
-
-    it('returns the function that removes the wrapper', async () => {
-      const adapter = createMikroAdapter(orm)
-      const unwrap = adapter.wrapEntity(Info, createWrapper('removed'))
-      unwrap()
-      await request(createInfoApi(adapter), 'GET', '/infos')
-      expect(calls).toEqual([])
-    })
   })
 
   it('gives each request a fork of the entity manager', async () => {

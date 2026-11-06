@@ -163,21 +163,6 @@ describe('tracking the files of model controllers', () => {
     expect(file).toMatchObject({ name: 'front.txt', size: 5 })
   })
 
-  it('replaces the tracking of an earlier call on the adapter', async () => {
-    const wrapEntity = vi.spyOn(adapter, 'wrapEntity')
-    const storages = createStorages({
-      covers: { type: 'disk', path: basePath, url: '/covers/' }
-    })
-    const unwrap = vi.fn()
-    wrapEntity.mockReturnValueOnce(unwrap)
-    const options = { adapter, paths: getAssetPaths([Book]), storages }
-    createAssets(options)
-    expect(unwrap).not.toHaveBeenCalled()
-    createAssets(options)
-    expect(unwrap).toHaveBeenCalledOnce()
-    wrapEntity.mockRestore()
-  })
-
   it('throws in `defineUploads()` for tables without paths', () => {
     expect(() => assets.defineUploads('shelf')).toThrow(
       `No asset paths for table 'shelf'`

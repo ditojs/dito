@@ -36,7 +36,7 @@ import { respond } from './respond.ts'
 declare module 'hono' {
   interface ContextVariableMap {
     // The wrappers of the adapter, from its `connect()`.
-    wrappersByEntity: Map<object, Set<EntityWrapper>>
+    wrappersByEntity: Map<object, EntityWrapper[]>
   }
 }
 
@@ -165,7 +165,7 @@ export function defineModelController<T extends object>(
 // Read the wrappers per request, as they also reach the controllers that were
 // defined before them.
 function getWrappers(c: DitoContext, entity: EntityClass<any>) {
-  return [...(c.var.wrappersByEntity.get(entity) ?? [])]
+  return c.var.wrappersByEntity.get(entity) ?? []
 }
 
 function hasHandler(actions: Actions = {}, key: string) {

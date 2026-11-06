@@ -40,10 +40,6 @@ export interface DefineUploadsOptions {
   uploads?: AssetUpload[]
 }
 
-// The functions that remove the wrappers of the last `createAssets()` of each
-// adapter.
-const unwrapsByAdapter = new WeakMap<Adapter, (() => void)[]>()
-
 export function createAssets({
   adapter,
   paths,
@@ -60,22 +56,16 @@ export function createAssets({
   // of a write commit with its transaction. The other methods run outside of
   // the requests' transactions.
   const { getKysely } = adapter
-  // All model controllers of the entities track the files of their writes. A
-  // repeated call on an adapter replaces the wrappers:
-  for (const unwrap of unwrapsByAdapter.get(adapter) ?? []) unwrap()
+  // All model controllers of the entities track the files of their writes:
   const pathsByEntity = Map.groupBy(normalizedPaths, path => path.entity)
-  const unwraps = []
   for (const [entity, paths] of pathsByEntity) {
-    if (entity && adapter.wrapEntity) {
-      unwraps.push(
-        adapter.wrapEntity(
-          entity,
-          defineAssetWrites({ paths, storages, getKysely })
-        )
+    if (entity) {
+      adapter.wrapEntity?.(
+        entity,
+        defineAssetWrites({ paths, storages, getKysely })
       )
     }
   }
-  unwrapsByAdapter.set(adapter, unwraps)
 
   return {
     paths,

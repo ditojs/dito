@@ -24,7 +24,7 @@ export function createMikroAdapter(orm: Orm): MikroAdapter {
       'Unable to use an ORM without the config of `defineMikroConfig()`'
     )
   }
-  const wrappersByEntity = new Map<object, Set<EntityWrapper>>()
+  const wrappersByEntity = new Map<object, EntityWrapper[]>()
   const getEm: MikroAdapter['getEm'] = c => c?.var.em ?? orm.em.fork()
 
   return {
@@ -54,9 +54,8 @@ export function createMikroAdapter(orm: Orm): MikroAdapter {
     // the request's transaction.
     getKysely: c => getEm(c).getKysely(),
     wrapEntity(entity, wrapper) {
-      const wrappers = wrappersByEntity.get(entity) ?? new Set()
-      wrappersByEntity.set(entity, wrappers.add(wrapper))
-      return () => wrappers.delete(wrapper)
+      const wrappers = wrappersByEntity.get(entity) ?? []
+      wrappersByEntity.set(entity, [...wrappers, wrapper])
     }
   }
 }
