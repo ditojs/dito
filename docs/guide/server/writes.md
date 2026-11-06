@@ -42,10 +42,11 @@ They keep what a client may write. They check what Postgres can't check well:
   `onCreate(() => [])` is their default.
 - They check required columns on create, and `null` in columns that aren't
   nullable.
-- They check the JSON types of scalars, integers, dates and enums. Without this,
-  `em.create()` would turn a string such as `"false"` into `true` for a boolean.
-  `em.assign()` would throw at the first wrong value, without its path in the
-  body.
+- They check the JSON types of scalars, integers, dates and enums, and of the
+  items of array columns. Without this, `em.create()` would turn a string such
+  as `"false"` into `true` for a boolean. `em.assign()` would throw at the first
+  wrong value, without its path in the body.
+- Decimals in string mode take numbers and numeric strings.
 - They check the `length` of strings, in characters.
 - They check that decimals have no more integer digits than their `precision`
   and `scale` leave.
@@ -212,7 +213,7 @@ here `book`. It works like the id of other owned rows:
 - Each pivot row requires its key, the id of a stored row. `#ref` isn't allowed
   there.
 - On a PATCH, a pivot row whose key the record links updates that row. Other
-  pivot rows are new, and need their required columns.
+  pivot rows are new, and need their required columns. They can't hold refs.
 - The array is the full set. Pivot rows missing from it are deleted.
 - Two pivot rows with the same key respond with 400 at the second one.
 - A body that writes both `bookLinks` and `books` responds with 400 at `books`.
@@ -259,7 +260,8 @@ A body can link rows that don't exist yet. A new row carries `#id`, a key that
 the client chooses. Other places in the body link to it with `{ '#ref': key }`.
 
 - A ref can stand for a relation to one row, or for an item of a to-many
-  relation of any kind.
+  relation. Owned relations hold their rows themselves, and a ref as an owned
+  row responds with 400 at its `#ref`.
 - A ref may point to a row before or after it in the body.
 - Only new nested rows carry `#id`. A link to a row that the database already
   holds is its id.

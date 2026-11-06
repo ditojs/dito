@@ -9,7 +9,9 @@ import {
   parsePlainDate
 } from '@ditojs/utils'
 import {
+  ArrayType,
   DecimalType,
+  EnumArrayType,
   ReferenceKind,
   wrap,
   type EntityMetadata,
@@ -152,6 +154,11 @@ class Run {
     })
   }
 
+  invalidOption(items: unknown[], path: Path) {
+    const options = items.map(item => JSON.stringify(item)).join('|')
+    this.invalidValue(`Invalid option: expected one of ${options}`, path)
+  }
+
   tooBig(expected: string, path: Path) {
     this.issues.push({
       path,
@@ -273,20 +280,18 @@ class Run {
       }
       return isOwned(prop) ? items : items.filter(item => item !== undefined)
     }
-    if (isOwned(prop)) {
-      // Null removes the owned row.
-      return value === null
-        ? null
-        : this.cleanOwnedRow(
-            prop,
-            value,
-            path,
-            isNew,
-            entity => (row[prop.name] = entity)
-          )
-    }
     if (value === null) {
+      // Null removes an owned row.
       return prop.nullable ? null : this.invalidType(getType(prop), null, path)
+    }
+    if (isOwned(prop)) {
+      return this.cleanOwnedRow(
+        prop,
+        value,
+        path,
+        isNew,
+        entity => (row[prop.name] = entity)
+      )
     }
     return isOwningToOne(prop)
       ? this.cleanId(row, prop, value, path)
@@ -304,6 +309,12 @@ class Run {
   ) {
     const target = prop.targetMeta!
     const key = getRowKey(prop)
+    if (isPlainObject(value) && '#ref' in value) {
+      return this.invalidValue('is not allowed in owned rows', [
+        ...path,
+        '#ref'
+      ])
+    }
     const id = isPlainObject(value) ? value[key.name] : undefined
     const idPath = [...path, key.name]
     // A pivot row is keyed by a relation to a stored row, which it requires.
@@ -355,17 +366,16 @@ class Run {
   // column declares, which Postgres would refuse without a field. Postgres
   // checks the ranges of numbers.
   cleanScalar(prop: EntityProperty, value: unknown, path: Path) {
+    if (prop.customType instanceof ArrayType) {
+      return this.cleanArray(prop, value, path)
+    }
     const type = getType(prop)
     const { items, length, precision, scale = 0 } = prop
     if (scalarChecks[type]?.(value) === false) {
       return this.invalidType(type, value, path)
     }
-    if (prop.enum && !prop.array && items && !items.includes(value as never)) {
-      const options = items.map(item => JSON.stringify(item)).join('|')
-      return this.invalidValue(
-        `Invalid option: expected one of ${options}`,
-        path
-      )
+    if (prop.enum && items && !items.includes(value as never)) {
+      return this.invalidOption(items, path)
     }
     if (prop.customType instanceof DecimalType && precision) {
       // Postgres rounds the fraction to the scale, but refuses more integer
@@ -395,6 +405,27 @@ class Run {
     return (type === 'date' && parsePlainDate(value as string)) || value
   }
 
+  // Checks the items of an array column by the type of its column, such as
+  // `int[]`, and the items of an enum array.
+  cleanArray(prop: EntityProperty, value: unknown, path: Path) {
+    if (!isArray(value)) return this.invalidType('array', value, path)
+    const type = getItemType(prop)
+    const { items } = prop
+    value.forEach((item, index) => {
+      const itemPath = [...path, index]
+      if (!scalarChecks[type]!(item)) {
+        this.invalidType(type, item, itemPath)
+      } else if (
+        prop.customType instanceof EnumArrayType &&
+        items &&
+        !items.includes(item as never)
+      ) {
+        this.invalidOption(items, itemPath)
+      }
+    })
+    return value
+  }
+
   // Runs the schema of a custom type, such as that of `defineJsonType()`, on
   // the value as sent. Its output isn't written.
   async checkSchema(schema: z.ZodType, value: unknown, path: Path) {
@@ -416,21 +447,46 @@ const scalarChecks: Record<string, (value: unknown) => boolean> = {
   number: Number.isFinite,
   int: Number.isInteger,
   boolean: isBoolean,
-  date: value => isString(value) && !isNaN(Date.parse(value))
+  date: value => isString(value) && !isNaN(Date.parse(value)),
+  // Decimals in string mode take numbers too.
+  decimal: value => (
+    Number.isFinite(value) ||
+    (isString(value) && value.trim() !== '' && Number.isFinite(Number(value)))
+  )
 }
 
 // The type of a property, as `scalarChecks` and messages name it.
 const getType = (prop: EntityProperty) =>
   isOwningToOne(prop)
     ? 'id'
-    : prop.runtimeType === 'Date'
-      ? 'date'
-      : (
-            prop.runtimeType === 'number' &&
-            (prop.columnTypes?.[0] ?? '') in integerBits
-          )
-        ? 'int'
-        : prop.runtimeType
+    : isOwned(prop)
+      ? 'object'
+      : prop.runtimeType === 'Date'
+        ? 'date'
+        : (
+              prop.customType instanceof DecimalType &&
+              prop.runtimeType === 'string'
+            )
+          ? 'decimal'
+          : (
+                prop.runtimeType === 'number' &&
+                (prop.columnTypes?.[0] ?? '') in integerBits
+              )
+            ? 'int'
+            : prop.runtimeType
+
+// The type of the items of an array column, by the type of its column.
+// MikroORM gives all array columns the type `string[]`.
+const getItemType = (prop: EntityProperty) => {
+  const column = (prop.columnTypes?.[0] ?? '').replace(/(\(.*\))?\[\]$/, '')
+  return column in integerBits
+    ? 'int'
+    : /^(numeric|decimal|real|double|float)/.test(column)
+      ? 'number'
+      : /^bool/.test(column)
+        ? 'boolean'
+        : 'string'
+}
 
 // Whether a client may write the property. Of the primary keys, only the
 // relations of composite keys are written, as in pivot rows. `onCreate` fills
@@ -529,6 +585,15 @@ function matchOwnedRows(meta: EntityMetadata, run: Run, record: object) {
             if (child[required.name] === undefined) {
               const type = getType(required)
               run.invalidType(type, undefined, [...childPath, required.name])
+            }
+          }
+          // `em.assign()` creates the pair, which `setRefs()` can't reach.
+          for (const ref of run.refs) {
+            if (ref.row === child) {
+              run.invalidValue(
+                'is not allowed to reference a new row',
+                ref.path
+              )
             }
           }
         } else {

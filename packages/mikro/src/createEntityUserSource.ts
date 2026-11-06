@@ -44,7 +44,8 @@ export function createEntityUserSource<U extends { id: number | string }>(
     const root = isFunction(em) ? em() : em
     if (!root) {
       throw new Error(
-        `createEntityUserSource(${entity.name}) needs \`em\` outside of the API`
+        `Unable to load the users of '${entity.name}' outside of the API ` +
+        'without `em`'
       )
     }
     return root.fork()

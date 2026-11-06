@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { StringType, defineEntity, p } from '@mikro-orm/core'
+import { ReferenceKind, StringType, defineEntity, p } from '@mikro-orm/core'
 import { assignRecord, createRecord } from './index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Book, entities } from './test/entities.ts'
@@ -47,16 +47,53 @@ const SampleSchema = defineEntity({
     state: p.enum(['draft', 'live']).nullable(),
     sync: p.string().type(new SyncType()).nullable(),
     async: p.string().type(new AsyncType()).nullable(),
-    data: p.blob().nullable()
+    data: p.blob().nullable(),
+    tags: p.array().nullable(),
+    sizes: p.integer().array().nullable(),
+    states: p.enum(['draft', 'live']).array().nullable()
   }
 })
 class Sample extends SampleSchema.class {}
 SampleSchema.setClass(Sample)
 
+// A profile owns its detail through a one-to-one relation that isn't
+// nullable. MikroORM's builders make the inverse side nullable, so only the
+// options can declare it otherwise.
+const ProfileSchema = defineEntity({
+  name: 'Profile',
+  tableName: 'profile',
+  properties: {
+    id: p.integer().primary(),
+    detail: () => ({
+      kind: ReferenceKind.ONE_TO_ONE,
+      entity: () => ProfileDetail,
+      mappedBy: 'profile',
+      orphanRemoval: true,
+      nullable: false
+    })
+  }
+})
+class Profile extends ProfileSchema.class {}
+ProfileSchema.setClass(Profile)
+
+const ProfileDetailSchema = defineEntity({
+  name: 'ProfileDetail',
+  tableName: 'profile_detail',
+  properties: {
+    id: p.integer().primary(),
+    text: p.string(),
+    profile: () => p.oneToOne(Profile).owner()
+  }
+})
+class ProfileDetail extends ProfileDetailSchema.class {}
+ProfileDetailSchema.setClass(ProfileDetail)
+
 const { orm, drop } = await createTestDatabase([
   ...entities,
   ...libraryEntities,
-  Sample
+  Sample,
+  Profile,
+  ProfileDetail
 ])
 
 afterAll(drop)
@@ -220,6 +257,69 @@ describe('the checks of a body', () => {
     expect(sample.price).toBe('999.99')
   })
 
+  it('takes numbers and numeric strings in decimals', async () => {
+    const em = orm.em.fork()
+    expect(
+      await issues(createRecord(em, Sample, { price: 'abc' }))
+    ).toEqual({ price: 'Invalid input: expected decimal, received string' })
+    expect(await issues(createRecord(em, Sample, { price: true }))).toEqual({
+      price: 'Invalid input: expected decimal, received boolean'
+    })
+    const sample = await createRecord(em, Sample, { price: 12.5 })
+    const other = await createRecord(em, Sample, { price: '7.25' })
+    await em.flush()
+    await em.refresh(sample)
+    await em.refresh(other)
+    expect([sample.price, other.price]).toEqual(['12.50', '7.25'])
+  })
+
+  it('checks arrays, the types of their items and the items of enums', async () => {
+    const em = orm.em.fork()
+    expect(
+      await issues(createRecord(em, Sample, { tags: 'a', sizes: {} }))
+    ).toEqual({
+      tags: 'Invalid input: expected array, received string',
+      sizes: 'Invalid input: expected array, received object'
+    })
+    expect(
+      await issues(
+        createRecord(em, Sample, {
+          tags: ['a', {}],
+          sizes: [1, 1.5, '2'],
+          states: ['live', 'gone']
+        })
+      )
+    ).toEqual({
+      'tags/1': 'Invalid input: expected string, received object',
+      'sizes/1': 'Invalid input: expected int, received number',
+      'sizes/2': 'Invalid input: expected int, received string',
+      'states/1': 'Invalid option: expected one of "draft"|"live"'
+    })
+    const sample = await createRecord(em, Sample, {
+      tags: ['a', 'b'],
+      sizes: [1, 2],
+      states: ['live']
+    })
+    await em.flush()
+    await em.refresh(sample)
+    expect(sample).toMatchObject({
+      tags: ['a', 'b'],
+      sizes: [1, 2],
+      states: ['live']
+    })
+  })
+
+  it('refuses null in owned one-to-one relations that are not nullable', async () => {
+    const em = orm.em.fork()
+    const profile = await createRecord(em, Profile, { detail: { text: 'A' } })
+    await em.flush()
+    expect(
+      await issues(
+        assignRecord(em, profile, { detail: null }).then(() => em.flush())
+      )
+    ).toEqual({ detail: 'Invalid input: expected object, received null' })
+  })
+
   it('reads plain dates as local midnight', async () => {
     const em = orm.em.fork()
     const sample = await createRecord(em, Sample, { at: '2026-05-14' })
@@ -272,6 +372,18 @@ describe('the checks of a body', () => {
       'authors/1/id': 'Invalid input: expected id, received string',
       'parts/0/defaultChapter/id': 'Invalid input: expected id, received string'
     })
+  })
+
+  it('refuses refs as owned rows', async () => {
+    const em = orm.em.fork()
+    expect(
+      await issues(
+        createRecord(em, Book, {
+          name: 'Book',
+          parts: [{ '#ref': 'p' }, { '#id': 'p', 'name': 'Part' }]
+        })
+      )
+    ).toEqual({ 'parts/0/#ref': 'is not allowed in owned rows' })
   })
 
   it('refuses ids of owned rows that are no ids', async () => {

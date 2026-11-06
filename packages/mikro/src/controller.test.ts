@@ -753,7 +753,7 @@ describe('find', () => {
   it('refuses the options that the base controls', async () => {
     for (const key of ['limit', 'offset', 'ctx', 'lockMode']) {
       expect(() => books({ find: { [key]: 1 } })).toThrow(
-        `\`find\` can't set \`${key}\`, which the base controls`
+        `Unable to set \`${key}\` in \`find\`, which the base controls`
       )
     }
     const errors: unknown[] = []
@@ -769,7 +769,8 @@ describe('find', () => {
     const { status } = await request(api, 'GET', '/books/1')
     expect(status).toBe(500)
     expect(errors[0]).toMatchObject({
-      message: `\`find\` can't set \`disableIdentityMap\`, which the base controls`
+      message:
+        'Unable to set `disableIdentityMap` in `find`, which the base controls'
     })
   })
 })
@@ -909,7 +910,7 @@ describe('defineListHandler', () => {
 
   it('refuses the options that the base controls', () => {
     expect(() => defineListHandler({ limit: 1 })).toThrow(
-      "`find` can't set `limit`, which the base controls"
+      'Unable to set `limit` in `find`, which the base controls'
     )
   })
 })

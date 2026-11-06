@@ -147,6 +147,27 @@ describe('assignRecord()', () => {
     })
   })
 
+  it('refuses refs to new rows in new pairs', async () => {
+    await expect(
+      assign({
+        coupons: [{ '#id': 'c', 'code': 'C1' }],
+        lines: [
+          { product: 1, coupon: { '#ref': 'c' } },
+          { product: 3, quantity: 1, coupon: { '#ref': 'c' } }
+        ]
+      })
+    ).rejects.toMatchObject({
+      errors: {
+        'lines/1/coupon': [
+          {
+            keyword: 'invalid_value',
+            message: 'is not allowed to reference a new row'
+          }
+        ]
+      }
+    })
+  })
+
   it('refuses the same product twice', async () => {
     await expect(
       assign({
@@ -229,13 +250,15 @@ describe('the controller', () => {
           basket: { id: 1 },
           product: { id: 2, name: 'P2' },
           quantity: 2,
-          price: 21
+          price: 21,
+          coupon: null
         },
         {
           basket: { id: 1 },
           product: { id: 3, name: 'P3' },
           quantity: 1,
-          price: 30
+          price: 30,
+          coupon: null
         }
       ]
     })
@@ -265,7 +288,8 @@ describe('the controller', () => {
           basket: { id: 3 },
           product: { id: 1, name: 'P1' },
           quantity: 2,
-          price: 5
+          price: 5,
+          coupon: null
         }
       ]
     })

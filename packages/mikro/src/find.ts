@@ -31,7 +31,9 @@ const controlled = ['limit', 'offset', 'ctx', 'disableIdentityMap', 'lockMode']
 export function checkFind<T extends object>(find: FindShape<T>) {
   for (const key of controlled) {
     if (key in find) {
-      throw new Error(`\`find\` can't set \`${key}\`, which the base controls`)
+      throw new Error(
+        `Unable to set \`${key}\` in \`find\`, which the base controls`
+      )
     }
   }
   return find

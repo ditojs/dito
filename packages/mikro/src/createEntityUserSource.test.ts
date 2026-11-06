@@ -146,7 +146,7 @@ describe('createEntityUserSource()', () => {
   it('needs `em` outside of the API', async () => {
     const custom = createEntityUserSource(Account, { serialize: ['id'] })
     await expect(custom.findById(outside, '1')).rejects.toThrow(
-      'needs `em` outside of the API'
+      `Unable to load the users of 'Account' outside of the API without \`em\``
     )
   })
 })

@@ -18,7 +18,9 @@ export function createMikroAdapter(
   orm: Orm
 ): Adapter & { getKysely(): Kysely<any> } {
   if (!hasMikroConfig(orm.em)) {
-    throw new Error('Create the ORM with the config of `defineMikroConfig()`.')
+    throw new Error(
+      'Unable to use an ORM without the config of `defineMikroConfig()`'
+    )
   }
   return {
     connect: () => orm.em.fork() as unknown as EntityManager,
