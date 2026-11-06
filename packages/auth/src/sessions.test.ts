@@ -126,7 +126,7 @@ describe('sessions', () => {
     const isAuthenticated = async (id: string, secret = secrets[0]!) => {
       const client = createClient(api.fetch)
       client.jar.set('admin.sess', await signCookie('admin.sess', id, secret))
-      return (await client.get('/admins/self')).data !== null
+      return (await client.get('/admins/self')).data !== undefined
     }
     expect(await isAuthenticated('valid')).toBe(true)
     expect(await isAuthenticated('expired')).toBe(false)
@@ -260,7 +260,7 @@ describe('sessions', () => {
       password: 'secret'
     })
     expect(response.status).toBe(503)
-    expect((await client.get('/admins/self')).data).toBe(null)
+    expect((await client.get('/admins/self')).data).toBe(undefined)
     expect(await sessionIds()).toEqual([])
   })
 
@@ -272,7 +272,7 @@ describe('sessions', () => {
     expect(client.jar.size).toBe(0)
     expect(await sessionIds()).toEqual([])
     expect((await client.post('/admins/logout')).status).toBe(204)
-    expect((await client.get('/admins/self')).data).toBe(null)
+    expect((await client.get('/admins/self')).data).toBe(undefined)
   })
 
   it('ends other sessions when the password changes', async () => {
@@ -288,8 +288,8 @@ describe('sessions', () => {
     expect(
       (await first.post('/admins/password', { password: 'new secret' })).status
     ).toBe(204)
-    expect((await first.get('/admins/self')).data).not.toBe(null)
-    expect((await second.get('/admins/self')).data).toBe(null)
+    expect((await first.get('/admins/self')).data).not.toBe(undefined)
+    expect((await second.get('/admins/self')).data).toBe(undefined)
     expect(
       (
         await second.post('/admins/login', {
@@ -420,7 +420,7 @@ describe('sessions', () => {
   it('serves self', async () => {
     const { api } = setup({ db, source: admins })
     const client = createClient(api.fetch)
-    expect((await client.get('/admins/self')).data).toBe(null)
+    expect((await client.get('/admins/self')).data).toBe(undefined)
     await client.post('/admins/login', { username: 'ada', password: 'secret' })
     expect((await client.get('/admins/self')).data).toEqual({
       id: 1,
@@ -481,14 +481,14 @@ describe('sessions', () => {
     const customer = setup({ db, source: customers })
     const other = createClient(customer.api.fetch)
     for (const [key, value] of client.jar) other.jar.set(key, value)
-    expect((await other.get('/admins/self')).data).toBe(null)
+    expect((await other.get('/admins/self')).data).toBe(undefined)
     expect(
       (await other.post('/admins/password', { password: 'new secret' })).status
     ).toBe(
       401
     )
     // The session of the admin stays:
-    expect((await client.get('/admins/self')).data).not.toBe(null)
+    expect((await client.get('/admins/self')).data).not.toBe(undefined)
   })
 
   it('saves the session and sets its cookie on errors', async () => {
@@ -606,6 +606,23 @@ describe('sessions', () => {
     expect(await read(await signCookie('flag', 'true', 'other'))).toBe(null)
     expect(await read('true')).toBe(null)
     expect(await read()).toBe(null)
+  })
+
+  it('sets signed cookies that `readSignedCookie()` reads', async () => {
+    const { sessions } = setup({ db, source: admins, secrets: ['new', 'old'] })
+    const app = new Hono()
+      .post('/', async c => {
+        await sessions.setSignedCookie(c, 'flag', 'true', { maxAge: 60 })
+        return c.text('set')
+      })
+      .get('/', async c => c.json(await sessions.readSignedCookie(c, 'flag')))
+    const client = createClient(app.fetch)
+    const { cookies } = await client.post('/')
+    expect(cookies[0]).toContain('Max-Age=60')
+    expect(cookies[0]).toContain('Secure')
+    expect((await client.get('/')).data).toBe('true')
+    const plain = await app.request('http://example.com/', { method: 'POST' })
+    expect(plain.headers.get('Set-Cookie')).not.toContain('Secure')
   })
 
   it('deletes expired sessions', async () => {

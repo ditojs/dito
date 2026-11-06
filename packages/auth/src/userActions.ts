@@ -154,10 +154,10 @@ export function defineUserActions<U extends User>({
       getSession(c).logout()
     },
 
-    // The logged-in user, or null.
+    // The logged-in user. Without a login, the answer is empty.
     'get self': async ({ c }) => {
       const user = await getSession(c).getUser<U>()
-      return user ? source.serialize(user) : null
+      return user ? source.serialize(user) : undefined
     },
 
     // What the admin offers, also before the login:

@@ -203,7 +203,7 @@ describe('passkeys()', () => {
     expect(
       await client.post('/admins/passkey-login', answer('key-1'))
     ).toMatchObject({ status: 401, data: { message: 'Passkey is incorrect' } })
-    expect((await client.get('/admins/self')).data).toBe(null)
+    expect((await client.get('/admins/self')).data).toBe(undefined)
   })
 
   it('confirms the access only with the own passkey', async () => {

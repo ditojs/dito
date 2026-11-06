@@ -58,6 +58,7 @@ export function createUsers<U extends User>(
     middleware: sessions.middleware,
     getUser: sessions.getUser,
     readSignedCookie: sessions.readSignedCookie,
+    setSignedCookie: sessions.setSignedCookie,
     deleteExpiredSessions: sessions.deleteExpired,
 
     // The login, session and security actions, for a controller of their own.

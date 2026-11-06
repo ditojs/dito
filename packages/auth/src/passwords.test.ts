@@ -155,8 +155,8 @@ describe('defineUserWrites()', () => {
       password: 'new secret'
     })
     expect(response.status).toBe(200)
-    expect((await first.get('/admins/self')).data).not.toBe(null)
-    expect((await second.get('/admins/self')).data).toBe(null)
+    expect((await first.get('/admins/self')).data).not.toBe(undefined)
+    expect((await second.get('/admins/self')).data).toBe(undefined)
   })
 
   // Usernames are compared with the record of a model controller, so their
@@ -212,7 +212,7 @@ describe('defineUserWrites()', () => {
       password: 'new secret'
     })
     expect(response.status).toBe(409)
-    expect((await client.get('/admins/self')).data).not.toBe(null)
+    expect((await client.get('/admins/self')).data).not.toBe(undefined)
   })
 
   it(`ends the sessions of other users' changed passwords`, async () => {
@@ -222,7 +222,7 @@ describe('defineUserWrites()', () => {
     await admin.post('/admins/login', { username: 'ada', password: 'secret' })
     await bob.post('/admins/login', { username: 'bob', password: 'secret' })
     await admin.request('PATCH', '/users/2', { password: 'new secret' })
-    expect((await admin.get('/admins/self')).data).not.toBe(null)
-    expect((await bob.get('/admins/self')).data).toBe(null)
+    expect((await admin.get('/admins/self')).data).not.toBe(undefined)
+    expect((await bob.get('/admins/self')).data).toBe(undefined)
   })
 })

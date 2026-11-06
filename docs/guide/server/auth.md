@@ -122,7 +122,7 @@ export const adminUsers = defineController({
   `totp` and `passwordReset`.
 - Logins post `username` and `password`. They respond with `{ user }`, or with
   `{ codeRequired: true }` for users with TOTP.
-- `get self` responds with the user, or `null`.
+- `get self` responds with the user, or with 204 without a login.
 - `get capabilities` tells the admin what to offer, also before the login.
 
 See [`defineActions()`](../../api/server/auth.md#defineactions) for all actions.

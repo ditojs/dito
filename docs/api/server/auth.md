@@ -73,20 +73,21 @@ users throw when they load users of an entity that doesn't.
 
 `createUsers()` returns these:
 
-| Member                      | Description                                                                                                                                                                                                  |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `findById(id)`              | Resolves to the user with the id, a string, or `null`, also for an id that doesn't fit the primary key.                                                                                                      |
-| `findByUsername(username)`  | Resolves to the user with the username, or `null`.                                                                                                                                                           |
-| `patch(user, values)`       | Writes the values at once, and sets them on the user. It doesn't flush the request's other changes.                                                                                                          |
-| `serialize(user)`           | Returns what `serialize` and `computed` describe.                                                                                                                                                            |
-| `middleware`                | The session middleware, see [The middleware](#the-middleware).                                                                                                                                               |
-| `getUser({ c })`            | Resolves to `{ id, roles }` of the session's user, or `null`. `createApi()` and `createAdmin()` use it as their `getUser`.                                                                                   |
-| `readSignedCookie(c, name)` | Returns the value of the cookie `name` if one of `secrets` signed it, else `null`. It reads the app's own cookies, which the app writes with `setSignedCookie(c, name, value, secrets[0])` of `hono/cookie`. |
-| `deleteExpiredSessions()`   | Deletes the expired rows of the `session` table. The `jobs` of the kit run it.                                                                                                                               |
-| `defineActions(options?)`   | Returns the mixin with the actions of the users, see [`defineActions()`](#defineactions).                                                                                                                    |
-| `name`                      | The name of the entity, which names the users in sessions and credentials, as `'<name>-<id>'`.                                                                                                               |
-| `usernameProperty`          | The option of the same name.                                                                                                                                                                                 |
-| `password`                  | The option of the same name.                                                                                                                                                                                 |
+| Member                                      | Description                                                                                                                                                            |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `findById(id)`                              | Resolves to the user with the id, a string, or `null`, also for an id that doesn't fit the primary key.                                                                |
+| `findByUsername(username)`                  | Resolves to the user with the username, or `null`.                                                                                                                     |
+| `patch(user, values)`                       | Writes the values at once, and sets them on the user. It doesn't flush the request's other changes.                                                                    |
+| `serialize(user)`                           | Returns what `serialize` and `computed` describe.                                                                                                                      |
+| `middleware`                                | The session middleware, see [The middleware](#the-middleware).                                                                                                         |
+| `getUser({ c })`                            | Resolves to `{ id, roles }` of the session's user, or `null`. `createApi()` and `createAdmin()` use it as their `getUser`.                                             |
+| `readSignedCookie(c, name)`                 | Returns the value of the cookie `name` if one of `secrets` signed it, else `null`. It reads the app's own cookies, which `setSignedCookie()` writes.                   |
+| `setSignedCookie(c, name, value, options?)` | Sets a cookie that `readSignedCookie()` reads, signed with the first of `secrets`, for the app's own cookies. It is `secure` on HTTPS, unless `options` say otherwise. |
+| `deleteExpiredSessions()`                   | Deletes the expired rows of the `session` table. The `jobs` of the kit run it.                                                                                         |
+| `defineActions(options?)`                   | Returns the mixin with the actions of the users, see [`defineActions()`](#defineactions).                                                                              |
+| `name`                                      | The name of the entity, which names the users in sessions and credentials, as `'<name>-<id>'`.                                                                         |
+| `usernameProperty`                          | The option of the same name.                                                                                                                                           |
+| `password`                                  | The option of the same name.                                                                                                                                           |
 
 The finding and writing methods use the entity manager of the running request,
 else a fork of `orm.em`.
@@ -233,7 +234,7 @@ Their bodies and responses:
   `{ codeRequired: true }`, and `post login-code` takes the code.
 - `post confirm-access` responds with `{ codeRequired: true }` when it needs a
   code. It responds with 204 once it confirms the access.
-- `get self` responds with the user, or `null`.
+- `get self` responds with the user, or with 204 without a login.
 - `get capabilities` responds with the capabilities that the actions offer,
   as `hasPasskeys`, `hasTotp`, `hasPasswordChange` and `hasPasswordReset`,
   also without a login. The admin loads them when it starts, see

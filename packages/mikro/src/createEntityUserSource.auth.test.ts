@@ -108,7 +108,7 @@ describe('createEntityUserSource() with auth', () => {
       true
     )
     expect(await self(first)).toEqual({ id: 1, username: 'ada' })
-    expect(await self(second)).toBe(null)
+    expect(await self(second)).toBe(undefined)
   })
 
   it('keeps the session when the flush fails', async () => {

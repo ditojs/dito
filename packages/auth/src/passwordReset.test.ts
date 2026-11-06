@@ -140,7 +140,7 @@ describe('passwordReset()', () => {
       })
     ).toMatchObject({ status: 204, data: undefined })
     // The other session and the link end with the new hash:
-    expect((await other.get('/admins/self')).data).toBe(null)
+    expect((await other.get('/admins/self')).data).toBe(undefined)
     expect(
       await client.post('/admins/password-reset-confirm', {
         token,

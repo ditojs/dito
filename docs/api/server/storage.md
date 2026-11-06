@@ -298,8 +298,7 @@ The action takes a `multipart/form-data` body and stores all its files.
 creates, such as generated PDFs, need one, so that the jobs track them.
 `assets.store(storage, { name, type?, data })` does three things:
 
-1. it stores the file in the storage, given by its name or as the storage
-   itself;
+1. it stores the file in the storage of that name;
 2. it inserts the file's row, which stays unreferenced until a scan finds it;
 3. it removes the file again when the insert fails.
 

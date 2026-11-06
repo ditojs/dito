@@ -1,7 +1,12 @@
 import { createHash, randomUUID } from 'node:crypto'
 import type { Context, MiddlewareHandler } from 'hono'
 import { getContext } from 'hono/context-storage'
-import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
+import {
+  deleteCookie,
+  getSignedCookie,
+  setSignedCookie as setHonoSignedCookie
+} from 'hono/cookie'
+import type { CookieOptions } from 'hono/utils/cookie'
 import type { Kysely } from 'kysely'
 import { isEmpty, parseDuration } from '@ditojs/utils'
 import type { Adapter } from '@ditojs/server'
@@ -179,7 +184,7 @@ export class RequestSession {
     const { adapter, secrets, cookieName, maxAge } = this.#options
     const database = adapter.getKysely()
     const c = this.#c
-    const secure = new URL(c.req.url).protocol === 'https:'
+    const secure = isSecure(c)
     let id = this.#id
     // A failed write keeps the old hash, and so the old fingerprint:
     if (this.#refreshedFingerprint && this.value.passport && !c.error) {
@@ -217,7 +222,7 @@ export class RequestSession {
         .values({ id, ...values })
         .execute()
     }
-    await setSignedCookie(c, cookieName, id, secrets[0], {
+    await setHonoSignedCookie(c, cookieName, id, secrets[0], {
       expires,
       sameSite: 'Lax',
       secure,
@@ -243,6 +248,20 @@ export function createSessions(options: CreateSessionsOptions) {
       if (value) return value
     }
     return null
+  }
+
+  // Set a cookie that `readSignedCookie()` reads, for the app's own cookies. It
+  // is `secure` on HTTPS, unless `options` say otherwise.
+  function setSignedCookie(
+    c: Context,
+    name: string,
+    value: string,
+    options?: CookieOptions
+  ) {
+    return setHonoSignedCookie(c, name, value, secrets[0], {
+      secure: isSecure(c),
+      ...options
+    })
   }
 
   // Delete the expired sessions. The `jobs` of the kit run this.
@@ -292,6 +311,7 @@ export function createSessions(options: CreateSessionsOptions) {
     cookieName,
     middleware,
     readSignedCookie,
+    setSignedCookie,
     deleteExpired,
     // The id and roles of the session's user, for `createApi()`.
     async getUser({ c }: { c: Context }) {
@@ -313,6 +333,10 @@ export function getSession(c: Context) {
 // The session of the running request.
 export function useSession(): Session {
   return getSession(getContext())
+}
+
+function isSecure(c: Context) {
+  return new URL(c.req.url).protocol === 'https:'
 }
 
 function deleteSession(database: Kysely<any>, id: string) {

@@ -116,7 +116,7 @@ describe('totp()', () => {
       status: 200,
       data: { codeRequired: true }
     })
-    expect((await client.get('/admins/self')).data).toBe(null)
+    expect((await client.get('/admins/self')).data).toBe(undefined)
     const pendingId = client.jar.get('admin.sess')
     expect(
       await client.post('/admins/login-code', { code: '000000' })
