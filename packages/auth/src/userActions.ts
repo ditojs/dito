@@ -9,15 +9,18 @@ import {
 } from '@ditojs/server'
 import { createAuthError, authenticationTimeout } from './authentication.ts'
 import type { Credential, Credentials } from './credentials.ts'
-import type { Passkeys } from './passkeys.ts'
-import type { PasswordReset } from './passwordReset.ts'
+import { createPasskeys, type CreatePasskeysOptions } from './passkeys.ts'
+import {
+  createPasswordReset,
+  type CreatePasswordResetOptions
+} from './passwordReset.ts'
 import {
   defaultPasswordSchema,
   hashPassword,
   verifyPassword
 } from './passwords.ts'
 import { getSession } from './sessions.ts'
-import type { Totp } from './totp.ts'
+import { createTotp, type CreateTotpOptions } from './totp.ts'
 import {
   getUserIdentifier,
   parseUserIdentifier,
@@ -33,10 +36,9 @@ export interface DefineUserActionsOptions<U extends User> {
   source: UserSource<U>
   // Needed for passkeys and TOTP.
   credentials?: Credentials
-  // From `@ditojs/auth/passkeys` and `@ditojs/auth/totp`.
-  passkeys?: Passkeys
-  totp?: Totp
-  passwordReset?: PasswordReset
+  passkeys?: CreatePasskeysOptions
+  totp?: CreateTotpOptions
+  passwordReset?: CreatePasswordResetOptions
   // In milliseconds or as a duration such as `'24h'`, ten minutes by default.
   reconfirmAfter?: number | string
   afterLogin?: (context: { c: Context; user: U }) => unknown
@@ -55,7 +57,6 @@ const credentialId = z.coerce
 export function defineUserActions<U extends User>({
   source,
   credentials,
-  passwordReset,
   afterLogin,
   ...options
 }: DefineUserActionsOptions<U>) {
@@ -63,17 +64,22 @@ export function defineUserActions<U extends User>({
   if ((options.passkeys || options.totp) && !credentials) {
     throw new Error('Unable to use passkeys or TOTP without credentials.')
   }
-  const passkeys = options.passkeys?.(credentials!)
-  const totp = options.totp?.(credentials!)
+  const passkeys = options.passkeys
+    ? createPasskeys(options.passkeys, credentials!)
+    : null
+  const totp = options.totp ? createTotp(options.totp, credentials!) : null
+  const passwordReset = options.passwordReset
+    ? createPasswordReset(options.passwordReset)
+    : null
   const { password = defaultPasswordSchema } = source
   const checkAuthentication = async (c: Context) => {
-    const user = await getSession(c).getUser(source)
+    const user = await getSession(c).getUser<U>()
     if (!user) throw createAuthError('Unauthorized Access')
     return user
   }
 
   const checkConfirmedAccess = (c: Context) =>
-    getSession(c).checkConfirmedAccess(source)
+    getSession(c).checkConfirmedAccess<U>()
 
   // Users with TOTP need a code whenever the app passes `credentials`. Without
   // the TOTP feature, they get the error of a wrong password, which doesn't
@@ -84,12 +90,12 @@ export function defineUserActions<U extends User>({
 
   const login = async (c: Context, user: U) => {
     const session = getSession(c)
-    session.login(source, user)
+    session.login(user)
     try {
-      await source.patch(c, user, { lastLogin: new Date() })
-      session.confirmAccess(source, user, reconfirmAfter)
+      await source.patch(user, { lastLogin: new Date() })
+      session.confirmAccess(user, reconfirmAfter)
       await afterLogin?.({ c, user })
-      return { user: await source.serialize(c, user) }
+      return { user: await source.serialize(user) }
     } catch (error) {
       // A failed login leaves no user in the session.
       session.logout()
@@ -104,15 +110,15 @@ export function defineUserActions<U extends User>({
       ? await credentials!.findByKey(source, 'passkey', key)
       : null
     const user = credential
-      ? await source.findById(c, credential.userId)
+      ? await source.findById(credential.userId)
       : null
     await passkeys!.verifyAuthentication(c, user ? credential : null, response)
     return user!
   }
 
   const setPassword = async (c: Context, user: U, password: string) => {
-    await source.patch(c, user, { hash: await hashPassword(password) })
-    getSession(c).refreshFingerprint(source, user)
+    await source.patch(user, { hash: await hashPassword(password) })
+    getSession(c).refreshFingerprint(user)
   }
 
   const actions: Actions = {
@@ -124,7 +130,7 @@ export function defineUserActions<U extends User>({
         }
         // Usernames that aren't strings are compared like unknown ones.
         const user = isString(username)
-          ? await source.findByUsername(c, username)
+          ? await source.findByUsername(username)
           : null
         if (!((await verifyPassword(password, user?.hash)) && user)) {
           throw createAuthError('Password or username is incorrect')
@@ -150,8 +156,8 @@ export function defineUserActions<U extends User>({
 
     // The logged-in user, or null.
     'get self': async ({ c }) => {
-      const user = await getSession(c).getUser(source)
-      return user ? source.serialize(c, user) : null
+      const user = await getSession(c).getUser<U>()
+      return user ? source.serialize(user) : null
     },
 
     // What the admin offers, also before the login:
@@ -184,7 +190,7 @@ export function defineUserActions<U extends User>({
           if (!code) return { codeRequired: true }
           await totp.verifyCode(source, user, code)
         }
-        getSession(c).confirmAccess(source, user, reconfirmAfter)
+        getSession(c).confirmAccess(user, reconfirmAfter)
       }
     }),
 
@@ -202,7 +208,7 @@ export function defineUserActions<U extends User>({
       'post password-reset': defineAction({
         body: z.object({ username: createRequiredString('username') }),
         handler: async ({ body: { username }, c }) => {
-          const user = await source.findByUsername(c, username)
+          const user = await source.findByUsername(username)
           if (user) passwordReset.sendLink(c, source, user)
         }
       }),
@@ -279,7 +285,7 @@ export function defineUserActions<U extends User>({
           )) {
             throw createAuthError('Missing or expired login', 400)
           }
-          const user = await source.findById(c, parsed.id)
+          const user = await source.findById(parsed.id)
           if (!user) throw createAuthError('Code is incorrect')
           await totp.verifyCode(source, user, code)
           delete session.value.pendingLogin

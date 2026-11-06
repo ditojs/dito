@@ -25,11 +25,10 @@ export interface CreatePasskeysOptions {
 
 export type Passkeys = ReturnType<typeof createPasskeys>
 
-export function createPasskeys({
-  rpName,
-  domain,
-  origins
-}: CreatePasskeysOptions) {
+export function createPasskeys(
+  { rpName, domain, origins }: CreatePasskeysOptions,
+  credentials: Credentials
+) {
   const getDomain = (c: Context) => domain ?? new URL(c.req.url).hostname
 
   const getExpectations = (c: Context) => ({
@@ -37,8 +36,7 @@ export function createPasskeys({
     expectedOrigin: origins ?? new URL(c.req.url).origin
   })
 
-  // `defineUserActions()` passes its credentials.
-  return (credentials: Credentials) => ({
+  return {
     async createAuthenticationOptions(c: Context) {
       // Passkeys are discoverable, so the browser offers them without a
       // username.
@@ -134,7 +132,7 @@ export function createPasskeys({
         }
       })
     }
-  })
+  }
 }
 
 // Keep the challenges of registrations and authentications apart, so that

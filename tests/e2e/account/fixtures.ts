@@ -1,6 +1,6 @@
 import { hashPassword } from '@ditojs/auth'
 import { db, defineScenario } from '../../utils/fixture-app.js'
-import { Session } from '../../utils/entities.js'
+import { Credential, Session } from '../../utils/entities.js'
 import { createUsersApi } from '../../utils/users.js'
 import { User } from './models/User.js'
 
@@ -11,7 +11,7 @@ export { db } from '../../utils/fixture-app.js'
 // read and patch themselves, at `users/self`.
 export const test = defineScenario({
   dirname: import.meta.dirname,
-  entities: [Session, User],
+  entities: [Credential, Session, User],
   controllers: { Session: false, User: false },
   users: orm =>
     createUsersApi({ orm, entity: User, secrets: ['account-secret'] }),

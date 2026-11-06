@@ -1,25 +1,15 @@
 import type { EntityClass } from '@mikro-orm/core'
 import { wrap } from '@mikro-orm/core'
 import type { z } from 'zod'
-import {
-  createSessions,
-  defineUserActions,
-  getSession,
-  getSessionUser,
-  type DefineUserActionsOptions
-} from '@ditojs/auth'
-import {
-  assignRecord,
-  createEntityUserSource,
-  createMikroAdapter
-} from '@ditojs/mikro'
+import { createUsers, type DefineActionsOptions } from '@ditojs/auth'
+import { assignRecord } from '@ditojs/mikro'
 import { HttpError, type Handler } from '@ditojs/server'
 import type { TestApi } from './app.js'
 import type { TestOrm } from './database.js'
 
-// The users of a scenario that logs in: `defineUserActions()` of `@ditojs/auth`
-// at `users`, on the rows of a user entity, with sessions in the `session`
-// table of `Session` in `./entities.ts`.
+// The users of a scenario that logs in: `createUsers()` of `@ditojs/auth` at
+// `users`, on the rows of a user entity, with the tables of `Session` and
+// `Credential` in `./entities.ts`.
 
 export interface TestUser {
   id: number
@@ -29,10 +19,9 @@ export interface TestUser {
   lastLogin?: Date | null
 }
 
-export interface UsersApiOptions<U extends TestUser> extends Omit<
-  DefineUserActionsOptions<U>,
-  'source'
-> {
+export interface UsersApiOptions<
+  U extends TestUser
+> extends DefineActionsOptions<U> {
   orm: TestOrm
   entity: EntityClass<U>
   secrets: string[]
@@ -47,38 +36,34 @@ export function createUsersApi<U extends TestUser>({
   password,
   ...options
 }: UsersApiOptions<U>): TestApi {
-  // Leaves out the hidden `hash`.
-  const source = createEntityUserSource(entity, {
-    em: orm.em,
+  const users = createUsers(entity, {
+    orm,
+    secrets,
+    session: { cookieName: 'dito.sess', maxAge: 24 * 60 * 60 * 1000 },
+    // Leaves out the hidden `hash`.
     serialize: ({ user }) => wrap(user).toObject(),
     password
   })
-  const sessions = createSessions({
-    adapter: createMikroAdapter(orm),
-    secrets,
-    cookieName: 'dito.sess',
-    maxAge: 24 * 60 * 60 * 1000
-  })
   // Users change their own values, but not the password or its hash.
-  const patchSelf: Handler = async ({ body, em, c }) => {
-    const user = await getSession(c).getUser(source)
+  const patchSelf: Handler = async ({ body, em, session }) => {
+    const user = await session.getUser<U>()
     if (!user) throw new HttpError(401)
     const { password, hash, ...values } = body ?? {}
     await assignRecord(em, user, values)
     await em.flush()
-    return source.serialize(c, user)
+    return users.serialize(user)
   }
   return {
     controllers: [
       {
         path: 'users',
-        mixins: [defineUserActions({ source, ...options })],
+        mixins: [users.defineActions(options)],
         actions: {
           'patch self': { authorize: true, handler: patchSelf }
         }
       }
     ],
-    middleware: [sessions.middleware],
-    getUser: ({ c }) => getSessionUser(c, source)
+    middleware: [users.middleware],
+    getUser: users.getUser
   }
 }

@@ -1,13 +1,6 @@
 import type { EntityManager } from '@mikro-orm/core'
 import { z } from 'zod'
-import {
-  createCredentials,
-  createPasswordReset,
-  hashPassword
-} from '@ditojs/auth'
-import { createPasskeys } from '@ditojs/auth/passkeys'
-import { createTotp } from '@ditojs/auth/totp'
-import { createMikroAdapter } from '@ditojs/mikro'
+import { hashPassword } from '@ditojs/auth'
 import type { TestOrm } from '../../utils/database.js'
 import { Credential, Session } from '../../utils/entities.js'
 import { createUsersApi } from '../../utils/users.js'
@@ -22,22 +15,15 @@ const secrets = ['passkeys-secret']
 // credentials in the tables of `@ditojs/auth`. The admin's unit tests turn
 // passkeys and TOTP off, to see what the admin offers without them.
 export function createApi(orm: TestOrm, { passkeys = true, totp = true } = {}) {
-  const credentials = createCredentials({ adapter: createMikroAdapter(orm) })
   return createUsersApi({
     orm,
     entity: User,
     secrets,
     password: z.string().min(6, 'must be at least 6 characters long'),
-    credentials,
     // The passkeys belong to the domain of the requests, `localhost`:
-    passkeys: passkeys
-      ? createPasskeys({ rpName: 'Example' })
-      : undefined,
-    totp: totp
-      ? createTotp({ issuer: 'Example', secret: 'totp-secret' })
-      : undefined,
-    passwordReset: createPasswordReset({
-      secrets,
+    passkeys: passkeys ? { rpName: 'Example' } : undefined,
+    totp: totp ? { issuer: 'Example', secret: 'totp-secret' } : undefined,
+    passwordReset: {
       // The tests ask for several links for one user in a row.
       resendAfter: 0,
       // The tests open the token of the links on the admin's own URL:
@@ -45,7 +31,7 @@ export function createApi(orm: TestOrm, { passkeys = true, totp = true } = {}) {
       send: ({ url }) => {
         sentPasswordResets.push(url)
       }
-    })
+    }
   })
 }
 

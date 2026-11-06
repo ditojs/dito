@@ -41,7 +41,7 @@ beforeEach(async () => {
     db,
     source: createSource('Admin', [ada]),
     credentials,
-    totp: createTotp({ issuer: 'Dito', secret: 'a long secret' })
+    totp: { issuer: 'Dito', secret: 'a long secret' }
   })
   client = createClient(api.fetch)
 })
@@ -170,6 +170,24 @@ describe('totp()', () => {
     expect(
       (await client.post('/admins/login-code', { code: backupCode })).status
     ).toBe(401)
+  })
+
+  it('counts failures also when the request rolls back', async () => {
+    await setUpTotp()
+    const credentials = createCredentials({ adapter: { getKysely: () => db } })
+    const totp = createTotp(
+      { issuer: 'Dito', secret: 'a long secret' },
+      credentials
+    )
+    const admins = createSource('Admin', [ada])
+    const rollback = new Error('Rolled back')
+    await expect(
+      db.transaction().execute(async () => {
+        await expect(totp.verifyCode(admins, ada, '000000')).rejects.toThrow()
+        throw rollback
+      })
+    ).rejects.toBe(rollback)
+    expect((await readTotp()).data.failures).toBe(1)
   })
 
   it('locks the codes after 10 failures', async () => {

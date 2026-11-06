@@ -1,4 +1,3 @@
-import type { Context } from 'hono'
 import type { z } from 'zod'
 
 // The values that auth reads from users.
@@ -13,25 +12,17 @@ export interface User {
   lastLogin?: Date | string | null
 }
 
-// The users of one kind, from `createEntityUserSource()` of `@ditojs/mikro` or
-// implemented by the app.
+// The users of one kind, from `createEntityUserSource()` of `@ditojs/mikro`.
 export interface UserSource<U extends User = User> {
   // The users' prefix in sessions and credentials, as in `'<name>-<id>'`.
   name: string
   // Resolve to null for ids that it can't read, as from tampered tokens.
-  findById(c: Context, id: string): Promise<U | null | undefined>
-  findByUsername(
-    c: Context,
-    username: string
-  ): Promise<U | null | undefined>
+  findById(id: string): Promise<U | null | undefined>
+  findByUsername(username: string): Promise<U | null | undefined>
   // Store the values and set them on `user`: the new hash, or the time of a
   // login.
-  patch(
-    c: Context,
-    user: U,
-    values: { hash?: string; lastLogin?: Date }
-  ): Promise<void>
-  serialize(c: Context, user: U): unknown
+  patch(user: U, values: { hash?: string; lastLogin?: Date }): Promise<void>
+  serialize(user: U): unknown
   // The property of the username in the bodies of writes, for
   // `defineUserWrites()`. Default: `username`.
   usernameProperty?: string

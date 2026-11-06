@@ -1,4 +1,6 @@
-import type { Context } from 'hono'
+import { Hono } from 'hono'
+import { contextStorage } from 'hono/context-storage'
+import type { EntityManager } from '@mikro-orm/core'
 import { z } from 'zod'
 import { defineEntity, p } from '@mikro-orm/core'
 import { createEntityUserSource } from './createEntityUserSource.ts'
@@ -48,17 +50,25 @@ const { orm, drop } = await createTestDatabase([Account, Device, Visitor])
 afterAll(drop)
 
 const source = createEntityUserSource(Account, {
-  em: () => orm.em,
+  orm,
   usernameProperty: 'email',
   where: { isActive: true },
   serialize: ['id', 'email'],
   computed: { domain: ({ user }) => user.email.split('@')[1] }
 })
 
-// A context outside of the API, and one of a request with its entity manager.
-const outside = { var: {} } as Context
-const inRequest = (em = orm.em.fork()) =>
-  ({ var: { em } }) as unknown as Context
+// Runs `fn` in a request with `em` as its entity manager.
+async function inRequest(em: EntityManager, fn: () => Promise<unknown>) {
+  const app = new Hono()
+    .use(contextStorage())
+    .get('/', async c => {
+      c.set('em', em)
+      await fn()
+      return c.body(null)
+    })
+  const response = await app.request('/')
+  expect(response.status).toBe(200)
+}
 
 let active: Account
 let inactive: Account
@@ -74,7 +84,7 @@ beforeEach(async () => {
 describe('createEntityUserSource()', () => {
   it('reads ids by the type of the primary key', async () => {
     const devices = createEntityUserSource(Device, {
-      em: () => orm.em,
+      orm,
       usernameProperty: 'label',
       serialize: ['id']
     })
@@ -82,20 +92,20 @@ describe('createEntityUserSource()', () => {
     const em = orm.em.fork()
     const device = em.create(Device, { id, label: 'Phone' })
     await em.flush()
-    expect(await devices.findById(outside, id)).toMatchObject({ id })
-    expect(await devices.findById(outside, '1')).toBeNull()
-    await devices.patch(outside, device, { hash: 'h' })
-    expect(await devices.findById(outside, id)).toMatchObject({ hash: 'h' })
+    expect(await devices.findById(id)).toMatchObject({ id })
+    expect(await devices.findById('1')).toBeNull()
+    await devices.patch(device, { hash: 'h' })
+    expect(await devices.findById(id)).toMatchObject({ hash: 'h' })
   })
 
   it('refuses entities that send their hash out', async () => {
     const visitors = createEntityUserSource(Visitor, {
-      em: () => orm.em,
+      orm,
       serialize: ['id']
     })
     const message = `Invalid user entity 'Visitor': its 'hash' isn't hidden`
-    await expect(visitors.findById(outside, '1')).rejects.toThrow(message)
-    await expect(visitors.findByUsername(outside, 'a')).rejects.toThrow(message)
+    await expect(visitors.findById('1')).rejects.toThrow(message)
+    await expect(visitors.findByUsername('a')).rejects.toThrow(message)
   })
 
   it('names the users by the entity', () => {
@@ -103,36 +113,39 @@ describe('createEntityUserSource()', () => {
   })
 
   it('finds users by integer ids only', async () => {
-    expect((await source.findById(outside, String(active.id)))?.email).toBe(
+    expect((await source.findById(String(active.id)))?.email).toBe(
       'a@example.com'
     )
-    expect(await source.findById(outside, `${active.id}x`)).toBeNull()
-    expect(await source.findById(outside, '')).toBeNull()
-    expect(await source.findById(outside, '-1')).toBeNull()
+    expect(await source.findById(`${active.id}x`)).toBeNull()
+    expect(await source.findById('')).toBeNull()
+    expect(await source.findById('-1')).toBeNull()
   })
 
   it('applies `where` to both finds', async () => {
-    expect(await source.findById(outside, String(inactive.id))).toBeNull()
-    expect(await source.findByUsername(outside, 'b@example.com')).toBeNull()
+    expect(await source.findById(String(inactive.id))).toBeNull()
+    expect(await source.findByUsername('b@example.com')).toBeNull()
     expect(
-      (await source.findByUsername(outside, 'a@example.com'))?.id
+      (await source.findByUsername('a@example.com'))?.id
     ).toBe(active.id)
   })
 
   it(`uses the request's entity manager`, async () => {
     const em = orm.em.fork()
-    const user = await source.findById(inRequest(em), String(active.id))
-    expect(em.getUnitOfWork().getById(Account, active.id)).toBe(user)
+    await inRequest(em, async () => {
+      const user = await source.findById(String(active.id))
+      expect(em.getUnitOfWork().getById(Account, active.id)).toBe(user)
+    })
   })
 
   it('writes patches at once and sets them on the user', async () => {
     const em = orm.em.fork()
-    const c = inRequest(em)
-    const user = (await source.findById(c, String(active.id)))!
-    user.email = 'unflushed@example.com'
     const lastLogin = new Date()
-    await source.patch(c, user, { hash: 'h', lastLogin })
-    expect(user.hash).toBe('h')
+    await inRequest(em, async () => {
+      const user = (await source.findById(String(active.id)))!
+      user.email = 'unflushed@example.com'
+      await source.patch(user, { hash: 'h', lastLogin })
+      expect(user.hash).toBe('h')
+    })
     const stored = await orm.em.fork().findOneOrFail(Account, active.id)
     expect(stored.hash).toBe('h')
     expect(stored.lastLogin?.getTime()).toBe(lastLogin.getTime())
@@ -141,8 +154,8 @@ describe('createEntityUserSource()', () => {
   })
 
   it('returns the fields and computed values as JSON', async () => {
-    const user = (await source.findById(outside, String(active.id)))!
-    expect(source.serialize(outside, user)).toEqual({
+    const user = (await source.findById(String(active.id)))!
+    expect(source.serialize(user)).toEqual({
       id: active.id,
       email: 'a@example.com',
       domain: 'example.com'
@@ -153,23 +166,17 @@ describe('createEntityUserSource()', () => {
     const password = z.string().min(12)
     expect(source.password).toBe(undefined)
     expect(
-      createEntityUserSource(Account, { serialize: ['id'], password }).password
+      createEntityUserSource(Account, { orm, serialize: ['id'], password })
+        .password
     ).toBe(password)
   })
 
   it('takes a function as `serialize`', async () => {
     const custom = createEntityUserSource(Account, {
-      em: orm.em,
+      orm,
       serialize: ({ user }) => ({ email: user.email })
     })
-    const user = (await custom.findById(outside, String(active.id)))!
-    expect(custom.serialize(outside, user)).toEqual({ email: 'a@example.com' })
-  })
-
-  it('needs `em` outside of the API', async () => {
-    const custom = createEntityUserSource(Account, { serialize: ['id'] })
-    await expect(custom.findById(outside, '1')).rejects.toThrow(
-      `Unable to load the users of 'Account' outside of the API without \`em\``
-    )
+    const user = (await custom.findById(String(active.id)))!
+    expect(custom.serialize(user)).toEqual({ email: 'a@example.com' })
   })
 })

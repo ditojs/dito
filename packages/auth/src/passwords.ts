@@ -68,16 +68,17 @@ export function defineUserWrites<U extends User>({
       .optional()
   })
 
-  // Changing a password needs confirmed access, also of other users, and so
-  // does a username, as password resets go to it. The record of the model
-  // controller has the current one, also for ids of its `load` such as `self`:
+  // Changing a password needs confirmed access of the session's user, also for
+  // other users and users of other sources, and so does a username, as password
+  // resets go to it. The record of the model controller has the current one,
+  // also for ids of its `load` such as `self`:
   const isSecurityChange = async (
     c: Context,
     body: Record<string, unknown>
   ) => {
     const username = body[usernameProperty]
     if (body.password === undefined && username === undefined) return false
-    if (!(await getSession(c).getUser(source))) return false
+    if (!(await getSession(c).getUser())) return false
     if (body.password !== undefined) return true
     const getRecord: ModelVariables['getRecord'] = c.get('getRecord')
     const record = await getRecord()
@@ -92,7 +93,7 @@ export function defineUserWrites<U extends User>({
       throw createValidationError(result.error.issues, bodyValidation)
     }
     if (params.id && (await isSecurityChange(c, input.body))) {
-      await getSession(c).checkConfirmedAccess(source)
+      await getSession(c).checkConfirmedAccess()
     }
     const { password } = result.data
     if (password === undefined) return next()
@@ -103,8 +104,12 @@ export function defineUserWrites<U extends User>({
     const user = (await next()) as U | undefined
     if (user) {
       user.hash = await hashPassword(password)
-      // The user keeps this session, and their other sessions end.
-      getSession(c).refreshFingerprint(source, user)
+      // The user keeps this session, and their other sessions end. An admin's
+      // session may write users of another source.
+      const session = getSession(c)
+      if (session.source.name === source.name) {
+        session.refreshFingerprint(user)
+      }
     }
     return user
   }

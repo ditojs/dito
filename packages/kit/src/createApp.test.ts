@@ -4,14 +4,10 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { Hono } from 'hono'
 import { defineEntity, p } from '@mikro-orm/core'
-import { defineUserActions } from '@ditojs/auth'
+import { hashPassword } from '@ditojs/auth'
 import { defineModelController } from '@ditojs/mikro'
 import { createApp, type App } from './index.ts'
-import {
-  createSource,
-  createUser,
-  secrets
-} from '../../auth/src/test/helpers.ts'
+import { secrets } from '../../auth/src/test/helpers.ts'
 import { createClient } from '../../../tests/utils/client.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Credential, Session } from '../../../tests/utils/entities.ts'
@@ -26,7 +22,25 @@ const BookSchema = defineEntity({
 class Book extends BookSchema.class {}
 BookSchema.setClass(Book)
 
-const entities = { Book, Session, Credential }
+// The users of the two areas.
+const userProperties = {
+  id: p.integer().primary(),
+  username: p.string(),
+  hash: p.string().nullable().hidden(),
+  roles: p.json<string[]>().nullable(),
+  lastLogin: p.datetime().nullable()
+}
+const AdminSchema = defineEntity({ name: 'Admin', properties: userProperties })
+class Admin extends AdminSchema.class {}
+AdminSchema.setClass(Admin)
+const MemberSchema = defineEntity({
+  name: 'Member',
+  properties: userProperties
+})
+class Member extends MemberSchema.class {}
+MemberSchema.setClass(Member)
+
+const entities = { Book, Admin, Member, Session, Credential }
 
 const books = (role: string) =>
   defineModelController({
@@ -80,24 +94,20 @@ describe('createApp()', () => {
 
     // Each API has its own session cookie and its own users.
     const areas = {
-      '/api/admin': { role: 'admin', name: 'ada' },
-      '/api': { role: 'member', name: 'max' }
+      '/api/admin': { entity: Admin, role: 'admin' },
+      '/api': { entity: Member, role: 'member' }
     }
-    for (const [prefix, { role, name }] of Object.entries(areas)) {
-      const users = createSource(role, [
-        await createUser(1, name, 'secret', [role])
-      ])
-      const controller = {
-        path: 'users',
-        mixins: [defineUserActions({ source: users })]
-      }
+    for (const [prefix, { entity, role }] of Object.entries(areas)) {
+      const users = app.createUsers(entity as typeof Admin, {
+        session: { cookieName: `${role}.sess`, maxAge: 60_000 },
+        serialize: ['id', 'username']
+      })
       app.routeApi(prefix, {
-        controllers: [controller, books(role)],
-        sessions: app.createSessions({
-          cookieName: `${role}.sess`,
-          maxAge: 60_000,
-          users
-        })
+        controllers: [
+          { path: 'users', mixins: [users.defineActions()] },
+          books(role)
+        ],
+        sessions: users
       })
     }
 
@@ -133,6 +143,11 @@ describe('createApp()', () => {
     log = []
     logs = []
     await database.orm.schema.clear()
+    const em = app.orm.em.fork()
+    const hash = await hashPassword('secret')
+    em.create(Admin, { username: 'ada', hash, roles: ['admin'] })
+    em.create(Member, { username: 'max', hash, roles: ['member'] })
+    await em.flush()
   })
 
   const login = async (prefix: string, username: string) => {

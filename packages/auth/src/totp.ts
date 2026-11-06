@@ -36,7 +36,10 @@ const tagLength = 16
 
 export type Totp = ReturnType<typeof createTotp>
 
-export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
+export function createTotp(
+  { issuer, secret: key }: CreateTotpOptions,
+  credentials: Credentials
+) {
   if (!key) throw new Error('Unable to use TOTP without a secret.')
   // Accept the previous and the next code too, for clocks that drift.
   function getCodeStep(secret: string, code: unknown) {
@@ -46,8 +49,7 @@ export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
     return delta !== null ? totp.counter({ timestamp }) + delta : null
   }
 
-  // `defineUserActions()` passes its credentials.
-  return (credentials: Credentials) => ({
+  return {
     // Keep the secret in the session until the user confirms it with a code.
     createSecret(c: Context, user: User) {
       const { base32: secret } = new Secret()
@@ -163,7 +165,7 @@ export function createTotp({ issuer, secret: key }: CreateTotpOptions) {
       if (isLocked) throw createAuthError('Too many attempts', 400)
       if (!isValid) throw createAuthError('Code is incorrect')
     }
-  })
+  }
 }
 
 function deriveKey(key: string, use: string) {

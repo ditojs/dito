@@ -2,7 +2,7 @@ import type { Hono } from 'hono'
 import { contextStorage, tryGetContext } from 'hono/context-storage'
 import type { ServerType } from '@hono/node-server'
 import pino, { type Logger, type LoggerOptions } from 'pino'
-import { MikroORM, type Options } from '@mikro-orm/postgresql'
+import { MikroORM, type EntityClass, type Options } from '@mikro-orm/postgresql'
 import {
   createApi,
   createHono,
@@ -17,9 +17,10 @@ import {
   getAssetPaths
 } from '@ditojs/mikro'
 import {
-  createSessions,
-  type CreateSessionsOptions,
-  type Sessions
+  createUsers,
+  type CreateUsersOptions,
+  type User,
+  type Users
 } from '@ditojs/auth'
 import {
   createAssets,
@@ -44,7 +45,7 @@ export interface CreateAppOptions {
   http?: Omit<CreateHonoOptions, 'onError' | 'middleware'>
   // The options of pino. The logs have no pid and hostname by default.
   logger?: LoggerOptions
-  // The secrets that sign the cookies of the sessions.
+  // The secrets that sign the cookies and the password reset links.
   secrets?: string[]
   // The definitions of `createStorages()`. A disk storage is served at the path
   // of its `url`. A `url` without a path, such as a host of its own, isn't.
@@ -61,10 +62,11 @@ export interface App {
   logger: Logger
   storages: StorageRegistry
   assets: Assets
-  // Sessions on the app's database, signed with its secrets.
-  createSessions(
-    options: Omit<CreateSessionsOptions, 'adapter' | 'secrets'>
-  ): Sessions
+  // Users of an entity on the app's database, signed with its secrets.
+  createUsers<U extends User>(
+    entity: EntityClass<U>,
+    options: Omit<CreateUsersOptions<U>, 'orm' | 'secrets'>
+  ): Users<U>
   // Routes an API on the app's database.
   routeApi(path: string, options: Omit<ApiConfig, 'adapter' | 'onError'>): void
   // Starts the services in order, then serves `hono` until `close()`, SIGINT or
@@ -123,7 +125,8 @@ export function createApp({
       return tryGetContext()?.var.logger ?? logger
     },
 
-    createSessions: options => createSessions({ ...options, adapter, secrets }),
+    createUsers: (entity, options) =>
+      createUsers(entity, { ...options, orm, secrets }),
 
     routeApi(path, options) {
       hono.route(path, createApi({ ...options, adapter, onError: logError }))

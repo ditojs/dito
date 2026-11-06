@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import type { Context, MiddlewareHandler } from 'hono'
+import { getContext } from 'hono/context-storage'
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
 import type { Kysely } from 'kysely'
 import { isEmpty, parseDuration } from '@ditojs/utils'
@@ -31,9 +32,8 @@ export interface CreateSessionsOptions {
   cookieName: string
   // In milliseconds or as a duration such as `'24h'`.
   maxAge: number | string
-  // The source of the users. The sessions then have `getUser()`, for the
-  // `getUser` of `createApi()`.
-  users?: UserSource<any>
+  // The source of the users that log in to these sessions.
+  users: UserSource<any>
 }
 
 // The options with `maxAge` parsed.
@@ -55,8 +55,19 @@ interface LoadedSession {
   value: SessionValue
 }
 
+// What apps use of the session of a request.
+export type Session = Pick<
+  RequestSession,
+  | 'value'
+  | 'login'
+  | 'logout'
+  | 'getUser'
+  | 'refreshFingerprint'
+  | 'checkConfirmedAccess'
+>
+
 // The session of a request. Handlers change `value` in place.
-export class Session {
+export class RequestSession {
   value: SessionValue
   #c: Context
   #id: string | null
@@ -66,7 +77,7 @@ export class Session {
   #regenerating = false
   #destroying = false
   #refreshedFingerprint: string | null = null
-  #usersBySource = new Map<string, Promise<User | null>>()
+  #user: Promise<User | null> | null = null
 
   constructor(
     c: Context,
@@ -85,41 +96,39 @@ export class Session {
     this.#regenerating = true
   }
 
-  login<U extends User>(source: UserSource<U>, user: U) {
+  get source() {
+    return this.#options.users
+  }
+
+  login(user: User) {
     this.value.passport = {
-      user: getUserIdentifier(source, user),
+      user: getUserIdentifier(this.source, user),
       passwordFingerprint: getPasswordFingerprint(user.hash)
     }
     this.#regenerating = true
     this.#destroying = false
-    this.#usersBySource = new Map([[source.name, Promise.resolve(user)]])
+    this.#user = Promise.resolve(user)
   }
 
   // Clear the whole session, not just the user.
   logout() {
     this.value = {}
     this.#destroying = true
-    this.#usersBySource = new Map()
+    this.#user = null
   }
 
-  // The user of the session if it belongs to `source`, once per request.
-  getUser<U extends User>(source: UserSource<U>): Promise<U | null> {
-    let user = this.#usersBySource.get(source.name)
-    if (!user) {
-      user = this.#findUser(source)
-      this.#usersBySource.set(source.name, user)
-    }
-    return user as Promise<U | null>
+  // The user of the session, once per request.
+  getUser<U extends User = any>(): Promise<U | null> {
+    this.#user ??= this.#findUser()
+    return this.#user as Promise<U | null>
   }
 
-  async #findUser(source: UserSource<any>) {
+  async #findUser() {
+    const { source } = this
     const { passport } = this.value
     const parsed = parseUserIdentifier(passport?.user)
     if (!passport || parsed?.name !== source.name) return null
-    const user: User | null | undefined = await source.findById(
-      this.#c,
-      parsed.id
-    )
+    const user: User | null | undefined = await source.findById(parsed.id)
     if (
       user &&
       passport.passwordFingerprint === getPasswordFingerprint(user.hash)
@@ -133,15 +142,15 @@ export class Session {
 
   // Keep the session of the request after the user changed the password,
   // while the user's other sessions end.
-  refreshFingerprint(source: UserSource<any>, user: User) {
-    if (this.value.passport?.user === getUserIdentifier(source, user)) {
+  refreshFingerprint(user: User) {
+    if (this.value.passport?.user === getUserIdentifier(this.source, user)) {
       this.#refreshedFingerprint = getPasswordFingerprint(user.hash)
     }
   }
 
-  confirmAccess(source: UserSource<any>, user: User, duration: number) {
+  confirmAccess(user: User, duration: number) {
     this.value.confirmedAccess = {
-      user: getUserIdentifier(source, user),
+      user: getUserIdentifier(this.source, user),
       expires: Date.now() + duration
     }
   }
@@ -149,12 +158,12 @@ export class Session {
   // Resolve to the user, or throw 401 without a login, and 403 with
   // `confirmationRequired` without confirmed access, which makes the admin
   // confirm the access and send the request again.
-  async checkConfirmedAccess<U extends User>(source: UserSource<U>) {
-    const user = await this.getUser(source)
+  async checkConfirmedAccess<U extends User = any>() {
+    const user = await this.getUser<U>()
     if (!user) throw createAuthError('Unauthorized Access')
     const { confirmedAccess } = this.value
     if (!(
-      confirmedAccess?.user === getUserIdentifier(source, user) &&
+      confirmedAccess?.user === getUserIdentifier(this.source, user) &&
       confirmedAccess.expires > Date.now()
     )) {
       throw createAuthError('Confirmation required', 403, {
@@ -219,7 +228,7 @@ export class Session {
 export type Sessions = ReturnType<typeof createSessions>
 
 export function createSessions(options: CreateSessionsOptions) {
-  const { adapter, secrets, cookieName, users } = options
+  const { adapter, secrets, cookieName } = options
   const sessionOptions = { ...options, maxAge: parseDuration(options.maxAge) }
   if (secrets.length === 0) {
     throw new Error('Unable to sign cookies without secrets.')
@@ -263,7 +272,7 @@ export function createSessions(options: CreateSessionsOptions) {
 
   // The Hono middleware, which runs before the API, as `app.use()`.
   const middleware: MiddlewareHandler = async (c, next) => {
-    const session = new Session(c, await load(c), sessionOptions)
+    const session = new RequestSession(c, await load(c), sessionOptions)
     c.set('session', session)
     try {
       await next()
@@ -279,7 +288,11 @@ export function createSessions(options: CreateSessionsOptions) {
     middleware,
     readSignedCookie,
     deleteExpired,
-    getUser: users && (({ c }: { c: Context }) => getSessionUser(c, users))
+    // The id and roles of the session's user, for `createApi()`.
+    async getUser({ c }: { c: Context }) {
+      const user = await getSession(c).getUser()
+      return user ? { id: user.id, roles: user.roles ?? [] } : null
+    }
   }
 }
 
@@ -289,14 +302,12 @@ export function getSession(c: Context) {
   if (!session) {
     throw new Error('Unable to use sessions without their middleware.')
   }
-  return session
+  return session as RequestSession
 }
 
-// The id and roles of the source's user, for the `getUser` of `createApi()`,
-// as `getUser: ({ c }) => getSessionUser(c, admins)`.
-export async function getSessionUser(c: Context, source: UserSource<any>) {
-  const user = await getSession(c).getUser(source)
-  return user ? { id: user.id, roles: user.roles ?? [] } : null
+// The session of the running request.
+export function useSession(): Session {
+  return getSession(getContext())
 }
 
 function deleteSession(database: Kysely<any>, id: string) {

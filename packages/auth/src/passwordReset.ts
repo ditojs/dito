@@ -85,7 +85,7 @@ export function createPasswordReset({
       const time = parseInt(encodedTime, 36)
       if (!(Date.now() - time < expiresAfter)) return null
       const id = Buffer.from(encodedId, 'base64url').toString()
-      const user = id ? await source.findById(c, id) : null
+      const user = id ? await source.findById(id) : null
       if (!user) return null
       const values = getSignedValues(source, user, time)
       const isSigned = secrets.some(secret =>

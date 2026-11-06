@@ -491,34 +491,40 @@ importers:
 
   packages/auth:
     dependencies:
+      '@ditojs/mikro':
+        specifier: workspace:^
+        version: link:../mikro
       '@ditojs/utils':
         specifier: workspace:^
         version: link:../utils
+      '@simplewebauthn/server':
+        specifier: ^14.0.3
+        version: 14.0.3
+      aaguids:
+        specifier: ^0.0.71
+        version: 0.0.71
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
+      otpauth:
+        specifier: ^9.5.2
+        version: 9.5.2
     devDependencies:
       '@ditojs/server':
         specifier: workspace:^
         version: link:../server
-      '@simplewebauthn/server':
-        specifier: ^14.0.3
-        version: 14.0.3
+      '@mikro-orm/core':
+        specifier: ^7.2.7
+        version: 7.2.7
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
-      aaguids:
-        specifier: ^0.0.71
-        version: 0.0.71
       hono:
         specifier: ^4.13.14
         version: 4.13.16
       kysely:
         specifier: 0.29.8
         version: 0.29.8
-      otpauth:
-        specifier: ^9.5.2
-        version: 9.5.2
       zod:
         specifier: ^4.6.7
         version: 4.6.7

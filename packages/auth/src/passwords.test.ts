@@ -1,11 +1,8 @@
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
 import { defineMixin, HttpError, type Handler } from '@ditojs/server'
-import {
-  defineUserWrites,
-  verifyPassword,
-  type DefineUserActionsOptions
-} from './index.ts'
+import { defineUserWrites, verifyPassword } from './passwords.ts'
+import type { DefineUserActionsOptions } from './userActions.ts'
 import {
   createSource,
   createUser,
@@ -98,6 +95,33 @@ describe('defineUserWrites()', () => {
       (await custom.post('/users', { username: 'cy', password: 'short' }))
         .status
     ).toBe(200)
+  })
+
+  it('asks an admin who writes users of another source to confirm', async () => {
+    const { api } = setup({
+      db,
+      source: admins,
+      reconfirmAfter: 0,
+      controllers: [
+        {
+          path: 'users',
+          authorize: true,
+          mixins: [
+            crud,
+            defineUserWrites({ source: createSource('Customer', users) })
+          ]
+        }
+      ]
+    })
+    const client = createClient(api.fetch)
+    await client.post('/admins/login', { username: 'ada', password: 'secret' })
+    const response = await client.request('PATCH', '/users/2', {
+      password: 'new secret'
+    })
+    expect(response).toMatchObject({
+      status: 403,
+      data: { confirmationRequired: true }
+    })
   })
 
   it('rejects a hash in the body', async () => {

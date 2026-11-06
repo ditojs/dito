@@ -4,7 +4,8 @@ import {
   defineController,
   defineMixin
 } from '@ditojs/server'
-import { createCredentials, defineUserWrites } from './index.ts'
+import { createCredentials } from './credentials.ts'
+import { defineUserWrites } from './passwords.ts'
 import {
   createSource,
   createUser,

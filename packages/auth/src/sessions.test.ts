@@ -4,15 +4,8 @@ import { z } from 'zod'
 import type { Kysely } from 'kysely'
 import { HttpError, createApi, defineController } from '@ditojs/server'
 import * as passwords from './passwords.ts'
-import { createPasskeys } from './passkeys.ts'
-import { createTotp } from './totp.ts'
-import { getPasswordFingerprint } from './sessions.ts'
-import {
-  createCredentials,
-  createPasswordReset,
-  getSession,
-  getSessionUser
-} from './index.ts'
+import { createCredentials } from './credentials.ts'
+import { getPasswordFingerprint, getSession } from './sessions.ts'
 import {
   createSource,
   createUser,
@@ -455,17 +448,17 @@ describe('sessions', () => {
         source: admins,
         credentials,
         passkeys: passkeys
-          ? createPasskeys({ rpName: 'Dito' })
+          ? { rpName: 'Dito' }
           : undefined,
         totp: totp
-          ? createTotp({ issuer: 'Dito', secret: 'a long secret' })
+          ? { issuer: 'Dito', secret: 'a long secret' }
           : undefined,
         passwordReset: passwordReset
-          ? createPasswordReset({
+          ? {
               secrets,
               confirmUrl: 'https://example.com/#password-reset={token}',
               send: () => {}
-            })
+            }
           : undefined
       })
       const client = createClient(api.fetch)
@@ -496,30 +489,6 @@ describe('sessions', () => {
     )
     // The session of the admin stays:
     expect((await client.get('/admins/self')).data).not.toBe(null)
-    // Through `getUser` of `createApi()`:
-    const apis = [admins, customers].map(source =>
-      new Hono().use(admin.sessions.middleware).route(
-        '/',
-        createApi({
-          getUser: ({ c }) => getSessionUser(c, source),
-          controllers: [
-            defineController({
-              path: 'me',
-              actions: { get: ({ user }) => user }
-            })
-          ]
-        })
-      )
-    )
-    const cookie = [...client.jar].map(([k, v]) => `${k}=${v}`).join('; ')
-    const get = async (api: (typeof apis)[number]) =>
-      (
-        await api.fetch(
-          new Request('https://example.com/me', { headers: { Cookie: cookie } })
-        )
-      ).json()
-    expect(await get(apis[0]!)).toEqual({ id: 1, roles: ['admin'] })
-    expect(await get(apis[1]!)).toBe(null)
   })
 
   it('saves the session and sets its cookie on errors', async () => {

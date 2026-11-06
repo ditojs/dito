@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely'
 import type { Mock } from 'vitest'
-import { createPasswordReset } from './index.ts'
+import { createPasswordReset } from './passwordReset.ts'
 import {
   createSource,
   createUser,
@@ -38,12 +38,12 @@ beforeEach(async () => {
     db,
     cookieName: 'customer.sess',
     source: customers,
-    passwordReset: createPasswordReset({
+    passwordReset: {
       secrets,
       confirmUrl: 'https://example.com/admin/#password-reset={token}',
       send,
       onError
-    })
+    }
   })
   client = createClient(api.fetch)
   other = createClient(api.fetch)

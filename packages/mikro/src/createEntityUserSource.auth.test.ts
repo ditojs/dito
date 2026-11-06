@@ -1,26 +1,17 @@
-import type { Kysely } from 'kysely'
 import { Hono } from 'hono'
 import { defineEntity, p } from '@mikro-orm/core'
 import { createApi } from '@ditojs/server'
 import {
-  createSessions,
-  defineUserWrites,
-  defineUserActions,
-  getSessionUser,
+  createUsers,
   hashPassword,
   verifyPassword
 } from '../../auth/src/index.ts'
-import {
-  createEntityUserSource,
-  createMikroAdapter,
-  defineModelController
-} from './index.ts'
+import { createMikroAdapter, defineModelController } from './index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
-import { Session } from '../../../tests/utils/entities.ts'
+import { Credential, Session } from '../../../tests/utils/entities.ts'
 import { createClient } from '../../../tests/utils/client.ts'
 
-// `createEntityUserSource()` and `defineUserWrites()` of auth on a model
-// controller.
+// `createUsers()` of auth on a model controller.
 
 const MemberSchema = defineEntity({
   name: 'Member',
@@ -36,35 +27,29 @@ const MemberSchema = defineEntity({
 class Member extends MemberSchema.class {}
 MemberSchema.setClass(Member)
 
-const { orm, db, drop } = await createTestDatabase([Member, Session])
+const { orm, drop } = await createTestDatabase([Member, Session, Credential])
 
 afterAll(drop)
 
-const source = createEntityUserSource(Member, {
-  em: orm.em,
-  serialize: ['id', 'username']
-})
-
-const sessions = createSessions({
-  adapter: { getKysely: () => db as Kysely<any> },
+const members = createUsers(Member, {
+  orm,
   secrets: ['secret sauce'],
-  cookieName: 'member.sess',
-  maxAge: 60_000
+  session: { cookieName: 'member.sess', maxAge: 60_000 },
+  serialize: ['id', 'username']
 })
 
 const app = new Hono().route(
   '/',
   createApi({
     adapter: createMikroAdapter(orm),
-    middleware: [sessions.middleware],
-    getUser: ({ c }) => getSessionUser(c, source),
+    sessions: members,
     controllers: [
-      { path: 'auth', mixins: [defineUserActions({ source })] },
+      { path: 'auth', mixins: [members.defineActions()] },
       defineModelController({
         path: 'members',
         entity: Member,
         authorize: true,
-        mixins: [defineUserWrites({ source })]
+        mixins: [members.defineWrites()]
       })
     ]
   })
@@ -156,18 +141,17 @@ describe('defineUserWrites() with confirmed access', () => {
     '/',
     createApi({
       adapter: createMikroAdapter(orm),
-      middleware: [sessions.middleware],
-      getUser: ({ c }) => getSessionUser(c, source),
+      sessions: members,
       controllers: [
         {
           path: 'auth',
-          mixins: [defineUserActions({ source, reconfirmAfter: 0 })]
+          mixins: [members.defineActions({ reconfirmAfter: 0 })]
         },
         defineModelController({
           path: 'members',
           entity: Member,
           authorize: true,
-          mixins: [defineUserWrites({ source })],
+          mixins: [members.defineWrites()],
           load: ({ c, id }) =>
             c.var.em.findOne(
               Member,

@@ -2,14 +2,14 @@ import type { Kysely } from 'kysely'
 import { Hono } from 'hono'
 import { generateSignedCookie } from 'hono/cookie'
 import { createApi, type ControllerDefinition } from '@ditojs/server'
+import { createCredentials } from '../credentials.ts'
+import { hashPassword } from '../passwords.ts'
+import { createSessions } from '../sessions.ts'
 import {
-  createCredentials,
-  createSessions,
   defineUserActions,
-  hashPassword,
-  type DefineUserActionsOptions,
-  type UserSource
-} from '../index.ts'
+  type DefineUserActionsOptions
+} from '../userActions.ts'
+import type { UserSource } from '../users.ts'
 import { createTestDatabase } from '../../../../tests/utils/database.ts'
 import { Credential, Session } from '../../../../tests/utils/entities.ts'
 
@@ -42,13 +42,13 @@ export function createSource(
 ): UserSource<TestUser> {
   return {
     name,
-    findById: async (c, id) => users.find(user => String(user.id) === id),
-    findByUsername: async (c, username) =>
+    findById: async id => users.find(user => String(user.id) === id),
+    findByUsername: async username =>
       users.find(user => user.username === username),
-    patch: async (c, user, values) => {
+    patch: async (user, values) => {
       Object.assign(user, values)
     },
-    serialize: (c, { hash, ...user }) => user
+    serialize: ({ hash, ...user }) => user
   }
 }
 
@@ -90,7 +90,8 @@ export function setup({
     adapter,
     secrets: cookieSecrets,
     cookieName,
-    maxAge
+    maxAge,
+    users: source
   })
   credentials ??= createCredentials({ adapter })
   const users = {
