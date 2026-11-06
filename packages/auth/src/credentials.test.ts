@@ -22,7 +22,11 @@ describe('createCredentials()', () => {
     const ada = await createUser(1, 'ada', null)
     const admins = createSource('Admin', [ada])
     const db = getDb()
-    const credentials = createCredentials({ adapter: { getKysely: () => db } })
+    const credentials = createCredentials({
+      adapter: {
+        getKysely: c => (c ? (c.var.em as any).getKysely() : db)
+      }
+    })
     await credentials.insert(admins, ada, 'totp', { data: {} })
     const users = defineController({
       path: 'users',

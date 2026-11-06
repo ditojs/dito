@@ -14,7 +14,7 @@ interface Orm {
 // transaction.
 export function createMikroAdapter(
   orm: Orm
-): Adapter & { getKysely(): Kysely<any> } {
+): Adapter & { getKysely(c?: DitoContext): Kysely<any> } {
   if (!hasMikroConfig(orm.em)) {
     throw new Error(
       'Unable to use an ORM without the config of `defineMikroConfig()`'
@@ -39,8 +39,9 @@ export function createMikroAdapter(
       toHttpError(error, getModelRequest(c)?.meta, c.req.method),
     // A Kysely on the ORM's pool, outside of any transaction, for sessions,
     // credentials and jobs. `orm.em.getKysely()` joins the current
-    // transaction, a fork doesn't.
-    getKysely: () => orm.em.fork().getKysely()
+    // transaction, a fork doesn't. With `c`, it runs in the request's
+    // transaction.
+    getKysely: c => (c ? getEntityManager(c) : orm.em.fork()).getKysely()
   }
 }
 

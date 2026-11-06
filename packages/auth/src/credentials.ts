@@ -26,7 +26,7 @@ export interface CreateCredentialsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`. Credentials use
   // its Kysely outside of the request's transaction, so TOTP failures stay
   // counted when the request fails.
-  adapter: { getKysely(): Kysely<any> }
+  adapter: { getKysely(c?: Context): Kysely<any> }
 }
 
 export function createCredentials({ adapter }: CreateCredentialsOptions) {
@@ -150,10 +150,8 @@ export function createCredentials({ adapter }: CreateCredentialsOptions) {
       { c }: { c?: Context } = {}
     ) {
       if (ids.length === 0) return
-      const kysely = c
-        ? (c.var.em as { getKysely(): Kysely<any> }).getKysely()
-        : getKysely()
-      await kysely
+      await adapter
+        .getKysely(c)
         .deleteFrom('credential')
         .where('user_model', '=', source.name)
         .where('user_id', 'in', ids.map(String))
