@@ -23,10 +23,26 @@ import {
 // The options of `serialize()`.
 export type Output = Record<string, unknown>
 
+const outputsByMeta = new WeakMap<EntityMetadata, WeakMap<object, Output>>()
+
 // Records go out in the shape of their controller's `find`, with the relations
 // of `populate` and of the paths in `fields`, such as `author.name`, as nested
 // rows.
 export function getOutput(meta: EntityMetadata, shape: FindShape): Output {
+  let outputs = outputsByMeta.get(meta)
+  if (!outputs) {
+    outputs = new WeakMap()
+    outputsByMeta.set(meta, outputs)
+  }
+  let output = outputs.get(shape)
+  if (!output) {
+    output = createOutput(meta, shape)
+    outputs.set(shape, output)
+  }
+  return output
+}
+
+function createOutput(meta: EntityMetadata, shape: FindShape): Output {
   const {
     populate: paths = [],
     exclude = [],
@@ -97,16 +113,7 @@ function toFields(meta: EntityMetadata, fields: string[]) {
 
 // Entities that no controller's `find` shapes go out with their loaded
 // relations:
-const plainOutputs = new WeakMap<EntityMetadata, Output>()
-
-function getPlainOutput(meta: EntityMetadata) {
-  let output = plainOutputs.get(meta)
-  if (!output) {
-    output = getOutput(meta, {})
-    plainOutputs.set(meta, output)
-  }
-  return output
-}
+const plainShape = {}
 
 // `serialize()` walks all loaded relations of the entity it gets, and rows that
 // share relations reach each other. One context walks them once for all rows.
@@ -158,7 +165,7 @@ export function serializeResult(
   // out if it holds many rows.
   const serializeEntity = async (entity: Row, ancestors: Set<object>) => {
     const { __meta: meta } = wrap(entity, true)
-    const json: Row = serialize(entity, getPlainOutput(meta))
+    const json: Row = serialize(entity, getOutput(meta, plainShape))
     const nested = new Set([...ancestors, entity])
     for (const prop of meta.relations) {
       const value = entity[prop.name]
