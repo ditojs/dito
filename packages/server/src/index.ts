@@ -1,5 +1,4 @@
 export type {
-  ActionDefinition,
   ActionSettings,
   Actions,
   Adapter,
@@ -11,7 +10,6 @@ export type {
   DitoVariables,
   Handler,
   HandlerContext,
-  HttpErrorBody,
   Middleware,
   MixinDefinition,
   RequestContext,

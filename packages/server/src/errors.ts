@@ -1,7 +1,7 @@
 import type { Context, ErrorHandler, NotFoundHandler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { isNumber, isString } from '@ditojs/utils'
-import type { Adapter, HttpErrorBody, ReportError } from './types.ts'
+import type { Adapter, ReportError } from './types.ts'
 
 // Errors respond with JSON: `{ type, message, status, code, errors }`. Those
 // with a status of 500 or above also go to `onError`.
@@ -26,6 +26,17 @@ const titles: Record<number, string> = {
 // The headers that describe a response's data, which errors don't keep. Hono
 // gives their names in lower case.
 const dataHeaders = /^(content-(?!security-)|etag$|cache-control$|location$)/
+
+// The JSON of an error. `errors` holds validation errors by the path of the
+// invalid value, such as `chapters/8/title`. Other keys are the error's data.
+interface HttpErrorBody {
+  [key: string]: unknown
+  type?: string
+  message: string
+  status: number
+  code?: string
+  errors?: Record<string, { message: string; keyword?: string }[]>
+}
 
 interface HttpErrorOptions {
   // Default: the title of the status, such as `Not Found`.

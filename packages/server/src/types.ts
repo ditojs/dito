@@ -153,17 +153,6 @@ export type Transact = <T>(
   fn: () => Promise<T>
 ) => Promise<T>
 
-// The JSON of an error. `errors` holds validation errors by the path of the
-// invalid value, such as `chapters/8/title`. Other keys are the error's data.
-export interface HttpErrorBody {
-  [key: string]: unknown
-  type?: string
-  message: string
-  status: number
-  code?: string
-  errors?: Record<string, { message: string; keyword?: string }[]>
-}
-
 // The database of an app, such as `createMikroAdapter(orm)`. An API uses the
 // parts that it finds, and auth and storage use `getKysely()`.
 export interface Adapter {
