@@ -173,7 +173,7 @@ describe('DitoRoot', () => {
   })
 
   describe('login dialog', () => {
-    const mountLoggedOut = async features => {
+    const mountLoggedOut = async capabilities => {
       const request = vi.fn(({ method, url, data }) => {
         // Users named 'totp-user' have TOTP:
         const responses = {
@@ -191,7 +191,7 @@ describe('DitoRoot', () => {
           ? { data: responses[url] }
           : null
       })
-      const admin = await mountAdmin({ views: {}, request, features })
+      const admin = await mountAdmin({ views: {}, request, capabilities })
       await admin.context.session.logout()
       await flushPromises()
       await admin.wrapper.find('button.dito-login').trigger('click')
@@ -309,16 +309,16 @@ describe('DitoRoot', () => {
       expect(dialog.text()).not.toContain('Sign In with Passkey')
     })
 
-    it('loads the features from the users API before the login', async () => {
+    it('loads the capabilities from the users API before the login', async () => {
       const admin = await mountAdmin({
         views: {},
         api: { users: { path: 'admins' } },
-        features: { hasPasskeys: true, hasPasswordReset: true },
+        capabilities: { hasPasskeys: true, hasPasswordReset: true },
         // Nobody is logged in:
         request: () => ({ data: null })
       })
       expect(admin.request).toHaveBeenCalledWith(
-        expect.objectContaining({ url: '/admins/features' })
+        expect.objectContaining({ url: '/admins/capabilities' })
       )
       const dialog = admin.wrapper.find('.dito-dialog')
       expect(dialog.text()).toContain('Sign In with Passkey')

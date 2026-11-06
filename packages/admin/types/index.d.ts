@@ -207,8 +207,8 @@ export interface ApiConfig {
   }
   /**
    * The routes of `defineUserActions()` on the server. `login`, `logout`,
-   * `self`, `features` and the routes of passwords, password resets, passkeys
-   * and TOTP are under `path`, such as `admins/login` or
+   * `self`, `capabilities` and the routes of passwords, password resets,
+   * passkeys and TOTP are under `path`, such as `admins/login` or
    * `admins/passkey-login`.
    */
   users?: {

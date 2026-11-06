@@ -136,7 +136,7 @@ function createUsersResource(path) {
   // The logged-in user, which the account settings load and patch:
   users.self = createChild('self')
   // What the users API offers, which the admin loads before the login:
-  users.features = createChild('features')
+  users.capabilities = createChild('capabilities')
   for (const name of [
     'password',
     'passwordReset',

@@ -170,7 +170,7 @@ The actions, under the controller's path:
 
 | Action                                                                                                                             | Feature         |
 | ---------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| `post login`, `post logout`, `get self`, `get features`, `post confirm-access`, `post password`                                    | always          |
+| `post login`, `post logout`, `get self`, `get capabilities`, `post confirm-access`, `post password`                                | always          |
 | `post password-reset`, `post password-reset-confirm`                                                                               | `passwordReset` |
 | `post passkey-login-options`, `post passkey-login`, `get passkeys`, `post passkey-options`, `post passkeys`, `delete passkeys/:id` | `passkeys`      |
 | `post login-code`, `get totp`, `post totp`, `post totp-confirm`, `delete totp`                                                     | `totp`          |
@@ -186,10 +186,10 @@ Their bodies and responses:
 - `post confirm-access` responds with `{ codeRequired: true }` when it needs a
   code. It responds with 204 once it confirms the access.
 - `get self` responds with the user, or `null`.
-- `get features` responds with the features that the actions offer, as
-  `hasPasskeys`, `hasTotp`, `hasPasswordChange` and `hasPasswordReset`, also
-  without a login. The admin loads them when it starts, see
-  [features](../admin/admin.md#features).
+- `get capabilities` responds with the capabilities that the actions offer,
+  as `hasPasskeys`, `hasTotp`, `hasPasswordChange` and `hasPasswordReset`,
+  also without a login. The admin loads them when it starts, see
+  [capabilities](../admin/admin.md#capabilities).
 - Other actions without a result, such as `post logout` and `post password`,
   respond with 204.
 

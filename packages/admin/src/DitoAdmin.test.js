@@ -114,7 +114,7 @@ describe('DitoAdmin', () => {
       expect(element.querySelector('.dito-account')?.textContent).toBe('ada')
     })
     expect(fetch.mock.calls.map(([url]) => url)).toEqual([
-      'https://library.example/api/features',
+      'https://library.example/api/capabilities',
       'https://library.example/api/self'
     ])
     expect(fetch.mock.calls[1][1]).toMatchObject({
@@ -123,7 +123,7 @@ describe('DitoAdmin', () => {
     })
   })
 
-  it('requests the features and the user at once', async () => {
+  it('requests the capabilities and the user at once', async () => {
     // Answer only once both requests are sent, the user first:
     const responses = {}
     const requestStub = vi.fn(
@@ -131,12 +131,12 @@ describe('DitoAdmin', () => {
     )
     const admin = createAdmin({ api: { url: '/', requestStub } })
     await vi.waitFor(() => {
-      expect(Object.keys(responses)).toEqual(['/features', '/self'])
+      expect(Object.keys(responses)).toEqual(['/capabilities', '/self'])
     })
     responses['/self']({ data: { id: 1, username: 'ada' } })
     await flushPromises()
-    responses['/features']({ data: { hasPasswordChange: true } })
-    // The account menu offers what the features enable:
+    responses['/capabilities']({ data: { hasPasswordChange: true } })
+    // The account menu offers what the capabilities enable:
     const button = await vi.waitFor(() => {
       const button = admin.el.querySelector(
         '.dito-account button[aria-haspopup="menu"]'

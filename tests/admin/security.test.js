@@ -26,7 +26,7 @@ vi.setConfig({ testTimeout: 30_000 })
 const views = { books: { type: 'view', label: 'Books', fields: {} } }
 
 // Logs in `ada` on `app`, runs `setUp()`, and opens the Security dialog from
-// the account menu, with the features that the app enables. Waits until the
+// the account menu, with the capabilities that the app enables. Waits until the
 // dialog loaded the passkeys and the TOTP. Requests and notifications are
 // observed through `request` and `notify`:
 async function openSecurity({ app = passkeysApp, setUp = null } = {}) {
@@ -37,7 +37,7 @@ async function openSecurity({ app = passkeysApp, setUp = null } = {}) {
     server: app.getUrl(),
     api: { users: { path: 'users' } }
   })
-  const { features } = admin.context.session
+  const { capabilities } = admin.context.session
   const request = vi.spyOn(admin.context.api, 'request')
   const notify = vi.spyOn(admin.context, 'notify')
   const account = admin.wrapper.find('.dito-account')
@@ -48,10 +48,10 @@ async function openSecurity({ app = passkeysApp, setUp = null } = {}) {
   const security = await vi.waitFor(() => {
     const dialog = getDialog(admin)
     expect(dialog?.attributes('aria-label')).toBe('Security')
-    if (features.hasPasskeys) {
+    if (capabilities.hasPasskeys) {
       expect(getRows(admin).length).toBeGreaterThan(0)
     }
-    if (features.hasTotp) {
+    if (capabilities.hasTotp) {
       expect(getState(admin)).not.toBe('')
     }
     return dialog

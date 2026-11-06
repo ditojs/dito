@@ -26,7 +26,7 @@ export default {
       () => adminContext.routeTree?.getViewRoute('accountSettings') ?? null
     )
     const { hasPasswordChange, hasPasskeys, hasTotp } =
-      adminContext.session.features
+      adminContext.session.capabilities
     return {
       adminContext,
       items: computed(() =>

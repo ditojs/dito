@@ -52,8 +52,8 @@ app.route('/admin', admin)
 ```
 
 The admin's users log in through the users controller of `@ditojs/auth`, e.g.
-at `/api/users`. The admin loads its features from there, to know what the login
-and account views offer. See [Users and sessions](../server/auth.md).
+at `/api/users`. The admin loads its capabilities from there, to know what the
+login and account views offer. See [Users and sessions](../server/auth.md).
 
 `settings` holds `rootClass`, a class for the admin's root element, and
 `forceDragFallback`, see

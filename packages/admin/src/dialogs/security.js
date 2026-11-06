@@ -15,7 +15,7 @@ import {
 export function showSecurityDialog(adminContext) {
   const { api, session } = adminContext
   const { users } = api
-  const { features } = session
+  const { capabilities } = session
   const formatDate = ({ value, format }) =>
     value ? format(value, { date: true }) : 'Never'
 
@@ -44,7 +44,7 @@ export function showSecurityDialog(adminContext) {
 
   return adminContext.showDialog({
     fields: {
-      ...(features.hasPasswordChange && {
+      ...(capabilities.hasPasswordChange && {
         // The password itself is never shown, only that there is one:
         password: {
           type: 'password',
@@ -98,7 +98,7 @@ export function showSecurityDialog(adminContext) {
         }
       }),
 
-      ...(features.hasPasskeys && {
+      ...(capabilities.hasPasskeys && {
         passkeys: {
           type: 'list',
           label: 'Passkeys',
@@ -141,7 +141,7 @@ export function showSecurityDialog(adminContext) {
         }
       }),
 
-      ...(features.hasTotp && {
+      ...(capabilities.hasTotp && {
         totp: {
           type: 'object',
           label: 'Two-Factor Authentication',

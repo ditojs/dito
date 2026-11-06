@@ -14,11 +14,11 @@ import DitoButtonType from '../types/DitoButtonType.vue'
 // How forms load and save their item through their resource, as they do now.
 
 // Returns the requests other than the ones for the logged-in user and the
-// features of the users API, as `[method, url, data]`.
+// capabilities of the users API, as `[method, url, data]`.
 function getRequests(request) {
   return request.mock.calls
     .map(([{ method = 'get', url, data }]) => [method, url, data])
-    .filter(([, url]) => url !== '/self' && url !== '/features')
+    .filter(([, url]) => url !== '/self' && url !== '/capabilities')
 }
 
 // Returns the error that `api.request()` throws for a response with `status`

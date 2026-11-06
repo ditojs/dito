@@ -38,7 +38,7 @@ The options:
   `index.html` and the `views/` that create the `DitoAdmin`.
 - `api` and `settings` become the `dito` object in the browser. It is served
   as `/admin/dito.js`.
-- The admin loads the features of the
+- The admin loads the capabilities of the
   [users controller](auth.md#the-users-controller) at `api.users` when it
   starts. They tell the login and account views what to offer.
 - `createAdmin()` returns a Hono app, which the host routes at `base`.

@@ -130,12 +130,12 @@ export const adminUsers = defineController({
 
 `defineUserActions()` returns a mixin with the actions of the admin's users.
 
-- It routes `post login`, `post logout`, `get self`, `get features`,
+- It routes `post login`, `post logout`, `get self`, `get capabilities`,
   `post confirm-access` and `post password`, and the actions of its features.
 - Logins post `username` and `password`. They respond with `{ user }`, or with
   `{ codeRequired: true }` for users with TOTP.
 - `get self` responds with the user, or `null`.
-- `get features` tells the admin what to offer, also before the login.
+- `get capabilities` tells the admin what to offer, also before the login.
 
 See [`defineUserActions()`](../../api/server/auth.md#defineuseractions) for all
 actions.

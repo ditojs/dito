@@ -18,7 +18,7 @@ export const usernameComponent = {
 // The login dialog resolves to the credentials, to `'passkey'` to log in with a
 // passkey, or to `'passwordReset'` to reset the password:
 /** @returns {DialogOptions} */
-export function createLoginDialog(features, additionalFields = {}) {
+export function createLoginDialog(capabilities, additionalFields = {}) {
   return {
     fields: {
       username: {
@@ -31,7 +31,7 @@ export function createLoginDialog(features, additionalFields = {}) {
         type: 'password',
         autocomplete: 'current-password',
         prefix: { type: 'icon', name: 'lock' },
-        ...(features.hasPasswordReset && {
+        ...(capabilities.hasPasswordReset && {
           suffix: {
             type: 'button',
             text: 'Forgot?',
@@ -50,7 +50,7 @@ export function createLoginDialog(features, additionalFields = {}) {
         text: 'Sign In'
       },
 
-      ...createPasskeyButtons(features, 'Sign In with Passkey'),
+      ...createPasskeyButtons(capabilities, 'Sign In with Passkey'),
 
       // `DitoDialog` adds the click event of the cancel button:
       cancel: {
@@ -141,7 +141,7 @@ export function createNewPasswordDialog() {
 // The confirm access dialog resolves to the password, or to `'passkey'` to
 // confirm the access with a passkey:
 /** @returns {DialogOptions} */
-export function createConfirmAccessDialog(features, user) {
+export function createConfirmAccessDialog(capabilities, user) {
   return {
     fields: {
       username: usernameComponent,
@@ -160,7 +160,7 @@ export function createConfirmAccessDialog(features, user) {
         text: 'Confirm'
       },
 
-      ...createPasskeyButtons(features, 'Use Passkey'),
+      ...createPasskeyButtons(capabilities, 'Use Passkey'),
 
       cancel: {
         type: 'button',

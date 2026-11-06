@@ -160,7 +160,7 @@ export function defineUserActions<U extends User>({
     },
 
     // What the admin offers, also before the login:
-    'get features': () => ({
+    'get capabilities': () => ({
       hasPasskeys: !!passkeys,
       hasTotp: !!totp,
       hasPasswordChange: true,

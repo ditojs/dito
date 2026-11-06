@@ -116,11 +116,11 @@ export async function mountForm({
 // Mounts `DitoAdmin` with `views` into a new element in the document, and waits
 // until the views are resolved and their routes are set up, or until it asks to
 // log in. `request(options)` handles the API requests other than the requests
-// for the logged-in user and for the `features` of the users API, and returns
-// the response as `{ data }` or throws. With the URL of a `server`, e.g. of a
-// scenario's app, the server answers all requests instead. The admin starts at
-// `path`. `api` is merged into the API settings, e.g. `api.defaults` or
-// `api.formats`, and `settings` are the ones of the `dito` object.
+// for the logged-in user and for the `capabilities` of the users API, and
+// returns the response as `{ data }` or throws. With the URL of a `server`,
+// e.g. of a scenario's app, the server answers all requests instead. The admin
+// starts at `path`. `api` is merged into the API settings, e.g. `api.defaults`
+// or `api.formats`, and `settings` are the ones of the `dito` object.
 export async function mountAdmin({
   views,
   request = null,
@@ -128,7 +128,7 @@ export async function mountAdmin({
   path = '/',
   api = {},
   settings = {},
-  features = {},
+  capabilities = {},
   options = {}
 }) {
   if (server) {
@@ -145,8 +145,8 @@ export async function mountAdmin({
     if (method === 'get' && url === '/self') {
       return { data: { id: 1, username: 'tester' } }
     }
-    if (method === 'get' && url === `${usersPath}/features`) {
-      return { data: features }
+    if (method === 'get' && url === `${usersPath}/capabilities`) {
+      return { data: capabilities }
     }
     if (!request) {
       throw new Error(`Unexpected request: ${method} ${url}`)

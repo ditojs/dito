@@ -198,11 +198,11 @@ async function getViteConfig(name: string, views: string) {
   return config
 }
 
-// Answers the own user as logged in, and no features of the users API, for
+// Answers the own user as logged in, and no capabilities of the users API, for
 // scenarios without users of their own.
 export function stubSession(): MiddlewareHandler {
   const user = { id: 1, username: 'test', name: 'Test' }
-  const features = {
+  const capabilities = {
     hasPasskeys: false,
     hasTotp: false,
     hasPasswordChange: false,
@@ -212,7 +212,7 @@ export function stubSession(): MiddlewareHandler {
     const { path, method } = c.req
     if (method === 'GET') {
       if (path === '/api/self') return c.json(user)
-      if (path === '/api/features') return c.json(features)
+      if (path === '/api/capabilities') return c.json(capabilities)
     }
     await next()
   }

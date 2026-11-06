@@ -439,7 +439,7 @@ describe('sessions', () => {
     { passkeys: false, totp: false, passwordReset: true },
     { passkeys: true, totp: true, passwordReset: true }
   ])(
-    'serves the features without a login, with passkeys: $passkeys, ' +
+    'serves the capabilities without a login, with passkeys: $passkeys, ' +
     'TOTP: $totp, password reset: $passwordReset',
     async ({ passkeys, totp, passwordReset }) => {
       const { api } = setup({
@@ -460,7 +460,7 @@ describe('sessions', () => {
         }
       })
       const client = createClient(api.fetch)
-      expect((await client.get('/admins/features')).data).toEqual({
+      expect((await client.get('/admins/capabilities')).data).toEqual({
         hasPasskeys: passkeys,
         hasTotp: totp,
         hasPasswordChange: true,

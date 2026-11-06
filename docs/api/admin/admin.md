@@ -154,7 +154,7 @@ through `POST admins/login`, logs out through `POST admins/logout` and loads the
 logged-in user from `GET admins/self`, which returns `null` without one. It
 reads `user` or `codeRequired` from the response of `login`. The admin offers
 password changes, password resets, passkeys and TOTP when the server enables
-them, see [features](#features). Their requests use the action names
+them, see [capabilities](#capabilities). Their requests use the action names
 of `defineUserActions()` under the same path, e.g. `POST admins/passkey-login`.
 The [account settings](#parameters) load the user from `self` too and patch it
 there, after which the admin fetches the user again. Requests that respond with
@@ -163,12 +163,12 @@ them to `confirm-access` and are sent again. See [AdminContext](#session) for
 the session that uses them. Without `users.path`, the routes are at the root of
 the API.
 
-### features
+### capabilities
 
-When it starts, the admin loads the features of the users controller from
-`GET admins/features` under [`api.users`](#users), also without a login:
+When it starts, the admin loads the capabilities of the users controller from
+`GET admins/capabilities` under [`api.users`](#users), also without a login:
 
-| Feature             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Capability          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `hasPasswordChange` | Set when the users controller routes `'post password'`, which `defineUserActions()` always does. Lets the user change their password in the Security dialog of the account menu. The account menu only offers the Security dialog when `hasPasswordChange`, `hasPasskeys` or `hasTotp` is set.                                                                                                                                                                                                                                                                                                                               |
 | `hasPasskeys`       | Set when the users controller routes the passkey actions, with [`createPasskeys()`](../server/auth.md#createpasskeys). Adds a Sign In with Passkey button to the login dialog. The Security dialog of the account menu lists the user's passkeys, named after their providers, and lets the user add and remove them. Needs the peer dependency `@simplewebauthn/browser`.                                                                                                                                                                                                                                                   |
@@ -377,9 +377,9 @@ asking again after each failure, until it succeeds or the user cancels. When
 the response has `codeRequired`, for users with TOTP, it asks for the code of
 their authenticator app or a backup code, and posts it to `login-code`, asking
 again after wrong codes, and for the password when the user cancels or the
-login expires. With `hasPasswordReset` among the [features](#features), it
-requests a password reset instead when the user chooses Forgot? in the password field, and then
-asks to log in again.
+login expires. With `hasPasswordReset` among the
+[capabilities](#capabilities), it requests a password reset instead when the
+user chooses Forgot? in the password field, and then asks to log in again.
 With `login.redirectAfterLogin`, a successful login loads that URL instead.
 
 ##### Return value

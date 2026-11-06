@@ -19,8 +19,8 @@ import type { RequestMethodResponse } from '../../types/index.d.ts'
 
 export type User = Record<string, any>
 
-// What the users API offers, from its `get features` action:
-export interface Features {
+// What the users API offers, from its `get capabilities` action:
+export interface Capabilities {
   hasPasskeys?: boolean
   hasTotp?: boolean
   hasPasswordChange?: boolean
@@ -45,7 +45,7 @@ export class Session {
   readonly #user: ShallowRef<User | null>
   // The responses of `request({ cache: 'global' })`, kept for the same user:
   loadCache: Record<string, Promise<any>> = {}
-  features: Features = {}
+  capabilities: Capabilities = {}
 
   constructor({
     adminContext,
@@ -80,10 +80,10 @@ export class Session {
       const { path, query } = router.currentRoute.value
       await router.replace({ path, query })
     }
-    // Load the features along with the user, and set the user once both are
-    // there, as the login dialog and the account menu need the features:
+    // Load the capabilities along with the user, and set the user once both
+    // are there, as the login dialog and the account menu need them:
     const [, user] = await Promise.all([
-      this.#fetchFeatures(),
+      this.#fetchCapabilities(),
       this.#loadUser()
     ])
     this.#setUser(user)
@@ -99,7 +99,7 @@ export class Session {
     const loginData = await this.#adminContext.showDialog<
       Record<string, any> | 'passkey' | 'passwordReset'
     >(
-      createLoginDialog(this.features, this.#login.additionalFields)
+      createLoginDialog(this.capabilities, this.#login.additionalFields)
     )
     if (!loginData) {
       return null
@@ -177,7 +177,7 @@ export class Session {
     const data = await this.#adminContext.showDialog<
       { password: string } | 'passkey'
     >(
-      createConfirmAccessDialog(this.features, this.#adminContext.user)
+      createConfirmAccessDialog(this.capabilities, this.#adminContext.user)
     )
     if (data) {
       try {
@@ -276,10 +276,10 @@ export class Session {
     }
   }
 
-  async #fetchFeatures() {
+  async #fetchCapabilities() {
     try {
-      const response = await this.#request(this.#api.users.features)
-      this.features = response.data
+      const response = await this.#request(this.#api.users.capabilities)
+      this.capabilities = response.data
     } catch (error) {
       this.#notifyError(error)
     }
