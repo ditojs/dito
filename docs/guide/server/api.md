@@ -6,7 +6,7 @@ import { createMikroAdapter } from '@ditojs/mikro'
 
 const api = createApi({
   controllers: [books, authors, loans],
-  sessions: admins,
+  users: admins,
   adapter: createMikroAdapter(orm)
 })
 app.route('/api/admin', api)
@@ -125,12 +125,12 @@ Requests without these headers keep their own URL and address.
 ```js
 const adminApi = createApi({
   controllers: adminControllers,
-  sessions: admins,
+  users: admins,
   adapter: createMikroAdapter(orm)
 })
 const frontApi = createApi({
   controllers: frontControllers,
-  sessions: members,
+  users: members,
   adapter: createMikroAdapter(orm)
 })
 
@@ -172,7 +172,7 @@ old migrations with knex's CLI until the Migrator takes over, see
 ## Users
 
 ```js
-sessions: admins
+users: admins
 ```
 
 `getUser({ c })` returns the user of a request as `{ id, roles }`, or `null`.
@@ -181,7 +181,7 @@ sessions: admins
 - Handlers read it as `user` of their context.
 - `authorize` checks its roles.
 
-`sessions` takes the users of `createUsers()` of `@ditojs/auth`, see
+`users` takes the result of `createUsers()` of `@ditojs/auth`, see
 [Users and sessions](auth.md). They load the session and read its user.
 
 ## Errors and logging

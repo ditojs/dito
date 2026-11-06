@@ -46,11 +46,11 @@ const admins = createUsers(Admin, {
   serialize: ['id', 'username', 'roles']
 })
 
-createApi({ controllers, adapter, sessions: admins })
+createApi({ controllers, adapter, users: admins })
 ```
 
 Sets up one kind of users, such as admins or members, on an entity, with their
-sessions and credentials. The app passes the result as `sessions` to
+sessions and credentials. The app passes the result as `users` to
 [`createApi()`](api.md#apiconfig), `app.routeApi()` and
 [`createAdmin()`](../admin/server.md#createadminoptions).
 

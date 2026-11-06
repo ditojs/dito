@@ -12,7 +12,7 @@ const admin = createAdmin({
     process.env.NODE_ENV === 'development' ? 'admin.vite.config.js' : undefined,
   api: { url: '/api/admin', users: { path: 'admins' } },
   settings: { language: 'en' },
-  sessions: admins,
+  users: admins,
   authorize: ['admin', 'editor']
 })
 
@@ -39,7 +39,7 @@ The options:
   [users controller](auth.md#the-users-controller) at `api.users` when it
   starts. They tell the login and account views what to offer.
 - `createAdmin()` returns a Hono app, which the app routes at `base`.
-- `sessions`, `middleware`, `getUser` and `authorize` work as in
+- `users`, `middleware`, `getUser` and `authorize` work as in
   [`createApi()`](controllers.md#authorization).
 - `authorize` decides whether a request may load the admin's views.
   `middleware` runs only on those requests. Other requests, such as the

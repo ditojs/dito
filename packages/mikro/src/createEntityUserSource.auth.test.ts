@@ -42,7 +42,7 @@ const app = new Hono().route(
   '/',
   createApi({
     adapter: createMikroAdapter(orm),
-    sessions: members,
+    users: members,
     controllers: [
       { path: 'auth', mixins: [members.defineActions()] },
       defineModelController({
@@ -141,7 +141,7 @@ describe('defineUserWrites() with confirmed access', () => {
     '/',
     createApi({
       adapter: createMikroAdapter(orm),
-      sessions: members,
+      users: members,
       controllers: [
         {
           path: 'auth',
@@ -196,7 +196,7 @@ describe('createUsers() on read-only controllers', () => {
       '/',
       createApi({
         adapter: createMikroAdapter(orm),
-        sessions: members,
+        users: members,
         controllers: [
           defineModelController({
             path: 'members',

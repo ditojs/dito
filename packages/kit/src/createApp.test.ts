@@ -107,7 +107,7 @@ describe('createApp()', () => {
           { path: 'users', mixins: [users.defineActions()] },
           books(role)
         ],
-        sessions: users
+        users
       })
     }
 

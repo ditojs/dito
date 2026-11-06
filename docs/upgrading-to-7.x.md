@@ -571,7 +571,7 @@ import * as mailer from './services/mailer.js'
 import * as scheduler from './services/scheduler.js'
 import { admins } from './users.js'
 
-app.routeApi('/api', { controllers, sessions: admins })
+app.routeApi('/api', { controllers, users: admins })
 await app.start({ services: [mailer, scheduler] })
 ```
 
@@ -606,7 +606,7 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 
 - `app.createUsers(entity, { session: { cookieName, maxAge }, serialize })`
   returns the users of an entity, which `app.routeApi()` and `createAdmin()`
-  take as `sessions`. Without the kit, the app calls
+  take as `users`. Without the kit, the app calls
   [`createUsers()`](api/server/auth.md#createusers) with `orm` and `secrets`. It
   takes `usernameProperty` as before.
 - [`users.defineActions()`](api/server/auth.md#defineactions) serves the admin's
@@ -715,7 +715,7 @@ const admin = createAdmin({
   dist: path.resolve('dist/admin'),
   vite: isDevelopment ? 'admin.vite.config.js' : undefined,
   api: { url: '/api/admin', users: { path: 'admins' } },
-  sessions: admins,
+  users: admins,
   authorize: 'admin'
 })
 app.hono.route('/admin', admin)

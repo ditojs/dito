@@ -27,10 +27,10 @@ import type {
 // matches go on to the app's `notFound()`.
 export function createApi({
   controllers,
-  sessions,
+  users,
   middleware,
   adapter = {},
-  getUser = sessions?.getUser,
+  getUser = users?.getUser,
   onError
 }: ApiConfig) {
   const app = new Hono<DitoEnv>()
@@ -38,7 +38,7 @@ export function createApi({
   // don't run each other's middleware, in any order.
   const setup: Middleware[] = [
     contextStorage(),
-    ...asArray(sessions?.middleware),
+    ...asArray(users?.middleware),
     ...asArray(middleware),
     async (c, next) => {
       if (adapter.connect) c.set('em', await adapter.connect(c))

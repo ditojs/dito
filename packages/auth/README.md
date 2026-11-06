@@ -32,7 +32,7 @@ const users = defineController({
 const api = createApi({
   controllers: [users, ...controllers],
   adapter,
-  sessions: admins
+  users: admins
 })
 
 const app = new Hono()

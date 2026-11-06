@@ -104,7 +104,7 @@ admin's views:
 ```js
 createAdmin({
   ...options,
-  sessions: users,
+  users,
   authorize: ['editor', 'desk', 'admin']
 })
 ```

@@ -37,7 +37,7 @@ export const admins = createUsers(Admin, {
 ```
 
 [`createUsers()`](../../api/server/auth.md#createusers) returns the users. The
-app passes them to the API as `sessions`:
+app passes them to the API as `users`:
 
 ```js
 import { Hono } from 'hono'
@@ -47,7 +47,7 @@ import { createMikroAdapter } from '@ditojs/mikro'
 const api = createApi({
   controllers,
   adapter: createMikroAdapter(orm),
-  sessions: admins
+  users: admins
 })
 
 const app = new Hono()
@@ -268,12 +268,12 @@ actions: {
 
 Users other than the admin's, such as the members of a library, have a
 `createUsers()` of their own, and so a session of their own. Their API takes
-them as `sessions`. They log in through `members.defineActions()`, or through
+them as `users`. They log in through `members.defineActions()`, or through
 the app's own actions, as above.
 
 ## Users outside of Dito
 
-`createAdmin()` takes `sessions`, as `createApi()` does. It checks the roles of
+`createAdmin()` takes `users`, as `createApi()` does. It checks the roles of
 the user in `authorize`, see [Serving the admin](admin.md).
 
 ```js

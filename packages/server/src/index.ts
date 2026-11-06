@@ -3,7 +3,7 @@ export type {
   Actions,
   Adapter,
   ApiConfig,
-  ApiSessions,
+  ApiUsers,
   Authorize,
   ControllerDefinition,
   DitoContext,

@@ -23,10 +23,10 @@ export interface CreateAdminOptions {
   api?: Record<string, unknown>
   // `dito.settings` in the browser.
   settings?: Record<string, unknown>
-  // The sessions that `getUser` and `authorize` need, such as those of
-  // `createUsers()`. Their middleware runs only on the requests that
-  // `authorize` checks, and `getUser` defaults to theirs.
-  sessions?: {
+  // The users that `getUser` and `authorize` need, from `createUsers()`. Their
+  // session middleware runs only on the requests that `authorize` checks, and
+  // `getUser` defaults to theirs.
+  users?: {
     middleware: MiddlewareHandler
     getUser?: (context: { c: Context }) => User | null | Promise<User | null>
   }
@@ -60,9 +60,9 @@ export type AdminServer = Hono<AdminEnv> & {
 
 export function createAdmin(options: CreateAdminOptions): AdminServer {
   const {
-    sessions,
+    users,
     middleware,
-    getUser = sessions?.getUser,
+    getUser = users?.getUser,
     authorize,
     api = {},
     settings = {}
@@ -102,7 +102,7 @@ export function createAdmin(options: CreateAdminOptions): AdminServer {
     })
     const handlers = [
       contextStorage(),
-      ...asArray(sessions?.middleware),
+      ...asArray(users?.middleware),
       ...asArray(middleware)
     ]
     app.use('/views/*', ...handlers, async (c, next) => {

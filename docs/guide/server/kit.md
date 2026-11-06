@@ -39,13 +39,13 @@ import * as controllers from './controllers/index.js'
 import * as mailer from './services/mailer.js'
 import { admins } from './users.js'
 
-app.routeApi('/api', { controllers, sessions: admins })
+app.routeApi('/api', { controllers, users: admins })
 app.hono.route(
   '/admin',
   createAdmin({
     base: '/admin',
     dist: 'dist/admin',
-    sessions: admins,
+    users: admins,
     authorize: 'admin'
   })
 )
@@ -54,7 +54,7 @@ await app.start({ services: [mailer] })
 
 - `app.routeApi()` routes an API on the app's database. The user of a request is
   the one of its session.
-- `sessions` takes the users of `app.createUsers()`, see [Users](#users).
+- `users` takes the result of `app.createUsers()`, see [Users](#users).
 - `app.start()` runs until `app.close()`, SIGINT or SIGTERM.
 - `app.hono` takes the app's own middleware and other Hono apps, such as the
   [admin](admin.md). Middleware goes before the routes.
