@@ -210,7 +210,7 @@ The `asset` rows go through two Kyselys:
 
 - Writes and uploads use the Kysely of the request's entity manager,
   `c.var.em.getKysely()`. So the `asset` rows of a write commit with its
-  transaction.
+  transaction. Uploads run without a transaction, so their rows commit at once.
 - `findReferences()` joins the transaction of the running request too. So it
   sees the request's own changes.
 - The other methods use `adapter.getKysely()`, outside of the requests'

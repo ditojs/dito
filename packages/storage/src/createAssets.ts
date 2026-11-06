@@ -58,9 +58,10 @@ export function createAssets({
   const defaultDeleteUnusedAfter = parseDeleteUnusedAfter(deleteUnusedAfter)
   const defaultMaxSize = parseMaxSize(maxSize)
   const normalizedFields = normalizeAssetFields(fields, defaultMaxSize)
-  // Writes and uploads use the Kysely of the request, so that the `asset` rows
-  // of a write commit with its transaction. The other methods run outside of
-  // the requests' transactions.
+  // Writes use the Kysely of the request, so that the `asset` rows of a write
+  // commit with its transaction. Uploads use it too, but run without one, so
+  // their rows commit at once. The other methods run outside of the requests'
+  // transactions.
   const { getKysely } = adapter
   const fieldsByEntity = Map.groupBy(normalizedFields, field => field.entity)
   const uploadsByEntity = new Map<object, NormalizedAssetUpload[]>()
