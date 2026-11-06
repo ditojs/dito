@@ -3,15 +3,8 @@ import { HTTPException } from 'hono/http-exception'
 import { isNumber, isString } from '@ditojs/utils'
 import type { Adapter, ErrorLogger, HttpErrorBody } from './types.ts'
 
-// Errors respond with JSON: `{ type, message, status, code, errors }`. An
-// `HttpError` is meant for the client, which gets its message and data. Other
-// errors with a numeric `status`, such as those of http-errors, respond with
-// that status, and with their message when `expose` is true, by default below
-// 500. All other errors respond with 500. Errors with a status of 500 or above
-// go to the `onError` hook of `createApi()` and `createErrorHandler()`, which
-// by default logs them through `c.var.logger`, any object with `error()`, else
-// `console`.
-
+// Errors respond with JSON: `{ type, message, status, code, errors }`. Those
+// with a status of 500 or above also go to `onError`.
 const titles: Record<number, string> = {
   400: 'Bad Request',
   401: 'Unauthorized',
@@ -30,9 +23,9 @@ const titles: Record<number, string> = {
   503: 'Service Unavailable'
 }
 
-function getStatusTitle(status: number) {
-  return titles[status] ?? (status < 500 ? 'Client Error' : 'Server Error')
-}
+// The headers that describe a response's data, which errors don't keep. Hono
+// gives their names in lower case.
+const dataHeaders = /^(content-(?!security-)|etag$|cache-control$|location$)/
 
 interface HttpErrorOptions {
   // Default: the title of the status, such as `Not Found`.
@@ -58,7 +51,12 @@ export class HttpError extends Error {
     status: number,
     { message, type, code, errors, cause, ...data }: HttpErrorOptions = {}
   ) {
-    super(message ?? getStatusTitle(status), { cause })
+    super(
+      message ??
+      titles[status] ??
+      (status < 500 ? 'Client Error' : 'Server Error'),
+      { cause }
+    )
     this.name = 'HttpError'
     this.status = status
     this.type = type
@@ -113,16 +111,51 @@ export function createValidationError(
   return new HttpError(status, {
     type,
     message,
-    errors: toFieldErrors(issues),
+    errors: getFieldErrors(issues),
     cause
   })
 }
 
-// The errors of the fields, keyed by their path, such as `chapters/8/title`,
-// and `''` for the value itself. The code of an issue becomes its `keyword`.
-function toFieldErrors(issues: readonly ValidationIssue[]) {
+// Hosts also pass it to `app.onError()`, for the errors outside of APIs, such
+// as those of their own middleware.
+export function createErrorHandler({
+  onError = logError,
+  toHttpError
+}: {
+  onError?: ErrorLogger
+  toHttpError?: Adapter['toHttpError']
+} = {}): ErrorHandler {
+  return async (error, c) => {
+    const httpError = convertStatusError(toHttpError?.(error, c) ?? error)
+    const body = (httpError ?? new HttpError(500)).toJSON()
+    if (body.status >= 500) await onError({ error, c })
+    const response = Response.json(body, { status: body.status })
+    // Keep the headers set before the error, such as cookies and those of
+    // `cors()`, and those of an `HTTPException`, such as `WWW-Authenticate`:
+    const headers = [
+      ...c.res.headers,
+      ...(error instanceof HTTPException ? (error.res?.headers ?? []) : [])
+    ]
+    // Hono adds them itself, except for errors of a route's only handler, so
+    // copy them and drop the current response.
+    c.res = undefined
+    for (const [name, value] of headers) {
+      if (!dataHeaders.test(name)) response.headers.append(name, value)
+    }
+    return response
+  }
+}
+
+// For `app.notFound()`, with the error going to `createErrorHandler()`.
+export const notFound: NotFoundHandler = () => {
+  throw new HttpError(404)
+}
+
+function getFieldErrors(issues: readonly ValidationIssue[]) {
   const errors: NonNullable<HttpErrorBody['errors']> = {}
   for (const { message, path = [], code } of issues) {
+    // Key the errors by path, such as `chapters/8/title`, and by `''` for the
+    // value itself:
     const key = path.map(String).join('/')
     ;(errors[key] ??= []).push({
       message,
@@ -132,64 +165,26 @@ function toFieldErrors(issues: readonly ValidationIssue[]) {
   return errors
 }
 
-// The `HttpError` of an error with a numeric `status` between 400 and 599,
-// or `undefined`. An `HttpError` is returned as it is.
-function toStatusError(error: unknown) {
-  if (error instanceof HttpError) return error
+// Convert errors with a numeric `status` between 400 and 599, such as those of
+// http-errors. Their message is exposed if `expose` is true, by default below
+// 500.
+function convertStatusError(error: unknown) {
   const { status, expose, message } = (error ?? {}) as {
     status?: unknown
     expose?: boolean
     message?: string
   }
-  if (!isNumber(status) || status < 400 || status > 599) return undefined
-  return new HttpError(status, {
-    message: ((expose ?? status < 500) && message) || undefined,
-    cause: error
-  })
+  return error instanceof HttpError
+    ? error
+    : isNumber(status) && status >= 400 && status <= 599
+      ? new HttpError(status, {
+          message: ((expose ?? status < 500) && message) || undefined,
+          cause: error
+        })
+      : undefined
 }
 
 function logError({ error, c }: { error: unknown; c: Context }) {
   const { logger = console } = c.var as { logger?: Pick<Console, 'error'> }
   logger.error(error)
-}
-
-// The headers of a response that describe its data. Names are in lower case.
-const dataHeaders = /^(content-(?!security-)|etag$|cache-control$|location$)/
-
-// The error handler of Hono apps, which hosts pass to `app.onError()` for the
-// errors outside of APIs, such as those of their own middleware. `onError` gets
-// the errors with a status of 500 or above. The response keeps the headers that
-// were set before the error, such as cookies and those of `cors()`, and those
-// of the response of Hono's `HTTPException`, such as `WWW-Authenticate`, except
-// the ones that describe the data.
-export function createErrorHandler({
-  onError = logError,
-  toHttpError
-}: {
-  onError?: ErrorLogger
-  toHttpError?: Adapter['toHttpError']
-} = {}): ErrorHandler {
-  return async (error, c) => {
-    const httpError = toStatusError(toHttpError?.(error, c as never) ?? error)
-    const body = (httpError ?? new HttpError(500)).toJSON()
-    if (body.status >= 500) await onError({ error, c })
-    const response = Response.json(body, { status: body.status })
-    const headers = [
-      ...c.res.headers,
-      ...(error instanceof HTTPException ? (error.res?.headers ?? []) : [])
-    ]
-    // Hono adds the headers of the current response to the one returned here,
-    // but not when the error comes from the only handler of a route. So this
-    // copies them and drops the current response.
-    c.res = undefined
-    for (const [name, value] of headers) {
-      if (!dataHeaders.test(name)) response.headers.append(name, value)
-    }
-    return response
-  }
-}
-
-// The handler of `app.notFound()`. `createErrorHandler()` handles its error.
-export const notFound: NotFoundHandler = () => {
-  throw new HttpError(404)
 }

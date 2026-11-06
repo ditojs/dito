@@ -2422,7 +2422,7 @@ describe('layers', () => {
 
   it('throws for a key without a handler', () => {
     expect(() => setup(books({ actions: { 'get other': true } }))).toThrow(
-      `Invalid action 'get other' in 'books' without a handler`
+      `Invalid action without a handler: 'get other' in 'books'.`
     )
   })
 

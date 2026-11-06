@@ -66,7 +66,7 @@ describe('hostMiddleware()', () => {
     expect((await post(app, plain, 'x'.repeat(1000))).status).toBe(200)
     expect((await post(app, plain, 'x'.repeat(1001))).status).toBe(413)
     expect(() => hostMiddleware({ bodyLimit: { maxSize: 'large' } })).toThrow(
-      `Invalid file size: 'large'`
+      `Invalid file size: 'large'.`
     )
   })
 

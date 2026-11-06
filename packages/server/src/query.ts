@@ -1,12 +1,6 @@
 import { z } from 'zod'
 import { asArray, isObject } from '@ditojs/utils'
 
-// Query values arrive as strings. Before a schema validates them, they become
-// what it expects, read from its JSON Schema: numbers, booleans, dates, and
-// arrays of these from all values of a key. Strings that don't convert stay
-// strings, so that the schema rejects them. Unions, transforms and all other
-// types get the strings as they are.
-
 type JsonSchema = z.core.JSONSchema.BaseSchema
 
 const jsonSchemas = new WeakMap<z.ZodType, JsonSchema>()
@@ -18,8 +12,10 @@ const booleans: Record<string, boolean> = {
   0: false
 }
 
-// Converts the values of a query, by key, to the properties of `schema`. Keys
-// that it doesn't describe keep their string, or their strings when repeated.
+// Query values arrive as strings. Before `schema` validates them, convert them
+// to numbers, booleans, dates, and arrays of these from all values of a key, as
+// its JSON Schema expects. Strings that don't convert stay strings, for the
+// schema to reject. Keys that it doesn't describe keep their strings.
 export function convertQuery(
   schema: z.ZodType,
   query: Record<string, string[]>
@@ -37,8 +33,8 @@ export function convertQuery(
   )
 }
 
-// Converts one value or the values of a repeated key, such as the arguments of
-// a list filter, to what `schema` expects.
+// For one value or the values of a repeated key, such as the arguments of a
+// list filter.
 export function convertQueryValue(
   schema: z.ZodType,
   value: string | string[]
@@ -46,15 +42,15 @@ export function convertQueryValue(
   return convertValues(getJsonSchema(schema), asArray(value))
 }
 
-// The JSON Schema of the input, once per schema. Dates have no JSON Schema, so
-// they get `instanceof: 'Date'`. An empty registry inlines the schemas that
-// have an id in the global one, instead of referencing them in `$defs`.
 function getJsonSchema(schema: z.ZodType) {
   let jsonSchema = jsonSchemas.get(schema)
   if (!jsonSchema) {
     jsonSchema = z.toJSONSchema(schema, {
       io: 'input',
+      // An empty registry inlines the schemas that have an id in the global
+      // one, instead of referencing them in `$defs`.
       metadata: z.registry(),
+      // Dates have no JSON Schema:
       unrepresentable: ({ zodSchema }) =>
         zodSchema instanceof z.ZodDate ? { instanceof: 'Date' } : 'any'
     })
@@ -63,8 +59,8 @@ function getJsonSchema(schema: z.ZodType) {
   return jsonSchema
 }
 
-// An array takes all values. Other types take a single value, and get the
-// values of a repeated key as they are, for the schema to reject.
+// Types other than arrays take a single value, and get the values of a
+// repeated key as they are, for the schema to reject.
 function convertValues(schema: JsonSchema, values: string[]) {
   const { type, items } = getType(schema)
   // Tuples have `prefixItems` instead of `items`, and get the strings.
@@ -89,8 +85,8 @@ function convertValue(schema: JsonSchema, value: string) {
   return value
 }
 
-// The one type that `schema` describes besides `null`, with its `items`, else
-// no type, such as for unions.
+// Find the one type besides `null`, with its `items`. Unions, transforms and
+// all other schemas have none, so that their values stay strings.
 function getType(schema: JsonSchema): { type?: string; items?: unknown } {
   if (schema.anyOf) {
     const schemas = schema.anyOf.filter(item => item.type !== 'null')

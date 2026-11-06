@@ -7,10 +7,7 @@ import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
 import { parseFileSize } from '@ditojs/utils'
 
-// Hono's standard middleware for a host, for `app.use(...hostMiddleware())`.
-// Each option is `false`, `true` for the defaults of that middleware, or its
-// options.
-
+// `false`, `true` for the defaults of the middleware, or its options:
 type Option<T extends (...args: any[]) => unknown> =
   | boolean
   | NonNullable<Parameters<T>[0]>
@@ -38,12 +35,11 @@ type BodyLimitOptions = Partial<
 
 const defaultBodyLimit = 1024 * 1024
 
-const overBodyLimit = () => {
+const rejectLargeBody = () => {
   throw new HTTPException(413, { message: 'Payload Too Large' })
 }
 
-// `csrf()` and `bodyLimit()` run after `secureHeaders()` and `cors()`, so that
-// their responses have the headers of these.
+// Hono's standard middleware for hosts, for `app.use(...hostMiddleware())`.
 export function hostMiddleware({
   csrf: csrfOptions = true,
   secureHeaders: secureHeadersOptions = true,
@@ -51,34 +47,40 @@ export function hostMiddleware({
   etag: etagOptions = false,
   bodyLimit: bodyLimitOptions = true
 }: HostMiddlewareOptions = {}) {
-  const options = <T>(value: true | T) => (value === true ? undefined : value)
+  const getOptions = <T>(value: true | T) =>
+    value === true ? undefined : value
   const middleware: MiddlewareHandler[] = []
   if (secureHeadersOptions) {
-    middleware.push(secureHeaders(options(secureHeadersOptions)))
+    middleware.push(secureHeaders(getOptions(secureHeadersOptions)))
   }
-  if (corsOptions) middleware.push(cors(options(corsOptions)))
-  if (etagOptions) middleware.push(etag(options(etagOptions)))
+  if (corsOptions) middleware.push(cors(getOptions(corsOptions)))
+  if (etagOptions) middleware.push(etag(getOptions(etagOptions)))
+  // `csrf()` and `bodyLimit()` run last, so that their responses have the
+  // headers of `secureHeaders()` and `cors()`.
   if (csrfOptions) {
-    const check = csrf(options(csrfOptions))
+    const check = csrf(getOptions(csrfOptions))
     middleware.push((c, next) =>
       c.req.header('Origin') ? check(c, next) : next()
     )
   }
   if (bodyLimitOptions) {
-    const { maxSize: size = defaultBodyLimit, onError = overBodyLimit } = (
-      options(bodyLimitOptions) ?? {}
+    const { maxSize: size = defaultBodyLimit, onError = rejectLargeBody } = (
+      getOptions(bodyLimitOptions) ?? {}
     )
     const maxSize = parseFileSize(size)
     const limit = bodyLimit({ maxSize, onError })
     middleware.push(async (c, next) => {
-      if (c.req.header('Content-Type')?.startsWith('multipart/')) return next()
       const length = c.req.header('Content-Length')
-      if (length === undefined) return limit(c, next)
       // `bodyLimit()` reads `c.req.raw.body`, after which `@hono/node-server`
-      // resets the connection of a body that nothing read. The next request
-      // of a keep-alive connection would fail. So bodies of a known size don't
-      // go through it.
-      return Number(length) > maxSize ? onError(c) : next()
+      // resets keep-alive connections of unread bodies, failing their next
+      // request. So only bodies of an unknown size go through it.
+      return c.req.header('Content-Type')?.startsWith('multipart/')
+        ? next()
+        : length === undefined
+          ? limit(c, next)
+          : Number(length) > maxSize
+            ? onError(c)
+            : next()
     })
   }
   return middleware

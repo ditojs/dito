@@ -121,7 +121,7 @@ describe('serve()', () => {
       'Timeout reached while stopping the server (10ms)'
     )
     await expect(serve(new Hono(), { closeTimeout: 'soon' })).rejects.toThrow(
-      `Invalid duration: 'soon'`
+      `Invalid duration: 'soon'.`
     )
   })
 

@@ -1,12 +1,7 @@
 import { Hono, type Context } from 'hono'
 import type { z } from 'zod'
 import { asArray, isArray, isFunction, isString } from '@ditojs/utils'
-import {
-  compareRanks,
-  rank,
-  resolveController,
-  type ResolvedAction
-} from './compose.ts'
+import { resolveController, type ResolvedAction } from './compose.ts'
 import { isController } from './define.ts'
 import { convertQuery } from './query.ts'
 import {
@@ -26,12 +21,9 @@ import type {
   Transaction
 } from './types.ts'
 
-// Builds a Hono app of the controllers, which the app routes with
-// `app.route('/api', api)`. A request runs the API's `middleware`, sets
-// `c.var.em` and `c.var.user`, then runs the middleware of its action, see
-// `getMiddleware()`. The handler runs last, inside the transaction and the
-// middleware. Paths that no action matches go on to the app's `notFound()`.
-
+// A request runs the API's `middleware`, sets `c.var.em` and `c.var.user`, then
+// runs the middleware of its action, and last the handler. Paths that no action
+// matches go on to the app's `notFound()`.
 export function createApi({
   controllers,
   middleware,
@@ -45,44 +37,42 @@ export function createApi({
     c.set('user', (await getUser?.({ c })) ?? null)
     await next()
   })
-  // The routes by method and path, with the names of parameters left out.
-  const routes = new Set<string>()
+  const routeShapes = new Set<string>()
   const definitions = isArray(controllers)
     ? controllers
     : Object.values(controllers).filter(isController)
-  const actions = definitions.flatMap(definition => {
-    const controller = resolveController(definition)
-    return controller.actions.map(action => {
+  const routes = definitions.flatMap(definition =>
+    resolveController(definition).map(action => {
       const { key, authorize, transacted } = action
-      const where = `'${key}' in '${controller.path}'`
+      const where = `'${key}' in '${definition.path}'`
       // Without `getUser`, there is no user whose roles could match.
       if (!getUser && (isString(authorize) || isArray(authorize))) {
         throw new Error(
-          `Unable to check the roles of ${where} without \`getUser\``
+          `Unable to check the roles of ${where} without \`getUser\`.`
         )
       }
       if (transacted && !adapter.transaction) {
         throw new Error(
           `Unable to run ${where} in a transaction: the adapter has no ` +
-          '`transaction`'
+          '`transaction`.'
         )
       }
       return {
         action,
-        path: `/${[controller.path, action.path].filter(Boolean).join('/')}`
+        path: `/${[definition.path, action.path].filter(Boolean).join('/')}`
       }
     })
-  })
+  )
   // Hono runs the first route that matches, so static segments go before
   // parameters, also across controllers: `get subscribe` before `get :id`.
-  actions.sort((a, b) => compareRanks(rank(a.path), rank(b.path)))
-  for (const { action, path } of actions) {
+  routes.sort((a, b) => compareRanks(rank(a.path), rank(b.path)))
+  for (const { action, path } of routes) {
     const method = action.verb.toUpperCase()
-    const route = `${method} ${getRouteShape(path)}`
-    if (routes.has(route)) {
-      throw new Error(`Unable to route ${method} ${path} twice`)
+    const shape = `${method} ${getRouteShape(path)}`
+    if (routeShapes.has(shape)) {
+      throw new Error(`Unable to route '${method} ${path}' twice.`)
     }
-    routes.add(route)
+    routeShapes.add(shape)
     const handlers: Middleware[] = [
       ...getMiddleware(action, adapter.transaction),
       async c => respond(c, action)
@@ -93,13 +83,13 @@ export function createApi({
   return app
 }
 
-// Sets `c.var.action`, authorizes, validates the query and the body, sets
-// `c.var.body`, opens the transaction, and runs the action's `middleware`.
+// Set `c.var.action`, authorize, validate the query and the body, open the
+// transaction, and run the action's `middleware`, in this order.
 function getMiddleware(
   action: ResolvedAction,
   transaction: Transaction | undefined
 ): Middleware[] {
-  const { authorize: value, query, body, key, verb } = action
+  const { authorize, query, body, key, verb } = action
   const middleware: Middleware[] = [
     async (c, next) => {
       c.set('action', key)
@@ -107,8 +97,13 @@ function getMiddleware(
     }
   ]
   // Reads without `authorize` let anyone in.
-  if (value !== undefined && value !== true) {
-    middleware.push(authorize(value))
+  if (authorize !== undefined && authorize !== true) {
+    middleware.push(async (c, next) => {
+      if (!(await isAuthorized(c, authorize))) {
+        throw new HttpError(c.var.user ? 403 : 401)
+      }
+      await next()
+    })
   }
   if (query) middleware.push(validate('query', query))
   if (body) middleware.push(validate('json', body))
@@ -137,18 +132,8 @@ function getMiddleware(
   return [...middleware, ...action.middleware]
 }
 
-function authorize(value: Exclude<Authorize, true>): Middleware {
-  return async (c, next) => {
-    if (!(await isAuthorized(c, value))) {
-      throw new HttpError(c.var.user ? 403 : 401)
-    }
-    await next()
-  }
-}
-
-// Whether `authorize` lets the user of `c.var.user` in, for `createApi()` and
-// `createAdmin()`: `true` lets anyone in, roles need a user with one of them,
-// and a function decides by returning `true`.
+// Shared with `createAdmin()`. A function lets the user in only by returning
+// `true`.
 export async function isAuthorized(c: DitoContext, authorize: Authorize) {
   const { user } = c.var
   return isFunction(authorize)
@@ -157,7 +142,6 @@ export async function isAuthorized(c: DitoContext, authorize: Authorize) {
       (!!user && asArray(authorize).some(role => user.roles.includes(role)))
 }
 
-// Validates the query or the JSON body, which become `c.req.valid(target)`.
 function validate(target: 'query' | 'json', schema: z.ZodType): Middleware {
   return async (c, next) => {
     const { data, error } = await schema.safeParseAsync(
@@ -185,41 +169,41 @@ async function respond(c: DitoContext, action: ResolvedAction) {
     c
   }
   const result = await action.run(context)
-  if (result instanceof Response) return withHeaders(c, result)
-  if (result === undefined) {
-    // Reads the status of `c.status()`, which Hono keeps private. It is 200
-    // without one.
+  if (result instanceof Response) {
+    return addHeaders(c, result)
+  } else if (result === undefined) {
+    // Hono keeps the status of `c.status()` private, and it is 200 without one:
     const { status } = c.newResponse(null)
     return c.body(null, (status === 200 ? 204 : status) as never)
   }
   return c.json(result as never)
 }
 
-// Adds the headers of `c.header()` to a Response that a handler returns,
-// unless the Response sets them itself. Hono drops them when `c.header()`
-// runs before `c.res` exists. Responses of `c.redirect()` already hold them.
-function withHeaders(c: DitoContext, response: Response) {
+// Hono drops the headers of `c.header()` when it runs before `c.res` exists.
+// Responses of `c.redirect()` hold them already, and a response's own win.
+function addHeaders(c: DitoContext, response: Response) {
   const cookies = response.headers.getSetCookie()
   const added = [...c.newResponse(null).headers].filter(([name, value]) =>
     name === 'set-cookie'
       ? !cookies.includes(value)
       : !response.headers.has(name)
   )
-  if (!added.length) return response
-  // The headers of some responses, such as `Response.redirect()`, are
-  // immutable.
-  const copy = new Response(response.body, response)
-  for (const [name, value] of added) copy.headers.append(name, value)
-  return copy
+  if (added.length) {
+    // The headers of some responses, such as `Response.redirect()`, are
+    // immutable.
+    const copy = new Response(response.body, response)
+    for (const [name, value] of added) copy.headers.append(name, value)
+    return copy
+  } else {
+    return response
+  }
 }
 
-// The JSON body of a request. An empty body is `{}`, and invalid JSON responds
-// with 400. Bodies of other types stay unread for the handler, and are
-// undefined.
 async function readBody(c: Context) {
   const type = c.req.header('Content-Type')
   // As Hono's validator does, which reads no JSON without a type.
   if (!type) return {}
+  // Bodies of other types stay unread, for the handler.
   if (!/^application\/([\w.-]+\+)?json\b/i.test(type)) return undefined
   const text = await c.req.text()
   if (!text) return {}
@@ -230,11 +214,33 @@ async function readBody(c: Context) {
   }
 }
 
-// The path of a route with the names of parameters left out, so that two
-// routes that match the same requests are equal.
 function getRouteShape(path: string) {
+  // Leave out the names of parameters, so that routes that match the same
+  // requests have the same shape:
   return path
     .split('/')
     .map(segment => segment.replace(/^:[^{]*/, ':'))
     .join('/')
+}
+
+// Rank segments by how much they match: 0 for static ones, 1 for parameters
+// with a pattern, 2 for plain parameters, and 3 for wildcards and patterns
+// that match any text, such as `:path{.+}`.
+function rank(path: string) {
+  return path.split('/').map(segment =>
+    segment === '*' || /^:.*\{\.[+*]\}$/.test(segment)
+      ? 3
+      : segment[0] === ':'
+        ? segment.includes('{')
+          ? 1
+          : 2
+        : 0
+  )
+}
+
+function compareRanks(a: number[], b: number[]) {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    if (a[i] !== b[i]) return a[i]! - b[i]!
+  }
+  return 0
 }

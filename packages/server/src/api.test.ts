@@ -295,7 +295,7 @@ describe('routing', () => {
   it('throws for empty segments in the controller path', () => {
     for (const path of ['', '/fonts', 'fonts/', 'fonts//by-name']) {
       expect(() => setup([{ path, actions: { get: () => 'list' } }])).toThrow(
-        `Invalid path '${path}'`
+        `Invalid path: '${path}'.`
       )
     }
   })
@@ -304,7 +304,7 @@ describe('routing', () => {
     expect(() =>
       setup([{ path: 'pages/:id/children', actions: { get: () => [] } }])
     ).toThrow(
-      "Invalid path 'pages/:id/children': `:id` belongs to the record actions"
+      "Invalid path: 'pages/:id/children'. `:id` belongs to the record actions."
     )
   })
 
@@ -314,19 +314,19 @@ describe('routing', () => {
         { path: 'fonts', actions: { 'get :id': () => 1 } },
         { path: 'fonts', actions: { 'get :id': () => 2 } }
       ])
-    ).toThrow('Unable to route GET /fonts/:id twice')
+    ).toThrow(`Unable to route 'GET /fonts/:id' twice.`)
     expect(() =>
       setup([
         { path: 'fonts', actions: { 'get by/:name': () => 1 } },
         { path: 'fonts/by', actions: { 'get :key': () => 2 } }
       ])
-    ).toThrow('Unable to route GET /fonts/by/:key twice')
+    ).toThrow(`Unable to route 'GET /fonts/by/:key' twice.`)
     expect(() =>
       setup([
         { path: 'fonts', actions: { 'get files/:path{.+}': () => 1 } },
         { path: 'fonts/files', actions: { 'get :name{.+}': () => 2 } }
       ])
-    ).toThrow('Unable to route GET /fonts/files/:name{.+} twice')
+    ).toThrow(`Unable to route 'GET /fonts/files/:name{.+}' twice.`)
     expect(() =>
       setup([
         { path: 'fonts', actions: { 'get files/:path{.+}': () => 1 } },
@@ -338,11 +338,11 @@ describe('routing', () => {
   it('throws for invalid keys', () => {
     expect(() =>
       setup([{ path: 'fonts', actions: { fetch: () => 1 } as never }])
-    ).toThrow(`Invalid action 'fetch' in 'fonts'`)
+    ).toThrow(`Invalid action: 'fetch' in 'fonts'.`)
     for (const key of ['get /by', 'get by//name', 'get by/', 'get ']) {
       expect(() =>
         setup([{ path: 'fonts', actions: { [key]: () => 1 } }])
-      ).toThrow(`Invalid action '${key}' in 'fonts'`)
+      ).toThrow(`Invalid action: '${key}' in 'fonts'.`)
     }
   })
 })
@@ -602,7 +602,7 @@ describe('settings of mixins', () => {
           actions: { 'post other': () => 'host' }
         }
       ])
-    ).toThrow(`Invalid action 'post other' in 'fonts' without \`authorize\``)
+    ).toThrow(`Invalid action without \`authorize\`: 'post other' in 'fonts'.`)
   })
 
   it('applies them to an action that the host adds to', async () => {
@@ -743,7 +743,7 @@ describe('authorize', () => {
           actions: { 'get': () => [], 'delete :id': true }
         }
       ])
-    ).toThrow(`Invalid action 'delete :id' in 'fonts' without \`authorize\``)
+    ).toThrow(`Invalid action without \`authorize\`: 'delete :id' in 'fonts'.`)
   })
 
   it('checks a write that a mixin sets with an object', () => {
@@ -751,7 +751,7 @@ describe('authorize', () => {
     const mixin = defineMixin({ actions: { post: { transacted: false } } })
     expect(() =>
       setup([{ path: 'fonts', mixins: [base, mixin], actions: { post: true } }])
-    ).toThrow(`Invalid action 'post' in 'fonts' without \`authorize\``)
+    ).toThrow(`Invalid action without \`authorize\`: 'post' in 'fonts'.`)
     const authorized = defineMixin({ ...base, authorize: 'admin' })
     expect(() =>
       setup([
@@ -768,7 +768,7 @@ describe('authorize', () => {
     })
     for (const authorize of ['admin', ['admin', 'editor']]) {
       expect(() => setup([fonts(authorize)], { getUser: undefined })).toThrow(
-        `Unable to check the roles of 'get' in 'fonts' without \`getUser\``
+        `Unable to check the roles of 'get' in 'fonts' without \`getUser\`.`
       )
     }
     expect(() =>
@@ -1239,7 +1239,7 @@ describe('transactions', () => {
     })
     expect(() => setup([fonts(true)])).toThrow(
       `Unable to run 'get' in 'fonts' in a transaction: the adapter has no ` +
-      '`transaction`'
+      '`transaction`.'
     )
     expect(() => setup([fonts(false)])).not.toThrow()
   })

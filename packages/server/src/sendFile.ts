@@ -9,11 +9,11 @@ export interface SendFileOptions {
   inline?: boolean
 }
 
-// Returns a response with a file, also from a stream such as a Node `Readable`.
+// The body may also be a stream, such as a Node `Readable`.
 export function sendFile(
   c: Context,
   body: BodyInit | AsyncIterable<Uint8Array>,
-  { filename, type, inline = false }: SendFileOptions
+  { filename, type, inline }: SendFileOptions
 ) {
   return c.body(body as never, 200, {
     'Content-Type': (
@@ -25,16 +25,19 @@ export function sendFile(
   })
 }
 
-function getDisposition(inline: boolean, filename?: string) {
+function getDisposition(inline?: boolean, filename?: string) {
   const type = inline ? 'inline' : 'attachment'
-  if (!filename) return type
-  // The plain name is for clients that don't read `filename*`.
-  const plainName = filename.replace(/[^\x20-\x7e]|["\\]/g, '_')
-  // `filename*` doesn't allow the characters `'()*`, which
-  // `encodeURIComponent()` keeps.
-  const encodedName = encodeURIComponent(filename).replace(
-    /['()*]/g,
-    char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
-  )
-  return `${type}; filename="${plainName}"; filename*=UTF-8''${encodedName}`
+  if (filename) {
+    // The plain name is for clients that don't read `filename*`.
+    const plainName = filename.replace(/[^\x20-\x7e]|["\\]/g, '_')
+    // `filename*` doesn't allow the characters `'()*`, which
+    // `encodeURIComponent()` keeps.
+    const encodedName = encodeURIComponent(filename).replace(
+      /['()*]/g,
+      char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+    )
+    return `${type}; filename="${plainName}"; filename*=UTF-8''${encodedName}`
+  } else {
+    return type
+  }
 }
