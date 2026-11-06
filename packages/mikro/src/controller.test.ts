@@ -537,7 +537,11 @@ describe('get', () => {
       `insert into book (name, created_at, updated_at)
        select 'Many ' || n, now(), now() from generate_series(1, 1000) n`
     )
-    const api = setup(books({ mixins: [defineChoices({ fields: ['name'] })] }))
+    const api = setup(
+      books({
+        actions: { 'get choices': defineChoices({ fields: ['name'] }) }
+      })
+    )
     const { json } = await request(api, 'GET', '/api/books/choices')
     await sql(`delete from book where name like 'Many %'`)
     expect(json.length).toBeGreaterThan(1000)
@@ -558,9 +562,9 @@ describe('get', () => {
               maxRows: Infinity
             })
             return (rows as Book[]).map(({ id }) => id)
-          }
-        },
-        mixins: [defineChoices({ fields: ['name'] })]
+          },
+          'get choices': defineChoices({ fields: ['name'] })
+        }
       })
     )
     for (const path of ['all', 'choices']) {
@@ -848,8 +852,10 @@ describe('defineList', () => {
     })
     const api = setup(
       books({
-        mixins: [defineChoices(getFind)],
-        actions: { 'get named': defineList(getFind) }
+        actions: {
+          'get named': defineList(getFind),
+          'get choices': defineChoices(getFind)
+        }
       })
     )
     for (const action of ['named', 'choices']) {
@@ -870,13 +876,13 @@ describe('defineList', () => {
           populate: ['parts.chapters', 'authors'],
           exclude: ['notes']
         },
-        mixins: [
-          defineChoices({
+        actions: {
+          'get choices': defineChoices({
             fields: ['id', 'name', 'notes', 'authors.name'],
             populate: ['authors'],
             orderBy: { name: 'desc' }
           })
-        ]
+        }
       })
     )
     const all = await request(api, 'GET', '/api/books/choices')
@@ -953,7 +959,9 @@ describe('defineList', () => {
     const api = setup(
       books({
         find: { fields: ['name'] },
-        mixins: [defineChoices({ fields: ['id', 'name', 'notes'] })]
+        actions: {
+          'get choices': defineChoices({ fields: ['id', 'name', 'notes'] })
+        }
       })
     )
     const { json } = await request(api, 'GET', '/api/books/choices?order=id')
@@ -973,12 +981,12 @@ describe('defineList', () => {
           populate: ['parts.chapters'],
           exclude: ['parts.name', 'notes']
         },
-        mixins: [
-          defineChoices({
+        actions: {
+          'get choices': defineChoices({
             fields: ['name', 'notes', 'parts'],
             populate: ['parts.chapters']
           })
-        ]
+        }
       })
     )
     const { json } = await request(api, 'GET', '/api/books/choices?order=id')
@@ -992,6 +1000,26 @@ describe('defineList', () => {
     })
     expect(json[0].parts[0]).not.toHaveProperty('name')
     expect(json[0].parts[0].chapters[0].name).toBe('Lesson')
+  })
+
+  it('sends choices without `beforeSerialize` and `serialize`', async () => {
+    const beforeSerialize = vi.fn()
+    const serialize = vi.fn(({ json }) => json)
+    const api = setup(
+      books({
+        beforeSerialize,
+        serialize,
+        actions: { 'get choices': defineChoices() }
+      })
+    )
+    const list = await request(api, 'GET', '/api/books/choices')
+    const page = await request(api, 'GET', '/api/books/choices?range=0,0')
+    expect(list.json[0].name).toBe('Arcadia')
+    expect(page.json).toMatchObject({ results: [{ name: 'Arcadia' }] })
+    expect(beforeSerialize).not.toHaveBeenCalled()
+    expect(serialize).not.toHaveBeenCalled()
+    await request(api, 'GET', '/api/books/1')
+    expect(serialize).toHaveBeenCalledOnce()
   })
 
   it('refuses the options that the base controls', () => {

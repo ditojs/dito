@@ -3,6 +3,8 @@ import { serialize } from '@mikro-orm/core'
 import type { ModelRequest } from './ModelRequest.ts'
 import { serializeResult } from './serialize.ts'
 
+const noSerializers = { beforeSerializers: [], serializers: [] }
+
 export async function respond(request: ModelRequest, result: unknown) {
   const { c, entity } = request
   const isRecord = (value: unknown) => value instanceof entity
@@ -18,7 +20,9 @@ export async function respond(request: ModelRequest, result: unknown) {
       setLocation(request, result)
     }
   }
-  const { beforeSerializers, serializers } = request.definition
+  const { beforeSerializers, serializers } = request.skipsSerializers
+    ? noSerializers
+    : request.definition
   const getRow = (row: object) => reloaded.get(row) ?? row
   const rows = records.map(getRow)
   const jsonByRow = new Map<object, unknown>()

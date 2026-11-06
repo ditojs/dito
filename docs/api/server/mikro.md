@@ -264,19 +264,27 @@ Returns the handler of a list, `({ list }) => list(find)`. As on the controller,
 ## defineChoices()
 
 ```ts
-defineChoices(find: Find): MixinDefinition
+defineChoices(find?: Find): Handler
 ```
 
 ```js
-mixins: [defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
+actions: {
+  'get choices': defineChoices({
+    fields: ['id', 'name'],
+    orderBy: { name: 'asc' }
+  })
+}
 // GET /book-categories/choices → [{ id, name }, …]
 ```
 
-Returns a mixin that routes `get choices`, a list for the options of a select.
-The action is `'get choices': defineList({ maxRows: Infinity, ...find })`,
-also with `find` as a function. So it returns all rows of the list, as a select needs, and takes the same
-filters. A `find` with `fields` names the relations that it sends, in its paths
-or in its own `populate`.
+Returns the handler of a list for the options of a select. It runs
+`list({ maxRows: Infinity, ...find })`, also with `find` as a function. So it
+returns all rows of the list, as a select needs, and takes the same filters. A
+`find` with `fields` names the relations that it sends, in its paths or in its
+own `populate`.
+
+Its rows aren't records, so the response skips `beforeSerialize` and
+`serialize`.
 
 ## list()
 

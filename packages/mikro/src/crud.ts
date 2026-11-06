@@ -56,14 +56,15 @@ export function defineList<T extends object = any>(
 }
 
 // A select shows all rows, so its list has no row limit unless `find` sets one.
-export function defineChoices<T extends object = any>(find: Find<T>) {
+// Its rows aren't records, so they skip `beforeSerialize` and `serialize`.
+export function defineChoices<T extends object = any>(
+  find: Find<T> = {}
+): Handler {
   if (!isFunction(find)) checkFind(find)
-  return defineMixin({
-    actions: {
-      'get choices': async ({ list, c }) =>
-        list({ maxRows: Infinity, ...(await resolveFind(find, c)) })
-    }
-  })
+  return async ({ list, c }) => {
+    getModelRequest(c)!.skipsSerializers = true
+    return list({ maxRows: Infinity, ...(await resolveFind(find, c)) })
+  }
 }
 
 async function deserialize(

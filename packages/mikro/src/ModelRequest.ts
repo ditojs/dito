@@ -87,6 +87,8 @@ export class ModelRequest<T extends object = any> {
   key: EntityProperty
   // The output of the last list, whose records go out in its shape.
   output?: Output
+  // Whether the response leaves out `beforeSerialize` and `serialize`.
+  skipsSerializers = false
   #find?: Promise<FindShape<T>>
   #resolvedFind?: Promise<ResolvedFind<T>>
   #record?: Promise<T>

@@ -258,7 +258,12 @@ static filters = {
 // GET /posts?scope=choose&filter=authorId:12
 
 // Dito.js 7
-mixins: [defineChoices({ fields: ['id', 'title'], orderBy: { title: 'asc' } })],
+actions: {
+  'get choices': defineChoices({
+    fields: ['id', 'title'],
+    orderBy: { title: 'asc' }
+  })
+},
 find: { populate: ['author'], orderBy: { createdAt: 'desc' } },
 filters: {
   title: defineTextFilter(),
@@ -272,7 +277,8 @@ filters: {
   handlers.
 - `?fields=` is gone. `?scope=` no longer chooses what a list loads. Instead, a
   controller routes the shapes that its clients need, such as `'get :id/full'`.
-  `defineChoices()` routes the options of a select at `get choices`.
+  `'get choices': defineChoices(find)` routes the options of a select, without
+  `beforeSerialize` and `serialize`.
 - List `scopes` of the admin keep their name and `defaultScope`. Each scope now
   sets list filters with `filter`, and optionally the order with `order`, such
   as `published: { label: 'Published', filter: { published: true } }`. The

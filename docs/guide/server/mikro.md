@@ -279,13 +279,19 @@ options replace the controller's. The list applies the controller's filters,
 ```js
 import { defineChoices } from '@ditojs/mikro'
 
-mixins: [defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
+actions: {
+  'get choices': defineChoices({
+    fields: ['id', 'name'],
+    orderBy: { name: 'asc' }
+  })
+}
 // GET /book-categories/choices → [{ id, name }, …]
 ```
 
-For the options of a select, use `defineChoices()`. This mixin routes
-`get choices`. A select shows all rows, so the list has no row limit, unless
-its `find` sets `maxRows`.
+For the options of a select, use `defineChoices()`, a handler as `defineList()`.
+A select shows all rows, so the list has no row limit, unless its `find` sets
+`maxRows`. These rows aren't records, so they skip `beforeSerialize` and
+`serialize`.
 
 ```js
 async 'get'({ list, c }) {
