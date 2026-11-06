@@ -80,9 +80,14 @@ export class Session {
       const { path, query } = router.currentRoute.value
       await router.replace({ path, query })
     }
-    // The login dialog and the account menu need the features:
-    await this.#fetchFeatures()
-    if (await this.fetchUser()) {
+    // Load the features along with the user, and set the user once both are
+    // there, as the login dialog and the account menu need the features:
+    const [, user] = await Promise.all([
+      this.#fetchFeatures(),
+      this.#loadUser()
+    ])
+    this.#setUser(user)
+    if (user) {
       await this.#resolveViews()
     } else {
       await this.login()
@@ -256,15 +261,19 @@ export class Session {
   }
 
   async fetchUser() {
-    let user: User | null = null
-    try {
-      const response = await this.#request(this.#api.users.self)
-      user = response.data || null
-    } catch (error) {
-      this.#notifyError(error)
-    }
+    const user = await this.#loadUser()
     this.#setUser(user)
     return user
+  }
+
+  async #loadUser(): Promise<User | null> {
+    try {
+      const response = await this.#request(this.#api.users.self)
+      return response.data || null
+    } catch (error) {
+      this.#notifyError(error)
+      return null
+    }
   }
 
   async #fetchFeatures() {

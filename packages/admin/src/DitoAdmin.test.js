@@ -123,6 +123,37 @@ describe('DitoAdmin', () => {
     })
   })
 
+  it('requests the features and the user at once', async () => {
+    // Answer only once both requests are sent, the user first:
+    const responses = {}
+    const requestStub = vi.fn(
+      ({ url }) => new Promise(resolve => (responses[url] = resolve))
+    )
+    const admin = createAdmin({ api: { url: '/', requestStub } })
+    await vi.waitFor(() => {
+      expect(Object.keys(responses)).toEqual(['/features', '/self'])
+    })
+    responses['/self']({ data: { id: 1, username: 'ada' } })
+    await flushPromises()
+    responses['/features']({ data: { hasPasswordChange: true } })
+    // The account menu offers what the features enable:
+    const button = await vi.waitFor(() => {
+      const button = admin.el.querySelector(
+        '.dito-account button[aria-haspopup="menu"]'
+      )
+      expect(button).not.toBe(null)
+      return button
+    })
+    button.click()
+    await vi.waitFor(() => {
+      const items = admin.el.querySelectorAll('.dito-account [role="menuitem"]')
+      expect([...items].map(item => item.textContent.trim())).toEqual([
+        'Security',
+        'Sign Out'
+      ])
+    })
+  })
+
   it('warns about each unknown option', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     createAdmin({
