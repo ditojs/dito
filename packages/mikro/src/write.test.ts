@@ -1,5 +1,11 @@
 import { z } from 'zod'
-import { ReferenceKind, StringType, defineEntity, p } from '@mikro-orm/core'
+import {
+  ArrayType,
+  ReferenceKind,
+  StringType,
+  defineEntity,
+  p
+} from '@mikro-orm/core'
 import { assignRecord, createRecord } from './index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 import { Book, entities } from './test/entities.ts'
@@ -30,6 +36,17 @@ class AsyncType extends StringType {
   }
 }
 
+// An array column with a schema of its own, such as a version `[2, 1]`.
+class PairType extends ArrayType<number> {
+  constructor() {
+    super(Number)
+  }
+
+  get schema() {
+    return z.tuple([z.int(), z.int()])
+  }
+}
+
 // The column types whose values the write checks before Postgres does.
 const SampleSchema = defineEntity({
   name: 'Sample',
@@ -50,7 +67,12 @@ const SampleSchema = defineEntity({
     data: p.blob().nullable(),
     tags: p.array().nullable(),
     sizes: p.integer().array().nullable(),
-    states: p.enum(['draft', 'live']).array().nullable()
+    states: p.enum(['draft', 'live']).array().nullable(),
+    pair: p
+      .array(Number)
+      .type(new PairType())
+      .columnType('integer[]')
+      .nullable()
   }
 })
 class Sample extends SampleSchema.class {}
@@ -294,6 +316,15 @@ describe('the checks of a body', () => {
       'sizes/1': 'Invalid input: expected int, received number',
       'sizes/2': 'Invalid input: expected int, received string',
       'states/1': 'Invalid option: expected one of "draft"|"live"'
+    })
+    // The schema of a custom type checks arrays whose items are valid.
+    expect(await issues(createRecord(em, Sample, { pair: [2] }))).toEqual({
+      pair: 'Too small: expected array to have >=2 items'
+    })
+    expect(
+      await issues(createRecord(em, Sample, { pair: [2, 1.5] }))
+    ).toEqual({
+      'pair/1': 'Invalid input: expected int, received number'
     })
     const sample = await createRecord(em, Sample, {
       tags: ['a', 'b'],

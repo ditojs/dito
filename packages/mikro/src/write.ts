@@ -396,10 +396,7 @@ class Run {
         return this.tooSmall('string to have >=1 characters', path)
       }
     }
-    const { schema } = (prop.customType ?? {}) as { schema?: z.ZodType }
-    if (schema) {
-      this.pending.push(this.checkSchema(schema, value, path))
-    }
+    this.checkCustomSchema(prop, value, path)
     // A plain date, such as `2026-05-14`, is local midnight, which
     // `new Date()` would read as UTC midnight.
     return (type === 'date' && parsePlainDate(value as string)) || value
@@ -411,6 +408,7 @@ class Run {
     if (!isArray(value)) return this.invalidType('array', value, path)
     const type = getItemType(prop)
     const { items } = prop
+    const { length } = this.issues
     value.forEach((item, index) => {
       const itemPath = [...path, index]
       if (!scalarChecks[type]!(item)) {
@@ -423,7 +421,17 @@ class Run {
         this.invalidOption(items, itemPath)
       }
     })
+    // As for scalars, only valid values go through the custom type's schema.
+    if (this.issues.length === length) {
+      this.checkCustomSchema(prop, value, path)
+    }
     return value
+  }
+
+  // Runs the schema of the property's custom type, if it has one.
+  checkCustomSchema(prop: EntityProperty, value: unknown, path: Path) {
+    const { schema } = (prop.customType ?? {}) as { schema?: z.ZodType }
+    if (schema) this.pending.push(this.checkSchema(schema, value, path))
   }
 
   // Runs the schema of a custom type, such as that of `defineJsonType()`, on
