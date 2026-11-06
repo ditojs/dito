@@ -4,6 +4,7 @@ import path from 'path'
 import { expect, type Page } from '@playwright/test'
 import type { EntityClass } from '@mikro-orm/postgresql'
 import type { Kysely } from 'kysely'
+import { createMikroAdapter } from '@ditojs/mikro'
 import { createAssets, createStorages, type AssetField } from '@ditojs/storage'
 import { serveFolder } from '../../utils/app.js'
 import { Asset } from '../../utils/entities.js'
@@ -55,7 +56,9 @@ export async function scan() {
 }
 
 /** Scans, and releases the files that no row references any more. */
-export function deleteUnusedAssets() {
+export async function deleteUnusedAssets() {
+  // The release keeps the files of the last hour.
+  await db.nativeUpdate(Asset, {}, { createdAt: new Date(0) })
   return createAssets({
     adapter,
     fields: assetFields,
@@ -69,6 +72,12 @@ export function deleteUnusedAssets() {
 export const test = defineScenario({
   dirname: import.meta.dirname,
   entities: [AssetWidget, NestedAssetWidget, Asset],
+  // The writes of the app's adapter track their files.
+  users: orm => {
+    const adapter = createMikroAdapter(orm)
+    createAssets({ adapter, fields: assetFields, storages })
+    return { adapter, controllers: [] }
+  },
   controllers: {
     AssetWidget: { mixins: [assets.defineUploads()] },
     NestedAssetWidget: { mixins: [assets.defineUploads()] },
