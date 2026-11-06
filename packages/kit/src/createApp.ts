@@ -31,7 +31,7 @@ import {
   type StorageRegistry
 } from '@ditojs/storage'
 import { serveStorage } from '@ditojs/storage/node'
-import { parseDuration } from '@ditojs/utils'
+import { isNumber, isString, parseDuration } from '@ditojs/utils'
 import { createRequestLogger } from './createRequestLogger.ts'
 
 export interface CreateAppOptions {
@@ -51,18 +51,29 @@ export interface CreateAppOptions {
   // of its `url`. A `url` without a path, such as a host of its own, isn't.
   storages?: Record<string, StorageDefinition>
   assets?: Pick<CreateAssetsOptions, 'deleteUnusedAfter' | 'maxSize'>
-  // The jobs that run while the app runs.
-  jobs?: JobsOptions
+  // The built-in jobs. With `false`, no jobs run at all, also not those of
+  // `addJob()`, such as in tests.
+  jobs?: JobsOptions | false
 }
 
+// When a job runs. `every` is in milliseconds or a duration such as `'1h'`, and
+// the first run comes one interval after the start, or at the start with
+// `immediate`. `at` is a time of each day, in local time, such as `'03:00'`.
+export type JobSchedule =
+  | { every: number | string; immediate?: boolean; at?: never }
+  | { at: string; every?: never; immediate?: never }
+
+export type JobDefinition = JobSchedule & { run: () => unknown }
+
+// A built-in job: a duration, or a schedule. `false` turns it off.
+type BuiltInJob = number | string | JobSchedule | false
+
 export interface JobsOptions {
-  // How often to delete the expired sessions, in milliseconds or as a duration
-  // such as `'1h'`. The default is `'1h'` once `createUsers()` was called. With
-  // `false`, or without users, the job doesn't run.
-  sessions?: number | string | false
-  // How often to run `assets.runJobs()`, in the same way, but off by default.
-  // The logger gets the result of each run.
-  assets?: number | string | false
+  // Deletes the expired sessions. Once `createUsers()` was called, the default
+  // is `'1h'`. Without users, the job doesn't run.
+  sessions?: BuiltInJob
+  // Runs `assets.runJobs()`, and logs a summary of each run. Off by default.
+  assets?: BuiltInJob
 }
 
 export interface App {
@@ -91,6 +102,10 @@ export interface App {
   ): void
   // Adds a service. Services start in this order and stop in reverse order.
   addService(name: string, service: Service): void
+  // Adds a job, which starts after the services and stops before them. A job
+  // that still runs skips its next run, and `close()` waits for it. Its errors
+  // go to the logger.
+  addJob(name: string, definition: JobDefinition): void
   // Starts the services alone, for scripts, until `close()`. A failed start
   // stops them and closes the ORM.
   startServices(): Promise<void>
@@ -113,7 +128,7 @@ export function createApp({
   secrets = [],
   storages: definitions = {},
   assets: assetsOptions,
-  jobs = {}
+  jobs: jobsOptions = {}
 }: CreateAppOptions): App {
   const logger = pino({ base: null, ...loggerOptions })
   const orm = new MikroORM(defineMikroConfig({ ...database, entities }))
@@ -139,9 +154,42 @@ export function createApp({
     ...assetsOptions
   })
   const services: App['services'] = {}
-  let hasUsers = false
+  const jobs: Record<string, Service> = {}
+  const { sessions: sessionsJob = '1h', assets: assetsJob = false } = (
+    jobsOptions || {}
+  )
   let isRunning = false
   let stop = () => orm.close()
+
+  const addJob: App['addJob'] = (name, definition) => {
+    if (Object.hasOwn(jobs, name)) {
+      throw new Error(`Unable to add job '${name}' twice.`)
+    }
+    jobs[name] = createJob(name, definition, logger)
+  }
+
+  const addBuiltInJob = (
+    name: string,
+    job: BuiltInJob,
+    run: JobDefinition['run']
+  ) => {
+    if (job !== false) {
+      const schedule = isNumber(job) || isString(job) ? { every: job } : job
+      addJob(name, { ...schedule, run })
+    }
+  }
+
+  addBuiltInJob('assets', assetsJob, async () => {
+    const { scan, released } = await assets.runJobs()
+    logger.info(
+      `Asset jobs: ${scan.rowCount} rows in ${scan.duration}ms, ` +
+      `${scan.unreferenced.length} unreferenced, ` +
+      `${scan.missing.length} missing, ${released.length} released`
+    )
+    for (const { key, error } of released) {
+      if (error) logger.error(error, `Unable to release asset '${key}'`)
+    }
+  })
 
   // The ORM closes last, as services stop in reverse order.
   const getServices = (): Service[] => [
@@ -174,7 +222,11 @@ export function createApp({
     },
 
     createUsers(entity, options) {
-      hasUsers = true
+      if (!Object.hasOwn(jobs, 'sessions')) {
+        addBuiltInJob('sessions', sessionsJob, () =>
+          deleteExpiredSessions(adapter)
+        )
+      }
       return createUsers(entity, { ...options, adapter, secrets })
     },
 
@@ -189,24 +241,21 @@ export function createApp({
       services[name] = service
     },
 
+    addJob,
+
     async startServices() {
       stop = await startServices(getServices())
     },
 
     async start() {
-      const sessionsJob = createJob(
-        jobs.sessions ?? (hasUsers && '1h'),
-        logger,
-        () => deleteExpiredSessions(adapter)
-      )
-      const assetsJob = createJob(jobs.assets, logger, async () =>
-        logger.info(await assets.runJobs(), 'Asset jobs')
-      )
       const served = await serve(hono, {
         port,
         host,
         closeTimeout,
-        services: [...getServices(), sessionsJob, assetsJob]
+        services: [
+          ...getServices(),
+          ...(jobsOptions ? Object.values(jobs) : [])
+        ]
       })
       stop = served.close
       return served.server
@@ -218,37 +267,67 @@ export function createApp({
   }
 }
 
-// Run `job` after each interval, unless it still runs. `stop()` waits for it,
-// as the ORM closes after the jobs.
+// Run the job on its schedule, unless it still runs. `stop()` waits for it, as
+// the services stop after the jobs.
 function createJob(
-  every: number | string | false | undefined,
-  logger: Logger,
-  job: () => unknown
+  name: string,
+  { every, at, immediate, run }: JobDefinition,
+  logger: Logger
 ): Service {
-  const interval = every ? parseDuration(every) : 0
-  let timer: ReturnType<typeof setInterval> | undefined
+  if (at && !timePattern.test(at)) {
+    throw new Error(`Invalid time of job '${name}': '${at}'.`)
+  }
+  const interval = at ? 0 : parseDuration(every!)
+  let timer: ReturnType<typeof setTimeout> | undefined
   let running: Promise<void> | undefined
-  const run = async () => {
+
+  const execute = async () => {
     try {
-      await job()
+      await run()
     } catch (error) {
-      logger.error(error)
+      logger.error(error, `Job '${name}' failed`)
     }
   }
+
+  const runJob = () => {
+    running ??= execute().finally(() => {
+      running = undefined
+    })
+  }
+
+  const scheduleRun = (time: string, after: Date) => {
+    const next = getNextTime(time, after)
+    timer = setTimeout(() => {
+      runJob()
+      scheduleRun(time, next)
+    }, next.getTime() - Date.now())
+  }
+
   return {
     start() {
-      if (interval) {
-        timer = setInterval(() => {
-          running ??= run().finally(() => {
-            running = undefined
-          })
-        }, interval)
+      if (at) {
+        scheduleRun(at, new Date())
+      } else {
+        if (immediate) runJob()
+        timer = setInterval(runJob, interval)
       }
     },
 
     async stop() {
-      clearInterval(timer)
+      clearTimeout(timer)
       await running
     }
   }
+}
+
+const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/
+
+// The next local time after `after`. Each day is built from its date, so that
+// runs keep their time across daylight saving changes.
+function getNextTime(time: string, after: Date) {
+  const [hours, minutes] = time.split(':').map(Number)
+  const getTime = (date: number) =>
+    new Date(after.getFullYear(), after.getMonth(), date, hours, minutes)
+  const today = getTime(after.getDate())
+  return today > after ? today : getTime(after.getDate() + 1)
 }

@@ -704,8 +704,10 @@ assets: { deleteUnusedAfter: '24h' }
   no mixin.
   `mixins: [assets.defineUploads()]` adds the upload action, and replaces
   `assets = true` of a controller.
-- `jobs: { assets: '1h' }` of `createApp()` runs `assets.runJobs()`. Without the
-  kit, the app runs it in its own schedule. Its release keeps `asset` rows
+- `jobs: { assets: { at: '03:00' } }` of `createApp()` runs `assets.runJobs()`
+  each day, and `app.addJob()` adds the app's own recurring work, see
+  [Jobs](guide/server/kit.md#jobs). Without the kit, the app runs it in its own
+  schedule. Its release keeps `asset` rows
   younger than an hour, also with `deleteUnusedAfter: 0`.
 - `serveStorage()` of `@ditojs/storage/node` serves public disk storages.
 - `S3Storage` comes from the main entry of the package.

@@ -46,19 +46,39 @@ Sets up an app. Only `entities` and `database` are required.
 
 ### Jobs
 
-| Option     | Type                        | Description                                                                                           |
-| ---------- | --------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `sessions` | `number \| string \| false` | How often to delete the expired sessions.                                                             |
-| `assets`   | `number \| string \| false` | How often to run [`assets.runJobs()`](storage.md#asset-jobs). The logger gets the result of each run. |
+The `jobs` option configures the built-in jobs. With `false`, no jobs run at
+all, also not those of `app.addJob()`, such as in tests.
 
-The intervals are in milliseconds, or durations such as `'1h'`. `false` turns a
-job off. `sessions` defaults to `'1h'` once `app.createUsers()` was called, and
-`assets` doesn't run by default.
+| Option     | Type                                  | Description                                                                                                                                                |
+| ---------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sessions` | `number \| string \| object \| false` | Deletes the expired sessions. The default is `'1h'` once `app.createUsers()` was called. Without users, it doesn't run.                                    |
+| `assets`   | `number \| string \| object \| false` | Runs [`assets.runJobs()`](storage.md#asset-jobs). Off by default. The logger gets a summary of each run and the error of each file that failed to release. |
 
-- The jobs start with `app.start()`, before the services, and stop after them.
-- The first run comes one interval after the start.
+Each takes a duration, or the form of `app.addJob()` without `run`. `false` turns
+it off.
+
+### addJob()
+
+```ts
+app.addJob(name: string, definition: JobDefinition): void
+```
+
+```js
+app.addJob('reminders', { every: '1h', immediate: true, run: sendReminders })
+app.addJob('report', { at: '03:00', run: sendReport })
+```
+
+| Key         | Type               | Description                                                                           |
+| ----------- | ------------------ | ------------------------------------------------------------------------------------- |
+| `every`     | `number \| string` | The interval, in milliseconds or as a duration such as `'1h'`.                        |
+| `immediate` | `boolean`          | With `every`: run at the start too. Otherwise the first run comes one interval later. |
+| `at`        | `string`           | The time of each day, in local time, such as `'03:00'`. Instead of `every`.           |
+| `run`       | `function`         | The work of the job, sync or async.                                                   |
+
+- Jobs start after the services, and stop before them.
 - A job that still runs skips its next run, and `app.close()` waits for it.
-- A job that fails logs its error, and runs again after the next interval.
+- A job that fails logs its error, and runs again at the next time.
+- A name works once, and an invalid `every` or `at` throws.
 
 ## runPlayground()
 

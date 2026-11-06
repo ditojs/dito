@@ -282,7 +282,9 @@ describe('createApp()', () => {
     })
     await app.close()
     const { length } = results
-    expect(results[0]).toMatchObject({ scan: { rowCount: 0 }, released: [] })
+    expect(results[0]).toMatch(
+      /^Asset jobs: 0 rows in \d+ms, 0 unreferenced, 0 missing, 0 released$/
+    )
     await new Promise(resolve => setTimeout(resolve, 20))
     expect(results).toHaveLength(length)
   })
@@ -345,7 +347,7 @@ describe('createApp()', () => {
       logger: {
         hooks: {
           logMethod(args) {
-            errors.push(args.at(-1))
+            errors.push(args)
           }
         }
       },
@@ -355,7 +357,9 @@ describe('createApp()', () => {
     await app.start()
     await vi.waitFor(() => expect(errors.length).toBeGreaterThan(1))
     await app.close()
-    expect((errors[0] as Error).message).toBe('Failed job')
+    const [error, message] = errors[0] as [Error, string]
+    expect(error.message).toBe('Failed job')
+    expect(message).toBe(`Job 'assets' failed`)
   })
 
   it('stops what started and closes the ORM when a service fails', async () => {
@@ -475,5 +479,181 @@ describe('createApp()', () => {
     expect(app.isRunning).toBe(false)
     expect(log).toEqual(['mailer start', 'mailer stop'])
     expect(await app.orm.isConnected()).toBe(false)
+  })
+
+  describe('addJob()', () => {
+    const createJobApp = (jobs?: JobsOptions | false) => {
+      const { host, user, dbName } = database.orm.config.getAll()
+      return createApp({
+        entities,
+        database: { host, user, dbName },
+        server: { host: '127.0.0.1' },
+        logger: { level: 'silent' },
+        secrets,
+        jobs
+      })
+    }
+
+    afterEach(() => void vi.useRealTimers())
+
+    it('runs jobs between the services, and waits for them', async () => {
+      const app = createJobApp()
+      let finish = () => {}
+      app.addService('mailer', service('mailer'))
+      app.addJob('report', {
+        every: '1h',
+        immediate: true,
+        run: () =>
+          new Promise<void>(resolve => {
+            log.push('job start')
+            finish = () => {
+              log.push('job end')
+              resolve()
+            }
+          })
+      })
+      await app.start()
+      const closed = app.close()
+      await vi.waitFor(() => expect(log).toContain('job start'))
+      finish()
+      await closed
+      expect(log).toEqual([
+        'mailer start',
+        'job start',
+        'job end',
+        'mailer stop'
+      ])
+    })
+
+    it('skips the runs of a job that still runs', async () => {
+      const app = createJobApp()
+      let finish = () => {}
+      const run = vi.fn(
+        () =>
+          new Promise<void>(resolve => {
+            finish = resolve
+          })
+      )
+      app.addJob('report', { every: 2, run })
+      await app.start()
+      await vi.waitFor(() => expect(run).toHaveBeenCalled())
+      await new Promise(resolve => setTimeout(resolve, 20))
+      expect(run).toHaveBeenCalledOnce()
+      finish()
+      await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(2))
+      finish()
+      await app.close()
+    })
+
+    it('keeps running a job that throws synchronously', async () => {
+      const app = createJobApp()
+      const run = vi.fn(() => {
+        throw new Error('Failed')
+      })
+      app.addJob('report', { every: 2, run })
+      await app.start()
+      await vi.waitFor(() => expect(run.mock.calls.length).toBeGreaterThan(1))
+      await app.close()
+    })
+
+    it('runs a job at its local time on each day', async () => {
+      vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
+      vi.setSystemTime(new Date(2026, 0, 1, 3, 30))
+      const app = createJobApp()
+      const run = vi.fn()
+      app.addJob('report', { at: '03:00', run })
+      await app.start()
+      await vi.advanceTimersByTimeAsync(23 * 3_600_000)
+      expect(run).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(3_600_000)
+      expect(run).toHaveBeenCalledOnce()
+      await vi.advanceTimersByTimeAsync(24 * 3_600_000)
+      expect(run).toHaveBeenCalledTimes(2)
+      vi.useRealTimers()
+      await app.close()
+    })
+
+    it('takes the form of `addJob()` for the built-in jobs', async () => {
+      vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
+      vi.setSystemTime(new Date(2026, 0, 1, 2, 59))
+      const app = createJobApp({ assets: { at: '03:00' } })
+      const runJobs = vi.spyOn(app.assets, 'runJobs').mockResolvedValue({
+        scan: { rowCount: 0, duration: 0, unreferenced: [], missing: [] },
+        released: []
+      } as never)
+      await app.start()
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(runJobs).toHaveBeenCalledOnce()
+      vi.useRealTimers()
+      await app.close()
+    })
+
+    it('logs each failed release of the asset jobs', async () => {
+      const { host, user, dbName } = database.orm.config.getAll()
+      const entries: unknown[][] = []
+      const app = createApp({
+        entities,
+        database: { host, user, dbName },
+        server: { host: '127.0.0.1' },
+        logger: {
+          hooks: {
+            logMethod(args) {
+              entries.push(args)
+            }
+          }
+        },
+        jobs: { assets: { every: 2 } }
+      })
+      const error = new Error('Failed')
+      vi.spyOn(app.assets, 'runJobs').mockResolvedValue({
+        scan: { rowCount: 2, duration: 1, unreferenced: [], missing: [] },
+        released: [
+          { key: 'a', storage: 'covers' },
+          { key: 'b', storage: 'covers', error }
+        ]
+      } as never)
+      await app.start()
+      await vi.waitFor(() => expect(entries.length).toBeGreaterThan(1))
+      await app.close()
+      expect(entries[0]).toEqual([
+        'Asset jobs: 2 rows in 1ms, 0 unreferenced, 0 missing, 2 released'
+      ])
+      expect(entries[1]).toEqual([error, `Unable to release asset 'b'`])
+    })
+
+    it('runs no jobs at all with `jobs: false`', async () => {
+      const app = createJobApp(false)
+      app.createUsers(Admin, {
+        session: { cookieName: 'admin.sess', expiresAfter: 60_000 }
+      })
+      const run = vi.fn()
+      app.addJob('report', { every: 2, immediate: true, run })
+      const setInterval = vi.spyOn(globalThis, 'setInterval')
+      await app.start()
+      const { calls } = setInterval.mock
+      setInterval.mockRestore()
+      await app.close()
+      expect(calls).toEqual([])
+      expect(run).not.toHaveBeenCalled()
+    })
+
+    it('adds each name once, and checks the schedule', async () => {
+      const app = createJobApp()
+      const run = () => {}
+      app.addJob('report', { every: '1h', run })
+      expect(() => app.addJob('report', { every: '1h', run })).toThrow(
+        `Unable to add job 'report' twice.`
+      )
+      expect(() => app.addJob('late', { at: '25:00', run })).toThrow(
+        `Invalid time of job 'late': '25:00'.`
+      )
+      expect(() => app.addJob('never', { every: 'soon', run })).toThrow(
+        `Invalid duration: 'soon'.`
+      )
+      expect(() => app.addJob('none', { run } as never)).toThrow(
+        `Invalid duration: 'undefined'.`
+      )
+      await app.close()
+    })
   })
 })

@@ -115,18 +115,35 @@ A service has `start()`, `stop()` or both. Other code reads it by name, as
 ## Jobs
 
 ```js
+app.addJob('reminders', { every: '1h', immediate: true, run: sendReminders })
+app.addJob('report', { at: '03:00', run: sendReport })
+```
+
+`app.addJob()` adds recurring work. `every` takes a duration, and `immediate` also
+runs the job at the start. `at` takes a local time of each day. Jobs start after
+the services, as they use them, and stop before them.
+
+A job that still runs skips its next run, and `app.close()` waits for it. The
+logger gets its errors.
+
+The `jobs` option configures the two built-in jobs, in the same form:
+
+```js
 jobs: {
   sessions: '1h',
-  assets: '24h'
+  assets: { at: '03:00' }
 }
 ```
 
-`jobs` says how often the recurring jobs run: deleting the expired sessions, and
-[`assets.runJobs()`](storage.md#tracking-files). They start with `app.start()`
-and stop with `app.close()`. The logger gets the result of each run of the asset
-jobs. Once the app has users, the sessions job runs every hour unless `sessions`
-says otherwise. `false` turns it off. Other jobs need an interval. See
-[Jobs](../../api/server/kit.md#jobs).
+- `sessions` deletes the expired sessions. Once the app has users, it runs every
+  hour unless `sessions` says otherwise.
+- `assets` runs [`assets.runJobs()`](storage.md#tracking-files), and is off by
+  default. The logger gets a summary of each run.
+- `false` turns one off.
+- `jobs: false` runs no jobs at all, also not those of `app.addJob()`, such as in
+  tests.
+
+See [Jobs](../../api/server/kit.md#jobs).
 
 ## Logging
 
