@@ -19,3 +19,17 @@ defineController({
     })
   }
 })
+
+// The variables of Hono's context reach handlers and `authorize`.
+declare module 'hono' {
+  interface ContextVariableMap {
+    appValue: string
+  }
+}
+defineController({
+  path: 'y',
+  authorize: ({ appValue, user, c }) => !!appValue && !!user && !!c.req.url,
+  actions: {
+    'get a': ({ appValue, user }) => appValue + user?.id
+  }
+})

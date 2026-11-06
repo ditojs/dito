@@ -450,7 +450,8 @@ Koa's `ctx` splits in two. A handler gets one object, its
 [context](api/server/api.md#the-handlers-context), which holds Hono's context `c`
 and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
 `c.var.user`. Every other callback, such as `authorize`, gets one object with
-`c` and what it needs, such as `({ c, user })`.
+`c`, the variables of the request and what else it needs, such as
+`({ c, user, session })`. Its type is `RequestContext`.
 
 | Dito.js 6 (Koa)                              | Dito.js 7                                                                                                  |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |

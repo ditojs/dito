@@ -217,7 +217,8 @@ Dito sets its variables in `c.var`:
 Middleware sets the app's own variables with `c.set()`, such as the session.
 Handlers get all variables in their context.
 
-TypeScript apps declare their types by augmenting `DitoVariables`:
+TypeScript apps declare their types by augmenting `DitoVariables`, as Dito's
+packages do. That types them in `c.var`, in handlers and in `authorize`:
 
 ```ts
 declare module '@ditojs/server' {

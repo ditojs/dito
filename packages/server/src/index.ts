@@ -16,6 +16,7 @@ export type {
   HttpErrorBody,
   Middleware,
   MixinDefinition,
+  RequestContext,
   Service,
   Transact,
   User

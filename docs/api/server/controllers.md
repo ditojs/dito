@@ -166,12 +166,13 @@ authorize:
   | true
   | string
   | string[]
-  | (({ c, user }) => boolean | Promise<boolean>)
+  | ((context: RequestContext) => boolean | Promise<boolean>)
 ```
 
 - `true` lets anyone in.
 - Roles grant access if `c.var.user.roles` holds any of them.
-- A function gets `{ c, user }` and decides. Only `true` grants access.
+- A function gets the [`RequestContext`](api.md#the-handlers-context), so `c`,
+  `user` and all other variables, and decides. Only `true` grants access.
 - A function reads the id of a record action with `c.req.param('id')`.
 - A function runs before the transaction and before the middleware of the
   layers. So it loads what it checks itself.

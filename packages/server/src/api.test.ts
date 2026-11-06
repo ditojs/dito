@@ -708,6 +708,19 @@ describe('authorize', () => {
     expect(response.status).toBe(200)
   })
 
+  it('gives a function the variables of the request', async () => {
+    const api = setup(
+      [controller({ authorize: ({ session, user }) => session === user?.id })],
+      {
+        middleware: async (c, next) => {
+          c.set('session', 1 as never)
+          await next()
+        }
+      }
+    )
+    expect((await request(api, 'GET', '/api/fonts')).status).toBe(200)
+  })
+
   it('checks the owner of the record with a function', async () => {
     const api = setup(
       [

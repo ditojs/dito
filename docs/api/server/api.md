@@ -102,14 +102,22 @@ transaction rolls back when `c.error` is set.
 ### The handler's context
 
 ```ts
-interface HandlerContext<Query, Body> extends DitoVariables {
+interface RequestContext<Query, Body>
+  extends ContextVariableMap, DitoVariables {
+  c: DitoContext<Query, Body>
+}
+
+interface HandlerContext<Query, Body> extends RequestContext<Query, Body> {
   query: Query
   body: Body
   params: Record<string, string>
-  c: DitoContext<Query, Body>
   next: () => Promise<unknown>
 }
 ```
+
+`RequestContext` is what every callback of a request gets: all its variables,
+and `c`. `authorize` gets it as it is. Other callbacks and handlers extend it.
+Only middleware has Hono's shape, `(c, next)`.
 
 Dito builds the context for each request and each layer:
 
@@ -134,7 +142,8 @@ The context also holds all other variables:
   [model controllers](mikro.md#definemodelcontroller);
 - the app's own, such as a session that middleware sets with `c.set()`.
 
-Apps type their own variables by augmenting `DitoVariables`:
+Packages and apps type their variables by augmenting `DitoVariables`. The
+variables of Hono's `ContextVariableMap` are part of the context too:
 
 ```ts
 declare module '@ditojs/server' {

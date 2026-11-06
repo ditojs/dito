@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import type { Context, MiddlewareHandler } from 'hono'
+import type { Context, ContextVariableMap, MiddlewareHandler } from 'hono'
 import type { Kysely } from 'kysely'
 import type { HttpError } from './errors.ts'
 
@@ -28,7 +28,8 @@ interface DatabaseVariables {
   em: any
 }
 
-// The variables that Dito sets on Hono's context of each request.
+// The variables of each request on Hono's context. Dito sets these, and its
+// packages add their own by augmenting this interface.
 export interface DitoVariables extends DatabaseVariables {
   // The signed-in user, or null.
   user: User | null
@@ -54,36 +55,38 @@ export type DitoContext<Query = any, Body = any> = Context<
   { out: { query: Query; json: Body } }
 >
 
-// The context of a handler, built for each request and each layer. It also
-// holds the app's own variables, such as a session.
+// What callbacks get for each request: its variables, also those of the app,
+// and Hono's context. Callbacks with more arguments extend it.
+export interface RequestContext<Query = any, Body = any>
+  extends ContextVariableMap, DitoVariables {
+  // Hono's context.
+  c: DitoContext<Query, Body>
+}
+
+// The context of a handler, built for each request and each layer.
 export interface HandlerContext<Query = Record<string, any>, Body = any>
-  extends DitoVariables {
+  extends RequestContext<Query, Body> {
   // The result of the `query` schema, else the first value of each
   // parameter.
   query: Query
   body: Body
   params: Record<string, string>
-  // Hono's context.
-  c: DitoContext<Query, Body>
   // Runs the handler of the same key in the layer beneath, and returns its
   // result. That handler sees the changes that this one makes to its context.
   next: () => Promise<unknown>
 }
 
-// Hono middleware, which reads Dito's variables from `c.var`.
+// Hono middleware, the only callback with the arguments `(c, next)`. It reads
+// Dito's variables from `c.var`.
 export type Middleware = MiddlewareHandler<DitoEnv>
 
 // `true` lets anyone in. Roles grant access if the user has any of them. A
-// function gets Hono's context and the user, and reads the id of a record
-// action with `c.req.param('id')`.
+// function reads the id of a record action with `c.req.param('id')`.
 export type Authorize =
   | true
   | string
   | string[]
-  | ((context: {
-      c: DitoContext
-      user: User | null
-    }) => boolean | Promise<boolean>)
+  | ((context: RequestContext) => boolean | Promise<boolean>)
 
 // A handler returns data, which Dito sends as JSON, or a `Response`.
 export type Handler<Query = Record<string, any>, Body = any> = (

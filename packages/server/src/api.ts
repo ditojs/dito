@@ -147,7 +147,7 @@ function getMiddleware(
 export async function isAuthorized(c: DitoContext, authorize: Authorize) {
   const { user } = c.var
   return isFunction(authorize)
-    ? (await authorize({ c, user })) === true
+    ? (await authorize({ ...c.var, c })) === true
     : authorize === true ||
       (!!user && asArray(authorize).some(role => user.roles.includes(role)))
 }

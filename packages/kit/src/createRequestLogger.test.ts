@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import pino from 'pino'
+import type { DitoEnv } from '@ditojs/server'
 import { createRequestLogger } from './createRequestLogger.ts'
 
 describe('createRequestLogger()', () => {
@@ -9,7 +10,7 @@ describe('createRequestLogger()', () => {
       {},
       { write: line => void entries.push(JSON.parse(line)) }
     )
-    const app = new Hono()
+    const app = new Hono<DitoEnv>()
     app.use(createRequestLogger(logger))
     app.get('/books', c => {
       c.set('action', 'get')

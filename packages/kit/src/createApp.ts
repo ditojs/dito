@@ -8,6 +8,7 @@ import {
   createHono,
   type CreateApiOptions,
   type CreateHonoOptions,
+  type DitoEnv,
   type Service
 } from '@ditojs/server'
 import { serve, type ServeOptions } from '@ditojs/server/node'
@@ -147,7 +148,7 @@ export function createApp({
     assets,
 
     get logger() {
-      return tryGetContext()?.var.logger ?? logger
+      return tryGetContext<DitoEnv>()?.var.logger ?? logger
     },
 
     createUsers(entity, options) {
