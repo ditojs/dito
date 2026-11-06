@@ -1,6 +1,6 @@
 import { defineMixin, type Actions, type Handler } from '@ditojs/server'
 import { isFunction } from '@ditojs/utils'
-import { checkFind, resolveFind, type Find, type FindShape } from './find.ts'
+import { checkFind, resolveFind, type Find } from './find.ts'
 import { getModelRequest, type ModelRequest } from './ModelRequest.ts'
 import { assignRecord, createRecord } from './records.ts'
 
@@ -56,14 +56,11 @@ export function defineList<T extends object = any>(
 
 // A select shows all rows, so its list has no row limit unless `find` sets one.
 export function defineChoices<T extends object = any>(find: Find<T>) {
-  const addMaxRows = (shape: FindShape<T>) => ({ maxRows: Infinity, ...shape })
+  if (!isFunction(find)) checkFind(find)
   return defineMixin({
     actions: {
-      'get choices': defineList(
-        isFunction(find)
-          ? async context => addMaxRows(await find(context))
-          : addMaxRows(find)
-      )
+      'get choices': async ({ list, c }) =>
+        list({ maxRows: Infinity, ...(await resolveFind(find, c)) })
     }
   })
 }
