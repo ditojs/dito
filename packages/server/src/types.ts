@@ -73,7 +73,7 @@ export interface HandlerContext<Query = Record<string, any>, Body = any>
 export type Middleware = MiddlewareHandler<DitoEnv>
 
 // `true` lets anyone in. Roles grant access if the user has any of them. A
-// function gets Hono's context and the user, and reads the id of a member
+// function gets Hono's context and the user, and reads the id of a record
 // action with `c.req.param('id')`.
 export type Authorize =
   | true

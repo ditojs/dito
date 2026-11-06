@@ -15,6 +15,8 @@ describe('sendFile()', () => {
           inline: true
         })
       },
+      'get quotes': ({ c }) =>
+        sendFile(c, 'data', { filename: `Font's (Bold)*.otf` }),
       'get unknown': ({ c }) =>
         sendFile(c, 'data', { filename: 'data.unknown' }),
       'get image': ({ c }) =>
@@ -49,6 +51,14 @@ describe('sendFile()', () => {
       `filename*=UTF-8''%C3%9Cn%C3%AF%20%221%22.pdf`
     )
     expect(response.headers.get('Cache-Control')).toBe('no-store')
+  })
+
+  it(`escapes the quotes and parentheses of \`filename*\``, async () => {
+    const response = await app.request('/api/files/quotes')
+    expect(response.headers.get('Content-Disposition')).toBe(
+      `attachment; filename="Font's (Bold)*.otf"; ` +
+      `filename*=UTF-8''Font%27s%20%28Bold%29%2A.otf`
+    )
   })
 
   it('falls back to binary data for unknown types', async () => {

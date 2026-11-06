@@ -55,7 +55,8 @@ Middleware for apps behind reverse proxies. The app adds it first.
 
 - `proxy` is the number of trusted proxies. `true`, the default, means one.
 - It sets the public URL as `c.req.url`, from `X-Forwarded-Proto` and
-  `X-Forwarded-Host`.
+  `X-Forwarded-Host`. It ignores protocols other than `http` and `https`, and
+  values other than a host with an optional port.
 - It reads the client's address from `X-Forwarded-For`.
 
 See [Behind a proxy](../../guide/server/api.md#behind-a-proxy).

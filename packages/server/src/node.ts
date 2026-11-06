@@ -98,28 +98,36 @@ function getList(request: Request, name: string) {
 function getPublicUrl(request: Request) {
   const [proto] = getList(request, 'X-Forwarded-Proto')
   const [host] = getList(request, 'X-Forwarded-Host')
-  if (!proto && !host) return request.url
   const url = new URL(request.url)
-  try {
-    return new URL(
-      `${proto ?? url.protocol.slice(0, -1)}://${host ?? url.host}` +
-      `${url.pathname}${url.search}`
-    ).href
-  } catch {
-    return request.url
+  // Take only `http` and `https`, and a plain host with an optional port:
+  if (proto && /^https?$/i.test(proto)) url.protocol = proto
+  if (host && /^([\w.-]+|\[[\da-f:.]+\])(:\d+)?$/i.test(host)) {
+    // Setting `host` without a port keeps the current one.
+    url.port = ''
+    url.host = host
   }
+  return url.href
 }
 
 // Undici doesn't accept a request of `@hono/node-server` as `RequestInit`, so
-// the copy takes its fields.
+// the copy takes its fields. Its `body` and `redirect` start to read the
+// socket, after which Node can't skip a body that the app leaves unread, and
+// resets the keep-alive connection. So the copy reads the body only once the
+// app reads it.
 function copyRequest(request: Request, url: string) {
-  const { method, headers, body, signal, redirect } = request
+  const { method, headers, signal } = request
+  const hasBody = method !== 'GET' && method !== 'HEAD'
   return new Request(url, {
     method,
     headers,
-    body,
     signal,
-    redirect,
-    ...(body && { duplex: 'half' })
+    ...(hasBody && {
+      body: ReadableStream.from(
+        (async function* () {
+          yield* request.body!
+        })()
+      ),
+      duplex: 'half'
+    })
   } as RequestInit)
 }

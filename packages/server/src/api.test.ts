@@ -303,7 +303,9 @@ describe('routing', () => {
   it('throws for `:id` in the controller path', () => {
     expect(() =>
       setup([{ path: 'pages/:id/children', actions: { get: () => [] } }])
-    ).toThrow("The path 'pages/:id/children' holds `:id`")
+    ).toThrow(
+      "Invalid path 'pages/:id/children': `:id` belongs to the record actions"
+    )
   })
 
   it('throws for two actions of the same method and path', () => {
@@ -312,19 +314,19 @@ describe('routing', () => {
         { path: 'fonts', actions: { 'get :id': () => 1 } },
         { path: 'fonts', actions: { 'get :id': () => 2 } }
       ])
-    ).toThrow('Two actions route GET /fonts/:id')
+    ).toThrow('Unable to route GET /fonts/:id twice')
     expect(() =>
       setup([
         { path: 'fonts', actions: { 'get by/:name': () => 1 } },
         { path: 'fonts/by', actions: { 'get :key': () => 2 } }
       ])
-    ).toThrow('Two actions route GET /fonts/by/:key')
+    ).toThrow('Unable to route GET /fonts/by/:key twice')
     expect(() =>
       setup([
         { path: 'fonts', actions: { 'get files/:path{.+}': () => 1 } },
         { path: 'fonts/files', actions: { 'get :name{.+}': () => 2 } }
       ])
-    ).toThrow('Two actions route GET /fonts/files/:name{.+}')
+    ).toThrow('Unable to route GET /fonts/files/:name{.+} twice')
     expect(() =>
       setup([
         { path: 'fonts', actions: { 'get files/:path{.+}': () => 1 } },
@@ -600,7 +602,7 @@ describe('settings of mixins', () => {
           actions: { 'post other': () => 'host' }
         }
       ])
-    ).toThrow(`'post other' has no \`authorize\` in 'fonts'`)
+    ).toThrow(`Invalid action 'post other' in 'fonts' without \`authorize\``)
   })
 
   it('applies them to an action that the host adds to', async () => {
@@ -741,7 +743,7 @@ describe('authorize', () => {
           actions: { 'get': () => [], 'delete :id': true }
         }
       ])
-    ).toThrow(`'delete :id' has no \`authorize\` in 'fonts'`)
+    ).toThrow(`Invalid action 'delete :id' in 'fonts' without \`authorize\``)
   })
 
   it('checks a write that a mixin sets with an object', () => {
@@ -749,7 +751,7 @@ describe('authorize', () => {
     const mixin = defineMixin({ actions: { post: { transacted: false } } })
     expect(() =>
       setup([{ path: 'fonts', mixins: [base, mixin], actions: { post: true } }])
-    ).toThrow(`'post' has no \`authorize\` in 'fonts'`)
+    ).toThrow(`Invalid action 'post' in 'fonts' without \`authorize\``)
     const authorized = defineMixin({ ...base, authorize: 'admin' })
     expect(() =>
       setup([
@@ -1051,6 +1053,46 @@ describe('validation', () => {
     ).toEqual({ body: { name: 'A' } })
   })
 
+  it('reads empty and invalid JSON the same with a schema', async () => {
+    const api = setup([
+      {
+        path: 'fonts',
+        authorize: true,
+        actions: {
+          post: defineAction({
+            body: z.object({ name: z.string().optional() }),
+            handler: ({ body, c }) => ({ body, valid: c.req.valid('json') })
+          })
+        }
+      }
+    ])
+    const post = (body: string) =>
+      request(api, 'POST', '/api/fonts', undefined, {
+        body,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    expect((await post('')).data).toEqual({ body: {}, valid: {} })
+    expect((await post('{"name":')).data).toEqual({
+      message: 'The body is invalid JSON.',
+      status: 400
+    })
+  })
+
+  it('reads the type of JSON in any case', async () => {
+    const api = setup([
+      {
+        path: 'fonts',
+        authorize: true,
+        actions: { post: ({ body }) => ({ body }) }
+      }
+    ])
+    const { data } = await request(api, 'POST', '/api/fonts', undefined, {
+      body: '{"name":"A"}',
+      headers: { 'Content-Type': 'Application/JSON' }
+    })
+    expect(data).toEqual({ body: { name: 'A' } })
+  })
+
   it('validates no body without a schema', async () => {
     const api = setup([
       { path: 'fonts', authorize: true, actions: { 'patch :id': () => 'ok' } }
@@ -1138,6 +1180,12 @@ describe('query values', () => {
       size: 2,
       draft: true
     })
+  })
+
+  it('converts schemas with an id of the registry', async () => {
+    const id = z.number().int().meta({ id: 'QueryId' })
+    const api = setupQuery(z.object({ page: id, id: z.array(id).optional() }))
+    expect(await get(api, 'page=2&id=1&id=3')).toEqual({ page: 2, id: [1, 3] })
   })
 
   it('leaves the strings of unions as they are', async () => {
@@ -1487,6 +1535,14 @@ describe('errors', () => {
           throw new HTTPException(413, {
             res: new Response('Too large', { status: 413 })
           })
+        },
+        'get login': () => {
+          throw new HTTPException(401, {
+            res: new Response('Unauthorized', {
+              status: 401,
+              headers: { 'WWW-Authenticate': 'Basic realm="Fonts"' }
+            })
+          })
         }
       }
     }
@@ -1528,6 +1584,13 @@ describe('errors', () => {
       message: 'Content Too Large',
       status: 413
     })
+  })
+
+  it(`keeps the headers of an HTTPException's response`, async () => {
+    const response = await request(api, 'GET', '/api/fonts/login')
+    expect(response.status).toBe(401)
+    expect(response.headers.get('WWW-Authenticate')).toBe('Basic realm="Fonts"')
+    expect(response.headers.get('Content-Type')).toBe('application/json')
   })
 
   it('answers errors with a numeric `status` with that status', async () => {

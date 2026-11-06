@@ -1,5 +1,4 @@
 import { Hono, type Context } from 'hono'
-import { validator } from 'hono/validator'
 import type { z } from 'zod'
 import { asArray, isArray, isFunction, isString } from '@ditojs/utils'
 import {
@@ -81,7 +80,7 @@ export function createApi({
     const method = action.verb.toUpperCase()
     const route = `${method} ${getRouteShape(path)}`
     if (routes.has(route)) {
-      throw new Error(`Two actions route ${method} ${path}`)
+      throw new Error(`Unable to route ${method} ${path} twice`)
     }
     routes.add(route)
     const handlers: Middleware[] = [
@@ -158,10 +157,13 @@ export async function isAuthorized(c: DitoContext, authorize: Authorize) {
       (!!user && asArray(authorize).some(role => user.roles.includes(role)))
 }
 
-function validate(target: 'query' | 'json', schema: z.ZodType) {
-  return validator(target, async (value, c) => {
+// Validates the query or the JSON body, which become `c.req.valid(target)`.
+function validate(target: 'query' | 'json', schema: z.ZodType): Middleware {
+  return async (c, next) => {
     const { data, error } = await schema.safeParseAsync(
-      target === 'query' ? convertQuery(schema, c.req.queries()) : value
+      target === 'query'
+        ? convertQuery(schema, c.req.queries())
+        : await readBody(c)
     )
     if (error) {
       throw createValidationError(
@@ -169,8 +171,9 @@ function validate(target: 'query' | 'json', schema: z.ZodType) {
         target === 'query' ? queryValidation : bodyValidation
       )
     }
-    return data as object
-  }) as Middleware
+    c.req.addValidatedData(target, data as object)
+    await next()
+  }
 }
 
 async function respond(c: DitoContext, action: ResolvedAction) {
@@ -217,7 +220,7 @@ async function readBody(c: Context) {
   const type = c.req.header('Content-Type')
   // As Hono's validator does, which reads no JSON without a type.
   if (!type) return {}
-  if (!/^application\/([\w.-]+\+)?json\b/.test(type)) return undefined
+  if (!/^application\/([\w.-]+\+)?json\b/i.test(type)) return undefined
   const text = await c.req.text()
   if (!text) return {}
   try {

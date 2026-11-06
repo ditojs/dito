@@ -44,7 +44,9 @@ export function resolveController(controller: ControllerDefinition) {
     throw new Error(`Invalid path '${path}'`)
   }
   if (path.split('/').includes(':id')) {
-    throw new Error(`The path '${path}' holds \`:id\``)
+    throw new Error(
+      `Invalid path '${path}': \`:id\` belongs to the record actions`
+    )
   }
   return { path, actions: resolveActions(path, getLayers(controller)) }
 }
@@ -88,7 +90,7 @@ function resolveActions(controllerPath: string, layers: MixinDefinition[]) {
     }
     const handlers = defs.flatMap(def => def.handler ?? [])
     if (!handlers.length) {
-      throw new Error(`'${key}' has no handler in ${where}`)
+      throw new Error(`Invalid action '${key}' in ${where} without a handler`)
     }
     const owners = layers.filter(
       layer => (
@@ -103,7 +105,9 @@ function resolveActions(controllerPath: string, layers: MixinDefinition[]) {
     )
     const authorize = setting('authorize')
     if (verb !== 'get' && authorize === undefined) {
-      throw new Error(`'${key}' has no \`authorize\` in ${where}`)
+      throw new Error(
+        `Invalid action '${key}' in ${where} without \`authorize\``
+      )
     }
     actions.push({
       key,

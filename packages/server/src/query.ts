@@ -47,12 +47,14 @@ export function convertQueryValue(
 }
 
 // The JSON Schema of the input, once per schema. Dates have no JSON Schema, so
-// they get `instanceof: 'Date'`.
+// they get `instanceof: 'Date'`. An empty registry inlines the schemas that
+// have an id in the global one, instead of referencing them in `$defs`.
 function getJsonSchema(schema: z.ZodType) {
   let jsonSchema = jsonSchemas.get(schema)
   if (!jsonSchema) {
     jsonSchema = z.toJSONSchema(schema, {
       io: 'input',
+      metadata: z.registry(),
       unrepresentable: ({ zodSchema }) =>
         zodSchema instanceof z.ZodDate ? { instanceof: 'Date' } : 'any'
     })

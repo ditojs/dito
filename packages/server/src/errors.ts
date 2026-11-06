@@ -1,4 +1,5 @@
 import type { Context, ErrorHandler, NotFoundHandler } from 'hono'
+import { HTTPException } from 'hono/http-exception'
 import { isNumber, isString } from '@ditojs/utils'
 import type { Adapter, ErrorLogger, HttpErrorBody } from './types.ts'
 
@@ -158,8 +159,9 @@ const dataHeaders = /^(content-(?!security-)|etag$|cache-control$|location$)/
 // The error handler of Hono apps, which hosts pass to `app.onError()` for the
 // errors outside of APIs, such as those of their own middleware. `onError` gets
 // the errors with a status of 500 or above. The response keeps the headers that
-// were set before the error, such as cookies and those of `cors()`, except the
-// ones that describe the data.
+// were set before the error, such as cookies and those of `cors()`, and those
+// of the response of Hono's `HTTPException`, such as `WWW-Authenticate`, except
+// the ones that describe the data.
 export function createErrorHandler({
   onError = logError,
   toHttpError
@@ -172,7 +174,10 @@ export function createErrorHandler({
     const body = (httpError ?? new HttpError(500)).toJSON()
     if (body.status >= 500) await onError({ error, c })
     const response = Response.json(body, { status: body.status })
-    const { headers } = c.res
+    const headers = [
+      ...c.res.headers,
+      ...(error instanceof HTTPException ? (error.res?.headers ?? []) : [])
+    ]
     // Hono adds the headers of the current response to the one returned here,
     // but not when the error comes from the only handler of a route. So this
     // copies them and drops the current response.

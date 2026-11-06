@@ -30,6 +30,11 @@ function getDisposition(inline: boolean, filename?: string) {
   if (!filename) return type
   // The plain name is for clients that don't read `filename*`.
   const plainName = filename.replace(/[^\x20-\x7e]|["\\]/g, '_')
-  const encodedName = encodeURIComponent(filename)
+  // `filename*` doesn't allow the characters `'()*`, which
+  // `encodeURIComponent()` keeps.
+  const encodedName = encodeURIComponent(filename).replace(
+    /['()*]/g,
+    char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  )
   return `${type}; filename="${plainName}"; filename*=UTF-8''${encodedName}`
 }

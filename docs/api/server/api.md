@@ -145,14 +145,15 @@ declare module '@ditojs/server' {
 
 ### The body
 
-The `body` of a write without a `body` schema follows these rules:
+The `body` of a write, and the input of a `body` schema, follow these rules:
 
 - An empty body is `{}`.
 - A body without `Content-Type` is `{}` too. So a JSON body without it is
   dropped, and a `PATCH` then changes nothing.
+- The type is read in any case, such as `Application/JSON`.
 - Invalid JSON responds with 400.
-- Bodies of other types, such as form data, are `undefined`. Handlers read them
-  from `c.req`, such as uploads with `c.req.formData()`.
+- Bodies of other types are `undefined`. Handlers read them from `c.req`, such
+  as `c.req.arrayBuffer()`.
 
 ### Adapter
 

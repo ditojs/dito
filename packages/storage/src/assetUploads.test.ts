@@ -443,7 +443,9 @@ describe('defineUploads()', () => {
     const mixin = bookAssets().defineUploads('book')
     expect(() =>
       createApi({ controllers: [{ path: 'books', mixins: [mixin] }] })
-    ).toThrow(`'post upload/:path{.+}' has no \`authorize\` in 'books'`)
+    ).toThrow(
+      `Invalid action 'post upload/:path{.+}' in 'books' without \`authorize\``
+    )
   })
 
   it('throws for tables without asset paths', () => {

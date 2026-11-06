@@ -41,8 +41,9 @@ const headers = {
 
 describe('hostMiddleware() on Node', () => {
   // Answers `/secret` with 401, without reading the body.
-  const host = () => {
+  const host = (proxy?: boolean) => {
     const app = new Hono()
+    if (proxy) app.use(forwarded(proxy))
     app.use(...hostMiddleware())
     app.post('/secret', c => c.text('Unauthorized', 401))
     app.get('/', c => c.text('ok'))
@@ -51,12 +52,19 @@ describe('hostMiddleware() on Node', () => {
 
   // Keep-alive connections fail on the next request when the server resets
   // them, which takes a few rounds to show.
-  async function expectOpenConnections(size: number, status: number) {
-    await withServer(host(), async url => {
+  async function expectOpenConnections(
+    size: number,
+    status: number,
+    proxy?: boolean
+  ) {
+    await withServer(host(proxy), async url => {
       for (let i = 0; i < 30; i++) {
         const response = await fetch(`${url}/secret`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(proxy && { 'X-Forwarded-Proto': 'https' })
+          },
           body: 'x'.repeat(size)
         })
         expect(response.status).toBe(status)
@@ -72,6 +80,10 @@ describe('hostMiddleware() on Node', () => {
 
   it('keeps connections usable after a body over the limit', async () => {
     await expectOpenConnections(1_100_000, 413)
+  })
+
+  it('keeps connections usable after an unread body behind a proxy', async () => {
+    await expectOpenConnections(900_000, 401, true)
   })
 })
 
@@ -181,6 +193,20 @@ describe('forwarded()', () => {
       headers: { 'X-Forwarded-Host': 'shop.test:8443' }
     })
     expect((await response.json()).url).toBe('http://shop.test:8443/')
+  })
+
+  it('ignores protocols other than HTTP, and hosts with more than a port', async () => {
+    for (const forwarded of [
+      { 'X-Forwarded-Proto': 'javascript' },
+      { 'X-Forwarded-Host': 'evil.test/path?' },
+      { 'X-Forwarded-Host': 'user@evil.test' },
+      { 'X-Forwarded-Host': 'evil.test#' }
+    ]) {
+      const response = await echo(true).request('http://backend:4040/a?b=1', {
+        headers: forwarded
+      })
+      expect((await response.json()).url).toBe('http://backend:4040/a?b=1')
+    }
   })
 
   it(`gives Dito APIs and Hono's CSRF check the public URL`, async () => {
