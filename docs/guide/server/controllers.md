@@ -334,8 +334,8 @@ middleware of the controller, of its mixins and of the action. The API's own
 ## Serialize and deserialize
 
 ```js
-async serialize({ record, json, c }) {
-  return { ...json, reviews: await countReviews(c.var.em, record.id) }
+async serialize({ record, json, em }) {
+  return { ...json, reviews: await countReviews(em, record.id) }
 }
 ```
 
@@ -343,7 +343,7 @@ Model controllers and their mixins take `serialize` and `deserialize`, see
 [`defineModelController()`](../../api/server/mikro.md#serialize-and-deserialize)
 of `@ditojs/mikro`.
 
-`serialize({ record, json, c })` shapes each outgoing record of the controller.
+`serialize({ record, json, em, c })` shapes each outgoing record of the controller.
 This includes records in arrays, in plain objects such as `{ results, total }`,
 and from custom actions. Use it for computed values that the entity's `find`
 can't express.
@@ -356,7 +356,7 @@ deserialize({ json, c }) {
 }
 ```
 
-`deserialize({ json, record, c })` shapes the body of the default `post` and
+`deserialize({ json, record, user, c })` shapes the body of the default `post` and
 `patch :id`, before the [checks of the body](writes.md#the-checks-of-a-body).
 
 - On updates, it also gets the current record.
@@ -381,9 +381,13 @@ defineMixin({
 })
 ```
 
-`beforeSerialize({ records, c })` runs once per response, before `serialize`. It
-gets all outgoing records as an array, also for a single record. It can load
-what the records need with one query, which `serialize` then reads.
+`beforeSerialize({ records, em, c })` runs once per response, before `serialize`.
+It gets all outgoing records as an array, also for a single record. It can load
+what the records need with one query, which `serialize` then reads. A variable
+that it sets with `c.set()` reaches `serialize` in the context.
+
+All three get the context of the request, with `user`, `em`, `action`, `body`,
+`c` and the app's variables, plus their own values.
 
 Each `serialize` gets the result of the one before. They run in layer order,
 the mixins first. The first one gets the record's JSON in the shape of `find`,

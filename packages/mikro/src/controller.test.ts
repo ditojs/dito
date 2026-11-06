@@ -788,6 +788,58 @@ describe('find', () => {
   })
 })
 
+describe('the context of callbacks', () => {
+  it('gives every callback the variables of the request', async () => {
+    const seen: Record<string, Record<string, unknown>> = {}
+    const see =
+      <T>(name: string, result: (context: any) => T) =>
+      (context: any) => {
+        seen[name] = { ...context, hasEm: context.em === context.c.var.em }
+        return result(context)
+      }
+    const api = setup(
+      books({
+        find: see('find', () => ({ orderBy: { id: 'asc' } })),
+        resolveId: see('resolveId', ({ id }) => id),
+        filters: {
+          name: {
+            schema: z.string(),
+            where: see('filter', ({ value }) => ({ name: value }))
+          }
+        },
+        deserialize: see('deserialize', ({ json }) => json),
+        beforeSerialize: see('beforeSerialize', () => {}),
+        serialize: see('serialize', ({ json }) => json)
+      })
+    )
+    await request(api, 'GET', '/api/books?filter=name:"Burns"', undefined, 'a')
+    expect(seen.filter).toMatchObject({ value: 'Burns', name: 'name' })
+    await request(api, 'PATCH', '/api/books/2', { notes: 'New' }, 'a')
+    expect(seen.resolveId).toMatchObject({ id: '2' })
+    expect(seen.deserialize).toMatchObject({ json: { notes: 'New' } })
+    expect(seen.deserialize!.record).toBeInstanceOf(Book)
+    expect(seen.beforeSerialize!.records).toHaveLength(1)
+    expect(seen.serialize).toMatchObject({ json: { notes: 'New' } })
+    for (const context of Object.values(seen)) {
+      expect(context.user).toEqual({ id: 'a', roles: ['a'] })
+      expect(context.hasEm).toBe(true)
+    }
+    expect(seen.serialize!.action).toBe('patch :id')
+    expect(seen.serialize!.body).toEqual({ notes: 'New' })
+  })
+
+  it('gives `serialize` the variables of `beforeSerialize`', async () => {
+    const api = setup(
+      books({
+        beforeSerialize: ({ c }) => c.set('label' as never, 'Set' as never),
+        serialize: ({ json, label }: any) => ({ ...json, label })
+      })
+    )
+    const { json } = await request(api, 'GET', '/api/books/1')
+    expect(json.label).toBe('Set')
+  })
+})
+
 describe('defineList', () => {
   it('takes `find` as a function of the context', async () => {
     const getFind = ({ c }: { c: DitoContext }) => ({

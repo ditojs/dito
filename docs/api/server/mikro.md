@@ -55,12 +55,12 @@ mixins.
 
 The keys of [`ControllerDefinition`](controllers.md#controllerdefinition), and:
 
-| Key         | Type                     | Description                                                                                                                                                                    |
-| ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `entity`    | `EntityClass`            | The entity of the controller.                                                                                                                                                  |
-| `find`      | [`Find`](#find)          | What the controller loads and returns. It can also be a function that returns it.                                                                                              |
-| `filters`   | `Record<string, Filter>` | The filters that lists take in `filter=name:args`, see [Filters](#filters).                                                                                                    |
-| `resolveId` | `({ c, id }) => unknown` | Resolves the id of a record action before it becomes the primary key, for aliases such as `self`. It gets the id as sent. A result that doesn't fit the key responds with 404. |
+| Key         | Type                               | Description                                                                                                                                                                                                                            |
+| ----------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `entity`    | `EntityClass`                      | The entity of the controller.                                                                                                                                                                                                          |
+| `find`      | [`Find`](#find)                    | What the controller loads and returns. It can also be a function that returns it.                                                                                                                                                      |
+| `filters`   | `Record<string, Filter>`           | The filters that lists take in `filter=name:args`, see [Filters](#filters).                                                                                                                                                            |
+| `resolveId` | `({ id, user, em, c }) => unknown` | Resolves the id of a record action before it becomes the primary key, for aliases such as `self`. It gets the [`RequestContext`](api.md#the-handlers-context) and the id as sent. A result that doesn't fit the key responds with 404. |
 
 ### Default handlers
 
@@ -96,15 +96,19 @@ base sets them.
 `defineModelController()` adds these keys to controllers and mixins:
 
 ```ts
-beforeSerialize?: ({ records, c }) => unknown
-serialize?: ({ record, json, c }) => unknown
-deserialize?: ({ json, record, c }) => object
+beforeSerialize?: (context: RequestContext & { records }) => unknown
+serialize?: (context: RequestContext & { record, json }) => unknown
+deserialize?: (context: RequestContext & { json, record }) => object
 ```
+
+Each gets the [`RequestContext`](api.md#the-handlers-context), so `user`, `em`, `action`,
+`body`, `c` and the variables of the app, plus its own values:
 
 - `beforeSerialize` runs once per response, before `serialize`. The layers run
   it in layer order. It gets the controller's outgoing records as an array, also
   for a single record. It doesn't run when there are no records. It can load
-  what `serialize` needs in one query.
+  what `serialize` needs in one query. `serialize` gets the variables that it
+  sets with `c.set()`.
 - `serialize` shapes each outgoing record of the controller. The layers run it
   in layer order.
 - `deserialize` shapes the body of the default `post` and `patch :id`. The
@@ -137,7 +141,7 @@ interface FindShape<T> extends FindOptions<T> {
   where?: object
   maxRows?: number
 }
-type Find<T> = FindShape<T> | (({ c, user }) => FindShape<T> | Promise<FindShape<T>>)
+type Find<T> = FindShape<T> | ((context: RequestContext) => FindShape<T> | Promise<FindShape<T>>)
 ```
 
 `find` decides what a controller loads and returns. It holds MikroORM's
@@ -153,7 +157,7 @@ The rules of `find`:
 - `limit`, `offset`, `ctx`, `disableIdentityMap` and `lockMode` throw, because
   the base controls them. In an object, they throw when the controller is
   defined. In a function, they throw on the request.
-- A function gets `{ c, user }`. It runs once per request, on the first query,
+- A function gets the [`RequestContext`](api.md#the-handlers-context). It runs once per request, on the first query,
   after `getUser`. So middleware that runs before Dito sets the user can't query
   through it.
 - `fields` and `exclude` both work. MikroORM can't take both, so the query gets
@@ -254,7 +258,7 @@ actions: {
 ```
 
 Returns the handler of a list, `({ list }) => list(find)`. As on the controller,
-`find` can be a function `({ c, user })`. The default `get` is
+`find` can be a function of the `RequestContext`. The default `get` is
 `defineList()`.
 
 ## defineChoices()
@@ -350,12 +354,9 @@ type Filter =
   | z.ZodType
   | {
       schema: z.ZodType
-      where: ({
-        value,
-        name,
-        c,
-        em
-      }) => object | undefined | Promise<object | undefined>
+      where: (
+        context: RequestContext & { value, name }
+      ) => object | undefined | Promise<object | undefined>
     }
 ```
 
@@ -382,12 +383,11 @@ Each filter validates its value with a Zod schema:
 - Invalid values respond with 400, with `errors` keyed by the filter's name.
 - A schema that throws gives the code `custom` and the message `Invalid input`.
 
-`where` gets one object, with these keys:
+`where` gets the [`RequestContext`](api.md#the-handlers-context), such as `user`, `em` and
+`c`, with these keys:
 
 - `value`, the output of the schema;
-- `name`, the filter's name;
-- `c`;
-- `em`.
+- `name`, the filter's name.
 
 It returns a MikroORM `where`, or `undefined` to skip the filter. A schema alone
 is short for a filter whose `where` returns `{ [name]: value }`. The list joins

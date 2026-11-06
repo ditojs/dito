@@ -3,21 +3,18 @@ import {
   HttpError,
   createValidationError,
   type DitoContext,
+  type RequestContext,
   type ValidationIssue
 } from '@ditojs/server'
 import { convertQueryValue, queryValidation } from '@ditojs/server/internal'
 import { asArray, isEmpty, isString, mapConcurrently } from '@ditojs/utils'
-import type { EntityManager } from '@mikro-orm/sql'
 import type { ListQuery } from './listQuery.ts'
 import { runSchema } from './validation.ts'
 
 // `where` returns undefined to skip the filter.
-export type FilterWhere<Value = any> = (context: {
-  value: Value
-  name: string
-  c: DitoContext
-  em: EntityManager
-}) => object | undefined | Promise<object | undefined>
+export type FilterWhere<Value = any> = (
+  context: RequestContext & { value: Value; name: string }
+) => object | undefined | Promise<object | undefined>
 
 // A schema alone is short for `{ [name]: value }`.
 export type Filter =
@@ -114,9 +111,9 @@ export async function getFilterWheres(
       type: 'FilterValidation'
     })
   }
-  const { em } = c.var
+  const context = { ...c.var, c }
   const wheres = await mapConcurrently(parsed, ({ name, value, where }) =>
-    where({ value, name, c, em })
+    where({ ...context, value, name })
   )
   return wheres.filter(where => where !== undefined)
 }

@@ -1,4 +1,4 @@
-import type { DitoContext, User } from '@ditojs/server'
+import type { DitoContext, RequestContext } from '@ditojs/server'
 import { isFunction, isPlainObject } from '@ditojs/utils'
 import {
   ReferenceKind,
@@ -17,10 +17,7 @@ export interface FindShape<T extends object = any>
 
 export type Find<T extends object = any> =
   | FindShape<T>
-  | ((context: {
-      c: DitoContext
-      user: User | null
-    }) => FindShape<T> | Promise<FindShape<T>>)
+  | ((context: RequestContext) => FindShape<T> | Promise<FindShape<T>>)
 
 // The options that the base sets itself.
 const controlled = ['limit', 'offset', 'ctx', 'disableIdentityMap', 'lockMode']
@@ -40,9 +37,7 @@ export async function resolveFind<T extends object>(
   find: Find<T>,
   c: DitoContext
 ) {
-  return isFunction(find)
-    ? checkFind(await find({ c, user: c.var.user }))
-    : find
+  return isFunction(find) ? checkFind(await find({ ...c.var, c })) : find
 }
 
 // MikroORM can't take `fields` and `exclude` together, so `fields` wins.

@@ -141,8 +141,8 @@ find: ({ user }) => ({
 | `filters`  | MikroORM's entity filters, such as `{ softDelete: false }`.                        |
 | `maxRows`  | The most rows that a list returns, 1000 by default.                                |
 
-`find` is an object, or a function that gets `{ c, user }` and returns one. The
-function runs once per request, after `getUser`. So its result can depend on
+`find` is an object, or a function that gets the context of the request, such
+as `{ user, em, c }`, and returns one. The function runs once per request, after `getUser`. So its result can depend on
 the user, as above.
 
 `limit` and `offset` belong to lists, so `find` can't set them.
@@ -213,10 +213,10 @@ filters: {
     where: ({ value }) =>
       value === 'all' ? undefined : { published: value === 'published' }
   }),
-  // A filter's `where` gets `c` and `em` too.
+  // A filter's `where` gets the context of the request too.
   mine: defineFilter({
     schema: z.boolean(),
-    where: ({ value, c }) => (value ? { author: c.var.user.id } : undefined)
+    where: ({ value, user }) => (value ? { author: user.id } : undefined)
   })
 }
 ```

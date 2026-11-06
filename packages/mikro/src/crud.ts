@@ -72,9 +72,10 @@ async function deserialize(
   record?: unknown
 ) {
   checkBody(json)
+  const context = { ...c.var, c }
   let data = json
   for (const layer of definition.deserializers) {
-    data = await layer({ json: data, record, c })
+    data = await layer({ ...context, json: data, record })
   }
   return data
 }

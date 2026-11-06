@@ -522,7 +522,7 @@ and the app's rules, see [Writes](guide/server/writes.md). Then it flushes once.
   of a website need one. The checks are Zod schemas from the metadata, so the
   messages are Zod's, such as `Invalid input: expected number, received string`.
   Dates are ISO 8601 strings with an offset, or plain dates.
-- **`deserialize({ json, record, c })`** decides what a user may write. It
+- **`deserialize({ json, record, user, c })`** decides what a user may write. It
   replaces `$parseJson()`, the read-only rules of properties, and the
   `before:*:patch` hooks that changed the body. Custom handlers don't run it.
 - **Graphs.** `graph: true`, `upsertGraph()`, `relate` and `unrelate` are gone.
@@ -536,9 +536,10 @@ and the app's rules, see [Writes](guide/server/writes.md). Then it flushes once.
 - **Deletes.** Call `em.remove(record)` and flush. Declare the delete rules of
   the foreign keys on the entities, see [Deletes](guide/server/writes.md#deletes).
 
-`serialize({ record, json, c })` replaces `$formatJson()` and the hooks that
-changed responses. `beforeSerialize({ records, c })` lets a mixin load what the
-records need in one query. See
+`serialize({ record, json, em, c })` replaces `$formatJson()` and the hooks that
+changed responses. `beforeSerialize({ records, em, c })` lets a mixin load what
+the records need in one query. They, `deserialize`, `resolveId`, `find` functions
+and the `where` of filters all get the `RequestContext` and their own values. See
 [Serialize and deserialize](guide/server/controllers.md#serialize-and-deserialize).
 
 #### Errors

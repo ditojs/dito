@@ -6,7 +6,8 @@ import {
   type DitoContext,
   type Handler,
   type HandlerContext,
-  type MixinDefinition
+  type MixinDefinition,
+  type RequestContext
 } from '@ditojs/server'
 import {
   chainHandlers,
@@ -45,19 +46,19 @@ declare module '@ditojs/server' {
     // Called once per response of a model controller, in layer order, with the
     // outgoing records, before `serialize`. It can load what the records need
     // in one query, which `serialize` then reads.
-    beforeSerialize?: (context: { records: any[]; c: DitoContext }) => unknown
+    beforeSerialize?: (context: RequestContext & { records: any[] }) => unknown
     // Called for each record of a model controller, in layer order, with its
     // JSON in the shape of the controller's `find`, or the result of the
     // previous layer. Returns the JSON to send.
-    serialize?: (context: { record: any; json: any; c: DitoContext }) => unknown
+    serialize?: (
+      context: RequestContext & { record: any; json: any }
+    ) => unknown
     // Shapes the body of a default write before its checks, in the reverse
     // order of `serialize`. It gets the body, or the result of the previous
     // layer, and on updates the current record. Returns the data to write.
-    deserialize?: (context: {
-      json: Record<string, any>
-      record?: any
-      c: DitoContext
-    }) => Record<string, any> | Promise<Record<string, any>>
+    deserialize?: (
+      context: RequestContext & { json: Record<string, any>; record?: any }
+    ) => Record<string, any> | Promise<Record<string, any>>
   }
 }
 
@@ -72,7 +73,7 @@ export interface ModelControllerDefinition<T extends object = any>
   // Resolves the id of a record action before it becomes the primary key, for
   // aliases such as `self`. It gets the id as sent. A result that doesn't fit
   // the key responds with 404.
-  resolveId?: (context: { c: DitoContext; id: string }) => unknown
+  resolveId?: (context: RequestContext & { id: string }) => unknown
 }
 
 export function defineModelController<T extends object>(
@@ -121,7 +122,7 @@ export function defineModelController<T extends object>(
       if (param !== undefined) {
         const id = toPrimaryKey(
           request.key,
-          await resolveId({ c, id: param })
+          await resolveId({ ...c.var, c, id: param })
         )
         if (id === undefined) throw new HttpError(404)
         c.set('id', id)

@@ -4,7 +4,7 @@ import type { ModelRequest } from './ModelRequest.ts'
 import { serializeResult } from './serialize.ts'
 
 export async function respond(request: ModelRequest, result: unknown) {
-  const { c, entity, definition } = request
+  const { c, entity } = request
   const isRecord = (value: unknown) => value instanceof entity
   const records = findRecords(result, isRecord)
   let reloaded = new Map<object, object>()
@@ -18,6 +18,7 @@ export async function respond(request: ModelRequest, result: unknown) {
       setLocation(request, result)
     }
   }
+  const { beforeSerializers, serializers } = request.definition
   const getRow = (row: object) => reloaded.get(row) ?? row
   const rows = records.map(getRow)
   const jsonByRow = new Map<object, unknown>()
@@ -25,12 +26,14 @@ export async function respond(request: ModelRequest, result: unknown) {
     request.output ?? (await request.getResolvedFind()).output
   )
   if (rows.length) {
-    for (const beforeSerialize of definition.beforeSerializers) {
-      await beforeSerialize({ records: rows, c })
+    for (const beforeSerialize of beforeSerializers) {
+      await beforeSerialize({ ...c.var, c, records: rows })
     }
     const items = serialize(rows, await getOutput())
     rows.forEach((row, index) => jsonByRow.set(row, items[index]))
   }
+  // After `beforeSerialize`, so that `serialize` gets the variables it sets:
+  const context = { ...c.var, c }
   return serializeResult(result, isRecord, async record => {
     const row = getRow(record as object)
     // Entities in the result can hold records that `findRecords()` can't reach:
@@ -38,8 +41,8 @@ export async function respond(request: ModelRequest, result: unknown) {
       jsonByRow.get(row) ??
       serialize(row, await getOutput())
     )
-    for (const layer of definition.serializers) {
-      json = await layer({ record: row, json, c })
+    for (const layer of serializers) {
+      json = await layer({ ...context, record: row, json })
     }
     return json
   })
