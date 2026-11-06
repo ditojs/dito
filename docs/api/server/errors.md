@@ -10,7 +10,7 @@ Errors respond with JSON.
 - Other errors respond with 500 and the title of the status, as their message
   may hold internals.
 - Errors with a status of 500 or above go to the `onError` hook of
-  [`createApi()`](api.md#apiconfig) and of
+  [`createApi()`](api.md#createapioptions) and of
   [`createHono()`](hono.md#createhono). By default, the hook logs them.
 
 ## The body
@@ -111,7 +111,7 @@ Hono only handles `Error`s. So throw an `HttpError`, not a `Response`.
 ```ts
 createValidationError(
   issues: readonly { message: string; path?: readonly PropertyKey[]; code?: string }[],
-  options?: ValidationErrorOptions
+  options?: CreateValidationErrorOptions
 ): HttpError
 ```
 

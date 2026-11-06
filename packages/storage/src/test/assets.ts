@@ -36,7 +36,7 @@ export const paths: AssetPath[] = [
   { ...bookPath, column: 'notes', path: '**.file', storage: 'covers' }
 ]
 
-export const getDb = (c: DitoContext) => c.var.em as Kysely<any>
+export const getDatabase = (c: DitoContext) => c.var.em as Kysely<any>
 
 export function setupAssetTests() {
   beforeAll(async () => {
@@ -148,7 +148,7 @@ export const adapter = {
 }
 export const handleAdapter: Partial<Adapter> = {
   connect: () => ({ getKysely: () => db }),
-  transaction: (c, fn) =>
+  transact: (c, fn) =>
     db.transaction().execute(async trx => {
       const previous = c.var.em
       c.set('em', { getKysely: () => trx })

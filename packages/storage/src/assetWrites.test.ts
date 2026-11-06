@@ -24,7 +24,7 @@ import {
   type Api,
   request,
   paths,
-  getDb,
+  getDatabase,
   file,
   addImport,
   addAsset,
@@ -83,7 +83,7 @@ describe('defineAssetWrites()', () => {
         defineAssetWrites({
           paths: normalizeAssetPaths(assetPaths),
           storages,
-          getDb
+          getDatabase
         })
       ],
       actions: {
@@ -92,9 +92,11 @@ describe('defineAssetWrites()', () => {
           if (body.fail) throw new Error('Failed write')
           if (body.conflict) {
             // A failed query aborts the transaction, as a failed flush does.
-            await sql`select * from missing`.execute(getDb(c)).catch(() => {
-              throw new HttpError(409)
-            })
+            await sql`select * from missing`
+              .execute(getDatabase(c))
+              .catch(() => {
+                throw new HttpError(409)
+              })
           }
           return body
         }
@@ -102,7 +104,7 @@ describe('defineAssetWrites()', () => {
     })
     return createApi({
       controllers: [books],
-      adapter: { connect: () => db, transaction: kyselyTransaction },
+      adapter: { connect: () => db, transact: kyselyTransaction },
       getUser: async () => null,
       onError: () => {}
     })
@@ -219,7 +221,7 @@ describe('defineAssetWrites()', () => {
     await addAsset('released', { since: old })
     let response: ReturnType<typeof post>
     await db.transaction().execute(async trx => {
-      await releaseAssets({ db: trx, storages, before: new Date() })
+      await releaseAssets({ database: trx, storages, before: new Date() })
       response = post(setup(), { cover: file('released') })
       await new Promise(resolve => setTimeout(resolve, 100))
     })
@@ -400,7 +402,7 @@ describe('importAssets()', () => {
       table: 'book',
       paths: normalizeAssetPaths(paths),
       storages,
-      db
+      database: db
     })
     expect(data.cover.key).not.toBe('seed')
     expect(data.cover.url).toBe(`https://example.com/${data.cover.key}`)
@@ -415,7 +417,7 @@ describe('importAssets()', () => {
       table: 'book',
       paths: normalizeAssetPaths(paths),
       storages,
-      db
+      database: db
     })
     expect(data.cover).toEqual({ key: 'seed', url: 'https://other.com/a.png' })
     expect(await getAssets()).toEqual([])

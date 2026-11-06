@@ -66,7 +66,7 @@ describe('defineUserWrites() with credentials', () => {
       // `@ditojs/mikro` have.
       adapter: {
         connect: () => ({ getKysely: () => db }),
-        transaction: (c, fn) =>
+        transact: (c, fn) =>
           db.transaction().execute(trx => {
             c.set('em', { getKysely: () => trx })
             return fn()

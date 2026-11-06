@@ -259,17 +259,17 @@ MikroORM's [entity filters](https://mikro-orm.io/docs/filters).
 ### Other lists
 
 ```js
-import { defineListHandler } from '@ditojs/mikro'
+import { defineList } from '@ditojs/mikro'
 
 actions: {
   // The root pages only.
-  'get': defineListHandler({ where: { parentPage: null } }),
+  'get': defineList({ where: { parentPage: null } }),
   // The latest edition of each book.
-  'get latest': defineListHandler({ where: { isLatest: true } })
+  'get latest': defineList({ where: { isLatest: true } })
 }
 ```
 
-`defineListHandler(find)` returns the handler of a list with its own `find`, a
+`defineList(find)` returns the handler of a list with its own `find`, a
 shape or a function, as on the controller. This `find` is merged with the controller's, as in
 [`find()`](../../api/server/mikro.md#find-1). Both `where`s apply. Its other
 options replace the controller's. The list applies the controller's filters,
@@ -321,7 +321,7 @@ async 'get :id/related'({ getRecord, find }) {
 
 Custom actions query through `find()` of their context. So they see the same
 rows as the default handlers. `find()` merges its options with the controller's
-`find`, as `defineListHandler()` does. So its rows stay within the controller's
+`find`, as `defineList()` does. So its rows stay within the controller's
 `where`.
 
 ```js

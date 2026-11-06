@@ -78,7 +78,7 @@ export interface ValidationIssue {
   readonly code?: unknown
 }
 
-export interface ValidationErrorOptions {
+export interface CreateValidationErrorOptions {
   // Default: `The data is not valid.`
   message?: string
   // Default: `ModelValidation`.
@@ -106,7 +106,7 @@ export function createValidationError(
     type = 'ModelValidation',
     status = 400,
     cause
-  }: ValidationErrorOptions = {}
+  }: CreateValidationErrorOptions = {}
 ) {
   return new HttpError(status, {
     type,

@@ -3,10 +3,10 @@ export type {
   ActionSettings,
   Actions,
   Adapter,
-  ApiConfig,
   ApiUsers,
   Authorize,
   ControllerDefinition,
+  CreateApiOptions,
   DitoContext,
   DitoEnv,
   DitoVariables,
@@ -27,6 +27,6 @@ export { createHono, type CreateHonoOptions } from './hono.ts'
 export {
   HttpError,
   createValidationError,
-  type ValidationErrorOptions,
+  type CreateValidationErrorOptions,
   type ValidationIssue
 } from './errors.ts'

@@ -47,7 +47,7 @@ export const crud = defineMixin({
   }
 })
 
-export function defineListHandler<T extends object = any>(
+export function defineList<T extends object = any>(
   find: Find<T> = {}
 ): Handler {
   if (!isFunction(find)) checkFind(find)
@@ -59,7 +59,7 @@ export function defineChoices<T extends object = any>(find: Find<T>) {
   const addMaxRows = (shape: FindShape<T>) => ({ maxRows: Infinity, ...shape })
   return defineMixin({
     actions: {
-      'get choices': defineListHandler(
+      'get choices': defineList(
         isFunction(find)
           ? async context => addMaxRows(await find(context))
           : addMaxRows(find)

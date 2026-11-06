@@ -5,7 +5,7 @@ export {
   guardEntity,
   type ModelControllerDefinition
 } from './controller.ts'
-export { crud, defineChoices, defineListHandler } from './crud.ts'
+export { crud, defineChoices, defineList } from './crud.ts'
 export { assignRecord, createRecord } from './records.ts'
 export type { Find, FindShape } from './find.ts'
 export {
@@ -19,10 +19,10 @@ export {
   defineJsonType,
   getAssetPaths,
   type JsonTypeAsset,
-  type JsonTypeOptions
+  type DefineJsonTypeOptions
 } from './SchemaJsonType.ts'
 export { createMikroAdapter, useEm } from './createMikroAdapter.ts'
 export {
   createEntityUserSource,
-  type EntityUserSourceOptions
+  type CreateEntityUserSourceOptions
 } from './createEntityUserSource.ts'

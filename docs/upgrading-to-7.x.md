@@ -282,7 +282,7 @@ filters: {
 - Custom actions query through `find(options)` of the handler's context, or
   through `c.var.find()`.
 - `list(options)`, or `c.var.list()`, runs the list with its filters, `order`
-  and `range`. `defineListHandler(find)` returns such a list as a handler.
+  and `range`. `defineList(find)` returns such a list as a handler.
 - Both keep to the rows of the controller's `find`. Only `where` and `filters`
   merge. The other options replace the controller's.
 - `getListQuery()` of the context returns the `where`, `orderBy` and `range` of
@@ -766,7 +766,7 @@ These things change. The admin of Dito.js 7 already handles them:
   [step 6](#6-turn-scopes-into-find-shapes), such as `author: { id: 12 }`
   instead of `authorId`.
 - A list returns at most 1000 rows. A larger list needs `range`, or a higher
-  `maxRows` in its find, such as `defineListHandler({ maxRows: 5000 })`.
+  `maxRows` in its find, such as `defineList({ maxRows: 5000 })`.
 - Unknown filters, and `order` on columns that the rows don't return, respond
   with 400. So does `nulls first` or `nulls last` in `order`.
 - Field errors hold a `message` and a `keyword`, without `params`, so

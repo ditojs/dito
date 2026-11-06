@@ -3,7 +3,7 @@
 ```js
 import {
   defineModelController,
-  defineListHandler,
+  defineList,
   defineChoices,
   crud,
   defineFilter,
@@ -67,7 +67,7 @@ The keys of [`ControllerDefinition`](controllers.md#controllerdefinition), and:
 
 | Key          | Handler                                                                                                                                                                                                |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `get`        | [`defineListHandler()`](#definelisthandler), which returns the list, see [Lists](#lists).                                                                                                              |
+| `get`        | [`defineList()`](#definelist), which returns the list, see [Lists](#lists).                                                                                                                            |
 | `post`       | Runs `deserialize`, then [`createRecord()`](#createrecord). The new record becomes `getRecord()`. Responds with 201 and `Location`, also when a layer replaces the handler and returns the new record. |
 | `get :id`    | Returns `getRecord()`.                                                                                                                                                                                 |
 | `patch :id`  | Runs `deserialize` with the record, then [`assignRecord()`](#assignrecord).                                                                                                                            |
@@ -236,26 +236,26 @@ applies. The primary key breaks ties, so that pages don't overlap. `order` takes
 rows return, or those of the controller's own list.
 
 A list returns at most 1000 rows. The `maxRows` of its `find` changes the
-limit, such as `defineListHandler({ maxRows: 50 })`. `Infinity` lifts it. A
+limit, such as `defineList({ maxRows: 50 })`. `Infinity` lifts it. A
 larger `range` responds with 400. A list without `range` that has more rows
 responds with 400 too.
 
-## defineListHandler()
+## defineList()
 
 ```ts
-defineListHandler(find?: Find): Handler
+defineList(find?: Find): Handler
 ```
 
 ```js
 actions: {
   // The root pages only.
-  'get': defineListHandler({ where: { parentPage: null } })
+  'get': defineList({ where: { parentPage: null } })
 }
 ```
 
 Returns the handler of a list, `({ list }) => list(find)`. As on the controller,
 `find` can be a function `({ c, user })`. The default `get` is
-`defineListHandler()`.
+`defineList()`.
 
 ## defineChoices()
 
@@ -269,7 +269,7 @@ mixins: [defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })]
 ```
 
 Returns a mixin that routes `get choices`, a list for the options of a select.
-The action is `'get choices': defineListHandler({ maxRows: Infinity, ...find })`,
+The action is `'get choices': defineList({ maxRows: Infinity, ...find })`,
 also with `find` as a function. So it returns all rows of the list, as a select needs, and takes the same
 filters. A `find` with `fields` names the relations that it sends, in its paths
 or in its own `populate`.
@@ -599,7 +599,7 @@ Returns the `adapter` of [`createApi()`](api.md#adapter):
 
 - `connect()` forks the entity manager for each request. The fork becomes `em`
   of the handler's context, and `c.var.em`.
-- `transaction` runs the action in a transaction of the request's entity
+- `transact()` runs the action in a transaction of the request's entity
   manager. While it runs, `em` is the transaction's entity manager. When the
   action throws, the transaction rolls back.
 - `toHttpError()` maps MikroORM's errors, see

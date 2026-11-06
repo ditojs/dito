@@ -56,11 +56,15 @@ export function createAssets({
   // Writes and uploads use the Kysely of the request, so that the `asset` rows
   // of a write commit with its transaction. The other methods run outside of
   // the requests' transactions.
-  const getDb = (c: DitoContext) => adapter.getKysely(c)
+  const getDatabase = (c: DitoContext) => adapter.getKysely(c)
   // All model controllers of the entities track the files of their writes:
   const pathsByEntity = Map.groupBy(normalizedPaths, path => path.entity)
   for (const [entity, paths] of pathsByEntity) {
-    guardEntity(entity, 'assets', defineAssetWrites({ paths, storages, getDb }))
+    guardEntity(
+      entity,
+      'assets',
+      defineAssetWrites({ paths, storages, getDatabase })
+    )
   }
 
   return {
@@ -96,7 +100,7 @@ export function createAssets({
           }))
         ],
         storages,
-        getDb
+        getDatabase
       })
     },
 
@@ -113,17 +117,17 @@ export function createAssets({
         table,
         paths: normalizedPaths,
         storages,
-        db: adapter.getKysely()
+        database: adapter.getKysely()
       })
     },
 
     // Read in the transaction of the running request, if there is one:
     findReferences(
-      options: Omit<FindAssetReferencesOptions, 'db' | 'paths'> = {}
+      options: Omit<FindAssetReferencesOptions, 'database' | 'paths'> = {}
     ) {
       return findAssetReferences({
         ...options,
-        db: adapter.getKysely(tryGetContext()),
+        database: adapter.getKysely(tryGetContext()),
         paths
       })
     },
@@ -137,7 +141,7 @@ export function createAssets({
     ) {
       return runAssetJobs({
         ...options,
-        db: adapter.getKysely(),
+        database: adapter.getKysely(),
         paths,
         storages,
         deleteUnusedAfter:

@@ -17,7 +17,7 @@ export interface JsonTypeAsset {
   maxSize?: number | string
 }
 
-export interface JsonTypeOptions<
+export interface DefineJsonTypeOptions<
   S extends z.ZodType | undefined = z.ZodType | undefined
 > {
   schema?: S
@@ -47,7 +47,7 @@ export class SchemaJsonType<T = any> extends JsonType {
   readonly getSchema: () => z.ZodType | undefined
   readonly assets: JsonTypeAsset[]
 
-  constructor({ schema, assets = [] }: JsonTypeOptions) {
+  constructor({ schema, assets = [] }: DefineJsonTypeOptions) {
     super()
     this.getSchema = () => schema
     this.assets = assets
@@ -59,7 +59,7 @@ export class SchemaJsonType<T = any> extends JsonType {
 }
 
 export function defineJsonType<S extends z.ZodType | undefined = undefined>(
-  options: JsonTypeOptions<S>
+  options: DefineJsonTypeOptions<S>
 ) {
   return new SchemaJsonType<S extends z.ZodType ? z.output<S> : any>(options)
 }

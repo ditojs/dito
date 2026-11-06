@@ -17,7 +17,7 @@ describe('the transaction helpers', () => {
     )
     expect(createMikroAdapter(orm)).toMatchObject({
       connect: expect.any(Function),
-      transaction: expect.any(Function),
+      transact: expect.any(Function),
       toHttpError: expect.any(Function)
     })
   })

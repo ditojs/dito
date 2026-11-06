@@ -171,7 +171,7 @@ export interface Adapter {
   ) => DitoVariables['em'] | Promise<DitoVariables['em']>
   // Runs the actions that need a transaction. Without it, none runs in one,
   // and `createApi()` throws for actions with `transacted: true`.
-  transaction?: Transaction
+  transact?: Transaction
   // The `HttpError` of a database error, or undefined for other errors.
   toHttpError?: (error: unknown, c: DitoContext) => HttpError | undefined
 }
@@ -191,10 +191,10 @@ export type ErrorLogger = (context: {
 
 export interface ApiUsers {
   middleware: Middleware
-  getUser?: ApiConfig['getUser']
+  getUser?: CreateApiOptions['getUser']
 }
 
-export interface ApiConfig {
+export interface CreateApiOptions {
   // A list, or an object such as a module namespace, of which only the
   // results of `defineController()` count.
   controllers: ControllerDefinition[] | Record<string, unknown>

@@ -6,7 +6,7 @@ import { MikroORM, type EntityClass, type Options } from '@mikro-orm/postgresql'
 import {
   createApi,
   createHono,
-  type ApiConfig,
+  type CreateApiOptions,
   type CreateHonoOptions,
   type Service
 } from '@ditojs/server'
@@ -83,7 +83,10 @@ export interface App {
     options: Omit<CreateUsersOptions<U>, 'orm' | 'secrets'>
   ): Users<U>
   // Routes an API on the app's database.
-  routeApi(path: string, options: Omit<ApiConfig, 'adapter' | 'onError'>): void
+  routeApi(
+    path: string,
+    options: Omit<CreateApiOptions, 'adapter' | 'onError'>
+  ): void
   // Starts the jobs and the services in order, then serves `hono` until
   // `close()`, SIGINT or SIGTERM.
   start(options?: { services?: Service[] }): Promise<ServerType>
@@ -93,7 +96,7 @@ export interface App {
 }
 
 // Logs through the logger of the request, so that errors have its id.
-const logError: ApiConfig['onError'] = ({ error, c }) =>
+const logError: CreateApiOptions['onError'] = ({ error, c }) =>
   c.var.logger.error(error)
 
 export function createApp({

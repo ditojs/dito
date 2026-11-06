@@ -13,7 +13,7 @@ import {
   queryValidation
 } from './errors.ts'
 import type {
-  ApiConfig,
+  CreateApiOptions,
   Authorize,
   DitoContext,
   DitoEnv,
@@ -32,7 +32,7 @@ export function createApi({
   adapter = {},
   getUser = users?.getUser,
   onError
-}: ApiConfig) {
+}: CreateApiOptions) {
   const app = new Hono<DitoEnv>()
   // Runs on the actions only, so that APIs routed at `/api` and `/api/admin`
   // don't run each other's middleware, in any order.
@@ -60,10 +60,10 @@ export function createApi({
           `Unable to check the roles of ${where} without \`getUser\`.`
         )
       }
-      if (transacted && !adapter.transaction) {
+      if (transacted && !adapter.transact) {
         throw new Error(
           `Unable to run ${where} in a transaction: the adapter has no ` +
-          '`transaction`.'
+          '`transact`.'
         )
       }
       return {
@@ -84,7 +84,7 @@ export function createApi({
     routeShapes.add(shape)
     const handlers: Middleware[] = [
       ...setup,
-      ...getMiddleware(action, adapter.transaction),
+      ...getMiddleware(action, adapter.transact),
       async c => respond(c, action)
     ]
     app.on(method, path, ...(handlers as [Middleware]))
@@ -97,7 +97,7 @@ export function createApi({
 // transaction, and run the action's `middleware`, in this order.
 function getMiddleware(
   action: ResolvedAction,
-  transaction: Transaction | undefined
+  transact: Transaction | undefined
 ): Middleware[] {
   const { authorize, query, body, key, verb } = action
   const middleware: Middleware[] = [
@@ -125,12 +125,12 @@ function getMiddleware(
       await next()
     })
   }
-  if (transaction && (action.transacted ?? verb !== 'get')) {
+  if (transact && (action.transacted ?? verb !== 'get')) {
     // Hono handles errors where they are thrown, and `next()` resolves with
     // `c.error` set. Throwing it again rolls the transaction back.
     middleware.push(async (c, next) => {
       try {
-        await transaction(c, async () => {
+        await transact(c, async () => {
           await next()
           if (c.error) throw c.error
         })

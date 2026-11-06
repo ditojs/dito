@@ -22,7 +22,7 @@ export function createMikroAdapter(orm: Orm): Adapter {
     connect: () => orm.em.fork(),
     // MikroORM flushes the entity manager before it commits, and rolls back
     // when `fn` throws.
-    transaction: async (c, fn) => {
+    transact: async (c, fn) => {
       const em = getEntityManager(c)
       try {
         return await em.transactional(async trx => {

@@ -17,7 +17,7 @@ See [API](../../guide/server/api.md) in the guide.
 ## createApi()
 
 ```ts
-createApi(config: ApiConfig): Hono<DitoEnv>
+createApi(options: CreateApiOptions): Hono<DitoEnv>
 ```
 
 ```js
@@ -42,7 +42,7 @@ not on the first request. These are invalid:
 - a routed action without a handler;
 - an action whose `authorize` holds roles when the API has no `getUser`, as no
   user could have them;
-- an action with `transacted: true` when the adapter has no `transaction`.
+- an action with `transacted: true` when the adapter has no `transact`.
 
 Hono runs the first route that matches. So Dito adds the routes by how much
 they match, also across controllers:
@@ -59,7 +59,7 @@ An API handles only the paths of its actions, and leaves the others to the app.
 So it also works at `/`. The app of [`createHono()`](hono.md#createhono) handles the
 other paths.
 
-### ApiConfig
+### CreateApiOptions
 
 | Key           | Type                                               | Description                                                                                                                                                                              |
 | ------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -162,7 +162,7 @@ The `body` of a write, and the input of a `body` schema, follow these rules:
 interface Adapter {
   getKysely(c?: DitoContext): Kysely<any>
   connect?(c: DitoContext): DitoVariables['em'] | Promise<DitoVariables['em']>
-  transaction?: Transaction
+  transact?: Transaction
   toHttpError?(error: unknown, c: DitoContext): HttpError | undefined
 }
 ```
@@ -174,7 +174,7 @@ The object that [`createMikroAdapter()`](mikro.md#createmikroadapter) returns.
 - `getKysely()` returns a Kysely outside of any transaction. With the `c` of a
   request, it runs in the request's transaction.
 - `connect()` returns the request's entity manager, which becomes `c.var.em`.
-- `transaction` runs the actions that need a transaction. Without it, no action
+- `transact()` runs the actions that need a transaction. Without it, no action
   runs in one.
 - `toHttpError()` maps the database's errors to an `HttpError`. It returns
   `undefined` for other errors.

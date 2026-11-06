@@ -31,7 +31,7 @@ import type { StorageRegistry } from './StorageRegistry.ts'
 
 // Use the Kysely of the request, such as one on `c.var.em`, so that the
 // `asset` rows of a write commit with its transaction:
-export type AssetDb = (c: DitoContext) => Kysely<any>
+export type AssetDatabase = (c: DitoContext) => Kysely<any>
 
 interface AssetOptions {
   paths: NormalizedAssetPath[]
@@ -67,8 +67,8 @@ const importConcurrency = 8
 export function defineAssetWrites({
   paths,
   storages,
-  getDb
-}: AssetOptions & { getDb: AssetDb }): MixinDefinition {
+  getDatabase
+}: AssetOptions & { getDatabase: AssetDatabase }): MixinDefinition {
   return {
     middleware: async (c, next) => {
       const imported: AssetPathFile[] = []
@@ -81,10 +81,10 @@ export function defineAssetWrites({
         checkFiles(c.var.body, paths)
         const files = findFiles(c.var.body, paths, storages)
         if (files.length > 0) {
-          const db = getDb(c)
+          const database = getDatabase(c)
           try {
             // Files that can't be accepted throw a 400.
-            const unreferenced = await importFiles(db, files, {
+            const unreferenced = await importFiles(database, files, {
               storages,
               imported
             })
@@ -94,7 +94,7 @@ export function defineAssetWrites({
               ...imported.map(({ file }) => file.key)
             ]
             if (keys.length > 0) {
-              await db
+              await database
                 .updateTable('asset')
                 .set({ unreferenced_since: null })
                 .where('key', 'in', keys)
@@ -154,14 +154,14 @@ function findFiles(
 // the rows that they use and that a scan found unreferenced. Files that the
 // `asset` table holds in their storage keep their key.
 async function importFiles(
-  db: Kysely<any>,
+  database: Kysely<any>,
   files: AssetPathFile[],
   options: ImportOptions
 ): Promise<string[]> {
   const getStorageKey = (storage: string, key: string) => `${storage}:${key}`
   const keys = [...new Set(files.map(({ file }) => file.key))]
   if (keys.length === 0) return []
-  const assets = await db
+  const assets = await database
     .selectFrom('asset')
     .select(['key', 'storage', 'file'])
     .where('key', 'in', keys)
@@ -182,7 +182,7 @@ async function importFiles(
         const stored =
           asset?.storage === first.storage.name
             ? asset.file
-            : await importFile(db, first, asset, options)
+            : await importFile(database, first, asset, options)
         if (stored) {
           for (const { file } of group) {
             for (const key of Object.keys(file)) {
@@ -206,7 +206,7 @@ async function importFiles(
   // the order keeps two writes from locking each other out.
   const locked =
     usedKeys.length > 0
-      ? await db
+      ? await database
           .selectFrom('asset')
           .select(['key', 'unreferenced_since'])
           .where('key', 'in', usedKeys)
@@ -227,7 +227,7 @@ async function importFiles(
 // Copy files with the `asset` row of another storage, and fetch files without
 // one from their `url` if the storage allows it:
 async function importFile(
-  db: Kysely<any>,
+  database: Kysely<any>,
   { file, storage, maxSize }: AssetPathFile,
   asset: { storage: string; file: AssetFile } | undefined,
   { storages, imported, skipDisallowed }: ImportOptions
@@ -255,7 +255,7 @@ async function importFile(
     Object.assign(stored, { width, height })
   }
   imported?.push({ file: stored, storage })
-  await insertAsset(db, stored, storage)
+  await insertAsset(database, stored, storage)
   return stored
 }
 
@@ -267,12 +267,12 @@ export async function importAssets<T extends object>(
     table,
     paths,
     storages,
-    db
-  }: AssetOptions & { table: string; db: Kysely<any> }
+    database
+  }: AssetOptions & { table: string; database: Kysely<any> }
 ) {
   const tablePaths = paths.filter(path => path.table === table)
   const files = findFiles(data, tablePaths, storages)
-  await importFiles(db, files, { storages, skipDisallowed: true })
+  await importFiles(database, files, { storages, skipDisallowed: true })
   return data
 }
 
@@ -312,16 +312,16 @@ async function* limitSize(data: FileData, maxSize: number) {
   }
 }
 
-// The row stays unreferenced until a scan finds the file. If `db` is outside
-// the transaction of the write that references the file and that write rolls
-// back, the release deletes the file later.
+// The row stays unreferenced until a scan finds the file. If `database` is
+// outside the transaction of the write that references the file and that write
+// rolls back, the release deletes the file later.
 export async function insertAsset(
-  db: Kysely<any>,
+  database: Kysely<any>,
   file: AssetFile,
   storage: Storage
 ) {
   const now = new Date()
-  await db
+  await database
     .insertInto('asset')
     .values({
       key: file.key,
@@ -337,13 +337,13 @@ export async function insertAsset(
 // Insert the `asset` row of files that the server creates, such as PDFs, so
 // that the jobs track them:
 export async function storeAsset(
-  db: Kysely<any>,
+  database: Kysely<any>,
   storage: Storage,
   options: StoreOptions
 ) {
   const file = await storage.store(options)
   try {
-    await insertAsset(db, file, storage)
+    await insertAsset(database, file, storage)
   } catch (error) {
     await storage.removeFile(file).catch(() => {})
     throw error

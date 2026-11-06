@@ -17,7 +17,7 @@ describe('useEm()', () => {
     const api = createApi({
       adapter: {
         connect: () => em,
-        transaction: async (c, fn) => {
+        transact: async (c, fn) => {
           c.set('em', trx)
           try {
             return await fn()

@@ -5,7 +5,7 @@ import picomatch from 'picomatch'
 import { camelize } from '@ditojs/utils'
 import { HttpError, defineAction, type MixinDefinition } from '@ditojs/server'
 import type { AssetFile } from './Storage.ts'
-import { storeAsset, type AssetDb } from './assetWrites.ts'
+import { storeAsset, type AssetDatabase } from './assetWrites.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
 
 export interface AssetUpload {
@@ -25,7 +25,7 @@ export interface NormalizedAssetUpload extends Omit<AssetUpload, 'maxSize'> {
 export interface DefineAssetUploadsOptions {
   uploads: NormalizedAssetUpload[]
   storages: StorageRegistry
-  getDb: AssetDb
+  getDatabase: AssetDatabase
 }
 
 // Define the action of the Dito admin's upload component,
@@ -35,7 +35,7 @@ export interface DefineAssetUploadsOptions {
 export function defineAssetUploads({
   uploads,
   storages,
-  getDb
+  getDatabase
 }: DefineAssetUploadsOptions): MixinDefinition {
   const matchers = uploads.map(upload => ({
     ...upload,
@@ -61,7 +61,7 @@ export function defineAssetUploads({
             })
           }
           const storage = storages.get(upload.storage)
-          const db = getDb(c)
+          const database = getDatabase(c)
           const parser = busboy({
             headers: { 'content-type': contentType },
             limits: { fileSize: upload.maxSize }
@@ -77,7 +77,7 @@ export function defineAssetUploads({
               // would throw the error of an abort. Its store reads it later:
               stream.on('error', () => {})
               const result = (results.at(-1) ?? Promise.resolve()).then(() =>
-                storeAsset(db, storage, {
+                storeAsset(database, storage, {
                   name: filename,
                   type: mimeType,
                   data: readUploadData(stream)
@@ -112,7 +112,7 @@ export function defineAssetUploads({
             await Promise.allSettled(
               files.map(async file => {
                 await storage.removeFile(file)
-                await db
+                await database
                   .deleteFrom('asset')
                   .where('key', '=', file.key)
                   .execute()

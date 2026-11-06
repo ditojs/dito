@@ -326,7 +326,7 @@ actions: {
 }
 ```
 
-Writes run in the API's `transaction`, and reads don't. An action, a controller
+Writes run in the `transact()` of the adapter, and reads don't. An action, a controller
 or a mixin can change this with `transacted`. The transaction covers the
 middleware of the controller, of its mixins and of the action. The API's own
 `middleware` runs outside of it.

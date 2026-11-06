@@ -3,7 +3,7 @@ import {
   createEntityUserSource,
   createMikroAdapter,
   guardEntity,
-  type EntityUserSourceOptions
+  type CreateEntityUserSourceOptions
 } from '@ditojs/mikro'
 import { createCredentials } from './credentials.ts'
 import type { CreatePasswordResetOptions } from './passwordReset.ts'
@@ -16,7 +16,7 @@ import {
 import type { User } from './users.ts'
 
 export interface CreateUsersOptions<U extends object>
-  extends Omit<EntityUserSourceOptions<U>, 'orm'> {
+  extends Omit<CreateEntityUserSourceOptions<U>, 'orm'> {
   // The ORM with its `session` and `credential` tables.
   orm: { em: EntityManager }
   // The secrets that sign the cookies and the password reset links. The first

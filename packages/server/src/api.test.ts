@@ -12,7 +12,7 @@ import {
   defineMixin,
   HttpError,
   type Adapter,
-  type ApiConfig,
+  type CreateApiOptions,
   type Authorize,
   type ControllerDefinition,
   type DitoContext,
@@ -33,16 +33,16 @@ declare module './index.ts' {
 const admin: User = { id: 1, roles: ['admin'] }
 const editor: User = { id: 2, roles: ['editor'] }
 
-interface SetupOptions extends Partial<ApiConfig>, Partial<Adapter> {
+interface SetupOptions extends Partial<CreateApiOptions>, Partial<Adapter> {
   user?: User | null
 }
 
 // The Hono app, which routes the API below `/api`. `connect` and
-// `transaction` go to the adapter, whose `toHttpError()` maps
+// `transact` go to the adapter, whose `toHttpError()` maps
 // `RangeError`, which stands for an error of the ORM.
 function setup(
   controllers: ControllerDefinition[],
-  { user = admin, connect, transaction, ...config }: SetupOptions = {}
+  { user = admin, connect, transact, ...config }: SetupOptions = {}
 ) {
   const app = new Hono()
   app.route(
@@ -52,7 +52,7 @@ function setup(
       getUser: async () => user,
       adapter: {
         connect,
-        transaction,
+        transact,
         toHttpError: error =>
           error instanceof RangeError
             ? new HttpError(422, { type: 'OutOfRange', message: error.message })
@@ -71,7 +71,7 @@ function setup(
 // `c.var.em` to 'trx' during `fn`.
 function createTransaction() {
   const log: string[] = []
-  const transaction: Transaction = async (c, fn) => {
+  const transact: Transaction = async (c, fn) => {
     log.push('begin')
     const { em } = c.var
     c.set('em', 'trx')
@@ -86,7 +86,7 @@ function createTransaction() {
       c.set('em', em)
     }
   }
-  return { transaction, log }
+  return { transact, log }
 }
 
 const request = (
@@ -480,7 +480,7 @@ describe('composition', () => {
   })
 
   it('takes settings from the last action, else the last layer', async () => {
-    const { transaction, log } = createTransaction()
+    const { transact, log } = createTransaction()
     const base = defineMixin({
       authorize: 'editor',
       actions: {
@@ -492,7 +492,7 @@ describe('composition', () => {
     const define = (def: Partial<ControllerDefinition>) =>
       setup([{ path: 'fonts', mixins: [base, mixin], ...def }], {
         user: editor,
-        transaction
+        transact
       })
     const api = define({
       authorize: 'admin',
@@ -1223,7 +1223,7 @@ describe('query values', () => {
 
 describe('transactions', () => {
   it('runs writes in a transaction, but not reads', async () => {
-    const { transaction, log } = createTransaction()
+    const { transact, log } = createTransaction()
     const api = setup(
       [
         {
@@ -1241,7 +1241,7 @@ describe('transactions', () => {
           }
         }
       ],
-      { transaction }
+      { transact }
     )
     expect(await json(api, 'GET', '/api/fonts')).toBe(null)
     expect(log).toEqual(['middleware none'])
@@ -1256,7 +1256,7 @@ describe('transactions', () => {
     expect(log).toEqual(['middleware none'])
   })
 
-  it('needs the `transaction` of the adapter for `transacted: true`', () => {
+  it('needs the `transact` of the adapter for `transacted: true`', () => {
     const fonts = (transacted: boolean): ControllerDefinition => ({
       path: 'fonts',
       authorize: true,
@@ -1264,13 +1264,13 @@ describe('transactions', () => {
     })
     expect(() => setup([fonts(true)])).toThrow(
       `Unable to run 'get' in 'fonts' in a transaction: the adapter has no ` +
-      '`transaction`.'
+      '`transact`.'
     )
     expect(() => setup([fonts(false)])).not.toThrow()
   })
 
   it('takes `transacted` from the action, else the last layer', async () => {
-    const { transaction, log } = createTransaction()
+    const { transact, log } = createTransaction()
     const mixin = defineMixin({ transacted: false })
     const api = setup(
       [
@@ -1289,7 +1289,7 @@ describe('transactions', () => {
           }
         }
       ],
-      { transaction }
+      { transact }
     )
     expect(await json(api, 'GET', '/api/fonts')).toBe('trx')
     expect(log).toEqual(['begin', 'commit'])
@@ -1301,7 +1301,7 @@ describe('transactions', () => {
   })
 
   it('rolls back when the handler throws', async () => {
-    const { transaction, log } = createTransaction()
+    const { transact, log } = createTransaction()
     const api = setup(
       [
         {
@@ -1319,7 +1319,7 @@ describe('transactions', () => {
           }
         }
       ],
-      { transaction }
+      { transact }
     )
     const response = await request(api, 'POST', '/api/fonts')
     expect(log).toEqual(['begin', 'middleware Too wide', 'rollback'])
@@ -1332,7 +1332,7 @@ describe('transactions', () => {
   })
 
   it('rolls back when the chain throws after the handler', async () => {
-    const { transaction, log } = createTransaction()
+    const { transact, log } = createTransaction()
     const api = setup(
       [
         {
@@ -1351,7 +1351,7 @@ describe('transactions', () => {
           }
         }
       ],
-      { transaction }
+      { transact }
     )
     const response = await request(api, 'POST', '/api/fonts')
     expect(log).toEqual(['begin', 'handler', 'middleware throws', 'rollback'])
@@ -1359,13 +1359,13 @@ describe('transactions', () => {
   })
 
   it('answers the errors of the transaction itself', async () => {
-    const transaction: Transaction = async (_c, fn) => {
+    const transact: Transaction = async (_c, fn) => {
       await fn()
       throw new RangeError('Commit failed')
     }
     const api = setup(
       [{ path: 'fonts', authorize: true, actions: { post: () => ({}) } }],
-      { transaction }
+      { transact }
     )
     const response = await request(api, 'POST', '/api/fonts')
     expect(response.status).toBe(422)
@@ -1374,7 +1374,7 @@ describe('transactions', () => {
 
   it('sets `em` from `connect`, which the transaction swaps', async () => {
     const log: string[] = []
-    const transaction: Transaction = async (c, fn) => {
+    const transact: Transaction = async (c, fn) => {
       const { em } = c.var
       c.set('em', `trx of ${em}`)
       try {
@@ -1393,7 +1393,7 @@ describe('transactions', () => {
           actions: { get: ({ em }) => em, post: ({ em }) => em }
         }
       ],
-      { transaction, connect }
+      { transact, connect }
     )
     expect(await json(api, 'GET', '/api/fonts')).toBe('db GET')
     expect(await json(api, 'POST', '/api/fonts')).toBe('trx of db POST')
@@ -1402,10 +1402,10 @@ describe('transactions', () => {
   })
 
   it('keeps `em` in a transaction that does not set it', async () => {
-    const transaction: Transaction = (_c, fn) => fn()
+    const transact: Transaction = (_c, fn) => fn()
     const api = setup(
       [{ path: 'fonts', authorize: true, actions: { post: ({ em }) => em } }],
-      { transaction, connect: () => 'db' }
+      { transact, connect: () => 'db' }
     )
     expect(await json(api, 'POST', '/api/fonts')).toBe('db')
   })

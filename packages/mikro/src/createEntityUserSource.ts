@@ -10,7 +10,7 @@ import { getPrimaryKey, toPrimaryKey } from './metadata.ts'
 
 // The `UserSource` of `@ditojs/auth`, which depends on this package.
 
-export interface EntityUserSourceOptions<U extends object> {
+export interface CreateEntityUserSourceOptions<U extends object> {
   // The ORM, for queries outside of the API's requests.
   orm: { em: EntityManager }
   // The property of the username. Default: `username`.
@@ -38,7 +38,7 @@ export function createEntityUserSource<U extends { id: number | string }>(
     serialize,
     computed = {},
     password
-  }: EntityUserSourceOptions<U>
+  }: CreateEntityUserSourceOptions<U>
 ) {
   // Outside of the API, such as in session middleware, query with a fork:
   const getEm = (): EntityManager => tryGetContext()?.var.em ?? orm.em.fork()

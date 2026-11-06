@@ -20,7 +20,7 @@ import {
   defineChoices,
   defineDateRangeFilter,
   defineFilter,
-  defineListHandler,
+  defineList,
   defineModelController,
   defineTextFilter,
   guardEntity,
@@ -546,8 +546,8 @@ describe('get', () => {
       books({
         find: {},
         actions: {
-          'get all': defineListHandler({ fields: ['name'], maxRows: Infinity }),
-          'get few': defineListHandler({ maxRows: count - 1 }),
+          'get all': defineList({ fields: ['name'], maxRows: Infinity }),
+          'get few': defineList({ maxRows: count - 1 }),
           'get ids': async ({ list }) => {
             const rows = await list({
               where: { published: true },
@@ -785,7 +785,7 @@ describe('find', () => {
   })
 })
 
-describe('defineListHandler', () => {
+describe('defineList', () => {
   it('takes `find` as a function of the context', async () => {
     const getFind = ({ c }: { c: DitoContext }) => ({
       where: { name: c.req.query('name') },
@@ -794,7 +794,7 @@ describe('defineListHandler', () => {
     const api = setup(
       books({
         mixins: [defineChoices(getFind)],
-        actions: { 'get named': defineListHandler(getFind) }
+        actions: { 'get named': defineList(getFind) }
       })
     )
     for (const action of ['named', 'choices']) {
@@ -852,7 +852,7 @@ describe('defineListHandler', () => {
           orderBy: { name: 'asc' }
         }),
         actions: {
-          'get published': defineListHandler({ where: { published: true } })
+          'get published': defineList({ where: { published: true } })
         }
       })
     )
@@ -877,7 +877,7 @@ describe('defineListHandler', () => {
       books({
         find: { populate: ['parts'], exclude: ['notes', 'parts.order'] },
         actions: {
-          'get all': defineListHandler({ fields: ['*'], populate: ['parts'] })
+          'get all': defineList({ fields: ['*'], populate: ['parts'] })
         }
       })
     )
@@ -940,7 +940,7 @@ describe('defineListHandler', () => {
   })
 
   it('refuses the options that the base controls', () => {
-    expect(() => defineListHandler({ limit: 1 })).toThrow(
+    expect(() => defineList({ limit: 1 })).toThrow(
       'Unable to set `limit` in `find`, which the base controls'
     )
   })
