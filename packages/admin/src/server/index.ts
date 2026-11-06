@@ -2,14 +2,19 @@ import fs from 'node:fs'
 import path from 'node:path'
 import net from 'node:net'
 import type { AddressInfo } from 'node:net'
-import { Hono, type Context, type MiddlewareHandler } from 'hono'
+import { Hono } from 'hono'
 import { contextStorage } from 'hono/context-storage'
 import type { HttpBindings } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { RESPONSE_ALREADY_SENT } from '@hono/node-server/utils/response'
 import type { InlineConfig, ViteDevServer } from 'vite'
 import { asArray, assignDeeply, isArray, isString } from '@ditojs/utils'
-import { isAuthorized, type Authorize, type User } from '@ditojs/server'
+import {
+  isAuthorized,
+  type Authorize,
+  type CreateApiOptions,
+  type User
+} from '@ditojs/server'
 import { normalizeBase } from './normalizeBase.ts'
 
 // The admin as a Hono app, for the host to mount with `app.route(base, admin)`.
@@ -23,18 +28,9 @@ export interface CreateAdminOptions {
   api?: Record<string, unknown>
   // `dito.settings` in the browser.
   settings?: Record<string, unknown>
-  // The users that `getUser` and `authorize` need, from `createUsers()`. Their
-  // session middleware runs only on the requests that `authorize` checks, and
-  // `getUser` defaults to theirs.
-  users?: {
-    middleware: MiddlewareHandler
-    getUser?: (context: { c: Context }) => User | null | Promise<User | null>
-  }
-  // Other middleware of these requests.
-  middleware?: MiddlewareHandler | MiddlewareHandler[]
-  // The signed-in user of the request, or null. `authorize` reads it as
-  // `c.var.user`.
-  getUser?: (context: { c: Context }) => User | null | Promise<User | null>
+  // The users that `authorize` checks, as in `createApi()`. Their middleware
+  // runs only on the requests that `authorize` checks.
+  users?: CreateApiOptions['users']
   // Who may load the files below `views/`, as in `createApi()`: `true` for
   // anyone, a role or a list of roles, of which the user needs one, or a
   // function of `c`. Denied requests get 401, or 403 with a user. Without it,
@@ -59,19 +55,12 @@ export type AdminServer = Hono<AdminEnv> & {
 }
 
 export function createAdmin(options: CreateAdminOptions): AdminServer {
-  const {
-    users,
-    middleware,
-    getUser = users?.getUser,
-    authorize,
-    api = {},
-    settings = {}
-  } = options
+  const { users, authorize, api = {}, settings = {} } = options
   const base = normalizeBase(options.base)
   const isProtected = authorize !== undefined && authorize !== true
-  // Without `getUser`, there is no user whose roles could match.
-  if (!getUser && (isString(authorize) || isArray(authorize))) {
-    throw new Error('Unable to check the roles of the admin without `getUser`.')
+  // Without `users`, there is no user whose roles could match.
+  if (!users && (isString(authorize) || isArray(authorize))) {
+    throw new Error('Unable to check the roles of the admin without `users`.')
   }
   const getFilePath = (pathname: string) => pathname.slice(base.length)
   const app = new Hono<AdminEnv>()
@@ -100,13 +89,9 @@ export function createAdmin(options: CreateAdminOptions): AdminServer {
       }
       await next()
     })
-    const handlers = [
-      contextStorage(),
-      ...asArray(users?.middleware),
-      ...asArray(middleware)
-    ]
+    const handlers = [contextStorage(), ...asArray(users?.middleware)]
     app.use('/views/*', ...handlers, async (c, next) => {
-      const user = (await getUser?.({ c })) ?? null
+      const user = (await users?.getUser({ c })) ?? null
       c.set('user', user)
       if (await isAuthorized(c, authorize)) return next()
       return user ? c.text('Forbidden', 403) : c.text('Unauthorized', 401)

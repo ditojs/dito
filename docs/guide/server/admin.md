@@ -39,10 +39,10 @@ The options:
   [users controller](auth.md#the-users-controller) at `api.users` when it
   starts. They tell the login and account views what to offer.
 - `createAdmin()` returns a Hono app, which the app routes at `base`.
-- `users`, `middleware`, `getUser` and `authorize` work as in
+- `users` and `authorize` work as in
   [`createApi()`](controllers.md#authorization).
-- `authorize` decides whether a request may load the admin's views.
-  `middleware` runs only on those requests. Other requests, such as the
+- `authorize` decides whether a request may load the admin's views. The
+  middleware of `users` runs only on those requests. Other requests, such as the
   login's, need no user.
 
 ## Building

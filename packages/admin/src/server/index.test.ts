@@ -46,10 +46,10 @@ describe('createAdmin() in production', () => {
     return { request: route(admin) }
   }
 
-  it('needs `getUser` for roles', () => {
+  it('needs `users` for roles', () => {
     for (const authorize of ['admin', ['admin']]) {
       expect(() => createAdmin({ base: '/admin', dist, authorize })).toThrow(
-        'Unable to check the roles of the admin without `getUser`'
+        'Unable to check the roles of the admin without `users`'
       )
     }
   })
@@ -215,14 +215,16 @@ describe('createAdmin() in production', () => {
 
   it('authorizes the views by the roles of the user', async () => {
     const admin = setupAdmin({
-      // Sets the role that `getUser` reads, as a session middleware would.
-      middleware: async (c: Context, next: Next) => {
-        c.set('role' as never, c.req.header('x-role') as never)
-        await next()
-      },
-      getUser: ({ c }: { c: Context }) => {
-        const role = c.get('role' as never) as string | undefined
-        return role ? { roles: [role] } : null
+      users: {
+        // Sets the role that `getUser` reads, as a session middleware would.
+        middleware: async (c: Context, next: Next) => {
+          c.set('role' as never, c.req.header('x-role') as never)
+          await next()
+        },
+        getUser: ({ c }: { c: Context }) => {
+          const role = c.get('role' as never) as string | undefined
+          return role ? { id: 1, roles: [role] } : null
+        }
       },
       authorize: ['admin', 'editor']
     })
@@ -241,9 +243,12 @@ describe('createAdmin() in production', () => {
   it('runs the middleware only on the requests it authorizes', async () => {
     const paths: string[] = []
     const admin = setupAdmin({
-      middleware: async (c: Context, next: Next) => {
-        paths.push(c.req.path)
-        await next()
+      users: {
+        middleware: async (c: Context, next: Next) => {
+          paths.push(c.req.path)
+          await next()
+        },
+        getUser: () => null
       },
       authorize: () => true
     })
@@ -256,9 +261,9 @@ describe('createAdmin() in production', () => {
 
   it('gives a function of `authorize` the user', async () => {
     const admin = setupAdmin({
-      getUser: () => ({ roles: ['admin'] }),
+      users: { getUser: () => ({ id: 1, roles: ['admin'] }) },
       authorize: ({ user }: { user: User | null }) =>
-        !!user?.roles.includes('admin')
+        !!user?.roles?.includes('admin')
     })
     expect((await admin.request('/admin/views/views-Cd34_y-W.js')).status).toBe(
       200
@@ -278,7 +283,7 @@ describe('createAdmin() in development', () => {
     admin = createAdmin({
       base: '/admin',
       api,
-      getUser: async () => null,
+      users: { getUser: async () => null },
       authorize: 'admin',
       vite: path.join(import.meta.dirname, '../test/admin.vite.config.ts')
     })
