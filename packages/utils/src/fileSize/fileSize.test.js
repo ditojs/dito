@@ -66,17 +66,19 @@ describe('parseFileSize()', () => {
   })
 
   it('throws on invalid input', () => {
-    expect(() => parseFileSize('MB')).toThrow(`Invalid file size: 'MB'`)
-    expect(() => parseFileSize('10 XB')).toThrow(`Invalid file size unit: 'XB'`)
+    expect(() => parseFileSize('MB')).toThrow(`Invalid file size: 'MB'.`)
+    expect(() => parseFileSize('10 XB')).toThrow(
+      `Invalid file size unit: 'XB'.`
+    )
     expect(() => parseFileSize('10 MB 5')).toThrow(
-      `Invalid file size: '10 MB 5'`
+      `Invalid file size: '10 MB 5'.`
     )
   })
 
   it('throws on thousands separators', () => {
     for (const input of ['1,000,000', '1.000.000', '1.000,5', '1,000.5 MB']) {
       expect(() => parseFileSize(input)).toThrow(
-        `Invalid file size: '${input}'`
+        `Invalid file size: '${input}'.`
       )
     }
   })

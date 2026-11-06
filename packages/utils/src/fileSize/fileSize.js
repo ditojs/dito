@@ -10,7 +10,7 @@ export function formatFileSize(size, { base = 10 } = {}) {
     prefixes.length - 1
   )
   let amount = roundFileSize(absolute, multiplier, exponent)
-  // Rounding can reach the next unit, e.g. 999999 bytes to 1000 kB = 1 MB.
+  // Rounding can reach the next unit, such as 999999 bytes to 1000 kB = 1 MB.
   if (amount >= multiplier && exponent < prefixes.length - 1) {
     amount = roundFileSize(absolute, multiplier, ++exponent)
   }
@@ -32,7 +32,7 @@ export function parseFileSize(input, { base = 10 } = {}) {
     .match(/^(\d*[.,]?\d*)\s*(\D*)$/) || []
   const amount = parseFloat(amountString?.replace(',', '.'))
   if (!isFinite(amount)) {
-    throw new Error(`Invalid file size: '${input}'`)
+    throw new Error(`Invalid file size: '${input}'.`)
   }
   const multiplier = getMultiplier(/^[kmgtpezy]ib?$/i.test(unit) ? 2 : base)
   const bitMatch = unit.replace(/^bits?$/, 'b').match(/^([KMGTPEZY]?)b$/)
@@ -52,7 +52,7 @@ export function parseFileSize(input, { base = 10 } = {}) {
   if (exponent >= 0) {
     return Math.round(amount * multiplier ** exponent)
   }
-  throw new Error(`Invalid file size unit: '${unit}'`)
+  throw new Error(`Invalid file size unit: '${unit}'.`)
 }
 
 function getMultiplier(base) {

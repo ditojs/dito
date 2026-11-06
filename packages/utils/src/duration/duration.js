@@ -36,15 +36,18 @@ export function parseDuration(input) {
   if (parts.length > 0 && isFinite(duration)) {
     return Math.round(duration)
   }
-  throw new Error(`Invalid duration: '${input}'`)
+  throw new Error(`Invalid duration: '${input}'.`)
 }
 
 // Only a single amount goes without a unit, so `'1h30'` stays invalid. Unknown
-// units, also the keys of `Object.prototype`, make the duration `NaN`.
+// units make the duration `NaN`.
 function getMilliseconds(unit, isSingle) {
   const name = unit.toLowerCase()
+  const key = unitsByName[name.replace(/s$/, '')] ?? name
   return name
-    ? millisecondsByUnit[unitsByName[name.replace(/s$/, '')] ?? name]
+    ? Object.hasOwn(millisecondsByUnit, key)
+      ? millisecondsByUnit[key]
+      : NaN
     : isSingle
       ? 1
       : NaN

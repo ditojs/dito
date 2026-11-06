@@ -37,6 +37,6 @@ describe('parseDuration()', () => {
     '1 toString',
     '1 constructor'
   ])('throws for %o', input => {
-    expect(() => parseDuration(input)).toThrow(`Invalid duration: '${input}'`)
+    expect(() => parseDuration(input)).toThrow(`Invalid duration: '${input}'.`)
   })
 })
