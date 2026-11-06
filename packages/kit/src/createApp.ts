@@ -51,7 +51,7 @@ export interface CreateAppOptions {
   // The definitions of `createStorages()`. A disk storage is served at the path
   // of its `url`. A `url` without a path, such as a host of its own, isn't.
   storages?: Record<string, StorageDefinition>
-  assets?: Pick<CreateAssetsOptions, 'deleteUnusedAfter'>
+  assets?: Pick<CreateAssetsOptions, 'deleteUnusedAfter' | 'maxSize'>
   // The jobs that run while the app runs.
   jobs?: JobsOptions
 }

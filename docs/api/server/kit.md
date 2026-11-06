@@ -23,7 +23,7 @@ Sets up an app. Only `entities` and `database` are required.
 | `logger`   | pino's `LoggerOptions`              | Logs have no `pid` and `hostname` unless `base` sets them.                                                                                                        |
 | `secrets`  | `string[]`                          | Sign the cookies of the sessions and the password reset links. The first one signs, and all of them verify.                                                       |
 | `storages` | `Record<string, StorageDefinition>` | See [`createStorages()`](storage.md#createstorages). A disk storage is served at the path of its `url`. A `url` without a path, such as a host of its own, isn't. |
-| `assets`   | `{ deleteUnusedAfter }`             | See [`createAssets()`](storage.md#createassets).                                                                                                                  |
+| `assets`   | `{ deleteUnusedAfter, maxSize }`    | See [`createAssets()`](storage.md#createassets).                                                                                                                  |
 | `jobs`     | `JobsOptions`                       | The jobs that run while the app runs, see [Jobs](#jobs).                                                                                                          |
 
 ### App

@@ -218,6 +218,38 @@ describe('createApp()', () => {
     expect(await missing.json()).toEqual({ message: 'Not Found', status: 404 })
   })
 
+  it('limits the uploads with `maxSize` of `assets`', async () => {
+    const { host, user, dbName } = database.orm.config.getAll()
+    const app = createApp({
+      entities,
+      database: { host, user, dbName },
+      logger: { level: 'silent' },
+      storages: { covers: { type: 'disk', path: folder, url: '/covers/' } },
+      assets: { maxSize: '5b' }
+    })
+    const uploads = [{ path: 'covers', storage: 'covers' }]
+    app.routeApi('/api', {
+      controllers: [
+        {
+          path: 'books',
+          authorize: true,
+          mixins: [app.assets.defineUploads({ uploads })]
+        }
+      ]
+    })
+    const upload = (text: string) => {
+      const body = new FormData()
+      body.append('file', new File([text], 'cover.txt'))
+      return app.hono.request('/api/books/upload/covers', {
+        method: 'POST',
+        body
+      })
+    }
+    expect((await upload('hi')).status).toBe(200)
+    expect((await upload('too long')).status).toBe(413)
+    await app.close()
+  })
+
   it('runs the jobs while the app runs', async () => {
     const { host, user, dbName } = database.orm.config.getAll()
     const results: unknown[] = []
