@@ -32,7 +32,7 @@ describe('createStorages()', () => {
     expect([...storages.keys()]).toEqual(['covers', 'archive'])
   })
 
-  it('resolves disk paths against the working directory', () => {
+  it('resolves disk fields against the working directory', () => {
     const storages = createStorages({
       covers: { type: 'disk', path: 'a' }
     })

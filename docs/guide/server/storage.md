@@ -51,22 +51,22 @@ app.use('/assets/public/*', serveStorage(storages.get('public')))
 `serveStorage()` of `@ditojs/storage/node` serves a public disk storage at the
 path of its `url`. It uses `serveStatic()` of `@hono/node-server`.
 
-## Asset paths
+## Asset fields
 
 ```js
 import { defineJsonType } from '@ditojs/mikro'
 
 // In the properties of entities:
 cover: p
-  .type(defineJsonType({ assets: [{ path: '', storage: 'public' }] }))
+  .type(defineJsonType({ assets: [{ dataPath: '', storage: 'public' }] }))
   .nullable(),
 chapters: p
-  .type(defineJsonType({ assets: [{ path: '*/images', storage: 'public' }] }))
+  .type(defineJsonType({ assets: [{ dataPath: '*/images', storage: 'public' }] }))
   .nullable(),
 content: p.type(
   defineJsonType({
     schema: contentSchema,
-    assets: [{ path: '**/file', storage: 'public' }]
+    assets: [{ dataPath: '**/file', storage: 'public' }]
   })
 )
 ```
@@ -74,33 +74,33 @@ content: p.type(
 Entities say which columns hold files, with the `assets` of `defineJsonType()`.
 A column can have `assets` next to a `schema`.
 
-`getAssetPaths(entities)` collects them as asset paths. An asset path has an
-`entity`, a `table`, a `column`, a `path` and a `storage`. The uploads, the
-writes and the jobs below read them. `path` is the data path of the files inside the column's
+`getAssetFields(entities)` collects them as asset fields. An asset field has an
+`entity`, a `table`, a `column`, a `dataPath` and a `storage`. The uploads, the
+writes and the jobs below read them. `dataPath` is the data path of the files inside the column's
 JSON value:
 
 - `''` stands for the column itself.
 - `*` matches one segment.
 - `**` matches any number of segments.
 
-The value at a path is one file, or an array of files.
+The value at a data path is one file, or an array of files.
 
 ## The assets of an app
 
 ```js
-import { getAssetPaths } from '@ditojs/mikro'
+import { getAssetFields } from '@ditojs/mikro'
 import { createAssets } from '@ditojs/storage'
 import * as entities from './entities/index.js'
 
 export const assets = createAssets({
   adapter,
-  paths: getAssetPaths(entities),
+  fields: getAssetFields(entities),
   storages,
   deleteUnusedAfter: '24h'
 })
 ```
 
-`createAssets()` binds the adapter, the asset paths and the storages once. It
+`createAssets()` binds the adapter, the asset fields and the storages once. It
 returns the methods that the sections below use.
 
 The package reads and writes its tables through [Kysely](https://kysely.dev).
@@ -127,15 +127,15 @@ response.
 
 - `assets.defineUploads()` adds the upload action. One mixin fits all
   controllers, so an app can keep it in a constant.
-- The action picks the storage of the first asset path of the controller's
+- The action picks the storage of the first asset field of the controller's
   entity that matches the data path. Paths that none matches respond with 404.
 
 ```js
-const uploads = [{ path: 'notes', storage: 'public' }]
+const uploads = [{ dataPath: 'notes', storage: 'public' }]
 assets.defineUploads({ uploads })
 ```
 
-For upload fields that no asset path describes, `uploads` adds globs of its own.
+For upload fields that no asset field describes, `uploads` adds globs of its own.
 Controllers without an entity only have these.
 
 An upload without a type from the client gets the type detected from its data.
@@ -148,7 +148,7 @@ of them too, see [`createHono()`](../../api/server/hono.md#createhono).
 
 ## Writes
 
-Every model controller of an entity with asset paths handles the files in the
+Every model controller of an entity with asset fields handles the files in the
 bodies of its writes, with no mixin. This adds no routes. A file that the `asset`
 table holds gets the properties of the stored file, whatever
 the client sent. Other files are imported from their `url`, when the storage's
@@ -166,7 +166,7 @@ jobs: {
 
 Each `asset` row has `unreferenced_since`, the time since no row references the
 file. Files that no row references for a while are deleted. Writes don't track
-the references. A job scans the data at the asset paths instead. The
+the references. A job scans the data at the asset fields instead. The
 [kit](kit.md#jobs) runs it. Without the kit, the app calls `assets.runJobs()` in
 its own schedule.
 

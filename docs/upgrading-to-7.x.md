@@ -35,7 +35,7 @@ lines, medium one module of the app, and high every model or every controller.
 | The app's knex migrations, until step 11                                               | knex's own CLI, as a bridge, see [step 1](#1-run-the-migrations-with-knexs-cli)                                                                                                                  | low                     |
 | `dito db:seed` and `seeds/`                                                            | MikroORM's [seeder](https://mikro-orm.io/docs/seeding), or a script with an entity manager                                                                                                       | medium                  |
 | `dito console`                                                                         | A REPL script of ten lines, or `runPlayground()` of `@ditojs/kit/playground` for piped code, see [step 4](#4-create-the-app)                                                                     | low                     |
-| `dito db:list_asset_config`, `db:recount_assets`                                       | The asset paths of the app, and `assets.runJobs()`                                                                                                                                               | low                     |
+| `dito db:list_asset_config`, `db:recount_assets`                                       | The asset fields of the app, and `assets.runJobs()`                                                                                                                                              | low                     |
 | `dito db:delete_expired_records`, `deleteExpiredRecordsEvery`                          | `deleteExpiredSessions(adapter)` of `@ditojs/auth` on a timer of the app                                                                                                                         | low                     |
 | `new Application()`, `app.execute()`, `start()`, `stop()`                              | `createApp()` of `@ditojs/kit`, with `app.routeApi()` for the controllers of each area and `app.start()`, which stops on signals. Without the kit: `createHono()`, `createApi()` and `serve()`   | low                     |
 | `config` and its sections                                                              | The app's own config module, whose sections are the options of `createApp()`                                                                                                                     | low                     |
@@ -57,7 +57,7 @@ lines, medium one module of the app, and high every model or every controller.
 | Koa middleware, `config.http`                                                          | The `server` option of `createApp()`, for `createHono()` with Hono's `secureHeaders()`, `csrf()`, `bodyLimit()`, `cors()` and `etag()`; other Hono middleware on `app.hono`                      | low                     |
 | `app.proxy`, `config.server.proxy`                                                     | `server.proxy` of `createApp()`, and `getClientAddress(c)` for the client's address                                                                                                              | low                     |
 | `UsersController`, `UserMixin`, `SessionMixin`, `PasskeyService`, `TotpService`        | `@ditojs/auth`: `createUsers()`, with `users.defineActions()` and `useSession()`                                                                                                                 | medium                  |
-| `config.storages`, model `assets`, `AssetFile`, asset counts in hooks                  | `@ditojs/storage`: `createStorages()`, asset paths, `createAssets()`, `serveStorage()`                                                                                                           | medium                  |
+| `config.storages`, model `assets`, `AssetFile`, asset counts in hooks                  | `@ditojs/storage`: `createStorages()`, asset fields, `createAssets()`, `serveStorage()`                                                                                                          | medium                  |
 | `AdminController`, `config.admin`, the admin's build                                   | `createAdmin()` of `@ditojs/admin/server` and `defineAdminViteConfig()` of `@ditojs/admin/vite`                                                                                                  | low                     |
 | Tests on `app.knex` and models                                                         | Tests on an entity manager of the ORM, and `app.request()` of Hono                                                                                                                               | medium                  |
 
@@ -681,10 +681,10 @@ and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 ```js
 // In the properties of the entity, instead of `static assets`:
 cover: p
-  .type(defineJsonType({ assets: [{ path: '', storage: 'public' }] }))
+  .type(defineJsonType({ assets: [{ dataPath: '', storage: 'public' }] }))
   .nullable(),
 chapters: p
-  .type(defineJsonType({ assets: [{ path: '*/images', storage: 'public' }] }))
+  .type(defineJsonType({ assets: [{ dataPath: '*/images', storage: 'public' }] }))
   .nullable(),
 
 // In `createApp()`:
@@ -693,7 +693,7 @@ assets: { deleteUnusedAfter: '24h' }
 ```
 
 - `app.storages` holds the storages, and `app.assets` the asset handling of
-  the asset paths that the entities declare. Without the kit, these are
+  the asset fields that the entities declare. Without the kit, these are
   `createStorages()` and `createAssets()`.
 - `app.hono` serves a disk storage at the path of its `url`.
 - Model controllers track the files of their entity with no mixin.
@@ -708,7 +708,7 @@ assets: { deleteUnusedAfter: '24h' }
   `{ ACL: 'public-read', CacheControl: 'max-age=31536000' }`.
 - Each controller has one upload action, `post upload/:path{.+}`, see
   [Uploads](api/server/storage.md#uploads). Its `uploads` option takes the
-  fields that no asset path describes.
+  fields that no asset field describes.
 - Uploads still stream into their storage. S3 storages upload them in parts of
   8 MB.
 - `limits.fileSize` becomes `maxSize`, the limit of each file. It also takes a

@@ -10,7 +10,7 @@ import {
   StorageRegistry,
   createAssets,
   type AssetFile,
-  type AssetPath,
+  type AssetField,
   type FileData
 } from './index.ts'
 import { defineAssetUploads } from './assetUploads.ts'
@@ -22,8 +22,8 @@ import {
   storages,
   type Api,
   request,
-  paths,
-  bookPath,
+  fields,
+  bookField,
   getAssets,
   adapter,
   handleAdapter
@@ -32,22 +32,22 @@ import {
 setupAssetTests()
 
 describe('defineUploads()', () => {
-  const uploadPaths: AssetPath[] = [
-    ...paths,
-    { ...bookPath, column: 'back_cover', path: '', storage: 'archive' },
+  const uploadFields: AssetField[] = [
+    ...fields,
+    { ...bookField, column: 'back_cover', dataPath: '', storage: 'archive' },
     {
       entity: class Shelf {},
       table: 'shelf',
       column: 'label',
-      path: '',
+      dataPath: '',
       storage: 'archive'
     }
   ]
   const bookAssets = () =>
-    createAssets({ adapter, paths: uploadPaths, storages })
+    createAssets({ adapter, fields: uploadFields, storages })
 
   // Sets the variable of model controllers.
-  const setBook = (c: DitoContext) => c.set('entity', bookPath.entity)
+  const setBook = (c: DitoContext) => c.set('entity', bookField.entity)
   const bookMiddleware: Middleware = async (c, next) => {
     setBook(c)
     await next()
@@ -171,13 +171,13 @@ describe('defineUploads()', () => {
     } = {}) {
       const limits = createAssets({
         adapter,
-        paths: uploadPaths.map(path =>
+        fields: uploadFields.map(path =>
           path.column === 'cover' ? { ...path, maxSize: coverSize } : path
         ),
         storages,
         maxSize: defaultSize
       })
-      const uploads = [{ path: 'drafts/*', storage: 'archive' }]
+      const uploads = [{ dataPath: 'drafts/*', storage: 'archive' }]
       return createApi({
         controllers: [
           {
@@ -365,7 +365,7 @@ describe('defineUploads()', () => {
           authorize: true,
           mixins: [
             defineAssetUploads({
-              uploads: [{ path: 'cover', storage: 'covers' }],
+              uploads: [{ dataPath: 'cover', storage: 'covers' }],
               uploadsByEntity: new Map(),
               storages: new StorageRegistry([counting]),
               getKysely: () => db
@@ -394,7 +394,7 @@ describe('defineUploads()', () => {
           authorize: true,
           mixins: [
             defineAssetUploads({
-              uploads: [{ path: 'cover', storage: 'covers' }],
+              uploads: [{ dataPath: 'cover', storage: 'covers' }],
               uploadsByEntity: new Map(),
               storages: new StorageRegistry([broken]),
               getKysely: () => db
@@ -435,7 +435,7 @@ describe('defineUploads()', () => {
           authorize: true,
           mixins: [
             defineAssetUploads({
-              uploads: [{ path: 'cover', storage: 'covers' }],
+              uploads: [{ dataPath: 'cover', storage: 'covers' }],
               uploadsByEntity: new Map(),
               storages,
               // A schema without `asset` table makes the inserts fail.
@@ -466,14 +466,14 @@ describe('defineUploads()', () => {
   })
 
   it('throws for uploads of unknown storages', () => {
-    const uploads = [{ path: 'drafts/*', storage: 'unknown' }]
+    const uploads = [{ dataPath: 'drafts/*', storage: 'unknown' }]
     expect(() => bookAssets().defineUploads({ uploads })).toThrow(
       `Unknown storage 'unknown'`
     )
   })
 
-  it('adds uploads without asset paths, also without an entity', async () => {
-    const uploads = [{ path: 'drafts/*', storage: 'archive' }]
+  it('adds uploads without asset fields, also without an entity', async () => {
+    const uploads = [{ dataPath: 'drafts/*', storage: 'archive' }]
     const api = createApi({
       controllers: [
         {

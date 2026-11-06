@@ -11,8 +11,8 @@ import {
   archive,
   storages,
   request,
-  paths,
-  bookPath,
+  fields,
+  bookField,
   file,
   addImport,
   addBook,
@@ -29,22 +29,22 @@ setupAssetTests()
 describe('createAssets()', () => {
   const createBookAssets = (
     deleteUnusedAfter: number | string = 24 * 60 * 60 * 1000
-  ) => createAssets({ adapter, paths, storages, deleteUnusedAfter })
+  ) => createAssets({ adapter, fields, storages, deleteUnusedAfter })
 
-  it('throws for asset paths of unknown storages', () => {
+  it('throws for asset fields of unknown storages', () => {
     expect(() =>
       createAssets({
         adapter,
-        paths: [{ ...bookPath, column: 'cover', path: '', storage: 'x' }],
+        fields: [{ ...bookField, column: 'cover', dataPath: '', storage: 'x' }],
         storages
       })
     ).toThrow(`Unknown storage 'x'`)
   })
 
-  it('takes paths without an entity, for the jobs of a migration', () => {
-    const { entity, ...path } = paths[0]!
+  it('takes fields without an entity, for the jobs of a migration', () => {
+    const { entity, ...path } = fields[0]!
     expect(() =>
-      createAssets({ adapter, paths: [path], storages })
+      createAssets({ adapter, fields: [path], storages })
     ).not.toThrow()
   })
 
@@ -110,7 +110,7 @@ describe('createAssets()', () => {
   it('throws for invalid durations and sizes', () => {
     expect(() => createBookAssets('soon')).toThrow(`Invalid duration: 'soon'`)
     expect(() =>
-      createAssets({ adapter, paths, storages, maxSize: 'large' })
+      createAssets({ adapter, fields, storages, maxSize: 'large' })
     ).toThrow(`Invalid file size: 'large'`)
     expect(() =>
       createBookAssets().runJobs({ deleteUnusedAfter: 'later' })

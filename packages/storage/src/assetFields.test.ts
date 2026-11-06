@@ -1,4 +1,4 @@
-import { findAssetFiles } from './assetPaths.ts'
+import { findAssetFiles } from './assetFields.ts'
 import { file } from './test/assets.ts'
 
 describe('findAssetFiles()', () => {

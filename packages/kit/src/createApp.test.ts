@@ -227,7 +227,7 @@ describe('createApp()', () => {
       storages: { covers: { type: 'disk', path: folder, url: '/covers/' } },
       assets: { maxSize: '5b' }
     })
-    const uploads = [{ path: 'covers', storage: 'covers' }]
+    const uploads = [{ dataPath: 'covers', storage: 'covers' }]
     app.routeApi('/api', {
       controllers: [
         {

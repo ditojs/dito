@@ -9,7 +9,7 @@ import {
   db,
   covers,
   storages,
-  paths,
+  fields,
   file,
   addBook,
   addAsset,
@@ -35,7 +35,7 @@ describe('scanAssets()', () => {
   })
 
   it('sets `unreferenced_since` and inserts missing rows', async () => {
-    const report = await scanAssets({ database: db, paths, now })
+    const report = await scanAssets({ database: db, fields, now })
     expect(report).toMatchObject({
       referenced: [{ key: 'a', storage: 'covers' }],
       unreferenced: [
@@ -62,14 +62,14 @@ describe('scanAssets()', () => {
 
   it('inserts no rows for keys that address other files', async () => {
     await addBook(3, { cover: file('3f/../victim') })
-    const report = await scanAssets({ database: db, paths, now })
+    const report = await scanAssets({ database: db, fields, now })
     expect(report.missing).toEqual([{ key: 'c', storage: 'covers' }])
     expect(await getKeys()).not.toContain('3f/../victim')
   })
 
   it('runs in the transaction that it gets', async () => {
     await db.transaction().execute(async trx => {
-      const report = await scanAssets({ database: trx, paths })
+      const report = await scanAssets({ database: trx, fields })
       expect(report.missing).toHaveLength(1)
     })
     expect(await getKeys()).toContain('c')
@@ -77,7 +77,7 @@ describe('scanAssets()', () => {
 
   it('writes nothing in a dry run', async () => {
     const before = await getAssets()
-    const report = await scanAssets({ database: db, paths, dryRun: true, now })
+    const report = await scanAssets({ database: db, fields, dryRun: true, now })
     expect(report.referenced).toHaveLength(1)
     expect(report.missing).toHaveLength(1)
     expect(await getAssets()).toEqual(before)
@@ -119,7 +119,7 @@ describe('runAssetJobs()', () => {
 
   const options = () => ({
     database: db,
-    paths,
+    fields,
     storages,
     deleteUnusedAfter: 24 * 60 * 60 * 1000,
     now
@@ -160,8 +160,8 @@ describe('findAssetReferences()', () => {
     await addBook(2, { notes: { items: [{ file: file('b') }] } })
   })
 
-  it('lists the files at the asset paths with their locations', async () => {
-    const references = await findAssetReferences({ database: db, paths })
+  it('lists the files at the asset fields with their locations', async () => {
+    const references = await findAssetReferences({ database: db, fields })
     expect(
       references.map(({ key, id, column, dataPath, storage }) => ({
         key,
@@ -203,33 +203,33 @@ describe('findAssetReferences()', () => {
     expect(references[0]).toMatchObject({
       table: 'book',
       file: file('a'),
-      assetPath: paths[0]
+      field: fields[0]
     })
   })
 
   it('filters by keys, storage and tables', async () => {
     expect(
-      (await findAssetReferences({ database: db, paths, keys: ['b'] })).map(
+      (await findAssetReferences({ database: db, fields, keys: ['b'] })).map(
         reference => reference.dataPath
       )
     ).toEqual(['pages/0/images/1', 'notes/items/0/file'])
     expect(
-      await findAssetReferences({ database: db, paths, storage: 'archive' })
+      await findAssetReferences({ database: db, fields, storage: 'archive' })
     ).toEqual(
       []
     )
     expect(
-      await findAssetReferences({ database: db, paths, tables: ['other'] })
+      await findAssetReferences({ database: db, fields, tables: ['other'] })
     ).toEqual(
       []
     )
   })
 
   it('assigns each location to the first path that reaches it', async () => {
-    const overlapping = [...paths, { ...paths[1], storage: 'archive' }]
+    const overlapping = [...fields, { ...fields[1], storage: 'archive' }]
     const references = await findAssetReferences({
       database: db,
-      paths: overlapping
+      fields: overlapping
     })
     expect(references).toHaveLength(4)
     expect(references.every(({ storage }) => storage === 'covers')).toBe(true)

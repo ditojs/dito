@@ -220,7 +220,7 @@ cover: {
 }
 ```
 
-On the server, the storage of the field is named in the asset paths of the
+On the server, the storage of the field is named in the asset fields of the
 entity, and `assets.defineUploads()` adds the upload action. See
 [Storages and files](../server/storage.md). Saving waits for running uploads.
 

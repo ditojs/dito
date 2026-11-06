@@ -4,10 +4,10 @@ import type { Adapter, MixinDefinition } from '@ditojs/server'
 import type { StoreOptions } from './Storage.ts'
 import {
   getDataPath,
-  normalizeAssetPaths,
+  normalizeAssetFields,
   parseMaxSize,
-  type AssetPath
-} from './assetPaths.ts'
+  type AssetField
+} from './assetFields.ts'
 import {
   findAssetReferences,
   runAssetJobs,
@@ -28,51 +28,51 @@ import {
 export interface CreateAssetsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`.
   adapter: Adapter
-  paths: AssetPath[]
+  fields: AssetField[]
   storages: StorageRegistry
   // The `deleteUnusedAfter` of `runJobs()`, in milliseconds or as a duration
   // such as `'24h'`, unless a call passes its own. By default, `false` skips
   // the release.
   deleteUnusedAfter?: number | string | false
-  // The `maxSize` of the asset paths and uploads without their own, as in
+  // The `maxSize` of the asset fields and uploads without their own, as in
   // `AssetUpload`.
   maxSize?: number | string
 }
 
 export interface DefineUploadsOptions {
-  // Uploads of fields that no asset path describes, with globs as `path`.
+  // Uploads of fields that no asset field describes, with globs as `dataPath`.
   uploads?: AssetUpload[]
 }
 
 export function createAssets({
   adapter,
-  paths,
+  fields,
   storages,
   deleteUnusedAfter = false,
   maxSize
 }: CreateAssetsOptions) {
   // Throw for unknown storages and invalid values here, not in the requests:
-  for (const path of paths) storages.get(path.storage)
+  for (const field of fields) storages.get(field.storage)
   const defaultDeleteUnusedAfter = parseDeleteUnusedAfter(deleteUnusedAfter)
   const defaultMaxSize = parseMaxSize(maxSize)
-  const normalizedPaths = normalizeAssetPaths(paths, defaultMaxSize)
+  const normalizedFields = normalizeAssetFields(fields, defaultMaxSize)
   // Writes and uploads use the Kysely of the request, so that the `asset` rows
   // of a write commit with its transaction. The other methods run outside of
   // the requests' transactions.
   const { getKysely } = adapter
   // All model controllers of the entities track the files of their writes:
-  const pathsByEntity = Map.groupBy(normalizedPaths, path => path.entity)
+  const fieldsByEntity = Map.groupBy(normalizedFields, field => field.entity)
   const uploadsByEntity = new Map<object, NormalizedAssetUpload[]>()
-  for (const [entity, paths] of pathsByEntity) {
+  for (const [entity, fields] of fieldsByEntity) {
     if (entity) {
       adapter.wrapEntity?.(
         entity,
-        defineAssetWrites({ paths, storages, getKysely })
+        defineAssetWrites({ fields, storages, getKysely })
       )
       uploadsByEntity.set(
         entity,
-        paths.map(({ column, path, storage, maxSize }) => ({
-          path: getDataPath(column, path),
+        fields.map(({ column, dataPath, storage, maxSize }) => ({
+          dataPath: getDataPath(column, dataPath),
           storage,
           maxSize
         }))
@@ -81,11 +81,11 @@ export function createAssets({
   }
 
   return {
-    paths,
+    fields,
     storages,
 
-    // Define the upload action of the asset paths of the controller's entity,
-    // with the camelCase column followed by the path of each, such as
+    // Define the upload action of the asset fields of the controller's entity,
+    // with the camelCase column followed by the data path of each, such as
     // `pages/*/images`, and of `uploads`.
     defineUploads({
       uploads = []
@@ -113,7 +113,7 @@ export function createAssets({
     import<T extends object>(table: string, data: T) {
       return importAssets(data, {
         table,
-        paths: normalizedPaths,
+        fields: normalizedFields,
         storages,
         database: adapter.getKysely()
       })
@@ -121,12 +121,12 @@ export function createAssets({
 
     // Read in the transaction of the running request, if there is one:
     findReferences(
-      options: Omit<FindAssetReferencesOptions, 'database' | 'paths'> = {}
+      options: Omit<FindAssetReferencesOptions, 'database' | 'fields'> = {}
     ) {
       return findAssetReferences({
         ...options,
         database: adapter.getKysely(tryGetContext()),
-        paths
+        fields
       })
     },
 
@@ -140,7 +140,7 @@ export function createAssets({
       return runAssetJobs({
         ...options,
         database: adapter.getKysely(),
-        paths,
+        fields,
         storages,
         deleteUnusedAfter:
           options.deleteUnusedAfter != null

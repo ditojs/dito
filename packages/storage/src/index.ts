@@ -14,7 +14,7 @@ export {
   type CreateStoragesOptions,
   type StorageDefinition
 } from './StorageRegistry.ts'
-export type { AssetPath } from './assetPaths.ts'
+export type { AssetField } from './assetFields.ts'
 export type { AssetUpload } from './assetUploads.ts'
 export {
   createAssets,

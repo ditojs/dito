@@ -13,7 +13,7 @@ Released in 2018 under the MIT license, with support by https://lineto.com/
 - It reads its tables through Kysely.
 
 ```js
-import { createMikroAdapter, getAssetPaths } from '@ditojs/mikro'
+import { createMikroAdapter, getAssetFields } from '@ditojs/mikro'
 import { createAssets, createStorages } from '@ditojs/storage'
 import * as entities from './entities/index.js'
 
@@ -24,7 +24,7 @@ const storages = createStorages({
 const adapter = createMikroAdapter(orm)
 const assets = createAssets({
   adapter,
-  paths: getAssetPaths(entities),
+  fields: getAssetFields(entities),
   storages
 })
 ```

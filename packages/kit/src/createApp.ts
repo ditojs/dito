@@ -16,7 +16,7 @@ import { serve, type ServeOptions } from '@ditojs/server/node'
 import {
   createMikroAdapter,
   defineMikroConfig,
-  getAssetPaths,
+  getAssetFields,
   type MikroAdapter
 } from '@ditojs/mikro'
 import {
@@ -129,7 +129,7 @@ export function createApp({
   }
   const assets = createAssets({
     adapter,
-    paths: getAssetPaths(entities),
+    fields: getAssetFields(entities),
     storages,
     ...assetsOptions
   })

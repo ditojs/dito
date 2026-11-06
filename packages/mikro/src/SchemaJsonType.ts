@@ -13,7 +13,7 @@ import { getEntities } from './metadata.ts'
 // files that the columns hold.
 
 export interface JsonTypeAsset {
-  path: string
+  dataPath: string
   storage: string
   maxSize?: number | string
 }
@@ -84,7 +84,7 @@ export const needsDefaults = (value: unknown) => (
 
 // Read the definitions, so that no ORM is needed, and name tables and columns
 // as MikroORM's default naming strategy does:
-export function getAssetPaths(entities: object) {
+export function getAssetFields(entities: object) {
   const naming = new UnderscoreNamingStrategy()
   return getEntities(entities).flatMap(entity => {
     const { meta } =

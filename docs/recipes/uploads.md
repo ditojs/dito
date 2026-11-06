@@ -10,7 +10,7 @@ Create the storages and the assets:
 
 ```js
 // storages.js
-import { getAssetPaths } from '@ditojs/mikro'
+import { getAssetFields } from '@ditojs/mikro'
 import { createAssets, createStorages } from '@ditojs/storage'
 import * as entities from './entities/index.js'
 
@@ -25,7 +25,7 @@ export const storages = createStorages({
 
 export const assets = createAssets({
   adapter,
-  paths: getAssetPaths(entities),
+  fields: getAssetFields(entities),
   storages,
   deleteUnusedAfter: '24h'
 })
@@ -46,10 +46,10 @@ const BookSchema = defineEntity({
     title: p.string(),
     // JSON columns of files, in these storages:
     cover: p
-      .type(defineJsonType({ assets: [{ path: '', storage: 'covers' }] }))
+      .type(defineJsonType({ assets: [{ dataPath: '', storage: 'covers' }] }))
       .nullable(),
     samplePages: p
-      .type(defineJsonType({ assets: [{ path: '', storage: 'samplePages' }] }))
+      .type(defineJsonType({ assets: [{ dataPath: '', storage: 'samplePages' }] }))
       .onCreate(() => [])
   }
 })
@@ -116,7 +116,7 @@ Upload fields send each file to the controller's upload action under their data
 path, here `POST books/upload/cover` and `POST books/upload/samplePages`. The
 action takes hyphenated paths such as `sample-pages` too.
 `assets.defineUploads()` adds the action. The action picks the storage of the
-asset path that matches. It stores the file and inserts its `asset` row. It
+asset field that matches. It stores the file and inserts its `asset` row. It
 responds with the file object: `key`, `name`, `type`, `size` and `url`, and the
 `width` and `height` of images. The field holds this object as its value.
 
@@ -132,6 +132,6 @@ that no book used for a day, such as uploads that were never saved.
 resized version instead.
 
 See also: [Storages and files](../guide/server/storage.md),
-[Asset paths](../api/server/storage.md#asset-paths),
+[Asset fields](../api/server/storage.md#asset-fields),
 [createAssets()](../api/server/storage.md#createassets),
 [`upload`](../api/admin/schemas.md#upload).

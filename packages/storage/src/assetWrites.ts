@@ -25,16 +25,16 @@ import {
 import {
   findAssetFiles,
   findInvalidFiles,
-  type NormalizedAssetPath
-} from './assetPaths.ts'
+  type NormalizedAssetField
+} from './assetFields.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
 
 interface AssetOptions {
-  paths: NormalizedAssetPath[]
+  fields: NormalizedAssetField[]
   storages: StorageRegistry
 }
 
-// A file at an asset path, with the storage and the size limit of the path:
+// A file at an asset field, with the storage and the size limit of the field:
 interface AssetPathFile {
   file: AssetFile
   storage: Storage
@@ -57,11 +57,11 @@ const fetchTimeout = 30_000
 const importConcurrency = 8
 
 // Accept the files in the body that the `asset` table holds in the storage of
-// their path, copy files of other storages, and import files without `asset`
+// their field, copy files of other storages, and import files without `asset`
 // row from their `url` when the storage allows it. Change the files of the
 // body in place, so that handlers read the stored files.
 export function defineAssetWrites({
-  paths,
+  fields,
   storages,
   getKysely
 }: AssetOptions & Pick<Adapter, 'getKysely'>): MixinDefinition {
@@ -74,8 +74,8 @@ export function defineAssetWrites({
           imported.map(({ file, storage }) => storage.removeFile(file))
         )
       if (writeMethods.includes(c.req.method)) {
-        checkFiles(c.var.body, paths)
-        const files = findFiles(c.var.body, paths, storages)
+        checkFiles(c.var.body, fields)
+        const files = findFiles(c.var.body, fields, storages)
         if (files.length > 0) {
           const database = getKysely(c)
           try {
@@ -109,13 +109,13 @@ export function defineAssetWrites({
   }
 }
 
-// Answer values at the asset paths that aren't files with 400, as `findFiles()`
-// leaves them out and the write would store them as they are.
-function checkFiles(body: unknown, paths: NormalizedAssetPath[]) {
+// Answer values at the asset fields that aren't files with 400, as
+// `findFiles()` leaves them out and the write would store them as they are.
+function checkFiles(body: unknown, fields: NormalizedAssetField[]) {
   const issues = asArray(body).flatMap(item =>
     isObject(item)
-      ? paths.flatMap(({ property, path }) =>
-          findInvalidFiles(item[property], path).map(filePath => ({
+      ? fields.flatMap(({ property, dataPath }) =>
+          findInvalidFiles(item[property], dataPath).map(filePath => ({
             path: [
               property,
               ...parseDataPath(normalizeDataPath(filePath))
@@ -130,13 +130,13 @@ function checkFiles(body: unknown, paths: NormalizedAssetPath[]) {
 
 function findFiles(
   body: unknown,
-  paths: NormalizedAssetPath[],
+  fields: NormalizedAssetField[],
   storages: StorageRegistry
 ): AssetPathFile[] {
   return asArray(body).flatMap(item =>
     isObject(item)
-      ? paths.flatMap(({ property, path, storage, maxSize }) =>
-          findAssetFiles(item[property], path).map(({ file }) => ({
+      ? fields.flatMap(({ property, dataPath, storage, maxSize }) =>
+          findAssetFiles(item[property], dataPath).map(({ file }) => ({
             file,
             storage: storages.get(storage),
             maxSize
@@ -261,13 +261,13 @@ export async function importAssets<T extends object>(
   data: T,
   {
     table,
-    paths,
+    fields,
     storages,
     database
   }: AssetOptions & { table: string; database: Kysely<any> }
 ) {
-  const tablePaths = paths.filter(path => path.table === table)
-  const files = findFiles(data, tablePaths, storages)
+  const tableFields = fields.filter(field => field.table === table)
+  const files = findFiles(data, tableFields, storages)
   await importFiles(database, files, { storages, skipDisallowed: true })
   return data
 }

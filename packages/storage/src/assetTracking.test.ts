@@ -8,7 +8,7 @@ import {
   createMikroAdapter,
   defineJsonType,
   defineModelController,
-  getAssetPaths,
+  getAssetFields,
   type MikroAdapter
 } from '@ditojs/mikro'
 import { createAssets, createStorages, type AssetFile } from './index.ts'
@@ -16,7 +16,7 @@ import { createTestDatabase } from '../../../tests/utils/database.ts'
 
 const assetColumn = () =>
   p
-    .type(defineJsonType({ assets: [{ path: '', storage: 'covers' }] }))
+    .type(defineJsonType({ assets: [{ dataPath: '', storage: 'covers' }] }))
     .nullable()
 
 const BookSchema = defineEntity({
@@ -87,7 +87,7 @@ beforeAll(async () => {
   adapter = createMikroAdapter(database.orm)
   assets = createAssets({
     adapter,
-    paths: getAssetPaths([Book, Shelf]),
+    fields: getAssetFields([Book, Shelf]),
     storages: createStorages({
       covers: { type: 'disk', path: basePath, url: '/covers/' }
     })
@@ -172,7 +172,7 @@ describe('tracking the files of model controllers', () => {
     expect(file).toMatchObject({ name: 'front.txt', size: 5 })
   })
 
-  it('finds the paths of the controller in one `defineUploads()`', async () => {
+  it('finds the fields of the controller in one `defineUploads()`', async () => {
     const mixin = assets.defineUploads()
     const uploads = createApi({
       controllers: [

@@ -138,36 +138,36 @@ interface AssetFile {
 `getUniqueKey(name)` returns a new key: a random UUID with the lower-cased
 extension of `name`.
 
-## Asset paths
+## Asset fields
 
 ```ts
-interface AssetPath {
+interface AssetField {
   table: string
   column: string
   // The data path of the files in the column's JSON value, '' for the column.
-  path: string
+  dataPath: string
   storage: string
   // The size limit of each uploaded, imported or copied file, see Uploads.
   maxSize?: number | string
 }
 ```
 
-An asset path says where a table stores files.
+An asset field says where a table stores files.
 
-- `path` takes `*` for one segment, and `**` for any number of segments.
-- A value at the path is one file, or an array of files.
+- `dataPath` takes `*` for one segment, and `**` for any number of segments.
+- A value at the data path is one file, or an array of files.
 - In request bodies, the column appears as its camelCase property, such as
   `cover_image` as `coverImage`.
 
-`createAssets()` takes the app's list of asset paths. With MikroORM, declare
-them on the columns, see [`getAssetPaths()`](mikro.md#getassetpaths).
+`createAssets()` takes the app's list of asset fields. With MikroORM, declare
+them on the columns, see [`getAssetFields()`](mikro.md#getassetfields).
 
 ## createAssets()
 
 ```ts
 createAssets(options: {
   adapter: Adapter
-  paths: AssetPath[]
+  fields: AssetField[]
   storages: StorageRegistry
   deleteUnusedAfter?: number | string | false
   maxSize?: number | string
@@ -177,7 +177,7 @@ createAssets(options: {
 ```js
 const assets = createAssets({
   adapter,
-  paths: getAssetPaths(entities),
+  fields: getAssetFields(entities),
   storages,
   deleteUnusedAfter: '24h'
 })
@@ -193,18 +193,18 @@ await assets.runJobs({ dryRun: true })
 ```
 
 Returns the asset handling of an app. It is bound to the app's adapter, asset
-paths and storages.
+fields and storages.
 
 - `adapter` is the adapter of `createApi()`, such as
   [`createMikroAdapter(orm)`](mikro.md#createmikroadapter).
 - `deleteUnusedAfter` is in milliseconds, or a duration string such as `'24h'`,
   see [`parseDuration()`](../utils.md#parseduration). By default, it is `false`,
   which skips the release.
-- `maxSize` is the size limit of the asset paths and uploads that don't set
+- `maxSize` is the size limit of the asset fields and uploads that don't set
   their own.
-- `createAssets()` throws for asset paths whose storage `storages` doesn't have.
+- `createAssets()` throws for asset fields whose storage `storages` doesn't have.
   `defineUploads()` does the same for `uploads`.
-- All model controllers of the entities of the asset paths track their files,
+- All model controllers of the entities of the asset fields track their files,
   see [Writes](#writes). This also holds for controllers that were defined
   before `createAssets()` runs.
 
@@ -219,24 +219,24 @@ The `asset` rows go through two Kyselys:
   transactions. So the rows of `store()` and `import()` commit at once. Their
   files stay when a request rolls back, and the release deletes them.
 
-| Member                                            | Description                                                                                           |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `defineUploads({ uploads? }?)`                    | A mixin with the upload action of the entity's asset paths and of `uploads`, see [Uploads](#uploads). |
-| `store(storage, { name, type?, data })`           | Stores a file that the server creates in the storage of that name, see [Stored files](#stored-files). |
-| `import(table, data)`                             | Imports the files of a row's data, see [Asset jobs](#asset-jobs). Returns `data`.                     |
-| `findReferences({ tables?, storage?, keys? }?)`   | Lists the files that rows reference, see [Asset jobs](#asset-jobs).                                   |
-| `runJobs({ dryRun?, now?, deleteUnusedAfter? }?)` | Runs the scan and the release, see [Asset jobs](#asset-jobs).                                         |
-| `paths`, `storages`                               | The options.                                                                                          |
+| Member                                            | Description                                                                                            |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `defineUploads({ uploads? }?)`                    | A mixin with the upload action of the entity's asset fields and of `uploads`, see [Uploads](#uploads). |
+| `store(storage, { name, type?, data })`           | Stores a file that the server creates in the storage of that name, see [Stored files](#stored-files).  |
+| `import(table, data)`                             | Imports the files of a row's data, see [Asset jobs](#asset-jobs). Returns `data`.                      |
+| `findReferences({ tables?, storage?, keys? }?)`   | Lists the files that rows reference, see [Asset jobs](#asset-jobs).                                    |
+| `runJobs({ dryRun?, now?, deleteUnusedAfter? }?)` | Runs the scan and the release, see [Asset jobs](#asset-jobs).                                          |
+| `fields`, `storages`                              | The options.                                                                                           |
 
 ### Writes
 
-Every model controller of an entity with asset paths handles the files in the
+Every model controller of an entity with asset fields handles the files in the
 JSON body of its writes, `c.var.body`, also of its own actions. It does this
 through the `adapter` of `createAssets()`, with no mixin and no routes, so the
 API takes the same adapter.
-These are the files at the entity's asset paths. For each file, it looks up the `asset` row of its key:
+These are the files at the entity's asset fields. For each file, it looks up the `asset` row of its key:
 
-- If the row is in the storage of the asset path, the file gets the properties
+- If the row is in the storage of the asset field, the file gets the properties
   of the stored file, from the row's `file`. So clients can't change them.
 - If the row is in another storage, the file is copied under a new key.
 - If there is no row, the file is imported from its `url` under a new key. This
@@ -245,8 +245,8 @@ These are the files at the entity's asset paths. For each file, it looks up the 
 - Imports don't follow redirects. A redirect responds with 400.
 - An import gives up after 30 seconds.
 - A write imports up to 8 files at once.
-- Imports and copies over the asset path's `maxSize` respond with 413.
-- Other values at an asset path, such as an object without a valid `key`,
+- Imports and copies over the asset field's `maxSize` respond with 413.
+- Other values at an asset field, such as an object without a valid `key`,
   respond with 400 and `BodyValidation` errors.
 
 It changes the files in place, so the handler reads the stored files in its
@@ -256,7 +256,7 @@ imported files again. Responses send the file objects as the rows hold them.
 ### Uploads
 
 ```js
-assets.defineUploads({ uploads: [{ path: 'avatar', storage: 'public' }] })
+assets.defineUploads({ uploads: [{ dataPath: 'avatar', storage: 'public' }] })
 ```
 
 `defineUploads({ uploads })` returns a mixin with the upload action
@@ -267,8 +267,8 @@ mixin have no upload route.
 
 - The action camelizes each segment of the path.
 - It stores the files in the storage of the first upload that matches the path.
-- It looks at the asset paths of `c.var.entity` first, the entity of the model
-  controller, as the camelCase column followed by the path, such as
+- It looks at the asset fields of `c.var.entity` first, the entity of the model
+  controller, as the camelCase column followed by the data path, such as
   `chapters/*/images`. Then it looks at `uploads`.
 - Other paths respond with 404.
 - Controllers without an entity only have `uploads`.
@@ -288,11 +288,11 @@ The action takes a `multipart/form-data` body and stores all its files.
   the files that no write references.
 - It needs `authorize` on the controller or on a layer.
 
-| Upload    | Type               | Description                                                                                                                                                                |
-| --------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `path`    | `string`           | A glob of camelCase data paths, with `*` for one segment and `**` for several segments, such as `avatar`.                                                                  |
-| `storage` | `string`           | The name of the storage of the files.                                                                                                                                      |
-| `maxSize` | `number \| string` | Optional, the size limit of each file: a number of bytes, or a string with a unit, such as `'500mb'`, as in the admin, see [`parseFileSize()`](../utils.md#parsefilesize). |
+| Upload     | Type               | Description                                                                                                                                                                |
+| ---------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dataPath` | `string`           | A glob of camelCase data paths, with `*` for one segment and `**` for several segments, such as `avatar`.                                                                  |
+| `storage`  | `string`           | The name of the storage of the files.                                                                                                                                      |
+| `maxSize`  | `number \| string` | Optional, the size limit of each file: a number of bytes, or a string with a unit, such as `'500mb'`, as in the admin, see [`parseFileSize()`](../utils.md#parsefilesize). |
 
 ### Stored files
 
@@ -331,7 +331,7 @@ release, and returns `{ scan, released }`.
 
 The scan:
 
-- finds the files that rows reference at the asset paths;
+- finds the files that rows reference at the asset fields;
 - sets `unreferenced_since` of the unreferenced files, and clears it for the
   referenced ones;
 - inserts the rows of referenced files that have none.

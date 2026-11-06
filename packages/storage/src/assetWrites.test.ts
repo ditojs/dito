@@ -13,7 +13,7 @@ import {
   storeAsset
 } from './assetWrites.ts'
 import { releaseAssets } from './assetJobs.ts'
-import { normalizeAssetPaths } from './assetPaths.ts'
+import { normalizeAssetFields } from './assetFields.ts'
 import {
   setupAssetTests,
   db,
@@ -23,7 +23,7 @@ import {
   storages,
   type Api,
   request,
-  paths,
+  fields,
   getKysely,
   file,
   addImport,
@@ -75,13 +75,13 @@ const kyselyTransaction: Transact = (c, fn) =>
 describe('defineAssetWrites()', () => {
   let received: any
 
-  function setup(assetPaths = paths) {
+  function setup(setupFields = fields) {
     const books = defineController({
       path: 'books',
       authorize: true,
       mixins: [
         defineAssetWrites({
-          paths: normalizeAssetPaths(assetPaths),
+          fields: normalizeAssetFields(setupFields),
           storages,
           getKysely
         })
@@ -176,7 +176,7 @@ describe('defineAssetWrites()', () => {
 
   it('answers imports and copies over `maxSize` with 413', async () => {
     const api = setup(
-      paths.map(path =>
+      fields.map(path =>
         path.column === 'cover' ? { ...path, maxSize: 5 } : path
       )
     )
@@ -281,7 +281,7 @@ describe('defineAssetWrites()', () => {
     expect(requests).toEqual(['/imports/a.png'])
   })
 
-  it('refuses values at asset paths that are no stored files', async () => {
+  it('refuses values at asset fields that are no stored files', async () => {
     const api = setup()
     const url = 'https://other.com/a.png'
     for (const cover of [{ name: 'a.png', url }, { key: 5, url }, 'a.png']) {
@@ -296,7 +296,7 @@ describe('defineAssetWrites()', () => {
     expect(await getAssets()).toEqual([])
   })
 
-  it('accepts empty values at asset paths', async () => {
+  it('accepts empty values at asset fields', async () => {
     const response = await post(setup(), { cover: null })
     expect(response.status).toBe(200)
   })
@@ -399,7 +399,7 @@ describe('importAssets()', () => {
     }
     await importAssets(data, {
       table: 'book',
-      paths: normalizeAssetPaths(paths),
+      fields: normalizeAssetFields(fields),
       storages,
       database: db
     })
@@ -414,7 +414,7 @@ describe('importAssets()', () => {
     const data = { cover: { key: 'seed', url: 'https://other.com/a.png' } }
     await importAssets(data, {
       table: 'book',
-      paths: normalizeAssetPaths(paths),
+      fields: normalizeAssetFields(fields),
       storages,
       database: db
     })

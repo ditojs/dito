@@ -7,7 +7,7 @@ import {
   createRecord,
   defineJsonType,
   defineMikroConfig,
-  getAssetPaths
+  getAssetFields
 } from './index.ts'
 import { createTestDatabase } from '../../../tests/utils/database.ts'
 
@@ -31,18 +31,18 @@ const BookSchema = defineEntity({
         defineJsonType({
           schema: specsSchema,
           assets: [
-            { path: '**/file', storage: 'public' },
-            { path: '*/files', storage: 'private' }
+            { dataPath: '**/file', storage: 'public' },
+            { dataPath: '*/files', storage: 'private' }
           ]
         })
       )
       .nullable(),
     coverImages: p
-      .type(defineJsonType({ assets: [{ path: '', storage: 'public' }] }))
+      .type(defineJsonType({ assets: [{ dataPath: '', storage: 'public' }] }))
       .nullable(),
     samples: p
       .type(
-        defineJsonType({ assets: [{ path: '*/file', storage: 'private' }] })
+        defineJsonType({ assets: [{ dataPath: '*/file', storage: 'private' }] })
       )
       .nullable(),
     notes: p.json().nullable(),
@@ -79,36 +79,36 @@ const ShelfSchema = defineEntity({
   properties: {
     id: p.integer().primary(),
     photo: p
-      .type(defineJsonType({ assets: [{ path: '', storage: 'public' }] }))
+      .type(defineJsonType({ assets: [{ dataPath: '', storage: 'public' }] }))
       .nullable()
   }
 })
 class BookShelf extends ShelfSchema.class {}
 ShelfSchema.setClass(BookShelf)
 
-const paths = [
-  { column: 'specs', path: '**/file', storage: 'public' },
-  { column: 'specs', path: '*/files', storage: 'private' },
-  { column: 'cover_images', path: '', storage: 'public' },
-  { column: 'samples', path: '*/file', storage: 'private' }
+const fields = [
+  { column: 'specs', dataPath: '**/file', storage: 'public' },
+  { column: 'specs', dataPath: '*/files', storage: 'private' },
+  { column: 'cover_images', dataPath: '', storage: 'public' },
+  { column: 'samples', dataPath: '*/file', storage: 'private' }
 ]
   .map(path => ({ entity: Book, table: 'book', ...path }))
   .concat({
     entity: BookShelf,
     table: 'book_shelf',
     column: 'photo',
-    path: '',
+    dataPath: '',
     storage: 'public'
   })
 
-describe('getAssetPaths()', () => {
-  it('reads the paths from definitions, without an ORM', () => {
-    expect(getAssetPaths([Book, BookShelf])).toEqual(paths)
+describe('getAssetFields()', () => {
+  it('reads the fields from definitions, without an ORM', () => {
+    expect(getAssetFields([Book, BookShelf])).toEqual(fields)
   })
 
   it('skips the exports of a module that are no entities', () => {
-    expect(getAssetPaths({ Book, BookShelf, count: 1, name: 'x' })).toEqual(
-      paths
+    expect(getAssetFields({ Book, BookShelf, count: 1, name: 'x' })).toEqual(
+      fields
     )
   })
 })
@@ -163,8 +163,8 @@ describe('`defineMikroConfig()`', () => {
     })
   })
 
-  it('still reads the asset paths after the discovery', () => {
-    expect(getAssetPaths([Book, BookShelf])).toEqual(paths)
+  it('still reads the asset fields after the discovery', () => {
+    expect(getAssetFields([Book, BookShelf])).toEqual(fields)
   })
 
   it('fills the defaults of a schema in new rows of `em.create()`', async () => {

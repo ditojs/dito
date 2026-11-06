@@ -12,7 +12,7 @@ import {
   createRecord,
   assignRecord,
   defineJsonType,
-  getAssetPaths,
+  getAssetFields,
   defineMikroConfig,
   createMikroAdapter,
   useEm
@@ -501,19 +501,19 @@ It doesn't flush.
 ```ts
 defineJsonType<S extends z.ZodType>(options: {
   schema?: S
-  assets?: { path: string; storage: string; maxSize?: number | string }[]
+  assets?: { dataPath: string; storage: string; maxSize?: number | string }[]
 }): Type<z.output<S>>
 ```
 
 ```js
 specs: p.type(defineJsonType({ schema: specsSchema })).nullable(),
 images: p
-  .type(defineJsonType({ assets: [{ path: '', storage: 'public' }] }))
+  .type(defineJsonType({ assets: [{ dataPath: '', storage: 'public' }] }))
   .nullable(),
 items: p.type(
   defineJsonType({
     schema: itemsSchema,
-    assets: [{ path: '**/file', storage: 'public' }]
+    assets: [{ dataPath: '**/file', storage: 'public' }]
   })
 )
 ```
@@ -531,30 +531,30 @@ Returns the custom type of a JSON column, for `p.type()`.
 
 `assets` says where the column holds files. A column can hold several:
 
-- `path` is the data path inside the value. It takes `*` and `**` wildcards, and
+- `dataPath` is the data path inside the value. It takes `*` and `**` wildcards, and
   `''` for the value itself.
 - `storage` is the name of the storage.
 - `maxSize` is the size limit of its uploads, imports and copies: a number of
   bytes, or a string with a unit, such as `'500mb'`, as in the admin, see
   [Uploads](storage.md#uploads).
 
-## getAssetPaths()
+## getAssetFields()
 
 ```ts
-getAssetPaths(entities: object): AssetPath[]
+getAssetFields(entities: object): AssetField[]
 ```
 
 ```js
-const paths = getAssetPaths(entities)
-const assets = createAssets({ adapter, paths, storages })
+const fields = getAssetFields(entities)
+const assets = createAssets({ adapter, fields, storages })
 ```
 
-Returns the asset paths that the `assets` of
+Returns the asset fields that the `assets` of
 [`defineJsonType()`](#definejsontype) declare, for `@ditojs/storage`.
 
 - It takes an array of entities, or a module of them.
 - It reads their definitions, so it needs no ORM.
-- Each path has its `entity`, next to the `table` and the `column`.
+- Each field has its `entity`, next to the `table` and the `column`.
 - Table and column names follow MikroORM's default naming strategy, unless a
   property sets its own.
 

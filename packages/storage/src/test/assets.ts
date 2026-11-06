@@ -7,7 +7,7 @@ import {
   DiskStorage,
   StorageRegistry,
   type AssetFile,
-  type AssetPath
+  type AssetField
 } from '../index.ts'
 import { createTestDatabase } from '../../../../tests/utils/database.ts'
 
@@ -28,12 +28,12 @@ export const request = (api: Api, url: string, init?: RequestInit) =>
 
 class Book {}
 
-export const bookPath = { entity: Book, table: 'book' }
+export const bookField = { entity: Book, table: 'book' }
 
-export const paths: AssetPath[] = [
-  { ...bookPath, column: 'cover', path: '', storage: 'covers' },
-  { ...bookPath, column: 'pages', path: '*/images', storage: 'covers' },
-  { ...bookPath, column: 'notes', path: '**.file', storage: 'covers' }
+export const fields: AssetField[] = [
+  { ...bookField, column: 'cover', dataPath: '', storage: 'covers' },
+  { ...bookField, column: 'pages', dataPath: '*/images', storage: 'covers' },
+  { ...bookField, column: 'notes', dataPath: '**.file', storage: 'covers' }
 ]
 
 export const getKysely = (c?: DitoContext) => c!.var.em as Kysely<any>

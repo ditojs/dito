@@ -15,7 +15,7 @@ import type { StorageRegistry } from './StorageRegistry.ts'
 
 export interface AssetUpload {
   // A glob of camelCase data paths, such as `pages/*/images`.
-  path: string
+  dataPath: string
   // The name of the storage that holds the files.
   storage: string
   // The size limit of each file, in bytes, or as a string with a unit, such as
@@ -29,7 +29,7 @@ export interface NormalizedAssetUpload extends Omit<AssetUpload, 'maxSize'> {
 
 export interface DefineAssetUploadsOptions {
   uploads: NormalizedAssetUpload[]
-  // The uploads of the asset paths of model controllers.
+  // The uploads of the asset fields of model controllers.
   uploadsByEntity: Map<object, NormalizedAssetUpload[]>
   storages: StorageRegistry
   getKysely: Adapter['getKysely']
@@ -46,7 +46,7 @@ export function defineAssetUploads({
   getKysely
 }: DefineAssetUploadsOptions): MixinDefinition {
   const createMatchers = (uploads: NormalizedAssetUpload[]) =>
-    uploads.map(upload => ({ ...upload, isMatch: picomatch(upload.path) }))
+    uploads.map(upload => ({ ...upload, isMatch: picomatch(upload.dataPath) }))
   const matchers = createMatchers(uploads)
   const matchersByEntity = new Map(
     [...uploadsByEntity].map(([entity, uploads]) => [

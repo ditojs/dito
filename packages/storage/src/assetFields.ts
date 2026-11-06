@@ -12,16 +12,16 @@ import {
 import type { EntityClass } from '@mikro-orm/core'
 import { isValidKey, type AssetFile } from './Storage.ts'
 
-// Where a table stores files, one file or an array of them per value:
-export interface AssetPath {
+// A JSON column that stores files, one file or an array of them per value:
+export interface AssetField {
   // The entity of the table, whose model controllers track the files. Without
-  // it, only the jobs read the path, as in a migration.
+  // it, only the jobs read the field, as in a migration.
   entity?: EntityClass<any>
   table: string
   column: string
   // The data path of the files inside the column's JSON value, with `*` for
   // one segment and `**` for any number of them, and `''` for the column.
-  path: string
+  dataPath: string
   // The name of the storage that holds the files.
   storage: string
   // The size limit of the uploads, imports and copies of its files, as in
@@ -29,22 +29,22 @@ export interface AssetPath {
   maxSize?: number | string
 }
 
-export interface NormalizedAssetPath extends Omit<AssetPath, 'maxSize'> {
+export interface NormalizedAssetField extends Omit<AssetField, 'maxSize'> {
   // The column as the camelCase property of request bodies, such as
   // `cover_image` as `coverImage`.
   property: string
   maxSize?: number
 }
 
-// Paths without their own `maxSize` get the default `maxSize`.
-export function normalizeAssetPaths(
-  paths: AssetPath[],
+// Fields without their own `maxSize` get the default `maxSize`.
+export function normalizeAssetFields(
+  fields: AssetField[],
   maxSize?: number
-): NormalizedAssetPath[] {
-  return paths.map(path => ({
-    ...path,
-    property: camelize(path.column),
-    maxSize: parseMaxSize(path.maxSize) ?? maxSize
+): NormalizedAssetField[] {
+  return fields.map(field => ({
+    ...field,
+    property: camelize(field.column),
+    maxSize: parseMaxSize(field.maxSize) ?? maxSize
   }))
 }
 

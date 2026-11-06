@@ -4,8 +4,8 @@ import type { AssetFile } from './Storage.ts'
 import {
   findAssetFiles,
   getDataPath,
-  type AssetPath
-} from './assetPaths.ts'
+  type AssetField
+} from './assetFields.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
 
 export interface Asset {
@@ -35,7 +35,7 @@ export interface ScanAssetsReport {
 
 export interface ScanAssetsOptions {
   database: Kysely<any>
-  paths: AssetPath[]
+  fields: AssetField[]
   // Report the changes, but write nothing.
   dryRun?: boolean
   now?: Date
@@ -46,14 +46,14 @@ export interface ScanAssetsOptions {
 // referenced files that have none, since writes accept only files with a row.
 export async function scanAssets({
   database,
-  paths,
+  fields,
   dryRun = false,
   now = new Date()
 }: ScanAssetsOptions): Promise<ScanAssetsReport> {
   const start = performance.now()
   const references = new Map<string, AssetReference>()
   let rowCount = 0
-  for await (const rowReferences of readReferences(database, paths)) {
+  for await (const rowReferences of readReferences(database, fields)) {
     rowCount++
     for (const reference of rowReferences) {
       if (!references.has(reference.key)) {
@@ -166,7 +166,7 @@ export async function releaseAssets({
 
 export interface RunAssetJobsOptions {
   database: Kysely<any>
-  paths: AssetPath[]
+  fields: AssetField[]
   storages: StorageRegistry
   // How long an asset stays unreferenced before its release, in milliseconds.
   // With `false`, the release is skipped.
@@ -181,13 +181,13 @@ export interface RunAssetJobsOptions {
 // rows reference again:
 export async function runAssetJobs({
   database,
-  paths,
+  fields,
   storages,
   deleteUnusedAfter,
   dryRun = false,
   now = new Date()
 }: RunAssetJobsOptions) {
-  const scan = await scanAssets({ database, paths, dryRun, now })
+  const scan = await scanAssets({ database, fields, dryRun, now })
   let released: ReleasedAsset[] = []
   if (deleteUnusedAfter !== false) {
     const before = new Date(now.getTime() - deleteUnusedAfter)
@@ -210,13 +210,13 @@ export interface AssetReference {
   // property, such as `pages/0/images/1`.
   dataPath: string
   storage: string
-  // The asset path that reaches the file.
-  assetPath: AssetPath
+  // The asset field that reaches the file.
+  field: AssetField
 }
 
 export interface FindAssetReferencesOptions {
   database: Kysely<any>
-  paths: AssetPath[]
+  fields: AssetField[]
   // Only these tables, when set.
   tables?: string[]
   // Only files of this storage, when set.
@@ -225,10 +225,10 @@ export interface FindAssetReferencesOptions {
   keys?: string[]
 }
 
-// Each location in a row belongs to the first asset path that reaches it.
+// Each location in a row belongs to the first asset field that reaches it.
 export async function findAssetReferences({
   database,
-  paths,
+  fields,
   tables,
   storage,
   keys
@@ -236,8 +236,8 @@ export async function findAssetReferences({
   const keySet = keys && new Set(keys)
   const references: AssetReference[] = []
   const selected = tables
-    ? paths.filter(path => tables.includes(path.table))
-    : paths
+    ? fields.filter(path => tables.includes(path.table))
+    : fields
   for await (const rowReferences of readReferences(database, selected)) {
     references.push(
       ...rowReferences.filter(
@@ -252,11 +252,11 @@ export async function findAssetReferences({
 }
 
 // Yield the references of each row, also the empty ones of rows without files:
-async function* readReferences(database: Kysely<any>, paths: AssetPath[]) {
-  const pathsByTable = Map.groupBy(paths, path => path.table)
-  for (const [table, tablePaths] of pathsByTable) {
-    for await (const row of readRows(database, table, tablePaths)) {
-      yield getRowReferences(row, table, tablePaths)
+async function* readReferences(database: Kysely<any>, fields: AssetField[]) {
+  const fieldsByTable = Map.groupBy(fields, field => field.table)
+  for (const [table, tableFields] of fieldsByTable) {
+    for await (const row of readRows(database, table, tableFields)) {
+      yield getRowReferences(row, table, tableFields)
     }
   }
 }
@@ -264,13 +264,13 @@ async function* readReferences(database: Kysely<any>, paths: AssetPath[]) {
 function getRowReferences(
   row: Record<string, unknown>,
   table: string,
-  paths: AssetPath[]
+  fields: AssetField[]
 ) {
   const references = new Map<string, AssetReference>()
-  for (const assetPath of paths) {
-    const { column, path, storage } = assetPath
-    for (const { file, path: filePath } of findAssetFiles(row[column], path)) {
-      const dataPath = getDataPath(column, filePath)
+  for (const field of fields) {
+    const { column, storage } = field
+    for (const { file, path } of findAssetFiles(row[column], field.dataPath)) {
+      const dataPath = getDataPath(column, path)
       if (!references.has(dataPath)) {
         references.set(dataPath, {
           key: file.key,
@@ -280,7 +280,7 @@ function getRowReferences(
           column,
           dataPath,
           storage,
-          assetPath
+          field
         })
       }
     }
@@ -294,9 +294,9 @@ const pageSize = 10_000
 async function* readRows(
   database: Kysely<any>,
   table: string,
-  paths: AssetPath[]
+  fields: AssetField[]
 ) {
-  const columns = [...new Set(paths.map(path => path.column))]
+  const columns = [...new Set(fields.map(field => field.column))]
   let lastId: unknown = null
   while (true) {
     let query = database
