@@ -633,8 +633,8 @@ Returns the entity manager of the running request. During a transaction, this is
 the transaction's entity manager. It is the same as `em` of the handler's
 context, and `c.var.em`.
 
-It throws outside of a request, and in the `middleware` of `createApi()`, which
-runs before the API sets `c.var.em`. Jobs and scripts have no request, so they
+It throws outside of a request, and in the `middleware` of `users`, which runs
+before the API sets `c.var.em`. Jobs and scripts have no request, so they
 call `orm.em.fork()` themselves.
 
 `createApi()` and `createAdmin()` run Hono's `contextStorage()`, which `useEm()`

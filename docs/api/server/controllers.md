@@ -157,7 +157,8 @@ an action overrides every layer, also when the action is a mixin's.
 
 A mixin with `actions` only counts as a layer for its own actions. So its
 `authorize` and `transacted` don't reach the actions of the controller. A mixin
-without `actions` holds settings for all actions.
+without `actions` holds settings for all actions. A mixin's `middleware` always
+reaches all actions of the controller.
 
 ## authorize
 

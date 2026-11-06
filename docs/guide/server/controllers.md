@@ -207,7 +207,9 @@ controller, in this order. Mixins list the mixins that they need in their own
   [`true` and objects](#true-and-objects).
 - When two layers set a handler for the same key, the later one wraps the
   earlier one through `next()`.
-- `middleware` lists are joined in layer order.
+- `middleware` lists are joined in layer order. A mixin's `middleware` reaches
+  all actions of the controller, while the `authorize` and `transacted` of a
+  mixin with `actions` stay on its own actions.
 - A setting comes from the last action definition that sets it, else from the
   last layer that sets it. See
   [ActionSettings](../../api/server/controllers.md#actionsettings).
