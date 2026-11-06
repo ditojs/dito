@@ -146,7 +146,7 @@ interface AssetPath {
   // The data path of the files in the column's JSON value, '' for the column.
   path: string
   storage: string
-  // The size limit of each uploaded file, see Uploads.
+  // The size limit of each uploaded, imported or copied file, see Uploads.
   maxSize?: number | string
 }
 ```
@@ -199,7 +199,8 @@ paths and storages.
 - `deleteUnusedAfter` is in milliseconds, or a duration string such as `'24h'`,
   see [`parseDuration()`](../utils.md#parseduration). By default, it is `false`,
   which skips the release.
-- `maxSize` is the size limit of the uploads that don't set their own.
+- `maxSize` is the size limit of the asset paths and uploads that don't set
+  their own.
 - `createAssets()` throws for asset paths whose storage `storages` doesn't have.
   `defineUploads()` does the same for `uploads`.
 
@@ -238,7 +239,9 @@ file, it looks up the `asset` row of its key:
   responds with 400.
 - Imports don't follow redirects. A redirect responds with 400.
 - An import gives up after 30 seconds.
-- Other values at an asset path, such as an object without a string `key`,
+- A write imports up to 8 files at once.
+- Imports and copies over the asset path's `maxSize` respond with 413.
+- Other values at an asset path, such as an object without a valid `key`,
   respond with 400 and `BodyValidation` errors.
 
 It changes the files in place, so the handler reads the stored files in its
@@ -267,9 +270,10 @@ assets.defineUploads({ uploads: [{ path: 'avatar', storage: 'public' }] })
 The action takes a `multipart/form-data` body and stores all its files.
 
 - Other bodies respond with 415.
-- The files stream from the body into the storage as they arrive.
+- The files stream from the body into the storage as they arrive, one after
+  another.
 - Files over the upload's `maxSize` respond with 413, and none of the body's
-  files are stored.
+  files are stored. The same goes for bodies that the client aborts.
 - [`hostMiddleware()`](hono.md#hostmiddleware) sets no limit on multipart bodies.
 - It inserts the `asset` rows of the files. They stay unreferenced until a scan
   finds them.

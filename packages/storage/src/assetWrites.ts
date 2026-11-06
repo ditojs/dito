@@ -1,9 +1,10 @@
-import fs from 'node:fs/promises'
+import fs from 'node:fs'
 import type { Kysely } from 'kysely'
 import {
   asArray,
   camelize,
   isObject,
+  mapConcurrently,
   normalizeDataPath,
   parseDataPath
 } from '@ditojs/utils'
@@ -17,12 +18,14 @@ import { bodyValidation } from '@ditojs/server/internal'
 import {
   resolveFileUrl,
   type AssetFile,
+  type FileData,
   type Storage,
   type StoreOptions
 } from './Storage.ts'
 import {
   findAssetFiles,
   findInvalidFiles,
+  parseMaxSize,
   type AssetPath
 } from './assetPaths.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
@@ -48,10 +51,11 @@ export interface AssetOptions<Db = AssetDb> {
   db: Db
 }
 
-// A file object and the storage of its asset path.
+// A file object, and the storage and the size limit of its asset path.
 interface StorageFile {
   file: AssetFile
   storage: Storage
+  maxSize?: number
 }
 
 interface ImportOptions {
@@ -65,6 +69,9 @@ const writeMethods = ['POST', 'PUT', 'PATCH']
 
 // How long an import from a `url` may take.
 const fetchTimeout = 30_000
+
+// How many files a write imports at once.
+const importConcurrency = 8
 
 export function assets({
   table,
@@ -139,10 +146,11 @@ function findFiles(
 ): StorageFile[] {
   return asArray(body).flatMap(item =>
     isObject(item)
-      ? paths.flatMap(({ column, path, storage }) =>
+      ? paths.flatMap(({ column, path, storage, maxSize }) =>
           findAssetFiles(item[camelize(column)], path).map(({ file }) => ({
             file,
-            storage: storages.get(storage)
+            storage: storages.get(storage),
+            maxSize: parseMaxSize(maxSize)
           }))
         )
       : []
@@ -173,25 +181,31 @@ async function importFiles(
   )
   // Wait for all imports before throwing, so that the caller removes every
   // imported file.
-  const results = await Promise.allSettled(
-    [...groups.values()].map(async group => {
-      const [first] = group
-      const asset = assetsByKey.get(first.file.key)
-      const stored =
-        asset?.storage === first.storage.name
-          ? asset.file
-          : await importFile(db, first, asset, options)
-      if (!stored) return
-      for (const { file } of group) {
-        for (const key of Object.keys(file)) {
-          delete file[key as keyof AssetFile]
+  const errors: unknown[] = []
+  await mapConcurrently(
+    [...groups.values()],
+    async group => {
+      try {
+        const [first] = group
+        const asset = assetsByKey.get(first.file.key)
+        const stored =
+          asset?.storage === first.storage.name
+            ? asset.file
+            : await importFile(db, first, asset, options)
+        if (!stored) return
+        for (const { file } of group) {
+          for (const key of Object.keys(file)) {
+            delete file[key as keyof AssetFile]
+          }
+          Object.assign(file, stored)
         }
-        Object.assign(file, stored)
+      } catch (error) {
+        errors.push(error)
       }
-    })
+    },
+    { concurrency: importConcurrency }
   )
-  const rejected = results.find(result => result.status === 'rejected')
-  if (rejected) throw rejected.reason
+  if (errors.length > 0) throw errors[0]
   const used = assets.filter(({ key, storage }) =>
     groups.has(`${storage}:${key}`)
   )
@@ -225,7 +239,7 @@ async function importFiles(
 // `skipDisallowed`.
 async function importFile(
   db: Kysely<any>,
-  { file, storage }: StorageFile,
+  { file, storage, maxSize }: StorageFile,
   asset: { storage: string; file: AssetFile } | undefined,
   { storages, imported, skipDisallowed }: ImportOptions
 ) {
@@ -240,9 +254,13 @@ async function importFile(
   const source = asset?.file ?? file
   const data = asset
     ? await storages.get(asset.storage).readFile(source)
-    : await fetchFile(file.url!)
+    : fetchFile(file.url!)
   const { name, type, width, height } = source
-  const stored = await storage.store({ name: name ?? source.key, type, data })
+  const stored = await storage.store({
+    name: name ?? source.key,
+    type,
+    data: maxSize != null ? limitSize(data, maxSize) : data
+  })
   // Keep the dimensions that `store()` can't read.
   if (stored.width == null && (width != null || height != null)) {
     Object.assign(stored, { width, height })
@@ -266,26 +284,38 @@ export async function importAssets<T extends object>(
   return data
 }
 
-async function fetchFile(url: string) {
+// Streams the data of an import, as `store()` reads it.
+async function* fetchFile(url: string) {
   if (url.startsWith('file://')) {
-    return fs.readFile(new URL(resolveFileUrl(url)))
+    yield* fs.createReadStream(new URL(resolveFileUrl(url)))
+  } else {
+    const importError = (reason: unknown) =>
+      new HttpError(400, {
+        message: `Unable to import asset from '${url}': ${reason}`
+      })
+    try {
+      const response = await fetch(url, {
+        // A redirect could lead to a url that `allowedImports` doesn't match.
+        redirect: 'manual',
+        signal: AbortSignal.timeout(fetchTimeout)
+      })
+      if (!response.ok || !response.body) throw importError(response.status)
+      yield* response.body
+    } catch (error) {
+      throw error instanceof HttpError
+        ? error
+        : importError((error as Error).message)
+    }
   }
-  const importError = (reason: unknown) =>
-    new HttpError(400, {
-      message: `Unable to import asset from '${url}': ${reason}`
-    })
-  try {
-    const response = await fetch(url, {
-      // A redirect could lead to a url that `allowedImports` doesn't match.
-      redirect: 'manual',
-      signal: AbortSignal.timeout(fetchTimeout)
-    })
-    if (!response.ok) throw importError(response.status)
-    return Buffer.from(await response.arrayBuffer())
-  } catch (error) {
-    throw error instanceof HttpError
-      ? error
-      : importError((error as Error).message)
+}
+
+// Fails with 413 as soon as the data grows over `maxSize`.
+async function* limitSize(data: FileData, maxSize: number) {
+  let size = 0
+  for await (const chunk of Buffer.isBuffer(data) ? [data] : data) {
+    size += chunk.byteLength
+    if (size > maxSize) throw new HttpError(413)
+    yield chunk
   }
 }
 

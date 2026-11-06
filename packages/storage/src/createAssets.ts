@@ -2,7 +2,7 @@ import type { Kysely } from 'kysely'
 import { isString, parseDuration } from '@ditojs/utils'
 import type { DitoContext, MixinDefinition } from '@ditojs/server'
 import type { Storage, StoreOptions } from './Storage.ts'
-import { getDataPath, type AssetPath } from './assetPaths.ts'
+import { getDataPath, parseMaxSize, type AssetPath } from './assetPaths.ts'
 import {
   findAssetReferences,
   runAssetJobs,
@@ -10,7 +10,7 @@ import {
 } from './assetJobs.ts'
 import { assets, importAssets, storeAsset } from './assetWrites.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
-import { parseMaxSize, uploadRoutes, type AssetUpload } from './assetUploads.ts'
+import { uploadRoutes, type AssetUpload } from './assetUploads.ts'
 
 // Binds the asset handling to an app's adapter, asset paths and storages. The
 // mixins use the Kysely of the request's handle, `c.var.em`, so that the
@@ -27,7 +27,8 @@ export interface CreateAssetsOptions {
   // such as `'24h'`, unless a call passes its own. By default, `false` skips
   // the release.
   deleteUnusedAfter?: number | string | false
-  // The `maxSize` of the uploads without their own, see `AssetUpload`.
+  // The `maxSize` of the asset paths and uploads without their own, see
+  // `AssetUpload`.
   maxSize?: number | string
 }
 
@@ -45,13 +46,19 @@ export function createAssets({
 }: CreateAssetsOptions) {
   // Throws for the storages that the registry doesn't have.
   for (const path of paths) storages.get(path.storage)
-  // The defaults of the jobs and uploads, which throw for invalid values here:
+  // The defaults of the jobs, writes and uploads, which throw for invalid
+  // values here:
   const defaults = {
     deleteUnusedAfter: parseDeleteUnusedAfter(deleteUnusedAfter),
     maxSize: parseMaxSize(maxSize)
   }
   const getDb = (c: DitoContext) =>
     (c.var.em as { getKysely(): Kysely<any> }).getKysely()
+  // The asset paths with the default `maxSize`:
+  const limitedPaths = paths.map(path => ({
+    ...path,
+    maxSize: parseMaxSize(path.maxSize) ?? defaults.maxSize
+  }))
 
   return {
     paths,
@@ -59,7 +66,7 @@ export function createAssets({
 
     // Handles the files in the bodies of the table's writes.
     defineWrites(table: string): MixinDefinition {
-      return assets({ table, paths, storages, db: getDb })
+      return assets({ table, paths: limitedPaths, storages, db: getDb })
     },
 
     // The upload action of the table's asset paths, with the camelCase column
@@ -72,7 +79,7 @@ export function createAssets({
       const [name, { uploads = [] }] = isString(table)
         ? [table, options]
         : [undefined, table]
-      const tableUploads = paths
+      const tableUploads = limitedPaths
         .filter(path => path.table === name)
         .map(({ column, path, storage, maxSize }) => ({
           path: getDataPath(column, path),
@@ -108,7 +115,7 @@ export function createAssets({
     import<T extends object>(table: string, data: T) {
       return importAssets(data, {
         table,
-        paths,
+        paths: limitedPaths,
         storages,
         db: adapter.getKysely()
       })

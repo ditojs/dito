@@ -117,9 +117,16 @@ export abstract class Storage {
   abstract listKeys(): Promise<string[]>
 }
 
-// A random UUID and the lower-cased extension of the name.
+// A random UUID and the lower-cased extension of the name. `win32` also cuts
+// at backslashes, so that keys never hold separators.
 export function getUniqueKey(name: string) {
-  return `${crypto.randomUUID()}${path.extname(name).toLowerCase()}`
+  return `${crypto.randomUUID()}${path.win32.extname(name).toLowerCase()}`
+}
+
+// Whether a key has the form of the keys of `getUniqueKey()`, so that it
+// addresses no other file.
+export function isValidKey(key: string) {
+  return /^[\w-]+(\.[^./\\]*)?$/.test(key)
 }
 
 export function resolveFileUrl(url: string) {

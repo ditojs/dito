@@ -73,6 +73,15 @@ describe('DiskStorage', () => {
       expect(keys.sort()).toEqual(files.map(file => file.key).sort())
     })
 
+    it('refuses keys that address other files', () => {
+      const storage = createDiskStorage()
+      for (const key of ['3f/../victim', '3f\\a', '..', 'a..b']) {
+        expect(() => storage.getFilePath({ key })).toThrow(
+          `Invalid asset key: '${key}'`
+        )
+      }
+    })
+
     it('removes files', async () => {
       const storage = createDiskStorage()
       const file = await store(storage, 'a.txt', 'a')

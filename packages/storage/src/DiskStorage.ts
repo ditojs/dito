@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import {
   Storage,
+  isValidKey,
   type AssetFile,
   type FileData,
   type StorageOptions
@@ -35,18 +36,11 @@ export class DiskStorage extends Storage {
   }
 
   getFilePath(file: AssetFile) {
-    const filePath = path.resolve(
-      this.path,
-      this.#getNestedFolder(file.key),
-      file.key
-    )
-    // Never address files outside of the storage folder or the folder itself,
-    // whatever the key. `path.join()` also handles folders at the root.
-    const folder = path.join(this.path, path.sep)
-    if (!filePath.startsWith(folder) || filePath === folder) {
+    // Never address files outside of the storage folder, whatever the key:
+    if (!isValidKey(file.key)) {
       throw new Error(`Invalid asset key: '${file.key}'`)
     }
-    return filePath
+    return path.resolve(this.path, this.#getNestedFolder(file.key), file.key)
   }
 
   override getFileUrl(file: AssetFile) {

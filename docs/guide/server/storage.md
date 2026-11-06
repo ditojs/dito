@@ -189,3 +189,11 @@ Three more methods:
   seed data.
 - `assets.findReferences({ tables, storage, keys })` lists where rows reference
   files, such as for an admin view of the assets.
+
+## Notes
+
+- Storages that serve their files from the app's origin, such as with
+  `serveStorage()`, also serve uploaded HTML and SVG files there, whose scripts
+  then run as the app. Serve storages of uploads from another origin.
+- A write copies a file of another storage without checking that the client
+  may read that storage. Its key is enough.

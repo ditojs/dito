@@ -70,11 +70,13 @@ const kyselyTransaction: Transaction = (c, fn) =>
 describe('assets()', () => {
   let received: any
 
-  function setup() {
+  function setup(assetPaths = paths) {
     const books = defineController({
       path: 'books',
       authorize: true,
-      mixins: [assets({ table: 'book', paths, storages, db: getDb })],
+      mixins: [
+        assets({ table: 'book', paths: assetPaths, storages, db: getDb })
+      ],
       actions: {
         post: async ({ body, c }) => {
           received = body
@@ -151,6 +153,56 @@ describe('assets()', () => {
     expect(await covers.readFile(received.cover)).toEqual(
       Buffer.from('Source')
     )
+  })
+
+  it('refuses files with keys that address other files', async () => {
+    const source = await addImport('source.txt', 'Source')
+    const response = await post(setup(), {
+      cover: { key: '3f/../victim', url: `file://${source}` }
+    })
+    expect(response.status).toBe(400)
+    expect(await getAssets()).toEqual([])
+  })
+
+  it('answers imports and copies over `maxSize` with 413', async () => {
+    const api = setup(
+      paths.map(path =>
+        path.column === 'cover' ? { ...path, maxSize: 5 } : path
+      )
+    )
+    const source = await addImport('source.txt', 'Source')
+    await archive.addFile(file('a'), Buffer.from('Archive'))
+    await addAsset('a', { storage: 'archive' })
+    for (const cover of [{ key: 'b', url: `file://${source}` }, file('a')]) {
+      const response = await post(api, { cover })
+      expect(response.status).toBe(413)
+    }
+    expect(await getKeys()).toEqual(['a'])
+    // Files under the limit of their path go through:
+    const response = await post(api, { pages: [{ images: [file('a')] }] })
+    expect(response.status).toBe(200)
+  })
+
+  it('runs a limited number of imports at once', async () => {
+    let fetching = 0
+    let maxFetching = 0
+    const server = http.createServer(async (req, res) => {
+      maxFetching = Math.max(maxFetching, ++fetching)
+      await new Promise(resolve => setTimeout(resolve, 20))
+      fetching--
+      res.end('a')
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const { port } = server.address() as AddressInfo
+    const images = Array.from({ length: 20 }, (_, index) => ({
+      key: `${index}`,
+      url: `http://127.0.0.1:${port}/imports/${index}.png`
+    }))
+    const response = await post(setup(), { pages: [{ images }] })
+    server.close()
+    expect(response.status).toBe(200)
+    expect(await covers.listKeys()).toHaveLength(20)
+    expect(maxFetching).toBeLessThanOrEqual(8)
   })
 
   it('waits for a release of a file that the write uses', async () => {

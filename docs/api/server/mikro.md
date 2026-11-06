@@ -548,8 +548,8 @@ Returns the custom type of a JSON column, for `p.type()`.
 - `path` is the data path inside the value. It takes `*` and `**` wildcards, and
   `''` for the value itself.
 - `storage` is the name of the storage.
-- `maxSize` is the size limit of its uploads: a number of bytes, or a string
-  with a unit, such as `'500mb'`, as in the admin, see
+- `maxSize` is the size limit of its uploads, imports and copies: a number of
+  bytes, or a string with a unit, such as `'500mb'`, as in the admin, see
   [Uploads](storage.md#uploads).
 
 ## getAssetPaths()

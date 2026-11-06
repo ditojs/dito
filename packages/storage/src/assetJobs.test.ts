@@ -60,6 +60,13 @@ describe('scanAssets()', () => {
     expect(missing).toEqual({ file: file('c'), storage: 'covers' })
   })
 
+  it('inserts no rows for keys that address other files', async () => {
+    await addBook(3, { cover: file('3f/../victim') })
+    const report = await scanAssets({ db, paths, now })
+    expect(report.missing).toEqual([{ key: 'c', storage: 'covers' }])
+    expect(await getKeys()).not.toContain('3f/../victim')
+  })
+
   it('runs in the transaction that it gets', async () => {
     await db.transaction().execute(async trx => {
       const report = await scanAssets({ db: trx, paths })

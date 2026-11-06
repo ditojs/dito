@@ -69,6 +69,10 @@ describe('getUniqueKey()', () => {
     expect(getUniqueKey('README')).toMatch(new RegExp(`^${uuidPattern}$`))
   })
 
+  it('creates keys without separators, also for names with backslashes', () => {
+    expect(getUniqueKey('a.b\\c')).toMatch(new RegExp(`^${uuidPattern}$`))
+  })
+
   it('creates different keys for the same name', () => {
     expect(getUniqueKey('a.txt')).not.toBe(getUniqueKey('a.txt'))
   })

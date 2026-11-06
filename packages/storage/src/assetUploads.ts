@@ -1,10 +1,12 @@
 import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import busboy from 'busboy'
 import picomatch from 'picomatch'
-import { camelize, parseFileSize } from '@ditojs/utils'
+import { camelize } from '@ditojs/utils'
 import { HttpError, defineAction, type MixinDefinition } from '@ditojs/server'
 import type { AssetFile } from './Storage.ts'
 import { storeAsset, type AssetDb } from './assetWrites.ts'
+import { parseMaxSize } from './assetPaths.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
 
 // The upload action of the Dito admin's upload component:
@@ -63,41 +65,47 @@ export function uploadRoutes({
           }
           const storage = storages.get(upload.storage)
           const database = db(c)
+          const parser = busboy({
+            headers: { 'content-type': contentType },
+            limits: { fileSize: upload.maxSize }
+          })
+          // Store the files one after another, and after a failed one, only
+          // read the rest of the body:
           const results: Promise<AssetFile>[] = []
+          parser.on('file', (_name, stream, { filename, mimeType }) => {
+            // busboy also gives untyped parts without a filename as files,
+            // which `formData()` reads as fields:
+            if (filename !== undefined) {
+              // A file that waits for the previous one has no reader yet, and
+              // would throw the error of an abort. Its store reads it later:
+              stream.on('error', () => {})
+              const result = (results.at(-1) ?? Promise.resolve()).then(() =>
+                storeAsset(database, storage, {
+                  name: filename,
+                  type: mimeType,
+                  data: readFile(stream)
+                })
+              )
+              // Read the rest of files that fail, so that parsing goes on
+              // to the end of the body, and the request ends cleanly:
+              result.catch(() => stream.resume())
+              results.push(result)
+            } else {
+              stream.resume()
+            }
+          })
           let error: unknown
           try {
-            await new Promise((resolve, reject) => {
-              const parser = busboy({
-                headers: { 'content-type': contentType },
-                limits: { fileSize: upload.maxSize }
-              })
-              parser.on('file', (_name, stream, { filename, mimeType }) => {
-                // busboy also gives untyped parts without a filename as files,
-                // which `formData()` reads as fields:
-                if (filename !== undefined) {
-                  const result = storeAsset(database, storage, {
-                    name: filename,
-                    type: mimeType,
-                    data: readFile(stream)
-                  })
-                  // Read the rest of files that fail, so that parsing goes on
-                  // to the end of the body, and the request ends cleanly:
-                  result.catch(() => stream.resume())
-                  results.push(result)
-                } else {
-                  stream.resume()
-                }
-              })
-              parser.on('close', resolve)
-              parser.on('error', reject)
-              Readable.from(c.req.raw.body ?? []).pipe(parser)
-            })
+            // `pipeline()` destroys the parser and the file that it reads
+            // when the client aborts:
+            await pipeline(Readable.from(c.req.raw.body ?? []), parser)
           } catch {
             error = new HttpError(400, {
               message: 'The multipart body is invalid.'
             })
           }
-          // Remove the stored files when the body or any of the files fail:
+          // Remove the stored files and their rows when the body or any of the
+          // files fail. The release removes the rows of files that stay:
           const settled = await Promise.allSettled(results)
           const files = settled
             .filter(result => result.status === 'fulfilled')
@@ -105,7 +113,13 @@ export function uploadRoutes({
           error ??= settled.find(result => result.status === 'rejected')?.reason
           if (error) {
             await Promise.allSettled(
-              files.map(file => storage.removeFile(file))
+              files.map(async file => {
+                await storage.removeFile(file)
+                await database
+                  .deleteFrom('asset')
+                  .where('key', '=', file.key)
+                  .execute()
+              })
             )
             throw error
           }
@@ -121,8 +135,4 @@ export function uploadRoutes({
 async function* readFile(stream: Readable & { truncated?: boolean }) {
   yield* stream.iterator({ destroyOnReturn: false })
   if (stream.truncated) throw new HttpError(413)
-}
-
-export function parseMaxSize(maxSize: number | string | undefined) {
-  return maxSize != null ? parseFileSize(maxSize) : undefined
 }

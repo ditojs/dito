@@ -5,7 +5,8 @@ import {
   StorageRegistry,
   createAssets,
   type AssetFile,
-  type AssetPath
+  type AssetPath,
+  type FileData
 } from './index.ts'
 import { uploadRoutes } from './assetUploads.ts'
 import {
@@ -197,6 +198,13 @@ describe('defineUploads()', () => {
       ])
     })
 
+    it('removes the files and rows of the other files', async () => {
+      const response = await upload(setupLimits(), 'cover', small(), large())
+      expect(response.status).toBe(413)
+      expect(await covers.listKeys()).toEqual([])
+      expect(await getAssets()).toEqual([])
+    })
+
     it('limits each file, not the whole body', async () => {
       const files = [new File(['a'.repeat(200)], 'a.txt'), small()]
       const response = await upload(setupLimits(), 'cover', ...files)
@@ -280,6 +288,83 @@ describe('defineUploads()', () => {
     expect(writtenBeforeEnd).toBeGreaterThan(8 * megabyte)
     const data = await covers.readFile(uploaded)
     expect(data[19 * megabyte]).toBe(19)
+  })
+
+  it('ends uploads that the client aborts, and removes their files', async () => {
+    async function* createBody() {
+      const part = (name: string) => (
+        '--boundary\r\n' +
+        `Content-Disposition: form-data; name="file"; filename="${name}"\r\n` +
+        'Content-Type: application/octet-stream\r\n\r\n'
+      )
+      yield Buffer.from(`${part('a.bin')}a\r\n${part('b.bin')}`)
+      yield Buffer.alloc(1024 * 1024)
+      throw new Error('Connection lost')
+    }
+    const chunks = createBody()
+    const body = new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        try {
+          const { value, done } = await chunks.next()
+          if (done) {
+            controller.close()
+          } else {
+            controller.enqueue(value)
+          }
+        } catch (error) {
+          controller.error(error)
+        }
+      }
+    })
+    const init: RequestInit & { duplex: 'half' } = {
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data; boundary=boundary' },
+      body,
+      duplex: 'half'
+    }
+    const response = await request(setup(), '/books/upload/cover', init)
+    expect(response.status).toBe(400)
+    expect(await covers.listKeys()).toEqual([])
+    expect(await getAssets()).toEqual([])
+  })
+
+  it('stores the files one after another', async () => {
+    // Counts the files that the storage writes at the same time:
+    class CountingStorage extends DiskStorage {
+      writing = 0
+      maxWriting = 0
+
+      override async addFile(file: AssetFile, data: FileData) {
+        this.maxWriting = Math.max(this.maxWriting, ++this.writing)
+        try {
+          await super.addFile(file, data)
+        } finally {
+          this.writing--
+        }
+      }
+    }
+    const counting = new CountingStorage({ name: 'covers', path: covers.path })
+    const api = createApi({
+      controllers: [
+        {
+          path: 'books',
+          authorize: true,
+          mixins: [
+            uploadRoutes({
+              uploads: [{ path: 'cover', storage: 'covers' }],
+              storages: new StorageRegistry([counting]),
+              db: () => db
+            })
+          ]
+        }
+      ],
+      onError: () => {}
+    })
+    const files = ['a', 'b', 'c'].map(name => new File([name], `${name}.txt`))
+    const response = await upload(api, 'cover', ...files)
+    expect(response.status).toBe(200)
+    expect(await counting.listKeys()).toHaveLength(3)
+    expect(counting.maxWriting).toBe(1)
   })
 
   it('answers failing storages with an error after the whole body', async () => {

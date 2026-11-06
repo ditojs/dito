@@ -188,6 +188,16 @@ describe('S3Storage', () => {
       expect(getRequests('AbortMultipartUpload')).toEqual([])
     })
 
+    it('cuts the parts of large chunks without copying them', async () => {
+      const storage = createS3Storage()
+      const data = Buffer.alloc(20 * 1024 * 1024)
+      await storage.addFile({ key: 'large.bin' }, data)
+      const parts = getRequests('UploadPart')
+      expect(parts).toHaveLength(3)
+      // Compare without the diff of 20 MB:
+      expect(parts.every(({ Body }) => Body.buffer === data.buffer)).toBe(true)
+    })
+
     it('puts streamed data of one part in one request', async () => {
       const storage = createS3Storage()
       async function* createData() {

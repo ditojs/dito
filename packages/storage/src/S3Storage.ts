@@ -174,21 +174,30 @@ export class S3Storage extends Storage {
 
 const partSize = 8 * 1024 * 1024
 
-// Splits the data into parts of `partSize`, and a last one with the rest.
+// Splits the data into parts of `partSize`, and a last one with the rest. The
+// parts are views of the chunks, and only those of several chunks are copies.
 async function* getParts(data: FileData) {
-  let chunks: Uint8Array[] = []
+  let chunks: Buffer[] = []
   let length = 0
   for await (const chunk of Buffer.isBuffer(data) ? [data] : data) {
-    chunks.push(chunk)
-    length += chunk.byteLength
-    while (length >= partSize) {
-      const buffer = Buffer.concat(chunks)
-      yield buffer.subarray(0, partSize)
-      chunks = [buffer.subarray(partSize)]
-      length -= partSize
+    let rest = Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+    while (length + rest.byteLength >= partSize) {
+      const end = partSize - length
+      yield joinChunks([...chunks, rest.subarray(0, end)])
+      rest = rest.subarray(end)
+      chunks = []
+      length = 0
+    }
+    if (rest.byteLength > 0) {
+      chunks.push(rest)
+      length += rest.byteLength
     }
   }
   if (length > 0) {
-    yield Buffer.concat(chunks)
+    yield joinChunks(chunks)
   }
+}
+
+function joinChunks(chunks: Buffer[]) {
+  return chunks.length > 1 ? Buffer.concat(chunks) : chunks[0]
 }

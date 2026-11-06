@@ -6,9 +6,10 @@ import {
   isObject,
   isString,
   normalizeDataPath,
-  parseDataPath
+  parseDataPath,
+  parseFileSize
 } from '@ditojs/utils'
-import type { AssetFile } from './Storage.ts'
+import { isValidKey, type AssetFile } from './Storage.ts'
 
 // Where a table stores files: a column, and the data path of the files inside
 // its JSON value, with `*` for one segment and `**` for any number of them.
@@ -22,12 +23,13 @@ export interface AssetPath {
   path: string
   // The name of the storage that holds the files.
   storage: string
-  // The size limit of an upload, see `AssetUpload`.
+  // The size limit of the uploads, imports and copies of its files, see
+  // `AssetUpload`.
   maxSize?: number | string
 }
 
 // Finds the file objects at `path` inside `value`, with their data paths.
-// Values without a string `key` are skipped.
+// Values without a valid `key` are skipped.
 export function findAssetFiles(value: unknown, path: string) {
   return findValues(value, path).filter(
     (entry): entry is { file: AssetFile; path: string } =>
@@ -67,6 +69,10 @@ export function getDataPath(column: string, path: string) {
   return normalizeDataPath([camelize(column), ...parseDataPath(path)])
 }
 
+export function parseMaxSize(maxSize: number | string | undefined) {
+  return maxSize != null ? parseFileSize(maxSize) : undefined
+}
+
 function isAssetFile(value: unknown): value is AssetFile {
-  return isObject(value) && isString(value.key)
+  return isObject(value) && isString(value.key) && isValidKey(value.key)
 }
