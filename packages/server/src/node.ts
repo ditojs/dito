@@ -122,11 +122,10 @@ function copyRequest(request: Request, url: string) {
     headers,
     signal,
     ...(hasBody && {
-      body: ReadableStream.from(
-        (async function* () {
-          yield* request.body!
-        })()
-      ),
+      // Undici takes async iterables as bodies.
+      body: (async function* () {
+        yield* request.body!
+      })(),
       duplex: 'half'
     })
   } as RequestInit)
