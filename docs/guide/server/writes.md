@@ -271,9 +271,10 @@ the client chooses. Other places in the body link to it with `{ '#ref': key }`.
 - Markers inside JSON columns are part of the JSON value.
 - The database assigns the ids. Clients don't generate them.
 
-The write first creates the new rows that carry `#id` or hold refs. It puts each
-one in its place in the body. Then it creates or assigns the record, and sets
-the refs.
+The write creates or assigns the record from the body without the refs, and
+then links each ref to the entity of its new row. MikroORM orders the inserts
+by their foreign keys. A cycle of refs between new rows is written with an
+update, so one of its relations must be nullable.
 
 ## Deletes
 

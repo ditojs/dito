@@ -52,13 +52,10 @@ interface Ref {
   path: Path
 }
 
-// A new nested row that carries `#id` or holds refs, created on its own before
-// the record. `place` puts its entity where the row is in the data.
+// A new nested row that carries `#id`.
 interface NewRow {
   meta: EntityMetadata
   row: Row
-  place?: (entity: object) => void
-  entity?: object
 }
 
 // MikroORM converts some values silently, such as any string to `true` for a
@@ -87,9 +84,8 @@ export async function createRecord<T extends object>(
   const meta = em.getMetadata().get(entity)
   const check = await clean(meta, data, true)
   await checkIds(em, check.ids)
-  createNewRows(em, check)
   const record = em.create(entity, check.row as never)
-  setRefs(check, row => (row === check.row ? record : undefined))
+  setRefs(meta, check, record)
   return record
 }
 
@@ -114,9 +110,8 @@ export async function assignRecord<T extends object>(
     em,
     check.ids.filter(id => !isLinked(id))
   )
-  createNewRows(em, check)
   em.assign(record, row as never, { onlyProperties: true })
-  setRefs(check, row => records.get(row))
+  setRefs(meta, check, record)
   return record
 }
 
@@ -130,8 +125,6 @@ class BodyCheck {
   ids: RelationId[] = []
   refs: Ref[] = []
   newRowsByKey = new Map<string, NewRow>()
-  // In the order of their creation: nested rows before their parents.
-  newRows = new Map<Row, NewRow>()
 
   addIssue(message: string, path: Path, code = 'invalid_value') {
     this.issues.push({ path, code, message })
@@ -189,14 +182,7 @@ class BodyCheck {
         this.addIssue(message, [...path, prop.name])
       }
     }
-    const keyedRow =
-      '#id' in data
-        ? this.addRowKey(meta, row, data['#id'], path, isNew)
-        : undefined
-    const hasRefs = this.refs.some(ref => ref.row === row)
-    if (keyedRow || (path.length && isNew && hasRefs)) {
-      this.newRows.set(row, keyedRow ?? { meta, row })
-    }
+    if ('#id' in data) this.addRowKey(meta, row, data['#id'], path, isNew)
     return row
   }
 
@@ -218,9 +204,7 @@ class BodyCheck {
           ? `is the key of another new row '${key}'`
           : undefined
     if (message) return this.addIssue(message, keyPath)
-    const keyedRow = { meta, row }
-    this.newRowsByKey.set(key, keyedRow)
-    return keyedRow
+    this.newRowsByKey.set(key, { meta, row })
   }
 
   // Return undefined for values that stay out of the data.
@@ -235,13 +219,7 @@ class BodyCheck {
       if (!isArray(value)) return this.addTypeIssue('array', value, path)
       const items: unknown[] = value.map((item, index) =>
         isOwned(prop)
-          ? this.cleanOwnedRow(
-              prop,
-              item,
-              [...path, index],
-              isNew,
-              entity => (items[index] = entity)
-            )
+          ? this.cleanOwnedRow(prop, item, [...path, index], isNew)
           : this.cleanId(row, prop, item, [...path, index])
       )
       if (isOwned(prop)) {
@@ -261,13 +239,7 @@ class BodyCheck {
       return prop.nullable ? null : this.addTypeIssue(getType(prop), null, path)
     }
     if (isOwned(prop)) {
-      return this.cleanOwnedRow(
-        prop,
-        value,
-        path,
-        isNew,
-        entity => (row[prop.name] = entity)
-      )
+      return this.cleanOwnedRow(prop, value, path, isNew)
     }
     return isOwningToOne(prop)
       ? this.cleanId(row, prop, value, path)
@@ -280,8 +252,7 @@ class BodyCheck {
     prop: EntityProperty,
     value: unknown,
     path: Path,
-    isParentNew: boolean,
-    place: (entity: object) => void
+    isParentNew: boolean
   ) {
     const target = prop.targetMeta!
     const key = getRowKey(prop)
@@ -309,8 +280,6 @@ class BodyCheck {
       row[key.name] = toPrimaryKey(key, id)
       if (row[key.name] === undefined) this.addTypeIssue('id', id, idPath)
     }
-    const newRow = row && this.newRows.get(row)
-    if (newRow) newRow.place = place
     return row
   }
 
@@ -672,25 +641,36 @@ function isSameOrSubclass(meta: EntityMetadata, target: EntityMetadata) {
   )
 }
 
-// Create the new nested rows deepest first, before the record:
-function createNewRows(em: EntityManager, check: BodyCheck) {
-  for (const newRow of check.newRows.values()) {
-    const entity = em.create(newRow.meta.class, newRow.row as never)
-    newRow.entity = entity
-    newRow.place!(entity)
-  }
-}
-
-// Set the refs once the record is created or assigned, on the new nested rows
-// and on the entities that `getEntity` returns for other rows:
-function setRefs(
-  check: BodyCheck,
-  getEntity: (row: Row) => object | undefined
-) {
+// Set the refs once MikroORM created the graph, which also orders the inserts:
+function setRefs(meta: EntityMetadata, check: BodyCheck, record: object) {
+  if (!check.refs.length) return
+  const entities = getEntities(meta, check.row, record as Row)
   for (const { key, row, prop } of check.refs) {
-    const entity = check.newRowsByKey.get(key)!.entity
-    const holder = (check.newRows.get(row)?.entity ?? getEntity(row)) as Row
+    const entity = entities.get(check.newRowsByKey.get(key)!.row)
+    const holder = entities.get(row)!
     if (isToMany(prop)) holder[prop.name].add(entity)
     else holder[prop.name] = entity
   }
+}
+
+// The entity of each row of a body. Owned rows keep their order in the record.
+function getEntities(
+  meta: EntityMetadata,
+  row: Row,
+  entity: Row,
+  entities = new Map<Row, Row>()
+) {
+  entities.set(row, entity)
+  for (const prop of meta.props) {
+    if (isOwned(prop) && row[prop.name] != null) {
+      const loaded = getLoadedRows(entity, prop)
+      for (const [index, child] of getOwnedRows(
+        prop,
+        row[prop.name]
+      ).entries()) {
+        getEntities(prop.targetMeta!, child, loaded[index]!, entities)
+      }
+    }
+  }
+  return entities
 }
