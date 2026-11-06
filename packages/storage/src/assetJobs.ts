@@ -8,25 +8,25 @@ import {
 } from './assetPaths.ts'
 import type { StorageRegistry } from './StorageRegistry.ts'
 
-export interface AssetKey {
+export interface Asset {
   key: string
   storage: string
 }
 
-export interface UnreferencedAsset extends AssetKey {
+export interface UnreferencedAsset extends Asset {
   since: Date
 }
 
 export interface ScanAssetsReport {
   // The rows that data references again. The scan clears their
   // `unreferenced_since`.
-  referenced: AssetKey[]
+  referenced: Asset[]
   // The rows that no data references, with their `unreferenced_since`. The
   // rows that the scan finds unreferenced first get `now`.
   unreferenced: UnreferencedAsset[]
   // The keys that data references without an `asset` row. The scan inserts
   // their rows.
-  missing: AssetKey[]
+  missing: Asset[]
   // The number of rows read.
   rowCount: number
   // In milliseconds.
@@ -67,7 +67,7 @@ export async function scanAssets({
     .select(['key', 'storage', 'unreferenced_since'])
     .orderBy('key')
     .execute()
-  const referenced: AssetKey[] = []
+  const referenced: Asset[] = []
   const unreferenced: UnreferencedAsset[] = []
   for (const { key, storage, unreferenced_since: since } of assets) {
     if (references.has(key)) {
@@ -124,7 +124,7 @@ export interface ReleaseAssetsOptions {
   before: Date
 }
 
-export interface ReleasedAsset extends AssetKey {
+export interface ReleasedAsset extends Asset {
   // Set when the file couldn't be removed. The row is deleted anyway.
   error?: unknown
 }
@@ -306,7 +306,7 @@ async function* readRows(db: Kysely<any>, table: string, paths: AssetPath[]) {
 
 async function updateAssets(
   db: Kysely<any>,
-  assets: AssetKey[],
+  assets: Asset[],
   since: Date | null,
   now: Date
 ) {

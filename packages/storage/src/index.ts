@@ -23,7 +23,7 @@ export {
   type DefineUploadsOptions
 } from './createAssets.ts'
 export type {
-  AssetKey,
+  Asset,
   AssetReference,
   ReleasedAsset,
   ScanAssetsReport,
