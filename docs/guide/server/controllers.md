@@ -268,7 +268,8 @@ of the layers, which sets `getRecord()`. So it loads what it checks itself, as
 `get :id/notice` does above. An action's own `authorize` replaces the one of
 its layers.
 
-Every write needs `authorize`. `authorize: true` opens a write to anyone. See [authorize](../../api/server/controllers.md#authorize) for all rules.
+Every write needs `authorize`. `authorize: true` opens a write to anyone. See
+[authorize](../../api/server/controllers.md#authorize) for all rules.
 
 The controller's [`find`](mikro.md#find) leaves out the rows that a user may
 not see. So `getRecord()` and the default handlers respond with 404 for them.

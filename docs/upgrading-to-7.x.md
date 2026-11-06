@@ -599,6 +599,10 @@ await serve(app, { port, closeTimeout: '5s', onClose: () => orm.close() })
 - `config.http` becomes the options of
   [`hostMiddleware()`](api/server/hono.md#hostmiddleware). Add it before
   `app.route()`. As in Dito.js 6, `csrf()` only checks requests with `Origin`.
+- `hostMiddleware()` leaves `cors` and `etag` off unless its options turn them
+  on. Dito.js 6 had both on by default.
+- Sizes with units count in powers of 1000: `bodyLimit: { maxSize: '1mb' }` is
+  1,000,000 bytes. Dito.js 6 read `'1mb'` as 1 MiB, 1,048,576 bytes.
 - `cors` works differently. Dito.js 6 echoed the request's origin. Hono's
   `cors()` allows any origin by default, without credentials. With
   `credentials: true`, it needs the allowed `origin`.
