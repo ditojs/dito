@@ -200,23 +200,18 @@ export type ErrorLogger = (context: {
   c: Context
 }) => void | Promise<void>
 
-export interface ApiUsers {
-  middleware: Middleware
-  getUser?: CreateApiOptions['getUser']
-}
-
 export interface CreateApiOptions {
   // A list, or an object such as a module namespace, of which only the
   // results of `defineController()` count.
   controllers: ControllerDefinition[] | Record<string, unknown>
-  // The users of the API, from `createUsers()`. Their session middleware runs
-  // first, and `getUser` defaults to theirs.
-  users?: ApiUsers
-  // Middleware of every action, before the user is read.
-  middleware?: Middleware | Middleware[]
+  // The users of the API, such as the result of `createUsers()`.
+  users?: {
+    // Runs first on every action, such as the one that loads the session.
+    middleware?: Middleware | Middleware[]
+    // The signed-in user of the request, or null.
+    getUser: (context: { c: DitoContext }) => User | null | Promise<User | null>
+  }
   adapter?: Partial<Adapter>
-  // The signed-in user of the request, or null.
-  getUser?: (context: { c: DitoContext }) => User | null | Promise<User | null>
   // By default, logs with `console.error()`.
   onError?: ErrorLogger
 }

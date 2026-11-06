@@ -282,8 +282,8 @@ import { timing } from 'hono/timing'
 defineController({ path: 'reports', middleware: timing(), actions })
 ```
 
-Middleware is Hono middleware, which runs before the handler. The API, the
-controller, a mixin and an action can set it. It gets `c` and `next`. It reads
+Middleware is Hono middleware, which runs before the handler. The controller, a
+mixin and an action can set it. It gets `c` and `next`. It reads
 Dito's variables from `c.var`, such as `c.var.user`. In the layers of a model
 controller, it can read `await c.var.getRecord()`. Any Hono middleware works.
 

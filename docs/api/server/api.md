@@ -40,7 +40,7 @@ not on the first request. These are invalid:
 - a write action (`post`, `put`, `patch`, `delete`) without `authorize`, on the
   action or on a layer, see [Authorization](controllers.md#authorize);
 - a routed action without a handler;
-- an action whose `authorize` holds roles when the API has no `getUser`, as no
+- an action whose `authorize` holds roles when the API has no `users`, as no
   user could have them;
 - an action with `transacted: true` when the adapter has no `transact`.
 
@@ -61,14 +61,28 @@ other paths.
 
 ### CreateApiOptions
 
-| Key           | Type                                               | Description                                                                                                                                                                              |
-| ------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `controllers` | `ControllerDefinition[] \| object`                 | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, Dito ignores all other values. |
-| `users`       | `{ middleware, getUser? }`                         | The result of [`createUsers()`](auth.md#createusers). Its middleware runs first, and `getUser` defaults to its own.                                                                      |
-| `middleware`  | `Middleware \| Middleware[]`                       | Hono middleware for every request of the API, such as sessions. It runs first, before Dito sets `c.var.em` and `c.var.user`.                                                             |
-| `adapter`     | [`Adapter`](#adapter)                              | The database: [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined, and no action runs in a transaction.                                              |
-| `getUser`     | `({ c }) => User \| null \| Promise<User \| null>` | Returns the signed-in user, `{ id, roles }`, which becomes `c.var.user`. Without it, the user is `null`.                                                                                 |
-| `onError`     | `({ error, c }) => void \| Promise<void>`          | Gets each error with a status of 500 or above, for the app's logs, not the response. By default, it logs through `console`. See [Errors](errors.md).                                     |
+| Key           | Type                                      | Description                                                                                                                                                                              |
+| ------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `controllers` | `ControllerDefinition[] \| object`        | The controllers, from `defineController()` of `@ditojs/server` or `defineModelController()` of `@ditojs/mikro`. In an object, such as a module namespace, Dito ignores all other values. |
+| `users`       | [`users`](#users)                         | The users of the API, such as the result of [`createUsers()`](auth.md#createusers). Without it, the user is `null`.                                                                      |
+| `adapter`     | [`Adapter`](#adapter)                     | The database: [`createMikroAdapter(orm)`](mikro.md#createmikroadapter). Without it, `em` is undefined, and no action runs in a transaction.                                              |
+| `onError`     | `({ error, c }) => void \| Promise<void>` | Gets each error with a status of 500 or above, for the app's logs, not the response. By default, it logs through `console`. See [Errors](errors.md).                                     |
+
+### users
+
+```ts
+users?: {
+  middleware?: Middleware | Middleware[]
+  getUser: ({ c }) => User | null | Promise<User | null>
+}
+```
+
+`users` is the only way to give an API its user. `middleware` is Hono middleware
+for every request of the API, such as the one that loads a session. It runs
+first, before Dito sets `c.var.em` and `c.var.user`. `getUser` returns the
+signed-in user, `{ id, roles }`, which becomes `c.var.user`.
+
+Other middleware goes on the Hono app, or on the controllers and mixins.
 
 ### The request
 
@@ -77,9 +91,9 @@ For each request of an action, Hono and Dito:
 1. match the route. `HEAD` runs the `GET` action and sends no body;
 2. run Hono's `contextStorage()`, for functions such as
    [`useEm()`](mikro.md#useem) and [`useSession()`](auth.md#usesession);
-3. run the middleware of `users`, and the API's `middleware`;
+3. run the middleware of `users`;
 4. set `c.var.em` with `connect()` of the adapter;
-5. set `c.var.user` with `getUser`;
+5. set `c.var.user` with `getUser` of `users`;
 6. set `c.var.action`, the key of the action;
 7. check the action's `authorize`, which responds with 401 without a user, and
    with 403 with one;

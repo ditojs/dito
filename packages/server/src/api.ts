@@ -22,15 +22,13 @@ import type {
   Transact
 } from './types.ts'
 
-// A request runs the API's `middleware`, sets `c.var.em` and `c.var.user`, then
-// runs the middleware of its action, and last the handler. Paths that no action
-// matches go on to the app.
+// A request runs the middleware of `users`, sets `c.var.em` and `c.var.user`,
+// then runs the middleware of its action, and last the handler. Paths that no
+// action matches go on to the app.
 export function createApi({
   controllers,
   users,
-  middleware,
   adapter = {},
-  getUser = users?.getUser,
   onError
 }: CreateApiOptions) {
   const app = new Hono<DitoEnv>()
@@ -39,10 +37,9 @@ export function createApi({
   const setup: Middleware[] = [
     contextStorage(),
     ...asArray(users?.middleware),
-    ...asArray(middleware),
     async (c, next) => {
       if (adapter.connect) c.set('em', await adapter.connect(c))
-      c.set('user', (await getUser?.({ c })) ?? null)
+      c.set('user', (await users?.getUser({ c })) ?? null)
       await next()
     }
   ]
@@ -54,10 +51,10 @@ export function createApi({
     resolveController(definition).map(action => {
       const { key, authorize, transacted } = action
       const where = `'${key}' in '${definition.path}'`
-      // Without `getUser`, there is no user whose roles could match.
-      if (!getUser && (isString(authorize) || isArray(authorize))) {
+      // Without `users`, there is no user whose roles could match.
+      if (!users && (isString(authorize) || isArray(authorize))) {
         throw new Error(
-          `Unable to check the roles of ${where} without \`getUser\`.`
+          `Unable to check the roles of ${where} without \`users\`.`
         )
       }
       if (transacted && !adapter.transact) {

@@ -480,8 +480,9 @@ and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
   [Variables](api/server/mikro.md#variables) for `id`.
 - Hono doesn't send a thrown `Response`. Throw an `HttpError`, or return the
   `Response`.
-- Middleware is Hono middleware. It goes on the Hono app, in
-  `createApi({ middleware })`, or on controllers, mixins and actions.
+- Middleware is Hono middleware. It goes on the Hono app, or on controllers,
+  mixins and actions. `createApi()` takes the user and its middleware only as
+  `users: { middleware, getUser }`.
 - Middleware reads the request's entity manager as `c.var.em`. Its Kysely,
   `c.var.em.getKysely()`, runs the queries that MikroORM doesn't build.
   `import '@ditojs/mikro/types'` types `em` as MikroORM's `EntityManager`.

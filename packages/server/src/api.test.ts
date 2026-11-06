@@ -33,7 +33,10 @@ declare module './index.ts' {
 const admin: User = { id: 1, roles: ['admin'] }
 const editor: User = { id: 2, roles: ['editor'] }
 
-interface SetupOptions extends Partial<CreateApiOptions>, Partial<Adapter> {
+type Users = NonNullable<CreateApiOptions['users']>
+
+interface SetupOptions
+  extends Partial<CreateApiOptions>, Partial<Adapter>, Partial<Users> {
   user?: User | null
 }
 
@@ -42,14 +45,21 @@ interface SetupOptions extends Partial<CreateApiOptions>, Partial<Adapter> {
 // `RangeError`, which stands for an error of the ORM.
 function setup(
   controllers: ControllerDefinition[],
-  { user = admin, connect, transact, ...config }: SetupOptions = {}
+  {
+    user = admin,
+    getUser = async () => user,
+    middleware,
+    connect,
+    transact,
+    ...config
+  }: SetupOptions = {}
 ) {
   const app = new Hono()
   app.route(
     '/api',
     createApi({
       controllers,
-      getUser: async () => user,
+      users: { middleware, getUser },
       adapter: {
         connect,
         transact,
@@ -215,9 +225,12 @@ describe('routing', () => {
     const api = (name: string) =>
       createApi({
         controllers: [{ path: 'items', actions: { get: () => name } }],
-        middleware: async (_c, next) => {
-          log.push(name)
-          await next()
+        users: {
+          middleware: async (_c, next) => {
+            log.push(name)
+            await next()
+          },
+          getUser: () => null
         }
       })
     const paths = ['/api/admin', '/api']
@@ -710,10 +723,10 @@ describe('authorize', () => {
 
   it('gives a function the variables of the request', async () => {
     const api = setup(
-      [controller({ authorize: ({ session, user }) => session === user?.id })],
+      [controller({ authorize: ({ session }) => session === 'open' })],
       {
         middleware: async (c, next) => {
-          c.set('session', 1 as never)
+          c.set('session', 'open')
           await next()
         }
       }
@@ -805,12 +818,12 @@ describe('authorize', () => {
       actions: { get: () => [] }
     })
     for (const authorize of ['admin', ['admin', 'editor']]) {
-      expect(() => setup([fonts(authorize)], { getUser: undefined })).toThrow(
-        `Unable to check the roles of 'get' in 'fonts' without \`getUser\`.`
+      expect(() => setup([fonts(authorize)], { users: undefined })).toThrow(
+        `Unable to check the roles of 'get' in 'fonts' without \`users\`.`
       )
     }
     expect(() =>
-      setup([fonts(({ user }) => !user)], { getUser: undefined })
+      setup([fonts(({ user }) => !user)], { users: undefined })
     ).not.toThrow()
   })
 })

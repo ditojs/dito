@@ -3,7 +3,6 @@ export type {
   ActionSettings,
   Actions,
   Adapter,
-  ApiUsers,
   Authorize,
   ControllerDefinition,
   CreateApiOptions,

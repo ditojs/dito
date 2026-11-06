@@ -155,14 +155,16 @@ old migrations with knex's CLI until the Migrator takes over, see
 users: admins
 ```
 
-`getUser({ c })` returns the user of a request as `{ id, roles }`, or `null`.
+`users` holds `getUser({ c })`, which returns the user of a request as
+`{ id, roles }`, or `null`, and optional `middleware`, such as the one that
+loads a session.
 
 - Dito sets the user as `c.var.user`.
 - Handlers read it as `user` of their context.
 - `authorize` checks its roles.
 
-`users` takes the result of `createUsers()` of `@ditojs/auth`, see
-[Users and sessions](auth.md). They load the session and read its user.
+The result of `createUsers()` of `@ditojs/auth` fits `users`, see
+[Users and sessions](auth.md). It loads the session and reads its user.
 
 ## Errors and logging
 
@@ -198,12 +200,9 @@ not with a leading `*`.
 ## Variables
 
 ```js
-const api = createApi({
-  controllers,
-  middleware: async (c, next) => {
-    c.set('requestId', c.req.header('X-Request-Id'))
-    await next()
-  }
+hono.use('/api/*', async (c, next) => {
+  c.set('requestId', c.req.header('X-Request-Id'))
+  await next()
 })
 ```
 
