@@ -1,9 +1,7 @@
 import type { EntityManager } from '@mikro-orm/sql'
 
-// Types `c.var.em` and `em` of the handlers as MikroORM's entity manager, for
-// apps that import this module once:
-//
-//   import '@ditojs/mikro/types'
+// Type `c.var.em` and `em` of the handlers as MikroORM's entity manager, for
+// apps that import '@ditojs/mikro/types' once.
 
 declare module '@ditojs/server' {
   interface DitoVariables {

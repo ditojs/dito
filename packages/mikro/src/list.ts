@@ -1,31 +1,19 @@
 import { HttpError } from '@ditojs/server'
 import { asArray } from '@ditojs/utils'
-import {
-  ReferenceKind,
-  type EntityMetadata,
-  type FindOptions
-} from '@mikro-orm/core'
+import { ReferenceKind, type EntityMetadata } from '@mikro-orm/core'
 import { getFilterWheres } from './filters.ts'
 import type { FindShape } from './find.ts'
 import type { ListQuery } from './listQuery.ts'
 import { getProperty, isLoadedColumn, isOwningToOne } from './metadata.ts'
-import type { ModelRequest } from './ModelRequest.ts'
+import type { ModelRequest, Query } from './ModelRequest.ts'
 
-// Lists take the parameters `filter=name:args`, `order=name desc` and
-// `range=0,49`, which responds with `{ results, total }` instead of an array.
-
-// The most rows a list returns, unless its `find` says otherwise.
 const defaultMaxRows = 1000
 
-// The query of a list, with its parameters.
-type List<T extends object> = Awaited<
-  ReturnType<ModelRequest<T>['query']>
-> & { query: ListQuery }
+type List<T extends object> = Query<T> & { query: ListQuery }
 
-// The `where`, `orderBy` and `range` of a list: `where` with the filters, and
-// `order` or else the `orderBy` of `options`, with the id last. `order` may use
-// the columns of the list's `find` and of the controller's, so that a list that
-// returns fewer columns, such as only the ids, orders as the controller's list.
+// `order` may use the columns of the list's `find` and of the controller's, so
+// that a list that returns fewer columns, such as only the ids, orders as the
+// controller's list.
 export async function getListQuery<T extends object>(
   { c, meta, definition }: ModelRequest<T>,
   { where, options, shape, own, query }: List<T>
@@ -59,11 +47,7 @@ export async function findRows<T extends object>(
   const { em, entity } = request
   const { maxRows = defaultMaxRows } = list.shape
   const { where, orderBy, range } = await getListQuery(request, list)
-  const cond = where as never
-  const findOptions: FindOptions<T, any, any, any> = {
-    ...list.options,
-    orderBy: orderBy as never
-  }
+  const options = { ...list.options, orderBy }
   if (range) {
     const [start, end] = range
     if (end - start + 1 > maxRows) {
@@ -73,30 +57,26 @@ export async function findRows<T extends object>(
         } rows`
       })
     }
-    const [results, total] = await em.findAndCount(entity, cond, {
-      ...findOptions,
+    const [results, total] = await em.findAndCount(entity, where, {
+      ...options,
       offset: start,
       limit: end - start + 1
     })
     return { results, total }
   }
-  if (maxRows === Infinity) return em.find(entity, cond, findOptions)
-  const rows = await em.find(entity, cond, {
-    ...findOptions,
+  if (maxRows === Infinity) return em.find(entity, where, options)
+  const rows = await em.find(entity, where, {
+    ...options,
     limit: maxRows + 1
   })
   if (rows.length > maxRows) {
     throw new HttpError(400, {
-      message: `The list has more than ${maxRows} rows: ask for a \`range\``
+      message: `Unable to list more than ${maxRows} rows without a \`range\``
     })
   }
   return rows
 }
 
-// The property that orders by the column `name`, if the rows return the column,
-// so that the order reveals nothing about values that the user can't see. Lists
-// don't load lazy columns. `relation.id` orders by the foreign key of the
-// relation, which needs no join. The rows always return their ids.
 function getOrderName(meta: EntityMetadata, shape: FindShape, name: string) {
   const { fields, exclude = [] } = shape as {
     fields?: string[]
@@ -105,14 +85,17 @@ function getOrderName(meta: EntityMetadata, shape: FindShape, name: string) {
   const [first, key, ...rest] = name.split('.')
   const prop = getProperty(meta, first!)
   if (!prop || rest.length) return undefined
+  // `relation.id` orders by the foreign key, which needs no join:
   const isColumn = key
     ? isOwningToOne(prop) && prop.targetMeta!.primaryKeys.includes(key)
     : prop.kind === ReferenceKind.SCALAR && isLoadedColumn(prop)
+  // Order only by columns that the rows return, so that the order reveals
+  // nothing about values that the user can't see:
   const isShown = (
     !prop.hidden &&
     !exclude.includes(name) &&
     !exclude.includes(prop.name) && (
-      prop.primary ||
+      prop.primary || // The rows always return their ids.
       !fields ||
       fields.some(
         field => (

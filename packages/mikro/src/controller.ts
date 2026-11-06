@@ -10,7 +10,7 @@ import {
 import { getLayers } from '@ditojs/server/internal'
 import { isFunction, isPlainObject, pickBy } from '@ditojs/utils'
 import type { EntityClass } from '@mikro-orm/core'
-import { defaults } from './crud.ts'
+import { defaultActions } from './crud.ts'
 import { checkFind, type Find } from './find.ts'
 import type { Filter } from './filters.ts'
 import { toPrimaryKey } from './metadata.ts'
@@ -20,14 +20,6 @@ import {
   type ModelDefinition
 } from './ModelRequest.ts'
 import { respond } from './respond.ts'
-
-// A model controller on a MikroORM entity. `defineModelController()` puts a
-// base layer before the definition and its mixins, with the default handlers of
-// the keys that they set and the middleware that creates the `ModelRequest`.
-// The controller wraps the handlers of each key: after them, `respond()`
-// flushes the writes once and serializes the result, inside the transaction and
-// the middleware. So a handler can check the graph before the flush. A delete
-// flushes in its handler.
 
 declare module '@ditojs/server' {
   interface MixinDefinition {
@@ -56,7 +48,7 @@ export interface ModelControllerDefinition<T extends object = any>
   // What lists, records and the responses of writes load and return, or a
   // function of the context that returns it.
   find?: Find<T>
-  // The filters of the list, `filter=name:args`, see `filters.ts`.
+  // The filters of the list, `filter=name:args`.
   filters?: Record<string, Filter>
   // Loads the record of a record action, in place of the controller's `find`
   // with the id. It gets the id as sent, also one that isn't a key, such as
@@ -89,7 +81,7 @@ export function defineModelController<T extends object>(
     layers.flatMap(({ actions = {} }) => Object.keys(actions))
   )
   const base: MixinDefinition = {
-    actions: pickBy(defaults, (value, key) => keys.has(key)),
+    actions: pickBy(defaultActions, (value, key) => keys.has(key)),
 
     async middleware(c, next) {
       const request = new ModelRequest<any>(c, model)
@@ -100,19 +92,20 @@ export function defineModelController<T extends object>(
         c.set('id', id ?? param)
       }
       c.set('entity', model.entity)
-      c.set('getRecord', request.record.bind(request))
+      c.set('getRecord', request.getRecord.bind(request))
       c.set('find', request.find.bind(request))
       c.set('list', request.list.bind(request))
-      c.set('getListQuery', request.listQuery.bind(request))
+      c.set('getListQuery', request.getListQuery.bind(request))
       await next()
     }
   }
 
-  // The wrappers have no settings, so the settings of the layers apply. Keys
-  // without a handler stay without one, so that `createApi()` rejects them.
-  // The controller's own settings go on the top layer, which holds all actions.
+  // Flush the writes once after the handlers, still inside the transaction, so
+  // handlers can check the graph before the flush:
   const wrap: Handler = async ({ c, next }) =>
     respond(getModelRequest(c)!, await next())
+  // The wrappers have no settings, so those of the layers apply. Keys without a
+  // handler stay without one, for `createApi()` to reject them.
   const actions = Object.fromEntries(
     [...keys]
       .filter(key =>
@@ -120,6 +113,7 @@ export function defineModelController<T extends object>(
       )
       .map(key => [key, wrap])
   )
+  // The controller's own settings go on the top layer, which holds all actions:
   const { authorize, transacted } = def
   return defineServerController({
     path,

@@ -3,28 +3,28 @@ import { checkFind, type FindShape } from './find.ts'
 import { getModelRequest, type ModelRequest } from './ModelRequest.ts'
 import { assignRecord, createRecord } from './write.ts'
 
-// The default handlers of a model controller. An action gets one by setting
-// its key, in `actions` or through the mixin `crud`.
-export const defaults: Actions = {
+// An action gets its default handler by setting its key, in `actions` or
+// through the mixin `crud`.
+export const defaultActions: Actions = {
   'get': ({ list }) => list(),
 
   // The new row becomes the request's record.
   async 'post'({ body, c }) {
-    const modelRequest = getModelRequest(c)!
-    const { em, entity } = modelRequest
-    const data = await deserialize(modelRequest, body)
+    const request = getModelRequest(c)!
+    const { em, entity } = request
+    const data = await deserialize(request, body)
     const row = await createRecord(em, entity, data)
-    modelRequest.setRecord(row)
+    request.setRecord(row)
     return row
   },
 
   'get :id': ({ getRecord }) => getRecord(),
 
   async 'patch :id'({ body, getRecord, c }) {
-    const modelRequest = getModelRequest(c)!
+    const request = getModelRequest(c)!
     const row = await getRecord()
-    const data = await deserialize(modelRequest, body, row)
-    return assignRecord(modelRequest.em, row, data)
+    const data = await deserialize(request, body, row)
+    return assignRecord(request.em, row, data)
   },
 
   async 'delete :id'({ getRecord, c }) {
@@ -35,7 +35,7 @@ export const defaults: Actions = {
   }
 }
 
-// A mixin that routes the five default handlers. Writes still need `authorize`.
+// Writes still need `authorize`.
 export const crud = defineMixin({
   actions: {
     'get': true,
@@ -46,7 +46,6 @@ export const crud = defineMixin({
   }
 })
 
-// The handler of a list, see `c.var.list`.
 export function defineListHandler<T extends object = any>(
   find: FindShape<T> = {}
 ): Handler {
@@ -54,8 +53,6 @@ export function defineListHandler<T extends object = any>(
   return ({ list }) => list(find)
 }
 
-// A mixin with the list `get choices`, for the options of a select, such as
-// `defineChoices({ fields: ['id', 'name'], orderBy: { name: 'asc' } })`.
 // A select shows all rows, so its list has no row limit unless `find` sets one.
 export function defineChoices<T extends object = any>(find: FindShape<T>) {
   return defineMixin({
@@ -65,7 +62,6 @@ export function defineChoices<T extends object = any>(find: FindShape<T>) {
   })
 }
 
-// Runs `deserialize` of each layer on the body of a write.
 async function deserialize(
   { c, definition }: ModelRequest,
   json: unknown,

@@ -9,20 +9,12 @@ import {
 } from '@mikro-orm/core'
 import { isOwned } from './metadata.ts'
 
-// Maps the errors of MikroORM and Postgres to `HttpError`s. Postgres checks the
-// types, ranges and lengths of the values that a write sends, beyond what
-// `write.ts` checks.
+// Postgres checks the types, ranges and lengths of the values that a write
+// sends, beyond what `write.ts` checks.
 
-const invalid = 'The data is not valid for the database.'
-const conflict = 'The data conflicts with rows in the database.'
+const invalidMessage = 'The data is not valid for the database.'
+const conflictMessage = 'The data conflicts with rows in the database.'
 
-// Returns undefined for errors that aren't MikroORM's. Other database errors
-// are internal and respond with a bare 500.
-//
-// With the metadata of the request's entity, Postgres' errors on its table
-// point at the property, such as `name`. Errors on other tables and on entities
-// whose owned rows share their table respond with the status only, as their
-// rows can't be told apart. `method` is the request's, to detect deletes.
 export function toHttpError(
   error: unknown,
   meta?: EntityMetadata,
@@ -37,6 +29,7 @@ export function toHttpError(
       cause: error
     })
   }
+  // Leave errors that aren't MikroORM's to the server:
   if (!(error instanceof DriverException)) return undefined
   const {
     table,
@@ -49,18 +42,20 @@ export function toHttpError(
     constraint?: string
     detail?: string
   }
+  // Errors on the table of the request's entity point at the property, such as
+  // `name`. Errors on other tables, or on a table that owned rows share, can't
+  // tell the rows apart:
   const isRootTable = !!meta && table === meta.tableName
   const root =
     isRootTable && !ownsTable(meta!, meta!.tableName) ? meta : undefined
-  // The error, with `issue` at the properties of `columns`.
-  const create = (
+  const createError = (
     status: 400 | 409,
     columns: (string | undefined)[] = [],
     issue?: { message: string; code: string }
   ) => {
     const props = root && issue ? getProperties(root, columns) : []
     const issues = props.map(prop => ({ path: [prop.name], ...issue! }))
-    const message = status === 400 ? invalid : conflict
+    const message = status === 400 ? invalidMessage : conflictMessage
     return issues.length
       ? createValidationError(issues, { message, status, cause: error })
       : new HttpError(status, { message, cause: error })
@@ -68,12 +63,12 @@ export function toHttpError(
   const code = error.sqlState ?? error.code
   switch (code) {
     case '23502':
-      return create(400, [column], {
+      return createError(400, [column], {
         message: 'is required',
         code: 'invalid_type'
       })
     case '23505':
-      return create(409, getKeyColumns(detail), {
+      return createError(409, getKeyColumns(detail), {
         message: 'already exists',
         code: 'not_unique'
       })
@@ -86,14 +81,14 @@ export function toHttpError(
         detail.includes('is still referenced') ||
         (meta && !isRootTable)
       )
-        ? create(409)
-        : create(400, getKeyColumns(detail), {
+        ? createError(409)
+        : createError(400, getKeyColumns(detail), {
             message: 'references a missing row',
             code: 'invalid_value'
           })
     case '23514': {
       const prefix = `${table}_`
-      return create(
+      return createError(
         400,
         constraint?.startsWith(prefix) && constraint.endsWith('_check')
           ? [constraint.slice(prefix.length, -'_check'.length)]
@@ -103,12 +98,13 @@ export function toHttpError(
     }
   }
   // Postgres' data exceptions, such as a value too long or out of range.
-  if (code?.startsWith('22')) return create(400)
-  if (error instanceof ConstraintViolationException) return create(409)
+  if (code?.startsWith('22')) return createError(400)
+  if (error instanceof ConstraintViolationException) return createError(409)
+  // Other database errors are internal:
   return new HttpError(500, { cause: error })
 }
 
-// Whether an owned relation of `meta`, at any depth, holds rows of `table`.
+// Look for owned relations that hold rows of `table`, at any depth:
 function ownsTable(
   meta: EntityMetadata,
   table: string,
@@ -124,7 +120,7 @@ function ownsTable(
   })
 }
 
-// The columns of a key in a detail such as `Key (a, "b")=(1, 2) …`.
+// Read the columns of a detail such as `Key (a, "b")=(1, 2) …`:
 function getKeyColumns(detail: string) {
   const match = /^Key \((.+?)\)=/.exec(detail)
   return match
@@ -132,8 +128,7 @@ function getKeyColumns(detail: string) {
     : []
 }
 
-// The properties of the columns, or none if a column has no property, such as
-// a key on an expression.
+// A column without a property, such as a key on an expression, gives none:
 function getProperties(meta: EntityMetadata, columns: (string | undefined)[]) {
   const props = columns.map(column =>
     meta.props.find(prop => column && prop.fieldNames?.includes(column))

@@ -8,10 +8,6 @@ import {
   type EntityProperty
 } from '@mikro-orm/core'
 
-// What Dito reads from MikroORM's metadata. An owned relation holds the nested
-// rows that a write sends with their parent: a one-to-many relation, or the
-// inverse side of a one-to-one relation, with `orphanRemoval`.
-
 export const isRelation = (prop: EntityProperty) => (
   prop.kind !== ReferenceKind.SCALAR && prop.kind !== ReferenceKind.EMBEDDED
 )
@@ -26,6 +22,7 @@ export const isOwningToOne = (prop: EntityProperty) => (
   (prop.kind === ReferenceKind.ONE_TO_ONE && !!prop.owner)
 )
 
+// An owned relation holds the nested rows that a write sends with their parent:
 export const isOwned = (prop: EntityProperty) => (
   !!prop.orphanRemoval && (
     prop.kind === ReferenceKind.ONE_TO_MANY ||
@@ -35,15 +32,13 @@ export const isOwned = (prop: EntityProperty) => (
 
 export type Row = Record<string, any>
 
-// The rows of an owned relation in a body: the items of an array, or the row
-// of a one-to-one relation.
+// In a body, an owned relation holds an array of rows or a single one.
 export function getOwnedRows(prop: EntityProperty, value: unknown): Row[] {
   if (!isOwned(prop)) return []
   return isArray(value) ? value : isPlainObject(value) ? [value] : []
 }
 
-// The loaded entities of a relation of `entity`.
-export function getLoaded(entity: Row, prop: EntityProperty): Row[] {
+export function getLoadedRows(entity: Row, prop: EntityProperty): Row[] {
   const value = entity[prop.name]
   if (Utils.isCollection(value)) {
     return value.isInitialized() ? (value.getItems(false) as Row[]) : []
@@ -59,7 +54,7 @@ const isEntity = (value: unknown) => (
   value instanceof EntitySchema || EntitySchema.REGISTRY.has(value as never)
 )
 
-// Whether a list loads the column of the property.
+// Lists load the columns that aren't lazy:
 export const isLoadedColumn = (prop: EntityProperty) => (
   !prop.lazy && (prop.persist !== false || !!prop.formula)
 )
@@ -84,13 +79,15 @@ export function getPathProps(meta: EntityMetadata, path: string) {
 
 export function getPrimaryKey(meta: EntityMetadata): EntityProperty {
   const { primaryKeys, className } = meta
-  if (primaryKeys.length !== 1) {
+  if (primaryKeys.length === 1) {
+    return meta.getPrimaryProp()
+  } else {
     throw new Error(
-      `'${className}' has ${primaryKeys.length ? 'a composite' : 'no'} ` +
-      'primary key: Dito only supports entities with a single primary key'
+      `Unsupported ${primaryKeys.length ? 'composite' : 'missing'} primary ` +
+      `key of '${className}': Dito only supports entities with a single ` +
+      'primary key'
     )
   }
-  return meta.getPrimaryProp()
 }
 
 // The bits of Postgres' integer column types.
@@ -109,34 +106,32 @@ export const integerBits: Record<string, bigint> = {
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-// Converts an id for the primary key `prop`, from the string of a path or a
-// value of a body. Returns undefined for an id that doesn't fit, which the
-// controller responds to with 404 or 400. Integers come as numbers or strings
-// of digits, since JSON numbers lose digits past 2^53, and are returned as the
-// runtime type of the property.
+// Convert the id of a path or a body to the runtime type of the key, or to
+// undefined if it doesn't fit, for the controller to respond with 404 or 400.
 export function toPrimaryKey(prop: EntityProperty, id: unknown): unknown {
   const column = prop.columnTypes?.[0] ?? ''
   const bits = integerBits[column]
   if (bits) {
+    // JSON numbers lose digits past 2^53, so integers also come as strings:
     const isInteger = (
       Number.isSafeInteger(id) ||
       (isString(id) && /^-?\d+$/.test(id))
     )
-    if (!isInteger) return undefined
-    const integer = BigInt(id as number | string)
+    const integer = isInteger ? BigInt(id as number | string) : undefined
     const max = 2n ** (bits - 1n)
-    if (integer < -max || integer >= max) return undefined
-    const type = prop.runtimeType
-    return type === 'bigint'
-      ? integer
-      : type === 'string'
-        ? String(integer)
-        : Number(integer)
-  }
-  if (!isString(id) || id === '') return undefined
-  if (column === 'uuid') {
+    if (integer !== undefined && integer >= -max && integer < max) {
+      const type = prop.runtimeType
+      return type === 'bigint'
+        ? integer
+        : type === 'string'
+          ? String(integer)
+          : Number(integer)
+    }
+  } else if (column === 'uuid') {
     // Postgres returns UUIDs in lower case.
-    return uuidPattern.test(id) ? id.toLowerCase() : undefined
+    return isString(id) && uuidPattern.test(id) ? id.toLowerCase() : undefined
+  } else if (isString(id) && id !== '') {
+    return id
   }
-  return id
+  return undefined
 }

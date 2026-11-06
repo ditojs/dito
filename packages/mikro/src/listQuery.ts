@@ -2,10 +2,6 @@ import type { Context } from 'hono'
 import { HttpError } from '@ditojs/server'
 import { asArray } from '@ditojs/utils'
 
-// Parses the list parameters of a request in the order they appear. Filters and
-// properties are words joined by dots. `params` replaces the parameters of the
-// URL, such as the `query` of `list()`.
-
 export type ListParams = URLSearchParams | Record<string, string | string[]>
 
 // The parsed list parameters.
@@ -22,32 +18,34 @@ export interface ListQuery {
   range: [number, number] | null
 }
 
+// Filters and properties are words joined by dots:
 const propertyPattern = /^\w+(\.\w+)*$/
 
+// `params` replaces the parameters of the URL, such as the `query` of `list()`.
 export function parseListQuery(c: Context, params?: ListParams): ListQuery {
   const query: ListQuery = {
     filter: [],
     order: [],
     range: null
   }
-  const entries = !params
-    ? new URL(c.req.url).searchParams
-    : params instanceof URLSearchParams
+  const entries = params
+    ? params instanceof URLSearchParams
       ? params
       : Object.entries(params).flatMap(([key, value]) =>
           asArray(value).map(item => [key, item] as const)
         )
+    : new URL(c.req.url).searchParams
   for (const [key, value] of entries) {
     if (key === 'filter') {
       const [, name = '', json = ''] = value.match(/^(.*?):(.*)$/s) ?? []
       const args = parseArguments(json)
-      check(propertyPattern.test(name) && !!args, key, value)
+      checkParameter(propertyPattern.test(name) && !!args, key, value)
       query.filter.push({ name, value: toFilterValue(args!) })
     } else if (key === 'order') {
       const [property = '', direction = 'asc', ...rest] = value
         .trim()
         .split(/\s+/)
-      check(
+      checkParameter(
         propertyPattern.test(property) &&
         (direction === 'asc' || direction === 'desc') &&
         !rest.length,
@@ -58,7 +56,7 @@ export function parseListQuery(c: Context, params?: ListParams): ListQuery {
     } else if (key === 'range') {
       const [, start, end] = value.match(/^(\d+),(\d+)$/) ?? []
       // Larger numbers lose digits, and Postgres refuses them.
-      check(
+      checkParameter(
         start !== undefined &&
         Number.isSafeInteger(+end!) &&
         +end! >= +start,
@@ -86,6 +84,8 @@ function toFilterValue(args: unknown[]): string | string[] {
   return values.length === 1 ? values[0]! : values
 }
 
-function check(valid: boolean, key: string, value: string) {
-  if (!valid) throw new HttpError(400, { message: `Invalid ${key} '${value}'` })
+function checkParameter(isValid: boolean, key: string, value: string) {
+  if (!isValid) {
+    throw new HttpError(400, { message: `Invalid ${key} '${value}'` })
+  }
 }

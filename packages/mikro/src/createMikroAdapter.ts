@@ -1,14 +1,12 @@
 import type { Adapter, DitoContext } from '@ditojs/server'
-import type { EntityManager as CoreEntityManager } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/sql'
 import type { Kysely } from 'kysely'
 import { toHttpError } from './databaseErrors.ts'
 import { hasMikroConfig } from './defineMikroConfig.ts'
 import { getModelRequest } from './ModelRequest.ts'
 
-// The `MikroORM` of any driver and any entities.
 interface Orm {
-  em: CoreEntityManager<any>
+  em: EntityManager
 }
 
 // The `adapter` of `createApi()`. Each request gets a fork of the entity
@@ -23,7 +21,7 @@ export function createMikroAdapter(
     )
   }
   return {
-    connect: () => orm.em.fork() as unknown as EntityManager,
+    connect: () => orm.em.fork(),
     // MikroORM flushes the entity manager before it commits, and rolls back
     // when `fn` throws.
     transaction: async (c, fn) => {
@@ -42,10 +40,7 @@ export function createMikroAdapter(
     // A Kysely on the ORM's pool, outside of any transaction, for sessions,
     // credentials and jobs. `orm.em.getKysely()` joins the current
     // transaction, a fork doesn't.
-    getKysely: () =>
-      (
-        orm.em.fork() as unknown as EntityManager
-      ).getKysely() as unknown as Kysely<any>
+    getKysely: () => orm.em.fork().getKysely()
   }
 }
 

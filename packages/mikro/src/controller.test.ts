@@ -504,7 +504,9 @@ describe('get', () => {
     const large = await request(api, 'GET', '/api/books?range=0,1000')
     expect(more).toMatchObject({
       status: 400,
-      json: { message: 'The list has more than 1000 rows: ask for a `range`' }
+      json: {
+        message: 'Unable to list more than 1000 rows without a `range`'
+      }
     })
     expect(page.json.total).toBe(1001)
     expect(page.json.results).toHaveLength(1000)
@@ -578,7 +580,9 @@ describe('get', () => {
     expect(few).toMatchObject({
       status: 400,
       json: {
-        message: `The list has more than ${count - 1} rows: ask for a \`range\``
+        message: `Unable to list more than ${
+          count - 1
+        } rows without a \`range\``
       }
     })
   })
@@ -1437,7 +1441,7 @@ describe('default handlers', () => {
     const { status } = await request(api, 'GET', '/pairs')
     expect(status).toBe(500)
     expect(errors[0]).toMatchObject({
-      message: expect.stringContaining(`'Pair' has a composite primary key`)
+      message: expect.stringContaining(`composite primary key of 'Pair'`)
     })
   })
 
@@ -2540,8 +2544,8 @@ describe('layers', () => {
     expect((await request(api, 'GET', '/api/books/one')).status).toBe(500)
     expect(errors[0]).toMatchObject({
       message: (
-        'getRecord() has no record here: only record actions load one, and ' +
-        'other actions need a handler that calls `setRecord()`'
+        'Unable to get the record: only record actions load one, and other ' +
+        'actions need a handler that calls `setRecord()`'
       )
     })
   })

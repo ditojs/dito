@@ -8,31 +8,8 @@ import {
 } from '@mikro-orm/core'
 import { getEntities } from './metadata.ts'
 
-// A write runs the `schema` of a column's custom type, a Zod schema, on the
-// value, see `write.ts`. The schema only validates, and the value is
-// written as sent. `defineJsonType()` declares the type of a JSON column:
-//
-//   specs: p.type(defineJsonType({ schema: specsSchema })).nullable()
-//
-// MikroORM deep-copies the metadata with its custom types, which breaks
-// schemas such as Zod's. So the schema comes from a getter, which the copy
-// leaves out.
-//
-// `assets` says where a JSON column holds files, for `getAssetPaths()`: `path`
-// is the data path inside the value, with `*` and `**` wildcards, `storage`
-// the storage of the files, and `maxSize` the size limit of their uploads,
-// imports and copies, in bytes or as a string with a unit, such as `'500mb'`.
-// A column of files needs no schema:
-//
-//   images: p.type(
-//     defineJsonType({ assets: [{ path: '', storage: 'public' }] })
-//   )
-//   items: p.type(
-//     defineJsonType({
-//       schema: itemsSchema,
-//       assets: [{ path: '**/file', storage: 'public' }]
-//     })
-//   )
+// The custom type of JSON columns, with the schema that writes check and the
+// files that the columns hold.
 
 export interface JsonTypeAsset {
   path: string
@@ -64,7 +41,9 @@ export interface SchemaJsonType<T> {
 }
 
 export class SchemaJsonType<T = any> extends JsonType {
-  // The copy keeps functions as they are.
+  // MikroORM deep-copies the metadata with its custom types, which breaks
+  // schemas such as Zod's, but keeps functions as they are and leaves getters
+  // out:
   readonly getSchema: () => z.ZodType | undefined
   readonly assets: JsonTypeAsset[]
 
@@ -85,9 +64,8 @@ export function defineJsonType<S extends z.ZodType | undefined = undefined>(
   return new SchemaJsonType<S extends z.ZodType ? z.output<S> : any>(options)
 }
 
-// The asset paths of `@ditojs/storage`, from the `assets` of the JSON columns
-// of `entities`, classes or a module of them. It reads the definitions, so it
-// needs no ORM. Names follow MikroORM's default naming strategy.
+// Read the definitions, so that no ORM is needed, and name tables and columns
+// as MikroORM's default naming strategy does:
 export function getAssetPaths(entities: object) {
   const naming = new UnderscoreNamingStrategy()
   return getEntities(entities).flatMap(entity => {

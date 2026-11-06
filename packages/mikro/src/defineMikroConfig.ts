@@ -10,13 +10,7 @@ import { getEntities } from './metadata.ts'
 import { PlainDate } from './PlainDate.ts'
 import { RemovedRows, SchemaDefaults } from './subscribers.ts'
 
-// The options of `new MikroORM()` for entities of Dito: `p.date()` columns keep
-// the local day, new rows get the defaults of their `defineJsonType()` schemas,
-// and `em.remove()` deletes owned rows and follows the delete rules of foreign
-// keys. Pivot entities with an id of their own log a warning. `entities` can be
-// a module of them, like in `getAssetPaths()`.
-//
-//   const orm = new MikroORM(defineMikroConfig({ dbName, entities }))
+// The options of `new MikroORM()` for the entities of Dito.
 export function defineMikroConfig<T extends Partial<Options<any, any, any>>>(
   options: Omit<T, 'entities'> & { entities?: T['entities'] | object }
 ): T {

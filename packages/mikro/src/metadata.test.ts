@@ -33,8 +33,8 @@ describe('getPrimaryKey()', () => {
 
   it('throws for composite primary keys', () => {
     expect(() => key('Pair')).toThrow(
-      `'Pair' has a composite primary key: Dito only supports entities with ` +
-      'a single primary key'
+      `Unsupported composite primary key of 'Pair': Dito only supports ` +
+      'entities with a single primary key'
     )
   })
 })

@@ -12,17 +12,7 @@ import { getEntityManager } from './createMikroAdapter.ts'
 import type { ListQuery } from './listQuery.ts'
 import { runSchema } from './validation.ts'
 
-// Filters of lists: `defineFilter()` types any filter, and the others read the
-// admin's `text` and `date-range` list filters. The admin sends
-// `filter=name:"text"`, or `filter=name:"operator","text"` with operators, and
-// `filter=name:"from","to"` for date ranges. Without properties, a filter
-// applies to the property of its name.
-//
-// Each value of `filter=name:args` is converted by the schema of its filter, as
-// query values are, and validated against it, and `where` turns the result into
-// a MikroORM `where`, or undefined to skip it. A schema alone is short for
-// `{ [name]: value }`. Several arguments give the schema an array.
-
+// `where` returns undefined to skip the filter.
 export type FilterWhere<Value = any> = (context: {
   value: Value
   name: string
@@ -30,11 +20,11 @@ export type FilterWhere<Value = any> = (context: {
   em: EntityManager
 }) => object | undefined | Promise<object | undefined>
 
+// A schema alone is short for `{ [name]: value }`.
 export type Filter =
   | z.ZodType
   | { schema: z.ZodType; where: FilterWhere }
 
-// Types `where` by the output of `schema`.
 export function defineFilter<S extends z.ZodType>(filter: {
   schema: S
   where: FilterWhere<z.output<S>>
@@ -44,8 +34,9 @@ export function defineFilter<S extends z.ZodType>(filter: {
 
 const operators = ['contains', 'equals', 'starts-with', 'ends-with'] as const
 
-// Rows where one of `properties` holds the text, case-insensitively.
-// `contains` is the default operator. An empty text skips the filter.
+// The admin's `text` filter sends `filter=name:"text"`, or with operators
+// `filter=name:"operator","text"`. Without properties, a filter applies to the
+// property of its name.
 export function defineTextFilter(properties: string[] = []): Filter {
   return {
     schema: z.union([
@@ -73,8 +64,8 @@ export function defineTextFilter(properties: string[] = []): Filter {
   }
 }
 
-// Rows whose date lies between two ISO date-times, either of which may be
-// empty.
+// The admin's `date-range` filter sends `filter=name:"from","to"`, either of
+// which may be empty.
 export function defineDateRangeFilter(property?: string): Filter {
   const date = z.iso.datetime({ offset: true }).or(z.literal(''))
   return {
@@ -90,7 +81,8 @@ export function defineDateRangeFilter(property?: string): Filter {
   }
 }
 
-// The `where` of each filter in `values`, without the skipped ones.
+// Convert each value by the schema of its filter, as query values are, and
+// validate it. Several arguments give the schema an array.
 export async function getFilterWheres(
   c: DitoContext,
   filters: Record<string, Filter>,

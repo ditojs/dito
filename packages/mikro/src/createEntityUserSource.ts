@@ -4,10 +4,7 @@ import type { EntityClass, EntityManager } from '@mikro-orm/core'
 import { isArray, isFunction, mapValues } from '@ditojs/utils'
 import { getPrimaryKey, toPrimaryKey } from './metadata.ts'
 
-// The user source of `@ditojs/auth` for a MikroORM entity. It queries with the
-// request's entity manager, else with a fork of `em`, such as in session
-// middleware that runs before the API. It implements auth's `UserSource`
-// without importing auth.
+// Implement the `UserSource` of `@ditojs/auth` without importing it.
 
 export interface EntityUserSourceOptions<U extends object> {
   // The ORM's entity manager, or a function that returns it, for queries
@@ -39,6 +36,8 @@ export function createEntityUserSource<U extends { id: number | string }>(
     password
   }: EntityUserSourceOptions<U>
 ) {
+  // Outside of the API, such as in session middleware, query with a fork of
+  // `em`:
   const getEm = (c: Context): EntityManager => {
     if (c.var.em) return c.var.em
     const root = isFunction(em) ? em() : em
@@ -51,8 +50,8 @@ export function createEntityUserSource<U extends { id: number | string }>(
     return root.fork()
   }
 
-  // The metadata of the entity, which needs to hide `hash`, as it would go out
-  // with the users in each response that holds them.
+  // `hash` needs to be hidden, or it would go out with the users in each
+  // response that holds them:
   const getMetadata = (em: EntityManager) => {
     const meta = em.getMetadata().get(entity)
     if (meta.props.some(prop => prop.name === 'hash' && !prop.hidden)) {
@@ -82,11 +81,10 @@ export function createEntityUserSource<U extends { id: number | string }>(
       const value = toPrimaryKey(key, id)
       return value === undefined ? null : findOne(em, { [key.name]: value })
     },
-    async findByUsername(c: Context, value: string): Promise<U | null> {
-      return findOne(getEm(c), { [usernameProperty]: value })
+    async findByUsername(c: Context, username: string): Promise<U | null> {
+      return findOne(getEm(c), { [usernameProperty]: username })
     },
-    // Writes the values at once and sets them on the user, without flushing
-    // the request's other changes.
+    // Write the values at once, without flushing the request's other changes:
     async patch(c: Context, user: U, values: object) {
       const em = getEm(c)
       const { name } = getKey(em)
@@ -95,12 +93,13 @@ export function createEntityUserSource<U extends { id: number | string }>(
       Object.assign(user, values)
     },
     serialize(c: Context, user: U) {
-      if (!isArray(serialize)) return serialize({ c, user })
       const record = user as Record<string, unknown>
-      return {
-        ...Object.fromEntries(serialize.map(key => [key, record[key]])),
-        ...mapValues(computed, get => get({ user }))
-      }
+      return isArray(serialize)
+        ? {
+            ...Object.fromEntries(serialize.map(key => [key, record[key]])),
+            ...mapValues(computed, get => get({ user }))
+          }
+        : serialize({ c, user })
     }
   }
 }

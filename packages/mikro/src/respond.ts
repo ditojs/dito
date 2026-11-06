@@ -3,15 +3,13 @@ import { serialize } from '@mikro-orm/core'
 import type { ModelRequest } from './ModelRequest.ts'
 import { serializeResult } from './serialize.ts'
 
-// Turns the result of the handlers into the response. Writes flush here, also
-// for results that aren't rows, such as the count of a delete. Then the records
-// go through `beforeSerialize` and `serialize`, and other entities through
-// `serializeResult()`.
 export async function respond(request: ModelRequest, result: unknown) {
   const { c, entity, definition } = request
   const isRecord = (value: unknown) => value instanceof entity
   const records = findRecords(result, isRecord)
   let reloaded = new Map<object, object>()
+  // Flush writes also for results that aren't rows, such as the count of a
+  // delete:
   if (c.req.method !== 'GET' && c.req.method !== 'HEAD') {
     await request.em.flush()
     reloaded = await reload(request, records)
@@ -26,7 +24,7 @@ export async function respond(request: ModelRequest, result: unknown) {
     }
   }
   return serializeResult(result, isRecord, async record => {
-    const output = request.output ?? (await request.query()).output
+    const output = request.output ?? (await request.getQuery()).output
     const row = getRow(record as object)
     let json: unknown = serialize(row, output)
     for (const layer of definition.serializers) {
@@ -36,24 +34,25 @@ export async function respond(request: ModelRequest, result: unknown) {
   })
 }
 
-// Loads the rows again in one query, in their shape, for formulas and values
-// that triggers set. A fork of `em` does it, in the same transaction, since a
-// refresh in `em` would leave the columns outside of the shape out of its
-// snapshots, and the next flush would write them. Returns the new row of each
-// record.
+// Load the rows again in one query, in their shape, for formulas and values
+// that triggers set:
 async function reload(request: ModelRequest, records: object[]) {
   const reloaded = new Map<object, object>()
-  if (!records.length) return reloaded
-  const { em, entity, key } = request
-  const { options } = await request.query()
-  const getId = (row: object) => (row as Record<string, unknown>)[key.name]
-  const rows = await em
-    .fork({ keepTransactionContext: true })
-    .find(entity, { [key.name]: { $in: records.map(getId) } } as never, options)
-  const rowsById = new Map(rows.map(row => [getId(row), row]))
-  for (const record of records) {
-    const row = rowsById.get(getId(record))
-    if (row) reloaded.set(record, row)
+  if (records.length) {
+    const { em, entity, key } = request
+    const { options } = await request.getQuery()
+    const getId = (row: object) => (row as Record<string, unknown>)[key.name]
+    const where = { [key.name]: { $in: records.map(getId) } }
+    // A refresh in `em` would leave the columns outside of the shape out of its
+    // snapshots, and the next flush would write them:
+    const rows = await em
+      .fork({ keepTransactionContext: true })
+      .find(entity, where as never, options)
+    const rowsById = new Map(rows.map(row => [getId(row), row]))
+    for (const record of records) {
+      const row = rowsById.get(getId(record))
+      if (row) reloaded.set(record, row)
+    }
   }
   return reloaded
 }
@@ -65,8 +64,8 @@ function setLocation({ c, key }: ModelRequest, row: unknown) {
   c.header('Location', `${path}/${id}`)
 }
 
-// The records in a result: the result itself, or the records in its arrays and
-// plain objects, such as the `results` of a page, each once.
+// Find records also in arrays and plain objects, such as the `results` of a
+// page:
 function findRecords(value: unknown, isRecord: (value: unknown) => boolean) {
   const records = new Set<object>()
   const find = (value: unknown) => {

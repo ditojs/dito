@@ -30,12 +30,6 @@ import { getEntityManager } from './createMikroAdapter.ts'
 import { getPrimaryKey } from './metadata.ts'
 import { getOutput, type Output } from './serialize.ts'
 
-// One request of a model controller, created by the middleware of the base
-// layer. That middleware runs inside the transaction, so `em` is the
-// transaction's. Its methods `record()`, `find()`, `list()` and `listQuery()`
-// are `c.var.getRecord()`, `c.var.find()`, `c.var.list()` and
-// `c.var.getListQuery()`.
-
 declare module '@ditojs/server' {
   interface DitoVariables {
     // In model controllers: the id of a record action, converted to the type of
@@ -72,7 +66,12 @@ declare module '@ditojs/server' {
 
 type ListFind<T extends object = any> = FindShape<T> & { query?: ListParams }
 
-// What the requests of a controller share.
+export type Query<T extends object> = ReturnType<typeof splitFind<T>> & {
+  own: FindShape<T>
+  shape: FindShape<T>
+  output: Output
+}
+
 export interface ModelDefinition<T extends object = any>
   extends Pick<ModelControllerDefinition<T>, 'entity' | 'load'> {
   find: Find<T>
@@ -82,11 +81,12 @@ export interface ModelDefinition<T extends object = any>
   deserializers: NonNullable<MixinDefinition['deserialize']>[]
 }
 
-// The request of each context of a model controller, for Dito's own handlers.
 const requests = new WeakMap<Context, ModelRequest>()
 
 export const getModelRequest = (c: Context) => requests.get(c)
 
+// The base layer's middleware creates the request inside the transaction, so
+// `em` is the transaction's.
 export class ModelRequest<T extends object = any> {
   c: DitoContext
   definition: ModelDefinition<T>
@@ -97,7 +97,7 @@ export class ModelRequest<T extends object = any> {
   // The output of the last list, whose records go out in its shape.
   output?: Output
   #find?: Promise<FindShape<T>>
-  #query?: ReturnType<ModelRequest<T>['getQuery']>
+  #query?: Promise<Query<T>>
   #record?: Promise<T>
 
   constructor(c: DitoContext, definition: ModelDefinition<T>) {
@@ -110,7 +110,7 @@ export class ModelRequest<T extends object = any> {
     requests.set(c, this)
   }
 
-  record() {
+  getRecord() {
     return (this.#record ??= this.#loadRecord())
   }
 
@@ -119,7 +119,7 @@ export class ModelRequest<T extends object = any> {
   }
 
   async find(find?: FindShape<T>) {
-    const { where, options } = await this.query(find)
+    const { where, options } = await this.getQuery(find)
     return this.em.find(this.entity, where, options) as Promise<any[]>
   }
 
@@ -129,18 +129,20 @@ export class ModelRequest<T extends object = any> {
     return findRows(this, list) as Promise<any>
   }
 
-  async listQuery(find?: ListFind<T>) {
+  async getListQuery(find?: ListFind<T>) {
     return getListQuery(this, await this.#getList(find))
   }
 
-  // The query of the controller's `find`, once per request, or of `extra`.
-  query(extra?: FindShape<T>) {
-    return extra ? this.getQuery(extra) : (this.#query ??= this.getQuery())
+  // Without `extra`, the query is the same for the whole request:
+  getQuery(extra?: FindShape<T>) {
+    return extra
+      ? this.#createQuery(extra)
+      : (this.#query ??= this.#createQuery())
   }
 
-  // The controller's `find` merged with `extra`, see `mergeFind()`, as a
-  // query and its output. A function of the context runs once per request.
-  async getQuery(extra?: FindShape<T>) {
+  // The controller's `find` merged with `extra`, as a query and its output. A
+  // `find` function runs once per request.
+  async #createQuery(extra?: FindShape<T>): Promise<Query<T>> {
     const { meta } = this
     const { find } = this.definition
     this.#find ??= isFunction(find)
@@ -164,8 +166,8 @@ export class ModelRequest<T extends object = any> {
     const id = c.req.param('id')
     if (id === undefined) {
       throw new Error(
-        'getRecord() has no record here: only record actions load one, and ' +
-        'other actions need a handler that calls `setRecord()`'
+        'Unable to get the record: only record actions load one, and other ' +
+        'actions need a handler that calls `setRecord()`'
       )
     }
     const record = load ? await load({ c, id }) : await this.#findRecord()
@@ -174,7 +176,7 @@ export class ModelRequest<T extends object = any> {
   }
 
   async #findRecord() {
-    const { where, options } = await this.query()
+    const { where, options } = await this.getQuery()
     return this.em.findOne(
       this.entity,
       { $and: [where, { [this.key.name]: this.c.var.id }] } as never,
@@ -182,17 +184,16 @@ export class ModelRequest<T extends object = any> {
     ) as Promise<T | null>
   }
 
-  // The query of the list with its parameters, see `findRows()`.
   async #getList({ query, ...extra }: ListFind<T> = {}) {
     return {
-      ...(await this.query(extra)),
+      ...(await this.getQuery(extra)),
       query: parseListQuery(this.c, query)
     }
   }
 }
 
-// Sets the record that `getRecord()` returns, such as the row that a `post`
-// creates.
+// Set the record that `getRecord()` returns, such as the row that a `post`
+// creates:
 export function setRecord(c: Context, record: unknown) {
   getModelRequest(c)!.setRecord(record)
 }
