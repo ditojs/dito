@@ -1,7 +1,6 @@
 import type { Adapter, DitoContext } from '@ditojs/server'
 import type { EntityManager } from '@mikro-orm/sql'
 import { tryGetContext } from 'hono/context-storage'
-import type { Kysely } from 'kysely'
 import { toHttpError } from './databaseErrors.ts'
 import { hasMikroConfig } from './defineMikroConfig.ts'
 import { getModelRequest } from './ModelRequest.ts'
@@ -13,9 +12,7 @@ interface Orm {
 // The `adapter` of `createApi()`. Each request gets a fork of the entity
 // manager as `c.var.em`, which is the transaction's entity manager during a
 // transaction.
-export function createMikroAdapter(
-  orm: Orm
-): Adapter & { getKysely(c?: DitoContext): Kysely<any> } {
+export function createMikroAdapter(orm: Orm): Adapter {
   if (!hasMikroConfig(orm.em)) {
     throw new Error(
       'Unable to use an ORM without the config of `defineMikroConfig()`'

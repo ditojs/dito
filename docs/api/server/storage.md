@@ -165,7 +165,7 @@ them on the columns, see [`getAssetPaths()`](mikro.md#getassetpaths).
 
 ```ts
 createAssets(options: {
-  adapter: { getKysely(): Kysely<any> }
+  adapter: Adapter
   paths: AssetPath[]
   storages: StorageRegistry
   deleteUnusedAfter?: number | string | false
@@ -219,14 +219,14 @@ The `asset` rows go through two Kyselys:
   transactions. So the rows of `store()` and `import()` commit at once. Their
   files stay when a request rolls back, and the release deletes them.
 
-| Member                                            | Description                                                                                          |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `defineUploads(table?, { uploads? }?)`            | A mixin with the upload action of the table's asset paths and of `uploads`, see [Uploads](#uploads). |
-| `store(storage, { name, type?, data })`           | Stores a file that the server creates, see [Stored files](#stored-files).                            |
-| `import(table, data)`                             | Imports the files of a row's data, see [Asset jobs](#asset-jobs). Returns `data`.                    |
-| `findReferences({ tables?, storage?, keys? }?)`   | Lists the files that rows reference, see [Asset jobs](#asset-jobs).                                  |
-| `runJobs({ dryRun?, now?, deleteUnusedAfter? }?)` | Runs the scan and the release, see [Asset jobs](#asset-jobs).                                        |
-| `paths`, `storages`                               | The options.                                                                                         |
+| Member                                            | Description                                                                                           |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `defineUploads(table?, { uploads? }?)`            | A mixin with the upload action of the table's asset paths and of `uploads`, see [Uploads](#uploads).  |
+| `store(storage, { name, type?, data })`           | Stores a file that the server creates in the storage of that name, see [Stored files](#stored-files). |
+| `import(table, data)`                             | Imports the files of a row's data, see [Asset jobs](#asset-jobs). Returns `data`.                     |
+| `findReferences({ tables?, storage?, keys? }?)`   | Lists the files that rows reference, see [Asset jobs](#asset-jobs).                                   |
+| `runJobs({ dryRun?, now?, deleteUnusedAfter? }?)` | Runs the scan and the release, see [Asset jobs](#asset-jobs).                                         |
+| `paths`, `storages`                               | The options.                                                                                          |
 
 ### Writes
 

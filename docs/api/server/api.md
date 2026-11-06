@@ -160,14 +160,19 @@ The `body` of a write, and the input of a `body` schema, follow these rules:
 
 ```ts
 interface Adapter {
+  getKysely(c?: DitoContext): Kysely<any>
   connect?(c: DitoContext): DitoVariables['em'] | Promise<DitoVariables['em']>
   transaction?: Transaction
   toHttpError?(error: unknown, c: DitoContext): HttpError | undefined
 }
 ```
 
-The object that [`createMikroAdapter()`](mikro.md#createmikroadapter) returns:
+The object that [`createMikroAdapter()`](mikro.md#createmikroadapter) returns.
+`createApi()` takes the parts that it needs, and `@ditojs/auth` and
+`@ditojs/storage` take it for `getKysely()`:
 
+- `getKysely()` returns a Kysely outside of any transaction. With the `c` of a
+  request, it runs in the request's transaction.
 - `connect()` returns the request's entity manager, which becomes `c.var.em`.
 - `transaction` runs the actions that need a transaction. Without it, no action
   runs in one.

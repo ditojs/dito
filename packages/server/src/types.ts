@@ -1,5 +1,6 @@
 import type { z } from 'zod'
 import type { Context, MiddlewareHandler } from 'hono'
+import type { Kysely } from 'kysely'
 import type { HttpError } from './errors.ts'
 
 // A controller is a plain object with one map of `actions`, keyed
@@ -158,8 +159,12 @@ export interface HttpErrorBody {
   errors?: Record<string, { message: string; keyword?: string }[]>
 }
 
-// The database of an API, such as `createMikroAdapter(orm)`.
+// The database of an app, such as `createMikroAdapter(orm)`. An API uses the
+// parts that it finds, and auth and storage use `getKysely()`.
 export interface Adapter {
+  // A Kysely outside of any transaction, for sessions, credentials and jobs.
+  // With the `c` of a request, it runs in the request's transaction.
+  getKysely: (c?: DitoContext) => Kysely<any>
   // The database handle of a request, as `c.var.em`.
   connect?: (
     c: DitoContext
@@ -198,7 +203,7 @@ export interface ApiConfig {
   users?: ApiUsers
   // Middleware of every action, before the user is read.
   middleware?: Middleware | Middleware[]
-  adapter?: Adapter
+  adapter?: Partial<Adapter>
   // The signed-in user of the request, or null.
   getUser?: (context: { c: DitoContext }) => User | null | Promise<User | null>
   // By default, logs with `console.error()`.

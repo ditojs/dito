@@ -146,7 +146,7 @@ export const now = new Date('2026-10-30T12:00:00Z')
 export const adapter = {
   getKysely: (c?: DitoContext) => (c ? (c.var.em as any).getKysely() : db)
 }
-export const handleAdapter: Adapter = {
+export const handleAdapter: Partial<Adapter> = {
   connect: () => ({ getKysely: () => db }),
   transaction: (c, fn) =>
     db.transaction().execute(async trx => {

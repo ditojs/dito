@@ -66,6 +66,5 @@ vite build --config admin.vite.config.js
 ```
 
 An `admin.vite.config.js` builds the admin with the same config that
-development uses. The second argument is merged into the config. In
-development, pass the file's path to `createAdmin()` as `vite`. It loads the
+development uses. In development, pass the file's path to `createAdmin()` as `vite`. It loads the
 file with the mode `development`.

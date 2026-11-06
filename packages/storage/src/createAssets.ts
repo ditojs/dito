@@ -1,9 +1,8 @@
 import { tryGetContext } from 'hono/context-storage'
-import type { Kysely } from 'kysely'
 import { guardEntity } from '@ditojs/mikro'
 import { isString, parseDuration } from '@ditojs/utils'
-import type { DitoContext, MixinDefinition } from '@ditojs/server'
-import type { Storage, StoreOptions } from './Storage.ts'
+import type { Adapter, DitoContext, MixinDefinition } from '@ditojs/server'
+import type { StoreOptions } from './Storage.ts'
 import {
   getDataPath,
   normalizeAssetPaths,
@@ -25,7 +24,7 @@ import { defineAssetUploads, type AssetUpload } from './assetUploads.ts'
 
 export interface CreateAssetsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`.
-  adapter: { getKysely(c?: DitoContext): Kysely<any> }
+  adapter: Adapter
   paths: AssetPath[]
   storages: StorageRegistry
   // The `deleteUnusedAfter` of `runJobs()`, in milliseconds or as a duration
@@ -103,12 +102,8 @@ export function createAssets({
 
     // The row commits at once, as the file stays when a request rolls back,
     // so that the release deletes it:
-    store(storage: string | Storage, options: StoreOptions) {
-      return storeAsset(
-        adapter.getKysely(),
-        isString(storage) ? storages.get(storage) : storage,
-        options
-      )
+    store(storage: string, options: StoreOptions) {
+      return storeAsset(adapter.getKysely(), storages.get(storage), options)
     },
 
     // Import the files of seed data, with rows that commit at once, as in

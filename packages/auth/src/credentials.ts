@@ -1,5 +1,5 @@
-import type { Context } from 'hono'
 import type { Kysely } from 'kysely'
+import type { Adapter } from '@ditojs/server'
 import type { User, UserSource } from './users.ts'
 
 // The passkeys and TOTP secrets of users in the `credential` table.
@@ -26,11 +26,11 @@ export interface CreateCredentialsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`. Credentials use
   // its Kysely outside of the request's transaction, so TOTP failures stay
   // counted when the request fails.
-  adapter: { getKysely(c?: Context): Kysely<any> }
+  adapter: Adapter
 }
 
 export function createCredentials({ adapter }: CreateCredentialsOptions) {
-  const getKysely = (c?: Context) => adapter.getKysely(c)
+  const { getKysely } = adapter
   const selectCredentials = (
     database: Kysely<any>,
     source: UserSource<any>,

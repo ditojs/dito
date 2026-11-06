@@ -587,7 +587,7 @@ It changes these things:
 ## createMikroAdapter()
 
 ```ts
-createMikroAdapter(orm: MikroORM): Adapter & { getKysely(): Kysely<any> }
+createMikroAdapter(orm: MikroORM): Adapter
 ```
 
 ```js

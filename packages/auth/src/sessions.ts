@@ -4,6 +4,7 @@ import { getContext } from 'hono/context-storage'
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
 import type { Kysely } from 'kysely'
 import { isEmpty, parseDuration } from '@ditojs/utils'
+import type { Adapter } from '@ditojs/server'
 import { createAuthError } from './authentication.ts'
 import {
   getUserIdentifier,
@@ -24,7 +25,7 @@ export interface CreateSessionsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`, for the
   // `session` table. Sessions load before and save after the actions, so they
   // use its Kysely outside of the request's transaction.
-  adapter: { getKysely(): Kysely<any> }
+  adapter: Adapter
   // The secrets that sign the cookie. The first one signs, and all of them
   // verify, so secrets can rotate.
   secrets: string[]

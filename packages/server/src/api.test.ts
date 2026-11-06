@@ -33,7 +33,7 @@ declare module './index.ts' {
 const admin: User = { id: 1, roles: ['admin'] }
 const editor: User = { id: 2, roles: ['editor'] }
 
-interface SetupOptions extends Partial<ApiConfig>, Adapter {
+interface SetupOptions extends Partial<ApiConfig>, Partial<Adapter> {
   user?: User | null
 }
 
