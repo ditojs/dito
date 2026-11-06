@@ -28,7 +28,11 @@ import {
 // protection.
 
 export interface DefineUserActionsOptions<U extends AuthUser> {
-  passkeys?: PasskeysOptions
+  // The name that browsers and authenticator apps show, such as the app's
+  // name. Passkeys and TOTP need it.
+  name?: string
+  // `true` enables passkeys with the default options.
+  passkeys?: boolean | PasskeysOptions
   totp?: TotpOptions
   passwordReset?: PasswordResetOptions<U>
   // In milliseconds or as a duration such as `'24h'`, ten minutes by default.
@@ -58,15 +62,17 @@ export function defineUserActions<U extends AuthUser>({
   source,
   credentials,
   secrets,
+  name,
   afterLogin,
   ...options
 }: UserActionsOptions<U>) {
   const reconfirmAfter = parseDuration(options.reconfirmAfter ?? '10m')
-  const passkeys = options.passkeys
-    ? createPasskeys({ ...options.passkeys, credentials })
+  const passkeyOptions = options.passkeys === true ? {} : options.passkeys
+  const passkeys = passkeyOptions
+    ? createPasskeys({ ...passkeyOptions, name, credentials })
     : null
   const totp = options.totp
-    ? createTotp({ ...options.totp, credentials })
+    ? createTotp({ ...options.totp, name, credentials })
     : null
   const passwordReset = options.passwordReset
     ? createPasswordReset({ ...options.passwordReset, secrets, source })

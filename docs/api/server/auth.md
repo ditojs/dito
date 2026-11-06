@@ -41,7 +41,7 @@ createUsers<U extends User>(
 const admins = createUsers(Admin, {
   adapter,
   secrets: config.keys,
-  session: { cookieName: 'admin.sess', maxAge: '24h' },
+  session: { maxAge: '24h' },
   serialize: ['id', 'username', 'roles']
 })
 
@@ -57,7 +57,7 @@ sessions and credentials. The app passes the result as `users` to
 | ------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `adapter`          | `MikroAdapter`                          | The [adapter](mikro.md#createmikroadapter) of the API, on the ORM with the `session` and `credential` tables.                                                            |
 | `secrets`          | `string[]`                              | The secrets that sign the cookies and the password reset links. The first one signs, and all of them verify, so they can rotate. `createUsers()` throws without any.     |
-| `session`          | `{ cookieName, maxAge }`                | The name of the cookie, such as `admin.sess`, and the lifetime of a session.                                                                                             |
+| `session`          | `{ cookieName?, maxAge }`               | The name of the cookie, by default the lowercased entity name and `.sess`, such as `admin.sess`, and the lifetime of a session.                                          |
 | `session.maxAge`   | `number \| string`                      | In milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Browsers cap cookies at 400 days.                             |
 | `serialize`        | `string[] \| ({ user }) => unknown`     | The properties that clients get, plus `computed`, or a function that returns the JSON. By default, the entity's own serialization, without hidden properties.            |
 | `computed`         | `Record<string, ({ user }) => unknown>` | Values computed from the user, added to the properties of `serialize`.                                                                                                   |
@@ -184,7 +184,7 @@ users.defineActions(options?: DefineUserActionsOptions<U>): MixinDefinition
 ```js
 defineController({
   path: 'admins',
-  mixins: [admins.defineActions({ totp: { issuer, secret } })]
+  mixins: [admins.defineActions({ name, totp: { secret } })]
 })
 ```
 
@@ -208,7 +208,8 @@ instead.
 
 | Option           | Type                       | Description                                                                                                                                                         |
 | ---------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `passkeys`       | `object`                   | Enables passkeys, see [Passkeys](#passkeys).                                                                                                                        |
+| `name`           | `string`                   | The name that browsers and authenticator apps show, such as the app's name. Passkeys and TOTP need it, and `defineActions()` throws without it.                     |
+| `passkeys`       | `true \| object`           | Enables passkeys, see [Passkeys](#passkeys).                                                                                                                        |
 | `totp`           | `object`                   | Enables TOTP, see [TOTP](#totp).                                                                                                                                    |
 | `passwordReset`  | `object`                   | Enables password resets, see [Password reset](#password-reset).                                                                                                     |
 | `reconfirmAfter` | `number \| string`         | How long a confirmed access lasts, in milliseconds, or a duration string such as `'24h'`, see [`parseDuration()`](../utils.md#parseduration). Default: ten minutes. |
@@ -247,12 +248,12 @@ app, such as `patch self`, see [Account settings](../../guide/admin/views.md).
 ### Passkeys
 
 ```js
-passkeys: { rpName: 'Book Catalog', origins: ['https://admin.example.com'] }
+passkeys: { origins: ['https://admin.example.com'] }
 ```
 
-Enables passkeys, as discoverable WebAuthn credentials.
+Enables passkeys, as discoverable WebAuthn credentials. `true` takes the defaults
+of the options. The browser shows the `name` of `defineActions()`.
 
-- `rpName` is the name that the browser shows.
 - `domain` defaults to the request's host.
 - `origins` defaults to the request's origin.
 
@@ -264,12 +265,12 @@ another host than the API sets `origins`, such as
 ### TOTP
 
 ```js
-totp: { issuer: 'Book Catalog', secret: config.totpSecret }
+totp: { secret: config.totpSecret }
 ```
 
-Enables time-based one-time codes, with backup codes.
+Enables time-based one-time codes, with backup codes. Authenticator apps show the
+`name` of `defineActions()`.
 
-- `issuer` is the name that authenticator apps show.
 - `secret` is a long random string of the app. The keys that encrypt the TOTP
   secrets are derived from it.
 - Ten wrong codes in a row lock the codes for 15 minutes.

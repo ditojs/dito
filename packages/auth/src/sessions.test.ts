@@ -452,15 +452,11 @@ describe('sessions', () => {
         db,
         source: admins,
         credentials,
-        passkeys: passkeys
-          ? { rpName: 'Dito' }
-          : undefined,
-        totp: totp
-          ? { issuer: 'Dito', secret: 'a long secret' }
-          : undefined,
+        name: 'Dito',
+        passkeys,
+        totp: totp ? { secret: 'a long secret' } : undefined,
         passwordReset: passwordReset
           ? {
-              secrets,
               confirmUrl: 'https://example.com/#password-reset={token}',
               send: () => {}
             }

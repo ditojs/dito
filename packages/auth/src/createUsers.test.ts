@@ -30,7 +30,7 @@ const send = vi.fn()
 const members = createUsers(Member, {
   adapter,
   secrets: ['secret sauce'],
-  session: { cookieName: 'member.sess', maxAge: 60_000 },
+  session: { maxAge: 60_000 },
   usernameProperty: 'email'
 })
 
@@ -42,8 +42,9 @@ const api = createApi({
       path: 'members',
       mixins: [
         members.defineActions({
-          passkeys: { rpName: 'Dito' },
-          totp: { issuer: 'Dito', secret: 'a long secret' },
+          name: 'Dito',
+          passkeys: true,
+          totp: { secret: 'a long secret' },
           passwordReset: { confirmUrl: 'https://example.com/{token}', send }
         })
       ]
@@ -78,6 +79,24 @@ beforeEach(async () => {
 
 const login = () =>
   client.post('/members/login', { username: email, password: 'secret' })
+
+describe('defineActions()', () => {
+  it('needs a `name` for passkeys and TOTP', () => {
+    expect(() => members.defineActions({ passkeys: true })).toThrow(
+      'Unable to use passkeys without a `name`.'
+    )
+    expect(() => members.defineActions({ totp: { secret: 'long' } })).toThrow(
+      'Unable to use TOTP without a `name`.'
+    )
+  })
+})
+
+describe('the session cookie', () => {
+  it('takes its name from the entity', async () => {
+    await login()
+    expect(client.jar.has('member.sess')).toBe(true)
+  })
+})
 
 describe('the user of a request', () => {
   it('is the entity of the session', async () => {

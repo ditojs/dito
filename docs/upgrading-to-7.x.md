@@ -608,14 +608,16 @@ await app.start({ services: [mailer, scheduler] })
 `@ditojs/auth`. The `session` and `credential` tables stay the same. So passkeys
 and TOTP secrets stay valid. See [Users and sessions](guide/server/auth.md).
 
-- `app.createUsers(entity, { session: { cookieName, maxAge }, serialize })`
-  returns the users of an entity, which `app.routeApi()` and `createAdmin()`
-  take as `users`. Without the kit, the app calls
+- `app.createUsers(entity, { session: { maxAge }, serialize })` returns the
+  users of an entity, which `app.routeApi()` and `createAdmin()` take as
+  `users`. The cookie defaults to the lowercased entity name and `.sess`, and
+  `session.cookieName` sets another one. Without the kit, the app calls
   [`createUsers()`](api/server/auth.md#createusers) with the `adapter` of its
   API and `secrets`. It takes `usernameProperty` as before.
 - [`users.defineActions()`](api/server/auth.md#defineactions) serves the admin's
-  users. It returns a mixin for the `mixins` of the users controller. Its
-  `get capabilities` tells the admin what to offer. Other users, such as a
+  users. It returns a mixin for the `mixins` of the users controller. Its `name`
+  is the name that browsers and authenticator apps show, for `passkeys: true`
+  and `totp: { secret }`. Its `get capabilities` tells the admin what to offer. Other users, such as a
   site's members, log in through the app's own actions, see
   [Other users](guide/server/auth.md#other-users).
 - `post login` and `post password-reset` name the user as `username` in the

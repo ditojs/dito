@@ -25,7 +25,8 @@ export const admins = createUsers(Admin, {
   adapter,
   // Sign the cookies and the password reset links.
   secrets: config.keys,
-  session: { cookieName: 'admin.sess', maxAge: '24h' },
+  // The cookie is `admin.sess`, unless `cookieName` says otherwise.
+  session: { maxAge: '24h' },
   // The property of the username, `username` by default.
   usernameProperty: 'username',
   // Inactive admins don't log in.
@@ -112,8 +113,9 @@ export const adminUsers = defineController({
   path: 'admins',
   mixins: [
     admins.defineActions({
-      passkeys: { rpName: 'Book Catalog' },
-      totp: { issuer: 'Book Catalog', secret: config.totpSecret }
+      name: 'Book Catalog',
+      passkeys: true,
+      totp: { secret: config.totpSecret }
     })
   ]
 })
@@ -187,16 +189,17 @@ tie them to their users. So deleting a user through a model controller deletes t
 
 ### Passkeys
 
-The option `passkeys: { rpName, domain?, origins? }` of `defineActions()` adds
-logins with passkeys. It also adds the actions to list, add and remove passkeys.
+The option `passkeys: true`, or `{ domain?, origins? }`, of `defineActions()`
+adds logins with passkeys. It also adds the actions to list, add and remove passkeys.
 
-The passkeys belong to the request's host and origin, unless `domain` and
+The browser shows the `name` of `defineActions()`. The passkeys belong to the request's host and origin, unless `domain` and
 `origins` say otherwise, see [Passkeys](../../api/server/auth.md#passkeys).
 
 ### Two-factor authentication
 
-The option `totp: { issuer, secret }` of `defineActions()` adds codes from an
-authenticator app, with backup codes.
+The option `totp: { secret }` of `defineActions()` adds codes from an
+authenticator app, with backup codes. The app shows the `name` of
+`defineActions()`.
 
 - Users with TOTP enter a code after the password.
 - `secret` is a long random string of the app. It encrypts the TOTP secrets in
@@ -250,7 +253,7 @@ import { createUsers, verifyPassword } from '@ditojs/auth'
 export const members = createUsers(Member, {
   adapter,
   secrets: config.keys,
-  session: { cookieName: 'member.sess', maxAge: '30d' },
+  session: { maxAge: '30d' },
   usernameProperty: 'email',
   serialize: ['id', 'email']
 })

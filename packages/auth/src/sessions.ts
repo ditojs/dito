@@ -34,16 +34,18 @@ export interface CreateSessionsOptions<U extends AuthUser = any> {
   // The secrets that sign the cookie. The first one signs, and all of them
   // verify, so secrets can rotate.
   secrets: string[]
-  // The cookie name, such as `admin.sess`.
-  cookieName: string
+  // The cookie name. By default, the source's lowercased name and `.sess`,
+  // such as `admin.sess`.
+  cookieName?: string
   // In milliseconds or as a duration such as `'24h'`.
   maxAge: number | string
   // The source of the users that log in to these sessions.
   source: UserSource<U>
 }
 
-// The options with `maxAge` parsed.
+// The options with `cookieName` set and `maxAge` parsed.
 interface SessionOptions extends CreateSessionsOptions {
+  cookieName: string
   maxAge: number
 }
 
@@ -231,8 +233,17 @@ export class RequestSession {
 export function createSessions<U extends AuthUser>(
   options: CreateSessionsOptions<U>
 ) {
-  const { adapter, secrets, cookieName } = options
-  const sessionOptions = { ...options, maxAge: parseDuration(options.maxAge) }
+  const {
+    adapter,
+    secrets,
+    source,
+    cookieName = `${source.name.toLowerCase()}.sess`
+  } = options
+  const sessionOptions = {
+    ...options,
+    cookieName,
+    maxAge: parseDuration(options.maxAge)
+  }
   if (secrets.length === 0) {
     throw new Error('Unable to sign cookies without secrets.')
   }

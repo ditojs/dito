@@ -14,8 +14,6 @@ import type { AuthUser } from './users.ts'
 // Passkeys as discoverable WebAuthn credentials of type `passkey`.
 
 export interface PasskeysOptions {
-  // The name that the browser shows, as the app's name.
-  rpName: string
   // The domain that the passkeys belong to. By default, the request's host.
   domain?: string
   // The origins of the pages that may use the passkeys. By default, the
@@ -24,15 +22,18 @@ export interface PasskeysOptions {
 }
 
 interface CreatePasskeysOptions extends PasskeysOptions {
+  // The name that the browser shows.
+  name?: string
   credentials: Credentials
 }
 
 export function createPasskeys({
-  rpName,
+  name,
   domain,
   origins,
   credentials
 }: CreatePasskeysOptions) {
+  if (!name) throw new Error('Unable to use passkeys without a `name`.')
   const getDomain = (c: Context) => domain ?? new URL(c.req.url).hostname
 
   const getExpectations = (c: Context) => ({
@@ -86,7 +87,7 @@ export function createPasskeys({
       existing: Credential[]
     ) {
       const options = await generateRegistrationOptions({
-        rpName,
+        rpName: name,
         rpID: getDomain(c),
         userName: username,
         // The same authenticator isn't registered twice.

@@ -45,7 +45,8 @@ beforeEach(async () => {
     db,
     source,
     credentials,
-    totp: { issuer: 'Dito', secret: 'a long secret' }
+    name: 'Dito',
+    totp: { secret: 'a long secret' }
   })
   client = createClient(api.fetch)
 })
@@ -183,7 +184,7 @@ describe('totp()', () => {
       source: createSource('Admin', [ada])
     })
     const totp = createTotp({
-      issuer: 'Dito',
+      name: 'Dito',
       secret: 'a long secret',
       credentials
     })
