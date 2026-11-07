@@ -48,6 +48,18 @@ describe('createAssets()', () => {
     ).not.toThrow()
   })
 
+  it('runs on the pool alone, for the jobs of a migration', async () => {
+    const assets = createAssets({
+      adapter: { getPoolKysely: () => db },
+      fields,
+      storages
+    })
+    await addBook(1, { cover: file('used') })
+    const references = await assets.findReferences({ keys: ['used'] })
+    expect(references.map(ref => ref.id)).toEqual([1])
+    expect((await assets.runJobs()).scan).toBeDefined()
+  })
+
   it('stores files in storages by name', async () => {
     const file = await createBookAssets().store('archive', {
       name: 'report.txt',

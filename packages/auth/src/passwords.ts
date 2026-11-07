@@ -139,7 +139,7 @@ export function defineUserWrites<U extends AuthUser>({
   const deleteHandler: Handler = async ({ c, next }) => {
     const user = await c.var.getRecord<U>()
     const result = await next()
-    await credentials.deleteUser(user, c)
+    await credentials.deleteUser(user)
     return result
   }
 

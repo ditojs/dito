@@ -616,10 +616,11 @@ Returns the [`adapter`](api.md#adapter) of `createApi()`, with what
   action throws, the transaction rolls back.
 - `toHttpError()` maps MikroORM's errors, see
   [Database errors](#database-errors).
-- `getKysely(c?)` returns a Kysely on the ORM's pool, outside of any transaction.
-  Sessions, credentials and jobs use it. With the `c` of a request, it runs in
-  the request's transaction. `orm.em.getKysely()` joins the current
-  transaction instead.
+- `getKysely()` returns the Kysely of `getEm()`. In a request, it joins the
+  request's transaction. Writes, uploads and `findReferences()` use it.
+- `getPoolKysely()` returns a Kysely on the ORM's pool, outside of any
+  transaction. Sessions, credentials and jobs use it. `orm.em.getKysely()` joins
+  the current transaction instead.
 - `wrapEntity(entity, wrapper)` wraps the model controllers of an entity. Dito's
   own packages use it.
 - `getEm()` returns the entity manager of the running request. Outside of a

@@ -1,6 +1,5 @@
 import type { Kysely } from 'kysely'
 import type { MikroAdapter } from '@ditojs/mikro'
-import type { DitoContext } from '@ditojs/server'
 import type { AuthUser, UserSource } from './users.ts'
 
 // The passkeys and TOTP secrets of users in the `credential` table.
@@ -25,9 +24,9 @@ export type Credentials = ReturnType<typeof createCredentials>
 
 export interface CreateCredentialsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`. Credentials use
-  // its Kysely outside of the request's transaction, so TOTP failures stay
+  // its pool, outside of the request's transaction, so TOTP failures stay
   // counted when the request fails.
-  adapter: Pick<MikroAdapter, 'getKysely'>
+  adapter: Pick<MikroAdapter, 'getKysely' | 'getPoolKysely'>
   // The source of the users of these credentials.
   source: UserSource<any>
 }
@@ -36,7 +35,7 @@ export function createCredentials({
   adapter,
   source
 }: CreateCredentialsOptions) {
-  const { getKysely } = adapter
+  const { getKysely, getPoolKysely } = adapter
   const selectCredentials = (database: Kysely<any>, type: string) =>
     database
       .selectFrom('credential')
@@ -46,10 +45,10 @@ export function createCredentials({
 
   return {
     source,
-    getKysely,
+    getPoolKysely,
 
     async list(user: AuthUser, type: string): Promise<Credential[]> {
-      const rows = await selectCredentials(getKysely(), type)
+      const rows = await selectCredentials(getPoolKysely(), type)
         .where('user_id', '=', String(user.id))
         .orderBy('id')
         .execute()
@@ -62,7 +61,7 @@ export function createCredentials({
       type: string,
       { trx }: { trx?: Kysely<any> } = {}
     ): Promise<Credential | null> {
-      const row = await selectCredentials(trx ?? getKysely(), type)
+      const row = await selectCredentials(trx ?? getPoolKysely(), type)
         .where('user_id', '=', String(user.id))
         .orderBy('id')
         .$if(!!trx, query => query.forUpdate())
@@ -71,7 +70,7 @@ export function createCredentials({
     },
 
     async findByKey(type: string, key: string): Promise<Credential | null> {
-      const row = await selectCredentials(getKysely(), type)
+      const row = await selectCredentials(getPoolKysely(), type)
         .where('key', '=', key)
         .executeTakeFirst()
       return row ? toCredential(row) : null
@@ -86,7 +85,7 @@ export function createCredentials({
         data
       }: Pick<Credential, 'data'> & Partial<Pick<Credential, 'key' | 'name'>>
     ): Promise<Credential> {
-      const row = await getKysely()
+      const row = await getPoolKysely()
         .insertInto('credential')
         .values({
           type,
@@ -105,7 +104,7 @@ export function createCredentials({
     async update(
       id: number,
       { data, lastUsedAt }: { data: unknown; lastUsedAt?: Date },
-      { trx = getKysely() }: { trx?: Kysely<any> } = {}
+      { trx = getPoolKysely() }: { trx?: Kysely<any> } = {}
     ) {
       await trx
         .updateTable('credential')
@@ -120,7 +119,7 @@ export function createCredentials({
     // Delete the user's credentials of `type`, or only the one with `id`, and
     // resolve to the number of deleted rows.
     async delete(user: AuthUser, type: string, id?: number) {
-      const result = await getKysely()
+      const result = await getPoolKysely()
         .deleteFrom('credential')
         .where('user_model', '=', source.name)
         .where('user_id', '=', String(user.id))
@@ -132,8 +131,8 @@ export function createCredentials({
 
     // No foreign keys delete the credentials of deleted users, so delete them
     // in the transaction of the request.
-    async deleteUser(user: AuthUser, c: DitoContext) {
-      await getKysely(c)
+    async deleteUser(user: AuthUser) {
+      await getKysely()
         .deleteFrom('credential')
         .where('user_model', '=', source.name)
         .where('user_id', '=', String(user.id))

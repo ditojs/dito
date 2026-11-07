@@ -46,7 +46,7 @@ export const getStorage = () => storages.get('test')
 
 // The Kysely instance of the ORM, for the work outside of requests.
 const adapter = {
-  getKysely: () => getOrm().em.getKysely() as unknown as Kysely<any>
+  getPoolKysely: () => getOrm().em.getKysely() as unknown as Kysely<any>
 }
 const assets = createAssets({ adapter, fields: assetFields, storages })
 

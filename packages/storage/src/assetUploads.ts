@@ -77,7 +77,7 @@ export function defineAssetUploads({
             })
           }
           const storage = storages.get(upload.storage)
-          const database = getKysely(c)
+          const database = getKysely()
           const parser = busboy({
             headers: { 'content-type': contentType },
             limits: { fileSize: upload.maxSize }

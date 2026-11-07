@@ -1,9 +1,4 @@
-import type {
-  Adapter,
-  DitoContext,
-  DitoEnv,
-  MixinDefinition
-} from '@ditojs/server'
+import type { Adapter, DitoEnv, MixinDefinition } from '@ditojs/server'
 import type { EntityManager } from '@mikro-orm/sql'
 import { tryGetContext } from 'hono/context-storage'
 import type { Kysely } from 'kysely'
@@ -24,9 +19,11 @@ export interface MikroAdapter extends Required<Adapter> {
   // The entity manager of the running request. Without one, such as in session
   // middleware or a job, a fork.
   getEm: () => EntityManager
-  // A Kysely outside of any transaction, for sessions, credentials and jobs.
-  // With the `c` of a request, it runs in the request's transaction.
-  getKysely: (c?: DitoContext) => Kysely<any>
+  // The Kysely of `getEm()`, in the transaction of the running request.
+  getKysely: () => Kysely<any>
+  // A Kysely on the ORM's pool, outside of any transaction, for sessions,
+  // credentials and jobs.
+  getPoolKysely: () => Kysely<any>
   // Wraps all model controllers of `entity` on this adapter. For Dito's own
   // packages.
   wrapEntity: (entity: object, wrapper: EntityWrapper) => void
@@ -42,9 +39,12 @@ export function createMikroAdapter(orm: Orm): MikroAdapter {
     )
   }
   const wrappersByEntity = new Map<object, EntityWrapper[]>()
+  const getEm = (): EntityManager => (
+    tryGetContext<DitoEnv>()?.var.em ?? orm.em.fork()
+  )
 
   return {
-    getEm: () => tryGetContext<DitoEnv>()?.var.em ?? orm.em.fork(),
+    getEm,
     connect: c => {
       c.set('wrappersByEntity', wrappersByEntity)
       return orm.em.fork()
@@ -64,11 +64,9 @@ export function createMikroAdapter(orm: Orm): MikroAdapter {
     },
     toHttpError: ({ error, c }) =>
       toHttpError(error, getModelRequest(c)?.meta, c.req.method),
-    // A Kysely on the ORM's pool, outside of any transaction, for sessions,
-    // credentials and jobs. `orm.em.getKysely()` joins the current
-    // transaction, a fork doesn't. With the `c` of an API's request, it runs in
-    // the request's transaction.
-    getKysely: c => (c?.var.em ?? orm.em.fork()).getKysely(),
+    getKysely: () => getEm().getKysely(),
+    // `orm.em.getKysely()` joins the current transaction, a fork doesn't.
+    getPoolKysely: () => orm.em.fork().getKysely(),
     wrapEntity(entity, wrapper) {
       const wrappers = wrappersByEntity.get(entity) ?? []
       wrappersByEntity.set(entity, [...wrappers, wrapper])

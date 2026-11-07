@@ -91,7 +91,7 @@ export function defineAssetWrites({
         checkFiles(rows)
         const files = findFiles(rows, storages)
         if (files.length > 0) {
-          const database = getKysely(c)
+          const database = getKysely()
           try {
             // Files that can't be accepted throw a 400.
             const unreferenced = await importFiles(database, files, {

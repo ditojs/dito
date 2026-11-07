@@ -146,7 +146,7 @@ export function createTotp({
         return { isValid, isLocked }
       }
       const { isValid, isLocked } = await credentials
-        .getKysely()
+        .getPoolKysely()
         .transaction()
         .execute(verify)
       // Report the lock already on the attempt that uses up the limit, so

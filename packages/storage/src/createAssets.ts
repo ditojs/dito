@@ -1,4 +1,3 @@
-import { tryGetContext } from 'hono/context-storage'
 import { parseDuration } from '@ditojs/utils'
 import type { EntityMetadata } from '@mikro-orm/core'
 import type { MixinDefinition } from '@ditojs/server'
@@ -29,8 +28,8 @@ import {
 
 export interface CreateAssetsOptions {
   // The adapter of the API, such as `createMikroAdapter(orm)`. For jobs alone,
-  // such as in a migration, `getKysely()` is enough.
-  adapter: Pick<MikroAdapter, 'getKysely'> & Partial<MikroAdapter>
+  // such as in a migration, `getPoolKysely()` is enough.
+  adapter: Pick<MikroAdapter, 'getPoolKysely'> & Partial<MikroAdapter>
   fields: AssetField[]
   storages: StorageRegistry
   // The `deleteUnusedAfter` of `runJobs()`, in milliseconds or as a duration
@@ -61,9 +60,9 @@ export function createAssets({
   const normalizedFields = normalizeAssetFields(fields, defaultMaxSize)
   // Writes use the Kysely of the request, so that the `asset` rows of a write
   // commit with its transaction. Uploads use it too, but run without one, so
-  // their rows commit at once. The other methods run outside of the requests'
-  // transactions.
-  const { getKysely } = adapter
+  // their rows commit at once. The other methods use the pool, outside of the
+  // requests' transactions. Jobs alone run without requests.
+  const { getPoolKysely, getKysely = getPoolKysely } = adapter
   const fieldsByEntity = Map.groupBy(normalizedFields, field => field.entity)
   const uploadsByEntity = new Map<object, NormalizedAssetUpload[]>()
   for (const [entity, fields] of fieldsByEntity) {
@@ -129,7 +128,7 @@ export function createAssets({
     // The row commits at once, as the file stays when a request rolls back,
     // so that the release deletes it:
     store(storage: string, options: StoreOptions) {
-      return storeAsset(adapter.getKysely(), storages.get(storage), options)
+      return storeAsset(getPoolKysely(), storages.get(storage), options)
     },
 
     // Import the files of seed data, with rows that commit at once, as in
@@ -139,7 +138,7 @@ export function createAssets({
         table,
         fields: normalizedFields,
         storages,
-        database: adapter.getKysely()
+        database: getPoolKysely()
       })
     },
 
@@ -149,7 +148,7 @@ export function createAssets({
     ) {
       return findAssetReferences({
         ...options,
-        database: adapter.getKysely(tryGetContext()),
+        database: getKysely(),
         fields
       })
     },
@@ -163,7 +162,7 @@ export function createAssets({
     ) {
       return runAssetJobs({
         ...options,
-        database: adapter.getKysely(),
+        database: getPoolKysely(),
         fields,
         storages,
         deleteUnusedAfter:

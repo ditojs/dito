@@ -152,14 +152,14 @@ describe('`defineMikroConfig()`', () => {
     ).not.toThrow()
   })
 
-  it('reads outside of a transaction with `adapter.getKysely()`', async () => {
+  it('reads outside of a transaction with `getPoolKysely()`', async () => {
     const adapter = createMikroAdapter(orm)
     await orm.em.fork().transactional(async em => {
       await em.insert(Book, { specs: {} } as never)
-      const read = (db: ReturnType<typeof adapter.getKysely>) =>
+      const read = (db: ReturnType<typeof adapter.getPoolKysely>) =>
         db.selectFrom('book').selectAll().execute()
       expect(await read(em.getKysely() as never)).toHaveLength(1)
-      expect(await read(adapter.getKysely())).toHaveLength(0)
+      expect(await read(adapter.getPoolKysely())).toHaveLength(0)
     })
   })
 

@@ -38,7 +38,7 @@ beforeEach(async () => {
   ada = await createUser(1, 'ada', 'secret')
   const source = createSource('Admin', [ada])
   const credentials = createCredentials({
-    adapter: { getKysely: () => db },
+    adapter: { getKysely: () => db, getPoolKysely: () => db },
     source
   })
   const { api } = setup({
@@ -180,7 +180,7 @@ describe('totp()', () => {
   it('counts failures also when the request rolls back', async () => {
     await setUpTotp()
     const credentials = createCredentials({
-      adapter: { getKysely: () => db },
+      adapter: { getKysely: () => db, getPoolKysely: () => db },
       source: createSource('Admin', [ada])
     })
     const totp = createTotp({

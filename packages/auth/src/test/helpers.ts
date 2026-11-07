@@ -92,7 +92,7 @@ export function setup({
   controllers?: ControllerDefinition[]
   credentials?: Credentials
 } & DefineUserActionsOptions<TestUser>) {
-  const adapter = { getKysely: () => db }
+  const adapter = { getKysely: () => db, getPoolKysely: () => db }
   const sessions = createSessions({
     adapter,
     secrets: cookieSecrets,

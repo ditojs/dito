@@ -97,7 +97,7 @@ describe('defineAssetWrites()', () => {
           if (body.conflict) {
             // A failed query aborts the transaction, as a failed flush does.
             await sql`select * from missing`
-              .execute(getKysely(c))
+              .execute(getKysely())
               .catch(() => {
                 throw new HttpError(409)
               })

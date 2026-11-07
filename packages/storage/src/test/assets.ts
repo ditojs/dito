@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { tryGetContext } from 'hono/context-storage'
 import { sql, type Kysely } from 'kysely'
-import type { Adapter, DitoContext, createApi } from '@ditojs/server'
+import type { Adapter, DitoEnv, createApi } from '@ditojs/server'
 import { createMikroAdapter, type MikroAdapter } from '@ditojs/mikro'
 import {
   DiskStorage,
@@ -38,7 +39,7 @@ export const fields: AssetField[] = [
   { ...bookField, column: 'notes', dataPath: '**.file', storage: 'covers' }
 ]
 
-export const getKysely = (c?: DitoContext) => c!.var.em as Kysely<any>
+export const getKysely = () => tryGetContext<DitoEnv>()!.var.em as Kysely<any>
 
 export function setupAssetTests() {
   beforeAll(async () => {

@@ -49,7 +49,7 @@ beforeEach(async () => {
   bob = await createUser(2, 'bob', 'secret')
   const source = createSource('Admin', [ada, bob])
   credentials = createCredentials({
-    adapter: { getKysely: () => db },
+    adapter: { getKysely: () => db, getPoolKysely: () => db },
     source
   })
   const { api } = setup({

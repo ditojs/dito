@@ -1,8 +1,10 @@
+import { tryGetContext } from 'hono/context-storage'
 import {
   HttpError,
   createApi,
   defineController,
-  defineMixin
+  defineMixin,
+  type DitoEnv
 } from '@ditojs/server'
 import { createCredentials } from './credentials.ts'
 import { defineUserWrites } from './passwords.ts'
@@ -23,7 +25,8 @@ describe('defineUserWrites() with credentials', () => {
     const db = getDb()
     const credentials = createCredentials({
       adapter: {
-        getKysely: c => (c ? (c.var.em as any).getKysely() : db)
+        getKysely: () => tryGetContext<DitoEnv>()!.var.em.getKysely(),
+        getPoolKysely: () => db
       },
       source: admins
     })

@@ -54,7 +54,7 @@ const crud = defineMixin({
 })
 
 function defineWrites(source: UserSource<TestUser>) {
-  const adapter = { getKysely: () => db }
+  const adapter = { getKysely: () => db, getPoolKysely: () => db }
   const credentials = createCredentials({ adapter, source })
   return defineUserWrites({ source, credentials })
 }

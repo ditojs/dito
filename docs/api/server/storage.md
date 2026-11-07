@@ -208,12 +208,12 @@ fields and storages.
 
 The `asset` rows go through two Kyselys:
 
-- Writes and uploads use the Kysely of the request's entity manager,
-  `c.var.em.getKysely()`. So the `asset` rows of a write commit with its
-  transaction. Uploads run without a transaction, so their rows commit at once.
+- Writes and uploads use `adapter.getKysely()`, the Kysely of the request's
+  entity manager. So the `asset` rows of a write commit with its transaction.
+  Uploads run without a transaction, so their rows commit at once.
 - `findReferences()` joins the transaction of the running request too. So it
   sees the request's own changes.
-- The other methods use `adapter.getKysely()`, outside of the requests'
+- The other methods use `adapter.getPoolKysely()`, outside of the requests'
   transactions. So the rows of `store()` and `import()` commit at once. Their
   files stay when a request rolls back, and the release deletes them.
 

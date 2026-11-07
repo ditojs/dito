@@ -31,7 +31,7 @@ export interface CreateSessionsOptions<U extends AuthUser = any> {
   // The adapter of the API, such as `createMikroAdapter(orm)`, for the
   // `session` table. Sessions load before and save after the actions, so they
   // use its Kysely outside of the request's transaction.
-  adapter: Pick<MikroAdapter, 'getKysely'>
+  adapter: Pick<MikroAdapter, 'getPoolKysely'>
   // The secrets that sign the cookie. The first one signs, and all of them
   // verify, so secrets can rotate.
   secrets: string[]
@@ -184,7 +184,7 @@ export class RequestSession {
   // Save the session and set the cookie, if anything changed.
   async commit() {
     const { adapter, secrets, cookieName, expiresAfter } = this.#options
-    const database = adapter.getKysely()
+    const database = adapter.getPoolKysely()
     const c = this.#c
     let id = this.#id
     // A failed write keeps the old hash, and so the old fingerprint:
@@ -262,7 +262,7 @@ export function createSessions<U extends AuthUser>(
     const id = await readCookie(c, cookieName)
     const row = id
       ? await adapter
-          .getKysely()
+          .getPoolKysely()
           .selectFrom('session')
           .select('value')
           .where('id', '=', id)
@@ -322,10 +322,10 @@ export function createSessions<U extends AuthUser>(
 // Delete the expired sessions of all users, who share the `session` table. The
 // `jobs` of the kit run this.
 export async function deleteExpiredSessions(
-  adapter: Pick<MikroAdapter, 'getKysely'>
+  adapter: Pick<MikroAdapter, 'getPoolKysely'>
 ) {
   await adapter
-    .getKysely()
+    .getPoolKysely()
     .deleteFrom('session')
     .where('expires_at', '<', new Date())
     .execute()

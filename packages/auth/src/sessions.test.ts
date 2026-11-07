@@ -446,7 +446,7 @@ describe('sessions', () => {
     'TOTP: $totp, password reset: $passwordReset',
     async ({ passkeys, totp, passwordReset }) => {
       const credentials = createCredentials({
-        adapter: { getKysely: () => db },
+        adapter: { getKysely: () => db, getPoolKysely: () => db },
         source: admins
       })
       const { api } = setup({
@@ -657,7 +657,7 @@ describe('sessions', () => {
         { id: 'endless', value: '{}', expires_at: null }
       ])
       .execute()
-    await deleteExpiredSessions({ getKysely: () => db })
+    await deleteExpiredSessions({ getPoolKysely: () => db })
     expect((await sessionIds()).sort()).toEqual(['endless', 'new'])
   })
 })
