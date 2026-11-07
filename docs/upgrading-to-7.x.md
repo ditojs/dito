@@ -837,9 +837,9 @@ Dito.js 6 still writes `count`, and `@ditojs/storage` needs the new server:
        })
      })
      try {
-       const { paths, storages } = assets
+       const { fields, storages } = assets
        const adapter = { getPoolKysely: () => db }
-       await createAssets({ adapter, paths, storages }).runJobs()
+       await createAssets({ adapter, fields, storages }).runJobs()
      } finally {
        await db.destroy()
      }
