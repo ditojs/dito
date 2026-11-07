@@ -92,10 +92,11 @@ export function createAssets({
   }
   // All model controllers of the entities track the files of their writes, and
   // so do those of the entities that own rows with files:
-  if (adapter.wrapEntity) {
-    for (const meta of adapter.getEm!().getMetadata().getAll().values()) {
+  const { wrapEntity, getEm } = adapter
+  if (wrapEntity && getEm) {
+    for (const meta of getEm().getMetadata().getAll().values()) {
       if (hasFiles(meta)) {
-        adapter.wrapEntity(
+        wrapEntity(
           meta.class,
           defineAssetWrites({ meta, fieldsByEntity, storages, getKysely })
         )
