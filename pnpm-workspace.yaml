@@ -15,6 +15,9 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - prettier-plugin-penere
+  - '@mikro-orm/core@7.2.8'
+  - '@mikro-orm/postgresql@7.2.8'
+  - '@mikro-orm/sql@7.2.8'
 patchedDependencies:
   # `:focus-within`, until capricorn86/happy-dom#2543 is released:
   happy-dom@21.0.4: patches/happy-dom@21.0.4.patch

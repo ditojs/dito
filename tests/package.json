@@ -19,8 +19,8 @@
     "@ditojs/storage": "workspace:^",
     "@ditojs/utils": "workspace:^",
     "@hono/node-server": "^2.1.5",
-    "@mikro-orm/core": "^7.2.7",
-    "@mikro-orm/postgresql": "^7.2.7",
+    "@mikro-orm/core": "^7.2.8",
+    "@mikro-orm/postgresql": "^7.2.8",
     "hono": "^4.13.14",
     "typescript": "^6.0.3",
     "vue": "^3.5.43"

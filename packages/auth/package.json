@@ -18,7 +18,7 @@
   "devDependencies": {
     "@ditojs/mikro": "workspace:^",
     "@ditojs/server": "workspace:^",
-    "@mikro-orm/core": "^7.2.7",
+    "@mikro-orm/core": "^7.2.8",
     "@types/node": "^26.6.4",
     "hono": "^4.13.14",
     "kysely": "0.29.8",

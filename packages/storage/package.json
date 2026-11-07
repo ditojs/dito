@@ -23,7 +23,7 @@
     "@ditojs/mikro": "workspace:^",
     "@ditojs/server": "workspace:^",
     "@hono/node-server": "^2.1.5",
-    "@mikro-orm/core": "^7.2.7",
+    "@mikro-orm/core": "^7.2.8",
     "@types/node": "^26.6.4",
     "hono": "^4.13.14",
     "kysely": "0.29.8"

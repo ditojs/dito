@@ -514,8 +514,8 @@ importers:
         specifier: workspace:^
         version: link:../server
       '@mikro-orm/core':
-        specifier: ^7.2.7
-        version: 7.2.7
+        specifier: ^7.2.8
+        version: 7.2.8
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
@@ -599,11 +599,11 @@ importers:
         specifier: ^2.1.5
         version: 2.1.5(hono@4.13.16)
       '@mikro-orm/core':
-        specifier: ^7.2.7
-        version: 7.2.7
+        specifier: ^7.2.8
+        version: 7.2.8
       '@mikro-orm/postgresql':
-        specifier: ^7.2.7
-        version: 7.2.7(@mikro-orm/core@7.2.7)
+        specifier: ^7.2.8
+        version: 7.2.8(@mikro-orm/core@7.2.8)
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
@@ -621,14 +621,14 @@ importers:
         specifier: workspace:^
         version: link:../server
       '@mikro-orm/core':
-        specifier: ^7.2.7
-        version: 7.2.7
+        specifier: ^7.2.8
+        version: 7.2.8
       '@mikro-orm/postgresql':
-        specifier: ^7.2.7
-        version: 7.2.7(@mikro-orm/core@7.2.7)
+        specifier: ^7.2.8
+        version: 7.2.8(@mikro-orm/core@7.2.8)
       '@mikro-orm/sql':
-        specifier: ^7.2.7
-        version: 7.2.7(@mikro-orm/core@7.2.7)
+        specifier: ^7.2.8
+        version: 7.2.8(@mikro-orm/core@7.2.8)
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
@@ -701,8 +701,8 @@ importers:
         specifier: ^2.1.5
         version: 2.1.5(hono@4.13.16)
       '@mikro-orm/core':
-        specifier: ^7.2.7
-        version: 7.2.7
+        specifier: ^7.2.8
+        version: 7.2.8
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
@@ -759,11 +759,11 @@ importers:
         specifier: ^2.1.5
         version: 2.1.5(hono@4.13.16)
       '@mikro-orm/core':
-        specifier: ^7.2.7
-        version: 7.2.7
+        specifier: ^7.2.8
+        version: 7.2.8
       '@mikro-orm/postgresql':
-        specifier: ^7.2.7
-        version: 7.2.7(@mikro-orm/core@7.2.7)
+        specifier: ^7.2.8
+        version: 7.2.8(@mikro-orm/core@7.2.8)
       hono:
         specifier: ^4.13.14
         version: 4.13.16
@@ -1210,8 +1210,8 @@ packages:
   '@levischuck/tiny-cbor@0.2.11':
     resolution: {integrity: sha512-llBRm4dT4Z89aRsm6u2oEZ8tfwL/2l6BwpZ7JcyieouniDECM5AqNgr/y08zalEIvW3RSK4upYyybDcmjXqAow==}
 
-  '@mikro-orm/core@7.2.7':
-    resolution: {integrity: sha512-46Fd5uhssmi4mkJRsWYhCOX08gseL9zTv9sjELsO1v1zNSeL59Bm4TvKVYHuW9zj+7OiE2o8dw2FSWNBfy0Www==}
+  '@mikro-orm/core@7.2.8':
+    resolution: {integrity: sha512-9E7wApevmNrqswey8pVT65nyBz1ejOafcdyHV2aKU9FmxnWr/MbfOVNlnpMe6D3+r+wsrVyx3dBJ0mHqTYQTCw==}
     engines: {node: '>= 22.17.0'}
     peerDependencies:
       dataloader: 2.2.3
@@ -1219,17 +1219,17 @@ packages:
       dataloader:
         optional: true
 
-  '@mikro-orm/postgresql@7.2.7':
-    resolution: {integrity: sha512-lEREiigqqvd3qlFVQ4VUK7GQqGywCPY6V5ZGd7VWxIYC0hZUfMDlVaIJvWyJksATUbT9hNQgxCSIIIZJ88nZHg==}
+  '@mikro-orm/postgresql@7.2.8':
+    resolution: {integrity: sha512-spAGvR8xfXGK0+mwsAsN3Kt5cg2Ge3DgXT3rNOeA7IxaBXpl+NMwXu5cSWes4jHlhWKJ4jzXyTo6xH+we9fbNA==}
     engines: {node: '>= 22.17.0'}
     peerDependencies:
-      '@mikro-orm/core': 7.2.7
+      '@mikro-orm/core': 7.2.8
 
-  '@mikro-orm/sql@7.2.7':
-    resolution: {integrity: sha512-ZzRMY8h/fEnXaSWVWCS+wEHb+U5lx8f3NYdwO0/huHJIGQaKa5s2QVkNKo2uEh/mrlxy1MHmtTvIjjXW4ikO+g==}
+  '@mikro-orm/sql@7.2.8':
+    resolution: {integrity: sha512-551INWnMri4veRmOVcGeM4hCn559OgXzxhZqWmVYeF5RDpavlVPBbYdiPaBd7NIOssPEG+LkcDH7lt2l67U4PQ==}
     engines: {node: '>= 22.17.0'}
     peerDependencies:
-      '@mikro-orm/core': 7.2.7
+      '@mikro-orm/core': 7.2.8
 
   '@napi-rs/wasm-runtime@0.2.4':
     resolution: {integrity: sha512-9zESzOO5aDByvhIAsOy9TbpZ0Ur2AJbUI7UT73kcUTS2mxAMHOBaa1st/jAymNoCtvrit99kkzT1FZuXVcgfIQ==}
@@ -6099,12 +6099,12 @@ snapshots:
 
   '@levischuck/tiny-cbor@0.2.11': {}
 
-  '@mikro-orm/core@7.2.7': {}
+  '@mikro-orm/core@7.2.8': {}
 
-  '@mikro-orm/postgresql@7.2.7(@mikro-orm/core@7.2.7)':
+  '@mikro-orm/postgresql@7.2.8(@mikro-orm/core@7.2.8)':
     dependencies:
-      '@mikro-orm/core': 7.2.7
-      '@mikro-orm/sql': 7.2.7(@mikro-orm/core@7.2.7)
+      '@mikro-orm/core': 7.2.8
+      '@mikro-orm/sql': 7.2.8(@mikro-orm/core@7.2.8)
       kysely: 0.29.8
       pg: 8.23.1
       pg-cursor: 2.22.1(pg@8.23.1)
@@ -6114,9 +6114,9 @@ snapshots:
     transitivePeerDependencies:
       - pg-native
 
-  '@mikro-orm/sql@7.2.7(@mikro-orm/core@7.2.7)':
+  '@mikro-orm/sql@7.2.8(@mikro-orm/core@7.2.8)':
     dependencies:
-      '@mikro-orm/core': 7.2.7
+      '@mikro-orm/core': 7.2.8
       kysely: 0.29.8
 
   '@napi-rs/wasm-runtime@0.2.4':
