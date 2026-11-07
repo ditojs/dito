@@ -158,7 +158,9 @@ an action overrides every layer, also when the action is a mixin's.
 A mixin with `actions` only counts as a layer for its own actions. So its
 `authorize` and `transacted` don't reach the actions of the controller. A mixin
 without `actions` holds settings for all actions. A mixin's `middleware` always
-reaches all actions of the controller.
+reaches all actions of the controller. A mixin that guards all actions with
+`authorize` stops guarding the others once it has actions of its own. If no
+other layer sets `authorize` for them, `createApi()` throws.
 
 ## authorize
 
@@ -180,9 +182,8 @@ authorize:
 
 A denied request responds with 401 without a user, and with 403 with one.
 
-Every write action needs `authorize`, on itself or on a layer. Otherwise,
-`createApi()` throws. Use `authorize: true` to open a write to anyone. GET
-actions without `authorize` let anyone in.
+Every action needs `authorize`, on itself or on a layer, reads included.
+Otherwise, `createApi()` throws. Use `authorize: true` to let anyone in.
 
 `isAuthorized(c, authorize)` resolves to whether `authorize` lets the user of
 `c.var.user` in. `createApi()` and

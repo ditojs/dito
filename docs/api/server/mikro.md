@@ -352,8 +352,8 @@ defineModelController({
 })
 ```
 
-A mixin that routes the five [default handlers](#default-handlers). Writes
-still need `authorize`.
+A mixin that routes the five [default handlers](#default-handlers). They still
+need `authorize`.
 
 ## Filters
 

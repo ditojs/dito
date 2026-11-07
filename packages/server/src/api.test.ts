@@ -118,8 +118,12 @@ const json = async (
 describe('routing', () => {
   it('matches static segments first, also across controllers', async () => {
     const api = setup([
-      { path: 'fonts', actions: { 'get :id': () => 'font' } },
-      { path: 'fonts/popular', actions: { get: () => 'popular' } }
+      { path: 'fonts', authorize: true, actions: { 'get :id': () => 'font' } },
+      {
+        path: 'fonts/popular',
+        authorize: true,
+        actions: { get: () => 'popular' }
+      }
     ])
     expect(await json(api, 'GET', '/api/fonts/popular')).toBe('popular')
     expect(await json(api, 'GET', '/api/fonts/1')).toBe('font')
@@ -192,7 +196,9 @@ describe('routing', () => {
     app.route(
       '/',
       createApi({
-        controllers: [{ path: 'reset', actions: { get: () => 'reset' } }]
+        controllers: [
+          { path: 'reset', authorize: true, actions: { get: () => 'reset' } }
+        ]
       })
     )
     app.get('/page', c => c.text('page'))
@@ -225,7 +231,9 @@ describe('routing', () => {
     const log: string[] = []
     const api = (name: string) =>
       createApi({
-        controllers: [{ path: 'items', actions: { get: () => name } }],
+        controllers: [
+          { path: 'items', authorize: true, actions: { get: () => name } }
+        ],
         users: {
           middleware: async (_c, next) => {
             log.push(name)
@@ -253,7 +261,9 @@ describe('routing', () => {
       c.header('X-Total', '2')
       return ['a', 'b']
     })
-    const api = setup([{ path: 'fonts', actions: { get: handler } }])
+    const api = setup([
+      { path: 'fonts', authorize: true, actions: { get: handler } }
+    ])
     const response = await request(api, 'HEAD', '/api/fonts')
     expect(response.status).toBe(200)
     expect(response.headers.get('X-Total')).toBe('2')
@@ -316,6 +326,7 @@ describe('routing', () => {
     const api = setup([
       defineController({
         path: 'pages/:pageId/child-pages',
+        authorize: true,
         actions: {
           'get': ({ params }) => params,
           'get :id': ({ params }) => params
@@ -341,7 +352,13 @@ describe('routing', () => {
 
   it('throws for `:id` in the controller path', () => {
     expect(() =>
-      setup([{ path: 'pages/:id/children', actions: { get: () => [] } }])
+      setup([
+        {
+          path: 'pages/:id/children',
+          authorize: true,
+          actions: { get: () => [] }
+        }
+      ])
     ).toThrow(
       "Invalid path: 'pages/:id/children'. `:id` belongs to the record actions."
     )
@@ -350,37 +367,59 @@ describe('routing', () => {
   it('throws for two actions of the same method and path', () => {
     expect(() =>
       setup([
-        { path: 'fonts', actions: { 'get :id': () => 1 } },
-        { path: 'fonts', actions: { 'get :id': () => 2 } }
+        { path: 'fonts', authorize: true, actions: { 'get :id': () => 1 } },
+        { path: 'fonts', authorize: true, actions: { 'get :id': () => 2 } }
       ])
     ).toThrow(`Unable to route 'GET /fonts/:id' twice.`)
     expect(() =>
       setup([
-        { path: 'fonts', actions: { 'get by/:name': () => 1 } },
-        { path: 'fonts/by', actions: { 'get :key': () => 2 } }
+        {
+          path: 'fonts',
+          authorize: true,
+          actions: { 'get by/:name': () => 1 }
+        },
+        { path: 'fonts/by', authorize: true, actions: { 'get :key': () => 2 } }
       ])
     ).toThrow(`Unable to route 'GET /fonts/by/:key' twice.`)
     expect(() =>
       setup([
-        { path: 'fonts', actions: { 'get files/:path{.+}': () => 1 } },
-        { path: 'fonts/files', actions: { 'get :name{.+}': () => 2 } }
+        {
+          path: 'fonts',
+          authorize: true,
+          actions: { 'get files/:path{.+}': () => 1 }
+        },
+        {
+          path: 'fonts/files',
+          authorize: true,
+          actions: { 'get :name{.+}': () => 2 }
+        }
       ])
     ).toThrow(`Unable to route 'GET /fonts/files/:name{.+}' twice.`)
     expect(() =>
       setup([
-        { path: 'fonts', actions: { 'get files/:path{.+}': () => 1 } },
-        { path: 'fonts/files', actions: { 'get :name': () => 2 } }
+        {
+          path: 'fonts',
+          authorize: true,
+          actions: { 'get files/:path{.+}': () => 1 }
+        },
+        {
+          path: 'fonts/files',
+          authorize: true,
+          actions: { 'get :name': () => 2 }
+        }
       ])
     ).not.toThrow()
   })
 
   it('throws for invalid keys', () => {
     expect(() =>
-      setup([{ path: 'fonts', actions: { fetch: () => 1 } as never }])
+      setup([
+        { path: 'fonts', authorize: true, actions: { fetch: () => 1 } as never }
+      ])
     ).toThrow(`Invalid action: 'fetch' in 'fonts'.`)
     for (const key of ['get /by', 'get by//name', 'get by/', 'get ']) {
       expect(() =>
-        setup([{ path: 'fonts', actions: { [key]: () => 1 } }])
+        setup([{ path: 'fonts', authorize: true, actions: { [key]: () => 1 } }])
       ).toThrow(`Invalid action: '${key}' in 'fonts'.`)
     }
   })
@@ -404,6 +443,7 @@ describe('composition', () => {
     const api = setup([
       {
         path: 'fonts',
+        authorize: true,
         mixins: [base, mixin],
         actions: {
           'get :id': async ({ next }) => {
@@ -460,7 +500,7 @@ describe('composition', () => {
         ]
       }
     })
-    const api = setup([{ path: 'fonts', mixins: [one, two] }])
+    const api = setup([{ path: 'fonts', authorize: true, mixins: [one, two] }])
     expect(await json(api, 'GET', '/api/fonts/1')).toEqual(['one', 'two'])
   })
 
@@ -478,14 +518,16 @@ describe('composition', () => {
       })
     const middle = wrap('middle', inner)
     const outer = wrap('outer', middle)
-    const api = setup([{ path: 'fonts', mixins: [outer] }])
+    const api = setup([{ path: 'fonts', authorize: true, mixins: [outer] }])
     expect(await json(api, 'GET', '/api/fonts/1')).toEqual([
       'inner',
       'middle',
       'outer'
     ])
     // `outer` lists `inner` through `middle`.
-    const direct = setup([{ path: 'fonts', mixins: [inner, middle, outer] }])
+    const direct = setup([
+      { path: 'fonts', authorize: true, mixins: [inner, middle, outer] }
+    ])
     expect(await json(direct, 'GET', '/api/fonts/1')).toEqual([
       'inner',
       'middle',
@@ -537,6 +579,7 @@ describe('composition', () => {
       [
         {
           path: 'fonts',
+          authorize: true,
           mixins: [base, mixin],
           middleware: middleware('controller'),
           actions: {
@@ -579,6 +622,7 @@ describe('composition', () => {
     const api = setup([
       {
         path: 'fonts',
+        authorize: true,
         middleware: async c => c.json('cached'),
         actions: { get: () => 'fresh' }
       }
@@ -591,6 +635,7 @@ describe('composition', () => {
       [
         {
           path: 'fonts',
+          authorize: true,
           actions: { get: ({ em, user, session }) => [em, user?.id, session] }
         }
       ],
@@ -641,7 +686,7 @@ describe('settings of mixins', () => {
           actions: { 'post other': () => 'host' }
         }
       ])
-    ).toThrow(`Invalid action without \`authorize\`: 'post other' in 'fonts'.`)
+    ).toThrow(`Invalid actions without \`authorize\`: 'post other' in 'fonts'.`)
   })
 
   it('applies them to an action that the host adds to', async () => {
@@ -785,7 +830,7 @@ describe('authorize', () => {
     expect((await request(api, 'POST', '/api/fonts')).status).toBe(200)
   })
 
-  it('throws for a write without `authorize` at any level', () => {
+  it('names each action without `authorize` at any level', () => {
     const base = defineMixin({ actions: { 'delete :id': () => null } })
     expect(() =>
       setup([
@@ -793,9 +838,13 @@ describe('authorize', () => {
           path: 'fonts',
           mixins: [base],
           actions: { 'get': () => [], 'delete :id': true }
-        }
+        },
+        { path: 'tags', actions: { 'get :id': () => null } }
       ])
-    ).toThrow(`Invalid action without \`authorize\`: 'delete :id' in 'fonts'.`)
+    ).toThrow(
+      `Invalid actions without \`authorize\`: 'delete :id' in 'fonts', ` +
+      `'get' in 'fonts', 'get :id' in 'tags'.`
+    )
   })
 
   it('checks a write that a mixin sets with an object', () => {
@@ -803,7 +852,7 @@ describe('authorize', () => {
     const mixin = defineMixin({ actions: { post: { transacted: false } } })
     expect(() =>
       setup([{ path: 'fonts', mixins: [base, mixin], actions: { post: true } }])
-    ).toThrow(`Invalid action without \`authorize\`: 'post' in 'fonts'.`)
+    ).toThrow(`Invalid actions without \`authorize\`: 'post' in 'fonts'.`)
     const authorized = defineMixin({ ...base, authorize: 'admin' })
     expect(() =>
       setup([
@@ -898,6 +947,7 @@ describe('validation', () => {
     const api = setup([
       {
         path: 'newsletter',
+        authorize: true,
         actions: {
           'get subscribe': defineAction({
             query: z.object({ emailAddress: z.email() }),
@@ -919,6 +969,7 @@ describe('validation', () => {
     const api = setup([
       {
         path: 'fonts',
+        authorize: true,
         actions: {
           'get': defineAction({
             query: z.object({
@@ -1020,6 +1071,7 @@ describe('validation', () => {
     const api = setup([
       {
         path: 'fonts',
+        authorize: true,
         middleware: async (c, next) => {
           c.set('query' as never, 'set' as never)
           c.set('params' as never, 'set' as never)
@@ -1159,6 +1211,7 @@ describe('query values', () => {
     setup([
       {
         path: 'fonts',
+        authorize: true,
         actions: { get: defineAction({ query, handler: ({ query }) => query }) }
       }
     ])
@@ -1308,6 +1361,7 @@ describe('transactions', () => {
       [
         {
           path: 'fonts',
+          authorize: true,
           transacted: true,
           actions: { get: ({ em }) => em }
         },
@@ -1524,6 +1578,7 @@ describe('afterCommit()', () => {
     const api = setup([
       {
         path: 'posts',
+        authorize: true,
         actions: {
           'get': () => {
             afterCommit(() => log.push('callback'))
@@ -1610,6 +1665,7 @@ describe('results', () => {
       [
         {
           path: 'fonts',
+          authorize: true,
           actions: {
             'get file': ({ c }) => {
               c.header('Cache-Control', 'no-store')
@@ -1703,12 +1759,15 @@ describe('results', () => {
   })
 
   it('keeps the cookies of middleware on data', async () => {
-    const api = setup([{ path: 'fonts', actions: { get: () => 'data' } }], {
-      middleware: async (c, next) => {
-        setCookie(c, 'session', 's')
-        await next()
+    const api = setup(
+      [{ path: 'fonts', authorize: true, actions: { get: () => 'data' } }],
+      {
+        middleware: async (c, next) => {
+          setCookie(c, 'session', 's')
+          await next()
+        }
       }
-    })
+    )
     const response = await request(api, 'GET', '/api/fonts')
     expect(response.headers.getSetCookie()).toEqual(['session=s; Path=/'])
   })
@@ -1718,6 +1777,7 @@ describe('errors', () => {
   const api = setup([
     {
       path: 'fonts',
+      authorize: true,
       actions: {
         'get taken': () => {
           throw new HttpError(409, {
@@ -1752,7 +1812,9 @@ describe('errors', () => {
   it('sets `c.var.action` before the middleware of `users`', async () => {
     const actions: string[] = []
     const api = setup(
-      [{ path: 'fonts', actions: { 'get :id': () => 'font' } }],
+      [
+        { path: 'fonts', authorize: true, actions: { 'get :id': () => 'font' } }
+      ],
       {
         middleware: async (c, next) => {
           actions.push(c.var.action)
@@ -1825,6 +1887,7 @@ describe('errors', () => {
       controllers: [
         {
           path: 'fonts',
+          authorize: true,
           actions: {
             'get taken': fail(409, 'Taken'),
             'get hidden': fail(400, 'Secret', false),
@@ -1905,6 +1968,7 @@ describe('errors', () => {
       [
         {
           path: 'fonts',
+          authorize: true,
           actions: {
             'get :id': () => {
               throw error
@@ -1926,6 +1990,7 @@ describe('errors', () => {
       [
         {
           path: 'fonts',
+          authorize: true,
           middleware: async (c, next) => {
             c.header('Cache-Control', 'public')
             await next()
@@ -1981,6 +2046,7 @@ describe('errors', () => {
         controllers: [
           {
             path: 'fonts',
+            authorize: true,
             actions: {
               get: () => {
                 throw new HttpError(409)
@@ -2034,6 +2100,7 @@ describe('errors', () => {
         controllers: [
           {
             path: 'fonts',
+            authorize: true,
             actions: {
               'get': fail,
               'get denied': () => {
@@ -2056,13 +2123,18 @@ describe('controllers of a module', () => {
   it('routes the plain objects with a string `path`', async () => {
     const fonts = defineController({
       path: 'fonts',
+      authorize: true,
       actions: { get: () => 'fonts' }
     })
     const module = {
       fonts,
       mixin: defineMixin({ actions: { 'get other': () => 'other' } }),
       helper: () => {},
-      plain: { path: 'plain', actions: { get: () => 'plain' } },
+      plain: {
+        path: 'plain',
+        authorize: true,
+        actions: { get: () => 'plain' }
+      },
       nested: { fonts },
       name: 'name',
       nothing: null
@@ -2083,6 +2155,7 @@ describe('types', () => {
     )
     defineController({
       path: 'fonts',
+      authorize: true,
       actions: {
         'get by/:name': getName,
         'get page': defineAction({

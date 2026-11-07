@@ -29,6 +29,7 @@ GenreSchema.setClass(Genre)
 export const genres = defineModelController({
   path: 'genres',
   entity: Genre,
+  authorize: ['editor', 'admin'],
   find: { orderBy: { name: 'asc' } },
   // `GET /genres?filter=parent:3` lists the subgenres of genre 3.
   filters: { parent: z.number().int() },

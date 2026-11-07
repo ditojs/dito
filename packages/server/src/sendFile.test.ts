@@ -5,6 +5,7 @@ import { createApi, defineController, sendFile } from './index.ts'
 describe('sendFile()', () => {
   const files = defineController({
     path: 'files',
+    authorize: true,
     actions: {
       'get csv': ({ c }) => sendFile(c, 'a,b', { filename: 'export.csv' }),
       'get pdf': ({ c }) => {

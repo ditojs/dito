@@ -37,7 +37,7 @@ export const defaultActions: Actions = {
   }
 }
 
-// Writes still need `authorize`.
+// The actions still need `authorize`.
 export const crud = defineMixin({
   actions: {
     'get': true,

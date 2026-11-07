@@ -18,8 +18,8 @@ it with `app.route()`. The app passes in what Dito.js doesn't do itself: the
 database and the user of a request.
 
 `createApi()` throws for invalid controllers, such as two actions on the same
-route, or a write without `authorize`. So errors show when the app starts, not
-on the first request.
+route, or an action without `authorize`. So errors show when the app starts,
+not on the first request.
 
 `controllers` is a list, or an object such as a module namespace. In an object,
 only plain objects with a string `path` count. So the module can export other

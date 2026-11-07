@@ -461,7 +461,7 @@ describe('defineUploads()', () => {
     expect(() =>
       createApi({ controllers: [{ path: 'books', mixins: [mixin] }] })
     ).toThrow(
-      `Invalid action without \`authorize\`: 'post upload/:path{.+}' in 'books'.`
+      `Invalid actions without \`authorize\`: 'post upload/:path{.+}' in 'books'.`
     )
   })
 

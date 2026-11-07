@@ -114,6 +114,7 @@ export async function createTestApp(
     admin = createAdmin({
       base: '/admin',
       api: { url: `${prefix}/`, ...api },
+      authorize: true,
       vite
     })
     app.route('/admin', admin)

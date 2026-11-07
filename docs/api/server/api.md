@@ -37,8 +37,9 @@ not on the first request. These are invalid:
 - a controller `path` that holds `:id`;
 - two actions that route the same method and path, in one controller or across
   controllers;
-- a write action (`post`, `put`, `patch`, `delete`) without `authorize`, on the
-  action or on a layer, see [Authorization](controllers.md#authorize);
+- an action without `authorize`, on the action or on a layer, see
+  [Authorization](controllers.md#authorize). The error names all of them, with
+  the paths of their controllers;
 - a routed action without a handler;
 - an action whose `authorize` holds roles when the API has no `users`, as no
   user could have them;

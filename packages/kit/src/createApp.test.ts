@@ -115,6 +115,7 @@ describe('createApp()', () => {
       controllers: [
         {
           path: 'books',
+          authorize: true,
           actions: {
             get() {
               throw new Error('Failed')

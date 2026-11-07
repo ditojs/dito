@@ -45,7 +45,9 @@ const admin = createAdmin({
   // Passed to the admin as `dito.api`:
   api: { url: '/api', locale: 'en-US' },
   // Passed to the admin as `dito.settings`:
-  settings: { rootClass: 'catalog-admin' }
+  settings: { rootClass: 'catalog-admin' },
+  // Anyone may load the views. The API protects the data:
+  authorize: true
 })
 
 app.route('/admin', admin)

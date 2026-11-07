@@ -70,10 +70,17 @@ export function createApi({
   const definitions = isArray(controllers)
     ? controllers
     : Object.values(controllers).filter(hasPath)
+  // Every action needs `authorize`, so that no route is public by omission.
+  // Collect the actions without it to name them all in one error:
+  const unauthorized: string[] = []
   const routes = definitions.flatMap(definition =>
-    resolveController(definition).map(action => {
+    resolveController(definition).flatMap(action => {
       const { key, authorize, transacted } = action
       const where = `'${key}' in '${definition.path}'`
+      if (authorize === undefined) {
+        unauthorized.push(where)
+        return []
+      }
       // Without `users`, there is no user whose roles could match.
       if (!users && (isString(authorize) || isArray(authorize))) {
         throw new Error(
@@ -87,11 +94,16 @@ export function createApi({
         )
       }
       return {
-        action,
+        action: { ...action, authorize },
         path: `/${[definition.path, action.path].filter(Boolean).join('/')}`
       }
     })
   )
+  if (unauthorized.length) {
+    throw new Error(
+      `Invalid actions without \`authorize\`: ${unauthorized.join(', ')}.`
+    )
+  }
   // Hono runs the first route that matches, so static segments go before
   // parameters, also across controllers: `get subscribe` before `get :id`.
   routes.sort((a, b) => compareRanks(rank(a.path), rank(b.path)))
@@ -121,13 +133,12 @@ export function createApi({
 // Authorize, validate the query and the body, open the transaction, and run
 // the action's `middleware`, in this order.
 function getMiddleware(
-  action: ResolvedAction,
+  action: ResolvedAction & { authorize: Authorize },
   transact: Transact | undefined
 ): Middleware[] {
   const { authorize, query, body, verb } = action
   const middleware: Middleware[] = []
-  // Reads without `authorize` let anyone in.
-  if (authorize !== undefined && authorize !== true) {
+  if (authorize !== true) {
     middleware.push(async (c, next) => {
       if (!(await isAuthorized(c, authorize))) {
         throw new HttpError(c.var.user ? 403 : 401)

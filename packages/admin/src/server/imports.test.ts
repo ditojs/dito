@@ -9,6 +9,7 @@ function getLoadedModules(mode: 'production' | 'development') {
     const { createAdmin } = await import(${JSON.stringify(index)})
     const admin = createAdmin({
       base: '/admin',
+      authorize: true,
       dist: ${JSON.stringify(root)},
       vite: ${JSON.stringify(mode)} === 'development'
         ? { root: ${

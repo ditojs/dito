@@ -58,6 +58,7 @@ const api = createApi({
     },
     {
       path: 'requests',
+      authorize: true,
       actions: {
         'get user': async ({ user, session }) => ({
           isEntity: user instanceof Member,

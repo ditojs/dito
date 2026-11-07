@@ -28,10 +28,10 @@ import { z } from 'zod'
 
 const greetings = defineController({
   path: 'greetings',
+  authorize: true,
   actions: {
     'get': () => ({ hello: 'world' }),
     'post': defineAction({
-      authorize: true,
       body: z.object({ name: z.string() }),
       handler: ({ body: { name } }) => ({ hello: name })
     })

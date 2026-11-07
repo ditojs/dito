@@ -180,6 +180,7 @@ const assets = createAssets({
 
 defineModelController({
   path: 'books',
+  authorize: 'editor',
   mixins: [assets.defineUploads()],
   ...
 })

@@ -101,7 +101,7 @@ type Output<S, Default> = S extends z.ZodType ? z.output<S> : Default
 
 // The settings of actions, controllers and mixins.
 export interface ActionSettings {
-  // Every write needs it on the action or a layer.
+  // Every action needs it, on itself or on a layer.
   authorize?: Authorize
   // Middleware of this action only, such as caching. It runs after the
   // authorization, the validation and the start of the transaction.

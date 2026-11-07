@@ -29,6 +29,7 @@ export interface ResolvedAction {
   path: string
   query: z.ZodType | undefined
   body: z.ZodType | undefined
+  // Undefined when no layer sets it, which `createApi()` rejects.
   authorize: Authorize | undefined
   transacted: boolean | undefined
   middleware: Middleware[]
@@ -105,19 +106,13 @@ function resolveActions(controllerPath: string, layers: MixinDefinition[]) {
       findLast(definitions.map(definition => definition[name])) ??
       findLast(owners.map(layer => layer[name]))
     )
-    const authorize = getSetting('authorize')
-    if (verb !== 'get' && authorize === undefined) {
-      throw new Error(
-        `Invalid action without \`authorize\`: '${key}' in ${where}.`
-      )
-    }
     actions.push({
       key,
       verb,
       path,
       query: findLast(definitions.map(definition => definition.query)),
       body: findLast(definitions.map(definition => definition.body)),
-      authorize,
+      authorize: getSetting('authorize'),
       transacted: getSetting('transacted'),
       middleware: [
         ...layers.flatMap(layer => asArray(layer.middleware)),

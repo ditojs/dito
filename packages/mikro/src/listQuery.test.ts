@@ -3,7 +3,11 @@ import { parseListQuery } from './listQuery.ts'
 
 const api = createApi({
   controllers: [
-    { path: 'books', actions: { get: ({ c }) => parseListQuery(c) } }
+    {
+      path: 'books',
+      authorize: true,
+      actions: { get: ({ c }) => parseListQuery(c) }
+    }
   ]
 })
 

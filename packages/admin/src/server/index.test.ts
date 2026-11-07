@@ -41,6 +41,7 @@ describe('createAdmin() in production', () => {
       dist,
       api,
       settings: { rootClass: 'app' },
+      authorize: true,
       ...options
     })
     return { request: route(admin) }
@@ -55,7 +56,7 @@ describe('createAdmin() in production', () => {
   })
 
   it('throws without vite or dist', () => {
-    expect(() => createAdmin({ base: '/admin' })).toThrow(
+    expect(() => createAdmin({ base: '/admin', authorize: true })).toThrow(
       'Unable to serve the admin without `vite` or `dist`'
     )
   })
@@ -63,7 +64,8 @@ describe('createAdmin() in production', () => {
   it('answers 404 while dist has no build', async () => {
     const admin = createAdmin({
       base: '/admin',
-      dist: path.join(dist, 'missing')
+      dist: path.join(dist, 'missing'),
+      authorize: true
     })
     const response = await route(admin)('/admin/')
     expect(response.status).toBe(404)

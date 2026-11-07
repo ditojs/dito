@@ -160,6 +160,7 @@ export const articleFront = {
 defineModelController({
   path: 'articles',
   entity: Article,
+  authorize: true,
   find: articleFront,
   actions: { 'get': true, 'get :id': true }
 })

@@ -499,9 +499,9 @@ and `next()`. Middleware gets `c`, and reads Dito's variables from it, such as
 #### Authorization
 
 `authorize` takes `true`, a role, a list of roles, or a function, see
-[authorize](api/server/controllers.md#authorize). Every write needs it, or
-`createApi()` throws. Front controllers that let anyone write set
-`authorize: true`.
+[authorize](api/server/controllers.md#authorize). Every action needs it, reads
+included, or `createApi()` throws. Routes that anyone may use, such as the
+reads of a public site or a webhook, set `authorize: true`.
 
 `$authorize()` and `handleAuthorization()` become a function that gets
 `{ c, user }`. It reads the id with `c.req.param('id')`. It runs before the body
@@ -761,7 +761,8 @@ It takes the same options without `base`, and stops Vite with `app.close()`.
 - With `vite`, the app runs on `serve()`. Without it, the admin serves the
   build of `dist`. `createAdmin()` throws if the build is missing.
 - `authorize` protects the admin's views, which the build puts below `views/`.
-  Other chunks go below `assets/`.
+  It is required, and `true` lets anyone load them. Other chunks go below
+  `assets/`.
 - The admin's build splits off only the chunk of the views. The `core`, `vendor`
   and `common` chunks of Dito.js 6 are gone.
 - `defineAdminViteConfig(config)` of `@ditojs/admin/vite` builds the admin, on

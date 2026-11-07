@@ -1569,6 +1569,7 @@ describe('default handlers', () => {
         defineModelController({
           path: 'pairs',
           entity: Pair,
+          authorize: true,
           actions: { get: true }
         })
       ],
@@ -1624,6 +1625,7 @@ describe('default handlers', () => {
       defineModelController({
         path: 'books',
         entity: Book,
+        authorize: true,
         actions: { 'get :id': ({ next }) => next() }
       })
     )
@@ -2830,6 +2832,7 @@ describe('createMikroAdapter()', () => {
       controllers: [
         {
           path: 'items',
+          authorize: true,
           actions: {
             'get locked': () => {
               throw OptimisticLockError.lockFailed('Book')
@@ -2861,6 +2864,7 @@ describe('createMikroAdapter()', () => {
           defineModelController({
             path: 'infos',
             entity: Info,
+            authorize: true,
             actions: { 'get': true, 'get count': ({ em }) => em.count(Info) }
           })
         ],
@@ -2946,7 +2950,11 @@ describe('createMikroAdapter()', () => {
   it('gives each request a fork of the entity manager', async () => {
     const api = createApi({
       controllers: [
-        { path: 'items', actions: { get: ({ em }) => em !== orm.em } }
+        {
+          path: 'items',
+          authorize: true,
+          actions: { get: ({ em }) => em !== orm.em }
+        }
       ],
       adapter: createMikroAdapter(orm)
     })

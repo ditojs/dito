@@ -33,9 +33,8 @@ export interface CreateAdminOptions {
   users?: CreateApiOptions['users']
   // Who may load the files below `views/`, as in `createApi()`: `true` for
   // anyone, a role or a list of roles, of which the user needs one, or a
-  // function of `c`. Denied requests get 401, or 403 with a user. Without it,
-  // anyone may.
-  authorize?: Authorize
+  // function of `c`. Denied requests get 401, or 403 with a user.
+  authorize: Authorize
   // The Vite config of development, or the path of its file, such as one
   // that exports `defineAdminViteConfig()` from `@ditojs/admin/vite`.
   // With it, Vite serves the admin's sources, which needs the Node server of
@@ -57,7 +56,7 @@ export type AdminServer = Hono<AdminEnv> & {
 export function createAdmin(options: CreateAdminOptions): AdminServer {
   const { users, authorize, api = {}, settings = {} } = options
   const base = normalizeBase(options.base)
-  const isProtected = authorize !== undefined && authorize !== true
+  const isProtected = authorize !== true
   // Without `users`, there is no user whose roles could match.
   if (!users && (isString(authorize) || isArray(authorize))) {
     throw new Error('Unable to check the roles of the admin without `users`.')
