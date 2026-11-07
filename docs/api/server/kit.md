@@ -30,23 +30,23 @@ Sets up an app. Only `entities` and `database` are required.
 
 ### App
 
-| Member                         | Description                                                                                                                                                                                          |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `hono`                         | The Hono app, for the app's own middleware and routes.                                                                                                                                               |
-| `orm`                          | The `MikroORM` of the entities.                                                                                                                                                                      |
-| `adapter`                      | See [`createMikroAdapter()`](mikro.md#createmikroadapter).                                                                                                                                           |
-| `logger`                       | The logger of the current request, else the app's.                                                                                                                                                   |
-| `storages`                     | The storages by name.                                                                                                                                                                                |
-| `assets`                       | See [`createAssets()`](storage.md#createassets).                                                                                                                                                     |
-| `services`                     | The services by name, such as `app.services.mailer`.                                                                                                                                                 |
-| `isRunning`                    | True from after the services start until a shutdown has ended all requests, so that work that outlives them can fail with a clear message.                                                           |
-| `createUsers(entity, options)` | [Users](auth.md#createusers) of an entity on the app's database and secrets.                                                                                                                         |
-| `routeApi(path, options)`      | Routes a [`createApi()`](api.md#createapi) on the app's database.                                                                                                                                    |
-| `routeAdmin(path, options)`    | Routes [`createAdmin()`](../admin/server.md#createadmin) at `path`, which is its `base`. `close()` stops Vite, also without a start. |
-| `addService(name, service)`    | Adds a [service](hono.md#serve). Services start in this order and stop in reverse order. A name works once.                                                                                          |
-| `startServices()`              | Starts the services alone, for scripts, until `close()`. A failed start stops them and closes the ORM.                                                                                               |
-| `start()`                      | Starts the services and the jobs, calls [`serve()`](hono.md#serve), and resolves to the Node server. A failed start stops what started and closes the ORM.                                           |
-| `close()`                      | Stops the server, the jobs and the services if they run, then closes the ORM.                                                                                                                        |
+| Member                         | Description                                                                                                                                                |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hono`                         | The Hono app, for the app's own middleware and routes.                                                                                                     |
+| `orm`                          | The `MikroORM` of the entities.                                                                                                                            |
+| `adapter`                      | See [`createMikroAdapter()`](mikro.md#createmikroadapter).                                                                                                 |
+| `logger`                       | The logger of the current request, else the app's.                                                                                                         |
+| `storages`                     | The storages by name.                                                                                                                                      |
+| `assets`                       | See [`createAssets()`](storage.md#createassets).                                                                                                           |
+| `services`                     | The services by name, such as `app.services.mailer`.                                                                                                       |
+| `isRunning`                    | True from after the services start until a shutdown has ended all requests, so that work that outlives them can fail with a clear message.                 |
+| `createUsers(entity, options)` | [Users](auth.md#createusers) of an entity on the app's database and secrets.                                                                               |
+| `routeApi(path, options)`      | Routes a [`createApi()`](api.md#createapi) on the app's database.                                                                                          |
+| `routeAdmin(path, options)`    | Routes [`createAdmin()`](../admin/server.md#createadmin) at `path`, which is its `base`. `close()` stops Vite, also without a start.                       |
+| `addService(name, service)`    | Adds a [service](hono.md#serve). Services start in this order and stop in reverse order. A name works once.                                                |
+| `startServices()`              | Starts the services alone, for scripts, until `close()`. A failed start stops them and closes the ORM.                                                     |
+| `start()`                      | Starts the services and the jobs, calls [`serve()`](hono.md#serve), and resolves to the Node server. A failed start stops what started and closes the ORM. |
+| `close()`                      | Stops the server, the jobs and the services if they run, then closes the ORM.                                                                              |
 
 ### Jobs
 
