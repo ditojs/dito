@@ -481,6 +481,25 @@ describe('createApp()', () => {
     expect(await app.orm.isConnected()).toBe(false)
   })
 
+  it('starts once, also while a start is pending', async () => {
+    const { host, user, dbName } = database.orm.config.getAll()
+    const app = createApp({
+      entities,
+      database: { host, user, dbName },
+      server: { host: '127.0.0.1' },
+      logger: { level: 'silent' }
+    })
+    app.addService('mailer', service('mailer'))
+    const started = app.start()
+    await expect(app.startServices()).rejects.toThrow(
+      'Unable to start the app twice.'
+    )
+    await started
+    await expect(app.start()).rejects.toThrow('Unable to start the app twice.')
+    await app.close()
+    expect(log).toEqual(['mailer start', 'mailer stop'])
+  })
+
   describe('addJob()', () => {
     const createJobApp = (jobs?: JobsOptions | false) => {
       const { host, user, dbName } = database.orm.config.getAll()

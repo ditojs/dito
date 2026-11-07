@@ -46,7 +46,7 @@ Sets up an app. Only `entities` and `database` are required.
 | `addService(name, service)`    | Adds a [service](hono.md#serve). Services start in this order and stop in reverse order. A name works once.                                                |
 | `startServices()`              | Starts the services alone, for scripts, until `close()`. A failed start stops them and closes the ORM.                                                     |
 | `start()`                      | Starts the services and the jobs, calls [`serve()`](hono.md#serve), and resolves to the Node server. A failed start stops what started and closes the ORM. |
-| `close()`                      | Stops the server, the jobs and the services if they run, then closes the ORM.                                                                              |
+| `close()`                      | Stops the server, the jobs and the services if they run, then closes the ORM. An app starts once.                                                          |
 
 ### Jobs
 

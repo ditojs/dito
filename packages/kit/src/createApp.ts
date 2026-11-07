@@ -177,6 +177,12 @@ export function createApp({
   }
 
   let stop = closeResources
+  // The resources close with the app, so it can't start again.
+  let hasStarted = false
+  const setStarted = () => {
+    if (hasStarted) throw new Error('Unable to start the app twice.')
+    hasStarted = true
+  }
 
   const addJob: App['addJob'] = (name, definition) => {
     if (Object.hasOwn(jobs, name)) {
@@ -267,10 +273,12 @@ export function createApp({
     addJob,
 
     async startServices() {
+      setStarted()
       stop = await startServices(getServices())
     },
 
     async start() {
+      setStarted()
       const served = await serve(hono, {
         port,
         host,
