@@ -1,6 +1,6 @@
 import type { EntityManager } from '@mikro-orm/core'
 import { z } from 'zod'
-import { hashPassword } from '@ditojs/auth/internal'
+import { hashPassword } from '@ditojs/auth'
 import type { TestOrm } from '../../utils/database.js'
 import { Credential, Session } from '../../utils/entities.js'
 import { createUsersApi } from '../../utils/users.js'

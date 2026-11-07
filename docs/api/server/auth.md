@@ -1,7 +1,7 @@
 # Auth
 
 ```js
-import { createUsers, useSession } from '@ditojs/auth'
+import { createUsers, hashPassword, useSession } from '@ditojs/auth'
 ```
 
 `@ditojs/auth` keeps sessions in signed cookies. It also has the actions of the
@@ -170,6 +170,20 @@ they call. It throws if the middleware of the users didn't run.
 `createApi()` and `createAdmin()` run Hono's `contextStorage()`, which
 `useSession()` needs. The app's own Hono routes run it themselves, before
 `middleware`. `createApp()` of the kit runs it for all routes.
+
+## hashPassword()
+
+```ts
+hashPassword(password: string): Promise<string>
+```
+
+Resolves to the bcrypt hash of the password, for the `hash` of a user. Seeds and
+factories use it, as they build plain data before entities exist. For an entity,
+use [`users.setPassword()`](#the-users).
+
+```js
+const members = [{ username: 'ada', hash: await hashPassword('secret') }]
+```
 
 ## defineActions()
 

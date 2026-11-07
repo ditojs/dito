@@ -1,4 +1,4 @@
-import { hashPassword } from '@ditojs/auth/internal'
+import { hashPassword } from '@ditojs/auth'
 import { db, defineScenario } from '../../utils/fixture-app.js'
 import { Credential, Session } from '../../utils/entities.js'
 import { createUsersApi } from '../../utils/users.js'
