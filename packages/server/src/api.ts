@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono'
-import { contextStorage } from 'hono/context-storage'
+import { contextStorage, tryGetContext } from 'hono/context-storage'
 import type { z } from 'zod'
 import {
   asArray,
@@ -45,10 +45,25 @@ export function createApi({
     contextStorage(),
     ...asArray(users?.middleware),
     async (c, next) => {
+      const callbacks: Callback[] = []
+      callbacksByContext.set(c, callbacks)
       c.set('onError', onError)
       if (adapter.connect) c.set('em', await adapter.connect(c))
       c.set('user', (await users?.getUser({ c })) ?? null)
       await next()
+      // Work that outlives the request runs its later callbacks at once:
+      callbacksByContext.delete(c)
+      // By now the transaction has committed, or `c.error` is set and it has
+      // rolled back.
+      if (!c.error) {
+        for (const callback of callbacks) {
+          try {
+            await callback()
+          } catch (error) {
+            await onError({ error, c })
+          }
+        }
+      }
     }
   ]
   const routeShapes = new Set<string>()
@@ -145,6 +160,24 @@ function getMiddleware(
     })
   }
   return [...middleware, ...action.middleware]
+}
+
+type Callback = () => unknown
+
+// The callbacks of `afterCommit()`, by the context of their request.
+const callbacksByContext = new WeakMap<Context, Callback[]>()
+
+// Run `fn` once the request succeeds, after its transaction commits and before
+// the response goes out. Errors of `fn` go to `onError`. Outside of an API's
+// request, and once its callbacks ran, run `fn` at once.
+export async function afterCommit(fn: Callback): Promise<void> {
+  const context = tryGetContext<DitoEnv>()
+  const callbacks = context && callbacksByContext.get(context)
+  if (callbacks) {
+    callbacks.push(fn)
+  } else {
+    await fn()
+  }
 }
 
 // Shared with `createAdmin()`. A function lets the user in only by returning

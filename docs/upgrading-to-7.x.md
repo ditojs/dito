@@ -542,6 +542,11 @@ and the app's rules, see [Writes](guide/server/writes.md). Then it flushes once.
   [Writes in custom handlers](guide/server/writes.md#writes-in-custom-handlers).
 - **Deletes.** Call `em.remove(record)` and flush. Declare the delete rules of
   the foreign keys on the entities, see [Deletes](guide/server/writes.md#deletes).
+- **Side effects.** Calls to other services, such as a mail or newsletter
+  provider, go in `afterCommit(fn)` of `@ditojs/server`. It runs `fn` once the
+  request's transaction commits, and drops it on a rollback. So the app needs
+  no outbox or transaction events of its own for them, see
+  [`afterCommit()`](api/server/api.md#aftercommit).
 
 `serialize({ record, json, em, c })` replaces `$formatJson()` and the hooks that
 changed responses. `beforeSerialize({ records, em, c })` lets a mixin load what

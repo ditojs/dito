@@ -1,7 +1,7 @@
 # API
 
 ```js
-import { createApi, sendFile } from '@ditojs/server'
+import { afterCommit, createApi, sendFile } from '@ditojs/server'
 ```
 
 An API is a list of controllers in one [Hono](https://hono.dev) app. The app
@@ -105,8 +105,10 @@ For each request of an action, Hono and Dito:
 10. open the adapter's transaction, for writes unless `transacted: false`, and for
     reads with `transacted: true`;
 11. run the `middleware` of the layers and of the action;
-12. run the handler with its context, and send the result, see
-    [Handler](controllers.md#handler).
+12. run the handler with its context, see [Handler](controllers.md#handler);
+13. commit the transaction;
+14. run the callbacks of [`afterCommit()`](#aftercommit), if nothing failed,
+    and send the response.
 
 Errors go to the API's error handler, see
 [How errors respond](errors.md#how-errors-respond), with the API's `onError` and
@@ -209,6 +211,43 @@ type Transact = <T>(c: DitoContext, fn: () => Promise<T>) => Promise<T>
 
 Runs `fn` in a transaction. When `fn` throws, it rolls the transaction back.
 While `fn` runs, `c.var.em` is the transaction's entity manager.
+
+## afterCommit()
+
+```ts
+afterCommit(fn: () => unknown): Promise<void>
+```
+
+```js
+import { afterCommit } from '@ditojs/server'
+
+export async function subscribe(member) {
+  member.subscribed = true
+  await afterCommit(() => newsletter.addSubscriber(member.email))
+}
+```
+
+Runs `fn` once the request's transaction commits, for side effects that must
+not happen when the write fails, such as a call to a mail or newsletter
+provider. It reads the request from Hono's `contextStorage()`, so code outside
+of handlers calls it without `c`.
+
+- The callbacks run in order, after the commit.
+- When the request fails, and its transaction rolls back, they don't run.
+- In a request without a transaction, they run after the handler succeeds.
+- The response waits for them, so a client that reads the provider after the
+  response sees the change. A callback that shouldn't hold the response up,
+  such as one that sends an email, starts its work without returning the
+  promise, and handles its errors itself.
+- A callback that throws goes to the API's `onError`, and the others still run.
+  The response stays a success, as the data is committed.
+- Outside of an API's request, such as in a script or a job, `afterCommit()`
+  runs `fn` at once and returns its promise, which rejects when `fn` throws.
+  A job that opens its own transaction runs its side effects after it.
+
+The callbacks belong to the request, not to a transaction. So the callbacks of
+a nested `em.transactional()` whose savepoint rolls back still run when the
+request's transaction commits.
 
 ## sendFile()
 

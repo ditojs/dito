@@ -5,6 +5,7 @@ import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import * as utils from '@ditojs/utils'
 import {
+  afterCommit,
   createApi,
   createValidationError,
   defineAction,
@@ -1439,6 +1440,150 @@ describe('transactions', () => {
       { transact, connect: () => 'db' }
     )
     expect(await json(api, 'POST', '/api/fonts')).toBe('db')
+  })
+})
+
+describe('afterCommit()', () => {
+  it('runs callbacks at once that work outliving the request adds', async () => {
+    const log: string[] = []
+    let later: Promise<void> | undefined
+    const api = setup([
+      {
+        path: 'posts',
+        authorize: true,
+        actions: {
+          post: () => {
+            later = new Promise(resolve => setTimeout(resolve, 10)).then(() =>
+              afterCommit(() => log.push('later'))
+            )
+            return {}
+          }
+        }
+      }
+    ])
+    expect((await request(api, 'POST', '/api/posts')).status).toBe(200)
+    await later
+    expect(log).toEqual(['later'])
+  })
+
+  it('runs the callbacks in order after the commit, before the response', async () => {
+    const { transact, log } = createTransaction()
+    const api = setup(
+      [
+        {
+          path: 'posts',
+          authorize: true,
+          actions: {
+            post: async () => {
+              await afterCommit(() => log.push('first'))
+              await afterCommit(async () => log.push('second'))
+              log.push('handler')
+              return {}
+            }
+          }
+        }
+      ],
+      { transact }
+    )
+    expect((await request(api, 'POST', '/api/posts')).status).toBe(200)
+    expect(log).toEqual(['begin', 'handler', 'commit', 'first', 'second'])
+  })
+
+  it('drops the callbacks when the transaction rolls back', async () => {
+    const { transact, log } = createTransaction()
+    const failedCommit: Transaction = async (_c, fn) => {
+      await fn()
+      throw new RangeError('Commit failed')
+    }
+    const posts: ControllerDefinition = {
+      path: 'posts',
+      authorize: true,
+      actions: {
+        'post': () => {
+          afterCommit(() => log.push('callback'))
+          throw new HttpError(409)
+        },
+        'post draft': () => {
+          afterCommit(() => log.push('callback'))
+          return {}
+        }
+      }
+    }
+    const api = setup([posts], { transact })
+    expect((await request(api, 'POST', '/api/posts')).status).toBe(409)
+    expect(log).toEqual(['begin', 'rollback'])
+    const failing = setup([posts], { transact: failedCommit })
+    expect((await request(failing, 'POST', '/api/posts/draft')).status).toBe(
+      422
+    )
+    expect(log).toEqual(['begin', 'rollback'])
+  })
+
+  it('runs the callbacks after the handler without a transaction', async () => {
+    const log: string[] = []
+    const api = setup([
+      {
+        path: 'posts',
+        actions: {
+          'get': () => {
+            afterCommit(() => log.push('callback'))
+            log.push('handler')
+            return []
+          },
+          'get missing': () => {
+            afterCommit(() => log.push('dropped'))
+            throw new HttpError(404)
+          }
+        }
+      }
+    ])
+    await request(api, 'GET', '/api/posts')
+    await request(api, 'GET', '/api/posts/missing')
+    expect(log).toEqual(['handler', 'callback'])
+  })
+
+  it('reports a failing callback and still responds', async () => {
+    const errors: unknown[] = []
+    const log: string[] = []
+    const api = setup(
+      [
+        {
+          path: 'posts',
+          authorize: true,
+          actions: {
+            post: () => {
+              afterCommit(() => {
+                throw new Error('Unable to notify')
+              })
+              afterCommit(() => log.push('next'))
+              return { id: 1 }
+            }
+          }
+        }
+      ],
+      {
+        transact: createTransaction().transact,
+        onError: ({ error }) => {
+          errors.push(error)
+        }
+      }
+    )
+    const response = await request(api, 'POST', '/api/posts')
+    expect(response.status).toBe(200)
+    expect(response.data).toEqual({ id: 1 })
+    expect(errors).toEqual([new Error('Unable to notify')])
+    expect(log).toEqual(['next'])
+  })
+
+  it('runs the callback at once outside of a request', async () => {
+    const log: string[] = []
+    await afterCommit(async () => log.push('callback'))
+    expect(log).toEqual(['callback'])
+    await expect(
+      afterCommit(() => {
+        throw new Error('Failed')
+      })
+    ).rejects.toThrow('Failed')
   })
 })
 

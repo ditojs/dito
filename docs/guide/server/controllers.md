@@ -333,6 +333,26 @@ or a mixin can change this with `transacted`. The transaction covers the
 middleware of the controller, of its mixins and of the action. The API's own
 `middleware` runs outside of it.
 
+### After the commit
+
+```js
+import { afterCommit } from '@ditojs/server'
+
+'post :id/publish': async ({ getRecord }) => {
+  const post = await getRecord()
+  post.publishedAt = new Date()
+  afterCommit(() => notifyFollowers(post))
+  return post
+}
+```
+
+Calls to other services, such as a mail or newsletter provider, can't roll
+back. `afterCommit(fn)` runs them once the transaction commits, and drops them
+when the write fails. The response waits for them, and a callback that throws
+goes to the API's `onError` without failing the response. Functions that a
+handler calls use it too, as it finds the request itself. See
+[`afterCommit()`](../../api/server/api.md#aftercommit).
+
 ## Serialize and deserialize
 
 ```js

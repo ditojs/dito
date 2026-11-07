@@ -18,7 +18,7 @@ export type {
   User
 } from './types.ts'
 export { defineAction, defineController, defineMixin } from './define.ts'
-export { createApi, isAuthorized } from './api.ts'
+export { afterCommit, createApi, isAuthorized } from './api.ts'
 export { sendFile, type SendFileOptions } from './sendFile.ts'
 export { createHono, type CreateHonoOptions } from './hono.ts'
 export {
