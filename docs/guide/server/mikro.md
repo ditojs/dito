@@ -131,15 +131,15 @@ find: ({ user }) => ({
 [find options](https://mikro-orm.io/docs/entity-manager), plus `where` and
 `maxRows`:
 
-| Option     | Description                                                                        |
-| ---------- | ---------------------------------------------------------------------------------- |
-| `where`    | The rows that the controller shows. Every query of the controller applies it.      |
-| `populate` | The relations that responses include, as nested rows.                              |
-| `fields`   | The columns to load and return. Paths such as `author.name` populate the relation. |
-| `exclude`  | The columns to leave out.                                                          |
-| `orderBy`  | The order of lists without `order=`.                                               |
-| `filters`  | MikroORM's entity filters, such as `{ softDelete: false }`.                        |
-| `maxRows`  | The most rows that a list returns, 1000 by default.                                |
+| Option     | Description                                                                   |
+| ---------- | ----------------------------------------------------------------------------- |
+| `where`    | The rows that the controller shows. Every query of the controller applies it. |
+| `populate` | The relations that responses include, as nested rows.                         |
+| `fields`   | The properties to return. Paths such as `author.name` populate the relation.  |
+| `exclude`  | The columns to leave out.                                                     |
+| `orderBy`  | The order of lists without `order=`.                                          |
+| `filters`  | MikroORM's entity filters, such as `{ softDelete: false }`.                   |
+| `maxRows`  | The most rows that a list returns, 1000 by default.                           |
 
 `find` is an object, or a function that gets the context of the request, such
 as `{ user, em, c }`, and returns one. The function runs once per request, after `getUser`. So its result can depend on
@@ -176,6 +176,13 @@ Records go out in the shape of `find`. Populated relations, and the relations
 of the paths in `fields`, such as `author` of `author.name`, are nested rows.
 Other relations to one row go out as `{ id }`, such as `author: { id: 12 }`. See
 [Output](../../api/server/mikro.md#output) for all rules.
+
+The controller's row loads all its columns that aren't lazy, so a getter such
+as `fullName` can read `firstName` and `lastName` without naming them. Related
+rows load what `fields` names, so their getters only see that, unless `fields`
+names the getter itself, such as `author.fullName`. Formulas load only where
+`fields` names them, or for a getter of their row. See
+[Loading](../../api/server/mikro.md#loading).
 
 Records that aren't the controller's, such as those that a custom action
 returns, go out with the relations that are loaded. Put secrets in `.hidden()`

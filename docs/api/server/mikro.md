@@ -192,6 +192,25 @@ Records go out in the shape of `find`:
 - A relation that `populate` adds without paths in `fields` goes out with all
   its columns.
 
+### Loading
+
+`fields` decides what goes out, not what loads:
+
+- The controller's row loads all its columns that aren't lazy, so that its
+  getters can read columns that `fields` doesn't name.
+- The rows of relations in the paths of `fields`, such as `author` of
+  `author.name`, load only the columns that `fields` names. Their getters only
+  see those, such as when a handler or a serializer reads them. `relation.*`
+  and a getter that `fields` names, such as `author.fullName`, load all the
+  columns of the row that aren't lazy.
+- Formulas load only where `fields` names them, since their subqueries are what
+  costs. `relation.*` names those of the relation that aren't lazy.
+- A getter in `fields`, a `persist: false` property without a formula, loads
+  the formulas of its row that aren't lazy, since it may read them.
+- Relations load only where `populate` or the paths of `fields` reach into
+  them. A getter that reads a relation needs paths into it in `fields`.
+- Lazy columns and lazy formulas load only where `fields` names them.
+
 ### find()
 
 ```ts

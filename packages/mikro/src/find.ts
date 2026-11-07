@@ -3,9 +3,16 @@ import { isFunction, isPlainObject } from '@ditojs/utils'
 import {
   ReferenceKind,
   type EntityMetadata,
+  type EntityProperty,
   type FindOptions
 } from '@mikro-orm/core'
-import { getPathProps, isLoadedColumn, isOwningToOne } from './metadata.ts'
+import {
+  getPathProps,
+  getProperty,
+  isLoadedColumn,
+  isOwningToOne,
+  isRelation
+} from './metadata.ts'
 
 export interface FindShape<T extends object = any>
   extends FindOptions<T, any, any, any> {
@@ -49,39 +56,61 @@ export function splitFind<T extends object>(
   const fields = options.fields as string[] | undefined
   if (fields) {
     delete options.exclude
-    options.fields = [
-      ...new Set(fields.flatMap(path => expandWildcard(meta, path)))
-    ] as never
+    options.fields = getLoadedFields(meta, fields) as never
   }
   return { where, options: options as FindOptions<T, any, any, any> }
 }
 
-// MikroORM selects all columns of `relation.*`, also the lazy ones and lazy
-// formulas, whose subqueries can be slow, so name the columns that aren't lazy.
-// The `*` of the root entity selects no lazy formulas.
-function expandWildcard(meta: EntityMetadata, path: string): string[] {
-  if (path.endsWith('.*')) {
-    const prefix = path.slice(0, -1)
-    const props = getPathProps(meta, path)
-    const target = props.at(-1)?.targetMeta
-    // A path with a segment that isn't a property stays as it is.
-    if (target && props.length === path.split('.').length - 1) {
-      return target.props
-        .filter(
-          prop => (
-            isLoadedColumn(prop) &&
-            !prop.embedded && (
-              prop.kind === ReferenceKind.SCALAR ||
-              prop.kind === ReferenceKind.EMBEDDED ||
-              isOwningToOne(prop)
-            )
-          )
-        )
-        .map(prop => prefix + prop.name)
+// `fields` decides what goes out. The controller's row loads all its columns
+// that aren't lazy, so that its getters can read them. A related row loads the
+// columns that `fields` names, or all of them for `*` or one of its getters.
+// Formulas cost a subquery each, so they load only where `fields` names them.
+// `*` and getters name the formulas of their row that aren't lazy.
+function getLoadedFields(meta: EntityMetadata, fields: string[]) {
+  const loaded = new Set<string>()
+  for (const field of fields) {
+    const props = getPathProps(meta, field)
+    const name = field.split('.').at(-1)!
+    const prefix = field.slice(0, -name.length)
+    const target = props.length ? props.at(-1)!.targetMeta : meta
+    // Other paths, such as those into embedded objects, load as they are:
+    const isRowPath = (
+      props.every(isRelation) &&
+      prefix === props.map(prop => `${prop.name}.`).join('')
+    )
+    if (target && isRowPath) {
+      const prop = getProperty(target, name)
+      const loadsFormulas = name === '*' || (!!prop && isGetter(prop))
+      const loadsColumns = !prefix || loadsFormulas
+      for (const column of target.props) {
+        if (
+          (loadsColumns && isRowColumn(column)) ||
+          (loadsFormulas && column.formula && !column.lazy)
+        ) {
+          loaded.add(prefix + column.name)
+        }
+      }
+      if (!loadsFormulas) loaded.add(field)
+    } else {
+      loaded.add(field)
     }
   }
-  return [path]
+  return [...loaded]
 }
+
+const isGetter = (prop: EntityProperty) => (
+  prop.persist === false && !prop.formula
+)
+
+const isRowColumn = (prop: EntityProperty) => (
+  isLoadedColumn(prop) &&
+  !prop.formula &&
+  !prop.embedded && (
+    prop.kind === ReferenceKind.SCALAR ||
+    prop.kind === ReferenceKind.EMBEDDED ||
+    isOwningToOne(prop)
+  )
+)
 
 // The options of `extra` replace those of `base`, but the `where`s join with
 // `$and`, and `filters` merge by name:
@@ -100,7 +129,7 @@ export function mergeFind<T extends object>(
     merged.filters = { ...base.filters, ...extra.filters }
   }
   // `extra` with `fields` names its own `populate`, so that a list of choices
-  // loads no more than it sends:
+  // loads no relations that it doesn't send:
   if (extra.fields && !extra.populate) delete merged.populate
   return merged as FindShape<T>
 }

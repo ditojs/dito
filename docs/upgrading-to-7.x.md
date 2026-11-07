@@ -308,6 +308,11 @@ filters: {
   unknown key, which writes ignore.
 - `order` and filters name the relation too, such as `order=author.id` and
   `filter=author.id:12`.
+- The controller's row loads all its columns that aren't lazy, so its getters
+  can read the columns that `fields` doesn't name. Related rows load what
+  `fields` names, so their getters only see that, unless `fields` names the
+  getter. Formulas load only where `fields` names them, or for a getter of
+  their row, see [Loading](api/server/mikro.md#loading).
 
 ### 7. Turn features and hooks into mixins
 
