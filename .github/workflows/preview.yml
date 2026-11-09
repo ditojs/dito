@@ -1,0 +1,29 @@
+name: Preview
+
+# Publishes preview builds of the packages of each pull request to pkg.pr.new,
+# without npm versions, and lists their URLs in a comment on the pull request.
+# An app installs them by URL, such as
+# `https://pkg.pr.new/ditojs/dito/@ditojs/server@<commit>`. It needs the
+# pkg.pr.new GitHub app on the repository.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter ./packages/ui --filter ./packages/admin run build
+      - run: >-
+          pnpm dlx pkg-pr-new@0.0.92 publish --pnpm
+          ./packages/utils ./packages/router ./packages/build ./packages/server
+          ./packages/ui ./packages/admin
