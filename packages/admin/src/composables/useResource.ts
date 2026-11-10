@@ -24,12 +24,13 @@ export interface RequestHandlerOptions {
   resource?: ApiResource | null
   query?: Record<string, any>
   data?: any
+  headers?: Record<string, string> | null
   isDataLoad?: boolean
 }
 
 export interface LoadOptions {
   query?: Record<string, any>
-  onLoad(data: any): Promise<unknown>
+  onLoad(data: any, response: Response): Promise<unknown>
   // Handle the error response of the load, and return whether it was handled:
   onError?: (response: any) => boolean
 }
@@ -41,11 +42,12 @@ export interface ButtonEventOptions {
 
 export interface SubmitResourceOptions {
   // Resolve to `true` to suppress the notification:
-  onSuccess?: (data: any) => Promise<boolean> | void
+  onSuccess?: (data: any, response: Response) => Promise<boolean> | void
   onError?: (error: any) => Promise<boolean> | void
   notifySuccess?: () => void
   notifyError?: (error: any) => void
   showValidationErrors(errors: Record<string, any>): Promise<unknown>
+  headers?: Record<string, string> | null
 }
 
 // Load and submit the data of a form or source through its resource, which
@@ -129,6 +131,7 @@ export function useResource({
       resource = getOwnResource({ method }),
       query,
       data,
+      headers,
       isDataLoad = false
     }: RequestHandlerOptions,
     callback: (error: any, response: any) => any
@@ -149,6 +152,7 @@ export function useResource({
           resource: resource ?? undefined,
           query,
           data,
+          headers,
           signal: controller.signal
         }
       )
@@ -210,7 +214,7 @@ export function useResource({
             return !!response && !!onError?.(response)
           } else {
             // Await the handlers, so that their errors are notified below.
-            await onLoad(response.data)
+            await onLoad(response.data, response)
           }
         }
       ).catch(notifyRequestError)
@@ -252,12 +256,13 @@ export function useResource({
               : 'Unable to send request.'
           })
         },
-        showValidationErrors
+        showValidationErrors,
+        headers
       }: SubmitResourceOptions
     ) {
       let isSuccessful = false
       await request(
-        { method, resource, data: payload },
+        { method, resource, data: payload, headers },
         async (err, response) => {
           const responseData = response?.data
           if (err) {
@@ -277,7 +282,7 @@ export function useResource({
           } else {
             // Forms merge the id of created items in `onSuccess()`, before the
             // notification reads the item label:
-            const isHandled = await onSuccess?.(responseData)
+            const isHandled = await onSuccess?.(responseData, response)
             await emitButtonEvent(button, 'success', {
               notify: isHandled ? undefined : notifySuccess
             })

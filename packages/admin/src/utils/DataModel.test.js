@@ -1592,6 +1592,20 @@ describe('DataModel', () => {
       expect(data.label).toBe('PERSUASION')
       dataModel.stop()
     })
+
+    it('keeps the version of the data that the server sent last', () => {
+      const { dataModel } = createDataModel(schema, { title: 'Emma' })
+      expect(dataModel.version).toBe(null)
+      dataModel.replaceFromServer({ title: 'Emma' }, { version: '"1"' })
+      expect(dataModel.version).toBe('"1"')
+      dataModel.mergeFromServer({ title: 'Persuasion' }, { version: '"2"' })
+      expect(dataModel.version).toBe('"2"')
+      // Partial merges keep it, and replaced data has none:
+      dataModel.mergeFromServer({ title: 'Emma' }, { isPartial: true })
+      expect(dataModel.version).toBe('"2"')
+      dataModel.replace({ title: 'Emma' })
+      expect(dataModel.version).toBe(null)
+    })
   })
 
   describe('merge()', () => {

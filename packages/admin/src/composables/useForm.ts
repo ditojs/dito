@@ -153,7 +153,7 @@ export function useForm({
 
   // Merge save responses into the item, to keep the identity of its objects.
   // In the data of their parent, the responses are edits still to apply:
-  const mergeResponse = (value: any) => {
+  const mergeResponse = (value: any, version: string | null) => {
     const { schema, data } = dataContext
     if (isTransient.value) {
       deserializeData(schema, value, {
@@ -169,7 +169,7 @@ export function useForm({
         dataContext.markEdited()
       }
     } else {
-      model.mergeFromServer(value)
+      model.mergeFromServer(value, { version })
     }
   }
 
@@ -177,8 +177,8 @@ export function useForm({
   const loadData = () => {
     model.replace(null)
     return requests.loadData({
-      onLoad: async data => {
-        model.replaceFromServer(data)
+      onLoad: async (data, response) => {
+        model.replaceFromServer(data, { version: getVersion(response) })
         await emitSchemaEvent('load')
       }
     })
@@ -275,15 +275,20 @@ export function useForm({
       })
     } else if (resource) {
       const payload = requests.getPayloadData(button, method)
+      // Send the version back, for the server to refuse stale saves:
+      const version = buttonResource ? null : model.version
       success = await requests.submitResource(
         button,
         resource,
         method,
         payload,
         {
-          onSuccess: response => {
-            if (response && isSubmittedData()) {
-              mergeResponse(response)
+          headers: version ? { 'Dito-Record-Version': version } : null,
+          onSuccess: (data, response) => {
+            if (data && isSubmittedData()) {
+              // Button resources may respond with other shapes of the record,
+              // whose versions the saves of the form can't send:
+              mergeResponse(data, buttonResource ? null : getVersion(response))
             }
             return callbacks.onSuccess()
           },
@@ -325,4 +330,9 @@ export function useForm({
     createData,
     submitData
   }
+}
+
+// Apps can replace `api.request()` with one whose responses have no headers:
+function getVersion(response: Response): string | null {
+  return response?.headers?.get('Dito-Record-Version') ?? null
 }

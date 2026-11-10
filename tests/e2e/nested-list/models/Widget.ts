@@ -9,12 +9,15 @@ import { Item } from './Item.js'
 export interface Widget {
   id: number
   name: string
+  revision?: number
   items?: Item[]
 }
 
 export class Widget extends Model {
   static override properties: ModelProperties = {
-    name: { type: 'string', required: true }
+    name: { type: 'string', required: true },
+    // Saves of widgets that changed since they were loaded fail:
+    revision: { type: 'integer', default: 0, version: true }
   }
 
   static override relations: ModelRelations = {

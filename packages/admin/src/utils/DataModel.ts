@@ -113,6 +113,9 @@ export class DataModel {
   // last reached the raw data:
   readonly #editableData = new WeakMap<object, any>()
   readonly #editableDataPaths = new WeakMap<object, () => string>()
+  // The version of the record that the server last sent, in its
+  // `Dito-Record-Version` header:
+  #version: string | null = null
   readonly #data: Ref<Data | null>
   readonly #options: Required<Omit<DataModelOptions, 'data'>>
   readonly scope = effectScope(true)
@@ -254,6 +257,7 @@ export class DataModel {
 
   // Replace the data, e.g. with a new item or a draft, which isn't an edit:
   replace(data: Data | null) {
+    this.#version = null
     this.#data.value = data
   }
 
@@ -265,11 +269,20 @@ export class DataModel {
 
   // Replace the data with data from the server, e.g. loaded data, once its
   // schema can be resolved from it:
-  replaceFromServer(data: Data | null) {
+  replaceFromServer(
+    data: Data | null,
+    { version = null }: { version?: string | null } = {}
+  ) {
     if (data) {
       this.#dataToDeserialize.add(toRaw(data))
     }
     this.replace(data)
+    this.#version = version
+  }
+
+  // Saves send the version back, and fail if the record changed since:
+  get version(): string | null {
+    return this.#version
   }
 
   // Merge data from the server into the data, to keep the identity of its
@@ -283,11 +296,22 @@ export class DataModel {
     {
       isReset = false,
       isPartial = false,
-      item = null
-    }: { isReset?: boolean; isPartial?: boolean; item?: Data | null } = {}
+      item = null,
+      version = null
+    }: {
+      isReset?: boolean
+      isPartial?: boolean
+      item?: Data | null
+      version?: string | null
+    } = {}
   ): Data | null {
     const target = item ?? this.data
     if (target && data) {
+      // Merges into `item` leave the version alone, as the item is part of the
+      // parent's data:
+      if (!isPartial && !item) {
+        this.#version = version
+      }
       // Resolve the schema also for `item`, without data of the model's own,
       // and again after the merge, which may change the type of the data:
       const getSchema = () => this.#options.schema()!
@@ -321,7 +345,7 @@ export class DataModel {
       }
     } else if (!isPartial) {
       // Without data on either side, partial merges have nothing to do:
-      this.replaceFromServer(data)
+      this.replaceFromServer(data, { version })
     }
     return item ?? this.data
   }
