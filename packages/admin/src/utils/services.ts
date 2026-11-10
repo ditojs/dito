@@ -30,6 +30,7 @@ export interface RequestOptions {
   resource?: Resource
   query?: Record<string, any>
   data?: any
+  headers?: Record<string, string> | null
   signal?: AbortSignal
   internal?: boolean
   // Cache for the admin session, or while the component's route or dialog is
@@ -82,7 +83,16 @@ export function getResourceUrl(
 
 export async function sendRequest(
   services: RequestServices,
-  { method, url, resource, query, data, signal, internal }: RequestOptions
+  {
+    method,
+    url,
+    resource,
+    query,
+    data,
+    headers,
+    signal,
+    internal
+  }: RequestOptions
 ) {
   const { adminContext } = services
   const { api, session } = adminContext
@@ -99,7 +109,7 @@ export async function sendRequest(
   if (checkUser) {
     await session.ensureUser()
   }
-  const send = () => api.request({ method, url, query, data, signal })
+  const send = () => api.request({ method, url, query, data, headers, signal })
   const response = await send().catch(async error => {
     // Security changes answer `confirmationRequired` without a recent login,
     // so we confirm the access and send them again. Cancelled confirmations

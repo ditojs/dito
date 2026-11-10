@@ -1,6 +1,7 @@
 export * from './_specificType.js'
 export * from './_primary.js'
 export * from './_foreign.js'
+export * from './_version.js'
 export * from './_unique.js'
 export * from './_index.js'
 export * from './_computed.js'

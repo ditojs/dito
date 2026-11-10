@@ -1146,6 +1146,15 @@ export type ModelProperty<T = any> = Schema<T> & {
    */
   foreign?: boolean
   /**
+   * Marks the property that holds the model's version, a `timestamp` or an
+   * `integer`. Member actions send it in the `Dito-Record-Version` header, and
+   * saves that send it back fail with status 412 if the record changed since.
+   * Every update writes the next version.
+   *
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/controllers.md#stale-saves Stale saves}
+   */
+  version?: boolean
+  /**
    * Adds an index to the database column in the migrations, by calling the
    * .index() method.
    */
@@ -1535,6 +1544,8 @@ export class Model extends ObjectionModel {
   static get datetimeAttributes(): string[]
   static get computedAttributes(): string[]
   static get hiddenAttributes(): string[]
+  /** The property marked with `version: true`, or `null`. */
+  static get versionProperty(): string | null
 
   /** The application instance this model is registered with. */
   static app: Application<Models>

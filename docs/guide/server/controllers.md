@@ -226,6 +226,51 @@ export class Books extends ModelController {
 }
 ```
 
+### Stale saves
+
+Two editors can load the same record. The second save then overwrites the
+first. To refuse the second save, a model marks the property that holds its
+version, a `timestamp` or an `integer`. This is also known as optimistic
+locking.
+
+```js
+export class Book extends TimestampedModel {
+  static properties = {
+    updatedAt: {
+      type: 'timestamp',
+      default: 'now()',
+      version: true
+    }
+  }
+}
+```
+
+The definition replaces that of `TimestampedModel`, so it repeats its
+`default`. Every update of the model writes the next version: the current time,
+or the integer plus one.
+
+Member `get`, `put` and `patch` actions, and collection `post`, send the
+version of the record that they return in the `Dito-Record-Version` header. A
+`put` or `patch` that sends it back reads the record's version and fails with
+status 412 if it differs. Saves without the header aren't checked, and neither are deletes.
+The forms of the admin send the version of the record they loaded with every
+save.
+
+Only the version of the record that a request addresses counts. Saves that send
+the version write the next one also when they only change relations, so a save
+of only a book's chapters still changes the book's version. A chapter saved
+through a controller of its own doesn't change the book's version, unless the
+app also updates the book.
+
+Saves that check versions run in a transaction by default. The check locks the
+row of the record until the save ends, so two saves with the same version can't
+both pass. With `transacted: false`, nothing locks the row, and two such saves
+can both pass.
+
+Timestamps need columns that store milliseconds. On columns that store whole
+seconds, two saves within one second write the same version, so use an
+`integer` there.
+
 ### Custom actions
 
 Actions defined in `collection` and `member` are routed without being listed
@@ -478,8 +523,9 @@ when it throws. Pass it to the queries of the action, e.g.
 
 Set on the controller, `transacted = true` is the default for all its
 actions, including the default ones and `get`. Without either, the default
-write actions of controllers with `graph` or `assets` are transacted, and
-the others aren't; `transacted = false` turns that off.
+write actions of controllers with `graph` or `assets` are transacted, and so
+are the saves of models with a version (see [Stale saves](#stale-saves)). The
+others aren't; `transacted = false` turns that off.
 
 ```js
 export class Orders extends ModelController {

@@ -123,8 +123,14 @@ export class Model extends objection.Model {
 
   // Internal: overridden by dito's mixins (e.g. `UserMixin`), which call
   // `super.setup()`. Apps override `initialize()`, which needs no `super`.
+  // It runs once all models are configured, so the definition is complete.
   // @overridable
-  static setup() {}
+  static setup() {
+    const name = this.versionProperty
+    if (name) {
+      this._configureVersionHooks(name)
+    }
+  }
 
   // @overridable
   static initialize() {}
@@ -504,6 +510,42 @@ export class Model extends objection.Model {
       () => this.getAttributes(({ hidden }) => hidden),
       []
     )
+  }
+
+  // The property marked with `version: true`, see `controllers/version.js`:
+  static get versionProperty() {
+    return this._getCached(
+      'jsonSchema:versionProperty',
+      () => {
+        const names = this.getAttributes(({ version }) => version)
+        if (names.length > 1) {
+          throw new ModelError(
+            this,
+            `Invalid version properties: ${names.join(', ')}. Only one ` +
+            'property can be the version.'
+          )
+        }
+        const [name = null] = names
+        const type = name && this.getProperty(name).type
+        if (name && !['timestamp', 'integer'].includes(type)) {
+          throw new ModelError(
+            this,
+            `Invalid version property '${name}' of type '${type}'. ` +
+            `Versions are of type 'timestamp' or 'integer'.`
+          )
+        }
+        return name
+      },
+      null
+    )
+  }
+
+  // The version that follows `version`: the integer plus one, or the current
+  // time:
+  static getNextVersion(version) {
+    return this.getProperty(this.versionProperty).type === 'integer'
+      ? (version ?? 0) + 1
+      : new Date()
   }
 
   static getProperty(name) {
@@ -1139,6 +1181,20 @@ export class Model extends objection.Model {
       const signed = { ...file }
       storage.signAssetFile(signed)
       return signed
+    })
+  }
+
+  // Every update advances the version of the record, so that saves from
+  // records loaded before fail. Integer versions count up in the database,
+  // from 0 if they are null:
+  static _configureVersionHooks(name) {
+    const isInteger = this.getProperty(name).type === 'integer'
+    this.on('before:update', ({ inputItems }) => {
+      for (const item of inputItems) {
+        item[name] = isInteger
+          ? objection.raw('coalesce(??, 0) + 1', [name])
+          : new Date()
+      }
     })
   }
 

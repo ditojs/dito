@@ -1,6 +1,7 @@
 import { isObject, isArray, asArray } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { ControllerError, ValidationError } from '../errors/index.js'
+import { addNextVersion } from './version.js'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
@@ -220,8 +221,9 @@ export class CollectionController extends Controller {
 
   async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
+    const data = addNextVersion(ctx, this.modelClass, body)
     return this.execute(ctx, (query, trx) =>
-      query[name](ctx.memberId, body)
+      query[name](ctx.memberId, data)
         .throwIfNotFound()
         .modify(getModify(modify, trx))
     )
