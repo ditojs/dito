@@ -6,6 +6,8 @@ import type { Schema } from './types.ts'
 export interface SourceContext {
   readonly schema: Schema
   readonly listQuery: ListQuery
+  // The query of the list as the server reads it, with the scope's filters:
+  getServerQuery(): Record<string, any>
   readonly dataPath: string
   readonly componentPath: string
   readonly store: Record<string, any>

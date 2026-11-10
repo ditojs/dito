@@ -140,7 +140,12 @@ describe('ListSchema', () => {
     assertType<ListSchema<Entry>>({
       type: 'list',
       scopes: {
-        active: { label: 'Active', defaultScope: true },
+        active: {
+          label: 'Active',
+          filter: { active: true },
+          order: 'title desc',
+          defaultScope: true
+        },
         archived: 'Archived'
       }
     })

@@ -2090,6 +2090,147 @@ describe('DitoListType', () => {
     })
   })
 
+  describe('scopes with filters', () => {
+    async function mountScopedBooksView(path) {
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            field: {
+              type: 'list',
+              resource: { path: 'books' },
+              scopes: {
+                all: { filter: {} },
+                newest: { filter: { published: true }, order: 'title desc' },
+                oldest: { filter: { published: true }, order: 'title asc' },
+                drafts: 'Drafts',
+                titles: { label: 'Titles', order: 'title asc' }
+              },
+              columns: { title: { sortable: true, defaultSort: 'desc' } }
+            }
+          }
+        },
+        request: () => ({ data: [] })
+      })
+      await admin.navigate(path)
+      const buttons = admin.wrapper.findAll('.dito-scopes button')
+      const getLoadQuery = () => admin.request.mock.calls.at(-1)[0].query
+      const getPressed = () =>
+        buttons.map(button => button.attributes('aria-pressed'))
+      return { admin, buttons, getLoadQuery, getPressed }
+    }
+
+    it('sends the filters and the order of the scope', async () => {
+      const { admin, buttons, getLoadQuery } = await mountScopedBooksView(
+        '/books?filter=title:"contains","Emma"'
+      )
+      await buttons[2].trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.query).toEqual({
+        scope: 'oldest',
+        filter: 'title:"contains","Emma"'
+      })
+      expect(getLoadQuery()).toEqual({
+        filter: ['title:"contains","Emma"', 'published:true'],
+        order: 'title asc'
+      })
+      await buttons[0].trigger('click')
+      await flushPromises()
+      expect(getLoadQuery()).toEqual({
+        filter: ['title:"contains","Emma"'],
+        order: 'title desc'
+      })
+    })
+
+    it('sends the name of scopes without filter or order', async () => {
+      const { buttons, getLoadQuery } = await mountScopedBooksView('/books')
+      await buttons[2].trigger('click')
+      await flushPromises()
+      await buttons[3].trigger('click')
+      await flushPromises()
+      expect(getLoadQuery()).toEqual({ scope: 'drafts', order: 'title desc' })
+    })
+
+    it('sends the name and the order of scopes with only `order`', async () => {
+      const { buttons, getLoadQuery } = await mountScopedBooksView('/books')
+      await buttons[4].trigger('click')
+      await flushPromises()
+      expect(getLoadQuery()).toEqual({ scope: 'titles', order: 'title asc' })
+    })
+
+    it('sends the filters of the default scope', async () => {
+      const { admin, getLoadQuery } = await mountScopedBooksView('/books')
+      expect(admin.router.currentRoute.value.query).toEqual({
+        scope: 'all',
+        order: 'title desc'
+      })
+      expect(getLoadQuery()).toEqual({ order: 'title desc' })
+    })
+
+    it('lets the scope override filters of the same name', async () => {
+      const { buttons, getLoadQuery } = await mountScopedBooksView(
+        '/books?filter=published:false'
+      )
+      await buttons[1].trigger('click')
+      await flushPromises()
+      expect(getLoadQuery().filter).toEqual([
+        'published:false',
+        'published:true'
+      ])
+    })
+
+    it('provides the query of the server as `sourceQuery`', async () => {
+      const { admin } = await mountScopedBooksView('/books?scope=newest')
+      const view = admin.getRouteComponent(component => !component.isForm)
+      const list = admin.getComponent(view, 'books')
+      expect(list.context.sourceQuery).toEqual({
+        filter: ['published:true'],
+        order: 'title desc'
+      })
+    })
+
+    it('keeps the scope when sorting by a column', async () => {
+      const { admin, buttons, getLoadQuery, getPressed } =
+        await mountScopedBooksView('/books')
+      await buttons[2].trigger('click')
+      await flushPromises()
+      await admin.wrapper.find('.dito-table-head button').trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.query).toEqual({
+        scope: 'oldest',
+        order: 'title desc'
+      })
+      expect(getLoadQuery()).toEqual({
+        filter: ['published:true'],
+        order: 'title desc'
+      })
+      expect(getPressed()).toEqual(['false', 'false', 'true', 'false', 'false'])
+    })
+
+    it('tells apart scopes with the same filters', async () => {
+      const { buttons, getLoadQuery, getPressed } =
+        await mountScopedBooksView('/books')
+      await buttons[1].trigger('click')
+      await flushPromises()
+      expect(getPressed()).toEqual(['false', 'true', 'false', 'false', 'false'])
+      await buttons[2].trigger('click')
+      await flushPromises()
+      expect(getPressed()).toEqual(['false', 'false', 'true', 'false', 'false'])
+      expect(getLoadQuery().order).toBe('title asc')
+    })
+
+    it('restores the scope of the route', async () => {
+      const { getLoadQuery, getPressed } = await mountScopedBooksView(
+        '/books?scope=newest'
+      )
+      expect(getPressed()).toEqual(['false', 'true', 'false', 'false', 'false'])
+      expect(getLoadQuery()).toEqual({
+        filter: ['published:true'],
+        order: 'title desc'
+      })
+    })
+  })
+
   describe('filters', () => {
     async function mountFilteredRecipes(request) {
       return mountSchema({

@@ -1,6 +1,6 @@
 import { computed, markRaw, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { isString } from '@ditojs/utils'
+import { asArray, isString } from '@ditojs/utils'
 import { ListQuery } from '../utils/ListQuery.js'
 import { getNamedSchemas } from '../utils/schema/lookup.js'
 import { isListSource } from '../utils/schema/structure.js'
@@ -39,6 +39,27 @@ export function useListQuery(
     return values.find(scope => scope.defaultScope) ?? values[0] ?? null
   })
 
+  const getScope = (name?: string) =>
+    name ? scopes.value?.[name] : defaultScope.value
+
+  // The query that the server reads. Scopes with `filter` send their filters
+  // instead of `scope`, after those of the panel, so that theirs apply:
+  function getServerQuery() {
+    const { query } = listQuery
+    const scope = getScope(query.scope)
+    if (scope && 'filter' in scope) {
+      const { scope: _, filter, ...rest } = query
+      const filters = [
+        ...asArray(filter),
+        ...Object.entries(scope.filter).map(
+          ([name, value]) => `${name}:${JSON.stringify(value)}`
+        )
+      ]
+      return { ...rest, ...(filters.length > 0 && { filter: filters }) }
+    }
+    return query
+  }
+
   const defaultOrder = computed(() => {
     for (const column of Object.values(columns.value ?? {})) {
       const { defaultSort } = column
@@ -55,10 +76,11 @@ export function useListQuery(
       router,
       getRoute: () => router.currentRoute.value,
       getSourceStore: () => props.store,
-      getDefaultQuery: () => ({
+      // The order of the selected scope applies until a column sets one:
+      getDefaultQuery: (query: Record<string, string>) => ({
         scope: defaultScope.value?.name,
         page: props.schema.page,
-        order: defaultOrder.value
+        order: getScope(query.scope)?.order ?? defaultOrder.value
       }),
       isInRoute,
       onChange
@@ -108,10 +130,12 @@ export function useListQuery(
     scopes,
     paginationRange,
 
+    getServerQuery,
+
     // Pass the pagination as range, so that the server counts the results:
     getRequestQuery() {
       const range = paginationRange.value
-      const { page, ...query } = listQuery.query
+      const { page, ...query } = getServerQuery()
       return { ...query, ...(range && { range: range.join(',') }) }
     }
   }

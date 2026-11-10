@@ -290,7 +290,7 @@ export default class SchemaContext {
     return get(
       this,
       'sourceQuery',
-      () => getServices(this).sourceContext?.listQuery.query ?? null
+      () => getServices(this).sourceContext?.getServerQuery() ?? null
     )
   }
 

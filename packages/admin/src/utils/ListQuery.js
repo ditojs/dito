@@ -30,7 +30,7 @@ export class ListQuery {
   // A changed query has other pages, so `resetPage` resets the page then:
   update(changes, { resetPage = false } = {}) {
     const { query } = this
-    const changedQuery = removeEmptyValues({ ...query, ...changes })
+    const changedQuery = this.merge(query, changes)
     if (isSameQuery(changedQuery, query)) {
       return Promise.resolve()
     }
@@ -74,10 +74,7 @@ export class ListQuery {
   // receives the merged query with the defaults:
   syncWithRoute() {
     const route = this.getRoute()
-    const query = this.withDefaults({
-      ...this.getSourceStore().query,
-      ...route.query
-    })
+    const query = this.merge(this.getSourceStore().query, route.query)
     this.getSourceStore().query = query
     if (!isSameQuery(query, route.query)) {
       this.router.replace({ query }).catch(console.error)
@@ -92,8 +89,19 @@ export class ListQuery {
     return hasChanged
   }
 
-  withDefaults(query) {
-    return removeEmptyValues({ ...this.getDefaultQuery(), ...query })
+  withDefaults(query = {}) {
+    return removeEmptyValues({ ...this.getDefaultQuery(query), ...query })
+  }
+
+  // The defaults depend on the query, e.g. the order on the scope, so the
+  // values that equal them are left out, and the merged query gets its own:
+  merge(query = {}, changes) {
+    const defaults = this.getDefaultQuery(query)
+    const values = pickBy(
+      query,
+      (value, key) => !isSameQuery({ value }, { value: defaults[key] })
+    )
+    return this.withDefaults({ ...values, ...changes })
   }
 }
 
