@@ -1,6 +1,11 @@
 import { clone } from '@ditojs/utils'
 import { ParameterValidator } from '../app/ParameterValidator.js'
 import { convertModelsToJson } from '../utils/model.js'
+import {
+  versionHeader,
+  getModelVersion,
+  checkVersion
+} from './version.js'
 
 export default class ControllerAction {
   constructor(
@@ -40,12 +45,30 @@ export default class ControllerAction {
     this.path = path
     this.scope = scope
     this.authorize = authorize
+    // The actions that return the record that they address send its version,
+    // if the model has one: member `get`, `put` and `patch`, and collection
+    // `post`:
+    this.sendsVersion = !!(
+      controller.modelClass?.versionProperty && (
+        type === 'member'
+          ? ['get', 'put', 'patch'].includes(name)
+          : name === 'post'
+      )
+    )
+    this.savesVersion = this.sendsVersion && type === 'member' && name !== 'get'
     this.transacted = !!(
       transacted ??
-      controller.transacted ??
-      // Core graph and assets operations are always transacted, unless the
-      // method is 'get':
-      (core && method !== 'get' && (controller.graph || controller.assets))
+      controller.transacted ?? (
+        // Core graph and assets operations are always transacted, unless the
+        // method is 'get', and so are saves of versions, whose check locks the
+        // record:
+        (
+          core &&
+          method !== 'get' &&
+          (controller.graph || controller.assets)
+        ) ||
+        this.savesVersion
+      )
     )
     this.authorization = controller.processAuthorize(this.authorize)
     this.paramsName = ['post', 'put', 'patch'].includes(this.method)
@@ -96,6 +119,9 @@ export default class ControllerAction {
     const { args, member } = await this.collectArguments(ctx, params)
     await this.controller.handleAuthorization(this.authorization, ctx, member)
     const { controller, identifier, before, after } = this
+    if (this.savesVersion && ctx.get(versionHeader)) {
+      ctx.memberVersion = await checkVersion(ctx, controller)
+    }
     // Run the action's own hooks after the controller's:
     await controller.emitHook(`before:${identifier}`, false, ctx, ...args)
     await before?.call(controller, ctx, ...args)
@@ -113,6 +139,14 @@ export default class ControllerAction {
       converted
     )
     const res = await after?.call(controller, ctx, result)
+    // `after` hooks may still update the returned model, e.g. through
+    // `$query().patch()`:
+    if (this.sendsVersion && response?.$isObjectionModel) {
+      const version = await getModelVersion(response, ctx.transaction)
+      if (version !== null) {
+        ctx.set(versionHeader, version)
+      }
+    }
     return this.validateResponse(res !== undefined ? res : result)
   }
 
