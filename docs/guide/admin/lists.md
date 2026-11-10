@@ -67,9 +67,9 @@ the item's form, every callback can read the label as `context.itemLabel`, see
 
 ## Scopes and filters
 
-`scopes` adds buttons that switch between the model scopes of the server, and
-`filters` adds a filter panel to the sidebar, whose values are sent as the
-`filter` query parameter:
+`scopes` adds buttons that switch the scope of the list, and `filters` adds a
+filter panel to the sidebar, whose values are sent as the `filter` query
+parameter:
 
 ```js
 books: {
@@ -87,9 +87,26 @@ books: {
 }
 ```
 
-The model needs the matching scopes and filters, see
-[Queries](../server/queries.md). Changing a filter goes back to the first
-page.
+Each scope sends its name as `scope`, so the model needs the matching scopes
+and filters, see [Queries](../server/queries.md). Changing a scope or a filter
+goes back to the first page.
+
+A scope with `filter` sets filters instead, and sends no `scope`. Each value is
+the argument of the filter of that name, sent along with the values of the
+panel. Where both set the same filter, the scope's value applies. The model then
+needs these filters, but no scope:
+
+```js
+scopes: {
+  all: { label: 'All', filter: {} },
+  published: { label: 'Published', filter: { published: true } },
+  drafts: { label: 'Drafts' } // The model scope `drafts`
+}
+```
+
+A scope with `order` sets the order of the list, until a click on a column
+header sets another one. The selected scope stays as `?scope=name` in the
+admin's URL, and `context.sourceQuery` holds the query that the server reads.
 
 ## Items in the data
 

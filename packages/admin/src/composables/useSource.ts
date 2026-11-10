@@ -97,6 +97,7 @@ export function useSource(
     columns,
     scopes,
     paginationRange,
+    getServerQuery,
     getRequestQuery
   } = useListQuery(props, {
     getPaginate: () => paginate.value,
@@ -379,6 +380,7 @@ export function useSource(
   const sourceContext: SourceContext = reactive({
     schema: toRef(props, 'schema'),
     listQuery,
+    getServerQuery,
     dataPath: toRef(props, 'dataPath'),
     componentPath,
     store: toRef(props, 'store'),

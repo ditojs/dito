@@ -5,6 +5,7 @@ function createListQuery({
   routeQuery = {},
   storedQuery,
   defaultQuery = { scope: 'all', order: 'title asc' },
+  getDefaultQuery = () => defaultQuery,
   isInRoute = true
 } = {}) {
   const onChange = vi.fn()
@@ -22,7 +23,7 @@ function createListQuery({
     router,
     getRoute: () => route,
     getSourceStore: () => store,
-    getDefaultQuery: () => defaultQuery,
+    getDefaultQuery,
     isInRoute: () => isInRoute,
     onChange
   })
@@ -166,6 +167,19 @@ describe('ListQuery', () => {
       const query = { scope: 'drafts', order: 'title asc', page: '2' }
       expect(store.query).toEqual(query)
       expect(router.replace).toHaveBeenCalledWith({ query })
+    })
+
+    it('applies the order of the scope that the route names', () => {
+      const { listQuery, store } = createListQuery({
+        routeQuery: { scope: 'oldest' },
+        storedQuery: { scope: 'newest', order: 'title desc' },
+        getDefaultQuery: ({ scope }) => ({
+          scope: 'all',
+          order: { newest: 'title desc', oldest: 'title asc' }[scope]
+        })
+      })
+      listQuery.syncWithRoute()
+      expect(store.query).toEqual({ scope: 'oldest', order: 'title asc' })
     })
 
     it(`doesn't replace the route if it holds the query`, () => {
