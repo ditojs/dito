@@ -271,6 +271,63 @@ Timestamps need columns that store milliseconds. On columns that store whole
 seconds, two saves within one second write the same version, so use an
 `integer` there.
 
+### Deltas
+
+Forms of graph controllers with `delta = true` save only what they changed:
+
+```js
+export class Books extends ModelController {
+  modelClass = Book
+  graph = true
+  delta = true
+}
+```
+
+Member actions that return a model send the relations that it holds in the
+`Dito-Record-Graph` header, and forms patch a delta, a body with
+`'#delta': true` at its root:
+
+- Values that changed, whole.
+- The rows of to-many relations that changed, by their id and with only the
+  values that changed. New rows come whole, and removed rows as
+  `{ id, '#removed': true }`, which the `removed` setting in the
+  `graphOptions` of their relation deletes or unrelates. Rows that a delta
+  leaves out stay as they are, unlike in `patchGraph()` without
+  `{ delta: true }`, which therefore takes no `removed` settings in its
+  `relations` option.
+- To-one records with the same id, by their id and with only the values that
+  changed. Other records come whole, and `null` removes them.
+
+Relation controllers take `delta` from their parent, like `graph`.
+
+A delta lists changes to the record that the form loaded, so it relies on
+[stale saves](#stale-saves) to fail if the record changed since. Controllers
+take deltas only if their model has a version, and refuse deltas without
+`Dito-Record-Version` with status 428. Forms without a version send whole
+records. A delta without changes keeps the version, so saving an unchanged form
+doesn't refuse the saves of other editors.
+
+Hooks and handlers of these patches receive only the delta in
+`ctx.request.body`. A `patch` action whose handler reads the whole record sets
+`delta: false`, so that its forms send the whole record:
+
+```js
+export class Books extends ModelController {
+  modelClass = Book
+  graph = true
+  delta = true
+
+  member = {
+    patch: {
+      delta: false,
+      handler(ctx) {
+        return updateBook(ctx.memberId, ctx.request.body)
+      }
+    }
+  }
+}
+```
+
 ### Custom actions
 
 Actions defined in `collection` and `member` are routed without being listed

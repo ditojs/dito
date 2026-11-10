@@ -52,6 +52,7 @@ value other than `undefined` becomes the response body.
 | `response`   | `Schema & { name? }` \| `[schema, options]` | Schema of the returned value. With `name`, the value is sent wrapped as `{ [name]: value }`.                                                                                                                                                                                   |
 | `authorize`  | [`Authorize`](#authorize)                   | Authorization of this action. It ranks above the `authorize` of the actions object it's written in and of the controller, but below the actions objects of subclasses, see [Authorize](#authorize).                                                                            |
 | `transacted` | `boolean`                                   | Runs the action in a transaction, available as `ctx.transaction`. Default: the controller's `transacted`; without either, the default write actions of controllers with `graph` or `assets` are transacted, and so are the `put` and `patch` actions of models with a version. |
+| `delta`      | `boolean`                                   | `false` on a member `patch` action makes forms send the whole record instead of its delta, for handlers that read it, see [Deltas](../../guide/server/controllers.md#deltas). Default `true`.                                                                                  |
 | `scope`      | `string \| string[]`                        | Scopes applied to the member query of `from: 'member'` parameters.                                                                                                                                                                                                             |
 | `path`       | `string`                                    | Overrides the path taken from the action name.                                                                                                                                                                                                                                 |
 | `options`    | `{ parameters?, response? }`                | Validation options for parameters and response (Ajv options, see [Validator](./validator.md#validation-options)).                                                                                                                                                              |
@@ -461,20 +462,21 @@ available on both. Extend `ModelController` rather than this class.
 
 ### Instance fields
 
-| Field         | Type                            | Description                                                                                                   |
-| ------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `modelClass`  | `typeof Model`                  | The model class.                                                                                              |
-| `collection`  | `object`                        | Collection actions, see [Default actions](#default-actions).                                                  |
-| `member`      | `object`                        | Member actions.                                                                                               |
-| `graph`       | `boolean`                       | Write through the graph methods (`insertGraphAndFetch()` …). Default `false`.                                 |
-| `scope`       | `string \| string[]`            | Scopes applied to the queries of the controller. The default `delete` actions leave them out.                 |
-| `allowParam`  | `string \| string[]`            | Query parameters the default actions accept, see [`QueryParameterOptions`](./query-builder.md). Default: all. |
-| `allowScope`  | `boolean \| string \| string[]` | Scopes the `scope` query parameter may request. Default: all.                                                 |
-| `allowFilter` | `boolean \| string \| string[]` | Filters the `filter` query parameter may request. Default: all.                                               |
-| `relate`      | `boolean`                       | `post` relates existing models instead of inserting.                                                          |
-| `unrelate`    | `boolean`                       | `delete` unrelates instead of deleting.                                                                       |
-| `isOneToOne`  | `boolean`                       | Whether the controller addresses a single related model.                                                      |
-| `idParam`     | `string`                        | The route parameter of member ids: `id`, `id1`, … per level.                                                  |
+| Field         | Type                            | Description                                                                                                                                                                         |
+| ------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `modelClass`  | `typeof Model`                  | The model class.                                                                                                                                                                    |
+| `collection`  | `object`                        | Collection actions, see [Default actions](#default-actions).                                                                                                                        |
+| `member`      | `object`                        | Member actions.                                                                                                                                                                     |
+| `graph`       | `boolean`                       | Write through the graph methods (`insertGraphAndFetch()` …). Default `false`.                                                                                                       |
+| `delta`       | `boolean`                       | Forms save only their delta against the record they loaded, if `graph` is set and the model has a version, see [Deltas](../../guide/server/controllers.md#deltas). Default `false`. |
+| `scope`       | `string \| string[]`            | Scopes applied to the queries of the controller. The default `delete` actions leave them out.                                                                                       |
+| `allowParam`  | `string \| string[]`            | Query parameters the default actions accept, see [`QueryParameterOptions`](./query-builder.md). Default: all.                                                                       |
+| `allowScope`  | `boolean \| string \| string[]` | Scopes the `scope` query parameter may request. Default: all.                                                                                                                       |
+| `allowFilter` | `boolean \| string \| string[]` | Filters the `filter` query parameter may request. Default: all.                                                                                                                     |
+| `relate`      | `boolean`                       | `post` relates existing models instead of inserting.                                                                                                                                |
+| `unrelate`    | `boolean`                       | `delete` unrelates instead of deleting.                                                                                                                                             |
+| `isOneToOne`  | `boolean`                       | Whether the controller addresses a single related model.                                                                                                                            |
+| `idParam`     | `string`                        | The route parameter of member ids: `id`, `id1`, … per level.                                                                                                                        |
 
 ### Default actions
 
