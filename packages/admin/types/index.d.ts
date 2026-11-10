@@ -2589,36 +2589,34 @@ export type SchemaContext<$Item = any> = {
    * Displays a notification to the user, with the
    * paragraphs of `text`.
    */
-  notify(
-    options: {
-      /** Notification style. @defaultValue `'info'` */
-      type?: LiteralUnion<'warning' | 'error' | 'info' | 'success'>
-      /**
-       * Heading text, escaped like `text`. Defaults to
-       * a label matching `type`.
-       */
-      title?: string
-      /**
-       * The original error object. When `type` is
-       * `'error'`, this is logged to the console
-       * alongside the message.
-       */
-      error?: unknown
-      /**
-       * Display duration in milliseconds. When omitted,
-       * calculated automatically from content length.
-       * Use `0` for sticky.
-       */
-      duration?: number
-      /**
-       * Body text, escaped, or HTML created with the
-       * `html` template of `@ditojs/utils`. Each entry
-       * is a paragraph, newlines in text become `<br>`,
-       * and `false` and `null` entries are skipped.
-       */
-      text: OrArrayOf<string | Html | false | null>
-    }
-  ): void
+  notify(options: {
+    /** Notification style. @defaultValue `'info'` */
+    type?: LiteralUnion<'warning' | 'error' | 'info' | 'success'>
+    /**
+     * Heading text, escaped like `text`. Defaults to
+     * a label matching `type`.
+     */
+    title?: string
+    /**
+     * The original error object. When `type` is
+     * `'error'`, this is logged to the console
+     * alongside the message.
+     */
+    error?: unknown
+    /**
+     * Display duration in milliseconds. When omitted,
+     * calculated automatically from content length.
+     * Use `0` for sticky.
+     */
+    duration?: number
+    /**
+     * Body text, escaped, or HTML created with the
+     * `html` template of `@ditojs/utils`. Each entry
+     * is a paragraph, newlines in text become `<br>`,
+     * and `false` and `null` entries are skipped.
+     */
+    text: OrArrayOf<string | Html | false | null>
+  }): void
 }
 
 /**
