@@ -1593,6 +1593,68 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
+    it('drops the delta base when partial merges replace relations', () => {
+      const { dataModel } = createDataModel(schema, {})
+      dataModel.replaceFromServer(
+        {
+          title: 'Emma',
+          chapters: [
+            { id: 1, title: 'One' },
+            { id: 2, title: 'Two' }
+          ]
+        },
+        { version: '"1"', graph: { chapters: {} } }
+      )
+      dataModel.mergeFromServer({ title: 'Persuasion' }, { isPartial: true })
+      expect(dataModel.getDelta()).toEqual({ '#delta': true })
+      dataModel.mergeFromServer(
+        { chapters: [{ id: 1, title: 'One' }] },
+        { isPartial: true }
+      )
+      expect(dataModel.getDelta()).toBe(null)
+      dataModel.stop()
+    })
+
+    it('leaves items that the server deleted out of deltas', () => {
+      const { dataModel, getListEntry } = createDataModel(schema, {})
+      dataModel.replaceFromServer(
+        {
+          title: 'Emma',
+          chapters: [
+            { id: 1, title: 'One' },
+            { id: 2, title: 'Two' }
+          ]
+        },
+        { version: '"1"', graph: { chapters: {} } }
+      )
+      dataModel.removeDeleted(getListEntry('chapters'), 0)
+      expect(dataModel.getDelta()).toEqual({ '#delta': true })
+      dataModel.stop()
+    })
+
+    it('drops the delta base when lists outside the graph load', () => {
+      const { dataModel } = createDataModel(schema, {})
+      dataModel.replaceFromServer(
+        { title: 'Emma', chapters: [] },
+        { version: '"1"', graph: { chapters: {} } }
+      )
+      const load = (name, value) =>
+        dataModel.setLoaded(
+          {
+            schema: schema.fields[name],
+            data: dataModel.data,
+            name,
+            dataPath: name
+          },
+          value
+        )
+      load('chapters', [{ id: 1, title: 'One' }])
+      expect(dataModel.getDelta()).toEqual({ '#delta': true })
+      load('reviews', [{ id: 1, text: 'Good' }])
+      expect(dataModel.getDelta()).toBe(null)
+      dataModel.stop()
+    })
+
     it('keeps the version of the data that the server sent last', () => {
       const { dataModel } = createDataModel(schema, { title: 'Emma' })
       expect(dataModel.version).toBe(null)

@@ -5,6 +5,7 @@ import { getErrorMessage } from '../utils/request.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { deserializeData } from '../utils/schema/data.js'
 import { mergeData } from '../utils/mergeData.ts'
+import { getRecordGraph, type RecordGraph } from '../utils/delta.ts'
 import { transientNote } from '../utils/dialogs.js'
 import { getText } from '../utils/html.js'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
@@ -153,7 +154,7 @@ export function useForm({
 
   // Merge save responses into the item, to keep the identity of its objects.
   // In the data of their parent, the responses are edits still to apply:
-  const mergeResponse = (value: any, version: string | null) => {
+  const mergeResponse = (value: any, record: ServerRecord) => {
     const { schema, data } = dataContext
     if (isTransient.value) {
       deserializeData(schema, value, {
@@ -169,7 +170,7 @@ export function useForm({
         dataContext.markEdited()
       }
     } else {
-      model.mergeFromServer(value, { version })
+      model.mergeFromServer(value, record)
     }
   }
 
@@ -178,7 +179,7 @@ export function useForm({
     model.replace(null)
     return requests.loadData({
       onLoad: async (data, response) => {
-        model.replaceFromServer(data, { version: getVersion(response) })
+        model.replaceFromServer(data, getServerRecord(response))
         await emitSchemaEvent('load')
       }
     })
@@ -274,9 +275,11 @@ export function useForm({
         notifyError: error => notifySubmitError(error)
       })
     } else if (resource) {
-      const payload = requests.getPayloadData(button, method)
-      // Send the version back, for the server to refuse stale saves:
+      // Send the version back, for the server to refuse stale saves. With a
+      // version and a record graph, patch only the delta:
       const version = buttonResource ? null : model.version
+      const delta = version && method === 'patch' ? model.getDelta() : null
+      const payload = delta ?? requests.getPayloadData(button, method)
       success = await requests.submitResource(
         button,
         resource,
@@ -287,8 +290,11 @@ export function useForm({
           onSuccess: (data, response) => {
             if (data && isSubmittedData()) {
               // Button resources may respond with other shapes of the record,
-              // whose versions the saves of the form can't send:
-              mergeResponse(data, buttonResource ? null : getVersion(response))
+              // whose versions and graphs the form can't use:
+              mergeResponse(
+                data,
+                buttonResource ? {} : getServerRecord(response)
+              )
             }
             return callbacks.onSuccess()
           },
@@ -332,7 +338,15 @@ export function useForm({
   }
 }
 
+interface ServerRecord {
+  version?: string | null
+  graph?: RecordGraph | null
+}
+
 // Apps can replace `api.request()` with one whose responses have no headers:
-function getVersion(response: Response): string | null {
-  return response?.headers?.get('Dito-Record-Version') ?? null
+function getServerRecord(response: Response): ServerRecord {
+  return {
+    version: response?.headers?.get('Dito-Record-Version') ?? null,
+    graph: getRecordGraph(response)
+  }
 }
