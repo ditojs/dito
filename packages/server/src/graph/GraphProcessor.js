@@ -1,16 +1,43 @@
 import { isArray } from '@ditojs/utils'
-import { ensureModelArray } from './graph.js'
+import { ensureModelArray, createControlPropError } from './graph.js'
+import { removedProp } from './records.js'
+import { GraphError } from '../errors/index.js'
 
+// With `options.delta`, `data` holds only what changed. Its to-many relations
+// keep the rows that it leaves out, and remove marked rows as their `removed`
+// setting in the relation's `graphOptions` says, which the call can't override.
+// To-one values keep the settings of their relation, so another record or
+// `null` replaces the related record, as without deltas.
 export class GraphProcessor {
-  constructor(rootModelClass, data, options = {}, defaults) {
+  constructor(
+    rootModelClass,
+    data,
+    { delta = false, ...options } = {},
+    defaults
+  ) {
+    // The call's settings come after the generated ones and would win over the
+    // `preserve` of deltas, so that rows left out would be removed:
+    if (
+      delta &&
+      Object.values(options.relations ?? {}).some(
+        settings => settings?.removed !== undefined
+      )
+    ) {
+      throw new GraphError(
+        "Deltas don't take `removed` settings in `relations`."
+      )
+    }
     this.rootModelClass = rootModelClass
     this.options = options
+    this.delta = delta
     this.defaults = defaults
     // The generated settings, resolved settings and pivot table extras of each
-    // relation path:
+    // relation path, and with `delta`, the `removed` settings of the to-many
+    // relations:
     this.relations = {}
     this.settings = {}
     this.extras = {}
+    this.removed = {}
     const models = this.processGraph(
       ensureModelArray(rootModelClass, data, { skipValidation: true })
     )
@@ -26,6 +53,9 @@ export class GraphProcessor {
     return {
       ...this.defaults.options,
       ...options,
+      // Only `processGraph()` adds markers, as `rejectGraphControlProps()`
+      // rejects them in the data of clients:
+      ...(this.delta && { allowMarkers: true }),
       strict: true,
       root: { ...this.defaults.options.root, ...root },
       // The generated settings come first, so the entries of the call override
@@ -66,7 +96,9 @@ export class GraphProcessor {
       if (data.$isObjectionModel) {
         const { constructor } = data
         const key = relationPath.join('.')
-        if (
+        if (data[removedProp] !== undefined) {
+          return this.processRemoved(data, relationPath)
+        } else if (
           relationPath.length > 0 &&
           this.getSettings(relationPath).added === 'relate' &&
           isRelatable(data)
@@ -85,21 +117,58 @@ export class GraphProcessor {
               const path = [...relationPath, name]
               const key = path.join('.')
               const relation = relations[name]
+              const settings = this.getRelationSettings(relation)
+              const keepsRows = (
+                this.delta &&
+                !constructor.getRelation(name).isOneToOne()
+              )
               // Bracket the keys of the generated settings, e.g.
               // `[chapters.book]`, so they don't clash with the call's keys:
-              this.relations[`[${key}]`] ??= this.getRelationSettings(relation)
+              this.relations[`[${key}]`] ??= keepsRows
+                ? { ...settings, removed: 'preserve' }
+                : settings
               this.extras[key] ??= relation.through?.extra
-              copy[name] = this.processGraph(data[name], path)
+              if (keepsRows) {
+                this.removed[key] ??= settings.removed
+              }
+              const value = this.processGraph(data[name], path)
+              if (value === undefined) {
+                delete copy[name]
+              } else {
+                copy[name] = value
+              }
             }
           }
           return copy
         }
       } else if (isArray(data)) {
-        // Potentially a has-many relation, so keep processing:
-        return data.map(entry => this.processGraph(entry, relationPath))
+        // Potentially a has-many relation, so keep processing. Removed rows
+        // that their relation preserves leave the list:
+        return data
+          .map(entry => this.processGraph(entry, relationPath))
+          .filter(entry => entry !== undefined)
       }
     }
     return data
+  }
+
+  // Mark a removed row to be deleted or unrelated, or leave it out if its
+  // relation preserves removed rows. Only to-many relations of deltas hold
+  // removed rows:
+  processRemoved(model, relationPath) {
+    const removed = this.removed[relationPath.join('.')]
+    if (model[removedProp] !== true || !removed) {
+      throw createControlPropError(removedProp, relationPath)
+    } else if (removed !== 'preserve') {
+      const { constructor } = model
+      const reference = constructor.getReference(model)
+      reference[
+        removed === 'delete'
+          ? constructor.graphDeleteProp
+          : constructor.graphUnrelateProp
+      ] = true
+      return reference
+    }
   }
 }
 

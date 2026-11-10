@@ -47,6 +47,7 @@ import {
 } from '../utils/duration.js'
 import { resolveFileUrl } from '../utils/asset.js'
 import { versionHeader } from '../controllers/version.js'
+import { recordGraphHeader } from '../graph/records.js'
 import { ValidationError, DatabaseError, AssetError } from '../errors/index.js'
 import {
   attachLogger,
@@ -681,15 +682,19 @@ export class Application extends Koa {
     }
     if (app.cors !== false) {
       const options = getOptions(app.cors)
-      // Admins on other origins read and send the versions of records. Without
-      // a list of allowed headers, all requested headers are allowed:
-      const addVersionHeader = headers => [versionHeader, ...asArray(headers)]
+      // Admins on other origins read the versions and graphs of records, and
+      // send the versions back. Without a list of allowed headers, all
+      // requested headers are allowed:
       this.use(
         cors({
           ...options,
-          exposeHeaders: addVersionHeader(options.exposeHeaders ?? []),
+          exposeHeaders: [
+            versionHeader,
+            recordGraphHeader,
+            ...asArray(options.exposeHeaders ?? [])
+          ],
           ...(options.allowHeaders && {
-            allowHeaders: addVersionHeader(options.allowHeaders)
+            allowHeaders: [versionHeader, ...asArray(options.allowHeaders)]
           })
         })
       )

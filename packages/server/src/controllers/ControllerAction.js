@@ -6,6 +6,13 @@ import {
   getModelVersion,
   checkVersion
 } from './version.js'
+import { ResponseError } from '../errors/index.js'
+import {
+  setRecordGraph,
+  isDelta,
+  rejectDelta,
+  deltaProp
+} from '../graph/records.js'
 
 export default class ControllerAction {
   constructor(
@@ -93,6 +100,17 @@ export default class ControllerAction {
     // Copy over the additional properties, e.g. `cached` so application
     // middleware can implement caching mechanisms:
     Object.assign(this, extra)
+    // Member patches of graph controllers with `delta` take deltas, as their
+    // version check refuses them for records that changed since. Handlers that
+    // read whole records turn deltas off with `delta: false`:
+    this.takesDelta = !!(
+      type === 'member' &&
+      name === 'patch' &&
+      this.savesVersion &&
+      controller.graph &&
+      controller.delta &&
+      this.delta !== false
+    )
   }
 
   // Possible values for `from` are:
@@ -112,6 +130,19 @@ export default class ControllerAction {
   }
 
   async callAction(ctx) {
+    if (isDelta(ctx.request.body)) {
+      if (!this.takesDelta || ctx.request.body[deltaProp] !== true) {
+        rejectDelta()
+      } else if (!ctx.get(versionHeader)) {
+        // Deltas only apply to the record they were taken from:
+        throw new ResponseError({
+          message: `Deltas require the version of the record in '${
+            versionHeader
+          }'.`,
+          status: 428
+        })
+      }
+    }
     const { params, wrapped } = await this.validateParameters(ctx)
     // Expose the query parameters that aren't consumed by the action's
     // parameters, for the default actions to pass on to their queries.
@@ -146,6 +177,14 @@ export default class ControllerAction {
       if (version !== null) {
         ctx.set(versionHeader, version)
       }
+    }
+    // Forms of controllers that take deltas need the relations of the record:
+    if (
+      this.sendsVersion &&
+      response?.$isObjectionModel &&
+      controller.patchAction?.takesDelta
+    ) {
+      setRecordGraph(ctx, response)
     }
     return this.validateResponse(res !== undefined ? res : result)
   }

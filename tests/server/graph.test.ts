@@ -9,6 +9,7 @@ import {
 import {
   GraphProcessor,
   ensureModelArray,
+  modelGraphToExpression,
   rejectGraphControlProps
   // @ts-expect-error -- The graph module is internal and not exported by the
   // package, so it comes without type declarations.
@@ -330,6 +331,30 @@ describe('Dito.js graph handling', () => {
       })
     })
 
+    it('keeps the rows of to-many relations of deltas only', () => {
+      // To-one values of deltas are complete, so they keep their settings:
+      const processor = new GraphProcessor(
+        Book,
+        {
+          title: 'Dune',
+          shelf: { name: 'Fiction' },
+          chapters: [{ title: 'One', book: { id: 2 } }],
+          genres: [{ id: 2 }]
+        },
+        { delta: true },
+        upsertDefaults
+      )
+      expect(processor.getOptions()).toMatchObject({
+        allowMarkers: true,
+        relations: {
+          '[shelf]': { removed: 'unrelate', added: 'insert' },
+          '[chapters]': { removed: 'preserve', added: 'insert' },
+          '[chapters.book]': { removed: 'unrelate', added: 'relate' },
+          '[genres]': { removed: 'preserve', added: 'relate' }
+        }
+      })
+    })
+
     it('resolves settings for relations set to null or empty', () => {
       // Strict upserts need `removed` for these too:
       const processor = new GraphProcessor(
@@ -629,6 +654,145 @@ describe('Dito.js graph handling', () => {
           { title: 'Earthsea', chapters }
         ])
       ).toEqual(['1/chapters/1/title'])
+    })
+  })
+
+  describe('modelGraphToExpression()', () => {
+    it('names the relations that the models hold, at any depth', async () => {
+      const library = await Library.query().insertGraphAndFetch({
+        name: 'City',
+        bookcases: [{ name: 'A', volumes: [{ title: 'One' }] }, { name: 'B' }]
+      })
+      const { book } = await insertBook()
+      const fetched = await Book.query()
+        .findById(book.id)
+        .withGraph('[chapters, genres]')
+      expect(modelGraphToExpression(library)).toEqual({
+        bookcases: { volumes: {} }
+      })
+      expect(modelGraphToExpression([fetched])).toEqual({
+        chapters: {},
+        genres: {}
+      })
+    })
+  })
+
+  describe('patchGraph() with deltas', () => {
+    it('keeps the rows that deltas leave out', async () => {
+      const { book } = await insertBook()
+      const [, two] = book.chapters
+      await Book.query().patchGraph(
+        {
+          id: book.id,
+          chapters: [{ id: two.id, title: 'Two (revised)' }, { title: 'Three' }]
+        },
+        { delta: true }
+      )
+      expect(await getChapterTitles(book.id)).toEqual([
+        'One',
+        'Two (revised)',
+        'Three'
+      ])
+      expect((await Book.query().findById(book.id))!.title).toBe('Earthsea')
+    })
+
+    it('removes rows as their relations remove them', async () => {
+      const { book, fantasy, drama } = await insertBook()
+      const [one] = book.chapters
+      await Book.query().patchGraph(
+        {
+          id: book.id,
+          chapters: [{ 'id': one.id, '#removed': true }],
+          genres: [{ 'id': fantasy.id, '#removed': true }]
+        },
+        { delta: true }
+      )
+      expect(await getChapterTitles(book.id)).toEqual(['Two'])
+      expect(await Genre.query().findById(fantasy.id)).toBeDefined()
+      expect(await getBookGenreRows(book.id)).toEqual([
+        { genreId: drama.id, rank: 2 }
+      ])
+    })
+
+    it('applies deltas of nested rows', async () => {
+      const library = await Library.query().insertGraphAndFetch({
+        name: 'City',
+        bookcases: [
+          {
+            name: 'A',
+            position: 1,
+            volumes: [
+              { title: 'One', position: 1 },
+              { title: 'Two', position: 2 }
+            ]
+          },
+          { name: 'B', position: 2, volumes: [{ title: 'Three', position: 1 }] }
+        ]
+      })
+      const [a, b] = library.bookcases
+      await Library.query().patchGraph(
+        {
+          id: library.id,
+          bookcases: [
+            {
+              id: a.id,
+              volumes: [
+                { 'id': a.volumes[0].id, '#removed': true },
+                { title: 'Four', position: 3 }
+              ]
+            },
+            { id: b.id, name: 'B (renamed)' }
+          ]
+        },
+        { delta: true }
+      )
+      const fetched = await Library.query()
+        .findById(library.id)
+        .withGraph('bookcases.volumes')
+      expect(
+        fetched!.bookcases.map(({ name, volumes }) => ({
+          name,
+          volumes: volumes.map(volume => volume.title)
+        }))
+      ).toEqual([
+        { name: 'A', volumes: ['Two', 'Four'] },
+        { name: 'B (renamed)', volumes: ['Three'] }
+      ])
+    })
+
+    it('saves nothing for empty deltas', async () => {
+      const { book } = await insertBook()
+      await Book.query().patchGraphAndFetchById(
+        book.id,
+        {},
+        { delta: true }
+      )
+      expect(await getChapterTitles(book.id)).toEqual(['One', 'Two'])
+      expect((await Book.query().findById(book.id))!.title).toBe('Earthsea')
+    })
+
+    it('rejects `removed` settings of the call', async () => {
+      const { book } = await insertBook()
+      const [, two] = book.chapters
+      expect(() =>
+        Book.query().patchGraph(
+          { id: book.id, chapters: [{ id: two.id, title: 'Two (revised)' }] },
+          { delta: true, relations: { chapters: { removed: 'delete' } } }
+        )
+      ).toThrow(GraphError)
+      expect(await getChapterTitles(book.id)).toEqual(['One', 'Two'])
+    })
+
+    it('rejects removed rows outside of deltas', async () => {
+      const { book } = await insertBook()
+      const [one] = book.chapters
+      expect(() =>
+        Book.query().patchGraph({
+          id: book.id,
+          chapters: [{ 'id': one.id, '#removed': true }]
+        })
+      ).toThrow(GraphError)
+      expect(await getChapterTitles(book.id)).toEqual(['One', 'Two'])
     })
   })
 
