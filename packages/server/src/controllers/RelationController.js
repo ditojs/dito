@@ -27,6 +27,7 @@ export class RelationController extends CollectionController {
     this.unrelate = !relationDefinition.owner
     // Inherit parent values:
     this.graph = parent.graph
+    this.delta = parent.delta
     this.transacted = parent.transacted
     this.level = parent.level + 1
     if (parent.scope) {

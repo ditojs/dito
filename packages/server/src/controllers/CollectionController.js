@@ -1,11 +1,18 @@
-import { isObject, isArray, asArray } from '@ditojs/utils'
+import { isObject, isArray, asArray, isEmpty } from '@ditojs/utils'
 import { Controller } from './Controller.js'
+import { deltaProp } from '../graph/records.js'
 import { ControllerError, ValidationError } from '../errors/index.js'
 import { addNextVersion } from './version.js'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
   graph = false
+  // Whether forms of graph controllers save only their delta, see
+  // `graph/records.js`:
+  delta = false
+  // The member `patch` action, whose `takesDelta` decides whether member
+  // responses send the record graph for deltas:
+  patchAction = null
   scope = null
   relate = false
   unrelate = false
@@ -18,6 +25,21 @@ export class CollectionController extends Controller {
   configure() {
     super.configure()
     this.idParam = this.level ? `id${this.level}` : 'id'
+  }
+
+  // @override
+  setupAction(type, actions, name, definition, authorize) {
+    const action = super.setupAction(
+      type,
+      actions,
+      name,
+      definition,
+      authorize
+    )
+    if (type === 'member' && name === 'patch') {
+      this.patchAction = action
+    }
+    return action
   }
 
   // @override
@@ -221,9 +243,16 @@ export class CollectionController extends Controller {
 
   async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
-    const data = addNextVersion(ctx, this.modelClass, body)
+    // Deltas pass their marker on as an option. Empty deltas change nothing, so
+    // they keep the version:
+    const { [deltaProp]: delta, ...rest } = body ?? {}
+    const data = !delta
+      ? addNextVersion(ctx, this.modelClass, body)
+      : isEmpty(rest)
+        ? rest
+        : addNextVersion(ctx, this.modelClass, rest)
     return this.execute(ctx, (query, trx) =>
-      query[name](ctx.memberId, data)
+      query[name](ctx.memberId, data, delta ? { delta } : undefined)
         .throwIfNotFound()
         .modify(getModify(modify, trx))
     )

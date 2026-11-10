@@ -46,12 +46,7 @@ export function rejectGraphControlProps(
       modelClass.graphDeleteProp
     ]) {
       if (prop in graph) {
-        const path = normalizeDataPath(dataPath)
-        throw new GraphError(
-          `Unsupported graph control property '${prop}'${
-            path ? ` at '${path}'` : ''
-          }.`
-        )
+        throw createControlPropError(prop, dataPath)
       }
     }
     for (const { name, relatedModelClass } of Object.values(
@@ -65,6 +60,15 @@ export function rejectGraphControlProps(
       )
     }
   }
+}
+
+export function createControlPropError(prop, dataPath = []) {
+  const path = normalizeDataPath(dataPath)
+  return new GraphError(
+    `Unsupported graph control property '${prop}'${
+      path ? ` at '${path}'` : ''
+    }.`
+  )
 }
 
 // Converts a model graph to model instances, preserving its shape: A single

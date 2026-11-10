@@ -2723,6 +2723,13 @@ export type BaseControllerActionOptions<$Controller = Controller> = {
    */
   transacted?: boolean
   /**
+   * Set `false` on a member `patch` action whose handler reads the whole
+   * record from the body, so that forms send it whole instead of the delta.
+   *
+   * @defaultValue `true`
+   */
+  delta?: boolean
+  /**
    * The validation options of the parameters and the response, e.g.
    * `{ parameters: { coerceTypes: false } }`.
    */
@@ -3103,6 +3110,14 @@ export class CollectionController<
    * @defaultValue `false`
    */
   graph?: boolean
+  /**
+   * Whether forms save only their delta against the record they loaded. Takes
+   * effect for graph controllers whose model has a version.
+   *
+   * @defaultValue `false`
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/controllers.md#deltas|Deltas}
+   */
+  delta?: boolean
   /** Whether the controller handles relate operations. */
   relate?: boolean
   /**
@@ -3688,7 +3703,13 @@ export interface EventEmitter {
 export type GraphWriteOptions = Omit<
   objection.StrictUpsertGraphOptions,
   'strict'
->
+> & {
+  /**
+   * The graph holds a delta: its relations keep the rows that it leaves out,
+   * and remove rows marked with `'#removed'` as their `removed` setting says.
+   */
+  delta?: boolean
+}
 
 export type QueryParameterOptions = {
   scope?: OrArrayOf<string>
@@ -4245,7 +4266,10 @@ export type PartialDitoModelGraph<M extends Partial<Model>> = {
   [K in objection.NonFunctionPropertyNames<M>]?: PartialDitoModelGraphField<
     M[K]
   >
-} & objection.GraphParameters
+} & objection.GraphParameters & {
+    /** Marks a row of a delta that its relation removes. */
+    '#removed'?: true
+  }
 
 // Nullable relations, e.g. of `belongsTo`, accept graphs as well as `null`:
 type PartialDitoModelGraphField<F> =
