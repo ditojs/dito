@@ -16,7 +16,11 @@ import {
   isPlainObject,
   isFunction,
   isString,
-  equals
+  equals,
+  setValueAtDataPath,
+  getValueAtDataPath,
+  parseDataPath,
+  isInteger
 } from '@ditojs/utils'
 import {
   editableDataTargets,
@@ -26,6 +30,7 @@ import {
   getRelativeDataPath
 } from './data.js'
 import { mergeData, mergeValues } from './mergeData.ts'
+import { getDelta, type RecordGraph } from './delta.ts'
 import {
   isEmptySchema,
   hasSubmitButton
@@ -116,6 +121,10 @@ export class DataModel {
   // The version of the record that the server last sent, in its
   // `Dito-Record-Version` header:
   #version: string | null = null
+  // For deltas, the relations of the data that the server last sent, and its
+  // data before deserialization, which deltas compare against:
+  #graph: RecordGraph | null = null
+  #serverData: Data | null = null
   readonly #data: Ref<Data | null>
   readonly #options: Required<Omit<DataModelOptions, 'data'>>
   readonly scope = effectScope(true)
@@ -257,7 +266,7 @@ export class DataModel {
 
   // Replace the data, e.g. with a new item or a draft, which isn't an edit:
   replace(data: Data | null) {
-    this.#version = null
+    this.#setServerData(null)
     this.#data.value = data
   }
 
@@ -271,13 +280,28 @@ export class DataModel {
   // schema can be resolved from it:
   replaceFromServer(
     data: Data | null,
-    { version = null }: { version?: string | null } = {}
+    {
+      version = null,
+      graph = null
+    }: { version?: string | null; graph?: RecordGraph | null } = {}
   ) {
     if (data) {
       this.#dataToDeserialize.add(toRaw(data))
     }
-    this.replace(data)
+    // Keep the server's data before it is deserialized in place:
+    this.#setServerData(data, version, graph)
+    this.#data.value = data
+  }
+
+  #setServerData(
+    data: Data | null,
+    version: string | null = null,
+    graph: RecordGraph | null = null
+  ) {
     this.#version = version
+    this.#graph = graph
+    // The data comes as JSON, which `structuredClone()` copies fastest:
+    this.#serverData = graph && data ? structuredClone(toRaw(data)) : null
   }
 
   // Saves send the version back, and fail if the record changed since:
@@ -297,20 +321,30 @@ export class DataModel {
       isReset = false,
       isPartial = false,
       item = null,
-      version = null
+      version = null,
+      graph = null
     }: {
       isReset?: boolean
       isPartial?: boolean
       item?: Data | null
       version?: string | null
+      graph?: RecordGraph | null
     } = {}
   ): Data | null {
     const target = item ?? this.data
     if (target && data) {
-      // Merges into `item` leave the version alone, as the item is part of the
-      // parent's data:
+      // Keep the server's data before it is deserialized in place. Merges into
+      // `item` leave it alone, as the item is part of the parent's data:
       if (!isPartial && !item) {
-        this.#version = version
+        this.#setServerData(data, version, graph)
+      } else if (isPartial && this.#serverData) {
+        // Partial merges of relations would replace their whole lists, so
+        // saves then send all data:
+        if (Object.keys(data).some(key => Object.hasOwn(this.#graph!, key))) {
+          this.#serverData = null
+        } else {
+          Object.assign(this.#serverData, structuredClone(toRaw(data)))
+        }
       }
       // Resolve the schema also for `item`, without data of the model's own,
       // and again after the merge, which may change the type of the data:
@@ -345,7 +379,7 @@ export class DataModel {
       }
     } else if (!isPartial) {
       // Without data on either side, partial merges have nothing to do:
-      this.replaceFromServer(data, { version })
+      this.replaceFromServer(data, { version, graph })
     }
     return item ?? this.data
   }
@@ -371,6 +405,21 @@ export class DataModel {
     },
     value: any
   ) {
+    // Copy the loaded value into the server's data. If its path is missing
+    // there, or if it is a list outside the record graph, whose deltas would
+    // keep removed rows, drop the server's data so that saves send all data:
+    const path = getRelativeDataPath(dataPath, this.dataPath)
+    if (this.#serverData && path) {
+      if (isArray(value) && !this.#isInGraph(path)) {
+        this.#serverData = null
+      } else {
+        try {
+          setValueAtDataPath(this.#serverData, path, structuredClone(value))
+        } catch {
+          this.#serverData = null
+        }
+      }
+    }
     // Deserialize in place, so that callbacks find the value in the root data:
     data[name] = value
     deserializeData(
@@ -379,6 +428,54 @@ export class DataModel {
       { ...this.walkOptions, dataPath: getParentDataPath(dataPath) }
     )
     this.markClean({ dataPath })
+  }
+
+  // Return null without a record graph, as there is nothing to compare
+  // against:
+  getDelta(): Data | null {
+    const data = this.serializedData.value
+    if (this.#graph && this.#serverData && data) {
+      const idKeys = this.#getIdKeys()
+      const delta = getDelta(
+        this.#serverData,
+        data,
+        this.#graph,
+        path => idKeys.get(path) ?? 'id'
+      )
+      return { '#delta': true, ...delta }
+    }
+    return null
+  }
+
+  #isInGraph(path: string) {
+    let graph: RecordGraph | undefined = this.#graph!
+    for (const part of parseDataPath(path)) {
+      if (!isInteger(+part)) {
+        graph = graph?.[part]
+      }
+    }
+    return !!graph
+  }
+
+  // The id keys of the lists in the data, by their data paths without indexes:
+  #getIdKeys() {
+    const idKeys = new Map<string, string>()
+    walkData(this.schema!, this.data!, {
+      ...this.walkOptions,
+      dataPath: this.dataPath,
+      visit: ({ node, dataPath }: DataEntry) => {
+        const { source } = node
+        if (source?.isList) {
+          const path = parseDataPath(
+            getRelativeDataPath(dataPath, this.dataPath) ?? ''
+          )
+            .filter((part: string) => !isInteger(+part))
+            .join('/')
+          idKeys.set(path, source.idKey)
+        }
+      }
+    })
+    return idKeys
   }
 
   set({ data, name, dataPath }: FieldKey & { dataPath: string }, value: any) {
@@ -504,7 +601,24 @@ export class DataModel {
 
   // Remove the item that a source deleted through its own resource, which
   // isn't an edit, like `setLoaded()`:
+  // The server deleted the item already, so deltas leave it out too:
   removeDeleted(entry: ListEntry, index: number) {
+    const path = getRelativeDataPath(entry.dataPath, this.dataPath)
+    const rows =
+      path && this.#serverData
+        ? getValueAtDataPath(this.#serverData, path, () => null)
+        : null
+    const idKey = entry.schema.idKey || 'id'
+    const id = entry.list[index]?.[idKey]
+    if (isArray(rows) && id != null) {
+      // The ids of the server's data may be strings, as in `getDelta()`:
+      const rowIndex = rows.findIndex(
+        row => String(row?.[idKey]) === String(id)
+      )
+      if (rowIndex >= 0) {
+        rows.splice(rowIndex, 1)
+      }
+    }
     this.#changeList(entry, list => list.splice(index, 1), { isEdit: false })
   }
 

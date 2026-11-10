@@ -13,6 +13,8 @@ class Widgets extends ScenarioController {
   // relation).
   override scope = ['^withItems']
   override graph = true
+  // Forms save only their delta against the loaded widget:
+  override delta = true
 }
 
 export const test = defineScenario({
