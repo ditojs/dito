@@ -3272,7 +3272,9 @@ export class CollectionController<
       query: QueryBuilder<$Model>,
       trx?: objection.Transaction
     ) => void,
-    body?: Record<string, any>
+    body?: Record<string, any>,
+    // The id of the record, by default `ctx.memberId`:
+    id?: Id | Id[]
   ): Promise<$Model>
 
   /**

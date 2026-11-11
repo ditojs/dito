@@ -455,6 +455,8 @@ and `GET /authors/:id/books/:id1`.
 Relations that aren't [owners](relations.md#owners) relate and unrelate
 their models: `POST` relates existing models by their ids, and `DELETE`
 unrelates them without deleting them. Owner relations insert and delete.
+To-one relations have no `member` routes: their `PUT` and `PATCH` save the
+related model, and respond with status 404 without one.
 
 A relation is part of its parent: reading it requires the authorization of the
 parent's `member.get`, changing it also that of the parent's `member.patch`,

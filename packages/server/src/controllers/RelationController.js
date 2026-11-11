@@ -175,7 +175,54 @@ export class RelationController extends CollectionController {
     })
   }
 
-  collection = this.markAsCoreActions({})
+  // Objection's graph saves don't run on related queries, so check that the
+  // relation holds the record, and save it through a query of its model:
+  // @override
+  async executeById(ctx, id, execute) {
+    return this.execute(ctx, async (query, trx) => {
+      if (!this.graph) {
+        return execute(query, trx)
+      }
+      await query
+        .clone()
+        .findById(id)
+        .select(...this.modelClass.getIdPropertyArray())
+        .throwIfNotFound()
+      return execute(this.setupQuery(this.modelClass.query(trx)), trx)
+    })
+  }
+
+  // To-one relations have no member route, so they save their related record
+  // by its id, and respond with 404 without one:
+  async executeAndFetchRelated(action, ctx, modify) {
+    const related = await this.execute(ctx, query =>
+      query
+        .select(...this.modelClass.getIdPropertyArray())
+        .first()
+        .throwIfNotFound()
+    )
+    return this.executeAndFetchById(
+      action,
+      ctx,
+      modify,
+      ctx.request.body,
+      related.$id()
+    )
+  }
+
+  collection = this.markAsCoreActions({
+    async put(ctx, modify) {
+      return this.isOneToOne
+        ? this.executeAndFetchRelated('update', ctx, modify)
+        : super.put(ctx, modify)
+    },
+
+    async patch(ctx, modify) {
+      return this.isOneToOne
+        ? this.executeAndFetchRelated('patch', ctx, modify)
+        : super.patch(ctx, modify)
+    }
+  })
 
   member = this.markAsCoreActions({})
 }

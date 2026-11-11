@@ -241,7 +241,13 @@ export class CollectionController extends Controller {
     )
   }
 
-  async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
+  async executeAndFetchById(
+    action,
+    ctx,
+    modify,
+    body = ctx.request.body,
+    id = ctx.memberId
+  ) {
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
     // Deltas pass their marker on as an option. Empty deltas change nothing, so
     // they keep the version:
@@ -251,11 +257,17 @@ export class CollectionController extends Controller {
       : isEmpty(rest)
         ? rest
         : addNextVersion(ctx, this.modelClass, rest)
-    return this.execute(ctx, (query, trx) =>
-      query[name](ctx.memberId, data, delta ? { delta } : undefined)
+    return this.executeById(ctx, id, (query, trx) =>
+      query[name](id, data, delta ? { delta } : undefined)
         .throwIfNotFound()
         .modify(getModify(modify, trx))
     )
+  }
+
+  // Run `execute()` with a query that saves the record with `id`. Overridden
+  // in RelationController:
+  async executeById(ctx, id, execute) {
+    return this.execute(ctx, execute)
   }
 
   async relateAndFetch(ctx, modify) {

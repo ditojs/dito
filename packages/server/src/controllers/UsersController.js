@@ -532,9 +532,15 @@ export class UsersController extends ModelController {
   }
 
   // @override
-  async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
-    await checkUserChanges(this, ctx, action, [[ctx.memberId, body]])
-    return super.executeAndFetchById(action, ctx, modify, body)
+  async executeAndFetchById(
+    action,
+    ctx,
+    modify,
+    body = ctx.request.body,
+    id = ctx.memberId
+  ) {
+    await checkUserChanges(this, ctx, action, [[id, body]])
+    return super.executeAndFetchById(action, ctx, modify, body, id)
   }
 
   isAuthenticated(ctx) {
