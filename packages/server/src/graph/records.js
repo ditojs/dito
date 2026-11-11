@@ -1,11 +1,12 @@
 import { modelGraphToExpression } from './expression.js'
 import { createControlPropError } from './graph.js'
 
-// Graph controllers with `delta = true`, whose model has a version, send the
-// model's record graph in the `Dito-Record-Graph` header: the relations that it
-// holds, like `{ chapters: { pages: {} } }`. Forms then patch only their delta,
-// a body with `'#delta': true` at its root. Its lists of records hold only the
-// rows that changed, and removed rows are `{ id, '#removed': true }`.
+// Controllers with `delta = true`, whose model has a version, send the model's
+// record graph in the `Dito-Record-Graph` header: for graph controllers the
+// relations that it holds, like `{ chapters: { pages: {} } }`, else `{}`. Forms
+// then patch only their delta, a body with `'#delta': true` at its root. Its
+// lists of records hold only the rows that changed, and removed rows are
+// `{ id, '#removed': true }`.
 export const recordGraphHeader = 'Dito-Record-Graph'
 export const deltaProp = '#delta'
 export const removedProp = '#removed'

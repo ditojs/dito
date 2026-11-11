@@ -100,14 +100,13 @@ export default class ControllerAction {
     // Copy over the additional properties, e.g. `cached` so application
     // middleware can implement caching mechanisms:
     Object.assign(this, extra)
-    // Member patches of graph controllers with `delta` take deltas, as their
-    // version check refuses them for records that changed since. Handlers that
-    // read whole records turn deltas off with `delta: false`:
+    // Member patches of controllers with `delta` take deltas, as their version
+    // check refuses them for records that changed since. Handlers that read
+    // whole records turn deltas off with `delta: false`:
     this.takesDelta = !!(
       type === 'member' &&
       name === 'patch' &&
       this.savesVersion &&
-      controller.graph &&
       controller.delta &&
       this.delta !== false
     )
@@ -178,13 +177,15 @@ export default class ControllerAction {
         ctx.set(versionHeader, version)
       }
     }
-    // Forms of controllers that take deltas need the relations of the record:
+    // Forms of controllers that take deltas need the relations of the record.
+    // Without `graph`, patches write no relations, so forms compare them as
+    // whole values:
     if (
       this.sendsVersion &&
       response?.$isObjectionModel &&
       controller.patchAction?.takesDelta
     ) {
-      setRecordGraph(ctx, response)
+      setRecordGraph(ctx, controller.graph ? response : null)
     }
     return this.validateResponse(res !== undefined ? res : result)
   }

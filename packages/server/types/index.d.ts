@@ -3112,7 +3112,7 @@ export class CollectionController<
   graph?: boolean
   /**
    * Whether forms save only their delta against the record they loaded. Takes
-   * effect for graph controllers whose model has a version.
+   * effect for controllers whose model has a version.
    *
    * @defaultValue `false`
    * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/controllers.md#deltas|Deltas}
