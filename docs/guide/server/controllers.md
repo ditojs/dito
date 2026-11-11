@@ -254,7 +254,11 @@ version of the record that they return in the `Dito-Record-Version` header. A
 `put` or `patch` that sends it back reads the record's version and fails with
 status 412 if it differs. Saves without the header aren't checked, and neither are deletes.
 The forms of the admin send the version of the record they loaded with every
-save.
+save. To keep saves from failing and losing many edits, they also check the
+version on edits and when the window gets the focus, at most every 30 seconds.
+Forms without edits then load the latest record, and forms with edits offer
+to. If the user declines, the form stops checking until it loads again, and
+saving fails with 412.
 
 Only the version of the record that a request addresses counts. Saves that send
 the version write the next one also when they only change relations, so a save

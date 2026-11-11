@@ -84,6 +84,99 @@ describe('DitoForm', () => {
     await flushPromises()
   })
 
+  describe('version checks', () => {
+    const loaded = { id: 1, title: 'Orlando' }
+
+    const respond = ({ version = '"1"', ...data }) => ({
+      data,
+      headers: new Headers({ 'Dito-Record-Version': version })
+    })
+
+    // Moves the clock past the delay between checks of the version:
+    const { now } = Date
+    let offset = 0
+    const later = () => {
+      offset += 60_000
+      vi.spyOn(Date, 'now').mockImplementation(() => now() + offset)
+    }
+
+    // Mounts the form of a record whose loads respond with `loads` in turn:
+    async function mountVersionedForm({ loads }) {
+      const admin = await mountAdmin({
+        views: {
+          items: {
+            type: 'view',
+            field: {
+              type: 'list',
+              resource: { path: 'items' },
+              form: { type: 'form', fields: { title: { type: 'text' } } }
+            }
+          }
+        },
+        request({ url }) {
+          return url === '/items'
+            ? { data: [loaded] }
+            : respond(loads.shift())
+        }
+      })
+      await admin.navigate('/items/1')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      const { model } = form.dataContext
+      const edit = async () => {
+        model.set(
+          { data: model.data, name: 'title', dataPath: 'title' },
+          'Flush'
+        )
+        await settle(form)
+      }
+      const focus = async () => {
+        window.dispatchEvent(new Event('focus'))
+        await settle(form)
+      }
+      return { model, edit, focus }
+    }
+
+    it('loads the latest record into forms without edits on focus', async () => {
+      const { model, focus } = await mountVersionedForm({
+        loads: [loaded, { ...loaded, title: 'Orlando!', version: '"2"' }]
+      })
+      // Records that the form just loaded aren't checked:
+      await focus()
+      expect(model.data.title).toBe('Orlando')
+      later()
+      await focus()
+      expect(model.data.title).toBe('Orlando!')
+    })
+
+    it('checks the version on edits', async () => {
+      const answer = stubConfirm(true)
+      const { model, edit } = await mountVersionedForm({
+        loads: [loaded, { ...loaded, title: 'Orlando!', version: '"2"' }]
+      })
+      later()
+      await edit()
+      expect(answer).toHaveBeenCalledTimes(1)
+      expect(model.data.title).toBe('Orlando!')
+    })
+
+    it('stops checking once the user declines to reload', async () => {
+      const answer = stubConfirm(false)
+      const latest = { ...loaded, title: 'Orlando!', version: '"2"' }
+      const { model, edit, focus } = await mountVersionedForm({
+        loads: [loaded, latest]
+      })
+      await edit()
+      later()
+      await focus()
+      latest.version = '"3"'
+      later()
+      await focus()
+      expect(answer).toHaveBeenCalledTimes(1)
+      expect(model.data.title).toBe('Flush')
+    })
+  })
+
   describe('submit()', () => {
     it('notifies the success with the escaped item label', async () => {
       const { submit, notify } = await mountBookForm(({ data }) => ({ data }))

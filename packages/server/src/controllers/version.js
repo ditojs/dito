@@ -61,8 +61,8 @@ export async function checkVersion(ctx, controller) {
   if (ctx.get(versionHeader) !== formatVersion(record[name])) {
     throw new ResponseError({
       message: (
-        'The record changed since it was loaded. Reload it to see the ' +
-        'changes.'
+        'The record changed since it was loaded. Copy your unsaved ' +
+        'changes, then reload it.'
       ),
       status: 412
     })
