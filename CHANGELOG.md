@@ -3,6 +3,25 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 6.7.0 (2026-11-11)
+
+### New
+
+- **server, admin:** Forms of graph controllers with `delta = true`, whose
+  model has a version, save only their delta against the loaded record, so
+  hooks and handlers of member patches receive only the values and rows that
+  changed. Give `patch` actions whose handlers read the whole record
+  `delta: false`, see [Deltas](docs/guide/server/controllers.md#deltas).
+- **server:** CORS exposes the `Dito-Record-Graph` header, in addition to the
+  app's `exposeHeaders`.
+- **server, admin:** Models mark the property that holds their version with
+  `version: true`. Member actions send it in the `Dito-Record-Version` header,
+  forms send it back, and saves of records that changed since they were loaded
+  fail with status 412, see
+  [Stale saves](docs/guide/server/controllers.md#stale-saves).
+- **server:** CORS exposes the `Dito-Record-Version` header, in addition to the
+  app's `exposeHeaders`, and allows it if the app lists `allowHeaders`.
+
 ## 6.6.1 (2026-11-05)
 
 ### Fixes
