@@ -761,10 +761,10 @@ describe('useSource()', () => {
                       fields: {
                         mood: {
                           type: 'select',
-                          options: context => {
-                            const genre = context.getValueAt('../../genre')
-                            genres.push(genre)
-                            return genre.moods
+                          options: ['Dark', 'Light'],
+                          multiple: context => {
+                            genres.push(context.getValueAt('../../genre'))
+                            return false
                           }
                         }
                       }

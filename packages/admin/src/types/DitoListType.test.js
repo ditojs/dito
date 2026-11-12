@@ -2347,6 +2347,33 @@ describe('DitoListType', () => {
       expect(input.element.value).toBe('Soup')
     })
 
+    it('loads the options of filters from their callbacks once', async () => {
+      const request = vi.fn(({ url }) => ({
+        data: url === 'tags' ? ['soup', 'salad'] : { results: [], total: 0 }
+      }))
+      const options = vi.fn(async ({ request }) => request({ url: 'tags' }))
+      const admin = await mountAdmin({
+        views: {
+          recipes: {
+            type: 'view',
+            field: {
+              type: 'list',
+              resource: { path: 'recipes' },
+              filters: {
+                tag: { fields: { tag: { type: 'multiselect', options } } }
+              }
+            }
+          }
+        },
+        request
+      })
+      await admin.navigate('/recipes?filter=tag:"soup"')
+      // Only the component loads them, not the walks of the panel's data:
+      expect(options).toHaveBeenCalledTimes(1)
+      const multiselect = admin.wrapper.find('.dito-panel .dito-multiselect')
+      expect(multiselect.text()).toContain('Soup')
+    })
+
     it('clears the filters to their defaults and applies them', async () => {
       const request = vi.fn(({ query }) => {
         if (JSON.stringify(query).includes('Soup')) {

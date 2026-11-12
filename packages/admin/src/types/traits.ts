@@ -103,9 +103,9 @@ export const optionsTraits = {
   getOptionsDataSchema: schema => schema.options,
 
   // Related values are objects. Static options give the type of the values,
-  // and their `enum`:
+  // and their `enum`. Options from callbacks are loaded, so they give neither:
   getProperty(schema: Schema, context: Context) {
-    const { options } = schema
+    const options = isFunction(context.schema.options) ? null : schema.options
     const { data, value } = isArray(options)
       ? { data: options }
       : (options ?? {})
