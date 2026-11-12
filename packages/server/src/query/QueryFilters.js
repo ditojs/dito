@@ -1,3 +1,4 @@
+import { isArray } from '@ditojs/utils'
 import Registry from './Registry.js'
 export const QueryFilters = new Registry()
 
@@ -37,6 +38,15 @@ QueryFilters.register({
           }
         }
       }
+    }
+  },
+
+  // Without parameters, the values keep the types of their JSON.
+  'equals'(query, property, value) {
+    if (isArray(value)) {
+      query.whereIn(property, value)
+    } else {
+      query.where(property, value)
     }
   },
 

@@ -819,6 +819,10 @@ describe('QueryFilterTypes — extensible filter registry', () => {
       properties: ['name']
     })
     assertType<ModelFilter>({
+      filter: 'equals',
+      properties: ['name']
+    })
+    assertType<ModelFilter>({
       filter: 'date-range',
       properties: ['createdAt']
     })

@@ -13,6 +13,9 @@ function createQueryRecorder({ isPostgreSQL = true } = {}) {
     },
     whereBetween(...args) {
       calls.push(['whereBetween', ...args])
+    },
+    whereIn(...args) {
+      calls.push(['whereIn', ...args])
     }
   }
 }
@@ -50,5 +53,21 @@ describe('QueryFilters.text', () => {
     const query = createQueryRecorder()
     handler(query, 'title', { operator: 'equals', text: '' })
     expect(query.calls).toEqual([])
+  })
+})
+
+describe('QueryFilters.equals', () => {
+  const handler = QueryFilters.get('equals')
+
+  it('compares the property with one value', () => {
+    const query = createQueryRecorder()
+    handler(query, 'genre', 'poetry')
+    expect(query.calls).toEqual([['where', 'genre', 'poetry']])
+  })
+
+  it('compares the property with a list of values', () => {
+    const query = createQueryRecorder()
+    handler(query, 'genre', ['poetry', 'drama'])
+    expect(query.calls).toEqual([['whereIn', 'genre', ['poetry', 'drama']]])
   })
 })

@@ -122,7 +122,9 @@ describe('definition.filters', () => {
     static properties = {
       title: { type: 'string' },
       subtitle: { type: 'string' },
+      genre: { type: 'string' },
       year: { type: 'integer' },
+      published: { type: 'boolean' },
       publishedAt: { type: 'datetime' }
     }
 
@@ -157,6 +159,16 @@ describe('definition.filters', () => {
       },
       publishedAt: {
         filter: 'date-range'
+      },
+      genre: {
+        filter: 'equals'
+      },
+      published: {
+        filter: 'equals'
+      },
+      heading: {
+        filter: 'equals',
+        properties: ['title', 'subtitle']
       }
     }
   }
@@ -295,9 +307,58 @@ describe('definition.filters', () => {
     expect(() =>
       Book.query().allowFilter('title').applyFilter('!decade', 1990)
     ).toThrow(`Query filter 'decade' is not allowed.`)
-    expect(() => Book.query().applyFilter('!genre', 'poetry')).toThrow(
-      `Query filter 'genre' is not defined.`
+    expect(() => Book.query().applyFilter('!shelf', 'top')).toThrow(
+      `Query filter 'shelf' is not defined.`
     )
+  })
+
+  it('applies equals query filters with one value', () => {
+    expect(toSQL(Book.query().applyFilter('genre', 'poetry'))).toEqual({
+      sql: 'select "Book".* from "Book" where ("Book"."genre" = $1)',
+      bindings: ['poetry']
+    })
+  })
+
+  it('applies equals query filters with a list of values', () => {
+    expect(
+      toSQL(Book.query().applyFilter('genre', ['poetry', 'drama']))
+    ).toEqual({
+      sql: 'select "Book".* from "Book" where ("Book"."genre" in ($1, $2))',
+      bindings: ['poetry', 'drama']
+    })
+  })
+
+  it('applies negated equals query filters with a list of values', () => {
+    expect(
+      toSQL(Book.query().applyFilter('!genre', ['poetry', 'drama']))
+    ).toEqual({
+      sql: (
+        'select "Book".* from "Book" ' +
+        'where not ("Book"."genre" in ($1, $2))'
+      ),
+      bindings: ['poetry', 'drama']
+    })
+  })
+
+  it('applies equals query filters to boolean properties', () => {
+    for (const published of [true, false]) {
+      expect(toSQL(Book.query().applyFilter('published', published))).toEqual(
+        {
+          sql: 'select "Book".* from "Book" where ("Book"."published" = $1)',
+          bindings: [published]
+        }
+      )
+    }
+  })
+
+  it('applies equals query filters to all listed properties', () => {
+    expect(toSQL(Book.query().applyFilter('heading', 'Dune'))).toEqual({
+      sql: (
+        'select "Book".* from "Book" where ' +
+        '(("Book"."title" = $1) or ("Book"."subtitle" = $2))'
+      ),
+      bindings: ['Dune', 'Dune']
+    })
   })
 
   it('inherits filters from parent classes', () => {
@@ -305,6 +366,9 @@ describe('definition.filters', () => {
       'between',
       'dated',
       'decade',
+      'genre',
+      'heading',
+      'published',
       'publishedAfter',
       'publishedAt',
       'text',

@@ -591,6 +591,7 @@ Built-in filter types:
 | Type           | Arguments           | Effect                                                                                                                                                                     |
 | -------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `'text'`       | `(operator?, text)` | Case-insensitive match: `'contains'`, `'equals'`, `'starts-with'` or `'ends-with'`. A missing, `null` or empty operator matches like `'contains'`. Empty text matches all. |
+| `'equals'`     | `(value)`           | Equal to `value`, or to any value of a `value` array.                                                                                                                      |
 | `'date-range'` | `(from, to)`        | Dates between `from` and `to`, either of them `null` for an open range.                                                                                                    |
 
 ```js

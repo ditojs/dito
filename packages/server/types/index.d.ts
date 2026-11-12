@@ -1256,8 +1256,9 @@ export type ModelFilterFunction<$Model extends Model = Model> = {
  * `{ filter: '...', properties: [...] }` in model filter definitions.
  *
  * Filter types are reusable query filters registered via
- * `QueryFilters.register()`. Dito.js ships with two built-in types:
+ * `QueryFilters.register()`. Dito.js ships with three built-in types:
  * - `'text'` — text search with operators (contains, equals, etc.)
+ * - `'equals'` — comparison with one value, or with a list of values
  * - `'date-range'` — date range filtering with from/to parameters
  *
  * Register custom filter types at runtime with
@@ -1287,6 +1288,7 @@ export type ModelFilterFunction<$Model extends Model = Model> = {
  */
 export interface QueryFilterTypes {
   'text': true
+  'equals': true
   'date-range': true
 }
 
@@ -4236,7 +4238,7 @@ export type QueryFilterDefinition =
     }
 
 /**
- * Registry of built-in query filters (text, date-range).
+ * Registry of built-in query filters (text, equals, date-range).
  * Provides reusable filter implementations that can be
  * referenced by name in model filter definitions.
  */

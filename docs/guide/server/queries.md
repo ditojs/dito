@@ -396,6 +396,7 @@ export class Book extends Model {
   static filters = {
     // Built-in filter types, applied to the property of the same name:
     title: { filter: 'text' },
+    genre: { filter: 'equals' },
     publishedAt: { filter: 'date-range' },
 
     // A built-in type applied to several properties, combined with OR:
@@ -421,7 +422,8 @@ export class Book extends Model {
 
 The built-in types are `'text'` (with an operator: `'contains'`, `'equals'`,
 `'starts-with'` or `'ends-with'`, and `'contains'` when the operator is left
-out or empty) and `'date-range'` (`from` and `to`, either `null` for an open
+out or empty), `'equals'` (one value, or a list of values that the property
+matches any of) and `'date-range'` (`from` and `to`, either `null` for an open
 range), see [`filters`](../../api/server/model.md#static-filters).
 
 In code, `applyFilter()` takes the name and the arguments:
