@@ -3,6 +3,22 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 6.8.0 (2026-11-12)
+
+### Behaviour changes
+
+- **server, admin:** Forms of controllers with `delta = true` save their delta also without `graph`, with the relations that changed whole, like other values. Give `patch` actions whose handlers read the whole record `delta: false`, see [Deltas](docs/guide/server/controllers.md#deltas).
+- **admin:** Forms of records with a version check it on edits and when the window gets the focus, at most every 30 seconds. If it changed, forms without edits load the latest record, and forms with edits offer to, see [Stale saves](docs/guide/server/controllers.md#stale-saves).
+
+### New
+
+- **server:** A `!` before a filter's name negates it, in the `filter` query parameter (`filter=!genre:"poetry"`), in `applyFilter('!genre', 'poetry')` and in the `filter` of list scopes, see [Filters](docs/guide/server/queries.md#filters).
+- **server:** The built-in `equals` filter type compares a property with one value, or with any of a list of values: `genre: { filter: 'equals' }`, applied as `filter=genre:"poetry"` or `filter=genre:["poetry","drama"]`. Like `text`, it takes `properties`.
+- **server:** Controllers of models with a version route `GET :id/record-version`, authorized like `get`. It answers with status 204 and the version in the `Dito-Record-Version` header.
+- **admin:** A list scope's `filter` can be a callback of the list's context that returns the filters, e.g. `mine: { label: 'Mine', filter: ({ user }) => ({ author: user.id }) }`, see [Scopes and filters](docs/guide/admin/lists.md#scopes-and-filters).
+- **admin:** List scopes can set filters instead of a model scope: `published: { label: 'Published', filter: { published: true } }` sends `filter=published:true` and no `scope`. `order` sets the order of a scope's list. Scopes without them work as before, see [Scopes and filters](docs/guide/admin/lists.md#scopes-and-filters).
+- **admin:** `context.sourceQuery` holds the query that the server reads, with the filters of the scope.
+
 ## 6.7.0 (2026-11-11)
 
 ### New
