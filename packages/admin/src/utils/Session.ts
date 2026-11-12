@@ -33,7 +33,8 @@ export class Session {
   readonly #viewRegistry: ViewRegistry
   readonly #login: LoginOptions
   readonly #user: ShallowRef<User | null>
-  #renewal: Promise<boolean> | null = null
+  #renewal: Promise<void> | null = null
+  #logins = 0
   // The responses of `request({ cache: 'global' })`, kept for the same user:
   loadCache: Record<string, Promise<any>> = {}
 
@@ -121,6 +122,7 @@ export class Session {
         location.replace(redirectAfterLogin)
       } else {
         this.#setUser(user)
+        this.#logins++
         await this.#resolveViews()
       }
       return user
@@ -273,19 +275,28 @@ export class Session {
     return (await this.fetchUser()) || this.login()
   }
 
+  // The number of logins, which tells requests whether the user logged in
+  // again since they were sent:
+  get logins() {
+    return this.#logins
+  }
+
   // The API answers 401 both once the session expired and when the user may
-  // not access a resource. Resolve to whether the session expired and the user
-  // logged in again. Requests refused at the same time share one login:
-  renewExpired(): Promise<boolean> {
-    this.#renewal ||= (async () => {
-      if (await this.fetchUser()) {
-        return false
-      }
-      return !!(await this.login())
-    })().finally(() => {
-      this.#renewal = null
-    })
-    return this.#renewal
+  // not access a resource. Resolve to whether the user logged in again since
+  // the refused request was sent, with the count of `logins` at that time.
+  // Requests refused at the same time share one login:
+  async renewExpired(logins: number): Promise<boolean> {
+    if (logins === this.#logins) {
+      this.#renewal ||= (async () => {
+        if (!(await this.fetchUser())) {
+          await this.login()
+        }
+      })().finally(() => {
+        this.#renewal = null
+      })
+      await this.#renewal
+    }
+    return logins !== this.#logins
   }
 
   #setUser(user: User | null) {

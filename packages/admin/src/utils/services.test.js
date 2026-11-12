@@ -460,23 +460,41 @@ describe('services', () => {
   })
 
   describe('sendRequest()', () => {
-    // `state.loggedIn` ends the session, `state.allowed` refuses `/books`:
+    // `state.loggedIn` ends the session, `state.allowed` refuses `/books`, and
+    // `state.credentials` answers the login dialog, `null` cancels it.
+    // `/slow` answers once `state.slow` resolves, with the session at the
+    // time it was sent:
     const mountWithUsers = async () => {
-      const state = { username: 'reader', loggedIn: true, allowed: true }
-      const request = vi.fn(({ method = 'get', url, data }) => {
+      const state = {
+        username: 'reader',
+        loggedIn: true,
+        allowed: true,
+        credentials: { username: 'reader', password: 'secret' },
+        slow: null
+      }
+      const unauthorized = () =>
+        Object.assign(new Error('Unauthorized'), {
+          response: { status: 401 }
+        })
+      const request = vi.fn(async ({ method = 'get', url, data }) => {
+        const user = { id: 1, username: state.username }
         if (url === '/users/session') {
-          return {
-            data: {
-              user: state.loggedIn
-                ? { id: 1, username: state.username }
-                : null
-            }
+          return { data: { user: state.loggedIn ? user : null } }
+        }
+        if (url === '/users/login') {
+          state.loggedIn = true
+          return { data: { user } }
+        }
+        if (url === '/slow') {
+          const { loggedIn } = state
+          await state.slow
+          if (!loggedIn) {
+            throw unauthorized()
           }
+          return { data: 'slow' }
         }
         if (url === '/books' && !(state.loggedIn && state.allowed)) {
-          throw Object.assign(new Error('Unauthorized'), {
-            response: { status: 401 }
-          })
+          throw unauthorized()
         }
         if (method === 'patch') {
           state.username = data.username
@@ -488,15 +506,14 @@ describe('services', () => {
         api: { users: { path: 'users' } },
         request
       })
+      const { context } = result.admin
       const getSessionRequestCount = () =>
         request.mock.calls.filter(([{ url }]) => url === '/users/session')
           .length
-      const login = vi
-        .spyOn(result.admin.context.session, 'login')
-        .mockImplementation(async () => {
-          state.loggedIn = true
-          return { id: 1, username: state.username }
-        })
+      vi.spyOn(context, 'showDialog').mockImplementation(
+        async () => state.credentials
+      )
+      const login = vi.spyOn(context.session, 'login')
       return { ...result, request, state, login, getSessionRequestCount }
     }
 
@@ -523,6 +540,31 @@ describe('services', () => {
       expect(login).toHaveBeenCalledTimes(1)
     })
 
+    it('sends requests refused after the login again', async () => {
+      const { admin, state, login } = await mountWithUsers()
+      state.loggedIn = false
+      let answerSlow
+      state.slow = new Promise(resolve => {
+        answerSlow = resolve
+      })
+      const services = { adminContext: admin.context }
+      const slow = sendRequest(services, { url: '/slow' })
+      await sendRequest(services, { url: '/books' })
+      answerSlow()
+      expect((await slow).data).toBe('slow')
+      expect(login).toHaveBeenCalledTimes(1)
+    })
+
+    it('throws refused requests once the login is cancelled', async () => {
+      const { admin, state } = await mountWithUsers()
+      state.loggedIn = false
+      state.credentials = null
+      await expect(
+        sendRequest({ adminContext: admin.context }, { url: '/books' })
+      ).rejects.toThrow('Unauthorized')
+      expect(admin.context.user).toBe(null)
+    })
+
     it('throws refused requests while the session lasts', async () => {
       const { admin, state, login } = await mountWithUsers()
       state.allowed = false
@@ -530,6 +572,16 @@ describe('services', () => {
         sendRequest({ adminContext: admin.context }, { url: '/books' })
       ).rejects.toThrow('Unauthorized')
       expect(login).not.toHaveBeenCalled()
+    })
+
+    it('throws resent requests that are refused again', async () => {
+      const { admin, state, login } = await mountWithUsers()
+      state.loggedIn = false
+      state.allowed = false
+      await expect(
+        sendRequest({ adminContext: admin.context }, { url: '/books' })
+      ).rejects.toThrow('Unauthorized')
+      expect(login).toHaveBeenCalledTimes(1)
     })
 
     it('fetches the own user again after patching it', async () => {
