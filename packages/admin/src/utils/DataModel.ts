@@ -109,6 +109,8 @@ export class DataModel {
   // paths of sources with their own resource, which can't be inlined, with
   // their sources:
   readonly #editedOwners = shallowReactive(new Map<string, DataSource | null>())
+  // The number of edits, which watchers can react to:
+  readonly #editCount = ref(0)
   // Data from the server, whose values are deserialized when it is set up:
   readonly #dataToDeserialize = new WeakSet<Data>()
   // New data, which gets all defaults when it is set up:
@@ -209,6 +211,10 @@ export class DataModel {
     return this.#options.parent()
   }
 
+  get editCount(): number {
+    return this.#editCount.value
+  }
+
   get isDirty(): boolean {
     return [...this.#editedOwners.values()].some(source =>
       source ? source.hasSubmitButton : this.#options.canSave()
@@ -226,6 +232,7 @@ export class DataModel {
   // Edits of data in sources with their own resource belong to these sources,
   // e.g. a tree whose children change, all other edits to the container:
   #markEdited(dataPath: string) {
+    this.#editCount.value++
     const sourceEntry = this.dataEntries.value.sourceEntriesWithResource.find(
       entry => getRelativeDataPath(dataPath, entry.dataPath) !== null
     )

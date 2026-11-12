@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { assignDeeply, capitalize, equals, html } from '@ditojs/utils'
 import { getResource } from '../utils/resource.js'
 import { getErrorMessage } from '../utils/request.js'
@@ -6,13 +6,14 @@ import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { deserializeData } from '../utils/schema/data.js'
 import { mergeData } from '../utils/mergeData.ts'
 import { getRecordGraph, type RecordGraph } from '../utils/delta.ts'
-import { transientNote } from '../utils/dialogs.js'
+import { confirm, transientNote } from '../utils/dialogs.js'
 import { getText } from '../utils/html.js'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 import { useSchemaContext } from './useSchemaContext.ts'
 import { useSchemaValue } from './useSchemaValue.ts'
 import { useSchemaEvents } from './useSchemaEvents.ts'
 import { useSourceItems } from './useSourceItems.ts'
+import { useDomEvents } from './useDomEvents.ts'
 import type { useResource } from './useResource.ts'
 import type { DataContext } from '../utils/DataContext.ts'
 import type { DataModel } from '../utils/DataModel.ts'
@@ -171,19 +172,69 @@ export function useForm({
       }
     } else {
       model.mergeFromServer(value, record)
+      versionCheckedAt = Date.now()
     }
+  }
+
+  const setLoadedData = async (data: any, response: Response) => {
+    model.replaceFromServer(data, getServerRecord(response))
+    versionCheckedAt = Date.now()
+    await emitSchemaEvent('load')
   }
 
   // Forms load their item without data, e.g. when they open another one:
   const loadData = () => {
     model.replace(null)
-    return requests.loadData({
-      onLoad: async (data, response) => {
-        model.replaceFromServer(data, getServerRecord(response))
-        await emitSchemaEvent('load')
-      }
-    })
+    return requests.loadData({ onLoad: setLoadedData })
   }
+
+  // Records may change while the form shows them, so that saves would fail and
+  // lose the edits. Check their version on edits and when the window gets the
+  // focus, unless the form loaded, saved or checked it recently. Forms without
+  // edits load the latest record, the others ask. Checks pause while one runs,
+  // and stop when the user declines, until the form loads again:
+  let versionCheckedAt = 0
+  const checkVersion = async () => {
+    const { version } = model
+    if (!version || Date.now() - versionCheckedAt < versionCheckDelay) return
+    versionCheckedAt = Infinity
+    // Ask for the version only, with the same read as saves. The check fails
+    // silently:
+    let latestVersion: string | null = null
+    await requests.request(
+      {
+        method: 'get',
+        resource: getResource('record-version', {
+          parent: requests.getResource({ method: 'get' })
+        })
+      },
+      (error, response) => {
+        latestVersion = error ? null : getServerRecord(response).version!
+        return true
+      }
+    )
+    const message = (
+      'changed since it was loaded. Do you want to reload it and discard ' +
+      'your changes?'
+    )
+    if (
+      !latestVersion ||
+      latestVersion === version ||
+      model.version !== version
+    ) {
+      versionCheckedAt = Date.now()
+    } else if (
+      !model.isDirty ||
+      (await confirm(services, html`${itemLabel.value} ${message}`, {
+        action: 'Reload'
+      }))
+    ) {
+      // Keep showing the data until the latest record loaded:
+      await requests.loadData({ onLoad: setLoadedData })
+    }
+  }
+  watch(() => model.editCount, checkVersion)
+  useDomEvents().domOn(window, 'focus', checkVersion)
 
   // Drop the item that the form loaded before, and its pending load:
   const createData = () => {
@@ -337,6 +388,9 @@ export function useForm({
     submitData
   }
 }
+
+// Forms check the version of their record at most this often:
+const versionCheckDelay = 30_000
 
 interface ServerRecord {
   version?: string | null

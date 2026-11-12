@@ -253,8 +253,16 @@ Member `get`, `put` and `patch` actions, and collection `post`, send the
 version of the record that they return in the `Dito-Record-Version` header. A
 `put` or `patch` that sends it back reads the record's version and fails with
 status 412 if it differs. Saves without the header aren't checked, and neither are deletes.
+Next to member `get`, controllers route `GET :id/record-version`, authorized
+like `get`, which answers with status 204 and only the version, read the same
+way as for saves.
+
 The forms of the admin send the version of the record they loaded with every
-save.
+save. To keep saves from failing and losing many edits, they also ask for the
+version on edits and when the window gets the focus, at most every 30 seconds.
+If it changed, forms without edits load the latest record, and forms with
+edits offer to. If the user declines, the form stops checking until it loads
+again, and saving fails with 412.
 
 Only the version of the record that a request addresses counts. Saves that send
 the version write the next one also when they only change relations, so a save

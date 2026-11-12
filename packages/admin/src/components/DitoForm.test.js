@@ -84,6 +84,111 @@ describe('DitoForm', () => {
     await flushPromises()
   })
 
+  describe('version checks', () => {
+    const loaded = { id: 1, title: 'Orlando' }
+
+    // Moves the clock past the delay between checks of the version:
+    const { now } = Date
+    let offset = 0
+    const later = () => {
+      offset += 60_000
+      vi.spyOn(Date, 'now').mockImplementation(() => now() + offset)
+    }
+
+    // Mounts the form of the record that `server.record` holds, at
+    // `server.version`, and records the urls of the requests. Responses hold
+    // copies, as the form edits them:
+    async function mountVersionedForm() {
+      const server = { record: loaded, version: '"1"' }
+      const requests = []
+      const admin = await mountAdmin({
+        views: {
+          items: {
+            type: 'view',
+            field: {
+              type: 'list',
+              resource: { path: 'items' },
+              form: { type: 'form', fields: { title: { type: 'text' } } }
+            }
+          }
+        },
+        request({ url }) {
+          requests.push(url)
+          const headers = new Headers({ 'Dito-Record-Version': server.version })
+          return url === '/items'
+            ? { data: [loaded] }
+            : url.endsWith('/record-version')
+              ? { data: null, headers }
+              : { data: { ...server.record }, headers }
+        }
+      })
+      await admin.navigate('/items/1')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      const { model } = form.dataContext
+      const edit = async () => {
+        model.set(
+          { data: model.data, name: 'title', dataPath: 'title' },
+          'Flush'
+        )
+        await settle(form)
+      }
+      const focus = async () => {
+        window.dispatchEvent(new Event('focus'))
+        await settle(form)
+      }
+      // Another editor saves the record:
+      const change = () => {
+        server.record = { ...loaded, title: 'Orlando!' }
+        server.version = `"${+JSON.parse(server.version) + 1}"`
+      }
+      return { model, requests, edit, focus, change }
+    }
+
+    it('loads the latest record into forms without edits on focus', async () => {
+      const { model, requests, focus, change } = await mountVersionedForm()
+      // Records that the form just loaded aren't checked:
+      await focus()
+      later()
+      await focus()
+      expect(requests.at(-1)).toBe('/items/1/record-version')
+      expect(model.data.title).toBe('Orlando')
+      change()
+      later()
+      await focus()
+      expect(requests.slice(-2)).toEqual([
+        '/items/1/record-version',
+        '/items/1'
+      ])
+      expect(model.data.title).toBe('Orlando!')
+      expect(model.version).toBe('"2"')
+    })
+
+    it('checks the version on edits', async () => {
+      const answer = stubConfirm(true)
+      const { model, edit, change } = await mountVersionedForm()
+      change()
+      later()
+      await edit()
+      expect(answer).toHaveBeenCalledTimes(1)
+      expect(model.data.title).toBe('Orlando!')
+    })
+
+    it('stops checking once the user declines to reload', async () => {
+      const answer = stubConfirm(false)
+      const { model, edit, focus, change } = await mountVersionedForm()
+      await edit()
+      change()
+      later()
+      await focus()
+      change()
+      later()
+      await focus()
+      expect(answer).toHaveBeenCalledTimes(1)
+      expect(model.data.title).toBe('Flush')
+    })
+  })
+
   describe('submit()', () => {
     it('notifies the success with the escaped item label', async () => {
       const { submit, notify } = await mountBookForm(({ data }) => ({ data }))

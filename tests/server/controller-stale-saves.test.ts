@@ -255,6 +255,29 @@ describe('Controllers with stale saves', () => {
     expect(headers.get('Dito-Record-Version')).toBeNull()
   })
 
+  it('answers with only the version of members', async () => {
+    const plan = await insertPlan()
+    const url = getUrl('plans', plan.id)
+    const getRecordVersion = async (url: string) => {
+      const response = await fetch(`${url}/record-version`)
+      expect(response.status).toBe(204)
+      return response.headers.get('Dito-Record-Version')
+    }
+    const headers = await loadVersion(url)
+    expect(await getRecordVersion(url)).toBe(headers['Dito-Record-Version'])
+    const response = await save(url, { name: 'A' }, headers)
+    expect(await getRecordVersion(url)).toBe(
+      response.headers.get('Dito-Record-Version')
+    )
+    expect((await fetch(`${getUrl('plans', 0)}/record-version`)).status).toBe(
+      404
+    )
+    // Models without a version have no such route:
+    const [step] = plan.steps
+    const steps = await fetch(`${getUrl('steps', step.id)}/record-version`)
+    expect(steps.status).toBe(404)
+  })
+
   it('refuses saves of records that changed since', async () => {
     const plan = await insertPlan()
     for (const path of ['plans', 'graphless-plans']) {
