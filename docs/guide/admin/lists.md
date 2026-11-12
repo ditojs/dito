@@ -112,6 +112,14 @@ matches:
 notPoetry: { label: 'All but poetry', filter: { '!genre': 'poetry' } }
 ```
 
+`filter` can also be a callback that returns the filters. It receives the
+context of the list, like other callbacks, e.g. to show the books of the user
+who is logged in:
+
+```js
+mine: { label: 'Mine', filter: ({ user }) => ({ author: user.id }) }
+```
+
 A scope with `order` sets the order of the list, until a click on a column
 header sets another one. The selected scope stays as `?scope=name` in the
 admin's URL, and `context.sourceQuery` holds the query that the server reads.

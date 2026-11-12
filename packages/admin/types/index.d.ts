@@ -707,7 +707,9 @@ export interface SourceSettings<$Item> {
    * Buttons that switch the scope of the list. A scope sends its name as
    * the `scope` query parameter, for the model scope of that name. A scope
    * with `filter` sends the argument of each filter by its name instead,
-   * as `filter=name:args`. `order` sets the order of the list, as in
+   * as `filter=name:args`. `filter` can also be a callback that returns
+   * the filters, e.g. `({ user }) => ({ author: user.id })`. `order` sets
+   * the order of the list, as in
    * `'title desc'`. The first scope, or the one with `defaultScope: true`,
    * is selected by default.
    */
@@ -718,7 +720,7 @@ export interface SourceSettings<$Item> {
           | {
               label?: string
               hint?: string
-              filter?: Record<string, unknown>
+              filter?: SchemaValue<$Item, {}, Record<string, unknown>>
               order?: string
               defaultScope?: boolean
             }

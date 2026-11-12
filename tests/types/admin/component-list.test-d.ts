@@ -149,6 +149,20 @@ describe('ListSchema', () => {
         archived: 'Archived'
       }
     })
+
+    assertType<ListSchema<Entry>>({
+      type: 'list',
+      scopes: {
+        mine: {
+          label: 'Mine',
+          filter(ctx) {
+            expectTypeOf(ctx).not.toBeAny()
+            expectTypeOf(ctx).toMatchTypeOf<SchemaContext<Entry>>()
+            return { author: ctx.user?.id }
+          }
+        }
+      }
+    })
   })
 
   it('accepts itemLabel as string, callback, or false', () => {

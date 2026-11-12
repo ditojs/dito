@@ -2231,6 +2231,68 @@ describe('DitoListType', () => {
     })
   })
 
+  describe('scopes with filter callbacks', () => {
+    async function mountBooksByAuthorView(path) {
+      const filter = vi.fn(({ user }) => ({ author: user.id }))
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            field: {
+              type: 'list',
+              resource: { path: 'books' },
+              scopes: {
+                all: { filter: {} },
+                mine: { label: 'Mine', filter },
+                published: { filter: { published: true } }
+              }
+            }
+          }
+        },
+        request: () => ({ data: [] })
+      })
+      await admin.navigate(path)
+      const buttons = admin.wrapper.findAll('.dito-scopes button')
+      const getLoadQuery = () => admin.request.mock.calls.at(-1)[0].query
+      return { admin, buttons, filter, getLoadQuery }
+    }
+
+    it('sends the filters that the callback returns', async () => {
+      const { admin, getLoadQuery } = await mountBooksByAuthorView(
+        '/books?scope=mine&filter=title:"contains","Emma"'
+      )
+      expect(admin.router.currentRoute.value.query).toEqual({
+        scope: 'mine',
+        filter: 'title:"contains","Emma"'
+      })
+      expect(getLoadQuery()).toEqual({
+        filter: ['title:"contains","Emma"', 'author:1']
+      })
+    })
+
+    it('calls the callback with the context of the list', async () => {
+      const { filter } = await mountBooksByAuthorView('/books?scope=mine')
+      expect(filter).toHaveBeenCalled()
+      const [context] = filter.mock.calls.at(-1)
+      expect(context.user).toMatchObject({ id: 1, username: 'tester' })
+      expect(context.schema.type).toBe('list')
+    })
+
+    it('switches between callback and object filters', async () => {
+      const { buttons, getLoadQuery } = await mountBooksByAuthorView('/books')
+      expect(getLoadQuery()).toEqual({})
+      await buttons[1].trigger('click')
+      await flushPromises()
+      expect(getLoadQuery()).toEqual({ filter: ['author:1'] })
+      await buttons[2].trigger('click')
+      await flushPromises()
+      expect(getLoadQuery()).toEqual({ filter: ['published:true'] })
+      await buttons[1].trigger('click')
+      await flushPromises()
+      expect(getLoadQuery()).toEqual({ filter: ['author:1'] })
+    })
+  })
+
   describe('filters', () => {
     async function mountFilteredRecipes(request) {
       return mountSchema({

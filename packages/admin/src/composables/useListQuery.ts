@@ -6,17 +6,21 @@ import { getNamedSchemas } from '../utils/schema/lookup.js'
 import { isListSource } from '../utils/schema/structure.js'
 import type { Schema } from '../utils/types.ts'
 import type { FieldProps } from './useField.ts'
+import type { SchemaValueOptions } from './useSchemaValue.ts'
 
 // The scope, page, order and filters of a list, remembered in the store, and
 // held by the route for lists that load their data in routes, see `ListQuery`.
 export function useListQuery(
   props: FieldProps,
   {
+    getSchemaValue,
     getPaginate,
     isInRoute,
     isRouted,
     onChange
   }: {
+    // Resolves callbacks of scopes with the context of the list:
+    getSchemaValue: (key: string, options: SchemaValueOptions) => any
     getPaginate: () => number | undefined
     // Lists in routes change the query through the route...
     isInRoute: () => boolean
@@ -43,15 +47,20 @@ export function useListQuery(
     name ? scopes.value?.[name] : defaultScope.value
 
   // The query that the server reads. Scopes with `filter` send their filters
-  // instead of `scope`, after those of the panel, so that theirs apply:
+  // instead of `scope`, after those of the panel, so that theirs apply.
+  // `filter` can be a callback that returns the filters:
   function getServerQuery() {
     const { query } = listQuery
     const scope = getScope(query.scope)
     if (scope && 'filter' in scope) {
       const { scope: _, filter, ...rest } = query
+      const scopeFilter = getSchemaValue('filter', {
+        type: Object,
+        schema: scope
+      })
       const filters = [
         ...asArray(filter),
-        ...Object.entries(scope.filter).map(
+        ...Object.entries(scopeFilter ?? {}).map(
           ([name, value]) => `${name}:${JSON.stringify(value)}`
         )
       ]
