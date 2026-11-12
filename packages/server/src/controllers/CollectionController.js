@@ -242,15 +242,14 @@ export class CollectionController extends Controller {
   }
 
   async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
-    const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
     // Deltas pass their marker on as an option. Empty deltas change nothing, so
-    // they keep the version:
+    // they only fetch the record and keep its version:
     const { [deltaProp]: delta, ...rest } = body ?? {}
-    const data = !delta
-      ? addNextVersion(ctx, this.modelClass, body)
-      : isEmpty(rest)
-        ? rest
-        : addNextVersion(ctx, this.modelClass, rest)
+    if (delta && isEmpty(rest)) {
+      return this.fetchMember(ctx, { id: ctx.memberId, modify })
+    }
+    const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
+    const data = addNextVersion(ctx, this.modelClass, delta ? rest : body)
     return this.execute(ctx, (query, trx) =>
       query[name](ctx.memberId, data, delta ? { delta } : undefined)
         .throwIfNotFound()

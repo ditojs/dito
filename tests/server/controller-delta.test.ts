@@ -134,10 +134,11 @@ describe('Controllers with deltas', () => {
     expect(JSON.parse(response.headers.get('Dito-Record-Graph')!)).toEqual({
       steps: {}
     })
-    for (const path of ['whole-plans', 'plain-plans']) {
-      const { headers } = await fetch(getPlanUrl(plan, path))
-      expect(headers.get('Dito-Record-Graph')).toBeNull()
-    }
+    const { headers } = await fetch(getPlanUrl(plan, 'whole-plans'))
+    expect(headers.get('Dito-Record-Graph')).toBeNull()
+    // Controllers without `graph` write no relations:
+    const plainResponse = await fetch(getPlanUrl(plan, 'plain-plans'))
+    expect(plainResponse.headers.get('Dito-Record-Graph')).toBe('{}')
     const listResponse = await fetch(`${getAppUrl(app)}/plans`)
     expect(listResponse.headers.get('Dito-Record-Graph')).toBeNull()
   })
@@ -173,12 +174,23 @@ describe('Controllers with deltas', () => {
 
   it('refuses deltas for handlers that read whole plans', async () => {
     const plan = await insertPlan()
-    for (const path of ['whole-plans', 'plain-plans']) {
-      const url = getPlanUrl(plan, path)
-      const response = await patch(url, { '#delta': true, 'name': 'A' })
-      expect(response.status).toBe(400)
-    }
+    const url = getPlanUrl(plan, 'whole-plans')
+    const response = await patch(url, { '#delta': true, 'name': 'A' })
+    expect(response.status).toBe(400)
     expect((await Plan.query().findById(plan.id))!.name).toBe('Plan')
+  })
+
+  it('applies deltas without `graph` as patches', async () => {
+    const plan = await insertPlan()
+    const url = getPlanUrl(plan, 'plain-plans')
+    const version = (await fetch(url)).headers.get('Dito-Record-Version')
+    const unchanged = await patch(url, { '#delta': true })
+    expect(unchanged.status).toBe(200)
+    expect(unchanged.headers.get('Dito-Record-Version')).toBe(version)
+    const response = await patch(url, { '#delta': true, 'name': 'A' })
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Dito-Record-Version')).not.toBe(version)
+    expect((await Plan.query().findById(plan.id))!.name).toBe('A')
   })
 
   it('keeps the version for deltas without changes', async () => {
