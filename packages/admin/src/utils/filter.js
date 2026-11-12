@@ -56,7 +56,7 @@ export const filterComponents = {
   }
 }
 
-export function createFiltersPanel(api, filters, dataPath, query) {
+export function createFiltersPanel(api, filters, query, services = null) {
   const { sticky, ...filterSchemas } = filters
   // The contexts of the filters' change events are the ones of the changed
   // filters, so we keep the panel's data to apply it on changes:
@@ -101,7 +101,12 @@ export function createFiltersPanel(api, filters, dataPath, query) {
 
     data() {
       // The query holds the values serialized, e.g. dates as strings:
-      filtersData = deserializeData(panel, parseFiltersData(panel, query.value))
+      // Callbacks of the filters read the services, e.g. `api` and `user`:
+      filtersData = deserializeData(
+        panel,
+        parseFiltersData(panel, query.value),
+        { services }
+      )
       return filtersData
     },
 

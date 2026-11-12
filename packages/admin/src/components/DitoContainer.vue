@@ -324,8 +324,8 @@ export default {
             ? componentPath.value
             : parentComponentPath.value,
           componentPath.value,
-          // The source of lists, for their filters:
-          services.sourceContext,
+          // Lists read their source from the services, for their filters:
+          services,
           panelTab
         )
       )

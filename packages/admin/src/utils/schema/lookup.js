@@ -255,14 +255,14 @@ export function getAllPanelEntries(
   dataPath,
   dataPathComponentPath,
   schemaComponentPath,
-  source = null,
+  services = null,
   tab = null
 ) {
   const panelSchema = getTypeDescriptor(schema)?.getPanelSchema?.(
     api,
     schema,
     dataPath,
-    source
+    services
   )
   const panelEntries = panelSchema
     ? [

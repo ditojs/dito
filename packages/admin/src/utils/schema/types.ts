@@ -5,6 +5,7 @@ import type {
   TypeDescriptor as PublicTypeDescriptor
 } from '../../../types/index.d.ts'
 import type { Schema } from '../types.ts'
+import type { Services } from '../services.ts'
 
 export type Context = Record<string, any>
 
@@ -30,16 +31,8 @@ export type TypeDescriptor = PublicTypeDescriptor & {
     api: ApiConfig,
     schema: Schema,
     dataPath: string,
-    // The list that the component renders, e.g. for the panel of its filters:
-    source: {
-      readonly listQuery: {
-        readonly query: Record<string, any>
-        update(
-          changes: Record<string, any>,
-          options?: { resetPage?: boolean }
-        ): Promise<unknown>
-      }
-    } | null
+    // The services of the component, e.g. for the panel of a list's filters:
+    services: Services | null
   ): Schema | null | undefined
 }
 

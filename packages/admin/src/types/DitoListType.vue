@@ -462,23 +462,25 @@ defineType({
   hasLabelButtons: true,
   alignsBelowLabels: false,
 
-  getPanelSchema(api, schema, dataPath, source) {
+  getPanelSchema(api, schema, dataPath, services) {
     const { filters } = schema
     if (filters) {
       return createFiltersPanel(
         api,
         filters,
-        dataPath,
         computed({
           get() {
-            return source.listQuery.query
+            return services.sourceContext.listQuery.query
           },
 
           // Only reset the page that the panel clears when the query changes:
           set({ page, ...query }) {
-            source.listQuery.update(query, { resetPage: true })
+            services.sourceContext.listQuery.update(query, {
+              resetPage: true
+            })
           }
-        })
+        }),
+        services
       )
     }
   },
