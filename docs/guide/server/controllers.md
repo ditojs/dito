@@ -273,7 +273,7 @@ seconds, two saves within one second write the same version, so use an
 
 ### Deltas
 
-Forms of graph controllers with `delta = true` save only what they changed:
+Forms of controllers with `delta = true` save only what they changed:
 
 ```js
 export class Books extends ModelController {
@@ -296,9 +296,12 @@ Member actions that return a model send the relations that it holds in the
   `{ delta: true }`, which therefore takes no `removed` settings in its
   `relations` option.
 - To-one records with the same id, by their id and with only the values that
-  changed. Other records come whole, and `null` removes them.
+  changed. Other records come whole, and `null` removes them. The to-many
+  relations of records that come whole keep the rows that they leave out too.
 
-Relation controllers take `delta` from their parent, like `graph`.
+Controllers without `graph` write no relations, so their deltas hold the
+relations that changed whole, like other values. Relation controllers take
+`delta` from their parent, like `graph`.
 
 A delta lists changes to the record that the form loaded, so it relies on
 [stale saves](#stale-saves) to fail if the record changed since. Controllers
