@@ -310,6 +310,9 @@ describe('definition.filters', () => {
     expect(() => Book.query().applyFilter('!shelf', 'top')).toThrow(
       `Query filter 'shelf' is not defined.`
     )
+    expect(() => Book.query().applyFilter(undefined)).toThrow(
+      `Query filter 'undefined' is not defined.`
+    )
   })
 
   it('applies equals query filters with one value', () => {

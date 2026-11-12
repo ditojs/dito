@@ -328,7 +328,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
 
     // A `!` before the name negates the filter, as in `!published`.
-    const [, not, filterName] = name.match(/^(!?)(.*)$/)
+    const [, not, filterName] = `${name}`.match(/^(!?)(.*)$/s)
     if (this.#allowFilters && !this.#allowFilters[filterName]) {
       throw new QueryBuilderError(
         `Query filter '${filterName}' is not allowed.`
