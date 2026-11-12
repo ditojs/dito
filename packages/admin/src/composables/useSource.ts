@@ -100,6 +100,7 @@ export function useSource(
     getServerQuery,
     getRequestQuery
   } = useListQuery(props, {
+    getSchemaValue,
     getPaginate: () => paginate.value,
     // Lists outside of routes, e.g. in dialogs, keep the query to themselves:
     isInRoute: () => !!routeContext,
