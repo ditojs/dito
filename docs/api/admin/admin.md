@@ -163,8 +163,10 @@ under it, e.g. `POST users/passkey-login`. The server's `UsersController`
 provides them all. The admin reads `user` from the responses of `login` and
 `session`, and `success` from the response of `logout`. The
 [account settings](#parameters) load the logged-in user from `self` and patch
-it there, after which the admin fetches the session's user again. Requests that
-answer `confirmationRequired` ask for the password, the TOTP code or a passkey,
+it there, after which the admin fetches the session's user again. When a
+request answers 401, the admin fetches the session, and if it expired, asks to
+log in and sends the request again. Requests that answer
+`confirmationRequired` ask for the password, the TOTP code or a passkey,
 post them to `confirm-access` and are sent again. See
 [AdminContext](#session) for the session that uses them.
 
@@ -437,10 +439,10 @@ A promise of the user, or `null` if the user cancels the login.
 ##### Example
 
 ```js
-// In a button's click handler, before a request that needs a session:
-async onClick({ request }) {
+// In a button's click handler, before opening a page that needs a session:
+async onClick() {
   if (await admin.context.session.ensureUser()) {
-    await request({ method: 'post', url: 'books/import' })
+    window.open('/books/export')
   }
 }
 ```

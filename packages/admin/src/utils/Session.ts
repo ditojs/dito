@@ -33,6 +33,7 @@ export class Session {
   readonly #viewRegistry: ViewRegistry
   readonly #login: LoginOptions
   readonly #user: ShallowRef<User | null>
+  #renewal: Promise<boolean> | null = null
   // The responses of `request({ cache: 'global' })`, kept for the same user:
   loadCache: Record<string, Promise<any>> = {}
 
@@ -270,6 +271,21 @@ export class Session {
 
   async ensureUser(): Promise<User | null> {
     return (await this.fetchUser()) || this.login()
+  }
+
+  // The API answers 401 both once the session expired and when the user may
+  // not access a resource. Resolve to whether the session expired and the user
+  // logged in again. Requests refused at the same time share one login:
+  renewExpired(): Promise<boolean> {
+    this.#renewal ||= (async () => {
+      if (await this.fetchUser()) {
+        return false
+      }
+      return !!(await this.login())
+    })().finally(() => {
+      this.#renewal = null
+    })
+    return this.#renewal
   }
 
   #setUser(user: User | null) {

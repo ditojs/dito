@@ -106,15 +106,19 @@ export async function sendRequest(
   }
   method ||= resourceRequest?.method
   const checkUser = !internal && api.isApiUrl(url)
-  if (checkUser) {
-    await session.ensureUser()
-  }
   const send = () => api.request({ method, url, query, data, headers, signal })
   const response = await send().catch(async error => {
-    // Security changes answer `confirmationRequired` without a recent login,
-    // so we confirm the access and send them again. Cancelled confirmations
-    // end the request quietly, like aborted ones:
-    if (checkUser && error.response?.data?.confirmationRequired) {
+    // Requests refused once the session expired are sent again after the
+    // login. Security changes answer `confirmationRequired` without a recent
+    // login, so we confirm the access and send them again. Cancelled
+    // confirmations end the request quietly, like aborted ones:
+    if (checkUser && error.response?.status === 401) {
+      if (await session.renewExpired()) {
+        return send()
+      } else {
+        throw error
+      }
+    } else if (checkUser && error.response?.data?.confirmationRequired) {
       if (await session.confirmAccess()) {
         return send()
       } else {

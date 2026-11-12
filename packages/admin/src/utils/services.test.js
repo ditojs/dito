@@ -460,16 +460,28 @@ describe('services', () => {
   })
 
   describe('sendRequest()', () => {
+    // `state.loggedIn` ends the session, `state.allowed` refuses `/books`:
     const mountWithUsers = async () => {
-      let username = 'reader'
+      const state = { username: 'reader', loggedIn: true, allowed: true }
       const request = vi.fn(({ method = 'get', url, data }) => {
         if (url === '/users/session') {
-          return { data: { user: { id: 1, username } } }
+          return {
+            data: {
+              user: state.loggedIn
+                ? { id: 1, username: state.username }
+                : null
+            }
+          }
+        }
+        if (url === '/books' && !(state.loggedIn && state.allowed)) {
+          throw Object.assign(new Error('Unauthorized'), {
+            response: { status: 401 }
+          })
         }
         if (method === 'patch') {
-          username = data.username
+          state.username = data.username
         }
-        return { data }
+        return { data: data ?? 'books' }
       })
       const result = await mountSchema({
         schema: { fields: { title: { type: 'text' } } },
@@ -479,8 +491,46 @@ describe('services', () => {
       const getSessionRequestCount = () =>
         request.mock.calls.filter(([{ url }]) => url === '/users/session')
           .length
-      return { ...result, request, getSessionRequestCount }
+      const login = vi
+        .spyOn(result.admin.context.session, 'login')
+        .mockImplementation(async () => {
+          state.loggedIn = true
+          return { id: 1, username: state.username }
+        })
+      return { ...result, request, state, login, getSessionRequestCount }
     }
+
+    it(`doesn't fetch the session before requests`, async () => {
+      const { admin, getSessionRequestCount } = await mountWithUsers()
+      const count = getSessionRequestCount()
+      const response = await sendRequest(
+        { adminContext: admin.context },
+        { url: '/books' }
+      )
+      expect(response.data).toBe('books')
+      expect(getSessionRequestCount()).toBe(count)
+    })
+
+    it('logs in and sends requests again once the session expired', async () => {
+      const { admin, state, login } = await mountWithUsers()
+      state.loggedIn = false
+      const services = { adminContext: admin.context }
+      const responses = await Promise.all([
+        sendRequest(services, { url: '/books' }),
+        sendRequest(services, { url: '/books' })
+      ])
+      expect(responses.map(({ data }) => data)).toEqual(['books', 'books'])
+      expect(login).toHaveBeenCalledTimes(1)
+    })
+
+    it('throws refused requests while the session lasts', async () => {
+      const { admin, state, login } = await mountWithUsers()
+      state.allowed = false
+      await expect(
+        sendRequest({ adminContext: admin.context }, { url: '/books' })
+      ).rejects.toThrow('Unauthorized')
+      expect(login).not.toHaveBeenCalled()
+    })
 
     it('fetches the own user again after patching it', async () => {
       const { admin, getSessionRequestCount } = await mountWithUsers()
@@ -494,8 +544,7 @@ describe('services', () => {
           data: { username: 'editor' }
         }
       )
-      // Once to ensure the user before the request, and once after it:
-      expect(getSessionRequestCount()).toBe(count + 2)
+      expect(getSessionRequestCount()).toBe(count + 1)
       expect(admin.context.user.username).toBe('editor')
     })
 
@@ -510,7 +559,7 @@ describe('services', () => {
           data: { username: 'editor' }
         }
       )
-      expect(getSessionRequestCount()).toBe(count + 1)
+      expect(getSessionRequestCount()).toBe(count)
       expect(admin.context.user.username).toBe('reader')
     })
 
