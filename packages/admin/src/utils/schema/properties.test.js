@@ -277,9 +277,10 @@ describe('getFormProperties()', () => {
         await getProperties({
           author: { type: 'select', options: { data: async () => [] } },
           editor: { type: 'select', options: { dataPath: 'editors' } },
+          genre: { type: 'select', options: async () => [] },
           value: { type: 'select', options: [1, 'one'] }
         })
-      ).toEqual({ author: {}, editor: {}, value: {} })
+      ).toEqual({ author: {}, editor: {}, genre: {}, value: {} })
     })
 
     it('describes `multiple` values as arrays', async () => {
