@@ -709,9 +709,8 @@ export interface SourceSettings<$Item> {
    * with `filter` sends the argument of each filter by its name instead,
    * as `filter=name:args`. `filter` can also be a callback that returns
    * the filters, e.g. `({ user }) => ({ author: user.id })`. `order` sets
-   * the order of the list, as in
-   * `'title desc'`. The first scope, or the one with `defaultScope: true`,
-   * is selected by default.
+   * the order of the list, as in `'title desc'`. The first scope, or the
+   * one with `defaultScope: true`, is selected by default.
    */
   scopes?:
     | string[]

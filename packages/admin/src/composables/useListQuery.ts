@@ -6,7 +6,7 @@ import { getNamedSchemas } from '../utils/schema/lookup.js'
 import { isListSource } from '../utils/schema/structure.js'
 import type { Schema } from '../utils/types.ts'
 import type { FieldProps } from './useField.ts'
-import type { SchemaValueOptions } from './useSchemaValue.ts'
+import type { useSchemaValue } from './useSchemaValue.ts'
 
 // The scope, page, order and filters of a list, remembered in the store, and
 // held by the route for lists that load their data in routes, see `ListQuery`.
@@ -20,7 +20,7 @@ export function useListQuery(
     onChange
   }: {
     // Resolves callbacks of scopes with the context of the list:
-    getSchemaValue: (key: string, options: SchemaValueOptions) => any
+    getSchemaValue: ReturnType<typeof useSchemaValue>['getSchemaValue']
     getPaginate: () => number | undefined
     // Lists in routes change the query through the route...
     isInRoute: () => boolean

@@ -2291,6 +2291,23 @@ describe('DitoListType', () => {
       await flushPromises()
       expect(getLoadQuery()).toEqual({ filter: ['author:1'] })
     })
+
+    it('lets the callback override filters of the same name', async () => {
+      const { getLoadQuery } = await mountBooksByAuthorView(
+        '/books?scope=mine&filter=author:2'
+      )
+      expect(getLoadQuery().filter).toEqual(['author:2', 'author:1'])
+    })
+
+    it('sends no filters for callbacks that return none', async () => {
+      const { buttons, filter, getLoadQuery } =
+        await mountBooksByAuthorView('/books')
+      filter.mockReturnValue(null)
+      await buttons[1].trigger('click')
+      await flushPromises()
+      expect(filter).toHaveBeenCalled()
+      expect(getLoadQuery()).toEqual({})
+    })
   })
 
   describe('filters', () => {
