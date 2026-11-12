@@ -131,6 +131,12 @@ describe('definition.filters', () => {
       decade(query, decade) {
         query.whereBetween('year', [decade, decade + 9])
       },
+      // Filters may add no condition for some arguments.
+      dated(query, isDated) {
+        if (isDated) {
+          query.whereNotNull('publishedAt')
+        }
+      },
       // Object filters with parameters receive the coerced values as object.
       publishedAfter: {
         parameters: {
@@ -243,9 +249,61 @@ describe('definition.filters', () => {
     ])
   })
 
+  it('applies negated filters with a `!` before the name', () => {
+    expect(toSQL(Book.query().applyFilter('!decade', 1990))).toEqual({
+      sql: (
+        'select "Book".* from "Book" ' +
+        'where not ("Book"."year" between $1 and $2)'
+      ),
+      bindings: [1990, 1999]
+    })
+  })
+
+  it('applies a filter and its negation together', () => {
+    expect(
+      toSQL(Book.query().applyFilter({ 'decade': [1990], '!title': ['Dune'] }))
+    ).toEqual({
+      sql: (
+        'select "Book".* from "Book" ' +
+        'where ("Book"."year" between $1 and $2) ' +
+        'and not ("Book"."title" ilike $3)'
+      ),
+      bindings: [1990, 1999, '%Dune%']
+    })
+  })
+
+  it('negates text query filters with several properties as a whole', () => {
+    expect(
+      toSQL(Book.query().applyFilter('!text', 'starts-with', 'Dune'))
+    ).toEqual({
+      sql: (
+        'select "Book".* from "Book" where ' +
+        'not (("Book"."title" ilike $1) or ("Book"."subtitle" ilike $2))'
+      ),
+      bindings: ['Dune%', 'Dune%']
+    })
+  })
+
+  it('leaves out negated filters that add no condition', () => {
+    expect(toSQL(Book.query().applyFilter('!dated', false))).toEqual({
+      sql: 'select "Book".* from "Book"',
+      bindings: []
+    })
+  })
+
+  it('checks negated filters against the allowed filters', () => {
+    expect(() =>
+      Book.query().allowFilter('title').applyFilter('!decade', 1990)
+    ).toThrow(`Query filter 'decade' is not allowed.`)
+    expect(() => Book.query().applyFilter('!genre', 'poetry')).toThrow(
+      `Query filter 'genre' is not defined.`
+    )
+  })
+
   it('inherits filters from parent classes', () => {
     expect(Object.keys(Novel.definition.filters).toSorted()).toEqual([
       'between',
+      'dated',
       'decade',
       'publishedAfter',
       'publishedAt',

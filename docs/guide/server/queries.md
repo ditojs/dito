@@ -440,6 +440,13 @@ by commas. Several filters are combined with AND:
 GET /api/books?filter=title:"contains","garden"&filter=price:5,20
 ```
 
+A `!` before the name negates a filter: `filter=!genre:"poetry"` returns the
+books that the `genre` filter leaves out, as `NOT (...)`. Rows where the
+filter's column is `NULL` are left out as well, as SQL doesn't match `NULL`
+either way. `applyFilter('!genre', 'poetry')` does the same in code. A filter
+and its negation can be applied together, and `allowFilter` treats both as the
+same filter.
+
 Filters are applied immediately, unlike scopes, which are applied when the
 query runs. Applying a filter that isn't defined throws a
 [`QueryBuilderError`](errors.md). The admin uses filters for the filter panels

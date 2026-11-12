@@ -16,7 +16,7 @@ QueryParameters.register({
       query.applyFilter(
         Object.fromEntries(
           asArray(value).map(filter => {
-            const [, name, json] = filter.match(/^(\w+):(.*)$/)
+            const [, name, json] = filter.match(/^(!?\w+):(.*)$/)
             return [name, JSON.parse(`[${json}]`)]
           })
         )
