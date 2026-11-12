@@ -1,8 +1,11 @@
 import { isObject, isArray, asArray, isEmpty } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { deltaProp } from '../graph/records.js'
+import { parseHandlerDefinition } from '../utils/handler.js'
 import { ControllerError, ValidationError } from '../errors/index.js'
-import { addNextVersion } from './version.js'
+import { addNextVersion, sendRecordVersion } from './version.js'
+
+const recordVersionAction = 'get record-version'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
@@ -38,6 +41,28 @@ export class CollectionController extends Controller {
     )
     if (type === 'member' && name === 'patch') {
       this.patchAction = action
+    }
+    // Members with a version also answer with only their version, authorized
+    // like `get`, see `sendRecordVersion()`:
+    if (
+      type === 'member' &&
+      name === 'get' &&
+      this.modelClass.versionProperty
+    ) {
+      if (actions[recordVersionAction]) {
+        throw new ControllerError(
+          this,
+          `The action '${recordVersionAction}' is reserved for the version ` +
+          'of members.'
+        )
+      }
+      super.setupAction(
+        type,
+        actions,
+        recordVersionAction,
+        parseHandlerDefinition({ handler: sendRecordVersion, core: true }),
+        authorize
+      )
     }
     return action
   }

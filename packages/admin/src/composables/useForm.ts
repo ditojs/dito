@@ -198,13 +198,21 @@ export function useForm({
     const { version } = model
     if (!version || Date.now() - versionCheckedAt < versionCheckDelay) return
     versionCheckedAt = Infinity
-    let latest: any = null
-    // The check fails silently:
-    await requests.request({ method: 'get' }, (error, response) => {
-      latest = error ? null : response
-      return true
-    })
-    const latestVersion = latest && getServerRecord(latest).version
+    // Ask for the version only, with the same read as saves. The check fails
+    // silently:
+    let latestVersion: string | null = null
+    await requests.request(
+      {
+        method: 'get',
+        resource: getResource('record-version', {
+          parent: requests.getResource({ method: 'get' })
+        })
+      },
+      (error, response) => {
+        latestVersion = error ? null : getServerRecord(response).version!
+        return true
+      }
+    )
     const message = (
       'changed since it was loaded. Do you want to reload it and discard ' +
       'your changes?'
@@ -221,7 +229,8 @@ export function useForm({
         action: 'Reload'
       }))
     ) {
-      await setLoadedData(latest.data, latest)
+      // Keep showing the data until the latest record loaded:
+      await requests.loadData({ onLoad: setLoadedData })
     }
   }
   watch(() => model.editCount, checkVersion)

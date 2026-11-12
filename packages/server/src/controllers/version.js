@@ -40,11 +40,11 @@ export async function getModelVersion(model, transaction) {
   return formatVersion(record[name])
 }
 
-// Read the version of the addressed record with a lock, and fail if it differs
-// from the one in the request. Missing records respond with 404. The scopes of
-// relations still apply, as they pick their members. The lock names the
-// model's table, so that it leaves the pivot rows of relations alone:
-export async function checkVersion(ctx, controller) {
+// Read the version of the addressed record, with a lock for saves. Missing
+// records respond with 404. The scopes of relations still apply, as they pick
+// their members. The lock names the model's table, so that it leaves the pivot
+// rows of relations alone:
+async function readVersion(ctx, controller, { lock = false } = {}) {
   const { modelClass } = controller
   const name = modelClass.versionProperty
   const record = await controller.execute(ctx, (query, transaction) =>
@@ -55,10 +55,21 @@ export async function checkVersion(ctx, controller) {
       .select(name)
       .throwIfNotFound()
       .modify(
-        query => transaction && query.forUpdate(query.tableRefFor(modelClass))
+        query => (
+          lock &&
+          transaction &&
+          query.forUpdate(query.tableRefFor(modelClass))
+        )
       )
   )
-  if (ctx.get(versionHeader) !== formatVersion(record[name])) {
+  return record[name]
+}
+
+// Fail with 412 if the version of the record differs from the one in the
+// request, and return it:
+export async function checkVersion(ctx, controller) {
+  const version = await readVersion(ctx, controller, { lock: true })
+  if (ctx.get(versionHeader) !== formatVersion(version)) {
     throw new ResponseError({
       message: (
         'The record changed since it was loaded. Copy your unsaved ' +
@@ -67,7 +78,19 @@ export async function checkVersion(ctx, controller) {
       status: 412
     })
   }
-  return record[name]
+  return version
+}
+
+// The handler of `GET :id/record-version`, which controllers route next to
+// member `get` for models with a version. Forms check through it whether saves
+// would be refused, with the same read of the version as saves, but without
+// the record:
+export async function sendRecordVersion(ctx) {
+  ctx.set(
+    versionHeader,
+    formatVersion(await readVersion(ctx, this.controller))
+  )
+  ctx.status = 204
 }
 
 // Checked saves write the next version, never one from the body, also when

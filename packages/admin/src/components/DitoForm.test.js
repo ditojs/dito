@@ -87,11 +87,6 @@ describe('DitoForm', () => {
   describe('version checks', () => {
     const loaded = { id: 1, title: 'Orlando' }
 
-    const respond = ({ version = '"1"', ...data }) => ({
-      data,
-      headers: new Headers({ 'Dito-Record-Version': version })
-    })
-
     // Moves the clock past the delay between checks of the version:
     const { now } = Date
     let offset = 0
@@ -100,8 +95,12 @@ describe('DitoForm', () => {
       vi.spyOn(Date, 'now').mockImplementation(() => now() + offset)
     }
 
-    // Mounts the form of a record whose loads respond with `loads` in turn:
-    async function mountVersionedForm({ loads }) {
+    // Mounts the form of the record that `server.record` holds, at
+    // `server.version`, and records the urls of the requests. Responses hold
+    // copies, as the form edits them:
+    async function mountVersionedForm() {
+      const server = { record: loaded, version: '"1"' }
+      const requests = []
       const admin = await mountAdmin({
         views: {
           items: {
@@ -114,9 +113,13 @@ describe('DitoForm', () => {
           }
         },
         request({ url }) {
+          requests.push(url)
+          const headers = new Headers({ 'Dito-Record-Version': server.version })
           return url === '/items'
             ? { data: [loaded] }
-            : respond(loads.shift())
+            : url.endsWith('/record-version')
+              ? { data: null, headers }
+              : { data: { ...server.record }, headers }
         }
       })
       await admin.navigate('/items/1')
@@ -134,26 +137,37 @@ describe('DitoForm', () => {
         window.dispatchEvent(new Event('focus'))
         await settle(form)
       }
-      return { model, edit, focus }
+      // Another editor saves the record:
+      const change = () => {
+        server.record = { ...loaded, title: 'Orlando!' }
+        server.version = `"${+JSON.parse(server.version) + 1}"`
+      }
+      return { model, requests, edit, focus, change }
     }
 
     it('loads the latest record into forms without edits on focus', async () => {
-      const { model, focus } = await mountVersionedForm({
-        loads: [loaded, { ...loaded, title: 'Orlando!', version: '"2"' }]
-      })
+      const { model, requests, focus, change } = await mountVersionedForm()
       // Records that the form just loaded aren't checked:
       await focus()
-      expect(model.data.title).toBe('Orlando')
       later()
       await focus()
+      expect(requests.at(-1)).toBe('/items/1/record-version')
+      expect(model.data.title).toBe('Orlando')
+      change()
+      later()
+      await focus()
+      expect(requests.slice(-2)).toEqual([
+        '/items/1/record-version',
+        '/items/1'
+      ])
       expect(model.data.title).toBe('Orlando!')
+      expect(model.version).toBe('"2"')
     })
 
     it('checks the version on edits', async () => {
       const answer = stubConfirm(true)
-      const { model, edit } = await mountVersionedForm({
-        loads: [loaded, { ...loaded, title: 'Orlando!', version: '"2"' }]
-      })
+      const { model, edit, change } = await mountVersionedForm()
+      change()
       later()
       await edit()
       expect(answer).toHaveBeenCalledTimes(1)
@@ -162,14 +176,12 @@ describe('DitoForm', () => {
 
     it('stops checking once the user declines to reload', async () => {
       const answer = stubConfirm(false)
-      const latest = { ...loaded, title: 'Orlando!', version: '"2"' }
-      const { model, edit, focus } = await mountVersionedForm({
-        loads: [loaded, latest]
-      })
+      const { model, edit, focus, change } = await mountVersionedForm()
       await edit()
+      change()
       later()
       await focus()
-      latest.version = '"3"'
+      change()
       later()
       await focus()
       expect(answer).toHaveBeenCalledTimes(1)
