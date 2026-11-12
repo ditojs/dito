@@ -57,17 +57,17 @@ describe('QueryFilters.text', () => {
 })
 
 describe('QueryFilters.equals', () => {
-  const handler = QueryFilters.get('equals')
+  const { handler } = QueryFilters.get('equals')
 
   it('compares the property with one value', () => {
     const query = createQueryRecorder()
-    handler(query, 'genre', 'poetry')
+    handler(query, 'genre', { value: 'poetry' })
     expect(query.calls).toEqual([['where', 'genre', 'poetry']])
   })
 
   it('compares the property with a list of values', () => {
     const query = createQueryRecorder()
-    handler(query, 'genre', ['poetry', 'drama'])
+    handler(query, 'genre', { value: ['poetry', 'drama'] })
     expect(query.calls).toEqual([['whereIn', 'genre', ['poetry', 'drama']]])
   })
 })

@@ -340,6 +340,27 @@ describe('definition.filters', () => {
     })
   })
 
+  it('matches `null` in equals query filters with `IS NULL`', () => {
+    expect(
+      toSQL(Book.query().applyFilter('!genre', ['poetry', null]))
+    ).toEqual({
+      sql: (
+        'select "Book".* from "Book" where ' +
+        'not (("Book"."genre" in ($1) or "Book"."genre" is null))'
+      ),
+      bindings: ['poetry']
+    })
+  })
+
+  it('throws validation errors for invalid equals query filters', () => {
+    expect(() => toSQL(Book.query().applyFilter('genre'))).toThrow(
+      ValidationError
+    )
+    expect(() => toSQL(Book.query().applyFilter('genre', [{}]))).toThrow(
+      ValidationError
+    )
+  })
+
   it('applies equals query filters to boolean properties', () => {
     for (const published of [true, false]) {
       expect(toSQL(Book.query().applyFilter('published', published))).toEqual(
