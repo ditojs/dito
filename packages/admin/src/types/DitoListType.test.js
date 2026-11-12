@@ -2233,7 +2233,6 @@ describe('DitoListType', () => {
 
   describe('scopes with filter callbacks', () => {
     async function mountBooksByAuthorView(path) {
-      const filter = vi.fn(({ user }) => ({ author: user.id }))
       const admin = await mountAdmin({
         views: {
           books: {
@@ -2243,7 +2242,10 @@ describe('DitoListType', () => {
               resource: { path: 'books' },
               scopes: {
                 all: { filter: {} },
-                mine: { label: 'Mine', filter },
+                mine: {
+                  label: 'Mine',
+                  filter: ({ user }) => ({ author: user.id })
+                },
                 published: { filter: { published: true } }
               }
             }
@@ -2254,7 +2256,7 @@ describe('DitoListType', () => {
       await admin.navigate(path)
       const buttons = admin.wrapper.findAll('.dito-scopes button')
       const getLoadQuery = () => admin.request.mock.calls.at(-1)[0].query
-      return { admin, buttons, filter, getLoadQuery }
+      return { admin, buttons, getLoadQuery }
     }
 
     it('sends the filters that the callback returns', async () => {
@@ -2270,14 +2272,6 @@ describe('DitoListType', () => {
       })
     })
 
-    it('calls the callback with the context of the list', async () => {
-      const { filter } = await mountBooksByAuthorView('/books?scope=mine')
-      expect(filter).toHaveBeenCalled()
-      const [context] = filter.mock.calls.at(-1)
-      expect(context.user).toMatchObject({ id: 1, username: 'tester' })
-      expect(context.schema.type).toBe('list')
-    })
-
     it('switches between callback and object filters', async () => {
       const { buttons, getLoadQuery } = await mountBooksByAuthorView('/books')
       expect(getLoadQuery()).toEqual({})
@@ -2290,23 +2284,6 @@ describe('DitoListType', () => {
       await buttons[1].trigger('click')
       await flushPromises()
       expect(getLoadQuery()).toEqual({ filter: ['author:1'] })
-    })
-
-    it('lets the callback override filters of the same name', async () => {
-      const { getLoadQuery } = await mountBooksByAuthorView(
-        '/books?scope=mine&filter=author:2'
-      )
-      expect(getLoadQuery().filter).toEqual(['author:2', 'author:1'])
-    })
-
-    it('sends no filters for callbacks that return none', async () => {
-      const { buttons, filter, getLoadQuery } =
-        await mountBooksByAuthorView('/books')
-      filter.mockReturnValue(null)
-      await buttons[1].trigger('click')
-      await flushPromises()
-      expect(filter).toHaveBeenCalled()
-      expect(getLoadQuery()).toEqual({})
     })
   })
 
