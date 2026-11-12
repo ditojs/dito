@@ -327,15 +327,22 @@ export class QueryBuilder extends objection.QueryBuilder {
       return this
     }
 
-    if (this.#allowFilters && !this.#allowFilters[name]) {
-      throw new QueryBuilderError(`Query filter '${name}' is not allowed.`)
+    // A `!` before the name negates the filter, as in `!published`.
+    const [, not, filterName] = `${name}`.match(/^(!?)(.*)$/s)
+    if (this.#allowFilters && !this.#allowFilters[filterName]) {
+      throw new QueryBuilderError(
+        `Query filter '${filterName}' is not allowed.`
+      )
     }
-    const filter = this.modelClass().definition.filters[name]
+    const filter = this.modelClass().definition.filters[filterName]
     if (!filter) {
-      throw new QueryBuilderError(`Query filter '${name}' is not defined.`)
+      throw new QueryBuilderError(
+        `Query filter '${filterName}' is not defined.`
+      )
     }
     // NOTE: Filters are automatically combine with and operations!
-    return this.andWhere(query => filter(query, ...args))
+    const handler = query => filter(query, ...args)
+    return not ? this.andWhereNot(handler) : this.andWhere(handler)
   }
 
   allowFilter(...filters) {

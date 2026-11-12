@@ -104,6 +104,14 @@ scopes: {
 }
 ```
 
+A `!` before the name negates the filter, see [Queries](../server/queries.md).
+The `notPoetry` scope lists all books but those that the `genre` filter
+matches:
+
+```js
+notPoetry: { label: 'All but poetry', filter: { '!genre': 'poetry' } }
+```
+
 A scope with `order` sets the order of the list, until a click on a column
 header sets another one. The selected scope stays as `?scope=name` in the
 admin's URL, and `context.sourceQuery` holds the query that the server reads.

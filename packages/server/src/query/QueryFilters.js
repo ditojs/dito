@@ -1,3 +1,4 @@
+import { isArray } from '@ditojs/utils'
 import Registry from './Registry.js'
 export const QueryFilters = new Registry()
 
@@ -36,6 +37,32 @@ QueryFilters.register({
             )
           }
         }
+      }
+    }
+  },
+
+  'equals': {
+    parameters: {
+      value: {
+        type: ['string', 'number', 'boolean', 'null', 'array'],
+        items: { type: ['string', 'number', 'boolean', 'null'] },
+        required: true
+      }
+    },
+
+    handler(query, property, { value }) {
+      if (isArray(value)) {
+        const values = value.filter(value => value !== null)
+        if (values.length < value.length) {
+          // `IN (NULL)` matches no rows, so match `null` with `IS NULL`:
+          query.where(query =>
+            query.whereIn(property, values).orWhereNull(property)
+          )
+        } else {
+          query.whereIn(property, values)
+        }
+      } else {
+        query.where(property, value)
       }
     }
   },

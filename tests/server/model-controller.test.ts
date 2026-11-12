@@ -692,6 +692,24 @@ describe('ModelController', () => {
       ])
     })
 
+    it('applies negated model filters from the query', async () => {
+      await insertBooks()
+      const negated = await request('/books?filter=!minPages:400&order=title')
+      expect(negated.data.map((book: any) => book.title)).toEqual(['Atlas'])
+      const both = await request(
+        '/books?filter=minPages:400&filter=!minPages:600&order=title'
+      )
+      expect(both.data.map((book: any) => book.title)).toEqual(['Bestiary'])
+    })
+
+    it('rejects invalid filter entries with a 400 error', async () => {
+      for (const filter of ['!!minPages:400', '!:400']) {
+        const response = await request(`/books?filter=${filter}`)
+        expect(response.status).toBe(400)
+        expect(response.data.message).toMatch(/Invalid Query filter/)
+      }
+    })
+
     it('rejects invalid query parameters with a 400 error', async () => {
       const response = await request('/books?range=5,1')
       expect(response.status).toBe(400)
@@ -1196,9 +1214,11 @@ describe('ModelController', () => {
     })
 
     it('only lets allowed filters pass through `allowFilter`', async () => {
-      const response = await request('/long-books?filter=minPages:400')
-      expect(response.status).toBe(400)
-      expect(response.data.message).toMatch(/minPages/)
+      for (const filter of ['minPages:400', '!minPages:400']) {
+        const response = await request(`/long-books?filter=${filter}`)
+        expect(response.status).toBe(400)
+        expect(response.data.message).toMatch(/minPages/)
+      }
     })
 
     it('passes graph scopes on to relation controllers', async () => {

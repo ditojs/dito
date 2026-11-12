@@ -122,7 +122,9 @@ describe('definition.filters', () => {
     static properties = {
       title: { type: 'string' },
       subtitle: { type: 'string' },
+      genre: { type: 'string' },
       year: { type: 'integer' },
+      published: { type: 'boolean' },
       publishedAt: { type: 'datetime' }
     }
 
@@ -130,6 +132,12 @@ describe('definition.filters', () => {
       // Plain function filters receive the arguments unmodified.
       decade(query, decade) {
         query.whereBetween('year', [decade, decade + 9])
+      },
+      // Filters may add no condition for some arguments.
+      dated(query, isDated) {
+        if (isDated) {
+          query.whereNotNull('publishedAt')
+        }
       },
       // Object filters with parameters receive the coerced values as object.
       publishedAfter: {
@@ -151,6 +159,16 @@ describe('definition.filters', () => {
       },
       publishedAt: {
         filter: 'date-range'
+      },
+      genre: {
+        filter: 'equals'
+      },
+      published: {
+        filter: 'equals'
+      },
+      heading: {
+        filter: 'equals',
+        properties: ['title', 'subtitle']
       }
     }
   }
@@ -243,10 +261,138 @@ describe('definition.filters', () => {
     ])
   })
 
+  it('applies negated filters with a `!` before the name', () => {
+    expect(toSQL(Book.query().applyFilter('!decade', 1990))).toEqual({
+      sql: (
+        'select "Book".* from "Book" ' +
+        'where not ("Book"."year" between $1 and $2)'
+      ),
+      bindings: [1990, 1999]
+    })
+  })
+
+  it('applies a filter and its negation together', () => {
+    expect(
+      toSQL(Book.query().applyFilter({ 'decade': [1990], '!title': ['Dune'] }))
+    ).toEqual({
+      sql: (
+        'select "Book".* from "Book" ' +
+        'where ("Book"."year" between $1 and $2) ' +
+        'and not ("Book"."title" ilike $3)'
+      ),
+      bindings: [1990, 1999, '%Dune%']
+    })
+  })
+
+  it('negates text query filters with several properties as a whole', () => {
+    expect(
+      toSQL(Book.query().applyFilter('!text', 'starts-with', 'Dune'))
+    ).toEqual({
+      sql: (
+        'select "Book".* from "Book" where ' +
+        'not (("Book"."title" ilike $1) or ("Book"."subtitle" ilike $2))'
+      ),
+      bindings: ['Dune%', 'Dune%']
+    })
+  })
+
+  it('leaves out negated filters that add no condition', () => {
+    expect(toSQL(Book.query().applyFilter('!dated', false))).toEqual({
+      sql: 'select "Book".* from "Book"',
+      bindings: []
+    })
+  })
+
+  it('checks negated filters against the allowed filters', () => {
+    expect(() =>
+      Book.query().allowFilter('title').applyFilter('!decade', 1990)
+    ).toThrow(`Query filter 'decade' is not allowed.`)
+    expect(() => Book.query().applyFilter('!shelf', 'top')).toThrow(
+      `Query filter 'shelf' is not defined.`
+    )
+    expect(() => Book.query().applyFilter(undefined)).toThrow(
+      `Query filter 'undefined' is not defined.`
+    )
+  })
+
+  it('applies equals query filters with one value', () => {
+    expect(toSQL(Book.query().applyFilter('genre', 'poetry'))).toEqual({
+      sql: 'select "Book".* from "Book" where ("Book"."genre" = $1)',
+      bindings: ['poetry']
+    })
+  })
+
+  it('applies equals query filters with a list of values', () => {
+    expect(
+      toSQL(Book.query().applyFilter('genre', ['poetry', 'drama']))
+    ).toEqual({
+      sql: 'select "Book".* from "Book" where ("Book"."genre" in ($1, $2))',
+      bindings: ['poetry', 'drama']
+    })
+  })
+
+  it('applies negated equals query filters with a list of values', () => {
+    expect(
+      toSQL(Book.query().applyFilter('!genre', ['poetry', 'drama']))
+    ).toEqual({
+      sql: (
+        'select "Book".* from "Book" ' +
+        'where not ("Book"."genre" in ($1, $2))'
+      ),
+      bindings: ['poetry', 'drama']
+    })
+  })
+
+  it('matches `null` in equals query filters with `IS NULL`', () => {
+    expect(
+      toSQL(Book.query().applyFilter('!genre', ['poetry', null]))
+    ).toEqual({
+      sql: (
+        'select "Book".* from "Book" where ' +
+        'not (("Book"."genre" in ($1) or "Book"."genre" is null))'
+      ),
+      bindings: ['poetry']
+    })
+  })
+
+  it('throws validation errors for invalid equals query filters', () => {
+    expect(() => toSQL(Book.query().applyFilter('genre'))).toThrow(
+      ValidationError
+    )
+    expect(() => toSQL(Book.query().applyFilter('genre', [{}]))).toThrow(
+      ValidationError
+    )
+  })
+
+  it('applies equals query filters to boolean properties', () => {
+    for (const published of [true, false]) {
+      expect(toSQL(Book.query().applyFilter('published', published))).toEqual(
+        {
+          sql: 'select "Book".* from "Book" where ("Book"."published" = $1)',
+          bindings: [published]
+        }
+      )
+    }
+  })
+
+  it('applies equals query filters to all listed properties', () => {
+    expect(toSQL(Book.query().applyFilter('heading', 'Dune'))).toEqual({
+      sql: (
+        'select "Book".* from "Book" where ' +
+        '(("Book"."title" = $1) or ("Book"."subtitle" = $2))'
+      ),
+      bindings: ['Dune', 'Dune']
+    })
+  })
+
   it('inherits filters from parent classes', () => {
     expect(Object.keys(Novel.definition.filters).toSorted()).toEqual([
       'between',
+      'dated',
       'decade',
+      'genre',
+      'heading',
+      'published',
       'publishedAfter',
       'publishedAt',
       'text',

@@ -180,8 +180,8 @@ Named, parametrized query conditions (see
   [`QueryFilters`](query-builder.md#queryfilters), applied to the property of
   the filter's name, or to each of `properties`, combined with `OR`. Built in:
   `'text'` (`operator`: `'contains'`, `'equals'`, `'starts-with'`,
-  `'ends-with'`, or none for `'contains'`; `text`) and `'date-range'` (`from`,
-  `to`).
+  `'ends-with'`, or none for `'contains'`; `text`), `'equals'` (one value, or a
+  list of values) and `'date-range'` (`from`, `to`).
 
 ```js
 static filters = {

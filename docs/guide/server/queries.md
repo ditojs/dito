@@ -396,6 +396,7 @@ export class Book extends Model {
   static filters = {
     // Built-in filter types, applied to the property of the same name:
     title: { filter: 'text' },
+    genre: { filter: 'equals' },
     publishedAt: { filter: 'date-range' },
 
     // A built-in type applied to several properties, combined with OR:
@@ -421,7 +422,8 @@ export class Book extends Model {
 
 The built-in types are `'text'` (with an operator: `'contains'`, `'equals'`,
 `'starts-with'` or `'ends-with'`, and `'contains'` when the operator is left
-out or empty) and `'date-range'` (`from` and `to`, either `null` for an open
+out or empty), `'equals'` (one value, or a list of values that the property
+matches any of, where `null` matches `NULL`) and `'date-range'` (`from` and `to`, either `null` for an open
 range), see [`filters`](../../api/server/model.md#static-filters).
 
 In code, `applyFilter()` takes the name and the arguments:
@@ -439,6 +441,13 @@ by commas. Several filters are combined with AND:
 ```text
 GET /api/books?filter=title:"contains","garden"&filter=price:5,20
 ```
+
+A `!` before the name negates a filter: `filter=!genre:"poetry"` returns the
+books that the `genre` filter leaves out, as `NOT (...)`. Where the filter
+compares a column with a value, rows where that column is `NULL` are left out
+as well, as SQL doesn't match `NULL` either way. `applyFilter('!genre', 'poetry')` does the same in code. A filter
+and its negation can be applied together, and `allowFilter` treats both as the
+same filter.
 
 Filters are applied immediately, unlike scopes, which are applied when the
 query runs. Applying a filter that isn't defined throws a
