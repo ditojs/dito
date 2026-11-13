@@ -885,7 +885,7 @@ describe('DitoSchema', () => {
         await clearTitle(input)
       }
       expect(getErrors('title')).toEqual(['The title field is required.'])
-      expect(document.querySelector('[data-tippy-root]')).toBe(null)
+      expect(document.querySelector('.dito-tooltip')).toBe(null)
     })
 
     it('keeps the errors when focusing their input', async () => {

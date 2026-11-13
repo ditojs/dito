@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import DitoTimePicker from './DitoTimePicker.vue'
 import DitoTimePanel from './DitoTimePanel.vue'
+import { click } from '../test/events.js'
 
 const keyCodes = { ArrowUp: 38, ArrowDown: 40, Enter: 13 }
 
@@ -14,6 +15,10 @@ function mountTimePicker(props = {}) {
 
 function findInput(wrapper) {
   return wrapper.find('input')
+}
+
+async function waitForFocus(element) {
+  await vi.waitFor(() => expect(document.activeElement).toBe(element))
 }
 
 async function focusInput(wrapper) {
@@ -50,22 +55,21 @@ describe('DitoTimePicker', () => {
     wrapper = null
   })
 
-  it('passes keys to the time panel only while it is shown', async () => {
+  it('moves the focus to the hours, and closes with Enter in them', async () => {
     wrapper = mountTimePicker()
-    const event = new KeyboardEvent('keydown', { keyCode: keyCodes.ArrowUp })
-    expect(wrapper.vm.handlePanelKey(event, { name: 'hour' })).toBe(false)
-    await focusInput(wrapper)
-    expect(wrapper.vm.handlePanelKey(event, { name: 'hour' })).toBe(true)
+    const toggle = wrapper.find('.dito-picker-input__toggle')
+    await click(toggle.element)
+    const hours = wrapper.find('.dito-time-picker-hour')
+    await waitForFocus(hours.element)
+    await hours.trigger('keydown', {
+      key: 'ArrowUp',
+      keyCode: keyCodes.ArrowUp
+    })
     expect(getEmittedHours(wrapper)).toEqual([9])
-  })
-
-  it('closes the popup with Enter', async () => {
-    wrapper = mountTimePicker()
-    await focusInput(wrapper)
-    expect(wrapper.find('.dito-time-picker-popup').exists()).toBe(true)
-    const event = await pressKey(wrapper, 'Enter', 1)
-    expect(event.defaultPrevented).toBe(true)
+    await hours.trigger('keydown', { key: 'Enter', keyCode: keyCodes.Enter })
+    await flushPromises()
     expect(wrapper.find('.dito-time-picker-popup').exists()).toBe(false)
+    await waitForFocus(toggle.element)
   })
 
   it('overwrites digits instead of inserting them', async () => {

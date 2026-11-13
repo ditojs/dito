@@ -1,542 +1,157 @@
 import { vi } from 'vitest'
+import { h } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { PopoverTrigger } from 'reka-ui'
 import DitoTrigger from './DitoTrigger.vue'
 import { isPopupShown } from '../test/trigger.js'
+import { click, pressKey, pointerDown } from '../test/events.js'
 
-function mountTrigger(props = {}) {
+function mountTrigger({
+  popup = '<div class="content"><button class="action">Go</button></div>',
+  props = {}
+} = {}) {
   return mount(DitoTrigger, {
     props,
     slots: {
-      trigger: '<button class="open">Open</button>',
-      popup: '<div class="content"><input></div>'
+      trigger: () => [
+        h('input', { class: 'input' }),
+        h(PopoverTrigger, { class: 'button' }, () => 'Open')
+      ],
+      popup
     },
     attachTo: document.body
   })
 }
 
-async function waitForTimers() {
-  await new Promise(resolve => setTimeout(resolve, 10))
-  await flushPromises()
+function findButton(wrapper) {
+  return wrapper.find('.button')
+}
+
+async function openPopup(wrapper) {
+  await click(findButton(wrapper).element)
+}
+
+async function waitForFocus(element) {
+  await vi.waitFor(() => expect(document.activeElement).toBe(element))
 }
 
 describe('DitoTrigger', () => {
+  let wrapper
+
   afterEach(() => {
-    vi.restoreAllMocks()
+    wrapper?.unmount()
+    wrapper = null
   })
 
-  it('opens on click', async () => {
-    const wrapper = mountTrigger()
-    const trigger = wrapper.find('.dito-trigger')
-    expect(isPopupShown(wrapper)).toBe(false)
-    await trigger.trigger('click')
+  it('opens and closes with the button in the trigger', async () => {
+    wrapper = mountTrigger()
+    expect(wrapper.find('.content').exists()).toBe(false)
+    await openPopup(wrapper)
     expect(isPopupShown(wrapper)).toBe(true)
-    expect(wrapper.find('.content').exists()).toBe(true)
-    expect(wrapper.emitted('update:show')).toEqual([[true]])
-    wrapper.unmount()
-  })
-
-  it(`leaves \`aria-expanded\` to the controls in the trigger`, async () => {
-    // The trigger elements have no role that allows `aria-expanded`, the
-    // controls in the trigger slot set it themselves, e.g. `DitoMenuButton`.
-    for (const trigger of ['click', 'hover', 'focus']) {
-      const wrapper = mountTrigger({ trigger, show: true })
-      await nextTick()
-      expect(
-        wrapper.find('.dito-trigger').attributes('aria-expanded')
-      ).toBeUndefined()
-      wrapper.unmount()
-    }
-  })
-
-  it('closes with Escape without letting it propagate', async () => {
-    const onKeyDown = vi.fn()
-    document.body.addEventListener('keydown', onKeyDown)
-    const wrapper = mountTrigger()
-    await wrapper.find('.dito-trigger').trigger('click')
-    await wrapper.find('.content input').trigger('keydown', { key: 'Escape' })
+    expect(findButton(wrapper).attributes('aria-expanded')).toBe('true')
+    await click(findButton(wrapper).element)
     expect(isPopupShown(wrapper)).toBe(false)
-    expect(onKeyDown).not.toHaveBeenCalled()
-    // Once closed, Escape propagates again:
-    await wrapper.find('.open').trigger('keydown', { key: 'Escape' })
-    expect(onKeyDown).toHaveBeenCalledOnce()
-    document.body.removeEventListener('keydown', onKeyDown)
-    wrapper.unmount()
+    expect(wrapper.emitted('update:show')).toEqual([[true], [false]])
   })
 
-  it('only listens to the window while the popup is shown', async () => {
-    const addEventListener = vi.spyOn(window, 'addEventListener')
-    const getMouseUpCalls = spy =>
-      spy.mock.calls.filter(([type]) => type === 'mouseup')
-    const wrapper = mountTrigger()
-    await nextTick()
-    expect(getMouseUpCalls(addEventListener)).toHaveLength(0)
-    await wrapper.find('.dito-trigger').trigger('click')
-    await nextTick()
-    expect(getMouseUpCalls(addEventListener)).toHaveLength(1)
-    // Clicking outside closes the popup and removes the listener:
-    window.dispatchEvent(new MouseEvent('mouseup'))
-    await nextTick()
-    await nextTick()
+  it(`doesn't open when its input gets the focus`, async () => {
+    wrapper = mountTrigger()
+    wrapper.find('.input').element.focus()
+    await flushPromises()
     expect(isPopupShown(wrapper)).toBe(false)
-    // The listener is removed through the signal it was added with:
-    const [[, , { signal }]] = getMouseUpCalls(addEventListener)
-    expect(signal.aborted).toBe(true)
-    wrapper.unmount()
   })
 
-  it('closes popups that are shown initially when clicking outside', async () => {
-    const wrapper = mountTrigger({ show: true })
-    await nextTick()
+  it(`doesn't open when disabled`, async () => {
+    wrapper = mountTrigger({ props: { disabled: true } })
+    await openPopup(wrapper)
+    expect(isPopupShown(wrapper)).toBe(false)
+  })
+
+  it('shows the popup with `show`', async () => {
+    wrapper = mountTrigger({ props: { show: true } })
+    await flushPromises()
     expect(isPopupShown(wrapper)).toBe(true)
-    window.dispatchEvent(new MouseEvent('mouseup'))
-    await nextTick()
+    await wrapper.setProps({ show: false })
     expect(isPopupShown(wrapper)).toBe(false)
-    wrapper.unmount()
   })
 
-  it('opens, closes and toggles the popup through its methods', async () => {
-    const wrapper = mountTrigger()
+  it('opens and closes the popup through its methods', async () => {
+    wrapper = mountTrigger()
     wrapper.vm.open()
-    await nextTick()
+    await flushPromises()
     expect(isPopupShown(wrapper)).toBe(true)
     wrapper.vm.close()
-    await nextTick()
+    await flushPromises()
     expect(isPopupShown(wrapper)).toBe(false)
-    wrapper.vm.toggle()
-    await nextTick()
+  })
+
+  it('moves the focus into the popup', async () => {
+    wrapper = mountTrigger()
+    await openPopup(wrapper)
+    await waitForFocus(wrapper.find('.action').element)
+  })
+
+  it('focuses the element of the popup with `data-autofocus` first', async () => {
+    wrapper = mountTrigger({
+      popup:
+        '<div><button>Back</button><button data-autofocus>Day</button></div>'
+    })
+    await openPopup(wrapper)
+    await waitForFocus(wrapper.find('[data-autofocus]').element)
+  })
+
+  it('closes with Escape and returns the focus to the button', async () => {
+    wrapper = mountTrigger()
+    await openPopup(wrapper)
+    await waitForFocus(wrapper.find('.action').element)
+    await pressKey('Escape')
+    expect(isPopupShown(wrapper)).toBe(false)
+    await waitForFocus(findButton(wrapper).element)
+  })
+
+  it('stays open on presses in the popup and closes on ones outside', async () => {
+    wrapper = mountTrigger()
+    await openPopup(wrapper)
+    await pointerDown(wrapper.find('.action').element)
     expect(isPopupShown(wrapper)).toBe(true)
-    wrapper.vm.toggle()
-    await nextTick()
+    await pointerDown(document.body)
     expect(isPopupShown(wrapper)).toBe(false)
-    await wrapper.setProps({ disabled: true })
-    wrapper.vm.open()
-    await nextTick()
-    expect(isPopupShown(wrapper)).toBe(false)
+  })
+
+  it('places the popup by `placement`', async () => {
+    wrapper = mountTrigger({ props: { placement: 'top-right' } })
+    await openPopup(wrapper)
+    expect(wrapper.find('.dito-popup').attributes()).toMatchObject({
+      'data-side': 'top',
+      'data-align': 'end'
+    })
+  })
+
+  it(`matches the popup's width to the target unless told not to`, async () => {
+    wrapper = mountTrigger()
+    await openPopup(wrapper)
+    expect(wrapper.find('.dito-popup').classes()).toContain(
+      'dito-popup--match-width'
+    )
     wrapper.unmount()
+    wrapper = mountTrigger({ props: { matchTargetWidth: false } })
+    await openPopup(wrapper)
+    expect(wrapper.find('.dito-popup').classes()).not.toContain(
+      'dito-popup--match-width'
+    )
   })
 
-  describe('in click mode', () => {
-    it('toggles the popup with clicks on the trigger', async () => {
-      const wrapper = mountTrigger({ trigger: 'click' })
-      const trigger = wrapper.find('.dito-trigger')
-      await trigger.trigger('click')
-      expect(isPopupShown(wrapper)).toBe(true)
-      await trigger.trigger('click')
-      expect(isPopupShown(wrapper)).toBe(false)
-      expect(wrapper.emitted('update:show')).toEqual([[true], [false]])
-      wrapper.unmount()
-    })
-
-    it('keeps the popup open on clicks inside of it', async () => {
-      const wrapper = mountTrigger({ trigger: 'click' })
-      await wrapper.find('.dito-trigger').trigger('click')
-      await nextTick()
-      const content = wrapper.find('.content').element
-      content.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
-      await nextTick()
-      expect(isPopupShown(wrapper)).toBe(true)
-      wrapper.unmount()
-    })
-
-    it(`doesn't open when disabled`, async () => {
-      const wrapper = mountTrigger({ trigger: 'click', disabled: true })
-      await wrapper.find('.dito-trigger').trigger('click')
-      expect(isPopupShown(wrapper)).toBe(false)
-      wrapper.unmount()
-    })
-  })
-
-  describe('positioning', () => {
-    // happy-dom's `ResizeObserver` does nothing, so record the observers and
-    // notify them by hand.
-    let observers
-    class FakeResizeObserver {
-      constructor(callback) {
-        this.callback = callback
-        this.elements = []
-        observers.push(this)
-      }
-
-      observe(element) {
-        this.elements.push(element)
-      }
-
-      disconnect() {
-        this.elements = []
-      }
-
-      notify() {
-        this.callback([])
-      }
-    }
-
-    beforeEach(() => {
-      observers = []
-      vi.stubGlobal('ResizeObserver', FakeResizeObserver)
-    })
-
-    afterEach(() => {
-      vi.unstubAllGlobals()
-    })
-
-    // Lays out the popup with the given width, as happy-dom doesn't.
-    function layOutPopup(wrapper, width) {
-      const popup = wrapper.find('.dito-popup').element
-      Object.defineProperty(popup, 'offsetWidth', { value: width })
-      Object.defineProperty(popup, 'offsetHeight', { value: 20 })
-      return popup
-    }
-
-    it('observes the size of the target only while shown', async () => {
-      const wrapper = mountTrigger({ trigger: 'click' })
-      await nextTick()
-      expect(observers).toHaveLength(0)
-      await wrapper.find('.dito-trigger').trigger('click')
-      await nextTick()
-      const trigger = wrapper.find('.dito-trigger').element
-      expect(observers).toHaveLength(1)
-      expect(observers[0].elements).toEqual([trigger])
-      await wrapper.find('.dito-trigger').trigger('click')
-      await nextTick()
-      expect(observers[0].elements).toEqual([])
-      wrapper.unmount()
-    })
-
-    it('positions the popup once it is laid out', async () => {
-      const wrapper = mountTrigger({ show: true })
-      await nextTick()
-      const popup = layOutPopup(wrapper, 100)
-      expect(popup.style.top).toBe('')
-      observers[0].notify()
-      expect(popup.style.top).toBe('0px')
-      expect(popup.style.left).toBe('0px')
-      wrapper.unmount()
-    })
-
-    it('positions the popup again when the placement changes', async () => {
-      const wrapper = mountTrigger({
-        show: true,
-        placement: 'bottom-left',
-        keepInView: false
-      })
-      await nextTick()
-      const popup = layOutPopup(wrapper, 100)
-      observers[0].notify()
-      expect(popup.style.left).toBe('0px')
-      await wrapper.setProps({ placement: 'bottom-right' })
-      await nextTick()
-      expect(popup.style.left).toBe('-100px')
-      wrapper.unmount()
-    })
-
-    describe('centered', () => {
-      // Lays out the trigger at the given left edge, 40px wide, as happy-dom
-      // doesn't.
-      function layOutTrigger(wrapper, left) {
-        const trigger = wrapper.find('.dito-trigger').element
-        vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(
-          { left, top: 0, width: 40, height: 20 }
-        )
-      }
-
-      it('centers the popup below the trigger', async () => {
-        const wrapper = mountTrigger({ show: true, placement: 'bottom-center' })
-        await nextTick()
-        layOutTrigger(wrapper, 500)
-        const popup = layOutPopup(wrapper, 100)
-        observers[0].notify()
-        expect(popup.style.left).toBe('470px')
-        expect(popup.style.getPropertyValue('--dito-popup-shift')).toBe('0px')
-        wrapper.unmount()
-      })
-
-      it('shifts the popup back into the window', async () => {
-        const wrapper = mountTrigger({ show: true, placement: 'bottom-center' })
-        await nextTick()
-        layOutTrigger(wrapper, window.innerWidth - 50)
-        const popup = layOutPopup(wrapper, 100)
-        observers[0].notify()
-        // Centered, it would reach 20px past the window's right edge:
-        expect(popup.style.left).toBe(`${window.innerWidth - 100}px`)
-        expect(popup.style.getPropertyValue('--dito-popup-shift')).toBe(
-          '-20px'
-        )
-        layOutTrigger(wrapper, 10)
-        observers[0].notify()
-        expect(popup.style.left).toBe('0px')
-        expect(popup.style.getPropertyValue('--dito-popup-shift')).toBe('20px')
-        wrapper.unmount()
-      })
-    })
-
-    it('stops observing the target once unmounted', async () => {
-      const wrapper = mountTrigger({ show: true })
-      await nextTick()
-      const [observer] = observers
-      wrapper.unmount()
-      expect(observer.elements).toEqual([])
-      expect(() => observer.notify()).not.toThrow()
-    })
-
-    it(`matches the popup's width to the target unless told not to`, async () => {
-      for (const matchTargetWidth of [true, false]) {
-        observers = []
-        const wrapper = mountTrigger({ show: true, matchTargetWidth })
-        await nextTick()
-        wrapper.find('.dito-trigger').element.style.width = '120px'
-        const popup = layOutPopup(wrapper, 100)
-        observers[0].notify()
-        expect(popup.firstElementChild.style.width).toBe(
-          matchTargetWidth ? '120px' : ''
-        )
-        wrapper.unmount()
-      }
-    })
-
-    it('observes the new target when it changes while shown', async () => {
-      const target = document.createElement('div')
-      document.body.appendChild(target)
-      const wrapper = mountTrigger({ show: true })
-      await nextTick()
-      const [observer] = observers
-      await wrapper.setProps({ target })
-      expect(observer.elements).toEqual([])
-      expect(observers).toHaveLength(2)
-      expect(observers[1].elements).toEqual([target])
-      wrapper.unmount()
-      target.remove()
-    })
-
-    it('positions popups without content', async () => {
-      const wrapper = mount(DitoTrigger, {
-        props: { show: true },
-        slots: { trigger: '<button class="open">Open</button>' },
-        attachTo: document.body
-      })
-      await nextTick()
-      const popup = layOutPopup(wrapper, 100)
-      expect(popup.firstElementChild).toBe(null)
-      observers[0].notify()
-      expect(popup.style.top).toBe('0px')
-      wrapper.unmount()
-    })
-
-    it('resolves targets given by ref name once mounted', async () => {
-      const wrapper = mountTrigger({ show: true, target: 'popup' })
-      await nextTick()
-      const trigger = wrapper.find('.dito-trigger').element
-      trigger.style.width = '120px'
-      const popup = layOutPopup(wrapper, 100)
-      popup.style.width = '150px'
-      expect(observers[0].elements).toEqual([popup])
-      observers[0].notify()
-      // With the popup as target, the trigger takes on the popup's width.
-      expect(trigger.style.width).toBe('150px')
-      wrapper.unmount()
-    })
-  })
-
-  describe('in focus mode', () => {
-    function mountFocusTrigger({
-      popup = '<div class="content"><input class="field"></div>',
-      trigger = '<input class="input">',
-      props = {}
-    } = {}) {
-      return mount(DitoTrigger, {
-        props: { trigger: 'focus', ...props },
-        slots: {
-          trigger,
-          popup
-        },
-        attachTo: document.body
-      })
-    }
-
-    async function openPopup(wrapper) {
-      wrapper.find('.input').element.focus()
-      await nextTick()
-      await nextTick()
-    }
-
-    function pressMouse(element, type) {
-      element.dispatchEvent(new MouseEvent(type, { bubbles: true }))
-    }
-
-    it('releases the readonly input on mouseup outside of the popup', async () => {
-      const wrapper = mountFocusTrigger()
-      await openPopup(wrapper)
-      const input = wrapper.find('.input').element
-      pressMouse(wrapper.find('.content').element, 'mousedown')
-      expect(input.hasAttribute('readonly')).toBe(true)
-      // E.g. after dragging in a color picker:
-      pressMouse(document.body, 'mouseup')
-      await waitForTimers()
-      expect(input.hasAttribute('readonly')).toBe(false)
-      wrapper.unmount()
-    })
-
-    it('stays open while the focus moves into the popup', async () => {
-      const wrapper = mountFocusTrigger({
-        popup: '<div class="content"><button class="action">Go</button></div>'
-      })
-      await openPopup(wrapper)
-      const action = wrapper.find('.action').element
-      action.focus()
-      await nextTick()
-      expect(wrapper.find('.content').exists()).toBe(true)
-      // Once the focus leaves trigger and popup, it closes:
-      action.blur()
-      await nextTick()
-      expect(isPopupShown(wrapper)).toBe(false)
-      wrapper.unmount()
-    })
-
-    it('returns the focus to the input when closing from the popup', async () => {
-      const wrapper = mountFocusTrigger({
-        popup: '<div class="content"><button class="action">Go</button></div>'
-      })
-      await openPopup(wrapper)
-      wrapper.find('.action').element.focus()
-      await wrapper.find('.action').trigger('keydown', { key: 'Escape' })
-      await nextTick()
-      await nextTick()
-      expect(document.activeElement).toBe(wrapper.find('.input').element)
-      // Without opening the popup again:
-      expect(isPopupShown(wrapper)).toBe(false)
-      wrapper.unmount()
-    })
-
-    it('keeps the focus in the input on clicks on popup buttons', async () => {
-      const wrapper = mountFocusTrigger({
-        popup: '<div class="content"><button class="action">Go</button></div>'
-      })
-      await openPopup(wrapper)
-      const event = new MouseEvent('mousedown', {
-        bubbles: true,
-        cancelable: true
-      })
-      wrapper.find('.action').element.dispatchEvent(event)
-      expect(event.defaultPrevented).toBe(true)
-      wrapper.unmount()
-    })
-
-    it('binds the focus events to targets that are set later', async () => {
-      const target = document.createElement('div')
-      target.innerHTML = '<input class="target-input">'
-      document.body.appendChild(target)
-      const wrapper = mountFocusTrigger()
-      await wrapper.setProps({ target })
-      target.querySelector('input').focus()
-      await nextTick()
-      expect(isPopupShown(wrapper)).toBe(true)
-      wrapper.unmount()
-      target.remove()
-    })
-
-    it(`doesn't mark the input readonly for fields in the popup`, async () => {
-      const wrapper = mountFocusTrigger()
-      await openPopup(wrapper)
-      const event = new MouseEvent('mousedown', {
-        bubbles: true,
-        cancelable: true
-      })
-      wrapper.find('.field').element.dispatchEvent(event)
-      expect(event.defaultPrevented).toBe(false)
-      expect(wrapper.find('.input').element.hasAttribute('readonly')).toBe(
-        false
-      )
-      wrapper.unmount()
-    })
-
-    it('lets mousedowns on the trigger input take the focus', async () => {
-      const wrapper = mountFocusTrigger()
-      await openPopup(wrapper)
-      const input = wrapper.find('.input').element
-      const event = new MouseEvent('mousedown', {
-        bubbles: true,
-        cancelable: true
-      })
-      input.dispatchEvent(event)
-      expect(event.defaultPrevented).toBe(false)
-      // Still locked until the mouse is released:
-      expect(input.hasAttribute('readonly')).toBe(true)
-      pressMouse(input, 'mouseup')
-      await waitForTimers()
-      expect(input.hasAttribute('readonly')).toBe(false)
-      wrapper.unmount()
-    })
-
-    it('returns the focus from the popup to the input on mouseup', async () => {
-      const wrapper = mountFocusTrigger({
-        popup: '<div class="content"><button class="action">Go</button></div>'
-      })
-      await openPopup(wrapper)
-      const content = wrapper.find('.content').element
-      pressMouse(content, 'mousedown')
-      // E.g. a control in the popup that took the focus in the meantime:
-      wrapper.find('.action').element.focus()
-      pressMouse(content, 'mouseup')
-      await waitForTimers()
-      expect(document.activeElement).toBe(wrapper.find('.input').element)
-      expect(isPopupShown(wrapper)).toBe(true)
-      wrapper.unmount()
-    })
-
-    it(`keeps inputs readonly that are readonly by themselves`, async () => {
-      const wrapper = mountFocusTrigger({
-        trigger: '<input class="input" readonly>'
-      })
-      await openPopup(wrapper)
-      const input = wrapper.find('.input').element
-      pressMouse(wrapper.find('.content').element, 'mousedown')
-      pressMouse(document.body, 'mouseup')
-      await waitForTimers()
-      expect(input.hasAttribute('readonly')).toBe(true)
-      wrapper.unmount()
-    })
-
-    it('handles triggers without an input', async () => {
-      const wrapper = mountFocusTrigger({
-        trigger: '<span class="label">Chapters</span>',
-        popup: '<div class="content"><button class="action">Go</button></div>',
-        props: { show: true }
-      })
-      await nextTick()
-      const event = new MouseEvent('mousedown', {
-        bubbles: true,
-        cancelable: true
-      })
-      wrapper.find('.label').element.dispatchEvent(event)
-      expect(event.defaultPrevented).toBe(true)
-      // Closing from the popup has no input to return the focus to:
-      wrapper.find('.action').element.focus()
-      await wrapper.find('.action').trigger('keydown', { key: 'Escape' })
-      await nextTick()
-      expect(isPopupShown(wrapper)).toBe(false)
-      expect(wrapper.emitted('update:show')).toEqual([[false]])
-      wrapper.unmount()
-    })
-
-    it('stays open while the focus moves within an external target', async () => {
-      const target = document.createElement('div')
-      target.innerHTML = '<input class="title"><input class="author">'
-      document.body.appendChild(target)
-      const wrapper = mountFocusTrigger({ props: { target } })
-      const [title, author] = target.querySelectorAll('input')
-      title.focus()
-      await nextTick()
-      expect(isPopupShown(wrapper)).toBe(true)
-      title.dispatchEvent(new FocusEvent('blur', { relatedTarget: author }))
-      await nextTick()
-      expect(isPopupShown(wrapper)).toBe(true)
-      author.dispatchEvent(
-        new FocusEvent('blur', { relatedTarget: document.body })
-      )
-      await nextTick()
-      expect(isPopupShown(wrapper)).toBe(false)
-      wrapper.unmount()
-      target.remove()
-    })
+  it('animates the popup with `transition`', async () => {
+    wrapper = mountTrigger()
+    await openPopup(wrapper)
+    expect(wrapper.find('.dito-popup').classes()).toContain(
+      'dito-popup--slide'
+    )
+    wrapper.unmount()
+    wrapper = mountTrigger({ props: { transition: null } })
+    await openPopup(wrapper)
+    expect(wrapper.find('.dito-popup').classes()).not.toContain(
+      'dito-popup--slide'
+    )
   })
 })

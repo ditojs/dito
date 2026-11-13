@@ -1,9 +1,9 @@
 <template lang="pug">
 DitoTrigger.dito-picker-input(
   ref="trigger"
-  trigger="focus"
-  v-bind="{ show, transition, placement, disabled, target }"
+  v-bind="{ show, transition, placement, disabled, target, matchTargetWidth }"
   @update:show="onUpdateShow"
+  @closed="isPopupClosing = false"
 )
   template(#trigger)
     slot(
@@ -18,23 +18,19 @@ DitoTrigger.dito-picker-input(
       :class="inputClass"
       v-bind="{ placeholder, disabled, focused: isFocused, ...inputAttributes }"
       @update:modelValue="onInputText"
-      @focus="onInputFocus"
+      @focus="isInputFocused = true"
       @blur="isInputFocused = false"
-      @click="onInputClick"
       @keydown="onInputKeyDown"
-      @keyup="updateCaretPart"
     )
       template(#prefix)
         slot(name="prefix")
       template(#suffix)
-        button.dito-picker-input__toggle(
+        PopoverTrigger.dito-picker-input__toggle(
           type="button"
           :aria-label="toggleLabel"
-          aria-haspopup="dialog"
-          :aria-expanded="isPopupShown ? 'true' : 'false'"
           :disabled="disabled"
-          @mousedown.stop.prevent
-          @click="onToggleClick"
+          @focus="isToggleFocused = true"
+          @blur="isToggleFocused = false"
         )
           DitoIcon(
             :name="icon"
@@ -52,28 +48,33 @@ DitoTrigger.dito-picker-input(
 
 <script>
 import { format } from '@ditojs/utils'
+import { PopoverTrigger } from 'reka-ui'
 import DitoTrigger from './DitoTrigger.vue'
 import DitoInput from './DitoInput.vue'
 import DitoIcon from './DitoIcon.vue'
-import { parseDate, getDatePartAtPosition } from '../utils/date.js'
+import {
+  alterDate,
+  describeDate,
+  getDatePartAtPosition,
+  parseDate,
+  stepDate
+} from '../utils/date.js'
 import { getSelection, setSelection } from '../utils/selection.js'
 import { getKeyNavigation } from '../utils/event.js'
 import { isTimePartName, editTimeText } from '../utils/time.js'
 
 // The input of the date and time pickers, with the icon button that toggles
 // their popup. It owns the picked value, the text that represents it and the
-// focus state of input and popup together. The popup's panel is rendered
-// through the `popup` slot, and navigated with the keyboard through
-// `handlePanelKey()`.
+// focus state of input, button and popup together. The popup's panel is
+// rendered through the `popup` slot, and takes the focus when it opens.
 export default {
-  components: { DitoTrigger, DitoInput, DitoIcon },
+  components: { DitoTrigger, DitoInput, DitoIcon, PopoverTrigger },
   emits: [
     'update:modelValue',
     'update:show',
     'change',
     'focus',
-    'blur',
-    'caretPartChange'
+    'blur'
   ],
 
   props: {
@@ -86,13 +87,11 @@ export default {
     disabled: { type: Boolean, default: false },
     transition: { type: String, default: 'slide' },
     placement: { type: String, default: 'bottom-left' },
-    target: { type: [String, HTMLElement], default: 'trigger' },
+    target: { type: HTMLElement, default: null },
+    matchTargetWidth: { type: Boolean, default: true },
     inputClass: { type: String, default: null },
     // The attributes and listeners of the native input.
-    inputAttributes: { type: Object, default: () => ({}) },
-    // Called with the keydown event of the input and the date part at the
-    // caret, returning whether the panel handled it.
-    handlePanelKey: { type: Function, default: () => false }
+    inputAttributes: { type: Object, default: () => ({}) }
   },
 
   data() {
@@ -101,15 +100,22 @@ export default {
       // The typed text, which isn't always a date.
       currentText: format(this.modelValue, this.formatOptions) || '',
       isPopupShown: this.show,
+      // Whether the popup is closing, until the focus has moved on from it.
+      isPopupClosing: false,
       isInputFocused: false,
-      isEdited: false,
-      caretPartName: null
+      isToggleFocused: false,
+      isEdited: false
     }
   },
 
   computed: {
     isFocused() {
-      return this.isInputFocused || this.isPopupShown
+      return (
+        this.isInputFocused ||
+        this.isToggleFocused ||
+        this.isPopupShown ||
+        this.isPopupClosing
+      )
     },
 
     valueText() {
@@ -187,17 +193,10 @@ export default {
         : null
     },
 
-    updateCaretPart() {
-      const name = this.getCaretPart()?.name ?? null
-      if (name !== this.caretPartName) {
-        this.caretPartName = name
-        this.$emit('caretPartChange', name)
-      }
-    },
-
     onUpdateShow(show) {
       // `DitoTrigger` owns the popup's state, this only mirrors it.
       this.isPopupShown = show
+      this.isPopupClosing = !show
       if (!show) {
         this.emitChangeIfEdited()
       }
@@ -219,54 +218,48 @@ export default {
       }
     },
 
-    onInputFocus() {
-      this.isInputFocused = true
-      this.updateCaretPart()
-    },
-
-    onInputClick() {
-      this.updateCaretPart()
-      // Reopen the popup when clicking into the focused input after it was
-      // closed, e.g. with Escape.
-      this.open()
-    },
-
-    onToggleClick() {
-      if (this.isPopupShown) {
-        this.close()
-      } else {
-        this.open()
-        this.focus()
-      }
+    // Steps the date part `part` of the value, and selects it again once the
+    // text shows the new value. Time parts wrap around without changing the
+    // date:
+    stepPart(part, step) {
+      const { name } = part
+      const date = this.currentValue
+      const length = { hour: 24, minute: 60, second: 60 }[name]
+      this.setValue(
+        length
+          ? alterDate(date, {
+              [name]: (describeDate(date)[name] + step + length) % length
+            })
+          : stepDate(date, name, step)
+      )
+      const input = this.getInputElement()
+      this.$nextTick(() => {
+        setSelection(
+          input,
+          getDatePartAtPosition(
+            this.currentText,
+            part.start,
+            this.formatOptions
+          )
+        )
+      })
     },
 
     onInputKeyDown(event) {
       const { ver: step, enter } = getKeyNavigation(event)
       const part = this.getCaretPart()
-      if (step || enter) {
+      if (step) {
         event.preventDefault()
-        if (!this.isPopupShown) {
-          if (step) {
-            this.open()
-          }
-        } else if (this.handlePanelKey(event, part) && part) {
-          // Select the changed part again, once the text was updated.
-          const input = this.getInputElement()
-          this.$nextTick(() => {
-            setSelection(
-              input,
-              getDatePartAtPosition(
-                this.currentText,
-                part.start,
-                this.formatOptions
-              )
-            )
-          })
+        // The arrow keys step the part at the caret. With Alt, or without a
+        // part to step, they open the popup, which takes the focus:
+        if (event.altKey || !this.currentValue || !part) {
+          this.open()
+        } else {
+          this.stepPart(part, step)
         }
-        if (enter) {
-          // Enter completes the edit, also after the panel handled it:
-          this.emitChangeIfEdited()
-        }
+      } else if (enter) {
+        event.preventDefault()
+        this.emitChangeIfEdited()
       } else if (isTimePartName(part?.name)) {
         editTimeText(event, this.getInputElement(), this.currentText.length)
       }

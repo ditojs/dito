@@ -5,7 +5,12 @@ import DitoTimePanel from './DitoTimePanel.vue'
 const keyCodes = { ArrowUp: 38, ArrowDown: 40, Enter: 13, ArrowLeft: 37 }
 
 function createKeyEvent(key) {
-  return new KeyboardEvent('keydown', { key, keyCode: keyCodes[key] })
+  return new KeyboardEvent('keydown', {
+    key,
+    keyCode: keyCodes[key],
+    bubbles: true,
+    cancelable: true
+  })
 }
 
 function mountTimePanel(props = {}) {
@@ -85,15 +90,40 @@ describe('DitoTimePanel', () => {
     ])
   })
 
-  describe('handleKey()', () => {
-    it('steps the part at the caret', () => {
+  describe('keyboard', () => {
+    // Presses `key` in the list of the column `name`:
+    function pressKey(wrapper, name, key) {
+      const event = createKeyEvent(key)
+      wrapper.find(`.dito-time-picker-${name}`).element.dispatchEvent(event)
+      return event
+    }
+
+    it('makes the lists focusable, the one of the hours first', () => {
       wrapper = mountTimePanel()
-      expect(
-        wrapper.vm.handleKey(createKeyEvent('ArrowDown'), { name: 'minute' })
-      ).toBe(true)
-      expect(
-        wrapper.vm.handleKey(createKeyEvent('ArrowUp'), { name: 'hour' })
-      ).toBe(true)
+      const lists = wrapper.findAll('[role="listbox"]')
+      expect(lists.map(list => list.attributes('tabindex'))).toEqual([
+        '0',
+        '0',
+        '0'
+      ])
+      expect(lists.map(list => list.attributes('data-autofocus'))).toEqual([
+        '',
+        undefined,
+        undefined
+      ])
+      const hours = lists[0]
+      const selected = hours.find('[aria-selected="true"]')
+      expect(hours.attributes('aria-activedescendant')).toBe(
+        selected.attributes('id')
+      )
+    })
+
+    it('steps the value of the focused list', () => {
+      wrapper = mountTimePanel()
+      expect(pressKey(wrapper, 'minute', 'ArrowDown').defaultPrevented).toBe(
+        true
+      )
+      pressKey(wrapper, 'hour', 'ArrowUp')
       expect(getEmittedTimes(wrapper)).toEqual([
         [9, 16, 30],
         [8, 15, 30]
@@ -102,9 +132,8 @@ describe('DitoTimePanel', () => {
 
     it('wraps around at the ends', () => {
       wrapper = mountTimePanel({ modelValue: new Date(2024, 2, 5, 23, 0, 30) })
-      const { vm } = wrapper
-      vm.handleKey(createKeyEvent('ArrowDown'), { name: 'hour' })
-      vm.handleKey(createKeyEvent('ArrowUp'), { name: 'minute' })
+      pressKey(wrapper, 'hour', 'ArrowDown')
+      pressKey(wrapper, 'minute', 'ArrowUp')
       expect(getEmittedTimes(wrapper)).toEqual([
         [0, 0, 30],
         [23, 59, 30]
@@ -113,18 +142,13 @@ describe('DitoTimePanel', () => {
 
     it('emits `select` with Enter', () => {
       wrapper = mountTimePanel()
-      expect(wrapper.vm.handleKey(createKeyEvent('Enter'), null)).toBe(true)
+      pressKey(wrapper, 'second', 'Enter')
       expect(wrapper.emitted('select')).toHaveLength(1)
     })
 
-    it(`doesn't handle keys outside of the time parts`, () => {
+    it('ignores other keys', () => {
       wrapper = mountTimePanel()
-      const { vm } = wrapper
-      expect(vm.handleKey(createKeyEvent('ArrowDown'), null)).toBe(false)
-      expect(vm.handleKey(createKeyEvent('ArrowDown'), { name: 'day' })).toBe(
-        false
-      )
-      expect(vm.handleKey(createKeyEvent('ArrowLeft'), { name: 'hour' })).toBe(
+      expect(pressKey(wrapper, 'hour', 'ArrowLeft').defaultPrevented).toBe(
         false
       )
       expect(wrapper.emitted('update:modelValue')).toBeUndefined()

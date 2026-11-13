@@ -13,6 +13,7 @@ import DitoView from '../components/DitoView.vue'
 import DitoForm from '../components/DitoForm.vue'
 import DitoContainer from '../components/DitoContainer.vue'
 import DitoSchema from '../components/DitoSchema.vue'
+import DitoInfo from '../components/DitoInfo.vue'
 import { appendDataPath } from '../utils/data.js'
 
 const mountedAdmins = new Set()
@@ -332,6 +333,18 @@ export async function enterValue(wrapper, value) {
   await flushPromises()
   await wrapper.trigger('change')
   await flushPromises()
+}
+
+// The HTML that the first info in `wrapper` shows in its tooltip:
+export function getInfoHtml(wrapper) {
+  return wrapper.findComponent(DitoInfo).vm.html
+}
+
+// The label of the `.dito-dialog` wrapper, the text of the title that labels
+// its `role="dialog"` element:
+export function getDialogLabel(dialog) {
+  const id = dialog.find('[role="dialog"]').attributes('aria-labelledby')
+  return dialog.find(`[id="${id}"]`).text()
 }
 
 function createMountResult(admin, routeComponent) {

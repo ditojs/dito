@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountAdmin, enterValue } from '../test/mount.js'
+import { mountAdmin, enterValue, getDialogLabel } from '../test/mount.js'
 
 // Shows a dialog through `DitoRoot.showDialog()`, and returns its promise, the
 // dialog element, whether it's still shown, and whether the promise settled.
@@ -21,6 +21,15 @@ async function showDialog(options) {
       return isSettled
     }
   }
+}
+
+// Presses the mouse on the element. reka-ui listens for pointer downs outside
+// the dialog only after a timeout:
+async function pointerDown(wrapper) {
+  await new Promise(resolve => setTimeout(resolve))
+  wrapper.element.dispatchEvent(
+    new PointerEvent('pointerdown', { bubbles: true, button: 0 })
+  )
 }
 
 const fields = { title: { type: 'text' } }
@@ -76,7 +85,7 @@ describe('DitoDialog', () => {
       buttons: { cancel: {} },
       settings: { label: 'Rename Book' }
     })
-    expect(dialog.attributes('aria-label')).toBe('Rename Book')
+    expect(getDialogLabel(dialog)).toBe('Rename Book')
   })
 
   it('sizes its content with `settings.width` in pixels or CSS lengths', async () => {
@@ -110,10 +119,10 @@ describe('DitoDialog', () => {
       buttons: { cancel: {} },
       settings: { clickToClose: true }
     })
-    await result.dialog.find('input').trigger('mouseup')
+    await pointerDown(result.dialog.find('input'))
     await flushPromises()
     expect(result.isSettled).toBe(false)
-    await result.dialog.trigger('mouseup')
+    await pointerDown(result.dialog)
     expect(await result.promise).toBe(undefined)
   })
 
@@ -197,6 +206,22 @@ describe('DitoDialog', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('cancels only the topmost of stacked dialogs with Escape', async () => {
+    const lower = await showDialog({ fields, buttons: { cancel: {} } })
+    let isUpperSettled = false
+    const upper = lower.admin.context
+      .showDialog({ fields, buttons: { cancel: {} } })
+      .finally(() => {
+        isUpperSettled = true
+      })
+    await flushPromises()
+    const [, upperDialog] = lower.admin.wrapper.findAll('.dito-dialog')
+    await upperDialog.find('input').trigger('keydown', { key: 'Escape' })
+    expect(await upper).toBe(undefined)
+    expect(isUpperSettled).toBe(true)
+    expect(lower.isSettled).toBe(false)
   })
 
   it(`doesn't cancel with Escape keys that its components handled`, async () => {
@@ -380,7 +405,7 @@ describe('DitoDialog', () => {
 
   it(`doesn't close on overlay clicks without \`clickToClose\``, async () => {
     const result = await showDialog({ fields, buttons: { cancel: {} } })
-    await result.dialog.trigger('mouseup')
+    await pointerDown(result.dialog)
     await flushPromises()
     expect(result.isSettled).toBe(false)
   })

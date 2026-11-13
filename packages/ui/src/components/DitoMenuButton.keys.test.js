@@ -1,5 +1,6 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import DitoMenuButton from './DitoMenuButton.vue'
+import { click, pressKey } from '../test/events.js'
 
 const items = [
   { value: 'starters', label: 'Starters' },
@@ -19,17 +20,6 @@ function findButton(wrapper) {
   return wrapper.find('button[aria-haspopup="menu"]')
 }
 
-async function pressKey(element, key) {
-  const event = new KeyboardEvent('keydown', {
-    key,
-    bubbles: true,
-    cancelable: true
-  })
-  element.dispatchEvent(event)
-  await flushPromises()
-  return event
-}
-
 describe('DitoMenuButton keyboard edge cases', () => {
   let wrapper
 
@@ -42,7 +32,7 @@ describe('DitoMenuButton keyboard edge cases', () => {
     wrapper = mountMenuButton()
     const button = findButton(wrapper)
     for (const key of ['ArrowLeft', 'a', 'Escape']) {
-      const event = await pressKey(button.element, key)
+      const event = await pressKey(key, button.element)
       expect(event.defaultPrevented).toBe(false)
     }
     expect(button.attributes('aria-expanded')).toBe('false')
@@ -50,54 +40,43 @@ describe('DitoMenuButton keyboard edge cases', () => {
 
   it('ignores other keys in the menu', async () => {
     wrapper = mountMenuButton()
-    await pressKey(findButton(wrapper).element, 'ArrowDown')
+    findButton(wrapper).element.focus()
+    await pressKey('ArrowDown', findButton(wrapper).element)
     const [first] = wrapper.findAll('[role="menuitem"]')
     expect(document.activeElement).toBe(first.element)
-    const event = await pressKey(first.element, 'ArrowRight')
-    expect(event.defaultPrevented).toBe(false)
+    await pressKey('ArrowRight', first.element)
     expect(document.activeElement).toBe(first.element)
     expect(findButton(wrapper).attributes('aria-expanded')).toBe('true')
   })
 
   it(`doesn't select anything with Enter when no item is focused`, async () => {
     wrapper = mountMenuButton()
-    await findButton(wrapper).trigger('click')
-    await flushPromises()
+    await click(findButton(wrapper).element)
+    // Clicks focus the menu, not its items:
     const menu = wrapper.find('[role="menu"]').element
-    const event = await pressKey(menu, 'Enter')
-    expect(event.defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(menu)
+    await pressKey('Enter', menu)
     expect(wrapper.emitted('select')).toBeUndefined()
     expect(findButton(wrapper).attributes('aria-expanded')).toBe('true')
   })
 
   it('focuses the first item with ArrowDown when none is focused', async () => {
     wrapper = mountMenuButton()
-    await findButton(wrapper).trigger('click')
-    await flushPromises()
-    await pressKey(wrapper.find('[role="menu"]').element, 'ArrowDown')
+    await click(findButton(wrapper).element)
+    await pressKey('ArrowDown', wrapper.find('[role="menu"]').element)
     expect(document.activeElement.textContent).toBe('Starters')
   })
 
-  it('forgets the elements of removed items', async () => {
+  it('reaches the items that it renders after changes', async () => {
     wrapper = mountMenuButton()
-    await pressKey(findButton(wrapper).element, 'ArrowDown')
+    findButton(wrapper).element.focus()
+    await pressKey('ArrowDown', findButton(wrapper).element)
     await wrapper.setProps({ items: items.slice(1) })
     await flushPromises()
-    // The keyboard reaches the rendered items:
-    await pressKey(wrapper.find('[role="menu"]').element, 'ArrowDown')
+    const menu = wrapper.find('[role="menu"]').element
+    await pressKey('End', menu)
+    expect(document.activeElement.textContent).toBe('Desserts')
+    await pressKey('Home', document.activeElement)
     expect(document.activeElement.textContent).toBe('Mains')
-    // A leak guard: removed items and their elements aren't kept around.
-    expect(wrapper.vm.itemElements.size).toBe(2)
-    expect(wrapper.vm.itemElements.has(items[0])).toBe(false)
-  })
-
-  it('passes the placement to the popup and marks itself open', async () => {
-    wrapper = mountMenuButton({ cover: false, placement: 'bottom-right' })
-    await findButton(wrapper).trigger('click')
-    await flushPromises()
-    expect(wrapper.find('.dito-popup').classes()).toContain(
-      'dito-popup--bottom-right'
-    )
-    expect(wrapper.classes()).toContain('dito-menu-button--open')
   })
 })

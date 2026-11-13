@@ -1,12 +1,5 @@
 <template lang="pug">
-DitoTrigger.dito-menu-button(
-  v-model:show="isOpen"
-  trigger="click"
-  :placement="placement"
-  :disabled="disabled"
-  :matchTargetWidth="false"
-  :cover="cover && !floating"
-  :transition="null"
+.dito-menu-button(
   :class=`{
     'dito-menu-button--open': isOpen,
     'dito-menu-button--attached': isAttached,
@@ -14,66 +7,80 @@ DitoTrigger.dito-menu-button(
     'dito-menu-button--offset': offset
   }`
 )
-  template(#trigger)
-    //- Safari and Firefox don't focus buttons on click, focus it ourselves so
-    //- that the focus stays with the open menu, as in Chrome:
-    DitoButton(
-      ref="button"
-      aria-haspopup="menu"
-      :aria-expanded="isOpen ? 'true' : 'false'"
+  DropdownMenuRoot(
+    v-model:open="isOpen"
+    :modal="false"
+  )
+    //- Passes `disabled` on to the button:
+    DropdownMenuTrigger(
+      asChild
       :disabled="disabled"
-      v-bind="$attrs"
-      @click="focusButton"
-      @keydown="onButtonKeyDown"
-      @keyup="onKeyUp"
     )
-      slot
-  template(#popup)
-    ul.dito-menu-button__menu(
+      DitoButton(
+        ref="button"
+        v-bind="$attrs"
+        @keydown="onButtonKeyDown"
+      )
+        slot
+    //- No portal, so that the menu's styles apply. The menu is fixed, so that
+    //- scrolling panels don't clip it:
+    DropdownMenuContent.dito-menu-button__menu(
       ref="menu"
-      role="menu"
-      @keydown="onMenuKeyDown"
-      @keyup="onKeyUp"
+      :side="sideAndAlign.side"
+      :align="sideAndAlign.align"
+      :sideOffset="sideOffset"
+      loop
+      positionStrategy="fixed"
+      @open-auto-focus="onOpenAutoFocus"
     )
-      li(
+      DropdownMenuArrow.dito-menu-button__tip(
+        v-if="floating"
+        :width="14"
+        :height="7"
+      )
+      DropdownMenuItem.dito-menu-button__item(
         v-for="item in items"
         :key="item.value"
-        role="none"
+        as="button"
+        type="button"
+        :disabled="item.disabled"
+        :title="item.icon ? item.label : null"
+        :class="{ 'dito-menu-button__item--icon': item.icon }"
+        @select="$emit('select', item)"
       )
-        button.dito-menu-button__item(
-          :ref="element => setItemElement(item, element)"
-          type="button"
-          role="menuitem"
-          :aria-disabled="item.disabled ? 'true' : null"
-          :title="item.icon ? item.label : null"
-          :class=`{
-            'dito-menu-button__item--icon': item.icon,
-            'dito-menu-button__item--disabled': item.disabled
-          }`
-          @click="selectItem(item)"
+        DitoIcon(
+          v-if="item.icon"
+          :name="item.icon"
         )
-          DitoIcon(
-            v-if="item.icon"
-            :name="item.icon"
-          )
-          template(
-            v-else
-          ) {{ item.label }}
+        template(
+          v-else
+        ) {{ item.label }}
 </template>
 
 <script>
-import DitoTrigger from './DitoTrigger.vue'
+import {
+  DropdownMenuArrow,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRoot,
+  DropdownMenuTrigger
+} from 'reka-ui'
 import DitoButton from './DitoButton.vue'
 import DitoIcon from './DitoIcon.vue'
+import { getSideAndAlign } from '../utils/trigger'
 
-// A button that opens a menu of `items`, each `{ value, label, disabled }`,
-// and emits `select` with the item that is chosen, by mouse or keyboard.
-// Items with an `icon` show it instead of their label, which becomes their
-// title.
-// Attributes, e.g. `class` or the `verb` and `text` of `DitoButton`, go to the
-// button, its content to the default slot.
+// A button that opens a menu of `items` and emits `select` with the chosen
+// one, see `docs/api/ui.md`. Attributes go to the button.
 export default {
-  components: { DitoTrigger, DitoButton, DitoIcon },
+  components: {
+    DropdownMenuArrow,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuRoot,
+    DropdownMenuTrigger,
+    DitoButton,
+    DitoIcon
+  },
   inheritAttrs: false,
   emits: ['select'],
 
@@ -94,20 +101,37 @@ export default {
 
   data() {
     return {
-      isOpen: false
+      isOpen: false,
+      buttonHeight: 0,
+      // Whether ArrowUp opened the menu, which then focuses its last item.
+      focusLast: false
     }
   },
 
   computed: {
     isAttached() {
       return !this.cover && !this.floating
+    },
+
+    sideAndAlign() {
+      return getSideAndAlign(this.placement)
+    },
+
+    sideOffset() {
+      // Covering menus move back over the button:
+      return this.cover && !this.floating ? -this.buttonHeight : 0
     }
   },
 
   watch: {
     async isOpen(isOpen) {
+      const button = this.$refs.button.$el
+      if (isOpen) {
+        this.buttonHeight = button.getBoundingClientRect().height
+      } else {
+        this.focusLast = false
+      }
       if (this.isAttached) {
-        const button = this.$refs.button.$el
         Object.assign(button.style, {
           minWidth: '',
           marginLeft: '',
@@ -115,130 +139,46 @@ export default {
         })
         if (isOpen) {
           await this.$nextTick()
-          const { menu } = this.$refs
-          const buttonWidth = getWidth(button)
-          const width = Math.max(buttonWidth, getWidth(menu))
+          const menu = this.$refs.menu.$el
+          const buttonWidth = button.getBoundingClientRect().width
+          const menuWidth = menu.getBoundingClientRect().width
+          const width = Math.max(buttonWidth, menuWidth)
           button.style.minWidth = menu.style.minWidth = `${width}px`
           // Grow the button towards the menu without moving what's around it:
-          const side = this.placement.endsWith('-right')
-            ? 'marginLeft'
-            : 'marginRight'
+          const side =
+            this.sideAndAlign.align === 'end' ? 'marginLeft' : 'marginRight'
           button.style[side] = `${buttonWidth - width}px`
         }
       }
     }
   },
 
-  created() {
-    // The elements of the rendered items, by item.
-    this.itemElements = new Map()
-  },
-
   methods: {
-    setItemElement(item, element) {
-      if (element) {
-        this.itemElements.set(item, element)
-      } else {
-        this.itemElements.delete(item)
-      }
-    },
-
-    getFocusedItemIndex() {
-      return this.items.findIndex(
-        item => this.itemElements.get(item) === document.activeElement
-      )
-    },
-
-    focusItemAt(index) {
-      this.itemElements.get(this.items[index])?.focus()
-    },
-
-    async open(focusIndex) {
-      this.isOpen = true
-      // Wait for the menu to be rendered, so its items can be focused.
-      await this.$nextTick()
-      this.focusItemAt(focusIndex)
-    },
-
-    close() {
-      this.isOpen = false
-      this.focusButton()
-    },
-
-    focusButton() {
-      this.$refs.button.$el.focus()
-    },
-
-    selectItem(item) {
-      if (!item.disabled) {
-        this.close()
-        this.$emit('select', item)
-      }
-    },
-
     onButtonKeyDown(event) {
-      const { key } = event
-      if (key === 'Enter' || key === ' ' || key === 'ArrowDown') {
+      // reka-ui opens the menu with Enter, Space and ArrowDown and focuses the
+      // first item. ArrowUp opens it at the last item:
+      if (event.key === 'ArrowUp' && !this.disabled) {
         event.preventDefault()
-        this.open(0)
-      } else if (key === 'ArrowUp') {
-        event.preventDefault()
-        this.open(this.items.length - 1)
+        this.focusLast = true
+        this.isOpen = true
       }
     },
 
-    onMenuKeyDown(event) {
-      const { key } = event
-      const count = this.items.length
-      const index = this.getFocusedItemIndex()
-      if (key === 'Escape') {
-        // `DitoTrigger` closes the menu, return the focus to the button.
-        this.focusButton()
-      } else if (key === 'Enter' || key === ' ') {
+    onOpenAutoFocus(event) {
+      if (this.focusLast) {
         event.preventDefault()
-        const item = this.items[index]
-        if (item) {
-          this.selectItem(item)
-        }
-      } else if (key === 'Tab') {
-        // Tab through the items, which follow the button, and close the menu
-        // once the focus leaves them:
-        if (event.shiftKey ? index === 0 : index === count - 1) {
-          this.isOpen = false
-        }
-      } else {
-        const targetIndex = {
-          ArrowDown: (index + 1) % count,
-          ArrowUp: (index - 1 + count) % count,
-          Home: 0,
-          End: count - 1
-        }[key]
-        if (targetIndex !== undefined) {
-          event.preventDefault()
-          this.focusItemAt(targetIndex)
-        }
-      }
-    },
-
-    onKeyUp(event) {
-      // Firefox clicks buttons on the keyup of Space even if its keydown was
-      // prevented, which would toggle the menu again or select an item, see
-      // `onButtonKeyDown()` and `onMenuKeyDown()`.
-      if (event.key === ' ') {
-        event.preventDefault()
+        const items = event.target.querySelectorAll(
+          '[role="menuitem"]:not([data-disabled])'
+        )
+        items[items.length - 1]?.focus()
       }
     }
   }
-}
-
-function getWidth(element) {
-  return element.getBoundingClientRect().width
 }
 </script>
 
 <style lang="scss">
 @use 'sass:list';
-@use 'sass:math';
 @import '../styles/_imports';
 
 $menu-button-radius: 0.5em;
@@ -249,9 +189,8 @@ $menu-button-padding: $menu-button-padding-ver 1em;
   display: inline-block;
 
   &__menu {
-    margin: 0;
-    padding: 0;
-    list-style: none;
+    // reka-ui gives the menu's z-index to the element that positions it:
+    z-index: $z-index-popup;
     border-radius: $menu-button-radius;
     box-shadow: $shadow-window;
     overflow: hidden;
@@ -278,44 +217,18 @@ $menu-button-padding: $menu-button-padding-ver 1em;
   }
 
   &--floating {
-    $tip-size: 0.5em;
-    $tip-side: $tip-size * math.sqrt(2);
     $padding: 0.25em;
 
-    .dito-popup {
-      margin-top: math.div(-$tip-size, 2);
-      padding-top: $tip-size;
-
-      // The tip pointing at the button, a square half hidden by the menu,
-      // which casts its own shadow:
-      &::before {
-        content: '';
-        position: absolute;
-        top: $tip-size - math.div($tip-side, 2);
-        left: 1.5em;
-        width: $tip-side;
-        height: $tip-side;
-        background: $button-color;
-        box-shadow: $shadow-window;
-        transform: rotate(45deg);
-      }
-
-      // Keep the tip near the edge that lines up with the button:
-      &--bottom-right::before {
-        left: auto;
-        right: 1.5em;
-      }
-
-      // ...or at the middle of the button, also when kept in the window:
-      &--bottom-center::before {
-        left: calc(50% - #{math.div($tip-side, 2)} - var(--dito-popup-shift));
-      }
+    // reka-ui places the tip at the menu's edge, in the middle of the button:
+    .dito-menu-button__tip {
+      fill: $button-color;
     }
 
     .dito-menu-button__menu {
-      position: relative;
       padding: $padding;
       background: $button-color;
+      // Show the tip outside the menu:
+      overflow: visible;
     }
 
     .dito-menu-button__item {
@@ -347,12 +260,12 @@ $menu-button-padding: $menu-button-padding-ver 1em;
       padding: $menu-button-padding-ver;
     }
 
-    &--disabled {
+    &[data-disabled] {
       color: $color-disabled;
       cursor: default;
     }
 
-    &:not(&--disabled):is(:hover, :focus-visible) {
+    &[data-highlighted] {
       background: $color-active;
       color: $color-white;
       outline: none;

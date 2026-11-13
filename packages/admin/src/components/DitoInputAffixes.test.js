@@ -1,7 +1,9 @@
 import { afterEach } from 'vitest'
+import { h } from 'vue'
 import { mount, enableAutoUnmount } from '@vue/test-utils'
+import { TooltipProvider } from 'reka-ui'
 import DitoInputAffixes from './DitoInputAffixes.vue'
-import { mountSchema } from '../test/mount.js'
+import { mountSchema, getInfoHtml } from '../test/mount.js'
 
 // Mounts the affixes on their own, without a type component.
 function mountInputAffixes(props) {
@@ -43,11 +45,18 @@ describe('DitoInputAffixes', () => {
   })
 
   it('renders the inline info', () => {
-    const wrapper = mountInputAffixes({
-      position: 'suffix',
-      inlineInfo: 'Help'
+    // Infos need the `TooltipProvider` that `DitoRoot` renders:
+    const wrapper = mount(TooltipProvider, {
+      slots: {
+        default: () =>
+          h(DitoInputAffixes, {
+            parentContext: {},
+            position: 'suffix',
+            inlineInfo: 'Help'
+          })
+      }
     })
-    expect(wrapper.find('.dito-info').attributes('data-info')).toBe('Help')
+    expect(getInfoHtml(wrapper)).toBe('Help')
   })
 
   it('is only mounted by fields with affixes to show', async () => {

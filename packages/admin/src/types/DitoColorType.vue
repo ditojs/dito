@@ -1,7 +1,6 @@
 <template lang="pug">
 DitoTrigger.dito-color(
   v-model:show="showPopup"
-  trigger="focus"
 )
   template(#trigger)
     DitoInput(
@@ -20,18 +19,19 @@ DitoTrigger.dito-color(
           v-bind="inputAffixesProps.prefix"
         )
       template(#suffix)
-        //- The suffix also shows the preview of the color:
         DitoInputAffixes(
-          v-if="inputAffixesProps.hasSuffix || value"
+          v-if="inputAffixesProps.hasSuffix"
           position="suffix"
           v-bind="inputAffixesProps.suffix"
           @clear="clear"
         )
-          template(#append)
-            .dito-color__preview(
-              v-if="value"
-            )
-              div(:style="{ background: `#${hexValue || '00000000'}` }")
+        //- After the affixes, which hide theirs while showing the clear button:
+        PopoverTrigger.dito-color__preview(
+          type="button"
+          aria-label="Choose color"
+          :disabled="attributes.disabled"
+        )
+          div(:style="{ background: `#${hexValue || '00000000'}` }")
   template(#popup)
     SketchPicker.dito-color__picker(
       v-model:tinyColor="colorValue"
@@ -44,6 +44,7 @@ DitoTrigger.dito-color(
 <script>
 // `v-model:tinyColor` requires the `tinycolor` exported by `vue-color`:
 import { SketchPicker, tinycolor } from 'vue-color'
+import { PopoverTrigger } from 'reka-ui'
 import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
 import { computed, ref, watch } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
@@ -54,7 +55,13 @@ import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 
 // @vue/component
 const DitoColorType = {
-  components: { DitoTrigger, DitoInput, DitoInputAffixes, SketchPicker },
+  components: {
+    DitoTrigger,
+    DitoInput,
+    DitoInputAffixes,
+    PopoverTrigger,
+    SketchPicker
+  },
   props: fieldProps,
 
   setup(props) {
@@ -232,10 +239,19 @@ $color-swatch-radius: $border-radius - $border-width;
   }
 
   &__preview {
+    // A button, sized like the `div` inside it, plus its border:
+    box-sizing: content-box;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
     background: $pattern-transparency;
     margin: (-$input-padding-ver) (-$input-padding-hor);
     margin-left: 0;
     border-left: $border-style;
+
+    &:focus-visible {
+      @include focus-ring($inset: true);
+    }
 
     &,
     div {
@@ -244,6 +260,11 @@ $color-swatch-radius: $border-radius - $border-width;
       border-top-right-radius: $color-swatch-radius;
       border-bottom-right-radius: $color-swatch-radius;
     }
+  }
+
+  // As wide as the input, instead of vue-color's own width:
+  & &__picker.vc-sketch-picker {
+    width: var(--reka-popover-trigger-width);
   }
 
   // Inherit input focus state

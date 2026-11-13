@@ -2370,8 +2370,8 @@ describe('DitoListType', () => {
       await admin.navigate('/recipes?filter=tag:"soup"')
       // Only the component loads them, not the walks of the panel's data:
       expect(options).toHaveBeenCalledTimes(1)
-      const multiselect = admin.wrapper.find('.dito-panel .dito-multiselect')
-      expect(multiselect.text()).toContain('Soup')
+      const input = admin.wrapper.find('.dito-panel .dito-multiselect__input')
+      expect(input.element.value).toBe('Soup')
     })
 
     it('gives the callbacks of filters the services of the admin', async () => {

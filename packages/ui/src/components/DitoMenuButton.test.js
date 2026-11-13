@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import { nextTick } from 'vue'
 import DitoMenuButton from './DitoMenuButton.vue'
+import { click, pressKey, pointerDown } from '../test/events.js'
 
 const items = [
   { value: 'heading', label: 'Heading' },
@@ -22,13 +22,24 @@ function findButton(wrapper) {
   return wrapper.find('button[aria-haspopup="menu"]')
 }
 
+function findMenu(wrapper) {
+  return wrapper.find('[role="menu"]')
+}
+
 function findMenuItems(wrapper) {
   return wrapper.findAll('[role="menuitem"]')
 }
 
-async function pressKey(wrapper, key) {
-  await wrapper.trigger('keydown', { key })
-  await flushPromises()
+// reka-ui returns the focus to the button after a timeout:
+async function waitForFocus(wrapper) {
+  await vi.waitFor(() => expect(document.activeElement).toBe(wrapper.element))
+}
+
+async function openWithKey(wrapper, key = 'Enter') {
+  const button = findButton(wrapper)
+  button.element.focus()
+  await pressKey(key)
+  return button
 }
 
 describe('DitoMenuButton', () => {
@@ -42,19 +53,12 @@ describe('DitoMenuButton', () => {
   it('renders a menu button with its attributes and content', () => {
     wrapper = mountMenuButton()
     const button = findButton(wrapper)
-    expect(button.classes()).toEqual(['dito-button', 'dito-create-menu'])
+    expect(button.classes()).toContain('dito-button')
+    expect(button.classes()).toContain('dito-create-menu')
     expect(button.attributes('type')).toBe('button')
     expect(button.attributes('aria-expanded')).toBe('false')
     expect(button.text()).toBe('Create')
     expect(wrapper.classes()).toContain('dito-menu-button')
-  })
-
-  it('focuses the button when a click opens the menu', async () => {
-    wrapper = mountMenuButton()
-    const button = findButton(wrapper)
-    await button.trigger('click')
-    expect(findMenuItems(wrapper)).toHaveLength(3)
-    expect(document.activeElement).toBe(button.element)
   })
 
   it('opens the menu offset below the top of the button with `offset`', () => {
@@ -73,14 +77,15 @@ describe('DitoMenuButton', () => {
     expect(wrapper.classes()).toContain('dito-menu-button--attached')
   })
 
-  it('opens the menu as a separate panel with `floating`', async () => {
+  it('opens the menu as a separate panel with a tip with `floating`', async () => {
     wrapper = mountMenuButton({ cover: false, floating: true })
     expect(wrapper.classes()).toContain('dito-menu-button--floating')
     expect(wrapper.classes()).not.toContain('dito-menu-button--attached')
     const button = findButton(wrapper)
-    await button.trigger('click')
-    await flushPromises()
-    expect(wrapper.find('[role="menu"]').exists()).toBe(true)
+    await click(button.element)
+    expect(findMenu(wrapper).find('.dito-menu-button__tip').exists()).toBe(
+      true
+    )
     // The button keeps its size and place:
     const { minWidth, marginLeft, marginRight } = button.element.style
     expect({ minWidth, marginLeft, marginRight }).toEqual({
@@ -88,6 +93,15 @@ describe('DitoMenuButton', () => {
       marginLeft: '',
       marginRight: ''
     })
+  })
+
+  it('places the menu by `placement` and marks itself open', async () => {
+    wrapper = mountMenuButton({ cover: false, placement: 'bottom-right' })
+    await click(findButton(wrapper).element)
+    const menu = findMenu(wrapper)
+    expect(menu.attributes('data-side')).toBe('bottom')
+    expect(menu.attributes('data-align')).toBe('end')
+    expect(wrapper.classes()).toContain('dito-menu-button--open')
   })
 
   it('renders its button with `DitoButton`, passing on its verb', () => {
@@ -105,17 +119,16 @@ describe('DitoMenuButton', () => {
   it('opens and closes the menu with clicks on the button', async () => {
     wrapper = mountMenuButton()
     const button = findButton(wrapper)
-    await button.trigger('click')
+    await click(button.element)
     expect(button.attributes('aria-expanded')).toBe('true')
-    expect(wrapper.classes()).toContain('dito-menu-button--open')
-    expect(wrapper.find('[role="menu"]').exists()).toBe(true)
     expect(findMenuItems(wrapper).map(item => item.text())).toEqual([
       'Heading',
       'Quote',
       'Image'
     ])
-    await button.trigger('click')
+    await click(button.element)
     expect(button.attributes('aria-expanded')).toBe('false')
+    expect(findMenu(wrapper).exists()).toBe(false)
   })
 
   it('shows the icons of items instead of their labels', async () => {
@@ -125,7 +138,7 @@ describe('DitoMenuButton', () => {
         { value: 'image', label: 'Image', icon: 'image' }
       ]
     })
-    await findButton(wrapper).trigger('click')
+    await click(findButton(wrapper).element)
     const [textItem, iconItem] = findMenuItems(wrapper)
     expect(textItem.text()).toBe('Heading')
     expect(textItem.attributes('title')).toBeUndefined()
@@ -135,23 +148,25 @@ describe('DitoMenuButton', () => {
     expect(iconItem.find('.dito-icon--image').exists()).toBe(true)
   })
 
-  it('selects items with clicks and closes the menu', async () => {
+  it('selects items with clicks, closes and focuses the button', async () => {
     wrapper = mountMenuButton()
     const button = findButton(wrapper)
-    await button.trigger('click')
+    await click(button.element)
     await findMenuItems(wrapper)[2].trigger('click')
+    await flushPromises()
     expect(wrapper.emitted('select')).toEqual([[items[2]]])
     expect(button.attributes('aria-expanded')).toBe('false')
-    expect(document.activeElement).toBe(button.element)
+    await waitForFocus(button)
   })
 
   it(`doesn't select disabled items`, async () => {
     wrapper = mountMenuButton()
     const button = findButton(wrapper)
-    await button.trigger('click')
+    await click(button.element)
     const disabledItem = findMenuItems(wrapper)[1]
     expect(disabledItem.attributes('aria-disabled')).toBe('true')
     await disabledItem.trigger('click')
+    await flushPromises()
     expect(wrapper.emitted('select')).toBeUndefined()
     expect(button.attributes('aria-expanded')).toBe('true')
   })
@@ -161,8 +176,7 @@ describe('DitoMenuButton', () => {
       JSON.stringify(key)
     } and focuses the first item`, async () => {
       wrapper = mountMenuButton()
-      const button = findButton(wrapper)
-      await pressKey(button, key)
+      const button = await openWithKey(wrapper, key)
       expect(button.attributes('aria-expanded')).toBe('true')
       expect(document.activeElement).toBe(findMenuItems(wrapper)[0].element)
     })
@@ -170,112 +184,81 @@ describe('DitoMenuButton', () => {
 
   it('opens with ArrowUp and focuses the last item', async () => {
     wrapper = mountMenuButton()
-    await pressKey(findButton(wrapper), 'ArrowUp')
+    await openWithKey(wrapper, 'ArrowUp')
     expect(document.activeElement).toBe(findMenuItems(wrapper)[2].element)
   })
 
   it('moves the focus with the arrow keys, Home and End', async () => {
-    wrapper = mountMenuButton()
-    await pressKey(findButton(wrapper), 'Enter')
-    const menu = wrapper.find('[role="menu"]')
+    wrapper = mountMenuButton({
+      items: [
+        { value: 'heading', label: 'Heading' },
+        { value: 'quote', label: 'Quote' },
+        { value: 'image', label: 'Image' }
+      ]
+    })
+    await openWithKey(wrapper)
     const elements = findMenuItems(wrapper).map(item => item.element)
-    await pressKey(menu, 'ArrowDown')
+    await pressKey('ArrowDown')
     expect(document.activeElement).toBe(elements[1])
-    await pressKey(menu, 'End')
+    await pressKey('End')
     expect(document.activeElement).toBe(elements[2])
-    await pressKey(menu, 'ArrowDown')
+    await pressKey('ArrowDown')
     expect(document.activeElement).toBe(elements[0])
-    await pressKey(menu, 'ArrowUp')
+    await pressKey('ArrowUp')
     expect(document.activeElement).toBe(elements[2])
-    await pressKey(menu, 'Home')
+    await pressKey('Home')
     expect(document.activeElement).toBe(elements[0])
+  })
+
+  it('skips disabled items with the keyboard', async () => {
+    wrapper = mountMenuButton()
+    await openWithKey(wrapper)
+    await pressKey('ArrowDown')
+    expect(document.activeElement).toBe(findMenuItems(wrapper)[2].element)
+  })
+
+  it('focuses items by typing the start of their label', async () => {
+    wrapper = mountMenuButton()
+    await openWithKey(wrapper)
+    await pressKey('i')
+    expect(document.activeElement).toBe(findMenuItems(wrapper)[2].element)
   })
 
   for (const key of ['Enter', ' ']) {
     it(`selects the focused item with ${JSON.stringify(key)}`, async () => {
       wrapper = mountMenuButton()
-      const button = findButton(wrapper)
-      await pressKey(button, 'ArrowUp')
-      await pressKey(wrapper.find('[role="menu"]'), key)
+      const button = await openWithKey(wrapper, 'ArrowUp')
+      await pressKey(key)
       expect(wrapper.emitted('select')).toEqual([[items[2]]])
       expect(button.attributes('aria-expanded')).toBe('false')
-      expect(document.activeElement).toBe(button.element)
+      await waitForFocus(button)
     })
   }
 
-  it(`doesn't select disabled items with the keyboard`, async () => {
+  it('closes with Escape and focuses the button', async () => {
     wrapper = mountMenuButton()
-    await pressKey(findButton(wrapper), 'Enter')
-    const menu = wrapper.find('[role="menu"]')
-    await pressKey(menu, 'ArrowDown')
-    await pressKey(menu, 'Enter')
-    expect(wrapper.emitted('select')).toBeUndefined()
-  })
-
-  it('prevents the keyup of Space from clicking buttons', async () => {
-    // Firefox clicks buttons on the keyup of Space, even if the keydown that
-    // opened the menu or selected an item was prevented.
-    wrapper = mountMenuButton()
-    const button = findButton(wrapper)
-    await pressKey(button, ' ')
-    for (const element of [document.activeElement, button.element]) {
-      const event = new KeyboardEvent('keyup', {
-        key: ' ',
-        bubbles: true,
-        cancelable: true
-      })
-      element.dispatchEvent(event)
-      expect(event.defaultPrevented).toBe(true)
-    }
-  })
-
-  it('leaves the keyup of other keys alone', async () => {
-    wrapper = mountMenuButton()
-    const button = findButton(wrapper)
-    await pressKey(button, 'Enter')
-    const event = new KeyboardEvent('keyup', {
-      key: 'Enter',
-      bubbles: true,
-      cancelable: true
-    })
-    button.element.dispatchEvent(event)
-    expect(event.defaultPrevented).toBe(false)
-  })
-
-  it('closes with Escape and returns the focus to the button', async () => {
-    const onKeyDown = vi.fn()
-    document.body.addEventListener('keydown', onKeyDown)
-    wrapper = mountMenuButton()
-    const button = findButton(wrapper)
-    await pressKey(button, 'Enter')
-    onKeyDown.mockClear()
-    await pressKey(wrapper.find('[role="menu"]'), 'Escape')
+    const button = await openWithKey(wrapper)
+    await pressKey('Escape')
     expect(button.attributes('aria-expanded')).toBe('false')
-    expect(document.activeElement).toBe(button.element)
-    // Escape doesn't also close what contains the menu button, e.g. dialogs.
-    expect(onKeyDown).not.toHaveBeenCalled()
-    document.body.removeEventListener('keydown', onKeyDown)
+    await waitForFocus(button)
   })
 
-  it('tabs through the items, and closes after the last one', async () => {
+  it('closes when the focus leaves the menu, e.g. with Tab', async () => {
+    const outside = document.createElement('button')
+    document.body.append(outside)
     wrapper = mountMenuButton()
-    const button = findButton(wrapper)
-    await pressKey(button, 'Enter')
-    const menu = wrapper.find('[role="menu"]')
-    await pressKey(menu, 'Tab')
-    expect(button.attributes('aria-expanded')).toBe('true')
-    await pressKey(menu, 'End')
-    await pressKey(menu, 'Tab')
+    const button = await openWithKey(wrapper)
+    outside.focus()
+    await flushPromises()
     expect(button.attributes('aria-expanded')).toBe('false')
+    outside.remove()
   })
 
-  it('closes on mouseup outside of it', async () => {
+  it('closes on presses outside of it', async () => {
     wrapper = mountMenuButton()
     const button = findButton(wrapper)
-    await button.trigger('click')
-    await nextTick()
-    document.body.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
-    await nextTick()
+    await click(button.element)
+    await pointerDown(document.body)
     expect(button.attributes('aria-expanded')).toBe('false')
   })
 
@@ -283,7 +266,9 @@ describe('DitoMenuButton', () => {
     wrapper = mountMenuButton({ disabled: true })
     const button = findButton(wrapper)
     expect(button.attributes('disabled')).toBeDefined()
-    await wrapper.find('.dito-trigger').trigger('click')
+    await click(button.element)
+    expect(button.attributes('aria-expanded')).toBe('false')
+    await pressKey('ArrowUp', button.element)
     expect(button.attributes('aria-expanded')).toBe('false')
   })
 })

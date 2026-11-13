@@ -356,12 +356,12 @@ describe('useField()', () => {
         }
       })
       const field = findField('genre')
-      await field.find('.multiselect').trigger('focus')
+      await field.find('.dito-multiselect__input').trigger('focus')
       await flushPromises()
-      await field.find('.multiselect__input').setValue('poe')
+      await field.find('.dito-multiselect__input').setValue('poe')
       await flushPromises()
       expect(events).toEqual([])
-      await field.find('.multiselect__element .multiselect__option').trigger(
+      await field.find('.dito-multiselect__option').trigger(
         'click'
       )
       await settle()

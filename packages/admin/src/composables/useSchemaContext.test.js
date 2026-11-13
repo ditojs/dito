@@ -7,7 +7,8 @@ import {
   mountSchema,
   enterValue,
   stubConfirm,
-  isForm
+  isForm,
+  getDialogLabel
 } from '../test/mount.js'
 
 describe('useSchemaContext()', () => {
@@ -570,7 +571,7 @@ describe('useSchemaContext()', () => {
       await findField('reset').trigger('click')
       await flushPromises()
       const dialog = admin.wrapper.find('.dito-dialog')
-      expect(dialog.attributes('aria-label')).toBe('Reset Dune?')
+      expect(getDialogLabel(dialog)).toBe('Reset Dune?')
       const button = dialog.find('button[type="submit"]')
       expect(button.text()).toBe('Reset')
       await button.trigger('click')
@@ -597,7 +598,7 @@ describe('useSchemaContext()', () => {
       await admin.wrapper.find('.dito-dialog form').trigger('submit')
       await flushPromises()
       const dialog = admin.wrapper.findAll('.dito-dialog').at(-1)
-      expect(dialog.attributes('aria-label')).toBe('Renamed to Dune.')
+      expect(getDialogLabel(dialog)).toBe('Renamed to Dune.')
       await dialog.find('.dito-dialog__buttons button').trigger('click')
       expect(await alerted).toBe(undefined)
     })

@@ -120,7 +120,12 @@ test.describe('screenshots', () => {
 
   test('color picker', async ({ page, url }) => {
     await openProject(page, url)
-    await page.getByLabel('Color', { exact: true }).click()
+    await page
+      .locator('.dito-input', {
+        has: page.getByLabel('Color', { exact: true })
+      })
+      .getByRole('button', { name: 'Choose color' })
+      .click()
     await expect(page.getByLabel('Sketch color picker')).toBeVisible()
     await expectScreenshot(page, 'color-picker.png')
   })

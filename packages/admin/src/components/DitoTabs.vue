@@ -1,34 +1,48 @@
 <template lang="pug">
-.dito-tabs(
-  ref="element"
-  role="tablist"
-  :class=`{
-    'dito-tabs--masked-start': isMaskedStart,
-    'dito-tabs--masked-end': isMaskedEnd
-  }`
-  @scroll.passive="updateMasks"
+//- reka-ui moves the focus with the arrow keys, Home and End. The selected tab
+//- stays the tab stop:
+RovingFocusGroup(
+  asChild
+  orientation="horizontal"
+  loop
+  :currentTabStopId="modelValue"
 )
-  a.dito-tabs__link(
-    v-for="(tabSchema, key) in tabs"
-    :id="getTabId(key)"
-    :key="key"
-    role="tab"
-    :aria-selected="modelValue === key"
-    :aria-controls="getTabPanelId(key)"
-    :tabindex="modelValue === key ? 0 : -1"
-    :class="{ 'dito-tabs__link--active': modelValue === key }"
-    @click="$emit('update:modelValue', key)"
-    @keydown="onKeyDown($event, key)"
-  ) {{ getLabelText(tabSchema, key) }}
+  .dito-tabs(
+    ref="element"
+    role="tablist"
+    :class=`{
+      'dito-tabs--masked-start': isMaskedStart,
+      'dito-tabs--masked-end': isMaskedEnd
+    }`
+    @scroll.passive="updateMasks"
+  )
+    RovingFocusItem(
+      v-for="(tabSchema, key) in tabs"
+      :key="key"
+      asChild
+      :tabStopId="key"
+      :active="modelValue === key"
+    )
+      a.dito-tabs__link(
+        :id="getTabId(key)"
+        role="tab"
+        :aria-selected="modelValue === key"
+        :aria-controls="getTabPanelId(key)"
+        :class="{ 'dito-tabs__link--active': modelValue === key }"
+        @click="$emit('update:modelValue', key)"
+        @keydown="onKeyDown($event, key)"
+      ) {{ getLabelText(tabSchema, key) }}
 </template>
 
 <script>
 import { inject, nextTick, useTemplateRef, watch } from 'vue'
+import { RovingFocusGroup, RovingFocusItem } from 'reka-ui'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useScrollMask } from '../composables/useScrollMask.ts'
 import { componentPathKey } from '../utils/keys.ts'
 
 export default {
+  components: { RovingFocusGroup, RovingFocusItem },
   emits: ['update:modelValue'],
 
   props: {
@@ -85,25 +99,12 @@ export default {
         return `${schemaComponentPath.node.componentPath}-tabpanel-${key}`
       },
 
-      // Manual activation: Arrow keys, Home and End only move the focus, Enter
-      // and Space select, to not switch the panels and URL on each key press.
+      // Manual activation: Enter and Space select, to not switch the panels
+      // and URL each time the focus moves:
       onKeyDown(event, key) {
-        const keys = Object.keys(props.tabs)
-        const index = keys.indexOf(key)
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
           emit('update:modelValue', key)
-        } else {
-          const focusIndex = {
-            ArrowLeft: (index - 1 + keys.length) % keys.length,
-            ArrowRight: (index + 1) % keys.length,
-            Home: 0,
-            End: keys.length - 1
-          }[event.key]
-          if (focusIndex !== undefined) {
-            event.preventDefault()
-            document.getElementById(getTabId(keys[focusIndex]))?.focus()
-          }
         }
       }
     }

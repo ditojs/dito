@@ -132,7 +132,7 @@ the menu, the arrow keys, Home and End move between items, Escape closes it.
 | Prop        | Type                                        | Default    | Description                                                                                                                   |
 | ----------- | ------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `items`     | `Array<{ value, label, icon?, disabled? }>` | required   | The menu items. Items with an `icon` from the [icon set](#icons) show it instead of their `label`, which becomes their title. |
-| `placement` | `string`                                    | `'bottom'` | Where the menu opens, see [`DitoTrigger`](#ditotrigger).                                                                      |
+| `placement` | `string`                                    | `'bottom'` | Where the menu opens, a side and an alignment like the one of [`DitoTrigger`](#ditotrigger).                                  |
 | `cover`     | `boolean`                                   | `true`     | Opens the menu over the button, like native menus.                                                                            |
 | `floating`  | `boolean`                                   | `false`    | Opens the menu below the button as a separate panel with a tip pointing at the button, overriding `cover`.                    |
 | `offset`    | `boolean`                                   | `false`    | Opens the menu one item padding below the top of the button, e.g. to line up with the text of a taller button.                |
@@ -281,49 +281,45 @@ All attributes go to the `<progress>` element, e.g. `aria-label`.
 
 ### DitoTrigger
 
-Shows a popup next to a trigger element, positioned absolutely and kept in the
-window if possible. The base of `DitoMenuButton` and the pickers.
+Shows a popup at the content of the trigger, built on
+[reka-ui](https://reka-ui.com)'s `Popover`. reka-ui's `PopoverTrigger` in the
+trigger opens and closes it. The popup takes the focus, first on its element
+with `data-autofocus`, else on its first focusable one, and returns it to the
+button when it closes. Escape and presses outside close it. The base of the
+pickers and the color field.
 
-| Prop                   | Type                    | Default    | Description                                                                                                                                                                                                                                               |
-| ---------------------- | ----------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`              | `string`                | `'click'`  | What shows the popup: `'click'` toggles it, `'hover'` shows it while the mouse is over the trigger or the popup, `'focus'` while an input or textarea in the trigger or the popup has the focus. `'always'` adds no handlers; the popup follows `show`.   |
-| `show`                 | `boolean`               | `false`    | Whether the popup is shown (`v-model:show`).                                                                                                                                                                                                              |
-| `placement`            | `string`                | `'bottom'` | The side of the trigger the popup appears on, `'top'`, `'bottom'`, `'left'` or `'right'`, optionally followed by the edge it aligns with, e.g. `'bottom-left'` or `'right-top'`, or by `center`, e.g. `'bottom-center'`. Adds `.dito-popup--{placement}`. |
-| `transition`           | `string`                | `'slide'`  | The popup's transition: `'slide'`, `'fade'` or `'zoom'`, or `null` to show it at once.                                                                                                                                                                    |
-| `target`               | `string \| HTMLElement` | `null`     | The element the popup is positioned at, instead of the trigger: an element, or `'trigger'` or `'popup'` for these parts of the trigger itself.                                                                                                            |
-| `disabled`             | `boolean`               | `false`    | Prevents showing the popup. Adds `.dito-trigger--disabled`.                                                                                                                                                                                               |
-| `keepInView`           | `boolean`               | `true`     | Flips the popup to the other side or edge if it doesn't fit in the window and there's more room there, and shifts centered popups back into the window.                                                                                                   |
-| `matchTargetWidth`     | `boolean`               | `true`     | Gives the popup's first child the width of the target.                                                                                                                                                                                                    |
-| `cover`                | `boolean`               | `false`    | Places the popup over the trigger instead of next to it.                                                                                                                                                                                                  |
-| `hideWhenClickOutside` | `boolean`               | `true`     | Hides the popup on clicks outside trigger, target and popup, and when the window loses focus.                                                                                                                                                             |
-| `alwaysShow`           | `boolean`               | `false`    | Shows the popup permanently.                                                                                                                                                                                                                              |
-| `hideDelay`            | `number`                | `0`        | With `trigger: 'hover'`, the milliseconds to wait before hiding.                                                                                                                                                                                          |
-| `customClass`          | `string`                | `null`     | An additional class of the popup.                                                                                                                                                                                                                         |
-| `zIndex`               | `number`                | `0`        | A `z-index` for the popup, instead of the default one.                                                                                                                                                                                                    |
+| Prop               | Type          | Default    | Description                                                                                                                                                                     |
+| ------------------ | ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show`             | `boolean`     | `false`    | Whether the popup is shown (`v-model:show`).                                                                                                                                    |
+| `placement`        | `string`      | `'bottom'` | The side of the trigger the popup appears on, `'top'`, `'bottom'`, `'left'` or `'right'`, optionally followed by the edge it aligns with, e.g. `'bottom-left'`, or by `center`. |
+| `transition`       | `string`      | `'slide'`  | The popup's transition: `'slide'`, `'fade'` or `'zoom'`, or `null` to show it at once.                                                                                          |
+| `target`           | `HTMLElement` | `null`     | The element the popup is positioned at, instead of the trigger.                                                                                                                 |
+| `disabled`         | `boolean`     | `false`    | Prevents showing the popup. Adds `.dito-trigger--disabled`.                                                                                                                     |
+| `keepInView`       | `boolean`     | `true`     | Flips and shifts the popup to keep it in the window.                                                                                                                            |
+| `matchTargetWidth` | `boolean`     | `true`     | Gives the popup's first child the width of the target.                                                                                                                          |
 
-| Event         | Payload | Description                    |
-| ------------- | ------- | ------------------------------ |
-| `update:show` | `show`  | The popup was shown or hidden. |
+| Event         | Payload | Description                                                          |
+| ------------- | ------- | -------------------------------------------------------------------- |
+| `update:show` | `show`  | The popup was shown or hidden.                                       |
+| `closed`      | –       | The popup was removed, after its transition, and the focus moved on. |
 
 | Slot      | Description                                          |
 | --------- | ---------------------------------------------------- |
-| `trigger` | The trigger.                                         |
+| `trigger` | The trigger, with the button that opens the popup.   |
 | `popup`   | The popup's content, only rendered while it's shown. |
 
-| Method                          | Description               |
-| ------------------------------- | ------------------------- |
-| `open()`, `close()`, `toggle()` | Shows or hides the popup. |
-
-Escape hides the popup, and doesn't reach elements around the trigger, e.g.
-dialogs.
+| Method              | Description               |
+| ------------------- | ------------------------- |
+| `open()`, `close()` | Shows or hides the popup. |
 
 ```vue
-<DitoTrigger trigger="hover" placement="right-top">
+<DitoTrigger placement="bottom-left">
   <template #trigger>
-    <DitoIcon name="info" />
+    <input v-model="query" />
+    <PopoverTrigger aria-label="Search tips">?</PopoverTrigger>
   </template>
   <template #popup>
-    <p class="bookshop-hint">Shipped within 2 days.</p>
+    <p class="bookshop-hint">Search by title or author.</p>
   </template>
 </DitoTrigger>
 ```
@@ -346,38 +342,40 @@ start on Sunday. Without a value, it shows today.
 
 In the day view, the arrow keys move between days, Page Up and Page Down
 between months, with Shift between years, and Home and End to the first and
-last day of the month.
+last day of the month. The day, month or year of the cursor has
+`data-autofocus`, see [`DitoTrigger`](#ditotrigger).
 
 ### DitoDatePicker
 
-An input for a date, with a [`DitoCalendar`](#ditocalendar) in a popup. Dates
-can be typed in the format of the locale; the up and down arrow keys open the
-popup, and then step the day, month or year at the caret. The value only
-changes for valid dates.
+An input for a date, with a button that opens a
+[`DitoCalendar`](#ditocalendar) in a popup, which takes the focus. Dates can be
+typed in the format of the locale, and the up and down arrow keys step the day,
+month or year at the caret. With Alt, or without a value, they open the popup.
+The value only changes for valid dates.
 
-| Prop          | Type                    | Default                                      | Description                                                                    |
-| ------------- | ----------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
-| `modelValue`  | `Date`                  | `null`                                       | The date (`v-model`).                                                          |
-| `locale`      | `string`                | `'en-US'`                                    | The locale of the text and the calendar.                                       |
-| `format`      | `object`                | `{ date: defaultFormats.date, time: false }` | The `date` and `time` options of [`format()`](./utils.md#format) for the text. |
-| `placeholder` | `string`                | `null`                                       | The input's placeholder.                                                       |
-| `disabled`    | `boolean`               | `false`                                      | Disables input and popup.                                                      |
-| `show`        | `boolean`               | `false`                                      | Whether the popup is shown (`v-model:show`).                                   |
-| `placement`   | `string`                | `'bottom-left'`                              | See [`DitoTrigger`](#ditotrigger).                                             |
-| `transition`  | `string`                | `'slide'`                                    | See [`DitoTrigger`](#ditotrigger).                                             |
-| `target`      | `string \| HTMLElement` | `'trigger'`                                  | See [`DitoTrigger`](#ditotrigger).                                             |
+| Prop          | Type          | Default                                      | Description                                                                    |
+| ------------- | ------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `modelValue`  | `Date`        | `null`                                       | The date (`v-model`).                                                          |
+| `locale`      | `string`      | `'en-US'`                                    | The locale of the text and the calendar.                                       |
+| `format`      | `object`      | `{ date: defaultFormats.date, time: false }` | The `date` and `time` options of [`format()`](./utils.md#format) for the text. |
+| `placeholder` | `string`      | `null`                                       | The input's placeholder.                                                       |
+| `disabled`    | `boolean`     | `false`                                      | Disables input and popup.                                                      |
+| `show`        | `boolean`     | `false`                                      | Whether the popup is shown (`v-model:show`).                                   |
+| `placement`   | `string`      | `'bottom-left'`                              | See [`DitoTrigger`](#ditotrigger).                                             |
+| `transition`  | `string`      | `'slide'`                                    | See [`DitoTrigger`](#ditotrigger).                                             |
+| `target`      | `HTMLElement` | `null`                                       | See [`DitoTrigger`](#ditotrigger).                                             |
 
 | Event               | Payload | Description                                                                                            |
 | ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
 | `update:modelValue` | `date`  | The date changed, while typing or choosing.                                                            |
 | `change`            | `date`  | The edit is done: the popup closed, the input lost focus or Enter was pressed, after the date changed. |
 | `update:show`       | `show`  | The popup was shown or hidden.                                                                         |
-| `focus`, `blur`     | –       | The input got the focus or the popup opened, and both are gone again.                                  |
+| `focus`, `blur`     | –       | The input, the button or the popup got the focus, and all of them lost it again.                       |
 
-| Slot               | Description                                          |
-| ------------------ | ---------------------------------------------------- |
-| `prefix`, `suffix` | Content before and after the text, inside the input. |
-| `trigger`          | Replaces the input, e.g. with a button.              |
+| Slot               | Description                                                              |
+| ------------------ | ------------------------------------------------------------------------ |
+| `prefix`, `suffix` | Content before and after the text, inside the input.                     |
+| `trigger`          | Replaces the input and the button, e.g. with reka-ui's `PopoverTrigger`. |
 
 | Method              | Description                 |
 | ------------------- | --------------------------- |
@@ -398,7 +396,9 @@ wrapper, the rest to the native input.
 ### DitoTimePicker
 
 An input for a time, with a panel to choose hours, minutes and seconds in a
-popup. Typed digits overwrite the digits at the caret, keeping the format.
+popup. Typed digits overwrite the digits at the caret, keeping the format, and
+the arrow keys step the part at the caret, wrapping around. In the panel, the
+arrow keys step the focused list, and Enter closes the popup.
 
 Props, events, slots and methods are those of
 [`DitoDatePicker`](#ditodatepicker), except that `format` defaults to
@@ -413,20 +413,21 @@ Props, events, slots and methods are those of
 
 ### DitoDateTimePicker
 
-An input for date and time, with a calendar in the popup while the caret is in
-the date, and the time panel while it's in the time.
+An input for date and time, with a calendar and the time panel next to each
+other in the popup. Picking a day keeps the popup open, Enter in the time panel
+closes it.
 
-| Prop          | Type                    | Default     | Description                                                                                                                                           |
-| ------------- | ----------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `modelValue`  | `Date`                  | `null`      | The date and time (`v-model`).                                                                                                                        |
-| `locale`      | `string`                | `'en-US'`   | The locale.                                                                                                                                           |
-| `format`      | `object`                | `null`      | `date` and `time` options of [`format()`](./utils.md#format), merged deeply over the defaults with a short month, e.g. `'Oct 13, 2026, 02:05:00 PM'`. |
-| `placeholder` | `string`                | `null`      | The input's placeholder.                                                                                                                              |
-| `disabled`    | `boolean`               | `false`     | Disables input and popup.                                                                                                                             |
-| `show`        | `boolean`               | `false`     | Whether the popup is shown (`v-model:show`).                                                                                                          |
-| `placement`   | `string`                | `null`      | See [`DitoTrigger`](#ditotrigger). Without it, the popup is placed `'bottom-left'` for the calendar and `'bottom-right'` for the time panel.          |
-| `transition`  | `string`                | `'slide'`   | See [`DitoTrigger`](#ditotrigger).                                                                                                                    |
-| `target`      | `string \| HTMLElement` | `'trigger'` | See [`DitoTrigger`](#ditotrigger).                                                                                                                    |
+| Prop          | Type          | Default         | Description                                                                                                                                           |
+| ------------- | ------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `modelValue`  | `Date`        | `null`          | The date and time (`v-model`).                                                                                                                        |
+| `locale`      | `string`      | `'en-US'`       | The locale.                                                                                                                                           |
+| `format`      | `object`      | `null`          | `date` and `time` options of [`format()`](./utils.md#format), merged deeply over the defaults with a short month, e.g. `'Oct 13, 2026, 02:05:00 PM'`. |
+| `placeholder` | `string`      | `null`          | The input's placeholder.                                                                                                                              |
+| `disabled`    | `boolean`     | `false`         | Disables input and popup.                                                                                                                             |
+| `show`        | `boolean`     | `false`         | Whether the popup is shown (`v-model:show`).                                                                                                          |
+| `placement`   | `string`      | `'bottom-left'` | See [`DitoTrigger`](#ditotrigger).                                                                                                                    |
+| `transition`  | `string`      | `'slide'`       | See [`DitoTrigger`](#ditotrigger).                                                                                                                    |
+| `target`      | `HTMLElement` | `null`          | See [`DitoTrigger`](#ditotrigger).                                                                                                                    |
 
 Events: `update:modelValue`, `change`, `update:show`, `focus` and `blur`, as in
 [`DitoDatePicker`](#ditodatepicker). Slots: `prefix` and `suffix`. Methods:
@@ -670,7 +671,7 @@ custom admin components, use `@ditojs/admin/imports.scss`, which includes it.
 The components follow BEM: blocks are named `.dito-{block}`, their elements
 `.dito-{block}__{element}`, and modifiers, including states,
 `.dito-{block}--{modifier}`, e.g. `.dito-button--disabled`,
-`.dito-switch--checked`, `.dito-input--focus` or `.dito-popup--bottom-left`.
+`.dito-switch--checked`, `.dito-input--focus` or `.dito-popup--slide`.
 
 Besides the classes of the components, the styles define:
 

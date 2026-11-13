@@ -1,5 +1,7 @@
+import { vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import DitoDatePicker from './DitoDatePicker.vue'
+import { click } from '../test/events.js'
 
 const keyCodes = { ArrowUp: 38, ArrowDown: 40, Enter: 13 }
 
@@ -18,6 +20,10 @@ function findToggle(wrapper) {
   return wrapper.find('button[aria-haspopup="dialog"]')
 }
 
+async function waitForFocus(element) {
+  await vi.waitFor(() => expect(document.activeElement).toBe(element))
+}
+
 function isPopupShown(wrapper) {
   return wrapper.find('.dito-calendar').exists()
 }
@@ -27,11 +33,11 @@ async function focusInput(wrapper) {
   await flushPromises()
 }
 
-// Presses `key` in the input with the caret at `position`.
-async function pressKey(wrapper, key, position) {
+// Presses `key` in the input with the caret at `position`, or on `element`.
+async function pressKey(wrapper, key, position, element) {
   const input = findInput(wrapper).element
   input.setSelectionRange(position, position)
-  input.dispatchEvent(
+  ;(element ?? input).dispatchEvent(
     new KeyboardEvent('keydown', {
       key,
       keyCode: keyCodes[key],
@@ -59,13 +65,10 @@ describe('DitoDatePicker', () => {
     const toggle = findToggle(wrapper)
     expect(toggle.attributes('type')).toBe('button')
     expect(toggle.attributes('aria-expanded')).toBe('false')
-    await toggle.trigger('click')
-    await flushPromises()
+    await click(toggle.element)
     expect(toggle.attributes('aria-expanded')).toBe('true')
     expect(isPopupShown(wrapper)).toBe(true)
-    expect(document.activeElement).toBe(findInput(wrapper).element)
-    await toggle.trigger('click')
-    await flushPromises()
+    await click(toggle.element)
     expect(toggle.attributes('aria-expanded')).toBe('false')
     expect(isPopupShown(wrapper)).toBe(false)
   })
@@ -78,16 +81,11 @@ describe('DitoDatePicker', () => {
     expect(wrapper.find('input').exists()).toBe(false)
   })
 
-  it('opens on focus and emits `focus` and `blur` once', async () => {
+  it(`doesn't open on focus`, async () => {
     wrapper = mountDatePicker()
     await focusInput(wrapper)
-    expect(isPopupShown(wrapper)).toBe(true)
-    expect(wrapper.emitted('update:show')).toEqual([[true]])
-    findInput(wrapper).element.blur()
-    await flushPromises()
     expect(isPopupShown(wrapper)).toBe(false)
     expect(wrapper.emitted('focus')).toHaveLength(1)
-    expect(wrapper.emitted('blur')).toHaveLength(1)
   })
 
   it('steps the date part at the caret', async () => {
@@ -98,37 +96,42 @@ describe('DitoDatePicker', () => {
     expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 2, 6)])
   })
 
-  it('selects the date with Enter and closes the popup', async () => {
+  it('moves the focus to the selected day of the calendar', async () => {
     wrapper = mountDatePicker()
-    await focusInput(wrapper)
-    await pressKey(wrapper, 'ArrowDown', 7)
-    await pressKey(wrapper, 'Enter', 7)
-    expect(getEmittedDates(wrapper).at(-1)).toEqual(new Date(2024, 2, 6))
-    expect(isPopupShown(wrapper)).toBe(false)
+    await click(findToggle(wrapper).element)
+    await waitForFocus(wrapper.find('[role="gridcell"][tabindex="0"]').element)
+    expect(document.activeElement.getAttribute('aria-label')).toBe(
+      'March 5, 2024'
+    )
   })
 
-  it('stays open while the focus moves into the calendar', async () => {
+  it('returns the focus to the button after selecting a day', async () => {
     wrapper = mountDatePicker()
     await focusInput(wrapper)
-    const cell = wrapper.find('[role="gridcell"][tabindex="0"]').element
-    cell.focus()
-    await flushPromises()
-    expect(isPopupShown(wrapper)).toBe(true)
-    // Leaving both closes the popup:
-    cell.blur()
-    await flushPromises()
-    expect(isPopupShown(wrapper)).toBe(false)
-  })
-
-  it('returns the focus to the input after selecting in the calendar', async () => {
-    wrapper = mountDatePicker()
-    await focusInput(wrapper)
+    const toggle = findToggle(wrapper)
+    await click(toggle.element)
     const cell = wrapper.find('[role="gridcell"][tabindex="0"]')
-    cell.element.focus()
+    await waitForFocus(cell.element)
     await cell.trigger('click')
     await flushPromises()
     expect(isPopupShown(wrapper)).toBe(false)
-    expect(document.activeElement).toBe(findInput(wrapper).element)
+    expect(getEmittedDates(wrapper)).toEqual([])
+    await waitForFocus(toggle.element)
+    expect(wrapper.emitted('change')).toBeUndefined()
+    expect(wrapper.emitted('focus')).toHaveLength(1)
+  })
+
+  it('emits `blur` once the focus leaves the input, button and calendar', async () => {
+    wrapper = mountDatePicker()
+    await focusInput(wrapper)
+    await click(findToggle(wrapper).element)
+    await waitForFocus(wrapper.find('[role="gridcell"][tabindex="0"]').element)
+    await pressKey(wrapper, 'Escape', 0, document.activeElement)
+    await waitForFocus(findToggle(wrapper).element)
     expect(wrapper.emitted('blur')).toBeUndefined()
+    findToggle(wrapper).element.blur()
+    await flushPromises()
+    expect(wrapper.emitted('focus')).toHaveLength(1)
+    expect(wrapper.emitted('blur')).toHaveLength(1)
   })
 })

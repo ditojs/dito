@@ -1,5 +1,5 @@
 import { html } from '@ditojs/utils'
-import { mountSchema } from '../test/mount.js'
+import { mountSchema, getInfoHtml } from '../test/mount.js'
 import DitoLabel from './DitoLabel.vue'
 import DitoAffixes from './DitoAffixes.vue'
 
@@ -39,8 +39,7 @@ describe('DitoLabel', () => {
         }
       }
     })
-    const getInfo = name =>
-      findContainer(name).find('.dito-info').attributes('data-info')
+    const getInfo = name => getInfoHtml(findContainer(name))
     expect(getInfo('title')).toBe('Q &amp; &lt;b&gt;A&lt;/b&gt;')
     expect(getInfo('author')).toBe('<b>Q &amp; A</b>')
   })

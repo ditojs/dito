@@ -8,7 +8,8 @@ import {
   mountAdmin,
   mountForm,
   unmountAdmin,
-  enterValue
+  enterValue,
+  getInfoHtml
 } from '../test/mount.js'
 
 // The DOM of the tests has no WebAuthn, so we answer passkey logins with a
@@ -260,7 +261,7 @@ describe('DitoRoot', () => {
         expect(dialog.find('input[name="password"]').exists()).toBe(false)
         const input = dialog.find('input[name="code"]')
         expect(input.attributes('placeholder')).toBe('123456')
-        expect(dialog.find('.dito-info').attributes('data-info')).toBe(
+        expect(getInfoHtml(dialog)).toBe(
           'Enter the code from your authenticator app, or a backup code.'
         )
         await enterValue(input, '123456')
@@ -522,10 +523,11 @@ describe('DitoRoot', () => {
       })
       await admin.navigate('/books')
       const element = admin.element.querySelector('.dito-info')
-      element.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
-      element.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      element.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, pointerType: 'mouse' })
+      )
       await vi.advanceTimersByTimeAsync(500)
-      return document.querySelector('[data-tippy-root]')
+      return document.querySelector('.dito-tooltip__content')
     }
 
     beforeEach(() => {

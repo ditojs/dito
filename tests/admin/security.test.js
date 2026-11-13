@@ -2,7 +2,10 @@ import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { startRegistration } from '@simplewebauthn/browser'
 import { TOTP } from 'otpauth'
-import { mountAdmin } from '../../packages/admin/src/test/mount.js'
+import {
+  mountAdmin,
+  getDialogLabel
+} from '../../packages/admin/src/test/mount.js'
 import { Credential } from '../e2e/passkeys/models/Credential.ts'
 import { Session } from '../e2e/passkeys/models/Session.ts'
 import { User } from '../e2e/passkeys/models/User.ts'
@@ -48,7 +51,7 @@ async function openSecurity({ features = {}, setUp = null } = {}) {
   await items[0].trigger('click')
   const security = await vi.waitFor(() => {
     const dialog = getDialog(admin)
-    expect(dialog?.attributes('aria-label')).toBe('Security')
+    expect(dialog && getDialogLabel(dialog)).toBe('Security')
     if (authentication.hasPasskeys) {
       expect(getRows(admin).length).toBeGreaterThan(0)
     }
@@ -334,7 +337,7 @@ describe('Security dialog', () => {
           confirmation: 'changed'
         })
         const dialog = await waitForDialog(admin, 'Confirm')
-        expect(dialog.attributes('aria-label')).toBe('Confirm Access')
+        expect(getDialogLabel(dialog)).toBe('Confirm Access')
         expect(dialog.text().includes('Use Passkey')).toBe(hasPasskeys)
       }
     )
@@ -450,7 +453,7 @@ describe('Security dialog', () => {
       await waitForNotification(notify, { type: 'error' })
       // Only the Security dialog stays:
       await vi.waitFor(() =>
-        expect(getDialog(admin).attributes('aria-label')).toBe('Security')
+        expect(getDialogLabel(getDialog(admin))).toBe('Security')
       )
       expect(getRequests(request, 'post', '/users/totp-confirm')).toHaveLength(
         1
@@ -466,7 +469,7 @@ describe('Security dialog', () => {
       await waitForDialog(admin, 'Confirm')
       await answerDialog(admin, 'Cancel')
       await vi.waitFor(() =>
-        expect(getDialog(admin).attributes('aria-label')).toBe('Security')
+        expect(getDialogLabel(getDialog(admin))).toBe('Security')
       )
       expect(notify).not.toHaveBeenCalled()
       expect(getRequests(request, 'post', '/users/totp-confirm')).toHaveLength(

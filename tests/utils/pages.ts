@@ -6,8 +6,14 @@ import {
 } from '@playwright/test'
 import { acceptConfirmDialog } from './dialogs.js'
 
-// Dito multiselect uses role=combobox + role=option in a portal. Option click
-// targets `page` (portal root), combobox can be scoped to any container.
+// The multiselect with the label, around its input, tags and options:
+export function getMultiselect(page: Page, label: string) {
+  return page.locator('.dito-multiselect', {
+    has: page.getByRole('combobox', { name: label, exact: true })
+  })
+}
+
+// Picks the option of the multiselect with the label in `scope`:
 export async function fillDitoMultiselect(
   page: Page,
   scope: Locator | Page,
@@ -17,13 +23,10 @@ export async function fillDitoMultiselect(
 ) {
   const combobox = scope.getByRole('combobox', { name: label })
   await combobox.click()
-  // Multiselects with `searchable: true` expose a text input inside the
-  // combobox — type to narrow the list. The dito default is
-  // `searchable: false`: clicking already shows all options, no input
-  // exists, so skip the type step.
-  const input = combobox.locator('input')
-  if (await input.count()) {
-    await input.fill(search)
+  // The input of multiselects with `searchable: true` narrows the list. It is
+  // readonly otherwise, the dito default, and clicking shows all options:
+  if (await combobox.isEditable()) {
+    await combobox.fill(search)
   }
   // Exact so e.g. "Cyrillic" doesn't also match "Latin & Cyrillic".
   await page

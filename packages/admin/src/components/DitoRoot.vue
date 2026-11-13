@@ -5,75 +5,76 @@
   :data-agent-platform="appState.agent.platform"
   :data-agent-version="appState.agent.versionNumber"
 )
-  Transition(name="dito-drag")
-    .dito-drag-overlay(
-      v-if="fileDropTargets.isDraggingFiles"
+  //- Shares the delay of the tooltips of infos, see `DitoInfo`:
+  TooltipProvider(:delayDuration="250")
+    Transition(name="dito-drag")
+      .dito-drag-overlay(
+        v-if="fileDropTargets.isDraggingFiles"
+      )
+    TransitionGroup(name="dito-dialog")
+      DitoDialog(
+        v-for="(dialog, key) in dialogs"
+        :key="key"
+        :fields="dialog.fields"
+        :buttons="dialog.buttons"
+        :promise="dialog.promise"
+        :data="dialog.data"
+        :settings="dialog.settings"
+        :inert="key !== topDialogKey"
+        @remove="removeDialog(key)"
+      )
+    DitoNavigation#dito-navigation(
+      ref="navigation"
+      :class="`dito-navigation--${menu.state}`"
+      :inert="!!topDialogKey"
     )
-  TransitionGroup(name="dito-dialog")
-    DitoDialog(
-      v-for="(dialog, key) in dialogs"
-      :key="key"
-      :fields="dialog.fields"
-      :buttons="dialog.buttons"
-      :promise="dialog.promise"
-      :data="dialog.data"
-      :settings="dialog.settings"
-      :inert="key !== topDialogKey"
-      @remove="removeDialog(key)"
+      button.dito-navigation__close(
+        v-if="menu.isOverlay"
+        type="button"
+        aria-label="Close Menu"
+        @click="menu.toggle()"
+      )
+    main.dito-page.dito-scroll-parent(
+      :class="pageClasses"
+      :inert="!!topDialogKey"
     )
-  DitoNavigation#dito-navigation(
-    ref="navigation"
-    :class="`dito-navigation--${menu.state}`"
-    :inert="!!topDialogKey"
-  )
-    button.dito-navigation__close(
-      v-if="menu.isOverlay"
-      type="button"
-      aria-label="Close Menu"
-      @click="menu.toggle()"
+      DitoHeader(
+        :spinner="options.spinner"
+        :isLoading="adminContext.loadingTracker.isLoading"
+      )
+        template(#prepend)
+          button.dito-header__toggle(
+            ref="menuButton"
+            type="button"
+            aria-label="Menu"
+            aria-controls="dito-navigation"
+            :aria-expanded="menu.isExpanded"
+            @click="menu.toggle()"
+          )
+      .dito-page__content.dito-scroll-parent
+        DitoRouterView(:routeLevel="0")
+    DitoSidebar(
+      ref="aside"
+      :class="`dito-sidebar--${sidebar.state}`"
+      :inert="!!topDialogKey"
     )
-  main.dito-page.dito-scroll-parent(
-    :class="pageClasses"
-    :inert="!!topDialogKey"
-  )
-    DitoHeader(
-      :spinner="options.spinner"
-      :isLoading="adminContext.loadingTracker.isLoading"
-    )
-      template(#prepend)
-        button.dito-header__toggle(
-          ref="menuButton"
-          type="button"
-          aria-label="Menu"
-          aria-controls="dito-navigation"
-          :aria-expanded="menu.isExpanded"
-          @click="menu.toggle()"
-        )
-    .dito-page__content.dito-scroll-parent
-      DitoRouterView(:routeLevel="0")
-  DitoSidebar(
-    ref="aside"
-    :class="`dito-sidebar--${sidebar.state}`"
-    :inert="!!topDialogKey"
-  )
-    DitoAccount(
-      v-if="adminContext.user"
-    )
-    button.dito-login(
-      v-else-if="hasSessionStarted"
-      type="button"
-      @click="adminContext.session.login()"
-    )
-      span Sign In
-    button.dito-header__toggle.dito-sidebar__toggle(
-      ref="sidebarButton"
-      type="button"
-      aria-label="Sidebar"
-      aria-controls="dito-sidebar"
-      :aria-expanded="sidebar.isExpanded"
-      @click="sidebar.toggle()"
-    )
-  DitoNotifications(ref="notifications")
+      DitoAccount(
+        v-if="adminContext.user"
+      )
+      button.dito-login(
+        v-else-if="hasSessionStarted"
+        type="button"
+        @click="adminContext.session.login()"
+      ) Sign In
+      button.dito-header__toggle.dito-sidebar__toggle(
+        ref="sidebarButton"
+        type="button"
+        aria-label="Sidebar"
+        aria-controls="dito-sidebar"
+        :aria-expanded="sidebar.isExpanded"
+        @click="sidebar.toggle()"
+      )
+    DitoNotifications(ref="notifications")
 </template>
 
 <script>
@@ -88,10 +89,10 @@ import {
   ref,
   useTemplateRef
 } from 'vue'
-import { delegate as tippyDelegate } from 'tippy.js'
 import appState from '../appState.js'
 import { useDomEvents } from '../composables/useDomEvents.ts'
 import { useSidebar } from '../composables/useSidebar.ts'
+import { TooltipProvider } from 'reka-ui'
 import DitoDialog from './DitoDialog.vue'
 import {
   applySchemaDefaults,
@@ -102,7 +103,7 @@ import { FileDropTargets } from '../utils/FileDropTargets.js'
 import { adminContextKey, fileDropTargetsKey } from '../utils/keys.ts'
 
 export default {
-  components: { DitoDialog },
+  components: { DitoDialog, TooltipProvider },
 
   props: {
     options: { type: Object, default: () => ({}) }
@@ -177,19 +178,6 @@ export default {
       }
       // The uploads handle the dropped files, the root only the overlay:
       domOn(document, fileDropTargets.getDocumentEventHandlers())
-
-      tippyDelegate(root.value, {
-        target: '.dito-info',
-        theme: 'info',
-        animation: 'shift-away-subtle',
-        interactive: true,
-        delay: 250,
-        zIndex: 1,
-        // `DitoInfo` passes the info as HTML:
-        allowHTML: true,
-        appendTo: node => node.closest('.dito-pane'),
-        onShow: instance => instance.setContent(instance.reference.dataset.info)
-      })
 
       // Warn about unsaved changes, also the ones being submitted, as
       // `beforeunload` can't wait for them:
@@ -288,9 +276,9 @@ let dialogId = 0
 }
 
 .dito-login {
-  padding: 0;
+  padding: $header-padding;
   border: 0;
-  color: inherit;
+  color: $color-white;
   background: none;
 
   &:focus-visible {

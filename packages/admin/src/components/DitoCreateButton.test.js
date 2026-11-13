@@ -30,8 +30,11 @@ const blocksSchema = {
   }
 }
 
-async function pressKey(wrapper, key) {
-  await wrapper.trigger('keydown', { key })
+// Presses the key on the focused element, like the keyboard does.
+async function pressKey(key) {
+  document.activeElement.dispatchEvent(
+    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+  )
   await flushPromises()
 }
 
@@ -67,22 +70,22 @@ describe('DitoCreateButton', () => {
     const button = findMenuButton(field)
     expect(button.attributes('aria-expanded')).toBe('false')
 
-    await pressKey(button, 'Enter')
+    button.element.focus()
+    await pressKey('Enter')
     expect(button.attributes('aria-expanded')).toBe('true')
-    const menu = field.find('[role="menu"]')
     const items = field.findAll('[role="menuitem"]')
     expect(document.activeElement).toBe(items[0].element)
 
-    await pressKey(menu, 'ArrowDown')
+    await pressKey('ArrowDown')
     expect(document.activeElement).toBe(items[1].element)
-    await pressKey(menu, 'End')
+    await pressKey('End')
     expect(document.activeElement).toBe(items[2].element)
-    await pressKey(menu, 'ArrowDown')
+    await pressKey('ArrowDown')
     expect(document.activeElement).toBe(items[0].element)
-    await pressKey(menu, 'ArrowUp')
+    await pressKey('ArrowUp')
     expect(document.activeElement).toBe(items[2].element)
 
-    await pressKey(menu, 'Enter')
+    await pressKey('Enter')
     expect(data.blocks).toEqual([{ type: 'image', url: null }])
     expect(button.attributes('aria-expanded')).toBe('false')
   })
@@ -94,11 +97,13 @@ describe('DitoCreateButton', () => {
     })
     const field = findField('blocks')
     const button = findMenuButton(field)
-    await pressKey(button, 'ArrowDown')
+    button.element.focus()
+    await pressKey('ArrowDown')
     expect(button.attributes('aria-expanded')).toBe('true')
-    await pressKey(field.find('[role="menu"]'), 'Escape')
+    await pressKey('Escape')
     expect(button.attributes('aria-expanded')).toBe('false')
-    expect(document.activeElement).toBe(button.element)
+    // reka-ui returns the focus to the button after a timeout:
+    await vi.waitFor(() => expect(document.activeElement).toBe(button.element))
     expect(data.blocks).toEqual([])
   })
 

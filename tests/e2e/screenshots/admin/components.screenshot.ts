@@ -25,6 +25,15 @@ function getLinkItem(page: Page) {
     .filter({ has: page.getByLabel('Link URL', { exact: true }) })
 }
 
+// The button that opens the picker of the input with the label:
+function getPickerButton(page: Page, label: string, name: string) {
+  return page
+    .locator('.dito-input', {
+      has: page.getByLabel(label, { exact: true })
+    })
+    .getByRole('button', { name })
+}
+
 function getAccountButton(page: Page) {
   return page.getByRole('button', { name: 'test', exact: true })
 }
@@ -130,7 +139,7 @@ test.describe('component screenshots', () => {
 
   test('date picker', async ({ page, url }) => {
     await openProject(page, url)
-    await page.getByLabel('Start Date', { exact: true }).click()
+    await getPickerButton(page, 'Start Date', 'Choose date').click()
     await expectScreenshot(page, 'date-picker.png')
   })
 
@@ -138,23 +147,21 @@ test.describe('component screenshots', () => {
     await openProject(page, url)
     const input = page.getByLabel('Start Date', { exact: true })
     await focusByKeyboard(page, input)
-    await page.keyboard.press('ArrowDown')
+    // Alt+ArrowDown opens the calendar, where ArrowDown moves a week on:
+    await page.keyboard.press('Alt+ArrowDown')
     await page.keyboard.press('ArrowDown')
     await expectScreenshot(page, 'date-picker-keyboard.png')
   })
 
   test('time picker', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
-    await page.getByLabel('Start Time', { exact: true }).click()
+    await getPickerButton(page, 'Start Time', 'Choose time').click()
     await expectScreenshot(page, 'time-picker.png')
   })
 
   test('datetime picker', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
-    // Click on the date, as the time shows the time panel instead:
-    await page
-      .getByLabel('Meeting', { exact: true })
-      .click({ position: { x: 20, y: 10 } })
+    await getPickerButton(page, 'Meeting', 'Choose date and time').click()
     await expectScreenshot(page, 'datetime-picker.png')
   })
 

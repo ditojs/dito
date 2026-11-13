@@ -1,5 +1,6 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import DitoDateTimePicker from './DitoDateTimePicker.vue'
+import { click } from '../test/events.js'
 
 const keyCodes = { ArrowUp: 38, ArrowDown: 40 }
 
@@ -14,12 +15,11 @@ function findInput(wrapper) {
   return wrapper.find('input')
 }
 
-function getShownPanel(wrapper) {
-  return wrapper.find('.dito-calendar').exists()
-    ? 'date'
-    : wrapper.find('.dito-time-picker-popup').exists()
-      ? 'time'
-      : null
+function getShownPanels(wrapper) {
+  return [
+    wrapper.find('.dito-calendar').exists() && 'date',
+    wrapper.find('.dito-time-picker-popup').exists() && 'time'
+  ].filter(Boolean)
 }
 
 // Moves the caret in the input to `position`, as a click would.
@@ -53,37 +53,41 @@ describe('DitoDateTimePicker', () => {
     wrapper = null
   })
 
-  it('shows the panel of the part at the caret', async () => {
+  it('shows the calendar and the time panel below the input', async () => {
     wrapper = mountDateTimePicker()
-    const text = findInput(wrapper).element.value
-    expect(text).toMatch(/^Mar 5, 2024, 02:30:00/)
-    await clickAt(wrapper, 1)
-    expect(getShownPanel(wrapper)).toBe('date')
-    const popup = wrapper.find('.dito-popup')
-    expect(popup.classes()).toContain('dito-popup--bottom-left')
-    await clickAt(wrapper, text.indexOf('30'))
-    expect(getShownPanel(wrapper)).toBe('time')
-    expect(popup.classes()).toContain('dito-popup--bottom-right')
+    expect(findInput(wrapper).element.value).toMatch(/^Mar 5, 2024, 02:30:00/)
+    await click(wrapper.find('.dito-picker-input__toggle').element)
+    expect(getShownPanels(wrapper)).toEqual(['date', 'time'])
+    expect(wrapper.find('.dito-popup').attributes()).toMatchObject({
+      'data-side': 'bottom',
+      'data-align': 'start'
+    })
   })
 
-  it('keeps a given placement for both panels', async () => {
-    wrapper = mountDateTimePicker({ placement: 'top-left' })
-    const text = findInput(wrapper).element.value
-    await clickAt(wrapper, 1)
-    const popup = wrapper.find('.dito-popup')
-    expect(popup.classes()).toContain('dito-popup--top-left')
-    await clickAt(wrapper, text.indexOf('30'))
-    expect(getShownPanel(wrapper)).toBe('time')
-    expect(popup.classes()).toContain('dito-popup--top-left')
+  it('places the popup by `placement`', async () => {
+    wrapper = mountDateTimePicker({ placement: 'top-right', show: true })
+    await flushPromises()
+    expect(wrapper.find('.dito-popup').attributes()).toMatchObject({
+      'data-side': 'top',
+      'data-align': 'end'
+    })
+  })
+
+  it('stays open when a day is picked, for the time', async () => {
+    wrapper = mountDateTimePicker({ show: true })
+    await flushPromises()
+    await wrapper.find('[role="gridcell"][tabindex="0"]').trigger('click')
+    await flushPromises()
+    expect(getShownPanels(wrapper)).toEqual(['date', 'time'])
   })
 
   it('shows the popup with `show` and emits `update:show`', async () => {
     wrapper = mountDateTimePicker({ show: true })
     await flushPromises()
-    expect(getShownPanel(wrapper)).toBe('date')
+    expect(getShownPanels(wrapper)).toEqual(['date', 'time'])
     await findInput(wrapper).trigger('keydown', { key: 'Escape' })
     await flushPromises()
-    expect(getShownPanel(wrapper)).toBe(null)
+    expect(getShownPanels(wrapper)).toEqual([])
     expect(wrapper.emitted('update:show')).toEqual([[false]])
   })
 
@@ -94,25 +98,8 @@ describe('DitoDateTimePicker', () => {
     await flushPromises()
     target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
     await flushPromises()
-    expect(getShownPanel(wrapper)).toBe('date')
+    expect(getShownPanels(wrapper)).toEqual(['date', 'time'])
     target.remove()
-  })
-
-  it('reopens for the other panel only', async () => {
-    wrapper = mountDateTimePicker()
-    const text = findInput(wrapper).element.value
-    await clickAt(wrapper, 1)
-    await findInput(wrapper).trigger('keydown', { key: 'Escape' })
-    await flushPromises()
-    expect(getShownPanel(wrapper)).toBe(null)
-    const input = findInput(wrapper)
-    input.element.setSelectionRange(5, 5)
-    await input.trigger('keyup', { key: 'ArrowRight' })
-    expect(getShownPanel(wrapper)).toBe(null)
-    input.element.setSelectionRange(text.indexOf('30'), text.indexOf('30'))
-    await input.trigger('keyup', { key: 'ArrowRight' })
-    await flushPromises()
-    expect(getShownPanel(wrapper)).toBe('time')
   })
 
   it('steps the parts of the date and the time', async () => {

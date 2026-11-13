@@ -45,18 +45,6 @@ export default {
     z-index: -1;
   }
 
-  span {
-    display: inline-block;
-    padding: $header-padding;
-    color: $color-white;
-
-    &:empty {
-      &::after {
-        content: '\200b';
-      }
-    }
-  }
-
   // The buttons that toggle the menu and the sidebar:
   &__toggle {
     position: relative;

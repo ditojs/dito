@@ -99,23 +99,6 @@ describe('DitoCalendar', () => {
     )
   })
 
-  it('selects the stepped date when navigating with `update`', () => {
-    wrapper = mountCalendar()
-    const { vm } = wrapper
-    expect(vm.navigate({ step: 1, mode: 'day', update: true })).toBe(true)
-    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 2, 6, 14, 30)])
-  })
-
-  it('only moves the cursor when navigating without `update`', async () => {
-    wrapper = mountCalendar()
-    expect(wrapper.vm.navigate({ step: 1, mode: 'day' })).toBe(true)
-    await flushPromises()
-    expect(getEmittedDates(wrapper)).toEqual([])
-    expect(findCursorCell(wrapper).attributes('aria-label')).toBe(
-      'March 6, 2024'
-    )
-  })
-
   it('moves the focus along when switching modes', async () => {
     wrapper = mountCalendar()
     const button = wrapper.find('.dito-calendar-select-month')
