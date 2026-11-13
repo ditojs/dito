@@ -1,7 +1,6 @@
 <template lang="pug">
 DitoTrigger.dito-color(
   v-model:show="showPopup"
-  trigger="focus"
 )
   template(#trigger)
     DitoInput(

@@ -1,7 +1,6 @@
 <template lang="pug">
 .dito-notifications(aria-live="polite")
   .dito-header
-    span
   .dito-notifications__inner
     VueNotifications(
       classes="dito-notification"
@@ -114,13 +113,8 @@ export default {
   $notification-width: 300px;
 
   // An empty header line above the notifications:
-  .dito-header span {
-    display: inline-block;
-    padding: $header-padding-ver 0;
-
-    &::after {
-      content: '\200b';
-    }
+  .dito-header {
+    height: $header-height;
   }
 
   // Only the notifications show above dialogs, not the header:

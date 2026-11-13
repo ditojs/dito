@@ -6,8 +6,6 @@ import {
 } from '@playwright/test'
 import { acceptConfirmDialog } from './dialogs.js'
 
-// Dito multiselect uses role=combobox + role=option in a portal. Option click
-// targets `page` (portal root), combobox can be scoped to any container.
 // The multiselect with the label, around its input, tags and options:
 export function getMultiselect(page: Page, label: string) {
   return page.locator('.dito-multiselect', {
@@ -15,6 +13,7 @@ export function getMultiselect(page: Page, label: string) {
   })
 }
 
+// Picks the option of the multiselect with the label in `scope`:
 export async function fillDitoMultiselect(
   page: Page,
   scope: Locator | Page,

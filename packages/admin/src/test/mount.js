@@ -335,13 +335,13 @@ export async function enterValue(wrapper, value) {
   await flushPromises()
 }
 
-// Returns the HTML that the first info in `wrapper` shows in its tooltip:
+// The HTML that the first info in `wrapper` shows in its tooltip:
 export function getInfoHtml(wrapper) {
   return wrapper.findComponent(DitoInfo).vm.html
 }
 
-// Returns the label of the `.dito-dialog` wrapper, the text of the title that
-// labels its `role="dialog"` element:
+// The label of the `.dito-dialog` wrapper, the text of the title that labels
+// its `role="dialog"` element:
 export function getDialogLabel(dialog) {
   const id = dialog.find('[role="dialog"]').attributes('aria-labelledby')
   return dialog.find(`[id="${id}"]`).text()
