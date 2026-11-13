@@ -33,6 +33,8 @@ export class Session {
   readonly #viewRegistry: ViewRegistry
   readonly #login: LoginOptions
   readonly #user: ShallowRef<User | null>
+  #renewal: Promise<void> | null = null
+  #logins = 0
   // The responses of `request({ cache: 'global' })`, kept for the same user:
   loadCache: Record<string, Promise<any>> = {}
 
@@ -120,6 +122,7 @@ export class Session {
         location.replace(redirectAfterLogin)
       } else {
         this.#setUser(user)
+        this.#logins++
         await this.#resolveViews()
       }
       return user
@@ -270,6 +273,48 @@ export class Session {
 
   async ensureUser(): Promise<User | null> {
     return (await this.fetchUser()) || this.login()
+  }
+
+  // Send a request to the API with `send()`. The API answers 401 both once the
+  // session expired and when the user may not access a resource, so we fetch
+  // the session, and if it expired, log in and send the request again. The
+  // count of logins tells requests refused at the same time that one of them
+  // already logged in. Security changes answer `confirmationRequired` without
+  // a recent login, so we confirm the access and send them again. Cancelled
+  // confirmations end the request quietly, like aborted ones:
+  async send<$Response>(send: () => Promise<$Response>): Promise<$Response> {
+    const logins = this.#logins
+    try {
+      return await send()
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        if (await this.#renewExpired(logins)) {
+          return this.send(send)
+        }
+      } else if (error.response?.data?.confirmationRequired) {
+        if (await this.confirmAccess()) {
+          return this.send(send)
+        }
+        throw new DOMException('The confirmation was cancelled.', 'AbortError')
+      }
+      throw error
+    }
+  }
+
+  // Resolve to whether the user logged in since the count was `logins`.
+  // Requests refused at the same time share one login:
+  async #renewExpired(logins: number): Promise<boolean> {
+    if (logins === this.#logins) {
+      this.#renewal ||= (async () => {
+        if (!(await this.fetchUser())) {
+          await this.login()
+        }
+      })().finally(() => {
+        this.#renewal = null
+      })
+      await this.#renewal
+    }
+    return logins !== this.#logins
   }
 
   #setUser(user: User | null) {
