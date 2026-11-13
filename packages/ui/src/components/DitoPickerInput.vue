@@ -1,7 +1,6 @@
 <template lang="pug">
 DitoTrigger.dito-picker-input(
   ref="trigger"
-  trigger="focus"
   v-bind="{ show, transition, placement, disabled, target }"
   @update:show="onUpdateShow"
 )

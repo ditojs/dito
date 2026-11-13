@@ -22,8 +22,8 @@
     PopoverContent.dito-popup(
       ref="popup"
       :class="popupClass"
-      :side="side"
-      :align="align"
+      :side="sideAndAlign.side"
+      :align="sideAndAlign.align"
       :sideOffset="0"
       :avoidCollisions="keepInView"
       positionStrategy="fixed"
@@ -39,7 +39,7 @@
 
 <script>
 import { PopoverAnchor, PopoverContent, PopoverRoot } from 'reka-ui'
-import { getTarget } from '../utils/trigger'
+import { getSideAndAlign, getTarget } from '../utils/trigger'
 
 // A popup at the input in the `trigger` slot, built on reka-ui's `Popover`. It
 // opens when the input gets the focus, and closes when the focus leaves both
@@ -70,17 +70,8 @@ export default {
   },
 
   computed: {
-    side() {
-      return this.placement.split('-')[0]
-    },
-
-    align() {
-      // `bottom-right` lines up the right edges, `bottom` the left ones:
-      const alignment = this.placement.split('-')[1]
-      return (
-        { right: 'end', bottom: 'end', center: 'center' }[alignment] ??
-        'start'
-      )
+    sideAndAlign() {
+      return getSideAndAlign(this.placement)
     },
 
     popupClass() {

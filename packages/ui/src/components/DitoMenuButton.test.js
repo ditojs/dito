@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import DitoMenuButton from './DitoMenuButton.vue'
+import { click, pressKey, pointerDown } from '../test/events.js'
 
 const items = [
   { value: 'heading', label: 'Heading' },
@@ -27,27 +28,6 @@ function findMenu(wrapper) {
 
 function findMenuItems(wrapper) {
   return wrapper.findAll('[role="menuitem"]')
-}
-
-// Clicks the element at least a millisecond after it was mounted. Vue ignores
-// events in the millisecond in which their listener was attached once another
-// Vue listener saw them, e.g. the capture listener of `DitoButton`.
-async function click(element) {
-  await new Promise(resolve => setTimeout(resolve, 1))
-  element.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }))
-  await flushPromises()
-}
-
-// Presses the key on the focused element, like the keyboard does.
-async function pressKey(key, element = document.activeElement) {
-  const event = new KeyboardEvent('keydown', {
-    key,
-    bubbles: true,
-    cancelable: true
-  })
-  element.dispatchEvent(event)
-  await flushPromises()
-  return event
 }
 
 // reka-ui returns the focus to the button after a timeout:
@@ -280,12 +260,7 @@ describe('DitoMenuButton', () => {
     wrapper = mountMenuButton()
     const button = findButton(wrapper)
     await click(button.element)
-    // reka-ui listens for presses outside the menu after a timeout:
-    await new Promise(resolve => setTimeout(resolve))
-    document.body.dispatchEvent(
-      new PointerEvent('pointerdown', { bubbles: true, button: 0 })
-    )
-    await flushPromises()
+    await pointerDown(document.body)
     expect(button.attributes('aria-expanded')).toBe('false')
   })
 

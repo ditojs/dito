@@ -1,5 +1,6 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import DitoMenuButton from './DitoMenuButton.vue'
+import { click, pressKey } from '../test/events.js'
 
 const items = [
   { value: 'starters', label: 'Starters' },
@@ -19,26 +20,6 @@ function findButton(wrapper) {
   return wrapper.find('button[aria-haspopup="menu"]')
 }
 
-async function pressKey(element, key) {
-  const event = new KeyboardEvent('keydown', {
-    key,
-    bubbles: true,
-    cancelable: true
-  })
-  element.dispatchEvent(event)
-  await flushPromises()
-  return event
-}
-
-// Clicks the element at least a millisecond after it was mounted. Vue ignores
-// events in the millisecond in which their listener was attached once another
-// Vue listener saw them, e.g. the capture listener of `DitoButton`.
-async function click(element) {
-  await new Promise(resolve => setTimeout(resolve, 1))
-  element.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }))
-  await flushPromises()
-}
-
 describe('DitoMenuButton keyboard edge cases', () => {
   let wrapper
 
@@ -51,7 +32,7 @@ describe('DitoMenuButton keyboard edge cases', () => {
     wrapper = mountMenuButton()
     const button = findButton(wrapper)
     for (const key of ['ArrowLeft', 'a', 'Escape']) {
-      const event = await pressKey(button.element, key)
+      const event = await pressKey(key, button.element)
       expect(event.defaultPrevented).toBe(false)
     }
     expect(button.attributes('aria-expanded')).toBe('false')
@@ -60,10 +41,10 @@ describe('DitoMenuButton keyboard edge cases', () => {
   it('ignores other keys in the menu', async () => {
     wrapper = mountMenuButton()
     findButton(wrapper).element.focus()
-    await pressKey(findButton(wrapper).element, 'ArrowDown')
+    await pressKey('ArrowDown', findButton(wrapper).element)
     const [first] = wrapper.findAll('[role="menuitem"]')
     expect(document.activeElement).toBe(first.element)
-    await pressKey(first.element, 'ArrowRight')
+    await pressKey('ArrowRight', first.element)
     expect(document.activeElement).toBe(first.element)
     expect(findButton(wrapper).attributes('aria-expanded')).toBe('true')
   })
@@ -74,7 +55,7 @@ describe('DitoMenuButton keyboard edge cases', () => {
     // Clicks focus the menu, not its items:
     const menu = wrapper.find('[role="menu"]').element
     expect(document.activeElement).toBe(menu)
-    await pressKey(menu, 'Enter')
+    await pressKey('Enter', menu)
     expect(wrapper.emitted('select')).toBeUndefined()
     expect(findButton(wrapper).attributes('aria-expanded')).toBe('true')
   })
@@ -82,20 +63,20 @@ describe('DitoMenuButton keyboard edge cases', () => {
   it('focuses the first item with ArrowDown when none is focused', async () => {
     wrapper = mountMenuButton()
     await click(findButton(wrapper).element)
-    await pressKey(wrapper.find('[role="menu"]').element, 'ArrowDown')
+    await pressKey('ArrowDown', wrapper.find('[role="menu"]').element)
     expect(document.activeElement.textContent).toBe('Starters')
   })
 
   it('reaches the items that it renders after changes', async () => {
     wrapper = mountMenuButton()
     findButton(wrapper).element.focus()
-    await pressKey(findButton(wrapper).element, 'ArrowDown')
+    await pressKey('ArrowDown', findButton(wrapper).element)
     await wrapper.setProps({ items: items.slice(1) })
     await flushPromises()
     const menu = wrapper.find('[role="menu"]').element
-    await pressKey(menu, 'End')
+    await pressKey('End', menu)
     expect(document.activeElement.textContent).toBe('Desserts')
-    await pressKey(document.activeElement, 'Home')
+    await pressKey('Home', document.activeElement)
     expect(document.activeElement.textContent).toBe('Mains')
   })
 })

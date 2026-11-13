@@ -11,13 +11,13 @@
     v-model:open="isOpen"
     :modal="false"
   )
+    //- Passes `disabled` on to the button:
     DropdownMenuTrigger(
       asChild
       :disabled="disabled"
     )
       DitoButton(
         ref="button"
-        :disabled="disabled"
         v-bind="$attrs"
         @keydown="onButtonKeyDown"
       )
@@ -26,8 +26,8 @@
     //- scrolling panels don't clip it:
     DropdownMenuContent.dito-menu-button__menu(
       ref="menu"
-      :side="side"
-      :align="align"
+      :side="sideAndAlign.side"
+      :align="sideAndAlign.align"
       :sideOffset="sideOffset"
       loop
       positionStrategy="fixed"
@@ -46,10 +46,7 @@
         type="button"
         :disabled="item.disabled"
         :title="item.icon ? item.label : null"
-        :class=`{
-          'dito-menu-button__item--icon': item.icon,
-          'dito-menu-button__item--disabled': item.disabled
-        }`
+        :class="{ 'dito-menu-button__item--icon': item.icon }"
         @select="$emit('select', item)"
       )
         DitoIcon(
@@ -71,13 +68,10 @@ import {
 } from 'reka-ui'
 import DitoButton from './DitoButton.vue'
 import DitoIcon from './DitoIcon.vue'
+import { getSideAndAlign } from '../utils/trigger'
 
-// A button that opens a menu of `items`, each `{ value, label, disabled }`,
-// and emits `select` with the item that is chosen, by mouse or keyboard.
-// Items with an `icon` show it instead of their label, which becomes their
-// title. `placement` is a side and an alignment, e.g. `bottom-right`.
-// Attributes, e.g. `class` or the `verb` and `text` of `DitoButton`, go to the
-// button, its content to the default slot.
+// A button that opens a menu of `items` and emits `select` with the chosen
+// one, see `docs/api/ui.md`. Attributes go to the button.
 export default {
   components: {
     DropdownMenuArrow,
@@ -120,17 +114,8 @@ export default {
       return !this.cover && !this.floating
     },
 
-    side() {
-      return this.placement.split('-')[0]
-    },
-
-    align() {
-      // `bottom-right` lines up the right edges, `bottom` the left ones:
-      const alignment = this.placement.split('-')[1]
-      return (
-        { right: 'end', bottom: 'end', center: 'center' }[alignment] ??
-        'start'
-      )
+    sideAndAlign() {
+      return getSideAndAlign(this.placement)
     },
 
     sideOffset() {
@@ -143,7 +128,7 @@ export default {
     async isOpen(isOpen) {
       const button = this.$refs.button.$el
       if (isOpen) {
-        this.buttonHeight = getSize(button).height
+        this.buttonHeight = button.getBoundingClientRect().height
       } else {
         this.focusLast = false
       }
@@ -156,11 +141,13 @@ export default {
         if (isOpen) {
           await this.$nextTick()
           const menu = this.$refs.menu.$el
-          const buttonWidth = getSize(button).width
-          const width = Math.max(buttonWidth, getSize(menu).width)
+          const buttonWidth = button.getBoundingClientRect().width
+          const menuWidth = menu.getBoundingClientRect().width
+          const width = Math.max(buttonWidth, menuWidth)
           button.style.minWidth = menu.style.minWidth = `${width}px`
           // Grow the button towards the menu without moving what's around it:
-          const side = this.align === 'end' ? 'marginLeft' : 'marginRight'
+          const side =
+            this.sideAndAlign.align === 'end' ? 'marginLeft' : 'marginRight'
           button.style[side] = `${buttonWidth - width}px`
         }
       }
@@ -198,10 +185,6 @@ export default {
       }
     }
   }
-}
-
-function getSize(element) {
-  return element.getBoundingClientRect()
 }
 </script>
 
@@ -288,7 +271,7 @@ $menu-button-padding: $menu-button-padding-ver 1em;
       padding: $menu-button-padding-ver;
     }
 
-    &--disabled {
+    &[data-disabled] {
       color: $color-disabled;
       cursor: default;
     }
