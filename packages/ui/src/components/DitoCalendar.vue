@@ -62,6 +62,7 @@
                 v-for="item in week"
                 :key="+item.date"
                 :ref="item.isCursor ? 'cursorItem' : undefined"
+                :data-autofocus="item.isCursor ? '' : null"
                 type="button"
                 role="gridcell"
                 :tabindex="item.isCursor ? 0 : -1"
@@ -102,6 +103,7 @@
             button.dito-calendar__item(
               v-for="(month, index) in monthNames"
               :ref="isCurrentMonth(index) ? 'cursorItem' : undefined"
+              :data-autofocus="isCurrentMonth(index) ? '' : null"
               type="button"
               :class="getMonthClass(index)"
               :aria-label="month.long"
@@ -128,6 +130,7 @@
             button.dito-calendar__item(
               v-for="year in yearRange"
               :ref="isCurrentYear(year) ? 'cursorItem' : undefined"
+              :data-autofocus="isCurrentYear(year) ? '' : null"
               type="button"
               :class="getYearClass(year)"
               :aria-label="String(year)"
@@ -139,7 +142,6 @@
 <script>
 import { asArray } from '@ditojs/utils'
 import { alterDate, stepDate } from '../utils/date.js'
-import { getKeyNavigation } from '../utils/event.js'
 
 // Returns the start of the current day, as the date that the calendar shows
 // without a value, so that selecting a day selects it without a time.
@@ -362,47 +364,6 @@ export default {
     getFirstYearOfDecade(year) {
       const yearStr = year.toString()
       return +`${yearStr.slice(0, -1)}0`
-    },
-
-    // Steps the date part `mode` of the cursor by `step`, or confirms the
-    // cursor with `enter`. With `update`, the stepped date is also selected.
-    // Returns whether anything happened.
-    navigate({ step, enter, mode = this.currentMode, update = false }) {
-      if (step) {
-        if (!['day', 'month', 'year'].includes(mode)) {
-          return false
-        }
-        const date = stepDate(this.currentValue, mode, step)
-        if (update) {
-          this.commitDate(date)
-        } else {
-          this.currentValue = date
-        }
-        return true
-      } else if (enter) {
-        switch (this.currentMode) {
-          case 'day':
-            this.selectDate(this.currentValue)
-            break
-          case 'month':
-            this.setMode('day')
-            break
-          case 'year':
-            this.setMode('month')
-            break
-        }
-        return true
-      }
-      return false
-    },
-
-    // Handles a keydown event of a picker's input, with the caret inside the
-    // date part `part`, and returns whether it was handled.
-    handleKey(event, part) {
-      const { ver: step, enter } = getKeyNavigation(event)
-      return step
-        ? !!part && this.navigate({ step, mode: part.name, update: true })
-        : this.navigate({ enter })
     },
 
     focusCursorItemIfFocused() {

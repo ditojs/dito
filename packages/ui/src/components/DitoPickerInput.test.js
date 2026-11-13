@@ -1,4 +1,3 @@
-import { vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { defaultFormats } from '@ditojs/utils'
 import DitoPickerInput from './DitoPickerInput.vue'
@@ -108,7 +107,7 @@ describe('DitoPickerInput', () => {
 
   it('emits `change` once the popup closes or the input loses focus', async () => {
     wrapper = mountPickerInput()
-    findInput(wrapper).element.focus()
+    wrapper.vm.open()
     await flushPromises()
     expect(isPopupShown(wrapper)).toBe(true)
     // Picked in the panel, which sets the value through the popup slot:
@@ -186,13 +185,62 @@ describe('DitoPickerInput', () => {
     expect(getEmittedDates(wrapper)).toEqual([null])
   })
 
-  it('opens the popup with the arrow keys, without changing the value', async () => {
-    const handlePanelKey = vi.fn(() => true)
-    wrapper = mountPickerInput({ handlePanelKey })
-    const event = await pressKey(wrapper, 'ArrowDown', 1)
+  it('steps the date part at the caret with the arrow keys', async () => {
+    wrapper = mountPickerInput()
+    // "March 5, 2024": The caret in the month, then in the year, then in
+    // the day of the updated text:
+    const event = await pressKey(wrapper, 'ArrowDown', 2)
     expect(event.defaultPrevented).toBe(true)
+    await pressKey(wrapper, 'ArrowUp', 11)
+    await pressKey(wrapper, 'ArrowDown', 6)
+    expect(getEmittedDates(wrapper)).toEqual([
+      new Date(2024, 3, 5),
+      new Date(2023, 3, 5),
+      new Date(2023, 3, 6)
+    ])
+    expect(isPopupShown(wrapper)).toBe(false)
+  })
+
+  it('clamps the day when stepping the month', async () => {
+    wrapper = mountPickerInput({ modelValue: new Date(2024, 0, 31) })
+    await pressKey(wrapper, 'ArrowDown', 2)
+    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 1, 29)])
+  })
+
+  it('wraps time parts around without changing the date', async () => {
+    wrapper = mountPickerInput({
+      modelValue: new Date(2024, 2, 5, 23, 30),
+      formatOptions: {
+        locale: 'en-GB',
+        date: false,
+        time: defaultFormats.time
+      }
+    })
+    // "23:30:00": The caret in the hour.
+    await pressKey(wrapper, 'ArrowDown', 1)
+    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 2, 5, 0, 30)])
+  })
+
+  it('opens the popup with Alt and the arrow keys, or without a value', async () => {
+    wrapper = mountPickerInput()
+    const input = findInput(wrapper).element
+    input.setSelectionRange(2, 2)
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        keyCode: keyCodes.ArrowDown,
+        altKey: true,
+        bubbles: true,
+        cancelable: true
+      })
+    )
+    await flushPromises()
     expect(isPopupShown(wrapper)).toBe(true)
-    expect(handlePanelKey).not.toHaveBeenCalled()
+    expect(getEmittedDates(wrapper)).toEqual([])
+    wrapper.unmount()
+    wrapper = mountPickerInput({ modelValue: null })
+    await pressKey(wrapper, 'ArrowDown', 0)
+    expect(isPopupShown(wrapper)).toBe(true)
   })
 
   it(`doesn't open the popup with Enter`, async () => {
@@ -202,45 +250,12 @@ describe('DitoPickerInput', () => {
     expect(isPopupShown(wrapper)).toBe(false)
   })
 
-  it('passes keys to the panel with the date part at the caret', async () => {
-    const handlePanelKey = vi.fn(() => false)
-    wrapper = mountPickerInput({ show: true, handlePanelKey })
-    await pressKey(wrapper, 'ArrowUp', 7)
-    expect(handlePanelKey).toHaveBeenCalledWith(
-      expect.any(KeyboardEvent),
-      expect.objectContaining({ name: 'day' })
-    )
-  })
-
-  it('handles keys without a panel', async () => {
-    wrapper = mountPickerInput({ show: true })
-    const event = await pressKey(wrapper, 'ArrowUp', 7)
-    expect(event.defaultPrevented).toBe(true)
-    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
-  })
-
-  it('emits the date part at the caret when it changes', async () => {
-    wrapper = mountPickerInput()
-    const input = findInput(wrapper)
-    input.element.setSelectionRange(1, 1)
-    await input.trigger('keyup')
-    input.element.setSelectionRange(2, 2)
-    await input.trigger('keyup')
-    input.element.setSelectionRange(7, 7)
-    await input.trigger('keyup')
-    expect(wrapper.emitted('caretPartChange')).toEqual([['month'], ['day']])
-  })
-
-  it('reopens the popup when clicking into the input', async () => {
+  it(`doesn't open when the input gets the focus or a click`, async () => {
     wrapper = mountPickerInput()
     findInput(wrapper).element.focus()
-    await flushPromises()
-    await findInput(wrapper).trigger('keydown', { key: 'Escape' })
-    await flushPromises()
-    expect(isPopupShown(wrapper)).toBe(false)
     await findInput(wrapper).trigger('click')
     await flushPromises()
-    expect(isPopupShown(wrapper)).toBe(true)
+    expect(isPopupShown(wrapper)).toBe(false)
   })
 
   it('disables the input and the toggle', async () => {
@@ -341,20 +356,6 @@ describe('DitoDatePicker, DitoTimePicker and DitoDateTimePicker', () => {
     expect(findInput(wrapper).element.value).toBe('5. März 2024')
   })
 
-  it('DitoDatePicker passes keys to the calendar only while it is shown', async () => {
-    const wrapper = mount(DitoDatePicker, {
-      props: { modelValue: new Date(2024, 2, 5) },
-      attachTo: document.body
-    })
-    expect(
-      wrapper.vm.handlePanelKey(
-        new KeyboardEvent('keydown', { keyCode: keyCodes.ArrowDown }),
-        { name: 'day' }
-      )
-    ).toBe(false)
-    wrapper.unmount()
-  })
-
   it('DitoDateTimePicker merges custom formats with its defaults', () => {
     const wrapper = mount(DitoDateTimePicker, {
       props: {
@@ -396,16 +397,14 @@ describe('DitoDatePicker, DitoTimePicker and DitoDateTimePicker', () => {
     wrapper.unmount()
   })
 
-  it(`DitoDateTimePicker doesn't pass keys of the other panel`, async () => {
+  it('DitoDateTimePicker shows the calendar and the time panel', async () => {
     const wrapper = mount(DitoDateTimePicker, {
-      props: { modelValue: new Date(2024, 2, 5, 14, 30) },
+      props: { modelValue: new Date(2024, 2, 5, 14, 30), show: true },
       attachTo: document.body
     })
-    const event = new KeyboardEvent('keydown', { keyCode: keyCodes.ArrowDown })
-    // The date panel is active, so time parts aren't handled:
-    expect(wrapper.vm.handlePanelKey(event, { name: 'minute' })).toBe(false)
-    // And the calendar isn't shown yet:
-    expect(wrapper.vm.handlePanelKey(event, { name: 'day' })).toBe(false)
+    await flushPromises()
+    expect(wrapper.find('.dito-calendar').exists()).toBe(true)
+    expect(wrapper.find('.dito-time-picker-popup').exists()).toBe(true)
     wrapper.unmount()
   })
 })

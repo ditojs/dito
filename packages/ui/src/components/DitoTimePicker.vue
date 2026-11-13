@@ -9,7 +9,6 @@ DitoPickerInput.dito-time-picker(
   toggleLabel="Choose time"
   inputClass="dito-time-picker-input"
   :inputAttributes="$attrs"
-  :handlePanelKey="handlePanelKey"
   @update:modelValue="value => $emit('update:modelValue', value)"
   @update:show="show => $emit('update:show', show)"
   @change="value => $emit('change', value)"
@@ -51,7 +50,7 @@ export default {
     placeholder: { type: String, default: null },
     show: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
-    target: { type: [String, HTMLElement], default: 'trigger' },
+    target: { type: HTMLElement, default: null },
     locale: { type: String, default: 'en-US' },
     format: {
       type: Object,
@@ -72,10 +71,6 @@ export default {
   },
 
   methods: {
-    handlePanelKey(event, part) {
-      return this.$refs.timePanel?.handleKey(event, part) ?? false
-    },
-
     focus() {
       this.$refs.pickerInput.focus()
     },

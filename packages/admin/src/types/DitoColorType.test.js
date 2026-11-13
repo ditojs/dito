@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { tinycolor } from 'vue-color'
 import { hyphenate } from '@ditojs/utils'
 import { setupView } from '../utils/schema/setup.js'
@@ -234,16 +235,30 @@ describe('DitoColorType', () => {
     expect(data.overlay).toBe('#0000ff80')
   })
 
-  it('opens the picker with black and no preview without a value', async () => {
+  it('opens the picker with black and shows no color without a value', async () => {
     const { findField, getComponent } = await mountSchema({
       schema: { fields: { background: { type: 'color' } } }
     })
-    expect(findField('background').find('.dito-color__preview').exists()).toBe(
-      false
+    const swatch = findField('background').find('.dito-color__preview div')
+    expect(swatch.attributes('style')).toMatch(
+      /transparent|#00000000|rgba\(0, 0, 0, 0\)/
     )
     expect(getComponent('background').colorValue.toHexString()).toBe(
       '#000000'
     )
+  })
+
+  it('opens the picker with the button that shows the color', async () => {
+    const { findField } = await mountSchema({
+      schema: { fields: { background: { type: 'color' } } },
+      data: { background: 'red' }
+    })
+    const field = findField('background')
+    const button = field.find('button.dito-color__preview')
+    expect(button.attributes('aria-label')).toBe('Choose color')
+    await button.trigger('click')
+    await flushPromises()
+    expect(field.find('.dito-color__picker').exists()).toBe(true)
   })
 
   it('keeps the value when picking the same color', async () => {

@@ -13,9 +13,9 @@ test.describe('color picker', () => {
   }) => {
     const entry = getCase('color', 'stores typed hex as lowercase hex')
     await page.goto(`${url}/admin/${entry.path}`)
-    const picker = await openColorPicker(page, entry)
     const input = text.getElement(page, entry)
     await input.fill('ff0000')
+    const picker = await openColorPicker(page, entry)
     await expect(picker.getByLabel('Hex', { exact: true })).toHaveValue(
       'ff0000'
     )

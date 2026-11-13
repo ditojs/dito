@@ -2,9 +2,12 @@ import { expect, type Page } from '@playwright/test'
 import { text } from './text.js'
 import type { DriverComponent, TypeComponentDriver } from './index.js'
 
-/** Opens the color picker, which shows while the input has focus. */
+/** Opens the color picker with the button next to the input. */
 export async function openColorPicker(page: Page, component: DriverComponent) {
-  await text.getElement(page, component).click()
+  await page
+    .locator('.dito-input', { has: text.getElement(page, component) })
+    .getByRole('button', { name: 'Choose color' })
+    .click()
   const picker = page.getByLabel('Sketch color picker')
   await expect(picker).toBeVisible()
   return picker

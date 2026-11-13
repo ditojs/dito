@@ -7,14 +7,20 @@
     v-for="column in columns"
     :key="column.name"
   )
+    //- The arrow keys step the value of the focused list, Enter picks it:
     ul(
       :ref="element => setListElement(column.name, element)"
       :class="`dito-time-picker-${column.name}`"
       role="listbox"
+      tabindex="0"
       :aria-label="column.label"
+      :aria-activedescendant="getOptionId(column.name, column.value)"
+      :data-autofocus="column.name === 'hour' ? '' : null"
+      @keydown="onListKeyDown($event, column)"
     )
       li(
         v-for="value in column.values"
+        :id="getOptionId(column.name, value)"
         :key="value"
         :ref="element => setOptionElement(column.name, value, element)"
         role="option"
@@ -30,11 +36,11 @@ import { alterDate } from '../utils/date.js'
 import { getKeyNavigation } from '../utils/event.js'
 
 const hours = [...Array(24).keys()]
+let panelId = 0
 const minutes = [...Array(60).keys()]
 
 // The panel of `DitoTimePicker` and `DitoDateTimePicker`, with a list of the
-// values for each of the hour, minute and second. The picker's input navigates
-// it through `handleKey()`.
+// values for each of the hour, minute and second.
 export default {
   emits: ['update:modelValue', 'select'],
 
@@ -87,6 +93,7 @@ export default {
   },
 
   created() {
+    this.id = ++panelId
     // The rendered lists and their options, by column name and value.
     this.listElements = {}
     this.optionElements = { hour: {}, minute: {}, second: {} }
@@ -117,25 +124,22 @@ export default {
       this.$emit('update:modelValue', alterDate(this.currentDate, time))
     },
 
-    // Handles a keydown event of the picker's input, with the caret inside the
-    // date part `part`, and returns whether it was handled.
-    handleKey(event, part) {
+    getOptionId(name, value) {
+      return `dito-time-panel-${this.id}-${name}-${value}`
+    },
+
+    onListKeyDown(event, column) {
       const { ver: step, enter } = getKeyNavigation(event)
-      if (enter) {
-        this.$emit('select')
-        return true
-      }
-      const column = (
-        step &&
-        this.columns.find(({ name }) => name === part?.name)
-      )
-      if (column) {
+      if (step) {
         // Wrap around at the ends:
         const { length } = column.values
         this.setTime({ [column.name]: (column.value + step + length) % length })
-        return true
+      } else if (enter) {
+        this.$emit('select')
+      } else {
+        return
       }
-      return false
+      event.preventDefault()
     },
 
     scrollToSelectedOptions({ smooth }) {
@@ -203,6 +207,10 @@ $time-picker-line-height: 24px;
     box-sizing: content-box;
     padding: 0 17px 0 0;
     height: 7 * $time-picker-line-height;
+
+    &:focus-visible {
+      @include focus-ring($inset: true);
+    }
 
     & > li {
       box-sizing: content-box;

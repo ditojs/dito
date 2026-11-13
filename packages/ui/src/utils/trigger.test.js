@@ -1,24 +1,26 @@
-import { getTarget } from './trigger.js'
+import { getSideAndAlign } from './trigger.js'
 
-describe('getTarget()', () => {
-  const element = document.createElement('button')
-
-  it('returns target elements and the elements of target components', () => {
-    expect(getTarget({ target: element })).toBe(element)
-    expect(getTarget({ target: { $el: element } })).toBe(element)
-  })
-
-  it('looks up string targets in the refs', () => {
-    expect(
-      getTarget({ target: 'button', $refs: { button: element } })
-    ).toBe(element)
-    expect(
-      getTarget({ target: 'button', $refs: { button: { $el: element } } })
-    ).toBe(element)
-  })
-
-  it('returns `undefined` without target', () => {
-    expect(getTarget({ target: null })).toBe(null)
-    expect(getTarget({ target: 'button', $refs: {} })).toBe(undefined)
+describe('getSideAndAlign()', () => {
+  it('returns the side and the alignment of placements', () => {
+    expect(getSideAndAlign('bottom')).toEqual({
+      side: 'bottom',
+      align: 'start'
+    })
+    expect(getSideAndAlign('bottom-left')).toEqual({
+      side: 'bottom',
+      align: 'start'
+    })
+    expect(getSideAndAlign('bottom-right')).toEqual({
+      side: 'bottom',
+      align: 'end'
+    })
+    expect(getSideAndAlign('top-center')).toEqual({
+      side: 'top',
+      align: 'center'
+    })
+    expect(getSideAndAlign('right-bottom')).toEqual({
+      side: 'right',
+      align: 'end'
+    })
   })
 })
