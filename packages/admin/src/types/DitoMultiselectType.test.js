@@ -34,10 +34,12 @@ async function search(field, searchTerm) {
   await flushPromises()
 }
 
-// The labels of the options and their groups, in order:
+// The labels of the options and their groups, in order. reka-ui hides the
+// groups without matching options:
 function getOptionLabels(field) {
   return field
     .findAll('.dito-multiselect__group, .dito-multiselect__option')
+    .filter(option => !option.element.closest('[hidden]'))
     .map(option => option.text())
 }
 
@@ -139,7 +141,7 @@ describe('DitoMultiselectType', () => {
       expect(onChange.mock.calls[0][0].value).toBe('drama')
     })
 
-    it('clears the value when the selected option is picked again', async () => {
+    it('keeps the value when the selected option is picked again', async () => {
       const { findField, data } = await mountSchema({
         schema: {
           fields: { genre: { type: 'multiselect', options: genres } }
@@ -147,7 +149,7 @@ describe('DitoMultiselectType', () => {
         data: { genre: 'poetry' }
       })
       await selectOption(findField('genre'), 'Poetry')
-      expect(data.genre).toBe(null)
+      expect(data.genre).toBe('poetry')
     })
 
     it('matches values with `options.equals()`', async () => {
@@ -479,7 +481,7 @@ describe('DitoMultiselectType', () => {
       )
     })
 
-    it('removes the last value with Backspace in the empty input', async () => {
+    it('selects and removes the last value with Backspace', async () => {
       const { findField, data } = await mountSchema({
         schema: {
           fields: {
@@ -488,9 +490,39 @@ describe('DitoMultiselectType', () => {
         },
         data: { genres: ['drama', 'poetry'] }
       })
-      const input = findField('genres').find('.dito-multiselect__input')
+      const field = findField('genres')
+      const input = field.find('.dito-multiselect__input')
+      await input.trigger('keydown', { key: 'Backspace' })
+      const tags = field.findAll('.dito-multiselect__tag')
+      expect(tags.map(tag => tag.attributes('data-state'))).toEqual([
+        'inactive',
+        'active'
+      ])
+      expect(data.genres).toEqual(['drama', 'poetry'])
       await input.trigger('keydown', { key: 'Backspace' })
       expect(data.genres).toEqual(['drama'])
+    })
+
+    it('adds no typed values without `taggable`', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          fields: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              options: genres
+            }
+          }
+        },
+        data: { genres: [] }
+      })
+      const field = findField('genres')
+      await search(field, 'Epic, Saga')
+
+      await field.find('.dito-multiselect__input').trigger('keydown.enter')
+      await flushPromises()
+      expect(data.genres).toEqual([])
     })
 
     it('picks options with the arrow keys and Enter', async () => {
@@ -549,6 +581,7 @@ describe('DitoMultiselectType', () => {
       const remove = findField('genres').find('.dito-multiselect__tag-remove')
       expect(remove.element.tagName).toBe('BUTTON')
       expect(remove.attributes('aria-label')).toBe('Remove Drama')
+      expect(remove.attributes('aria-labelledby')).toBeUndefined()
     })
 
     it('sends the values serialized by `serializeValue()`', async () => {
@@ -1044,6 +1077,35 @@ describe('DitoMultiselectType', () => {
     ])
     await selectOption(field, 'Dune')
     expect(data.book).toBe('dune')
+  })
+
+  it('filters the options by their labels, in their groups', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        fields: {
+          book: {
+            type: 'multiselect',
+            searchable: true,
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', shelf: 'Classics' },
+                { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' },
+                { value: 'persuasion', label: 'Persuasion', shelf: 'Classics' }
+              ],
+              group: 'shelf'
+            }
+          }
+        }
+      }
+    })
+    const field = findField('book')
+    await search(field, 'UN')
+    expect(getOptionLabels(field)).toEqual(['Sci-Fi', 'Dune'])
+    await search(field, 'xyz')
+    expect(getOptionLabels(field)).toEqual([])
+    expect(field.find('.dito-multiselect__empty').text()).toBe(
+      'No matching options'
+    )
   })
 
   it('groups the options by the result of an `options.group` callback', async () => {

@@ -8,54 +8,61 @@
     'dito-multiselect--has-errors': !!errorsElementId
   }`
 )
-  .dito-multiselect__inner
+  .dito-multiselect__inner(ref="inner")
     DitoInputAffixes(
       v-if="inputAffixesProps.hasPrefix"
       position="prefix"
       v-bind="inputAffixesProps.prefix"
       absolute
     )
-    //- Dito filters the options itself, by their labels or with `search`:
+    //- reka-ui filters the options by their labels, unless `search` does:
     ComboboxRoot.dito-multiselect__root(
       v-model="selectedOptions"
       v-model:open="isOpen"
       :multiple="multiple"
       :by="isSameOption"
       :disabled="attributes.disabled"
-      ignoreFilter
+      :ignoreFilter="!!searchFilter"
       openOnClick
       openOnFocus
       :resetSearchTermOnBlur="resetsSearchTerm"
       :resetSearchTermOnSelect="resetsSearchTerm"
     )
       ComboboxAnchor.dito-multiselect__control
-        span.dito-multiselect__tag(
-          v-for="option in multiple ? selectedOptions : []"
-          :key="getValueForOption(option)"
-          :class=`{
-            'dito-multiselect__tag--unavailable': isUnavailableOption(option)
-          }`
-          :title="isUnavailableOption(option) ? 'Not among the options' : null"
+        //- Typing adds no tags, only `taggable` does, see `onEnter()`:
+        TagsInputRoot.dito-multiselect__tags(
+          v-if="multiple"
+          v-model="selectedOptions"
+          :displayValue="getLabelForOption"
+          :delimiter="null"
+          :disabled="attributes.disabled"
         )
-          span {{ getLabelForOption(option) }}
-          button.dito-multiselect__tag-remove(
-            type="button"
-            :aria-label="`Remove ${getLabelForOption(option)}`"
-            :disabled="attributes.disabled"
-            @click="removeOption(option)"
+          TagsInputItem.dito-multiselect__tag(
+            v-for="option in selectedOptions"
+            :key="getValueForOption(option)"
+            :value="option"
+            :class=`{
+              'dito-multiselect__tag--unavailable': isUnavailableOption(option)
+            }`
+            :title=`
+              isUnavailableOption(option) ? 'Not among the options' : null
+            `
           )
+            TagsInputItemText
+            //- Named for what it does, not after the tag's text:
+            TagsInputItemDelete.dito-multiselect__tag-remove(
+              :aria-label="`Remove ${getLabelForOption(option)}`"
+              :aria-labelledby="null"
+            )
+          ComboboxInput(
+            asChild
+            v-bind="inputProps"
+          )
+            TagsInputInput.dito-multiselect__input(:placeholder="placeholder")
         ComboboxInput.dito-multiselect__input(
-          :id="componentPath"
-          ref="input"
-          v-model="searchTerm"
-          :displayValue="getDisplayValue"
-          :readonly="!searchable"
+          v-else
+          v-bind="inputProps"
           :placeholder="placeholder"
-          :aria-label="labelText"
-          v-bind="attributes"
-          @focus="onInputFocus"
-          @keydown.enter="onEnter"
-          @keydown.backspace="onBackspace"
         )
         DitoSpinner.dito-multiselect__spinner(
           v-if="isLoading"
@@ -83,7 +90,7 @@
             v-if="isGrouped"
           )
             ComboboxGroup(
-              v-for="group in filteredOptions"
+              v-for="group in activeOptions"
               :key="group.label"
             )
               ComboboxLabel.dito-multiselect__group {{ group.label }}
@@ -97,14 +104,13 @@
             v-else
           )
             ComboboxItem.dito-multiselect__option(
-              v-for="option in filteredOptions"
+              v-for="option in activeOptions"
               :key="getValueForOption(option)"
               :value="option"
               @select="onSelect($event, option)"
             ) {{ getLabelForOption(option) }}
-          ComboboxEmpty.dito-multiselect__empty(
-            v-if="!tagOption"
-          ) {{ searchTerm ? 'No matching options' : 'No options' }}
+          ComboboxEmpty.dito-multiselect__empty
+            | {{ searchTerm ? 'No matching options' : 'No options' }}
     DitoInputAffixes(
       v-if="inputAffixesProps.hasSuffix"
       position="suffix"
@@ -123,7 +129,15 @@
 </template>
 
 <script>
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import {
+  computed,
+  onMounted,
+  ref,
+  shallowRef,
+  unref,
+  watch,
+  withKeys
+} from 'vue'
 import {
   ComboboxAnchor,
   ComboboxContent,
@@ -134,7 +148,12 @@ import {
   ComboboxLabel,
   ComboboxRoot,
   ComboboxTrigger,
-  ComboboxViewport
+  ComboboxViewport,
+  TagsInputInput,
+  TagsInputItem,
+  TagsInputItemDelete,
+  TagsInputItemText,
+  TagsInputRoot
 } from 'reka-ui'
 import { defineType } from '../utils/schema/types.ts'
 import { optionsTraits } from './traits.ts'
@@ -145,9 +164,10 @@ import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 import DitoSpinner from '../components/DitoSpinner.vue'
 import { isArray, isBoolean, isObject } from '@ditojs/utils'
 
-// A select of one or `multiple` options, built on reka-ui's `Combobox`.
-// `searchable` filters the options by their labels, `search` asks a filter for
-// them, and `taggable` adds what was typed as a new option.
+// A select of one or `multiple` options, built on reka-ui's `Combobox`, with
+// the values of multiple ones in its `TagsInput`. `searchable` filters the
+// options by their labels, `search` asks a filter for them, and `taggable` adds
+// what was typed as a new option.
 // @vue/component
 const DitoMultiselectType = {
   components: {
@@ -161,6 +181,11 @@ const DitoMultiselectType = {
     ComboboxRoot,
     ComboboxTrigger,
     ComboboxViewport,
+    TagsInputInput,
+    TagsInputItem,
+    TagsInputItemDelete,
+    TagsInputItemText,
+    TagsInputRoot,
     DitoInputAffixes,
     DitoOptionsEditButtons,
     DitoSpinner
@@ -168,8 +193,9 @@ const DitoMultiselectType = {
   props: fieldProps,
 
   setup(props) {
-    const input = ref(null)
-    const getInputElement = () => input.value?.$el
+    const inner = ref(null)
+    const getInputElement = () =>
+      inner.value?.querySelector('.dito-multiselect__input')
     const isOpen = ref(false)
 
     const field = useField(props, {
@@ -291,26 +317,6 @@ const DitoMultiselectType = {
         : searchTerm.value?.trim() ?? ''
     )
 
-    // Without `search`, searches show the options whose labels contain the
-    // search term, in their groups:
-    const filteredOptions = computed(() => {
-      const options = activeOptions.value
-      const term = query.value.toLowerCase()
-      if (!term || searchFilter.value || !isOpen.value) {
-        return options
-      }
-      const matches = option =>
-        String(getLabelForOption(option)).toLowerCase().includes(term)
-      return isGrouped.value
-        ? options
-            .map(group => ({
-              ...group,
-              options: group.options.filter(matches)
-            }))
-            .filter(group => group.options.length > 0)
-        : options.filter(matches)
-    })
-
     // The option to add the search term as a tag, unless an option has it as
     // its label:
     const tagOption = computed(() => {
@@ -397,6 +403,45 @@ const DitoMultiselectType = {
       searchTerm.value = getDisplayValue(selectedOptions.value)
     }
 
+    // reka-ui selects the highlighted option on Enter. Without one, Enter adds
+    // the search term as a tag, and keeps `TagsInput` from adding it as typed:
+    const onEnter = event => {
+      const highlighted = event.target
+        .closest('.dito-multiselect')
+        .querySelector('[data-highlighted]')
+      if (!highlighted && (multiple.value || tagOption.value)) {
+        event.preventDefault()
+        if (tagOption.value) {
+          onAddTag(tagOption.value.tag)
+        }
+      }
+    }
+
+    const onInputFocus = event => {
+      // Typing replaces the label that single selects show:
+      if (!multiple.value && searchable.value) {
+        event.target.select()
+      }
+    }
+
+    // The props of the input, in `TagsInput` for multiple values:
+    const inputProps = computed(() => {
+      const { onFocus, ...attributes } = field.attributes.value
+      return {
+        ...attributes,
+        'id': unref(field.componentPath),
+        'modelValue': searchTerm.value,
+        'onUpdate:modelValue': term => {
+          searchTerm.value = term
+        },
+        'displayValue': getDisplayValue,
+        'readonly': !searchable.value,
+        'aria-label': field.labelText.value,
+        'onFocus': [onFocus, onInputFocus],
+        'onKeydown': withKeys(onEnter, ['enter'])
+      }
+    })
+
     watch(query, query => {
       if (searchFilter.value) {
         search(query)
@@ -419,10 +464,10 @@ const DitoMultiselectType = {
     return {
       ...field,
       ...optionsField,
-      input,
+      inner,
+      inputProps,
       isOpen,
       selectedOptions,
-      filteredOptions,
       tagOption,
       searchTerm,
       searchable,
@@ -468,23 +513,12 @@ const DitoMultiselectType = {
         )
       },
 
-      removeOption(option) {
-        selectedOptions.value = selectedOptions.value.filter(
-          selected => selected !== option
-        )
-      },
-
       onSelect(event, option) {
         // reka-ui closes single selects and keeps multiple ones open:
         if (multiple.value) {
           if (!stayOpen.value) {
             isOpen.value = false
           }
-        } else if (isSameOption(option, selectedOptions.value)) {
-          // Picking the selected option again clears it:
-          event.preventDefault()
-          selectedOptions.value = null
-          isOpen.value = stayOpen.value
         } else if (stayOpen.value) {
           event.preventDefault()
           selectedOptions.value = option
@@ -495,32 +529,6 @@ const DitoMultiselectType = {
         // Enter may have added the tag already, see `onEnter()`:
         if (tagOption.value) {
           onAddTag(tagOption.value.tag)
-        }
-      },
-
-      onEnter(event) {
-        // Add the search term as a tag also when no option is highlighted.
-        // reka-ui selects highlighted options itself:
-        const highlighted = event.target
-          .closest('.dito-multiselect')
-          .querySelector('[data-highlighted]')
-        if (tagOption.value && !highlighted) {
-          event.preventDefault()
-          onAddTag(tagOption.value.tag)
-        }
-      },
-
-      onBackspace() {
-        // Backspace in the empty input removes the last value:
-        if (multiple.value && !searchTerm.value) {
-          selectedOptions.value = selectedOptions.value.slice(0, -1)
-        }
-      },
-
-      onInputFocus(event) {
-        // Typing replaces the label that single selects show:
-        if (!multiple.value && searchable.value) {
-          event.target.select()
         }
       }
     }
@@ -538,6 +546,7 @@ export default DitoMultiselectType
 </script>
 
 <style lang="scss">
+@use 'sass:color';
 @import '../styles/_imports';
 
 $tag-remove-width: 1.8em;
@@ -574,6 +583,11 @@ $tag-padding: 3px;
     overflow: auto;
   }
 
+  // The tags and the input wrap together in the control:
+  &__tags {
+    display: contents;
+  }
+
   &__tag {
     display: inline-flex;
     align-items: center;
@@ -589,6 +603,11 @@ $tag-padding: 3px;
     // Values without options, see `getFallbackOption()`.
     &--unavailable {
       background: $color-grey;
+    }
+
+    // Selected with the arrow keys or Backspace, which then removes it:
+    &[data-state='active'] {
+      background: color.adjust($color-active, $lightness: -15%);
     }
   }
 
