@@ -1,0 +1,27 @@
+name: Changelog
+
+# Pull requests that change the packages add their entries to
+# `changelog/unreleased/`, unless they carry the label `no changelog`:
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  changelog:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no changelog') }}
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          files=$(gh pr view "$PR" -R "$GITHUB_REPOSITORY" --json files --jq '.files[].path')
+          if grep -v '\.test\.' <<< "$files" | grep -q '^packages/' &&
+            ! grep -q '^changelog/unreleased/' <<< "$files"; then
+            echo "::error::Add an entry to changelog/unreleased/, see its README, or the label 'no changelog'."
+            exit 1
+          fi

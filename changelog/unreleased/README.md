@@ -1,8 +1,9 @@
 # Unreleased changes
 
-Each pull request adds its changelog entries here, in a file of its own named
-after its branch, e.g. `context-get-value-at.md`, under the headings of their
-kind in the format of [`CHANGELOG.md`](../../CHANGELOG.md):
+Each pull request that changes the packages adds its changelog entries here,
+in a file of its own named after its branch, e.g. `context-get-value-at.md`,
+under the headings of their kind in the format of
+[`CHANGELOG.md`](../../CHANGELOG.md):
 
 ```md
 ### New
@@ -14,6 +15,10 @@ The kinds are `Behaviour changes`, `Deprecations`, `New`, `Fixes` and
 `Internal`. On release, `scripts/changelog.js` collects the files into the
 section of the new version and deletes them, so that pull requests don't
 conflict in `CHANGELOG.md`.
+
+The `Changelog` workflow fails pull requests that change files in `packages/`,
+other than tests, without adding a file here. Changes that apps don't see, like
+dependency updates of the dev tools, get the label `no changelog` instead.
 
 ## Writing entries
 
