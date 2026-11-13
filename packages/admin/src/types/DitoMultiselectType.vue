@@ -17,6 +17,7 @@
     )
     //- reka-ui filters the options by their labels, unless `search` does:
     ComboboxRoot.dito-multiselect__root(
+      ref="root"
       v-model="selectedOptions"
       v-model:open="isOpen"
       :multiple="multiple"
@@ -25,8 +26,8 @@
       :ignoreFilter="!!searchFilter"
       openOnClick
       openOnFocus
-      :resetSearchTermOnBlur="resetsSearchTerm"
-      :resetSearchTermOnSelect="resetsSearchTerm"
+      :resetSearchTermOnBlur="shouldResetSearchTerm"
+      :resetSearchTermOnSelect="shouldResetSearchTerm"
     )
       ComboboxAnchor.dito-multiselect__control
         //- Typing adds no tags, only `taggable` does, see `onEnter()`:
@@ -55,12 +56,14 @@
               :aria-labelledby="null"
             )
           ComboboxInput(
+            v-model="searchTerm"
             asChild
             v-bind="inputProps"
           )
             TagsInputInput.dito-multiselect__input(:placeholder="placeholder")
         ComboboxInput.dito-multiselect__input(
           v-else
+          v-model="searchTerm"
           v-bind="inputProps"
           :placeholder="placeholder"
         )
@@ -69,7 +72,6 @@
         )
         ComboboxTrigger.dito-multiselect__trigger(
           v-else
-          tabindex="-1"
           aria-label="Show options"
         )
       //- No portal, so that the styles apply. The list is fixed, so that
@@ -81,30 +83,22 @@
         :sideOffset="-1"
       )
         ComboboxViewport.dito-multiselect__viewport
+          //- Keyed by the tag, as reka-ui reads its text once, when mounted:
           ComboboxItem.dito-multiselect__option.dito-multiselect__option--tag(
             v-if="tagOption"
+            :key="tagOption.tag"
             :value="tagOption"
             @select.prevent="onSelectTag"
           ) {{ tagOption.tag }}
-          template(
-            v-if="isGrouped"
+          ComboboxGroup(
+            v-for="group in optionGroups"
+            :key="group.label"
           )
-            ComboboxGroup(
-              v-for="group in activeOptions"
-              :key="group.label"
-            )
-              ComboboxLabel.dito-multiselect__group {{ group.label }}
-              ComboboxItem.dito-multiselect__option(
-                v-for="option in group.options"
-                :key="getValueForOption(option)"
-                :value="option"
-                @select="onSelect($event, option)"
-              ) {{ getLabelForOption(option) }}
-          template(
-            v-else
-          )
+            ComboboxLabel.dito-multiselect__group(
+              v-if="group.label"
+            ) {{ group.label }}
             ComboboxItem.dito-multiselect__option(
-              v-for="option in activeOptions"
+              v-for="option in group.options"
               :key="getValueForOption(option)"
               :value="option"
               @select="onSelect($event, option)"
@@ -193,6 +187,7 @@ const DitoMultiselectType = {
   props: fieldProps,
 
   setup(props) {
+    const root = ref(null)
     const inner = ref(null)
     const getInputElement = () =>
       inner.value?.querySelector('.dito-multiselect__input')
@@ -202,10 +197,7 @@ const DitoMultiselectType = {
       // Only emit blur events once closed, see `onBlur()`. Picking options
       // emits change events, not the native ones of the input:
       getEvents: ({ onFocus }) => ({ onFocus, onBlur }),
-      focusElement: () => {
-        getInputElement()?.focus()
-        isOpen.value = true
-      },
+      focusElement: () => getInputElement()?.focus(),
       blurElement: () => {
         isOpen.value = false
         getInputElement()?.blur()
@@ -214,6 +206,10 @@ const DitoMultiselectType = {
     const { value, focused, autofocus, services, getSchemaValue } = field
 
     function onBlur() {
+      // While the options load, there is no list that could have the focus:
+      if (isLoading.value) {
+        isOpen.value = false
+      }
       if (!isOpen.value) {
         field.onBlur()
       }
@@ -314,7 +310,14 @@ const DitoMultiselectType = {
     const query = computed(() =>
       searchTerm.value === getDisplayValue(selectedOptions.value)
         ? ''
-        : searchTerm.value?.trim() ?? ''
+        : searchTerm.value.trim()
+    )
+
+    // Ungrouped options are in one group without a label:
+    const optionGroups = computed(() =>
+      isGrouped.value
+        ? activeOptions.value
+        : [{ label: null, options: activeOptions.value }]
     )
 
     // The option to add the search term as a tag, unless an option has it as
@@ -322,10 +325,8 @@ const DitoMultiselectType = {
     const tagOption = computed(() => {
       const tag = query.value
       if (!taggable.value || !tag || isLoading.value) return null
-      const getOptions = options =>
-        isGrouped.value ? options.flatMap(group => group.options) : options
-      const exists = getOptions(activeOptions.value).some(
-        option => getLabelForOption(option) === tag
+      const exists = optionGroups.value.some(group =>
+        group.options.some(option => getLabelForOption(option) === tag)
       )
       return exists ? null : { tag }
     })
@@ -403,14 +404,16 @@ const DitoMultiselectType = {
       searchTerm.value = getDisplayValue(selectedOptions.value)
     }
 
-    // reka-ui selects the highlighted option on Enter. Without one, Enter adds
-    // the search term as a tag, and keeps `TagsInput` from adding it as typed:
+    // reka-ui selects the highlighted option on Enter, while the filter shows
+    // it. Without one, Enter adds the search term as a tag, keeps `TagsInput`
+    // from adding it as typed, and doesn't submit dialogs:
     const onEnter = event => {
-      const highlighted = event.target
-        .closest('.dito-multiselect')
-        .querySelector('[data-highlighted]')
-      if (!highlighted && (multiple.value || tagOption.value)) {
+      if (
+        !root.value?.highlightedElement?.isConnected &&
+        (multiple.value || tagOption.value)
+      ) {
         event.preventDefault()
+        event.stopPropagation()
         if (tagOption.value) {
           onAddTag(tagOption.value.tag)
         }
@@ -430,10 +433,6 @@ const DitoMultiselectType = {
       return {
         ...attributes,
         'id': unref(field.componentPath),
-        'modelValue': searchTerm.value,
-        'onUpdate:modelValue': term => {
-          searchTerm.value = term
-        },
         'displayValue': getDisplayValue,
         'readonly': !searchable.value,
         'aria-label': field.labelText.value,
@@ -448,10 +447,24 @@ const DitoMultiselectType = {
       }
     })
 
+    // Single values show the label of their option again. Multiple values
+    // keep the term of their `search` for more picks:
+    const shouldResetSearchTerm = computed(
+      () => !multiple.value || !searchFilter.value
+    )
+
     watch(isOpen, isOpen => {
-      // Emit the blur event held back while the multiselect was open:
-      if (!isOpen && focused.value) {
-        onBlur()
+      if (!isOpen) {
+        // reka-ui resets the term only when it closes the list itself, not
+        // after picks in multiple selects, see `onSelect()`:
+        if (shouldResetSearchTerm.value) {
+          searchTerm.value = getDisplayValue(selectedOptions.value)
+        }
+        // Emit the blur event held back while the list was open, unless the
+        // input keeps the focus:
+        if (focused.value && !getInputElement()?.matches(':focus')) {
+          onBlur()
+        }
       }
     })
 
@@ -464,22 +477,18 @@ const DitoMultiselectType = {
     return {
       ...field,
       ...optionsField,
+      root,
       inner,
       inputProps,
       isOpen,
       selectedOptions,
+      optionGroups,
       tagOption,
       searchTerm,
-      searchable,
-      taggable,
       multiple,
       isLoading,
       isSameOption,
-      getDisplayValue,
-      // Single values show the label of their option again. Multiple values
-      // keep the term of their `search` for more picks:
-      resetsSearchTerm: computed(() => !multiple.value || !searchFilter.value),
-      onAddTag,
+      shouldResetSearchTerm,
 
       placeholder: computed(() => {
         let placeholder = getSchemaValue('placeholder', {

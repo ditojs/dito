@@ -503,6 +503,49 @@ describe('DitoMultiselectType', () => {
       expect(data.genres).toEqual(['drama'])
     })
 
+    it('clears the search term once a pick closes the options', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          fields: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              options: genres
+            }
+          }
+        },
+        data: { genres: [] }
+      })
+      const field = findField('genres')
+      await search(field, 'dra')
+      await selectOption(field, 'Drama')
+      expect(data.genres).toEqual(['drama'])
+      expect(field.find('.dito-multiselect__input').element.value).toBe('')
+    })
+
+    it('keeps offering the typed tag while typing', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          fields: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable: true,
+              options: genres
+            }
+          }
+        },
+        data: { genres: [] }
+      })
+      const field = findField('genres')
+      await search(field, 'E')
+      await search(field, 'Ep')
+      await search(field, 'Epi')
+      expect(field.find('.dito-multiselect__option--tag').text()).toBe('Epi')
+    })
+
     it('adds no typed values without `taggable`', async () => {
       const { findField, data } = await mountSchema({
         schema: {
@@ -865,7 +908,7 @@ describe('DitoMultiselectType', () => {
     const field = findField('genre')
     await selectOption(field, 'Drama')
     // Searchable multiselects stay open when they lose the focus:
-    await field.find('.dito-multiselect__input').trigger('blur')
+    field.find('.dito-multiselect__input').element.blur()
     await flushPromises()
     expect(getErrors('genre')).toEqual([])
     getComponent('genre').isOpen = false
