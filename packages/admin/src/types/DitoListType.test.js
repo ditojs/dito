@@ -2374,6 +2374,39 @@ describe('DitoListType', () => {
       expect(multiselect.text()).toContain('Soup')
     })
 
+    it('gives the callbacks of filters the services of the admin', async () => {
+      const apis = []
+      const admin = await mountAdmin({
+        views: {
+          recipes: {
+            type: 'view',
+            field: {
+              type: 'list',
+              resource: { path: 'recipes' },
+              filters: {
+                tag: {
+                  fields: {
+                    tag: {
+                      type: 'multiselect',
+                      options: ['soup', 'salad'],
+                      multiple({ api }) {
+                        apis.push(api)
+                        return false
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        request: () => ({ data: { results: [], total: 0 } })
+      })
+      await admin.navigate('/recipes?filter=tag:"soup"')
+      expect(apis.length).toBeGreaterThan(0)
+      expect(apis).not.toContain(null)
+    })
+
     it('clears the filters to their defaults and applies them', async () => {
       const request = vi.fn(({ query }) => {
         if (JSON.stringify(query).includes('Soup')) {

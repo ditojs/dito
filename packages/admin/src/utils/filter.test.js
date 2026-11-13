@@ -53,7 +53,7 @@ function createPanel({
   defaults = {}
 } = {}) {
   const queryRef = ref(query)
-  const panel = createFiltersPanel({ defaults }, filters, 'books', queryRef)
+  const panel = createFiltersPanel({ defaults }, filters, queryRef)
   return { panel, query: queryRef }
 }
 
