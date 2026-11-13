@@ -63,8 +63,7 @@
       v-else-if="hasSessionStarted"
       type="button"
       @click="adminContext.session.login()"
-    )
-      span Sign In
+    ) Sign In
     button.dito-header__toggle.dito-sidebar__toggle(
       ref="sidebarButton"
       type="button"
@@ -274,9 +273,9 @@ let dialogId = 0
 }
 
 .dito-login {
-  padding: 0;
+  padding: $header-padding;
   border: 0;
-  color: inherit;
+  color: $color-white;
   background: none;
 
   &:focus-visible {

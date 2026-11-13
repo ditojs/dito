@@ -6,6 +6,8 @@
 - **admin:** The tooltips of infos are built on `reka-ui`'s `Tooltip`, as `.dito-tooltip` in the pane of their info. `.dito-info` no longer has `data-info`.
 - **ui:** `DitoTrigger` is built on `reka-ui`'s `Popover` and only shows popups at the input of its trigger, as the pickers and the color field do. The props `trigger`, `cover`, `hideWhenClickOutside`, `alwaysShow`, `hideDelay`, `customClass` and `zIndex` are removed, and popups have `data-side` and `data-align` instead of `.dito-popup--{placement}`, see [`DitoTrigger`](docs/api/ui.md#ditotrigger).
 - **ui:** `DitoMenuButton` is built on `reka-ui`'s `DropdownMenu`. The keyboard skips disabled items, typing the start of a label focuses its item, and clicks on the button focus the menu.
+- **ui:** The tips of floating menus are `reka-ui` arrows, `svg.dito-menu-button__tip`, filled with the menu's color.
+- **admin:** `.dito-header` no longer pads the spans inside it, only the text of the trail, `.dito-trail__text`. Pad the spans of custom header content in their own styles.
 
 ### Internal
 

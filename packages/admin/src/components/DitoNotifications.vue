@@ -113,10 +113,13 @@ export default {
 .dito-notifications {
   $notification-width: 300px;
 
-  .dito-header {
-    span {
-      padding-left: 0;
-      padding-right: 0;
+  // An empty header line above the notifications:
+  .dito-header span {
+    display: inline-block;
+    padding: $header-padding-ver 0;
+
+    &::after {
+      content: '\200b';
     }
   }
 

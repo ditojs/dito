@@ -34,13 +34,11 @@
       @open-auto-focus="onOpenAutoFocus"
       @keydown="onMenuKeyDown"
     )
-      DropdownMenuArrow(
+      DropdownMenuArrow.dito-menu-button__tip(
         v-if="floating"
-        asChild
-        :width="0"
-        :height="0"
+        :width="14"
+        :height="7"
       )
-        span.dito-menu-button__tip
       DropdownMenuItem.dito-menu-button__item(
         v-for="item in items"
         :key="item.value"
@@ -112,7 +110,6 @@ export default {
     return {
       isOpen: false,
       buttonHeight: 0,
-      buttonFontSize: 0,
       // Whether ArrowUp opened the menu, which then focuses its last item.
       focusLast: false
     }
@@ -137,13 +134,8 @@ export default {
     },
 
     sideOffset() {
-      // Floating menus leave room for their tip, half of its size of 0.5em,
-      // see the styles. Covering menus move back over the button:
-      return this.floating
-        ? this.buttonFontSize * 0.25
-        : this.cover
-          ? -this.buttonHeight
-          : 0
+      // Covering menus move back over the button:
+      return this.cover && !this.floating ? -this.buttonHeight : 0
     }
   },
 
@@ -152,7 +144,6 @@ export default {
       const button = this.$refs.button.$el
       if (isOpen) {
         this.buttonHeight = getSize(button).height
-        this.buttonFontSize = parseFloat(getComputedStyle(button).fontSize)
       } else {
         this.focusLast = false
       }
@@ -216,7 +207,6 @@ function getSize(element) {
 
 <style lang="scss">
 @use 'sass:list';
-@use 'sass:math';
 @import '../styles/_imports';
 
 $menu-button-radius: 0.5em;
@@ -255,39 +245,11 @@ $menu-button-padding: $menu-button-padding-ver 1em;
   }
 
   &--floating {
-    $tip-size: 0.5em;
-    $tip-side: $tip-size * math.sqrt(2);
     $padding: 0.25em;
 
-    // The tip pointing at the button, a square half hidden by the menu, which
-    // casts its own shadow. reka-ui places the tip at the menu's edge, in the
-    // middle of the button, inside an element that it positions and rotates.
-    // Both have no size, so that reka-ui doesn't add one to the offset, also
-    // in headers that style their spans, and the tip draws the square around
-    // itself:
-    .dito-menu-button__menu > span:has(> .dito-menu-button__tip) {
-      z-index: -1;
-    }
-
-    .dito-menu-button__menu > span:has(> .dito-menu-button__tip),
+    // reka-ui places the tip at the menu's edge, in the middle of the button:
     .dito-menu-button__tip {
-      width: 0;
-      height: 0;
-      padding: 0;
-    }
-
-    .dito-menu-button__tip {
-      &::before {
-        content: '';
-        position: absolute;
-        top: math.div(-$tip-side, 2);
-        left: math.div(-$tip-side, 2);
-        width: $tip-side;
-        height: $tip-side;
-        background: $button-color;
-        box-shadow: $shadow-window;
-        transform: rotate(45deg);
-      }
+      fill: $button-color;
     }
 
     .dito-menu-button__menu {

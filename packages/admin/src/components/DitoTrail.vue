@@ -112,6 +112,17 @@ export default {
     padding-left: 0;
   }
 
+  &__text {
+    display: inline-block;
+    padding: $header-padding;
+    color: $color-white;
+
+    // Keep the height of empty breadcrumbs:
+    &:empty::after {
+      content: '\200b';
+    }
+  }
+
   &__link {
     position: relative;
     display: block;

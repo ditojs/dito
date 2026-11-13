@@ -86,11 +86,6 @@ export default {
     &:focus-visible {
       @include focus-ring;
     }
-
-    span {
-      padding: 0;
-      color: inherit;
-    }
   }
 }
 </style>
