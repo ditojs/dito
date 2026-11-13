@@ -170,8 +170,7 @@ export default {
       },
 
       onPointerDownOutside(event) {
-        // Close only on clicks on the overlay, not on other elements outside
-        // the dialog, e.g. notifications:
+        // Close only on presses on the overlay:
         if (
           !props.settings.clickToClose ||
           event.detail.originalEvent.target !== dialog.value
@@ -221,6 +220,9 @@ function toCssLength(length) {
   // Prevent scrolling of the page behind the dialog:
   overflow: hidden;
   background: rgb(0, 0, 0, 0.2);
+  // reka-ui turns off pointer events on the body while the dialog is open.
+  // The overlay takes them, for `clickToClose`:
+  pointer-events: auto;
 
   &__content {
     display: flex;
