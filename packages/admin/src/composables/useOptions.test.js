@@ -141,8 +141,8 @@ describe('useOptions()', () => {
       })
 
     async function search(field, searchTerm) {
-      await field.find('.multiselect').trigger('focus')
-      await field.find('.multiselect__input').setValue(searchTerm)
+      await field.find('.dito-multiselect__input').trigger('focus')
+      await field.find('.dito-multiselect__input').setValue(searchTerm)
       await flushPromises()
     }
 
@@ -155,7 +155,7 @@ describe('useOptions()', () => {
       await search(field, 'Bio')
       expect(filter).toHaveBeenCalledOnce()
       expect(
-        field.findAll('.multiselect__option').map(option => option.text())
+        field.findAll('.dito-multiselect__option').map(option => option.text())
       ).toContain('Biography')
       expect(field.text()).not.toContain('Fiction')
     })

@@ -301,7 +301,9 @@ describe('widgets of values', () => {
       }
     }
     const { wrapper } = await mountPage(GenresPage, 'books', item)
-    const tags = getContainer(wrapper, 'Genres').findAll('.multiselect__tag')
+    const tags = getContainer(wrapper, 'Genres').findAll(
+      '.dito-multiselect__tag'
+    )
     expect(tags.map(tag => tag.text())).toEqual(['Rock'])
   })
 

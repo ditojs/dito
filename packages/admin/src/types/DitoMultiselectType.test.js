@@ -13,16 +13,16 @@ const genres = [
   { value: 'drama', label: 'Drama' }
 ]
 
-// Opens the multiselect, like clicking it does, so that its options render.
+// Opens the multiselect, like focusing it does, so that its options render.
 async function open(field) {
-  await field.find('.multiselect').trigger('focus')
+  await field.find('.dito-multiselect__input').trigger('focus')
   await flushPromises()
 }
 
 async function selectOption(field, label) {
   await open(field)
   const option = field
-    .findAll('.multiselect__element .multiselect__option')
+    .findAll('.dito-multiselect__option')
     .find(option => option.text() === label)
   await option.trigger('click')
   await flushPromises()
@@ -30,24 +30,25 @@ async function selectOption(field, label) {
 
 async function search(field, searchTerm) {
   await open(field)
-  await field.find('.multiselect__input').setValue(searchTerm)
+  await field.find('.dito-multiselect__input').setValue(searchTerm)
   await flushPromises()
 }
 
+// The labels of the options and their groups, in order:
 function getOptionLabels(field) {
   return field
-    .findAll('.multiselect__element .multiselect__option')
+    .findAll('.dito-multiselect__group, .dito-multiselect__option')
     .map(option => option.text())
 }
 
 async function addTag(field, text) {
   await search(field, text)
-  await field.find('.multiselect__input').trigger('keydown.enter')
+  await field.find('.dito-multiselect__input').trigger('keydown.enter')
   await flushPromises()
 }
 
 function getTagLabels(field) {
-  return field.findAll('.multiselect__tag').map(tag => tag.text())
+  return field.findAll('.dito-multiselect__tag').map(tag => tag.text())
 }
 
 describe('DitoMultiselectType', () => {
@@ -59,7 +60,9 @@ describe('DitoMultiselectType', () => {
         },
         data: { genre: 'poetry' }
       })
-      expect(findField('genre').find('.multiselect__single').text()).toBe(
+      expect(
+        findField('genre').find('.dito-multiselect__input').element.value
+      ).toBe(
         'Poetry'
       )
     })
@@ -90,7 +93,9 @@ describe('DitoMultiselectType', () => {
         data: { genre: 'poetry', genres: ['drama'] }
       })
       const field = findField('genre')
-      expect(field.find('.multiselect__single').text()).toBe('Poetry (Genre)')
+      expect(field.find('.dito-multiselect__input').element.value).toBe(
+        'Poetry (Genre)'
+      )
       await open(field)
       expect(getOptionLabels(field)).toEqual([
         'Fiction',
@@ -134,6 +139,17 @@ describe('DitoMultiselectType', () => {
       expect(onChange.mock.calls[0][0].value).toBe('drama')
     })
 
+    it('clears the value when the selected option is picked again', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          fields: { genre: { type: 'multiselect', options: genres } }
+        },
+        data: { genre: 'poetry' }
+      })
+      await selectOption(findField('genre'), 'Poetry')
+      expect(data.genre).toBe(null)
+    })
+
     it('matches values with `options.equals()`', async () => {
       const { findField } = await mountSchema({
         schema: {
@@ -151,7 +167,9 @@ describe('DitoMultiselectType', () => {
         },
         data: { genre: 'POETRY' }
       })
-      expect(findField('genre').find('.multiselect__single').text()).toBe(
+      expect(
+        findField('genre').find('.dito-multiselect__input').element.value
+      ).toBe(
         'Poetry'
       )
     })
@@ -217,7 +235,9 @@ describe('DitoMultiselectType', () => {
         },
         data: { genre: 'opera' }
       })
-      expect(findField('genre').find('.multiselect__single').text()).toBe(
+      expect(
+        findField('genre').find('.dito-multiselect__input').element.value
+      ).toBe(
         'opera'
       )
       expect(data.genre).toBe('opera')
@@ -239,7 +259,9 @@ describe('DitoMultiselectType', () => {
         },
         data: { author: { id: 3, name: 'Bram Stoker' } }
       })
-      expect(findField('author').find('.multiselect__single').text()).toBe(
+      expect(
+        findField('author').find('.dito-multiselect__input').element.value
+      ).toBe(
         'Bram Stoker'
       )
       expect(data.author).toEqual({ id: 3, name: 'Bram Stoker' })
@@ -266,7 +288,7 @@ describe('DitoMultiselectType', () => {
       await selectOption(field, 'Fiction')
       expect(data.genres).toEqual(['drama', 'fiction'])
       expect(getTagLabels(field)).toEqual(['Drama', 'Fiction'])
-      await field.find('.multiselect__tag-icon').trigger('mousedown')
+      await field.find('.dito-multiselect__tag-remove').trigger('click')
       expect(data.genres).toEqual(['fiction'])
     })
 
@@ -336,7 +358,7 @@ describe('DitoMultiselectType', () => {
       expect(getTagLabels(field)).toEqual(['opera', 'Poetry'])
       expect(
         field
-          .findAll('.multiselect__tag')
+          .findAll('.dito-multiselect__tag')
           .map(tag => tag.classes('dito-multiselect__tag--unavailable'))
       ).toEqual([true, false])
       await selectOption(field, 'Drama')
@@ -360,11 +382,13 @@ describe('DitoMultiselectType', () => {
         data: { keywords: ['classic'] }
       })
       const field = findField('keywords')
-      expect(field.find('.multiselect__input').attributes('placeholder')).toBe(
+      expect(
+        field.find('.dito-multiselect__input').attributes('placeholder')
+      ).toBe(
         'Search or add a Keyword'
       )
       await search(field, 'gothic')
-      await field.find('.multiselect__input').trigger('keydown.enter')
+      await field.find('.dito-multiselect__input').trigger('keydown.enter')
       await flushPromises()
       expect(data.keywords).toEqual(['classic', 'gothic'])
       expect(getTagLabels(field)).toEqual(['Classic', 'Gothic'])
@@ -391,7 +415,7 @@ describe('DitoMultiselectType', () => {
       await search(field, 'gothic')
       // `setValue()` triggers `change` on the search input, ignore it:
       onChange.mockClear()
-      await field.find('.multiselect__input').trigger('keydown.enter')
+      await field.find('.dito-multiselect__input').trigger('keydown.enter')
       await flushPromises()
       expect(data.keywords).toEqual(['gothic'])
       expect(onChange).toHaveBeenCalledOnce()
@@ -400,7 +424,7 @@ describe('DitoMultiselectType', () => {
       expect(getComponent('keywords').options).toEqual(['classic', 'gothic'])
       expect(
         field
-          .findAll('.multiselect__tag')
+          .findAll('.dito-multiselect__tag')
           .map(tag => tag.classes('dito-multiselect__tag--unavailable'))
       ).toEqual([false])
     })
@@ -422,7 +446,7 @@ describe('DitoMultiselectType', () => {
       const field = findField('keywords')
       expect(getTagLabels(field)).toEqual(['Classic', 'Gothic'])
       await search(field, 'modern')
-      await field.find('.multiselect__input').trigger('keydown.enter')
+      await field.find('.dito-multiselect__input').trigger('keydown.enter')
       await flushPromises()
       expect(data.keywords).toEqual(['classic', 'gothic', 'modern'])
     })
@@ -446,14 +470,74 @@ describe('DitoMultiselectType', () => {
       const field = findField('language')
       await search(field, 'Romansh')
       onChange.mockClear()
-      await field.find('.multiselect__input').trigger('keydown.enter')
+      await field.find('.dito-multiselect__input').trigger('keydown.enter')
       await flushPromises()
       expect(data.language).toBe('Romansh')
       expect(onChange).toHaveBeenCalledOnce()
-      expect(field.find('.multiselect__single').text()).toBe('Romansh')
+      expect(field.find('.dito-multiselect__input').element.value).toBe(
+        'Romansh'
+      )
     })
 
-    it('makes the tag remove icons focusable in document order', async () => {
+    it('removes the last value with Backspace in the empty input', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          fields: {
+            genres: { type: 'multiselect', multiple: true, options: genres }
+          }
+        },
+        data: { genres: ['drama', 'poetry'] }
+      })
+      const input = findField('genres').find('.dito-multiselect__input')
+      await input.trigger('keydown', { key: 'Backspace' })
+      expect(data.genres).toEqual(['drama'])
+    })
+
+    it('picks options with the arrow keys and Enter', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          fields: {
+            genres: { type: 'multiselect', multiple: true, options: genres }
+          }
+        },
+        data: { genres: [] }
+      })
+      const input = findField('genres').find('.dito-multiselect__input')
+      // Focusing opens the options and highlights the first one:
+      input.element.focus()
+      await flushPromises()
+      await input.trigger('keydown', { key: 'ArrowDown' })
+      await input.trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+      expect(data.genres).toEqual(['poetry'])
+    })
+
+    it('picks the highlighted option with Enter instead of adding a tag', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          fields: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable: true,
+              options: genres
+            }
+          }
+        },
+        data: { genres: [] }
+      })
+      const field = findField('genres')
+      await search(field, 'dra')
+      expect(getOptionLabels(field)).toEqual(['dra', 'Drama'])
+      const input = field.find('.dito-multiselect__input')
+      await input.trigger('keydown', { key: 'ArrowDown' })
+      await input.trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+      expect(data.genres).toEqual(['drama'])
+    })
+
+    it('makes the tag remove buttons focusable and labelled', async () => {
       const { findField } = await mountSchema({
         schema: {
           fields: {
@@ -462,11 +546,9 @@ describe('DitoMultiselectType', () => {
         },
         data: { genres: ['drama'] }
       })
-      expect(
-        findField('genres')
-          .find('.multiselect__tag-icon')
-          .attributes('tabindex')
-      ).toBe('0')
+      const remove = findField('genres').find('.dito-multiselect__tag-remove')
+      expect(remove.element.tagName).toBe('BUTTON')
+      expect(remove.attributes('aria-label')).toBe('Remove Drama')
     })
 
     it('sends the values serialized by `serializeValue()`', async () => {
@@ -486,8 +568,8 @@ describe('DitoMultiselectType', () => {
         request: ({ data }) => ({ data })
       })
       await findField('genres')
-        .find('.multiselect__tag-icon')
-        .trigger('mousedown')
+        .find('.dito-multiselect__tag-remove')
+        .trigger('click')
       expect(await submit()).toMatchObject({ genres: null })
     })
   })
@@ -510,7 +592,7 @@ describe('DitoMultiselectType', () => {
         data: { genre: null }
       })
       const placeholder = findField('genre')
-        .find('.multiselect__input')
+        .find('.dito-multiselect__input')
         .attributes('placeholder')
       expect(placeholder).not.toContain('null')
     }
@@ -537,7 +619,9 @@ describe('DitoMultiselectType', () => {
       data: { genre: null, mood: null }
     })
     const getPlaceholder = dataPath =>
-      findField(dataPath).find('.multiselect__input').attributes('placeholder')
+      findField(dataPath)
+        .find('.dito-multiselect__input')
+        .attributes('placeholder')
     expect(getPlaceholder('genre')).toBe('Select or search Genre')
     expect(getPlaceholder('mood')).toBe(undefined)
   })
@@ -557,7 +641,9 @@ describe('DitoMultiselectType', () => {
       data: { title: 'Dracula', genre: null }
     })
     expect(
-      findField('genre').find('.multiselect__input').attributes('placeholder')
+      findField('genre')
+        .find('.dito-multiselect__input')
+        .attributes('placeholder')
     ).toBe('Genre of Dracula')
   })
 
@@ -576,7 +662,9 @@ describe('DitoMultiselectType', () => {
       data: { genre: null }
     })
     expect(
-      findField('genre').find('.multiselect__input').attributes('placeholder')
+      findField('genre')
+        .find('.dito-multiselect__input')
+        .attributes('placeholder')
     ).toBe('Select or search Genre')
   })
 
@@ -614,14 +702,16 @@ describe('DitoMultiselectType', () => {
         schema: createAuthorSchema(filter)
       })
       const field = findField('author')
-      expect(field.find('.multiselect__input').attributes('placeholder')).toBe(
+      expect(
+        field.find('.dito-multiselect__input').attributes('placeholder')
+      ).toBe(
         'Select or search Author'
       )
       await search(field, 'Sh')
       expect(filter).toHaveBeenCalledOnce()
       expect(getOptionLabels(field)).toEqual(['Mary Shelley'])
       await field
-        .find('.multiselect__element .multiselect__option')
+        .find('.dito-multiselect__option')
         .trigger('click')
       await flushPromises()
       expect(data.author).toEqual({ id: 2, name: 'Mary Shelley' })
@@ -633,7 +723,9 @@ describe('DitoMultiselectType', () => {
         data: { author: { id: 1, name: 'Jane Austen' } }
       })
       const field = findField('author')
-      expect(field.find('.multiselect__single').text()).toBe('Jane Austen')
+      expect(field.find('.dito-multiselect__input').element.value).toBe(
+        'Jane Austen'
+      )
       await search(field, 'Stoker')
       expect(getOptionLabels(field)).toEqual(['Bram Stoker'])
     })
@@ -665,7 +757,7 @@ describe('DitoMultiselectType', () => {
       const field = findField('author')
       await search(field, 'Stoker')
       expect(getOptionLabels(field)).toEqual(['Bram Stoker'])
-      await field.find('.multiselect__input').setValue('')
+      await field.find('.dito-multiselect__input').setValue('')
       await flushPromises()
       expect(getOptionLabels(field)).toEqual(['Jane Austen'])
     })
@@ -709,7 +801,7 @@ describe('DitoMultiselectType', () => {
   })
 
   it('opens and focuses multiselects with `autofocus`', async () => {
-    const { getComponent } = await mountSchema({
+    const { getComponent, findField } = await mountSchema({
       schema: {
         fields: {
           genre: { type: 'multiselect', autofocus: true, options: genres }
@@ -717,8 +809,10 @@ describe('DitoMultiselectType', () => {
       }
     })
     const genre = getComponent('genre')
-    expect(genre.$refs.element.isOpen).toBe(true)
-    expect(genre.populate).toBe(true)
+    expect(genre.isOpen).toBe(true)
+    expect(document.activeElement).toBe(
+      findField('genre').find('.dito-multiselect__input').element
+    )
   })
 
   it('validates only once the open multiselect is closed', async () => {
@@ -738,12 +832,12 @@ describe('DitoMultiselectType', () => {
     const field = findField('genre')
     await selectOption(field, 'Drama')
     // Searchable multiselects stay open when they lose the focus:
-    await field.find('.multiselect').trigger('blur')
+    await field.find('.dito-multiselect__input').trigger('blur')
     await flushPromises()
     expect(getErrors('genre')).toEqual([])
-    getComponent('genre').$refs.element.deactivate()
+    getComponent('genre').isOpen = false
     await flushPromises()
-    expect(field.find('.multiselect--active').exists()).toBe(false)
+    expect(field.find('.dito-multiselect--open').exists()).toBe(false)
     expect(getErrors('genre')).toEqual(['The genre field is not allowed.'])
   })
 
@@ -760,7 +854,7 @@ describe('DitoMultiselectType', () => {
       },
       data: { languages: ['Latin', 'German'] }
     })
-    const tags = findField('languages').findAll('.multiselect__tag')
+    const tags = findField('languages').findAll('.dito-multiselect__tag')
     expect(tags.map(tag => tag.text())).toEqual(['Latin', 'German'])
     expect(
       tags.map(tag => tag.classes('dito-multiselect__tag--unavailable'))
@@ -785,7 +879,7 @@ describe('DitoMultiselectType', () => {
     })
     const field = findField('genres')
     await search(field, 'opera')
-    await field.find('.multiselect__input').trigger('keydown.enter')
+    await field.find('.dito-multiselect__input').trigger('keydown.enter')
     await flushPromises()
     expect(data.genres).toEqual(['drama', 'opera'])
     expect(getComponent('genres').options).toContainEqual({
@@ -1003,7 +1097,7 @@ describe('DitoMultiselectType', () => {
     })
     const field = findField('books')
     await search(field, 'Ubik')
-    await field.find('.multiselect__input').trigger('keydown.enter')
+    await field.find('.dito-multiselect__input').trigger('keydown.enter')
     await flushPromises()
     expect(data.books).toEqual(['Ubik'])
     expect(
@@ -1033,7 +1127,7 @@ describe('DitoMultiselectType', () => {
     expect(getTagLabels(field)).toEqual(['Mary Shelley', 'Bram Stoker'])
     expect(
       field
-        .findAll('.multiselect__tag')
+        .findAll('.dito-multiselect__tag')
         .map(tag => tag.classes('dito-multiselect__tag--unavailable'))
     ).toEqual([false, true])
     await selectOption(field, 'Jane Austen')

@@ -2,7 +2,8 @@ import { test, expect } from '../fixtures.js'
 import { Widget } from '../models/Widget.js'
 import {
   DitoListView,
-  DitoForm
+  DitoForm,
+  getMultiselect
 } from '../../../utils/pages.js'
 
 test.describe('multiselect', () => {
@@ -31,9 +32,8 @@ test.describe('multiselect', () => {
 
     // Tag chips should be visible. Each chip carries the tag's name; the
     // multiselect renders selected items as chips inside the combobox.
-    const tagsCombobox = page.getByRole('combobox', { name: 'Tags' })
-    await expect(tagsCombobox).toContainText('tag-1')
-    await expect(tagsCombobox).toContainText('tag-2')
+    const tags = getMultiselect(page, 'Tags').locator('.dito-multiselect__tag')
+    await expect(tags).toHaveText(['tag-1', 'tag-2'])
 
     // Re-fetch from DB and confirm the join-table relation persisted.
     const persisted = await Widget.query()
@@ -49,8 +49,7 @@ test.describe('multiselect', () => {
     // Reload, confirm empty.
     await list.navigate('/widgets')
     await list.list.edit('Widget A')
-    await expect(tagsCombobox).not.toContainText('tag-1')
-    await expect(tagsCombobox).not.toContainText('tag-2')
+    await expect(tags).toHaveCount(0)
 
     const cleared = await Widget.query()
       .findById(widget.$id() as number)
@@ -70,7 +69,7 @@ test.describe('multiselect', () => {
     const list = new DitoListView(page, url, 'Widget')
     await list.navigate('/widgets')
     await list.list.edit('Widget A')
-    const codes = page.getByRole('combobox', { name: 'Codes' })
+    const codes = getMultiselect(page, 'Codes')
     await expect(codes.locator('.dito-multiselect__tag')).toHaveText([
       'Alpha',
       'gone'
@@ -81,7 +80,7 @@ test.describe('multiselect', () => {
     // Removing another value keeps the one without option.
     await codes
       .locator('.dito-multiselect__tag', { hasText: 'Alpha' })
-      .locator('.multiselect__tag-icon')
+      .getByRole('button', { name: /^Remove / })
       .click()
     await new DitoForm(page).save()
     const stored = await Widget.query().findById(widget.$id() as number)
@@ -97,13 +96,13 @@ test.describe('multiselect', () => {
     const list = new DitoListView(page, url, 'Widget')
     await list.navigate('/widgets')
     await list.list.edit('Widget A')
-    const tags = page.getByRole('combobox', { name: 'Tags' })
+    const tags = getMultiselect(page, 'Tags')
     await expect(
       tags.locator('.dito-multiselect__tag--unavailable')
     ).toHaveText(['hidden'])
     await tags
       .locator('.dito-multiselect__tag', { hasText: 'tag-1' })
-      .locator('.multiselect__tag-icon')
+      .getByRole('button', { name: /^Remove / })
       .click()
     await new DitoForm(page).save()
     const stored = await Widget.query()
@@ -143,10 +142,10 @@ test.describe('multiselect', () => {
     await list.list.edit('Widget A')
     const shape = page.getByRole('combobox', { name: 'Shape' })
     await shape.click()
-    await shape.locator('input').fill('tri')
+    await shape.fill('tri')
     await expect(page.getByRole('option', { name: 'Triangle' })).toBeVisible()
     // The internal search would match the "r" in "Circle" and "Square" too:
-    await shape.locator('input').fill('r')
+    await shape.fill('r')
     await expect(page.getByRole('option')).toHaveCount(0)
   })
 
@@ -160,12 +159,12 @@ test.describe('multiselect', () => {
     await list.navigate('/widgets')
     await list.list.edit('Widget A')
     const shape = page.getByRole('combobox', { name: 'Shape' })
-    await expect(shape).toContainText('Triangle')
+    await expect(shape).toHaveValue('Triangle')
     await shape.click()
-    await shape.locator('input').fill('c')
+    await shape.fill('c')
     await expect(page.getByRole('option')).toHaveText(['Circle'])
     await page.keyboard.press('Escape')
-    await expect(shape).toContainText('Triangle')
+    await expect(shape).toHaveValue('Triangle')
     await new DitoForm(page).save()
     const widget = await Widget.query().findOne({ name: 'Widget A' })
     expect(widget?.shape).toBe('triangle')
@@ -181,10 +180,10 @@ test.describe('multiselect', () => {
     await list.list.edit('Widget A')
     const color = page.getByRole('combobox', { name: 'Color' })
     await color.click()
-    await color.locator('input').fill('gr')
+    await color.fill('gr')
     const options = page.getByRole('option')
     await expect(options).toHaveText(['Green'])
-    await color.locator('input').fill('b')
+    await color.fill('b')
     await expect(options).toHaveText(['Blue'])
     await options.first().click()
     await page.getByRole('button', { name: 'Save', exact: true }).click()
@@ -202,9 +201,9 @@ test.describe('multiselect', () => {
     await list.list.edit('Widget A')
     const paint = page.getByRole('combobox', { name: 'Paint' })
     await paint.click()
-    await paint.locator('input').fill('b')
-    await paint.locator('input').fill('bla')
-    const options = paint.getByRole('option')
+    await paint.fill('b')
+    await paint.fill('bla')
+    const options = page.getByRole('option')
     await expect(options).toHaveText(['Black'])
     // The search for "b" finishes later, and must not replace the options:
     await page.waitForTimeout(800)
