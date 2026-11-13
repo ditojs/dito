@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { html } from '@ditojs/utils'
-import { mountAdmin, enterValue } from '../test/mount.js'
+import { mountAdmin, enterValue, getInfoHtml } from '../test/mount.js'
 import CustomFieldPage from '../test/CustomFieldPage.vue'
 import {
   useDitoForm,
@@ -258,7 +258,7 @@ describe('widgets of values', () => {
     const { wrapper } = await mountPage(WebsitePage, 'books', item)
     const markup = wrapper.html()
     expect(markup).toContain('<b>Site</b>')
-    expect(markup).toContain('<i>Public</i>')
+    expect(getInfoHtml(wrapper)).toBe('<i>Public</i>')
     expect(markup).toContain('<em>https</em>')
     const warnings = warn.mock.calls.flat().join()
     warn.mockRestore()

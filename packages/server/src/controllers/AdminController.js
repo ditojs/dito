@@ -332,7 +332,6 @@ const coreDependencies = [
   'defu',
   'ohash',
   'sortablejs',
-  'tippy.js',
   '@tiptap/*',
   'tiptap-*',
   'prosemirror-*',

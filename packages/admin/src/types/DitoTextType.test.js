@@ -1,6 +1,11 @@
 import { vi } from 'vitest'
 import { html } from '@ditojs/utils'
-import { mountSchema, mountForm, enterValue } from '../test/mount.js'
+import {
+  mountSchema,
+  mountForm,
+  enterValue,
+  getInfoHtml
+} from '../test/mount.js'
 
 describe('DitoTextType', () => {
   it('displays the value and writes input back into the data', async () => {
@@ -188,9 +193,7 @@ describe('DitoTextType', () => {
     // With a label, the label shows the info:
     expect(price.find('.dito-info').exists()).toBe(false)
     expect(
-      findField('title').find('.dito-affixes--suffix .dito-info').attributes(
-        'data-info'
-      )
+      getInfoHtml(findField('title').find('.dito-affixes--suffix'))
     ).toBe('As printed')
   })
 

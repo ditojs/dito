@@ -446,9 +446,6 @@ importers:
       sortablejs:
         specifier: ^1.15.7
         version: 1.15.7
-      tippy.js:
-        specifier: ^6.3.7
-        version: 6.3.7
       tiptap-footnotes:
         specifier: ^3.0.1
         version: 3.0.1(@tiptap/core@3.33.0(@tiptap/pm@3.33.0))(@tiptap/extension-list-item@3.33.0(@tiptap/extension-list@3.33.0(@tiptap/core@3.33.0(@tiptap/pm@3.33.0))(@tiptap/pm@3.33.0)))(@tiptap/extension-ordered-list@3.33.0(@tiptap/extension-list@3.33.0(@tiptap/core@3.33.0(@tiptap/pm@3.33.0))(@tiptap/pm@3.33.0)))(@tiptap/pm@3.33.0)
@@ -1572,9 +1569,6 @@ packages:
     resolution: {integrity: sha512-iGURLGuKDLakSEl7Pgfv8h7f+XLT+V861Wfhz0zlEl5nyFuKUopdkFBPKqTllTUp06aOwPuH8iuUEb3yp3MpbQ==}
     engines: {node: '>=20'}
     hasBin: true
-
-  '@popperjs/core@2.11.8':
-    resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
 
   '@prettier/plugin-pug@3.6.0':
     resolution: {integrity: sha512-kAzQ5XJ31cRnME+0TkZorwqwtzFAAZROFm6CCrsRBCcAltQ0Z/81XJN1NYkQZA5F8fFt1b9S/lyHSfxI7KHHIA==}
@@ -5504,9 +5498,6 @@ packages:
     resolution: {integrity: sha512-LgO3D9yZJjApUiuUfl9iFAwrtaX4+lok3wJIqttGoKCHlWUqHqbQpnxCf82L8FjgKsh4iGo78hqJwgL8F6To2A==}
     engines: {node: '>=14.0.0'}
 
-  tippy.js@6.3.7:
-    resolution: {integrity: sha512-E1d3oP2emgJ9dRQZdf3Kkn0qJgI6ZLpyS5z6ZkY1DF3kaQaBsGZsndEpHwx+eC+tYM41HaSNvNtLx8tU57FzTQ==}
-
   tiptap-footnotes@3.0.1:
     resolution: {integrity: sha512-JeQav5spy5/gEDHnwbkJrzPB46Lvn9SxefhKCcQKsUopzzqYtjaA2oTO+QxVixRJ88wLAa5KexaCIzvY6hMiSQ==}
     peerDependencies:
@@ -6878,8 +6869,6 @@ snapshots:
   '@playwright/test@1.65.0':
     dependencies:
       playwright: 1.65.0
-
-  '@popperjs/core@2.11.8': {}
 
   '@prettier/plugin-pug@3.6.0(prettier@3.9.10)':
     dependencies:
@@ -11146,10 +11135,6 @@ snapshots:
       picomatch: 4.0.7
 
   tinyrainbow@3.2.0: {}
-
-  tippy.js@6.3.7:
-    dependencies:
-      '@popperjs/core': 2.11.8
 
   tiptap-footnotes@3.0.1(@tiptap/core@3.33.0(@tiptap/pm@3.33.0))(@tiptap/extension-list-item@3.33.0(@tiptap/extension-list@3.33.0(@tiptap/core@3.33.0(@tiptap/pm@3.33.0))(@tiptap/pm@3.33.0)))(@tiptap/extension-ordered-list@3.33.0(@tiptap/extension-list@3.33.0(@tiptap/core@3.33.0(@tiptap/pm@3.33.0))(@tiptap/pm@3.33.0)))(@tiptap/pm@3.33.0):
     dependencies:
