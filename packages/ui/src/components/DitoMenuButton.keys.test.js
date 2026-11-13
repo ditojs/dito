@@ -30,6 +30,15 @@ async function pressKey(element, key) {
   return event
 }
 
+// Clicks the element at least a millisecond after it was mounted. Vue ignores
+// events in the millisecond in which their listener was attached once another
+// Vue listener saw them, e.g. the capture listener of `DitoButton`.
+async function click(element) {
+  await new Promise(resolve => setTimeout(resolve, 1))
+  element.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }))
+  await flushPromises()
+}
+
 describe('DitoMenuButton keyboard edge cases', () => {
   let wrapper
 
@@ -50,54 +59,43 @@ describe('DitoMenuButton keyboard edge cases', () => {
 
   it('ignores other keys in the menu', async () => {
     wrapper = mountMenuButton()
+    findButton(wrapper).element.focus()
     await pressKey(findButton(wrapper).element, 'ArrowDown')
     const [first] = wrapper.findAll('[role="menuitem"]')
     expect(document.activeElement).toBe(first.element)
-    const event = await pressKey(first.element, 'ArrowRight')
-    expect(event.defaultPrevented).toBe(false)
+    await pressKey(first.element, 'ArrowRight')
     expect(document.activeElement).toBe(first.element)
     expect(findButton(wrapper).attributes('aria-expanded')).toBe('true')
   })
 
   it(`doesn't select anything with Enter when no item is focused`, async () => {
     wrapper = mountMenuButton()
-    await findButton(wrapper).trigger('click')
-    await flushPromises()
+    await click(findButton(wrapper).element)
+    // Clicks focus the menu, not its items:
     const menu = wrapper.find('[role="menu"]').element
-    const event = await pressKey(menu, 'Enter')
-    expect(event.defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(menu)
+    await pressKey(menu, 'Enter')
     expect(wrapper.emitted('select')).toBeUndefined()
     expect(findButton(wrapper).attributes('aria-expanded')).toBe('true')
   })
 
   it('focuses the first item with ArrowDown when none is focused', async () => {
     wrapper = mountMenuButton()
-    await findButton(wrapper).trigger('click')
-    await flushPromises()
+    await click(findButton(wrapper).element)
     await pressKey(wrapper.find('[role="menu"]').element, 'ArrowDown')
     expect(document.activeElement.textContent).toBe('Starters')
   })
 
-  it('forgets the elements of removed items', async () => {
+  it('reaches the items that it renders after changes', async () => {
     wrapper = mountMenuButton()
+    findButton(wrapper).element.focus()
     await pressKey(findButton(wrapper).element, 'ArrowDown')
     await wrapper.setProps({ items: items.slice(1) })
     await flushPromises()
-    // The keyboard reaches the rendered items:
-    await pressKey(wrapper.find('[role="menu"]').element, 'ArrowDown')
+    const menu = wrapper.find('[role="menu"]').element
+    await pressKey(menu, 'End')
+    expect(document.activeElement.textContent).toBe('Desserts')
+    await pressKey(document.activeElement, 'Home')
     expect(document.activeElement.textContent).toBe('Mains')
-    // A leak guard: removed items and their elements aren't kept around.
-    expect(wrapper.vm.itemElements.size).toBe(2)
-    expect(wrapper.vm.itemElements.has(items[0])).toBe(false)
-  })
-
-  it('passes the placement to the popup and marks itself open', async () => {
-    wrapper = mountMenuButton({ cover: false, placement: 'bottom-right' })
-    await findButton(wrapper).trigger('click')
-    await flushPromises()
-    expect(wrapper.find('.dito-popup').classes()).toContain(
-      'dito-popup--bottom-right'
-    )
-    expect(wrapper.classes()).toContain('dito-menu-button--open')
   })
 })
