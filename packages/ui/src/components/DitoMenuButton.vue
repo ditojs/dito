@@ -32,7 +32,6 @@
       loop
       positionStrategy="fixed"
       @open-auto-focus="onOpenAutoFocus"
-      @keydown="onMenuKeyDown"
     )
       DropdownMenuArrow.dito-menu-button__tip(
         v-if="floating"
@@ -172,16 +171,6 @@ export default {
           '[role="menuitem"]:not([data-disabled])'
         )
         items[items.length - 1]?.focus()
-      }
-    },
-
-    onMenuKeyDown(event) {
-      // Close the menu here, before `document` receives the event, and mark
-      // Escape as handled, so it doesn't also close what contains the menu
-      // button, e.g. the sidebar. reka-ui then ignores the event:
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        this.isOpen = false
       }
     }
   }

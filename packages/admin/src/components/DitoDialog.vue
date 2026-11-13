@@ -159,8 +159,8 @@ export default {
 
       onEscapeKeyDown(event) {
         // Only dialogs with a cancel button or at most one button can be
-        // cancelled. Escape keys that the dialog's components handled are
-        // already prevented, and reka-ui ignores them:
+        // cancelled. reka-ui passes Escape only to the topmost of its layers,
+        // e.g. to a popup in the dialog:
         if (
           !buttonSchemas.value.cancel &&
           Object.keys(buttonSchemas.value).length > 1

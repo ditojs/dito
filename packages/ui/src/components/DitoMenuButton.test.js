@@ -235,12 +235,10 @@ describe('DitoMenuButton', () => {
     })
   }
 
-  it('closes with Escape, focuses the button and marks it handled', async () => {
+  it('closes with Escape and focuses the button', async () => {
     wrapper = mountMenuButton()
     const button = await openWithKey(wrapper)
-    // Escape doesn't also close what contains the menu button, e.g. dialogs:
-    const event = await pressKey('Escape')
-    expect(event.defaultPrevented).toBe(true)
+    await pressKey('Escape')
     expect(button.attributes('aria-expanded')).toBe('false')
     await waitForFocus(button)
   })

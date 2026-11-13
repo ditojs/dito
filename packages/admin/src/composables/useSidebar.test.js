@@ -259,5 +259,18 @@ describe('useSidebar()', () => {
       await flushPromises()
       expect(sidebar.classes()).toContain('dito-sidebar--open')
     })
+
+    it(`doesn't close on Escape keys that close popups`, async () => {
+      const { sidebar, button } = await mountSidebar()
+      await button.trigger('click')
+      await flushPromises()
+      const popup = document.createElement('div')
+      popup.setAttribute('data-dismissable-layer', '')
+      document.body.append(popup)
+      pressEscape(document.activeElement)
+      await flushPromises()
+      popup.remove()
+      expect(sidebar.classes()).toContain('dito-sidebar--open')
+    })
   })
 })
