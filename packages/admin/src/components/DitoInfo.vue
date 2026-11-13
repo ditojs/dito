@@ -1,28 +1,28 @@
 <template lang="pug">
-TooltipProvider(:delayDuration="250")
-  TooltipRoot
-    TooltipTrigger(asChild)
-      .dito-info(ref="icon")
-    //- In the pane, outside of labels, which are buttons or pass clicks on to
-    //- their inputs. The tooltip is fixed, so that scrolling panes don't clip
-    //- it, and flips below the info where the pane has no room above it:
-    TooltipPortal(
-      :to="pane"
-      :disabled="!pane"
+//- In the `TooltipProvider` of `DitoRoot`:
+TooltipRoot
+  TooltipTrigger(asChild)
+    .dito-info(ref="icon")
+  //- In the pane, outside of labels, which are buttons or pass clicks on to
+  //- their inputs. The tooltip is fixed, so that scrolling panes don't clip
+  //- it, and flips below the info where the pane has no room above it:
+  TooltipPortal(
+    :to="pane"
+    :disabled="!pane"
+  )
+    TooltipContent.dito-tooltip(
+      side="top"
+      :sideOffset="2"
+      :collisionBoundary="pane"
+      positionStrategy="fixed"
     )
-      TooltipContent.dito-tooltip(
-        side="top"
-        :sideOffset="2"
-        :collisionBoundary="pane"
-        positionStrategy="fixed"
+      .dito-tooltip__content(
+        v-html="html"
       )
-        .dito-tooltip__content(
-          v-html="html"
-        )
-        TooltipArrow.dito-tooltip__arrow(
-          :width="16"
-          :height="8"
-        )
+      TooltipArrow.dito-tooltip__arrow(
+        :width="16"
+        :height="8"
+      )
 </template>
 
 <script>
@@ -31,7 +31,6 @@ import {
   TooltipArrow,
   TooltipContent,
   TooltipPortal,
-  TooltipProvider,
   TooltipRoot,
   TooltipTrigger
 } from 'reka-ui'
@@ -43,7 +42,6 @@ export default {
     TooltipArrow,
     TooltipContent,
     TooltipPortal,
-    TooltipProvider,
     TooltipRoot,
     TooltipTrigger
   },

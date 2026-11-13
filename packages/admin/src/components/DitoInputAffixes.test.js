@@ -1,5 +1,7 @@
 import { afterEach } from 'vitest'
+import { h } from 'vue'
 import { mount, enableAutoUnmount } from '@vue/test-utils'
+import { TooltipProvider } from 'reka-ui'
 import DitoInputAffixes from './DitoInputAffixes.vue'
 import { mountSchema, getInfoHtml } from '../test/mount.js'
 
@@ -43,9 +45,16 @@ describe('DitoInputAffixes', () => {
   })
 
   it('renders the inline info', () => {
-    const wrapper = mountInputAffixes({
-      position: 'suffix',
-      inlineInfo: 'Help'
+    // Infos need the `TooltipProvider` that `DitoRoot` renders:
+    const wrapper = mount(TooltipProvider, {
+      slots: {
+        default: () =>
+          h(DitoInputAffixes, {
+            parentContext: {},
+            position: 'suffix',
+            inlineInfo: 'Help'
+          })
+      }
     })
     expect(getInfoHtml(wrapper)).toBe('Help')
   })
