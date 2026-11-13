@@ -132,7 +132,7 @@ the menu, the arrow keys, Home and End move between items, Escape closes it.
 | Prop        | Type                                        | Default    | Description                                                                                                                   |
 | ----------- | ------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `items`     | `Array<{ value, label, icon?, disabled? }>` | required   | The menu items. Items with an `icon` from the [icon set](#icons) show it instead of their `label`, which becomes their title. |
-| `placement` | `string`                                    | `'bottom'` | Where the menu opens, see [`DitoTrigger`](#ditotrigger).                                                                      |
+| `placement` | `string`                                    | `'bottom'` | Where the menu opens, a side and an alignment like the one of [`DitoTrigger`](#ditotrigger).                                  |
 | `cover`     | `boolean`                                   | `true`     | Opens the menu over the button, like native menus.                                                                            |
 | `floating`  | `boolean`                                   | `false`    | Opens the menu below the button as a separate panel with a tip pointing at the button, overriding `cover`.                    |
 | `offset`    | `boolean`                                   | `false`    | Opens the menu one item padding below the top of the button, e.g. to line up with the text of a taller button.                |
@@ -281,25 +281,21 @@ All attributes go to the `<progress>` element, e.g. `aria-label`.
 
 ### DitoTrigger
 
-Shows a popup next to a trigger element, positioned absolutely and kept in the
-window if possible. The base of `DitoMenuButton` and the pickers.
+Shows a popup at an input in the trigger, built on
+[reka-ui](https://reka-ui.com)'s `Popover`. The popup opens when the input gets
+the focus and closes when the focus leaves both the trigger and the popup.
+Clicks in the popup keep the focus in the input, except on its fields. The base
+of the pickers and the color field.
 
-| Prop                   | Type                    | Default    | Description                                                                                                                                                                                                                                               |
-| ---------------------- | ----------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`              | `string`                | `'click'`  | What shows the popup: `'click'` toggles it, `'hover'` shows it while the mouse is over the trigger or the popup, `'focus'` while an input or textarea in the trigger or the popup has the focus. `'always'` adds no handlers; the popup follows `show`.   |
-| `show`                 | `boolean`               | `false`    | Whether the popup is shown (`v-model:show`).                                                                                                                                                                                                              |
-| `placement`            | `string`                | `'bottom'` | The side of the trigger the popup appears on, `'top'`, `'bottom'`, `'left'` or `'right'`, optionally followed by the edge it aligns with, e.g. `'bottom-left'` or `'right-top'`, or by `center`, e.g. `'bottom-center'`. Adds `.dito-popup--{placement}`. |
-| `transition`           | `string`                | `'slide'`  | The popup's transition: `'slide'`, `'fade'` or `'zoom'`, or `null` to show it at once.                                                                                                                                                                    |
-| `target`               | `string \| HTMLElement` | `null`     | The element the popup is positioned at, instead of the trigger: an element, or `'trigger'` or `'popup'` for these parts of the trigger itself.                                                                                                            |
-| `disabled`             | `boolean`               | `false`    | Prevents showing the popup. Adds `.dito-trigger--disabled`.                                                                                                                                                                                               |
-| `keepInView`           | `boolean`               | `true`     | Flips the popup to the other side or edge if it doesn't fit in the window and there's more room there, and shifts centered popups back into the window.                                                                                                   |
-| `matchTargetWidth`     | `boolean`               | `true`     | Gives the popup's first child the width of the target.                                                                                                                                                                                                    |
-| `cover`                | `boolean`               | `false`    | Places the popup over the trigger instead of next to it.                                                                                                                                                                                                  |
-| `hideWhenClickOutside` | `boolean`               | `true`     | Hides the popup on clicks outside trigger, target and popup, and when the window loses focus.                                                                                                                                                             |
-| `alwaysShow`           | `boolean`               | `false`    | Shows the popup permanently.                                                                                                                                                                                                                              |
-| `hideDelay`            | `number`                | `0`        | With `trigger: 'hover'`, the milliseconds to wait before hiding.                                                                                                                                                                                          |
-| `customClass`          | `string`                | `null`     | An additional class of the popup.                                                                                                                                                                                                                         |
-| `zIndex`               | `number`                | `0`        | A `z-index` for the popup, instead of the default one.                                                                                                                                                                                                    |
+| Prop               | Type                    | Default    | Description                                                                                                                                                                     |
+| ------------------ | ----------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show`             | `boolean`               | `false`    | Whether the popup is shown (`v-model:show`).                                                                                                                                    |
+| `placement`        | `string`                | `'bottom'` | The side of the trigger the popup appears on, `'top'`, `'bottom'`, `'left'` or `'right'`, optionally followed by the edge it aligns with, e.g. `'bottom-left'`, or by `center`. |
+| `transition`       | `string`                | `'slide'`  | The popup's transition: `'slide'`, `'fade'` or `'zoom'`, or `null` to show it at once.                                                                                          |
+| `target`           | `string \| HTMLElement` | `null`     | The element the popup is positioned at, instead of the trigger.                                                                                                                 |
+| `disabled`         | `boolean`               | `false`    | Prevents showing the popup. Adds `.dito-trigger--disabled`.                                                                                                                     |
+| `keepInView`       | `boolean`               | `true`     | Flips and shifts the popup to keep it in the window.                                                                                                                            |
+| `matchTargetWidth` | `boolean`               | `true`     | Gives the popup's first child the width of the target.                                                                                                                          |
 
 | Event         | Payload | Description                    |
 | ------------- | ------- | ------------------------------ |
@@ -307,7 +303,7 @@ window if possible. The base of `DitoMenuButton` and the pickers.
 
 | Slot      | Description                                          |
 | --------- | ---------------------------------------------------- |
-| `trigger` | The trigger.                                         |
+| `trigger` | The trigger, with the input that opens the popup.    |
 | `popup`   | The popup's content, only rendered while it's shown. |
 
 | Method                          | Description               |
@@ -318,12 +314,12 @@ Escape hides the popup, and doesn't reach elements around the trigger, e.g.
 dialogs.
 
 ```vue
-<DitoTrigger trigger="hover" placement="right-top">
+<DitoTrigger placement="bottom-left">
   <template #trigger>
-    <DitoIcon name="info" />
+    <input v-model="query" />
   </template>
   <template #popup>
-    <p class="bookshop-hint">Shipped within 2 days.</p>
+    <p class="bookshop-hint">Search by title or author.</p>
   </template>
 </DitoTrigger>
 ```

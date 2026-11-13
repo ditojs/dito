@@ -1,189 +1,119 @@
-<!-- Derived from ATUI, and further extended: https://aliqin.github.io/atui/ -->
 <template lang="pug">
-.dito-trigger-container(
-  @keydown="onKeyDown"
-)
-  .dito-trigger(
-    v-if="alwaysShow"
-    ref="trigger"
-    :class="triggerClass"
+.dito-trigger-container
+  PopoverRoot(
+    :open="showPopup"
+    @update:open="setShow"
   )
-    slot(name="trigger")
-  .dito-trigger(
-    v-else-if="trigger === 'click'"
-    ref="trigger"
-    :class="triggerClass"
-    @click="onClick"
-  )
-    slot(name="trigger")
-  .dito-trigger(
-    v-else-if="trigger === 'hover'"
-    ref="trigger"
-    :class="triggerClass"
-    @mouseenter="onHover(true)"
-    @mouseleave="onHover(false)"
-  )
-    slot(name="trigger")
-  .dito-trigger(
-    v-else-if="trigger === 'focus' || trigger === 'always'"
-    ref="trigger"
-    :class="triggerClass"
-  )
-    slot(name="trigger")
-  Transition(
-    :name="transition ? `dito-${transition}` : undefined"
-    :css="!!transition"
-  )
-    .dito-popup(
-      v-if="trigger === 'hover'"
-      v-show="showPopup"
+    PopoverAnchor(
+      asChild
+      :reference="reference"
+    )
+      .dito-trigger(
+        ref="trigger"
+        :class="{ 'dito-trigger--disabled': disabled }"
+        @focusin="onFocusIn"
+        @focusout="onFocusOut"
+        @mousedown="onTriggerMouseDown"
+        @keydown="onKeyDown"
+      )
+        slot(name="trigger")
+    //- No portal, so that the styles apply. The popup is fixed, so that
+    //- scrolling panels don't clip it:
+    PopoverContent.dito-popup(
       ref="popup"
       :class="popupClass"
-      :style="popupStyle"
-      @mouseenter="onHover(true)"
-      @mouseleave="onHover(false)"
+      :side="side"
+      :align="align"
+      :sideOffset="0"
+      :avoidCollisions="keepInView"
+      positionStrategy="fixed"
+      @open-auto-focus.prevent
+      @close-auto-focus.prevent
+      @interact-outside="onInteractOutside"
+      @focusout="onFocusOut"
+      @mousedown="onPopupMouseDown"
+      @keydown="onKeyDown"
     )
-      slot(
-        v-if="showPopup"
-        name="popup"
-      )
-    .dito-popup(
-      v-else
-      v-show="showPopup"
-      ref="popup"
-      :class="popupClass"
-      :style="popupStyle"
-    )
-      slot(
-        v-if="showPopup"
-        name="popup"
-      )
+      slot(name="popup")
 </template>
 
 <script>
-import { hyphenate } from '@ditojs/utils'
-import { addEvents, combineEvents } from '../utils/event.js'
+import { PopoverAnchor, PopoverContent, PopoverRoot } from 'reka-ui'
 import { getTarget } from '../utils/trigger'
 
-function isFocusableControl(element) {
-  return !!element.matches?.('input, textarea, select, button')
-}
-
-function isEditableControl(element) {
-  return !!element.matches?.('input, textarea, select')
-}
-
+// A popup at the input in the `trigger` slot, built on reka-ui's `Popover`. It
+// opens when the input gets the focus, and closes when the focus leaves both
+// the trigger and the popup. Clicks in the popup keep the focus in the input,
+// except on its fields. `placement` is a side and an alignment, e.g.
+// `bottom-left`, and `target` an element to place the popup at instead.
 export default {
+  components: { PopoverAnchor, PopoverContent, PopoverRoot },
   emits: ['update:show'],
 
   props: {
-    trigger: { type: String, default: 'click' },
     // The name of the transition of the popup, or `null` to show it at once.
     transition: { type: String, default: 'slide' },
     placement: { type: String, default: 'bottom' },
     show: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     target: { type: [String, HTMLElement], default: null },
-    customClass: { type: String, default: null },
-    zIndex: { type: Number, default: 0 },
     keepInView: { type: Boolean, default: true },
-    hideWhenClickOutside: { type: Boolean, default: true },
     // Whether the popup's first child takes on the width of the target.
-    matchTargetWidth: { type: Boolean, default: true },
-    alwaysShow: { type: Boolean, default: false },
-    cover: { type: Boolean, default: false },
-    hideDelay: { type: Number, default: 0 }
+    matchTargetWidth: { type: Boolean, default: true }
   },
 
   data() {
     return {
       showPopup: this.show,
-      focusEvents: null,
-      closeEvents: null,
-      popupEvents: null,
-      mouseLeaveTimer: null,
-      targetResizeObserver: null,
-      targetScrollEvents: null
+      reference: null
     }
   },
 
   computed: {
-    triggerClass() {
-      return {
-        'dito-trigger--disabled': this.disabled
-      }
+    side() {
+      return this.placement.split('-')[0]
+    },
+
+    align() {
+      // `bottom-right` lines up the right edges, `bottom` the left ones:
+      const alignment = this.placement.split('-')[1]
+      return (
+        { right: 'end', bottom: 'end', center: 'center' }[alignment] ??
+        'start'
+      )
     },
 
     popupClass() {
-      const classes = {
-        [`dito-popup--${hyphenate(this.placement)}`]: true
+      return {
+        [`dito-popup--${this.transition}`]: !!this.transition,
+        'dito-popup--match-width': this.matchTargetWidth
       }
-      if (this.customClass) {
-        classes[this.customClass] = true
-      }
-      return classes
-    },
-
-    popupStyle() {
-      return this.zIndex ? `z-index: ${this.zIndex}` : ''
     }
   },
 
   watch: {
     show(show) {
-      this.showPopup = show || this.alwaysShow
+      this.showPopup = show
     },
 
-    showPopup(to, from) {
-      if (to ^ from) {
-        if (!to && this.trigger === 'focus' && this.isPopupFocused()) {
-          // Don't lose the focus with the popup, e.g. after selecting a date in
-          // a calendar with the keyboard.
+    showPopup: {
+      // Before the popup is removed, so that it still holds the focus:
+      flush: 'pre',
+      handler(show) {
+        if (!show && this.isPopupFocused()) {
+          // Don't lose the focus with the popup, e.g. after selecting a date
+          // in a calendar with the keyboard.
           this.focusTriggerInput()
         }
-        this.$emit('update:show', to)
-        this.$nextTick(() => this.onShowPopup(to))
+        this.$emit('update:show', show)
       }
     },
 
-    target() {
-      if (this.$refs.trigger) {
-        this.addTargetEvents()
-        if (this.targetResizeObserver) {
-          this.unobserveTarget()
-          this.observeTarget()
-        }
-      }
-    },
-
-    placement() {
-      this.$nextTick(() => this.updatePosition())
-    }
+    target: 'updateReference'
   },
 
   mounted() {
-    this.addTargetEvents()
-
-    if (this.showPopup) {
-      // The `showPopup` watcher doesn't see popups that are shown initially.
-      this.onShowPopup(true)
-    } else if (this.alwaysShow) {
-      this.showPopup = true
-    }
-  },
-
-  created() {
-    this.showPopup = this.show
-    // Whether `focusTriggerInput()` is moving the focus, see there.
-    this.isFocusingTriggerInput = false
-  },
-
-  unmounted() {
-    this.focusEvents?.remove()
-    this.removeCloseEvents()
-    this.popupEvents?.remove()
-    this.unobserveTarget()
-    clearTimeout(this.mouseLeaveTimer)
+    this.updateReference()
   },
 
   methods: {
@@ -194,48 +124,43 @@ export default {
     },
 
     close() {
-      if (!this.alwaysShow) {
-        this.showPopup = false
-      }
+      this.showPopup = false
     },
 
     toggle() {
-      if (this.showPopup) {
-        this.close()
-      } else {
+      this.setShow(!this.showPopup)
+    },
+
+    setShow(show) {
+      if (show) {
         this.open()
+      } else {
+        this.close()
       }
     },
 
-    // Returns the element that the popup is positioned at, resolving a `target`
-    // given by ref name, which is only possible once mounted. This is why it
-    // can't be a computed property: `$refs` aren't reactive.
-    getTargetElement() {
-      return getTarget(this) ?? this.$refs.trigger
+    // A `target` other than the trigger, resolved once mounted, as `$refs`
+    // aren't reactive:
+    updateReference() {
+      const target = getTarget(this)
+      this.reference = target && target !== this.$refs.trigger ? target : null
+    },
+
+    getPopupElement() {
+      return this.$refs.popup?.$el ?? null
     },
 
     isPopupFocused() {
-      return !!this.$refs.popup?.matches(':focus-within')
-    },
-
-    // Returns whether `element` is part of the trigger, its target or the
-    // popup.
-    containsElement(element) {
-      return (
-        !!element && (
-          this.$el.contains(element) ||
-          this.getTargetElement().contains(element)
-        )
-      )
+      return !!this.getPopupElement()?.matches(':focus-within')
     },
 
     getTriggerInput() {
-      return this.getTargetElement()?.querySelector('input, textarea') ?? null
+      return this.$refs.trigger?.querySelector('input, textarea') ?? null
     },
 
     focusTriggerInput() {
       // The input's focus event would open the popup again, see
-      // `addFocusEvents()`. Focus events are dispatched synchronously.
+      // `onFocusIn()`. Focus events are dispatched synchronously.
       this.isFocusingTriggerInput = true
       try {
         this.getTriggerInput()?.focus()
@@ -244,367 +169,68 @@ export default {
       }
     },
 
-    addTargetEvents() {
-      this.focusEvents?.remove()
-      this.focusEvents =
-        this.trigger === 'focus'
-          ? this.addFocusEvents(this.getTargetElement())
-          : null
-    },
-
-    // Adds the events that close the popup while it is shown, see
-    // `onShowPopup()`.
-    addCloseEvents() {
-      if (this.hideWhenClickOutside && !this.alwaysShow && !this.closeEvents) {
-        const { trigger, popup } = this.$refs
-        // Use 'mouseup' instead of 'click', since click appears to happen after
-        // the DOM inside of popups could change in a way so that the check
-        // `popup.contains(event.target)` would fail:
-        this.closeEvents = addEvents(window, {
-          mouseup: event => {
-            if (
-              this.showPopup &&
-              !popup.contains(event.target) &&
-              !trigger.contains(event.target) &&
-              !this.getTargetElement().contains(event.target)
-            ) {
-              this.showPopup = false
-            }
-          },
-
-          blur: () => {
-            this.showPopup = false
-          }
-        })
+    onFocusIn(event) {
+      if (
+        !this.isFocusingTriggerInput &&
+        isEditableControl(event.target)
+      ) {
+        this.open()
       }
     },
 
-    removeCloseEvents() {
-      this.closeEvents?.remove()
-      this.closeEvents = null
-    },
-
-    onKeyDown(event) {
-      if (event.key === 'Escape' && this.showPopup && !this.alwaysShow) {
-        // Don't let Escape also close what contains the trigger, e.g. dialogs.
-        event.stopPropagation()
+    // Only close once the focus leaves the trigger and the popup, e.g. when
+    // tabbing out, but not when it moves between them:
+    onFocusOut(event) {
+      const element = event.relatedTarget
+      if (
+        !this.$refs.trigger?.contains(element) &&
+        !this.getPopupElement()?.contains(element)
+      ) {
         this.close()
       }
     },
 
-    // Positions the popup whenever the size of the target changes, which
-    // includes the moment it is laid out, also if the popup is shown inside a
-    // hidden part of the page that only becomes visible later. The target is
-    // observed rather than the popup, since `updatePosition()` resizes the
-    // popup, which would trigger the observer again. The fixed popup also
-    // follows the target when anything scrolls, and scroll events don't
-    // bubble, so capture them:
-    observeTarget() {
-      if (!this.targetResizeObserver) {
-        const updatePosition = () => this.updatePosition()
-        this.targetResizeObserver = new ResizeObserver(updatePosition)
-        this.targetResizeObserver.observe(this.getTargetElement())
-        this.targetScrollEvents = addEvents(
-          window,
-          { scroll: updatePosition, resize: updatePosition },
-          { capture: true, passive: true }
-        )
+    onInteractOutside(event) {
+      // Clicks and focus in the trigger aren't outside of the popup:
+      if (this.$refs.trigger?.contains(event.target)) {
+        event.preventDefault()
       }
     },
 
-    unobserveTarget() {
-      this.targetResizeObserver?.disconnect()
-      this.targetResizeObserver = null
-      this.targetScrollEvents?.remove()
-      this.targetScrollEvents = null
-    },
-
-    updatePosition() {
-      const { trigger, popup } = this.$refs
-      if (!popup || !this.showPopup || popup.offsetWidth === 0) {
-        // Unmounted, hidden, or not laid out yet, see `observeTarget()`.
-        return
-      }
-
-      const target = this.getTargetElement()
-      if (this.matchTargetWidth) {
-        // Actually resize the popup's first child, so it can set size limits.
-        const el = this.target === 'popup' ? trigger : popup.firstElementChild
-        if (el) {
-          el.style.width = getComputedStyle(target).width
-        }
-      }
-
-      // The popup is fixed so that scrolling panels don't clip it, and is
-      // positioned in window coordinates:
-      const {
-        left: triggerLeft,
-        top: triggerTop,
-        width: triggerWidth,
-        height: triggerHeight
-      } = target.getBoundingClientRect()
-      const popupWidth = popup.offsetWidth
-      const popupHeight = popup.offsetHeight
-
-      let [part1, part2] = this.placement.split('-')
-      if (this.keepInView) {
-        const winWidth = window.innerWidth
-        const winHeight = window.innerHeight
-        const roomAbove = triggerTop
-        const roomBelow = winHeight - triggerTop - triggerHeight
-        const roomLeft = triggerLeft
-        const roomRight = winWidth - triggerLeft - triggerWidth
-        // Flips the popup to the other side if it doesn't fit, but only if
-        // there's more room there, so it doesn't move further out of view.
-        const shouldFlip = (room, otherRoom, size) => (
-          room < size && otherRoom > room
-        )
-
-        if (part1 === 'top') {
-          if (shouldFlip(roomAbove, roomBelow, popupHeight)) {
-            part1 = 'bottom'
-          }
-        } else if (part1 === 'bottom') {
-          if (shouldFlip(roomBelow, roomAbove, popupHeight)) {
-            part1 = 'top'
-          }
-        } else if (part1 === 'left') {
-          if (shouldFlip(roomLeft, roomRight, popupWidth)) {
-            part1 = 'right'
-          }
-        } else if (part1 === 'right') {
-          if (shouldFlip(roomRight, roomLeft, popupWidth)) {
-            part1 = 'left'
-          }
-        }
-
-        // The alignments of the popup's edges with the trigger's edges.
-        if (part2 === 'top') {
-          if (
-            shouldFlip(
-              winHeight - triggerTop,
-              triggerTop + triggerHeight,
-              popupHeight
-            )
-          ) {
-            part2 = 'bottom'
-          }
-        } else if (part2 === 'bottom') {
-          if (
-            shouldFlip(
-              triggerTop + triggerHeight,
-              winHeight - triggerTop,
-              popupHeight
-            )
-          ) {
-            part2 = 'top'
-          }
-        } else if (part2 === 'left') {
-          if (
-            shouldFlip(
-              winWidth - triggerLeft,
-              triggerLeft + triggerWidth,
-              popupWidth
-            )
-          ) {
-            part2 = 'right'
-          }
-        } else if (part2 === 'right') {
-          if (
-            shouldFlip(
-              triggerLeft + triggerWidth,
-              winWidth - triggerLeft,
-              popupWidth
-            )
-          ) {
-            part2 = 'left'
-          }
-        }
-      }
-
-      const isAboveOrBelow = part1 === 'top' || part1 === 'bottom'
-      let left = 0
-      let top = 0
-      switch (part1) {
-        case 'top':
-          top -= popupHeight
-          break
-        case 'left':
-          left -= popupWidth
-          break
-        case 'right':
-          left += triggerWidth
-          break
-        case 'bottom':
-          top += triggerHeight
-          break
-      }
-      switch (part2) {
-        case 'right':
-          left -= popupWidth - triggerWidth
-          break
-        case 'bottom':
-          top -= popupHeight - triggerHeight
-          break
-        case 'center':
-          if (isAboveOrBelow) {
-            left += (triggerWidth - popupWidth) / 2
-          } else {
-            top += (triggerHeight - popupHeight) / 2
-          }
-          break
-      }
-      // Centered popups can't flip their alignment, so shift them back into
-      // the window instead, and expose the shift, e.g. for tips that keep
-      // pointing at the middle of the trigger:
-      let shift = 0
-      if (part2 === 'center' && this.keepInView) {
-        const start = isAboveOrBelow ? triggerLeft + left : triggerTop + top
-        const size = isAboveOrBelow ? popupWidth : popupHeight
-        const room = isAboveOrBelow ? window.innerWidth : window.innerHeight
-        shift = Math.max(Math.min(room - start - size, 0), -start)
-        if (isAboveOrBelow) {
-          left += shift
-        } else {
-          top += shift
-        }
-      }
-      popup.style.setProperty('--dito-popup-shift', `${shift}px`)
-      if (this.cover) {
-        if (part1 === 'top') {
-          top += triggerHeight
-        } else if (part1 === 'bottom') {
-          top -= triggerHeight
-        }
-      }
-      popup.style.left = `${triggerLeft + left}px`
-      popup.style.top = `${triggerTop + top}px`
-    },
-
-    addFocusEvents(parent) {
-      const targets = parent.querySelectorAll('input, textarea')
-      // The trigger's input while it is marked readonly, see `mousedown`, and
-      // the events that release it again.
-      let lockedInput = null
-      let releaseEvents = null
-
-      const releaseInput = event => {
-        const input = lockedInput
-        lockedInput = null
-        releaseEvents.remove()
-        releaseEvents = null
-        // Give some time for other events to update input before it becomes
-        // editable and still focused again.
-        setTimeout(() => {
-          input.removeAttribute('readonly')
-          // Only bring the focus back from the popup, not if the focus moved
-          // elsewhere in the meantime, e.g. by clicking outside.
-          if (!isFocusableControl(event.target) && this.isPopupFocused()) {
-            input.focus()
-          }
-        }, 0)
-      }
-
-      // Only close once the focus leaves the trigger, its target and the
-      // popup, e.g. when tabbing out, but not when it moves between them, e.g.
-      // when tabbing into the popup. Blur events don't bubble, so capture them.
-      const onBlur = event => {
-        if (!this.containsElement(event.relatedTarget)) {
-          this.close()
-        }
-      }
-      parent.addEventListener('blur', onBlur, true)
-
-      return combineEvents(
-        addEvents(targets, {
-          focus: () => {
-            if (!this.isFocusingTriggerInput) {
-              this.open()
-            }
-          }
-        }),
-
-        addEvents(parent, {
-          mousedown: event => {
-            const { target } = event
-            const isInPopup = !!this.$refs.popup?.contains(target)
-            // Controls take the focus, except for the buttons in the popup, so
-            // that the focus stays in the trigger's input when using the mouse.
-            const takesFocus = isInPopup
-              ? isEditableControl(target)
-              : isFocusableControl(target)
-            if (!takesFocus) {
-              event.preventDefault()
-              event.stopPropagation()
-            }
-            // Mark the trigger's input as readonly so it can't lose focus
-            // while the user does other mouse-activities in the popup, except
-            // for the controls in the popup that take the focus themselves,
-            // e.g. the fields of a color picker.
-            if (!lockedInput && !(isInPopup && takesFocus)) {
-              const input = this.getTriggerInput()
-              if (input && !input.hasAttribute('readonly')) {
-                input.setAttribute('readonly', 'true')
-                lockedInput = input
-                // Release the input wherever the mouse is released, also
-                // outside of `parent`, e.g. after dragging in a color picker.
-                releaseEvents = addEvents(window, { mouseup: releaseInput })
-              }
-            }
-          }
-        }),
-
-        {
-          remove() {
-            parent.removeEventListener('blur', onBlur, true)
-            releaseEvents?.remove()
-            releaseEvents = null
-            lockedInput?.removeAttribute('readonly')
-            lockedInput = null
-          }
-        }
-      )
-    },
-
-    onShowPopup(show) {
-      // The popup may have been toggled again or unmounted in the meantime:
-      if (show !== this.showPopup || !this.$refs.popup) return
-      if (show) {
-        if (this.trigger === 'focus') {
-          this.popupEvents?.remove()
-          this.popupEvents = this.addFocusEvents(this.$refs.popup)
-        }
-        this.addCloseEvents()
-        this.observeTarget()
-      } else {
-        this.popupEvents?.remove()
-        this.popupEvents = null
-        this.removeCloseEvents()
-        this.unobserveTarget()
+    onTriggerMouseDown(event) {
+      // Only controls take the focus, so that clicks elsewhere in the trigger,
+      // e.g. on a preview, keep it in the input:
+      if (!isFocusableControl(event.target)) {
+        event.preventDefault()
       }
     },
 
-    onClick() {
-      this.toggle()
+    onPopupMouseDown(event) {
+      // The fields of the popup take the focus, e.g. those of a color picker.
+      // Everything else leaves it in the input:
+      if (!isEditableControl(event.target)) {
+        event.preventDefault()
+      }
     },
 
-    onHover(enter) {
-      if (!this.disabled) {
-        clearTimeout(this.mouseLeaveTimer)
-        if (enter) {
-          this.showPopup = true
-        } else {
-          if (this.hideDelay) {
-            this.mouseLeaveTimer = setTimeout(() => {
-              this.showPopup = false
-            }, this.hideDelay)
-          } else {
-            this.showPopup = false
-          }
-        }
+    onKeyDown(event) {
+      // Close the popup here, before `document` receives the event, and mark
+      // Escape as handled, so it doesn't also close what contains the trigger,
+      // e.g. dialogs. reka-ui then ignores the event:
+      if (event.key === 'Escape' && this.showPopup) {
+        event.preventDefault()
+        this.close()
       }
     }
   }
+}
+
+function isFocusableControl(element) {
+  return !!element.matches?.('input, textarea, select, button')
+}
+
+function isEditableControl(element) {
+  return !!element.matches?.('input, textarea, select')
 }
 </script>
 
@@ -631,10 +257,27 @@ export default {
   }
 }
 
+// reka-ui gives the popup's z-index to the element that positions it, and
+// waits for the animations of closing popups before it removes them:
 .dito-popup {
-  position: fixed;
-  top: 0;
-  left: 0;
   z-index: $z-index-popup;
+
+  @each $transition in fade, slide, zoom {
+    &--#{$transition} {
+      &[data-state='open'] {
+        animation: dito-#{$transition}-enter 0.15s $ease-out-quart;
+      }
+
+      &[data-state='closed'] {
+        animation: dito-#{$transition}-leave 0.15s $ease-out-quart;
+      }
+    }
+  }
+
+  // Doubled, to override the widths of the children's own styles, e.g. of
+  // vue-color's pickers:
+  &#{&}--match-width > :first-child {
+    width: var(--reka-popover-trigger-width);
+  }
 }
 </style>

@@ -60,10 +60,16 @@ describe('DitoDateTimePicker', () => {
     await clickAt(wrapper, 1)
     expect(getShownPanel(wrapper)).toBe('date')
     const popup = wrapper.find('.dito-popup')
-    expect(popup.classes()).toContain('dito-popup--bottom-left')
+    expect(popup.attributes()).toMatchObject({
+      'data-side': 'bottom',
+      'data-align': 'start'
+    })
     await clickAt(wrapper, text.indexOf('30'))
     expect(getShownPanel(wrapper)).toBe('time')
-    expect(popup.classes()).toContain('dito-popup--bottom-right')
+    expect(popup.attributes()).toMatchObject({
+      'data-side': 'bottom',
+      'data-align': 'end'
+    })
   })
 
   it('keeps a given placement for both panels', async () => {
@@ -71,10 +77,16 @@ describe('DitoDateTimePicker', () => {
     const text = findInput(wrapper).element.value
     await clickAt(wrapper, 1)
     const popup = wrapper.find('.dito-popup')
-    expect(popup.classes()).toContain('dito-popup--top-left')
+    expect(popup.attributes()).toMatchObject({
+      'data-side': 'top',
+      'data-align': 'start'
+    })
     await clickAt(wrapper, text.indexOf('30'))
     expect(getShownPanel(wrapper)).toBe('time')
-    expect(popup.classes()).toContain('dito-popup--top-left')
+    expect(popup.attributes()).toMatchObject({
+      'data-side': 'top',
+      'data-align': 'start'
+    })
   })
 
   it('shows the popup with `show` and emits `update:show`', async () => {
