@@ -22,8 +22,6 @@
       :ignoreFilter="!!searchFilter"
       openOnClick
       openOnFocus
-      :resetSearchTermOnBlur="shouldResetSearchTerm"
-      :resetSearchTermOnSelect="shouldResetSearchTerm"
     )
       ComboboxAnchor.dito-multiselect__control
         //- The tag option adds typed values, never `TagsInput` itself:
@@ -45,11 +43,7 @@
             `
           )
             TagsInputItemText {{ getLabelForOption(option) }}
-            //- Named for what it does, not after the text of its tag:
-            TagsInputItemDelete.dito-multiselect__tag-remove(
-              :aria-label="`Remove ${getLabelForOption(option)}`"
-              :aria-labelledby="null"
-            )
+            TagsInputItemDelete.dito-multiselect__tag-remove
           ComboboxInput(
             ref="element"
             v-model="searchTerm"
@@ -365,18 +359,10 @@ const DitoMultiselectType = {
       }
     })
 
-    // Single values show the label of their option again. Multiple values
-    // keep the term of their `search` for more picks:
-    const shouldResetSearchTerm = computed(
-      () => !multiple.value || !searchFilter.value
-    )
-
     watch(isOpen, isOpen => {
       if (!isOpen) {
         // reka-ui only resets the term when it closes the list itself:
-        if (shouldResetSearchTerm.value) {
-          searchTerm.value = getDisplayValue()
-        }
+        searchTerm.value = getDisplayValue()
         // Emit the blur event held back while the list was open, unless the
         // input keeps the focus:
         if (focused.value && !getInput()?.matches(':focus')) {
@@ -422,7 +408,6 @@ const DitoMultiselectType = {
       searchTerm,
       multiple,
       isLoading,
-      shouldResetSearchTerm,
 
       placeholder: computed(() => {
         let placeholder = getSchemaValue('placeholder', {
@@ -516,9 +501,7 @@ export default DitoMultiselectType
 @use 'sass:color';
 @import '../styles/_imports';
 
-$tag-remove-width: 1.8em;
 $tag-margin: 2px;
-$tag-padding: 3px;
 
 .dito-multiselect {
   $self: &;
@@ -562,7 +545,7 @@ $tag-padding: 3px;
     align-self: stretch;
     margin: $tag-margin 0 $tag-margin $tag-margin;
     border-radius: 1em;
-    padding: $tag-padding 0 $tag-padding 0.8em;
+    padding: 3px 0 3px 0.8em;
     line-height: 1em;
     color: $color-text-inverted;
     background: $color-active;
@@ -579,23 +562,20 @@ $tag-padding: 3px;
   }
 
   &__tag-remove {
+    @extend %button--plain;
+
     position: relative;
     align-self: stretch;
-    width: $tag-remove-width;
-    padding: 0;
-    border: 0;
+    width: 1.8em;
     border-radius: 1em;
-    background: none;
-    cursor: pointer;
 
     &::after {
       @extend %icon--clear;
 
       font-size: 0.9em;
-      color: $color-text-inverted;
     }
 
-    &:hover::after {
+    &:hover {
       color: $color-text;
     }
   }
@@ -607,10 +587,8 @@ $tag-padding: 3px;
     min-width: 0;
     padding: $input-padding;
     border: 0;
-    font: inherit;
     color: inherit;
     background: none;
-    outline: none;
 
     &::placeholder {
       color: $color-placeholder;
@@ -636,9 +614,7 @@ $tag-padding: 3px;
   }
 
   &__trigger {
-    padding: 0;
-    border: 0;
-    background: none;
+    @extend %button--plain;
 
     &[data-state='open'] {
       transform: rotate(180deg);
@@ -647,7 +623,6 @@ $tag-padding: 3px;
     &::before {
       @include arrow($select-arrow-size);
 
-      position: absolute;
       bottom: $select-arrow-bottom;
       right: $select-arrow-right;
     }
@@ -655,7 +630,6 @@ $tag-padding: 3px;
 
   &__spinner {
     justify-content: center;
-    align-items: center;
   }
 
   // reka-ui gives its z-index to the element that positions the list:
@@ -674,14 +648,12 @@ $tag-padding: 3px;
 
     &[data-side='bottom'] {
       border-top-color: $border-color;
-      border-top-left-radius: 0;
-      border-top-right-radius: 0;
+      border-radius: 0 0 $border-radius $border-radius;
     }
 
     &[data-side='top'] {
       border-bottom-color: $border-color;
-      border-bottom-left-radius: 0;
-      border-bottom-right-radius: 0;
+      border-radius: $border-radius $border-radius 0 0;
     }
   }
 
@@ -693,7 +665,6 @@ $tag-padding: 3px;
   &__group,
   &__empty {
     padding: $input-padding;
-    line-height: $line-height;
   }
 
   &__option {
@@ -735,14 +706,12 @@ $tag-padding: 3px;
     border-color: $color-active;
   }
 
-  &--open:has(#{$self}__content[data-side='bottom']) &__control {
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+  &:has(#{$self}__content[data-side='bottom']) &__control {
+    border-radius: $border-radius $border-radius 0 0;
   }
 
-  &--open:has(#{$self}__content[data-side='top']) &__control {
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
+  &:has(#{$self}__content[data-side='top']) &__control {
+    border-radius: 0 0 $border-radius $border-radius;
   }
 
   &--disabled {

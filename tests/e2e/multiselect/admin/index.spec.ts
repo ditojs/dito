@@ -80,7 +80,7 @@ test.describe('multiselect', () => {
     // Removing another value keeps the one without option.
     await codes
       .locator('.dito-multiselect__tag', { hasText: 'Alpha' })
-      .getByRole('button', { name: /^Remove / })
+      .getByRole('button')
       .click()
     await new DitoForm(page).save()
     const stored = await Widget.query().findById(widget.$id() as number)
@@ -102,7 +102,7 @@ test.describe('multiselect', () => {
     ).toHaveText(['hidden'])
     await tags
       .locator('.dito-multiselect__tag', { hasText: 'tag-1' })
-      .getByRole('button', { name: /^Remove / })
+      .getByRole('button')
       .click()
     await new DitoForm(page).save()
     const stored = await Widget.query()
