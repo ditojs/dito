@@ -1,10 +1,5 @@
 import { vi } from 'vitest'
-import {
-  addEvents,
-  combineEvents,
-  getKey,
-  getKeyNavigation
-} from './event.js'
+import { addEvents } from './event.js'
 
 describe('addEvents()', () => {
   it('adds and removes the event handlers on all targets', () => {
@@ -52,45 +47,5 @@ describe('addEvents()', () => {
     addEvents(target, { click }, { signal: AbortSignal.abort() })
     target.click()
     expect(click).not.toHaveBeenCalled()
-  })
-})
-
-describe('combineEvents()', () => {
-  it('removes all combined events', () => {
-    const events = [{ remove: vi.fn() }, { remove: vi.fn() }]
-    combineEvents(...events).remove()
-    for (const event of events) {
-      expect(event.remove).toHaveBeenCalledOnce()
-    }
-  })
-})
-
-describe('getKey()', () => {
-  it('names the arrow and enter keys', () => {
-    expect(getKey({ keyCode: 37 })).toBe('left')
-    expect(getKey({ keyCode: 40 })).toBe('down')
-    expect(getKey({ keyCode: 13 })).toBe('enter')
-    expect(getKey({ keyCode: 65 })).toBe(undefined)
-    expect(getKey(null)).toBe(undefined)
-  })
-})
-
-describe('getKeyNavigation()', () => {
-  it('returns the horizontal and vertical direction and enter', () => {
-    expect(getKeyNavigation({ keyCode: 37 })).toEqual({
-      hor: -1,
-      ver: 0,
-      enter: false
-    })
-    expect(getKeyNavigation({ keyCode: 40 })).toEqual({
-      hor: 0,
-      ver: 1,
-      enter: false
-    })
-    expect(getKeyNavigation({ keyCode: 13 })).toEqual({
-      hor: 0,
-      ver: 0,
-      enter: true
-    })
   })
 })

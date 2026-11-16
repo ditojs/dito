@@ -2,8 +2,7 @@
 .dito-account
   DitoMenuButton.dito-account__button(
     :items="items"
-    placement="bottom-center"
-    floating
+    align="center"
     @select="onSelectMenuItem"
   )
     span {{ adminContext.user.username }}
