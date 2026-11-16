@@ -13,7 +13,7 @@ async function login(page: Page, url: string) {
   await page.goto(`${url}/admin/`)
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Username').fill('ada')
-  await dialog.getByLabel('Password').fill('secret')
+  await dialog.getByLabel('Password', { exact: true }).fill('secret')
   await dialog.getByRole('button', { name: 'Sign In', exact: true }).click()
   await expect(page.locator('.dito-account')).toHaveText('ada')
 }
@@ -176,9 +176,11 @@ test.describe('screenshots', () => {
     await page.goto(`${url}/admin/`)
     const dialog = page.getByRole('dialog')
     await dialog.getByLabel('Username').fill('ada')
-    await dialog.getByLabel('Password').fill('secret')
+    await dialog.getByLabel('Password', { exact: true }).fill('secret')
     await dialog.getByRole('button', { name: 'Sign In', exact: true }).click()
-    await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
+    await expect(
+      dialog.getByLabel('Authentication Code', { exact: true })
+    ).toBeFocused()
     await expectScreenshot(page, 'login-code.png')
   })
 
@@ -192,7 +194,9 @@ test.describe('screenshots', () => {
 
   test('TOTP setup dialog', async ({ page, url }) => {
     const { dialog } = await openTotpSetup(page, url)
-    await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
+    await expect(
+      dialog.getByLabel('Authentication Code', { exact: true })
+    ).toBeFocused()
     await expectScreenshot(page, 'totp-setup.png', {
       mask: getTotpMask(dialog)
     })
@@ -200,7 +204,9 @@ test.describe('screenshots', () => {
 
   test('backup codes dialog', async ({ page, url }) => {
     const { dialog: setup, totp } = await openTotpSetup(page, url)
-    await setup.getByLabel('Authentication Code').fill(totp.generate())
+    await setup
+      .getByLabel('Authentication Code', { exact: true })
+      .fill(totp.generate())
     await setup.getByRole('button', { name: 'Turn On' }).click()
     const dialog = page.getByRole('dialog', { name: 'Backup Codes' })
     await expect(dialog.getByRole('textbox')).toHaveValue(/^\w{5}-\w{5}/)
@@ -238,9 +244,11 @@ test.describe('phone screenshots', () => {
     await page.goto(`${url}/admin/`)
     const dialog = page.getByRole('dialog')
     await dialog.getByLabel('Username').fill('ada')
-    await dialog.getByLabel('Password').fill('secret')
+    await dialog.getByLabel('Password', { exact: true }).fill('secret')
     await dialog.getByRole('button', { name: 'Sign In', exact: true }).click()
-    await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
+    await expect(
+      dialog.getByLabel('Authentication Code', { exact: true })
+    ).toBeFocused()
     await expectScreenshot(page, 'phone-login-code.png')
   })
 
@@ -284,7 +292,7 @@ test.describe('phone screenshots', () => {
     } as any)
     await security.getByRole('button', { name: 'Set Up' }).click()
     const dialog = page.getByRole('dialog', { name: 'Confirm Access' })
-    await expect(dialog.getByLabel('Password')).toBeFocused()
+    await expect(dialog.getByLabel('Password', { exact: true })).toBeFocused()
     await expectScreenshot(page, 'phone-confirm-access.png')
   })
 
@@ -314,7 +322,9 @@ test.describe('phone screenshots', () => {
 
   test('TOTP setup dialog', async ({ page, url }) => {
     const { dialog } = await openTotpSetup(page, url)
-    await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
+    await expect(
+      dialog.getByLabel('Authentication Code', { exact: true })
+    ).toBeFocused()
     await expectScreenshot(page, 'phone-totp-setup.png', {
       mask: getTotpMask(dialog)
     })
@@ -322,7 +332,9 @@ test.describe('phone screenshots', () => {
 
   test('backup codes dialog', async ({ page, url }) => {
     const { dialog: setup, totp } = await openTotpSetup(page, url)
-    await setup.getByLabel('Authentication Code').fill(totp.generate())
+    await setup
+      .getByLabel('Authentication Code', { exact: true })
+      .fill(totp.generate())
     await setup.getByRole('button', { name: 'Turn On' }).click()
     const dialog = page.getByRole('dialog', { name: 'Backup Codes' })
     await expect(dialog.getByRole('textbox')).toHaveValue(/^\w{5}-\w{5}/)
