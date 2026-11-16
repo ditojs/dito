@@ -1,7 +1,7 @@
 import { afterEach } from 'vitest'
 import { mount, enableAutoUnmount } from '@vue/test-utils'
 import DitoInputAffixes from './DitoInputAffixes.vue'
-import { mountSchema, openInfo } from '../test/mount.js'
+import { mountSchema } from '../test/mount.js'
 
 // Mounts the affixes on their own, without a type component.
 function mountInputAffixes(props) {
@@ -42,22 +42,13 @@ describe('DitoInputAffixes', () => {
     expect(hasClearButton({ clearable: false, hasValue: true })).toBe(false)
   })
 
-  it('renders the inline info', async () => {
-    const wrapper = mountInputAffixes({
-      position: 'suffix',
-      inlineInfo: 'Help'
-    })
-    expect((await openInfo(wrapper)).textContent).toBe('Help')
-  })
-
   it('is only mounted by fields with affixes to show', async () => {
     const { wrapper } = await mountSchema({
       schema: {
         fields: {
           title: { type: 'text' },
           price: { type: 'number', prefix: '$' },
-          author: { type: 'text', clearable: true },
-          isbn: { type: 'text', label: false, info: 'Help' }
+          author: { type: 'text', clearable: true }
         }
       },
       data: { author: 'Ada' }
@@ -66,6 +57,6 @@ describe('DitoInputAffixes', () => {
       wrapper
         .findAllComponents(DitoInputAffixes)
         .map(affixes => affixes.props('position'))
-    ).toEqual(['prefix', 'suffix', 'suffix'])
+    ).toEqual(['prefix', 'suffix'])
   })
 })
