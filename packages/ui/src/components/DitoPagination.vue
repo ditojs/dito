@@ -130,6 +130,10 @@ export default {
       border 0s;
     font-variant-numeric: tabular-nums;
     padding: 0 0.5em;
+
+    &[data-selected] {
+      @include button-active;
+    }
   }
 
   &__prev .dito-icon {
