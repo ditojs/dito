@@ -1,6 +1,6 @@
 <template lang="pug">
 PopoverRoot
-  //- Infos can sit in buttons, e.g. of button fields without a label, which the
+  //- Infos can sit in buttons, e.g. in the affixes of button fields, which the
   //- click on the info doesn't press:
   PopoverTrigger.dito-info(
     ref="trigger"
