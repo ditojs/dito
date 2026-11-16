@@ -231,20 +231,18 @@ export default {
       this.placeholder = this.placeholder.set(fields)
     },
 
-    // Selects today, or the current time without the parts that the field
-    // doesn't edit, e.g. the seconds:
+    // Select today, or the current time without the time parts that the
+    // field doesn't edit.
     selectNow() {
-      if (!this.readonly) {
-        const date =
-          this.granularity === 'day'
-            ? getToday('day')
-            : toCalendarDateTime(now(getLocalTimeZone())).set({
-                millisecond: 0,
-                ...(this.granularity !== 'second' && { second: 0 }),
-                ...(this.granularity === 'hour' && { minute: 0 })
-              })
-        this.$emit('update:modelValue', date)
-      }
+      const date =
+        this.granularity === 'day'
+          ? getToday('day')
+          : toCalendarDateTime(now(getLocalTimeZone())).set({
+              millisecond: 0,
+              ...(this.granularity !== 'second' && { second: 0 }),
+              ...(this.granularity === 'hour' && { minute: 0 })
+            })
+      this.$emit('update:modelValue', date)
     },
 
     focus() {
