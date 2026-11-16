@@ -99,7 +99,8 @@ export const projects = createWidgetView<Project>(
                   buttons: {
                     cancel: { text: 'Cancel' },
                     submit: { text: 'Send' }
-                  }
+                  },
+                  settings: { clickToClose: true }
                 })
               }
             }

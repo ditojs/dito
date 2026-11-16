@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { html } from '@ditojs/utils'
 import { flushPromises } from '@vue/test-utils'
-import { mountAdmin, enterValue } from '../test/mount.js'
+import { mountAdmin, enterValue, getDialogLabel } from '../test/mount.js'
 import {
   confirm,
   prompt,
@@ -30,7 +30,7 @@ describe('confirm()', () => {
       '<b>Dune</b>'
     )
     expect(dialog.find('label').exists()).toBe(false)
-    expect(dialog.attributes('aria-label')).toBe('Delete Dune?')
+    expect(getDialogLabel(dialog)).toBe('Delete Dune?')
     expect(dialog.find('button[type="submit"]').text()).toBe('Delete')
   })
 
@@ -41,7 +41,7 @@ describe('confirm()', () => {
     const message = dialog.find('.dito-confirm-message')
     expect(message.find('img').exists()).toBe(false)
     expect(message.text()).toBe('Delete <img src=x onerror="alert(1)">?')
-    expect(dialog.attributes('aria-label')).toBe(
+    expect(getDialogLabel(dialog)).toBe(
       'Delete <img src=x onerror="alert(1)">?'
     )
   })
@@ -93,7 +93,7 @@ describe('prompt()', () => {
         value: 'Dune'
       })
     )
-    expect(dialog.attributes('aria-label')).toBe('Rename Dune:')
+    expect(getDialogLabel(dialog)).toBe('Rename Dune:')
     const message = dialog.find('.dito-confirm-message')
     expect(message.html()).toContain('<b>Dune</b>')
     const input = dialog.find('input')
@@ -157,7 +157,7 @@ describe('alert()', () => {
     const { promise, dialog } = await showDialog(root =>
       alert(root, html`Dune was <b>sold out</b>.`, { action: 'Close' })
     )
-    expect(dialog.attributes('aria-label')).toBe('Dune was sold out.')
+    expect(getDialogLabel(dialog)).toBe('Dune was sold out.')
     expect(dialog.find('.dito-confirm-message').html()).toContain(
       '<b>sold out</b>'
     )
@@ -189,7 +189,7 @@ describe('confirmAndRemove()', () => {
     const { promise, dialog, notify } = await showDialog(root =>
       confirmAndRemove(root, { label: 'Dune', isTransient: true, remove })
     )
-    expect(dialog.attributes('aria-label')).toBe(
+    expect(getDialogLabel(dialog)).toBe(
       'Do you really want to remove Dune?'
     )
     expect(dialog.find('button[type="submit"]').text()).toBe('Remove')
@@ -211,7 +211,7 @@ describe('confirmAndRemove()', () => {
         remove: () => true
       })
     )
-    expect(dialog.attributes('aria-label')).toBe(
+    expect(getDialogLabel(dialog)).toBe(
       'Do you really want to delete Dune?'
     )
     expect(dialog.find('button[type="submit"]').text()).toBe('Delete')
