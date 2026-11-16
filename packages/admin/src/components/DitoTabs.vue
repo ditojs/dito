@@ -24,10 +24,12 @@ TabsRoot(
         asChild
       )
         //- The panes are not reka-ui's `TabsContent`, so the links set the
-        //- ids that connect tabs and panes:
+        //- ids that connect tabs and panes. Space selects the tab without
+        //- scrolling the pane:
         a.dito-tabs__link(
           :id="getTabId(key)"
           :aria-controls="getTabPanelId(key)"
+          @keydown.space.prevent
         ) {{ getLabelText(tabSchema, key) }}
 </template>
 
