@@ -341,6 +341,18 @@ export function getDialogLabel(dialog) {
   return dialog.find(`[id="${id}"]`).text()
 }
 
+// Clicks the first info in `wrapper`, and returns the content of its popup,
+// which is in the pane or else next to the info:
+export async function openInfo(wrapper) {
+  const info = wrapper.find('.dito-info')
+  await info.trigger('click')
+  await flushPromises()
+  const id = info.attributes('aria-controls')
+  return info.element
+    .getRootNode()
+    .querySelector(`[id="${id}"] .dito-info__content`)
+}
+
 function createMountResult(admin, routeComponent) {
   const { wrapper } = admin
   const schemaComponent = admin.getSchemaComponent(routeComponent)

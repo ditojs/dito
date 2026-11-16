@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { h, ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { defineType } from '../index.js'
-import { mountSchema, mountForm } from '../test/mount.js'
+import { mountSchema, mountForm, openInfo } from '../test/mount.js'
 import DitoErrors from './DitoErrors.vue'
 import DitoSchemaField from './DitoSchemaField.vue'
 
@@ -289,7 +289,7 @@ describe('DitoContainer', () => {
       await settle()
       const container = findContainer('title')
       expect(container.find('input').element.value).toBe('PERSUASION')
-      expect(container.find('.dito-label').html()).toContain('About PERSUASION')
+      expect((await openInfo(container)).textContent).toBe('About PERSUASION')
       expect(formatValue).toHaveBeenCalledOnce()
       expect(info).toHaveBeenCalledOnce()
     })
@@ -334,7 +334,7 @@ describe('DitoContainer', () => {
       })
       const label = findContainer('genre').find('.dito-label')
       expect(label.text()).toContain('Genre of 2')
-      expect(label.html()).toContain('novel, poem')
+      expect((await openInfo(label)).textContent).toBe('novel, poem')
     })
 
     it('removes the members of the type when the type changes', async () => {

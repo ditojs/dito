@@ -1,5 +1,6 @@
+import { vi } from 'vitest'
 import { html } from '@ditojs/utils'
-import { mountSchema } from '../test/mount.js'
+import { mountSchema, openInfo } from '../test/mount.js'
 import DitoLabel from './DitoLabel.vue'
 import DitoAffixes from './DitoAffixes.vue'
 
@@ -39,10 +40,33 @@ describe('DitoLabel', () => {
         }
       }
     })
-    const getInfo = name =>
-      findContainer(name).find('.dito-info').attributes('data-info')
-    expect(getInfo('title')).toBe('Q &amp; &lt;b&gt;A&lt;/b&gt;')
-    expect(getInfo('author')).toBe('<b>Q &amp; A</b>')
+    const getInfo = async name =>
+      (await openInfo(findContainer(name))).innerHTML
+    expect(await getInfo('title')).toBe('Q &amp; &lt;b&gt;A&lt;/b&gt;')
+    expect(await getInfo('author')).toBe('<b>Q &amp; A</b>')
+  })
+
+  it(`doesn't toggle collapsible labels with clicks on their info`, async () => {
+    const onToggle = vi.fn()
+    const { findContainer } = await mountSchema({
+      schema: {
+        fields: {
+          details: {
+            type: 'section',
+            label: 'Details',
+            info: 'More about the book',
+            collapsible: true,
+            onToggle,
+            fields: { title: { type: 'text' } }
+          }
+        }
+      }
+    })
+    const label = findContainer('details').find(
+      '.dito-schema-header .dito-label'
+    )
+    expect((await openInfo(label)).textContent).toBe('More about the book')
+    expect(onToggle).not.toHaveBeenCalled()
   })
 
   it('shows the text of labels with affixes as text', async () => {

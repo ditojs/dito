@@ -88,7 +88,6 @@ import {
   ref,
   useTemplateRef
 } from 'vue'
-import { delegate as tippyDelegate } from 'tippy.js'
 import appState from '../appState.js'
 import { useDomEvents } from '../composables/useDomEvents.ts'
 import { useSidebar } from '../composables/useSidebar.ts'
@@ -177,19 +176,6 @@ export default {
       }
       // The uploads handle the dropped files, the root only the overlay:
       domOn(document, fileDropTargets.getDocumentEventHandlers())
-
-      tippyDelegate(root.value, {
-        target: '.dito-info',
-        theme: 'info',
-        animation: 'shift-away-subtle',
-        interactive: true,
-        delay: 250,
-        zIndex: 1,
-        // `DitoInfo` passes the info as HTML:
-        allowHTML: true,
-        appendTo: node => node.closest('.dito-pane'),
-        onShow: instance => instance.setContent(instance.reference.dataset.info)
-      })
 
       // Warn about unsaved changes, also the ones being submitted, as
       // `beforeunload` can't wait for them:
