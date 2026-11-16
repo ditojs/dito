@@ -337,6 +337,15 @@ describe('DitoContainer', () => {
       expect((await openInfo(label)).textContent).toBe('novel, poem')
     })
 
+    it('shows one info for a field without a label', async () => {
+      const { findContainer } = await mountSchema({
+        schema: {
+          fields: { isbn: { type: 'text', label: false, info: 'Help' } }
+        }
+      })
+      expect(findContainer('isbn').findAll('.dito-info')).toHaveLength(1)
+    })
+
     it('removes the members of the type when the type changes', async () => {
       const label = ({ options }) => (options ? 'Choose' : 'Enter')
       const { findContainer, data, settle } = await mountSchema({
