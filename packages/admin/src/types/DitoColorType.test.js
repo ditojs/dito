@@ -137,6 +137,22 @@ describe('DitoColorType', () => {
     await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
   })
 
+  it('keeps the hue of picked grays until the value changes', async () => {
+    const { getComponent, data, settle } = await mountSchema({
+      schema: { fields: { background: { type: 'color' } } },
+      data: { background: '#ff8000' }
+    })
+    const color = getComponent('background')
+    const gray = { space: 'hsb', h: 200, s: 0, b: 50, alpha: 1 }
+    color.setPickerColor(gray)
+    await settle()
+    expect(data.background).toBe('#808080')
+    expect(color.pickerColor).toEqual(gray)
+    data.background = '#ffffff'
+    await settle()
+    expect(color.pickerColor).toMatchObject({ h: 0, s: 0, b: 100 })
+  })
+
   it('clears the value with the clear button of clearable fields', async () => {
     const onChange = vi.fn()
     const { findField, data } = await mountSchema({
