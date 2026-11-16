@@ -43,7 +43,7 @@ describe('DitoSwitchType', () => {
       schema: { fields: { isPublic: { type: 'switch' } } }
     })
     expect(data.isPublic).toBe(false)
-    await findField('isPublic').find('input').setValue(true)
+    await findField('isPublic').find('[role="switch"]').trigger('click')
     expect(data.isPublic).toBe(true)
   })
 
@@ -72,7 +72,7 @@ describe('DitoSwitchType', () => {
       data: { isPublic: false },
       request: ({ data }) => ({ data })
     })
-    await findField('isPublic').find('input').setValue(true)
+    await findField('isPublic').find('[role="switch"]').trigger('click')
     expect(await submit()).toMatchObject({ isPublic: true })
   })
 })

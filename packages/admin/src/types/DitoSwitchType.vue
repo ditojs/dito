@@ -5,6 +5,7 @@ DitoSwitch.dito-switch(
   v-model="value"
   :labels="schema.labels"
   v-bind="attributes"
+  @update:modelValue="onChange"
 )
 </template>
 
@@ -17,7 +18,11 @@ import { DitoSwitch } from '@ditojs/ui/src'
 const DitoSwitchType = {
   components: { DitoSwitch },
   props: fieldProps,
-  setup: props => useField(props)
+  // reka-ui's switch emits no native change events:
+  setup: props =>
+    useField(props, {
+      getEvents: ({ onFocus, onBlur }) => ({ onFocus, onBlur })
+    })
 }
 
 defineType({

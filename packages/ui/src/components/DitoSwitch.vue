@@ -1,21 +1,14 @@
 <template lang="pug">
 .dito-switch(
-  :class="classes"
+  :class="$attrs.class"
   :style="styles"
 )
-  .dito-switch__pane
-    input(
-      :id="id"
-      ref="input"
-      v-bind="attributes"
-      v-model="checked"
-      role="switch"
-      type="checkbox"
-      :aria-checked="checked"
-      :name="name"
-      :disabled="disabled"
-    )
-    .dito-switch__button
+  SwitchRoot.dito-switch__control(
+    ref="control"
+    v-slot="{ checked }"
+    v-bind="attributes"
+  )
+    SwitchThumb.dito-switch__thumb
     span.dito-switch__label(
       v-if="labels"
     )
@@ -30,36 +23,19 @@
 </template>
 
 <script>
+import { SwitchRoot, SwitchThumb } from 'reka-ui'
+
+// The class goes to the root, all other attributes to reka-ui's `SwitchRoot`,
+// also `v-model`, `id`, `name` and `disabled`.
 export default {
-  emits: ['update:modelValue', 'change'],
+  components: { SwitchRoot, SwitchThumb },
   inheritAttrs: false,
 
   props: {
-    modelValue: { type: Boolean, default: false },
-    id: { type: String, default: null },
-    name: { type: String, default: null },
-    disabled: { type: Boolean, default: false },
     labels: { type: [Object, Boolean], default: false }
   },
 
-  data() {
-    return {
-      checked: this.modelValue
-    }
-  },
-
   computed: {
-    classes() {
-      const prefix = 'dito-switch'
-      return [
-        this.$attrs.class,
-        {
-          [`${prefix}--checked`]: this.checked,
-          [`${prefix}--disabled`]: this.disabled
-        }
-      ]
-    },
-
     styles() {
       const { labels: { checked, unchecked } = {} } = this
       // Calculate `--switch-width` in `rem`, based on the given labels' length.
@@ -75,22 +51,9 @@ export default {
     }
   },
 
-  watch: {
-    modelValue(modelValue) {
-      this.checked = modelValue
-    },
-
-    checked(checked) {
-      if (checked !== this.modelValue) {
-        this.$emit('update:modelValue', checked)
-        this.$emit('change', checked)
-      }
-    }
-  },
-
   methods: {
     focus() {
-      this.$refs.input.focus()
+      this.$refs.control.$el.focus()
     }
   }
 }
@@ -114,38 +77,26 @@ export default {
   --height: calc(var(--switch-height) - 2 * var(--switch-margin));
   --offset: calc(var(--width) - var(--height));
 
-  display: inline-block;
-  position: relative;
+  display: inline-flex;
+  align-items: center;
   height: var(--switch-height);
   // To make inline labels appear on consistent baseline:
   vertical-align: bottom;
   @include user-select(none);
 
-  &__pane {
+  &__control {
     position: relative;
+    box-sizing: border-box;
     width: var(--width);
     height: var(--height);
-  }
-
-  &__pane,
-  &__label {
-    top: 50%;
-    transform: translateY(-50%);
-  }
-
-  input {
-    cursor: pointer;
-    appearance: none;
-    width: 100%;
-    height: 100%;
+    padding: 0;
+    border: 0;
     border-radius: 1em;
     background: $color-light;
-    transition:
-      border-color 0.3s,
-      background-color 0.3s;
+    transition: background-color 0.3s;
   }
 
-  &__button {
+  &__thumb {
     --size: calc(var(--height) - 2 * var(--switch-padding));
 
     position: absolute;
@@ -160,24 +111,19 @@ export default {
     transform: translateX(0);
   }
 
-  &__button,
-  &__label {
-    pointer-events: none;
-  }
-
   &__label {
     position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
     right: var(--label-margin);
     text-transform: uppercase;
     color: $color-white;
   }
 
-  &--checked {
-    input {
-      background: $color-active;
-    }
+  &__control[data-state='checked'] {
+    background: $color-active;
 
-    #{$self}__button {
+    #{$self}__thumb {
       transform: translateX(var(--offset));
     }
 
@@ -187,12 +133,14 @@ export default {
     }
   }
 
-  &--disabled {
+  &__control[data-disabled] {
     @extend %button--disabled;
   }
 
-  input:focus-visible + #{$self}__button {
-    @include focus-ring;
+  &__control:focus-visible {
+    #{$self}__thumb {
+      @include focus-ring;
+    }
   }
 }
 </style>
