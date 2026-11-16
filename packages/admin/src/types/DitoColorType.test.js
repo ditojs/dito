@@ -1,5 +1,4 @@
 import { vi } from 'vitest'
-import { tinycolor } from 'vue-color'
 import { hyphenate } from '@ditojs/utils'
 import { setupView } from '../utils/schema/setup.js'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
@@ -129,8 +128,8 @@ describe('DitoColorType', () => {
     const color = getComponent('background')
     color.showPopup = true
     await settle()
-    color.colorValue = tinycolor('#0000ff')
-    color.colorValue = tinycolor('#00ff00')
+    color.setPickerColor('#0000ff')
+    color.setPickerColor('#00ff00')
     await settle()
     expect(data.background).toBe('#00ff00')
     expect(onChange).not.toHaveBeenCalled()
@@ -164,7 +163,7 @@ describe('DitoColorType', () => {
     const color = getComponent('background')
     color.showPopup = true
     await settle()
-    color.colorValue = tinycolor('#0000ff')
+    color.setPickerColor('#0000ff')
     color.clear()
     color.showPopup = false
     await settle()
@@ -245,10 +244,14 @@ describe('DitoColorType', () => {
     )
     await swatch.trigger('click')
     await settle()
-    expect(field.find('.dito-color__picker').exists()).toBe(true)
-    expect(getComponent('background').colorValue.toHexString()).toBe(
-      '#000000'
-    )
+    expect(field.find('.dito-color__popup').exists()).toBe(true)
+    expect(getComponent('background').pickerColor).toEqual({
+      space: 'hsb',
+      h: 0,
+      s: 0,
+      b: 0,
+      alpha: 1
+    })
   })
 
   it('keeps the value when picking the same color', async () => {
@@ -257,11 +260,11 @@ describe('DitoColorType', () => {
       data: { background: 'red' }
     })
     const color = getComponent('background')
-    color.colorValue = tinycolor('#ff0000')
+    color.setPickerColor('#ff0000')
     await settle()
     expect(data.background).toBe('red')
     expect(dataModel.isDirty).toBe(false)
-    color.colorValue = tinycolor('#ff000080')
+    color.setPickerColor('#ff000080')
     await settle()
     expect(data.background).toBe('#ff000080')
   })

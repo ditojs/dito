@@ -320,7 +320,7 @@ const coreDependencies = [
   'vue',
   '@vue/*',
   '@vueuse/*',
-  'vue-color',
+  'tinycolor2',
   'vue-router',
   'vue-upload-component',
   'reka-ui',

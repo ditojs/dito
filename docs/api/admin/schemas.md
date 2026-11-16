@@ -462,8 +462,8 @@ startsAt: {
 | ------------------ | -------------------------- | --------------- | --------------------------------------- |
 | `type`             | `'color'`                  |                 | Required.                               |
 | `colorFormat`      | `SchemaValue<ColorFormat>` | `'hex'`         | The format of the value, see below.     |
-| `alpha`            | `SchemaValue<boolean>`     | `false`         | Shows the alpha slider.                 |
-| `inputs`           | `SchemaValue<boolean>`     | `true`          | Shows inputs to enter values, e.g. RGB. |
+| `alpha`            | `SchemaValue<boolean>`     | `false`         | Shows the alpha slider and input.       |
+| `inputs`           | `SchemaValue<boolean>`     | `true`          | Shows inputs for the RGB values.        |
 | `presets`          | `SchemaValue<string[]>`    | 16 basic colors | Colors to pick from, in any CSS format. |
 | `prefix`, `suffix` | `OrArrayOf<SchemaAffix>`   |                 | See [Affixes](#affixes).                |
 

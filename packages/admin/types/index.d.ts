@@ -1963,8 +1963,8 @@ export interface ColorSchema<$Item = any>
    */
   alpha?: SchemaValue<$Item, {}, boolean>
   /**
-   * Whether to display input fields for manual color value
-   * entry (e.g. RGB, HSL) in the color picker.
+   * Whether to show inputs for the RGB values, and the alpha value with
+   * `alpha`, in the color picker.
    *
    * @defaultValue `true`
    */
