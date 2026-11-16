@@ -9,6 +9,7 @@ ToastProvider
         :key="notification.id"
         v-model:open="notification.open"
         :class="`dito-notification--${notification.type}`"
+        :type="notification.type === 'error' ? 'foreground' : 'background'"
         :duration="notification.duration"
         @click="notification.open = false"
         @escape-key-down="onEscapeKeyDown"
@@ -198,6 +199,15 @@ export default {
 
   &[data-swipe='move'] {
     transform: translateX(var(--reka-toast-swipe-move-x));
+  }
+
+  &[data-swipe='cancel'] {
+    transition: transform 0.2s $ease-out-quart;
+  }
+
+  // Stay where the swipe ends while the toast fades out:
+  &[data-swipe='end'] {
+    transform: translateX(var(--reka-toast-swipe-end-x));
   }
 
   &__title {
