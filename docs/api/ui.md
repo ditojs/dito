@@ -500,6 +500,7 @@ Use with `@extend`:
 | `%input--borderless`                     | Height and alignment of inputs without border, e.g. checkboxes, to line up with bordered ones.                         |
 | `%button--disabled`                      | The disabled look of buttons.                                                                                          |
 | `%icon--{name}`                          | One of the [icons](#icons), as a mask in `currentColor`, e.g. in a `::before`.                                         |
+| `%popup`                                 | The panel of popups and menus: border, radius, background, shadow, `z-index` and enter animation.                      |
 
 ### Functions
 
