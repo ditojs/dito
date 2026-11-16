@@ -30,8 +30,7 @@ test.describe('multiselect', () => {
     await list.navigate('/widgets')
     await list.list.edit('Widget A')
 
-    // Tag chips should be visible. Each chip carries the tag's name; the
-    // multiselect renders selected items as chips inside the combobox.
+    // The tags show the names of the related tags:
     const tags = getMultiselect(page, 'Tags').locator('.dito-multiselect__tag')
     await expect(tags).toHaveText(['tag-1', 'tag-2'])
 
