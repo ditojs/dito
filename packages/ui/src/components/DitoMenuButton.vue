@@ -7,7 +7,6 @@ DropdownMenuRoot(:modal="false")
     DitoButton.dito-menu-button(
       ref="button"
       v-bind="$attrs"
-      :disabled="disabled"
     )
       slot
   //- No portal, so that the styles apply. The menu is fixed, so that
