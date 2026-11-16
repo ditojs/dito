@@ -39,6 +39,13 @@ describe('DitoDatePicker', () => {
     }
   )
 
+  it(`doesn't open the calendar of readonly fields`, () => {
+    wrapper = mount(DitoDatePicker, { props: { readonly: true } })
+    expect(
+      wrapper.find('button[aria-label="Choose date"]').attributes('disabled')
+    ).toBeDefined()
+  })
+
   it('steps the calendar by years', async () => {
     wrapper = await openCalendar({ modelValue: new CalendarDate(2026, 5, 14) })
     const year = wrapper.find('select[aria-label="Year"]')

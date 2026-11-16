@@ -13,10 +13,6 @@
     :context="parentContext"
   )
   slot(name="append")
-  DitoInfo(
-    v-if="inlineInfo"
-    :info="inlineInfo"
-  )
 </template>
 
 <script>
@@ -24,11 +20,10 @@ import { computed } from 'vue'
 import { asArray, isString, isHtml } from '@ditojs/utils'
 import { hasSlotContent } from '@ditojs/ui/src'
 import DitoAffix from './DitoAffix.vue'
-import DitoInfo from './DitoInfo.vue'
 import { shouldRenderSchema } from '../utils/schema/value.js'
 
 export default {
-  components: { DitoAffix, DitoInfo },
+  components: { DitoAffix },
   emits: ['clear'],
 
   props: {
@@ -40,7 +35,6 @@ export default {
     clearable: { type: Boolean, default: false },
     hasValue: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
-    inlineInfo: { type: [String, Object], default: null },
     // For the callbacks of the items:
     parentContext: { type: Object, required: true }
   },
@@ -92,7 +86,6 @@ export default {
       hasContent() {
         return (
           visibleItems.value.length > 0 ||
-          !!props.inlineInfo ||
           hasSlotContent(slots.prepend) ||
           hasSlotContent(slots.append)
         )
