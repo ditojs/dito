@@ -11,6 +11,7 @@ ToastProvider
         :class="`dito-notification--${notification.type}`"
         :duration="notification.duration"
         @click="notification.open = false"
+        @escape-key-down="onEscapeKeyDown"
       )
         ToastTitle.dito-notification__title {{ notification.title }}
         ToastDescription(asChild)
@@ -118,9 +119,17 @@ export default {
               type,
               title,
               content,
-              duration: duration === 0 ? Infinity : duration
+              duration
             }
           ]
+        }
+      },
+
+      // reka-ui closes toasts on any Escape key, also the ones that close
+      // dialogs. Only close them when the focus is in the notifications:
+      onEscapeKeyDown(event) {
+        if (!event.target.closest('.dito-notifications__viewport')) {
+          event.preventDefault()
         }
       },
 
