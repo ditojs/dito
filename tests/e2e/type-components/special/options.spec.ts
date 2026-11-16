@@ -38,9 +38,10 @@ test.describe('grouped options', () => {
     await page.goto(`${url}/admin/${entry.path}`)
     const element = multiselect.getElement(page, entry)
     await element.click()
-    await expect(
-      element.locator('.multiselect__option--group')
-    ).toHaveText(['Fruit', 'Vegetable'])
+    await expect(page.locator('.dito-multiselect__group')).toHaveText([
+      'Fruit',
+      'Vegetable'
+    ])
   })
 
   test('lists the groups of checkboxes in fieldsets', async ({

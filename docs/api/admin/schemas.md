@@ -710,7 +710,10 @@ format: {
 ### multiselect
 
 `MultiselectSchema`. A searchable dropdown that selects one or several
-options.
+options, built on `reka-ui`'s `Combobox`. Multiple values show as tags in its
+`TagsInput`, which Backspace and the arrow keys select and remove. Picking the
+selected option of a single select keeps it, `clearable` adds a button that
+clears it.
 
 | Option             | Type                                                               | Default                                                                                                                                  | Description                                                                                                                                                                                                                                                                                                                 |
 | ------------------ | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
