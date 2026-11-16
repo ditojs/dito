@@ -53,7 +53,7 @@
     v-bind="componentProps"
     :class="componentClasses"
   )
-  //- Without a label, the info follows the component, outside of it, as
+  //- Without a label, the info follows the component, outside of it, since
   //- buttons can't hold the button of the info:
   DitoInfo(
     v-if="hasComponentInfo"

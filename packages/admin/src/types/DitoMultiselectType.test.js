@@ -638,6 +638,23 @@ describe('DitoMultiselectType', () => {
       expect(getOptionLabels(field)).toEqual(['Bram Stoker'])
     })
 
+    it('keeps the label of values picked from a search once closed', async () => {
+      const filter = vi.fn(async () => [authors[1]])
+      const schema = createAuthorSchema(filter)
+      schema.fields.author.relate = false
+      schema.fields.author.options.value = 'id'
+      const { findField, data } = await mountSchema({ schema })
+      const field = findField('author')
+      await search(field, 'Sh')
+      await field.find('.dito-multiselect__option').trigger('click')
+      // reka-ui resets the input a millisecond after it closes:
+      await new Promise(resolve => setTimeout(resolve, 10))
+      await flushPromises()
+      expect(data.author).toBe(2)
+      expect(getInput(field).element.value).toBe('Mary Shelley')
+      expect(filter).toHaveBeenCalledOnce()
+    })
+
     it('ignores the results of outdated searches', async () => {
       const resolvers = new Map()
       const filter = ({ searchTerm }) =>
