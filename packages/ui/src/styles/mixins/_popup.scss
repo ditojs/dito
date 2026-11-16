@@ -1,5 +1,5 @@
-// The panel of popups, menus and lists. reka-ui gives the popup's z-index to
-// the element that positions it, so extend this there:
+// The panel of popups, menus and lists, extended by their content. reka-ui
+// copies the z-index of the content to the element that positions it:
 %popup {
   z-index: $z-index-popup;
   border: $border-style;
