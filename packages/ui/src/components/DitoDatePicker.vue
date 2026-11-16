@@ -24,7 +24,10 @@
             :key="item.part"
             :part="item.part"
           ) {{ item.value }}
-        DatePickerTrigger.dito-date-picker__toggle(aria-label="Choose date")
+        DatePickerTrigger.dito-date-picker__toggle(
+          aria-label="Choose date"
+          :disabled="disabled || readonly"
+        )
           DitoIcon(
             name="calendar"
             :disabled="disabled"
@@ -165,10 +168,12 @@ export default {
   inheritAttrs: false,
   emits: ['update:modelValue'],
 
-  // The props of `DatePickerRoot` that the picker reads too. With a
+  // The props of `DatePickerRoot` that the picker reads or passes on. With a
   // `granularity` finer than `day`, the field also edits the time:
   props: {
     modelValue: { type: Object, default: null },
+    // On reka-ui's hidden input, which focuses the field for its label:
+    id: { type: String, default: undefined },
     granularity: { type: String, default: 'day' },
     hourCycle: { type: Number, default: undefined },
     locale: { type: String, default: 'en-US' },
@@ -229,15 +234,17 @@ export default {
     // Selects today, or the current time without the parts that the field
     // doesn't edit, e.g. the seconds:
     selectNow() {
-      const date =
-        this.granularity === 'day'
-          ? getToday('day')
-          : toCalendarDateTime(now(getLocalTimeZone())).set({
-              millisecond: 0,
-              ...(this.granularity !== 'second' && { second: 0 }),
-              ...(this.granularity === 'hour' && { minute: 0 })
-            })
-      this.$emit('update:modelValue', date)
+      if (!this.readonly) {
+        const date =
+          this.granularity === 'day'
+            ? getToday('day')
+            : toCalendarDateTime(now(getLocalTimeZone())).set({
+                millisecond: 0,
+                ...(this.granularity !== 'second' && { second: 0 }),
+                ...(this.granularity === 'hour' && { minute: 0 })
+              })
+        this.$emit('update:modelValue', date)
+      }
     },
 
     focus() {

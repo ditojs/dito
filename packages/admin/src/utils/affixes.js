@@ -1,12 +1,9 @@
-// The suffix also holds the clear button, and the info of components without a
-// label, as the label shows it otherwise.
+// The suffix also holds the clear button.
 export function getInputAffixesProps({
   schema,
   disabled,
   clearable,
   value,
-  label,
-  info,
   context
 }) {
   const prefix = {
@@ -14,7 +11,6 @@ export function getInputAffixesProps({
     disabled,
     clearable: false,
     hasValue: false,
-    inlineInfo: null,
     parentContext: context
   }
   const suffix = {
@@ -23,7 +19,6 @@ export function getInputAffixesProps({
     clearable: !!clearable,
     // Empty strings are no value to clear either:
     hasValue: value != null && value !== '',
-    inlineInfo: (!label && info) || null,
     parentContext: context
   }
   return {
@@ -35,6 +30,6 @@ export function getInputAffixesProps({
   }
 }
 
-function hasContent({ items, clearable, hasValue, inlineInfo }) {
-  return !!(items || clearable && hasValue || inlineInfo)
+function hasContent({ items, clearable, hasValue }) {
+  return !!(items || clearable && hasValue)
 }
