@@ -7,6 +7,16 @@ function findNotifications() {
   return [...document.querySelectorAll('.dito-notification')]
 }
 
+function pressEscape(element) {
+  element.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true
+    })
+  )
+}
+
 async function mountNotifications(api) {
   const admin = await mountAdmin({
     views: { books: { type: 'view', label: 'Books', fields: {} } },
@@ -112,6 +122,17 @@ describe('DitoNotifications', () => {
     expect(findNotifications()).toHaveLength(2)
     notifications.destroyAll()
     await flushPromises()
+    await vi.waitFor(() => expect(findNotifications()).toHaveLength(0))
+  })
+
+  it('closes notifications on Escape only when they have the focus', async () => {
+    const notifications = await mountNotifications()
+    notifications.notify({ text: 'Saved' })
+    await flushPromises()
+    pressEscape(document.body)
+    await flushPromises()
+    expect(findNotifications()[0].dataset.state).toBe('open')
+    pressEscape(findNotifications()[0])
     await vi.waitFor(() => expect(findNotifications()).toHaveLength(0))
   })
 
