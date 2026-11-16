@@ -462,8 +462,7 @@ export default {
 <style lang="scss">
 .dito-form {
   &--embedded {
-    // No scrolling inside embedded forms, and prevent open .multiselect from
-    // being cropped.
+    // No scrolling inside embedded forms:
     overflow: visible;
   }
 }

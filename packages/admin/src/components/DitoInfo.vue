@@ -1,11 +1,8 @@
 <template lang="pug">
 PopoverRoot
-  //- Infos can sit in buttons, e.g. in the affixes of button fields, which the
-  //- click on the info doesn't press:
   PopoverTrigger.dito-info(
     ref="trigger"
     :aria-label="label ? `Info: ${label}` : 'Info'"
-    @click.stop
   )
   //- In the pane, outside of the buttons and labels around the info. The popup
   //- is fixed, so that scrolling panes don't clip it, and flips below the info
