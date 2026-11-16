@@ -7,7 +7,7 @@ async function login(page: Page, url: string, [username, password]: string[]) {
   await page.goto(`${url}/admin/`)
   const dialog = page.locator('.dito-dialog')
   await dialog.getByLabel('Username').fill(username)
-  await dialog.getByLabel('Password').fill(password)
+  await dialog.getByLabel('Password', { exact: true }).fill(password)
   await dialog.getByRole('button', { name: 'Sign In' }).click()
   await expect(dialog).toBeHidden()
 }
@@ -35,7 +35,7 @@ test.describe('account settings', () => {
     await page.goto(`${url}/admin/`)
     const dialog = page.locator('.dito-dialog')
     const username = dialog.getByLabel('Username')
-    const password = dialog.getByLabel('Password')
+    const password = dialog.getByLabel('Password', { exact: true })
     await expect(username).toHaveAttribute('autocomplete', 'username')
     await expect(password).toHaveAttribute('autocomplete', 'current-password')
     for (const field of [username, password]) {

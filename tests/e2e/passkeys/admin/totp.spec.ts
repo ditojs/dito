@@ -10,7 +10,7 @@ function getAccountButton(page: Page) {
 async function loginWithPassword(page: Page) {
   const login = page.getByRole('dialog')
   await login.getByLabel('Username').fill('ada')
-  await login.getByLabel('Password').fill('secret')
+  await login.getByLabel('Password', { exact: true }).fill('secret')
   await login.getByRole('button', { name: 'Sign In', exact: true }).click()
 }
 
@@ -35,10 +35,14 @@ test.describe('TOTP', () => {
     })
     await expect(setup.getByRole('img', { name: 'QR code' })).toBeVisible()
     // `autofocus` focuses the code, not the key before it:
-    await expect(setup.getByLabel('Authentication Code')).toBeFocused()
+    await expect(
+      setup.getByLabel('Authentication Code', { exact: true })
+    ).toBeFocused()
     const secret = await setup.getByLabel('Or enter the key').inputValue()
     const totp = new TOTP({ secret: secret.replaceAll(' ', '') })
-    await setup.getByLabel('Authentication Code').fill(totp.generate())
+    await setup
+      .getByLabel('Authentication Code', { exact: true })
+      .fill(totp.generate())
     await setup.getByRole('button', { name: 'Turn On' }).click()
     const codes = page.getByRole('dialog', { name: 'Backup Codes' })
     const backupCodes = (await codes.getByRole('textbox').inputValue()).split(
@@ -56,7 +60,9 @@ test.describe('TOTP', () => {
     await page.locator('button.dito-login').click()
     await loginWithPassword(page)
     const dialog = page.getByRole('dialog')
-    await dialog.getByLabel('Authentication Code').fill('wrong')
+    await dialog
+      .getByLabel('Authentication Code', { exact: true })
+      .fill('wrong')
     await dialog.getByRole('button', { name: 'Verify' }).click()
     await expect(page.locator('.dito-notification')).toContainText(
       'Code is incorrect'
@@ -64,7 +70,7 @@ test.describe('TOTP', () => {
     // Wait for the dialog of the wrong code to leave, as the next one asks:
     await expect(dialog).toHaveCount(1)
     await dialog
-      .getByLabel('Authentication Code')
+      .getByLabel('Authentication Code', { exact: true })
       .fill(totp.generate({ timestamp: Date.now() + totp.period * 1000 }))
     await dialog.getByRole('button', { name: 'Verify' }).click()
     await expect(getAccountButton(page)).toHaveText('ada')
