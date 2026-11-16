@@ -152,7 +152,7 @@ export default {
     const dialogs = reactive({})
     // The anchor stays set after closing, for the text of the leaving tooltip:
     const tooltip = reactive({ anchor: null, open: false })
-    // The trigger renders no element, so describe the anchor while it shows:
+    // The trigger renders no element, so describe the open tooltip's anchor:
     watch(
       () => (tooltip.open ? tooltip.anchor : null),
       (anchor, previous) => {
