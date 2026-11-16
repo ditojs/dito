@@ -1,10 +1,10 @@
 <template lang="pug">
 PopoverRoot
-  //- Infos can sit in buttons, e.g. collapsible labels, which the click on the
-  //- info doesn't press:
+  //- Infos can sit in buttons, e.g. of button fields without a label, which the
+  //- click on the info doesn't press:
   PopoverTrigger.dito-info(
     ref="trigger"
-    aria-label="Info"
+    :aria-label="label ? `Info: ${label}` : 'Info'"
     @click.stop
   )
   //- In the pane, outside of the buttons and labels around the info. The popup
@@ -52,7 +52,9 @@ export default {
 
   props: {
     // Text or `html`:
-    info: { type: [String, Object], required: true }
+    info: { type: [String, Object], required: true },
+    // The text of the label that the info is about, to name the button:
+    label: { type: String, default: null }
   },
 
   setup(props) {

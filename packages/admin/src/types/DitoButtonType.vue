@@ -29,6 +29,7 @@ DitoButton(
     DitoInfo(
       v-if="!label && info"
       :info="info"
+      :label="text"
     )
 </template>
 

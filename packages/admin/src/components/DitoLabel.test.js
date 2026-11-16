@@ -31,22 +31,22 @@ describe('DitoLabel', () => {
     expect(label.find('.dito-affix').text()).toBe('1.')
   })
 
-  it('shows info as text, and `html` info as HTML', async () => {
+  it('shows info as text with its line breaks, and `html` info as HTML', async () => {
     const { findContainer } = await mountSchema({
       schema: {
         fields: {
-          title: { type: 'text', info: 'Q & <b>A</b>' },
+          title: { type: 'text', info: 'Q & <b>A</b>\nOr B' },
           author: { type: 'text', info: html`<b>${'Q & A'}</b>` }
         }
       }
     })
     const getInfo = async name =>
       (await openInfo(findContainer(name))).innerHTML
-    expect(await getInfo('title')).toBe('Q &amp; &lt;b&gt;A&lt;/b&gt;')
+    expect(await getInfo('title')).toBe('Q &amp; &lt;b&gt;A&lt;/b&gt;\nOr B')
     expect(await getInfo('author')).toBe('<b>Q &amp; A</b>')
   })
 
-  it(`doesn't toggle collapsible labels with clicks on their info`, async () => {
+  it('places the info of collapsible labels outside of their toggle', async () => {
     const onToggle = vi.fn()
     const { findContainer } = await mountSchema({
       schema: {
@@ -64,6 +64,10 @@ describe('DitoLabel', () => {
     })
     const label = findContainer('details').find(
       '.dito-schema-header .dito-label'
+    )
+    expect(label.find('button .dito-info').exists()).toBe(false)
+    expect(label.find('.dito-info').attributes('aria-label')).toBe(
+      'Info: Details'
     )
     expect((await openInfo(label)).textContent).toBe('More about the book')
     expect(onToggle).not.toHaveBeenCalled()
