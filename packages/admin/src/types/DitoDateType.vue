@@ -27,7 +27,7 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
 import { getSchemaValue } from '../utils/schema/value.js'
 import { fieldProps, useField } from '../composables/useField.ts'
@@ -51,7 +51,13 @@ const DitoDateType = {
   setup(props) {
     // Text fields keep `readonly` fields focusable instead of disabling them:
     const field = useField(props, { nativeField: true, textField: true })
-    const { services, context, value, attributes } = field
+    const { services, context, componentPath, value, attributes } = field
+    // reka-ui's fields have no element that the `autofocus` attribute focuses:
+    onMounted(() => {
+      if (field.autofocus.value) {
+        field.element.value.focus()
+      }
+    })
     return {
       ...field,
       DitoDatePicker,
@@ -63,6 +69,8 @@ const DitoDateType = {
         const isTime = props.schema.type === 'time'
         const { title, ...attrs } = attributes.value
         return {
+          // reka-ui gives the id to a hidden input, so the label focuses it:
+          'id': componentPath.value,
           'locale': services.adminContext.api.locale,
           'granularity': !time
             ? 'day'
