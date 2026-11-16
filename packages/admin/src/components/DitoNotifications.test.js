@@ -36,7 +36,9 @@ describe('DitoNotifications', () => {
     await flushPromises()
     const [notification] = findNotifications()
     expect(notification.querySelector('img, i')).toBe(null)
-    expect(notification.querySelector('.notification-title').textContent).toBe(
+    expect(
+      notification.querySelector('.dito-notification__title').textContent
+    ).toBe(
       '<i>Saved</i>'
     )
     expect(
@@ -118,7 +120,9 @@ describe('DitoNotifications', () => {
     notifications.notify({ type: 'reminder', text: 'Return Emma' })
     await flushPromises()
     const [notification] = findNotifications()
-    expect(notification.querySelector('.notification-title').textContent).toBe(
+    expect(
+      notification.querySelector('.dito-notification__title').textContent
+    ).toBe(
       'Notification'
     )
     expect(console.error).toHaveBeenCalledWith('Return Emma')

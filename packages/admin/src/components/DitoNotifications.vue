@@ -1,19 +1,34 @@
 <template lang="pug">
-.dito-notifications(aria-live="polite")
-  .dito-header
-    span
-  .dito-notifications__inner
-    VueNotifications(
-      classes="dito-notification"
-      :dangerouslySetInnerHtml="true"
-      position=""
-      width=""
-    )
+ToastProvider
+  .dito-notifications
+    .dito-header
+      span
+    .dito-notifications__inner
+      ToastRoot.dito-notification(
+        v-for="notification in notifications"
+        :key="notification.id"
+        v-model:open="notification.open"
+        :class="`dito-notification--${notification.type}`"
+        :duration="notification.duration"
+        @click="notification.open = false"
+      )
+        ToastTitle.dito-notification__title {{ notification.title }}
+        ToastDescription(asChild)
+          .dito-notification__content(
+            v-html="notification.content"
+          )
+      ToastViewport.dito-notifications__viewport
 </template>
 
 <script>
-import { inject } from 'vue'
-import { notify as showNotification } from '@kyvg/vue3-notification'
+import { inject, ref } from 'vue'
+import {
+  ToastDescription,
+  ToastProvider,
+  ToastRoot,
+  ToastTitle,
+  ToastViewport
+} from 'reka-ui'
 import { asArray, isString, isHtml, escapeHtml } from '@ditojs/utils'
 import { adminContextKey } from '../utils/keys.ts'
 import { getText } from '../utils/html.js'
@@ -26,10 +41,23 @@ function isLikelyMarkup(paragraph) {
   )
 }
 
+let notificationId = 0
+
 export default {
+  components: {
+    ToastDescription,
+    ToastProvider,
+    ToastRoot,
+    ToastTitle,
+    ToastViewport
+  },
+
   setup() {
     const adminContext = inject(adminContextKey)
+    const notifications = ref([])
     return {
+      notifications,
+
       // Strings in `text` are escaped, only `html` values render as HTML:
       notify({ type = 'info', title, text, error, duration } = {}) {
         title ||= (
@@ -76,24 +104,30 @@ export default {
             ...(type === 'error' && error ? [error] : [])
           ]
         )
-        const { notifications = true } = adminContext.api
-        if (notifications) {
+        const { notifications: settings = true } = adminContext.api
+        if (settings) {
           // `durationFactor` is in milliseconds per character, plus 40 more:
-          const { durationFactor = 20 } = notifications
+          const { durationFactor = 20 } = settings
           duration ??= (40 + content.length + title.length) * durationFactor
-          showNotification({
-            type,
-            title: escapeHtml(title),
-            text: content,
-            duration: duration === 0 ? -1 : duration // < 0 -> <= 0 = sticky
-          })
+          // Keep closed notifications until the next one, so they can animate:
+          notifications.value = [
+            ...notifications.value.filter(notification => notification.open),
+            {
+              id: ++notificationId,
+              open: true,
+              type,
+              title,
+              content,
+              duration: duration === 0 ? Infinity : duration
+            }
+          ]
         }
       },
 
       destroyAll() {
-        // `VueNotifications` doesn't expose methods, but closes all its
-        // notifications when notified with `clean`:
-        showNotification({ clean: true })
+        for (const notification of notifications.value) {
+          notification.open = false
+        }
       }
     }
   }
@@ -126,60 +160,70 @@ export default {
     z-index: $z-index-notifications;
   }
 
-  .vue-notification-group {
+  &__viewport {
     position: absolute;
     // The column takes no room, as the sidebar reaches the window edge:
     right: $content-padding;
     top: 0;
     width: $notification-width;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+.dito-notification {
+  padding: 8px;
+  margin: $content-padding 0;
+  border-radius: $border-radius;
+  box-shadow: $shadow-window;
+  cursor: pointer;
+
+  &[data-state='open'] {
+    animation: dito-fade-enter 0.2s $ease-out-quart;
   }
 
-  .vue-notification-wrapper {
-    overflow: visible;
+  &[data-state='closed'] {
+    animation: dito-fade-leave 0.2s $ease-out-quart;
   }
 
-  .dito-notification {
-    padding: 8px;
-    margin: $content-padding 0;
-    font-size: inherit;
-    color: $color-white;
-    border-radius: $border-radius;
-    box-shadow: $shadow-window;
+  &[data-swipe='move'] {
+    transform: translateX(var(--reka-toast-swipe-move-x));
+  }
 
-    .notification-title {
-      font-weight: bold;
-      padding-bottom: 8px;
-    }
+  &__title {
+    font-weight: bold;
+    padding-bottom: 8px;
+  }
 
-    .notification-content {
-      overflow: hidden;
-      word-break: break-all;
+  &__content {
+    overflow: hidden;
+    word-break: break-all;
 
-      p {
-        margin: 0;
+    p {
+      margin: 0;
 
-        & + p {
-          margin-top: 8px;
-        }
+      & + p {
+        margin-top: 8px;
       }
     }
+  }
 
-    &,
-    &.info {
-      @include type($color-active);
-    }
+  &,
+  &--info {
+    @include type($color-active);
+  }
 
-    &.success {
-      @include type($color-success);
-    }
+  &--success {
+    @include type($color-success);
+  }
 
-    &.warning {
-      @include type($color-warning);
-    }
+  &--warning {
+    @include type($color-warning);
+  }
 
-    &.error {
-      @include type($color-error);
-    }
+  &--error {
+    @include type($color-error);
   }
 }
 </style>

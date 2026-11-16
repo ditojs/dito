@@ -347,9 +347,6 @@ importers:
       '@internationalized/date':
         specifier: ^3.12.4
         version: 3.12.4
-      '@kyvg/vue3-notification':
-        specifier: ^3.4.2
-        version: 3.4.2(vue@3.5.45(typescript@6.0.3))
       '@simplewebauthn/browser':
         specifier: ^14.0.0
         version: 14.0.0
@@ -1211,11 +1208,6 @@ packages:
     peerDependencies:
       koa: '>=2'
       multer: '*'
-
-  '@kyvg/vue3-notification@3.4.2':
-    resolution: {integrity: sha512-CZ2zOdXsbGCtWbdqMgbusKtZTkMT+dYpw9bmAitsdSNHT0knh4njD8X95JIyTMWvNVjhDkFedbkNiZLcPqttwQ==}
-    peerDependencies:
-      vue: ^3.0.0
 
   '@levischuck/tiny-cbor@0.2.11':
     resolution: {integrity: sha512-llBRm4dT4Z89aRsm6u2oEZ8tfwL/2l6BwpZ7JcyieouniDECM5AqNgr/y08zalEIvW3RSK4upYyybDcmjXqAow==}
@@ -6431,10 +6423,6 @@ snapshots:
     dependencies:
       koa: 3.3.0
       multer: 2.5.0
-
-  '@kyvg/vue3-notification@3.4.2(vue@3.5.45(typescript@6.0.3))':
-    dependencies:
-      vue: 3.5.45(typescript@6.0.3)
 
   '@levischuck/tiny-cbor@0.2.11': {}
 

@@ -99,14 +99,14 @@ export async function runCase(page: Page, url: string, entry: CaseEntry) {
   }
   if (entry.invalid && entry.value === undefined) {
     await getSaveButton(page).click()
-    await expect(page.locator('.dito-notification.error')).toBeVisible()
+    await expect(page.locator('.dito-notification--error')).toBeVisible()
     return
   }
   if (entry.value !== undefined) {
     await setValue(page, entry)
     if (entry.invalid) {
       await getSaveButton(page).click()
-      await expect(page.locator('.dito-notification.error')).toBeVisible()
+      await expect(page.locator('.dito-notification--error')).toBeVisible()
       expect(await getStored(entry)).toEqual(entry.seed ?? null)
       return
     }
