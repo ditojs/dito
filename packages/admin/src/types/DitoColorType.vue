@@ -150,7 +150,7 @@ const DitoColorType = {
     )
     // The value of the input while it can't be written, see `hexValue`:
     const enteredValue = ref(null)
-    // The last color picked, see `pickerColor`:
+    // The color picked last, which keeps the hue of grays:
     const pickedColor = ref(null)
 
     const changeOnceEdited = createChangeOnceEdited({
@@ -188,11 +188,12 @@ const DitoColorType = {
       showPopup,
       getChannelName,
 
-      // The color of the picker, in reka-ui's HSB space, which its area needs
-      // for its saturation. Keep the picked color while the value matches it,
-      // as grays, black and white lose their hue in the value:
+      // The picker's color in reka-ui's HSB space, which its area needs for
+      // its saturation:
       pickerColor: computed(() => {
         const color = tinycolor(enteredValue.value || value.value || '#000000')
+        // Grays, black and white lose their hue in the value, so keep the
+        // picked color while it matches:
         if (
           pickedColor.value &&
           toTinyColor(pickedColor.value).toHex8String() === color.toHex8String()
