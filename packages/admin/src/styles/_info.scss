@@ -43,13 +43,16 @@
 }
 
 .dito-info__content,
+.dito-tooltip {
+  white-space: pre-line;
+  padding: ($input-padding-ver + 2 * $border-width)
+    ($input-padding-hor + $border-width);
+}
+
 // The tooltip is portalled to the body, so it needs to show above the dialogs,
 // the header and the sidebar:
 .dito-tooltip {
   z-index: $z-index-tooltip;
-  white-space: pre-line;
-  padding: ($input-padding-ver + 2 * $border-width)
-    ($input-padding-hor + $border-width);
 }
 
 .dito-info__arrow,

@@ -89,7 +89,7 @@
           :sideOffset="2"
           hideWhenDetached
         )
-          | {{ tooltip.anchor.dataset.tooltip }}
+          span#dito-tooltip {{ tooltip.anchor.dataset.tooltip }}
           TooltipArrow.dito-tooltip__arrow(
             :width="16"
             :height="8"
@@ -106,7 +106,8 @@ import {
   provide,
   reactive,
   ref,
-  useTemplateRef
+  useTemplateRef,
+  watch
 } from 'vue'
 import {
   TooltipArrow,
@@ -151,6 +152,14 @@ export default {
     const dialogs = reactive({})
     // The anchor stays set after closing, for the text of the leaving tooltip:
     const tooltip = reactive({ anchor: null, open: false })
+    // The trigger renders no element, so describe the open tooltip's anchor:
+    watch(
+      () => (tooltip.open ? tooltip.anchor : null),
+      (anchor, previous) => {
+        previous?.removeAttribute('aria-describedby')
+        anchor?.setAttribute('aria-describedby', 'dito-tooltip')
+      }
+    )
     // The files dragged over the admin, for the uploads to drop them on:
     const fileDropTargets = markRaw(new FileDropTargets())
     provide(fileDropTargetsKey, fileDropTargets)
