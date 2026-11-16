@@ -188,6 +188,14 @@ isbn: { type: 'text', label: html`<abbr>ISBN</abbr>` },
 author: { type: 'text', info: ({ item }) => html`By <b>${item.author}</b>` }
 ```
 
+Elements in `html` with a `data-tooltip` attribute show its text in a tooltip
+when hovered or focused, e.g. in cells, where Vue components can't be used:
+
+```js
+render: ({ value }) =>
+  html`<span data-tooltip="${value.description}">${value.name}</span>`
+```
+
 Where labels show as text, e.g. in tabs, the menu, the trail, column headers
 and accessible names, `html` shows its text without the tags. Prettier formats `html` templates as HTML by default,
 which changes their whitespace, so apps that use them may want to set
