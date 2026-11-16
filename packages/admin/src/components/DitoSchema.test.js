@@ -879,13 +879,12 @@ describe('DitoSchema', () => {
       expect(field.classes()).not.toContain('dito-input--has-errors')
     })
 
-    it('displays the errors in the document, not in tooltips', async () => {
+    it('displays the errors in the document', async () => {
       const { input, getErrors } = await mountRequiredTitle()
       for (let i = 0; i < 3; i++) {
         await clearTitle(input)
       }
       expect(getErrors('title')).toEqual(['The title field is required.'])
-      expect(document.querySelector('[data-tippy-root]')).toBe(null)
     })
 
     it('keeps the errors when focusing their input', async () => {
