@@ -353,10 +353,10 @@ const DitoMultiselectType = {
       }
     }
 
-    // Search only while the list is open. Closing it keeps the searched
-    // options until the next search, as they hold the selected options:
-    watch(query, query => {
-      if (searchFilter.value && isOpen.value) {
+    // Search only while the list is open, and show all options again when it
+    // opens without a search term:
+    watch([query, isOpen], ([query, isOpen]) => {
+      if (searchFilter.value && isOpen) {
         search(query)
       }
     })

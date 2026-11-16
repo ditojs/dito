@@ -642,7 +642,11 @@ describe('DitoMultiselectType', () => {
       const filter = vi.fn(async () => [authors[1]])
       const schema = createAuthorSchema(filter)
       schema.fields.author.relate = false
-      schema.fields.author.options.value = 'id'
+      schema.fields.author.options = {
+        data: [authors[0]],
+        label: 'name',
+        value: 'id'
+      }
       const { findField, data } = await mountSchema({ schema })
       const field = findField('author')
       await search(field, 'Sh')
@@ -651,6 +655,10 @@ describe('DitoMultiselectType', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
       await flushPromises()
       expect(data.author).toBe(2)
+      expect(getInput(field).element.value).toBe('Mary Shelley')
+      // Reopening shows all options instead of the last results:
+      await open(field)
+      expect(getOptionLabels(field)).toEqual(['Jane Austen'])
       expect(getInput(field).element.value).toBe('Mary Shelley')
       expect(filter).toHaveBeenCalledOnce()
     })
