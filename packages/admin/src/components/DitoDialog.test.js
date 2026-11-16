@@ -165,6 +165,19 @@ describe('DitoDialog', () => {
     }
   })
 
+  it(`doesn't cancel with Escape keys that its components handled`, async () => {
+    const result = await showDialog({
+      fields,
+      buttons: { cancel: {} }
+    })
+    const input = result.dialog.find('input')
+    // Like a component that closes its menu with Escape:
+    input.element.addEventListener('keydown', event => event.preventDefault())
+    await input.trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+    expect(result.isSettled).toBe(false)
+  })
+
   it('shows no buttons without any that render', async () => {
     const hidden = { type: 'button', text: 'Hidden', if: () => false }
     for (const buttons of [{}, { hidden }]) {
