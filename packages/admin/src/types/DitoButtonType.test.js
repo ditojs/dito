@@ -72,6 +72,21 @@ describe('DitoButtonType', () => {
     expect(button.attributes('aria-label')).toBeUndefined()
   })
 
+  it('shows its info next to it, so that its text names it', async () => {
+    const { findField, findContainer } = await mountSchema({
+      schema: {
+        fields: {
+          publish: { type: 'button', text: 'Publish', info: 'Goes live' }
+        }
+      }
+    })
+    expect(findField('publish').text()).toBe('Publish')
+    expect(findField('publish').find('.dito-info').exists()).toBe(false)
+    expect(
+      findContainer('publish').find('.dito-info').attributes('aria-label')
+    ).toBe('Info: Publish')
+  })
+
   it('styles buttons as primary through `primary`', async () => {
     const { findField } = await mountSchema({
       schema: {
