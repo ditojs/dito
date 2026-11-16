@@ -1,50 +1,62 @@
 <template lang="pug">
-DitoTrigger.dito-color(
-  v-model:show="showPopup"
-  trigger="focus"
-)
-  template(#trigger)
-    DitoInput(
-      :id="componentPath"
-      ref="element"
-      v-model="hexValue"
-      type="input"
-      size="8"
-      :focused="showPopup"
-      v-bind="attributes"
+.dito-color
+  PopoverRoot(
+    v-model:open="showPopup"
+  )
+    //- The popup is placed at the input, and the swatch button opens it:
+    PopoverAnchor(asChild)
+      DitoInput(
+        :id="componentPath"
+        ref="element"
+        v-model="hexValue"
+        type="input"
+        size="8"
+        :focused="showPopup"
+        v-bind="attributes"
+      )
+        template(#prefix)
+          DitoInputAffixes(
+            v-if="inputAffixesProps.hasPrefix"
+            position="prefix"
+            v-bind="inputAffixesProps.prefix"
+          )
+        template(#suffix)
+          DitoInputAffixes(
+            v-if="inputAffixesProps.hasSuffix"
+            position="suffix"
+            v-bind="inputAffixesProps.suffix"
+            @clear="clear"
+          )
+          //- Outside of the affixes, so their clear button doesn't hide it:
+          PopoverTrigger.dito-color__preview(
+            aria-label="Choose color"
+            :disabled="disabled || readonly"
+          )
+            div(:style="{ background: `#${hexValue || '00000000'}` }")
+    //- No portal, so that the styles apply. The popup is fixed, so that
+    //- scrolling panes don't clip it:
+    PopoverContent.dito-color__popup(
+      align="start"
+      positionStrategy="fixed"
     )
-      template(#prefix)
-        DitoInputAffixes(
-          v-if="inputAffixesProps.hasPrefix"
-          position="prefix"
-          v-bind="inputAffixesProps.prefix"
-        )
-      template(#suffix)
-        //- The suffix also shows the preview of the color:
-        DitoInputAffixes(
-          v-if="inputAffixesProps.hasSuffix || value"
-          position="suffix"
-          v-bind="inputAffixesProps.suffix"
-          @clear="clear"
-        )
-          template(#append)
-            .dito-color__preview(
-              v-if="value"
-            )
-              div(:style="{ background: `#${hexValue || '00000000'}` }")
-  template(#popup)
-    SketchPicker.dito-color__picker(
-      v-model:tinyColor="colorValue"
-      :disableAlpha="!alpha"
-      :disableFields="!inputs"
-      :presetColors="presets"
-    )
+      SketchPicker.dito-color__picker(
+        v-model:tinyColor="colorValue"
+        :disableAlpha="!alpha"
+        :disableFields="!inputs"
+        :presetColors="presets"
+      )
 </template>
 
 <script>
 // `v-model:tinyColor` requires the `tinycolor` exported by `vue-color`:
 import { SketchPicker, tinycolor } from 'vue-color'
-import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
+import {
+  PopoverAnchor,
+  PopoverContent,
+  PopoverRoot,
+  PopoverTrigger
+} from 'reka-ui'
+import { DitoInput } from '@ditojs/ui/src'
 import { computed, ref, watch } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
 import { colorTraits } from './traits.ts'
@@ -54,7 +66,15 @@ import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 
 // @vue/component
 const DitoColorType = {
-  components: { DitoTrigger, DitoInput, DitoInputAffixes, SketchPicker },
+  components: {
+    DitoInput,
+    DitoInputAffixes,
+    PopoverAnchor,
+    PopoverContent,
+    PopoverRoot,
+    PopoverTrigger,
+    SketchPicker
+  },
   props: fieldProps,
 
   setup(props) {
@@ -223,7 +243,18 @@ $color-swatch-radius: $border-radius - $border-width;
     }
   }
 
-  &__picker {
+  // reka-ui gives its z-index to the element that positions the popup:
+  &__popup {
+    z-index: $z-index-popup;
+
+    &[data-state='open'] {
+      animation: dito-slide-enter 0.15s $ease-out-quart;
+    }
+  }
+
+  // As wide as the input, instead of vue-color's own width:
+  & &__picker.vc-sketch-picker {
+    width: var(--reka-popover-trigger-width);
     margin: $popup-margin;
     border: $border-style;
     border-radius: $border-radius;
@@ -232,6 +263,10 @@ $color-swatch-radius: $border-radius - $border-width;
   }
 
   &__preview {
+    // A button, sized like the `div` inside it, plus its border:
+    @extend %button--plain;
+
+    box-sizing: content-box;
     background: $pattern-transparency;
     margin: (-$input-padding-ver) (-$input-padding-hor);
     margin-left: 0;
@@ -243,6 +278,14 @@ $color-swatch-radius: $border-radius - $border-width;
       height: calc($input-height - 2 * $border-width);
       border-top-right-radius: $color-swatch-radius;
       border-bottom-right-radius: $color-swatch-radius;
+    }
+
+    &:focus-visible {
+      @include focus-ring($inset: true);
+    }
+
+    &:disabled {
+      cursor: default;
     }
   }
 

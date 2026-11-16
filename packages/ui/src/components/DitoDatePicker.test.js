@@ -1,134 +1,52 @@
-import { mount, flushPromises } from '@vue/test-utils'
+import { vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { CalendarDate, CalendarDateTime } from '@internationalized/date'
 import DitoDatePicker from './DitoDatePicker.vue'
 
-const keyCodes = { ArrowUp: 38, ArrowDown: 40, Enter: 13 }
-
-function mountDatePicker(props = {}) {
-  return mount(DitoDatePicker, {
-    props: { modelValue: new Date(2024, 2, 5), ...props },
-    attachTo: document.body
-  })
-}
-
-function findInput(wrapper) {
-  return wrapper.find('input')
-}
-
-function findToggle(wrapper) {
-  return wrapper.find('button[aria-haspopup="dialog"]')
-}
-
-function isPopupShown(wrapper) {
-  return wrapper.find('.dito-calendar').exists()
-}
-
-async function focusInput(wrapper) {
-  findInput(wrapper).element.focus()
+// Mounts the picker and opens its calendar:
+async function openCalendar(props) {
+  const wrapper = mount(DitoDatePicker, { props, attachTo: document.body })
+  await wrapper.find('button[aria-label="Choose date"]').trigger('click')
   await flushPromises()
-}
-
-// Presses `key` in the input with the caret at `position`.
-async function pressKey(wrapper, key, position) {
-  const input = findInput(wrapper).element
-  input.setSelectionRange(position, position)
-  input.dispatchEvent(
-    new KeyboardEvent('keydown', {
-      key,
-      keyCode: keyCodes[key],
-      bubbles: true,
-      cancelable: true
-    })
-  )
-  await flushPromises()
-}
-
-function getEmittedDates(wrapper) {
-  return (wrapper.emitted('update:modelValue') ?? []).map(([date]) => date)
+  return wrapper
 }
 
 describe('DitoDatePicker', () => {
   let wrapper
 
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 4, 14, 9, 30, 45))
+  })
+
   afterEach(() => {
     wrapper?.unmount()
-    wrapper = null
+    vi.useRealTimers()
   })
 
-  it('toggles the popup with its icon button', async () => {
-    wrapper = mountDatePicker()
-    const toggle = findToggle(wrapper)
-    expect(toggle.attributes('type')).toBe('button')
-    expect(toggle.attributes('aria-expanded')).toBe('false')
-    await toggle.trigger('click')
-    await flushPromises()
-    expect(toggle.attributes('aria-expanded')).toBe('true')
-    expect(isPopupShown(wrapper)).toBe(true)
-    expect(document.activeElement).toBe(findInput(wrapper).element)
-    await toggle.trigger('click')
-    await flushPromises()
-    expect(toggle.attributes('aria-expanded')).toBe('false')
-    expect(isPopupShown(wrapper)).toBe(false)
-  })
+  it.each([
+    ['day', 'Today', new CalendarDate(2026, 5, 14)],
+    ['minute', 'Now', new CalendarDateTime(2026, 5, 14, 9, 30)],
+    ['second', 'Now', new CalendarDateTime(2026, 5, 14, 9, 30, 45)]
+  ])(
+    'selects the current %s with its footer button',
+    async (granularity, text, date) => {
+      wrapper = await openCalendar({ granularity })
+      const button = wrapper.find('.dito-calendar__now')
+      expect(button.text()).toBe(text)
+      await button.trigger('click')
+      expect(wrapper.emitted('update:modelValue')).toEqual([[date]])
+    }
+  )
 
-  it('renders the `trigger` slot in place of the input', () => {
-    wrapper = mount(DitoDatePicker, {
-      slots: { trigger: '<button class="custom">Pick</button>' }
-    })
-    expect(wrapper.find('.custom').exists()).toBe(true)
-    expect(wrapper.find('input').exists()).toBe(false)
-  })
-
-  it('opens on focus and emits `focus` and `blur` once', async () => {
-    wrapper = mountDatePicker()
-    await focusInput(wrapper)
-    expect(isPopupShown(wrapper)).toBe(true)
-    expect(wrapper.emitted('update:show')).toEqual([[true]])
-    findInput(wrapper).element.blur()
-    await flushPromises()
-    expect(isPopupShown(wrapper)).toBe(false)
-    expect(wrapper.emitted('focus')).toHaveLength(1)
-    expect(wrapper.emitted('blur')).toHaveLength(1)
-  })
-
-  it('steps the date part at the caret', async () => {
-    wrapper = mountDatePicker()
-    await focusInput(wrapper)
-    // "March 5, 2024": The caret in the day.
-    await pressKey(wrapper, 'ArrowDown', 7)
-    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 2, 6)])
-  })
-
-  it('selects the date with Enter and closes the popup', async () => {
-    wrapper = mountDatePicker()
-    await focusInput(wrapper)
-    await pressKey(wrapper, 'ArrowDown', 7)
-    await pressKey(wrapper, 'Enter', 7)
-    expect(getEmittedDates(wrapper).at(-1)).toEqual(new Date(2024, 2, 6))
-    expect(isPopupShown(wrapper)).toBe(false)
-  })
-
-  it('stays open while the focus moves into the calendar', async () => {
-    wrapper = mountDatePicker()
-    await focusInput(wrapper)
-    const cell = wrapper.find('[role="gridcell"][tabindex="0"]').element
-    cell.focus()
-    await flushPromises()
-    expect(isPopupShown(wrapper)).toBe(true)
-    // Leaving both closes the popup:
-    cell.blur()
-    await flushPromises()
-    expect(isPopupShown(wrapper)).toBe(false)
-  })
-
-  it('returns the focus to the input after selecting in the calendar', async () => {
-    wrapper = mountDatePicker()
-    await focusInput(wrapper)
-    const cell = wrapper.find('[role="gridcell"][tabindex="0"]')
-    cell.element.focus()
-    await cell.trigger('click')
-    await flushPromises()
-    expect(isPopupShown(wrapper)).toBe(false)
-    expect(document.activeElement).toBe(findInput(wrapper).element)
-    expect(wrapper.emitted('blur')).toBeUndefined()
+  it('steps the calendar by years', async () => {
+    wrapper = await openCalendar({ modelValue: new CalendarDate(2026, 5, 14) })
+    const year = wrapper.find('select[aria-label="Year"]')
+    await wrapper.find('button[aria-label="Previous year"]').trigger('click')
+    expect(year.element.value).toBe('2025')
+    await wrapper.find('button[aria-label="Next year"]').trigger('click')
+    await wrapper.find('button[aria-label="Next year"]').trigger('click')
+    expect(year.element.value).toBe('2027')
+    expect(wrapper.emitted('update:modelValue')).toBe(undefined)
   })
 })

@@ -2,3 +2,17 @@
   opacity: 0.6;
   pointer-events: none;
 }
+
+// A button without the look of one, e.g. an icon or a text link:
+%button--plain {
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
