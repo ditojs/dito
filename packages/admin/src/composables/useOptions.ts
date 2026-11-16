@@ -5,6 +5,7 @@ import {
   type WritableComputedRef
 } from 'vue'
 import {
+  asArray,
   debounceAsync,
   isArray,
   isFunction,
@@ -119,13 +120,17 @@ export function useOptions(
   const activeOptions = computed(() => searchedOptions?.value || options.value)
   const hasOptions = computed(() => activeOptions.value.length > 0)
 
+  // Remember the options of picked values, which later searches may not hold:
+  let pickedOptions = new Map()
+
   // Options filtered out by a search are still options of the value:
   const findOption = (value: any) => (
     findOptionForValue(settings.value, activeOptions.value, value) ?? (
       activeOptions.value !== options.value
         ? findOptionForValue(settings.value, options.value, value)
         : undefined
-    )
+    ) ??
+    pickedOptions.get(value)
   )
 
   // Plain value options are their own values:
@@ -152,6 +157,9 @@ export function useOptions(
     },
 
     set(selectedValue) {
+      pickedOptions = new Map(
+        asArray(selectedValue).map(value => [value, findOption(value)])
+      )
       value.value = getValueForSelectedValue(
         settings.value,
         selectedValue,
