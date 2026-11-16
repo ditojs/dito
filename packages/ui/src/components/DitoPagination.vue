@@ -1,34 +1,63 @@
-<!-- eslint-disable vue/no-template-shadow -->
 <template lang="pug">
-nav.dito-pagination(aria-label="Pagination")
+PaginationRoot.dito-pagination(
+  v-model:page="currentPage"
+  aria-label="Pagination"
+  :total="total"
+  :itemsPerPage="pageSize"
+  :siblingCount="1"
+  showEdges
+)
   .dito-pagination__total(
     v-if="showTotal"
   )
     template(
       v-if="total > 0"
     ) {{ first }} – {{ last }} / {{ total }}
-  .dito-buttons.dito-buttons--round(
+  PaginationList.dito-buttons.dito-buttons--round(
     v-if="numPages > 1"
+    v-slot="{ items }"
   )
-    DitoButton(
-      v-for="button in buttons"
-      :key="button.type || button.index"
-      :class="getButtonClasses(button)"
-      :disabled="button.disabled"
-      :aria-label="getButtonLabel(button)"
-      :aria-current="button.active ? 'page' : null"
-      @click="onClickButton(button)"
+    PaginationPrev.dito-button.dito-pagination__prev
+      DitoIcon(name="arrow")
+    template(
+      v-for="(item, index) in items"
+      :key="index"
     )
-      span(
-        v-if="button.text"
-      ) {{ button.text }}
+      PaginationListItem.dito-button(
+        v-if="item.type === 'page'"
+        :value="item.value"
+      )
+      PaginationEllipsis.dito-pagination__ellipsis(
+        v-else
+        as="span"
+      )
+        DitoIcon(name="ellipsis")
+    PaginationNext.dito-button
+      DitoIcon(name="arrow")
 </template>
 
 <script>
-import DitoButton from './DitoButton.vue'
+import {
+  PaginationEllipsis,
+  PaginationList,
+  PaginationListItem,
+  PaginationNext,
+  PaginationPrev,
+  PaginationRoot
+} from 'reka-ui'
+import DitoIcon from './DitoIcon.vue'
 
 export default {
-  components: { DitoButton },
+  components: {
+    DitoIcon,
+    PaginationEllipsis,
+    PaginationList,
+    PaginationListItem,
+    PaginationNext,
+    PaginationPrev,
+    PaginationRoot
+  },
+
   emits: ['update:page'],
 
   props: {
@@ -40,8 +69,6 @@ export default {
 
   data() {
     return {
-      showPrev: true,
-      showNext: true,
       currentPage: this.page
     }
   },
@@ -57,64 +84,6 @@ export default {
 
     numPages() {
       return Math.ceil(this.total / this.pageSize)
-    },
-
-    buttons() {
-      const { showPrev, showNext, currentPage, numPages } = this
-      const showLength = showPrev + showNext + 1
-
-      let start = 1
-      let end
-      if (numPages <= showLength) {
-        end = numPages
-      } else if (currentPage <= showPrev + 1) {
-        end = showLength
-      } else if (currentPage >= numPages - showNext) {
-        end = numPages
-        start = numPages - showLength + 1
-      } else {
-        start = currentPage - showPrev
-        end = currentPage + showNext
-      }
-
-      const buttons = []
-      buttons.push({
-        index: currentPage - 1,
-        type: 'prev',
-        disabled: currentPage <= 1
-      })
-      if (start >= 2) {
-        buttons.push({ index: 1, text: 1 })
-      }
-      if (start > 2) {
-        buttons.push({
-          index: Math.max(1, currentPage - 10),
-          type: 'ellipsis-prev'
-        })
-      }
-      for (let i = start; i <= end; i++) {
-        buttons.push({
-          index: i,
-          text: i,
-          active: i === currentPage
-        })
-      }
-      if (end < numPages - 1) {
-        buttons.push({
-          index: Math.min(numPages, currentPage + 10),
-          type: 'ellipsis-next'
-        })
-      }
-      if (end <= numPages - 1) {
-        buttons.push({ index: numPages, text: numPages })
-      }
-      buttons.push({
-        index: currentPage + 1,
-        type: 'next',
-        disabled: currentPage >= numPages
-      })
-
-      return buttons
     }
   },
 
@@ -134,37 +103,6 @@ export default {
     currentPage(to, from) {
       if (to !== from) {
         this.$emit('update:page', to)
-      }
-    }
-  },
-
-  created() {
-    this.currentPage = this.page
-  },
-
-  methods: {
-    getButtonClasses(button) {
-      const prefix = 'dito-button'
-      return {
-        [`${prefix}--${button.type}`]: button.type,
-        [`${prefix}--active`]: button.active
-      }
-    },
-
-    getButtonLabel(button) {
-      if (button.type === 'prev') return 'Previous page'
-      if (button.type === 'next') return 'Next page'
-      if (button.text) return `Page ${button.text}`
-      return null
-    },
-
-    onClickButton(button) {
-      if (
-        button.index &&
-        !button.disabled &&
-        button.index !== this.currentPage
-      ) {
-        this.currentPage = button.index
       }
     }
   }
@@ -192,46 +130,15 @@ export default {
       border 0s;
     font-variant-numeric: tabular-nums;
     padding: 0 0.5em;
+  }
 
-    &--prev,
-    &--next {
-      &::before {
-        @extend %icon--arrow;
-      }
-    }
+  &__prev .dito-icon {
+    transform: scaleX(-1);
+  }
 
-    &--prev::before {
-      transform: scaleX(-1);
-    }
-
-    &--ellipsis-prev,
-    &--ellipsis-next {
-      background: none;
-      border: 0;
-      padding: 0;
-      margin: 0;
-      color: $color-text;
-
-      &::before {
-        @extend %icon--ellipsis;
-      }
-
-      &:hover::before {
-        @extend %icon--chevrons;
-      }
-
-      &:focus {
-        color: $color-active;
-      }
-
-      &:active {
-        box-shadow: none;
-      }
-    }
-
-    &--ellipsis-prev::before {
-      transform: scaleX(-1);
-    }
+  &__ellipsis {
+    display: flex;
+    align-items: center;
   }
 }
 </style>
