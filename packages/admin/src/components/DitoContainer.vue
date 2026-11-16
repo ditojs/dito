@@ -53,6 +53,13 @@
     v-bind="componentProps"
     :class="componentClasses"
   )
+  //- Without a label, the info follows the component, outside of it, as
+  //- buttons can't hold the button of the info:
+  DitoInfo(
+    v-if="hasComponentInfo"
+    :info="info"
+    :label="componentText"
+  )
   DitoErrors(
     v-if="errors"
     :id="errorsElementId"
@@ -225,6 +232,10 @@ export default {
       )
     })
 
+    const hasComponentInfo = computed(
+      () => !!field.info.value && !hasSchemaLabel.value
+    )
+
     const errorsElementId = computed(() => `${componentPath.value}-errors`)
 
     // Type components teleport their buttons into the row of the label:
@@ -241,6 +252,9 @@ export default {
       isMounted,
       label,
       info: field.info,
+      hasComponentInfo,
+      // Name the info after the text of buttons:
+      componentText: computed(() => getSchemaValue('text', { type: String })),
       errors,
       isReplacedWithLabel,
       typeComponent: computed(() => getTypeComponent(props.schema.type)),
@@ -277,6 +291,7 @@ export default {
         return {
           [`${prefix}--disabled`]: disabled.value,
           [`${prefix}--has-errors`]: !!errors.value,
+          [`${prefix}--has-info`]: hasComponentInfo.value,
           [`${prefix}--single`]: props.single,
           [`${prefix}--compact`]: props.compact,
           [`${prefix}--label-vertical`]: props.verticalLabels,
@@ -417,6 +432,17 @@ export default {
     // components (e.g.  buttons):
     > .dito-component:first-child {
       margin-top: $input-height;
+    }
+  }
+
+  &--has-info {
+    // Place the info on the line of the component:
+    flex-flow: row wrap;
+    align-items: center;
+
+    > .dito-component--fill {
+      flex: 1;
+      width: auto;
     }
   }
 
