@@ -56,8 +56,7 @@ import DitoButton from './DitoButton.vue'
 import DitoIcon from './DitoIcon.vue'
 
 // A button that opens a menu of `items`, built on reka-ui's `DropdownMenu`,
-// and emits `select` with the chosen item, see `docs/api/ui.md`. Attributes go
-// to the button.
+// and emits `select` with the chosen item. Attributes go to the button.
 export default {
   components: {
     DropdownMenuArrow,
