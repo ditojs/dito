@@ -1,0 +1,24 @@
+// The parts of date and time fields, see `DitoDatePicker` and `DitoTimeInput`:
+.dito-date-segments {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  // Keep the spaces of the literals, which are flex items of their own:
+  white-space: pre;
+
+  // The parts that can be edited, not the literals between them:
+  &__part:not([data-reka-date-field-segment='literal']) {
+    border-radius: 2px;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+
+    &:focus {
+      background: $color-active;
+      color: $color-white;
+    }
+
+    &[data-placeholder] {
+      color: $color-placeholder;
+    }
+  }
+}

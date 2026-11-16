@@ -344,6 +344,9 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.8.0
         version: 1.8.0
+      '@internationalized/date':
+        specifier: ^3.12.4
+        version: 3.12.4
       '@kyvg/vue3-notification':
         specifier: ^3.4.2
         version: 3.4.2(vue@3.5.45(typescript@6.0.3))
@@ -715,6 +718,12 @@ importers:
       '@ditojs/build':
         specifier: workspace:^
         version: link:../build
+      '@internationalized/date':
+        specifier: ^3.12.4
+        version: 3.12.4
+      reka-ui:
+        specifier: ^2.11.0
+        version: 2.11.0(vue@3.5.45(typescript@6.0.3))
       vite:
         specifier: ^8.3.7
         version: 8.3.7(@types/node@26.6.6)(sass@1.108.1)(yaml@2.9.1)

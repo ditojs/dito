@@ -187,12 +187,8 @@ describe('widgets of values', () => {
     const getPicker = label =>
       getContainer(wrapper, label).find('.dito-date > *').classes()
     expect(getPicker('Day')).toContain('dito-date-picker')
-    expect(getPicker('Opens At')).toContain('dito-time-picker')
-    expect(getPicker('Meets At')).toContain('dito-date-time-picker')
-    // The `formats` of date widgets merge over `api.formats`:
-    expect(getContainer(wrapper, 'Day').find('input').element.value).toBe(
-      '5/14/2026'
-    )
+    expect(getPicker('Opens At')).toContain('dito-time-input')
+    expect(getPicker('Meets At')).toContain('dito-date-picker')
     expect(getComponentClasses('Tint')).toContain('dito-color')
     expect(getComponentClasses('Image')).toContain('dito-upload')
     expect(getContainer(wrapper, 'Notes').find('textarea').element.value).toBe(

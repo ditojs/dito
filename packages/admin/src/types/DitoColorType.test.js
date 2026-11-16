@@ -234,13 +234,18 @@ describe('DitoColorType', () => {
     expect(data.overlay).toBe('#0000ff80')
   })
 
-  it('opens the picker with black and no preview without a value', async () => {
-    const { findField, getComponent } = await mountSchema({
+  it('opens the picker with the swatch button, at black without a value', async () => {
+    const { findField, getComponent, settle } = await mountSchema({
       schema: { fields: { background: { type: 'color' } } }
     })
-    expect(findField('background').find('.dito-color__preview').exists()).toBe(
-      false
+    const field = findField('background')
+    const swatch = field.find('button[aria-label="Choose color"]')
+    expect(swatch.find('div').attributes('style')).toMatch(
+      /background: (#00000000|rgba\(0, 0, 0, 0\))/
     )
+    await swatch.trigger('click')
+    await settle()
+    expect(field.find('.dito-color__picker').exists()).toBe(true)
     expect(getComponent('background').colorValue.toHexString()).toBe(
       '#000000'
     )

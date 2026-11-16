@@ -420,13 +420,16 @@ isAvailable: { type: 'switch', labels: { checked: 'yes', unchecked: 'no' } }
 
 ### date, datetime, time
 
-`DateSchema`. A date, date and time, or time picker.
+`DateSchema`. A date field with a calendar, a date field with a time and a
+calendar, or a time field. The fields edit each part of the value on its own,
+in the order of the admin's `api.locale`, and the calendar's header picks the
+month and year from lists.
 
-| Option             | Type                                                    | Default       | Description                                                                                                 |
-| ------------------ | ------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------- |
-| `type`             | `'date' \| 'datetime' \| 'time'`                        |               | Required.                                                                                                   |
-| `formats`          | `SchemaValue<{ date?: DateFormat, time?: TimeFormat }>` | `api.formats` | The display formats, merged over the admin's `api.formats`. See `format()` in [@ditojs/utils](../utils.md). |
-| `prefix`, `suffix` | `OrArrayOf<SchemaAffix>`                                |               | See [Affixes](#affixes).                                                                                    |
+| Option             | Type                                                    | Default       | Description                                                                                                                                                                                                        |
+| ------------------ | ------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `type`             | `'date' \| 'datetime' \| 'time'`                        |               | Required.                                                                                                                                                                                                          |
+| `formats`          | `SchemaValue<{ date?: DateFormat, time?: TimeFormat }>` | `api.formats` | The display formats, merged over the admin's `api.formats`. See `format()` in [@ditojs/utils](../utils.md). The fields only take the parts of the time and `hour12` from them, e.g. `{ time: { second: false } }`. |
+| `prefix`, `suffix` | `OrArrayOf<SchemaAffix>`                                |               | See [Affixes](#affixes).                                                                                                                                                                                           |
 
 Loaded values become `Date` objects; dates without a time are read in the
 local time zone. Strings that code writes into the data are shown as dates and
@@ -437,9 +440,9 @@ fields instead. Invalid dates and strings that aren't dates, e.g. times like
 `'14:30'`, fail validation.
 
 ```js
-publishedAt: {
-  type: 'date',
-  formats: { date: { day: 'numeric', month: 'short', year: 'numeric' } }
+startsAt: {
+  type: 'datetime',
+  formats: { time: { second: false, hour12: false } }
 }
 ```
 

@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { tinycolor } from 'vue-color'
+import { CalendarDate, CalendarDateTime } from '@internationalized/date'
 import {
   mountSchema,
   mountForm,
@@ -444,27 +445,24 @@ describe('useField()', () => {
     })
 
     it.each([
-      ['date', 'May 14, 2026', 'May 15, 2026'],
-      ['datetime', 'May 14, 2026, 9:30 AM', 'May 14, 2026, 10:30 AM'],
-      ['time', '9:30 AM', '10:30 AM']
-    ])(
-      'emits input for each entered %s, and change on Enter',
-      async (type, ...texts) => {
-        const { findField, events, settle } = await mountWithEvents({
-          publishedAt: { type }
-        })
-        const input = findField('publishedAt').find('input')
-        await input.trigger('focus')
-        await typeText(input, ...texts)
-        expect(events.map(([event]) => event)).toEqual(['input', 'input'])
-        await input.trigger('keydown', { key: 'Enter', keyCode: 13 })
+      ['date', new CalendarDate(2026, 5, 14)],
+      ['datetime', new CalendarDateTime(2026, 5, 14, 9, 30)],
+      ['time', new CalendarDateTime(2026, 5, 14, 9, 30)]
+    ])('emits input and change for each entered %s', async (type, date) => {
+      const { getComponent, events, settle } = await mountWithEvents({
+        publishedAt: { type }
+      })
+      const field = getComponent('publishedAt').$refs.element
+      for (const value of [date, date.add({ days: 1 })]) {
+        field.$emit('update:modelValue', value)
         await settle()
-        expect(events.map(([event]) => event)).toEqual([
-          'input',
-          'input',
-          'change'
-        ])
       }
-    )
+      expect(events.map(([event]) => event)).toEqual([
+        'input',
+        'change',
+        'input',
+        'change'
+      ])
+    })
   })
 })
