@@ -1,34 +1,45 @@
 <template lang="pug">
-.dito-tabs(
-  ref="element"
-  role="tablist"
-  :class=`{
-    'dito-tabs--masked-start': isMaskedStart,
-    'dito-tabs--masked-end': isMaskedEnd
-  }`
-  @scroll.passive="updateMasks"
+//- Manual activation: the arrow keys, Home and End only move the focus, Enter
+//- and Space select, to not switch the panels and URL on each key press.
+TabsRoot(
+  asChild
+  activationMode="manual"
+  :modelValue="modelValue"
+  @update:modelValue="key => $emit('update:modelValue', key)"
 )
-  a.dito-tabs__link(
-    v-for="(tabSchema, key) in tabs"
-    :id="getTabId(key)"
-    :key="key"
-    role="tab"
-    :aria-selected="modelValue === key"
-    :aria-controls="getTabPanelId(key)"
-    :tabindex="modelValue === key ? 0 : -1"
-    :class="{ 'dito-tabs__link--active': modelValue === key }"
-    @click="$emit('update:modelValue', key)"
-    @keydown="onKeyDown($event, key)"
-  ) {{ getLabelText(tabSchema, key) }}
+  TabsList(asChild)
+    .dito-tabs(
+      ref="element"
+      :class=`{
+        'dito-tabs--masked-start': isMaskedStart,
+        'dito-tabs--masked-end': isMaskedEnd
+      }`
+      @scroll.passive="updateMasks"
+    )
+      TabsTrigger(
+        v-for="(tabSchema, key) in tabs"
+        :key="key"
+        :value="key"
+        as="a"
+        asChild
+      )
+        //- The panes are not reka-ui's `TabsContent`, so the links set the
+        //- ids that connect tabs and panes:
+        a.dito-tabs__link(
+          :id="getTabId(key)"
+          :aria-controls="getTabPanelId(key)"
+        ) {{ getLabelText(tabSchema, key) }}
 </template>
 
 <script>
 import { inject, nextTick, useTemplateRef, watch } from 'vue'
+import { TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useScrollMask } from '../composables/useScrollMask.ts'
 import { componentPathKey } from '../utils/keys.ts'
 
 export default {
+  components: { TabsList, TabsRoot, TabsTrigger },
   emits: ['update:modelValue'],
 
   props: {
@@ -38,7 +49,7 @@ export default {
     context: { type: Object, required: true }
   },
 
-  setup(props, { emit }) {
+  setup(props) {
     // Identify tabs through the component path of their schema, like panes:
     const schemaComponentPath = inject(componentPathKey)
     const getTabId = key =>
@@ -83,28 +94,6 @@ export default {
 
       getTabPanelId(key) {
         return `${schemaComponentPath.node.componentPath}-tabpanel-${key}`
-      },
-
-      // Manual activation: Arrow keys, Home and End only move the focus, Enter
-      // and Space select, to not switch the panels and URL on each key press.
-      onKeyDown(event, key) {
-        const keys = Object.keys(props.tabs)
-        const index = keys.indexOf(key)
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          emit('update:modelValue', key)
-        } else {
-          const focusIndex = {
-            ArrowLeft: (index - 1 + keys.length) % keys.length,
-            ArrowRight: (index + 1) % keys.length,
-            Home: 0,
-            End: keys.length - 1
-          }[event.key]
-          if (focusIndex !== undefined) {
-            event.preventDefault()
-            document.getElementById(getTabId(keys[focusIndex]))?.focus()
-          }
-        }
       }
     }
   }
@@ -144,11 +133,8 @@ export default {
       border-top-left-radius: $tab-radius;
       border-top-right-radius: $tab-radius;
 
-      &:active {
-        background: $color-lightest;
-      }
-
-      &--active {
+      &:active,
+      &[data-state='active'] {
         background: $color-lightest;
       }
     }
@@ -175,7 +161,7 @@ export default {
         background: $color-lighter;
       }
 
-      &--active {
+      &[data-state='active'] {
         background: $color-active;
         border-color: color.adjust($color-active, $lightness: -10%);
         color: $color-white;
