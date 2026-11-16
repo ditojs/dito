@@ -342,6 +342,7 @@ e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
 | Prop                   | Type                                      | Default   | Description                                                  |
 | ---------------------- | ----------------------------------------- | --------- | ------------------------------------------------------------ |
 | `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                        |
+| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                      |
 | `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                      |
 | `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.          |
 | `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                    |

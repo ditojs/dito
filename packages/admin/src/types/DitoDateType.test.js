@@ -54,6 +54,28 @@ describe('DitoDateType', () => {
     expect(getText('createdAt')).toBe('3/5/2024, 14:30')
   })
 
+  it('focuses the field from its label, and with `autofocus`', async () => {
+    const { findContainer } = await mountSchema({
+      schema: {
+        fields: {
+          publishedOn: { type: 'date', label: 'Published', autofocus: true },
+          opensAt: { type: 'time', label: 'Opens' }
+        }
+      }
+    })
+    const [published, opens] = ['publishedOn', 'opensAt'].map(name =>
+      findContainer(name)
+    )
+    expect(document.activeElement).toBe(
+      published.find('[contenteditable="true"]').element
+    )
+    const { htmlFor } = opens.find('label').element
+    opens.find(`[id="${htmlFor}"]`).element.focus()
+    expect(document.activeElement).toBe(
+      opens.find('[contenteditable="true"]').element
+    )
+  })
+
   it('writes entered dates into the data as local dates', async () => {
     const { data, enterDate } = await mountDates(mountSchema, {
       schema: {
