@@ -3120,6 +3120,14 @@ export class CollectionController<
    * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/controllers.md#deltas|Deltas}
    */
   delta?: boolean
+  /**
+   * Whether members serve their files at `GET :id/download/:key`, authorized
+   * like member `get`.
+   *
+   * @defaultValue `false`
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/storages.md#downloads|Downloads}
+   */
+  downloads?: boolean
   /** Whether the controller handles relate operations. */
   relate?: boolean
   /**
@@ -3400,6 +3408,7 @@ export type ModelControllerRelation = Partial<
     | 'allowParam'
     | 'relate'
     | 'unrelate'
+    | 'downloads'
   >
 > & {
   relation?: ModelControllerActions<RelationController>

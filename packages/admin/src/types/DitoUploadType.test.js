@@ -159,6 +159,17 @@ describe('DitoUploadType', () => {
     })
   })
 
+  it('links files to the download route of the member with `downloadUrl: true`', async () => {
+    const { findField } = await mountForm({
+      schema: { fields: { file: { type: 'upload', downloadUrl: true } } },
+      data: { file: { ...scan, key: 'scan-key.pdf' } }
+    })
+    const link = findField('file').find('a[download]')
+    expect(link.attributes('href')).toMatch(
+      /\/items\/1\/download\/scan-key\.pdf$/
+    )
+  })
+
   it('passes each file and its index to `downloadUrl()` with `multiple`', async () => {
     const { findField } = await mountForm({
       schema: {

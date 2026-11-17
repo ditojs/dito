@@ -113,6 +113,16 @@ export default class DitoAdmin {
         return `${this.collection(resource.parent)}/upload/${resource.path}`
       },
 
+      download(resource) {
+        // Dito.js Server serves the files of members on the member resource:
+        const { parent } = resource
+        return parent?.type === 'member'
+          ? `${this.member(parent)}/download/${
+              encodeURIComponent(resource.path)
+            }`
+          : null
+      },
+
       ...api.resources
     }
 

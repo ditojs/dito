@@ -132,6 +132,8 @@ export type RequestMethodResponse<T> = Response & { data: T }
  * - `'member'` — appends `id` to the path (e.g. `users/5`)
  * - `'upload'` — builds an upload path under the parent collection
  *   (e.g. `users/upload/avatar`)
+ * - `'download'` — builds a download path under the parent member
+ *   (e.g. `users/5/download/<key>`)
  *
  * Paths are built recursively through the `parent` chain, so a
  * member nested under a collection produces paths like
@@ -144,7 +146,7 @@ export interface ApiResource {
    *
    * @see {@link ApiResource} for the path-building rules per type.
    */
-  type?: LiteralUnion<'collection' | 'member' | 'upload'>
+  type?: LiteralUnion<'collection' | 'member' | 'upload' | 'download'>
   /**
    * URL path segment for this resource. If it starts with `/`, it is
    * treated as absolute and parent nesting is skipped. Otherwise it
@@ -1600,9 +1602,10 @@ export interface UploadSchema<$Item = any> extends FieldSchemaBase<$Item> {
    */
   thumbnailUrl?: SchemaValue<$Item, {}, string>
   /**
-   * URL or function returning URL for file downloads.
+   * URL or function returning URL for file downloads, or `true` for the
+   * download route of the form's member.
    */
-  downloadUrl?: SchemaValue<$Item, {}, string>
+  downloadUrl?: SchemaValue<$Item, {}, string | boolean>
   /**
    * Enables copy/paste for the field's files, between all upload fields. The
    * data is `{ files }`.

@@ -592,6 +592,146 @@ describe('asset handling in transacted requests', () => {
   })
 })
 
+describe('asset downloads', () => {
+  const Document = createDocumentClass()
+  class Asset extends AssetMixin(Model) {}
+
+  class Documents extends ModelController<any> {
+    override modelClass = Document
+    override downloads = true
+    override member: any = {
+      allow: ['get'],
+      authorize: {
+        get: (ctx: any, member: any) => (
+          ctx.get('x-allow') === 'yes' && member?.file?.name !== 'hidden.txt'
+        )
+      }
+    }
+  }
+
+  // Without `get`, members serve no files:
+  class Submissions extends ModelController<any> {
+    override modelClass = Document
+    override downloads = true
+    override member: any = { allow: [] }
+  }
+
+  const app = createServerApp({
+    models: { Document, Asset },
+    controllers: { Documents, Submissions }
+  })
+  app.addStorage(new MemoryStorage(app, 'memory', {} as StorageConfig))
+
+  beforeAll(async () => {
+    await createTestDatabase(app)
+    await app.start()
+  })
+
+  afterAll(async () => {
+    await app.stop()
+    await app.knex.destroy()
+  })
+
+  const download = (
+    id: number,
+    key: string,
+    { allow = 'yes', path = 'documents' } = {}
+  ) =>
+    fetch(
+      `${getAppUrl(app)}/${path}/${id}/download/${encodeURIComponent(key)}`,
+      { headers: { 'x-allow': allow } }
+    )
+
+  const createDocument = (name: string, data: string) =>
+    Document.query().insertAndFetch({
+      file: AssetFile.create({ name, type: 'text/plain', data })
+    })
+
+  it('serves the files of members by key', async () => {
+    const document = await createDocument('letter.txt', 'Dear reader')
+    const response = await download(document.id, document.file!.key)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toMatch(/^text\/plain/)
+    expect(response.headers.get('content-disposition')).toBe(
+      'attachment; filename="letter.txt"'
+    )
+    expect(await response.text()).toBe('Dear reader')
+  })
+
+  it('decodes keys with encoded characters', async () => {
+    const document = await createDocument('notes.my text', 'Notes')
+    expect(document.file!.key).toMatch(/\.my text$/)
+    const response = await download(document.id, document.file!.key)
+    expect(await response.text()).toBe('Notes')
+  })
+
+  it('answers keys that the member does not hold with 404', async () => {
+    const document = await Document.query().insertAndFetch({ file: null })
+    const other = await createDocument('other.txt', 'Other')
+    expect((await download(document.id, other.file!.key)).status).toBe(404)
+    expect((await download(999, other.file!.key)).status).toBe(404)
+  })
+
+  it('needs the `get` authorization of the member', async () => {
+    const document = await createDocument('secret.txt', 'Secret')
+    const response = await download(document.id, document.file!.key, {
+      allow: 'no'
+    })
+    expect(response.status).toBe(401)
+  })
+
+  it('passes the member to the `authorize` of `get`', async () => {
+    const document = await createDocument('hidden.txt', 'Hidden')
+    const response = await download(document.id, document.file!.key)
+    expect(response.status).toBe(401)
+  })
+
+  it('serves no files of members without `get`', async () => {
+    const document = await createDocument('submitted.txt', 'Submitted')
+    const response = await download(document.id, document.file!.key, {
+      path: 'submissions'
+    })
+    expect(response.status).toBe(404)
+  })
+
+  it('reserves the download actions of members', async () => {
+    const OtherDocument = createDocumentClass()
+    class Reserved extends ModelController<any> {
+      override modelClass = OtherDocument
+      override downloads = true
+      override member: any = {
+        'allow': ['get', 'get download/*'],
+        'get download/*'() {}
+      }
+    }
+    const other = createServerApp({
+      models: { Document: OtherDocument },
+      controllers: { Reserved }
+    })
+    await expect(other.setupControllers()).rejects.toThrow(
+      `The action 'get download/*' is reserved for the files of members.`
+    )
+    await other.knex.destroy()
+  })
+
+  it('rejects downloads of models without assets', async () => {
+    class Note extends Model {}
+    class Notes extends ModelController<any> {
+      override modelClass = Note
+      override downloads = true
+      override member: any = { allow: ['get'] }
+    }
+    const other = createServerApp({
+      models: { Note },
+      controllers: { Notes }
+    })
+    await expect(other.setupControllers()).rejects.toThrow(
+      `Model 'Note' has no assets to download.`
+    )
+    await other.knex.destroy()
+  })
+})
+
 describe('asset handling across storages', () => {
   class Book extends Model {
     declare id: number

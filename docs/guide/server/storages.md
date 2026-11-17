@@ -34,9 +34,9 @@ export default {
 
 `url` is the absolute URL at which the files are public, ending in `/`;
 file objects get a `url` built from it. Without it, files have no URL, e.g.
-in private S3 buckets, and the admin downloads them from the upload schema's
-[`downloadUrl`](../../api/admin/schemas.md#upload). `path` is the folder of a disk storage,
-relative to the app's `basePath`. The
+in private S3 buckets, and controllers can serve them on a
+[download route](#downloads). `path` is the folder of a disk storage, relative
+to the app's `basePath`. The
 [`StorageConfig`](../../api/server/storage.md#storageconfig) lists all
 options.
 
@@ -171,6 +171,29 @@ assets = {
   }
 }
 ```
+
+### Downloads
+
+Controllers with `downloads = true` serve the files of their members by key,
+e.g. `GET /api/books/1/download/3f2a9c1e-….pdf`, with the file's type and
+name. The route sits next to member `get` and takes its `authorize`, which
+receives the member. The hooks of `get` don't run for it. It answers 404 for
+keys that the member's own asset properties don't hold, so files of related
+models need `downloads` on the relation's controller. Member actions on
+`download/:param` throw at setup, as they would share the route:
+
+```js
+export class Books extends ModelController {
+  modelClass = Book
+  assets = true
+  downloads = true
+}
+```
+
+The admin's `upload` type links files without `url` to this route with
+[`downloadUrl: true`](../../api/admin/schemas.md#upload), on the member of the
+form. Fields of nested forms without their own resource link to the member of
+the parent form, so they need `downloadUrl` functions instead.
 
 ### Signatures
 

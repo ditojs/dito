@@ -282,16 +282,26 @@ const DitoUploadType = {
           })
         : context
 
-    const getDownloadUrl = (file, index) =>
-      file.url
-        ? file.url
-        : !file.upload || file.upload.success
-          ? getSchemaValue('downloadUrl', {
-              type: String,
-              default: null,
-              context: getFileContext(file, index)
-            })
-          : null
+    const getDownloadUrl = (file, index) => {
+      const url = (
+        file.url || (
+          !file.upload || file.upload.success
+            ? getSchemaValue('downloadUrl', {
+                type: [String, Boolean],
+                default: null,
+                context: getFileContext(file, index)
+              })
+            : null
+        )
+      )
+      // `true` links saved files to the download route of the form's member,
+      // see `downloads` of controllers:
+      return url === true
+        ? file.upload
+          ? null
+          : getResourceUrl(services, { type: 'download', path: file.key })
+        : url || null
+    }
 
     const downloadUrls = computed(() =>
       // Resolve like `fetchBlob()`, for links and clicks to match:
