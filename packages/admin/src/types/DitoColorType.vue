@@ -1,5 +1,5 @@
 <template lang="pug">
-.dito-color
+.dito-color(ref="root")
   PopoverRoot(
     v-model:open="showPopup"
   )
@@ -34,9 +34,12 @@
           )
             div(:style="{ background: `#${hexValue || '00000000'}` }")
     //- No portal, so that the styles apply. The popup is fixed, so that
-    //- scrolling panes don't clip it:
+    //- scrolling panes don't clip it, and stays in the closest container that
+    //- scrolls, so that it doesn't cover the panels next to it:
     PopoverContent.dito-color__popup(
       align="start"
+      :sideOffset="2"
+      :collisionBoundary="scrollContainer"
       positionStrategy="fixed"
     )
       ColorAreaRoot(
@@ -105,7 +108,14 @@ import {
   getChannelName
 } from 'reka-ui'
 import { DitoInput } from '@ditojs/ui/src'
-import { computed, ref, watch } from 'vue'
+import {
+  computed,
+  onMounted,
+  ref,
+  shallowRef,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { defineType } from '../utils/schema/types.ts'
 import { colorTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
@@ -177,6 +187,19 @@ const DitoColorType = {
       changeOnceEdited.emitIfDone()
     }
 
+    const root = useTemplateRef('root')
+    const scrollContainer = shallowRef(null)
+    onMounted(() => {
+      let element = root.value.parentElement
+      while (
+        element &&
+        !/auto|scroll/.test(getComputedStyle(element).overflowY)
+      ) {
+        element = element.parentElement
+      }
+      scrollContainer.value = element
+    })
+
     watch(showPopup, showPopup => {
       if (!showPopup) {
         changeOnceEdited.emitIfDone()
@@ -186,6 +209,7 @@ const DitoColorType = {
     return {
       ...field,
       showPopup,
+      scrollContainer,
       getChannelName,
 
       // The picker's color in reka-ui's HSB space, which its area needs for
@@ -349,7 +373,6 @@ $color-slider-height: 12px;
     box-sizing: border-box;
     // As wide as the input:
     width: var(--reka-popover-trigger-width);
-    margin: $popup-margin;
     padding: $color-picker-gap;
   }
 

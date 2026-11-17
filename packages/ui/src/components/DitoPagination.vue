@@ -33,7 +33,11 @@ PaginationRoot.dito-pagination(
         v-else
         as="span"
       )
-        DitoIcon(name="ellipsis")
+        DitoIcon(
+          name="ellipsis"
+          aria-hidden="true"
+        )
+        VisuallyHidden More pages
     //- reka only disables the button on the last page, not past it.
     PaginationNext.dito-button.dito-pagination__next(
       aria-label="Next page"
@@ -49,7 +53,8 @@ import {
   PaginationListItem,
   PaginationNext,
   PaginationPrev,
-  PaginationRoot
+  PaginationRoot,
+  VisuallyHidden
 } from 'reka-ui'
 import DitoIcon from './DitoIcon.vue'
 
@@ -61,7 +66,8 @@ export default {
     PaginationListItem,
     PaginationNext,
     PaginationPrev,
-    PaginationRoot
+    PaginationRoot,
+    VisuallyHidden
   },
 
   emits: ['update:page'],

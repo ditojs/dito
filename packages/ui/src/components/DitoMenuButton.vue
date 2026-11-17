@@ -103,6 +103,7 @@ $menu-button-padding: 0.25em;
   // Fit long menus into the room that reka-ui measures, and scroll them
   // only vertically, also when a scrollbar narrows the items:
   box-sizing: border-box;
+  max-width: var(--reka-dropdown-menu-content-available-width);
   max-height: var(--reka-dropdown-menu-content-available-height);
   overflow: hidden auto;
 }

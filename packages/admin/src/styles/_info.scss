@@ -54,6 +54,12 @@
     ($input-padding-hor + $border-width);
 }
 
+// Slide away from the trigger, also when the popup flips below it:
+.dito-info__popup[data-side='bottom'],
+.dito-tooltip[data-side='bottom'] {
+  --slide-offset: -5px;
+}
+
 // The tooltip is portalled to the body, so it needs to show above the dialogs,
 // the header and the sidebar:
 .dito-tooltip {
@@ -74,6 +80,6 @@
 @keyframes dito-info-enter {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translateY(var(--slide-offset, 5px));
   }
 }

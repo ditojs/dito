@@ -668,7 +668,8 @@ $tag-margin: 2px;
   }
 
   &__viewport {
-    max-height: 300px;
+    // Fit the list into the room that reka-ui measures:
+    max-height: min(300px, var(--reka-combobox-content-available-height));
   }
 
   &__option,
