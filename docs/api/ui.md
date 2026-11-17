@@ -128,8 +128,9 @@ The admin styles common verbs, e.g. `create`, `add`, `edit`, `delete` and
 A button that opens a menu of items next to it, below by default, with a tip
 pointing at the button, and emits `select` with the chosen item. It is built on
 [`reka-ui`'s `DropdownMenu`](https://reka-ui.com/docs/components/dropdown-menu),
-which handles mouse and keyboard: Enter, Space and the arrow keys open the
-menu, the arrow keys, Home and End move between items, Escape closes it.
+which handles mouse and keyboard: Enter, Space and ArrowDown open the menu,
+the arrow keys, Home and End move between items, Escape closes it, and Tab
+leaves it.
 
 | Prop       | Type                                        | Default    | Description                                                                                                                   |
 | ---------- | ------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -537,5 +538,6 @@ placeholders `%icon--{name}` and the list `$icons`:
 
 ### Transitions
 
-The styles include the transitions `dito-slide`, `dito-fade` and `dito-zoom`,
-and `TransitionHeight` uses the transition `dito-height`.
+The styles include the transition `dito-fade` and the animation
+`dito-slide-enter` of popups, and `TransitionHeight` uses the transition
+`dito-height`.
