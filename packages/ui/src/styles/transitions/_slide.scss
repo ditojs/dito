@@ -1,4 +1,4 @@
-// The animation of popups and menus as they open:
+// The animation of elements that slide open, see `TransitionHeight`:
 @keyframes dito-slide-enter {
   0% {
     opacity: 0;
@@ -10,5 +10,13 @@
     opacity: 1;
     transform-origin: 0% 0%;
     transform: scaleY(1);
+  }
+}
+
+// The animation of popups as they open, see `%popup--animated`:
+@keyframes dito-popup-enter {
+  from {
+    opacity: 0;
+    transform: scaleY(0.8);
   }
 }

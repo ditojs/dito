@@ -13,7 +13,10 @@
 %popup--animated {
   @extend %popup;
 
+  // Grow from the field, also when the popup flips above it:
+  transform-origin: var(--reka-popover-content-transform-origin);
+
   &[data-state='open'] {
-    animation: dito-slide-enter 0.15s $ease-out-quart;
+    animation: dito-popup-enter 0.15s $ease-out-quart;
   }
 }
