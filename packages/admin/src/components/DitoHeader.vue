@@ -45,7 +45,9 @@ export default {
     z-index: -1;
   }
 
-  span {
+  // Its own texts, not the spans of menus in it, e.g. their tips:
+  > span,
+  .dito-trail__text {
     display: inline-block;
     padding: $header-padding;
     color: $color-white;
