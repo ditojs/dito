@@ -19,32 +19,25 @@ DropdownMenuRoot(:modal="false")
     loop
     positionStrategy="fixed"
   )
-    DropdownMenuArrow.dito-menu-button__tip(
-      :width="14"
-      :height="7"
+    DropdownMenuItem.dito-menu-button__item(
+      v-for="item in items"
+      :key="item.value"
+      :disabled="item.disabled"
+      :title="item.icon ? item.label : null"
+      :class="{ 'dito-menu-button__item--icon': item.icon }"
+      @select="$emit('select', item)"
     )
-    //- The items scroll, not the menu, which would clip its tip:
-    .dito-menu-button__items
-      DropdownMenuItem.dito-menu-button__item(
-        v-for="item in items"
-        :key="item.value"
-        :disabled="item.disabled"
-        :title="item.icon ? item.label : null"
-        :class="{ 'dito-menu-button__item--icon': item.icon }"
-        @select="$emit('select', item)"
+      DitoIcon(
+        v-if="item.icon"
+        :name="item.icon"
       )
-        DitoIcon(
-          v-if="item.icon"
-          :name="item.icon"
-        )
-        template(
-          v-else
-        ) {{ item.label }}
+      template(
+        v-else
+      ) {{ item.label }}
 </template>
 
 <script>
 import {
-  DropdownMenuArrow,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuRoot,
@@ -57,7 +50,6 @@ import DitoIcon from './DitoIcon.vue'
 // and emits `select` with the chosen item. Attributes go to the button.
 export default {
   components: {
-    DropdownMenuArrow,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuRoot,
@@ -108,32 +100,21 @@ $menu-button-padding: 0.25em;
   border-radius: $menu-button-radius;
   background: $button-color;
   box-shadow: $shadow-window;
-  // Fit long menus into the room that reka-ui measures, and scroll them:
-  display: flex;
-  flex-flow: column;
+  // Fit long menus into the room that reka-ui measures, and scroll them
+  // only vertically, also when a scrollbar narrows the items:
   box-sizing: border-box;
   max-height: var(--reka-dropdown-menu-content-available-height);
+  overflow: hidden auto;
 
   &[data-state='open'] {
     animation: dito-slide-enter 0.15s $ease-out-quart;
   }
 }
 
-.dito-menu-button__items {
-  overflow-y: auto;
-}
-
-.dito-menu-button__tip {
-  fill: $button-color;
-  // The shadow of the menu, in the shape of the tip:
-  filter: drop-shadow(0 0 3px $color-shadow);
-}
-
 .dito-menu-button__item {
   @extend %button--plain;
 
   display: block;
-  width: 100%;
   padding: 0.6em 1em;
   // Concentric with the menu's corners, around its padding:
   border-radius: $menu-button-radius - $menu-button-padding;
