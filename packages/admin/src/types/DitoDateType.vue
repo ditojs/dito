@@ -7,7 +7,7 @@
     :is="schema.type === 'time' ? DitoTimeInput : DitoDatePicker"
     ref="element"
     v-model="dateValue"
-    v-bind="fieldProps"
+    v-bind="pickerProps"
     @update:open="onUpdateOpen"
   )
     template(#prefix)
@@ -42,12 +42,8 @@ import {
   today
 } from '@internationalized/date'
 import { convertToDate } from '../utils/date.js'
-import {
-  isDate,
-  assignDeeply,
-  equals,
-  formatPlainDate
-} from '@ditojs/utils'
+import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
+import { isDate, assignDeeply, formatPlainDate } from '@ditojs/utils'
 
 // @vue/component
 const DitoDateType = {
@@ -58,16 +54,13 @@ const DitoDateType = {
     // Text fields keep `readonly` fields focusable instead of disabling them:
     const field = useField(props, { nativeField: true, textField: true })
     const { services, context, componentPath, value, attributes } = field
-    // Edits emit `change` once they're done, when the focus leaves the field
-    // or the calendar closes, and only if they changed the value:
-    let changedValue = value.value
-    let isClearing = false
-    const emitChange = () => {
-      if (!isClearing && !equals(value.value, changedValue)) {
-        changedValue = value.value
-        field.onChange()
-      }
-    }
+    // Edits emit `change` when the focus leaves the field, and when the
+    // calendar closes, as picking a day keeps the focus in the field:
+    let open = false
+    const changeOnceEdited = createChangeOnceEdited({
+      isEditing: () => open,
+      emitChange: () => field.onChange()
+    })
     // reka-ui's fields have no element that the `autofocus` attribute focuses:
     onMounted(() => {
       if (field.autofocus.value) {
@@ -80,7 +73,7 @@ const DitoDateType = {
       DitoTimeInput,
 
       // The parts of the time and `hour12` come from the time format:
-      fieldProps: computed(() => {
+      pickerProps: computed(() => {
         const { time } = getFormats(props.schema, context)
         const isTime = props.schema.type === 'time'
         const { title, ...attrs } = attributes.value
@@ -122,34 +115,31 @@ const DitoDateType = {
         },
         set(dateValue) {
           value.value = dateValue?.toDate(getLocalTimeZone()) ?? null
+          changeOnceEdited.markEdited()
         }
       }),
 
-      onUpdateOpen(open) {
-        if (!open) {
-          emitChange()
-        }
+      onUpdateOpen(isOpen) {
+        open = isOpen
+        changeOnceEdited.emitIfDone()
       },
 
       onClear() {
         // Clearing blurs the field and emits its own change:
-        isClearing = true
+        changeOnceEdited.reset()
         field.clear()
-        isClearing = false
-        changedValue = value.value
       },
 
       // The field is focused while one of its parts or its popup is:
       onFocusIn(event) {
         if (!event.currentTarget.contains(event.relatedTarget)) {
-          changedValue = value.value
           field.onFocus()
         }
       },
 
       onFocusOut(event) {
         if (!event.currentTarget.contains(event.relatedTarget)) {
-          emitChange()
+          changeOnceEdited.emitIfDone()
           field.onBlur()
         }
       }

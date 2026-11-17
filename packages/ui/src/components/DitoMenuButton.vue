@@ -49,6 +49,7 @@ import {
 } from 'reka-ui'
 import DitoButton from './DitoButton.vue'
 import DitoIcon from './DitoIcon.vue'
+import { getScrollContainer } from '../utils/element.js'
 
 // A button that opens a menu of `items`, built on reka-ui's `DropdownMenu`,
 // and emits `select` with the chosen item. Attributes go to the button.
@@ -79,14 +80,7 @@ export default {
   mounted() {
     // Keep the menu in the closest container that scrolls, out of the headers
     // above it:
-    let element = this.$refs.button.$el.parentElement
-    while (
-      element &&
-      !/auto|scroll/.test(getComputedStyle(element).overflowY)
-    ) {
-      element = element.parentElement
-    }
-    this.scrollContainer = element
+    this.scrollContainer = getScrollContainer(this.$refs.button.$el)
   },
 
   methods: {
