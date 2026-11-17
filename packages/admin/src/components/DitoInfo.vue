@@ -9,10 +9,8 @@ PopoverRoot(
     @pointerenter="onPointerEnter"
     @pointerleave="onPointerLeave"
   )
-  //- In the pane, outside of the buttons and labels around the info. The popup
-  //- is fixed, so that scrolling panes don't clip it, and stays in the scroll
-  //- area of the info, e.g. a sidebar, flipping below the info where it has no
-  //- room above it:
+  //- Fixed and outside of the buttons and labels around the info, so that
+  //- scrolling panes don't clip it:
   PopoverPortal(
     :to="pane"
     :disabled="!pane"
@@ -46,6 +44,7 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
+import { getScrollContainer } from '@ditojs/ui/src'
 import { getHtml } from '../utils/html.js'
 
 // An info button that shows `info` in a popup.
@@ -72,7 +71,7 @@ export default {
     onMounted(() => {
       const element = trigger.value.$el
       pane.value = element.closest('.dito-pane')
-      scrollArea.value = element.closest('.dito-scroll')
+      scrollArea.value = getScrollContainer(element)
     })
 
     const open = ref(false)

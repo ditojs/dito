@@ -45,7 +45,7 @@ export default {
     z-index: -1;
   }
 
-  // Its own texts, not the spans of menus in it, e.g. their tips:
+  // Its own texts, not the spans of menus in it:
   > span,
   .dito-trail__text {
     display: inline-block;
