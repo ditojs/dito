@@ -17,6 +17,7 @@
         v-slot="{ segments }"
         :class="inputClasses"
         v-bind="$attrs"
+        @mousedown="onMouseDown"
       )
         slot(name="prefix")
         .dito-date-segments
@@ -263,6 +264,18 @@ export default {
               ...(this.granularity === 'hour' && { minute: 0 })
             })
       this.$emit('update:modelValue', date)
+    },
+
+    // Clicks outside the parts and the button, e.g. on the placeholder, focus
+    // the first part:
+    onMouseDown(event) {
+      if (
+        !this.disabled &&
+        !event.target.closest('[contenteditable="true"], button')
+      ) {
+        this.focus()
+        event.preventDefault()
+      }
     },
 
     focus() {
