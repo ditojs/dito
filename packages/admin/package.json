@@ -51,6 +51,7 @@
   },
   "peerDependencies": {
     "@floating-ui/dom": "^1.8.0",
+    "@internationalized/date": "^3.12.4",
     "@kyvg/vue3-notification": "^3.4.2",
     "@simplewebauthn/browser": "^14.0.0",
     "@tiptap/core": "^3.33.0",
@@ -81,7 +82,6 @@
     "@vueuse/integrations": "^15.0.0",
     "codeflask": "^1.4.1",
     "fflate": "^0.8.3",
-    "@internationalized/date": "^3.12.4",
     "lean-qr": "^2.7.4",
     "nanoid": "^6.0.2",
     "reka-ui": "^2.11.0",
@@ -95,6 +95,7 @@
   "devDependencies": {
     "@ditojs/build": "workspace:^",
     "@floating-ui/dom": "^1.8.0",
+    "@internationalized/date": "^3.12.4",
     "@kyvg/vue3-notification": "^3.4.2",
     "@simplewebauthn/browser": "^14.0.0",
     "@tiptap/core": "^3.33.0",
@@ -125,7 +126,6 @@
     "@vueuse/integrations": "^15.0.0",
     "codeflask": "^1.4.1",
     "fflate": "^0.8.3",
-    "@internationalized/date": "^3.12.4",
     "lean-qr": "^2.7.4",
     "nanoid": "^6.0.2",
     "reka-ui": "^2.11.0",

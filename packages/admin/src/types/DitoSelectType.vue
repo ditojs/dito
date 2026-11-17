@@ -108,6 +108,7 @@ const DitoSelectType = {
 defineType({
   type: 'select',
   component: DitoSelectType,
+  hasInputAffixes: true,
   ...optionsTraits
 })
 

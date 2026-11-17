@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { html } from '@ditojs/utils'
-import { mountSchema, mountForm, enterValue } from '../test/mount.js'
+import { mountSchema, mountForm, enterValue, openInfo } from '../test/mount.js'
 
 describe('DitoTextType', () => {
   it('displays the value and writes input back into the data', async () => {
@@ -166,7 +166,7 @@ describe('DitoTextType', () => {
     )
   })
 
-  it('renders `prefix` and `suffix`', async () => {
+  it('renders `prefix` and `suffix`, and `info` inline without label', async () => {
     const { findField } = await mountSchema({
       schema: {
         fields: {
@@ -176,16 +176,19 @@ describe('DitoTextType', () => {
             prefix: 'EUR',
             suffix: 'net',
             info: 'Without taxes'
-          }
+          },
+          title: { type: 'text', info: 'As printed' }
         }
       },
-      data: { price: '10' }
+      data: { price: '10', title: 'Dune' }
     })
     const price = findField('price')
     expect(price.find('.dito-affixes--prefix').text()).toBe('EUR')
     expect(price.find('.dito-affixes--suffix').text()).toBe('net')
     // With a label, the label shows the info:
     expect(price.find('.dito-info').exists()).toBe(false)
+    const suffix = findField('title').find('.dito-affixes--suffix')
+    expect((await openInfo(suffix)).textContent).toBe('As printed')
   })
 
   it('disables the input through a `disabled()` callback on the data', async () => {

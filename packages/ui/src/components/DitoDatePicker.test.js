@@ -39,6 +39,16 @@ describe('DitoDatePicker', () => {
     }
   )
 
+  it('shows the placeholder only without a value', async () => {
+    wrapper = mount(DitoDatePicker, { props: { placeholder: 'From' } })
+    const getPlaceholder = () => wrapper.find('.dito-date-picker__placeholder')
+    expect(getPlaceholder().text()).toBe('From')
+    expect(wrapper.classes()).toContain('dito-date-picker--placeholder')
+    await wrapper.setProps({ modelValue: new CalendarDate(2026, 5, 14) })
+    expect(getPlaceholder().exists()).toBe(false)
+    expect(wrapper.classes()).not.toContain('dito-date-picker--placeholder')
+  })
+
   it(`doesn't open the calendar of readonly fields`, () => {
     wrapper = mount(DitoDatePicker, { props: { readonly: true } })
     expect(

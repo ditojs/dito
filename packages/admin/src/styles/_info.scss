@@ -29,7 +29,8 @@
     --color: #{color.adjust($color-active, $lightness: 5%)};
 
     z-index: $z-index-info;
-    max-width: 350px;
+    // Wrap the text within the room that the popup has:
+    max-width: min(350px, var(--reka-popover-content-available-width));
     border-radius: $border-radius;
     background: var(--color);
     color: $color-white;

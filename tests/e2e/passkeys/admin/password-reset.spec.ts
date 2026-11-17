@@ -3,6 +3,8 @@ import { test, expect, sentPasswordResets } from '../fixtures.js'
 
 async function login(page: Page, password: string) {
   const dialog = page.getByRole('dialog')
+  // The dialog of a failed login leaves while the next one opens:
+  await expect(dialog).toHaveCount(1)
   await dialog.getByLabel('Username').fill('ada')
   await dialog.getByLabel('Password', { exact: true }).fill(password)
   await dialog.getByRole('button', { name: 'Sign In', exact: true }).click()
