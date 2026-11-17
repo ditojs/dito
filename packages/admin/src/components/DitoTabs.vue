@@ -1,6 +1,6 @@
 <template lang="pug">
 //- Manual activation: the arrow keys, Home and End only move the focus, Enter
-//- and Space select, to not switch the panels and URL on each key press.
+//- and Space select, to not switch the panels and URL on each key press:
 TabsRoot(
   asChild
   activationMode="manual"
