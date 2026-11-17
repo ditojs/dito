@@ -38,7 +38,7 @@ PaginationRoot.dito-pagination(
           aria-hidden="true"
         )
         VisuallyHidden More pages
-    //- reka only disables the button on the last page, not past it.
+    //- reka-ui only disables the button on the last page, not past it:
     PaginationNext.dito-button.dito-pagination__next(
       aria-label="Next page"
       :disabled="currentPage >= numPages"

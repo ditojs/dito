@@ -30,7 +30,7 @@ Inside custom admin components, the admin's styles already include those of
 | Section                   | Exports                                                                                                                                                        |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoProgress`, `DitoDatePicker`, `DitoTimeInput`, `TransitionHeight` |
-| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `addEvents()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()`                                                                   |
+| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `getScrollContainer()`, `hasErrors()`, `addEvents()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()`                            |
 | [Styles](#styles)         | CSS classes, SCSS variables, mixins, functions and icons                                                                                                       |
 
 ## Example
@@ -87,9 +87,9 @@ import { DitoButton, DitoMenuButton } from '@ditojs/ui'
 ```
 
 All components are Vue 3 components with the Options API. Values are bound
-with `v-model` (`modelValue`), `v-model:show` or `v-model:page`. Components
-that wrap a native element pass the attributes they don't declare, including
-listeners, on to it, as noted per component.
+with `v-model` (`modelValue`) or `v-model:page`. Components that wrap a native
+element pass the attributes they don't declare, including listeners, on to it,
+as noted per component.
 
 ### DitoButton
 
@@ -153,7 +153,7 @@ The default slot is the content of the button. All other attributes, e.g.
     { value: 'csv', label: 'CSV' },
     { value: 'pdf', label: 'PDF', disabled: !hasPdfExport }
   ]"
-  @select="item => exportOrders(item.value)"
+  @select="item => exportBooks(item.value)"
 />
 ```
 
@@ -295,22 +295,22 @@ year from lists. The values are dates of
 e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
 `day`, which also edits the time.
 
-| Prop                   | Type                                      | Default   | Description                                                                                      |
-| ---------------------- | ----------------------------------------- | --------- | ------------------------------------------------------------------------------------------------ |
-| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                                                            |
-| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                                                          |
-| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                                                          |
-| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.                                              |
-| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                                                        |
-| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list.                                     |
-| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.                                        |
-| `placeholder`          | `string`                                  | `null`    | Shown while the field is empty and not focused. Empty fields show their parts only once focused. |
+| Prop                   | Type                                      | Default   | Description                                                                                                 |
+| ---------------------- | ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                                                                       |
+| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                                                                     |
+| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                                                                     |
+| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.                                                         |
+| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                                                                   |
+| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list.                                                |
+| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.                                                   |
+| `placeholder`          | `string`                                  | `null`    | Shown while no part is entered and the field isn't focused. Such fields show their parts only once focused. |
 
 | Slot               | Description                                     |
 | ------------------ | ----------------------------------------------- |
 | `prefix`, `suffix` | Content before and after the parts of the date. |
 
-All other attributes go to the field, e.g. `aria-label`, and `aria-invalid`
+All other attributes but `class` go to the field, e.g. `aria-label`, and `aria-invalid`
 shows errors, as in [`DitoInput`](#ditoinput). The field emits `update:open`
 when the calendar opens or closes, and looks focused while it is open. Methods:
 `focus()` and `blur()`.
@@ -327,8 +327,9 @@ when the calendar opens or closes, and looks focused while it is open. Methods:
 A time field, built on
 [`reka-ui`'s `TimeField`](https://reka-ui.com/docs/components/time-field), which
 edits each part of the time on its own. The values are `Time`, or dates with a
-time of `@internationalized/date`, whose date it keeps. Its only prop of its own
-is `locale`, `'en-US'` by default; all of `TimeFieldRoot`'s props fall through,
+time of `@internationalized/date`, whose date it keeps. Its own props are
+`locale`, `'en-US'` by default, and `disabled`, which also adds
+`.dito-input--disabled`; all other props of `TimeFieldRoot` fall through,
 e.g. `modelValue` (`v-model`), `granularity`, `hourCycle` and
 `defaultPlaceholder`, the value that typing starts from without a value.
 
@@ -381,6 +382,26 @@ getVerbButtonAttributes({ verb: 'add', subject: 'Chapter' })
 //   'aria-label': 'Add Chapter'
 // }
 ```
+
+### Elements
+
+#### getScrollContainer()
+
+```js
+getScrollContainer(element)
+```
+
+Returns the closest ancestor of `element` that scrolls vertically, or `null`,
+e.g. as the `collisionBoundary` of a popup.
+
+#### hasErrors()
+
+```js
+hasErrors(attributes)
+```
+
+Returns whether the `aria-invalid` of `attributes` marks errors: all values
+but `false` and empty ones do, as in ARIA.
 
 ### Events
 
@@ -504,8 +525,8 @@ Use with `@extend`:
 | `%input--borderless`                     | Height and alignment of inputs without border, e.g. checkboxes, to line up with bordered ones.                         |
 | `%button--disabled`                      | The disabled look of buttons.                                                                                          |
 | `%icon--{name}`                          | One of the [icons](#icons), as a mask in `currentColor`, e.g. in a `::before`.                                         |
-| `%popup`                                 | The panel of popups and menus: border, radius, background, shadow and `z-index`.                                       |
-| `%popup--animated`                       | `%popup` with the enter animation of larger popups, e.g. calendars. Menus and lists open at once.                      |
+| `%popup`                                 | The `z-index` of popups, menus and lists.                                                                              |
+| `%popup--animated`                       | `%popup` with the panel and enter animation of larger popups, e.g. calendars. Menus and lists open at once.            |
 
 ### Functions
 
@@ -544,6 +565,7 @@ placeholders `%icon--{name}` and the list `$icons`:
 
 ### Transitions
 
-The styles include the transition `dito-fade` and the animation
-`dito-slide-enter` of popups, and `TransitionHeight` uses the transition
-`dito-height`.
+The styles include the transition `dito-fade`, and the animations
+`dito-slide-enter` and `dito-slide-leave` for elements that slide open and
+closed. Set `transform-origin` where they are used. `TransitionHeight` uses
+them with the transition `dito-height`.
