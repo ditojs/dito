@@ -1,5 +1,5 @@
 <template lang="pug">
-//- Pass the label as `aria-label`, as reka reads its text only once:
+//- Pass the label as `aria-label`, as reka-ui reads its text only once:
 DitoSwitch.dito-switch(
   :id="componentPath"
   ref="element"
