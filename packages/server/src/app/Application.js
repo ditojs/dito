@@ -1106,12 +1106,15 @@ export class Application extends Koa {
             // used directly for the actual running query.
             for (const file of files) {
               Object.assign(file, importedFile)
+              // Files of private storages have no `url`.
+              if (!importedFile.url) delete file.url
             }
           } else {
             // Asset is from a foreign source, but was already imported and can
             // be reused. See above for an explanation of this merge.
             for (const file of files) {
               Object.assign(file, asset.file)
+              if (!asset.file.url) delete file.url
             }
             // NOTE: No need to add `file` to `importedFiles`, since it's
             // already been imported to the storage before.

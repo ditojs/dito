@@ -32,9 +32,12 @@ export default {
 }
 ```
 
-`url` is the absolute URL at which the files are public, ending in `/`;
-file objects get a `url` built from it. Without it, files have no URL, e.g.
-in private S3 buckets, and the admin downloads them from the upload schema's
+`url` is the absolute URL at which the files are public, ending in `/`.
+Storages with `url` are public: each time a file is read, it gets a `url` built
+from the storage's `url`. The `url` isn't stored, so changing a storage's `url`
+needs no change of the data. Storages without `url`, or with `public: false`,
+are private, e.g. private S3 buckets: their files have no `url`, and the admin
+downloads them from the upload schema's
 [`downloadUrl`](../../api/admin/schemas.md#upload). `path` is the folder of a disk storage,
 relative to the app's `basePath`. The
 [`StorageConfig`](../../api/server/storage.md#storageconfig) lists all
@@ -97,7 +100,8 @@ Files are described by plain objects, stored as JSON in the models:
 ```
 
 `key` is the file's unique name in the storage, `name` its original name.
-`width` and `height` are only there for images and videos uploaded with
+`url` is only there in public storages, and is added on each read rather than
+stored. `width` and `height` are only there for images and videos uploaded with
 `readDimensions`.
 
 ## Asset properties
