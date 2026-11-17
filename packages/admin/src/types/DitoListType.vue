@@ -9,7 +9,10 @@
   //- Without a label, the buttons show in the header, which is otherwise
   //- empty and hidden:
   .dito-list__header(
-    v-if="scopes || hasPagination || hasClipboard || hasToggleAll && !labelId"
+    v-if=`
+      scopes || hasPagination || hasClipboard || columnItems.length > 0 ||
+      hasToggleAll && !labelId
+    `
   )
     //- With a label, the label toggles all items:
     button.dito-chevron.dito-chevron--double(
@@ -43,6 +46,15 @@
         :disabled="!creatable || disabled || readonly || isLoading"
         @paste="pasteItems"
       )
+    //- In an element of its own, as the menu renders next to its button:
+    .dito-list__columns(
+      v-if="columnItems.length > 0"
+    )
+      DitoMenuButton(
+        :items="columnItems"
+        align="end"
+        @select="item => table.getColumn(item.value).toggleVisibility()"
+      ) Columns
     DitoPagination.dito-list__pagination(
       v-if="hasPagination"
       v-model:page="page"
@@ -55,7 +67,8 @@
         'dito-table--separators': isInlined,
         'dito-table--larger-padding': hasEditButtons && !isInlined,
         'dito-table--alternate-colors': !isInlined,
-        'dito-table--even-count': hasEvenCount
+        'dito-table--even-count': hasEvenCount,
+        'dito-table--sized': hasSizedColumns
       }`
     )
       DitoTableHead.dito-list__table-head(
@@ -69,73 +82,94 @@
         :draggable="draggable"
         :modelValue="listData"
       )
-        tr.dito-table__row(
-          v-for="{ id, original: item, index } in rows"
-          :id="getComponentPath(index)"
-          :key="id"
-          :class=`{
-            'dito-table__row--error': dataModel.errors.hasWithin(item)
-          }`
+        template(
+          v-for="{ row, item, index } in rows"
+          :key="row.id"
         )
-          template(
-            v-for="column in table.getAllLeafColumns()"
-            :key="column.id"
+          tr.dito-table__row(
+            :id="getComponentPath(index)"
+            :class=`{
+              'dito-table__row--error': dataModel.errors.hasWithin(item)
+            }`
           )
-            td.dito-table__buttons(
-              v-if="column.id === buttonsColumnId"
+            template(
+              v-for="{ id, column } in row.getVisibleCells()"
+              :key="id"
             )
-              DitoEditButtons(
-                :schema="schema"
-                :formSchema="getItemFormSchema(schema, item, context)"
-                :dataPath="getDataPath(index)"
-                :data="item"
-                :store="getItemStore(item, index)"
-                :disabled="disabled || isLoading"
-                :deletable="deletable"
-                :draggable="draggable"
-                :editable="editable"
-                :editPath="getEditPath(index)"
-                @delete="deleteItem(item, index)"
-                @move="delta => moveItem(index, delta)"
+              td.dito-table__expand(
+                v-if="column.id === expandColumnId"
+                :style="getColumnStyle(column)"
               )
-            td(
-              v-else-if="column.id === itemColumnId"
-            )
-              DitoSourceItem(
-                :schema="schema"
-                :formSchema="getItemFormSchema(schema, item, context)"
-                :dataPath="getDataPath(index)"
-                :data="item"
-                :index="index"
-                :store="getItemStore(item, index)"
-                :disabled="disabled || isLoading"
-                :collapsed="collapsed"
-                :collapsible="collapsible"
-                :deletable="deletable"
-                :draggable="draggable && listData.length > 1"
-                :editable="editable"
-                :editPath="getEditPath(index)"
-                :createPath="sourceContext.createPath"
-                :insertIndex="creatable && draggable ? index : null"
-                @delete="deleteItem(item, index)"
-                @move="delta => moveItem(index, delta)"
-              )
-                template(
-                  v-if="$slots.default"
-                  #default="{ context }"
+                button.dito-chevron(
+                  type="button"
+                  :class="{ 'dito-chevron--open': row.getIsExpanded() }"
+                  :aria-expanded="row.getIsExpanded()"
+                  aria-label="Preview"
+                  @click="row.toggleExpanded()"
                 )
-                  slot(:context="context")
-            DitoTableCell(
-              v-else
-              :class="getCellClass(column)"
-              :cell="column.columnDef.meta.schema"
-              :schema="schema"
-              :dataPath="getDataPath(index)"
-              :data="item"
-              :store="store"
-              :nested="false"
-              :disabled="disabled || isLoading"
-            )
+              td.dito-table__buttons(
+                v-else-if="column.id === buttonsColumnId"
+              )
+                DitoEditButtons(
+                  :schema="schema"
+                  :formSchema="getItemFormSchema(schema, item, context)"
+                  :dataPath="getDataPath(index)"
+                  :data="item"
+                  :store="getItemStore(item, index)"
+                  :disabled="disabled || isLoading"
+                  :deletable="deletable"
+                  :draggable="draggable"
+                  :editable="editable"
+                  :editPath="getEditPath(index)"
+                  @delete="deleteItem(item, index)"
+                  @move="delta => moveItem(index, delta)"
+                )
+              td(
+                v-else-if="column.id === itemColumnId"
+              )
+                DitoSourceItem(
+                  :schema="schema"
+                  :formSchema="getItemFormSchema(schema, item, context)"
+                  :dataPath="getDataPath(index)"
+                  :data="item"
+                  :index="index"
+                  :store="getItemStore(item, index)"
+                  :disabled="disabled || isLoading"
+                  :collapsed="collapsed"
+                  :collapsible="collapsible"
+                  :deletable="deletable"
+                  :draggable="draggable && listData.length > 1"
+                  :editable="editable"
+                  :editPath="getEditPath(index)"
+                  :createPath="sourceContext.createPath"
+                  :insertIndex="creatable && draggable ? index : null"
+                  @delete="deleteItem(item, index)"
+                  @move="delta => moveItem(index, delta)"
+                )
+                  template(
+                    v-if="$slots.default"
+                    #default="{ context }"
+                  )
+                    slot(:context="context")
+              DitoTableCell(
+                v-else
+                :class="getCellClass(column)"
+                :style="getColumnStyle(column)"
+                :cell="column.columnDef.meta.schema"
+                :schema="schema"
+                :dataPath="getDataPath(index)"
+                :data="item"
+                :store="store"
+                :nested="false"
+                :disabled="disabled || isLoading"
+              )
+          tr.dito-table__preview(
+            v-if="hasPreview && row.getIsExpanded()"
+          )
+            td(:colspan="numColumns")
+              .dito-table__preview-content(
+                v-html="getPreviewHtml(item, index)"
+              )
         tr.dito-table__row.dito-table__row--empty(
           v-if="emptyText && !listData.length && !isLoading"
         )
@@ -171,8 +205,10 @@ import { useSortable } from '../composables/useSortable.ts'
 import { useRenderedItems } from '../composables/useRenderedItems.ts'
 import {
   useListTable,
+  getColumnStyle,
   itemColumnId,
-  buttonsColumnId
+  buttonsColumnId,
+  expandColumnId
 } from '../composables/useListTable.ts'
 import { useSteps, countStepItems } from '../composables/useSteps.ts'
 import { provideToNode } from '../composables/useComponentPath.ts'
@@ -186,6 +222,7 @@ import {
 } from '../utils/schema/setup.js'
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
+import { getHtml } from '../utils/html.js'
 import { initializeData } from '../utils/schema/data.js'
 import {
   getFormSchemas,
@@ -199,7 +236,7 @@ import { fromClipboard } from '../utils/fromClipboard.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
 import { getUploadEntries } from '../utils/interchange.ts'
 import { labelToggleKey } from '../utils/keys.ts'
-import { DitoPagination } from '@ditojs/ui/src'
+import { DitoMenuButton, DitoPagination } from '@ditojs/ui/src'
 import { hyphenate, labelize } from '@ditojs/utils'
 import { computed, inject, watchEffect } from 'vue'
 
@@ -209,6 +246,7 @@ const DitoListType = {
     DitoSourceItem,
     DitoClipboard,
     DitoLabelButtons,
+    DitoMenuButton,
     DitoPagination
   },
   props: fieldProps,
@@ -228,11 +266,17 @@ const DitoListType = {
     })
     const { listData, editable, deletable, draggable, creatable } = source
     const { services, context, getItemStore } = source
-    const { getSchemaValue, shouldRenderSchema } = useSchemaValue(context)
+    const { getSchemaValue, getLabelText, shouldRenderSchema } =
+      useSchemaValue(context)
     // The inlined schemas of the items read whether they're open from their
     // stores, which the table's expansion reads too:
+    // Lists with columns can show previews of their items below their rows:
+    const hasPreview = computed(
+      () => !!props.schema.preview && !source.isInlined.value
+    )
     const isItemOpen = (item, index) => (
-      getItemStore(item, index).opened ?? !source.collapsed.value
+      getItemStore(item, index).opened ??
+      !(source.collapsed.value || hasPreview.value)
     )
     const hasEditButtons = computed(
       () => (
@@ -245,11 +289,13 @@ const DitoListType = {
     )
     const table = useListTable({
       schema: props.schema,
+      store: props.store,
       items: listData,
       columns: source.columns,
       listQuery: source.listQuery,
       hasButtons: hasCellEditButtons,
-      collapsible: source.collapsible,
+      hasPreview,
+      expandable: computed(() => source.collapsible.value || hasPreview.value),
       isItemOpen,
       getItemStore,
       shouldRenderSchema
@@ -343,8 +389,32 @@ const DitoListType = {
       table,
       itemColumnId,
       buttonsColumnId,
+      expandColumnId,
+      getColumnStyle,
+      hasPreview,
+      // Tables with sized columns grow wider than the list, and scroll:
+      hasSizedColumns: computed(() =>
+        Object.values(source.columns.value ?? {}).some(
+          column => column.width || column.resizable
+        )
+      ),
+      // The columns that viewers can hide, as items of the columns menu:
+      columnItems: computed(() =>
+        table
+          .getAllLeafColumns()
+          .filter(column => column.getCanHide())
+          .map(column => ({
+            value: column.id,
+            label: getLabelText(column.columnDef.meta.schema),
+            checked: column.getIsVisible()
+          }))
+      ),
+      // The rendered rows with their items and their indices in the list:
       rows: computed(() =>
-        table.getRowModel().rows.slice(0, renderedItems.value.length)
+        table
+          .getRowModel()
+          .rows.slice(0, renderedItems.value.length)
+          .map(row => ({ row, item: row.original, index: row.index }))
       ),
       labelize,
       getItemFormSchema,
@@ -361,7 +431,7 @@ const DitoListType = {
       toggleAll,
       emptyText: computed(() => getSchemaValue('empty', { type: String })),
 
-      numColumns: computed(() => table.getAllLeafColumns().length),
+      numColumns: computed(() => table.getVisibleLeafColumns().length),
 
       page: computed({
         get() {
@@ -394,6 +464,18 @@ const DitoListType = {
 
       getEditPath(index) {
         return editable.value ? source.sourceContext.getItemPath(index) : null
+      },
+
+      getPreviewHtml(item, index) {
+        return getHtml(
+          props.schema.preview(
+            source.createContext({
+              data: item,
+              dataPath: appendDataPath(props.dataPath, index),
+              nested: true
+            })
+          )
+        )
       },
 
       getCellClass(column) {
@@ -557,9 +639,11 @@ export default DitoListType
       margin-left: $form-spacing + $border-width - $focus-ring-padding;
     }
 
-    .dito-label-buttons {
+    .dito-label-buttons,
+    #{$self}__columns {
       margin-left: auto;
 
+      + #{$self}__columns,
       + #{$self}__pagination {
         margin-left: $form-spacing;
       }

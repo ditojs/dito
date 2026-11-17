@@ -1,4 +1,5 @@
 import type { ViewSchema } from '@ditojs/admin'
+import { html } from '@ditojs/utils'
 import type { Book } from './models/Book.js'
 
 export const books: ViewSchema<Book> = {
@@ -12,15 +13,33 @@ export const books: ViewSchema<Book> = {
     deletable: true,
     paginate: 10,
     columns: {
-      title: { label: 'Title', sortable: true, defaultSort: 'asc' },
-      author: { label: 'Author', sortable: true },
-      year: { label: 'Year', sortable: true },
-      pages: { label: 'Pages', sortable: true },
+      title: {
+        label: 'Title',
+        sortable: true,
+        defaultSort: 'asc',
+        pinned: 'start',
+        resizable: true,
+        width: 260
+      },
+      author: {
+        label: 'Author',
+        sortable: true,
+        resizable: true,
+        draggable: true,
+        hideable: true
+      },
+      year: { label: 'Year', sortable: true, draggable: true, hideable: true },
+      pages: { label: 'Pages', sortable: true, draggable: true, hidden: true },
       available: {
         label: 'Available',
+        draggable: true,
+        hideable: true,
         render: ({ value }) => (value ? 'Yes' : 'No')
       }
     },
+    preview: ({ item }) =>
+      html`<b>${item.title}</b> by ${item.author}, ${item.year}, ${item.pages}
+        pages: ${item.chapters?.map(({ title }) => title).join(', ')}`,
     scopes: {
       $default: { label: 'All' },
       available: { label: 'Available' },

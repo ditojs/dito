@@ -114,13 +114,38 @@
     }
   }
 
+  // Previews take the colors of the rows above them:
   &--alternate-colors {
-    > tbody > tr:nth-child(odd),
+    > tbody > tr:nth-child(odd of #{$self}__row),
+    > tbody > tr:nth-child(odd of #{$self}__row) + #{$self}__preview,
     &#{$self}--even-count > tfoot > tr {
       > td {
         background: $color-white;
       }
     }
+  }
+
+  &--sized {
+    width: max-content;
+    min-width: 100%;
+  }
+
+  &__expand {
+    box-sizing: border-box;
+    width: 40px;
+    vertical-align: middle;
+  }
+
+  &__preview > td {
+    padding-top: 0;
+  }
+
+  // After the preview buttons, and in view when the table scrolls:
+  &__preview-content {
+    position: sticky;
+    inset-inline-start: 0;
+    width: fit-content;
+    padding-inline-start: 40px;
   }
 
   &--background {

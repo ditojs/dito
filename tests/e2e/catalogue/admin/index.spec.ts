@@ -15,6 +15,24 @@ test.describe('catalogue', () => {
     ).toHaveAttribute('aria-current', 'page')
   })
 
+  test('previews books and shows hidden columns', async ({ page, url }) => {
+    const view = new DitoListView(page, url, 'Books')
+    await view.navigate('/books')
+    await view.list
+      .getRow('Emma')
+      .getByRole('button', { name: 'Preview' })
+      .click()
+    await expect(page.locator('.dito-table__preview')).toContainText(
+      'Emma by Jane Austen, 1815'
+    )
+    await expect(page.getByRole('columnheader', { name: 'Pages' })).toBeHidden()
+    await page.getByRole('button', { name: 'Columns' }).click()
+    await page.getByRole('menuitemcheckbox', { name: 'Pages' }).click()
+    await expect(
+      page.getByRole('columnheader', { name: 'Pages' })
+    ).toBeVisible()
+  })
+
   test('expands and collapses all chapters', async ({ page, url }) => {
     const view = new DitoListView(page, url, 'Books')
     await view.navigate('/books')

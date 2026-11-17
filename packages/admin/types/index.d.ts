@@ -796,6 +796,11 @@ export interface SourceSettings<$Item> {
    */
   paginate?: SchemaValue<$Item, {}, number>
   /**
+   * Shows a preview of each item below its row, opened by a button at its
+   * start. Lists with columns only.
+   */
+  preview?: SchemaValueCallback<$Item, {}, string | Html>
+  /**
    * The default page number for paginated sources.
    */
   page?: number
@@ -2029,6 +2034,18 @@ export type ColumnSchema<$Item = any, $Value = any> = DisplaySchema<
    * Columns are ordered by the first column to specify `defaultSort`.
    */
   defaultSort?: true | 'asc' | 'desc'
+  /** Whether viewers can hide the column through the columns menu. */
+  hideable?: boolean
+  /** Whether the column starts hidden, which also makes it `hideable`. */
+  hidden?: boolean
+  /** Whether viewers can resize the column by dragging its edge. */
+  resizable?: boolean
+  /** The width of the column in pixels. */
+  width?: number
+  /** Whether viewers can move the column by dragging its header. */
+  draggable?: boolean
+  /** Sticks the column to the start or end of the table when it scrolls. */
+  pinned?: 'start' | 'end'
 }
 
 /**

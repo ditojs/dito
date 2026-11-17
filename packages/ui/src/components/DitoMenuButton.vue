@@ -23,13 +23,18 @@ DropdownMenuRoot(
     loop
     positionStrategy="fixed"
   )
-    DropdownMenuItem.dito-menu-button__item(
+    //- Items with `checked` are checkboxes:
+    component.dito-menu-button__item(
       v-for="item in items"
+      :is=`item.checked != null
+        ? 'DropdownMenuCheckboxItem'
+        : 'DropdownMenuItem'`
       :key="item.value"
+      v-bind="item.checked != null ? { modelValue: item.checked } : {}"
       :disabled="item.disabled"
       :title="item.icon ? item.label : null"
       :class="{ 'dito-menu-button__item--icon': item.icon }"
-      @select="$emit('select', item)"
+      @select="onSelect($event, item)"
     )
       DitoIcon(
         v-if="item.icon"
@@ -42,6 +47,7 @@ DropdownMenuRoot(
 
 <script>
 import {
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuRoot,
@@ -55,6 +61,7 @@ import { getScrollContainer } from '../utils/element.js'
 // and emits `select` with the chosen item. Attributes go to the button.
 export default {
   components: {
+    DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuRoot,
@@ -84,6 +91,14 @@ export default {
   },
 
   methods: {
+    // Checkboxes keep the menu open, to toggle several of them:
+    onSelect(event, item) {
+      if (item.checked != null) {
+        event.preventDefault()
+      }
+      this.$emit('select', item)
+    },
+
     async onUpdateOpen(open) {
       this.alignment = this.align
       if (open && this.align === 'center' && /top|bottom/.test(this.side)) {
@@ -148,6 +163,16 @@ $menu-button-padding: 0.25em;
     // Show only the icon, in a square:
     display: flex;
     padding: 0.5em;
+  }
+
+  &[role='menuitemcheckbox']::before {
+    display: inline-block;
+    width: 1.25em;
+    content: '';
+  }
+
+  &[data-state='checked']::before {
+    content: '✓';
   }
 
   &[data-disabled] {
