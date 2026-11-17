@@ -5,8 +5,7 @@
   background: $color-active;
   border-color: $color-active;
 
-  &:active,
-  &[data-state='open'] {
+  &:active {
     border-color: color.adjust($color-active, $lightness: -10%);
   }
 
