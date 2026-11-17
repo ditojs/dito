@@ -153,7 +153,7 @@ The default slot is the content of the button. All other attributes, e.g.
     { value: 'csv', label: 'CSV' },
     { value: 'pdf', label: 'PDF', disabled: !hasPdfExport }
   ]"
-  @select="item => exportOrders(item.value)"
+  @select="item => exportBooks(item.value)"
 />
 ```
 
