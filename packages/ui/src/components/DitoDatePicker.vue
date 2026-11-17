@@ -1,5 +1,5 @@
 <template lang="pug">
-.dito-date-picker(:class="{ 'dito-date-picker--placeholder': hasPlaceholder }")
+.dito-date-picker(:class="{ 'dito-date-picker--empty': !modelValue }")
   //- Picking a day closes the calendar, and picking it again keeps it:
   DatePickerRoot(
     v-bind="$props"
@@ -23,7 +23,7 @@
         .dito-date-segments
           //- Shown instead of the empty parts while the field isn't focused:
           span.dito-date-picker__placeholder(
-            v-if="hasPlaceholder"
+            v-if="placeholder && !modelValue"
           ) {{ placeholder }}
           DatePickerInput.dito-date-segments__part(
             v-for="item in segments"
@@ -203,10 +203,6 @@ export default {
   },
 
   computed: {
-    hasPlaceholder() {
-      return !!this.placeholder && !this.modelValue
-    },
-
     inputClasses() {
       return {
         // Like `DitoInput`:
@@ -317,12 +313,12 @@ function getToday(granularity) {
     min-width: 8em;
   }
 
-  // Hide the parts behind the placeholder, but keep them focusable:
-  &--placeholder:not(:focus-within) .dito-date-segments__part {
+  // Empty fields hide their parts until focused, but keep them focusable:
+  &--empty:not(:focus-within) .dito-date-segments__part {
     opacity: 0;
   }
 
-  &--placeholder:focus-within &__placeholder {
+  &--empty:focus-within &__placeholder {
     display: none;
   }
 
