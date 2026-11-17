@@ -362,6 +362,28 @@ describe('DitoContainer', () => {
       }
     })
 
+    it('leaves the focus in the field when the mouse opens the info', async () => {
+      const { findContainer, findField } = await mountSchema({
+        schema: { fields: { title: { type: 'text', info: 'Help' } } }
+      })
+      const info = findContainer('title').find('.dito-info')
+      const input = findField('title').find('input').element
+      input.focus()
+      vi.useFakeTimers()
+      try {
+        await info.trigger('pointerenter', { pointerType: 'mouse' })
+        await vi.advanceTimersByTimeAsync(250)
+        expect(info.attributes('aria-expanded')).toBe('true')
+        expect(document.activeElement).toBe(input)
+        await info.trigger('pointerleave', { pointerType: 'mouse' })
+        await vi.advanceTimersByTimeAsync(250)
+        expect(info.attributes('aria-expanded')).toBe('false')
+        expect(document.activeElement).toBe(input)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('shows one info for fields without a label, in the suffix of inputs', async () => {
       const { findContainer } = await mountSchema({
         schema: {
