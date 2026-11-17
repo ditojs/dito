@@ -87,9 +87,9 @@ import { DitoButton, DitoMenuButton } from '@ditojs/ui'
 ```
 
 All components are Vue 3 components with the Options API. Values are bound
-with `v-model` (`modelValue`), `v-model:show` or `v-model:page`. Components
-that wrap a native element pass the attributes they don't declare, including
-listeners, on to it, as noted per component.
+with `v-model` (`modelValue`) or `v-model:page`. Components that wrap a native
+element pass the attributes they don't declare, including listeners, on to it,
+as noted per component.
 
 ### DitoButton
 
