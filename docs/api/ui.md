@@ -128,8 +128,9 @@ The admin styles common verbs, e.g. `create`, `add`, `edit`, `delete` and
 A button that opens a menu of items next to it, below by default, with a tip
 pointing at the button, and emits `select` with the chosen item. It is built on
 [`reka-ui`'s `DropdownMenu`](https://reka-ui.com/docs/components/dropdown-menu),
-which handles mouse and keyboard: Enter, Space and the arrow keys open the
-menu, the arrow keys, Home and End move between items, Escape closes it.
+which handles mouse and keyboard: Enter, Space and ArrowDown open the menu,
+the arrow keys, Home and End move between items, Escape closes it, and Tab
+leaves it.
 
 | Prop       | Type                                        | Default    | Description                                                                                                                   |
 | ---------- | ------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -293,23 +294,25 @@ year from lists. The values are dates of
 e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
 `day`, which also edits the time.
 
-| Prop                   | Type                                      | Default   | Description                                                  |
-| ---------------------- | ----------------------------------------- | --------- | ------------------------------------------------------------ |
-| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                        |
-| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                      |
-| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                      |
-| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.          |
-| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                    |
-| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list. |
-| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.    |
+| Prop                   | Type                                      | Default   | Description                                                     |
+| ---------------------- | ----------------------------------------- | --------- | --------------------------------------------------------------- |
+| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                           |
+| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                         |
+| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                         |
+| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.             |
+| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                       |
+| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list.    |
+| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.       |
+| `placeholder`          | `string`                                  | `null`    | Shown instead of the empty parts while the field isn't focused. |
 
 | Slot               | Description                                     |
 | ------------------ | ----------------------------------------------- |
 | `prefix`, `suffix` | Content before and after the parts of the date. |
 
 All other attributes go to the field, e.g. `aria-label`, and `aria-invalid`
-shows errors, as in [`DitoInput`](#ditoinput). Methods: `focus()` and
-`blur()`.
+shows errors, as in [`DitoInput`](#ditoinput). The field emits `update:open`
+when the calendar opens or closes, and looks focused while it is open. Methods:
+`focus()` and `blur()`.
 
 ```vue
 <DitoDatePicker
@@ -539,5 +542,6 @@ placeholders `%icon--{name}` and the list `$icons`:
 
 ### Transitions
 
-The styles include the transitions `dito-slide`, `dito-fade` and `dito-zoom`,
-and `TransitionHeight` uses the transition `dito-height`.
+The styles include the transition `dito-fade` and the animation
+`dito-slide-enter` of popups, and `TransitionHeight` uses the transition
+`dito-height`.

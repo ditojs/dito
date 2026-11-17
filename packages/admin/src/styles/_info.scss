@@ -38,6 +38,11 @@
   filter: drop-shadow(0 2px 4px $color-shadow);
 }
 
+// Wrap the text of infos within the room that their popup has:
+.dito-info__popup {
+  max-width: min(350px, var(--reka-popover-content-available-width));
+}
+
 .dito-info__popup[data-state='open'] {
   animation: dito-info-enter 0.25s $ease-out-quart;
 }

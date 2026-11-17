@@ -28,8 +28,6 @@ DropdownMenuRoot(:modal="false")
       DropdownMenuItem.dito-menu-button__item(
         v-for="item in items"
         :key="item.value"
-        as="button"
-        type="button"
         :disabled="item.disabled"
         :title="item.icon ? item.label : null"
         :class="{ 'dito-menu-button__item--icon': item.icon }"
@@ -123,6 +121,8 @@ $menu-button-padding: 0.25em;
 
 .dito-menu-button__tip {
   fill: $button-color;
+  // The shadow of the menu, in the shape of the tip:
+  filter: drop-shadow(0 0 3px $color-shadow);
 }
 
 .dito-menu-button__item {
