@@ -295,16 +295,16 @@ year from lists. The values are dates of
 e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
 `day`, which also edits the time.
 
-| Prop                   | Type                                      | Default   | Description                                                     |
-| ---------------------- | ----------------------------------------- | --------- | --------------------------------------------------------------- |
-| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                           |
-| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                         |
-| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                         |
-| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.             |
-| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                       |
-| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list.    |
-| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.       |
-| `placeholder`          | `string`                                  | `null`    | Shown instead of the empty parts while the field isn't focused. |
+| Prop                   | Type                                      | Default   | Description                                                                                      |
+| ---------------------- | ----------------------------------------- | --------- | ------------------------------------------------------------------------------------------------ |
+| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                                                            |
+| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                                                          |
+| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                                                          |
+| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.                                              |
+| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                                                        |
+| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list.                                     |
+| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.                                        |
+| `placeholder`          | `string`                                  | `null`    | Shown while the field is empty and not focused. Empty fields show their parts only once focused. |
 
 | Slot               | Description                                     |
 | ------------------ | ----------------------------------------------- |
