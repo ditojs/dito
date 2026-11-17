@@ -7,8 +7,8 @@ version, see the upgrade guides in `docs/`.
 
 ### Behaviour changes
 
-- **server:** S3 storages give files a `url` only if they set `url`, as before 6.0.0, so files of private buckets have no URL that can't be opened. The admin downloads them from the upload schema's [`downloadUrl`](../../docs/api/admin/schemas.md#upload). Give public S3 storages without `url` the URL of their bucket, e.g. `url: 'https://bookshop-covers.s3.eu-central-1.amazonaws.com/'`. Files stored since 6.0.0 in private buckets keep their URL in the database: remove `url` from their JSON.
-- **admin:** Requests to the API no longer fetch the session before they are sent, so endpoints that need no login work without one. When a request answers 401 and the session expired, the admin asks to log in and sends the request again, see [`api.users`](../../docs/api/admin/admin.md#users).
+- **server:** S3 storages give files a `url` only if they set `url`, as before 6.0.0, so files of private buckets have no URL that can't be opened. The admin downloads them from the upload schema's [`downloadUrl`](docs/api/admin/schemas.md#upload). Give public S3 storages without `url` the URL of their bucket, e.g. `url: 'https://bookshop-covers.s3.eu-central-1.amazonaws.com/'`. Files stored since 6.0.0 in private buckets keep their URL in the database: remove `url` from their JSON.
+- **admin:** Requests to the API no longer fetch the session before they are sent, so endpoints that need no login work without one. When a request answers 401 and the session expired, the admin asks to log in and sends the request again, see [`api.users`](docs/api/admin/admin.md#users).
 
 ### Fixes
 
