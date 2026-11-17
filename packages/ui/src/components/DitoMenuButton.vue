@@ -120,7 +120,8 @@ $menu-button-padding: 0.25em;
 }
 
 .dito-menu-button__items {
-  overflow-y: auto;
+  // Only scroll vertically, also when a scrollbar narrows the items:
+  overflow: hidden auto;
 }
 
 .dito-menu-button__tip {
@@ -133,7 +134,6 @@ $menu-button-padding: 0.25em;
   @extend %button--plain;
 
   display: block;
-  width: 100%;
   padding: 0.6em 1em;
   // Concentric with the menu's corners, around its padding:
   border-radius: $menu-button-radius - $menu-button-padding;
