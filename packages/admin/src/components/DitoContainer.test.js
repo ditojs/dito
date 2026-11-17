@@ -337,13 +337,48 @@ describe('DitoContainer', () => {
       expect((await openInfo(label)).textContent).toBe('novel, poem')
     })
 
-    it('shows one info for a field without a label', async () => {
+    it('opens the info while the mouse is over it, after a delay', async () => {
+      const { findContainer } = await mountSchema({
+        schema: { fields: { title: { type: 'text', info: 'Help' } } }
+      })
+      const info = findContainer('title').find('.dito-info')
+      const isOpen = () => info.attributes('aria-expanded') === 'true'
+      vi.useFakeTimers()
+      try {
+        // Touches toggle the info with clicks only:
+        await info.trigger('pointerenter', { pointerType: 'touch' })
+        await vi.advanceTimersByTimeAsync(250)
+        expect(isOpen()).toBe(false)
+        await info.trigger('pointerenter', { pointerType: 'mouse' })
+        await vi.advanceTimersByTimeAsync(200)
+        expect(isOpen()).toBe(false)
+        await vi.advanceTimersByTimeAsync(50)
+        expect(isOpen()).toBe(true)
+        await info.trigger('pointerleave', { pointerType: 'mouse' })
+        await vi.advanceTimersByTimeAsync(250)
+        expect(isOpen()).toBe(false)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('shows one info for fields without a label, in the suffix of inputs', async () => {
       const { findContainer } = await mountSchema({
         schema: {
-          fields: { isbn: { type: 'text', label: false, info: 'Help' } }
+          fields: {
+            isbn: { type: 'text', label: false, info: 'Help' },
+            check: { type: 'button', text: 'Check', info: 'Help' }
+          }
         }
       })
-      expect(findContainer('isbn').findAll('.dito-info')).toHaveLength(1)
+      const isbn = findContainer('isbn').findAll('.dito-info')
+      expect(isbn).toHaveLength(1)
+      expect(isbn[0].element.closest('.dito-affixes--suffix')).not.toBe(null)
+      const check = findContainer('check').findAll('.dito-info')
+      expect(check).toHaveLength(1)
+      expect(check[0].element.parentElement.classList).toContain(
+        'dito-container'
+      )
     })
 
     it('removes the members of the type when the type changes', async () => {

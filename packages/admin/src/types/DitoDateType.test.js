@@ -93,6 +93,20 @@ describe('DitoDateType', () => {
     expect(data.publishedOn).toBe(null)
   })
 
+  it('keeps the time of date-times when picking a day', async () => {
+    const { findField, data, settle } = await mountSchema({
+      schema: { fields: { createdAt: { type: 'datetime' } } },
+      data: { createdAt: new Date(2026, 4, 14, 11, 30).toISOString() }
+    })
+    const field = findField('createdAt')
+    await field.find('.dito-date-picker__toggle').trigger('click')
+    await settle()
+    // The days of the calendar have the time of the value:
+    await field.find('[data-value^="2026-05-20"]').trigger('click')
+    await settle()
+    expect(data.createdAt).toEqual(new Date(2026, 4, 20, 11, 30))
+  })
+
   it('sends dates as plain dates, date-times and times as ISO strings', async () => {
     const createdAt = new Date(2026, 4, 14, 8, 0)
     const opensAt = new Date(2026, 4, 14, 14, 30)
