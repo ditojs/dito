@@ -393,6 +393,15 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'section-label-focus.png')
   })
 
+  test('buttons with infos', async ({ page, url }) => {
+    await openProject(page, url, 'Details')
+    await page.getByRole('button', { name: 'Advanced', exact: true }).click()
+    await expect(
+      page.getByRole('button', { name: 'Info: Publish', exact: true })
+    ).toBeVisible()
+    await expectScreenshot(page, 'button-infos.png')
+  })
+
   test('list collapse all focus', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
     await focusByKeyboard(
