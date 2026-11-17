@@ -491,6 +491,7 @@ const DitoMultiselectType = {
 defineType({
   type: 'multiselect',
   component: DitoMultiselectType,
+  hasInputAffixes: true,
   hasSearch: true,
   ...optionsTraits
 })

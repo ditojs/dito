@@ -446,21 +446,42 @@ describe('useField()', () => {
       ['date', new CalendarDate(2026, 5, 14)],
       ['datetime', new CalendarDateTime(2026, 5, 14, 9, 30)],
       ['time', new CalendarDateTime(2026, 5, 14, 9, 30)]
-    ])('emits input and change for each entered %s', async (type, date) => {
-      const { getComponent, events, settle } = await mountWithEvents({
-        publishedAt: { type }
-      })
-      const field = getComponent('publishedAt').$refs.element
-      for (const value of [date, date.add({ days: 1 })]) {
-        field.$emit('update:modelValue', value)
-        await settle()
+    ])(
+      'emits input for each entered %s, and change once blurred',
+      async (type, date) => {
+        const { findField, getComponent, events, settle } =
+          await mountWithEvents({ publishedAt: { type } })
+        const field = findField('publishedAt')
+        const element = getComponent('publishedAt').$refs.element
+        await field.trigger('focusin')
+        for (const value of [date, date.add({ days: 1 })]) {
+          element.$emit('update:modelValue', value)
+          await settle()
+        }
+        expect(events.map(([event]) => event)).toEqual(['input', 'input'])
+        await field.trigger('focusout')
+        expect(events.map(([event]) => event)).toEqual([
+          'input',
+          'input',
+          'change'
+        ])
       }
-      expect(events.map(([event]) => event)).toEqual([
-        'input',
-        'change',
-        'input',
-        'change'
-      ])
+    )
+
+    it('emits change for dates once their calendar closes, if changed', async () => {
+      const { findField, getComponent, events, settle } = await mountWithEvents(
+        { publishedAt: { type: 'date' } },
+        { data: { publishedAt: '2026-05-14' } }
+      )
+      const element = getComponent('publishedAt').$refs.element
+      await findField('publishedAt').trigger('focusin')
+      element.$emit('update:open', false)
+      expect(events).toEqual([])
+      element.$emit('update:modelValue', new CalendarDate(2026, 5, 15))
+      await settle()
+      element.$emit('update:open', false)
+      await settle()
+      expect(events.map(([event]) => event)).toEqual(['input', 'change'])
     })
   })
 })

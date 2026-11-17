@@ -16,6 +16,7 @@ TabsRoot(
       }`
       @scroll.passive="updateMasks"
     )
+      //- `as="a"` keeps reka-ui from giving the link `type="button"`:
       TabsTrigger(
         v-for="(tabSchema, key) in tabs"
         :key="key"

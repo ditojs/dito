@@ -53,8 +53,8 @@
     v-bind="componentProps"
     :class="componentClasses"
   )
-  //- Without a label, the info follows the component, outside of it, since
-  //- buttons can't hold the button of the info:
+  //- Without a label, inputs show the info in their suffix. It follows other
+  //- components, outside of them, since buttons can't hold its button:
   DitoInfo(
     v-if="hasComponentInfo"
     :info="info"
@@ -233,7 +233,11 @@ export default {
     })
 
     const hasComponentInfo = computed(
-      () => !!field.info.value && !hasSchemaLabel.value
+      () => (
+        !!field.info.value &&
+        !hasSchemaLabel.value &&
+        !typeDescriptor.value?.hasInputAffixes
+      )
     )
 
     const errorsElementId = computed(() => `${componentPath.value}-errors`)
