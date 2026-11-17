@@ -23,12 +23,19 @@ describe('DitoSwitch', () => {
           wrapper.setProps({ modelValue })
         }
       },
-      { attrs: { id: 'is-available', class: 'availability' } }
+      {
+        attrs: {
+          'id': 'is-available',
+          'class': 'availability',
+          'aria-describedby': 'hint'
+        }
+      }
     )
     const control = wrapper.find('[role="switch"]')
     expect(wrapper.classes()).toEqual(['dito-switch', 'availability'])
     expect(control.attributes()).toMatchObject({
       'id': 'is-available',
+      'aria-describedby': 'hint',
       'data-state': 'unchecked'
     })
     await control.trigger('click')
@@ -60,6 +67,13 @@ describe('DitoSwitch', () => {
     )
     await wrapper.find('[role="switch"]').trigger('click')
     expect(wrapper.find('.dito-switch__label').text()).toBe('lent')
+  })
+
+  it('sizes the switch to fit a single custom label', () => {
+    wrapper = mountSwitch({ labels: { checked: 'available' } })
+    expect(wrapper.element.style.getPropertyValue('--switch-width')).toBe(
+      '13.5rem'
+    )
   })
 
   it('renders the label slots instead of the labels', async () => {

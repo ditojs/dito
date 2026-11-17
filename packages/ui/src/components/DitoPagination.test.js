@@ -44,6 +44,13 @@ describe('DitoPagination', () => {
     expect(getTotal(wrapper)).toBe('21 – 30 / 30')
   })
 
+  it('disables the next button past the last page', () => {
+    const wrapper = mountPagination({ total: 20, page: 5 })
+    expect(
+      wrapper.find('button[aria-label="Next page"]').attributes()
+    ).toHaveProperty('disabled')
+  })
+
   it('follows changes of the page prop', async () => {
     const wrapper = mountPagination({ total: 100, page: 1 })
     await wrapper.setProps({ page: 5 })
