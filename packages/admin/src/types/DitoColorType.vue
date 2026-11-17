@@ -107,7 +107,7 @@ import {
   convertToRgb,
   getChannelName
 } from 'reka-ui'
-import { DitoInput } from '@ditojs/ui/src'
+import { DitoInput, getScrollContainer } from '@ditojs/ui/src'
 import {
   computed,
   onMounted,
@@ -190,14 +190,7 @@ const DitoColorType = {
     const root = useTemplateRef('root')
     const scrollContainer = shallowRef(null)
     onMounted(() => {
-      let element = root.value.parentElement
-      while (
-        element &&
-        !/auto|scroll/.test(getComputedStyle(element).overflowY)
-      ) {
-        element = element.parentElement
-      }
-      scrollContainer.value = element
+      scrollContainer.value = getScrollContainer(root.value)
     })
 
     watch(showPopup, showPopup => {
