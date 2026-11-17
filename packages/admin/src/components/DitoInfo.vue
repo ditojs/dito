@@ -23,6 +23,8 @@ PopoverRoot(
       :collisionBoundary="scrollArea"
       :collisionPadding="8"
       positionStrategy="fixed"
+      @open-auto-focus="onOpenAutoFocus"
+      @close-auto-focus="onCloseAutoFocus"
       @pointerenter="onPointerEnter"
       @pointerleave="onPointerLeave"
     )
@@ -75,11 +77,16 @@ export default {
 
     const open = ref(false)
     let timer = null
+    // Whether hovering opened the popup, so that it leaves the focus alone:
+    let hovered = false
     // Open and close after a delay, so that the pointer can pass over the info
     // and move from it to the popup:
     const setOpenLater = value => {
       clearTimeout(timer)
       timer = setTimeout(() => {
+        if (value && !open.value) {
+          hovered = true
+        }
         open.value = value
       }, 250)
     }
@@ -89,6 +96,21 @@ export default {
       scrollArea,
       open,
       html: computed(() => getHtml(props.info)),
+
+      // A mouse that passes over the info doesn't take the focus away from the
+      // field that the user types in:
+      onOpenAutoFocus(event) {
+        if (hovered) {
+          event.preventDefault()
+        }
+      },
+
+      onCloseAutoFocus(event) {
+        if (hovered) {
+          event.preventDefault()
+          hovered = false
+        }
+      },
 
       // Only mice hover. Touches and keys toggle the popup with clicks:
       onPointerEnter(event) {
