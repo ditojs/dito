@@ -10,6 +10,13 @@ import {
 import { useRoute } from 'vue-router'
 import { useDomEvents } from './useDomEvents.ts'
 
+// The triggers of open popups by their ARIA state, and reka-ui's open popups:
+const openPopupSelector = [
+  '[aria-haspopup][aria-expanded="true"]',
+  '[role="combobox"][aria-expanded="true"]',
+  '[data-dismissable-layer]'
+].join(', ')
+
 // Sidebars are docked on wide screens, where the user can collapse them, which
 // the browser remembers. Below `breakpoint`, they open as overlays instead,
 // which close on navigation. `region` is the content that slides, and its
@@ -50,12 +57,12 @@ export function useSidebar({
 
       keydown(event: KeyboardEvent) {
         // Escape keys that others handled, e.g. dialogs, don't close it, nor
-        // the ones in reka-ui's menus and popups, which close themselves and
-        // only see the key after this listener:
+        // the ones in open popups or at their triggers, as reka-ui closes the
+        // popups and only sees the key after this listener:
         if (
           event.key === 'Escape' &&
           !event.defaultPrevented &&
-          !(event.target as Element).closest('[data-dismissable-layer]')
+          !(event.target as Element).closest(openPopupSelector)
         ) {
           event.preventDefault()
           close()
