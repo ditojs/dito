@@ -3,6 +3,7 @@
   //- Picking a day closes the calendar, and picking it again keeps it:
   DatePickerRoot(
     v-model:placeholder="placeholder"
+    v-model:open="open"
     v-bind="$props"
     closeOnSelect
     preventDeselect
@@ -166,7 +167,7 @@ export default {
     DitoIcon
   },
   inheritAttrs: false,
-  emits: ['update:modelValue'],
+  emits: ['update:modelValue', 'update:open'],
 
   // The props of `DatePickerRoot` that the picker reads or passes on. With a
   // `granularity` finer than `day`, the field also edits the time:
@@ -186,7 +187,8 @@ export default {
   data() {
     return {
       // The month that the calendar shows, which the header's lists change:
-      placeholder: this.modelValue ?? getToday(this.granularity)
+      placeholder: this.modelValue ?? getToday(this.granularity),
+      open: false
     }
   },
 
@@ -197,7 +199,9 @@ export default {
         'dito-input--has-errors': ![null, false, 'false', ''].includes(
           this.$attrs['aria-invalid'] ?? null
         ),
-        'dito-input--disabled': this.disabled
+        'dito-input--disabled': this.disabled,
+        // The field looks focused while its calendar is open:
+        'dito-input--focus': this.open
       }
     },
 
@@ -223,6 +227,12 @@ export default {
         { length: last - first + 1 },
         (_, index) => first + index
       )
+    }
+  },
+
+  watch: {
+    open(open) {
+      this.$emit('update:open', open)
     }
   },
 
@@ -373,6 +383,8 @@ function getToday(granularity) {
 
   &__grid {
     width: 100%;
+    // Columns of equal width:
+    table-layout: fixed;
     border-collapse: collapse;
   }
 

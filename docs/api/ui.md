@@ -43,7 +43,7 @@ book as featured:
   <div class="bookshop-publishing">
     <DitoDatePicker
       v-model="publishedAt"
-      placeholder="Publication date"
+      aria-label="Publication date"
     />
     <DitoSwitch
       v-model="featured"
@@ -354,8 +354,9 @@ e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
 | `prefix`, `suffix` | Content before and after the parts of the date. |
 
 All other attributes go to the field, e.g. `aria-label`, and `aria-invalid`
-shows errors, as in [`DitoInput`](#ditoinput). Methods: `focus()` and
-`blur()`.
+shows errors, as in [`DitoInput`](#ditoinput). The field emits `update:open`
+when the calendar opens or closes, and looks focused while it is open. Methods:
+`focus()` and `blur()`.
 
 ```vue
 <DitoDatePicker
