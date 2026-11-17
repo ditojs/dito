@@ -6,6 +6,8 @@ function getProps(component) {
     disabled: false,
     clearable: false,
     value: null,
+    label: null,
+    info: null,
     context: {},
     ...component
   })
@@ -46,6 +48,16 @@ describe('getInputAffixesProps()', () => {
     })
   })
 
+  it('shows the info in the suffix only without a label', () => {
+    expect(getProps({ info: 'Help' })).toMatchObject({
+      prefix: { inlineInfo: null },
+      suffix: { inlineInfo: 'Help' }
+    })
+    expect(
+      getProps({ info: 'Help', label: 'Title' }).suffix.inlineInfo
+    ).toBe(null)
+  })
+
   it('tells which affixes have content to show', () => {
     expect(getProps({})).toMatchObject({ hasPrefix: false, hasSuffix: false })
     expect(getProps({ schema: { prefix: '$' } })).toMatchObject({
@@ -54,5 +66,6 @@ describe('getInputAffixesProps()', () => {
     })
     expect(getProps({ clearable: true }).hasSuffix).toBe(false)
     expect(getProps({ clearable: true, value: 'a' }).hasSuffix).toBe(true)
+    expect(getProps({ info: 'Help' }).hasSuffix).toBe(true)
   })
 })

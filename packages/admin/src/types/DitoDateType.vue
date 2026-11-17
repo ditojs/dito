@@ -127,6 +127,7 @@ const DitoDateType = {
 defineType({
   type: ['date', 'datetime', 'time'],
   component: DitoDateType,
+  hasInputAffixes: true,
 
   // Times are sent as full date-times:
   getProperty: ({ type }) => ({ type: type === 'date' ? 'date' : 'datetime' }),

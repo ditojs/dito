@@ -193,6 +193,7 @@ defineType({
   ...colorTraits,
   type: 'color',
   component: DitoColorType,
+  hasInputAffixes: true,
 
   setupSchema({ schema }) {
     if (schema.colorFormat === 'name') {
