@@ -46,6 +46,7 @@ const DitoNumberType = {
 defineType({
   type: ['number', 'integer'],
   component: DitoNumberType,
+  hasInputAffixes: true,
   ...numberTraits
 })
 

@@ -429,7 +429,26 @@ export const reports = {
       }),
       label: 'Planned Projects'
     },
-    done: { ...createScopeView('done'), label: 'Done Projects' }
+    done: {
+      // A filter without a label, with an info at the edge of the sidebar:
+      ...createScopeView('done', {
+        filters: {
+          search: {
+            fields: {
+              search: {
+                type: 'text',
+                label: false,
+                info: (
+                  'Searches the names and the descriptions of the projects, ' +
+                  'and the names of their contacts'
+                )
+              }
+            }
+          }
+        }
+      }),
+      label: 'Done Projects'
+    }
   }
 } as const
 
