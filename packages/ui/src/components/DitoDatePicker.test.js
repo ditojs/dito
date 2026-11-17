@@ -49,6 +49,17 @@ describe('DitoDatePicker', () => {
     expect(wrapper.classes()).not.toContain('dito-date-picker--placeholder')
   })
 
+  it('focuses the first part on clicks outside the parts', async () => {
+    wrapper = mount(DitoDatePicker, {
+      props: { placeholder: 'From' },
+      attachTo: document.body
+    })
+    await wrapper.find('.dito-date-picker__placeholder').trigger('mousedown')
+    expect(document.activeElement).toBe(
+      wrapper.find('[contenteditable="true"]').element
+    )
+  })
+
   it(`doesn't open the calendar of readonly fields`, () => {
     wrapper = mount(DitoDatePicker, { props: { readonly: true } })
     expect(
