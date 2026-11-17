@@ -302,9 +302,11 @@ function getToday(granularity) {
 <style lang="scss">
 @import '../styles/_imports';
 
-// reka-ui marks empty parts with `data-placeholder`:
-$entered-part: '.dito-date-segments__part' +
-  ':not([data-placeholder], [data-reka-date-field-segment="literal"])';
+// reka-ui marks empty parts with `data-placeholder`, but not the literals and
+// the day period, which always have a value:
+$entered-part: '.dito-date-segments__part:not([data-placeholder], ' +
+  '[data-reka-date-field-segment="literal"], ' +
+  '[data-reka-date-field-segment="dayPeriod"])';
 
 .dito-date-picker {
   .dito-input {
