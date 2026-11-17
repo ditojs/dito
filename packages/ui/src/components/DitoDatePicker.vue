@@ -231,12 +231,11 @@ export default {
     },
 
     years() {
-      // Without limits, a century back and 20 years ahead of today, also
-      // reaching the year that the calendar shows:
-      const { year } = today(getLocalTimeZone())
+      // Ten years around the year that the calendar shows, within the limits,
+      // so that the native menu stays short. The year arrows reach further:
       const shown = this.shownDate.year
-      const first = Math.min(this.minValue?.year ?? year - 100, shown)
-      const last = Math.max(this.maxValue?.year ?? year + 20, shown)
+      const first = Math.max(shown - 10, this.minValue?.year ?? -Infinity)
+      const last = Math.min(shown + 10, this.maxValue?.year ?? Infinity)
       return Array.from(
         { length: last - first + 1 },
         (_, index) => first + index
