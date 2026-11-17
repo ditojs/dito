@@ -54,7 +54,8 @@
     :class="componentClasses"
   )
   //- Without a label, inputs show the info in their suffix. It follows other
-  //- components, outside of them, since buttons can't hold its button:
+  //- components, since buttons can't hold its button, and lies over the end
+  //- of buttons:
   DitoInfo(
     v-if="hasComponentInfo"
     :info="info"
@@ -447,6 +448,25 @@ export default {
     > .dito-component--fill {
       flex: 1;
       width: auto;
+    }
+
+    // Lay the info over the end of buttons, which can't hold its button. Pad
+    // both sides, so that the text stays centred and clear of the info:
+    > .dito-button {
+      $inset: $input-padding-hor + $border-width;
+
+      padding-inline: calc(
+        #{2 * $input-padding-hor} + 1em * var(--line-height)
+      );
+
+      + .dito-info {
+        margin-left: calc(-1 * (var(--size) + #{$inset}));
+        margin-right: $inset;
+      }
+
+      &:is(.dito-button--primary, [type='submit']) + .dito-info {
+        color: $color-text-inverted;
+      }
     }
   }
 

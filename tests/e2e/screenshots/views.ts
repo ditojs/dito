@@ -149,7 +149,20 @@ export const projects = createWidgetView<Project>(
               collapsible: true,
               collapsed: true,
               fields: {
-                slug: { type: 'text', label: 'Slug' }
+                slug: { type: 'text', label: 'Slug' },
+                // Buttons with infos and no labels, narrow and full-width:
+                preview: {
+                  type: 'button',
+                  text: 'Preview',
+                  info: 'Opens the project as visitors see it'
+                },
+                publish: {
+                  type: 'button',
+                  text: 'Publish',
+                  primary: true,
+                  width: 'fill',
+                  info: 'Makes the project public'
+                }
               }
             },
             // A row of a checkbox and a section without labels, whose fields
