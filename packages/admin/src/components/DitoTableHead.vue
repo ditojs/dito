@@ -1,12 +1,9 @@
 <template lang="pug">
 thead.dito-table-head
-  tr(
-    v-for="headerGroup in table.getHeaderGroups()"
-    :key="headerGroup.id"
-  )
+  tr
     template(
-      v-for="{ id, column } in headerGroup.headers"
-      :key="id"
+      v-for="column in table.getAllLeafColumns()"
+      :key="column.id"
     )
       //- The buttons column, with an empty <span> for the styles of the head:
       th(

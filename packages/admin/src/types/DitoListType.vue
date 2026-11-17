@@ -70,16 +70,16 @@
         :modelValue="listData"
       )
         tr.dito-table__row(
-          v-for="{ row, item, index } in rows"
+          v-for="{ id, original: item, index } in rows"
           :id="getComponentPath(index)"
-          :key="row.id"
+          :key="id"
           :class=`{
             'dito-table__row--error': dataModel.errors.hasWithin(item)
           }`
         )
           template(
-            v-for="{ id, column } in row.getAllCells()"
-            :key="id"
+            v-for="column in table.getAllLeafColumns()"
+            :key="column.id"
           )
             td.dito-table__buttons(
               v-if="column.id === buttonsColumnId"
@@ -343,16 +343,8 @@ const DitoListType = {
       table,
       itemColumnId,
       buttonsColumnId,
-      // The rendered rows with their items and their indices in the list:
       rows: computed(() =>
-        table
-          .getRowModel()
-          .rows.slice(0, renderedItems.value.length)
-          .map(row => ({
-            row,
-            item: row.original,
-            index: row.index
-          }))
+        table.getRowModel().rows.slice(0, renderedItems.value.length)
       ),
       labelize,
       getItemFormSchema,

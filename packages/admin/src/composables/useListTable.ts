@@ -95,7 +95,6 @@ export function useListTable({
     manualSorting: true,
     // Clicks toggle the order of the sorted column, and sort others ascending:
     enableSortingRemoval: false,
-    enableMultiSort: false,
     sortDescFirst: false,
     // The stores keep the expansion when the data changes:
     manualExpanding: true,
