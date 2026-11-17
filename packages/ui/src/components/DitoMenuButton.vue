@@ -1,5 +1,8 @@
 <template lang="pug">
-DropdownMenuRoot(:modal="false")
+DropdownMenuRoot(
+  :modal="false"
+  @update:open="onUpdateOpen"
+)
   DropdownMenuTrigger(
     asChild
     :disabled="disabled"
@@ -12,8 +15,9 @@ DropdownMenuRoot(:modal="false")
   //- No portal, so that the styles apply. The menu is fixed, so that
   //- scrolling panels don't clip it:
   DropdownMenuContent.dito-menu-button__menu(
+    ref="menu"
     :side="side"
-    :align="align"
+    :align="alignment"
     :sideOffset="4"
     :collisionBoundary="scrollContainer"
     loop
@@ -64,12 +68,12 @@ export default {
     items: { type: Array, required: true },
     // Where the menu opens, as in reka-ui's `DropdownMenuContent`:
     side: { type: String, default: 'bottom' },
-    align: { type: String, default: 'start' },
+    align: { type: String, default: 'center' },
     disabled: { type: Boolean, default: false }
   },
 
   data() {
-    return { scrollContainer: null }
+    return { scrollContainer: null, alignment: this.align }
   },
 
   mounted() {
@@ -83,6 +87,32 @@ export default {
       element = element.parentElement
     }
     this.scrollContainer = element
+  },
+
+  methods: {
+    async onUpdateOpen(open) {
+      this.alignment = this.align
+      if (open && this.align === 'center' && /top|bottom/.test(this.side)) {
+        // reka-ui's flip never leaves `center`, so a centered menu that
+        // doesn't fit aligns with the button's edge on that side. reka-ui
+        // positions the menu in microtasks, so this runs before it shows:
+        await this.$nextTick()
+        const { offsetWidth: width } = this.$refs.menu.$el
+        const button = this.$refs.button.$el.getBoundingClientRect()
+        const { left, right } =
+          this.scrollContainer?.getBoundingClientRect() ?? {
+            left: 0,
+            right: document.documentElement.clientWidth
+          }
+        const center = (button.left + button.right) / 2
+        this.alignment =
+          center + width / 2 > right
+            ? 'end'
+            : center - width / 2 < left
+              ? 'start'
+              : 'center'
+      }
+    }
   }
 }
 </script>
