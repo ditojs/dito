@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import DitoMenuButton from './DitoMenuButton.vue'
 
@@ -27,6 +28,7 @@ describe('DitoMenuButton', () => {
   afterEach(() => {
     wrapper?.unmount()
     wrapper = null
+    vi.restoreAllMocks()
   })
 
   it('renders its content and attributes in a `DitoButton`', () => {
@@ -57,5 +59,15 @@ describe('DitoMenuButton', () => {
     const [csv] = menu.findAll('.dito-menu-button__item')
     await csv.trigger('click')
     expect(wrapper.emitted('select')).toEqual([[items[0]]])
+  })
+
+  it('aligns centered menus that would overflow to the edge of the button', async () => {
+    wrapper = mountMenuButton()
+    const button = wrapper.find('button').element
+    const right = document.documentElement.clientWidth
+    button.getBoundingClientRect = () => ({ left: right - 40, right })
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
+    const menu = await openMenu(wrapper)
+    expect(menu.attributes('data-align')).toBe('end')
   })
 })
