@@ -49,8 +49,14 @@ export function useSidebar({
       },
 
       keydown(event: KeyboardEvent) {
-        // Escape keys that others handled, e.g. dialogs, don't close it:
-        if (event.key === 'Escape' && !event.defaultPrevented) {
+        // Escape keys that others handled, e.g. dialogs, don't close it, nor
+        // the ones in reka-ui's menus and popups, which close themselves and
+        // only see the key after this listener:
+        if (
+          event.key === 'Escape' &&
+          !event.defaultPrevented &&
+          !(event.target as Element).closest('[data-dismissable-layer]')
+        ) {
           event.preventDefault()
           close()
         }

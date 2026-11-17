@@ -5,11 +5,13 @@
   background: $color-active;
   border-color: $color-active;
 
-  &:active {
+  &:active,
+  &[data-state='open'] {
     border-color: color.adjust($color-active, $lightness: -10%);
   }
 
-  &:hover {
+  &:hover,
+  &[data-state='open'] {
     background: color.adjust($color-active, $lightness: -7.5%);
   }
 

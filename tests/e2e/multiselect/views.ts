@@ -127,3 +127,20 @@ export const widgets = createWidgetView<Widget>(
     columns: { name: { label: 'Name' } }
   }
 )
+
+// The same widgets with a required field of multiple values:
+export const features = createWidgetView<Widget>(
+  'Widget',
+  'widgets',
+  {
+    name: { type: 'text', label: 'Name' },
+    codes: {
+      type: 'multiselect',
+      label: 'Codes',
+      multiple: true,
+      required: true,
+      options: ['a', 'b']
+    }
+  },
+  { columns: { name: { label: 'Name' } } }
+)

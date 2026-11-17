@@ -365,19 +365,24 @@ describe('DitoDialog', () => {
     expect(request).toHaveBeenCalledTimes(2)
   })
 
-  it('submits with Enter in its inputs only', async () => {
+  it('submits with Enter in its text inputs only', async () => {
     const result = await showDialog({
-      fields,
+      fields: { ...fields, done: { type: 'checkbox' } },
       buttons: { cancel: {}, apply: { type: 'submit' } },
-      data: { title: 'Emma' }
+      data: { title: 'Emma', done: true }
     })
     await result.dialog.find('button.dito-button--cancel').trigger('keydown', {
       key: 'Enter'
     })
+    await result.dialog.find('input[type="checkbox"]').trigger('keydown', {
+      key: 'Enter'
+    })
     await flushPromises()
     expect(result.isSettled).toBe(false)
-    await result.dialog.find('input').trigger('keydown', { key: 'Enter' })
-    expect(await result.promise).toEqual({ title: 'Emma' })
+    await result.dialog.find('input[name="title"]').trigger('keydown', {
+      key: 'Enter'
+    })
+    expect(await result.promise).toEqual({ title: 'Emma', done: true })
   })
 
   it('submits once with Enter in its inputs', async () => {
