@@ -39,16 +39,6 @@ describe('DitoDatePicker', () => {
     }
   )
 
-  it('shows the placeholder only without a value, hiding the empty parts', async () => {
-    wrapper = mount(DitoDatePicker, { props: { placeholder: 'From' } })
-    const getPlaceholder = () => wrapper.find('.dito-date-picker__placeholder')
-    expect(getPlaceholder().text()).toBe('From')
-    expect(wrapper.classes()).toContain('dito-date-picker--empty')
-    await wrapper.setProps({ modelValue: new CalendarDate(2026, 5, 14) })
-    expect(getPlaceholder().exists()).toBe(false)
-    expect(wrapper.classes()).not.toContain('dito-date-picker--empty')
-  })
-
   it('focuses the first part on clicks outside the parts', async () => {
     wrapper = mount(DitoDatePicker, {
       props: { placeholder: 'From' },

@@ -44,6 +44,7 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
+import { getScrollContainer } from '@ditojs/ui/src'
 import { getHtml } from '../utils/html.js'
 
 // An info button that shows `info` in a popup.
@@ -70,7 +71,7 @@ export default {
     onMounted(() => {
       const element = trigger.value.$el
       pane.value = element.closest('.dito-pane')
-      scrollArea.value = element.closest('.dito-scroll')
+      scrollArea.value = getScrollContainer(element)
     })
 
     const open = ref(false)

@@ -1,5 +1,5 @@
 <template lang="pug">
-.dito-date-picker(:class="{ 'dito-date-picker--empty': !modelValue }")
+.dito-date-picker(:class="$attrs.class")
   //- Picking a day closes the calendar, and picking it again keeps it:
   DatePickerRoot(
     v-bind="$props"
@@ -12,18 +12,18 @@
   )
     //- The popup is placed at the field, not at its button:
     DatePickerAnchor(asChild)
-      //- Attributes go to the field, e.g. its accessible name:
+      //- The attributes but `class` go to the field, for its accessible name:
       DatePickerField.dito-input(
         v-slot="{ segments }"
         :class="inputClasses"
-        v-bind="$attrs"
+        v-bind="attributes"
         @mousedown="onMouseDown"
       )
         slot(name="prefix")
         .dito-date-segments
           //- Shown instead of the empty parts while the field isn't focused:
           span.dito-date-picker__placeholder(
-            v-if="placeholder && !modelValue"
+            v-if="placeholder"
           ) {{ placeholder }}
           DatePickerInput.dito-date-segments__part(
             v-for="item in segments"
@@ -39,9 +39,8 @@
             :disabled="disabled"
           )
         slot(name="suffix")
-    //- No portal, so that the styles apply. The popup is fixed, so that
-    //- scrolling panels don't clip it, and stays in the closest container that
-    //- scrolls, so that it doesn't cover the panels next to it:
+    //- Fixed, so that scrolling panels don't clip it, and without a portal, so
+    //- that the styles apply:
     DatePickerContent.dito-date-picker__popup(
       :portal="{ disabled: true }"
       align="start"
@@ -148,9 +147,10 @@ import {
   DatePickerTrigger
 } from 'reka-ui'
 import DitoIcon from './DitoIcon.vue'
+import { getScrollContainer, hasErrors } from '../utils/element.js'
 
 // A date field with a calendar in a popup, built on reka-ui's `DatePicker`,
-// with dates of `@internationalized/date` as values, see `docs/api/ui.md`.
+// with dates of `@internationalized/date` as values.
 export default {
   components: {
     DatePickerAnchor,
@@ -205,14 +205,16 @@ export default {
   computed: {
     inputClasses() {
       return {
-        // Like `DitoInput`:
-        'dito-input--has-errors': ![null, false, 'false', ''].includes(
-          this.$attrs['aria-invalid'] ?? null
-        ),
+        'dito-input--has-errors': hasErrors(this.$attrs),
         'dito-input--disabled': this.disabled,
         // The field looks focused while its calendar is open:
         'dito-input--focus': this.open
       }
+    },
+
+    attributes() {
+      const { class: _, ...attributes } = this.$attrs
+      return attributes
     },
 
     months() {
@@ -246,14 +248,7 @@ export default {
   },
 
   mounted() {
-    let element = this.$el.parentElement
-    while (
-      element &&
-      !/auto|scroll/.test(getComputedStyle(element).overflowY)
-    ) {
-      element = element.parentElement
-    }
-    this.scrollContainer = element
+    this.scrollContainer = getScrollContainer(this.$el)
   },
 
   methods: {
@@ -262,7 +257,7 @@ export default {
     },
 
     // Select today, or the current time without the time parts that the
-    // field doesn't edit.
+    // field doesn't edit:
     selectNow() {
       const date =
         this.granularity === 'day'
@@ -307,18 +302,23 @@ function getToday(granularity) {
 <style lang="scss">
 @import '../styles/_imports';
 
+// reka-ui marks empty parts with `data-placeholder`:
+$entered-part: '.dito-date-segments__part' +
+  ':not([data-placeholder], [data-reka-date-field-segment="literal"])';
+
 .dito-date-picker {
   .dito-input {
     display: flex;
     min-width: 8em;
   }
 
-  // Empty fields hide their parts until focused, but keep them focusable:
-  &--empty:not(:focus-within) .dito-date-segments__part {
+  // Fields without entered parts hide them until focused, but keep them
+  // focusable:
+  &:not(:focus-within, :has(#{$entered-part})) .dito-date-segments__part {
     opacity: 0;
   }
 
-  &--empty:focus-within &__placeholder {
+  &:is(:focus-within, :has(#{$entered-part})) &__placeholder {
     display: none;
   }
 
