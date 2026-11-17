@@ -43,7 +43,7 @@ book as featured:
   <div class="bookshop-publishing">
     <DitoDatePicker
       v-model="publishedAt"
-      aria-label="Publication date"
+      placeholder="Publication date"
     />
     <DitoSwitch
       v-model="featured"
@@ -339,15 +339,16 @@ year from lists. The values are dates of
 e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
 `day`, which also edits the time.
 
-| Prop                   | Type                                      | Default   | Description                                                  |
-| ---------------------- | ----------------------------------------- | --------- | ------------------------------------------------------------ |
-| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                        |
-| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                      |
-| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                      |
-| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.          |
-| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                    |
-| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list. |
-| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.    |
+| Prop                   | Type                                      | Default   | Description                                                     |
+| ---------------------- | ----------------------------------------- | --------- | --------------------------------------------------------------- |
+| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                           |
+| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                         |
+| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                         |
+| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.             |
+| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                       |
+| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list.    |
+| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.       |
+| `placeholder`          | `string`                                  | `null`    | Shown instead of the empty parts while the field isn't focused. |
 
 | Slot               | Description                                     |
 | ------------------ | ----------------------------------------------- |
