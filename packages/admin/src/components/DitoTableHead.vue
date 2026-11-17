@@ -1,85 +1,71 @@
 <template lang="pug">
 thead.dito-table-head
-  tr
+  tr(
+    v-for="headerGroup in table.getHeaderGroups()"
+    :key="headerGroup.id"
+  )
     template(
-      v-for="column in columns"
+      v-for="{ id, column } in headerGroup.headers"
+      :key="id"
     )
+      //- The buttons column, with an empty <span> for the styles of the head:
       th(
-        v-if="shouldRenderSchema(column)"
+        v-if="column.id === buttonsColumnId"
+      )
+        span
+      th(
+        v-else
         scope="col"
         :class="getColumnClass(column)"
-        :aria-sort="column.sortable ? getSortState(column) : null"
+        :aria-sort="column.getCanSort() ? getSortState(column) : null"
       )
         DitoButton(
-          v-if="column.sortable"
+          v-if="column.getCanSort()"
           :class="getSortClass(column)"
-          @click="sortByColumn(column)"
+          @click="column.toggleSorting()"
         )
           .dito-button__order-arrows
-          span {{ getLabelText(column) }}
+          span {{ getLabelText(column.columnDef.meta.schema) }}
         span(
           v-else
-        ) {{ getLabelText(column) }}
-    th(
-      v-if="hasEditButtons"
-    )
-      //- Empty <span> is needed for styling, see _table.scss
-      span
+        ) {{ getLabelText(column.columnDef.meta.schema) }}
 </template>
 
 <script>
-import { computed } from 'vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { hyphenate } from '@ditojs/utils'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { buttonsColumnId } from '../composables/useListTable.ts'
+
+const sortStates = { asc: 'ascending', desc: 'descending' }
 
 export default {
   components: { DitoButton },
 
   props: {
-    listQuery: { type: Object, required: true },
-    columns: { type: Object, required: true },
-    hasEditButtons: { type: Boolean, required: true },
+    table: { type: Object, required: true },
     // For the callbacks of the columns, like for the cells:
     context: { type: Object, required: true }
   },
 
   setup(props) {
-    const sort = computed(() => {
-      const [name, order] = (props.listQuery.query.order || '').split(/\s+/)
-      return { name, order }
-    })
-
     return {
       ...useSchemaValue(props.context),
+      buttonsColumnId,
 
       getColumnClass(column) {
-        return `dito-column--${hyphenate(column.name)}`
+        return `dito-column--${hyphenate(column.id)}`
       },
 
       getSortClass(column) {
-        const { name, order } = sort.value
-        return name === column.name
+        const order = column.getIsSorted()
+        return order
           ? `dito-button--selected dito-button--order-${order}`
           : null
       },
 
       getSortState(column) {
-        const { name, order } = sort.value
-        const states = { asc: 'ascending', desc: 'descending' }
-        return states[name === column.name && order] || 'none'
-      },
-
-      sortByColumn(column) {
-        const { name, order } = sort.value
-        // Toggle order if the same column is clicked again.
-        const newOrder =
-          name === column.name && order === 'asc' ? 'desc' : 'asc'
-        // Sorting resets the page, as the sorted list has other pages.
-        props.listQuery.update(
-          { order: `${column.name} ${newOrder}` },
-          { resetPage: true }
-        )
+        return sortStates[column.getIsSorted()] || 'none'
       }
     }
   }

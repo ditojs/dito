@@ -45,9 +45,7 @@
       )
     DitoPagination.dito-list__pagination(
       v-if="hasPagination"
-      :listQuery="listQuery"
-      :limit="paginate"
-      :total="total || 0"
+      :table="table"
     )
   .dito-list__table
     table.dito-table(
@@ -60,9 +58,7 @@
     )
       DitoTableHead.dito-list__table-head(
         v-if="columns"
-        :listQuery="listQuery"
-        :columns="columns"
-        :hasEditButtons="hasEditButtons"
+        :table="table"
         :context="context"
       )
       DitoDraggable(
@@ -72,35 +68,37 @@
         :modelValue="listData"
       )
         tr.dito-table__row(
-          v-for="(item, index) in renderedItems"
+          v-for="{ row, item, index } in rows"
           :id="getComponentPath(index)"
-          :key="getItemUid(schema, item)"
+          :key="row.id"
           :class=`{
             'dito-table__row--error': dataModel.errors.hasWithin(item)
           }`
         )
           template(
-            v-if="columns"
+            v-for="{ id, column } in row.getVisibleCells()"
+            :key="id"
           )
-            template(
-              v-for="column in columns"
+            td.dito-table__buttons(
+              v-if="column.id === buttonsColumnId"
             )
-              DitoTableCell(
-                v-if="shouldRenderSchema(column)"
-                :key="column.name"
-                :class="getCellClass(column)"
-                :cell="column"
+              DitoEditButtons(
                 :schema="schema"
+                :formSchema="getItemFormSchema(schema, item, context)"
                 :dataPath="getDataPath(index)"
                 :data="item"
-                :store="store"
-                :nested="false"
+                :store="getItemStore(item, index)"
                 :disabled="disabled || isLoading"
+                :deletable="deletable"
+                :draggable="draggable"
+                :editable="editable"
+                :editPath="getEditPath(index)"
+                @delete="deleteItem(item, index)"
+                @move="delta => moveItem(index, delta)"
               )
-          template(
-            v-else
-          )
-            td
+            td(
+              v-else-if="column.id === itemColumnId"
+            )
               DitoSourceItem(
                 :schema="schema"
                 :formSchema="getItemFormSchema(schema, item, context)"
@@ -125,22 +123,16 @@
                   #default="{ context }"
                 )
                   slot(:context="context")
-          td.dito-table__buttons(
-            v-if="hasCellEditButtons"
-          )
-            DitoEditButtons(
+            DitoTableCell(
+              v-else
+              :class="getCellClass(column)"
+              :cell="column.columnDef.meta.schema"
               :schema="schema"
-              :formSchema="getItemFormSchema(schema, item, context)"
               :dataPath="getDataPath(index)"
               :data="item"
-              :store="getItemStore(item, index)"
+              :store="store"
+              :nested="false"
               :disabled="disabled || isLoading"
-              :deletable="deletable"
-              :draggable="draggable"
-              :editable="editable"
-              :editPath="getEditPath(index)"
-              @delete="deleteItem(item, index)"
-              @move="delta => moveItem(index, delta)"
             )
         tr.dito-table__row.dito-table__row--empty(
           v-if="emptyText && !listData.length && !isLoading"
@@ -175,6 +167,11 @@ import { fieldProps } from '../composables/useField.ts'
 import { useSource } from '../composables/useSource.ts'
 import { useSortable } from '../composables/useSortable.ts'
 import { useRenderedItems } from '../composables/useRenderedItems.ts'
+import {
+  useListTable,
+  itemColumnId,
+  buttonsColumnId
+} from '../composables/useListTable.ts'
 import { useSteps, countStepItems } from '../composables/useSteps.ts'
 import { provideToNode } from '../composables/useComponentPath.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
@@ -187,7 +184,7 @@ import {
 } from '../utils/schema/setup.js'
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
-import { getItemUid, initializeData } from '../utils/schema/data.js'
+import { initializeData } from '../utils/schema/data.js'
 import {
   getFormSchemas,
   getItemFormSchema,
@@ -224,9 +221,33 @@ const DitoListType = {
     const { listData, editable, deletable, draggable, creatable } = source
     const { services, context, getItemStore } = source
     const { getSchemaValue, shouldRenderSchema } = useSchemaValue(context)
+    // The inlined schemas of the items read whether they're open from their
+    // stores, which the table's expansion reads too:
     const isItemOpen = (item, index) => (
       getItemStore(item, index).opened ?? !source.collapsed.value
     )
+    const hasEditButtons = computed(
+      () => (
+        listData.value.length > 0 &&
+        (editable.value || deletable.value || draggable.value)
+      )
+    )
+    const hasCellEditButtons = computed(
+      () => !source.isInlined.value && hasEditButtons.value
+    )
+    const table = useListTable({
+      schema: props.schema,
+      items: listData,
+      columns: source.columns,
+      listQuery: source.listQuery,
+      paginate: source.paginate,
+      total: source.total,
+      hasButtons: hasCellEditButtons,
+      collapsible: source.collapsible,
+      isItemOpen,
+      getItemStore,
+      shouldRenderSchema
+    })
     // Steps render items by the fields of their forms. Collapsed items render
     // only their header, and rows of tables count as one field:
     const getItemWeight = (item, index, isOpen = isItemOpen(item, index)) => {
@@ -252,15 +273,6 @@ const DitoListType = {
     const hasListButtons = computed(
       () => !!(source.buttonSchemas.value || creatable.value)
     )
-    const hasEditButtons = computed(
-      () => (
-        listData.value.length > 0 &&
-        (editable.value || deletable.value || draggable.value)
-      )
-    )
-    const hasCellEditButtons = computed(
-      () => !source.isInlined.value && hasEditButtons.value
-    )
     // Expand the items in steps, as opening them all at once blocks the page
     // for long, in the order in which `useRenderedItems()` renders them:
     let expandedCount = 0
@@ -271,22 +283,21 @@ const DitoListType = {
         fields,
         (item, index) => getItemWeight(item, index, true)
       )
-      const items = listData.value.slice(expandedCount, expandedCount + count)
-      items.forEach((item, index) => {
-        getItemStore(item, expandedCount + index).opened = true
-      })
+      const rows = table
+        .getRowModel()
+        .rows.slice(expandedCount, expandedCount + count)
+      table.setExpanded(expanded => ({
+        ...expanded,
+        ...Object.fromEntries(rows.map(row => [row.id, true]))
+      }))
       expandedCount += count
       if (expandedCount >= listData.value.length) {
         expandSteps.stop()
       }
     })
-    // The inlined schemas of the items read their state from their stores.
     // While expanding, the items count as expanded already:
     const hasCollapsedItems = computed(
-      () => (
-        !expandSteps.isRunning.value &&
-        listData.value.some((item, index) => !isItemOpen(item, index))
-      )
+      () => !expandSteps.isRunning.value && !table.getIsAllRowsExpanded()
     )
     const hasToggleAll = computed(
       () => (
@@ -306,9 +317,7 @@ const DitoListType = {
         expandSteps.start()
       } else {
         expandSteps.stop()
-        listData.value.forEach((item, index) => {
-          getItemStore(item, index).opened = false
-        })
+        table.toggleAllRowsExpanded(false)
       }
     }
     // The label of the container toggles all items, if there is one:
@@ -325,16 +334,26 @@ const DitoListType = {
 
     return {
       ...source,
-      renderedItems,
-      shouldRenderSchema,
+      table,
+      itemColumnId,
+      buttonsColumnId,
+      // The rendered rows with their items and their indices in the list:
+      rows: computed(() =>
+        table
+          .getRowModel()
+          .rows.slice(0, renderedItems.value.length)
+          .map(row => ({
+            row,
+            item: row.original,
+            index: row.index
+          }))
+      ),
       labelize,
-      getItemUid,
       getItemFormSchema,
       getDraggableOptions,
       moveItem,
       hasListButtons,
       hasEditButtons,
-      hasCellEditButtons,
       dataModel: computed(() => source.services.dataContext.model),
       hasPagination: computed(() => !!source.paginate.value),
       hasEvenCount: computed(() => !(listData.value.length % 2)),
@@ -344,13 +363,7 @@ const DitoListType = {
       toggleAll,
       emptyText: computed(() => getSchemaValue('empty', { type: String })),
 
-      numColumns: computed(() => {
-        const columns = source.columns.value
-        return (
-          (columns ? Object.keys(columns).length : 1) +
-          (hasCellEditButtons.value ? 1 : 0)
-        )
-      }),
+      numColumns: computed(() => table.getVisibleLeafColumns().length),
 
       listButtonsAttributes: computed(() => ({
         buttons: source.buttonSchemas.value,
@@ -376,7 +389,7 @@ const DitoListType = {
       },
 
       getCellClass(column) {
-        return `dito-cell--${hyphenate(column.name)}`
+        return `dito-cell--${hyphenate(column.id)}`
       },
 
       // Lists with their own resource save their items through it:

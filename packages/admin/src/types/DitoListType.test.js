@@ -4,6 +4,7 @@ import { html } from '@ditojs/utils'
 import { DOMWrapper, flushPromises } from '@vue/test-utils'
 import Sortable from 'sortablejs'
 import { RequestError } from '../utils/request.js'
+import { getItemUid } from '../utils/schema/data.js'
 import {
   mountSchema,
   mountForm,
@@ -1359,7 +1360,7 @@ describe('DitoListType', () => {
         data: { chapters: [{ title: 'Prologue' }] }
       })
       const list = getComponent('chapters')
-      const uid = list.getItemUid(list.schema, data.chapters[0])
+      const uid = getItemUid(list.schema, data.chapters[0])
       const store = list.getItemStore(data.chapters[0])
       await findField('chapters').find('a.dito-button--edit').trigger('click')
       await settle()
@@ -1368,7 +1369,7 @@ describe('DitoListType', () => {
         .trigger('click')
       await settle()
       const [chapter] = data.chapters
-      expect(list.getItemUid(list.schema, chapter)).toBe(uid)
+      expect(getItemUid(list.schema, chapter)).toBe(uid)
       expect(list.getItemStore(chapter)).toBe(store)
     })
 
@@ -1402,7 +1403,7 @@ describe('DitoListType', () => {
       })
       const list = getComponent('chapters')
       const [, secondSection] = data.chapters[0].sections
-      const uid = list.getItemUid(list.schema, secondSection)
+      const uid = getItemUid(list.schema, secondSection)
       await findField('chapters').find('a.dito-button--edit').trigger('click')
       await settle()
       stubConfirm(true)
@@ -1414,7 +1415,7 @@ describe('DitoListType', () => {
       await settle()
       const [section] = data.chapters[0].sections
       expect(section.name).toBe('Two')
-      expect(list.getItemUid(list.schema, section)).toBe(uid)
+      expect(getItemUid(list.schema, section)).toBe(uid)
     })
 
     it('keeps the uids of new items when saving them', async () => {
@@ -1432,12 +1433,12 @@ describe('DitoListType', () => {
         request: ({ data }) => ({ data: addIds(data) })
       })
       const list = result.getComponent('ingredients')
-      const uid = list.getItemUid(list.schema, result.data.ingredients[0])
+      const uid = getItemUid(list.schema, result.data.ingredients[0])
       await result.submit()
       // The saved data replaces the form's data:
       const [ingredient] = result.data.ingredients
       expect(ingredient.id).toBe(2)
-      expect(list.getItemUid(list.schema, ingredient)).toBe(uid)
+      expect(getItemUid(list.schema, ingredient)).toBe(uid)
     })
   })
 
