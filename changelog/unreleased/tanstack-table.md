@@ -1,7 +1,8 @@
 ### Behaviour changes
 
 - **admin:** The tables of lists are built on [TanStack Table](https://tanstack.com/table), which apps now provide as the peer dependency `@tanstack/vue-table`. List schemas don't change.
-  - `DitoTableHead` and `DitoPagination` take the list's TanStack `table` instead of `listQuery`, `columns`, `limit` and `total`.
+  - `DitoTableHead` takes the list's TanStack `table` instead of `listQuery`, `columns` and `hasEditButtons`.
+  - The admin's `DitoPagination` is removed. Lists use the `DitoPagination` of `@ditojs/ui`.
 
 ### Fixes
 

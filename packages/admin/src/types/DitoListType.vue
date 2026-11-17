@@ -45,7 +45,9 @@
       )
     DitoPagination.dito-list__pagination(
       v-if="hasPagination"
-      :table="table"
+      v-model:page="page"
+      :pageSize="paginate"
+      :total="total || 0"
     )
   .dito-list__table
     table.dito-table(
@@ -76,7 +78,7 @@
           }`
         )
           template(
-            v-for="{ id, column } in row.getVisibleCells()"
+            v-for="{ id, column } in row.getAllCells()"
             :key="id"
           )
             td.dito-table__buttons(
@@ -197,12 +199,18 @@ import { fromClipboard } from '../utils/fromClipboard.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
 import { getUploadEntries } from '../utils/interchange.ts'
 import { labelToggleKey } from '../utils/keys.ts'
+import { DitoPagination } from '@ditojs/ui/src'
 import { hyphenate, labelize } from '@ditojs/utils'
 import { computed, inject, watchEffect } from 'vue'
 
 // @vue/component
 const DitoListType = {
-  components: { DitoSourceItem, DitoClipboard, DitoLabelButtons },
+  components: {
+    DitoSourceItem,
+    DitoClipboard,
+    DitoLabelButtons,
+    DitoPagination
+  },
   props: fieldProps,
 
   setup(props) {
@@ -240,8 +248,6 @@ const DitoListType = {
       items: listData,
       columns: source.columns,
       listQuery: source.listQuery,
-      paginate: source.paginate,
-      total: source.total,
       hasButtons: hasCellEditButtons,
       collapsible: source.collapsible,
       isItemOpen,
@@ -363,7 +369,17 @@ const DitoListType = {
       toggleAll,
       emptyText: computed(() => getSchemaValue('empty', { type: String })),
 
-      numColumns: computed(() => table.getVisibleLeafColumns().length),
+      numColumns: computed(() => table.getAllLeafColumns().length),
+
+      page: computed({
+        get() {
+          return (+source.listQuery.query.page || 0) + 1
+        },
+
+        set(page) {
+          source.listQuery.update({ page: page - 1 })
+        }
+      }),
 
       listButtonsAttributes: computed(() => ({
         buttons: source.buttonSchemas.value,
