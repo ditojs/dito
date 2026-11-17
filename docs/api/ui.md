@@ -125,8 +125,8 @@ The admin styles common verbs, e.g. `create`, `add`, `edit`, `delete` and
 
 ### DitoMenuButton
 
-A button that opens a menu of items next to it, below by default, with a tip
-pointing at the button, and emits `select` with the chosen item. It is built on
+A button that opens a menu of items next to it, below by default, and emits
+`select` with the chosen item. It is built on
 [`reka-ui`'s `DropdownMenu`](https://reka-ui.com/docs/components/dropdown-menu),
 which handles mouse and keyboard: Enter, Space and ArrowDown open the menu,
 the arrow keys, Home and End move between items, Escape closes it, and Tab
