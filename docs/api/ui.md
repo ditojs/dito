@@ -525,8 +525,8 @@ Use with `@extend`:
 | `%input--borderless`                     | Height and alignment of inputs without border, e.g. checkboxes, to line up with bordered ones.                         |
 | `%button--disabled`                      | The disabled look of buttons.                                                                                          |
 | `%icon--{name}`                          | One of the [icons](#icons), as a mask in `currentColor`, e.g. in a `::before`.                                         |
-| `%popup`                                 | The panel of popups and menus: border, radius, background, shadow and `z-index`.                                       |
-| `%popup--animated`                       | `%popup` with the enter animation of larger popups, e.g. calendars. Menus and lists open at once.                      |
+| `%popup`                                 | The `z-index` of popups, menus and lists.                                                                              |
+| `%popup--animated`                       | `%popup` with the panel and enter animation of larger popups, e.g. calendars. Menus and lists open at once.            |
 
 ### Functions
 
@@ -565,6 +565,7 @@ placeholders `%icon--{name}` and the list `$icons`:
 
 ### Transitions
 
-The styles include the transition `dito-fade` and the animation
-`dito-slide-enter` of popups, and `TransitionHeight` uses the transition
-`dito-height`.
+The styles include the transition `dito-fade`, and the animations
+`dito-slide-enter` and `dito-slide-leave` for elements that slide open and
+closed. Set `transform-origin` where they are used. `TransitionHeight` uses
+them with the transition `dito-height`.

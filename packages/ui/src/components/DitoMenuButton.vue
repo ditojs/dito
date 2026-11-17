@@ -121,9 +121,9 @@ $menu-button-padding: 0.25em;
   @extend %popup;
 
   padding: $menu-button-padding;
-  border: 0;
   border-radius: $menu-button-radius;
   background: $button-color;
+  box-shadow: $shadow-window;
   // Fit long menus into the room that reka-ui measures, and scroll them
   // only vertically, also when a scrollbar narrows the items:
   box-sizing: border-box;

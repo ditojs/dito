@@ -653,8 +653,9 @@ $tag-margin: 2px;
 
     box-sizing: border-box;
     width: var(--reka-combobox-trigger-width);
-    border-color: $color-active;
-    box-shadow: none;
+    border: $border-width solid $color-active;
+    border-radius: $border-radius;
+    background: $color-white;
 
     &[data-side='bottom'] {
       border-top-color: $border-color;
