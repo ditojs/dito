@@ -248,6 +248,14 @@ describe('useSidebar()', () => {
       pressEscape(layer)
       await flushPromises()
       expect(sidebar.classes()).toContain('dito-sidebar--open')
+      // Like the input of an open list, outside of its popup:
+      const input = document.createElement('input')
+      input.setAttribute('role', 'combobox')
+      input.setAttribute('aria-expanded', 'true')
+      region.element.append(input)
+      pressEscape(input)
+      await flushPromises()
+      expect(sidebar.classes()).toContain('dito-sidebar--open')
     })
 
     it('closes the sidebar on navigation', async () => {
