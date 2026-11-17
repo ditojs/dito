@@ -427,6 +427,16 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'sidebar-info.png')
   })
 
+  test('calendar in a filter panel', async ({ page, url }) => {
+    await page.setViewportSize({ width: 1200, height: 1000 })
+    await page.goto(`${url}/admin/reports/done`)
+    await expect(page.getByText('Archive', { exact: true })).toBeVisible()
+    // The empty field above shows its placeholder:
+    await page.getByRole('button', { name: 'Choose date' }).last().click()
+    await expect(page.locator('.dito-calendar')).toBeVisible()
+    await expectScreenshot(page, 'filter-calendar.png')
+  })
+
   test('collapsed menu and sidebar', async ({ page, url }) => {
     await openProject(page, url)
     await page.getByRole('button', { name: 'Menu', exact: true }).click()

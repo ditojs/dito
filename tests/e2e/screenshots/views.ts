@@ -444,7 +444,8 @@ export const reports = {
                 )
               }
             }
-          }
+          },
+          meetingAt: { filter: 'date-range', label: 'Meeting' }
         }
       }),
       label: 'Done Projects'
