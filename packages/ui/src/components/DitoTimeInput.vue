@@ -3,6 +3,7 @@
 TimeFieldRoot.dito-time-input.dito-input(
   v-slot="{ segments }"
   :locale="locale"
+  :disabled="disabled"
   :class="classes"
 )
   slot(name="prefix")
@@ -17,23 +18,22 @@ TimeFieldRoot.dito-time-input.dito-input(
 
 <script>
 import { TimeFieldInput, TimeFieldRoot } from 'reka-ui'
+import { hasErrors } from '../utils/element.js'
 
-// A time field, built on reka-ui's `TimeField`, see `docs/api/ui.md`.
+// A time field, built on reka-ui's `TimeField`.
 export default {
   components: { TimeFieldInput, TimeFieldRoot },
 
   props: {
-    locale: { type: String, default: 'en-US' }
+    locale: { type: String, default: 'en-US' },
+    disabled: { type: Boolean, default: false }
   },
 
   computed: {
     classes() {
       return {
-        // Like `DitoInput`:
-        'dito-input--has-errors': ![null, false, 'false', ''].includes(
-          this.$attrs['aria-invalid'] ?? null
-        ),
-        'dito-input--disabled': this.$attrs.disabled
+        'dito-input--has-errors': hasErrors(this.$attrs),
+        'dito-input--disabled': this.disabled
       }
     }
   },
