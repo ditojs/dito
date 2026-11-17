@@ -670,6 +670,125 @@ describe('asset handling across storages', () => {
   })
 })
 
+describe('asset urls', () => {
+  class UrlStorage extends MemoryStorage {
+    override _getFileUrl(file: AssetFile) {
+      return new URL(file.key, this.url).toString()
+    }
+  }
+
+  class Poster extends Model {
+    declare id: number
+    declare image: AssetFile | null
+    declare scan: AssetFile | null
+
+    static override properties: ModelProperties = {
+      image: { type: 'object', nullable: true },
+      scan: { type: 'object', nullable: true }
+    }
+
+    static override assets = {
+      image: { storage: 'images' },
+      scan: { storage: 'scans' }
+    }
+  }
+  class Asset extends AssetMixin(Model) {}
+  const app = createTestApp({ models: { Poster, Asset } })
+  const images = new UrlStorage(app, 'images', {
+    url: 'https://old.example.com/'
+  } as StorageConfig)
+  const scans = new UrlStorage(app, 'scans', {
+    url: 'https://scans.example.com/',
+    public: false
+  } as StorageConfig)
+  app.addStorage(images)
+  app.addStorage(scans)
+
+  beforeAll(async () => {
+    await createTestDatabase(app)
+  })
+
+  afterAll(async () => {
+    await destroyTestApp(app)
+  })
+
+  afterEach(() => {
+    images.url = 'https://old.example.com/'
+  })
+
+  // SQLite returns JSON columns as text:
+  const parseColumn = (value: unknown) =>
+    typeof value === 'string' ? JSON.parse(value) : value
+
+  it('stores files without url and signature', async () => {
+    const poster = await Poster.query().insertAndFetch({
+      image: AssetFile.create({ name: 'stored.jpg', data: 'stored' })
+    })
+    const { key } = poster.image!
+    expect(poster.image!.url).toBe(`https://old.example.com/${key}`)
+    const json = JSON.parse(JSON.stringify(poster))
+    await Poster.query().patchById(poster.id, { image: json.image })
+    const row = await app.knex(Poster.tableName).where('id', poster.id).first()
+    const image = parseColumn(row.image)
+    expect(image).toMatchObject({ key, name: 'stored.jpg' })
+    expect(image).not.toHaveProperty('url')
+    expect(image).not.toHaveProperty('signature')
+    const asset = await app.knex(Asset.tableName).where('key', key).first()
+    expect(parseColumn(asset.file)).not.toHaveProperty('url')
+  })
+
+  it('reads the url of the storage, also over stored urls', async () => {
+    const poster = await Poster.query().insertAndFetch({
+      image: AssetFile.create({ name: 'moved.jpg', data: 'moved' })
+    })
+    const { key } = poster.image!
+    await app
+      .knex(Poster.tableName)
+      .where('id', poster.id)
+      .update({
+        image: JSON.stringify({
+          ...poster.image,
+          url: 'https://stale.example.com/moved.jpg'
+        })
+      })
+    images.url = 'https://new.example.com/'
+    const loaded = (await Poster.query().findById(poster.id))!
+    expect(loaded.image!.url).toBe(`https://new.example.com/${key}`)
+    const json = loaded.toJSON()
+    expect(json.image!.url).toBe(`https://new.example.com/${key}`)
+    expect(images.verifyAssetFile(json.image!)).toBe(true)
+    const asset = (await Asset.query().findOne('key', key))!
+    expect(asset.file.url).toBe(`https://new.example.com/${key}`)
+  })
+
+  it('gives copies to private storages no url', async () => {
+    const poster = await Poster.query().insertAndFetch({
+      image: AssetFile.create({ name: 'copied.jpg', data: 'copied' })
+    })
+    const { key } = poster.image!
+    const info = vi.spyOn(app.logger, 'info').mockImplementation(() => {})
+    try {
+      // The copy changes the passed file in place, and `insert()` returns it
+      // without reading it again:
+      const copy = await Poster.query().insert({ scan: poster.image })
+      expect(copy.scan!.key).not.toBe(key)
+      expect(copy.scan).not.toHaveProperty('url')
+    } finally {
+      info.mockRestore()
+    }
+  })
+
+  it('gives files of private storages no url', async () => {
+    const poster = await Poster.query().insertAndFetch({
+      scan: AssetFile.create({ name: 'private.pdf', data: 'private' })
+    })
+    expect(poster.scan).not.toHaveProperty('url')
+    const loaded = (await Poster.query().findById(poster.id))!
+    expect(loaded.scan).not.toHaveProperty('url')
+    expect(loaded.toJSON().scan).not.toHaveProperty('url')
+  })
+})
+
 describe('asset reference counting', () => {
   class Album extends Model {
     declare id: number

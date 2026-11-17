@@ -1,5 +1,6 @@
 import { mixin } from '@ditojs/utils'
 import { TimestampedMixin } from './TimestampedMixin.js'
+import { formatDatabaseFile } from '../utils/asset.js'
 
 // Asset models are always to be time-stamped:
 export const AssetMixin = mixin(
@@ -69,6 +70,14 @@ export const AssetMixin = mixin(
       static async deleteExpiredRecords() {
         await super.deleteExpiredRecords()
         await this.app.releaseUnusedAssets()
+      }
+
+      // @override
+      $formatDatabaseJson(json) {
+        if (json.file) {
+          json.file = formatDatabaseFile(json.file)
+        }
+        return super.$formatDatabaseJson(json)
       }
 
       // @override

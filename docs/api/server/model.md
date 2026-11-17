@@ -815,7 +815,8 @@ $formatDatabaseJson(json)
 ```
 
 Converts data for the database: datetimes to ISO strings, dates to plain dates,
-booleans to integers on SQLite; removes computed properties. _Hook, call
+booleans to integers on SQLite; removes computed properties, and the `url` and
+`signature` of asset files. _Hook, call
 `super`._
 
 ### $parseDatabaseJson()

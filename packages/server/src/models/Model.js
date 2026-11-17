@@ -28,6 +28,7 @@ import {
 } from '../schema/index.js'
 import { populateGraph, filterGraph, ensureModel } from '../graph/index.js'
 import { formatJson } from '../utils/json.js'
+import { formatDatabaseFile } from '../utils/asset.js'
 import {
   ResponseError,
   GraphError,
@@ -706,6 +707,8 @@ export class Model extends objection.Model {
     for (const key of constructor.computedAttributes) {
       delete json[key]
     }
+    // Store files without `url` and `signature`:
+    constructor._mapAssetFiles(json, formatDatabaseFile)
     // NOTE: No need to normalize the identifiers in the JSON in case of
     // normalizeDbNames, as this already happens through
     // knex.config.wrapIdentifier(), see Application.js
