@@ -36,7 +36,6 @@
       v-if="interchange"
       title="Download or Upload Data"
       :items="interchangeItems"
-      align="end"
       @select="onSelectInterchangeItem"
     )
 </template>
