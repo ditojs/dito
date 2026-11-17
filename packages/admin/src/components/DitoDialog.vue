@@ -195,10 +195,15 @@ export default {
       },
 
       onEnter(event) {
-        // Submit on Enter in inputs, also for password managers that simulate
-        // an untrusted Enter keypress, which browsers ignore. Prevent the
-        // implicit submission of trusted ones, which would submit again:
-        if (event.target instanceof HTMLInputElement) {
+        // Submit on Enter in text inputs, like the implicit submission of
+        // browsers, also for password managers that simulate an untrusted
+        // Enter keypress, which browsers ignore. Prevent the implicit
+        // submission of trusted ones, which would submit again:
+        const { target } = event
+        if (
+          target instanceof HTMLInputElement &&
+          textInputTypes.has(target.type)
+        ) {
           event.preventDefault()
           submit()
         }
@@ -206,6 +211,22 @@ export default {
     }
   }
 }
+
+// The types of inputs that browsers submit their form from with Enter:
+const textInputTypes = new Set([
+  'text',
+  'search',
+  'url',
+  'tel',
+  'email',
+  'password',
+  'number',
+  'date',
+  'month',
+  'week',
+  'time',
+  'datetime-local'
+])
 
 // Numbers are pixels, strings any CSS length:
 function toCssLength(length) {

@@ -8,6 +8,7 @@
     ref="element"
     v-model="dateValue"
     v-bind="fieldProps"
+    @update:open="onUpdateOpen"
   )
     template(#prefix)
       DitoInputAffixes(
@@ -22,7 +23,7 @@
         position="suffix"
         v-bind="inputAffixesProps.suffix"
         absolute
-        @clear="clear"
+        @clear="onClear"
       )
 </template>
 
@@ -41,7 +42,12 @@ import {
   today
 } from '@internationalized/date'
 import { convertToDate } from '../utils/date.js'
-import { isDate, assignDeeply, formatPlainDate } from '@ditojs/utils'
+import {
+  isDate,
+  assignDeeply,
+  equals,
+  formatPlainDate
+} from '@ditojs/utils'
 
 // @vue/component
 const DitoDateType = {
@@ -52,6 +58,16 @@ const DitoDateType = {
     // Text fields keep `readonly` fields focusable instead of disabling them:
     const field = useField(props, { nativeField: true, textField: true })
     const { services, context, componentPath, value, attributes } = field
+    // Edits emit `change` once they're done, when the focus leaves the field
+    // or the calendar closes, and only if they changed the value:
+    let changedValue = value.value
+    let isClearing = false
+    const emitChange = () => {
+      if (!isClearing && !equals(value.value, changedValue)) {
+        changedValue = value.value
+        field.onChange()
+      }
+    }
     // reka-ui's fields have no element that the `autofocus` attribute focuses:
     onMounted(() => {
       if (field.autofocus.value) {
@@ -85,6 +101,8 @@ const DitoDateType = {
           'defaultPlaceholder': isTime
             ? toCalendarDateTime(today(getLocalTimeZone()))
             : undefined,
+          // `placeholder` of `TimeFieldRoot` is its starting value instead:
+          'placeholder': isTime ? undefined : attrs.placeholder,
           'disabled': attrs.disabled,
           'readonly': attrs.readonly,
           'aria-label': title,
@@ -104,19 +122,34 @@ const DitoDateType = {
         },
         set(dateValue) {
           value.value = dateValue?.toDate(getLocalTimeZone()) ?? null
-          field.onChange()
         }
       }),
+
+      onUpdateOpen(open) {
+        if (!open) {
+          emitChange()
+        }
+      },
+
+      onClear() {
+        // Clearing blurs the field and emits its own change:
+        isClearing = true
+        field.clear()
+        isClearing = false
+        changedValue = value.value
+      },
 
       // The field is focused while one of its parts or its popup is:
       onFocusIn(event) {
         if (!event.currentTarget.contains(event.relatedTarget)) {
+          changedValue = value.value
           field.onFocus()
         }
       },
 
       onFocusOut(event) {
         if (!event.currentTarget.contains(event.relatedTarget)) {
+          emitChange()
           field.onBlur()
         }
       }
@@ -127,6 +160,7 @@ const DitoDateType = {
 defineType({
   type: ['date', 'datetime', 'time'],
   component: DitoDateType,
+  hasInputAffixes: true,
 
   // Times are sent as full date-times:
   getProperty: ({ type }) => ({ type: type === 'date' ? 'date' : 'datetime' }),

@@ -1,9 +1,10 @@
 <template lang="pug">
-.dito-date-picker
+.dito-date-picker(:class="{ 'dito-date-picker--placeholder': hasPlaceholder }")
   //- Picking a day closes the calendar, and picking it again keeps it:
   DatePickerRoot(
-    v-model:placeholder="placeholder"
     v-bind="$props"
+    v-model:placeholder="shownDate"
+    v-model:open="open"
     closeOnSelect
     preventDeselect
     weekdayFormat="short"
@@ -19,6 +20,10 @@
       )
         slot(name="prefix")
         .dito-date-segments
+          //- Shown instead of the empty parts while the field isn't focused:
+          span.dito-date-picker__placeholder(
+            v-if="hasPlaceholder"
+          ) {{ placeholder }}
           DatePickerInput.dito-date-segments__part(
             v-for="item in segments"
             :key="item.part"
@@ -55,7 +60,7 @@
           //- The month and year that the calendar shows, not the value:
           select.dito-calendar__select(
             aria-label="Month"
-            :value="placeholder.month"
+            :value="shownDate.month"
             @change="setPlaceholder({ month: +$event.target.value })"
           )
             option(
@@ -65,7 +70,7 @@
             ) {{ month.label }}
           select.dito-calendar__select(
             aria-label="Year"
-            :value="placeholder.year"
+            :value="shownDate.year"
             @change="setPlaceholder({ year: +$event.target.value })"
           )
             option(
@@ -166,7 +171,7 @@ export default {
     DitoIcon
   },
   inheritAttrs: false,
-  emits: ['update:modelValue'],
+  emits: ['update:modelValue', 'update:open'],
 
   // The props of `DatePickerRoot` that the picker reads or passes on. With a
   // `granularity` finer than `day`, the field also edits the time:
@@ -180,24 +185,33 @@ export default {
     minValue: { type: Object, default: undefined },
     maxValue: { type: Object, default: undefined },
     disabled: { type: Boolean },
-    readonly: { type: Boolean }
+    readonly: { type: Boolean },
+    placeholder: { type: String, default: null }
   },
 
   data() {
     return {
-      // The month that the calendar shows, which the header's lists change:
-      placeholder: this.modelValue ?? getToday(this.granularity)
+      // The month that the calendar shows, which the header's lists change.
+      // reka-ui calls it the placeholder:
+      shownDate: this.modelValue ?? getToday(this.granularity),
+      open: false
     }
   },
 
   computed: {
+    hasPlaceholder() {
+      return !!this.placeholder && !this.modelValue
+    },
+
     inputClasses() {
       return {
         // Like `DitoInput`:
         'dito-input--has-errors': ![null, false, 'false', ''].includes(
           this.$attrs['aria-invalid'] ?? null
         ),
-        'dito-input--disabled': this.disabled
+        'dito-input--disabled': this.disabled,
+        // The field looks focused while its calendar is open:
+        'dito-input--focus': this.open
       }
     },
 
@@ -216,7 +230,7 @@ export default {
       // Without limits, a century back and 20 years ahead of today, also
       // reaching the year that the calendar shows:
       const { year } = today(getLocalTimeZone())
-      const shown = this.placeholder.year
+      const shown = this.shownDate.year
       const first = Math.min(this.minValue?.year ?? year - 100, shown)
       const last = Math.max(this.maxValue?.year ?? year + 20, shown)
       return Array.from(
@@ -226,9 +240,15 @@ export default {
     }
   },
 
+  watch: {
+    open(open) {
+      this.$emit('update:open', open)
+    }
+  },
+
   methods: {
     setPlaceholder(fields) {
-      this.placeholder = this.placeholder.set(fields)
+      this.shownDate = this.shownDate.set(fields)
     },
 
     // Select today, or the current time without the time parts that the
@@ -269,6 +289,21 @@ function getToday(granularity) {
   .dito-input {
     display: flex;
     min-width: 8em;
+  }
+
+  // Hide the parts behind the placeholder, but keep them focusable:
+  &--placeholder:not(:focus-within) .dito-date-segments__part {
+    opacity: 0;
+  }
+
+  &--placeholder:focus-within &__placeholder {
+    display: none;
+  }
+
+  &__placeholder {
+    position: absolute;
+    color: $color-placeholder;
+    pointer-events: none;
   }
 
   &__toggle {
@@ -377,6 +412,9 @@ function getToday(granularity) {
   }
 
   &__weekday {
+    // Columns of equal width. A fixed table layout would make the table as
+    // wide as the popup can grow, as it sizes to its content:
+    width: calc(100% / 7);
     font-weight: bold;
     height: $input-height;
   }
