@@ -1,9 +1,11 @@
 <template lang="pug">
+//- Pass the label as `aria-label`, as reka reads its text only once:
 DitoSwitch.dito-switch(
   :id="componentPath"
   ref="element"
   v-model="value"
   :labels="schema.labels"
+  :aria-label="labelText"
   v-bind="attributes"
 )
 </template>

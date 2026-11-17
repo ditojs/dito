@@ -212,11 +212,12 @@ input is sized to fit the longer of `min` and `max`.
 
 An on/off switch, built on `reka-ui`'s `Switch`: a button with `role="switch"`
 and `[data-state='checked']` or `[data-state='unchecked']`. Inside a form, a
-`name` adds a hidden checkbox that submits with it.
+`name` adds a hidden checkbox that submits with it. Space and Enter toggle it,
+so Enter on a switch doesn't submit a dialog.
 
 | Prop         | Type                                | Default | Description                                                                                                                        |
 | ------------ | ----------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `modelValue` | `boolean`                           | `false` | Whether it's on (`v-model`).                                                                                                       |
+| `modelValue` | `boolean`                           | `false` | Whether it's on (`v-model`). Without it, the switch keeps its own state.                                                           |
 | `id`, `name` | `string`                            | `null`  | Set on the switch.                                                                                                                 |
 | `disabled`   | `boolean`                           | `false` | Disables the switch.                                                                                                               |
 | `labels`     | `boolean \| { checked, unchecked }` | `false` | Shows a label inside the switch: `true` shows `'on'` and `'off'`, an object its own texts. The switch grows with the longer label. |

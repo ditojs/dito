@@ -1,5 +1,7 @@
 <template lang="pug">
-ToastProvider
+//- Swiping would keep the text of errors from being selected and pages from
+//- scrolling on touch:
+ToastProvider(disableSwipe)
   .dito-notifications
     .dito-header
       span
@@ -19,7 +21,8 @@ ToastProvider
           .dito-notification__content(
             v-html="notification.content"
           )
-      ToastViewport.dito-notifications__viewport
+      //- reka hides its own announcements from screen readers:
+      ToastViewport.dito-notifications__viewport(aria-live="polite")
 </template>
 
 <script>
@@ -195,19 +198,6 @@ export default {
 
   &[data-state='closed'] {
     animation: dito-fade-leave 0.2s $ease-out-quart;
-  }
-
-  &[data-swipe='move'] {
-    transform: translateX(var(--reka-toast-swipe-move-x));
-  }
-
-  &[data-swipe='cancel'] {
-    transition: transform 0.2s $ease-out-quart;
-  }
-
-  // Stay where the swipe ends while the toast fades out:
-  &[data-swipe='end'] {
-    transform: translateX(var(--reka-toast-swipe-end-x));
   }
 
   &__title {

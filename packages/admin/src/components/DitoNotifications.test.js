@@ -114,6 +114,15 @@ describe('DitoNotifications', () => {
     ).toEqual([['Saved.'], ['Saved.']])
   })
 
+  it('shows notifications in a polite live region', async () => {
+    const notifications = await mountNotifications()
+    notifications.notify({ text: 'Saved' })
+    await flushPromises()
+    expect(
+      findNotifications()[0].closest('[aria-live]').getAttribute('aria-live')
+    ).toBe('polite')
+  })
+
   it('closes all notifications', async () => {
     const notifications = await mountNotifications()
     notifications.notify({ text: 'One' })

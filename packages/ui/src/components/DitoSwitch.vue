@@ -92,6 +92,8 @@ export default {
     padding: 0;
     border: 0;
     border-radius: 1em;
+    font: inherit;
+    cursor: pointer;
     background: $color-light;
     transition: background-color 0.3s;
   }
