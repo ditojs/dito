@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import { test, expect } from '../fixtures.js'
+import { Project } from '../models/Project.js'
 import { seedProjects, openProject, expectScreenshot } from '../scenes.js'
 
 // Screenshots of the admin's components in their various states: open menus
@@ -361,6 +362,18 @@ test.describe('component screenshots', () => {
     await page.getByRole('button', { name: 'Page 2', exact: true }).click()
     await expect(page.getByText('Archive', { exact: true })).toBeVisible()
     await expectScreenshot(page, 'pagination.png')
+  })
+
+  test('pagination with ellipses', async ({ page, url }) => {
+    // Fill 20 pages of two projects, and open page 10 (`page` counts from 0):
+    for (let id = 4; id <= 40; id++) {
+      await Project.query().insert({ id, name: `Project ${id}` })
+    }
+    await page.goto(`${url}/admin/projects?page=9`)
+    await expect(
+      page.getByLabel('Pagination').locator('[aria-current="page"]')
+    ).toHaveText('10')
+    await expectScreenshot(page, 'pagination-ellipses.png')
   })
 
   test('tree item focus', async ({ page, url }) => {

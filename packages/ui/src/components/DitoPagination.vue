@@ -17,7 +17,9 @@ PaginationRoot.dito-pagination(
     v-if="numPages > 1"
     v-slot="{ items }"
   )
-    PaginationPrev.dito-button.dito-pagination__prev
+    PaginationPrev.dito-button.dito-pagination__prev(
+      aria-label="Previous page"
+    )
       DitoIcon(name="arrow")
     template(
       v-for="(item, index) in items"
@@ -32,7 +34,11 @@ PaginationRoot.dito-pagination(
         as="span"
       )
         DitoIcon(name="ellipsis")
-    PaginationNext.dito-button
+    //- reka only disables the button on the last page, not past it.
+    PaginationNext.dito-button.dito-pagination__next(
+      aria-label="Next page"
+      :disabled="currentPage >= numPages"
+    )
       DitoIcon(name="arrow")
 </template>
 
@@ -143,6 +149,9 @@ export default {
   &__ellipsis {
     display: flex;
     align-items: center;
+    justify-content: center;
+    min-width: $input-height;
+    min-height: $input-height;
   }
 }
 </style>
