@@ -21,7 +21,7 @@ ToastProvider(disableSwipe)
           .dito-notification__content(
             v-html="notification.content"
           )
-      //- reka hides its own announcements from screen readers:
+      //- reka-ui hides its own announcements from screen readers:
       ToastViewport.dito-notifications__viewport(aria-live="polite")
 </template>
 
