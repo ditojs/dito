@@ -290,23 +290,25 @@ year from lists. The values are dates of
 e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
 `day`, which also edits the time.
 
-| Prop                   | Type                                      | Default   | Description                                                  |
-| ---------------------- | ----------------------------------------- | --------- | ------------------------------------------------------------ |
-| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                        |
-| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                      |
-| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                      |
-| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.          |
-| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                    |
-| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list. |
-| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.    |
+| Prop                   | Type                                      | Default   | Description                                                     |
+| ---------------------- | ----------------------------------------- | --------- | --------------------------------------------------------------- |
+| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                           |
+| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                         |
+| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                         |
+| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.             |
+| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                       |
+| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list.    |
+| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.       |
+| `placeholder`          | `string`                                  | `null`    | Shown instead of the empty parts while the field isn't focused. |
 
 | Slot               | Description                                     |
 | ------------------ | ----------------------------------------------- |
 | `prefix`, `suffix` | Content before and after the parts of the date. |
 
 All other attributes go to the field, e.g. `aria-label`, and `aria-invalid`
-shows errors, as in [`DitoInput`](#ditoinput). Methods: `focus()` and
-`blur()`.
+shows errors, as in [`DitoInput`](#ditoinput). The field emits `update:open`
+when the calendar opens or closes, and looks focused while it is open. Methods:
+`focus()` and `blur()`.
 
 ```vue
 <DitoDatePicker
