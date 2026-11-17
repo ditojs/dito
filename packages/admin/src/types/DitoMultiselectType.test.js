@@ -140,14 +140,31 @@ describe('DitoMultiselectType', () => {
     it('clears the value with the clear button', async () => {
       const { findField, data } = await mountSchema({
         schema: {
-          fields: {
-            genre: { type: 'multiselect', options: genres, clearable: true }
-          }
+          fields: { genre: { type: 'multiselect', options: genres } }
         },
         data: { genre: 'poetry' }
       })
       await findField('genre').find('button[title="Clear"]').trigger('click')
       expect(data.genre).toBe(null)
+    })
+
+    it('is clearable by default unless `required` or `clearable: false`', async () => {
+      const genre = { type: 'multiselect', options: genres }
+      const { findField } = await mountSchema({
+        schema: {
+          fields: {
+            optional: genre,
+            required: { ...genre, required: true },
+            unclearable: { ...genre, clearable: false }
+          }
+        },
+        data: { optional: 'poetry', required: 'poetry', unclearable: 'poetry' }
+      })
+      const isClearable = name =>
+        findField(name).find('button[title="Clear"]').exists()
+      expect(isClearable('optional')).toBe(true)
+      expect(isClearable('required')).toBe(false)
+      expect(isClearable('unclearable')).toBe(false)
     })
 
     it('keeps `null` values instead of their `default`', async () => {
@@ -531,15 +548,17 @@ describe('DitoMultiselectType', () => {
             searchable: true,
             placeholder: false,
             options: genres
-          }
+          },
+          format: { type: 'multiselect', options: genres }
         }
       },
-      data: { genre: null, mood: null }
+      data: { genre: null, mood: null, format: null }
     })
     const getPlaceholder = dataPath =>
       getInput(findField(dataPath)).attributes('placeholder')
     expect(getPlaceholder('genre')).toBe('Select or search Genre')
     expect(getPlaceholder('mood')).toBe(undefined)
+    expect(getPlaceholder('format')).toBe('Select option')
   })
 
   it('resolves `placeholder` callbacks', async () => {

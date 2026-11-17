@@ -86,6 +86,25 @@ test.describe('multiselect', () => {
     expect(stored?.codes).toEqual(['gone'])
   })
 
+  test('keeps the errors of deselected required values', async ({
+    page,
+    url
+  }) => {
+    // Removing a tag outside of the input validates the new value right away.
+    await Widget.query().insert({ name: 'Widget A', codes: ['a'] })
+    const list = new DitoListView(page, url, 'Features')
+    await list.navigate('/features')
+    await list.list.edit('Widget A')
+    const codes = getMultiselect(page, 'Codes')
+    await codes.locator('.dito-multiselect__tag').getByRole('button').click()
+    const errors = page
+      .locator('.dito-container')
+      .filter({ has: codes })
+      .last()
+      .locator('.dito-errors')
+    await expect(errors).toContainText(/required/)
+  })
+
   test('keeps related values without options', async ({ page, url }) => {
     const widget = await Widget.query().insertGraph({
       name: 'Widget A',
