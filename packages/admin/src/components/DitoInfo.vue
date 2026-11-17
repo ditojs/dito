@@ -9,10 +9,8 @@ PopoverRoot(
     @pointerenter="onPointerEnter"
     @pointerleave="onPointerLeave"
   )
-  //- In the pane, outside of the buttons and labels around the info. The popup
-  //- is fixed, so that scrolling panes don't clip it, and stays in the scroll
-  //- area of the info, e.g. a sidebar, flipping below the info where it has no
-  //- room above it:
+  //- Fixed and outside of the buttons and labels around the info, so that
+  //- scrolling panes don't clip it:
   PopoverPortal(
     :to="pane"
     :disabled="!pane"
