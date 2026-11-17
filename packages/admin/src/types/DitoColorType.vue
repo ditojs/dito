@@ -341,7 +341,7 @@ $color-slider-height: 12px;
   }
 
   &__popup {
-    @extend %popup;
+    @extend %popup--animated;
 
     display: flex;
     flex-flow: column;

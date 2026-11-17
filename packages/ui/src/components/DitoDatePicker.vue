@@ -341,7 +341,7 @@ function getToday(granularity) {
 }
 
 .dito-date-picker__popup {
-  @extend %popup;
+  @extend %popup--animated;
 }
 
 .dito-calendar {

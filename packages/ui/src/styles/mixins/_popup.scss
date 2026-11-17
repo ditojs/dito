@@ -6,6 +6,12 @@
   border-radius: $border-radius;
   background: $color-white;
   box-shadow: $shadow-window;
+}
+
+// A popup that animates as it opens, for larger ones like calendars. Menus and
+// lists open at once:
+%popup--animated {
+  @extend %popup;
 
   &[data-state='open'] {
     animation: dito-slide-enter 0.15s $ease-out-quart;
