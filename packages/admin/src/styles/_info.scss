@@ -39,6 +39,11 @@
     &[data-state='open'] {
       animation: dito-info-enter 0.25s $ease-out-quart;
     }
+
+    // Slide away from the info, also when the popup flips below it:
+    &[data-side='bottom'] {
+      --slide-offset: -5px;
+    }
   }
 
   &__content {
@@ -55,6 +60,6 @@
 @keyframes dito-info-enter {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translateY(var(--slide-offset, 5px));
   }
 }
