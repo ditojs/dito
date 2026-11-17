@@ -140,6 +140,12 @@ export default {
     &[data-selected] {
       @include button-active;
     }
+
+    // As wide as the page buttons, which the padding beside the icon exceeds:
+    &.dito-pagination__prev,
+    &.dito-pagination__next {
+      padding: 0;
+    }
   }
 
   &__prev .dito-icon {
