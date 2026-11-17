@@ -1,5 +1,6 @@
 <template lang="pug">
-//- The suffix also holds the clear button of clearable components.
+//- The suffix also holds the clear button of clearable components, and their
+//- info when they have no label to show it.
 DitoAffixes(
   :items="items"
   :position="position"
@@ -8,6 +9,7 @@ DitoAffixes(
   :clearable="clearable"
   :hasValue="hasValue"
   :disabled="disabled"
+  :inlineInfo="inlineInfo"
   :parentContext="parentContext"
   @clear="$emit('clear')"
 )
@@ -36,6 +38,7 @@ export default {
     disabled: { type: Boolean, default: false },
     clearable: { type: Boolean, default: false },
     hasValue: { type: Boolean, default: false },
+    inlineInfo: { type: [String, Object], default: null },
     // For the callbacks of the items:
     parentContext: { type: Object, required: true }
   }

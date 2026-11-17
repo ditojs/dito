@@ -295,6 +295,8 @@ export function useField(
       disabled: disabled.value,
       clearable: clearable.value,
       value: value.value,
+      label: label.value,
+      info: info.value,
       context
     })
   )

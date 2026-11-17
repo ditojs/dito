@@ -407,6 +407,15 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'sidebar-overlay.png')
   })
 
+  test('info at the edge of a sidebar panel', async ({ page, url }) => {
+    await page.setViewportSize({ width: 1200, height: 1000 })
+    await page.goto(`${url}/admin/reports/done`)
+    await expect(page.getByText('Archive', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Info', exact: true }).click()
+    await expect(page.locator('.dito-info__popup')).toBeVisible()
+    await expectScreenshot(page, 'sidebar-info.png')
+  })
+
   test('collapsed menu and sidebar', async ({ page, url }) => {
     await openProject(page, url)
     await page.getByRole('button', { name: 'Menu', exact: true }).click()
