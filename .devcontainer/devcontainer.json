@@ -1,0 +1,15 @@
+// Opens a branch in GitHub Codespaces with an e2e scenario running, e.g. to
+// show features or reproduce issues:
+// https://codespaces.new/ditojs/dito/tree/<branch>?quickstart=1
+// The admin is at /admin/ of the forwarded port 8080.
+{
+  "name": "Dito.js",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24",
+  "postCreateCommand": "npm install -g pnpm@12.9.0 && pnpm install",
+  "postAttachCommand": "pnpm -C tests serve catalogue --port 8080",
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": { "label": "Admin", "onAutoForward": "notify" }
+  },
+  "hostRequirements": { "cpus": 4 }
+}
