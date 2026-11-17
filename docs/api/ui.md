@@ -132,12 +132,12 @@ which handles mouse and keyboard: Enter, Space and ArrowDown open the menu,
 the arrow keys, Home and End move between items, Escape closes it, and Tab
 leaves it.
 
-| Prop       | Type                                        | Default    | Description                                                                                                                   |
-| ---------- | ------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `items`    | `Array<{ value, label, icon?, disabled? }>` | required   | The menu items. Items with an `icon` from the [icon set](#icons) show it instead of their `label`, which becomes their title. |
-| `side`     | `string`                                    | `'bottom'` | The side of the button the menu opens on: `'top'`, `'right'`, `'bottom'` or `'left'`.                                         |
-| `align`    | `string`                                    | `'start'`  | The edge of the button the menu aligns with: `'start'`, `'center'` or `'end'`.                                                |
-| `disabled` | `boolean`                                   | `false`    | Disables the button.                                                                                                          |
+| Prop       | Type                                        | Default    | Description                                                                                                                                                                 |
+| ---------- | ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`    | `Array<{ value, label, icon?, disabled? }>` | required   | The menu items. Items with an `icon` from the [icon set](#icons) show it instead of their `label`, which becomes their title.                                               |
+| `side`     | `string`                                    | `'bottom'` | The side of the button the menu opens on: `'top'`, `'right'`, `'bottom'` or `'left'`.                                                                                       |
+| `align`    | `string`                                    | `'center'` | The preferred alignment of the menu with the button: `'start'`, `'center'` or `'end'`. A centered menu without room on one side aligns with the button's edge on that side. |
+| `disabled` | `boolean`                                   | `false`    | Disables the button.                                                                                                                                                        |
 
 | Event    | Payload | Description                 |
 | -------- | ------- | --------------------------- |
