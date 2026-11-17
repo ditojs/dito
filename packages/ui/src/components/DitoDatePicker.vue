@@ -40,11 +40,13 @@
           )
         slot(name="suffix")
     //- No portal, so that the styles apply. The popup is fixed, so that
-    //- scrolling panels don't clip it:
+    //- scrolling panels don't clip it, and stays in the closest container that
+    //- scrolls, so that it doesn't cover the panels next to it:
     DatePickerContent.dito-date-picker__popup(
       :portal="{ disabled: true }"
       align="start"
       :sideOffset="2"
+      :collisionBoundary="scrollContainer"
       positionStrategy="fixed"
     )
       DatePickerCalendar.dito-calendar(
@@ -195,7 +197,8 @@ export default {
       // The month that the calendar shows, which the header's lists change.
       // reka-ui calls it the placeholder:
       shownDate: this.modelValue ?? getToday(this.granularity),
-      open: false
+      open: false,
+      scrollContainer: null
     }
   },
 
@@ -245,6 +248,17 @@ export default {
     open(open) {
       this.$emit('update:open', open)
     }
+  },
+
+  mounted() {
+    let element = this.$el.parentElement
+    while (
+      element &&
+      !/auto|scroll/.test(getComputedStyle(element).overflowY)
+    ) {
+      element = element.parentElement
+    }
+    this.scrollContainer = element
   },
 
   methods: {
