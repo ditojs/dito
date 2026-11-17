@@ -54,12 +54,14 @@
               :placeholder="placeholder"
               @keydown.enter.prevent
             )
+        //- Keep Enter without a highlighted option from submitting dialogs:
         ComboboxInput.dito-multiselect__input(
           v-else
           ref="element"
           v-model="searchTerm"
           v-bind="inputProps"
           :placeholder="placeholder"
+          @keydown.enter.prevent
         )
         DitoSpinner.dito-multiselect__spinner(
           v-if="isLoading"
@@ -141,6 +143,7 @@ import { useOptions } from '../composables/useOptions.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 import DitoSpinner from '../components/DitoSpinner.vue'
+import { getDataKeywords } from '../utils/schema/properties.js'
 import { isArray, isBoolean, isObject } from '@ditojs/utils'
 
 // Selects one or `multiple` options with reka-ui's `Combobox`, which holds
@@ -180,7 +183,12 @@ const DitoMultiselectType = {
       blurElement: () => {
         isOpen.value = false
         getInput()?.blur()
-      }
+      },
+      // Optional single selects can be cleared:
+      defaultClearable: () => (
+        !multiple.value &&
+        !getDataKeywords(props.schema, field.context).required
+      )
     })
     const { element, value, focused, autofocus, services, getSchemaValue } =
       field
@@ -277,6 +285,11 @@ const DitoMultiselectType = {
       set(newValue) {
         selectedValue.value = newValue
         field.onChange()
+        // Edits outside of the input, e.g. removing tags with their buttons,
+        // aren't validated on blur:
+        if (!focused.value) {
+          field.validate()
+        }
       }
     })
 
@@ -427,7 +440,7 @@ const DitoMultiselectType = {
               ? label
                 ? `Select or search ${label}`
                 : 'Select or search'
-              : undefined
+              : 'Select option'
           : placeholder
       }),
 
@@ -491,6 +504,7 @@ const DitoMultiselectType = {
 defineType({
   type: 'multiselect',
   component: DitoMultiselectType,
+  hasInputAffixes: true,
   hasSearch: true,
   ...optionsTraits
 })
