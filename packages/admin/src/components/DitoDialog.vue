@@ -3,10 +3,8 @@
   ref="dialog"
   :style="{ '--width': width, '--min-width': minWidth }"
 )
-  //- `DitoRoot` removes the dialog once it resolves, and makes everything
-  //- behind it inert except the notifications. reka-ui's modal mode would
-  //- hide them and block their clicks. The dialog cancels itself, and reka-ui
-  //- dismisses nothing:
+  //- reka-ui's modal mode would hide the notifications and block their
+  //- clicks, so `DitoRoot` makes the rest inert instead:
   DialogRoot(
     open
     :modal="false"
