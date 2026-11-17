@@ -24,7 +24,7 @@
   }
 }
 
-// The popups of infos, see `DitoInfo`, and the tooltip, see `DitoRoot`:
+// The popups of infos and the tooltip:
 .dito-info__popup,
 .dito-tooltip {
   --color: #{color.adjust($color-active, $lightness: 5%)};
@@ -71,8 +71,8 @@
   fill: var(--color);
 }
 
-// The tooltip of `data-tooltip` attributes, see `DitoRoot`. It opens after a
-// delay, like the native tooltips of `title` attributes:
+// The tooltip of `data-tooltip` attributes opens after a delay, like the native
+// tooltips of `title` attributes:
 .dito-tooltip:not([data-state='closed']) {
   animation: dito-info-enter 0.25s $ease-out-quart 0.5s backwards;
 }
