@@ -721,7 +721,9 @@ format: {
 options, built on `reka-ui`'s `Combobox`. Multiple values show as tags in its
 `TagsInput`, which Backspace and the arrow keys select and remove. Picking the
 selected option of a single select keeps it. Single selects that aren't
-`required` show a button that clears them, unless `clearable` is `false`.
+`required` show a button that clears them, unless `clearable` is `false`. Lists
+of more than 200 options without groups render only the options in view, with
+`reka-ui`'s `ComboboxVirtualizer`.
 
 | Option             | Type                                                               | Default                                                                                                                                               | Description                                                                                                                                                                                                                                                                                                                 |
 | ------------------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
