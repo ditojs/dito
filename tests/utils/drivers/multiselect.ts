@@ -24,8 +24,8 @@ export const multiselect: TypeComponentDriver = {
       } else {
         const element = this.getElement(page, component)
         await element.click()
-        await element.locator('input').fill(option.tag)
-        await element.locator('input').press('Enter')
+        await element.fill(option.tag)
+        await element.press('Enter')
       }
     }
     // Close the dropdown, so it doesn't cover the form.
@@ -34,10 +34,11 @@ export const multiselect: TypeComponentDriver = {
 
   async getValue(page, component) {
     const container = getContainer(page, component)
-    const tags = await container.locator('.multiselect__tag').allTextContents()
+    const tags = await container
+      .locator('.dito-multiselect__tag')
+      .allTextContents()
     return tags.length > 0
       ? tags.map(tag => tag.trim())
-      : ((await container.locator('.multiselect__single').textContent()) ?? '')
-          .trim()
+      : (await this.getElement(page, component).inputValue()).trim()
   }
 }
