@@ -7,7 +7,7 @@
   white-space: pre;
 
   // The parts that can be edited, not the literals between them:
-  &__part:not([data-reka-date-field-segment='literal']) {
+  &__part:not(.dito-date-segments__part--literal) {
     border-radius: 2px;
     font-variant-numeric: tabular-nums;
     outline: none;
@@ -17,7 +17,7 @@
       color: $color-white;
     }
 
-    &[data-placeholder] {
+    &.dito-date-segments__part--empty {
       color: $color-placeholder;
     }
   }

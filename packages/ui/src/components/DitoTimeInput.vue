@@ -10,8 +10,10 @@ TimeFieldRoot.dito-time-input.dito-input(
   .dito-date-segments
     TimeFieldInput.dito-date-segments__part(
       v-for="item in segments"
+      ref="parts"
       :key="item.part"
       :part="item.part"
+      :class="getSegmentClasses(item)"
     ) {{ item.value }}
   slot(name="suffix")
 </template>
@@ -19,6 +21,7 @@ TimeFieldRoot.dito-time-input.dito-input(
 <script>
 import { TimeFieldInput, TimeFieldRoot } from 'reka-ui'
 import { hasErrors } from '../utils/element.js'
+import { focusSegment, getSegmentClasses } from './dateSegments.js'
 
 // A time field, built on reka-ui's `TimeField`.
 export default {
@@ -39,8 +42,10 @@ export default {
   },
 
   methods: {
+    getSegmentClasses,
+
     focus() {
-      this.$el.querySelector('[contenteditable="true"]')?.focus()
+      focusSegment(this.$refs.parts)
     },
 
     blur() {
