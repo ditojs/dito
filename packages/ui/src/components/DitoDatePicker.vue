@@ -25,15 +25,22 @@
         @click="onPartFocus"
       )
         slot(name="prefix")
-        .dito-date-segments(ref="segments")
+        .dito-date-segments(
+          ref="segments"
+          :class=`{
+            'dito-date-segments--entered': segments.some(isEnteredSegment)
+          }`
+        )
           //- Shown instead of the empty parts while the field isn't focused:
           span.dito-date-picker__placeholder(
             v-if="placeholder"
           ) {{ placeholder }}
           DatePickerInput.dito-date-segments__part(
             v-for="item in segments"
+            ref="parts"
             :key="item.part"
             :part="item.part"
+            :class="getSegmentClasses(item)"
           ) {{ item.value }}
         //- The button opens the calendar, also of fields with a time:
         DatePickerTrigger.dito-date-picker__toggle(
@@ -175,6 +182,11 @@ import {
 } from 'reka-ui'
 import DitoIcon from './DitoIcon.vue'
 import DitoTimePanel from './DitoTimePanel.vue'
+import {
+  focusSegment,
+  getSegmentClasses,
+  isEnteredSegment
+} from './dateSegments.js'
 import { hasErrors } from '../utils/element.js'
 import { usePopupPlacement } from '../utils/vue.js'
 
@@ -285,6 +297,9 @@ export default {
   },
 
   methods: {
+    isEnteredSegment,
+    getSegmentClasses,
+
     setPlaceholder(fields) {
       this.shownDate = this.shownDate.set(fields)
     },
@@ -315,7 +330,9 @@ export default {
     onMouseDown(event) {
       if (
         !this.disabled &&
-        !event.target.closest('[contenteditable="true"], button')
+        !event.target.closest(
+          '.dito-date-segments__part:not(.dito-date-segments__part--literal), button'
+        )
       ) {
         this.focus()
         event.preventDefault()
@@ -364,7 +381,7 @@ export default {
     },
 
     focus() {
-      this.$el.querySelector('[contenteditable="true"]')?.focus()
+      focusSegment(this.$refs.parts)
     },
 
     blur() {
@@ -385,12 +402,6 @@ function getToday(granularity) {
 <style lang="scss">
 @import '../styles/_imports';
 
-// reka-ui marks empty parts with `data-placeholder`, but not the literals and
-// the day period, which always have a value:
-$entered-part: '.dito-date-segments__part:not([data-placeholder], ' +
-  '[data-reka-date-field-segment="literal"], ' +
-  '[data-reka-date-field-segment="dayPeriod"])';
-
 .dito-date-picker {
   .dito-input {
     display: flex;
@@ -399,12 +410,17 @@ $entered-part: '.dito-date-segments__part:not([data-placeholder], ' +
 
   // Fields without entered parts hide them until focused, but keep them
   // focusable:
-  &:not(:focus-within, :has(#{$entered-part})) .dito-date-segments__part {
-    opacity: 0;
+  &:not(:focus-within) .dito-date-segments:not(.dito-date-segments--entered) {
+    .dito-date-segments__part {
+      opacity: 0;
+    }
   }
 
-  &:is(:focus-within, :has(#{$entered-part})) &__placeholder {
-    display: none;
+  &:focus-within,
+  .dito-date-segments--entered {
+    .dito-date-picker__placeholder {
+      display: none;
+    }
   }
 
   &__placeholder {
