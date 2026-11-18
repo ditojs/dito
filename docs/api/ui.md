@@ -212,29 +212,32 @@ input is sized to fit the longer of `min` and `max`.
 
 ### DitoSwitch
 
-An on/off switch, rendered as a checkbox with `role="switch"`.
+An on/off switch, built on `reka-ui`'s `Switch`: a button with `role="switch"`
+and `[data-state='checked']` or `[data-state='unchecked']`. Inside a form, a
+`name` adds a hidden checkbox that submits with it. Space and Enter toggle it,
+so Enter on a switch doesn't submit a dialog.
 
 | Prop         | Type                                | Default | Description                                                                                                                        |
 | ------------ | ----------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `modelValue` | `boolean`                           | `false` | Whether it's on (`v-model`).                                                                                                       |
-| `id`, `name` | `string`                            | `null`  | Set on the checkbox.                                                                                                               |
+| `modelValue` | `boolean`                           | `false` | Whether it's on (`v-model`). Without it, the switch keeps its own state.                                                           |
+| `id`, `name` | `string`                            | `null`  | Set on the switch.                                                                                                                 |
 | `disabled`   | `boolean`                           | `false` | Disables the switch.                                                                                                               |
 | `labels`     | `boolean \| { checked, unchecked }` | `false` | Shows a label inside the switch: `true` shows `'on'` and `'off'`, an object its own texts. The switch grows with the longer label. |
 
-| Event               | Payload   | Description                   |
-| ------------------- | --------- | ----------------------------- |
-| `update:modelValue` | `checked` | The switch was toggled.       |
-| `change`            | `checked` | Same, for `@change` handlers. |
+| Event               | Payload   | Description             |
+| ------------------- | --------- | ----------------------- |
+| `update:modelValue` | `checked` | The switch was toggled. |
 
 | Slot                   | Description                                    |
 | ---------------------- | ---------------------------------------------- |
 | `checked`, `unchecked` | Replace the label texts, when `labels` is set. |
 
-| Method    | Description           |
-| --------- | --------------------- |
-| `focus()` | Focuses the checkbox. |
+| Method    | Description         |
+| --------- | ------------------- |
+| `focus()` | Focuses the switch. |
 
-`class` goes to the switch; all other attributes go to the checkbox.
+`class` goes to the `.dito-switch` element around it; all other attributes go to
+the switch, `.dito-switch__control`.
 
 ```vue
 <DitoSwitch
@@ -500,7 +503,7 @@ custom admin components, use `@ditojs/admin/imports.scss`, which includes it.
 The components follow BEM: blocks are named `.dito-{block}`, their elements
 `.dito-{block}__{element}`, and modifiers, including states,
 `.dito-{block}--{modifier}`, e.g. `.dito-button--disabled`,
-`.dito-switch--checked`, `.dito-input--focus` or `.dito-menu-button__item--icon`.
+`.dito-input--focus` or `.dito-menu-button__item--icon`.
 
 Besides the classes of the components, the styles define:
 

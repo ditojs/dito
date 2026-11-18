@@ -113,9 +113,11 @@ describe('nested forms with properties', () => {
     const { findField } = await mountRooms()
     const getValues = dataPath =>
       findField(dataPath)
-        .findAll('input')
+        .findAll('[role="switch"], input')
         .map(({ element }) =>
-          element.type === 'checkbox' ? element.checked : element.value
+          element.role === 'switch'
+            ? element.getAttribute('aria-checked') === 'true'
+            : element.value
         )
     // The irrelevant humidity hides its slider:
     expect(getValues('rooms/0/climate')).toEqual([true, '21', '21', false])
@@ -125,7 +127,7 @@ describe('nested forms with properties', () => {
   it('edit and submit their data through the widgets', async () => {
     const { findField, data, submit } = await mountRooms()
     const climate = findField('rooms/0/climate')
-    await climate.findAll('input[type="checkbox"]')[1].setValue(true)
+    await climate.findAll('[role="switch"]')[1].trigger('click')
     await enterValue(climate.findAll('input[type="number"]')[1], '60')
     await enterValue(findField('sensors').find('input'), 'Window')
     expect(data.rooms[0].climate).toEqual({

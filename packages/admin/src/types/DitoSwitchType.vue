@@ -1,9 +1,11 @@
 <template lang="pug">
+//- Pass the label as `aria-label`, as reka-ui reads its text only once:
 DitoSwitch.dito-switch(
   :id="componentPath"
   ref="element"
   v-model="value"
   :labels="schema.labels"
+  :aria-label="labelText"
   v-bind="attributes"
 )
 </template>
@@ -17,7 +19,15 @@ import { DitoSwitch } from '@ditojs/ui/src'
 const DitoSwitchType = {
   components: { DitoSwitch },
   props: fieldProps,
-  setup: props => useField(props)
+  // reka-ui's switch emits no native change events:
+  setup: props =>
+    useField(props, {
+      getEvents: ({ onFocus, onBlur, onChange }) => ({
+        onFocus,
+        onBlur,
+        'onUpdate:modelValue': onChange
+      })
+    })
 }
 
 defineType({
