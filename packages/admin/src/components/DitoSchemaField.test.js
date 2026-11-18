@@ -243,10 +243,12 @@ describe('DitoSchemaField', () => {
       data: { values: 4, isStatic: false }
     })
     const slider = findField('values')
-    const input = slider.find('.slider__track + .dito-container input')
+    const control = slider.find(
+      '.slider__track + .dito-container [role="switch"]'
+    )
     // The field's path doesn't include the field whose slot holds it:
-    expect(input.attributes('id')).toBe('axis/isStatic')
-    await input.setValue(true)
+    expect(control.attributes('id')).toBe('axis/isStatic')
+    await control.trigger('click')
     expect(data.isStatic).toBe(true)
   })
 
