@@ -23,8 +23,10 @@
         .dito-date-segments(ref="segments")
           TimeFieldInput.dito-date-segments__part(
             v-for="item in segments"
+            ref="parts"
             :key="item.part"
             :part="item.part"
+            :class="getSegmentClasses(item)"
           ) {{ item.value }}
         PopoverTrigger.dito-time-input__toggle(
           aria-label="Choose time"
@@ -65,6 +67,7 @@ import {
 } from 'reka-ui'
 import DitoIcon from './DitoIcon.vue'
 import DitoTimePanel from './DitoTimePanel.vue'
+import { focusSegment, getSegmentClasses } from './dateSegments.js'
 import { hasErrors } from '../utils/element.js'
 import { usePopupPlacement } from '../utils/vue.js'
 
@@ -126,6 +129,8 @@ export default {
   },
 
   methods: {
+    getSegmentClasses,
+
     // Focusing or clicking a part opens the popup, also after it was closed
     // while the part kept the focus:
     onPartFocus(event) {
@@ -177,7 +182,7 @@ export default {
     },
 
     focus() {
-      this.$el.querySelector('[contenteditable="true"]')?.focus()
+      focusSegment(this.$refs.parts)
     },
 
     blur() {
