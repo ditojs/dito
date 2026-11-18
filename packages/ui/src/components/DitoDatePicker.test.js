@@ -50,6 +50,20 @@ describe('DitoDatePicker', () => {
     )
   })
 
+  it('marks the parts that are entered and the ones that are empty', async () => {
+    wrapper = mount(DitoDatePicker, { attachTo: document.body })
+    const segments = wrapper.find('.dito-date-segments')
+    expect(segments.classes()).not.toContain('dito-date-segments--entered')
+    const month = wrapper.find('.dito-date-segments__part')
+    expect(month.classes()).toContain('dito-date-segments__part--empty')
+    expect(
+      wrapper.findAll('.dito-date-segments__part--literal').length
+    ).toBeGreaterThan(0)
+    await month.trigger('keydown', { key: '5' })
+    expect(segments.classes()).toContain('dito-date-segments--entered')
+    expect(month.classes()).not.toContain('dito-date-segments__part--empty')
+  })
+
   it(`doesn't open the calendar of readonly fields`, () => {
     wrapper = mount(DitoDatePicker, { props: { readonly: true } })
     expect(
