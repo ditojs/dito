@@ -38,8 +38,11 @@ for (const file of files) {
   for (const section of sections) {
     const [heading, ...lines] = section.split('\n')
     // Each entry is a list item, with its indented lines:
+    // Links in the files are relative to their folder, those in
+    // `CHANGELOG.md` to the root:
     const items = lines
       .join('\n')
+      .replaceAll('](../../', '](')
       .split(/\n(?=- )/)
       .map(item => item.trim())
       .filter(Boolean)
