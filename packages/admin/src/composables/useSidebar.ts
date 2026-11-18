@@ -10,11 +10,14 @@ import {
 import { useRoute } from 'vue-router'
 import { useDomEvents } from './useDomEvents.ts'
 
-// The triggers of open popups by their ARIA state, and reka-ui's open popups:
+// The triggers of open popups by their ARIA state, and the popups by their
+// role:
 const openPopupSelector = [
   '[aria-haspopup][aria-expanded="true"]',
   '[role="combobox"][aria-expanded="true"]',
-  '[data-dismissable-layer]'
+  '[role="menu"]',
+  '[role="listbox"]',
+  '[role="dialog"]'
 ].join(', ')
 
 // Sidebars are docked on wide screens, where the user can collapse them, which
