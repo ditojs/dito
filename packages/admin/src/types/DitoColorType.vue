@@ -1,5 +1,5 @@
 <template lang="pug">
-.dito-color
+.dito-color(ref="root")
   PopoverRoot(
     v-model:open="showPopup"
   )
@@ -34,30 +34,88 @@
           )
             div(:style="{ background: `#${hexValue || '00000000'}` }")
     //- No portal, so that the styles apply. The popup is fixed, so that
-    //- scrolling panes don't clip it:
+    //- scrolling panes don't clip it, and stays in the closest container that
+    //- scrolls, so that it doesn't cover the panels next to it:
     PopoverContent.dito-color__popup(
       align="start"
+      :sideOffset="2"
+      :collisionBoundary="scrollContainer"
       positionStrategy="fixed"
     )
-      SketchPicker.dito-color__picker(
-        v-model:tinyColor="colorValue"
-        :disableAlpha="!alpha"
-        :disableFields="!inputs"
-        :presetColors="presets"
+      ColorAreaRoot(
+        v-slot="{ style }"
+        :modelValue="pickerColor"
+        colorSpace="hsb"
+        xChannel="saturation"
+        yChannel="brightness"
+        @update:color="setPickerColor"
       )
+        ColorAreaArea.dito-color__area(:style="style")
+          ColorAreaThumb.dito-color__thumb
+      ColorSliderRoot.dito-color__slider(
+        v-for="channel in sliderChannels"
+        :key="channel"
+        :modelValue="pickerColor"
+        colorSpace="hsb"
+        :channel="channel"
+        @update:color="setPickerColor"
+      )
+        ColorSliderTrack.dito-color__track
+        ColorSliderThumb.dito-color__thumb
+      .dito-color__fields(
+        v-if="inputs"
+      )
+        ColorFieldRoot.dito-color__field(
+          v-for="channel in fieldChannels"
+          :key="channel"
+          :modelValue="pickerColor"
+          colorSpace="hsb"
+          :channel="channel"
+          @update:color="setPickerColor"
+        )
+          ColorFieldInput.dito-input(:id="`${componentPath}-${channel}`")
+          label(:for="`${componentPath}-${channel}`")
+            | {{ getChannelName(channel) }}
+      .dito-color__presets
+        button.dito-color__preset(
+          v-for="preset in presets"
+          :key="preset"
+          type="button"
+          :title="preset"
+          @click="setPickerColor(preset)"
+        )
+          ColorSwatch.dito-color__swatch(:color="preset")
 </template>
 
 <script>
-// `v-model:tinyColor` requires the `tinycolor` exported by `vue-color`:
-import { SketchPicker, tinycolor } from 'vue-color'
+import tinycolor from 'tinycolor2'
+import { isString } from '@ditojs/utils'
 import {
+  ColorAreaArea,
+  ColorAreaRoot,
+  ColorAreaThumb,
+  ColorFieldInput,
+  ColorFieldRoot,
+  ColorSliderRoot,
+  ColorSliderThumb,
+  ColorSliderTrack,
+  ColorSwatch,
   PopoverAnchor,
   PopoverContent,
   PopoverRoot,
-  PopoverTrigger
+  PopoverTrigger,
+  convertToRgb,
+  getChannelName
 } from 'reka-ui'
-import { DitoInput } from '@ditojs/ui/src'
-import { computed, ref, watch } from 'vue'
+import { DitoInput, getScrollContainer } from '@ditojs/ui/src'
+import {
+  computed,
+  onMounted,
+  ref,
+  shallowRef,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { defineType } from '../utils/schema/types.ts'
 import { colorTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
@@ -67,13 +125,21 @@ import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 // @vue/component
 const DitoColorType = {
   components: {
+    ColorAreaArea,
+    ColorAreaRoot,
+    ColorAreaThumb,
+    ColorFieldInput,
+    ColorFieldRoot,
+    ColorSliderRoot,
+    ColorSliderThumb,
+    ColorSliderTrack,
+    ColorSwatch,
     DitoInput,
     DitoInputAffixes,
     PopoverAnchor,
     PopoverContent,
     PopoverRoot,
-    PopoverTrigger,
-    SketchPicker
+    PopoverTrigger
   },
   props: fieldProps,
 
@@ -89,8 +155,13 @@ const DitoColorType = {
     })
     const { value, focused, readonly, getSchemaValue } = field
     const showPopup = ref(false)
+    const alpha = computed(() =>
+      getSchemaValue('alpha', { type: Boolean, default: false })
+    )
     // The value of the input while it can't be written, see `hexValue`:
     const enteredValue = ref(null)
+    // The color picked last, which keeps the hue of grays:
+    const pickedColor = ref(null)
 
     const changeOnceEdited = createChangeOnceEdited({
       isEditing: () => focused.value || showPopup.value,
@@ -116,6 +187,12 @@ const DitoColorType = {
       changeOnceEdited.emitIfDone()
     }
 
+    const root = useTemplateRef('root')
+    const scrollContainer = shallowRef(null)
+    onMounted(() => {
+      scrollContainer.value = getScrollContainer(root.value)
+    })
+
     watch(showPopup, showPopup => {
       if (!showPopup) {
         changeOnceEdited.emitIfDone()
@@ -125,34 +202,44 @@ const DitoColorType = {
     return {
       ...field,
       showPopup,
+      scrollContainer,
+      getChannelName,
 
-      colorValue: computed({
-        get() {
-          return tinycolor(enteredValue.value || value.value || '#000000')
-        },
-
-        set(color) {
-          enteredValue.value = null
-          // Skip unchanged colors, as converting formats like `hsl` back and
-          // forth isn't lossless and would cause endless updates.
-          if (
-            !value.value ||
-            color.toHex8String() !== tinycolor(value.value).toHex8String()
-          ) {
-            setEditedValue(color)
-          }
+      // The picker's color in reka-ui's HSB space, which its area needs for
+      // its saturation:
+      pickerColor: computed(() => {
+        const color = tinycolor(enteredValue.value || value.value || '#000000')
+        // Grays, black and white lose their hue in the value, so keep the
+        // picked color while it matches:
+        if (
+          pickedColor.value &&
+          toTinyColor(pickedColor.value).toHex8String() === color.toHex8String()
+        ) {
+          return pickedColor.value
+        } else {
+          const { h, s, v, a } = color.toHsv()
+          return { space: 'hsb', h, s: s * 100, b: v * 100, alpha: a }
         }
       }),
+
+      setPickerColor(color) {
+        const picked = toTinyColor(color)
+        // Presets are hex strings, which `pickerColor` converts itself:
+        pickedColor.value = isString(color) ? null : color
+        enteredValue.value = null
+        // Keep the value's format when the same color is picked:
+        if (
+          !value.value ||
+          picked.toHex8String() !== tinycolor(value.value).toHex8String()
+        ) {
+          setEditedValue(picked)
+        }
+      },
 
       hexValue: computed({
         get() {
           const color = tinycolor(value.value)
-          return color.isValid()
-            ? color
-                .toString(color.getAlpha() < 1 ? 'hex8' : 'hex6')
-                .slice(1)
-                .toLowerCase()
-            : null
+          return color.isValid() ? getHex(color).slice(1).toLowerCase() : null
         },
 
         set(hex) {
@@ -167,16 +254,27 @@ const DitoColorType = {
         }
       }),
 
-      alpha: computed(() =>
-        getSchemaValue('alpha', { type: Boolean, default: false })
-      ),
+      alpha,
 
       inputs: computed(() =>
         getSchemaValue('inputs', { type: Boolean, default: true })
       ),
 
+      sliderChannels: computed(() =>
+        alpha.value ? ['hue', 'alpha'] : ['hue']
+      ),
+
+      fieldChannels: computed(() =>
+        alpha.value
+          ? ['red', 'green', 'blue', 'alpha']
+          : ['red', 'green', 'blue']
+      ),
+
+      // reka-ui reads hex colors, the presets can be in any CSS format:
       presets: computed(() =>
-        getSchemaValue('presets', { type: Array, default: defaultPresets })
+        getSchemaValue('presets', { type: Array, default: defaultPresets }).map(
+          preset => getHex(tinycolor(preset))
+        )
       ),
 
       clear() {
@@ -204,6 +302,20 @@ defineType({
 
 export default DitoColorType
 
+// Eight digits only with transparency, like reka-ui's hex colors:
+function getHex(color) {
+  return color.toString(color.getAlpha() < 1 ? 'hex8' : 'hex6')
+}
+
+// reka-ui's colors are objects in its color spaces, the presets hex strings:
+function toTinyColor(color) {
+  if (isString(color)) {
+    return tinycolor(color)
+  }
+  const { r, g, b, alpha } = convertToRgb(color)
+  return tinycolor({ r, g, b, a: alpha })
+}
+
 const defaultPresets = [
   '#ffffff',
   '#c3c3c3',
@@ -227,10 +339,11 @@ const defaultPresets = [
 
 <style lang="scss">
 @import '../styles/_imports';
-@import 'vue-color/style.css';
 
 $color-swatch-width: $pattern-transparency-size;
 $color-swatch-radius: $border-radius - $border-width;
+$color-picker-gap: 8px;
+$color-slider-height: 12px;
 
 .dito-color {
   .dito-input {
@@ -247,20 +360,107 @@ $color-swatch-radius: $border-radius - $border-width;
   // reka-ui gives its z-index to the element that positions the popup:
   &__popup {
     z-index: $z-index-popup;
+    display: flex;
+    flex-flow: column;
+    gap: $color-picker-gap;
+    box-sizing: border-box;
+    // As wide as the input:
+    width: var(--reka-popover-trigger-width);
+    padding: $color-picker-gap;
+    border: $border-style;
+    border-radius: $border-radius;
+    background: $color-white;
+    box-shadow: $shadow-window;
 
     &[data-state='open'] {
       animation: dito-slide-enter 0.15s $ease-out-quart;
     }
   }
 
-  // As wide as the input, instead of vue-color's own width:
-  & &__picker.vc-sketch-picker {
-    width: var(--reka-popover-trigger-width);
-    margin: $popup-margin;
-    border: $border-style;
-    border-radius: $border-radius;
-    background: $color-white;
-    box-shadow: $shadow-window;
+  &__area {
+    position: relative;
+    height: 150px;
+    border-radius: $color-swatch-radius;
+  }
+
+  &__slider {
+    display: flex;
+    position: relative;
+    align-items: center;
+    height: $color-slider-height;
+    // The transparency shows through the alpha slider's track:
+    background: $pattern-transparency;
+    background-size: $color-slider-height $color-slider-height;
+    border-radius: $color-swatch-radius;
+  }
+
+  &__track {
+    flex: 1;
+    align-self: stretch;
+    border-radius: inherit;
+  }
+
+  &__thumb {
+    width: $color-slider-height;
+    height: $color-slider-height;
+    box-sizing: border-box;
+    border: 2px solid $color-white;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 1px $color-shadow,
+      inset 0 0 0 1px $color-shadow;
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+
+  &__fields {
+    display: flex;
+    gap: $color-picker-gap;
+  }
+
+  &__field {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+
+    .dito-input {
+      width: 100%;
+      box-sizing: border-box;
+      font-variant-numeric: tabular-nums;
+    }
+
+    label {
+      font-size: $font-size-small;
+    }
+  }
+
+  &__presets {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: $color-picker-gap;
+    padding-top: $color-picker-gap;
+    border-top: $border-style;
+  }
+
+  &__preset {
+    @extend %button--plain;
+
+    border-radius: $color-swatch-radius;
+    background: $pattern-transparency;
+    background-size: $color-slider-height $color-slider-height;
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+
+  &__swatch {
+    aspect-ratio: 1;
+    border-radius: inherit;
+    background: var(--reka-color-swatch-color);
+    box-shadow: inset 0 0 0 1px $color-shadow;
   }
 
   &__preview {
