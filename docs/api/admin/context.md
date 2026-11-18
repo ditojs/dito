@@ -983,6 +983,10 @@ of button and form events, calling it suppresses dito's own notification.
 | `options.error`    | `unknown`                                       | The original error, logged to the console for `type: 'error'`.                                                                                              |
 | `options.duration` | `number`                                        | Milliseconds to show it, `0` for sticky. Defaults to a duration from the length of the content, see [`api.notifications`](./admin.md#apiconfig).            |
 
+Notifications are `reka-ui` toasts: they pause while hovered or focused, and
+close on a click. Each is a `.dito-notification` with a modifier of its type,
+e.g. `.dito-notification--error`.
+
 #### Example
 
 ```js
