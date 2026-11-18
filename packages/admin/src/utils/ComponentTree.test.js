@@ -478,7 +478,7 @@ describe('ComponentTree', () => {
     await form.routeContext.close()
     await flushPromises()
     expect(
-      admin.wrapper.find('.dito-tabs--inlined .dito-tabs__link--active').text()
+      admin.wrapper.find('.dito-tabs--inlined [data-state="active"]').text()
     ).toBe('More')
   })
 
