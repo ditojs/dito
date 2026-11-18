@@ -245,9 +245,10 @@ An on/off switch, rendered as a checkbox with `role="switch"`.
 
 ### DitoPagination
 
-Page navigation for a number of items: the range shown (`11 – 20 / 95`),
-previous and next buttons, and numbered page buttons, with ellipsis buttons
-that jump ten pages.
+Page navigation for a number of items, built on `reka-ui`'s `Pagination`: the
+range shown (`11 – 20 / 95`), previous and next buttons, and numbered page
+buttons, with the first and last page and ellipses for the pages left out. The
+current page's button has `[data-selected]`.
 
 | Prop        | Type      | Default | Description                                                                             |
 | ----------- | --------- | ------- | --------------------------------------------------------------------------------------- |
