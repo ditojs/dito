@@ -960,79 +960,83 @@ export class Application extends Koa {
 
   // Assets handling
 
-  async createAssets(storage, files, count = 0, transaction = null) {
+  async createAssets(
+    storage,
+    files,
+    referenced = false,
+    transaction = null
+  ) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       // Shallow-clone file objects to avoid mutating the originals, since
       // $parseJson() → convertAssetFile() deletes the signature.
       // The originals may still be needed (e.g. sent as upload response).
       // Shallow clone is sufficient as file objects are flat (scalar values).
+      const now = new Date()
       const assets = files.map(file => ({
         key: file.key,
         file: { ...file },
         storage: storage.name,
-        count
+        // Uploads stay unreferenced until a write or a scan finds their file:
+        unreferencedSince: referenced ? null : now
       }))
       return AssetModel.query(transaction).insert(assets)
     }
     return []
   }
 
-  async handleAddedAndRemovedAssets(
-    storage,
-    addedFiles,
-    removedFiles,
-    changedFiles,
-    transaction = null
-  ) {
-    let importedFiles = []
+  async referenceAssets(files, transaction = null) {
     const AssetModel = this.getModel('Asset')
-    if (AssetModel) {
-      importedFiles = await this.addForeignAssets(
-        storage,
-        [...addedFiles, ...changedFiles],
-        transaction
-      )
-      if (addedFiles.length > 0 || removedFiles.length > 0) {
-        // Files occur once for each reference that they gain or lose:
-        const changeCount = (files, increment) =>
-          mapConcurrently(
-            Object.entries(groupBy(files, 'key')),
-            async ([key, files]) => {
-              const changed = await AssetModel.query(transaction)
-                .where('key', key)
-                .increment('count', files.length * increment)
-              // Don't store references to assets released in the meantime:
-              if (!changed && increment > 0) {
-                throw new AssetError(
-                  `Unable to reference released asset: '${
-                    files[0].name
-                  }' ('${
-                    key
-                  }')`
-                )
-              }
-            }
-          )
-        await Promise.all([
-          changeCount(addedFiles, 1),
-          changeCount(removedFiles, -1)
-        ])
+    const keys = [...new Set(files.map(file => file.key))]
+    if (AssetModel && keys.length > 0) {
+      // Lock the assets until the transaction ends, so that releases wait for
+      // the write. Lock them in the order of their keys, so that two writes
+      // can't lock each other out:
+      const assets = await AssetModel.query(transaction)
+        .whereIn('key', keys)
+        .orderBy('key')
+        .forUpdate()
+      // Don't store references to assets released in the meantime:
+      if (assets.length < keys.length) {
+        const assetKeys = new Set(assets.map(asset => asset.key))
+        const file = files.find(file => !assetKeys.has(file.key))
+        throw new AssetError(
+          `Unable to reference released asset: '${
+            file.name
+          }' ('${
+            file.key
+          }')`
+        )
+      }
+      const unreferencedKeys = assets
+        .filter(asset => asset.unreferencedSince)
+        .map(asset => asset.key)
+      if (unreferencedKeys.length > 0) {
+        await AssetModel.query(transaction)
+          .whereIn('key', unreferencedKeys)
+          .patch({ unreferencedSince: null })
       }
     }
-    return importedFiles
   }
 
   async addForeignAssets(storage, files, transaction = null) {
     const importedFiles = []
     const AssetModel = this.getModel('Asset')
-    if (AssetModel) {
+    if (AssetModel && files.length > 0) {
       // Find missing assets (copied from another system), and add them.
       const filesByKey = groupBy(files, file => file.key)
+      const assetsByKey = Object.fromEntries(
+        (
+          await AssetModel.query(transaction).whereIn(
+            'key',
+            Object.keys(filesByKey)
+          )
+        ).map(asset => [asset.key, asset])
+      )
       await mapConcurrently(
         Object.entries(filesByKey),
         async ([key, files]) => {
-          const asset = await AssetModel.query(transaction).findOne('key', key)
+          const asset = assetsByKey[key]
           if (asset?.storage !== storage.name) {
             const [file] = files // Pick the first file
             let importedFile
@@ -1099,7 +1103,7 @@ export class Application extends Koa {
             // Sign the imported foreign file so it passes verification when
             // createAssets() triggers $parseJson() → convertAssetFile().
             storage.signAssetFile(importedFile)
-            await this.createAssets(storage, [importedFile], 0, transaction)
+            await this.createAssets(storage, [importedFile], false, transaction)
             importedFiles.push(importedFile)
             // Merge back the changed file properties into the actual file
             // objects, so that the data from the static model hook can be
@@ -1232,59 +1236,67 @@ export class Application extends Koa {
     return references
   }
 
-  async recountAssets({ dryRun = false, transaction = null } = {}) {
-    const changed = []
+  async scanAssets({ dryRun = false, transaction = null } = {}) {
+    const referenced = []
+    const unreferenced = []
     const missing = []
     const lost = []
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
-      await AssetModel.transaction(transaction, async trx => {
-        // Lock the assets before counting, so that concurrent writes either
-        // are counted or change the counts after the recount:
-        const query = AssetModel.query(trx)
-        const assets = await (dryRun ? query : query.forUpdate())
-        const referencesByKey = groupBy(
-          await this.getAssetReferences({ transaction: trx }),
-          'key'
-        )
-        for (const asset of assets) {
-          const count = referencesByKey[asset.key]?.length ?? 0
-          if (count !== asset.count) {
-            changed.push({ asset, count })
-            if (!dryRun) {
-              await AssetModel.query(trx).findById(asset.id).patch({ count })
-            }
+      const now = new Date()
+      // Read the references before the assets, so that the assets of writes
+      // that commit in between aren't missing:
+      const referencesByKey = groupBy(
+        await this.getAssetReferences({ transaction }),
+        'key'
+      )
+      const assets = await AssetModel.query(transaction)
+      for (const asset of assets) {
+        if (referencesByKey[asset.key]) {
+          if (asset.unreferencedSince) {
+            referenced.push(asset)
+          }
+        } else if (!asset.unreferencedSince) {
+          unreferenced.push(asset)
+        }
+      }
+      // Find the missing assets of referenced files that are still stored, as
+      // files without assets can't be stored in other places:
+      const assetKeys = new Set(assets.map(asset => asset.key))
+      const storedKeysByStorage = {}
+      for (const [key, references] of Object.entries(referencesByKey)) {
+        if (!assetKeys.has(key)) {
+          const storage = this.getStorage(references[0].storage)
+          const storedKeys = (storedKeysByStorage[storage.name] ||=
+            await getStoredKeys(storage))
+          if (storedKeys.has(key)) {
+            missing.push({ key, references })
+          } else {
+            lost.push({ key, references })
           }
         }
-        // Create the missing assets of referenced files that are still stored,
-        // as files without assets can't be stored in other places:
-        const assetKeys = new Set(assets.map(asset => asset.key))
-        const storedKeysByStorage = {}
-        for (const [key, references] of Object.entries(referencesByKey)) {
-          if (!assetKeys.has(key)) {
+      }
+      if (!dryRun) {
+        await AssetModel.transaction(transaction, async trx => {
+          const markAssets = async (assets, unreferencedSince) => {
+            for (const keys of getBatches(assets.map(asset => asset.key))) {
+              await AssetModel.query(trx)
+                .whereIn('key', keys)
+                .patch({ unreferencedSince })
+            }
+          }
+          await markAssets(referenced, null)
+          await markAssets(unreferenced, now)
+          for (const { references } of missing) {
             const storage = this.getStorage(references[0].storage)
-            const storedKeys = (storedKeysByStorage[storage.name] ||=
-              await getStoredKeys(storage))
-            if (storedKeys.has(key)) {
-              missing.push({ key, references })
-              if (!dryRun) {
-                const file = { ...references[0].file }
-                storage.signAssetFile(file)
-                await this.createAssets(
-                  storage,
-                  [file],
-                  references.length,
-                  trx
-                )
-              }
-            } else {
-              lost.push({ key, references })
-            }
+            const file = { ...references[0].file }
+            storage.signAssetFile(file)
+            await this.createAssets(storage, [file], true, trx)
           }
-        }
-      })
+        })
+      }
     }
-    return { changed, missing, lost }
+    return { referenced, unreferenced, missing, lost }
   }
 
   async releaseUnusedAssets({
@@ -1303,23 +1315,33 @@ export class Application extends Koa {
         usage: 'Use a duration, or `false` to keep the assets.'
       })
     }
-    // Calculate the date math in JS instead of SQL, as there is no easy
-    // cross-SQL way to do `now() - interval X hours`:
-    const getDate = duration =>
-      duration === false ? null : subtractDuration(new Date(), duration)
-    const unusedDate = getDate(olderThan ?? assets.deleteUnusedAfter)
-    const unsavedDate = getDate(olderThan ?? assets.deleteUnsavedAfter)
-    if (AssetModel && (unusedDate || unsavedDate)) {
-      return AssetModel.transaction(transaction, async trx => {
-        const orphanedAssets = await AssetModel.query(trx)
-          .where('count', 0)
-          .andWhere(query => {
+    const unusedAfter = olderThan ?? assets.deleteUnusedAfter
+    const unsavedAfter = olderThan ?? assets.deleteUnsavedAfter
+    if (AssetModel && (unusedAfter !== false || unsavedAfter !== false)) {
+      // Mark the assets that lost their last reference since the last run:
+      await this.scanAssets({ transaction })
+      // Calculate the date math in JS instead of SQL, as there is no easy
+      // cross-SQL way to do `now() - interval X hours`:
+      const getDate = duration =>
+        duration === false ? null : subtractDuration(new Date(), duration)
+      const unusedDate = getDate(unusedAfter)
+      const unsavedDate = getDate(unsavedAfter)
+      // A scan misses the references of writes that commit while it runs,
+      // and marks their assets as unreferenced. With a short
+      // `deleteUnusedAfter`, scan again to find these references before the
+      // release. Assets that only the second scan marks wait for the next run.
+      if (unusedDate && getDuration(unusedAfter) < getDuration('1h')) {
+        await this.scanAssets({ transaction })
+      }
+      const released = await AssetModel.transaction(transaction, async trx => {
+        const assets = await AssetModel.query(trx)
+          .where(query => {
             // Assets that lost their last reference:
             if (unusedDate) {
               query.orWhere(query =>
                 query
                   .where('updatedAt', '!=', ref('createdAt'))
-                  .andWhere('updatedAt', '<=', unusedDate)
+                  .andWhere('unreferencedSince', '<=', unusedDate)
               )
             }
             // Assets that were uploaded but never saved, protected from being
@@ -1328,56 +1350,32 @@ export class Application extends Koa {
               query.orWhere(query =>
                 query
                   .where('updatedAt', '=', ref('createdAt'))
-                  .andWhere('updatedAt', '<=', unsavedDate)
+                  .andWhere('unreferencedSince', '<=', unsavedDate)
               )
             }
           })
-          // Make concurrent writes that reference these assets wait:
+          // Make writes that reference these assets wait, and skip the assets
+          // that writes referenced before:
           .forUpdate()
-        const unusedAssets = []
-        if (orphanedAssets.length > 0) {
-          // Counts can be too low, e.g. after writes that skip the model hooks,
-          // so only release the assets that no data references anymore, and
-          // correct the counts of the others:
-          const referencesByKey = groupBy(
-            await this.getAssetReferences({
-              keys: orphanedAssets.map(asset => asset.key),
-              transaction: trx
-            }),
-            'key'
-          )
-          for (const asset of orphanedAssets) {
-            const count = referencesByKey[asset.key]?.length
-            if (count) {
-              this.logger.warn(
-                `Asset ${
-                  pico.green(`'${asset.file.name}'`)
-                } has ${count} references but a count of 0, correcting it.`
-              )
-              await AssetModel.query(trx).findById(asset.id).patch({ count })
-            } else {
-              unusedAssets.push(asset)
-            }
-          }
+        for (const keys of getBatches(assets.map(asset => asset.key))) {
+          await AssetModel.query(trx).delete().whereIn('key', keys)
         }
-        if (unusedAssets.length > 0) {
-          const unusedKeys = await mapConcurrently(
-            unusedAssets,
-            async asset => {
-              try {
-                await this.getStorage(asset.storage).removeFile(asset.file)
-              } catch (error) {
-                this.emit('error', error)
-                asset.error = error
-              }
-              return asset.key
-            },
-            { concurrency }
-          )
-          await AssetModel.query(trx).delete().whereIn('key', unusedKeys)
-        }
-        return unusedAssets
+        return assets
       })
+      // Remove the files after the delete, so that a failed delete keeps them:
+      await mapConcurrently(
+        released,
+        async asset => {
+          try {
+            await this.getStorage(asset.storage).removeFile(asset.file)
+          } catch (error) {
+            this.emit('error', error)
+            asset.error = error
+          }
+        },
+        { concurrency }
+      )
+      return released
     }
     return []
   }
@@ -1449,6 +1447,15 @@ const defaultLoggerOptions = {
 // Escape the wildcards of `like` patterns, with `!` as the escape character:
 function escapeLike(string) {
   return string.replace(/[!%_]/g, '!$&')
+}
+
+// Keep `in` lists below the parameter limits of the databases:
+function getBatches(array, size = 1000) {
+  const batches = []
+  for (let i = 0; i < array.length; i += size) {
+    batches.push(array.slice(i, i + size))
+  }
+  return batches
 }
 
 async function getStoredKeys(storage) {

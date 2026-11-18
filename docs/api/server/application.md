@@ -76,7 +76,7 @@ augmentation of `ApplicationConfig` for project-specific settings.
 | `knex.typeParsers`          | `Record<number, (value) => any>`          |           | PostgreSQL type parsers by type OID, applied when `knex.client` is `'postgresql'`. Parsers for `numeric` (1700) and `int8` (20) also install the matching array parsers.                                                                              |
 | `storages`                  | `Record<string, StorageConfig>`           |           | Storage configurations by name, see [Storage](storage.md).                                                                                                                                                                                            |
 | `services`                  | `Record<string, object \| boolean>`       |           | Service configurations by service name. `true` uses the defaults of the service, `false` removes it. Each added service needs an entry.                                                                                                               |
-| `assets.deleteUnusedAfter`  | `string \| number \| false`               | `'24h'`   | Minimum age of unused assets without changes before they are deleted, at the next run of [`deleteExpiredRecords()`](#deleteexpiredrecords). `false` keeps them. Strings are parsed by [parse-duration](https://www.npmjs.com/package/parse-duration). |
+| `assets.deleteUnusedAfter`  | `string \| number \| false`               | `'24h'`   | Minimum time that the assets go unreferenced before they are deleted, at the next run of [`deleteExpiredRecords()`](#deleteexpiredrecords). `false` keeps them. Strings are parsed by [parse-duration](https://www.npmjs.com/package/parse-duration). |
 | `assets.deleteUnsavedAfter` | `string \| number \| false`               | `'24h'`   | Minimum age of uploaded but never saved assets before they are deleted, like `deleteUnusedAfter`. Must not be `0`.                                                                                                                                    |
 
 ### config.log
@@ -750,11 +750,13 @@ const released = await app.releaseUnusedAssets({
 })
 ```
 
-Removes the files and records of assets that are no longer referenced
-(`count` 0) and unchanged for `assets.deleteUnusedAfter`, or never saved for
-`assets.deleteUnsavedAfter`. Assets that data still references despite their
-count are kept and get their count corrected, with a warning. The asset model
-calls it from [`deleteExpiredRecords()`](#deleteexpiredrecords).
+Runs [`scanAssets()`](#scanassets), then removes the files and records of
+assets that no data has referenced for `assets.deleteUnusedAfter`, or that
+were never saved for `assets.deleteUnsavedAfter`. With a `deleteUnusedAfter`
+below one hour, it scans twice, as a scan misses the references of writes that
+commit while it runs. It locks the assets that it removes, so that writes that
+reference them wait and then fail. The asset model calls it from
+[`deleteExpiredRecords()`](#deleteexpiredrecords).
 
 #### Parameters
 
@@ -779,7 +781,7 @@ const references = await app.getAssetReferences({
 ```
 
 Finds every place in the data that stores an asset file, one reference for each
-occurrence, as the reference counts count them.
+occurrence.
 
 #### Parameters
 
@@ -796,23 +798,24 @@ the file inside the record, e.g. `'photos/1'`, the `storage` name, and the
 `config` of the model's asset data path that the file was found through, e.g.
 `{ storage: 'photos', readDimensions: true }`.
 
-### recountAssets()
+### scanAssets()
 
 ```js
-const { changed, missing, lost } = await app.recountAssets({
+const { referenced, unreferenced, missing, lost } = await app.scanAssets({
   dryRun,
   transaction
 })
 ```
 
-Sets the count of every asset to the number of its references, as
-[`getAssetReferences()`](#getassetreferences) finds them, and creates the
+Compares the assets with their references, as
+[`getAssetReferences()`](#getassetreferences) finds them: sets
+`unreferencedSince` of the assets that no data references to the time of the
+scan, and clears it on the ones that data references again. It creates the
 missing assets of referenced files that their storage still has, as files
 without assets can't be stored in other places, and throws for storages that
-can't list their keys. It locks the assets while counting, unless it runs as a
-dry run. Counts drift when writes skip the model hooks, e.g. deletes through
-database cascades, scripts and seeds. The [`db:recount_assets`](#commands)
-command runs it.
+can't list their keys. Writes that skip the model hooks, e.g. deletes through
+database cascades, scripts and seeds, are found this way. The
+[`db:scan_assets`](#commands) command runs it.
 
 #### Parameters
 
@@ -821,38 +824,32 @@ command runs it.
 | `dryRun`      | `boolean`     | Only return what it would change. |
 | `transaction` | `Transaction` | Transaction to run in.            |
 
-Returns `Promise<{ changed, missing, lost }>`: `changed` holds `{ asset, count }` for
-each asset whose count differs, with the asset as it was and the counted
-`count`, `missing` holds `{ key, references }` for each referenced file without
-an asset, and `lost` the same for referenced files that their storage doesn't
-have anymore, which it only reports.
+Returns `Promise<{ referenced, unreferenced, missing, lost }>`: `referenced`
+holds the assets that data references again, `unreferenced` the ones that no
+data references anymore, both as they were before the scan, `missing` holds
+`{ key, references }` for each referenced file without an asset, and `lost`
+the same for referenced files that their storage doesn't have anymore, which
+it only reports.
 
 ### createAssets()
 
 ```js
-await app.createAssets(storage, files, count = 0, transaction?)
+await app.createAssets(storage, files, referenced = false, transaction?)
 ```
 
-Inserts asset records for files, with the reference count `count`. Returns
-`Promise<Model[]>`.
+Inserts asset records for files, unreferenced since now unless `referenced` is
+set. Returns `Promise<Model[]>`.
 
-### handleAddedAndRemovedAssets()
+### referenceAssets()
 
 ```js
-await app.handleAddedAndRemovedAssets(
-  storage,
-  addedFiles,
-  removedFiles,
-  changedFiles,
-  transaction?
-)
+await app.referenceAssets(files, transaction?)
 ```
 
-Imports foreign files among the added and changed ones, and adjusts the
-reference counts. Returns `Promise<AssetFile[]>`: the imported files. Each
-occurrence of a file in `addedFiles` and `removedFiles` adds or removes one
-reference. Throws an `AssetError` when an added file's asset was released in the
-meantime.
+Locks the assets of the files until the transaction ends, in the order of
+their keys, and clears their `unreferencedSince`. Model writes call it after
+the imports. Throws an `AssetError` when an asset was released in the
+meantime. Returns `Promise<void>`.
 
 ### addForeignAssets()
 
@@ -957,7 +954,7 @@ application. Projects usually wrap them in `package.json` scripts:
     "db:seed": "dito db:seed ./src/server/app.js",
     "db:create_migration": "dito db:create_migration ./src/server/app.js",
     "db:list_asset_config": "dito db:list_asset_config ./src/server/app.js",
-    "db:recount_assets": "dito db:recount_assets ./src/server/app.js",
+    "db:scan_assets": "dito db:scan_assets ./src/server/app.js",
     "db:delete_expired_records": "dito db:delete_expired_records ./src/server/app.js"
   }
 }
@@ -978,7 +975,7 @@ when the command succeeds, and `1` with the error printed otherwise.
 | `db:seed`                   | application   | Runs the seeds in the `seeds` folder.                                                                                         |
 | `db:create_migration`       | application   | Creates a migration for the tables of models.                                                                                 |
 | `db:list_asset_config`      | application   | Prints the asset configuration of models.                                                                                     |
-| `db:recount_assets`         | application   | Recounts the references of all assets, see [`recountAssets()`](#recountassets). `--dry-run` only prints what it would change. |
+| `db:scan_assets`            | application   | Marks the assets that no data references, see [`scanAssets()`](#scanassets). `--dry-run` only prints what it would change.    |
 | `db:delete_expired_records` | application   | Sets up the application and runs [`deleteExpiredRecords()`](#deleteexpiredrecords) once. Fails when a model's deletion fails. |
 | `console`                   | application   | Starts the application with an interactive console.                                                                           |
 

@@ -58,10 +58,17 @@ export const AssetMixin = mixin(
           required: true
         },
 
+        // The time since which no data references the file, or `null`.
+        unreferencedSince: {
+          type: 'timestamp',
+          nullable: true
+        },
+
+        // Unused. Apps drop the column in a migration of their own, and the
+        // next major version removes it.
         count: {
           type: 'integer',
-          unsigned: true,
-          default: 0
+          unsigned: true
         }
       }
 

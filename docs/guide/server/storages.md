@@ -186,8 +186,8 @@ don't survive restarts of the server.
 ## The asset model
 
 The asset model records every stored file: its `key`, its `file` object, its
-`storage`, and `count`, the number of references to it. It is the model named
-`Asset`, made with `AssetMixin`:
+`storage`, and `unreferencedSince`, the time since which no data references
+the file, or `null`. It is the model named `Asset`, made with `AssetMixin`:
 
 ```js
 import { AssetMixin, Model } from '@ditojs/server'
@@ -202,26 +202,45 @@ Register it with the other models, and create its table with a
 pnpm db:create_migration create_assets Asset
 ```
 
-Without an asset model, files are still stored and verified, but not counted
+Tables created before `unreferencedSince` need the column, and can drop
+`count`, which is unused:
+
+```js
+export async function up(knex) {
+  await knex.schema.table('asset', table => {
+    table.timestamp('unreferenced_since').nullable()
+    table.dropColumn('count')
+  })
+}
+```
+
+Then run `pnpm db:scan_assets` once, to mark the assets that no data
+references.
+
+Without an asset model, files are still stored and verified, but not tracked
 or removed, and files can't be added from code or imported.
 
 ### Cleanup
 
-Files that no model references anymore are removed, along with their records,
-once they haven't changed for `config.assets.deleteUnusedAfter`. Files that
-were uploaded but never saved in a model are removed after
-`config.assets.deleteUnsavedAfter`. Both default to 24 hours, and `false` keeps
-the files.
+Writes that store files clear `unreferencedSince` of their assets, and lock
+them until the transaction ends. Writes that remove files change nothing: a
+scan of all data finds the assets that no data references anymore and sets
+their `unreferencedSince`. Writes that skip the model hooks, e.g. of scripts,
+seeds and database cascades, are found by the next scan too.
 
-These are minimum ages: the application checks for such files with
+The application scans and then removes the files and their records with
 [`app.deleteExpiredRecords()`](../../api/server/application.md#deleteexpiredrecords),
-every `config.app.deleteExpiredRecordsEvery` (one hour by default), and removes
-them at the first run after them. Before removing a file, it checks that no
-data references it anymore, as writes that skip the model hooks, e.g. of
-scripts and seeds, don't count the references they add. To remove unused
-files right away, e.g. from an admin action, call
-`app.releaseUnusedAssets({ olderThan: 0 })`. `pnpm db:recount_assets` sets the
-counts to the references in the data again.
+every `config.app.deleteExpiredRecordsEvery` (one hour by default). It removes
+files that no data has referenced for `config.assets.deleteUnusedAfter`, and
+files that were uploaded but never saved in a model after
+`config.assets.deleteUnsavedAfter`. Both default to 24 hours, and `false` keeps
+the files. These are minimum ages: files are removed at the first run after
+them. A write that references a file that was removed in the meantime fails
+with a 400 response.
+
+To remove unused files right away, e.g. from an admin action, call
+`app.releaseUnusedAssets({ olderThan: 0 })`. `pnpm db:scan_assets` runs the
+scan on its own.
 
 ## Adding files in code
 
@@ -242,8 +261,8 @@ await book.$patch({ cover })
 
 When a transaction rolls back with an error, the files that were stored or
 imported in it are removed again. Rollbacks without an error keep them in the
-storage. Failed writes outside of transactions keep them too, with counts that
-`pnpm db:recount_assets` corrects.
+storage. Failed writes outside of transactions keep them too, until the
+cleanup removes them.
 
 ### Importing files
 

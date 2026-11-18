@@ -272,9 +272,9 @@ export interface ApplicationConfig {
   } & PinoLoggerOptions
   assets?: {
     /**
-     * The minimum age after which unused assets without changes are deleted,
-     * at the next run of `app.deleteExpiredRecords()`, or `false` to keep
-     * them.
+     * The minimum time since a scan found no more references to an asset
+     * before it is deleted, at the next run of `app.deleteExpiredRecords()`,
+     * or `false` to keep them.
      *
      * @example '1 hr 20 mins'
      * @defaultValue `'24h'`
@@ -790,22 +790,24 @@ export class Application<$Models extends Models = Models> {
   }): Promise<AssetReference[]>
 
   /**
-   * Sets the counts of all assets to the number of their references, and
-   * creates the missing assets of referenced files. With `dryRun`, it only
-   * returns what it would change.
+   * Marks the assets that no data references with `unreferencedSince`, clears
+   * it on the ones that data references again, and creates the missing assets
+   * of referenced files. With `dryRun`, it only returns what it would change.
    */
-  recountAssets(options?: {
+  scanAssets(options?: {
     dryRun?: boolean
     transaction?: objection.Transaction | null
   }): Promise<{
-    changed: { asset: InstanceType<typeof AssetModel>; count: number }[]
+    referenced: InstanceType<typeof AssetModel>[]
+    unreferenced: InstanceType<typeof AssetModel>[]
     missing: { key: string; references: AssetReference[] }[]
     lost: { key: string; references: AssetReference[] }[]
   }>
 
   /**
-   * Releases unused and unsaved assets past `deleteUnusedAfter` and
-   * `deleteUnsavedAfter`, or past `olderThan` for both.
+   * Scans the assets, then releases unused and unsaved assets past
+   * `deleteUnusedAfter` and `deleteUnsavedAfter`, or past `olderThan` for
+   * both.
    */
   releaseUnusedAssets(options?: {
     olderThan?: string | number | false | null
@@ -814,30 +816,26 @@ export class Application<$Models extends Models = Models> {
   }): Promise<Model[]>
 
   /**
-   * Creates Asset model records for the given files.
-   * Returns the inserted assets, or an empty array if no
+   * Creates Asset model records for the given files, unreferenced unless
+   * `referenced` is set. Returns the inserted assets, or an empty array if no
    * AssetModel is registered.
    */
   createAssets(
     storage: Storage,
     files: AssetFile[],
-    count?: number,
+    referenced?: boolean,
     transaction?: objection.Transaction | null
   ): Promise<Model[]>
 
   /**
-   * Handles added, removed, and changed asset files.
-   * Imports foreign assets and updates counts. Returns
-   * the imported files, or an empty array if no
-   * AssetModel is registered.
+   * Locks the assets of the files until the transaction ends, and clears
+   * their `unreferencedSince`. Throws an `AssetError` if an asset was
+   * released in the meantime.
    */
-  handleAddedAndRemovedAssets(
-    storage: Storage,
-    addedFiles: AssetFile[],
-    removedFiles: AssetFile[],
-    changedFiles: AssetFile[],
+  referenceAssets(
+    files: AssetFile[],
     transaction?: objection.Transaction | null
-  ): Promise<AssetFile[]>
+  ): Promise<void>
 
   /**
    * Finds and imports missing assets from external
@@ -4590,7 +4588,9 @@ export const AssetMixin: <T extends Constructor<{}>>(
     key: string
     file: AssetFileObject
     storage: string
-    count: number
+    unreferencedSince: Date | null
+    /** @deprecated Unused, apps drop the column in their own migration. */
+    count: number | null
     createdAt: Date
     updatedAt: Date
     $parseJson(

@@ -91,15 +91,19 @@ describe('asset handling without an Asset model', () => {
     expect(await Document.query()).toEqual([])
   })
 
-  it('returns arrays from all asset methods', async () => {
+  it('returns empty results from all asset methods', async () => {
     const storage = app.getStorage('memory')!
     const file = AssetFile.create({ name: 'file.txt', data: 'data' })
     expect(await app.createAssets(storage, [file])).toEqual([])
-    expect(
-      await app.handleAddedAndRemovedAssets(storage, [file], [], [])
-    ).toEqual([])
+    await expect(app.referenceAssets([file])).resolves.toBeUndefined()
     expect(await app.addForeignAssets(storage, [file])).toEqual([])
     expect(await app.handleModifiedAssets(storage, [file])).toEqual([])
+    expect(await app.scanAssets()).toEqual({
+      referenced: [],
+      unreferenced: [],
+      missing: [],
+      lost: []
+    })
     expect(await app.releaseUnusedAssets()).toEqual([])
   })
 })
@@ -117,22 +121,22 @@ describe('asset handling with an Asset model', () => {
     await destroyTestApp(app)
   })
 
-  it('imports added files and counts their references', async () => {
+  it('imports added files and marks their assets as referenced', async () => {
     const document = await Document.query().insertAndFetch({
-      file: AssetFile.create({ name: 'counted.txt', data: 'counted' })
+      file: AssetFile.create({ name: 'imported.txt', data: 'imported' })
     })
     const key = document.file!.key
     const storage = app.getStorage('memory') as MemoryStorage
-    expect(storage.dataByKey.get(key)?.toString()).toBe('counted')
+    expect(storage.dataByKey.get(key)?.toString()).toBe('imported')
     const asset = await Asset.query().findOne('key', key)
-    expect(asset).toMatchObject({ count: 1, storage: 'memory' })
+    expect(asset).toMatchObject({ unreferencedSince: null, storage: 'memory' })
   })
 
   it('runs app overrides of the asset methods on model writes', async () => {
     // Spies replace the methods on the app instance, just like overrides in
     // an Application subclass, and call through to the originals.
     const methodNames = [
-      'handleAddedAndRemovedAssets',
+      'referenceAssets',
       'handleModifiedAssets',
       'addForeignAssets',
       'createAssets'
@@ -264,7 +268,7 @@ describe('Asset handling', () => {
         expect(file.size).toBe(11)
         expect(storage.verifyAssetFile(file)).toBe(true)
         expect(await Asset.query().findOne('key', file.key)).toMatchObject({
-          count: 0,
+          unreferencedSince: expect.anything(),
           storage: 'memory'
         })
         expect(info).toHaveBeenCalledWith(
@@ -367,16 +371,16 @@ describe('Asset handling', () => {
   describe('releaseUnusedAssets()', () => {
     const day = 24 * 60 * 60 * 1000
 
-    // Creates an asset without references that last changed two days ago,
-    // after its creation if it is unused, or at its creation if unsaved:
+    // Creates an asset without references since two days, that was
+    // referenced after its creation if it is unused, or never if unsaved:
     async function createExpiredAsset(name: string, isUnused: boolean) {
       const file = await createUploadedFile(name, name)
-      await app.createAssets(storage, [file], 0)
+      await app.createAssets(storage, [file])
       const updatedAt = new Date(Date.now() - 2 * day)
       const createdAt = isUnused ? new Date(Date.now() - 3 * day) : updatedAt
       await Asset.knex()(Asset.tableName)
         .where('key', file.key)
-        .update({ createdAt, updatedAt })
+        .update({ createdAt, updatedAt, unreferencedSince: updatedAt })
       return file.key
     }
 
@@ -413,7 +417,7 @@ describe('Asset handling', () => {
 
     it('removes unreferenced assets and their files', async () => {
       const file = await createUploadedFile('unused.txt', 'unused')
-      await app.createAssets(storage, [file], 0)
+      await app.createAssets(storage, [file])
       const released: any[] = await app.releaseUnusedAssets({
         olderThan: 0
       })
@@ -422,9 +426,10 @@ describe('Asset handling', () => {
       expect(await Asset.query().findOne('key', file.key)).toBeUndefined()
     })
 
-    it('keeps referenced assets', async () => {
+    it('keeps assets that data references', async () => {
       const file = await createUploadedFile('used.txt', 'used')
-      await app.createAssets(storage, [file], 1)
+      await app.createAssets(storage, [file])
+      await Document.query().insert({ file })
       const released: any[] = await app.releaseUnusedAssets({
         olderThan: 0
       })
@@ -434,7 +439,7 @@ describe('Asset handling', () => {
 
     it('rejects invalid durations', async () => {
       const file = await createUploadedFile('pending.txt', 'pending')
-      await app.createAssets(storage, [file], 0)
+      await app.createAssets(storage, [file])
       await expect(
         app.releaseUnusedAssets({ olderThan: 'soon' })
       ).rejects.toThrow(
@@ -447,7 +452,7 @@ describe('Asset handling', () => {
 
     it('emits errors of files that cannot be removed', async () => {
       const file = await createUploadedFile('stuck.txt', 'stuck')
-      await app.createAssets(storage, [file], 0)
+      await app.createAssets(storage, [file])
       const error = new Error('Storage is read-only')
       const removeFile = vi
         .spyOn(storage, 'removeFile')
@@ -642,11 +647,11 @@ describe('asset handling across storages', () => {
       expect(key).not.toBe(coverKey)
       expect(scans.dataByKey.get(key)?.toString()).toBe('Emma')
       expect(await Asset.query().findOne('key', key)).toMatchObject({
-        count: 1,
+        unreferencedSince: null,
         storage: 'scans'
       })
       expect(await Asset.query().findOne('key', coverKey)).toMatchObject({
-        count: 1,
+        unreferencedSince: null,
         storage: 'covers'
       })
       expect(info).toHaveBeenCalledWith(
@@ -664,13 +669,13 @@ describe('asset handling across storages', () => {
     expect(covers.dataByKey.get(cover.key)?.toString()).toBe('Persuasion')
     expect(covers.dataByKey.size).toBe(2)
     expect(await Asset.query().findOne('key', cover.key)).toMatchObject({
-      count: 2,
+      unreferencedSince: null,
       storage: 'covers'
     })
   })
 })
 
-describe('asset reference counting', () => {
+describe('asset scan', () => {
   class Album extends Model {
     declare id: number
     declare cover: AssetFile | null
@@ -730,13 +735,13 @@ describe('asset reference counting', () => {
     const file = AssetFile.create({ name, data: name })
     await storage.addFile(file, Buffer.from(name))
     storage.signAssetFile(file)
-    await app.createAssets(storage, [file], 0)
+    await app.createAssets(storage, [file])
     // Uploads happen before their data is saved, and the release tells never
-    // persisted assets by `updatedAt = createdAt`, so backdate both:
+    // saved assets by `updatedAt = createdAt`, so backdate both:
     const date = new Date(Date.now() - 1000)
     await Asset.knex()(Asset.tableName)
       .where('key', file.key)
-      .update({ createdAt: date, updatedAt: date })
+      .update({ createdAt: date, updatedAt: date, unreferencedSince: date })
     return copy(file)
   }
 
@@ -745,9 +750,13 @@ describe('asset reference counting', () => {
     return JSON.parse(JSON.stringify(data))
   }
 
-  async function getCount(file: AssetFile) {
+  async function isReferenced(file: AssetFile) {
     const asset = await Asset.query().findOne('key', file.key)
-    return asset?.count
+    return asset && !asset.unreferencedSince
+  }
+
+  function getKeys(assets: { key: string }[]) {
+    return assets.map(asset => asset.key)
   }
 
   async function withDeleteUnusedAfter(
@@ -764,123 +773,53 @@ describe('asset reference counting', () => {
     }
   }
 
-  it('counts one asset for an upload stored in several records', async () => {
+  it('marks uploads as referenced when writes store them', async () => {
     const file = await upload('shared.jpg')
+    expect(await isReferenced(file)).toBe(false)
     await Album.query().insert({ cover: copy(file) })
-    await Album.query().insert({ cover: copy(file) })
+    await Album.query().insert({ photos: [copy(file), copy(file)] })
     expect(await Asset.query().where('key', file.key)).toHaveLength(1)
-    expect(await getCount(file)).toBe(2)
+    expect(await isReferenced(file)).toBe(true)
   })
 
-  it('reuses persisted assets stored in other records', async () => {
-    const album = await Album.query().insertAndFetch({
-      cover: await upload('persisted.jpg')
-    })
-    const { cover } = copy(album)
-    await Album.query().insert({ cover })
-    expect(await getCount(cover!)).toBe(2)
-  })
-
-  it('counts down when files are replaced or records deleted', async () => {
+  it('marks assets as unreferenced once a scan finds no references', async () => {
     const file = await upload('replaced.jpg')
+    const other = await upload('other.jpg')
     const first = await Album.query().insertAndFetch({ cover: copy(file) })
     const second = await Album.query().insertAndFetch({ cover: copy(file) })
-    const other = await upload('other.jpg')
     await Album.query().patchById(first.id, { cover: other })
-    expect(await getCount(file)).toBe(1)
-    expect(await getCount(other)).toBe(1)
+    expect(getKeys((await app.scanAssets()).unreferenced)).not.toContain(
+      file.key
+    )
     await Album.query().deleteById(second.id)
-    expect(await getCount(file)).toBe(0)
-    await Album.query().patchById(first.id, { cover: null })
-    expect(await getCount(other)).toBe(0)
+    expect(await isReferenced(file)).toBe(true)
+    expect(getKeys((await app.scanAssets()).unreferenced)).toContain(file.key)
+    expect(await isReferenced(file)).toBe(false)
+    expect(await isReferenced(other)).toBe(true)
+    // Assets that are marked already aren't reported again:
+    expect(getKeys((await app.scanAssets()).unreferenced)).not.toContain(
+      file.key
+    )
   })
 
-  it('counts each occurrence of a file in one property', async () => {
-    const file = await upload('repeated.jpg')
-    const album = await Album.query().insertAndFetch({
-      photos: [copy(file), copy(file)]
-    })
-    expect(await getCount(file)).toBe(2)
-    await Album.query().patchById(album.id, {
-      photos: [copy(file), copy(file), copy(file)]
-    })
-    expect(await getCount(file)).toBe(3)
-    await Album.query().patchById(album.id, { photos: [copy(file)] })
-    expect(await getCount(file)).toBe(1)
-    await Album.query().patchById(album.id, { photos: [] })
-    expect(await getCount(file)).toBe(0)
-  })
-
-  it('counts added and removed files of several keys together', async () => {
-    const first = await upload('first.jpg')
-    const second = await upload('second.jpg')
-    const album = await Album.query().insertAndFetch({
-      photos: [copy(first), copy(first), copy(second)]
-    })
-    expect(await getCount(first)).toBe(2)
-    expect(await getCount(second)).toBe(1)
-    await Album.query().patchById(album.id, {
-      photos: [copy(second), copy(second), copy(second)]
-    })
-    expect(await getCount(first)).toBe(0)
-    expect(await getCount(second)).toBe(3)
-  })
-
-  it('counts a file stored in several properties of a record', async () => {
-    const file = await upload('cover-and-photo.jpg')
-    const album = await Album.query().insertAndFetch({
-      cover: copy(file),
-      photos: [copy(file)]
-    })
-    expect(await getCount(file)).toBe(2)
-    await Album.query().patchById(album.id, { cover: null })
-    expect(await getCount(file)).toBe(1)
-  })
-
-  it('counts a file stored in several records of a graph', async () => {
-    const file = await upload('artwork.jpg')
+  it('finds the files of all records that queries change', async () => {
+    const file = await upload('graph.jpg')
     const album = await Album.query().insertGraphAndFetch({
       tracks: [{ artwork: copy(file) }, { artwork: copy(file) }]
     })
-    expect(await getCount(file)).toBe(2)
+    expect(await isReferenced(file)).toBe(true)
     await Track.query().deleteById(album.tracks[0].id)
-    expect(await getCount(file)).toBe(1)
-    await Track.query().deleteById(album.tracks[1].id)
-    expect(await getCount(file)).toBe(0)
-  })
-
-  it('counts a file in all records that a query deletes', async () => {
-    const file = await upload('deleted.jpg')
-    const albums = await Promise.all([
-      Album.query().insertAndFetch({ cover: copy(file) }),
-      Album.query().insertAndFetch({ cover: copy(file) }),
-      Album.query().insertAndFetch({ cover: copy(file) })
-    ])
-    expect(await getCount(file)).toBe(3)
-    const ids = albums.map(album => album.id)
-    await Album.query().whereIn('id', ids).delete()
-    expect(await getCount(file)).toBe(0)
-  })
-
-  it('counts a file in all records that a query patches', async () => {
-    const file = await upload('patched.jpg')
-    const albums = await Promise.all([
-      Album.query().insertAndFetch({ cover: null }),
-      Album.query().insertAndFetch({ cover: null })
-    ])
-    const ids = albums.map(album => album.id)
-    await Album.query()
-      .whereIn('id', ids)
-      .patch({ cover: copy(file) })
-    expect(await getCount(file)).toBe(2)
-    await Album.query().whereIn('id', ids).patch({ cover: null })
-    expect(await getCount(file)).toBe(0)
-  })
-
-  it('counts no references for patches without records', async () => {
-    const file = await upload('missing.jpg')
-    await Album.query().patchById(-1, { cover: copy(file) })
-    expect(await getCount(file)).toBe(0)
+    await app.scanAssets()
+    expect(await isReferenced(file)).toBe(true)
+    await Track.query().whereIn('id', [album.tracks[1].id]).patch({
+      artwork: null
+    })
+    await app.scanAssets()
+    expect(await isReferenced(file)).toBe(false)
+    await Track.query()
+      .whereIn('id', [album.tracks[1].id])
+      .patch({ artwork: copy(file) })
+    expect(await isReferenced(file)).toBe(true)
   })
 
   it('releases files at the next run after their last reference without delay', async () => {
@@ -901,10 +840,10 @@ describe('asset reference counting', () => {
     await withDeleteUnusedAfter(0, async () => {
       const pending = await upload('pending.jpg')
       await app.deleteExpiredRecords()
-      expect(await getCount(pending)).toBe(0)
+      expect(await isReferenced(pending)).toBe(false)
       expect(storage.dataByKey.has(pending.key)).toBe(true)
       await Album.query().insert({ cover: pending })
-      expect(await getCount(pending)).toBe(1)
+      expect(await isReferenced(pending)).toBe(true)
     })
   })
 
@@ -915,10 +854,70 @@ describe('asset reference counting', () => {
     // The copy of a deleted record can be stored again:
     const { cover } = copy(album)
     await Album.query().deleteById(album.id)
-    expect(await getCount(cover!)).toBe(0)
     await app.releaseUnusedAssets()
+    expect(await isReferenced(cover!)).toBe(false)
     await Album.query().insert({ cover })
-    expect(await getCount(cover!)).toBe(1)
+    expect(await isReferenced(cover!)).toBe(true)
+  })
+
+  it('releases the files of failed writes after the next scan', async () => {
+    await withDeleteUnusedAfter(0, async () => {
+      const album = await Album.query().insertAndFetch({ cover: null })
+      const file = await upload('failed.jpg')
+      // The duplicate id fails in the database, after the asset hooks:
+      await expect(
+        Album.query().insert({ id: album.id, cover: copy(file) })
+      ).rejects.toThrow()
+      expect(await isReferenced(file)).toBe(true)
+      await app.deleteExpiredRecords()
+      expect(await Asset.query().findOne('key', file.key)).toBeUndefined()
+      expect(storage.dataByKey.has(file.key)).toBe(false)
+    })
+  })
+
+  it('scans again before releases with a short `deleteUnusedAfter`', async () => {
+    await withDeleteUnusedAfter(0, async () => {
+      const file = await upload('moved.jpg')
+      const album = await Album.query().insertAndFetch({ cover: copy(file) })
+      await Album.query().patchById(album.id, { cover: null })
+      // A write that commits after the first scan read the references:
+      const getAssetReferences = app.getAssetReferences.bind(app)
+      const spy = vi
+        .spyOn(app, 'getAssetReferences')
+        .mockImplementationOnce(async options => {
+          const references = await getAssetReferences(options)
+          await Album.query().insert({ cover: copy(file) })
+          return references
+        })
+      try {
+        await app.deleteExpiredRecords()
+        expect(await isReferenced(file)).toBe(true)
+        expect(storage.dataByKey.has(file.key)).toBe(true)
+      } finally {
+        spy.mockRestore()
+      }
+    })
+  })
+
+  it('rejects references to assets released in the meantime', async () => {
+    const file = await upload('raced.jpg')
+    // A concurrent release needs a second connection, so we release the asset
+    // after `addForeignAssets()` found it, before the write locks it:
+    const addForeignAssets = app.addForeignAssets.bind(app)
+    const spy = vi
+      .spyOn(app, 'addForeignAssets')
+      .mockImplementation(async (...args) => {
+        const imported = await addForeignAssets(...args)
+        await Asset.query().delete().where('key', file.key)
+        return imported
+      })
+    try {
+      await expect(
+        Track.query().insert({ artwork: copy(file) })
+      ).rejects.toThrow(`Unable to reference released asset: 'raced.jpg'`)
+    } finally {
+      spy.mockRestore()
+    }
   })
 })
 
@@ -1046,13 +1045,13 @@ describe('asset references', () => {
     const file = AssetFile.create({ name, data: name })
     await storage.addFile(file, Buffer.from(name))
     storage.signAssetFile(file)
-    await app.createAssets(storage, [file], 0)
+    await app.createAssets(storage, [file])
     // Uploads happen before their data is saved, and the release tells never
-    // persisted assets by `updatedAt = createdAt`, so backdate both:
+    // saved assets by `updatedAt = createdAt`, so backdate both:
     const date = new Date(Date.now() - 1000)
     await Asset.knex()(Asset.tableName)
       .where('key', file.key)
-      .update({ createdAt: date, updatedAt: date })
+      .update({ createdAt: date, updatedAt: date, unreferencedSince: date })
     return copy(file)
   }
 
@@ -1061,9 +1060,13 @@ describe('asset references', () => {
     return JSON.parse(JSON.stringify(data))
   }
 
-  async function getCount(file: AssetFile) {
+  async function isReferenced(file: AssetFile) {
     const asset = await Asset.query().findOne('key', file.key)
-    return asset?.count
+    return asset && !asset.unreferencedSince
+  }
+
+  function getKeys(assets: { key: string }[]) {
+    return assets.map(asset => asset.key)
   }
 
   async function withDeleteUnusedAfter(
@@ -1182,72 +1185,61 @@ describe('asset references', () => {
     ).toHaveLength(1)
   })
 
-  it('keeps referenced files and corrects their count', async () => {
-    const warn = vi.spyOn(app.logger, 'warn').mockImplementation(() => {})
-    try {
-      await withDeleteUnusedAfter(0, async () => {
-        const file = await upload('missed.jpg')
-        const track = await Track.query().insertAndFetch({
-          artwork: copy(file)
-        })
-        await insertWithoutHooks({ artwork: copy(file) })
-        // Without the counted reference, the next run would release the file:
-        await Track.query().deleteById(track.id)
-        await app.deleteExpiredRecords()
-        expect(await getCount(file)).toBe(1)
-        expect(storage.dataByKey.has(file.key)).toBe(true)
-        expect(warn).toHaveBeenCalledWith(
-          expect.stringContaining('has 1 references but a count of 0')
-        )
+  it('keeps files that writes without hooks reference', async () => {
+    await withDeleteUnusedAfter(0, async () => {
+      const file = await upload('missed.jpg')
+      const track = await Track.query().insertAndFetch({
+        artwork: copy(file)
       })
-    } finally {
-      warn.mockRestore()
-    }
+      await insertWithoutHooks({ artwork: copy(file) })
+      await Track.query().deleteById(track.id)
+      await app.deleteExpiredRecords()
+      expect(await isReferenced(file)).toBe(true)
+      expect(storage.dataByKey.has(file.key)).toBe(true)
+    })
   })
 
-  it('recounts the references of all assets', async () => {
-    const missed = await upload('recount-missed.jpg')
-    const left = await upload('recount-left.jpg')
-    const pending = await upload('recount-pending.jpg')
-    await Track.query().insert({ artwork: copy(missed) })
+  it('scans the references of all assets', async () => {
+    const missed = await upload('scan-missed.jpg')
+    const left = await upload('scan-left.jpg')
+    const pending = await upload('scan-pending.jpg')
     await insertWithoutHooks({ artwork: copy(missed) })
     const track = await Track.query().insertAndFetch({ artwork: copy(left) })
     await Track.knex()(Track.tableName).where('id', track.id).delete()
-    const { changed, missing } = await app.recountAssets()
-    const countsByKey = Object.fromEntries(
-      changed.map(({ asset, count }) => [asset.key, [asset.count, count]])
-    )
-    expect(countsByKey[missed.key]).toEqual([1, 2])
-    expect(countsByKey[left.key]).toEqual([1, 0])
-    expect(countsByKey[pending.key]).toBeUndefined()
+    const { referenced, unreferenced, missing } = await app.scanAssets()
+    expect(getKeys(referenced)).toContain(missed.key)
+    expect(getKeys(unreferenced)).toContain(left.key)
+    for (const assets of [referenced, unreferenced]) {
+      expect(getKeys(assets)).not.toContain(pending.key)
+    }
     expect(missing).toEqual([])
-    expect((await Asset.query().findOne('key', missed.key))?.count).toBe(2)
-    expect((await Asset.query().findOne('key', left.key))?.count).toBe(0)
-    expect((await app.recountAssets()).changed).toEqual([])
+    expect(await isReferenced(missed)).toBe(true)
+    expect(await isReferenced(left)).toBe(false)
+    expect(await app.scanAssets()).toMatchObject({
+      referenced: [],
+      unreferenced: []
+    })
   })
 
-  it('only reports wrong counts in a dry run', async () => {
-    const file = await upload('recount-dry.jpg')
+  it('only reports changes in a dry run', async () => {
+    const file = await upload('scan-dry.jpg')
     await insertWithoutHooks({ artwork: copy(file) })
-    const { changed } = await app.recountAssets({ dryRun: true })
-    expect(changed).toContainEqual({
-      asset: expect.objectContaining({ key: file.key, count: 0 }),
-      count: 1
-    })
-    expect((await Asset.query().findOne('key', file.key))?.count).toBe(0)
-    await app.recountAssets()
+    const { referenced } = await app.scanAssets({ dryRun: true })
+    expect(getKeys(referenced)).toContain(file.key)
+    expect(await isReferenced(file)).toBe(false)
+    await app.scanAssets()
   })
 
   it('creates the missing assets of referenced files', async () => {
-    const file = await upload('recount-missing.jpg')
+    const file = await upload('scan-missing.jpg')
     const track = await Track.query().insertAndFetch({ artwork: copy(file) })
     await Asset.knex()(Asset.tableName).where('key', file.key).delete()
     // Files without assets can't be stored in other places:
     const { artwork } = copy(track)
     await expect(Track.query().insert({ artwork })).rejects.toThrow(
-      `Unable to import asset from foreign source: 'recount-missing.jpg'`
+      `Unable to import asset from foreign source: 'scan-missing.jpg'`
     )
-    const { missing } = await app.recountAssets()
+    const { missing } = await app.scanAssets()
     expect(missing).toEqual([
       {
         key: file.key,
@@ -1255,20 +1247,19 @@ describe('asset references', () => {
       }
     ])
     expect(await Asset.query().findOne('key', file.key)).toMatchObject({
-      count: 1,
+      unreferencedSince: null,
       storage: 'memory',
-      file: { name: 'recount-missing.jpg' }
+      file: { name: 'scan-missing.jpg' }
     })
     await Track.query().insert({ artwork: copy(track).artwork })
-    expect((await Asset.query().findOne('key', file.key))?.count).toBe(2)
   })
 
   it('reports referenced files that are lost from their storage', async () => {
-    const file = await upload('recount-lost.jpg')
+    const file = await upload('scan-lost.jpg')
     const track = await Track.query().insertAndFetch({ artwork: copy(file) })
     await Asset.knex()(Asset.tableName).where('key', file.key).delete()
     storage.dataByKey.delete(file.key)
-    const { missing, lost } = await app.recountAssets()
+    const { missing, lost } = await app.scanAssets()
     expect(missing).toEqual([])
     expect(lost).toEqual([
       {
@@ -1295,7 +1286,7 @@ describe('asset references', () => {
     ).toHaveLength(1)
   })
 
-  it('counts and finds files at wildcard data paths', async () => {
+  it('finds files at wildcard data paths', async () => {
     const file = await upload('nested.jpg')
     const page = await Page.query().insertAndFetch({
       content: {
@@ -1303,38 +1294,22 @@ describe('asset references', () => {
         items: [{ file: copy(file) }, { text: 'Text' }]
       }
     })
-    expect(await getCount(file)).toBe(2)
+    expect(await isReferenced(file)).toBe(true)
     const references = await app.getAssetReferences({ keys: [file.key] })
     expect(references.map(reference => reference.dataPath).sort()).toEqual([
       'content/header/file',
       'content/items/0/file'
     ])
     await Page.query().patchById(page.id, { content: {} })
-    expect(await getCount(file)).toBe(0)
+    expect(getKeys((await app.scanAssets()).unreferenced)).toContain(file.key)
   })
 
-  it('counts each location of overlapping data paths once', async () => {
+  it('marks files of overlapping data paths as referenced', async () => {
     const file = await upload('overlapping.jpg')
-    const article = await Article.query().insertAndFetch({
-      content: { items: [{ file: copy(file) }] }
-    })
-    expect(await getCount(file)).toBe(1)
-    await Article.query().patchById(article.id, {
+    await Article.query().insert({
       content: { items: [{ file: copy(file) }, { file: copy(file) }] }
     })
-    expect(await getCount(file)).toBe(2)
-    await Article.query().patchById(article.id, {
-      content: { items: [{ file: copy(file) }] }
-    })
-    expect(await getCount(file)).toBe(1)
-    await Article.query().patchById(article.id, { content: { items: [] } })
-    expect(await getCount(file)).toBe(0)
-    await Article.query().patchById(article.id, {
-      content: { items: [{ file: copy(file) }] }
-    })
-    expect(await getCount(file)).toBe(1)
-    await Article.query().deleteById(article.id)
-    expect(await getCount(file)).toBe(0)
+    expect(await isReferenced(file)).toBe(true)
   })
 
   it('finds each location of overlapping data paths once, through the first', async () => {
@@ -1389,7 +1364,6 @@ describe('asset references', () => {
       cover: copy(cover),
       photos: [copy(photo), null, copy(photo)]
     })
-    expect(await getCount(photo)).toBe(2)
     const loaded = (await Album.query().findById(album.id))!
     const [first, empty, last] = loaded.photos!
     for (const file of [loaded.cover!, first!, last!]) {
@@ -1448,16 +1422,6 @@ describe('asset references', () => {
     }
   })
 
-  it('recounts each location of overlapping data paths once', async () => {
-    const file = await upload('overlapping-recount.jpg')
-    // Skip the asset hooks, to only test how references are counted:
-    await Article.knex()(Article.tableName).insert({
-      content: JSON.stringify({ items: [{ file }, { file }] })
-    })
-    await app.recountAssets()
-    expect(await getCount(file)).toBe(2)
-  })
-
   describe('in transactions', () => {
     it('releases unused files after the transaction is committed', async () => {
       await withDeleteUnusedAfter(0, async () => {
@@ -1488,27 +1452,8 @@ describe('asset references', () => {
         ).rejects.toThrow('Rolled back')
         await app.deleteExpiredRecords()
         expect(storage.dataByKey.has(key)).toBe(true)
-        expect(await getCount(track.artwork!)).toBe(1)
+        expect(await isReferenced(track.artwork!)).toBe(true)
       })
     })
-  })
-
-  it('rejects references to assets released in the meantime', async () => {
-    const file = await upload('raced.jpg')
-    // A concurrent release needs a second connection, so we release the asset
-    // where `addForeignAssets()` would only find it:
-    const addForeignAssets = vi
-      .spyOn(app, 'addForeignAssets')
-      .mockImplementation(async () => {
-        await Asset.query().delete().where('key', file.key)
-        return []
-      })
-    try {
-      await expect(
-        Track.query().insert({ artwork: copy(file) })
-      ).rejects.toThrow(`Unable to reference released asset: 'raced.jpg'`)
-    } finally {
-      addForeignAssets.mockRestore()
-    }
   })
 })
