@@ -2,8 +2,6 @@
 .dito-account
   DitoMenuButton.dito-account__button(
     :items="items"
-    placement="bottom-center"
-    floating
     @select="onSelectMenuItem"
   )
     span {{ adminContext.user.username }}
@@ -76,7 +74,8 @@ export default {
     &,
     &:hover,
     &:active,
-    &:focus {
+    &:focus,
+    &[data-state='open'] {
       border-color: transparent;
       color: $color-white;
       background: none;
@@ -85,11 +84,6 @@ export default {
 
     &:focus-visible {
       @include focus-ring;
-    }
-
-    span {
-      padding: 0;
-      color: inherit;
     }
   }
 }

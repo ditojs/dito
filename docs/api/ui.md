@@ -27,11 +27,11 @@ Inside custom admin components, the admin's styles already include those of
 
 ## Contents
 
-| Section                   | Exports                                                                                                                                                                                        |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoProgress`, `DitoTrigger`, `DitoDatePicker`, `DitoTimeInput`, `DitoTimePanel`, `TransitionHeight` |
-| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `getScrollContainer()`, `hasErrors()`, `addEvents()`, `combineEvents()`, `getKey()`, `getKeyNavigation()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()`       |
-| [Styles](#styles)         | CSS classes, SCSS variables, mixins, functions and icons                                                                                                                                       |
+| Section                   | Exports                                                                                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoProgress`, `DitoDatePicker`, `DitoTimeInput`, `DitoTimePanel`, `TransitionHeight` |
+| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `getScrollContainer()`, `hasErrors()`, `addEvents()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()`                                             |
+| [Styles](#styles)         | CSS classes, SCSS variables, mixins, functions and icons                                                                                                                        |
 
 ## Example
 
@@ -83,13 +83,13 @@ export default {
 ## Components
 
 ```js
-import { DitoButton, DitoTrigger } from '@ditojs/ui'
+import { DitoButton, DitoMenuButton } from '@ditojs/ui'
 ```
 
 All components are Vue 3 components with the Options API. Values are bound
-with `v-model` (`modelValue`), `v-model:show` or `v-model:page`. Components
-that wrap a native element pass the attributes they don't declare, including
-listeners, on to it, as noted per component.
+with `v-model` (`modelValue`) or `v-model:page`. Components that wrap a native
+element pass the attributes they don't declare, including listeners, on to it,
+as noted per component.
 
 ### DitoButton
 
@@ -125,18 +125,19 @@ The admin styles common verbs, e.g. `create`, `add`, `edit`, `delete` and
 
 ### DitoMenuButton
 
-A button that opens a menu of items, and emits `select` with the chosen item.
-It can be used with mouse and keyboard: Enter, Space and the arrow keys open
-the menu, the arrow keys, Home and End move between items, Escape closes it.
+A button that opens a menu of items next to it, below by default, and emits
+`select` with the chosen item. It is built on
+[`reka-ui`'s `DropdownMenu`](https://reka-ui.com/docs/components/dropdown-menu),
+which handles mouse and keyboard: Enter, Space and ArrowDown open the menu,
+the arrow keys, Home and End move between items, Escape closes it, and Tab
+leaves it.
 
-| Prop        | Type                                        | Default    | Description                                                                                                                   |
-| ----------- | ------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `items`     | `Array<{ value, label, icon?, disabled? }>` | required   | The menu items. Items with an `icon` from the [icon set](#icons) show it instead of their `label`, which becomes their title. |
-| `placement` | `string`                                    | `'bottom'` | Where the menu opens, see [`DitoTrigger`](#ditotrigger).                                                                      |
-| `cover`     | `boolean`                                   | `true`     | Opens the menu over the button, like native menus.                                                                            |
-| `floating`  | `boolean`                                   | `false`    | Opens the menu below the button as a separate panel with a tip pointing at the button, overriding `cover`.                    |
-| `offset`    | `boolean`                                   | `false`    | Opens the menu one item padding below the top of the button, e.g. to line up with the text of a taller button.                |
-| `disabled`  | `boolean`                                   | `false`    | Disables the button.                                                                                                          |
+| Prop       | Type                                        | Default    | Description                                                                                                                                                                 |
+| ---------- | ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`    | `Array<{ value, label, icon?, disabled? }>` | required   | The menu items. Items with an `icon` from the [icon set](#icons) show it instead of their `label`, which becomes their title.                                               |
+| `side`     | `string`                                    | `'bottom'` | The side of the button the menu opens on: `'top'`, `'right'`, `'bottom'` or `'left'`.                                                                                       |
+| `align`    | `string`                                    | `'center'` | The preferred alignment of the menu with the button: `'start'`, `'center'` or `'end'`. A centered menu without room on one side aligns with the button's edge on that side. |
+| `disabled` | `boolean`                                   | `false`    | Disables the button.                                                                                                                                                        |
 
 | Event    | Payload | Description                 |
 | -------- | ------- | --------------------------- |
@@ -152,7 +153,7 @@ The default slot is the content of the button. All other attributes, e.g.
     { value: 'csv', label: 'CSV' },
     { value: 'pdf', label: 'PDF', disabled: !hasPdfExport }
   ]"
-  @select="item => exportOrders(item.value)"
+  @select="item => exportBooks(item.value)"
 />
 ```
 
@@ -277,55 +278,6 @@ All attributes go to the `<progress>` element, e.g. `aria-label`.
 
 ```vue
 <DitoProgress :value="job.processed" :max="job.total" aria-label="Import" />
-```
-
-### DitoTrigger
-
-Shows a popup next to a trigger element, positioned absolutely and kept in the
-window if possible. The base of `DitoMenuButton` and the pickers.
-
-| Prop                   | Type                    | Default    | Description                                                                                                                                                                                                                                               |
-| ---------------------- | ----------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`              | `string`                | `'click'`  | What shows the popup: `'click'` toggles it, `'hover'` shows it while the mouse is over the trigger or the popup, `'focus'` while an input or textarea in the trigger or the popup has the focus. `'always'` adds no handlers; the popup follows `show`.   |
-| `show`                 | `boolean`               | `false`    | Whether the popup is shown (`v-model:show`).                                                                                                                                                                                                              |
-| `placement`            | `string`                | `'bottom'` | The side of the trigger the popup appears on, `'top'`, `'bottom'`, `'left'` or `'right'`, optionally followed by the edge it aligns with, e.g. `'bottom-left'` or `'right-top'`, or by `center`, e.g. `'bottom-center'`. Adds `.dito-popup--{placement}`. |
-| `transition`           | `string`                | `'slide'`  | The popup's transition: `'slide'`, `'fade'` or `'zoom'`, or `null` to show it at once.                                                                                                                                                                    |
-| `target`               | `string \| HTMLElement` | `null`     | The element the popup is positioned at, instead of the trigger: an element, or `'trigger'` or `'popup'` for these parts of the trigger itself.                                                                                                            |
-| `disabled`             | `boolean`               | `false`    | Prevents showing the popup. Adds `.dito-trigger--disabled`.                                                                                                                                                                                               |
-| `keepInView`           | `boolean`               | `true`     | Flips the popup to the other side or edge if it doesn't fit in the window and there's more room there, and shifts centered popups back into the window.                                                                                                   |
-| `matchTargetWidth`     | `boolean`               | `true`     | Gives the popup's first child the width of the target.                                                                                                                                                                                                    |
-| `cover`                | `boolean`               | `false`    | Places the popup over the trigger instead of next to it.                                                                                                                                                                                                  |
-| `hideWhenClickOutside` | `boolean`               | `true`     | Hides the popup on clicks outside trigger, target and popup, and when the window loses focus.                                                                                                                                                             |
-| `alwaysShow`           | `boolean`               | `false`    | Shows the popup permanently.                                                                                                                                                                                                                              |
-| `hideDelay`            | `number`                | `0`        | With `trigger: 'hover'`, the milliseconds to wait before hiding.                                                                                                                                                                                          |
-| `customClass`          | `string`                | `null`     | An additional class of the popup.                                                                                                                                                                                                                         |
-| `zIndex`               | `number`                | `0`        | A `z-index` for the popup, instead of the default one.                                                                                                                                                                                                    |
-
-| Event         | Payload | Description                    |
-| ------------- | ------- | ------------------------------ |
-| `update:show` | `show`  | The popup was shown or hidden. |
-
-| Slot      | Description                                          |
-| --------- | ---------------------------------------------------- |
-| `trigger` | The trigger.                                         |
-| `popup`   | The popup's content, only rendered while it's shown. |
-
-| Method                          | Description               |
-| ------------------------------- | ------------------------- |
-| `open()`, `close()`, `toggle()` | Shows or hides the popup. |
-
-Escape hides the popup, and doesn't reach elements around the trigger, e.g.
-dialogs.
-
-```vue
-<DitoTrigger trigger="hover" placement="right-top">
-  <template #trigger>
-    <DitoIcon name="info" />
-  </template>
-  <template #popup>
-    <p class="bookshop-hint">Shipped within 2 days.</p>
-  </template>
-</DitoTrigger>
 ```
 
 ### DitoDatePicker
@@ -493,33 +445,6 @@ const events = addEvents(window, {
 events.remove()
 ```
 
-#### combineEvents()
-
-```js
-combineEvents(...events)
-```
-
-Combines the results of several `addEvents()` calls into one `{ remove() }`.
-
-#### getKey()
-
-```js
-getKey(event)
-```
-
-Returns `'left'`, `'up'`, `'right'`, `'down'` or `'enter'` for the arrow keys
-and Enter of a keyboard event, and `undefined` for other keys.
-
-#### getKeyNavigation()
-
-```js
-getKeyNavigation(event)
-```
-
-Returns the direction of the arrow key of a keyboard event as
-`{ hor, ver, enter }`: `hor` and `ver` are `-1`, `0` or `1`, `enter` whether
-it's Enter.
-
 ### Vue
 
 #### hasVNodeContent()
@@ -572,7 +497,7 @@ custom admin components, use `@ditojs/admin/imports.scss`, which includes it.
 The components follow BEM: blocks are named `.dito-{block}`, their elements
 `.dito-{block}__{element}`, and modifiers, including states,
 `.dito-{block}--{modifier}`, e.g. `.dito-button--disabled`,
-`.dito-switch--checked`, `.dito-input--focus` or `.dito-popup--bottom-left`.
+`.dito-switch--checked`, `.dito-input--focus` or `.dito-menu-button__item--icon`.
 
 Besides the classes of the components, the styles define:
 
@@ -658,5 +583,6 @@ placeholders `%icon--{name}` and the list `$icons`:
 
 ### Transitions
 
-`DitoTrigger` uses the transitions `dito-slide`, `dito-fade` and `dito-zoom`,
-and `TransitionHeight` the transition `dito-height`.
+The styles include the transition `dito-fade` and the animation
+`dito-slide-enter` of popups, and `TransitionHeight` uses the transition
+`dito-height`.
