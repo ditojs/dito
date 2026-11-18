@@ -1,11 +1,4 @@
-.dito-slide-enter-active {
-  animation: dito-slide-enter 0.15s $ease-out-quart;
-}
-
-.dito-slide-leave-active {
-  animation: dito-slide-leave 0.15s $ease-out-quart;
-}
-
+// The animation of popups and menus as they open:
 @keyframes dito-slide-enter {
   0% {
     opacity: 0;
@@ -20,6 +13,7 @@
   }
 }
 
+// The animation of `TransitionHeight` as its content hides:
 @keyframes dito-slide-leave {
   0% {
     opacity: 1;

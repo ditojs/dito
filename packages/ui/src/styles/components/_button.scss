@@ -42,7 +42,9 @@
     border-color: $color-active;
   }
 
-  &:hover {
+  // Menu buttons look hovered while their menu is open:
+  &:hover,
+  &[data-state='open'] {
     background: $button-color-hover;
   }
 
@@ -71,7 +73,8 @@
       border-color: color.adjust($color-active, $lightness: -10%);
     }
 
-    &:hover {
+    &:hover,
+    &[data-state='open'] {
       background: color.adjust($color-active, $lightness: -7.5%);
     }
 
