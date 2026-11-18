@@ -451,6 +451,9 @@ test.describe('component screenshots', () => {
 
   test('calendar in a filter panel', async ({ page, url }) => {
     await page.setViewportSize({ width: 1200, height: 1000 })
+    // The empty calendar shows the month of today and marks it, so today is
+    // the day of the baseline:
+    await page.clock.install({ time: new Date('2026-11-17T12:00:00') })
     await page.goto(`${url}/admin/reports/done`)
     await expect(page.getByText('Archive', { exact: true })).toBeVisible()
     // The empty field above shows its placeholder:
