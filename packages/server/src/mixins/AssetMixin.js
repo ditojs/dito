@@ -64,8 +64,7 @@ export const AssetMixin = mixin(
           nullable: true
         },
 
-        // Unused. Apps drop the column in a migration of their own, and the
-        // next major version removes it.
+        // Unused. Apps drop the column in a migration of their own.
         count: {
           type: 'integer',
           unsigned: true

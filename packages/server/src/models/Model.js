@@ -1261,17 +1261,14 @@ export class Model extends objection.Model {
         for (const dataPath of dataPaths) {
           const storage = this.app.getStorage(assets[dataPath].storage)
           const files = filesPerDataPath[dataPath]
-          const imported = await this.app.addForeignAssets(
-            storage,
-            files,
-            transaction
+          importedFiles.push(
+            ...(await this.app.addForeignAssets(storage, files, transaction))
           )
-          importedFiles.push(...imported)
-          // Also handle files where the data property is changed before
-          // update / patch, meaning the file's content is replaced.
+          // Also handle files of existing assets that carry data, meaning the
+          // file's content is replaced.
           // NOTE: This will change the content for all the references to it,
           // and so should only really be used when there's only one reference.
-          const importedKeys = new Set(imported.map(file => file.key))
+          const importedKeys = new Set(importedFiles.map(file => file.key))
           modifiedFiles.push(
             ...(await this.app.handleModifiedAssets(
               storage,
@@ -1280,8 +1277,8 @@ export class Model extends objection.Model {
             ))
           )
         }
-        // Lock the assets after the imports, so that slow imports hold no
-        // locks:
+        // Lock the assets after the imports of this query, so that its
+        // imports hold no locks:
         await this.app.referenceAssets(
           Object.values(filesPerDataPath).flat(),
           transaction

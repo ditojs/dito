@@ -751,11 +751,11 @@ const released = await app.releaseUnusedAssets({
 ```
 
 Runs [`scanAssets()`](#scanassets), then removes the files and records of
-assets that no data has referenced for `assets.deleteUnusedAfter`, or that
-were never saved for `assets.deleteUnsavedAfter`. With a `deleteUnusedAfter`
-below one hour, it scans twice, as a scan misses the references of writes that
-commit while it runs. It locks the assets that it removes, so that writes that
-reference them wait and then fail. The asset model calls it from
+assets that a scan found unreferenced at least `assets.deleteUnusedAfter` ago,
+or that were never saved for `assets.deleteUnsavedAfter`. When this reaches
+marks of scans from the last hour, it scans twice, as a scan misses the
+references of writes that commit while it runs. It locks the assets that it
+removes, so that writes that reference them wait and then fail. The asset model calls it from
 [`deleteExpiredRecords()`](#deleteexpiredrecords).
 
 #### Parameters
@@ -811,9 +811,9 @@ Compares the assets with their references, as
 [`getAssetReferences()`](#getassetreferences) finds them: sets
 `unreferencedSince` of the assets that no data references to the time of the
 scan, and clears it on the ones that data references again. It creates the
-missing assets of referenced files that their storage still has, as files
-without assets can't be stored in other places, and throws for storages that
-can't list their keys. Writes that skip the model hooks, e.g. deletes through
+missing assets of referenced files, as files without assets can't be stored,
+and reports the files that their storage doesn't have as lost. Storages that
+can't list their keys report no lost files. Writes that skip the model hooks, e.g. deletes through
 database cascades, scripts and seeds, are found this way. The
 [`db:scan_assets`](#commands) command runs it.
 
@@ -828,8 +828,7 @@ Returns `Promise<{ referenced, unreferenced, missing, lost }>`: `referenced`
 holds the assets that data references again, `unreferenced` the ones that no
 data references anymore, both as they were before the scan, `missing` holds
 `{ key, references }` for each referenced file without an asset, and `lost`
-the same for referenced files that their storage doesn't have anymore, which
-it only reports.
+the same for referenced files that their storage doesn't have anymore.
 
 ### findOrphanedFiles()
 
@@ -844,7 +843,9 @@ const files = await app.findOrphanedFiles({
 
 Lists the files of the storages that have no asset record and no reference
 in the data, and that haven't changed for `olderThan`, as files of writes that
-are still running have no record yet. Removes them with `remove`. It lists the
+are still running have no record yet. Removes them with `remove`. It counts
+all files of a storage's folder or bucket, also the ones of other apps that
+share it. It lists the
 files with [`storage.listFiles()`](storage.md#listfiles), and throws for
 storages that can't list their files. The
 [`db:find_orphaned_files`](#commands) command runs it.

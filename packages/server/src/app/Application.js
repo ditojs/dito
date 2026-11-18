@@ -977,7 +977,7 @@ export class Application extends Koa {
         key: file.key,
         file: { ...file },
         storage: storage.name,
-        // Uploads stay unreferenced until a write or a scan finds their file:
+        // New assets stay unreferenced until a write or a scan finds them:
         unreferencedSince: referenced ? null : now
       }))
       return AssetModel.query(transaction).insert(assets)
@@ -990,8 +990,8 @@ export class Application extends Koa {
     const keys = [...new Set(files.map(file => file.key))]
     if (AssetModel && keys.length > 0) {
       // Lock the assets until the transaction ends, so that releases wait for
-      // the write. Lock them in the order of their keys, so that two writes
-      // can't lock each other out:
+      // the write. Lock them in the order of their keys, so that two calls
+      // can't deadlock:
       const assets = await AssetModel.query(transaction)
         .whereIn('key', keys)
         .orderBy('key')
@@ -1012,9 +1012,14 @@ export class Application extends Koa {
         .filter(asset => asset.unreferencedSince)
         .map(asset => asset.key)
       if (unreferencedKeys.length > 0) {
-        await AssetModel.query(transaction)
+        const count = await AssetModel.query(transaction)
           .whereIn('key', unreferencedKeys)
           .patch({ unreferencedSince: null })
+        // Writes outside of transactions hold no locks, so a release can
+        // delete the assets between the two queries:
+        if (count < unreferencedKeys.length) {
+          throw new AssetError('Unable to reference released assets.')
+        }
       }
     }
   }
@@ -1145,6 +1150,11 @@ export class Application extends Koa {
               // object, so that the data from the static model hook can be used
               // directly for the actual running query.
               Object.assign(file, changedFile)
+              // Keep the asset's file in sync, as later writes take its
+              // properties for the files that they store:
+              await AssetModel.query(transaction)
+                .findById(asset.id)
+                .patch({ file: { ...changedFile } })
               modifiedFiles.push(changedFile)
             } else {
               throw new AssetError(
@@ -1260,16 +1270,18 @@ export class Application extends Koa {
           unreferenced.push(asset)
         }
       }
-      // Find the missing assets of referenced files that are still stored, as
-      // files without assets can't be stored in other places:
+      // Find the referenced files without assets, and the lost ones among
+      // them that their storage doesn't have. Writes can't store files without
+      // assets, so both get one:
       const assetKeys = new Set(assets.map(asset => asset.key))
       const storedKeysByStorage = {}
       for (const [key, references] of Object.entries(referencesByKey)) {
         if (!assetKeys.has(key)) {
           const storage = this.getStorage(references[0].storage)
+          // Storages that can't list their keys can't tell lost files:
           const storedKeys = (storedKeysByStorage[storage.name] ||=
             await getStoredKeys(storage))
-          if (storedKeys.has(key)) {
+          if (!storedKeys || storedKeys.has(key)) {
             missing.push({ key, references })
           } else {
             lost.push({ key, references })
@@ -1280,6 +1292,13 @@ export class Application extends Koa {
         await AssetModel.transaction(transaction, async trx => {
           const markAssets = async (assets, unreferencedSince) => {
             for (const keys of getBatches(assets.map(asset => asset.key))) {
+              // Lock the assets in the order of their keys like writes do, so
+              // that they can't deadlock:
+              await AssetModel.query(trx)
+                .select('id')
+                .whereIn('key', keys)
+                .orderBy('key')
+                .forUpdate()
               await AssetModel.query(trx)
                 .whereIn('key', keys)
                 .patch({ unreferencedSince })
@@ -1287,7 +1306,7 @@ export class Application extends Koa {
           }
           await markAssets(referenced, null)
           await markAssets(unreferenced, now)
-          for (const { references } of missing) {
+          for (const { references } of [...missing, ...lost]) {
             const storage = this.getStorage(references[0].storage)
             const file = { ...references[0].file }
             storage.signAssetFile(file)
@@ -1319,6 +1338,7 @@ export class Application extends Koa {
     const unsavedAfter = olderThan ?? assets.deleteUnsavedAfter
     if (AssetModel && (unusedAfter !== false || unsavedAfter !== false)) {
       // Mark the assets that lost their last reference since the last run:
+      const start = new Date()
       await this.scanAssets({ transaction })
       // Calculate the date math in JS instead of SQL, as there is no easy
       // cross-SQL way to do `now() - interval X hours`:
@@ -1327,10 +1347,11 @@ export class Application extends Koa {
       const unusedDate = getDate(unusedAfter)
       const unsavedDate = getDate(unsavedAfter)
       // A scan misses the references of writes that commit while it runs,
-      // and marks their assets as unreferenced. With a short
-      // `deleteUnusedAfter`, scan again to find these references before the
-      // release. Assets that only the second scan marks wait for the next run.
-      if (unusedDate && getDuration(unusedAfter) < getDuration('1h')) {
+      // and marks their assets. Such marks come from the scan above and from
+      // scans of other processes that started up to an hour before it. When
+      // the release reaches them, scan again to find the references. Assets
+      // that only the second scan marks wait for the next run.
+      if (unusedDate && unusedDate > subtractDuration(start, '1h')) {
         await this.scanAssets({ transaction })
       }
       const released = await AssetModel.transaction(transaction, async trx => {
@@ -1354,8 +1375,9 @@ export class Application extends Koa {
               )
             }
           })
-          // Make writes that reference these assets wait, and skip the assets
-          // that writes referenced before:
+          // Writes that reference these assets wait. Assets that a write
+          // referenced first are skipped after the wait:
+          .orderBy('key')
           .forUpdate()
         for (const keys of getBatches(assets.map(asset => asset.key))) {
           await AssetModel.query(trx).delete().whereIn('key', keys)
@@ -1386,8 +1408,7 @@ export class Application extends Koa {
     remove = false,
     concurrency = 8
   } = {}) {
-    // A short `olderThan` finds the files of writes that are still running,
-    // so fail on invalid durations:
+    // Fail on invalid durations, as they would remove all orphaned files:
     checkDuration('olderThan', olderThan, {
       min: 0,
       usage: 'Use a duration.'
@@ -1523,10 +1544,5 @@ function getBatches(array, size = 1000) {
 
 async function getStoredKeys(storage) {
   const keys = await storage.listKeys()
-  if (!keys) {
-    throw new AssetError(
-      `Unable to list the keys of storage '${storage.name}'.`
-    )
-  }
-  return new Set(keys)
+  return keys ? new Set(keys) : null
 }

@@ -129,7 +129,6 @@ describe('scanAssets()', () => {
       'Marked 0 assets as referenced and 0 as unreferenced, ' +
       'created 0 missing assets, found 1 lost files.'
     ])
-    expect(await Asset.query().findOne('key', file.key)).toBeUndefined()
   })
 })
 
@@ -164,11 +163,13 @@ describe('scanAssets() with storages that cannot list their keys', () => {
     await app.knex.destroy()
   })
 
-  it('rejects files without assets that it cannot check', async () => {
+  it('creates the assets of files that it cannot check', async () => {
+    vi.spyOn(console, 'info').mockImplementation(() => {})
     const file = AssetFile.create({ name: 'unlisted.mp4', data: 'video' })
     await app.knex(Clip.tableName).insert({ video: JSON.stringify(file) })
-    await expect(scanAssets(app)).rejects.toThrow(
-      `Unable to list the keys of storage 'unlisted'.`
-    )
+    expect(await scanAssets(app)).toBe(true)
+    expect(await Asset.query().findOne('key', file.key)).toMatchObject({
+      unreferencedSince: null
+    })
   })
 })

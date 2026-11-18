@@ -16,6 +16,7 @@ import {
   destroyTestApp
 } from './setup.js'
 import { createTestApp as createServerApp, getAppUrl } from '../utils/app.js'
+import { isSQLiteTest } from '../utils/test-knex.js'
 
 // Storage configs are typed per built-in storage type only, so we cast them:
 class MemoryStorage extends Storage {
@@ -380,8 +381,8 @@ describe('Asset handling', () => {
   describe('releaseUnusedAssets()', () => {
     const day = 24 * 60 * 60 * 1000
 
-    // Creates an asset without references since two days, that was
-    // referenced after its creation if it is unused, or never if unsaved:
+    // Creates an asset that has had no references for two days. Unused
+    // assets were referenced after their creation, unsaved ones never:
     async function createExpiredAsset(name: string, isUnused: boolean) {
       const file = await createUploadedFile(name, name)
       await app.createAssets(storage, [file])
@@ -908,6 +909,39 @@ describe('asset scan', () => {
     })
   })
 
+  it('locks the assets of writes in the order of their keys', async context => {
+    context.skip(isSQLiteTest, 'SQLite has no row locks')
+    const first = await upload('first.jpg')
+    const second = await upload('second.jpg')
+    const queries: string[] = []
+    const onQuery = ({ sql }: { sql: string }) => queries.push(sql)
+    const knex = Album.knex()
+    knex.on('query', onQuery)
+    try {
+      await Album.query().insert({ photos: [copy(second), copy(first)] })
+    } finally {
+      knex.off('query', onQuery)
+    }
+    expect(queries).toContainEqual(
+      expect.stringMatching(/ order by "Asset"."key" asc for update$/)
+    )
+  })
+
+  it('keeps the asset of modified files in sync', async () => {
+    const album = await Album.query().insertAndFetch({
+      cover: await upload('modified.jpg')
+    })
+    const cover = AssetFile.create({ name: 'modified.jpg', data: 'larger' })
+    cover.key = album.cover!.key
+    await Album.query().patchById(album.id, { cover })
+    const asset = await Asset.query().findOne('key', cover.key)
+    expect(asset!.file.size).toBe(6)
+    // Later writes take the size of the asset's file:
+    const { cover: copied } = copy((await Album.query().findById(album.id))!)
+    const other = await Album.query().insertAndFetch({ cover: copied })
+    expect(other.cover!.size).toBe(6)
+  })
+
   it('rejects references to assets released in the meantime', async () => {
     const file = await upload('raced.jpg')
     // A concurrent release needs a second connection, so we release the asset
@@ -1276,7 +1310,9 @@ describe('asset references', () => {
         references: [expect.objectContaining({ id: track.id })]
       }
     ])
-    expect(await Asset.query().findOne('key', file.key)).toBeUndefined()
+    // The asset of the lost file keeps the next scans from reporting it again:
+    expect(await Asset.query().findOne('key', file.key)).toBeDefined()
+    expect((await app.scanAssets()).lost).toEqual([])
   })
 
   it('finds files of records that default scopes hide', async () => {

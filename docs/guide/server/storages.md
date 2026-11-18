@@ -226,17 +226,20 @@ Writes that store files clear `unreferencedSince` of their assets, and lock
 them until the transaction ends. Writes that remove files change nothing: a
 scan of all data finds the assets that no data references anymore and sets
 their `unreferencedSince`. Writes that skip the model hooks, e.g. of scripts,
-seeds and database cascades, are found by the next scan too.
+seeds and database cascades, are found by the next scan too. The scan reads
+all data with asset properties, at each run. Files without an asset can't be
+stored, and the scan creates the assets of referenced files that have none.
 
 The application scans and then removes the files and their records with
 [`app.deleteExpiredRecords()`](../../api/server/application.md#deleteexpiredrecords),
 every `config.app.deleteExpiredRecordsEvery` (one hour by default). It removes
-files that no data has referenced for `config.assets.deleteUnusedAfter`, and
-files that were uploaded but never saved in a model after
+files that a scan found unreferenced at least `config.assets.deleteUnusedAfter`
+ago, and files that were uploaded but never saved in a model after
 `config.assets.deleteUnsavedAfter`. Both default to 24 hours, and `false` keeps
 the files. These are minimum ages: files are removed at the first run after
 them. A write that references a file that was removed in the meantime fails
-with a 400 response.
+with a 400 response. Only writes in transactions keep their files from being
+removed until they commit.
 
 To remove unused files right away, e.g. from an admin action, call
 `app.releaseUnusedAssets({ olderThan: 0 })`. `pnpm db:scan_assets` runs the
@@ -245,7 +248,9 @@ scan on its own.
 Files that a storage holds without an asset record and without a reference,
 e.g. of uploads from before the asset model, are orphaned.
 `pnpm db:find_orphaned_files` lists the ones older than a day, and removes
-them with `--remove`, see
+them with `--remove`. It counts every file in the storage's folder or bucket,
+also the ones of other apps that share it, so check the list before removing.
+See
 [`app.findOrphanedFiles()`](../../api/server/application.md#findorphanedfiles).
 
 ## Adding files in code

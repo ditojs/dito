@@ -12,7 +12,11 @@ export async function findOrphanedFiles(app, ...args) {
       }`
     )
   }
-  const count = files.filter(file => !file.error).length
-  console.info(`${remove ? 'Removed' : 'Found'} ${count} orphaned files.`)
-  return true
+  const failed = files.filter(file => file.error)
+  console.info(
+    `${remove ? 'Removed' : 'Found'} ${
+      files.length - failed.length
+    } orphaned files.`
+  )
+  return failed.length === 0
 }

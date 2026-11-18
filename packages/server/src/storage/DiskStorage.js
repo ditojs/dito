@@ -118,14 +118,20 @@ export class DiskStorage extends Storage {
 
   // @override
   async _listFiles() {
-    return mapConcurrently(
+    const files = await mapConcurrently(
       await this._listKeys(),
       async key => {
-        const { mtime } = await fs.stat(this._getFilePath({ key }))
-        return { key, lastModified: mtime }
+        try {
+          const { mtime } = await fs.stat(this._getFilePath({ key }))
+          return { key, lastModified: mtime }
+        } catch (error) {
+          // Skip the files that are removed while listing:
+          if (error.code !== 'ENOENT') throw error
+        }
       },
       { concurrency: 16 }
     )
+    return files.filter(Boolean)
   }
 
   _getNestedFolder(key, posix = false) {
