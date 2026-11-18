@@ -333,7 +333,7 @@ describe('useField()', () => {
       })
       await findField('genre').find('select').setValue('poetry')
       await findField('isAvailable').find('input').setValue(true)
-      await findField('isEbook').find('input').setValue(true)
+      await findField('isEbook').find('[role="switch"]').trigger('click')
       await findField('format').findAll('input')[1].setValue(true)
       await settle()
       expect(events).toEqual([
