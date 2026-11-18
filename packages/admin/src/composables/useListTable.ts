@@ -1,4 +1,4 @@
-import { computed, type Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 import {
   columnOrderingFeature,
   columnPinningFeature,
@@ -20,6 +20,7 @@ import {
   type Updater
 } from '@tanstack/vue-table'
 import { getItemUid } from '../utils/schema/data.js'
+import { getStoredItem, setStoredItem } from '../utils/storage.ts'
 import type { ListQuery } from '../utils/ListQuery.js'
 import type { Schema } from '../utils/types.ts'
 
@@ -59,11 +60,11 @@ const displayColumn = { enableHiding: false, enableResizing: false }
 
 // The table of a list. TanStack Table holds its columns, rows, sorting,
 // expansion and column layout. The list's query holds the order, which the
-// server applies. The item stores hold which items are open, and the list's
-// store holds how viewers change the columns.
+// server applies. The item stores hold which items are open, and the browser's
+// storage holds how viewers change the columns, under `storageKey`.
 export function useListTable({
   schema,
-  store,
+  storageKey,
   items,
   columns,
   listQuery,
@@ -75,7 +76,7 @@ export function useListTable({
   shouldRenderSchema
 }: {
   schema: Schema
-  store: Store
+  storageKey: string
   items: Ref<Item[]>
   columns: Ref<Record<string, Schema> | null>
   listQuery: ListQuery
@@ -145,22 +146,30 @@ export function useListTable({
     }
   })
 
-  // The columns that viewers hide, move and resize, remembered in the store:
+  // The columns that viewers hide, move and resize, remembered across reloads:
+  const layout = ref(JSON.parse(getStoredItem(storageKey) ?? '{}'))
   const getStoredState = <T>(key: string, getDefault: () => T) => {
-    const state = computed((): T => store[key] ?? getDefault())
+    const state = computed((): T => layout.value[key] ?? getDefault())
     const onChange = (updater: Updater<T>) => {
-      store[key] = functionalUpdate(updater, state.value)
+      layout.value = {
+        ...layout.value,
+        [key]: functionalUpdate(updater, state.value)
+      }
+      setStoredItem(storageKey, JSON.stringify(layout.value))
     }
     return [state, onChange] as const
   }
+  // The columns with `hidden` start hidden, also when the table resets them:
+  const initialState = {
+    columnVisibility: Object.fromEntries(
+      schemaColumns.value
+        .filter(column => column.hidden)
+        .map(column => [column.name, false])
+    )
+  }
   const [columnVisibility, onColumnVisibilityChange] = getStoredState(
     'columnVisibility',
-    (): Record<string, boolean> =>
-      Object.fromEntries(
-        schemaColumns.value
-          .filter(column => column.hidden)
-          .map(column => [column.name, false])
-      )
+    () => initialState.columnVisibility
   )
   const [columnOrder, onColumnOrderChange] = getStoredState(
     'columnOrder',
@@ -177,6 +186,7 @@ export function useListTable({
     // The table compares the data by reference, and lists change in place:
     data: computed(() => [...items.value]),
     getRowId,
+    initialState,
     state: computed(() => ({
       sorting: sorting.value,
       expanded: expanded.value,

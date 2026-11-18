@@ -9,6 +9,7 @@ import {
 } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDomEvents } from './useDomEvents.ts'
+import { getStoredItem, setStoredItem } from '../utils/storage.ts'
 
 // The triggers of open popups by their ARIA state, and reka-ui's open popups:
 const openPopupSelector = [
@@ -139,7 +140,7 @@ export function useSidebar({
   const collapse = (collapsed: boolean) =>
     transition(() => {
       isCollapsed.value = collapsed
-      setStoredItem(storageKey, collapsed)
+      setStoredItem(storageKey, String(collapsed))
     })
 
   const onMediaChange = () => {
@@ -217,20 +218,4 @@ function setSize(
   // Apply the size before the transitions return:
   getWidth(space)
   space.style.transition = ''
-}
-
-// Storage can be unavailable, e.g. in private windows or when it's blocked, and
-// then sidebars just aren't remembered:
-function getStoredItem(key: string) {
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-function setStoredItem(key: string, value: boolean) {
-  try {
-    localStorage.setItem(key, String(value))
-  } catch {}
 }

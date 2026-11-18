@@ -175,6 +175,14 @@ $menu-button-padding: 0.25em;
     content: '✓';
   }
 
+  // Items after checkboxes, e.g. ones that reset them, below a line:
+  &[role='menuitemcheckbox'] + &[role='menuitem'] {
+    margin-top: $menu-button-padding;
+    border-top: $border-width solid $border-color;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+
   &[data-disabled] {
     color: $color-disabled;
     cursor: default;

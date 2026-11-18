@@ -1,6 +1,6 @@
 import { html } from '@ditojs/utils'
 import { flushPromises } from '@vue/test-utils'
-import { mountSchema } from '../test/mount.js'
+import { mountSchema, unmountAdmin } from '../test/mount.js'
 
 const books = [
   { title: 'Emma', author: 'Jane Austen', year: 1815 },
@@ -16,6 +16,8 @@ const mountBooks = (list, data = books) =>
 const getTexts = wrappers => wrappers.map(wrapper => wrapper.text())
 
 describe('useListTable()', () => {
+  afterEach(() => localStorage.clear())
+
   it('opens previews of items below their rows', async () => {
     const { findField } = await mountBooks({
       columns: ['title'],
@@ -51,6 +53,26 @@ describe('useListTable()', () => {
     await items[1].trigger('click')
     await flushPromises()
     expect(getHeaders()).toEqual(['Title', 'Author', 'Year'])
+  })
+
+  it('remembers the columns that viewers change', async () => {
+    const list = { columns: { title: {}, author: { hideable: true } } }
+    const openMenu = async field => {
+      await field.find('.dito-list__columns button').trigger('click')
+      return field.findAll('.dito-menu-button__item')
+    }
+    const first = await mountBooks(list)
+    const [author] = await openMenu(first.findField('books'))
+    await author.trigger('click')
+    unmountAdmin(first.admin)
+    const second = await mountBooks(list)
+    const field = second.findField('books')
+    expect(getTexts(field.findAll('thead th'))).toEqual(['Title'])
+    const items = await openMenu(field)
+    expect(items.at(-1).text()).toBe('Reset Columns')
+    await items.at(-1).trigger('click')
+    await flushPromises()
+    expect(getTexts(field.findAll('thead th'))).toEqual(['Title', 'Author'])
   })
 
   it('moves draggable columns dropped onto others', async () => {

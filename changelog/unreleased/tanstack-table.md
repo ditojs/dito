@@ -7,7 +7,7 @@
 ### New
 
 - **admin:** `preview` of lists with columns shows a preview of each item below its row, opened by a button at its start.
-- **admin:** Columns can be `hideable` or `hidden`, which shows them in a columns menu, `resizable` with an initial `width`, `draggable` to move them by their headers, and `pinned` to the `'start'` or `'end'` of the table. The list remembers how viewers change its columns.
+- **admin:** Columns can be `hideable` or `hidden`, which shows them in a columns menu, `resizable` with an initial `width`, `draggable` to move them by their headers, and `pinned` to the `'start'` or `'end'` of the table. The browser remembers how viewers change the columns of each list, until they choose Reset Columns in the menu.
 - **ui:** Items of `DitoMenuButton` with `checked` are checkboxes, which keep the menu open.
 
 ### Fixes

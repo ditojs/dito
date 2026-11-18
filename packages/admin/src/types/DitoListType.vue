@@ -53,7 +53,7 @@
       DitoMenuButton(
         :items="columnItems"
         align="end"
-        @select="item => table.getColumn(item.value).toggleVisibility()"
+        @select="selectColumnItem"
       ) Columns
     DitoPagination.dito-list__pagination(
       v-if="hasPagination"
@@ -239,6 +239,7 @@ import { labelToggleKey } from '../utils/keys.ts'
 import { DitoMenuButton, DitoPagination } from '@ditojs/ui/src'
 import { hyphenate, labelize } from '@ditojs/utils'
 import { computed, inject, watchEffect } from 'vue'
+import { useRouter } from 'vue-router'
 
 // @vue/component
 const DitoListType = {
@@ -287,9 +288,13 @@ const DitoListType = {
     const hasCellEditButtons = computed(
       () => !source.isInlined.value && hasEditButtons.value
     )
+    // Remember the columns per view and list, the same for all items of lists
+    // in lists:
+    const [view] = useRouter().currentRoute.value.matched
+    const listPath = source.componentPath.value.replace(/\/\d+/g, '')
     const table = useListTable({
       schema: props.schema,
-      store: props.store,
+      storageKey: `dito-columns-${view?.path ?? ''}/${listPath}`,
       items: listData,
       columns: source.columns,
       listQuery: source.listQuery,
@@ -398,17 +403,33 @@ const DitoListType = {
           column => column.width || column.resizable
         )
       ),
-      // The columns that viewers can hide, as items of the columns menu:
-      columnItems: computed(() =>
-        table
+      // The columns that viewers can hide, as items of the columns menu, and
+      // the item that resets the columns that viewers changed:
+      columnItems: computed(() => {
+        const columns = table
           .getAllLeafColumns()
           .filter(column => column.getCanHide())
-          .map(column => ({
-            value: column.id,
-            label: getLabelText(column.columnDef.meta.schema),
-            checked: column.getIsVisible()
-          }))
-      ),
+        return columns.length > 0
+          ? [
+              ...columns.map(column => ({
+                value: column.id,
+                label: getLabelText(column.columnDef.meta.schema),
+                checked: column.getIsVisible()
+              })),
+              { value: null, label: 'Reset Columns' }
+            ]
+          : []
+      }),
+
+      selectColumnItem({ value }) {
+        if (value) {
+          table.getColumn(value).toggleVisibility()
+        } else {
+          table.resetColumnVisibility()
+          table.resetColumnOrder()
+          table.resetColumnSizing()
+        }
+      },
       // The rendered rows with their items and their indices in the list:
       rows: computed(() =>
         table
