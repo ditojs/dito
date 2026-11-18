@@ -107,7 +107,9 @@ test.describe('screenshots', () => {
     await expect(page.locator('.dito-table__row--error')).toHaveCount(1)
     // The notification of the failed save times out after about 2s, which the
     // screenshot would race:
-    await expect(page.getByText('Validation Errors')).toBeHidden()
+    await expect(
+      page.locator('.dito-notification', { hasText: 'Validation Errors' })
+    ).toBeHidden()
     await expectScreenshot(page, 'rows-errors.png')
   })
 

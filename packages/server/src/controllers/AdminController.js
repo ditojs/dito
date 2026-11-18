@@ -321,7 +321,6 @@ const coreDependencies = [
   '@vue/*',
   '@vueuse/*',
   'vue-color',
-  '@kyvg/vue3-notification',
   'vue-router',
   'vue-upload-component',
   'reka-ui',

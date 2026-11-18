@@ -43,8 +43,10 @@ function createRequestError(status, data) {
 function getNotifications() {
   return [...document.querySelectorAll('.dito-notification')].map(
     notification => ({
-      title: notification.querySelector('.notification-title')?.textContent,
-      text: notification.querySelector('.notification-content')?.textContent
+      title: notification.querySelector('.dito-notification__title')
+        ?.textContent,
+      text: notification.querySelector('.dito-notification__content')
+        ?.textContent
     })
   )
 }
