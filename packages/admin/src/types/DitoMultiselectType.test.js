@@ -608,7 +608,8 @@ describe('DitoMultiselectType', () => {
           number: {
             type: 'multiselect',
             searchable: true,
-            options: Array.from({ length: 1000 }, (_, index) => `${index}`)
+            // Just over the length from which only some options render:
+            options: Array.from({ length: 250 }, (_, index) => `${index}`)
           }
         }
       }
@@ -617,12 +618,12 @@ describe('DitoMultiselectType', () => {
     await open(field)
     const count = field.findAll('.dito-multiselect__option').length
     expect(count).toBeGreaterThan(0)
-    expect(count).toBeLessThan(1000)
-    await search(field, '999')
-    expect(getOptionLabels(field)).toEqual(['999'])
+    expect(count).toBeLessThan(250)
+    await search(field, '249')
+    expect(getOptionLabels(field)).toEqual(['249'])
     await getInput(field).trigger('keydown.enter')
     await flushPromises()
-    expect(data.number).toBe('999')
+    expect(data.number).toBe('249')
     vi.restoreAllMocks()
   })
 
