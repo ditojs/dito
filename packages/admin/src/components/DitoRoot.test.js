@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { startAuthentication } from '@simplewebauthn/browser'
 import appState from '../appState.js'
+import { html } from '@ditojs/utils'
 import DitoAdmin from '../DitoAdmin.js'
 import {
   mountAdmin,
@@ -522,5 +523,33 @@ describe('DitoRoot', () => {
     const content = await openInfo(admin.wrapper)
     expect(content.textContent).toBe('The title on the cover')
     expect(content.closest('.dito-pane')).not.toBe(null)
+  })
+
+  it('shows the tooltips of `data-tooltip` attributes', async () => {
+    const admin = await mountAdmin({
+      views: {
+        books: {
+          type: 'view',
+          fields: {
+            title: {
+              type: 'label',
+              label: html`<abbr data-tooltip="Second <edition>">2nd</abbr>`
+            }
+          }
+        }
+      }
+    })
+    await admin.navigate('/books')
+    const abbr = admin.wrapper.find('abbr')
+    await abbr.trigger('pointerover')
+    await flushPromises()
+    const tooltip = document.querySelector('.dito-tooltip')
+    expect(tooltip.textContent).toContain('Second <edition>')
+    const id = abbr.attributes('aria-describedby')
+    expect(document.getElementById(id).textContent).toBe('Second <edition>')
+    await abbr.trigger('focusout')
+    await flushPromises()
+    expect(document.querySelector('.dito-tooltip')).toBe(null)
+    expect(abbr.attributes('aria-describedby')).toBe(undefined)
   })
 })
