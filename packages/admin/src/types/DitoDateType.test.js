@@ -10,7 +10,9 @@ async function mountDates(mount, options) {
   const { findField, getComponent, settle } = result
   return {
     ...result,
-    getText: name => findField(name).find('[role="group"]').text(),
+    // Some ICU versions put a narrow no-break space before AM and PM:
+    getText: name =>
+      findField(name).find('[role="group"]').text().replace(/\s/g, ' '),
     async enterDate(name, date) {
       getComponent(name).$refs.element.$emit('update:modelValue', date)
       await settle()
