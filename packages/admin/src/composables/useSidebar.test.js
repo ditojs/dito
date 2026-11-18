@@ -242,10 +242,10 @@ describe('useSidebar()', () => {
       await button.trigger('click')
       await flushPromises()
       // Like the open menu of reka-ui, which closes on Escape itself:
-      const layer = document.createElement('div')
-      layer.setAttribute('data-dismissable-layer', '')
-      region.element.append(layer)
-      pressEscape(layer)
+      const menu = document.createElement('div')
+      menu.setAttribute('role', 'menu')
+      region.element.append(menu)
+      pressEscape(menu)
       await flushPromises()
       expect(sidebar.classes()).toContain('dito-sidebar--open')
       // Like the input of an open list, outside of its popup:
