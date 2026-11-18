@@ -39,7 +39,13 @@ export interface Project {
   milestones?: Milestone[] | null
   phases?: Phase[] | null
   settings?: { visibility?: string | null; reviewer?: string | null } | null
-  advanced?: { slug?: string | null } | null
+  // The buttons of the advanced section have no data, but need keys in the
+  // type so that the form's fields can name them:
+  advanced?: {
+    slug?: string | null
+    preview?: never
+    publish?: never
+  } | null
   website?: string | null
   startTime?: string | null
   meetingAt?: string | null
