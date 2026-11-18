@@ -85,19 +85,33 @@
             :value="tagOption"
             @select.prevent="addTag(tagOption.tag)"
           ) {{ tagOption.tag }}
-          ComboboxGroup(
-            v-for="group in optionGroups"
-            :key="group.label"
+          //- Long lists render only the options in view, and measure them:
+          ComboboxVirtualizer(
+            v-if="virtualOptions"
+            v-slot="{ virtualItem: { index }, virtualizer }"
+            :options="virtualValues"
           )
-            ComboboxLabel.dito-multiselect__group(
-              v-if="group.label"
-            ) {{ group.label }}
             ComboboxItem.dito-multiselect__option(
-              v-for="option in group.options"
-              :key="getValueForOption(option)"
-              :value="getValueForOption(option)"
+              :ref="item => virtualizer.measureElement(item?.$el)"
+              :value="virtualValues[index]"
               @select="onSelect"
-            ) {{ getLabelForOption(option) }}
+            ) {{ getLabelForOption(virtualOptions[index]) }}
+          template(
+            v-else
+          )
+            ComboboxGroup(
+              v-for="group in optionGroups"
+              :key="group.label"
+            )
+              ComboboxLabel.dito-multiselect__group(
+                v-if="group.label"
+              ) {{ group.label }}
+              ComboboxItem.dito-multiselect__option(
+                v-for="option in group.options"
+                :key="getValueForOption(option)"
+                :value="getValueForOption(option)"
+                @select="onSelect"
+              ) {{ getLabelForOption(option) }}
           ComboboxEmpty.dito-multiselect__empty
             | {{ isLoading ? 'Loading…' : 'No options' }}
     DitoInputAffixes(
@@ -130,11 +144,13 @@ import {
   ComboboxRoot,
   ComboboxTrigger,
   ComboboxViewport,
+  ComboboxVirtualizer,
   TagsInputInput,
   TagsInputItem,
   TagsInputItemDelete,
   TagsInputItemText,
-  TagsInputRoot
+  TagsInputRoot,
+  useFilter
 } from 'reka-ui'
 import { defineType } from '../utils/schema/types.ts'
 import { optionsTraits } from './traits.ts'
@@ -145,6 +161,8 @@ import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 import DitoSpinner from '../components/DitoSpinner.vue'
 import { getDataKeywords } from '../utils/schema/properties.js'
 import { isArray, isBoolean, isObject } from '@ditojs/utils'
+
+const maxRenderedOptions = 200
 
 // Selects one or `multiple` options with reka-ui's `Combobox`, which holds
 // their values. Multiple values show as tags in reka-ui's `TagsInput`.
@@ -161,6 +179,7 @@ const DitoMultiselectType = {
     ComboboxRoot,
     ComboboxTrigger,
     ComboboxViewport,
+    ComboboxVirtualizer,
     TagsInputInput,
     TagsInputItem,
     TagsInputItemDelete,
@@ -311,6 +330,20 @@ const DitoMultiselectType = {
         : [{ label: null, options: activeOptions.value }]
     )
 
+    // Long lists without groups render only the options in view, through
+    // reka-ui's virtualizer, which leaves filtering them by label to us:
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const virtualOptions = computed(() => {
+      const options = activeOptions.value
+      return !isGrouped.value && options.length > maxRenderedOptions
+        ? searchFilter.value || !query.value
+          ? options
+          : options.filter(option =>
+              contains(String(getLabelForOption(option)), query.value)
+            )
+        : null
+    })
+
     // The option to add the search term as a tag, unless an option has it as
     // its label:
     const tagOption = computed(() => {
@@ -419,6 +452,10 @@ const DitoMultiselectType = {
       comboboxValue,
       selectedOptions,
       optionGroups,
+      virtualOptions,
+      virtualValues: computed(() =>
+        virtualOptions.value?.map(getValueForOption)
+      ),
       tagOption,
       searchTerm,
       isLoading,
@@ -669,8 +706,12 @@ $tag-margin: 2px;
   }
 
   &__viewport {
-    // Fit the list into the room that reka-ui measures:
-    max-height: min(300px, var(--reka-combobox-content-available-height));
+    // Fit the list into the room that reka-ui measures, and before it has,
+    // keep long lists from rendering all their options:
+    max-height: min(
+      300px,
+      var(--reka-combobox-content-available-height, 300px)
+    );
   }
 
   &__option,
@@ -680,6 +721,9 @@ $tag-margin: 2px;
   }
 
   &__option {
+    // Also in long lists, where reka-ui places them absolutely:
+    box-sizing: border-box;
+    width: 100%;
     cursor: pointer;
 
     &[data-state='checked'] {

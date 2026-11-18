@@ -599,6 +599,33 @@ describe('DitoMultiselectType', () => {
     )
   })
 
+  it('renders only some options of long lists, and filters them', async () => {
+    // happy-dom has no layout, so give the list the height that it shows:
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(300)
+    const { findField, data } = await mountSchema({
+      schema: {
+        fields: {
+          number: {
+            type: 'multiselect',
+            searchable: true,
+            options: Array.from({ length: 1000 }, (_, index) => `${index}`)
+          }
+        }
+      }
+    })
+    const field = findField('number')
+    await open(field)
+    const count = field.findAll('.dito-multiselect__option').length
+    expect(count).toBeGreaterThan(0)
+    expect(count).toBeLessThan(1000)
+    await search(field, '999')
+    expect(getOptionLabels(field)).toEqual(['999'])
+    await getInput(field).trigger('keydown.enter')
+    await flushPromises()
+    expect(data.number).toBe('999')
+    vi.restoreAllMocks()
+  })
+
   describe('search', () => {
     const authors = [
       { id: 1, name: 'Jane Austen' },
