@@ -176,15 +176,13 @@ export default {
     box-shadow: inset 2px 0 $color-active;
   }
 
-  // On the right edge of the header, without the borders of header children:
+  // On the right edge of the header, after the label with its borders:
   &__resize {
     position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
     width: 6px;
-    margin: 0;
-    border: 0;
     cursor: col-resize;
     touch-action: none;
 

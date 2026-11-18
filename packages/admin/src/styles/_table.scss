@@ -162,7 +162,7 @@
   // the cell itself, so buttons can keep the border themselves and display
   // focus nicely.
   > thead > tr > th {
-    > * {
+    > :first-child {
       box-sizing: content-box;
 
       // Use `:not(:focus)` to avoid overriding button focus border styling.
@@ -176,15 +176,15 @@
       @include table-border-right;
     }
 
-    &:first-child > * {
+    &:first-child > :first-child {
       @include table-border-top-left;
     }
 
-    &:last-child > * {
+    &:last-child > :first-child {
       @include table-border-top-right;
     }
 
-    & + th > * {
+    & + th > :first-child {
       margin-left: -1px;
       // Don't cover the focused border of buttons:
       &:focus {
