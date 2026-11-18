@@ -16,23 +16,9 @@ test.describe('color picker', () => {
     const input = text.getElement(page, entry)
     await input.fill('ff0000')
     const picker = await openColorPicker(page, entry)
-    await expect(picker.getByLabel('Hex', { exact: true })).toHaveValue(
-      'ff0000'
-    )
-    await picker.getByLabel('Color:#00a2e8', { exact: true }).click()
+    await expect(picker.getByLabel('Red', { exact: true })).toHaveValue('255')
+    await picker.getByTitle('#00a2e8', { exact: true }).click()
     await expect(input).toHaveValue('00a2e8')
-  })
-
-  test('picker shows the hex value in lowercase', async ({ page, url }) => {
-    const entry = getCase('color', 'shows a stored value without hash')
-    await Case.query()
-      .patch({ [entry.name]: '#00A2E8' })
-      .findById(1)
-    await page.goto(`${url}/admin/${entry.path}`)
-    const picker = await openColorPicker(page, entry)
-    await expect(picker.getByLabel('Hex', { exact: true })).toHaveValue(
-      '00a2e8'
-    )
   })
 
   test('clear button shows when hovering the input, not the picker', async ({

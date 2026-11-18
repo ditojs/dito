@@ -1,6 +1,5 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { tinycolor } from 'vue-color'
 import { CalendarDate, CalendarDateTime } from '@internationalized/date'
 import {
   mountSchema,
@@ -413,8 +412,8 @@ describe('useField()', () => {
         const color = getComponent('background')
         color.showPopup = true
         await settle()
-        color.colorValue = tinycolor('#0000ff')
-        color.colorValue = tinycolor('#00ff00')
+        color.setPickerColor('#0000ff')
+        color.setPickerColor('#00ff00')
         color.showPopup = false
         await vi.waitFor(() => expect(events).toHaveLength(3))
         expect(events).toEqual([

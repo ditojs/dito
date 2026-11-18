@@ -31,7 +31,7 @@ const cases: TypeCase[] = [
   {
     title: 'stores the transparent preset as hex8 with alpha',
     schema: { alpha: true },
-    value: { pick: 'transparency' },
+    value: { pick: '#00000000' },
     stored: '#00000000',
     shown: '00000000'
   },

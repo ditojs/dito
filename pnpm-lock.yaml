@@ -425,6 +425,9 @@ importers:
       '@tiptap/vue-3':
         specifier: ^3.33.0
         version: 3.33.0(@floating-ui/dom@1.8.0)(@tiptap/core@3.33.0(@tiptap/pm@3.33.0))(@tiptap/pm@3.33.0)(vue@3.5.45(typescript@6.0.3))
+      '@types/tinycolor2':
+        specifier: ^1.4.6
+        version: 1.4.6
       '@vueuse/integrations':
         specifier: ^15.0.0
         version: 15.0.0(focus-trap@8.2.4)(sortablejs@1.15.7)(vue@3.5.45(typescript@6.0.3))
@@ -446,6 +449,9 @@ importers:
       sortablejs:
         specifier: ^1.15.7
         version: 1.15.7
+      tinycolor2:
+        specifier: ^1.6.0
+        version: 1.6.0
       tiptap-footnotes:
         specifier: ^3.0.1
         version: 3.0.1(@tiptap/core@3.33.0(@tiptap/pm@3.33.0))(@tiptap/extension-list-item@3.33.0(@tiptap/extension-list@3.33.0(@tiptap/core@3.33.0(@tiptap/pm@3.33.0))(@tiptap/pm@3.33.0)))(@tiptap/extension-ordered-list@3.33.0(@tiptap/extension-list@3.33.0(@tiptap/core@3.33.0(@tiptap/pm@3.33.0))(@tiptap/pm@3.33.0)))(@tiptap/pm@3.33.0)
@@ -458,9 +464,6 @@ importers:
       vue:
         specifier: ^3.5.45
         version: 3.5.45(typescript@6.0.3)
-      vue-color:
-        specifier: ^3.3.3
-        version: 3.3.3(vue@3.5.45(typescript@6.0.3))
       vue-router:
         specifier: ^5.4.0
         version: 5.4.0(@vue/compiler-sfc@3.5.45)(rolldown@1.2.18)(vite@8.3.7(@types/node@26.6.6)(sass@1.108.1)(yaml@2.9.1))(vue@3.5.45(typescript@6.0.3))
@@ -2010,6 +2013,9 @@ packages:
 
   '@types/serve-static@2.2.0':
     resolution: {integrity: sha512-8mam4H1NHLtu7nmtalF7eyBH14QyOASmcxHhSfEoRyr0nP/YdoesEtU+uSRvMe96TW/HPTtkoKqQLl53N7UXMQ==}
+
+  '@types/tinycolor2@1.4.6':
+    resolution: {integrity: sha512-iEN8J0BoMnsWBqjVbWH/c0G0Hh7O21lpR2/+PrvAVgWdzL7eexIFm4JN/Wn10PTcmNdtS6U67r499mlWMXOxNw==}
 
   '@types/web-bluetooth@0.0.21':
     resolution: {integrity: sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA==}
@@ -4254,9 +4260,6 @@ packages:
     resolution: {integrity: sha512-uUv1yxHzaKVVEPfcFeGSNov/Cehjv08ovlY8ImTljgL7Q+SiA0dAYLQ6SYVa2kkKqNj4Y3aZEI7xv2teadie0A==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
 
-  material-colors@1.2.6:
-    resolution: {integrity: sha512-6qE4B9deFBIa9YSpOc9O0Sgc43zTeVYbgDT5veRKSlB2+ZuHNoVVxA1L/ckMUayV9Ay9y7Z/SZCLcGteW9i7bg==}
-
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
@@ -5827,11 +5830,6 @@ packages:
   vscode-uri@3.2.0:
     resolution: {integrity: sha512-m2gXo3bn0G1kT9InzMf07fTbqMbGtyckj3bH5ktLO+1Ssv+yiATZ4dhwaQv9UZWxJh6E9IFGnQyjgWVDWVBDrg==}
 
-  vue-color@3.3.3:
-    resolution: {integrity: sha512-FW/9JXFbCHfFEGv6SFUuK/SE+K61pHoL7lxJMQXcU+Zt7s36Ui1/tMDc3vzGXPrxxRBB+NSzFt+71nEaUJ29dQ==}
-    peerDependencies:
-      vue: '>=2.7.0 <4.0.0'
-
   vue-component-type-helpers@3.3.14:
     resolution: {integrity: sha512-Pq3+OnbCiPCHk0R7KSZrx+j/XXaUn2kSQ1epxq60w8CPbByLjC1EJgV51n4WY851sTXUVzsNMuitywdkdVyKjA==}
 
@@ -7285,6 +7283,8 @@ snapshots:
     dependencies:
       '@types/http-errors': 2.0.5
       '@types/node': 26.6.6
+
+  '@types/tinycolor2@1.4.6': {}
 
   '@types/web-bluetooth@0.0.21': {}
 
@@ -9651,8 +9651,6 @@ snapshots:
       - kerberos
       - supports-color
 
-  material-colors@1.2.6: {}
-
   math-intrinsics@1.1.0: {}
 
   mathml-tag-names@4.0.0: {}
@@ -11394,12 +11392,6 @@ snapshots:
   vscode-languageserver-types@3.18.5: {}
 
   vscode-uri@3.2.0: {}
-
-  vue-color@3.3.3(vue@3.5.45(typescript@6.0.3)):
-    dependencies:
-      material-colors: 1.2.6
-      tinycolor2: 1.6.0
-      vue: 3.5.45(typescript@6.0.3)
 
   vue-component-type-helpers@3.3.14: {}
 
