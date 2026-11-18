@@ -230,8 +230,9 @@ const url = storage.getFileUrl(file)
 ```
 
 Returns the public URL of the file, resolved against `config.url`. Returns
-`string | undefined`: without `config.url`, `undefined` for disk storages, and
-for S3 the URL of the file in the bucket at the `s3.endpoint`.
+`string | undefined`: `undefined` without `config.url`, e.g. for private S3
+buckets. The admin then downloads files from the upload schema's
+[`downloadUrl`](../admin/schemas.md#upload).
 
 ### getUniqueKey()
 

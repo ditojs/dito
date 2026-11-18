@@ -199,7 +199,7 @@ describe('S3Storage', () => {
   })
 
   describe('urls', () => {
-    it('prefers the configured url', async () => {
+    it('uses the configured url', async () => {
       const storage = await createS3Storage({
         url: 'https://covers.example.com/'
       })
@@ -208,33 +208,11 @@ describe('S3Storage', () => {
       )
     })
 
-    it('uses the virtual-hosted url of the bucket', async () => {
+    it('gives files no url without `url`', async () => {
       const storage = await createS3Storage()
-      expect(storage.getFileUrl({ key: 'a.png' })).toBe(
-        'https://library-covers.sos-ch-dk-2.exo.io/a.png'
-      )
-    })
-
-    it('uses the AWS endpoint of the region without `s3.endpoint`', async () => {
-      const storage = await createS3Storage({
-        s3: { ...s3Config, endpoint: undefined, region: 'eu-central-1' }
-      })
-      expect(storage.getFileUrl({ key: 'a.png' })).toBe(
-        'https://library-covers.s3.eu-central-1.amazonaws.com/a.png'
-      )
-    })
-
-    it('uses path-style urls for local hosts and dotted buckets', async () => {
-      const local = await createS3Storage({
-        s3: { ...s3Config, endpoint: 'http://localhost:4566' }
-      })
-      expect(local.getFileUrl({ key: 'a.png' })).toBe(
-        'http://localhost:4566/library-covers/a.png'
-      )
-      const dotted = await createS3Storage({ bucket: 'covers.example.com' })
-      expect(dotted.getFileUrl({ key: 'a.png' })).toBe(
-        'https://sos-ch-dk-2.exo.io/covers.example.com/a.png'
-      )
+      const file = AssetFile.create({ name: 'blurb.txt', data: 'Blurb' })
+      await storage.addFile(file, file.data)
+      expect(file.url).toBeUndefined()
     })
   })
 
@@ -254,10 +232,7 @@ describe('S3Storage', () => {
         ContentType: 'text/plain',
         Body: Buffer.from('Front')
       })
-      const file = storage.convertStorageFile(result)
-      expect(file.url).toBe(
-        `https://library-covers.sos-ch-dk-2.exo.io/${result.key}`
-      )
+      expect(storage.convertStorageFile(result).url).toBeUndefined()
     })
 
     it('uploads streams in parts of 8 MB', async () => {
@@ -480,9 +455,6 @@ describe('S3Storage', () => {
         Body: Buffer.from('Blurb')
       })
       expect(getRequests('CreateMultipartUpload')).toHaveLength(0)
-      expect(file.url).toBe(
-        `https://library-covers.sos-ch-dk-2.exo.io/${file.key}`
-      )
       expect(file.size).toBe(5)
       expect(file.path).toBeUndefined()
     })
