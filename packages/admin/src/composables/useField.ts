@@ -59,6 +59,8 @@ export interface FieldOptions extends FocusOptions {
   // `autocomplete`. All others are disabled while they're `readonly`.
   nativeField?: boolean
   textField?: boolean
+  // Whether the field is clearable without a `clearable` setting:
+  defaultClearable?: () => boolean
 }
 
 // The field of a container: the value of its type component and the schema
@@ -150,7 +152,8 @@ export function useField(
     textField = false,
     getEvents,
     focusElement,
-    blurElement
+    blurElement,
+    defaultClearable
   }: FieldOptions = {}
 ) {
   const { field } = props
@@ -176,7 +179,10 @@ export function useField(
   )
   const clearable = computed(
     () => (
-      getSchemaValue('clearable', { type: Boolean, default: false }) &&
+      getSchemaValue('clearable', {
+        type: Boolean,
+        default: () => defaultClearable?.() ?? false
+      }) &&
       !readonly.value
     )
   )
