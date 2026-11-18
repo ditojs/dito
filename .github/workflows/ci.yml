@@ -1,10 +1,12 @@
 name: CI
 
+# Stacked pull requests are based on `feature/` branches and get the full
+# checks too:
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, 'feature/**']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
