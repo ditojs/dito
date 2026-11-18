@@ -1,67 +1,118 @@
 import { clone } from '@ditojs/utils'
-import { mountSchema, mountForm, enterValue } from '../test/mount.js'
+import { CalendarDate, CalendarDateTime } from '@internationalized/date'
+import { mountSchema, mountForm } from '../test/mount.js'
+
+// Adds `getText(name)`, the text of the field with its parts, and
+// `enterDate(name, date)`, which enters a date of `@internationalized/date` as
+// the field emits it, to the result of `mount()`:
+async function mountDates(mount, options) {
+  const result = await mount(options)
+  const { findField, getComponent, settle } = result
+  return {
+    ...result,
+    // Some ICU versions put a narrow no-break space before AM and PM:
+    getText: name =>
+      findField(name).find('[role="group"]').text().replace(/\s/g, ' '),
+    async enterDate(name, date) {
+      getComponent(name).$refs.element.$emit('update:modelValue', date)
+      await settle()
+    }
+  }
+}
 
 describe('DitoDateType', () => {
-  it('displays plain dates in the format of the locale', async () => {
-    const { findField } = await mountSchema({
-      schema: { fields: { publishedOn: { type: 'date' } } },
-      data: { publishedOn: '2024-03-05' }
-    })
-    expect(findField('publishedOn').find('input').element.value).toBe(
-      'March 5, 2024'
-    )
-  })
-
-  it('displays date-times and times in the format of the locale', async () => {
-    const { findField } = await mountSchema({
+  it('shows dates, date-times and times in the parts of the locale', async () => {
+    const { getText } = await mountDates(mountSchema, {
       schema: {
         fields: {
+          publishedOn: { type: 'date' },
           createdAt: { type: 'datetime' },
           opensAt: { type: 'time' }
         }
       },
       data: {
+        publishedOn: '2024-03-05',
         createdAt: new Date(2024, 2, 5, 14, 30).toISOString(),
         opensAt: new Date(2024, 2, 5, 9, 15).toISOString()
       }
     })
-    const getText = name => findField(name).find('input').element.value
-    expect(getText('createdAt')).toMatch(/^March 5, 2024, 02:30/)
-    expect(getText('opensAt')).toMatch(/^09:15/)
+    expect(getText('publishedOn')).toBe('3/5/2024')
+    expect(getText('createdAt')).toBe('3/5/2024, 2:30:00 PM')
+    expect(getText('opensAt')).toBe('9:15:00 AM')
   })
 
-  it('uses the date and time formats of `formats`', async () => {
-    const { findField } = await mountSchema({
+  it('edits the parts of the time and the hours of `formats`', async () => {
+    const { getText } = await mountDates(mountSchema, {
       schema: {
         fields: {
-          publishedOn: {
-            type: 'date',
-            formats: { date: { month: 'short' } }
+          createdAt: {
+            type: 'datetime',
+            formats: { time: { second: false, hour12: false } }
           }
         }
       },
-      data: { publishedOn: '2024-03-05' }
+      data: { createdAt: new Date(2024, 2, 5, 14, 30).toISOString() }
     })
-    expect(findField('publishedOn').find('input').element.value).toBe(
-      'Mar 5, 2024'
+    expect(getText('createdAt')).toBe('3/5/2024, 14:30')
+  })
+
+  it('focuses the field from its label, and with `autofocus`', async () => {
+    const { findContainer } = await mountSchema({
+      schema: {
+        fields: {
+          publishedOn: { type: 'date', label: 'Published', autofocus: true },
+          opensAt: { type: 'time', label: 'Opens' }
+        }
+      }
+    })
+    const [published, opens] = ['publishedOn', 'opensAt'].map(name =>
+      findContainer(name)
+    )
+    expect(document.activeElement).toBe(
+      published.find('[contenteditable="true"]').element
+    )
+    const { htmlFor } = opens.find('label').element
+    opens.find(`[id="${htmlFor}"]`).element.focus()
+    expect(document.activeElement).toBe(
+      opens.find('[contenteditable="true"]').element
     )
   })
 
-  it('parses entered dates into the data', async () => {
-    const { findField, data } = await mountSchema({
-      schema: { fields: { publishedOn: { type: 'date' } } }
+  it('writes entered dates into the data as local dates', async () => {
+    const { data, enterDate } = await mountDates(mountSchema, {
+      schema: {
+        fields: {
+          publishedOn: { type: 'date' },
+          createdAt: { type: 'datetime' }
+        }
+      }
     })
-    await enterValue(findField('publishedOn').find('input'), 'May 14, 2026')
-    expect(data.publishedOn).toBeInstanceOf(Date)
-    expect(data.publishedOn.getFullYear()).toBe(2026)
-    expect(data.publishedOn.getMonth()).toBe(4)
-    expect(data.publishedOn.getDate()).toBe(14)
+    await enterDate('publishedOn', new CalendarDate(2026, 5, 14))
+    await enterDate('createdAt', new CalendarDateTime(2026, 5, 14, 11, 30))
+    expect(data.publishedOn).toEqual(new Date(2026, 4, 14))
+    expect(data.createdAt).toEqual(new Date(2026, 4, 14, 11, 30))
+    await enterDate('publishedOn', null)
+    expect(data.publishedOn).toBe(null)
+  })
+
+  it('keeps the time of date-times when picking a day', async () => {
+    const { findField, data, settle } = await mountSchema({
+      schema: { fields: { createdAt: { type: 'datetime' } } },
+      data: { createdAt: new Date(2026, 4, 14, 11, 30).toISOString() }
+    })
+    const field = findField('createdAt')
+    await field.find('.dito-date-picker__toggle').trigger('click')
+    await settle()
+    // The days of the calendar have the time of the value:
+    await field.find('[data-value^="2026-05-20"]').trigger('click')
+    await settle()
+    expect(data.createdAt).toEqual(new Date(2026, 4, 20, 11, 30))
   })
 
   it('sends dates as plain dates, date-times and times as ISO strings', async () => {
     const createdAt = new Date(2026, 4, 14, 8, 0)
     const opensAt = new Date(2026, 4, 14, 14, 30)
-    const { findField, dataModel, data, submit } = await mountForm({
+    const { dataModel, data, submit } = await mountForm({
       schema: {
         fields: {
           publishedOn: { type: 'date' },
@@ -73,7 +124,10 @@ describe('DitoDateType', () => {
       // Respond with a copy, like a server:
       request: ({ data }) => ({ data: clone(data) })
     })
-    await enterValue(findField('publishedOn').find('input'), 'May 14, 2026')
+    dataModel.set(
+      { data, name: 'publishedOn', dataPath: 'publishedOn' },
+      new Date(2026, 4, 14)
+    )
     dataModel.set({ data, name: 'createdAt', dataPath: 'createdAt' }, createdAt)
     dataModel.set({ data, name: 'opensAt', dataPath: 'opensAt' }, opensAt)
     expect(await submit()).toMatchObject({
@@ -87,13 +141,13 @@ describe('DitoDateType', () => {
   })
 
   it(`keeps strings that aren't dates, e.g. times, but rejects them`, async () => {
-    const { findField, data, getErrors, submit } = await mountForm({
+    const { data, getText, getErrors, submit } = await mountDates(mountForm, {
       schema: { fields: { opensAt: { type: 'time' } } },
       data: { opensAt: '14:30' },
       request: ({ data }) => ({ data: clone(data) })
     })
     expect(data.opensAt).toBe('14:30')
-    expect(findField('opensAt').find('input').element.value).toBe('')
+    expect(getText('opensAt')).toBe('––:––:–– AM')
     expect(await submit()).toBe(null)
     expect(getErrors('opensAt')).toEqual([
       'The Opens At field must be a valid date.'
@@ -127,7 +181,7 @@ describe('DitoDateType', () => {
     const expiresAt = new Date(2026, 9, 13, 14, 30)
 
     const mountWithWrite = () =>
-      mountForm({
+      mountDates(mountForm, {
         schema: {
           fields: {
             expiryDate: { type: 'date' },
@@ -145,19 +199,12 @@ describe('DitoDateType', () => {
         request: ({ data }) => ({ data: clone(data) })
       })
 
-    it('displays them and passes them to the picker as dates', async () => {
-      const { findField, getComponent, settle } = await mountWithWrite()
+    it('shows them as dates', async () => {
+      const { findField, getText, settle } = await mountWithWrite()
       await findField('renew').trigger('click')
       await settle()
-      expect(findField('expiryDate').find('input').element.value).toBe(
-        'October 13, 2026'
-      )
-      expect(getComponent('expiryDate').$refs.element.modelValue).toEqual(
-        new Date(2026, 9, 13)
-      )
-      expect(getComponent('expiresAt').$refs.element.modelValue).toEqual(
-        expiresAt
-      )
+      expect(getText('expiryDate')).toBe('10/13/2026')
+      expect(getText('expiresAt')).toBe('10/13/2026, 2:30:00 PM')
     })
 
     it('keeps them in the data and sends them unchanged', async () => {
@@ -172,10 +219,10 @@ describe('DitoDateType', () => {
     })
 
     it('converts them to dates once the user edits them', async () => {
-      const { findField, data, settle } = await mountWithWrite()
+      const { findField, enterDate, data, settle } = await mountWithWrite()
       await findField('renew').trigger('click')
       await settle()
-      await enterValue(findField('expiryDate').find('input'), 'May 14, 2026')
+      await enterDate('expiryDate', new CalendarDate(2026, 5, 14))
       expect(data.expiryDate).toEqual(new Date(2026, 4, 14))
     })
 

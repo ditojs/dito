@@ -81,13 +81,13 @@ const samples: Record<string, Sample> = {
     ...text('', ''),
     property: { type: 'date' },
     seed: '2026-05-14',
-    value: 'June 1, 2026'
+    value: '6/1/2026'
   },
   datetime: {
     ...text('', ''),
     property: { type: 'datetime' },
     seed: '2026-05-14T09:30:00.000Z',
-    value: 'June 1, 2026, 10:00:00 AM'
+    value: '6/1/2026, 10:00:00 AM'
   },
   code: { ...text('a', 'b'), property: { type: 'text' }, clearable: false },
   markup: {
