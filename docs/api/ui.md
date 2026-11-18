@@ -27,11 +27,11 @@ Inside custom admin components, the admin's styles already include those of
 
 ## Contents
 
-| Section                   | Exports                                                                                                                                                                                                                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoProgress`, `DitoTrigger`, `DitoCalendar`, `DitoDatePicker`, `DitoTimePicker`, `DitoDateTimePicker`, `TransitionHeight`                                                           |
-| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `describeDate()`, `alterDate()`, `stepDate()`, `parseDate()`, `getDatePartAtPosition()`, `addEvents()`, `combineEvents()`, `getKey()`, `getKeyNavigation()`, `getSelection()`, `setSelection()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()` |
-| [Styles](#styles)         | CSS classes, SCSS variables, mixins, functions and icons                                                                                                                                                                                                                       |
+| Section                   | Exports                                                                                                                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoProgress`, `DitoTrigger`, `DitoDatePicker`, `DitoTimeInput`, `TransitionHeight`            |
+| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `getScrollContainer()`, `hasErrors()`, `addEvents()`, `combineEvents()`, `getKey()`, `getKeyNavigation()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()` |
+| [Styles](#styles)         | CSS classes, SCSS variables, mixins, functions and icons                                                                                                                                 |
 
 ## Example
 
@@ -328,117 +328,58 @@ dialogs.
 </DitoTrigger>
 ```
 
-### DitoCalendar
-
-A month calendar to choose a day, with views to choose month and year. Weeks
-start on Sunday. Without a value, it shows today.
-
-| Prop         | Type     | Default   | Description                               |
-| ------------ | -------- | --------- | ----------------------------------------- |
-| `modelValue` | `Date`   | `null`    | The selected date (`v-model`).            |
-| `locale`     | `string` | `'en-US'` | The locale of month and weekday names.    |
-| `mode`       | `string` | `'day'`   | The view: `'day'`, `'month'` or `'year'`. |
-
-| Event               | Payload | Description                                                                            |
-| ------------------- | ------- | -------------------------------------------------------------------------------------- |
-| `update:modelValue` | `date`  | A day, month or year was selected. Choosing a day keeps the time of the current value. |
-| `select`            | –       | A day was chosen, e.g. to close a popup.                                               |
-
-In the day view, the arrow keys move between days, Page Up and Page Down
-between months, with Shift between years, and Home and End to the first and
-last day of the month.
-
 ### DitoDatePicker
 
-An input for a date, with a [`DitoCalendar`](#ditocalendar) in a popup. Dates
-can be typed in the format of the locale; the up and down arrow keys open the
-popup, and then step the day, month or year at the caret. The value only
-changes for valid dates.
+A date field with a calendar in a popup, built on
+[`reka-ui`'s `DatePicker`](https://reka-ui.com/docs/components/date-picker).
+The field edits each part of the date on its own, in the order of the locale,
+and the button next to it opens the calendar, whose header picks the month and
+year from lists. The values are dates of
+[`@internationalized/date`](https://react-spectrum.adobe.com/internationalized/date/),
+e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
+`day`, which also edits the time.
 
-| Prop          | Type                    | Default                                      | Description                                                                    |
-| ------------- | ----------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
-| `modelValue`  | `Date`                  | `null`                                       | The date (`v-model`).                                                          |
-| `locale`      | `string`                | `'en-US'`                                    | The locale of the text and the calendar.                                       |
-| `format`      | `object`                | `{ date: defaultFormats.date, time: false }` | The `date` and `time` options of [`format()`](./utils.md#format) for the text. |
-| `placeholder` | `string`                | `null`                                       | The input's placeholder.                                                       |
-| `disabled`    | `boolean`               | `false`                                      | Disables input and popup.                                                      |
-| `show`        | `boolean`               | `false`                                      | Whether the popup is shown (`v-model:show`).                                   |
-| `placement`   | `string`                | `'bottom-left'`                              | See [`DitoTrigger`](#ditotrigger).                                             |
-| `transition`  | `string`                | `'slide'`                                    | See [`DitoTrigger`](#ditotrigger).                                             |
-| `target`      | `string \| HTMLElement` | `'trigger'`                                  | See [`DitoTrigger`](#ditotrigger).                                             |
+| Prop                   | Type                                      | Default   | Description                                                                                                 |
+| ---------------------- | ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                                                                       |
+| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                                                                     |
+| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                                                                     |
+| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.                                                         |
+| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                                                                   |
+| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list.                                                |
+| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.                                                   |
+| `placeholder`          | `string`                                  | `null`    | Shown while no part is entered and the field isn't focused. Such fields show their parts only once focused. |
 
-| Event               | Payload | Description                                                                                            |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| `update:modelValue` | `date`  | The date changed, while typing or choosing.                                                            |
-| `change`            | `date`  | The edit is done: the popup closed, the input lost focus or Enter was pressed, after the date changed. |
-| `update:show`       | `show`  | The popup was shown or hidden.                                                                         |
-| `focus`, `blur`     | –       | The input got the focus or the popup opened, and both are gone again.                                  |
+| Slot               | Description                                     |
+| ------------------ | ----------------------------------------------- |
+| `prefix`, `suffix` | Content before and after the parts of the date. |
 
-| Slot               | Description                                          |
-| ------------------ | ---------------------------------------------------- |
-| `prefix`, `suffix` | Content before and after the text, inside the input. |
-| `trigger`          | Replaces the input, e.g. with a button.              |
-
-| Method              | Description                 |
-| ------------------- | --------------------------- |
-| `focus()`, `blur()` | Focuses or blurs the input. |
-
-All other attributes go to the [`DitoInput`](#ditoinput): `class` to its
-wrapper, the rest to the native input.
+All other attributes but `class` go to the field, e.g. `aria-label`, and `aria-invalid`
+shows errors, as in [`DitoInput`](#ditoinput). The field emits `update:open`
+when the calendar opens or closes, and looks focused while it is open. Methods:
+`focus()` and `blur()`.
 
 ```vue
 <DitoDatePicker
-  v-model="book.publishedAt"
+  v-model="book.publishedOn"
   locale="en-GB"
-  :format="{ date: { month: 'short' }, time: false }"
-  @change="save"
 />
 ```
 
-### DitoTimePicker
+### DitoTimeInput
 
-An input for a time, with a panel to choose hours, minutes and seconds in a
-popup. Typed digits overwrite the digits at the caret, keeping the format.
+A time field, built on
+[`reka-ui`'s `TimeField`](https://reka-ui.com/docs/components/time-field), which
+edits each part of the time on its own. The values are `Time`, or dates with a
+time of `@internationalized/date`, whose date it keeps. Its own props are
+`locale`, `'en-US'` by default, and `disabled`, which also adds
+`.dito-input--disabled`; all other props of `TimeFieldRoot` fall through,
+e.g. `modelValue` (`v-model`), `granularity`, `hourCycle` and
+`defaultPlaceholder`, the value that typing starts from without a value.
 
-Props, events, slots and methods are those of
-[`DitoDatePicker`](#ditodatepicker), except that `format` defaults to
-`{ time: defaultFormats.time, date: false }`.
-
-```vue
-<DitoTimePicker
-  v-model="shop.opensAt"
-  :format="{ time: { second: false } }"
-/>
-```
-
-### DitoDateTimePicker
-
-An input for date and time, with a calendar in the popup while the caret is in
-the date, and the time panel while it's in the time.
-
-| Prop          | Type                    | Default     | Description                                                                                                                                           |
-| ------------- | ----------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `modelValue`  | `Date`                  | `null`      | The date and time (`v-model`).                                                                                                                        |
-| `locale`      | `string`                | `'en-US'`   | The locale.                                                                                                                                           |
-| `format`      | `object`                | `null`      | `date` and `time` options of [`format()`](./utils.md#format), merged deeply over the defaults with a short month, e.g. `'Oct 13, 2026, 02:05:00 PM'`. |
-| `placeholder` | `string`                | `null`      | The input's placeholder.                                                                                                                              |
-| `disabled`    | `boolean`               | `false`     | Disables input and popup.                                                                                                                             |
-| `show`        | `boolean`               | `false`     | Whether the popup is shown (`v-model:show`).                                                                                                          |
-| `placement`   | `string`                | `null`      | See [`DitoTrigger`](#ditotrigger). Without it, the popup is placed `'bottom-left'` for the calendar and `'bottom-right'` for the time panel.          |
-| `transition`  | `string`                | `'slide'`   | See [`DitoTrigger`](#ditotrigger).                                                                                                                    |
-| `target`      | `string \| HTMLElement` | `'trigger'` | See [`DitoTrigger`](#ditotrigger).                                                                                                                    |
-
-Events: `update:modelValue`, `change`, `update:show`, `focus` and `blur`, as in
-[`DitoDatePicker`](#ditodatepicker). Slots: `prefix` and `suffix`. Methods:
-`focus()` and `blur()`. All other attributes go to the
-[`DitoInput`](#ditoinput).
-
-```vue
-<DitoDateTimePicker
-  v-model="order.shippedAt"
-  :format="{ time: { second: false } }"
-/>
-```
+Slots: `prefix` and `suffix`, as in [`DitoDatePicker`](#ditodatepicker).
+Methods: `focus()` and `blur()`. With `aria-invalid`, the field shows errors,
+as `DitoInput` does.
 
 ### TransitionHeight
 
@@ -486,68 +427,25 @@ getVerbButtonAttributes({ verb: 'add', subject: 'Chapter' })
 // }
 ```
 
-### Dates
+### Elements
 
-All date helpers work with local time.
-
-#### describeDate()
+#### getScrollContainer()
 
 ```js
-describeDate(date)
+getScrollContainer(element)
 ```
 
-Returns the parts of `date` as
-`{ year, month, day, hour, minute, second, millisecond }`, with `month`
-counted from `0` like in `Date`. Without a date, all parts are `0`.
+Returns the closest ancestor of `element` that scrolls vertically, or `null`,
+e.g. as the `collisionBoundary` of a popup.
 
-#### alterDate()
+#### hasErrors()
 
 ```js
-alterDate(date, overrides = {})
+hasErrors(attributes)
 ```
 
-Returns a new `Date` with the parts of `date` replaced by `overrides`, e.g.
-`{ hour: 0, minute: 0 }`. Out-of-range parts roll over like in `new Date()`:
-January 31, 2026 with `{ month: 1 }` becomes March 3.
-
-#### stepDate()
-
-```js
-stepDate(date, partName, step)
-```
-
-Returns a new `Date` with the part `partName`, e.g. `'month'`, changed by
-`step`. Stepping the year or month keeps the day within the new month:
-January 31 plus one month is the last day of February.
-
-#### parseDate()
-
-```js
-parseDate(string, { locale = 'en-US', date = true, time = true } = {})
-```
-
-Parses a date as [`format()`](./utils.md#format) formats it in
-`locale`, e.g. `'May 14, 2026'`, `'14 May 2026'`, `'05/14/2026'` (in `en-US`)
-or `'14.05.2026'`, optionally followed by a time like `'11:30:00 PM'` if `time`
-is set.
-With `date: false`, only a time is parsed, on January 1, 2000. Returns `null`
-for anything it can't parse and for dates that don't exist.
-
-```js
-parseDate('May 14, 2026, 11:30:00 PM') // May 14, 2026, 23:30
-parseDate('14.05.2026', { locale: 'de-DE', time: false }) // May 14, 2026
-```
-
-#### getDatePartAtPosition()
-
-```js
-getDatePartAtPosition(string, position, { locale, date, time } = {})
-```
-
-Returns the part of a formatted date at the caret `position` as
-`{ name, start, end }`, e.g. `{ name: 'month', start: 0, end: 3 }`, or the
-part before it if the caret is on a separator. Returns `null` without a
-string.
+Returns whether the `aria-invalid` of `attributes` marks errors: all values
+but `false` and empty ones do, as in ARIA.
 
 ### Events
 
@@ -597,26 +495,6 @@ getKeyNavigation(event)
 Returns the direction of the arrow key of a keyboard event as
 `{ hor, ver, enter }`: `hor` and `ver` are `-1`, `0` or `1`, `enter` whether
 it's Enter.
-
-### Selection
-
-#### getSelection()
-
-```js
-getSelection(input)
-```
-
-Returns the selection of an input or textarea as `{ start, end }`, or `null`
-for other elements.
-
-#### setSelection()
-
-```js
-setSelection(input, { start, end })
-```
-
-Focuses an input or textarea and selects the range from `start` to `end`.
-Does nothing for other elements.
 
 ### Vue
 
