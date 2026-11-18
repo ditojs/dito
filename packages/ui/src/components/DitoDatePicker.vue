@@ -337,17 +337,8 @@ $entered-part: '.dito-date-segments__part:not([data-placeholder], ' +
   }
 }
 
-// reka-ui gives the popup's z-index to the element that positions it:
 .dito-date-picker__popup {
-  z-index: $z-index-popup;
-  border: $border-style;
-  border-radius: $border-radius;
-  background: $color-white;
-  box-shadow: $shadow-window;
-
-  &[data-state='open'] {
-    animation: dito-slide-enter 0.15s $ease-out-quart;
-  }
+  @extend %popup--animated;
 }
 
 .dito-calendar {

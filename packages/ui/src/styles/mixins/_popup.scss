@@ -1,0 +1,22 @@
+// The base of popups, menus and lists, extended by their content. reka-ui
+// copies the z-index of the content to the element that positions it:
+%popup {
+  z-index: $z-index-popup;
+}
+
+// The panel of larger popups like calendars, which animates as it opens.
+// Menus and lists have their own look and open at once:
+%popup--animated {
+  @extend %popup;
+
+  border: $border-style;
+  border-radius: $border-radius;
+  background: $color-white;
+  box-shadow: $shadow-window;
+  // Grow from the field, also when the popup flips above it:
+  transform-origin: var(--reka-popover-content-transform-origin);
+
+  &[data-state='open'] {
+    animation: dito-slide-enter 0.15s $ease-out-quart;
+  }
+}

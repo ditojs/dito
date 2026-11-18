@@ -118,8 +118,8 @@ $menu-button-radius: 0.5em;
 $menu-button-padding: 0.25em;
 
 .dito-menu-button__menu {
-  // reka-ui gives the menu's z-index to the element that positions it:
-  z-index: $z-index-popup;
+  @extend %popup;
+
   padding: $menu-button-padding;
   border-radius: $menu-button-radius;
   background: $button-color;
@@ -130,10 +130,6 @@ $menu-button-padding: 0.25em;
   max-width: var(--reka-dropdown-menu-content-available-width);
   max-height: var(--reka-dropdown-menu-content-available-height);
   overflow: hidden auto;
-
-  &[data-state='open'] {
-    animation: dito-slide-enter 0.15s $ease-out-quart;
-  }
 }
 
 .dito-menu-button__item {
