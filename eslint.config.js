@@ -119,7 +119,7 @@ export default [
     }
   },
   {
-    files: ['packages/*/src/**/*.ts'],
+    files: ['packages/*/src/**/*.ts', 'examples/*/src/**/*.ts'],
 
     languageOptions: {
       parser: tsParser,

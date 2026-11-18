@@ -1,7 +1,8 @@
 name: Preview
 
 # Publishes preview builds of the packages of each pull request to pkg.pr.new,
-# without npm versions, and lists their URLs in a comment on the pull request.
+# without npm versions, and lists their URLs in a comment on the pull request,
+# with a link that opens `examples/showcase` with them in StackBlitz.
 # An app installs them by URL, such as
 # `https://pkg.pr.new/ditojs/dito/@ditojs/server@<commit>`. It needs the
 # pkg.pr.new GitHub app on the repository.
@@ -25,5 +26,6 @@ jobs:
       - run: pnpm --filter ./packages/ui --filter ./packages/admin run build
       - run: >-
           pnpm dlx pkg-pr-new@0.0.92 publish --pnpm
+          --template ./examples/showcase
           ./packages/utils ./packages/router ./packages/build ./packages/server
           ./packages/ui ./packages/admin

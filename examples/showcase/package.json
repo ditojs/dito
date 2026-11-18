@@ -1,0 +1,20 @@
+{
+  "name": "dito-showcase",
+  "private": true,
+  "type": "module",
+  "description": "The tables of Dito.js Admin, with an API in the browser",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@ditojs/admin": "^6.8.0",
+    "@ditojs/ui": "^6.8.0",
+    "@ditojs/utils": "^6.8.0",
+    "vue": "^3.5.45"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.10",
+    "vite": "^8.3.7"
+  }
+}

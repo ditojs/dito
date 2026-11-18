@@ -17,11 +17,11 @@
     "test:unit": "vitest --run",
     "types": "tsc -p tsconfig.types.json && tsc -p packages/admin",
     "dist:check": "pnpm -C packages/ui run build && pnpm -C packages/admin run build && node scripts/check-dist.js",
-    "eslint": "NODE_ENV=production eslint packages/*/src packages/*/types tests",
+    "eslint": "NODE_ENV=production eslint packages/*/src packages/*/types tests examples/*/src",
     "eslint:fix": "pnpm run eslint --fix",
     "stylelint": "stylelint 'packages/*/src/**/*.{vue,scss}'",
     "stylelint:fix": "pnpm run stylelint --fix",
-    "prettier": "prettier 'packages/*/src/**/*.{js,ts,vue}' 'packages/*/types/**/*.ts' 'tests/**/*.ts' '**/*.md' --check",
+    "prettier": "prettier 'packages/*/src/**/*.{js,ts,vue}' 'packages/*/types/**/*.ts' 'tests/**/*.ts' 'examples/*/src/**/*.ts' '**/*.md' --check",
     "prettier:fix": "prettier 'packages/*/src/**/*.{js,ts,vue}' 'packages/*/types/**/*.ts' 'tests/**/*.ts' '**/*.md' --write",
     "lint": "concurrently pnpm:eslint pnpm:prettier pnpm:stylelint pnpm:peers:check",
     "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix && pnpm run stylelint:fix",
@@ -37,6 +37,9 @@
       "env NODE_ENV=production eslint --max-warnings 0"
     ],
     "tests/**/*.{js,ts}": [
+      "env NODE_ENV=production eslint --max-warnings 0"
+    ],
+    "examples/*/src/**/*.ts": [
       "env NODE_ENV=production eslint --max-warnings 0"
     ],
     "packages/**/src/**/*.vue": [
