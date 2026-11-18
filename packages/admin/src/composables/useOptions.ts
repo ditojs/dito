@@ -158,7 +158,7 @@ export function useOptions(
 
     set(selectedValue) {
       pickedOptions = new Map(
-        asArray(selectedValue).map(value => [value, findOption(value)])
+        asArray(selectedValue).map((value: any) => [value, findOption(value)])
       )
       value.value = getValueForSelectedValue(
         settings.value,
