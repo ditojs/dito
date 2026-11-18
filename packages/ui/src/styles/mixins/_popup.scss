@@ -13,8 +13,9 @@
   border-radius: $border-radius;
   background: $color-white;
   box-shadow: $shadow-window;
-  // Grow from the field, also when the popup flips above it:
-  transform-origin: var(--reka-popover-content-transform-origin);
+  // Grow from the field, also when the popup flips above it. Only reka-ui's
+  // popovers set the variable, other popups grow from their top:
+  transform-origin: var(--reka-popover-content-transform-origin, top);
 
   &[data-state='open'] {
     animation: dito-slide-enter 0.15s $ease-out-quart;

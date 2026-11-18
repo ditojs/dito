@@ -30,7 +30,7 @@ Inside custom admin components, the admin's styles already include those of
 | Section                   | Exports                                                                                                                                                                         |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoProgress`, `DitoDatePicker`, `DitoTimeInput`, `DitoTimePanel`, `TransitionHeight` |
-| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `getScrollContainer()`, `hasErrors()`, `addEvents()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()`                                             |
+| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `getScrollContainer()`, `hasErrors()`, `addEvents()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()`, `usePopupPlacement()`                      |
 | [Styles](#styles)         | CSS classes, SCSS variables, mixins, functions and icons                                                                                                                        |
 
 ## Example
@@ -486,6 +486,29 @@ raw(value)
 Wraps `value` in an object `{ value }` that Vue never makes reactive, to keep
 large or foreign objects, e.g. editor instances, in reactive state without
 deep reactivity.
+
+#### usePopupPlacement()
+
+```js
+usePopupPlacement(getElement)
+```
+
+Returns the props that place a popup of reka-ui next to its trigger, to bind
+to its content component inside `setup()`: `positionStrategy: 'fixed'`, so
+that scrolling panels don't clip it, and as `collisionBoundary` the closest
+container that scrolls around the element that `getElement()` returns once
+mounted, see `getScrollContainer()`.
+
+```js
+setup() {
+  const trigger = useTemplateRef('trigger')
+  return { placement: usePopupPlacement(() => trigger.value.$el) }
+}
+```
+
+```pug
+PopoverContent(v-bind="placement")
+```
 
 ## Styles
 

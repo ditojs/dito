@@ -1,5 +1,8 @@
 <template lang="pug">
-.dito-date-picker(:class="$attrs.class")
+.dito-date-picker(
+  ref="root"
+  :class="$attrs.class"
+)
   //- Picking the selected day again keeps it:
   DatePickerRoot(
     v-bind="$props"
@@ -43,14 +46,12 @@
             :disabled="disabled"
           )
         slot(name="suffix")
-    //- Fixed, so that scrolling panels don't clip it, and without a portal, so
-    //- that the styles apply:
+    //- No portal, so that the styles apply:
     DatePickerContent.dito-date-picker__popup(
+      v-bind="placement"
       :portal="{ disabled: true }"
       :align="activePanel === 'time' ? 'end' : 'start'"
       :sideOffset="2"
-      :collisionBoundary="scrollContainer"
-      positionStrategy="fixed"
       @open-auto-focus="keepPartFocused"
       @close-auto-focus="keepPartFocused"
       @interact-outside="onInteractOutside"
@@ -151,6 +152,7 @@ import {
   toCalendarDateTime,
   today
 } from '@internationalized/date'
+import { useTemplateRef } from 'vue'
 import {
   DatePickerAnchor,
   DatePickerCalendar,
@@ -173,7 +175,8 @@ import {
 } from 'reka-ui'
 import DitoIcon from './DitoIcon.vue'
 import DitoTimePanel from './DitoTimePanel.vue'
-import { getScrollContainer, hasErrors } from '../utils/element.js'
+import { hasErrors } from '../utils/element.js'
+import { usePopupPlacement } from '../utils/vue.js'
 
 // A date field with a calendar in a popup, built on reka-ui's `DatePicker`,
 // with dates of `@internationalized/date` as values. While a part of the time
@@ -220,6 +223,11 @@ export default {
     placeholder: { type: String, default: null }
   },
 
+  setup() {
+    const root = useTemplateRef('root')
+    return { placement: usePopupPlacement(() => root.value) }
+  },
+
   data() {
     return {
       // The month that the calendar shows, which the header's lists change.
@@ -227,8 +235,7 @@ export default {
       shownDate: this.modelValue ?? getToday(this.granularity),
       open: false,
       // The panel that the popup shows, 'date' or 'time':
-      activePanel: 'date',
-      scrollContainer: null
+      activePanel: 'date'
     }
   },
 
@@ -275,10 +282,6 @@ export default {
     open(open) {
       this.$emit('update:open', open)
     }
-  },
-
-  mounted() {
-    this.scrollContainer = getScrollContainer(this.$el)
   },
 
   methods: {
