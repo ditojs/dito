@@ -149,7 +149,20 @@ export const projects = createWidgetView<Project>(
               collapsible: true,
               collapsed: true,
               fields: {
-                slug: { type: 'text', label: 'Slug' }
+                slug: { type: 'text', label: 'Slug' },
+                // Buttons with infos and no labels, narrow and full-width:
+                preview: {
+                  type: 'button',
+                  text: 'Preview',
+                  info: 'Opens the project as visitors see it'
+                },
+                publish: {
+                  type: 'button',
+                  text: 'Publish',
+                  primary: true,
+                  width: 'fill',
+                  info: 'Makes the project public'
+                }
               }
             },
             // A row of a checkbox and a section without labels, whose fields
@@ -429,7 +442,27 @@ export const reports = {
       }),
       label: 'Planned Projects'
     },
-    done: { ...createScopeView('done'), label: 'Done Projects' }
+    done: {
+      // A filter without a label, with an info at the edge of the sidebar:
+      ...createScopeView('done', {
+        filters: {
+          search: {
+            fields: {
+              search: {
+                type: 'text',
+                label: false,
+                info: (
+                  'Searches the names and the descriptions of the projects, ' +
+                  'and the names of their contacts'
+                )
+              }
+            }
+          },
+          meetingAt: { filter: 'date-range', label: 'Meeting' }
+        }
+      }),
+      label: 'Done Projects'
+    }
   }
 } as const
 

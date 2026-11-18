@@ -80,6 +80,7 @@ defineType({
     'creditcard'
   ],
   component: DitoTextType,
+  hasInputAffixes: true,
   ...textTraits,
 
   getProperty({ type }) {

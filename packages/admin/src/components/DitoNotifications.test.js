@@ -7,6 +7,16 @@ function findNotifications() {
   return [...document.querySelectorAll('.dito-notification')]
 }
 
+function pressEscape(element) {
+  element.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true
+    })
+  )
+}
+
 async function mountNotifications(api) {
   const admin = await mountAdmin({
     views: { books: { type: 'view', label: 'Books', fields: {} } },
@@ -36,7 +46,9 @@ describe('DitoNotifications', () => {
     await flushPromises()
     const [notification] = findNotifications()
     expect(notification.querySelector('img, i')).toBe(null)
-    expect(notification.querySelector('.notification-title').textContent).toBe(
+    expect(
+      notification.querySelector('.dito-notification__title').textContent
+    ).toBe(
       '<i>Saved</i>'
     )
     expect(
@@ -102,6 +114,15 @@ describe('DitoNotifications', () => {
     ).toEqual([['Saved.'], ['Saved.']])
   })
 
+  it('shows notifications in a polite live region', async () => {
+    const notifications = await mountNotifications()
+    notifications.notify({ text: 'Saved' })
+    await flushPromises()
+    expect(
+      findNotifications()[0].closest('[aria-live]').getAttribute('aria-live')
+    ).toBe('polite')
+  })
+
   it('closes all notifications', async () => {
     const notifications = await mountNotifications()
     notifications.notify({ text: 'One' })
@@ -113,12 +134,25 @@ describe('DitoNotifications', () => {
     await vi.waitFor(() => expect(findNotifications()).toHaveLength(0))
   })
 
+  it('closes notifications on Escape only when they have the focus', async () => {
+    const notifications = await mountNotifications()
+    notifications.notify({ text: 'Saved' })
+    await flushPromises()
+    pressEscape(document.body)
+    await flushPromises()
+    expect(findNotifications()[0].dataset.state).toBe('open')
+    pressEscape(findNotifications()[0])
+    await vi.waitFor(() => expect(findNotifications()).toHaveLength(0))
+  })
+
   it('titles and logs notifications of unknown types as errors', async () => {
     const notifications = await mountNotifications()
     notifications.notify({ type: 'reminder', text: 'Return Emma' })
     await flushPromises()
     const [notification] = findNotifications()
-    expect(notification.querySelector('.notification-title').textContent).toBe(
+    expect(
+      notification.querySelector('.dito-notification__title').textContent
+    ).toBe(
       'Notification'
     )
     expect(console.error).toHaveBeenCalledWith('Return Emma')

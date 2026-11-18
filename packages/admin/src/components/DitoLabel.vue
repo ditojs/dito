@@ -1,15 +1,15 @@
 <template lang="pug">
-//- With buttons, only the chevron and the text toggle:
+//- With buttons or an info, only the chevron and the text toggle:
 component.dito-label(
   v-if="hasContent || collapsible"
-  :is="collapsible && !hasButtons ? 'button' : 'div'"
+  :is="collapsible && !togglesContent ? 'button' : 'div'"
   :class="{ 'dito-label--required': required }"
-  v-bind="hasButtons ? null : toggleAttributes"
+  v-bind="togglesContent ? null : toggleAttributes"
 )
   //- The chevron and the text, which the focus ring of toggles encloses:
   component.dito-label__content(
-    :is="collapsible && hasButtons ? 'button' : 'div'"
-    v-bind="hasButtons ? toggleAttributes : null"
+    :is="collapsible && togglesContent ? 'button' : 'div'"
+    v-bind="togglesContent ? toggleAttributes : null"
   )
     .dito-chevron(
       v-if="collapsible"
@@ -40,9 +40,16 @@ component.dito-label(
         :parentContext="context"
       )
       DitoInfo(
-        v-if="info"
+        v-if="info && !collapsible"
         :info="info"
+        :label="text"
       )
+  //- Outside of the toggle, as buttons can't hold buttons:
+  DitoInfo(
+    v-if="info && collapsible"
+    :info="info"
+    :label="text"
+  )
   //- Type components teleport their buttons here, see `DitoLabelButtons`:
   .dito-label__buttons(
     v-if="hasButtons"
@@ -54,7 +61,7 @@ import { computed } from 'vue'
 import { asArray } from '@ditojs/utils'
 import DitoAffixes from './DitoAffixes.vue'
 import DitoInfo from './DitoInfo.vue'
-import { getHtml } from '../utils/html.js'
+import { getHtml, getText } from '../utils/html.js'
 
 export default {
   components: { DitoAffixes, DitoInfo },
@@ -82,6 +89,8 @@ export default {
     const html = computed(() => getHtml(props.label))
     return {
       html,
+      text: computed(() => getText(props.label)),
+      togglesContent: computed(() => props.hasButtons || !!props.info),
       hasContent: computed(() => !!html.value),
       prefixes: computed(() => asArray(props.label?.prefix)),
       suffixes: computed(() => asArray(props.label?.suffix)),

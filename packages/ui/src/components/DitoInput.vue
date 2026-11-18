@@ -25,6 +25,8 @@
 </template>
 
 <script>
+import { hasErrors } from '../utils/element.js'
+
 export default {
   emits: ['update:modelValue'],
   inheritAttrs: false,
@@ -55,10 +57,7 @@ export default {
         this.$attrs.class,
         {
           'dito-input--focus': this.focused,
-          // Like ARIA, treat all values but `false` and empty ones as invalid:
-          'dito-input--has-errors': ![null, false, 'false', ''].includes(
-            this.$attrs['aria-invalid'] ?? null
-          ),
+          'dito-input--has-errors': hasErrors(this.$attrs),
           'dito-input--disabled': this.disabled
         }
       ]

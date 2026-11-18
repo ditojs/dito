@@ -38,13 +38,23 @@ describe('DitoCheckboxType', () => {
 })
 
 describe('DitoSwitchType', () => {
-  it('defaults to `false` and toggles the value', async () => {
+  it('defaults to `false`, toggles the value and follows its label', async () => {
     const { findField, data } = await mountSchema({
-      schema: { fields: { isPublic: { type: 'switch' } } }
+      schema: {
+        fields: {
+          isPublic: {
+            type: 'switch',
+            label: ({ value }) => (value ? 'Public' : 'Private')
+          }
+        }
+      }
     })
     expect(data.isPublic).toBe(false)
-    await findField('isPublic').find('input').setValue(true)
+    const control = findField('isPublic').find('[role="switch"]')
+    expect(control.attributes('aria-label')).toBe('Private')
+    await control.trigger('click')
     expect(data.isPublic).toBe(true)
+    expect(control.attributes('aria-label')).toBe('Public')
   })
 
   it('displays the labels of the checked state', async () => {
@@ -72,7 +82,7 @@ describe('DitoSwitchType', () => {
       data: { isPublic: false },
       request: ({ data }) => ({ data })
     })
-    await findField('isPublic').find('input').setValue(true)
+    await findField('isPublic').find('[role="switch"]').trigger('click')
     expect(await submit()).toMatchObject({ isPublic: true })
   })
 })

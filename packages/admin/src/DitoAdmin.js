@@ -1,6 +1,5 @@
 import { createApp, h as createElement } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
-import VueNotifications from '@kyvg/vue3-notification'
 import {
   isString,
   assignDeeply,
@@ -170,11 +169,6 @@ export default class DitoAdmin {
 
     // Prevent endless loops of error messages during render functions:
     app.config.errorHandler = console.error
-
-    app.use(VueNotifications, {
-      componentName: 'VueNotifications',
-      name: 'notify'
-    })
 
     app.directive('resize', ResizeDirective)
 

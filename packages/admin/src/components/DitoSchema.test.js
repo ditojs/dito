@@ -292,7 +292,7 @@ describe('DitoSchema', () => {
       it('keeps the tab selected by the user', async () => {
         const { admin, schemaComponent, loadItem } =
           await mountLoadingForm('/items/1')
-        admin.element.querySelector('.dito-tabs__link').click()
+        await admin.wrapper.find('.dito-tabs__link').trigger('mousedown')
         await loadItem()
         expect(schemaComponent.selectedTab).toBe('details')
       })
@@ -353,7 +353,7 @@ describe('DitoSchema', () => {
       it('replaces the path with the clicked tab', async () => {
         const { admin } = await mountForm({ schema, data })
         const { length } = window.history
-        admin.element.querySelectorAll('.dito-tabs__link')[1].click()
+        await admin.wrapper.findAll('.dito-tabs__link')[1].trigger('mousedown')
         await flushPromises()
         expect(admin.router.currentRoute.value.path).toBe('/items/1/reviews')
         expect(window.history.length).toBe(length)
@@ -770,7 +770,7 @@ describe('DitoSchema', () => {
       data: { author: { name: 'Jane', bio: 'Bath' } }
     })
     const getActiveTab = () =>
-      wrapper.find('.dito-tabs--inlined .dito-tabs__link--active').text()
+      wrapper.find('.dito-tabs--inlined [data-state="active"]').text()
     const toggle = async () => {
       await findContainer('details')
         .find('.dito-schema-header .dito-label')
@@ -780,7 +780,7 @@ describe('DitoSchema', () => {
       await flushPromises()
     }
     await wrapper.findAll('.dito-tabs--inlined .dito-tabs__link')[1].trigger(
-      'click'
+      'mousedown'
     )
     expect(getActiveTab()).toBe('More')
     // Closed, the section unmounts its content, which mounts again:
@@ -879,13 +879,12 @@ describe('DitoSchema', () => {
       expect(field.classes()).not.toContain('dito-input--has-errors')
     })
 
-    it('displays the errors in the document, not in tooltips', async () => {
+    it('displays the errors in the document', async () => {
       const { input, getErrors } = await mountRequiredTitle()
       for (let i = 0; i < 3; i++) {
         await clearTitle(input)
       }
       expect(getErrors('title')).toEqual(['The title field is required.'])
-      expect(document.querySelector('[data-tippy-root]')).toBe(null)
     })
 
     it('keeps the errors when focusing their input', async () => {

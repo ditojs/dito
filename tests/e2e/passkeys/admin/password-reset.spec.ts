@@ -3,8 +3,10 @@ import { test, expect, sentPasswordResets } from '../fixtures.js'
 
 async function login(page: Page, password: string) {
   const dialog = page.getByRole('dialog')
+  // The dialog of a failed login leaves while the next one opens:
+  await expect(dialog).toHaveCount(1)
   await dialog.getByLabel('Username').fill('ada')
-  await dialog.getByLabel('Password').fill(password)
+  await dialog.getByLabel('Password', { exact: true }).fill(password)
   await dialog.getByRole('button', { name: 'Sign In', exact: true }).click()
 }
 
@@ -35,7 +37,9 @@ test.describe('password reset', () => {
     await expect(page.locator('.dito-notification')).toContainText(
       'If the account exists, we sent you an email.'
     )
-    await expect(page.getByRole('dialog').getByLabel('Password')).toBeVisible()
+    await expect(
+      page.getByRole('dialog').getByLabel('Password', { exact: true })
+    ).toBeVisible()
     expect(sentPasswordResets).toHaveLength(1)
 
     // Open the link on the admin's URL, and set a new password:

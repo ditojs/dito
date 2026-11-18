@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 .dito-info {
   --size: calc(1em * var(--line-height));
 
@@ -6,14 +8,78 @@
   flex: 0 0 var(--size);
   width: var(--size);
   height: var(--size);
+  padding: 0;
+  border: 0;
+  font: inherit;
   text-align: center;
   vertical-align: top;
   margin-left: 0.35em;
   color: $color-active;
+  background: none;
 
   &::before {
     @extend %icon--info;
 
     width: var(--size);
+  }
+}
+
+// The popups of infos and the tooltip:
+.dito-info__popup,
+.dito-tooltip {
+  --color: #{color.adjust($color-active, $lightness: 5%)};
+
+  // reka-ui gives the z-index to the element that positions the popup:
+  z-index: $z-index-info;
+  max-width: 350px;
+  border-radius: $border-radius;
+  background: var(--color);
+  color: $color-white;
+  filter: drop-shadow(0 2px 4px $color-shadow);
+}
+
+// Wrap the text of infos within the room that their popup has:
+.dito-info__popup {
+  max-width: min(350px, var(--reka-popover-content-available-width));
+}
+
+.dito-info__popup[data-state='open'] {
+  animation: dito-info-enter 0.25s $ease-out-quart;
+}
+
+.dito-info__content,
+.dito-tooltip {
+  white-space: pre-line;
+  padding: ($input-padding-ver + 2 * $border-width)
+    ($input-padding-hor + $border-width);
+}
+
+// Slide away from the trigger, also when the popup flips below it:
+.dito-info__popup[data-side='bottom'],
+.dito-tooltip[data-side='bottom'] {
+  --slide-offset: -5px;
+}
+
+// The tooltip is portalled to the body, so it needs to show above the dialogs,
+// the header and the sidebar:
+.dito-tooltip {
+  z-index: $z-index-tooltip;
+}
+
+.dito-info__arrow,
+.dito-tooltip__arrow {
+  fill: var(--color);
+}
+
+// The tooltip of `data-tooltip` attributes opens after a delay, like the native
+// tooltips of `title` attributes:
+.dito-tooltip:not([data-state='closed']) {
+  animation: dito-info-enter 0.25s $ease-out-quart 0.5s backwards;
+}
+
+@keyframes dito-info-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--slide-offset, 5px));
   }
 }

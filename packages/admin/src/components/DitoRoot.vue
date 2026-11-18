@@ -74,6 +74,26 @@
       @click="sidebar.toggle()"
     )
   DitoNotifications(ref="notifications")
+  //- The tooltip of the `data-tooltip` attributes in rendered HTML:
+  TooltipProvider(disableHoverableContent)
+    TooltipRoot(
+      v-model:open="tooltip.open"
+    )
+      TooltipTrigger(
+        asChild
+        :reference="tooltip.anchor"
+      )
+      TooltipPortal
+        TooltipContent.dito-tooltip(
+          side="top"
+          :sideOffset="2"
+          hideWhenDetached
+        )
+          span#dito-tooltip {{ tooltip.anchor.dataset.tooltip }}
+          TooltipArrow.dito-tooltip__arrow(
+            :width="16"
+            :height="8"
+          )
 </template>
 
 <script>
@@ -86,9 +106,17 @@ import {
   provide,
   reactive,
   ref,
-  useTemplateRef
+  useTemplateRef,
+  watch
 } from 'vue'
-import { delegate as tippyDelegate } from 'tippy.js'
+import {
+  TooltipArrow,
+  TooltipContent,
+  TooltipPortal,
+  TooltipProvider,
+  TooltipRoot,
+  TooltipTrigger
+} from 'reka-ui'
 import appState from '../appState.js'
 import { useDomEvents } from '../composables/useDomEvents.ts'
 import { useSidebar } from '../composables/useSidebar.ts'
@@ -102,7 +130,15 @@ import { FileDropTargets } from '../utils/FileDropTargets.js'
 import { adminContextKey, fileDropTargetsKey } from '../utils/keys.ts'
 
 export default {
-  components: { DitoDialog },
+  components: {
+    DitoDialog,
+    TooltipArrow,
+    TooltipContent,
+    TooltipPortal,
+    TooltipProvider,
+    TooltipRoot,
+    TooltipTrigger
+  },
 
   props: {
     options: { type: Object, default: () => ({}) }
@@ -114,6 +150,16 @@ export default {
     const root = useTemplateRef('root')
     const notifications = useTemplateRef('notifications')
     const dialogs = reactive({})
+    // The anchor stays set after closing, for the text of the leaving tooltip:
+    const tooltip = reactive({ anchor: null, open: false })
+    // The trigger renders no element, so describe the open tooltip's anchor:
+    watch(
+      () => (tooltip.open ? tooltip.anchor : null),
+      (anchor, previous) => {
+        previous?.removeAttribute('aria-describedby')
+        anchor?.setAttribute('aria-describedby', 'dito-tooltip')
+      }
+    )
     // The files dragged over the admin, for the uploads to drop them on:
     const fileDropTargets = markRaw(new FileDropTargets())
     provide(fileDropTargetsKey, fileDropTargets)
@@ -175,21 +221,27 @@ export default {
       for (const column of root.value.children) {
         sidebarObserver.observe(column)
       }
+      const showTooltip = event => {
+        const anchor = event.target.closest('[data-tooltip]')
+        if (anchor) {
+          tooltip.anchor = anchor
+        }
+        tooltip.open = !!anchor
+      }
+      const hideTooltip = () => {
+        tooltip.open = false
+      }
+      domOn(root.value, {
+        // Touches don't hover, so nothing would hide the tooltip again:
+        pointerover: event => (
+          event.pointerType !== 'touch' && showTooltip(event)
+        ),
+        pointerleave: hideTooltip,
+        focusin: showTooltip,
+        focusout: hideTooltip
+      })
       // The uploads handle the dropped files, the root only the overlay:
       domOn(document, fileDropTargets.getDocumentEventHandlers())
-
-      tippyDelegate(root.value, {
-        target: '.dito-info',
-        theme: 'info',
-        animation: 'shift-away-subtle',
-        interactive: true,
-        delay: 250,
-        zIndex: 1,
-        // `DitoInfo` passes the info as HTML:
-        allowHTML: true,
-        appendTo: node => node.closest('.dito-pane'),
-        onShow: instance => instance.setContent(instance.reference.dataset.info)
-      })
 
       // Warn about unsaved changes, also the ones being submitted, as
       // `beforeunload` can't wait for them:
@@ -219,6 +271,7 @@ export default {
       hasSessionStarted,
       menu,
       sidebar,
+      tooltip,
       // Everything behind the topmost dialog is inert, so that it can't be
       // selected, focused or clicked:
       topDialogKey: computed(() => Object.keys(dialogs).at(-1) ?? null),

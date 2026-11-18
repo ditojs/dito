@@ -53,6 +53,14 @@
     v-bind="componentProps"
     :class="componentClasses"
   )
+  //- Without a label, inputs show the info in their suffix. It follows other
+  //- components, since buttons can't hold its button, and lies over the end
+  //- of buttons:
+  DitoInfo(
+    v-if="hasComponentInfo"
+    :info="info"
+    :label="componentText"
+  )
   DitoErrors(
     v-if="errors"
     :id="errorsElementId"
@@ -225,6 +233,14 @@ export default {
       )
     })
 
+    const hasComponentInfo = computed(
+      () => (
+        !!field.info.value &&
+        !hasSchemaLabel.value &&
+        !typeDescriptor.value?.hasInputAffixes
+      )
+    )
+
     const errorsElementId = computed(() => `${componentPath.value}-errors`)
 
     // Type components teleport their buttons into the row of the label:
@@ -241,6 +257,9 @@ export default {
       isMounted,
       label,
       info: field.info,
+      hasComponentInfo,
+      // Name the info after the text of buttons:
+      componentText: computed(() => getSchemaValue('text', { type: String })),
       errors,
       isReplacedWithLabel,
       typeComponent: computed(() => getTypeComponent(props.schema.type)),
@@ -277,6 +296,7 @@ export default {
         return {
           [`${prefix}--disabled`]: disabled.value,
           [`${prefix}--has-errors`]: !!errors.value,
+          [`${prefix}--has-info`]: hasComponentInfo.value,
           [`${prefix}--single`]: props.single,
           [`${prefix}--compact`]: props.compact,
           [`${prefix}--label-vertical`]: props.verticalLabels,
@@ -417,6 +437,36 @@ export default {
     // components (e.g.  buttons):
     > .dito-component:first-child {
       margin-top: $input-height;
+    }
+  }
+
+  &--has-info {
+    // Place the info on the line of the component:
+    flex-flow: row wrap;
+    align-items: center;
+
+    > .dito-component--fill {
+      flex: 1;
+      width: auto;
+    }
+
+    // Lay the info over the end of buttons, which can't hold its button. Pad
+    // both sides, so that the text stays centred and clear of the info:
+    > .dito-button {
+      $inset: $input-padding-hor + $border-width;
+
+      padding-inline: calc(
+        #{2 * $input-padding-hor} + 1em * var(--line-height)
+      );
+
+      + .dito-info {
+        margin-left: calc(-1 * (var(--size) + #{$inset}));
+        margin-right: $inset;
+      }
+
+      &:is(.dito-button--primary, [type='submit']) + .dito-info {
+        color: $color-text-inverted;
+      }
     }
   }
 

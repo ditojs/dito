@@ -24,7 +24,7 @@ async function login(page: Page, url: string, password: string) {
   await page.goto(`${getLocalUrl(url)}/admin/`)
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Username').fill('ada')
-  await dialog.getByLabel('Password').fill(password)
+  await dialog.getByLabel('Password', { exact: true }).fill(password)
   await dialog.getByRole('button', { name: 'Sign In', exact: true }).click()
   await expect(getAccountButton(page)).toHaveText('ada')
 }

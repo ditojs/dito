@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { tinycolor } from 'vue-color'
+import { CalendarDate, CalendarDateTime } from '@internationalized/date'
 import {
   mountSchema,
   mountForm,
@@ -332,7 +332,7 @@ describe('useField()', () => {
       })
       await findField('genre').find('select').setValue('poetry')
       await findField('isAvailable').find('input').setValue(true)
-      await findField('isEbook').find('input').setValue(true)
+      await findField('isEbook').find('[role="switch"]').trigger('click')
       await findField('format').findAll('input')[1].setValue(true)
       await settle()
       expect(events).toEqual([
@@ -356,14 +356,12 @@ describe('useField()', () => {
         }
       })
       const field = findField('genre')
-      await field.find('.multiselect').trigger('focus')
+      await field.find('.dito-multiselect__input').trigger('focus')
       await flushPromises()
-      await field.find('.multiselect__input').setValue('poe')
+      await field.find('.dito-multiselect__input').setValue('poe')
       await flushPromises()
       expect(events).toEqual([])
-      await field.find('.multiselect__element .multiselect__option').trigger(
-        'click'
-      )
+      await field.find('.dito-multiselect__option').trigger('click')
       await settle()
       expect(events).toEqual([
         ['input', 'genre', 'poetry'],
@@ -414,8 +412,8 @@ describe('useField()', () => {
         const color = getComponent('background')
         color.showPopup = true
         await settle()
-        color.colorValue = tinycolor('#0000ff')
-        color.colorValue = tinycolor('#00ff00')
+        color.setPickerColor('#0000ff')
+        color.setPickerColor('#00ff00')
         color.showPopup = false
         await vi.waitFor(() => expect(events).toHaveLength(3))
         expect(events).toEqual([
@@ -444,21 +442,23 @@ describe('useField()', () => {
     })
 
     it.each([
-      ['date', 'May 14, 2026', 'May 15, 2026'],
-      ['datetime', 'May 14, 2026, 9:30 AM', 'May 14, 2026, 10:30 AM'],
-      ['time', '9:30 AM', '10:30 AM']
+      ['date', new CalendarDate(2026, 5, 14)],
+      ['datetime', new CalendarDateTime(2026, 5, 14, 9, 30)],
+      ['time', new CalendarDateTime(2026, 5, 14, 9, 30)]
     ])(
-      'emits input for each entered %s, and change on Enter',
-      async (type, ...texts) => {
-        const { findField, events, settle } = await mountWithEvents({
-          publishedAt: { type }
-        })
-        const input = findField('publishedAt').find('input')
-        await input.trigger('focus')
-        await typeText(input, ...texts)
+      'emits input for each entered %s, and change once blurred',
+      async (type, date) => {
+        const { findField, getComponent, events, settle } =
+          await mountWithEvents({ publishedAt: { type } })
+        const field = findField('publishedAt')
+        const element = getComponent('publishedAt').$refs.element
+        await field.trigger('focusin')
+        for (const value of [date, date.add({ days: 1 })]) {
+          element.$emit('update:modelValue', value)
+          await settle()
+        }
         expect(events.map(([event]) => event)).toEqual(['input', 'input'])
-        await input.trigger('keydown', { key: 'Enter', keyCode: 13 })
-        await settle()
+        await field.trigger('focusout')
         expect(events.map(([event]) => event)).toEqual([
           'input',
           'input',
@@ -466,5 +466,21 @@ describe('useField()', () => {
         ])
       }
     )
+
+    it('emits change for dates once their calendar closes, if changed', async () => {
+      const { findField, getComponent, events, settle } = await mountWithEvents(
+        { publishedAt: { type: 'date' } },
+        { data: { publishedAt: '2026-05-14' } }
+      )
+      const element = getComponent('publishedAt').$refs.element
+      await findField('publishedAt').trigger('focusin')
+      element.$emit('update:open', false)
+      expect(events).toEqual([])
+      element.$emit('update:modelValue', new CalendarDate(2026, 5, 15))
+      await settle()
+      element.$emit('update:open', false)
+      await settle()
+      expect(events.map(([event]) => event)).toEqual(['input', 'change'])
+    })
   })
 })

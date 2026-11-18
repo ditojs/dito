@@ -1,6 +1,10 @@
 <template lang="pug">
 .dito-multiselect(
-  :class="{ 'dito-multiselect--has-errors': !!errorsElementId }"
+  :class=`{
+    'dito-multiselect--open': isOpen,
+    'dito-multiselect--disabled': attributes.disabled,
+    'dito-multiselect--has-errors': !!errorsElementId
+  }`
 )
   .dito-multiselect__inner
     DitoInputAffixes(
@@ -9,51 +13,93 @@
       v-bind="inputAffixesProps.prefix"
       absolute
     )
-    VueMultiselect(
-      :id="componentPath"
-      ref="element"
-      v-model="selectedOptions"
-      :aria-label="labelText"
-      :class="multiselectClasses"
-      :showLabels="false"
-      :placeholder="placeholder"
-      tagPlaceholder="Press enter to add new tag"
-      :options="populate && activeOptions || []"
-      :customLabel="option => getLabelForOption(option)"
-      :trackBy="optionValue"
-      :groupLabel="isGrouped ? 'label' : null"
-      :groupValues="isGrouped ? 'options' : null"
+    //- reka-ui filters the options by their labels, unless `search` does:
+    ComboboxRoot.dito-multiselect__root(
+      v-model="comboboxValue"
+      v-model:open="isOpen"
       :multiple="multiple"
-      :taggable="!!taggable"
-      :searchable="searchable"
-      :internalSearch="!searchFilter"
-      :preserveSearch="!!searchFilter"
-      :clearOnSelect="!searchFilter"
-      :closeOnSelect="!stayOpen"
-      :loading="isLoadingOptions || isLoadingSearchedOptions"
-      v-bind="attributes"
-      @open="onOpen"
-      @close="onClose"
-      @tag="onAddTag"
-      @search-change="onSearchChange"
+      :disabled="attributes.disabled"
+      :ignoreFilter="!!searchFilter"
+      openOnClick
+      openOnFocus
     )
-      template(#singleLabel="{ option }")
-        | {{ getLabelForOption(option) }}
-      //- Mark values without options:
-      template(#tag="{ option, remove }")
-        span.multiselect__tag.dito-multiselect__tag(
-          :class=`{
-            'dito-multiselect__tag--unavailable': isUnavailableOption(option)
-          }`
-          :title="isUnavailableOption(option) ? 'Not among the options' : null"
-          @mousedown.prevent
+      ComboboxAnchor.dito-multiselect__control
+        //- The tag option adds typed values, never `TagsInput` itself:
+        TagsInputRoot.dito-multiselect__tags(
+          v-if="multiple"
+          v-model="comboboxValue"
+          :delimiter="null"
+          :disabled="attributes.disabled"
         )
-          span {{ getLabelForOption(option) }}
-          i.multiselect__tag-icon(
-            tabindex="0"
-            @keydown.enter.prevent="remove(option)"
-            @mousedown.prevent="remove(option)"
+          TagsInputItem.dito-multiselect__tag(
+            v-for="option in selectedOptions"
+            :key="getValueForOption(option)"
+            :value="getValueForOption(option)"
+            :class=`{
+              'dito-multiselect__tag--unavailable': isUnavailableOption(option)
+            }`
+            :title=`
+              isUnavailableOption(option) ? 'Not among the options' : null
+            `
           )
+            TagsInputItemText {{ getLabelForOption(option) }}
+            TagsInputItemDelete.dito-multiselect__tag-remove
+          ComboboxInput(
+            ref="element"
+            v-model="searchTerm"
+            asChild
+            v-bind="inputProps"
+          )
+            TagsInputInput.dito-multiselect__input(
+              :placeholder="placeholder"
+              @keydown.enter.prevent
+            )
+        //- Keep Enter without a highlighted option from submitting dialogs:
+        ComboboxInput.dito-multiselect__input(
+          v-else
+          ref="element"
+          v-model="searchTerm"
+          v-bind="inputProps"
+          :placeholder="placeholder"
+          @keydown.enter.prevent
+        )
+        DitoSpinner.dito-multiselect__spinner(
+          v-if="isLoading"
+        )
+        ComboboxTrigger.dito-multiselect__trigger(
+          v-else
+          aria-label="Show options"
+        )
+      //- No portal, so that the styles apply. The list is fixed, so that
+      //- scrolling panes don't clip it, and overlaps the control's border:
+      ComboboxContent.dito-multiselect__content(
+        position="popper"
+        positionStrategy="fixed"
+        :sideOffset="-1"
+      )
+        ComboboxViewport.dito-multiselect__viewport
+          //- Keyed by the tag, as reka-ui reads the text of items once:
+          ComboboxItem.dito-multiselect__option.dito-multiselect__option--tag(
+            v-if="tagOption"
+            :key="tagOption.tag"
+            :value="tagOption"
+            @select.prevent="addTag(tagOption.tag)"
+          ) {{ tagOption.tag }}
+          ComboboxGroup(
+            v-for="group in optionGroups"
+            :key="group.label"
+          )
+            ComboboxLabel.dito-multiselect__group(
+              v-if="group.label"
+            ) {{ group.label }}
+            ComboboxItem.dito-multiselect__option(
+              v-for="option in group.options"
+              :key="getValueForOption(option)"
+              :value="getValueForOption(option)"
+              @select="onSelect"
+            ) {{ getLabelForOption(option) }}
+          ComboboxEmpty.dito-multiselect__empty
+            | {{ isLoading ? 'Loading…' : 'No options' }}
     DitoInputAffixes(
       v-if="inputAffixesProps.hasSuffix"
       position="suffix"
@@ -72,33 +118,88 @@
 </template>
 
 <script>
-import { computed, onMounted, ref, shallowRef } from 'vue'
+import { computed, onMounted, ref, shallowRef, unref, watch } from 'vue'
+import {
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxGroup,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxLabel,
+  ComboboxRoot,
+  ComboboxTrigger,
+  ComboboxViewport,
+  TagsInputInput,
+  TagsInputItem,
+  TagsInputItemDelete,
+  TagsInputItemText,
+  TagsInputRoot
+} from 'reka-ui'
 import { defineType } from '../utils/schema/types.ts'
 import { optionsTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useOptions } from '../composables/useOptions.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
-import VueMultiselect from 'vue-multiselect'
+import DitoSpinner from '../components/DitoSpinner.vue'
+import { getDataKeywords } from '../utils/schema/properties.js'
 import { isArray, isBoolean, isObject } from '@ditojs/utils'
 
+// Selects one or `multiple` options with reka-ui's `Combobox`, which holds
+// their values. Multiple values show as tags in reka-ui's `TagsInput`.
 // @vue/component
 const DitoMultiselectType = {
-  components: { DitoInputAffixes, DitoOptionsEditButtons, VueMultiselect },
+  components: {
+    ComboboxAnchor,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxGroup,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxLabel,
+    ComboboxRoot,
+    ComboboxTrigger,
+    ComboboxViewport,
+    TagsInputInput,
+    TagsInputItem,
+    TagsInputItemDelete,
+    TagsInputItemText,
+    TagsInputRoot,
+    DitoInputAffixes,
+    DitoOptionsEditButtons,
+    DitoSpinner
+  },
   props: fieldProps,
 
   setup(props) {
+    const isOpen = ref(false)
+    const getInput = () => element.value?.$el
     const field = useField(props, {
-      // Only emit blur events once closed, see `onClose()`. Picking options
-      // emits change events, not the native ones of the search input:
+      // Only emit blur events once closed, see `onBlur()`. Picking options
+      // emits change events, not the native ones of the input:
       getEvents: ({ onFocus }) => ({ onFocus, onBlur }),
-      focusElement: () => element.value.activate(),
-      blurElement: () => element.value.deactivate()
+      focusElement: () => getInput()?.focus(),
+      blurElement: () => {
+        isOpen.value = false
+        getInput()?.blur()
+      },
+      // Optional single selects can be cleared:
+      defaultClearable: () => (
+        !multiple.value &&
+        !getDataKeywords(props.schema, field.context).required
+      )
     })
     const { element, value, focused, autofocus, services, getSchemaValue } =
       field
-    const isMounted = ref(false)
-    const populate = ref(false)
+
+    function onBlur() {
+      if (!isOpen.value) {
+        field.onBlur()
+      }
+    }
+
+    const searchTerm = ref('')
     const searchedOptions = shallowRef(null)
     const isLoadingSearchedOptions = ref(false)
     let currentSearchTerm = null
@@ -108,6 +209,7 @@ const DitoMultiselectType = {
     const getBoolean = key =>
       computed(() => getSchemaValue(key, { type: Boolean, default: false }))
     const multiple = getBoolean('multiple')
+    const stayOpen = getBoolean('stayOpen')
     // `taggable` can be an object with `label` and `value` converters:
     const taggable = computed(() =>
       getSchemaValue('taggable', { type: [Boolean, Object], default: false })
@@ -120,7 +222,9 @@ const DitoMultiselectType = {
     })
     const {
       options,
+      activeOptions,
       hasOptions,
+      isGrouped,
       isLoadingOptions,
       optionsResolver,
       relate,
@@ -128,7 +232,7 @@ const DitoMultiselectType = {
       optionValue,
       searchFilter,
       selectedValue,
-      isSelected,
+      getLabelForOption,
       getValueForOption,
       getOptionForValue,
       getFallbackOption
@@ -140,43 +244,87 @@ const DitoMultiselectType = {
         default: !!searchFilter.value
       })
     )
+    const isLoading = computed(
+      () => isLoadingOptions.value || isLoadingSearchedOptions.value
+    )
 
-    function onBlur() {
-      if (!element.value.isOpen) {
-        field.onBlur()
-      }
-    }
+    // Keep values without options visible, like ones from searches, once the
+    // options are loaded. Taggable multiselects may have no options besides
+    // their values.
+    const selectedOptions = computed(() => {
+      const values = value.value
+      const isShowingValues = (
+        hasOptions.value ||
+        taggable.value && !isLoadingOptions.value
+      )
+      const getOption = value => (
+        getOptionForValue(relate.value ? getValueForOption(value) : value) ||
+        getFallbackOption(value)
+      )
+      return multiple.value
+        ? isShowingValues && isArray(values)
+          ? values.map(getOption)
+          : []
+        : isShowingValues && values != null
+          ? getOption(values)
+          : null
+    })
 
-    const selectedOptions = computed({
+    // The combobox holds the values of the selected options, not the stored
+    // ones, as `options.equals()` can match options to other values:
+    const comboboxValue = computed({
       get() {
-        // Keep values without options visible, like ones from searches, once
-        // the options are loaded. Taggable multiselects may have no options
-        // besides their values.
-        const values = value.value
-        const isShowingValues = (
-          hasOptions.value ||
-          taggable.value && !isLoadingOptions.value
-        )
-        const getOption = value => (
-          getOptionForValue(relate.value ? getValueForOption(value) : value) ||
-          getFallbackOption(value)
-        )
+        const options = selectedOptions.value
         return multiple.value
-          ? isShowingValues && isArray(values)
-            ? values.map(getOption)
-            : []
-          : isShowingValues && values != null
-            ? getOption(values)
+          ? options.map(getValueForOption)
+          : options != null
+            ? getValueForOption(options)
             : null
       },
 
-      set(option) {
-        // vue-multiselect can't map options to values itself:
-        selectedValue.value = multiple.value
-          ? (option || []).map(value => getValueForOption(value))
-          : getValueForOption(option)
+      set(newValue) {
+        selectedValue.value = newValue
         field.onChange()
+        // Edits outside of the input, e.g. removing tags with their buttons,
+        // aren't validated on blur:
+        if (!focused.value) {
+          field.validate()
+        }
       }
+    })
+
+    // Single selects show the label of their option in the input:
+    const getDisplayValue = () => {
+      const option = multiple.value ? null : selectedOptions.value
+      return option != null ? String(getLabelForOption(option)) : ''
+    }
+
+    // The label in the input isn't a search:
+    const query = computed(() =>
+      searchTerm.value === getDisplayValue() ? '' : searchTerm.value.trim()
+    )
+
+    // Ungrouped options are in one group without a label:
+    const optionGroups = computed(() =>
+      isGrouped.value
+        ? activeOptions.value
+        : [{ label: null, options: activeOptions.value }]
+    )
+
+    // The option to add the search term as a tag, unless an option has it as
+    // its label:
+    const tagOption = computed(() => {
+      const tag = query.value
+      return (
+        taggable.value &&
+        tag &&
+        !isLoading.value &&
+        !optionGroups.value.some(group =>
+          group.options.some(option => getLabelForOption(option) === tag)
+        )
+      )
+        ? { tag }
+        : null
     })
 
     // Wait for the options, as the filter receives them. Return `null` on
@@ -196,10 +344,69 @@ const DitoMultiselectType = {
       }
     }
 
+    const search = async searchTerm => {
+      currentSearchTerm = searchTerm
+      if (searchTerm) {
+        // Show no options until the results of the search arrive:
+        searchedOptions.value = []
+        // Resolved promises return options without a loading indicator:
+        const timer = setTimeout(() => {
+          isLoadingSearchedOptions.value = true
+        }, 0)
+        const options = await loadSearchedOptions(searchTerm)
+        clearTimeout(timer)
+        // Ignore searches that newer ones replaced in the meantime:
+        if (searchTerm === currentSearchTerm) {
+          searchedOptions.value = options
+          isLoadingSearchedOptions.value = false
+        }
+      } else {
+        searchedOptions.value = null
+        isLoadingSearchedOptions.value = false
+      }
+    }
+
+    // Search only while the list is open, and show all options again when it
+    // opens without a search term:
+    watch([query, isOpen], ([query, isOpen]) => {
+      if (searchFilter.value && isOpen) {
+        search(query)
+      }
+    })
+
+    watch(isOpen, isOpen => {
+      if (!isOpen) {
+        // reka-ui only resets the term when it closes the list itself:
+        searchTerm.value = getDisplayValue()
+        // Emit the blur event held back while the list was open, unless the
+        // input keeps the focus:
+        if (focused.value && !getInput()?.matches(':focus')) {
+          onBlur()
+        }
+      }
+    })
+
+    // Typing replaces the label that single selects show:
+    const onInputFocus = event => {
+      if (!multiple.value && searchable.value) {
+        event.target.select()
+      }
+    }
+
+    const inputProps = computed(() => {
+      const { onFocus, ...attributes } = field.attributes.value
+      return {
+        ...attributes,
+        'id': unref(field.componentPath),
+        'displayValue': getDisplayValue,
+        'readonly': !searchable.value,
+        'aria-label': field.labelText.value,
+        'onFocus': [onFocus, onInputFocus]
+      }
+    })
+
     onMounted(() => {
-      isMounted.value = true
       if (autofocus.value) {
-        // vue-multiselect doesn't support the autofocus attribute:
         field.focus()
       }
     })
@@ -207,26 +414,14 @@ const DitoMultiselectType = {
     return {
       ...field,
       ...optionsField,
+      inputProps,
+      isOpen,
+      comboboxValue,
       selectedOptions,
-      populate,
-      searchable,
-      taggable,
-      isLoadingSearchedOptions,
-
-      stayOpen: getBoolean('stayOpen'),
-
-      multiselectClasses: computed(() => {
-        const prefix = 'multiselect'
-        return {
-          [`${prefix}--multiple`]: multiple.value,
-          [`${prefix}--loading`]: (
-            isLoadingOptions.value || isLoadingSearchedOptions.value
-          ),
-          [`${prefix}--highlight`]: (
-            isMounted.value && element.value.pointerDirty
-          )
-        }
-      }),
+      optionGroups,
+      tagOption,
+      searchTerm,
+      isLoading,
 
       placeholder: computed(() => {
         let placeholder = getSchemaValue('placeholder', {
@@ -245,7 +440,7 @@ const DitoMultiselectType = {
               ? label
                 ? `Select or search ${label}`
                 : 'Select or search'
-              : undefined
+              : 'Select option'
           : placeholder
       }),
 
@@ -260,74 +455,46 @@ const DitoMultiselectType = {
         )
       },
 
-      onOpen() {
-        populate.value = true
-      },
-
-      onClose() {
-        // Emit the blur event held back while the multiselect was open:
-        if (focused.value) {
-          onBlur()
+      onSelect(event) {
+        // reka-ui closes single selects and keeps multiple ones open:
+        if (multiple.value) {
+          if (!stayOpen.value) {
+            isOpen.value = false
+          }
+        } else if (stayOpen.value) {
+          event.preventDefault()
+          comboboxValue.value = event.detail.value
         }
       },
 
-      onAddTag(tag) {
-        if (taggable.value) {
-          const { label: toLabel, value: toValue } = isObject(taggable.value)
-            ? taggable.value
-            : {}
-          const context = field.createContext({ value: tag })
-          const value = toValue ? toValue(context) : tag
-          const labelKey = optionLabel.value
-          const valueKey = optionValue.value
-          // Select existing options instead of adding duplicates:
-          const isObjectOption = !!(labelKey && valueKey)
-          const existingOption = isObjectOption
-            ? getOptionForValue(value)
-            : null
-          const option = (
-            existingOption ?? (
-              isObjectOption
-                ? {
-                    [labelKey]: toLabel ? toLabel(context) : tag,
-                    [valueKey]: value
-                  }
-                : value
-            )
+      addTag(tag) {
+        const { label: toLabel, value: toValue } = isObject(taggable.value)
+          ? taggable.value
+          : {}
+        const context = field.createContext({ value: tag })
+        const value = toValue ? toValue(context) : tag
+        const labelKey = optionLabel.value
+        const valueKey = optionValue.value
+        // Select existing options instead of adding duplicates:
+        const isObjectOption = !!(labelKey && valueKey)
+        if (!(isObjectOption && getOptionForValue(value))) {
+          addedTagOptions.value.push(
+            isObjectOption
+              ? {
+                  [labelKey]: toLabel ? toLabel(context) : tag,
+                  [valueKey]: value
+                }
+              : value
           )
-          if (!existingOption) {
-            addedTagOptions.value.push(option)
-          }
-          // `selectedOptions` emits the change:
-          if (!multiple.value) {
-            selectedOptions.value = option
-          } else if (!isSelected(option)) {
-            selectedOptions.value = [...selectedOptions.value, option]
-          }
         }
-      },
-
-      async onSearchChange(searchTerm) {
-        if (searchFilter.value) {
-          currentSearchTerm = searchTerm
-          if (searchTerm) {
-            // Show no options until the results of the search arrive:
-            searchedOptions.value = []
-            // Resolved promises return options without a loading indicator:
-            const timer = setTimeout(() => {
-              isLoadingSearchedOptions.value = true
-            }, 0)
-            const options = await loadSearchedOptions(searchTerm)
-            clearTimeout(timer)
-            // Ignore searches that newer ones replaced in the meantime:
-            if (searchTerm === currentSearchTerm) {
-              searchedOptions.value = options
-              isLoadingSearchedOptions.value = false
-            }
-          } else {
-            searchedOptions.value = null
-            isLoadingSearchedOptions.value = false
-          }
+        if (!multiple.value) {
+          comboboxValue.value = value
+        } else if (!comboboxValue.value.includes(value)) {
+          comboboxValue.value = [...comboboxValue.value, value]
+        }
+        searchTerm.value = getDisplayValue()
+        if (!stayOpen.value) {
+          isOpen.value = false
         }
       }
     }
@@ -337,6 +504,7 @@ const DitoMultiselectType = {
 defineType({
   type: 'multiselect',
   component: DitoMultiselectType,
+  hasInputAffixes: true,
   hasSearch: true,
   ...optionsTraits
 })
@@ -345,28 +513,16 @@ export default DitoMultiselectType
 </script>
 
 <style lang="scss">
+@use 'sass:color';
 @import '../styles/_imports';
-@import 'vue-multiselect/dist/vue-multiselect.css';
 
-$spinner-width: $select-arrow-width;
-$tag-icon-width: 1.8em;
 $tag-margin: 2px;
-$tag-padding: 3px;
-$tag-line-height: 1em;
 
 .dito-multiselect {
+  $self: &;
+
   display: inline-flex;
   position: relative;
-
-  &__tag {
-    color: $color-text-inverted;
-    background: $color-active;
-
-    // Values without options, see `getFallbackOption()`.
-    &--unavailable {
-      background: $color-grey;
-    }
-  }
 
   &__inner {
     flex: 1;
@@ -375,252 +531,214 @@ $tag-line-height: 1em;
     align-items: center;
   }
 
-  .multiselect {
-    $self: last-selector(&);
+  &__root {
+    flex: 1;
+    min-width: 0;
+  }
 
-    --input-width: 100%;
+  &__control {
+    @extend %input;
 
-    font-size: inherit;
-    min-height: inherit;
-    color: $color-black;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    position: relative;
+    padding: 0 $select-arrow-width 0 0;
+    max-height: 10em;
+    overflow: auto;
+  }
 
-    &--multiple {
-      --input-width: auto;
+  // The tags and the input wrap together in the control:
+  &__tags {
+    display: contents;
+  }
+
+  &__tag {
+    display: inline-flex;
+    align-items: center;
+    // As high as the input, so that tags don't make it taller:
+    align-self: stretch;
+    margin: $tag-margin 0 $tag-margin $tag-margin;
+    border-radius: 1em;
+    padding: 3px 0 3px 0.8em;
+    line-height: 1em;
+    color: $color-text-inverted;
+    background: $color-active;
+
+    // Values without options, see `getFallbackOption()`.
+    &--unavailable {
+      background: $color-grey;
     }
 
-    &__tags {
-      display: flex;
-      font-size: inherit;
-      min-height: inherit;
-      overflow: auto;
-      padding: 0 $spinner-width 0 0;
-      // So tags can float on multiple lines and have proper margins:
-      padding-bottom: $tag-margin;
-    }
-
-    &__tag {
-      float: left;
-      margin: $tag-margin 0 0 $tag-margin;
-      border-radius: 1em;
-      padding: $tag-padding $tag-icon-width $tag-padding 0.8em;
-      line-height: $tag-line-height;
-      height: calc($input-height - 2 * $tag-padding);
-    }
-
-    &__tags-wrap {
-      overflow: auto;
-      line-height: 0;
-    }
-
-    &__single,
-    &__placeholder,
-    &__input {
-      @include ellipsis;
-
-      flex: 1 0 0%;
-      width: 0;
-      min-height: 0;
-      margin: 0 0 1px 0;
-      font-size: inherit;
-      line-height: inherit;
-      // Sadly, vue-select sets style="padding: ...;" in addition to using
-      // classes, so `!important` is necessary:
-      padding: $input-padding !important;
-      // So input can float next to tags and have proper margins with
-      // &__tags:
-      padding-bottom: 0 !important;
-      background: none;
-    }
-
-    &__placeholder,
-    &__input::placeholder {
-      color: $color-placeholder;
-    }
-
-    &__placeholder {
-      &::after {
-        // Enforce actual line-height for positioning.
-        content: '\200b';
-      }
-    }
-
-    &__select,
-    &__spinner {
-      padding: 0;
-      // $border-width to prevent masking border with &__spinner
-      top: $border-width;
-      right: $border-width;
-      bottom: $border-width;
-      height: inherit;
-      border-radius: $border-radius;
-    }
-
-    &__select {
-      width: $select-arrow-width;
-
-      &::before {
-        @include arrow($select-arrow-size);
-
-        bottom: $select-arrow-bottom;
-        right: $select-arrow-right;
-      }
-    }
-
-    &__spinner {
-      width: $spinner-width;
-
-      &::before,
-      &::after {
-        // Change the width of the loading spinner
-        border-width: 3px;
-        border-top-color: $color-active;
-        inset: 0;
-        margin: auto;
-      }
-    }
-
-    &__option {
-      $option: last-selector(&);
-
-      min-height: unset;
-      height: unset;
-      line-height: $line-height;
-      padding: $input-padding;
-
-      &::after {
-        // Instruction text for options (e.g. "Press enter to add new tag")
-        position: static;
-        height: auto;
-        line-height: inherit;
-        padding-left: $input-padding-hor;
-      }
-
-      // Only show the highlight once the pulldown has received mouse or
-      // keyboard interaction, in which case `&--highlight` will be set,
-      // which is controlled by `pointerDirty` in vue-multiselect.
-      // Until then, clear the highlight style, but only if it isn't also
-      // disabled or selected, in which case we want to keep the style.
-      @at-root #{$self}:not(#{$self}--highlight)
-          #{$option}:not(#{$option}--disabled):not(#{$option}--selected) {
-        color: $color-text;
-        background: transparent;
-      }
-
-      &--highlight {
-        &::after {
-          background: transparent;
-          color: $color-white;
-        }
-
-        @at-root #{$self}#{$self}--highlight #{last-selector(&)} {
-          color: $color-text-inverted;
-          background: $color-active;
-        }
-      }
-
-      &--selected {
-        font-weight: normal;
-        color: $color-text;
-        background: $color-highlight;
-
-        @at-root #{$self}#{$self}--highlight &#{$option}--highlight {
-          color: $color-text-inverted;
-        }
-      }
-
-      &--disabled {
-        background: none;
-        color: $color-disabled;
-      }
-    }
-
-    &__tag-icon {
-      background: none;
-      border-radius: 1em;
-      width: $tag-icon-width;
-      margin: 0;
-
-      &::after {
-        @extend %icon--clear;
-
-        font-size: 0.9em;
-        color: $color-text-inverted;
-      }
-
-      &:hover::after {
-        color: $color-text;
-      }
-    }
-
-    &__tags,
-    &__content-wrapper {
-      border: $border-style;
-      border-radius: $border-radius;
-    }
-
-    &__content-wrapper {
-      z-index: $z-index-popup;
-      border-color: $color-active;
-    }
-
-    &:not(&--above) #{$self}__content-wrapper {
-      margin: (-$border-width) 0 0;
-      border-top-color: $border-color;
-      border-top-left-radius: 0;
-      border-top-right-radius: 0;
-    }
-
-    &--above #{$self}__content-wrapper {
-      margin: 0 0 (-$border-width);
-      border-bottom-color: $border-color;
-      border-bottom-left-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-
-    &--active {
-      #{$self}__placeholder {
-        // Don't use `display: none` to hide place-holder, as the layout would
-        // collapse.
-        display: inline-block;
-        visibility: hidden;
-      }
-
-      #{$self}__single,
-      #{$self}__input {
-        // Sadly, vue-select sets `style="width"` in addition to using classes
-        // so `!important` is necessary:
-        width: var(--input-width) !important;
-      }
-
-      #{$self}__tags {
-        border-color: $color-active;
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-      }
-
-      &#{$self}--above {
-        #{$self}__tags {
-          border-radius: $border-radius;
-          border-top-left-radius: 0;
-          border-top-right-radius: 0;
-        }
-      }
-    }
-
-    &--loading {
-      #{$self}__tags {
-        border-radius: $border-radius;
-      }
-
-      #{$self}__content-wrapper {
-        display: none;
-      }
+    // Selected with the arrow keys or Backspace, which then removes it:
+    &[data-state='active'] {
+      background: color.adjust($color-active, $lightness: -15%);
     }
   }
 
-  // After the borders of the tags, which it overrides:
-  &--has-errors .multiselect__tags {
-    border-color: $color-error;
+  &__tag-remove {
+    @extend %button--plain;
+
+    position: relative;
+    align-self: stretch;
+    width: 1.8em;
+    border-radius: 1em;
+
+    &::after {
+      @extend %icon--clear;
+
+      font-size: 0.9em;
+    }
+
+    &:hover {
+      color: $color-text;
+    }
+  }
+
+  &__input {
+    @include ellipsis;
+
+    flex: 1 0 4em;
+    min-width: 0;
+    padding: $input-padding;
+    border: 0;
+    color: inherit;
+    background: none;
+
+    &::placeholder {
+      color: $color-placeholder;
+    }
+
+    // Only show the placeholder next to tags while the list is open:
+    #{$self}:not(#{$self}--open) #{$self}__tag ~ &::placeholder {
+      color: transparent;
+    }
+
+    &[readonly] {
+      cursor: default;
+    }
+  }
+
+  &__trigger,
+  &__spinner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: $select-arrow-width;
+  }
+
+  &__trigger {
+    @extend %button--plain;
+
+    &[data-state='open'] {
+      transform: rotate(180deg);
+    }
+
+    &::before {
+      @include arrow($select-arrow-size);
+
+      bottom: $select-arrow-bottom;
+      right: $select-arrow-right;
+    }
+  }
+
+  &__spinner {
+    justify-content: center;
+  }
+
+  // The list continues the input, so it has its border and no shadow:
+  &__content {
+    @extend %popup;
+
+    box-sizing: border-box;
+    width: var(--reka-combobox-trigger-width);
+    border: $border-width solid $color-active;
+    border-radius: $border-radius;
+    background: $color-white;
+
+    &[data-side='bottom'] {
+      border-top-color: $border-color;
+      border-radius: 0 0 $border-radius $border-radius;
+    }
+
+    &[data-side='top'] {
+      border-bottom-color: $border-color;
+      border-radius: $border-radius $border-radius 0 0;
+    }
+  }
+
+  &__viewport {
+    // Fit the list into the room that reka-ui measures:
+    max-height: min(300px, var(--reka-combobox-content-available-height));
+  }
+
+  &__option,
+  &__group,
+  &__empty {
+    padding: $input-padding;
+  }
+
+  &__option {
+    cursor: pointer;
+
+    &[data-state='checked'] {
+      background: $color-highlight;
+    }
+
+    &[data-highlighted] {
+      color: $color-text-inverted;
+      background: $color-active;
+    }
+
+    &[data-disabled] {
+      color: $color-disabled;
+      background: none;
+      cursor: default;
+    }
+
+    &--tag::after {
+      content: 'Press enter to add new tag';
+      padding-left: $input-padding-hor;
+      opacity: 0.6;
+    }
+  }
+
+  &__group {
+    font-weight: bold;
+    background: $color-lightest;
+  }
+
+  &__empty {
+    color: $color-placeholder;
+  }
+
+  // Join the open control and its list into one shape:
+  &--open &__control {
+    border-color: $color-active;
+  }
+
+  &:has(#{$self}__content[data-side='bottom']) &__control {
+    border-radius: $border-radius $border-radius 0 0;
+  }
+
+  &:has(#{$self}__content[data-side='top']) &__control {
+    border-radius: 0 0 $border-radius $border-radius;
+  }
+
+  &--disabled {
+    #{$self}__control {
+      @extend %field--disabled;
+    }
+
+    #{$self}__trigger::before {
+      border-color: $color-disabled;
+    }
+  }
+
+  // After the borders of the control, which it overrides:
+  &--has-errors &__control {
+    @extend %input--has-errors;
   }
 }
 </style>

@@ -1,5 +1,6 @@
+import { vi } from 'vitest'
 import { html } from '@ditojs/utils'
-import { mountSchema } from '../test/mount.js'
+import { mountSchema, openInfo } from '../test/mount.js'
 import DitoLabel from './DitoLabel.vue'
 import DitoAffixes from './DitoAffixes.vue'
 
@@ -30,19 +31,46 @@ describe('DitoLabel', () => {
     expect(label.find('.dito-affix').text()).toBe('1.')
   })
 
-  it('shows info as text, and `html` info as HTML', async () => {
+  it('shows info as text with its line breaks, and `html` info as HTML', async () => {
     const { findContainer } = await mountSchema({
       schema: {
         fields: {
-          title: { type: 'text', info: 'Q & <b>A</b>' },
+          title: { type: 'text', info: 'Q & <b>A</b>\nOr B' },
           author: { type: 'text', info: html`<b>${'Q & A'}</b>` }
         }
       }
     })
-    const getInfo = name =>
-      findContainer(name).find('.dito-info').attributes('data-info')
-    expect(getInfo('title')).toBe('Q &amp; &lt;b&gt;A&lt;/b&gt;')
-    expect(getInfo('author')).toBe('<b>Q &amp; A</b>')
+    const getInfo = async name =>
+      (await openInfo(findContainer(name))).innerHTML
+    expect(await getInfo('title')).toBe('Q &amp; &lt;b&gt;A&lt;/b&gt;\nOr B')
+    expect(await getInfo('author')).toBe('<b>Q &amp; A</b>')
+  })
+
+  it('places the info of collapsible labels outside of their toggle', async () => {
+    const onToggle = vi.fn()
+    const { findContainer } = await mountSchema({
+      schema: {
+        fields: {
+          details: {
+            type: 'section',
+            label: 'Details',
+            info: 'More about the book',
+            collapsible: true,
+            onToggle,
+            fields: { title: { type: 'text' } }
+          }
+        }
+      }
+    })
+    const label = findContainer('details').find(
+      '.dito-schema-header .dito-label'
+    )
+    expect(label.find('button .dito-info').exists()).toBe(false)
+    expect(label.find('.dito-info').attributes('aria-label')).toBe(
+      'Info: Details'
+    )
+    expect((await openInfo(label)).textContent).toBe('More about the book')
+    expect(onToggle).not.toHaveBeenCalled()
   })
 
   it('shows the text of labels with affixes as text', async () => {

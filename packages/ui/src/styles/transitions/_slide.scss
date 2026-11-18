@@ -1,35 +1,15 @@
-.dito-slide-enter-active {
-  animation: dito-slide-enter 0.15s $ease-out-quart;
-}
-
-.dito-slide-leave-active {
-  animation: dito-slide-leave 0.15s $ease-out-quart;
-}
-
+// The animations of elements that slide open and closed. Their users set the
+// `transform-origin`:
 @keyframes dito-slide-enter {
-  0% {
+  from {
     opacity: 0;
-    transform-origin: 0% 0%;
     transform: scaleY(0.8);
-  }
-
-  100% {
-    opacity: 1;
-    transform-origin: 0% 0%;
-    transform: scaleY(1);
   }
 }
 
 @keyframes dito-slide-leave {
-  0% {
-    opacity: 1;
-    transform-origin: 0% 0%;
-    transform: scaleY(1);
-  }
-
-  100% {
+  to {
     opacity: 0;
-    transform-origin: 0% 0%;
     transform: scaleY(0.8);
   }
 }

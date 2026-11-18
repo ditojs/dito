@@ -1,14 +1,15 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { startAuthentication } from '@simplewebauthn/browser'
-import { html } from '@ditojs/utils'
 import appState from '../appState.js'
+import { html } from '@ditojs/utils'
 import DitoAdmin from '../DitoAdmin.js'
 import {
   mountAdmin,
   mountForm,
   unmountAdmin,
-  enterValue
+  enterValue,
+  openInfo
 } from '../test/mount.js'
 
 // The DOM of the tests has no WebAuthn, so we answer passkey logins with a
@@ -260,7 +261,7 @@ describe('DitoRoot', () => {
         expect(dialog.find('input[name="password"]').exists()).toBe(false)
         const input = dialog.find('input[name="code"]')
         expect(input.attributes('placeholder')).toBe('123456')
-        expect(dialog.find('.dito-info').attributes('data-info')).toBe(
+        expect((await openInfo(dialog)).textContent).toBe(
           'Enter the code from your authenticator app, or a backup code.'
         )
         await enterValue(input, '123456')
@@ -509,49 +510,46 @@ describe('DitoRoot', () => {
     })
   })
 
-  describe('info tooltips', () => {
-    // Hovers the info of the `title` field and returns its tooltip:
-    async function showInfoTooltip(info) {
-      const admin = await mountAdmin({
-        views: {
-          books: {
-            type: 'view',
-            fields: { title: { type: 'text', info } }
+  it('shows infos in a popup in their pane', async () => {
+    const admin = await mountAdmin({
+      views: {
+        books: {
+          type: 'view',
+          fields: { title: { type: 'text', info: 'The title on the cover' } }
+        }
+      }
+    })
+    await admin.navigate('/books')
+    const content = await openInfo(admin.wrapper)
+    expect(content.textContent).toBe('The title on the cover')
+    expect(content.closest('.dito-pane')).not.toBe(null)
+  })
+
+  it('shows the tooltips of `data-tooltip` attributes', async () => {
+    const admin = await mountAdmin({
+      views: {
+        books: {
+          type: 'view',
+          fields: {
+            title: {
+              type: 'label',
+              label: html`<abbr data-tooltip="Second <edition>">2nd</abbr>`
+            }
           }
         }
-      })
-      await admin.navigate('/books')
-      const element = admin.element.querySelector('.dito-info')
-      element.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
-      element.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
-      await vi.advanceTimersByTimeAsync(500)
-      return document.querySelector('[data-tippy-root]')
-    }
-
-    beforeEach(() => {
-      vi.useFakeTimers({ shouldAdvanceTime: true })
+      }
     })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
-    it('shows the info of labels in a tooltip in their pane', async () => {
-      const tooltip = await showInfoTooltip('The title on the cover')
-      expect(tooltip.textContent).toBe('The title on the cover')
-      expect(tooltip.parentElement.closest('.dito-pane')).not.toBe(null)
-    })
-
-    it('shows text info as text, with its line breaks', async () => {
-      const tooltip = await showInfoTooltip('Cover & <b>spine</b>\nOr back')
-      expect(tooltip.textContent).toBe('Cover & <b>spine</b>\nOr back')
-      expect(tooltip.querySelector('b')).toBe(null)
-    })
-
-    it('renders the HTML of `html` info', async () => {
-      const tooltip = await showInfoTooltip(html`The <b>cover</b>`)
-      expect(tooltip.querySelector('b').textContent).toBe('cover')
-      expect(tooltip.textContent).toBe('The cover')
-    })
+    await admin.navigate('/books')
+    const abbr = admin.wrapper.find('abbr')
+    await abbr.trigger('pointerover')
+    await flushPromises()
+    const tooltip = document.querySelector('.dito-tooltip')
+    expect(tooltip.textContent).toContain('Second <edition>')
+    const id = abbr.attributes('aria-describedby')
+    expect(document.getElementById(id).textContent).toBe('Second <edition>')
+    await abbr.trigger('focusout')
+    await flushPromises()
+    expect(document.querySelector('.dito-tooltip')).toBe(null)
+    expect(abbr.attributes('aria-describedby')).toBe(undefined)
   })
 })

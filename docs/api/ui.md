@@ -27,11 +27,11 @@ Inside custom admin components, the admin's styles already include those of
 
 ## Contents
 
-| Section                   | Exports                                                                                                                                                                                                                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoProgress`, `DitoTrigger`, `DitoCalendar`, `DitoDatePicker`, `DitoTimePicker`, `DitoDateTimePicker`, `TransitionHeight`                                                           |
-| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `describeDate()`, `alterDate()`, `stepDate()`, `parseDate()`, `getDatePartAtPosition()`, `addEvents()`, `combineEvents()`, `getKey()`, `getKeyNavigation()`, `getSelection()`, `setSelection()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()` |
-| [Styles](#styles)         | CSS classes, SCSS variables, mixins, functions and icons                                                                                                                                                                                                                       |
+| Section                   | Exports                                                                                                                                                        |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoProgress`, `DitoDatePicker`, `DitoTimeInput`, `TransitionHeight` |
+| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `getScrollContainer()`, `hasErrors()`, `addEvents()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()`                            |
+| [Styles](#styles)         | CSS classes, SCSS variables, mixins, functions and icons                                                                                                       |
 
 ## Example
 
@@ -83,13 +83,13 @@ export default {
 ## Components
 
 ```js
-import { DitoButton, DitoTrigger } from '@ditojs/ui'
+import { DitoButton, DitoMenuButton } from '@ditojs/ui'
 ```
 
 All components are Vue 3 components with the Options API. Values are bound
-with `v-model` (`modelValue`), `v-model:show` or `v-model:page`. Components
-that wrap a native element pass the attributes they don't declare, including
-listeners, on to it, as noted per component.
+with `v-model` (`modelValue`) or `v-model:page`. Components that wrap a native
+element pass the attributes they don't declare, including listeners, on to it,
+as noted per component.
 
 ### DitoButton
 
@@ -125,18 +125,19 @@ The admin styles common verbs, e.g. `create`, `add`, `edit`, `delete` and
 
 ### DitoMenuButton
 
-A button that opens a menu of items, and emits `select` with the chosen item.
-It can be used with mouse and keyboard: Enter, Space and the arrow keys open
-the menu, the arrow keys, Home and End move between items, Escape closes it.
+A button that opens a menu of items next to it, below by default, and emits
+`select` with the chosen item. It is built on
+[`reka-ui`'s `DropdownMenu`](https://reka-ui.com/docs/components/dropdown-menu),
+which handles mouse and keyboard: Enter, Space and ArrowDown open the menu,
+the arrow keys, Home and End move between items, Escape closes it, and Tab
+leaves it.
 
-| Prop        | Type                                        | Default    | Description                                                                                                                   |
-| ----------- | ------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `items`     | `Array<{ value, label, icon?, disabled? }>` | required   | The menu items. Items with an `icon` from the [icon set](#icons) show it instead of their `label`, which becomes their title. |
-| `placement` | `string`                                    | `'bottom'` | Where the menu opens, see [`DitoTrigger`](#ditotrigger).                                                                      |
-| `cover`     | `boolean`                                   | `true`     | Opens the menu over the button, like native menus.                                                                            |
-| `floating`  | `boolean`                                   | `false`    | Opens the menu below the button as a separate panel with a tip pointing at the button, overriding `cover`.                    |
-| `offset`    | `boolean`                                   | `false`    | Opens the menu one item padding below the top of the button, e.g. to line up with the text of a taller button.                |
-| `disabled`  | `boolean`                                   | `false`    | Disables the button.                                                                                                          |
+| Prop       | Type                                        | Default    | Description                                                                                                                                                                 |
+| ---------- | ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`    | `Array<{ value, label, icon?, disabled? }>` | required   | The menu items. Items with an `icon` from the [icon set](#icons) show it instead of their `label`, which becomes their title.                                               |
+| `side`     | `string`                                    | `'bottom'` | The side of the button the menu opens on: `'top'`, `'right'`, `'bottom'` or `'left'`.                                                                                       |
+| `align`    | `string`                                    | `'center'` | The preferred alignment of the menu with the button: `'start'`, `'center'` or `'end'`. A centered menu without room on one side aligns with the button's edge on that side. |
+| `disabled` | `boolean`                                   | `false`    | Disables the button.                                                                                                                                                        |
 
 | Event    | Payload | Description                 |
 | -------- | ------- | --------------------------- |
@@ -152,7 +153,7 @@ The default slot is the content of the button. All other attributes, e.g.
     { value: 'csv', label: 'CSV' },
     { value: 'pdf', label: 'PDF', disabled: !hasPdfExport }
   ]"
-  @select="item => exportOrders(item.value)"
+  @select="item => exportBooks(item.value)"
 />
 ```
 
@@ -209,29 +210,32 @@ input is sized to fit the longer of `min` and `max`.
 
 ### DitoSwitch
 
-An on/off switch, rendered as a checkbox with `role="switch"`.
+An on/off switch, built on `reka-ui`'s `Switch`: a button with `role="switch"`
+and `[data-state='checked']` or `[data-state='unchecked']`. Inside a form, a
+`name` adds a hidden checkbox that submits with it. Space and Enter toggle it,
+so Enter on a switch doesn't submit a dialog.
 
 | Prop         | Type                                | Default | Description                                                                                                                        |
 | ------------ | ----------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `modelValue` | `boolean`                           | `false` | Whether it's on (`v-model`).                                                                                                       |
-| `id`, `name` | `string`                            | `null`  | Set on the checkbox.                                                                                                               |
+| `modelValue` | `boolean`                           | `false` | Whether it's on (`v-model`). Without it, the switch keeps its own state.                                                           |
+| `id`, `name` | `string`                            | `null`  | Set on the switch.                                                                                                                 |
 | `disabled`   | `boolean`                           | `false` | Disables the switch.                                                                                                               |
 | `labels`     | `boolean \| { checked, unchecked }` | `false` | Shows a label inside the switch: `true` shows `'on'` and `'off'`, an object its own texts. The switch grows with the longer label. |
 
-| Event               | Payload   | Description                   |
-| ------------------- | --------- | ----------------------------- |
-| `update:modelValue` | `checked` | The switch was toggled.       |
-| `change`            | `checked` | Same, for `@change` handlers. |
+| Event               | Payload   | Description             |
+| ------------------- | --------- | ----------------------- |
+| `update:modelValue` | `checked` | The switch was toggled. |
 
 | Slot                   | Description                                    |
 | ---------------------- | ---------------------------------------------- |
 | `checked`, `unchecked` | Replace the label texts, when `labels` is set. |
 
-| Method    | Description           |
-| --------- | --------------------- |
-| `focus()` | Focuses the checkbox. |
+| Method    | Description         |
+| --------- | ------------------- |
+| `focus()` | Focuses the switch. |
 
-`class` goes to the switch; all other attributes go to the checkbox.
+`class` goes to the `.dito-switch` element around it; all other attributes go to
+the switch, `.dito-switch__control`.
 
 ```vue
 <DitoSwitch
@@ -242,9 +246,10 @@ An on/off switch, rendered as a checkbox with `role="switch"`.
 
 ### DitoPagination
 
-Page navigation for a number of items: the range shown (`11 – 20 / 95`),
-previous and next buttons, and numbered page buttons, with ellipsis buttons
-that jump ten pages.
+Page navigation for a number of items, built on `reka-ui`'s `Pagination`: the
+range shown (`11 – 20 / 95`), previous and next buttons, and numbered page
+buttons, with the first and last page and ellipses for the pages left out. The
+current page's button has `[data-selected]`.
 
 | Prop        | Type      | Default | Description                                                                             |
 | ----------- | --------- | ------- | --------------------------------------------------------------------------------------- |
@@ -279,166 +284,58 @@ All attributes go to the `<progress>` element, e.g. `aria-label`.
 <DitoProgress :value="job.processed" :max="job.total" aria-label="Import" />
 ```
 
-### DitoTrigger
-
-Shows a popup next to a trigger element, positioned absolutely and kept in the
-window if possible. The base of `DitoMenuButton` and the pickers.
-
-| Prop                   | Type                    | Default    | Description                                                                                                                                                                                                                                               |
-| ---------------------- | ----------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`              | `string`                | `'click'`  | What shows the popup: `'click'` toggles it, `'hover'` shows it while the mouse is over the trigger or the popup, `'focus'` while an input or textarea in the trigger or the popup has the focus. `'always'` adds no handlers; the popup follows `show`.   |
-| `show`                 | `boolean`               | `false`    | Whether the popup is shown (`v-model:show`).                                                                                                                                                                                                              |
-| `placement`            | `string`                | `'bottom'` | The side of the trigger the popup appears on, `'top'`, `'bottom'`, `'left'` or `'right'`, optionally followed by the edge it aligns with, e.g. `'bottom-left'` or `'right-top'`, or by `center`, e.g. `'bottom-center'`. Adds `.dito-popup--{placement}`. |
-| `transition`           | `string`                | `'slide'`  | The popup's transition: `'slide'`, `'fade'` or `'zoom'`, or `null` to show it at once.                                                                                                                                                                    |
-| `target`               | `string \| HTMLElement` | `null`     | The element the popup is positioned at, instead of the trigger: an element, or `'trigger'` or `'popup'` for these parts of the trigger itself.                                                                                                            |
-| `disabled`             | `boolean`               | `false`    | Prevents showing the popup. Adds `.dito-trigger--disabled`.                                                                                                                                                                                               |
-| `keepInView`           | `boolean`               | `true`     | Flips the popup to the other side or edge if it doesn't fit in the window and there's more room there, and shifts centered popups back into the window.                                                                                                   |
-| `matchTargetWidth`     | `boolean`               | `true`     | Gives the popup's first child the width of the target.                                                                                                                                                                                                    |
-| `cover`                | `boolean`               | `false`    | Places the popup over the trigger instead of next to it.                                                                                                                                                                                                  |
-| `hideWhenClickOutside` | `boolean`               | `true`     | Hides the popup on clicks outside trigger, target and popup, and when the window loses focus.                                                                                                                                                             |
-| `alwaysShow`           | `boolean`               | `false`    | Shows the popup permanently.                                                                                                                                                                                                                              |
-| `hideDelay`            | `number`                | `0`        | With `trigger: 'hover'`, the milliseconds to wait before hiding.                                                                                                                                                                                          |
-| `customClass`          | `string`                | `null`     | An additional class of the popup.                                                                                                                                                                                                                         |
-| `zIndex`               | `number`                | `0`        | A `z-index` for the popup, instead of the default one.                                                                                                                                                                                                    |
-
-| Event         | Payload | Description                    |
-| ------------- | ------- | ------------------------------ |
-| `update:show` | `show`  | The popup was shown or hidden. |
-
-| Slot      | Description                                          |
-| --------- | ---------------------------------------------------- |
-| `trigger` | The trigger.                                         |
-| `popup`   | The popup's content, only rendered while it's shown. |
-
-| Method                          | Description               |
-| ------------------------------- | ------------------------- |
-| `open()`, `close()`, `toggle()` | Shows or hides the popup. |
-
-Escape hides the popup, and doesn't reach elements around the trigger, e.g.
-dialogs.
-
-```vue
-<DitoTrigger trigger="hover" placement="right-top">
-  <template #trigger>
-    <DitoIcon name="info" />
-  </template>
-  <template #popup>
-    <p class="bookshop-hint">Shipped within 2 days.</p>
-  </template>
-</DitoTrigger>
-```
-
-### DitoCalendar
-
-A month calendar to choose a day, with views to choose month and year. Weeks
-start on Sunday. Without a value, it shows today.
-
-| Prop         | Type     | Default   | Description                               |
-| ------------ | -------- | --------- | ----------------------------------------- |
-| `modelValue` | `Date`   | `null`    | The selected date (`v-model`).            |
-| `locale`     | `string` | `'en-US'` | The locale of month and weekday names.    |
-| `mode`       | `string` | `'day'`   | The view: `'day'`, `'month'` or `'year'`. |
-
-| Event               | Payload | Description                                                                            |
-| ------------------- | ------- | -------------------------------------------------------------------------------------- |
-| `update:modelValue` | `date`  | A day, month or year was selected. Choosing a day keeps the time of the current value. |
-| `select`            | –       | A day was chosen, e.g. to close a popup.                                               |
-
-In the day view, the arrow keys move between days, Page Up and Page Down
-between months, with Shift between years, and Home and End to the first and
-last day of the month.
-
 ### DitoDatePicker
 
-An input for a date, with a [`DitoCalendar`](#ditocalendar) in a popup. Dates
-can be typed in the format of the locale; the up and down arrow keys open the
-popup, and then step the day, month or year at the caret. The value only
-changes for valid dates.
+A date field with a calendar in a popup, built on
+[`reka-ui`'s `DatePicker`](https://reka-ui.com/docs/components/date-picker).
+The field edits each part of the date on its own, in the order of the locale,
+and the button next to it opens the calendar, whose header picks the month and
+year from lists. The values are dates of
+[`@internationalized/date`](https://react-spectrum.adobe.com/internationalized/date/),
+e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
+`day`, which also edits the time.
 
-| Prop          | Type                    | Default                                      | Description                                                                    |
-| ------------- | ----------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
-| `modelValue`  | `Date`                  | `null`                                       | The date (`v-model`).                                                          |
-| `locale`      | `string`                | `'en-US'`                                    | The locale of the text and the calendar.                                       |
-| `format`      | `object`                | `{ date: defaultFormats.date, time: false }` | The `date` and `time` options of [`format()`](./utils.md#format) for the text. |
-| `placeholder` | `string`                | `null`                                       | The input's placeholder.                                                       |
-| `disabled`    | `boolean`               | `false`                                      | Disables input and popup.                                                      |
-| `show`        | `boolean`               | `false`                                      | Whether the popup is shown (`v-model:show`).                                   |
-| `placement`   | `string`                | `'bottom-left'`                              | See [`DitoTrigger`](#ditotrigger).                                             |
-| `transition`  | `string`                | `'slide'`                                    | See [`DitoTrigger`](#ditotrigger).                                             |
-| `target`      | `string \| HTMLElement` | `'trigger'`                                  | See [`DitoTrigger`](#ditotrigger).                                             |
+| Prop                   | Type                                      | Default   | Description                                                                                                 |
+| ---------------------- | ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                                                                       |
+| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                                                                     |
+| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                                                                     |
+| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.                                                         |
+| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                                                                   |
+| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list.                                                |
+| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.                                                   |
+| `placeholder`          | `string`                                  | `null`    | Shown while no part is entered and the field isn't focused. Such fields show their parts only once focused. |
 
-| Event               | Payload | Description                                                                                            |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| `update:modelValue` | `date`  | The date changed, while typing or choosing.                                                            |
-| `change`            | `date`  | The edit is done: the popup closed, the input lost focus or Enter was pressed, after the date changed. |
-| `update:show`       | `show`  | The popup was shown or hidden.                                                                         |
-| `focus`, `blur`     | –       | The input got the focus or the popup opened, and both are gone again.                                  |
+| Slot               | Description                                     |
+| ------------------ | ----------------------------------------------- |
+| `prefix`, `suffix` | Content before and after the parts of the date. |
 
-| Slot               | Description                                          |
-| ------------------ | ---------------------------------------------------- |
-| `prefix`, `suffix` | Content before and after the text, inside the input. |
-| `trigger`          | Replaces the input, e.g. with a button.              |
-
-| Method              | Description                 |
-| ------------------- | --------------------------- |
-| `focus()`, `blur()` | Focuses or blurs the input. |
-
-All other attributes go to the [`DitoInput`](#ditoinput): `class` to its
-wrapper, the rest to the native input.
+All other attributes but `class` go to the field, e.g. `aria-label`, and `aria-invalid`
+shows errors, as in [`DitoInput`](#ditoinput). The field emits `update:open`
+when the calendar opens or closes, and looks focused while it is open. Methods:
+`focus()` and `blur()`.
 
 ```vue
 <DitoDatePicker
-  v-model="book.publishedAt"
+  v-model="book.publishedOn"
   locale="en-GB"
-  :format="{ date: { month: 'short' }, time: false }"
-  @change="save"
 />
 ```
 
-### DitoTimePicker
+### DitoTimeInput
 
-An input for a time, with a panel to choose hours, minutes and seconds in a
-popup. Typed digits overwrite the digits at the caret, keeping the format.
+A time field, built on
+[`reka-ui`'s `TimeField`](https://reka-ui.com/docs/components/time-field), which
+edits each part of the time on its own. The values are `Time`, or dates with a
+time of `@internationalized/date`, whose date it keeps. Its own props are
+`locale`, `'en-US'` by default, and `disabled`, which also adds
+`.dito-input--disabled`; all other props of `TimeFieldRoot` fall through,
+e.g. `modelValue` (`v-model`), `granularity`, `hourCycle` and
+`defaultPlaceholder`, the value that typing starts from without a value.
 
-Props, events, slots and methods are those of
-[`DitoDatePicker`](#ditodatepicker), except that `format` defaults to
-`{ time: defaultFormats.time, date: false }`.
-
-```vue
-<DitoTimePicker
-  v-model="shop.opensAt"
-  :format="{ time: { second: false } }"
-/>
-```
-
-### DitoDateTimePicker
-
-An input for date and time, with a calendar in the popup while the caret is in
-the date, and the time panel while it's in the time.
-
-| Prop          | Type                    | Default     | Description                                                                                                                                           |
-| ------------- | ----------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `modelValue`  | `Date`                  | `null`      | The date and time (`v-model`).                                                                                                                        |
-| `locale`      | `string`                | `'en-US'`   | The locale.                                                                                                                                           |
-| `format`      | `object`                | `null`      | `date` and `time` options of [`format()`](./utils.md#format), merged deeply over the defaults with a short month, e.g. `'Oct 13, 2026, 02:05:00 PM'`. |
-| `placeholder` | `string`                | `null`      | The input's placeholder.                                                                                                                              |
-| `disabled`    | `boolean`               | `false`     | Disables input and popup.                                                                                                                             |
-| `show`        | `boolean`               | `false`     | Whether the popup is shown (`v-model:show`).                                                                                                          |
-| `placement`   | `string`                | `null`      | See [`DitoTrigger`](#ditotrigger). Without it, the popup is placed `'bottom-left'` for the calendar and `'bottom-right'` for the time panel.          |
-| `transition`  | `string`                | `'slide'`   | See [`DitoTrigger`](#ditotrigger).                                                                                                                    |
-| `target`      | `string \| HTMLElement` | `'trigger'` | See [`DitoTrigger`](#ditotrigger).                                                                                                                    |
-
-Events: `update:modelValue`, `change`, `update:show`, `focus` and `blur`, as in
-[`DitoDatePicker`](#ditodatepicker). Slots: `prefix` and `suffix`. Methods:
-`focus()` and `blur()`. All other attributes go to the
-[`DitoInput`](#ditoinput).
-
-```vue
-<DitoDateTimePicker
-  v-model="order.shippedAt"
-  :format="{ time: { second: false } }"
-/>
-```
+Slots: `prefix` and `suffix`, as in [`DitoDatePicker`](#ditodatepicker).
+Methods: `focus()` and `blur()`. With `aria-invalid`, the field shows errors,
+as `DitoInput` does.
 
 ### TransitionHeight
 
@@ -486,68 +383,25 @@ getVerbButtonAttributes({ verb: 'add', subject: 'Chapter' })
 // }
 ```
 
-### Dates
+### Elements
 
-All date helpers work with local time.
-
-#### describeDate()
+#### getScrollContainer()
 
 ```js
-describeDate(date)
+getScrollContainer(element)
 ```
 
-Returns the parts of `date` as
-`{ year, month, day, hour, minute, second, millisecond }`, with `month`
-counted from `0` like in `Date`. Without a date, all parts are `0`.
+Returns the closest ancestor of `element` that scrolls vertically, or `null`,
+e.g. as the `collisionBoundary` of a popup.
 
-#### alterDate()
+#### hasErrors()
 
 ```js
-alterDate(date, overrides = {})
+hasErrors(attributes)
 ```
 
-Returns a new `Date` with the parts of `date` replaced by `overrides`, e.g.
-`{ hour: 0, minute: 0 }`. Out-of-range parts roll over like in `new Date()`:
-January 31, 2026 with `{ month: 1 }` becomes March 3.
-
-#### stepDate()
-
-```js
-stepDate(date, partName, step)
-```
-
-Returns a new `Date` with the part `partName`, e.g. `'month'`, changed by
-`step`. Stepping the year or month keeps the day within the new month:
-January 31 plus one month is the last day of February.
-
-#### parseDate()
-
-```js
-parseDate(string, { locale = 'en-US', date = true, time = true } = {})
-```
-
-Parses a date as [`format()`](./utils.md#format) formats it in
-`locale`, e.g. `'May 14, 2026'`, `'14 May 2026'`, `'05/14/2026'` (in `en-US`)
-or `'14.05.2026'`, optionally followed by a time like `'11:30:00 PM'` if `time`
-is set.
-With `date: false`, only a time is parsed, on January 1, 2000. Returns `null`
-for anything it can't parse and for dates that don't exist.
-
-```js
-parseDate('May 14, 2026, 11:30:00 PM') // May 14, 2026, 23:30
-parseDate('14.05.2026', { locale: 'de-DE', time: false }) // May 14, 2026
-```
-
-#### getDatePartAtPosition()
-
-```js
-getDatePartAtPosition(string, position, { locale, date, time } = {})
-```
-
-Returns the part of a formatted date at the caret `position` as
-`{ name, start, end }`, e.g. `{ name: 'month', start: 0, end: 3 }`, or the
-part before it if the caret is on a separator. Returns `null` without a
-string.
+Returns whether the `aria-invalid` of `attributes` marks errors: all values
+but `false` and empty ones do, as in ARIA.
 
 ### Events
 
@@ -570,53 +424,6 @@ const events = addEvents(window, {
 // later:
 events.remove()
 ```
-
-#### combineEvents()
-
-```js
-combineEvents(...events)
-```
-
-Combines the results of several `addEvents()` calls into one `{ remove() }`.
-
-#### getKey()
-
-```js
-getKey(event)
-```
-
-Returns `'left'`, `'up'`, `'right'`, `'down'` or `'enter'` for the arrow keys
-and Enter of a keyboard event, and `undefined` for other keys.
-
-#### getKeyNavigation()
-
-```js
-getKeyNavigation(event)
-```
-
-Returns the direction of the arrow key of a keyboard event as
-`{ hor, ver, enter }`: `hor` and `ver` are `-1`, `0` or `1`, `enter` whether
-it's Enter.
-
-### Selection
-
-#### getSelection()
-
-```js
-getSelection(input)
-```
-
-Returns the selection of an input or textarea as `{ start, end }`, or `null`
-for other elements.
-
-#### setSelection()
-
-```js
-setSelection(input, { start, end })
-```
-
-Focuses an input or textarea and selects the range from `start` to `end`.
-Does nothing for other elements.
 
 ### Vue
 
@@ -670,7 +477,7 @@ custom admin components, use `@ditojs/admin/imports.scss`, which includes it.
 The components follow BEM: blocks are named `.dito-{block}`, their elements
 `.dito-{block}__{element}`, and modifiers, including states,
 `.dito-{block}--{modifier}`, e.g. `.dito-button--disabled`,
-`.dito-switch--checked`, `.dito-input--focus` or `.dito-popup--bottom-left`.
+`.dito-input--focus` or `.dito-menu-button__item--icon`.
 
 Besides the classes of the components, the styles define:
 
@@ -687,7 +494,7 @@ The variables of `_settings.scss`, with these groups:
 | Group               | Variables                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Colors              | `$color-dark-offset`, `$color-light-offset` (how much darker the dark and light greys are), `$color-black`, `$color-darkest`, `$color-darker`, `$color-dark`, `$color-grey`, `$color-light`, `$color-lighter`, `$color-lightest`, `$color-white`, `$color-active`, `$color-highlight`, `$color-success`, `$color-warning`, `$color-error`, `$color-text`, `$color-text-inverted`, `$color-placeholder`, `$color-disabled`, `$color-shadow` |
-| Sizes               | `$input-height`, `$input-height-factor`, `$input-padding`, `$input-padding-ver`, `$input-padding-hor`, `$popup-margin`, `$chevron-indent`                                                                                                                                                                                                                                                                                                  |
+| Sizes               | `$input-height`, `$input-height-factor`, `$input-padding`, `$input-padding-ver`, `$input-padding-hor`, `$chevron-indent`                                                                                                                                                                                                                                                                                                                   |
 | Borders and shadows | `$border-radius`, `$border-color`, `$border-width`, `$border-style`, `$shadow-window`, `$shadow-focus`                                                                                                                                                                                                                                                                                                                                     |
 | Buttons             | `$button-color`, `$button-color-hover`, `$button-color-active`, `$button-color-active-hover`, `$button-color-active-border`, `$button-round-padding`, `$button-round-padding-ver`, `$button-round-padding-hor`                                                                                                                                                                                                                             |
 | Selects             | `$select-arrow-width`, `$select-arrow-size`, `$select-arrow-bottom`, `$select-arrow-right`                                                                                                                                                                                                                                                                                                                                                 |
@@ -718,6 +525,8 @@ Use with `@extend`:
 | `%input--borderless`                     | Height and alignment of inputs without border, e.g. checkboxes, to line up with bordered ones.                         |
 | `%button--disabled`                      | The disabled look of buttons.                                                                                          |
 | `%icon--{name}`                          | One of the [icons](#icons), as a mask in `currentColor`, e.g. in a `::before`.                                         |
+| `%popup`                                 | The `z-index` of popups, menus and lists.                                                                              |
+| `%popup--animated`                       | `%popup` with the panel and enter animation of larger popups, e.g. calendars. Menus and lists open at once.            |
 
 ### Functions
 
@@ -756,5 +565,7 @@ placeholders `%icon--{name}` and the list `$icons`:
 
 ### Transitions
 
-`DitoTrigger` uses the transitions `dito-slide`, `dito-fade` and `dito-zoom`,
-and `TransitionHeight` the transition `dito-height`.
+The styles include the transition `dito-fade`, and the animations
+`dito-slide-enter` and `dito-slide-leave` for elements that slide open and
+closed. Set `transform-origin` where they are used. `TransitionHeight` uses
+them with the transition `dito-height`.

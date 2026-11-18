@@ -1,17 +1,29 @@
 import type { TypeComponentDriver } from './index.js'
-import { text } from './text.js'
 
 /**
- * Driver for `date`, `datetime` and `time`: types the value into the input,
- * in the displayed format, and closes the picker.
+ * Driver for `date`, `datetime` and `time`, whose fields edit each part of the
+ * value on its own: types the numbers and the day period of the value into the
+ * parts, starting at the first, e.g. `5/14/2026, 11:30:00 AM`.
  */
 export const date: TypeComponentDriver = {
-  getElement: text.getElement,
-  getValue: text.getValue,
+  getElement(page, { label }) {
+    return page.getByRole('group', { name: label, exact: true })
+  },
 
   async setValue(page, component, value) {
-    const element = this.getElement(page, component)
-    await element.fill(String(value))
-    await element.press('Enter')
+    await this.getElement(page, component)
+      .locator('[contenteditable="true"]')
+      .first()
+      .click()
+    // Full numbers move the focus on to the next part:
+    for (const token of String(value).match(/\d+|AM|PM/g) ?? []) {
+      await page.keyboard.type(
+        token.length === 1 && /\d/.test(token) ? token.padStart(2, '0') : token
+      )
+    }
+  },
+
+  async getValue(page, component) {
+    return (await this.getElement(page, component).textContent())?.trim()
   }
 }

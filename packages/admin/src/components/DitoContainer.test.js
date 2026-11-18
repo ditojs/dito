@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { h, ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { defineType } from '../index.js'
-import { mountSchema, mountForm } from '../test/mount.js'
+import { mountSchema, mountForm, openInfo } from '../test/mount.js'
 import DitoErrors from './DitoErrors.vue'
 import DitoSchemaField from './DitoSchemaField.vue'
 
@@ -289,7 +289,7 @@ describe('DitoContainer', () => {
       await settle()
       const container = findContainer('title')
       expect(container.find('input').element.value).toBe('PERSUASION')
-      expect(container.find('.dito-label').html()).toContain('About PERSUASION')
+      expect((await openInfo(container)).textContent).toBe('About PERSUASION')
       expect(formatValue).toHaveBeenCalledOnce()
       expect(info).toHaveBeenCalledOnce()
     })
@@ -334,7 +334,73 @@ describe('DitoContainer', () => {
       })
       const label = findContainer('genre').find('.dito-label')
       expect(label.text()).toContain('Genre of 2')
-      expect(label.html()).toContain('novel, poem')
+      expect((await openInfo(label)).textContent).toBe('novel, poem')
+    })
+
+    it('opens the info while the mouse is over it, after a delay', async () => {
+      const { findContainer } = await mountSchema({
+        schema: { fields: { title: { type: 'text', info: 'Help' } } }
+      })
+      const info = findContainer('title').find('.dito-info')
+      const isOpen = () => info.attributes('aria-expanded') === 'true'
+      vi.useFakeTimers()
+      try {
+        // Touches toggle the info with clicks only:
+        await info.trigger('pointerenter', { pointerType: 'touch' })
+        await vi.advanceTimersByTimeAsync(250)
+        expect(isOpen()).toBe(false)
+        await info.trigger('pointerenter', { pointerType: 'mouse' })
+        await vi.advanceTimersByTimeAsync(200)
+        expect(isOpen()).toBe(false)
+        await vi.advanceTimersByTimeAsync(50)
+        expect(isOpen()).toBe(true)
+        await info.trigger('pointerleave', { pointerType: 'mouse' })
+        await vi.advanceTimersByTimeAsync(250)
+        expect(isOpen()).toBe(false)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('leaves the focus in the field when the mouse opens the info', async () => {
+      const { findContainer, findField } = await mountSchema({
+        schema: { fields: { title: { type: 'text', info: 'Help' } } }
+      })
+      const info = findContainer('title').find('.dito-info')
+      const input = findField('title').find('input').element
+      input.focus()
+      vi.useFakeTimers()
+      try {
+        await info.trigger('pointerenter', { pointerType: 'mouse' })
+        await vi.advanceTimersByTimeAsync(250)
+        expect(info.attributes('aria-expanded')).toBe('true')
+        expect(document.activeElement).toBe(input)
+        await info.trigger('pointerleave', { pointerType: 'mouse' })
+        await vi.advanceTimersByTimeAsync(250)
+        expect(info.attributes('aria-expanded')).toBe('false')
+        expect(document.activeElement).toBe(input)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('shows one info for fields without a label, in the suffix of inputs', async () => {
+      const { findContainer } = await mountSchema({
+        schema: {
+          fields: {
+            isbn: { type: 'text', label: false, info: 'Help' },
+            check: { type: 'button', text: 'Check', info: 'Help' }
+          }
+        }
+      })
+      const isbn = findContainer('isbn').findAll('.dito-info')
+      expect(isbn).toHaveLength(1)
+      expect(isbn[0].element.closest('.dito-affixes--suffix')).not.toBe(null)
+      const check = findContainer('check').findAll('.dito-info')
+      expect(check).toHaveLength(1)
+      expect(check[0].element.parentElement.classList).toContain(
+        'dito-container'
+      )
     })
 
     it('removes the members of the type when the type changes', async () => {

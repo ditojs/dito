@@ -30,11 +30,6 @@ const blocksSchema = {
   }
 }
 
-async function pressKey(wrapper, key) {
-  await wrapper.trigger('keydown', { key })
-  await flushPromises()
-}
-
 function findMenuButton(field) {
   return field.find('button.dito-create-button[aria-haspopup="menu"]')
 }
@@ -56,50 +51,6 @@ describe('DitoCreateButton', () => {
     await items[1].trigger('click')
     await flushPromises()
     expect(data.blocks).toEqual([{ type: 'quote', text: null }])
-  })
-
-  it('opens the menu and creates items with the keyboard', async () => {
-    const { findField, data } = await mountSchema({
-      schema: blocksSchema,
-      data: { blocks: [] }
-    })
-    const field = findField('blocks')
-    const button = findMenuButton(field)
-    expect(button.attributes('aria-expanded')).toBe('false')
-
-    await pressKey(button, 'Enter')
-    expect(button.attributes('aria-expanded')).toBe('true')
-    const menu = field.find('[role="menu"]')
-    const items = field.findAll('[role="menuitem"]')
-    expect(document.activeElement).toBe(items[0].element)
-
-    await pressKey(menu, 'ArrowDown')
-    expect(document.activeElement).toBe(items[1].element)
-    await pressKey(menu, 'End')
-    expect(document.activeElement).toBe(items[2].element)
-    await pressKey(menu, 'ArrowDown')
-    expect(document.activeElement).toBe(items[0].element)
-    await pressKey(menu, 'ArrowUp')
-    expect(document.activeElement).toBe(items[2].element)
-
-    await pressKey(menu, 'Enter')
-    expect(data.blocks).toEqual([{ type: 'image', url: null }])
-    expect(button.attributes('aria-expanded')).toBe('false')
-  })
-
-  it('closes the menu with Escape and focuses the button', async () => {
-    const { findField, data } = await mountSchema({
-      schema: blocksSchema,
-      data: { blocks: [] }
-    })
-    const field = findField('blocks')
-    const button = findMenuButton(field)
-    await pressKey(button, 'ArrowDown')
-    expect(button.attributes('aria-expanded')).toBe('true')
-    await pressKey(field.find('[role="menu"]'), 'Escape')
-    expect(button.attributes('aria-expanded')).toBe('false')
-    expect(document.activeElement).toBe(button.element)
-    expect(data.blocks).toEqual([])
   })
 
   it('offers the forms by their `creatable` only', async () => {

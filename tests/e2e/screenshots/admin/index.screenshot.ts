@@ -107,7 +107,9 @@ test.describe('screenshots', () => {
     await expect(page.locator('.dito-table__row--error')).toHaveCount(1)
     // The notification of the failed save times out after about 2s, which the
     // screenshot would race:
-    await expect(page.getByText('Validation Errors')).toBeHidden()
+    await expect(
+      page.locator('.dito-notification', { hasText: 'Validation Errors' })
+    ).toBeHidden()
     await expectScreenshot(page, 'rows-errors.png')
   })
 
@@ -120,8 +122,10 @@ test.describe('screenshots', () => {
 
   test('color picker', async ({ page, url }) => {
     await openProject(page, url)
-    await page.getByLabel('Color', { exact: true }).click()
-    await expect(page.getByLabel('Sketch color picker')).toBeVisible()
+    await page.getByRole('button', { name: 'Choose color' }).click()
+    await expect(
+      page.getByRole('dialog', { name: 'Choose color' })
+    ).toBeVisible()
     await expectScreenshot(page, 'color-picker.png')
   })
 

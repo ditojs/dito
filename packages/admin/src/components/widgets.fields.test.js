@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { html } from '@ditojs/utils'
-import { mountAdmin, enterValue } from '../test/mount.js'
+import { mountAdmin, enterValue, openInfo } from '../test/mount.js'
 import CustomFieldPage from '../test/CustomFieldPage.vue'
 import {
   useDitoForm,
@@ -112,7 +112,10 @@ const BookPage = {
             name: 'day',
             formats: { date: { day: 'numeric', month: 'numeric' } }
           }),
-          h(DitoTimeField, { name: 'opensAt' }),
+          h(DitoTimeField, {
+            name: 'opensAt',
+            formats: { time: { second: false } }
+          }),
           h(DitoTimeField, { name: 'opensDaily' }),
           h(DitoDateTimeField, { name: 'meetsAt' }),
           h(DitoColorField, { name: 'tint' }),
@@ -187,12 +190,13 @@ describe('widgets of values', () => {
     const getPicker = label =>
       getContainer(wrapper, label).find('.dito-date > *').classes()
     expect(getPicker('Day')).toContain('dito-date-picker')
-    expect(getPicker('Opens At')).toContain('dito-time-picker')
-    expect(getPicker('Meets At')).toContain('dito-date-time-picker')
-    // The `formats` of date widgets merge over `api.formats`:
-    expect(getContainer(wrapper, 'Day').find('input').element.value).toBe(
-      '5/14/2026'
-    )
+    expect(getPicker('Opens At')).toContain('dito-time-input')
+    expect(getPicker('Meets At')).toContain('dito-date-picker')
+    // The `formats` of date widgets merge over `api.formats`, keeping the
+    // minutes:
+    expect(
+      getContainer(wrapper, 'Opens At').find('[role="group"]').text()
+    ).toMatch(/^\d{1,2}:\d{2}\s[AP]M$/)
     expect(getComponentClasses('Tint')).toContain('dito-color')
     expect(getComponentClasses('Image')).toContain('dito-upload')
     expect(getContainer(wrapper, 'Notes').find('textarea').element.value).toBe(
@@ -258,7 +262,7 @@ describe('widgets of values', () => {
     const { wrapper } = await mountPage(WebsitePage, 'books', item)
     const markup = wrapper.html()
     expect(markup).toContain('<b>Site</b>')
-    expect(markup).toContain('<i>Public</i>')
+    expect((await openInfo(wrapper)).innerHTML).toBe('<i>Public</i>')
     expect(markup).toContain('<em>https</em>')
     const warnings = warn.mock.calls.flat().join()
     warn.mockRestore()
@@ -301,7 +305,9 @@ describe('widgets of values', () => {
       }
     }
     const { wrapper } = await mountPage(GenresPage, 'books', item)
-    const tags = getContainer(wrapper, 'Genres').findAll('.multiselect__tag')
+    const tags = getContainer(wrapper, 'Genres').findAll(
+      '.dito-multiselect__tag'
+    )
     expect(tags.map(tag => tag.text())).toEqual(['Rock'])
   })
 

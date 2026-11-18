@@ -1,21 +1,128 @@
 <template lang="pug">
-//- `DitoRoot` shows the info in a tooltip, as HTML:
-.dito-info(:data-info="html")
+PopoverRoot(
+  v-model:open="open"
+)
+  //- Hovering opens the popup too, after a delay:
+  PopoverTrigger.dito-info(
+    ref="trigger"
+    :aria-label="label ? `Info: ${label}` : 'Info'"
+    @pointerenter="onPointerEnter"
+    @pointerleave="onPointerLeave"
+  )
+  //- Fixed and outside of the buttons and labels around the info, so that
+  //- scrolling panes don't clip it:
+  PopoverPortal(
+    :to="pane"
+    :disabled="!pane"
+  )
+    PopoverContent.dito-info__popup(
+      side="top"
+      :sideOffset="2"
+      :collisionBoundary="scrollArea"
+      :collisionPadding="8"
+      positionStrategy="fixed"
+      @open-auto-focus="onOpenAutoFocus"
+      @close-auto-focus="onCloseAutoFocus"
+      @pointerenter="onPointerEnter"
+      @pointerleave="onPointerLeave"
+    )
+      .dito-info__content(
+        v-html="html"
+      )
+      PopoverArrow.dito-info__arrow(
+        :width="16"
+        :height="8"
+      )
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, onMounted, ref, shallowRef, useTemplateRef } from 'vue'
+import {
+  PopoverArrow,
+  PopoverContent,
+  PopoverPortal,
+  PopoverRoot,
+  PopoverTrigger
+} from 'reka-ui'
+import { getScrollContainer } from '@ditojs/ui/src'
 import { getHtml } from '../utils/html.js'
 
+// An info button that shows `info` in a popup.
 export default {
+  components: {
+    PopoverArrow,
+    PopoverContent,
+    PopoverPortal,
+    PopoverRoot,
+    PopoverTrigger
+  },
+
   props: {
     // Text or `html`:
-    info: { type: [String, Object], required: true }
+    info: { type: [String, Object], required: true },
+    // The text of the label that the info is about, to name the button:
+    label: { type: String, default: null }
   },
 
   setup(props) {
+    const trigger = useTemplateRef('trigger')
+    const pane = shallowRef(null)
+    const scrollArea = shallowRef(null)
+    onMounted(() => {
+      const element = trigger.value.$el
+      pane.value = element.closest('.dito-pane')
+      scrollArea.value = getScrollContainer(element)
+    })
+
+    const open = ref(false)
+    let timer = null
+    // Whether hovering opened the popup, so that it leaves the focus alone:
+    let hovered = false
+    // Open and close after a delay, so that the pointer can pass over the info
+    // and move from it to the popup:
+    const setOpenLater = value => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        if (value && !open.value) {
+          hovered = true
+        }
+        open.value = value
+      }, 250)
+    }
+
     return {
-      html: computed(() => getHtml(props.info))
+      pane,
+      scrollArea,
+      open,
+      html: computed(() => getHtml(props.info)),
+
+      // A mouse that passes over the info doesn't take the focus away from the
+      // field that the user types in:
+      onOpenAutoFocus(event) {
+        if (hovered) {
+          event.preventDefault()
+        }
+      },
+
+      onCloseAutoFocus(event) {
+        if (hovered) {
+          event.preventDefault()
+          hovered = false
+        }
+      },
+
+      // Only mice hover. Touches and keys toggle the popup with clicks:
+      onPointerEnter(event) {
+        if (event.pointerType === 'mouse') {
+          setOpenLater(true)
+        }
+      },
+
+      onPointerLeave(event) {
+        if (event.pointerType === 'mouse') {
+          setOpenLater(false)
+        }
+      }
     }
   }
 }

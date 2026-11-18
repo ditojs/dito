@@ -237,6 +237,27 @@ describe('useSidebar()', () => {
       expect(sidebar.classes()).toContain('dito-sidebar--closed')
     })
 
+    it(`doesn't close the sidebar on Escape in menus and popups`, async () => {
+      const { sidebar, region, button } = await mountSidebar()
+      await button.trigger('click')
+      await flushPromises()
+      // Like the open menu of reka-ui, which closes on Escape itself:
+      const layer = document.createElement('div')
+      layer.setAttribute('data-dismissable-layer', '')
+      region.element.append(layer)
+      pressEscape(layer)
+      await flushPromises()
+      expect(sidebar.classes()).toContain('dito-sidebar--open')
+      // Like the input of an open list, outside of its popup:
+      const input = document.createElement('input')
+      input.setAttribute('role', 'combobox')
+      input.setAttribute('aria-expanded', 'true')
+      region.element.append(input)
+      pressEscape(input)
+      await flushPromises()
+      expect(sidebar.classes()).toContain('dito-sidebar--open')
+    })
+
     it('closes the sidebar on navigation', async () => {
       const { admin, sidebar, button } = await mountSidebar()
       await button.trigger('click')

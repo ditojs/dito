@@ -2,17 +2,20 @@ import { expect, type Page } from '@playwright/test'
 import { text } from './text.js'
 import type { DriverComponent, TypeComponentDriver } from './index.js'
 
-/** Opens the color picker, which shows while the input has focus. */
+/** Opens the color picker with the swatch button next to the input. */
 export async function openColorPicker(page: Page, component: DriverComponent) {
-  await text.getElement(page, component).click()
-  const picker = page.getByLabel('Sketch color picker')
+  await page
+    .locator('.dito-input', { has: text.getElement(page, component) })
+    .getByRole('button', { name: 'Choose color' })
+    .click()
+  const picker = page.getByRole('dialog', { name: 'Choose color' })
   await expect(picker).toBeVisible()
   return picker
 }
 
 /**
  * Driver for `color`: enters hex values into the input, or picks a preset
- * with `{ pick: '#ed1c24' }`, or `{ pick: 'transparency' }`.
+ * with `{ pick: '#ed1c24' }` or `{ pick: '#00000000' }`.
  */
 export const color: TypeComponentDriver = {
   getElement: text.getElement,
@@ -24,12 +27,7 @@ export const color: TypeComponentDriver = {
     }
     const { pick } = value as { pick: string }
     const picker = await openColorPicker(page, component)
-    await picker
-      .getByLabel(
-        pick === 'transparency' ? 'Color: transparency' : `Color:${pick}`,
-        { exact: true }
-      )
-      .click()
+    await picker.getByTitle(pick, { exact: true }).click()
     // Click an empty area to close the picker, so it doesn't cover the form.
     await page.mouse.click(1000, 400)
     await expect(picker).toBeHidden()
