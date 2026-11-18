@@ -1,10 +1,12 @@
 name: CI
 
+# Stacked pull requests are based on `feature/` branches and get the full
+# checks too:
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, 'feature/**']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -46,7 +48,10 @@ jobs:
           pnpm vitest run --coverage --shard=${{ matrix.shard }}
           --reporter=blob --coverage.reporter=text-summary
           --coverage.thresholds.lines=0 --coverage.thresholds.branches=0
-      - uses: actions/upload-artifact@v4
+      # Also upload the reports of failed shards, so that the merged report in
+      # the `coverage` job lists the tests that failed:
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
         with:
           name: blob-report-${{ strategy.job-index }}
           path: .vitest/blob/
@@ -55,6 +60,7 @@ jobs:
 
   coverage:
     needs: unit
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

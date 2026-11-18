@@ -1,6 +1,5 @@
 // aws-lite names its methods after the S3 API:
 /* eslint-disable new-cap */
-import { isIP } from 'net'
 import { callbackify } from 'util'
 import { PassThrough, Readable } from 'stream'
 import { fileTypeFromBuffer } from 'file-type'
@@ -62,14 +61,6 @@ export class S3Storage extends Storage {
     })
     this.s3 = S3
     this.bucket = bucket
-    // Without `config.url`, use the url of the bucket, in path-style only for
-    // local hosts and buckets with dots in their names, like aws-lite:
-    const { protocol, host, hostname } = origin
-    this.url ??=
-      hostname === 'localhost' || isIP(hostname) || bucket.includes('.')
-        ? `${protocol}//${host}/${bucket}/`
-        : `${protocol}//${bucket}.${host}/`
-
     // The multer storage engine of uploads:
     this.storage = {
       _handleFile: callbackify(async (req, file) => {
