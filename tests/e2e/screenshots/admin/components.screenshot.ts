@@ -41,7 +41,9 @@ async function focusByKeyboard(page: Page, locator: Locator) {
 // disappear while the screenshot is taken, along with the browser's validation
 // bubble, leaving the inline errors that the scenes are about.
 async function dismissValidationErrors(page: Page) {
-  const notification = page.getByText('Validation Errors')
+  const notification = page.locator('.dito-notification', {
+    hasText: 'Validation Errors'
+  })
   await notification.click()
   await expect(notification).toBeHidden()
   await page.mouse.move(0, 0)
@@ -321,7 +323,9 @@ test.describe('component screenshots', () => {
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
     await dialog.getByRole('button', { name: 'Remove', exact: true }).click()
-    await expect(page.getByText('Successfully Removed')).toBeVisible()
+    await expect(
+      page.locator('.dito-notification', { hasText: 'Successfully Removed' })
+    ).toBeVisible()
     await page.mouse.move(0, 0)
     await expectScreenshot(page, 'notification.png')
   })

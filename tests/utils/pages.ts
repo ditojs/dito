@@ -227,7 +227,7 @@ export class DitoForm {
     options: { error?: boolean; hasText?: string | RegExp } = {}
   ) {
     const locator = this.page.locator(
-      options.error ? '.dito-notification.error' : '.dito-notification'
+      options.error ? '.dito-notification--error' : '.dito-notification'
     )
     return options.hasText
       ? locator.filter({ hasText: options.hasText })
