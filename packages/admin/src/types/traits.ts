@@ -5,7 +5,7 @@ import {
   isString,
   pickBy
 } from '@ditojs/utils'
-import { tinycolor } from 'vue-color'
+import tinycolor from 'tinycolor2'
 import type { Context, TypeDescriptor } from '../utils/schema/types.ts'
 import type { Schema } from '../utils/types.ts'
 import {
