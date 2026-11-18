@@ -649,19 +649,15 @@ $tag-margin: 2px;
     justify-content: center;
   }
 
-  // reka-ui gives its z-index to the element that positions the list:
+  // The list continues the input, so it has its border and no shadow:
   &__content {
-    z-index: $z-index-popup;
+    @extend %popup;
+
     box-sizing: border-box;
     width: var(--reka-combobox-trigger-width);
-    border: $border-style;
-    border-color: $color-active;
+    border: $border-width solid $color-active;
     border-radius: $border-radius;
     background: $color-white;
-
-    &[data-state='open'] {
-      animation: dito-slide-enter 0.15s $ease-out-quart;
-    }
 
     &[data-side='bottom'] {
       border-top-color: $border-color;

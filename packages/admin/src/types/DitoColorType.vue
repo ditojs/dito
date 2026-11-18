@@ -395,9 +395,9 @@ $color-slider-height: 12px;
     }
   }
 
-  // reka-ui gives its z-index to the element that positions the popup:
   &__popup {
-    z-index: $z-index-popup;
+    @extend %popup--animated;
+
     display: flex;
     flex-flow: column;
     gap: $color-picker-gap;
@@ -405,14 +405,6 @@ $color-slider-height: 12px;
     // As wide as the input:
     width: var(--reka-popover-trigger-width);
     padding: $color-picker-gap;
-    border: $border-style;
-    border-radius: $border-radius;
-    background: $color-white;
-    box-shadow: $shadow-window;
-
-    &[data-state='open'] {
-      animation: dito-slide-enter 0.15s $ease-out-quart;
-    }
   }
 
   &__area {

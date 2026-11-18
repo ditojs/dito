@@ -64,6 +64,7 @@ $duration: 0.15s;
 .dito-height-leave-active {
   transition: height $duration $ease-out-quart;
   overflow: hidden;
+  transform-origin: top left;
 }
 
 .dito-height-enter-active {
