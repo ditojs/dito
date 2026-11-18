@@ -116,6 +116,18 @@ export class DiskStorage extends Storage {
     return files
   }
 
+  // @override
+  async _listFiles() {
+    return mapConcurrently(
+      await this._listKeys(),
+      async key => {
+        const { mtime } = await fs.stat(this._getFilePath({ key }))
+        return { key, lastModified: mtime }
+      },
+      { concurrency: 16 }
+    )
+  }
+
   _getNestedFolder(key, posix = false) {
     // Store files in nested folders created with the first two chars of the
     // key, for faster access & management with large amounts of files.

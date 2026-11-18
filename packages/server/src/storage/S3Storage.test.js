@@ -521,6 +521,20 @@ describe('S3Storage', () => {
       ).toEqual([undefined, 'second', 'third'])
     })
 
+    it('lists files with their modification dates', async () => {
+      const storage = await createS3Storage()
+      const lastModified = '2026-11-01T10:00:00.000Z'
+      pages = {
+        first: {
+          Contents: [{ Key: 'a.png', LastModified: lastModified }],
+          IsTruncated: false
+        }
+      }
+      expect(await storage.listFiles()).toEqual([
+        { key: 'a.png', lastModified: new Date(lastModified) }
+      ])
+    })
+
     it('lists no keys for empty buckets', async () => {
       const storage = await createS3Storage()
       pages = { first: { Contents: [], IsTruncated: false } }

@@ -1380,6 +1380,69 @@ export class Application extends Koa {
     return []
   }
 
+  async findOrphanedFiles({
+    storages = Object.keys(this.storages),
+    olderThan = '24h',
+    remove = false,
+    concurrency = 8
+  } = {}) {
+    // A short `olderThan` finds the files of writes that are still running,
+    // so fail on invalid durations:
+    checkDuration('olderThan', olderThan, {
+      min: 0,
+      usage: 'Use a duration.'
+    })
+    const orphaned = []
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      const modifiedBefore = subtractDuration(new Date(), olderThan)
+      // List the files before reading the assets and references, so that the
+      // files of writes that commit in between aren't orphaned:
+      const filesByStorage = {}
+      for (const name of storages) {
+        const storage = this.getStorage(name)
+        if (!storage) {
+          throw new AssetError(`Unknown storage: '${name}'.`)
+        }
+        const files = await storage.listFiles()
+        if (!files) {
+          throw new AssetError(`Unable to list the files of storage '${name}'.`)
+        }
+        filesByStorage[name] = files
+      }
+      const assets = await AssetModel.query().select('key')
+      const assetKeys = new Set(assets.map(asset => asset.key))
+      const references = await this.getAssetReferences()
+      const referencedKeys = new Set(references.map(reference => reference.key))
+      for (const [storage, files] of Object.entries(filesByStorage)) {
+        for (const { key, lastModified } of files) {
+          if (
+            !assetKeys.has(key) &&
+            !referencedKeys.has(key) &&
+            lastModified <= modifiedBefore
+          ) {
+            orphaned.push({ storage, key, lastModified })
+          }
+        }
+      }
+      if (remove) {
+        await mapConcurrently(
+          orphaned,
+          async file => {
+            try {
+              await this.getStorage(file.storage).removeFile({ key: file.key })
+            } catch (error) {
+              this.emit('error', error)
+              file.error = error
+            }
+          },
+          { concurrency }
+        )
+      }
+    }
+    return orphaned
+  }
+
   get requestLocals() {
     return this.requestStorage.getStore() ?? {}
   }

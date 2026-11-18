@@ -210,8 +210,19 @@ Reads the file's contents. Returns `Promise<Buffer>`.
 const keys = await storage.listKeys()
 ```
 
-Lists the keys of all files in the storage, e.g. to find orphaned files. Returns
-`Promise<string[]>`.
+Lists the keys of all files in the storage. Returns `Promise<string[]>`.
+
+### listFiles()
+
+```js
+const files = await storage.listFiles()
+```
+
+Lists all files in the storage with the time of their last change, to find
+orphaned files with
+[`app.findOrphanedFiles()`](application.md#findorphanedfiles). Returns
+`Promise<{ key: string, lastModified: Date }[]>`, or `undefined` for storages
+that don't implement `_listFiles()`.
 
 ### getFilePath()
 
@@ -351,6 +362,7 @@ _Hooks._ The public methods delegate to these:
 | `_removeFile(file)`    | `removeFile()`                       |
 | `_readFile(file)`      | `readFile()`                         |
 | `_listKeys()`          | `listKeys()`                         |
+| `_listFiles()`         | `listFiles()`                        |
 | `_getFilePath(file)`   | `getFilePath()`                      |
 | `_getFileUrl(file)`    | `getFileUrl()`, `addFile()`, uploads |
 

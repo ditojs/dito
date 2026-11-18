@@ -242,6 +242,12 @@ To remove unused files right away, e.g. from an admin action, call
 `app.releaseUnusedAssets({ olderThan: 0 })`. `pnpm db:scan_assets` runs the
 scan on its own.
 
+Files that a storage holds without an asset record and without a reference,
+e.g. of uploads from before the asset model, are orphaned.
+`pnpm db:find_orphaned_files` lists the ones older than a day, and removes
+them with `--remove`, see
+[`app.findOrphanedFiles()`](../../api/server/application.md#findorphanedfiles).
+
 ## Adding files in code
 
 `AssetFile.create()` creates a file from data, which is stored when the model

@@ -1,5 +1,6 @@
 export * from './createMigration.js'
 export * from './deleteExpiredRecords.js'
+export * from './findOrphanedFiles.js'
 export * from './listAssetConfig.js'
 export * from './migrate.js'
 export * from './scanAssets.js'
