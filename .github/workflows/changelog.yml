@@ -4,7 +4,7 @@ name: Changelog
 # `changelog/unreleased/`, unless they carry the label `no changelog`:
 on:
   pull_request:
-    branches: [main]
+    branches: [main, 'feature/**']
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
