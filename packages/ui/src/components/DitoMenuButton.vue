@@ -12,16 +12,14 @@ DropdownMenuRoot(
       v-bind="$attrs"
     )
       slot
-  //- No portal, so that the styles apply. The menu is fixed, so that
-  //- scrolling panels don't clip it:
+  //- No portal, so that the styles apply:
   DropdownMenuContent.dito-menu-button__menu(
     ref="menu"
+    v-bind="placement"
     :side="side"
     :align="alignment"
     :sideOffset="4"
-    :collisionBoundary="scrollContainer"
     loop
-    positionStrategy="fixed"
   )
     DropdownMenuItem.dito-menu-button__item(
       v-for="item in items"
@@ -41,6 +39,7 @@ DropdownMenuRoot(
 </template>
 
 <script>
+import { useTemplateRef } from 'vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -49,7 +48,7 @@ import {
 } from 'reka-ui'
 import DitoButton from './DitoButton.vue'
 import DitoIcon from './DitoIcon.vue'
-import { getScrollContainer } from '../utils/element.js'
+import { usePopupPlacement } from '../utils/vue.js'
 
 // A button that opens a menu of `items`, built on reka-ui's `DropdownMenu`,
 // and emits `select` with the chosen item. Attributes go to the button.
@@ -73,14 +72,13 @@ export default {
     disabled: { type: Boolean, default: false }
   },
 
-  data() {
-    return { scrollContainer: null, alignment: this.align }
+  setup() {
+    const button = useTemplateRef('button')
+    return { placement: usePopupPlacement(() => button.value.$el) }
   },
 
-  mounted() {
-    // Keep the menu in the closest container that scrolls, out of the headers
-    // above it:
-    this.scrollContainer = getScrollContainer(this.$refs.button.$el)
+  data() {
+    return { alignment: this.align }
   },
 
   methods: {
@@ -94,7 +92,7 @@ export default {
         const { offsetWidth: width } = this.$refs.menu.$el
         const button = this.$refs.button.$el.getBoundingClientRect()
         const { left, right } =
-          this.scrollContainer?.getBoundingClientRect() ?? {
+          this.placement.collisionBoundary?.getBoundingClientRect() ?? {
             left: 0,
             right: document.documentElement.clientWidth
           }
