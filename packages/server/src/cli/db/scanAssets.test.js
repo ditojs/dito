@@ -4,7 +4,7 @@ import { Application } from '../../app/Application.js'
 import { Model } from '../../models/index.js'
 import { AssetMixin } from '../../mixins/index.js'
 import { AssetFile, Storage } from '../../storage/index.js'
-import { recountAssets } from './recountAssets.js'
+import { recountAssets } from './scanAssets.js'
 import { createTestKnex } from '../../../../../tests/utils/test-knex.ts'
 import { createTestDatabase } from '../../../../../tests/utils/database.ts'
 
