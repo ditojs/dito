@@ -41,7 +41,10 @@ test.describe('child pages', () => {
     await list.dragRow(0, 1)
     await expect(list.rows.first()).toContainText('Second')
     await page.getByRole('button', { name: 'Save Order' }).click()
-    await expect(page.getByText('The order was saved.')).toBeVisible()
+    // The toast also announces its text in a hidden copy for screen readers:
+    await expect(
+      page.locator('.dito-notification', { hasText: 'The order was saved.' })
+    ).toBeVisible()
     const pages = await Page.query().orderBy('order')
     expect(pages.map(({ name, order }) => ({ name, order }))).toEqual([
       { name: 'Second', order: 0 },
