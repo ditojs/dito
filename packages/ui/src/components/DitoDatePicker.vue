@@ -1,5 +1,8 @@
 <template lang="pug">
-.dito-date-picker(:class="$attrs.class")
+.dito-date-picker(
+  ref="root"
+  :class="$attrs.class"
+)
   //- Picking a day closes the calendar, and picking it again keeps it:
   DatePickerRoot(
     v-bind="$props"
@@ -39,14 +42,12 @@
             :disabled="disabled"
           )
         slot(name="suffix")
-    //- Fixed, so that scrolling panels don't clip it, and without a portal, so
-    //- that the styles apply:
+    //- No portal, so that the styles apply:
     DatePickerContent.dito-date-picker__popup(
+      v-bind="placement"
       :portal="{ disabled: true }"
       align="start"
       :sideOffset="2"
-      :collisionBoundary="scrollContainer"
-      positionStrategy="fixed"
     )
       DatePickerCalendar.dito-calendar(
         v-slot="{ weekDays, grid }"
@@ -126,6 +127,7 @@ import {
   toCalendarDateTime,
   today
 } from '@internationalized/date'
+import { useTemplateRef } from 'vue'
 import {
   DatePickerAnchor,
   DatePickerCalendar,
@@ -147,7 +149,8 @@ import {
   DatePickerTrigger
 } from 'reka-ui'
 import DitoIcon from './DitoIcon.vue'
-import { getScrollContainer, hasErrors } from '../utils/element.js'
+import { hasErrors } from '../utils/element.js'
+import { usePopupPlacement } from '../utils/vue.js'
 
 // A date field with a calendar in a popup, built on reka-ui's `DatePicker`,
 // with dates of `@internationalized/date` as values.
@@ -192,13 +195,17 @@ export default {
     placeholder: { type: String, default: null }
   },
 
+  setup() {
+    const root = useTemplateRef('root')
+    return { placement: usePopupPlacement(() => root.value) }
+  },
+
   data() {
     return {
       // The month that the calendar shows, which the header's lists change.
       // reka-ui calls it the placeholder:
       shownDate: this.modelValue ?? getToday(this.granularity),
-      open: false,
-      scrollContainer: null
+      open: false
     }
   },
 
@@ -245,10 +252,6 @@ export default {
     open(open) {
       this.$emit('update:open', open)
     }
-  },
-
-  mounted() {
-    this.scrollContainer = getScrollContainer(this.$el)
   },
 
   methods: {

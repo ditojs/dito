@@ -33,14 +33,11 @@
             :disabled="disabled || readonly"
           )
             div(:style="{ background: `#${hexValue || '00000000'}` }")
-    //- No portal, so that the styles apply. The popup is fixed, so that
-    //- scrolling panes don't clip it, and stays in the closest container that
-    //- scrolls, so that it doesn't cover the panels next to it:
+    //- No portal, so that the styles apply:
     PopoverContent.dito-color__popup(
+      v-bind="placement"
       align="start"
       :sideOffset="2"
-      :collisionBoundary="scrollContainer"
-      positionStrategy="fixed"
     )
       ColorAreaRoot(
         v-slot="{ style }"
@@ -107,12 +104,10 @@ import {
   convertToRgb,
   getChannelName
 } from 'reka-ui'
-import { DitoInput, getScrollContainer } from '@ditojs/ui/src'
+import { DitoInput, usePopupPlacement } from '@ditojs/ui/src'
 import {
   computed,
-  onMounted,
   ref,
-  shallowRef,
   useTemplateRef,
   watch
 } from 'vue'
@@ -188,10 +183,7 @@ const DitoColorType = {
     }
 
     const root = useTemplateRef('root')
-    const scrollContainer = shallowRef(null)
-    onMounted(() => {
-      scrollContainer.value = getScrollContainer(root.value)
-    })
+    const placement = usePopupPlacement(() => root.value)
 
     watch(showPopup, showPopup => {
       if (!showPopup) {
@@ -202,7 +194,7 @@ const DitoColorType = {
     return {
       ...field,
       showPopup,
-      scrollContainer,
+      placement,
       getChannelName,
 
       // The picker's color in reka-ui's HSB space, which its area needs for

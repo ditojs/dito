@@ -9,18 +9,16 @@ PopoverRoot(
     @pointerenter="onPointerEnter"
     @pointerleave="onPointerLeave"
   )
-  //- Fixed and outside of the buttons and labels around the info, so that
-  //- scrolling panes don't clip it:
+  //- In the pane, outside of the buttons and labels around the info:
   PopoverPortal(
     :to="pane"
     :disabled="!pane"
   )
     PopoverContent.dito-info__popup(
+      v-bind="placement"
       side="top"
       :sideOffset="2"
-      :collisionBoundary="scrollArea"
       :collisionPadding="8"
-      positionStrategy="fixed"
       @open-auto-focus="onOpenAutoFocus"
       @close-auto-focus="onCloseAutoFocus"
       @pointerenter="onPointerEnter"
@@ -44,7 +42,7 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
-import { getScrollContainer } from '@ditojs/ui/src'
+import { usePopupPlacement } from '@ditojs/ui/src'
 import { getHtml } from '../utils/html.js'
 
 // An info button that shows `info` in a popup.
@@ -67,11 +65,9 @@ export default {
   setup(props) {
     const trigger = useTemplateRef('trigger')
     const pane = shallowRef(null)
-    const scrollArea = shallowRef(null)
+    const placement = usePopupPlacement(() => trigger.value.$el)
     onMounted(() => {
-      const element = trigger.value.$el
-      pane.value = element.closest('.dito-pane')
-      scrollArea.value = getScrollContainer(element)
+      pane.value = trigger.value.$el.closest('.dito-pane')
     })
 
     const open = ref(false)
@@ -92,7 +88,7 @@ export default {
 
     return {
       pane,
-      scrollArea,
+      placement,
       open,
       html: computed(() => getHtml(props.info)),
 

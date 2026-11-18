@@ -92,7 +92,7 @@ export async function openProject(page: Page, url: string, tab?: string) {
 
 // Waits for fonts and pending requests, so that the screenshots are stable.
 // `toHaveScreenshot()` finishes transitions and animations itself, e.g. of
-// menus, pickers and notifications. The screenshots capture the viewport, as
+// pickers and notifications. The screenshots capture the viewport, as
 // the admin scrolls its own containers instead of the page.
 export async function expectScreenshot(
   page: Page,
