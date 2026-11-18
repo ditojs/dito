@@ -1,5 +1,3 @@
-@use 'sass:color';
-
 .dito-button {
   display: inline-flex;
   align-items: center;
@@ -65,22 +63,7 @@
   &--active,
   &--primary,
   &[type='submit'] {
-    color: $color-text-inverted;
-    background: $color-active;
-    border-color: $color-active;
-
-    &:active {
-      border-color: color.adjust($color-active, $lightness: -10%);
-    }
-
-    &:hover,
-    &[data-state='open'] {
-      background: color.adjust($color-active, $lightness: -7.5%);
-    }
-
-    &:focus {
-      border-color: color.adjust($color-active, $lightness: -25%);
-    }
+    @include button-active;
   }
 
   &--disabled,

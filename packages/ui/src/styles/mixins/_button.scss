@@ -1,3 +1,24 @@
+@use 'sass:color';
+
+@mixin button-active {
+  color: $color-text-inverted;
+  background: $color-active;
+  border-color: $color-active;
+
+  &:active {
+    border-color: color.adjust($color-active, $lightness: -10%);
+  }
+
+  &:hover,
+  &[data-state='open'] {
+    background: color.adjust($color-active, $lightness: -7.5%);
+  }
+
+  &:focus {
+    border-color: color.adjust($color-active, $lightness: -25%);
+  }
+}
+
 %button--disabled {
   opacity: 0.6;
   pointer-events: none;
