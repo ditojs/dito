@@ -11,7 +11,6 @@ DitoButton.dito-create-button(
 DitoMenuButton.dito-create-button(
   v-else-if="hasCreatableForms"
   :items="menuItems"
-  placement="bottom-right"
   :disabled="disabled"
   :verb="verb"
   :text="text"
