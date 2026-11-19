@@ -1,47 +1,56 @@
 <template lang="pug">
 .dito-dialog(
   ref="dialog"
-  role="dialog"
-  :aria-label="settings.label || 'Dialog'"
-  aria-modal="true"
   :style="{ '--width': width, '--min-width': minWidth }"
-  @mouseup.self="onMouseUp"
-  @keydown="onKeyDown"
 )
-  UseFocusTrap.dito-dialog__focus-trap(:options="focusTrapOptions")
-    form.dito-dialog__form.dito-scroll-parent(
-      @submit.prevent="submit"
-      @keydown.enter="onEnter"
+  //- reka-ui's modal mode would hide the notifications and block their
+  //- clicks, so `DitoRoot` makes the rest inert instead:
+  DialogRoot(
+    open
+    :modal="false"
+  )
+    DialogContent.dito-dialog__content(
+      aria-modal="true"
+      :aria-describedby="undefined"
+      @open-auto-focus="onOpenAutoFocus"
+      @escape-key-down="onEscapeKeyDown"
+      @interact-outside="onInteractOutside"
     )
-      // Keep Enter from pressing the clearable buttons:
-      button(
-        v-show="false"
+      VisuallyHidden
+        DialogTitle {{ settings.label || 'Dialog' }}
+      form.dito-dialog__form.dito-scroll-parent(
+        @submit.prevent="submit"
+        @keydown.enter="onEnter"
       )
-      DitoSchema(
-        :schema="schema"
-        :data="dialogData"
-        :store="store"
-        padding="root"
-        scrollable
-        generateLabels
-      )
-        template(#buttons)
-          DitoButtons.dito-dialog__buttons.dito-buttons--large(
-            :buttons="buttonSchemas"
-            :data="dialogData"
-          )
+        // Keep Enter from pressing the clearable buttons:
+        button(
+          v-show="false"
+        )
+        DitoSchema(
+          :schema="schema"
+          :data="dialogData"
+          :store="store"
+          padding="root"
+          scrollable
+          generateLabels
+        )
+          template(#buttons)
+            DitoButtons.dito-dialog__buttons.dito-buttons--large(
+              :buttons="buttonSchemas"
+              :data="dialogData"
+            )
 </template>
 
 <script>
 import { computed, useTemplateRef } from 'vue'
 import { clone, isNumber } from '@ditojs/utils'
-import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
+import { DialogContent, DialogRoot, DialogTitle, VisuallyHidden } from 'reka-ui'
 import { useContainer } from '../composables/useContainer.ts'
 import { getButtonSchemas, hasSubmitButton } from '../utils/schema/lookup.js'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 
 export default {
-  components: { UseFocusTrap },
+  components: { DialogContent, DialogRoot, DialogTitle, VisuallyHidden },
   emits: ['remove'],
 
   props: {
@@ -132,59 +141,90 @@ export default {
       width: computed(() => toCssLength(props.settings.width)),
       minWidth: computed(() => toCssLength(props.settings.minWidth)),
 
-      focusTrapOptions: {
-        immediate: true,
-        // Focus the first submit or primary button, unless a component has
-        // `autofocus` or focused itself, e.g. multiselects. `undefined` falls
-        // back to the focused or first tabbable element:
-        initialFocus: () => (
-          dialog.value.querySelector('[autofocus]') || (
-            !dialog.value.matches(':focus-within') &&
-            dialog.value.querySelector(
-              '.dito-dialog__buttons :is([type="submit"], .dito-button--primary)'
-            )
-          ) ||
-          undefined
-        ),
-        fallbackFocus: () => dialog.value,
-        // Only dialogs with a cancel button or at most one button can be
-        // cancelled, see `onKeyDown()`. The trap is also deactivated on
-        // unmount, e.g. after submitting, so it can't cancel then:
-        escapeDeactivates: false
-      },
-
-      onEnter(event) {
-        // Submit on Enter in inputs, also for password managers that simulate
-        // an untrusted Enter keypress, which browsers ignore. Prevent the
-        // implicit submission of trusted ones, which would submit again:
-        if (event.target instanceof HTMLInputElement) {
+      onOpenAutoFocus(event) {
+        // Focus the element with `autofocus`, or else the first submit or
+        // primary button. reka-ui calls this only if no component focused
+        // itself, e.g. a multiselect, and focuses the first tabbable element
+        // if this doesn't:
+        const element = (
+          event.target.querySelector('[autofocus]') ||
+          event.target.querySelector(
+            '.dito-dialog__buttons :is([type="submit"], .dito-button--primary)'
+          )
+        )
+        if (element) {
           event.preventDefault()
-          submit()
+          element.focus()
         }
       },
 
-      onMouseUp() {
-        if (props.settings.clickToClose) {
-          cancel()
-        }
-      },
-
-      onKeyDown(event) {
-        // Escape keys that the dialog's components handled don't cancel it:
+      onEscapeKeyDown(event) {
+        // Only dialogs with a cancel button or at most one button can be
+        // cancelled, and not with Escape keys that its components handled.
+        // reka-ui passes Escape only to the topmost of its layers:
+        const isPrevented = event.defaultPrevented
+        event.preventDefault()
         if (
-          event.key === 'Escape' &&
-          !event.defaultPrevented && (
+          !isPrevented && (
             !!buttonSchemas.value.cancel ||
             Object.keys(buttonSchemas.value).length <= 1
           )
         ) {
-          event.preventDefault()
           cancel()
+        }
+      },
+
+      onInteractOutside(event) {
+        // Cancel only on presses on the overlay, with `clickToClose`. Clicks
+        // and focus in the notifications keep the dialog open. reka-ui skips
+        // its focus return after dismissals from outside, so it dismisses
+        // nothing here either:
+        event.preventDefault()
+        const { originalEvent } = event.detail
+        if (
+          props.settings.clickToClose &&
+          originalEvent.type === 'pointerdown' &&
+          originalEvent.target === dialog.value
+        ) {
+          // Keep the mouse down from moving the returned focus to the body:
+          originalEvent.preventDefault()
+          cancel()
+        }
+      },
+
+      onEnter(event) {
+        // Submit on Enter in text inputs, like the implicit submission of
+        // browsers, also for password managers that simulate an untrusted
+        // Enter keypress, which browsers ignore. Prevent the implicit
+        // submission of trusted ones, which would submit again:
+        const { target } = event
+        if (
+          target instanceof HTMLInputElement &&
+          textInputTypes.has(target.type)
+        ) {
+          event.preventDefault()
+          submit()
         }
       }
     }
   }
 }
+
+// The types of inputs that browsers submit their form from with Enter:
+const textInputTypes = new Set([
+  'text',
+  'search',
+  'url',
+  'tel',
+  'email',
+  'password',
+  'number',
+  'date',
+  'month',
+  'week',
+  'time',
+  'datetime-local'
+])
 
 // Numbers are pixels, strings any CSS length:
 function toCssLength(length) {
@@ -209,7 +249,7 @@ function toCssLength(length) {
   overflow: hidden;
   background: rgb(0, 0, 0, 0.2);
 
-  &__focus-trap {
+  &__content {
     display: flex;
     max-height: 100%;
   }
@@ -233,8 +273,8 @@ function toCssLength(length) {
     border-radius: $border-radius;
     // The width is that of the content, without the padding around it:
     max-width: calc(var(--width, 35em) + 2 * #{$content-padding});
-    // Within the window's padding. Percentages don't resolve in the focus
-    // trap, which is as wide as the form:
+    // Within the window's padding. Percentages don't resolve in the content,
+    // which is as wide as the form:
     min-width: min(
       calc(var(--min-width, 0px) + 2 * #{$content-padding}),
       calc(100vw - 2 * #{$content-padding})

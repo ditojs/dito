@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountAdmin, enterValue } from '../test/mount.js'
+import { mountAdmin, enterValue, getDialogLabel } from '../test/mount.js'
 
 // Shows a dialog through `DitoRoot.showDialog()`, and returns its promise, the
 // dialog element, whether it's still shown, and whether the promise settled.
@@ -21,6 +21,13 @@ async function showDialog(options) {
       return isSettled
     }
   }
+}
+
+// Presses the mouse on the element. reka-ui listens for pointer downs outside
+// the dialog only after a timeout:
+async function pressPointer(wrapper) {
+  await new Promise(resolve => setTimeout(resolve))
+  await wrapper.trigger('pointerdown')
 }
 
 const fields = { title: { type: 'text' } }
@@ -76,7 +83,7 @@ describe('DitoDialog', () => {
       buttons: { cancel: {} },
       settings: { label: 'Rename Book' }
     })
-    expect(dialog.attributes('aria-label')).toBe('Rename Book')
+    expect(getDialogLabel(dialog)).toBe('Rename Book')
   })
 
   it('sizes its content with `settings.width` in pixels or CSS lengths', async () => {
@@ -104,16 +111,21 @@ describe('DitoDialog', () => {
     expect(style.getPropertyValue('--width')).toBe('600px')
   })
 
-  it('closes with `clickToClose` only when the overlay is clicked', async () => {
+  it('closes on presses on the overlay only with `clickToClose`', async () => {
+    const without = await showDialog({ fields, buttons: { cancel: {} } })
+    await pressPointer(without.dialog)
+    await flushPromises()
+    expect(without.isSettled).toBe(false)
+
     const result = await showDialog({
       fields,
       buttons: { cancel: {} },
       settings: { clickToClose: true }
     })
-    await result.dialog.find('input').trigger('mouseup')
+    await pressPointer(result.dialog.find('input'))
     await flushPromises()
     expect(result.isSettled).toBe(false)
-    await result.dialog.trigger('mouseup')
+    await pressPointer(result.dialog)
     expect(await result.promise).toBe(undefined)
   })
 
@@ -151,6 +163,19 @@ describe('DitoDialog', () => {
       await dialog.find('input').trigger('keydown', { key: 'Escape' })
       expect(await promise).toBe(undefined)
     }
+  })
+
+  it(`doesn't cancel with Escape keys that its components handled`, async () => {
+    const result = await showDialog({
+      fields,
+      buttons: { cancel: {} }
+    })
+    const input = result.dialog.find('input')
+    // Like a component that closes its menu with Escape:
+    input.element.addEventListener('keydown', event => event.preventDefault())
+    await input.trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+    expect(result.isSettled).toBe(false)
   })
 
   it('shows no buttons without any that render', async () => {
@@ -199,19 +224,6 @@ describe('DitoDialog', () => {
     }
   })
 
-  it(`doesn't cancel with Escape keys that its components handled`, async () => {
-    const result = await showDialog({
-      fields,
-      buttons: { cancel: {} }
-    })
-    const input = result.dialog.find('input')
-    // Like a component that closes its menu with Escape:
-    input.element.addEventListener('keydown', event => event.preventDefault())
-    await input.trigger('keydown', { key: 'Escape' })
-    await flushPromises()
-    expect(result.isSettled).toBe(false)
-  })
-
   it('resolves with the value of `closeDialog()` of its buttons', async () => {
     const { dialog, promise, isShown } = await showDialog({
       fields,
@@ -236,8 +248,22 @@ describe('DitoDialog', () => {
       }
     })
     const button = dialog.find('button[id="$buttons/remove"]').element
-    // The focus trap focuses initially after a delay:
+    // reka-ui focuses initially after a delay:
     await vi.waitFor(() => expect(document.activeElement).toBe(button))
+  })
+
+  it('keeps the notifications usable', async () => {
+    const result = await showDialog({
+      fields,
+      buttons: { cancel: {} },
+      settings: { clickToClose: true }
+    })
+    const notifications = result.admin.wrapper.find('.dito-notifications')
+    expect(notifications.attributes('aria-hidden')).toBe(undefined)
+    expect(document.body.style.pointerEvents).toBe('')
+    await pressPointer(notifications)
+    await flushPromises()
+    expect(result.isSettled).toBe(false)
   })
 
   it('validates, edits and replaces its data through contexts', async () => {
@@ -339,19 +365,24 @@ describe('DitoDialog', () => {
     expect(request).toHaveBeenCalledTimes(2)
   })
 
-  it('submits with Enter in its inputs only', async () => {
+  it('submits with Enter in its text inputs only', async () => {
     const result = await showDialog({
-      fields,
+      fields: { ...fields, done: { type: 'checkbox' } },
       buttons: { cancel: {}, apply: { type: 'submit' } },
-      data: { title: 'Emma' }
+      data: { title: 'Emma', done: true }
     })
     await result.dialog.find('button.dito-button--cancel').trigger('keydown', {
       key: 'Enter'
     })
+    await result.dialog.find('input[type="checkbox"]').trigger('keydown', {
+      key: 'Enter'
+    })
     await flushPromises()
     expect(result.isSettled).toBe(false)
-    await result.dialog.find('input').trigger('keydown', { key: 'Enter' })
-    expect(await result.promise).toEqual({ title: 'Emma' })
+    await result.dialog.find('input[name="title"]').trigger('keydown', {
+      key: 'Enter'
+    })
+    expect(await result.promise).toEqual({ title: 'Emma', done: true })
   })
 
   it('submits once with Enter in its inputs', async () => {
@@ -376,12 +407,5 @@ describe('DitoDialog', () => {
       title: 'Validation Errors',
       text: 'Please correct the highlighted errors.'
     })
-  })
-
-  it(`doesn't close on overlay clicks without \`clickToClose\``, async () => {
-    const result = await showDialog({ fields, buttons: { cancel: {} } })
-    await result.dialog.trigger('mouseup')
-    await flushPromises()
-    expect(result.isSettled).toBe(false)
   })
 })
