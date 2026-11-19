@@ -22,6 +22,7 @@ Common options:
 | ---------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `type`           | `string`   | `'disk'`, `'s3'` or the type of a [registered](#static-register) storage class.                                                                                 |
 | `url`            | `string`   | Absolute base URL of the stored files, ending in `/`: file URLs are resolved against it, so `…/covers` without the slash drops `covers`.                        |
+| `public`         | `boolean`  | Whether the files are public: each read gives them a `url` resolved against `url`, which isn't stored. Default `true` with `url`, else `false`.                 |
 | `concurrency`    | `number`   | Concurrency of storage operations, e.g. importing assets. Default `8`.                                                                                          |
 | `allowedImports` | `string[]` | Glob patterns of URLs from which unsigned asset files may be imported, e.g. `['https://images.example.com/**']`; `file://` URLs are resolved to absolute paths. |
 
@@ -123,6 +124,7 @@ const storage = new DiskStorage(app, 'covers', {
 | `config`        | `StorageConfig`                 | The configuration.                                           |
 | `url`           | `string \| undefined`           | `config.url`.                                                |
 | `path`          | `string \| undefined`           | `config.path`.                                               |
+| `isPublic`      | `boolean`                       | `config.public`, default `true` with `config.url`.           |
 | `concurrency`   | `number`                        | `config.concurrency`, default `8`.                           |
 | `isInitialized` | `boolean`                       | Set to `true` by `app.setupStorages()`.                      |
 | `storage`       | `multer.StorageEngine \| null`  | The multer storage engine for uploads, created by `setup()`. |
@@ -230,9 +232,9 @@ const url = storage.getFileUrl(file)
 ```
 
 Returns the public URL of the file, resolved against `config.url`. Returns
-`string | undefined`: `undefined` without `config.url`, e.g. for private S3
-buckets. The admin then downloads files from the upload schema's
-[`downloadUrl`](../admin/schemas.md#upload).
+`string | undefined`: `undefined` for private storages, without `config.url`
+or with `public: false`, e.g. for private S3 buckets. The admin then downloads
+files from the upload schema's [`downloadUrl`](../admin/schemas.md#upload).
 
 ### getUniqueKey()
 
@@ -269,10 +271,13 @@ storage.convertAssetFile(file, { trusted })
 ```
 
 Turns a file object from request data into an [`AssetFile`](#assetfile) of
-this storage, in place, and removes its signature. Unless `trusted` is `true`
-(default `false`), throws an [`AssetError`](errors.md#asseterror) unless the
-file is already an `AssetFile`, carries a valid signature, or comes from an
-`allowedImports` URL with a key in the format of `getUniqueKey()`.
+this storage, in place, removes its signature, and sets its `url` to
+`getFileUrl()`. Files from `allowedImports` URLs keep their `url`, from which
+imports fetch their data, and so do untrusted `AssetFile` instances. Unless
+`trusted` is `true` (default `false`), throws an
+[`AssetError`](errors.md#asseterror) unless the file is already an
+`AssetFile`, carries a valid signature, or comes from an `allowedImports` URL
+with a key in the format of `getUniqueKey()`.
 
 ### isImportSourceAllowed()
 
@@ -420,8 +425,10 @@ Returns `string`: a UUID v4 with the name's lowercase extension.
 
 ## AssetFileObject
 
-The JSON form of asset files, as returned by uploads and stored in asset
-properties: `{ key, name, type, size, url, width?, height?, signature? }`.
+The JSON form of asset files, as returned by uploads and read from asset
+properties: `{ key, name, type, size, url?, width?, height?, signature? }`.
+`url` is only there for files of public storages, and is added on each read
+rather than stored.
 `signature` is set in upload responses and in the JSON of models
 ([`$formatJson()`](model.md#formatjson) signs their asset files), so that
 clients can send the files back; it is removed before storing, see

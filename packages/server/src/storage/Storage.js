@@ -21,6 +21,9 @@ export class Storage {
     this.config = config
     this.url = config.url
     this.path = config.path
+    // Files of public storages have a `url`. Storages with `url` are public
+    // unless `config.public` is `false`.
+    this.isPublic = config.public ?? !!config.url
     // Use a default concurrency of 8 for storage IO, e.g. the importing of
     // foreign assets.
     this.concurrency = config.concurrency ?? 8
@@ -89,9 +92,19 @@ export class Storage {
   }
 
   convertAssetFile(file, { trusted = false } = {}) {
-    if (!trusted && !(file instanceof AssetFile)) {
+    const isInstance = file instanceof AssetFile
+    // Files from allowed sources keep their `url`, as imports fetch their data
+    // from it. `AssetFile` instances that are converted again keep theirs, as
+    // they can be such imports.
+    const shouldKeepUrl = (
+      !trusted && (
+        isInstance ||
+        this.isImportSourceAllowed(file.url)
+      )
+    )
+    if (!trusted && !isInstance) {
       if (!this.verifyAssetFile(file)) {
-        if (!this.isImportSourceAllowed(file.url)) {
+        if (!shouldKeepUrl) {
           throw new AssetError(
             `Invalid asset signature for file '${
               file.name ?? file.key
@@ -112,6 +125,16 @@ export class Storage {
     }
     // Remove signature once the data made it to here.
     delete file.signature
+    // All other files get the url of this storage, as stored urls can differ
+    // from it.
+    if (!shouldKeepUrl && isString(file.key)) {
+      const url = this.getFileUrl(file)
+      if (url) {
+        file.url = url
+      } else {
+        delete file.url
+      }
+    }
     AssetFile.convert(file, this)
   }
 
@@ -122,7 +145,7 @@ export class Storage {
       name: storageFile.originalname,
       type: storageFile.mimetype,
       size: storageFile.size,
-      url: this._getFileUrl(storageFile),
+      url: this.getFileUrl(storageFile),
       // In case `config.readDimensions` is set:
       width: storageFile.width,
       height: storageFile.height
@@ -138,7 +161,6 @@ export class Storage {
   async addFile(file, data) {
     await this._addFile(file, data)
     file.size = Buffer.byteLength(data)
-    file.url = this._getFileUrl(file)
     // TODO: Support `config.readDimensions`, but this can only be done once
     // there are separate storage instances per model assets config!
     this.convertAssetFile(file, { trusted: true })
@@ -162,7 +184,7 @@ export class Storage {
   }
 
   getFileUrl(file) {
-    return this._getFileUrl(file)
+    return this.isPublic ? this._getFileUrl(file) : undefined
   }
 
   signAssetFile(file) {

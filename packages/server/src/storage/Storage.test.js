@@ -236,6 +236,53 @@ describe('Storage: constructor', () => {
   })
 })
 
+describe('Storage: public files', () => {
+  it('makes storages with url public by default', () => {
+    expect(createMemoryStorage({ url: 'https://cdn.example.com/' }).isPublic)
+      .toBe(true)
+    expect(createMemoryStorage().isPublic).toBe(false)
+  })
+
+  it('gives files of private storages no url', () => {
+    const storage = createMemoryStorage({
+      url: 'https://cdn.example.com/',
+      public: false
+    })
+    expect(storage.getFileUrl({ key: 'a.txt' })).toBeUndefined()
+    const file = { key: 'a.txt', url: 'https://cdn.example.com/a.txt' }
+    storage.convertAssetFile(file, { trusted: true })
+    expect(file).not.toHaveProperty('url')
+  })
+
+  it('gives files without key no url', () => {
+    const storage = createMemoryStorage({ url: 'https://cdn.example.com/' })
+    const file = { name: 'legacy.txt' }
+    storage.convertAssetFile(file, { trusted: true })
+    expect(file).not.toHaveProperty('url')
+  })
+
+  it('replaces the urls of converted files with its own', () => {
+    const storage = createMemoryStorage({ url: 'https://new.example.com/' })
+    const file = { key: 'a.txt', url: 'https://old.example.com/a.txt' }
+    storage.convertAssetFile(file, { trusted: true })
+    expect(file.url).toBe('https://new.example.com/a.txt')
+  })
+
+  it('keeps the urls of files from allowed sources, also signed ones', () => {
+    const storage = new Storage({ keys: ['test-secret'] }, 'test', {
+      url: 'https://cdn.example.com/',
+      allowedImports: ['https://example.com/**']
+    })
+    const unsigned = { key: 'cover', url: 'https://example.com/a.png' }
+    storage.convertAssetFile(unsigned, { trusted: false })
+    expect(unsigned.url).toBe('https://example.com/a.png')
+    const signed = { key: 'other', url: 'https://example.com/b.png' }
+    storage.signAssetFile(signed)
+    storage.convertAssetFile(signed, { trusted: false })
+    expect(signed.url).toBe('https://example.com/b.png')
+  })
+})
+
 describe('Storage.register()', () => {
   it('derives the type from the class name', () => {
     class CloudArchiveStorage extends Storage {}

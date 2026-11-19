@@ -306,6 +306,13 @@ interface CommonStorageConfig {
    * The base URL at which assets are accessible.
    */
   url?: string
+  /**
+   * Whether the files are public, with a `url` resolved against `url` each
+   * time they are read.
+   *
+   * @defaultValue `true` with `url`, else `false`
+   */
+  public?: boolean
   allowedImports?: string[]
 }
 
@@ -4374,6 +4381,8 @@ export class Storage {
   url?: string
   /** The file system path for disk storage. */
   path?: string
+  /** Whether stored files have a `url`, see `config.public`. */
+  isPublic: boolean
   /**
    * Upload concurrency limit.
    *
@@ -4430,7 +4439,7 @@ export class Storage {
   listKeys(): Promise<string[]>
   /** Returns the file system path for a file, if any. */
   getFilePath(file: AssetFile): string | undefined
-  /** Returns the public URL for a file, if any. */
+  /** Returns the URL of a file in a public storage. */
   getFileUrl(file: AssetFile): string | undefined
 
   /**
