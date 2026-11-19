@@ -1,13 +1,14 @@
 <template lang="pug">
-.dito-date
+.dito-date(
+  @focusin="onFocusIn"
+  @focusout="onFocusOut"
+)
   component(
-    :is="pickerComponents[schema.type]"
-    :id="componentPath"
+    :is="schema.type === 'time' ? DitoTimeInput : DitoDatePicker"
     ref="element"
     v-model="dateValue"
-    :locale="adminContext.api.locale"
-    :format="formats"
-    v-bind="attributes"
+    v-bind="pickerProps"
+    @update:open="onUpdateOpen"
   )
     template(#prefix)
       DitoInputAffixes(
@@ -22,34 +23,27 @@
         position="suffix"
         v-bind="inputAffixesProps.suffix"
         absolute
-        @clear="clear"
+        @clear="onClear"
       )
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
 import { getSchemaValue } from '../utils/schema/value.js'
 import { fieldProps, useField } from '../composables/useField.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
+import { DitoDatePicker, DitoTimeInput } from '@ditojs/ui/src'
 import {
-  DitoDatePicker,
-  DitoTimePicker,
-  DitoDateTimePicker
-} from '@ditojs/ui/src'
+  fromDate,
+  getLocalTimeZone,
+  toCalendarDate,
+  toCalendarDateTime,
+  today
+} from '@internationalized/date'
 import { convertToDate } from '../utils/date.js'
-import {
-  isDate,
-  isString,
-  assignDeeply,
-  formatPlainDate
-} from '@ditojs/utils'
-
-const pickerComponents = {
-  date: DitoDatePicker,
-  time: DitoTimePicker,
-  datetime: DitoDateTimePicker
-}
+import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
+import { isDate, assignDeeply, formatPlainDate } from '@ditojs/utils'
 
 // @vue/component
 const DitoDateType = {
@@ -57,28 +51,98 @@ const DitoDateType = {
   props: fieldProps,
 
   setup(props) {
-    const field = useField(props, {
-      nativeField: true,
-      textField: true
+    // Text fields keep `readonly` fields focusable instead of disabling them:
+    const field = useField(props, { nativeField: true, textField: true })
+    const { services, context, componentPath, value, attributes } = field
+    // Edits emit `change` when the focus leaves the field, and when the
+    // calendar closes, as picking a day keeps the focus in the field:
+    let open = false
+    const changeOnceEdited = createChangeOnceEdited({
+      isEditing: () => open,
+      emitChange: () => field.onChange()
     })
-    const { services, context, value } = field
+    // reka-ui's fields have no element that the `autofocus` attribute focuses:
+    onMounted(() => {
+      if (field.autofocus.value) {
+        field.element.value.focus()
+      }
+    })
     return {
       ...field,
-      adminContext: services.adminContext,
-      pickerComponents,
-      formats: computed(() => getFormats(props.schema, context)),
+      DitoDatePicker,
+      DitoTimeInput,
 
-      // Strings written by code stay in the data until the user edits them.
-      // The picker only shows dates:
+      // The parts of the time and `hour12` come from the time format:
+      pickerProps: computed(() => {
+        const { time } = getFormats(props.schema, context)
+        const isTime = props.schema.type === 'time'
+        const { title, ...attrs } = attributes.value
+        return {
+          // reka-ui gives the id to a hidden input, so the label focuses it:
+          'id': componentPath.value,
+          'locale': services.adminContext.api.locale,
+          'granularity': !time
+            ? 'day'
+            : time.second
+              ? 'second'
+              : time.minute
+                ? 'minute'
+                : 'hour',
+          'hourCycle':
+            time?.hour12 != null ? (time.hour12 ? 12 : 24) : undefined,
+          // Typing a time without a value keeps today's date:
+          'defaultPlaceholder': isTime
+            ? toCalendarDateTime(today(getLocalTimeZone()))
+            : undefined,
+          // `placeholder` of `TimeFieldRoot` is its starting value instead:
+          'placeholder': isTime ? undefined : attrs.placeholder,
+          'disabled': attrs.disabled,
+          'readonly': attrs.readonly,
+          'aria-label': title,
+          'aria-labelledby': attrs['aria-labelledby'],
+          'aria-invalid': attrs['aria-invalid'],
+          'aria-describedby': attrs['aria-describedby']
+        }
+      }),
+
+      // The fields edit dates of `@internationalized/date` in the local time
+      // zone. Strings written by code stay in the data until the user edits
+      // them:
       dateValue: computed({
         get: () => {
           const date = convertToDate(value.value)
-          return isString(date) ? null : date
+          return isDate(date) ? toDateValue(date, props.schema.type) : null
         },
-        set(date) {
-          value.value = date
+        set(dateValue) {
+          value.value = dateValue?.toDate(getLocalTimeZone()) ?? null
+          changeOnceEdited.markEdited()
         }
-      })
+      }),
+
+      onUpdateOpen(isOpen) {
+        open = isOpen
+        changeOnceEdited.emitIfDone()
+      },
+
+      onClear() {
+        // Clearing blurs the field and emits its own change:
+        changeOnceEdited.reset()
+        field.clear()
+      },
+
+      // The field is focused while one of its parts or its popup is:
+      onFocusIn(event) {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          field.onFocus()
+        }
+      },
+
+      onFocusOut(event) {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          changeOnceEdited.emitIfDone()
+          field.onBlur()
+        }
+      }
     }
   }
 }
@@ -118,6 +182,12 @@ defineType({
 })
 
 export default DitoDateType
+
+// A date of `@internationalized/date` with the local day and time of `date`:
+function toDateValue(date, type) {
+  const zoned = fromDate(date, getLocalTimeZone())
+  return type === 'date' ? toCalendarDate(zoned) : toCalendarDateTime(zoned)
+}
 
 // The date and time formats of the type, `null` for the parts it doesn't show:
 function getFormats(schema, context) {

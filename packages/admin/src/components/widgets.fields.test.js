@@ -112,7 +112,10 @@ const BookPage = {
             name: 'day',
             formats: { date: { day: 'numeric', month: 'numeric' } }
           }),
-          h(DitoTimeField, { name: 'opensAt' }),
+          h(DitoTimeField, {
+            name: 'opensAt',
+            formats: { time: { second: false } }
+          }),
           h(DitoTimeField, { name: 'opensDaily' }),
           h(DitoDateTimeField, { name: 'meetsAt' }),
           h(DitoColorField, { name: 'tint' }),
@@ -187,12 +190,13 @@ describe('widgets of values', () => {
     const getPicker = label =>
       getContainer(wrapper, label).find('.dito-date > *').classes()
     expect(getPicker('Day')).toContain('dito-date-picker')
-    expect(getPicker('Opens At')).toContain('dito-time-picker')
-    expect(getPicker('Meets At')).toContain('dito-date-time-picker')
-    // The `formats` of date widgets merge over `api.formats`:
-    expect(getContainer(wrapper, 'Day').find('input').element.value).toBe(
-      '5/14/2026'
-    )
+    expect(getPicker('Opens At')).toContain('dito-time-input')
+    expect(getPicker('Meets At')).toContain('dito-date-picker')
+    // The `formats` of date widgets merge over `api.formats`, keeping the
+    // minutes:
+    expect(
+      getContainer(wrapper, 'Opens At').find('[role="group"]').text()
+    ).toMatch(/^\d{1,2}:\d{2}\s[AP]M$/)
     expect(getComponentClasses('Tint')).toContain('dito-color')
     expect(getComponentClasses('Image')).toContain('dito-upload')
     expect(getContainer(wrapper, 'Notes').find('textarea').element.value).toBe(

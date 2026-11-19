@@ -51,6 +51,7 @@
   },
   "peerDependencies": {
     "@floating-ui/dom": "^1.8.0",
+    "@internationalized/date": "^3.12.4",
     "@kyvg/vue3-notification": "^3.4.2",
     "@simplewebauthn/browser": "^14.0.0",
     "@tiptap/core": "^3.33.0",
@@ -95,6 +96,7 @@
   "devDependencies": {
     "@ditojs/build": "workspace:^",
     "@floating-ui/dom": "^1.8.0",
+    "@internationalized/date": "^3.12.4",
     "@kyvg/vue3-notification": "^3.4.2",
     "@simplewebauthn/browser": "^14.0.0",
     "@tiptap/core": "^3.33.0",

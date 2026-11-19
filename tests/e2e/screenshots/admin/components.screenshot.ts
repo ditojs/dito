@@ -130,31 +130,42 @@ test.describe('component screenshots', () => {
 
   test('date picker', async ({ page, url }) => {
     await openProject(page, url)
-    await page.getByLabel('Start Date', { exact: true }).click()
+    await page
+      .getByRole('group', { name: 'Start Date' })
+      .getByRole('button', { name: 'Choose date' })
+      .click()
+    await expect(page.locator('.dito-calendar')).toBeVisible()
     await expectScreenshot(page, 'date-picker.png')
   })
 
-  test('date picker by keyboard', async ({ page, url }) => {
+  test('date field by keyboard', async ({ page, url }) => {
     await openProject(page, url)
-    const input = page.getByLabel('Start Date', { exact: true })
-    await focusByKeyboard(page, input)
-    await page.keyboard.press('ArrowDown')
-    await page.keyboard.press('ArrowDown')
-    await expectScreenshot(page, 'date-picker-keyboard.png')
+    const month = page
+      .getByRole('group', { name: 'Start Date' })
+      .getByRole('spinbutton')
+      .first()
+    await focusByKeyboard(page, month)
+    await page.keyboard.press('ArrowUp')
+    await expectScreenshot(page, 'date-field-keyboard.png')
   })
 
-  test('time picker', async ({ page, url }) => {
+  test('time field', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
-    await page.getByLabel('Start Time', { exact: true }).click()
-    await expectScreenshot(page, 'time-picker.png')
+    await page
+      .getByRole('group', { name: 'Start Time' })
+      .getByRole('spinbutton')
+      .first()
+      .click()
+    await expectScreenshot(page, 'time-field.png')
   })
 
   test('datetime picker', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
-    // Click on the date, as the time shows the time panel instead:
     await page
-      .getByLabel('Meeting', { exact: true })
-      .click({ position: { x: 20, y: 10 } })
+      .getByRole('group', { name: 'Meeting' })
+      .getByRole('button', { name: 'Choose date' })
+      .click()
+    await expect(page.locator('.dito-calendar')).toBeVisible()
     await expectScreenshot(page, 'datetime-picker.png')
   })
 
@@ -423,6 +434,19 @@ test.describe('component screenshots', () => {
     await page.getByRole('button', { name: 'Info', exact: true }).click()
     await expect(page.locator('.dito-info__popup')).toBeVisible()
     await expectScreenshot(page, 'sidebar-info.png')
+  })
+
+  test('calendar in a filter panel', async ({ page, url }) => {
+    await page.setViewportSize({ width: 1200, height: 1000 })
+    // The empty calendar shows the month of today and marks it, so today is
+    // the day of the baseline:
+    await page.clock.install({ time: new Date('2026-11-17T12:00:00') })
+    await page.goto(`${url}/admin/reports/done`)
+    await expect(page.getByText('Archive', { exact: true })).toBeVisible()
+    // The empty field above shows its placeholder:
+    await page.getByRole('button', { name: 'Choose date' }).last().click()
+    await expect(page.locator('.dito-calendar')).toBeVisible()
+    await expectScreenshot(page, 'filter-calendar.png')
   })
 
   test('collapsed menu and sidebar', async ({ page, url }) => {
