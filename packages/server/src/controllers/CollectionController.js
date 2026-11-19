@@ -4,8 +4,10 @@ import { deltaProp } from '../graph/records.js'
 import { parseHandlerDefinition } from '../utils/handler.js'
 import { ControllerError, ValidationError } from '../errors/index.js'
 import { addNextVersion, sendRecordVersion } from './version.js'
+import { sendMemberFile } from './download.js'
 
 const recordVersionAction = 'get record-version'
+const downloadAction = 'get download/:key'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
@@ -19,6 +21,8 @@ export class CollectionController extends Controller {
   scope = null
   relate = false
   unrelate = false
+  // Whether members serve their files, see `sendMemberFile()`:
+  downloads = false
   modelClass = null // To be defined by sub-classes
   isOneToOne = false
   idParam = null
@@ -61,6 +65,41 @@ export class CollectionController extends Controller {
         actions,
         recordVersionAction,
         parseHandlerDefinition({ handler: sendRecordVersion, core: true }),
+        authorize
+      )
+    }
+    // Members of controllers with `downloads` serve their files, authorized
+    // like `get`:
+    if (type === 'member' && name === 'get' && this.downloads) {
+      if (!this.modelClass.definition.assets) {
+        throw new ControllerError(
+          this,
+          `Model '${this.modelClass.name}' has no assets to download.`
+        )
+      }
+      // The router lets one route replace another with the same path:
+      const reserved = Object.keys(actions).find(key =>
+        /^get download\/(:[^/]+|\*\*?)$/.test(key)
+      )
+      if (reserved) {
+        throw new ControllerError(
+          this,
+          `The action '${reserved}' is reserved for the files of members.`
+        )
+      }
+      super.setupAction(
+        type,
+        actions,
+        downloadAction,
+        parseHandlerDefinition({
+          handler: sendMemberFile,
+          // Pass the member to `authorize`, as for `get` with a member
+          // parameter:
+          parameters: { member: { from: 'member' } },
+          // Storage reads can be slow, and need no transaction:
+          transacted: false,
+          core: true
+        }),
         authorize
       )
     }

@@ -231,8 +231,8 @@ const url = storage.getFileUrl(file)
 
 Returns the public URL of the file, resolved against `config.url`. Returns
 `string | undefined`: `undefined` without `config.url`, e.g. for private S3
-buckets. The admin then downloads files from the upload schema's
-[`downloadUrl`](../admin/schemas.md#upload).
+buckets. Controllers can serve such files on a
+[download route](../../guide/server/storages.md#downloads).
 
 ### getUniqueKey()
 
