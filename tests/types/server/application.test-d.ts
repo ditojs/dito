@@ -77,7 +77,7 @@ describe('Application', () => {
     expectTypeOf<AssetReference['dataPath']>().toEqualTypeOf<string>()
     expectTypeOf<AssetReference['config']>().toEqualTypeOf<ModelAsset>()
     expectTypeOf<
-      Awaited<ReturnType<App['recountAssets']>>['missing'][number]['references']
+      Awaited<ReturnType<App['scanAssets']>>['missing'][number]['references']
     >().toEqualTypeOf<AssetReference[]>()
   })
 

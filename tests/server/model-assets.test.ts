@@ -66,7 +66,7 @@ describe('Model asset hooks', () => {
     const cookbook = await Cookbook.query().insertAndFetch({
       title: 'Soups'
     } as any)
-    const handleAssets = vi.spyOn(app, 'handleAddedAndRemovedAssets')
+    const handleAssets = vi.spyOn(app, 'referenceAssets')
     await Cookbook.query().patchAndFetchById(cookbook.id, {
       title: 'Stews'
     } as any)
@@ -77,17 +77,15 @@ describe('Model asset hooks', () => {
     const cookbook = await Cookbook.query().insertAndFetch({
       title: 'Soups'
     } as any)
-    const handleAssets = vi.spyOn(app, 'handleAddedAndRemovedAssets')
+    const handleAssets = vi.spyOn(app, 'referenceAssets')
     const cover = AssetFile.create({ name: 'cover.txt', data: 'cover' })
     await Cookbook.query().patchAndFetchById(cookbook.id, { cover } as any)
     expect(handleAssets).toHaveBeenCalledOnce()
-    const [storage, addedFiles] = handleAssets.mock.calls[0]
-    expect(storage.name).toBe('memory')
-    expect(addedFiles).toEqual([cover])
+    expect(handleAssets.mock.calls[0][0]).toEqual([cover])
   })
 
   it('handles the asset files of all models inserted at once', async () => {
-    const handleAssets = vi.spyOn(app, 'handleAddedAndRemovedAssets')
+    const handleAssets = vi.spyOn(app, 'referenceAssets')
     const cover = AssetFile.create({ name: 'cover.txt', data: 'cover' })
     // Only the second model has asset data:
     await Cookbook.query().insert([
@@ -95,6 +93,6 @@ describe('Model asset hooks', () => {
       { title: 'Stews', cover }
     ] as any)
     expect(handleAssets).toHaveBeenCalledOnce()
-    expect(handleAssets.mock.calls[0][1]).toEqual([cover])
+    expect(handleAssets.mock.calls[0][0]).toEqual([cover])
   })
 })

@@ -157,6 +157,10 @@ export class Storage {
     return this._listKeys()
   }
 
+  async listFiles() {
+    return this._listFiles()
+  }
+
   getFilePath(file) {
     return this._getFilePath(file)
   }
@@ -239,6 +243,9 @@ export class Storage {
 
   // @overridable
   async _listKeys() {}
+
+  // @overridable
+  async _listFiles() {}
 
   async _handleUpload(req, file, config) {
     if (

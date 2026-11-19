@@ -13,7 +13,6 @@ import {
   parseDataPath,
   normalizeDataPath,
   getEntriesAtDataPath,
-  groupBy,
   assignDeeply,
   formatPlainDate,
   parsePlainDate,
@@ -1203,62 +1202,27 @@ export class Model extends objection.Model {
     this.on(
       [
         'before:insert',
-        'before:update',
-        'before:delete'
+        'before:update'
       ],
-      async ({ type, transaction, inputItems, asFindQuery }) => {
-        const isInsert = type === 'before:insert'
-        const isDelete = type === 'before:delete'
-        // Figure out which asset data paths where actually present in the
-        // submitted data, and only compare these. But when deleting, use all.
-        const dataPaths = isDelete
-          ? assetDataPaths
-          : assetDataPaths.filter(
-              dataPath => (
-                // Skip check for wildcard data-paths.
-                /^\*\*?/.test(dataPath) ||
-                // Only keep normal data paths that match present properties,
-                // in any of the items that inserts may write at once.
-                inputItems.some(item => parseDataPath(dataPath)[0] in item)
-              )
-            )
+      async ({ transaction, inputItems }) => {
+        // Figure out which asset data paths were actually present in the
+        // submitted data, and only handle these.
+        const dataPaths = assetDataPaths.filter(
+          dataPath => (
+            // Skip check for wildcard data-paths.
+            /^\*\*?/.test(dataPath) ||
+            // Only keep normal data paths that match present properties,
+            // in any of the items that inserts may write at once.
+            inputItems.some(item => parseDataPath(dataPath)[0] in item)
+          )
+        )
         // `dataPaths` is empty in the case of an update/insert that does not
         // affect the assets.
         if (dataPaths.length === 0) return
 
-        // Load the model's asset files in their current state before the query
-        // is executed. For deletes, load the data for all asset data-paths.
-        // Otherwise, only load the columns present in the input data.
-        const beforeItems = isInsert
-          ? []
-          : isDelete
-            ? // When deleting, it's ok to load all columns when data-paths
-              // contain wildcards unfiltered, since `afterItems` will be empty
-              // anyway.
-              await loadAssetDataPaths(asFindQuery(), dataPaths)
-            : await asFindQuery().select(
-                // Select only the properties that are present in the data,
-                // and which aren't the result of computed properties.
-                Object.keys(inputItems[0]).filter(key => {
-                  const property = this.getProperty(key)
-                  return property && !property.computed
-                })
-              )
-        // Updates apply their data to each of the records:
-        const afterItems = isInsert
-          ? inputItems
-          : isDelete
-            ? []
-            : beforeItems.map(() => inputItems[0])
-
-        const beforeFilesPerDataPath = getFilesPerAssetDataPath(
+        const filesPerDataPath = getFilesPerAssetDataPath(
           this,
-          beforeItems,
-          dataPaths
-        )
-        const afterFilesPerDataPath = getFilesPerAssetDataPath(
-          this,
-          afterItems,
+          inputItems,
           dataPaths
         )
 
@@ -1296,41 +1260,29 @@ export class Model extends objection.Model {
 
         for (const dataPath of dataPaths) {
           const storage = this.app.getStorage(assets[dataPath].storage)
-          const beforeFiles = beforeFilesPerDataPath[dataPath]
-          const afterFiles = afterFilesPerDataPath[dataPath]
-          const beforeByKey = groupBy(beforeFiles, 'key')
-          const afterByKey = groupBy(afterFiles, 'key')
-          // Each occurrence of a file counts as one reference:
-          const addedFiles = getExtraFiles(afterByKey, beforeByKey)
-          const removedFiles = getExtraFiles(beforeByKey, afterByKey)
-          const changedFiles = afterFiles.filter(file => {
-            const beforeFile = beforeByKey[file.key]?.[0]
-            return beforeFile && !equals(file, beforeFile)
-          })
-          // Also handle files where the data property is changed before
-          // update / patch, meaning the file's content is replaced.
+          const files = filesPerDataPath[dataPath]
+          importedFiles.push(
+            ...(await this.app.addForeignAssets(storage, files, transaction))
+          )
+          // Also handle files of existing assets that carry data, meaning the
+          // file's content is replaced.
           // NOTE: This will change the content for all the references to it,
           // and so should only really be used when there's only one reference.
-          const filesWithChangedData = afterFiles.filter(
-            file => file.data && beforeByKey[file.key]
-          )
-          importedFiles.push(
-            ...(await this.app.handleAddedAndRemovedAssets(
-              storage,
-              addedFiles,
-              removedFiles,
-              changedFiles,
-              transaction
-            ))
-          )
+          const importedKeys = new Set(importedFiles.map(file => file.key))
           modifiedFiles.push(
             ...(await this.app.handleModifiedAssets(
               storage,
-              filesWithChangedData,
+              files.filter(file => file.data && !importedKeys.has(file.key)),
               transaction
             ))
           )
         }
+        // Lock the assets after the imports of this query, so that its
+        // imports hold no locks:
+        await this.app.referenceAssets(
+          Object.values(filesPerDataPath).flat(),
+          transaction
+        )
       }
     )
   }
@@ -1349,13 +1301,6 @@ function getMeta(modelClass, key, value) {
   return meta[key]
 }
 
-function loadAssetDataPaths(query, dataPaths) {
-  return dataPaths.reduce(
-    (query, dataPath) => query.loadDataPath(dataPath),
-    query
-  )
-}
-
 const noop = () => {}
 
 function getFilesPerAssetDataPath(modelClass, items, dataPaths) {
@@ -1369,12 +1314,4 @@ function getFilesPerAssetDataPath(modelClass, items, dataPaths) {
     }
   }
   return filesPerDataPath
-}
-
-// Collect the files that occur more often in `filesByKey` than in
-// `otherFilesByKey`, one for each additional occurrence:
-function getExtraFiles(filesByKey, otherFilesByKey) {
-  return Object.entries(filesByKey).flatMap(
-    ([key, files]) => files.slice(otherFilesByKey[key]?.length ?? 0)
-  )
 }

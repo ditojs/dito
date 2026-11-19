@@ -1,13 +1,18 @@
 import pico from 'picocolors'
 
-export async function recountAssets(app, ...args) {
+export async function scanAssets(app, ...args) {
   const dryRun = args.includes('--dry-run')
-  const { changed, missing, lost } = await app.recountAssets({ dryRun })
-  for (const { asset, count } of changed) {
+  const { referenced, unreferenced, missing, lost } = await app.scanAssets({
+    dryRun
+  })
+  for (const asset of referenced) {
     console.info(
-      `Asset ${
-        pico.green(`'${asset.file.name}'`)
-      } (${asset.key}): count ${asset.count} → ${count}`
+      `Asset ${pico.green(`'${asset.file.name}'`)} (${asset.key}): referenced`
+    )
+  }
+  for (const asset of unreferenced) {
+    console.info(
+      `Asset ${pico.green(`'${asset.file.name}'`)} (${asset.key}): unreferenced`
     )
   }
   for (const { key, references } of missing) {
@@ -31,7 +36,8 @@ export async function recountAssets(app, ...args) {
     )
   }
   console.info(
-    `${dryRun ? 'Would change' : 'Changed'} ${changed.length} counts, ${
+    `${dryRun ? 'Would mark' : 'Marked'} ${referenced.length} assets as ` +
+    `referenced and ${unreferenced.length} as unreferenced, ${
       dryRun ? 'would create' : 'created'
     } ${missing.length} missing assets, found ${lost.length} lost files.`
   )

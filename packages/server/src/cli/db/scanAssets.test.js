@@ -4,7 +4,7 @@ import { Application } from '../../app/Application.js'
 import { Model } from '../../models/index.js'
 import { AssetMixin } from '../../mixins/index.js'
 import { AssetFile, Storage } from '../../storage/index.js'
-import { recountAssets } from './recountAssets.js'
+import { scanAssets } from './scanAssets.js'
 import { createTestKnex } from '../../../../../tests/utils/test-knex.ts'
 import { createTestDatabase } from '../../../../../tests/utils/database.ts'
 
@@ -32,7 +32,7 @@ class Track extends Model {
 
 class Asset extends AssetMixin(Model) {}
 
-describe('recountAssets()', () => {
+describe('scanAssets()', () => {
   const app = new Application({
     config: { log: { silent: true }, knex: createTestKnex() },
     models: { Track, Asset }
@@ -61,8 +61,8 @@ describe('recountAssets()', () => {
     vi.restoreAllMocks()
   })
 
-  // Stores a track that references `artwork` without counting it, as writes
-  // that skip the model hooks do:
+  // Stores a track that references `artwork` without marking its asset, as
+  // writes that skip the model hooks do:
   async function insertWithoutHooks(name) {
     const file = AssetFile.create({ name, data: name })
     const storage = app.getStorage('memory')
@@ -70,39 +70,50 @@ describe('recountAssets()', () => {
     // Sign a copy like an upload, as `createAssets()` expects:
     const upload = { ...file }
     storage.signAssetFile(upload)
-    await app.createAssets(storage, [upload], 0)
+    await app.createAssets(storage, [upload])
     await app.knex(Track.tableName).insert({ artwork: JSON.stringify(file) })
     return file
   }
 
-  it('prints the counts that a dry run would change', async () => {
+  async function isReferenced(file) {
+    const asset = await Asset.query().findOne('key', file.key)
+    return !asset.unreferencedSince
+  }
+
+  it('prints the assets that a dry run would mark', async () => {
     const file = await insertWithoutHooks('dry.jpg')
-    expect(await recountAssets(app, '--dry-run')).toBe(true)
+    expect(await scanAssets(app, '--dry-run')).toBe(true)
     expect(output).toEqual([
-      `Asset 'dry.jpg' (${file.key}): count 0 → 1`,
-      'Would change 1 counts, would create 0 missing assets, ' +
-      'found 0 lost files.'
+      `Asset 'dry.jpg' (${file.key}): referenced`,
+      'Would mark 1 assets as referenced and 0 as unreferenced, ' +
+      'would create 0 missing assets, found 0 lost files.'
     ])
-    expect((await Asset.query().findOne('key', file.key)).count).toBe(0)
+    expect(await isReferenced(file)).toBe(false)
   })
 
-  it('changes the counts and prints them', async () => {
+  it('marks the assets and prints them', async () => {
     const file = await insertWithoutHooks('wet.jpg')
-    expect(await recountAssets(app)).toBe(true)
+    expect(await scanAssets(app)).toBe(true)
+    expect(await isReferenced(file)).toBe(true)
+    await Track.query().delete()
+    output = []
+    expect(await scanAssets(app)).toBe(true)
     expect(output).toEqual([
-      `Asset 'wet.jpg' (${file.key}): count 0 → 1`,
-      'Changed 1 counts, created 0 missing assets, found 0 lost files.'
+      `Asset 'wet.jpg' (${file.key}): unreferenced`,
+      'Marked 0 assets as referenced and 1 as unreferenced, ' +
+      'created 0 missing assets, found 0 lost files.'
     ])
-    expect((await Asset.query().findOne('key', file.key)).count).toBe(1)
+    expect(await isReferenced(file)).toBe(false)
   })
 
   it('prints the missing assets that it creates', async () => {
     const file = await insertWithoutHooks('missing.jpg')
     await Asset.query().delete().where('key', file.key)
-    expect(await recountAssets(app)).toBe(true)
+    expect(await scanAssets(app)).toBe(true)
     expect(output).toEqual([
       `Asset 'missing.jpg' (${file.key}): missing, 1 references`,
-      'Changed 0 counts, created 1 missing assets, found 0 lost files.'
+      'Marked 0 assets as referenced and 0 as unreferenced, ' +
+      'created 1 missing assets, found 0 lost files.'
     ])
   })
 
@@ -111,17 +122,17 @@ describe('recountAssets()', () => {
     await Asset.query().delete().where('key', file.key)
     app.getStorage('memory').keys.delete(file.key)
     const [track] = await Track.query()
-    expect(await recountAssets(app)).toBe(true)
+    expect(await scanAssets(app)).toBe(true)
     expect(output).toEqual([
       `Asset 'lost.jpg' (${file.key}): lost from storage 'memory', ` +
       `1 references: Track ${track.id} artwork`,
-      'Changed 0 counts, created 0 missing assets, found 1 lost files.'
+      'Marked 0 assets as referenced and 0 as unreferenced, ' +
+      'created 0 missing assets, found 1 lost files.'
     ])
-    expect(await Asset.query().findOne('key', file.key)).toBeUndefined()
   })
 })
 
-describe('recountAssets() with storages that cannot list their keys', () => {
+describe('scanAssets() with storages that cannot list their keys', () => {
   class UnlistedStorage extends Storage {
     async _addFile() {}
   }
@@ -152,11 +163,13 @@ describe('recountAssets() with storages that cannot list their keys', () => {
     await app.knex.destroy()
   })
 
-  it('rejects files without assets that it cannot check', async () => {
+  it('creates the assets of files that it cannot check', async () => {
+    vi.spyOn(console, 'info').mockImplementation(() => {})
     const file = AssetFile.create({ name: 'unlisted.mp4', data: 'video' })
     await app.knex(Clip.tableName).insert({ video: JSON.stringify(file) })
-    await expect(recountAssets(app)).rejects.toThrow(
-      `Unable to list the keys of storage 'unlisted'.`
-    )
+    expect(await scanAssets(app)).toBe(true)
+    expect(await Asset.query().findOne('key', file.key)).toMatchObject({
+      unreferencedSince: null
+    })
   })
 })
