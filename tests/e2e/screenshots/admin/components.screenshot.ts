@@ -382,6 +382,15 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'section-label-focus.png')
   })
 
+  test('buttons with infos', async ({ page, url }) => {
+    await openProject(page, url, 'Details')
+    await page.getByRole('button', { name: 'Advanced', exact: true }).click()
+    await expect(
+      page.getByRole('button', { name: 'Info: Publish', exact: true })
+    ).toBeVisible()
+    await expectScreenshot(page, 'button-infos.png')
+  })
+
   test('list collapse all focus', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
     await focusByKeyboard(
@@ -405,6 +414,15 @@ test.describe('component screenshots', () => {
     await page.getByRole('button', { name: 'Sidebar', exact: true }).click()
     await expect(page.getByText('Owner: Ada')).toBeVisible()
     await expectScreenshot(page, 'sidebar-overlay.png')
+  })
+
+  test('info at the edge of a sidebar panel', async ({ page, url }) => {
+    await page.setViewportSize({ width: 1200, height: 1000 })
+    await page.goto(`${url}/admin/reports/done`)
+    await expect(page.getByText('Archive', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Info', exact: true }).click()
+    await expect(page.locator('.dito-info__popup')).toBeVisible()
+    await expectScreenshot(page, 'sidebar-info.png')
   })
 
   test('collapsed menu and sidebar', async ({ page, url }) => {

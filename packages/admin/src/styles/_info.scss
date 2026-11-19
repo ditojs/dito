@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 .dito-info {
   --size: calc(1em * var(--line-height));
 
@@ -6,14 +8,58 @@
   flex: 0 0 var(--size);
   width: var(--size);
   height: var(--size);
+  padding: 0;
+  border: 0;
+  font: inherit;
   text-align: center;
   vertical-align: top;
   margin-left: 0.35em;
   color: $color-active;
+  background: none;
 
   &::before {
     @extend %icon--info;
 
     width: var(--size);
+  }
+
+  // The popup, see `DitoInfo`. reka-ui gives its z-index to the element that
+  // positions it:
+  &__popup {
+    --color: #{color.adjust($color-active, $lightness: 5%)};
+
+    z-index: $z-index-info;
+    // Wrap the text within the room that the popup has:
+    max-width: min(350px, var(--reka-popover-content-available-width));
+    border-radius: $border-radius;
+    background: var(--color);
+    color: $color-white;
+    filter: drop-shadow(0 2px 4px $color-shadow);
+
+    &[data-state='open'] {
+      animation: dito-info-enter 0.25s $ease-out-quart;
+    }
+
+    // Slide away from the info, also when the popup flips below it:
+    &[data-side='bottom'] {
+      --slide-offset: -5px;
+    }
+  }
+
+  &__content {
+    white-space: pre-line;
+    padding: ($input-padding-ver + 2 * $border-width)
+      ($input-padding-hor + $border-width);
+  }
+
+  &__arrow {
+    fill: var(--color);
+  }
+}
+
+@keyframes dito-info-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--slide-offset, 5px));
   }
 }

@@ -13,6 +13,8 @@ export type Context = Record<string, any>
 export type TypeDescriptor = PublicTypeDescriptor & {
   // Only multiselects read `search` from their schema:
   readonly hasSearch?: boolean
+  // Inputs show the info of fields without a label in their suffix:
+  readonly hasInputAffixes?: boolean
   // Lists show their buttons in the row of their label:
   readonly hasLabelButtons?: boolean
   // Sources hold their items in a list or an object:
