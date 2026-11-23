@@ -104,7 +104,9 @@ export default {
           position-anchor: --dito-menu-item;
           top: anchor(top);
           left: calc(anchor(right) + 2 * $menu-spacing);
-          width: anchor-size(width);
+          // As wide as its item, or as its longest label:
+          width: max-content;
+          min-width: anchor-size(width);
           z-index: $z-index-header;
           box-shadow: $shadow-window;
 
