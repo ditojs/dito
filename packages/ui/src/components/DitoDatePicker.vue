@@ -14,7 +14,8 @@
   )
     //- The popup is placed at the field, not at its button:
     DatePickerAnchor(asChild)
-      //- The attributes but `class` go to the field, for its accessible name:
+      //- The attributes but `class` go to the field, for its accessible name.
+      //- reka-ui's parts handle all keys but Tab, so the popup misses Escape:
       DatePickerField.dito-input(
         v-slot="{ segments }"
         :class="inputClasses"
@@ -23,6 +24,7 @@
         @focusin="onPartFocus"
         @focusout="onFocusOut"
         @click="onPartFocus"
+        @keydown.esc="open = false"
       )
         slot(name="prefix")
         .dito-date-segments(

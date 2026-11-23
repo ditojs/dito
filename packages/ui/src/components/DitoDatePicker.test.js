@@ -101,10 +101,10 @@ describe('DitoDatePicker', () => {
       expect(document.activeElement).toBe(findPart('day').element)
     })
 
-    it('opens the calendar again when a focused part is clicked', async () => {
+    it('closes the calendar on Escape in a part, and opens it on a click', async () => {
       mountDatePicker({ modelValue: new CalendarDate(2026, 5, 14) })
       await focusPart('month')
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      await findPart('month').trigger('keydown', { key: 'Escape' })
       await flushPromises()
       expect(wrapper.find('.dito-calendar').exists()).toBe(false)
       expect(document.activeElement).toBe(findPart('month').element)

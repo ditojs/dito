@@ -9,7 +9,8 @@
     //- The popup is placed at the field, not at its button:
     PopoverAnchor(asChild)
       //- The attributes but `class` go to the field, also the other props of
-      //- `reka-ui`'s `TimeFieldRoot`:
+      //- `reka-ui`'s `TimeFieldRoot`. Its parts handle all keys but Tab, so
+      //- the popup misses Escape:
       TimeFieldRoot.dito-input(
         v-slot="{ segments }"
         v-bind="{ ...$props, ...attributes }"
@@ -18,6 +19,7 @@
         @focusin="onPartFocus"
         @focusout="onFocusOut"
         @click="onPartFocus"
+        @keydown.esc="open = false"
       )
         slot(name="prefix")
         .dito-date-segments(ref="segments")
