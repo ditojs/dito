@@ -48,6 +48,14 @@ describe('getInputAffixesProps()', () => {
     })
   })
 
+  it('takes empty strings and lists as no value to clear', () => {
+    const hasValue = value =>
+      getProps({ clearable: true, value }).suffix.hasValue
+    expect(hasValue('')).toBe(false)
+    expect(hasValue([])).toBe(false)
+    expect(hasValue(['a'])).toBe(true)
+  })
+
   it('shows the info in the suffix only without a label', () => {
     expect(getProps({ info: 'Help' })).toMatchObject({
       prefix: { inlineInfo: null },
