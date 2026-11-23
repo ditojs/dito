@@ -670,15 +670,19 @@ $tag-margin: 2px;
   &__trigger {
     @extend %button--plain;
 
-    &[data-state='open'] {
-      transform: rotate(180deg);
-    }
-
+    // The arrow of selects, placed inside the border of the control:
     &::before {
       @include arrow($select-arrow-size);
 
       bottom: $select-arrow-bottom;
-      right: $select-arrow-right;
+      right: calc(#{$select-arrow-right} - #{$border-width});
+    }
+
+    // Turn the arrow in place, so that it keeps its distance to the edge:
+    &[data-state='open']::before {
+      transform: rotate(135deg);
+      top: $select-arrow-bottom;
+      bottom: 0;
     }
   }
 
