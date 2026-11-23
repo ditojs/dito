@@ -16,11 +16,13 @@ ToastProvider(disableSwipe)
         @click="notification.open = false"
         @escape-key-down="onEscapeKeyDown"
       )
-        ToastTitle.dito-notification__title {{ notification.title }}
-        ToastDescription(asChild)
-          .dito-notification__content(
-            v-html="notification.content"
-          )
+        //- Clips the notification while its height opens and closes:
+        .dito-notification__inner
+          ToastTitle.dito-notification__title {{ notification.title }}
+          ToastDescription(asChild)
+            .dito-notification__content(
+              v-html="notification.content"
+            )
       //- reka-ui hides its own announcements from screen readers:
       ToastViewport.dito-notifications__viewport(aria-live="polite")
 </template>
@@ -186,26 +188,35 @@ export default {
 }
 
 .dito-notification {
-  padding: 8px;
+  // A grid row that closes to no height, so that the notifications below
+  // move up smoothly once one leaves:
+  display: grid;
+  grid-template-rows: 1fr;
   margin: $content-padding 0;
   border-radius: $border-radius;
   box-shadow: $shadow-window;
   cursor: pointer;
 
   &[data-state='open'] {
-    animation: dito-fade-enter 0.2s $ease-out-quart;
+    animation: dito-fade-enter 0.3s $ease-out-quart;
   }
 
   &[data-state='closed'] {
-    animation: dito-fade-leave 0.2s $ease-out-quart;
+    animation: dito-notification-leave 0.3s $ease-out-quart;
+  }
+
+  &__inner {
+    min-height: 0;
+    overflow: hidden;
   }
 
   &__title {
     font-weight: bold;
-    padding-bottom: 8px;
+    padding: 8px 8px 0;
   }
 
   &__content {
+    padding: 8px;
     overflow: hidden;
     word-break: break-all;
 
@@ -233,6 +244,14 @@ export default {
 
   &--error {
     @include type($color-error);
+  }
+}
+
+@keyframes dito-notification-leave {
+  to {
+    grid-template-rows: 0fr;
+    margin-block: 0;
+    opacity: 0;
   }
 }
 </style>
