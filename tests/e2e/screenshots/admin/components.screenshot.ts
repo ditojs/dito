@@ -140,11 +140,11 @@ test.describe('component screenshots', () => {
 
   test('date field by keyboard', async ({ page, url }) => {
     await openProject(page, url)
-    const month = page
+    const day = page
       .getByRole('group', { name: 'Start Date' })
       .getByRole('spinbutton')
       .first()
-    await focusByKeyboard(page, month)
+    await focusByKeyboard(page, day)
     await page.keyboard.press('ArrowUp')
     await expectScreenshot(page, 'date-field-keyboard.png')
   })
