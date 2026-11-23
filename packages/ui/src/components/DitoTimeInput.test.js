@@ -86,6 +86,18 @@ describe('DitoTimeInput', () => {
     ])
   })
 
+  it('shows the start of its parts again once the focus leaves', async () => {
+    mountTimeInput({ props: { modelValue: new Time(9, 15) } })
+    const segments = wrapper.find('.dito-date-segments').element
+    await focusPart(1)
+    segments.scrollLeft = 40
+    // The focus moving on between the parts keeps the position:
+    await focusPart(0)
+    expect(segments.scrollLeft).toBe(40)
+    document.activeElement.blur()
+    expect(segments.scrollLeft).toBe(0)
+  })
+
   it('focuses the part that was picked in the panel', async () => {
     mountTimeInput({ props: { modelValue: new Time(9, 15) } })
     await focusPart(0)

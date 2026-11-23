@@ -158,6 +158,18 @@ describe('DitoDatePicker', () => {
       }
     })
 
+    it('shows the start of its parts again once the focus leaves', async () => {
+      mountDatePicker({ modelValue: new CalendarDate(2026, 5, 14) })
+      const segments = wrapper.find('.dito-date-segments').element
+      await focusPart('year')
+      segments.scrollLeft = 40
+      // The focus moving on between the parts keeps the position:
+      await focusPart('day')
+      expect(segments.scrollLeft).toBe(40)
+      document.activeElement.blur()
+      expect(segments.scrollLeft).toBe(0)
+    })
+
     it('focuses the part that was picked in the time panel', async () => {
       mountDatePicker({
         modelValue: new CalendarDateTime(2026, 5, 14, 9, 30),

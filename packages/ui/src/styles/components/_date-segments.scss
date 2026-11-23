@@ -2,7 +2,10 @@
 .dito-date-segments {
   display: flex;
   flex: 1;
-  min-width: 0;
+  // The field takes the width of its layout and clips the parts, as an input
+  // does with its text:
+  width: 0;
+  overflow: hidden;
   // Keep the spaces of the literals, which are flex items of their own:
   white-space: pre;
 

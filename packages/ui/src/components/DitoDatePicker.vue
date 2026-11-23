@@ -18,10 +18,11 @@
         v-bind="attributes"
         @mousedown="onMouseDown"
         @focusin="onPartFocus"
+        @focusout="onFocusOut"
         @click="onPartFocus"
       )
         slot(name="prefix")
-        .dito-date-segments
+        .dito-date-segments(ref="segments")
           //- Shown instead of the empty parts while the field isn't focused:
           span.dito-date-picker__placeholder(
             v-if="placeholder"
@@ -331,6 +332,14 @@ export default {
       const { target } = event
       if (this.$el.contains(target) && !target.closest('button')) {
         event.preventDefault()
+      }
+    },
+
+    // Show the start of clipped parts again once the focus leaves the field,
+    // as inputs do:
+    onFocusOut(event) {
+      if (!event.currentTarget.contains(event.relatedTarget)) {
+        this.$refs.segments.scrollLeft = 0
       }
     },
 
