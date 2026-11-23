@@ -149,24 +149,53 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'date-field-keyboard.png')
   })
 
-  test('time field', async ({ page, url }) => {
+  test('time picker', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
     await page
       .getByRole('group', { name: 'Start Time' })
       .getByRole('spinbutton')
       .first()
       .click()
-    await expectScreenshot(page, 'time-field.png')
+    await expect(page.locator('.dito-time-panel')).toBeVisible()
+    await expectScreenshot(page, 'time-picker.png')
   })
 
   test('datetime picker', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
+    // The clear button lies over the button of the calendar, so open it with
+    // a part of the date:
     await page
       .getByRole('group', { name: 'Meeting' })
-      .getByRole('button', { name: 'Choose date' })
+      .getByRole('spinbutton', { name: 'month' })
       .click()
     await expect(page.locator('.dito-calendar')).toBeVisible()
     await expectScreenshot(page, 'datetime-picker.png')
+  })
+
+  test('datetime picker time and clear button', async ({ page, url }) => {
+    await openProject(page, url, 'Extras')
+    const field = page.getByRole('group', { name: 'Meeting' })
+    // The time shows the time panel instead of the calendar:
+    await field.getByRole('spinbutton', { name: 'hour' }).click()
+    await expect(page.locator('.dito-time-panel')).toBeVisible()
+    // The clear button shows on hover, over the button of the calendar:
+    const clear = field.getByRole('button', { name: 'Clear' })
+    await field.hover()
+    await expect(clear).toBeVisible()
+    const [outer, inner] = await Promise.all(
+      [clear, field.locator('.dito-icon--calendar')].map(
+        async locator => (await locator.boundingBox())!
+      )
+    )
+    expect(outer.x).toBeLessThanOrEqual(inner.x)
+    expect(outer.y).toBeLessThanOrEqual(inner.y)
+    expect(outer.x + outer.width).toBeGreaterThanOrEqual(inner.x + inner.width)
+    expect(outer.y + outer.height).toBeGreaterThanOrEqual(
+      inner.y + inner.height
+    )
+    await expectScreenshot(page, 'datetime-picker-time.png')
+    await clear.click()
+    await expect(clear).toBeHidden()
   })
 
   test('drag handle focus in inline list', async ({ page, url }) => {
