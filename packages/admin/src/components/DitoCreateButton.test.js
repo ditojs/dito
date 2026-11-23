@@ -53,6 +53,17 @@ describe('DitoCreateButton', () => {
     expect(data.blocks).toEqual([{ type: 'quote', text: null }])
   })
 
+  it('aligns the menu with the end of its button', async () => {
+    const { findField } = await mountSchema({
+      schema: blocksSchema,
+      data: { blocks: [] }
+    })
+    const field = findField('blocks')
+    await findMenuButton(field).trigger('click')
+    await flushPromises()
+    expect(field.find('[role="menu"]').attributes('data-align')).toBe('end')
+  })
+
   it('offers the forms by their `creatable` only', async () => {
     const creatable = vi.fn(({ item, value }) => item.blocks === value)
     const { findField, data } = await mountSchema({

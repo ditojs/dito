@@ -20,7 +20,7 @@ DropdownMenuRoot(
     :class="{ 'dito-menu-button__menu--attached': attached }"
     :side="side"
     :align="alignment"
-    :sideOffset="attached ? 0 : 4"
+    :sideOffset="sideOffset"
     :collisionBoundary="scrollContainer"
     loop
     positionStrategy="fixed"
@@ -75,11 +75,13 @@ export default {
     // Join the menu and the button into one shape, as wide as the wider of
     // the two:
     attached: { type: Boolean, default: false },
+    // Open the menu over the button instead of next to it:
+    cover: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false }
   },
 
   data() {
-    return { scrollContainer: null, alignment: this.align }
+    return { scrollContainer: null, alignment: this.align, sideOffset: 4 }
   },
 
   mounted() {
@@ -90,6 +92,12 @@ export default {
 
   methods: {
     async onUpdateOpen(open) {
+      const { offsetHeight, offsetWidth } = this.$refs.button.$el
+      this.sideOffset = this.cover
+        ? -(/top|bottom/.test(this.side) ? offsetHeight : offsetWidth)
+        : this.attached
+          ? 0
+          : 4
       this.alignment = this.align
       if (open && this.align === 'center' && /top|bottom/.test(this.side)) {
         // reka-ui's flip never leaves `center`, so a centered menu that
