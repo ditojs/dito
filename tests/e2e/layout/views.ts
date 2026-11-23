@@ -41,9 +41,10 @@ export const widgets = createWidgetView<Widget>(
               inlined: true,
               collapsible: 'all',
               clipboard: true,
-              itemLabel: ({ item }) => ({
+              // The tooltip shows the whole url of clipped suffixes:
+              itemLabel: ({ item: { url } }) => ({
                 text: 'Link',
-                suffix: html` — <small>${item.url}</small>`
+                suffix: html` — <small data-tooltip="${url}">${url}</small>`
               }),
               form: {
                 type: 'form',

@@ -62,12 +62,14 @@
 
 // The tooltip is portalled to the body, so it needs to show above the dialogs,
 // the header and the sidebar. It is white, as the color of infos belongs to
-// their button:
+// their button. Like native tooltips, it lets the pointer through to what it
+// covers, also while it waits to show:
 .dito-tooltip {
   --color: #{$color-white};
 
   z-index: $z-index-tooltip;
   color: $color-text;
+  pointer-events: none;
 }
 
 .dito-info__arrow,
