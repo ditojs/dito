@@ -424,7 +424,7 @@ describe('useField()', () => {
       })
 
       it('emits input and change for entered colors once written', async () => {
-        const { findField, events } = await mountWithEvents(
+        const { findField, getComponent, events } = await mountWithEvents(
           { background: { type: 'color' } },
           { data: { background: '#ff8000' } }
         )
@@ -433,6 +433,8 @@ describe('useField()', () => {
         await typeText(input, '00f', '00ff00')
         expect(events).toEqual([])
         await input.trigger('blur')
+        // The focused input opened the picker, which still counts as editing:
+        getComponent('background').showPopup = false
         await vi.waitFor(() => expect(events).toHaveLength(2))
         expect(events).toEqual([
           ['input', 'background', '#00ff00'],

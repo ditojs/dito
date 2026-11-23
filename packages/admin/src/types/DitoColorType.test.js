@@ -101,7 +101,7 @@ describe('DitoColorType', () => {
 
   it('emits change once entered colors are written on blur', async () => {
     const onChange = vi.fn()
-    const { findField, data } = await mountForm({
+    const { findField, getComponent, data } = await mountForm({
       schema: {
         fields: { background: { type: 'color', onChange } }
       },
@@ -113,6 +113,9 @@ describe('DitoColorType', () => {
     expect(onChange).not.toHaveBeenCalled()
     await input.trigger('blur')
     await vi.waitFor(() => expect(data.background).toBe('#00ff00'))
+    // The focused input opened the picker, which still counts as editing:
+    expect(onChange).not.toHaveBeenCalled()
+    getComponent('background').showPopup = false
     await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
     expect(onChange.mock.calls[0][0].value).toBe('#00ff00')
   })
@@ -268,6 +271,32 @@ describe('DitoColorType', () => {
       b: 0,
       alpha: 1
     })
+  })
+
+  it('opens the picker when the input is focused or clicked', async () => {
+    const { findField, getComponent, settle } = await mountSchema({
+      schema: { fields: { background: { type: 'color' } } }
+    })
+    const field = findField('background')
+    await field.find('input').trigger('focus')
+    await settle()
+    expect(field.find('.dito-color__popup').exists()).toBe(true)
+    getComponent('background').showPopup = false
+    await settle()
+    expect(field.find('.dito-color__popup').exists()).toBe(false)
+    await field.find('input').trigger('click')
+    await settle()
+    expect(field.find('.dito-color__popup').exists()).toBe(true)
+  })
+
+  it(`doesn't open the picker of readonly fields`, async () => {
+    const { findField, settle } = await mountSchema({
+      schema: { fields: { background: { type: 'color', readonly: true } } }
+    })
+    const field = findField('background')
+    await field.find('input').trigger('focus')
+    await settle()
+    expect(field.find('.dito-color__popup').exists()).toBe(false)
   })
 
   it('keeps the value when picking the same color', async () => {

@@ -2,12 +2,9 @@ import { expect, type Page } from '@playwright/test'
 import { text } from './text.js'
 import type { DriverComponent, TypeComponentDriver } from './index.js'
 
-/** Opens the color picker with the swatch button next to the input. */
+/** Opens the color picker by clicking its input. */
 export async function openColorPicker(page: Page, component: DriverComponent) {
-  await page
-    .locator('.dito-input', { has: text.getElement(page, component) })
-    .getByRole('button', { name: 'Choose color' })
-    .click()
+  await text.getElement(page, component).click()
   const picker = page.getByRole('dialog', { name: 'Choose color' })
   await expect(picker).toBeVisible()
   return picker
