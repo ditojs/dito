@@ -9,6 +9,7 @@ DropdownMenuRoot(
   )
     DitoButton.dito-menu-button(
       ref="button"
+      :class="{ 'dito-menu-button--attached': attached }"
       v-bind="$attrs"
     )
       slot
@@ -16,9 +17,10 @@ DropdownMenuRoot(
   //- scrolling panels don't clip it:
   DropdownMenuContent.dito-menu-button__menu(
     ref="menu"
+    :class="{ 'dito-menu-button__menu--attached': attached }"
     :side="side"
     :align="alignment"
-    :sideOffset="4"
+    :sideOffset="attached ? 0 : 4"
     :collisionBoundary="scrollContainer"
     loop
     positionStrategy="fixed"
@@ -70,6 +72,9 @@ export default {
     // Where the menu opens, as in reka-ui's `DropdownMenuContent`:
     side: { type: String, default: 'bottom' },
     align: { type: String, default: 'center' },
+    // Join the menu and the button into one shape, as wide as the wider of
+    // the two:
+    attached: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false }
   },
 
@@ -112,6 +117,7 @@ export default {
 </script>
 
 <style lang="scss">
+@use 'sass:list';
 @import '../styles/_imports';
 
 $menu-button-radius: 0.5em;
@@ -133,6 +139,28 @@ $menu-button-padding: 0.25em;
 
   &[data-state='open'] {
     animation: dito-slide-enter 0.15s $ease-out-quart;
+  }
+}
+
+// Attached menus continue their open button, without a shadow over it:
+.dito-menu-button--attached[data-state='open'] {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.dito-menu-button__menu--attached {
+  $blur: list.nth($shadow-window, 3);
+  // The radius of the buttons that attached menus join:
+  $radius: 2 * $border-radius;
+
+  min-width: var(--reka-dropdown-menu-trigger-width);
+  padding: 0;
+  border-radius: 0 0 $radius $radius;
+  clip-path: inset(0 (-$blur) (-2 * $blur));
+
+  .dito-menu-button__item {
+    justify-content: center;
+    border-radius: 0;
   }
 }
 
