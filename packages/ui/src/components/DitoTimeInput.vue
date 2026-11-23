@@ -13,10 +13,11 @@
         :class="inputClasses"
         @update:modelValue="value => $emit('update:modelValue', value ?? null)"
         @focusin="onPartFocus"
+        @focusout="onFocusOut"
         @click="onPartFocus"
       )
         slot(name="prefix")
-        .dito-date-segments
+        .dito-date-segments(ref="segments")
           TimeFieldInput.dito-date-segments__part(
             v-for="item in segments"
             :key="item.part"
@@ -159,6 +160,14 @@ export default {
 
     hasFocusedPart() {
       return !!this.$el.querySelector('[contenteditable="true"]:focus')
+    },
+
+    // Show the start of clipped parts again once the focus leaves the field,
+    // as inputs do:
+    onFocusOut(event) {
+      if (!event.currentTarget.contains(event.relatedTarget)) {
+        this.$refs.segments.scrollLeft = 0
+      }
     },
 
     // The part that was picked in the panel becomes the focused one:
