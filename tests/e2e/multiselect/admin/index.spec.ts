@@ -206,4 +206,28 @@ test.describe('multiselect', () => {
     await page.waitForTimeout(800)
     await expect(options).toHaveText(['Black'])
   })
+
+  test('renders only the options in view of long lists, and finds the others', async ({
+    page,
+    url
+  }) => {
+    await Widget.query().insert({ name: 'Widget A', size: 'Small' })
+    const list = new DitoListView(page, url, 'Widget')
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    const serial = page.getByRole('combobox', { name: 'Serial' })
+    await serial.click()
+    const options = page.getByRole('option')
+    await expect(options.first()).toHaveText('0001')
+    expect(await options.count()).toBeLessThan(100)
+    await serial.fill('0999')
+    await expect(options).toHaveText(['0999'])
+    await options.first().click()
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(
+        async () => (await Widget.query().findOne({ name: 'Widget A' }))?.serial
+      )
+      .toBe('0999')
+  })
 })

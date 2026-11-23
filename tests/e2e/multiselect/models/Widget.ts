@@ -14,6 +14,7 @@ export interface Widget {
   color?: string | null
   paint?: string | null
   codes?: string[] | null
+  serial?: string | null
   tags?: Tag[]
 }
 
@@ -24,7 +25,8 @@ export class Widget extends Model {
     shape: { type: 'string', nullable: true },
     color: { type: 'string', nullable: true },
     paint: { type: 'string', nullable: true },
-    codes: { type: 'array', nullable: true, items: { type: 'string' } }
+    codes: { type: 'array', nullable: true, items: { type: 'string' } },
+    serial: { type: 'string', nullable: true }
   }
 
   static override relations: ModelRelations = {
