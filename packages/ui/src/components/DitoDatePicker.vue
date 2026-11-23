@@ -74,26 +74,27 @@
           DatePickerPrev.dito-calendar__step(aria-label="Previous month")
             span.dito-calendar__arrow.dito-calendar__arrow--prev
           //- The month and year that the calendar shows, not the value:
-          select.dito-calendar__select(
-            aria-label="Month"
-            :value="shownDate.month"
-            @change="setPlaceholder({ month: +$event.target.value })"
-          )
-            option(
-              v-for="month in months"
-              :key="month.value"
-              :value="month.value"
-            ) {{ month.label }}
-          select.dito-calendar__select(
-            aria-label="Year"
-            :value="shownDate.year"
-            @change="setPlaceholder({ year: +$event.target.value })"
-          )
-            option(
-              v-for="year in years"
-              :key="year"
-              :value="year"
-            ) {{ year }}
+          .dito-calendar__heading
+            select.dito-calendar__select(
+              aria-label="Month"
+              :value="shownDate.month"
+              @change="setPlaceholder({ month: +$event.target.value })"
+            )
+              option(
+                v-for="month in months"
+                :key="month.value"
+                :value="month.value"
+              ) {{ month.label }}
+            select.dito-calendar__select(
+              aria-label="Year"
+              :value="shownDate.year"
+              @change="setPlaceholder({ year: +$event.target.value })"
+            )
+              option(
+                v-for="year in years"
+                :key="year"
+                :value="year"
+              ) {{ year }}
           DatePickerNext.dito-calendar__step(aria-label="Next month")
             span.dito-calendar__arrow.dito-calendar__arrow--next
           DatePickerNext.dito-calendar__step(
@@ -409,13 +410,31 @@ $entered-part: '.dito-date-segments__part:not([data-placeholder], ' +
     border-bottom: $border-style;
   }
 
-  &__select {
+  &__heading {
     flex: 1;
-    min-width: 0;
+    display: flex;
+    justify-content: center;
+    gap: 0.25em;
+  }
+
+  // Plain text that opens the native menu, without its arrow:
+  &__select {
+    appearance: none;
+    padding: 0 0.2em;
     font: inherit;
     font-weight: bold;
+    color: inherit;
     border: 0;
     background: none;
+    cursor: pointer;
+
+    &:hover {
+      color: $color-active;
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+    }
   }
 
   &__step {
@@ -426,6 +445,10 @@ $entered-part: '.dito-date-segments__part:not([data-placeholder], ' +
     justify-content: center;
     width: $input-height;
     height: $input-height;
+
+    &:hover {
+      color: $color-active;
+    }
   }
 
   // The years show two arrows, the months one:
