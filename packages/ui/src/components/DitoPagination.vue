@@ -29,15 +29,18 @@ PaginationRoot.dito-pagination(
         v-if="item.type === 'page'"
         :value="item.value"
       )
-      PaginationEllipsis.dito-pagination__ellipsis(
+      //- The ellipses jump ten pages, back before the current page and forward
+      //- after it:
+      button.dito-pagination__ellipsis(
         v-else
-        as="span"
+        type="button"
+        :class=`{
+          'dito-pagination__ellipsis--back':
+            getJumpPage(items, index) < currentPage
+        }`
+        :aria-label="`Page ${getJumpPage(items, index)}`"
+        @click="currentPage = getJumpPage(items, index)"
       )
-        DitoIcon(
-          name="ellipsis"
-          aria-hidden="true"
-        )
-        VisuallyHidden More pages
     //- reka-ui only disables the button on the last page, not past it:
     PaginationNext.dito-button.dito-pagination__next(
       aria-label="Next page"
@@ -48,26 +51,22 @@ PaginationRoot.dito-pagination(
 
 <script>
 import {
-  PaginationEllipsis,
   PaginationList,
   PaginationListItem,
   PaginationNext,
   PaginationPrev,
-  PaginationRoot,
-  VisuallyHidden
+  PaginationRoot
 } from 'reka-ui'
 import DitoIcon from './DitoIcon.vue'
 
 export default {
   components: {
     DitoIcon,
-    PaginationEllipsis,
     PaginationList,
     PaginationListItem,
     PaginationNext,
     PaginationPrev,
-    PaginationRoot,
-    VisuallyHidden
+    PaginationRoot
   },
 
   emits: ['update:page'],
@@ -117,6 +116,16 @@ export default {
         this.$emit('update:page', to)
       }
     }
+  },
+
+  methods: {
+    getJumpPage(items, index) {
+      const { currentPage, numPages } = this
+      const currentIndex = items.findIndex(({ value }) => value === currentPage)
+      return index < currentIndex
+        ? Math.max(1, currentPage - 10)
+        : Math.min(numPages, currentPage + 10)
+    }
   }
 }
 </script>
@@ -159,11 +168,28 @@ export default {
   }
 
   &__ellipsis {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @extend %button--plain;
+
+    position: relative;
     min-width: $input-height;
     min-height: $input-height;
+
+    &::before {
+      @extend %icon--ellipsis;
+    }
+
+    // Show where the jump goes:
+    &:hover::before {
+      @extend %icon--chevrons;
+    }
+
+    &--back::before {
+      transform: scaleX(-1);
+    }
+
+    &:focus-visible {
+      color: $color-active;
+    }
   }
 }
 </style>
