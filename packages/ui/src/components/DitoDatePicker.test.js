@@ -46,7 +46,7 @@ describe('DitoDatePicker', () => {
     })
     await wrapper.find('.dito-date-picker__placeholder').trigger('mousedown')
     expect(document.activeElement).toBe(
-      wrapper.find('[contenteditable="true"]').element
+      wrapper.find('[role="spinbutton"]').element
     )
   })
 
@@ -82,7 +82,7 @@ describe('DitoDatePicker', () => {
 
     const findParts = () => wrapper.findAll('[role="spinbutton"]')
     const findPart = name =>
-      wrapper.find(`[data-reka-date-field-segment="${name}"]`)
+      wrapper.find(`[role="spinbutton"][aria-label^="${name},"]`)
 
     async function focusPart(name) {
       findPart(name).element.focus()
@@ -220,7 +220,7 @@ describe('DitoDatePicker', () => {
         .findAll('.dito-time-panel [aria-label="Minute"] li')[45]
         .trigger('click')
       await flushPromises()
-      expect(document.activeElement.dataset.rekaDateFieldSegment).toBe('minute')
+      expect(document.activeElement).toBe(findPart('minute').element)
       expect(wrapper.find('.dito-time-panel').exists()).toBe(true)
     })
 

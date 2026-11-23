@@ -67,7 +67,11 @@ import {
 } from 'reka-ui'
 import DitoIcon from './DitoIcon.vue'
 import DitoTimePanel from './DitoTimePanel.vue'
-import { focusSegment, getSegmentClasses } from './dateSegments.js'
+import {
+  findSegment,
+  focusSegment,
+  getSegmentClasses
+} from './dateSegments.js'
 import { hasErrors } from '../utils/element.js'
 import { usePopupPlacement } from '../utils/vue.js'
 
@@ -134,7 +138,11 @@ export default {
     // Focusing or clicking a part opens the popup, also after it was closed
     // while the part kept the focus:
     onPartFocus(event) {
-      if (event.target.matches('[contenteditable="true"]')) {
+      if (
+        findSegment(this.$refs.parts, event.target) &&
+        !this.disabled &&
+        !this.readonly
+      ) {
         this.open = true
       }
     },
@@ -165,7 +173,7 @@ export default {
     },
 
     hasFocusedPart() {
-      return !!this.$el.querySelector('[contenteditable="true"]:focus')
+      return !!findSegment(this.$refs.parts, document.activeElement)
     },
 
     // Show the start of clipped parts again once the focus leaves the field,
@@ -178,7 +186,7 @@ export default {
 
     // The part that was picked in the panel becomes the focused one:
     focusPart(name) {
-      this.$el.querySelector(`[data-reka-time-field-segment="${name}"]`).focus()
+      focusSegment(this.$refs.parts, name)
     },
 
     focus() {

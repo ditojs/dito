@@ -15,8 +15,18 @@ export function getSegmentClasses(segment) {
   }
 }
 
-// Focus the first part that isn't a literal. reka-ui's parts of disabled
-// fields can't take the focus:
-export function focusSegment(parts) {
-  parts?.find(part => part.$props.part !== 'literal')?.$el.focus()
+// The part that `element` is, unless it's a literal:
+export function findSegment(parts, element) {
+  return parts?.find(
+    part => part.$el === element && part.$props.part !== 'literal'
+  )
+}
+
+// Focus the part called `name`, or the first that isn't a literal. reka-ui's
+// parts of disabled fields can't take the focus:
+export function focusSegment(parts, name) {
+  const segment = parts?.find(({ $props }) =>
+    name ? $props.part === name : $props.part !== 'literal'
+  )
+  segment?.$el.focus()
 }

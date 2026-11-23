@@ -69,12 +69,12 @@ describe('DitoDateType', () => {
       findContainer(name)
     )
     expect(document.activeElement).toBe(
-      published.find('[contenteditable="true"]').element
+      published.find('[role="spinbutton"]').element
     )
     const { htmlFor } = opens.find('label').element
     opens.find(`[id="${htmlFor}"]`).element.focus()
     expect(document.activeElement).toBe(
-      opens.find('[contenteditable="true"]').element
+      opens.find('[role="spinbutton"]').element
     )
   })
 

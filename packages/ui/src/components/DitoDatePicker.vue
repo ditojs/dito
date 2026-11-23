@@ -183,6 +183,7 @@ import {
 import DitoIcon from './DitoIcon.vue'
 import DitoTimePanel from './DitoTimePanel.vue'
 import {
+  findSegment,
   focusSegment,
   getSegmentClasses,
   isEnteredSegment
@@ -342,9 +343,9 @@ export default {
     // Focusing or clicking a part opens the popup with the panel of the part,
     // also after it was closed while the part kept the focus:
     onPartFocus(event) {
-      const { target } = event
-      if (target.matches('[contenteditable="true"]')) {
-        const part = target.dataset.rekaDateFieldSegment
+      const segment = findSegment(this.$refs.parts, event.target)
+      if (segment && !this.disabled && !this.readonly) {
+        const { part } = segment.$props
         this.activePanel = timeParts.includes(part) ? 'time' : 'date'
         this.open = true
       }
@@ -353,7 +354,7 @@ export default {
     // reka-ui focuses the calendar when the popup opens, and the button when
     // it closes, which a focused part prevents:
     keepPartFocused(event) {
-      if (this.$el.querySelector('[contenteditable="true"]:focus')) {
+      if (findSegment(this.$refs.parts, document.activeElement)) {
         event.preventDefault()
       }
     },
@@ -377,7 +378,7 @@ export default {
 
     // The part that was picked in the time panel becomes the focused one:
     focusPart(name) {
-      this.$el.querySelector(`[data-reka-date-field-segment="${name}"]`).focus()
+      focusSegment(this.$refs.parts, name)
     },
 
     focus() {
