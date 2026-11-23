@@ -44,6 +44,24 @@ describe('DitoPagination', () => {
     expect(getTotal(wrapper)).toBe('21 – 30 / 30')
   })
 
+  it('jumps ten pages with the ellipses', async () => {
+    const wrapper = mountPagination({ total: 500, page: 20 })
+    const [back, forward] = wrapper.findAll('.dito-pagination__ellipsis')
+    expect(back.attributes('aria-label')).toBe('Page 10')
+    expect(forward.attributes('aria-label')).toBe('Page 30')
+    await forward.trigger('click')
+    expect(wrapper.emitted('update:page')).toEqual([[30]])
+  })
+
+  it('stops the jumps of the ellipses at the first and last page', () => {
+    const getLabels = page =>
+      mountPagination({ total: 500, page })
+        .findAll('.dito-pagination__ellipsis')
+        .map(ellipsis => ellipsis.attributes('aria-label'))
+    expect(getLabels(5)).toEqual(['Page 1', 'Page 15'])
+    expect(getLabels(46)).toEqual(['Page 36', 'Page 50'])
+  })
+
   it('disables the next button past the last page', () => {
     const wrapper = mountPagination({ total: 20, page: 5 })
     expect(
