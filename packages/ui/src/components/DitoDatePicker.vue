@@ -1,11 +1,10 @@
 <template lang="pug">
 .dito-date-picker(:class="$attrs.class")
-  //- Picking a day closes the calendar, and picking it again keeps it:
+  //- Picking the selected day again keeps it:
   DatePickerRoot(
     v-bind="$props"
     v-model:placeholder="shownDate"
     v-model:open="open"
-    closeOnSelect
     preventDeselect
     weekdayFormat="short"
     @update:modelValue="value => $emit('update:modelValue', value ?? null)"
@@ -18,6 +17,8 @@
         :class="inputClasses"
         v-bind="attributes"
         @mousedown="onMouseDown"
+        @focusin="onPartFocus"
+        @click="onPartFocus"
       )
         slot(name="prefix")
         .dito-date-segments
@@ -30,9 +31,11 @@
             :key="item.part"
             :part="item.part"
           ) {{ item.value }}
+        //- The button opens the calendar, also of fields with a time:
         DatePickerTrigger.dito-date-picker__toggle(
           aria-label="Choose date"
           :disabled="disabled || readonly"
+          @click="activePanel = 'date'"
         )
           DitoIcon(
             name="calendar"
@@ -41,14 +44,25 @@
         slot(name="suffix")
     //- Fixed, so that scrolling panels don't clip it, and without a portal, so
     //- that the styles apply:
-    DatePickerContent.dito-date-picker__popup(
+    DatePickerContent.dito-picker-popup(
       :portal="{ disabled: true }"
-      align="start"
+      :align="activePanel === 'time' ? 'end' : 'start'"
       :sideOffset="2"
       :collisionBoundary="scrollContainer"
       positionStrategy="fixed"
+      @open-auto-focus="keepPartFocused"
+      @close-auto-focus="keepPartFocused"
+      @interact-outside="onInteractOutside"
     )
+      DitoTimePanel(
+        v-if="activePanel === 'time'"
+        :modelValue="modelValue ?? shownDate"
+        :granularity="granularity"
+        @update:modelValue="value => $emit('update:modelValue', value)"
+        @select="focusPart"
+      )
       DatePickerCalendar.dito-calendar(
+        v-else
         v-slot="{ weekDays, grid }"
       )
         DatePickerHeader.dito-calendar__header
@@ -107,9 +121,13 @@
                 :key="date.toString()"
                 :date="date"
               )
+                //- Picking a day closes the calendar, while edits in the field
+                //- keep it open:
                 DatePickerCellTrigger.dito-calendar__day(
                   :day="date"
                   :month="month.value"
+                  @click="open = false"
+                  @keydown.enter.space="open = false"
                 )
         .dito-calendar__footer
           DatePickerClose(asChild)
@@ -147,10 +165,12 @@ import {
   DatePickerTrigger
 } from 'reka-ui'
 import DitoIcon from './DitoIcon.vue'
+import DitoTimePanel from './DitoTimePanel.vue'
 import { getScrollContainer, hasErrors } from '../utils/element.js'
 
 // A date field with a calendar in a popup, built on reka-ui's `DatePicker`,
-// with dates of `@internationalized/date` as values.
+// with dates of `@internationalized/date` as values. While a part of the time
+// is focused, the popup shows the lists of `DitoTimePanel` instead.
 export default {
   components: {
     DatePickerAnchor,
@@ -171,7 +191,8 @@ export default {
     DatePickerPrev,
     DatePickerRoot,
     DatePickerTrigger,
-    DitoIcon
+    DitoIcon,
+    DitoTimePanel
   },
   inheritAttrs: false,
   emits: ['update:modelValue', 'update:open'],
@@ -198,6 +219,8 @@ export default {
       // reka-ui calls it the placeholder:
       shownDate: this.modelValue ?? getToday(this.granularity),
       open: false,
+      // The panel that the popup shows, 'date' or 'time':
+      activePanel: 'date',
       scrollContainer: null
     }
   },
@@ -282,6 +305,39 @@ export default {
       }
     },
 
+    // Focusing or clicking a part opens the popup with the panel of the part,
+    // also after it was closed while the part kept the focus:
+    onPartFocus(event) {
+      const { target } = event
+      if (target.matches('[contenteditable="true"]')) {
+        const part = target.dataset.rekaDateFieldSegment
+        this.activePanel = timeParts.includes(part) ? 'time' : 'date'
+        this.open = true
+      }
+    },
+
+    // reka-ui focuses the calendar when the popup opens, and the button when
+    // it closes, which a focused part prevents:
+    keepPartFocused(event) {
+      if (this.$el.querySelector('[contenteditable="true"]:focus')) {
+        event.preventDefault()
+      }
+    },
+
+    // Clicks on the field and the focus moving between its parts keep the
+    // popup open:
+    onInteractOutside(event) {
+      const { target } = event
+      if (this.$el.contains(target) && !target.closest('button')) {
+        event.preventDefault()
+      }
+    },
+
+    // The part that was picked in the time panel becomes the focused one:
+    focusPart(name) {
+      this.$el.querySelector(`[data-reka-date-field-segment="${name}"]`).focus()
+    },
+
     focus() {
       this.$el.querySelector('[contenteditable="true"]')?.focus()
     },
@@ -291,6 +347,8 @@ export default {
     }
   }
 }
+
+const timeParts = ['hour', 'minute', 'second', 'dayPeriod']
 
 // Today, with a time for granularities finer than `day`:
 function getToday(granularity) {
@@ -334,19 +392,6 @@ $entered-part: '.dito-date-segments__part:not([data-placeholder], ' +
     @extend %button--plain;
 
     display: flex;
-  }
-}
-
-// reka-ui gives the popup's z-index to the element that positions it:
-.dito-date-picker__popup {
-  z-index: $z-index-popup;
-  border: $border-style;
-  border-radius: $border-radius;
-  background: $color-white;
-  box-shadow: $shadow-window;
-
-  &[data-state='open'] {
-    animation: dito-slide-enter 0.15s $ease-out-quart;
   }
 }
 

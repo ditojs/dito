@@ -263,7 +263,36 @@ describe('DitoDateType', () => {
     const prefix = field.find('.dito-affixes--prefix')
     expect(prefix.text()).toBe('On')
     expect(prefix.classes()).toContain('dito-affixes--absolute')
+    expect(field.find('.dito-affixes--suffix').classes()).toContain(
+      'dito-affixes--absolute'
+    )
     await field.find('button[title="Clear"]').trigger('click')
     expect(field.find('button[title="Clear"]').exists()).toBe(false)
+  })
+
+  it('opens the popup of clearable fields by a click on a part', async () => {
+    // The clear button lies over the button of the popup while it shows:
+    const { findField, settle } = await mountSchema({
+      schema: {
+        fields: {
+          publishedOn: { type: 'date', clearable: true },
+          opensAt: { type: 'time', clearable: true }
+        }
+      },
+      data: {
+        publishedOn: '2024-03-01',
+        opensAt: new Date(2024, 2, 5, 9, 15).toISOString()
+      }
+    })
+    for (const [name, popup] of [
+      ['publishedOn', '.dito-calendar'],
+      ['opensAt', '.dito-time-panel']
+    ]) {
+      const field = findField(name)
+      expect(field.find('button[title="Clear"]').exists()).toBe(true)
+      await field.find('[role="spinbutton"]').trigger('click')
+      await settle()
+      expect(field.find(popup).exists()).toBe(true)
+    }
   })
 })

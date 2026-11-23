@@ -292,7 +292,12 @@ export const projects = createWidgetView<Project>(
               width: '1/2'
             },
             startTime: { type: 'time', label: 'Start Time', width: '1/4' },
-            meetingAt: { type: 'datetime', label: 'Meeting', width: '1/4' },
+            meetingAt: {
+              type: 'datetime',
+              label: 'Meeting',
+              width: '1/4',
+              clearable: true
+            },
             contactInfo: {
               type: 'section',
               label: 'Contact Info',

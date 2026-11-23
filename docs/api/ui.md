@@ -27,11 +27,11 @@ Inside custom admin components, the admin's styles already include those of
 
 ## Contents
 
-| Section                   | Exports                                                                                                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoProgress`, `DitoTrigger`, `DitoDatePicker`, `DitoTimeInput`, `TransitionHeight`            |
-| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `getScrollContainer()`, `hasErrors()`, `addEvents()`, `combineEvents()`, `getKey()`, `getKeyNavigation()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()` |
-| [Styles](#styles)         | CSS classes, SCSS variables, mixins, functions and icons                                                                                                                                 |
+| Section                   | Exports                                                                                                                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Components](#components) | `DitoButton`, `DitoMenuButton`, `DitoIcon`, `DitoInput`, `DitoSwitch`, `DitoPagination`, `DitoProgress`, `DitoTrigger`, `DitoDatePicker`, `DitoTimeInput`, `DitoTimePanel`, `TransitionHeight` |
+| [Helpers](#helpers)       | `getVerbButtonAttributes()`, `getScrollContainer()`, `hasErrors()`, `addEvents()`, `combineEvents()`, `getKey()`, `getKeyNavigation()`, `hasVNodeContent()`, `hasSlotContent()`, `raw()`       |
+| [Styles](#styles)         | CSS classes, SCSS variables, mixins, functions and icons                                                                                                                                       |
 
 ## Example
 
@@ -332,12 +332,15 @@ dialogs.
 
 A date field with a calendar in a popup, built on
 [`reka-ui`'s `DatePicker`](https://reka-ui.com/docs/components/date-picker).
-The field edits each part of the date on its own, in the order of the locale,
-and the button next to it opens the calendar, whose header picks the month and
-year from lists. The values are dates of
+The field edits each part of the date on its own, in the order of the locale.
+Focusing or clicking a part opens the calendar, as does the button next to the
+field, and its header picks the month and year from lists. The values are dates
+of
 [`@internationalized/date`](https://react-spectrum.adobe.com/internationalized/date/),
 e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
-`day`, which also edits the time.
+`day`, which also edits the time. While a part of the time is focused, the
+popup shows a [`DitoTimePanel`](#ditotimepanel) instead of the calendar.
+Readonly and disabled fields don't open the popup.
 
 | Prop                   | Type                                      | Default   | Description                                                                                                 |
 | ---------------------- | ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------- |
@@ -350,9 +353,9 @@ e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
 | `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.                                                   |
 | `placeholder`          | `string`                                  | `null`    | Shown while no part is entered and the field isn't focused. Such fields show their parts only once focused. |
 
-| Slot               | Description                                     |
-| ------------------ | ----------------------------------------------- |
-| `prefix`, `suffix` | Content before and after the parts of the date. |
+| Slot               | Description                                                    |
+| ------------------ | -------------------------------------------------------------- |
+| `prefix`, `suffix` | Content before and after the parts of the date and the button. |
 
 All other attributes but `class` go to the field, e.g. `aria-label`, and `aria-invalid`
 shows errors, as in [`DitoInput`](#ditoinput). The field emits `update:open`
@@ -370,16 +373,37 @@ when the calendar opens or closes, and looks focused while it is open. Methods:
 
 A time field, built on
 [`reka-ui`'s `TimeField`](https://reka-ui.com/docs/components/time-field), which
-edits each part of the time on its own. The values are `Time`, or dates with a
-time of `@internationalized/date`, whose date it keeps. Its own props are
-`locale`, `'en-US'` by default, and `disabled`, which also adds
-`.dito-input--disabled`; all other props of `TimeFieldRoot` fall through,
-e.g. `modelValue` (`v-model`), `granularity`, `hourCycle` and
-`defaultPlaceholder`, the value that typing starts from without a value.
+edits each part of the time on its own. Focusing or clicking a part opens a
+[`DitoTimePanel`](#ditotimepanel) in a popup, as does the button next to the
+field. The values are `Time`, or dates with a time of
+`@internationalized/date`, whose date it keeps.
 
+| Prop                   | Type                             | Default    | Description                                                         |
+| ---------------------- | -------------------------------- | ---------- | ------------------------------------------------------------------- |
+| `modelValue`           | `TimeValue`                      | `null`     | The time (`v-model`).                                               |
+| `granularity`          | `'hour' \| 'minute' \| 'second'` | `'minute'` | The smallest part that the field edits.                             |
+| `hourCycle`            | `12 \| 24`                       | –          | The hours of the field, or else those of the locale.                |
+| `locale`               | `string`                         | `'en-US'`  | The locale of the field.                                            |
+| `defaultPlaceholder`   | `TimeValue`                      | –          | The value that typing and picking start from without a value.       |
+| `disabled`, `readonly` | `boolean`                        | `false`    | Disables the field, or keeps its value from being edited or picked. |
+
+All other attributes but `class` go to the field, also the other props of
+`TimeFieldRoot`, and `aria-invalid` shows errors, as in
+[`DitoInput`](#ditoinput). The field looks focused while its popup is open.
 Slots: `prefix` and `suffix`, as in [`DitoDatePicker`](#ditodatepicker).
-Methods: `focus()` and `blur()`. With `aria-invalid`, the field shows errors,
-as `DitoInput` does.
+Methods: `focus()` and `blur()`.
+
+### DitoTimePanel
+
+The lists in the popups of [`DitoTimeInput`](#ditotimeinput) and
+[`DitoDatePicker`](#ditodatepicker), one for each part of the time, with hours
+from 00 to 23. Picking a value sets that part of `modelValue` and emits
+`select` with its name, e.g. `'minute'`, for the field to focus that part.
+
+| Prop          | Type                             | Default    | Description                                  |
+| ------------- | -------------------------------- | ---------- | -------------------------------------------- |
+| `modelValue`  | `TimeValue`                      | required   | The time, or a date with a time (`v-model`). |
+| `granularity` | `'hour' \| 'minute' \| 'second'` | `'minute'` | The smallest part that the panel shows.      |
 
 ### TransitionHeight
 
