@@ -124,10 +124,14 @@
                 :date="date"
               )
                 //- Picking a day closes the calendar, while edits in the field
-                //- keep it open:
+                //- keep it open. Dragging moves the selection along with the
+                //- pointer, until its release picks the day:
                 DatePickerCellTrigger.dito-calendar__day(
                   :day="date"
                   :month="month.value"
+                  @mousedown.left="selectDay(date)"
+                  @mouseenter="$event.buttons === 1 && selectDay(date)"
+                  @mouseup.left="open = false"
                   @click="open = false"
                   @keydown.enter.space="open = false"
                 )
@@ -142,6 +146,7 @@
 <script>
 import {
   getLocalTimeZone,
+  isSameDay,
   now,
   toCalendarDateTime,
   today
@@ -281,6 +286,13 @@ export default {
       this.shownDate = this.shownDate.set(fields)
     },
 
+    selectDay(date) {
+      const { modelValue } = this
+      if (!this.readonly && !(modelValue && isSameDay(date, modelValue))) {
+        this.$emit('update:modelValue', date)
+      }
+    },
+
     // Select today, or the current time without the time parts that the
     // field doesn't edit:
     selectNow() {
@@ -406,6 +418,8 @@ $entered-part: '.dito-date-segments__part:not([data-placeholder], ' +
 }
 
 .dito-calendar {
+  @include user-select(none);
+
   min-width: 240px;
   padding: 0 0.5em 0.5em;
 

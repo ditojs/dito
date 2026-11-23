@@ -158,6 +158,32 @@ describe('DitoDatePicker', () => {
       }
     })
 
+    it('moves the selection along while dragging over the days', async () => {
+      mountDatePicker({
+        'modelValue': new CalendarDateTime(2026, 5, 14, 9, 30),
+        'granularity': 'minute',
+        'onUpdate:modelValue': modelValue => wrapper.setProps({ modelValue })
+      })
+      await focusPart('day')
+      const findDay = day => wrapper.find(`[data-value^="2026-05-${day}"]`)
+      await findDay(20).trigger('mousedown', { button: 0 })
+      expect(wrapper.props('modelValue')).toEqual(
+        new CalendarDateTime(2026, 5, 20, 9, 30)
+      )
+      // The pointer only selects days while its button is pressed:
+      await findDay(21).trigger('mouseenter', { buttons: 0 })
+      expect(wrapper.props('modelValue').day).toBe(20)
+      await findDay(22).trigger('mouseenter', { buttons: 1 })
+      expect(findDay(22).attributes('data-selected')).toBeDefined()
+      expect(wrapper.find('.dito-calendar').exists()).toBe(true)
+      await findDay(22).trigger('mouseup', { button: 0 })
+      await flushPromises()
+      expect(wrapper.find('.dito-calendar').exists()).toBe(false)
+      expect(wrapper.props('modelValue')).toEqual(
+        new CalendarDateTime(2026, 5, 22, 9, 30)
+      )
+    })
+
     it('shows the start of its parts again once the focus leaves', async () => {
       mountDatePicker({ modelValue: new CalendarDate(2026, 5, 14) })
       const segments = wrapper.find('.dito-date-segments').element
