@@ -3,7 +3,8 @@
   PopoverRoot(
     v-model:open="showPopup"
   )
-    //- The popup is placed at the input, and the swatch button opens it:
+    //- The popup is placed at the input, which opens it along with the swatch
+    //- button:
     PopoverAnchor(asChild)
       DitoInput(
         :id="componentPath"
@@ -27,10 +28,13 @@
             v-bind="inputAffixesProps.suffix"
             @clear="clear"
           )
-          //- Outside of the affixes, so their clear button doesn't hide it:
+          //- Outside of the affixes, so their clear button doesn't hide it.
+          //- Its clicks don't focus the input, which would open the popup
+          //- before they close it again:
           PopoverTrigger.dito-color__preview(
             aria-label="Choose color"
             :disabled="disabled || readonly"
+            @mousedown.stop
           )
             div(:style="{ background: `#${hexValue || '00000000'}` }")
     //- No portal, so that the styles apply. The popup is fixed, so that
@@ -41,6 +45,9 @@
       :sideOffset="2"
       :collisionBoundary="scrollContainer"
       positionStrategy="fixed"
+      @open-auto-focus="keepInputFocused"
+      @close-auto-focus="keepInputFocused"
+      @interact-outside="onInteractOutside"
     )
       ColorAreaRoot(
         v-slot="{ style }"
@@ -61,7 +68,7 @@
         @update:color="setPickerColor"
       )
         ColorSliderTrack.dito-color__track
-        ColorSliderThumb.dito-color__thumb
+        ColorSliderThumb.dito-color__handle
       .dito-color__fields(
         v-if="inputs"
       )
@@ -73,9 +80,12 @@
           :channel="channel"
           @update:color="setPickerColor"
         )
-          ColorFieldInput.dito-input(:id="`${componentPath}-${channel}`")
           label(:for="`${componentPath}-${channel}`")
-            | {{ getChannelName(channel) }}
+            | {{ getChannelName(channel)[0] }}
+          ColorFieldInput.dito-input(
+            :id="`${componentPath}-${channel}`"
+            :aria-label="getChannelName(channel)"
+          )
       .dito-color__presets
         button.dito-color__preset(
           v-for="preset in presets"
@@ -148,7 +158,13 @@ const DitoColorType = {
       // Native change events don't tell when editing is done, as the picker
       // edits the value too. Swallow them, see `changeOnceEdited`:
       getEvents: ({ onFocus }) => ({
-        onFocus,
+        onFocus: () => {
+          onFocus()
+          openPopup()
+        },
+        // Open the popup again after it was closed while the input kept the
+        // focus:
+        onClick: openPopup,
         onBlur,
         onChange: () => {}
       })
@@ -175,6 +191,12 @@ const DitoColorType = {
       value.value = editedValue
       changeOnceEdited.markEdited()
       changeOnceEdited.emitIfDone()
+    }
+
+    function openPopup() {
+      if (!readonly.value) {
+        showPopup.value = true
+      }
     }
 
     function onBlur() {
@@ -204,6 +226,22 @@ const DitoColorType = {
       showPopup,
       scrollContainer,
       getChannelName,
+
+      // reka-ui focuses the popup when it opens, and the button when it
+      // closes, which a focused input prevents:
+      keepInputFocused(event) {
+        if (focused.value) {
+          event.preventDefault()
+        }
+      },
+
+      // Clicks on the input and its affixes keep the popup open:
+      onInteractOutside(event) {
+        const { target } = event
+        if (root.value.contains(target) && !target.closest('button')) {
+          event.preventDefault()
+        }
+      },
 
       // The picker's color in reka-ui's HSB space, which its area needs for
       // its saturation:
@@ -415,24 +453,36 @@ $color-slider-height: 12px;
     }
   }
 
+  // The sliders have an upright bar instead of the area's circle:
+  &__handle {
+    width: 4px;
+    height: $color-slider-height;
+    border-radius: 2px;
+    background: $color-white;
+    box-shadow: 0 0 2px rgba($color-black, 0.6);
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+
   &__fields {
     display: flex;
     gap: $color-picker-gap;
   }
 
   &__field {
+    display: flex;
     flex: 1;
+    align-items: center;
+    gap: $color-picker-gap * 0.5;
     min-width: 0;
-    text-align: center;
 
     .dito-input {
-      width: 100%;
+      flex: 1;
+      min-width: 0;
       box-sizing: border-box;
       font-variant-numeric: tabular-nums;
-    }
-
-    label {
-      font-size: $font-size-small;
     }
   }
 
