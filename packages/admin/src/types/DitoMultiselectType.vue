@@ -614,8 +614,10 @@ $tag-margin: 2px;
       color: transparent;
     }
 
+    // Without search, the input only holds the focus:
     &[readonly] {
       cursor: default;
+      caret-color: transparent;
     }
   }
 
