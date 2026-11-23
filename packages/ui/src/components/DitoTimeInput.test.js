@@ -59,10 +59,10 @@ describe('DitoTimeInput', () => {
     expect(findPanel().exists()).toBe(true)
   })
 
-  it('opens the time panel again when a focused part is clicked', async () => {
+  it('closes the time panel on Escape in a part, and opens it on a click', async () => {
     mountTimeInput({ props: { modelValue: new Time(9, 15) } })
     await focusPart(0)
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await findParts()[0].trigger('keydown', { key: 'Escape' })
     await flushPromises()
     expect(findPanel().exists()).toBe(false)
     expect(document.activeElement).toBe(findParts()[0].element)
