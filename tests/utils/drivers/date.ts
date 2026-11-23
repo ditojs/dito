@@ -12,7 +12,7 @@ export const date: TypeComponentDriver = {
 
   async setValue(page, component, value) {
     await this.getElement(page, component)
-      .locator('[contenteditable="true"]')
+      .getByRole('spinbutton')
       .first()
       .click()
     // Full numbers move the focus on to the next part:

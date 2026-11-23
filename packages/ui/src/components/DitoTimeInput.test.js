@@ -31,15 +31,13 @@ describe('DitoTimeInput', () => {
     expect(wrapper.find('.dito-input').classes()).toEqual(
       expect.arrayContaining(['dito-input--disabled', 'dito-input--has-errors'])
     )
-    expect(wrapper.find('[contenteditable="true"]').exists()).toBe(false)
+    expect(findParts()[0].attributes('aria-disabled')).toBe('true')
   })
 
   it('focuses its first part', () => {
     mountTimeInput()
     wrapper.vm.focus()
-    expect(document.activeElement).toBe(
-      wrapper.find('[contenteditable="true"]').element
-    )
+    expect(document.activeElement).toBe(findParts()[0].element)
   })
 
   it('opens the time panel with its button, and focuses the first part', async () => {
