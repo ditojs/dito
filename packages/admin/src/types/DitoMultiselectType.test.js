@@ -283,6 +283,10 @@ describe('DitoMultiselectType', () => {
       await settle()
       // Empty arrays aren't missing values that get the `default` again:
       expect(data.genres).toEqual([])
+      // ...and nothing to clear either:
+      expect(findField('genres').find('button[title="Clear"]').exists()).toBe(
+        false
+      )
     })
 
     it('holds an empty array by default', async () => {

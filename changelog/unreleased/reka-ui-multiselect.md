@@ -6,3 +6,7 @@
   - The `.multiselect__*` styles are removed. The markup uses `.dito-multiselect__*` classes and the `data-state` attributes of `reka-ui`.
   - Multiselects with `search` reset their search term when the list closes, and single selects show the selected label again.
   - The remove buttons of tags are no longer tab stops. The arrow keys move between the tags, and Backspace removes them.
+
+### Fixes
+
+- **admin:** `clearable` fields only show their clear button when there is something to clear, and no longer for an empty list of values, e.g. of `multiple` multiselects.
