@@ -34,7 +34,7 @@
         slot(name="suffix")
     //- Fixed, so that scrolling panels don't clip it, and without a portal, so
     //- that the styles apply:
-    PopoverContent.dito-picker-popup(
+    PopoverContent.dito-time-input__popup(
       align="start"
       :sideOffset="2"
       :collisionBoundary="scrollContainer"
@@ -199,6 +199,10 @@ export default {
     @extend %button--plain;
 
     display: flex;
+  }
+
+  &__popup {
+    @extend %popup--animated;
   }
 }
 </style>

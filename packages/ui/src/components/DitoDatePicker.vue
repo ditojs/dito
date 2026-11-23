@@ -45,7 +45,7 @@
         slot(name="suffix")
     //- Fixed, so that scrolling panels don't clip it, and without a portal, so
     //- that the styles apply:
-    DatePickerContent.dito-picker-popup(
+    DatePickerContent.dito-date-picker__popup(
       :portal="{ disabled: true }"
       :align="activePanel === 'time' ? 'end' : 'start'"
       :sideOffset="2"
@@ -414,6 +414,10 @@ $entered-part: '.dito-date-segments__part:not([data-placeholder], ' +
     @extend %button--plain;
 
     display: flex;
+  }
+
+  &__popup {
+    @extend %popup--animated;
   }
 }
 
