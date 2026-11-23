@@ -1,5 +1,8 @@
 <template lang="pug">
-.dito-time-input(:class="$attrs.class")
+.dito-time-input(
+  ref="root"
+  :class="$attrs.class"
+)
   PopoverRoot(
     v-model:open="open"
   )
@@ -32,13 +35,11 @@
             :disabled="disabled"
           )
         slot(name="suffix")
-    //- Fixed, so that scrolling panels don't clip it, and without a portal, so
-    //- that the styles apply:
+    //- No portal, so that the styles apply:
     PopoverContent.dito-time-input__popup(
+      v-bind="placement"
       align="start"
       :sideOffset="2"
-      :collisionBoundary="scrollContainer"
-      positionStrategy="fixed"
       @open-auto-focus="onOpenAutoFocus"
       @close-auto-focus="onCloseAutoFocus"
       @interact-outside="onInteractOutside"
@@ -53,6 +54,7 @@
 
 <script>
 import { Time } from '@internationalized/date'
+import { useTemplateRef } from 'vue'
 import {
   PopoverAnchor,
   PopoverContent,
@@ -63,7 +65,8 @@ import {
 } from 'reka-ui'
 import DitoIcon from './DitoIcon.vue'
 import DitoTimePanel from './DitoTimePanel.vue'
-import { getScrollContainer, hasErrors } from '../utils/element.js'
+import { hasErrors } from '../utils/element.js'
+import { usePopupPlacement } from '../utils/vue.js'
 
 // A time field with the lists of `DitoTimePanel` in a popup, built on
 // reka-ui's `TimeField`.
@@ -93,11 +96,13 @@ export default {
     readonly: { type: Boolean, default: false }
   },
 
+  setup() {
+    const root = useTemplateRef('root')
+    return { placement: usePopupPlacement(() => root.value) }
+  },
+
   data() {
-    return {
-      open: false,
-      scrollContainer: null
-    }
+    return { open: false }
   },
 
   computed: {
@@ -118,10 +123,6 @@ export default {
     panelValue() {
       return this.modelValue ?? this.defaultPlaceholder ?? new Time()
     }
-  },
-
-  mounted() {
-    this.scrollContainer = getScrollContainer(this.$el)
   },
 
   methods: {
