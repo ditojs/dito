@@ -101,6 +101,16 @@ export const widgets = createWidgetView<Widget>(
         value: 'value'
       }
     },
+    // Long enough to render only the options in view:
+    serial: {
+      type: 'multiselect',
+      label: 'Serial',
+      searchable: true,
+      options: Array.from(
+        { length: 1000 },
+        (_, index) => String(index + 1).padStart(4, '0')
+      )
+    },
     // The options leave out hidden tags, as if the user may not see them.
     tags: {
       type: 'multiselect',
