@@ -159,6 +159,32 @@ test.describe('layout', () => {
     ).toEqual({ isClipped: true, textOverflow: 'ellipsis' })
   })
 
+  test('lets the pointer through tooltips to what they cover', async ({
+    page,
+    url
+  }) => {
+    await Widget.query().insert({
+      name: 'Widget A',
+      links: [{ url: 'https://example.com/' }]
+    })
+    const list = new DitoListView(page, url, 'Widget')
+    const form = new DitoForm(page)
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    await form.selectTab('Details')
+    await page.locator('[data-tooltip]').hover()
+    // Also while the tooltip waits to show, the pointer reaches what's below:
+    const tooltip = page.locator('.dito-tooltip')
+    await expect(tooltip).toBeAttached()
+    expect(
+      await tooltip.evaluate(element => {
+        const { x, y, width, height } = element.getBoundingClientRect()
+        const hit = document.elementFromPoint(x + width / 2, y + height / 2)
+        return element.contains(hit)
+      })
+    ).toBe(false)
+  })
+
   test('toggles all items of lists by their label', async ({ page, url }) => {
     await Widget.query().insert({
       name: 'Widget A',
