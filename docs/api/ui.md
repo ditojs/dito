@@ -137,6 +137,7 @@ leaves it.
 | `items`    | `Array<{ value, label, icon?, disabled? }>` | required   | The menu items. Items with an `icon` from the [icon set](#icons) show it instead of their `label`, which becomes their title.                                               |
 | `side`     | `string`                                    | `'bottom'` | The side of the button the menu opens on: `'top'`, `'right'`, `'bottom'` or `'left'`.                                                                                       |
 | `align`    | `string`                                    | `'center'` | The preferred alignment of the menu with the button: `'start'`, `'center'` or `'end'`. A centered menu without room on one side aligns with the button's edge on that side. |
+| `attached` | `boolean`                                   | `false`    | Joins the menu and the button into one shape, as wide as the wider of the two.                                                                                              |
 | `disabled` | `boolean`                                   | `false`    | Disables the button.                                                                                                                                                        |
 
 | Event    | Payload | Description                 |

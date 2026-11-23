@@ -61,6 +61,15 @@ describe('DitoMenuButton', () => {
     expect(wrapper.emitted('select')).toEqual([[items[0]]])
   })
 
+  it('marks the button and the menu of attached menus', async () => {
+    wrapper = mountMenuButton({ attached: true })
+    expect(wrapper.find('button').classes()).toContain(
+      'dito-menu-button--attached'
+    )
+    const menu = await openMenu(wrapper)
+    expect(menu.classes()).toContain('dito-menu-button__menu--attached')
+  })
+
   it('aligns centered menus that would overflow to the edge of the button', async () => {
     wrapper = mountMenuButton()
     const button = wrapper.find('button').element
