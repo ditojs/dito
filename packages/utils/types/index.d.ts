@@ -543,6 +543,24 @@ export function parsePlainDate(
   string: string | null | undefined
 ): Date | null
 /**
+ * Formats a file size in bytes with the largest unit that keeps it at 1 or
+ * more, e.g. `'1.23 kB'`, in units of 1000 bytes, or with `base: 2` in IEC
+ * units of 1024 bytes, e.g. `'1.5 KiB'`.
+ */
+export function formatFileSize(
+  size: number,
+  options?: { base?: 10 | 2 }
+): string
+/**
+ * Parses a file size in bytes or with a unit, e.g. `'10MB'`, `'1 MiB'` or
+ * `'100kb'`, into bytes. IEC units always use base 2. Throws for anything
+ * else.
+ */
+export function parseFileSize(
+  input: string | number,
+  options?: { base?: 10 | 2 }
+): number
+/**
  * Formats a date value as a string. If the value is not a Date,
  * attempts to convert it to a Date first.
  */

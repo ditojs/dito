@@ -274,6 +274,10 @@ Files of the same app that are stored in another storage than the one of their
 field, e.g. pasted from another upload field in the admin, are copied to the
 field's storage under a new key.
 
+A `maxSize` in the model's asset settings limits the size of imported and
+copied files, e.g. `cover: { storage: 'covers', maxSize: '10MB' }`, see
+[`static assets`](../../api/server/model.md#static-assets).
+
 ## Custom storages
 
 Storages for other backends extend `Storage` and register themselves for a

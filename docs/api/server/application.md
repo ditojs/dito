@@ -844,26 +844,30 @@ await app.handleAddedAndRemovedAssets(
   addedFiles,
   removedFiles,
   changedFiles,
-  transaction?
+  transaction?,
+  { maxSize? }?
 )
 ```
 
 Imports foreign files among the added and changed ones, and adjusts the
 reference counts. Returns `Promise<AssetFile[]>`: the imported files. Each
 occurrence of a file in `addedFiles` and `removedFiles` adds or removes one
-reference. Throws an `AssetError` when an added file's asset was released in the
+reference. `maxSize` is passed on to
+[`addForeignAssets()`](#addforeignassets). Throws an `AssetError` when an added file's asset was released in the
 meantime.
 
 ### addForeignAssets()
 
 ```js
-await app.addForeignAssets(storage, files, transaction?)
+await app.addForeignAssets(storage, files, transaction?, { maxSize? }?)
 ```
 
 Imports files without asset records from their `data`, or their `url` if the
 storage's `allowedImports` allow it (`file://` and HTTP URLs), and creates their
 records. Files of assets in another storage are copied to `storage` under a new
-key. Returns `Promise<AssetFile[]>`: the imported and copied files.
+key. Returns `Promise<AssetFile[]>`: the imported and copied files. With
+`maxSize`, in bytes or as a string like `'10MB'`, imports from URLs and copies
+of larger files fail with an `AssetError`.
 
 ### handleModifiedAssets()
 

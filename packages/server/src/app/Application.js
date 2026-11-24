@@ -30,7 +30,9 @@ import {
   normalizeDataPath,
   groupBy,
   mapConcurrently,
-  toPromiseCallback
+  toPromiseCallback,
+  parseFileSize,
+  formatFileSize
 } from '@ditojs/utils'
 import { Validator } from './Validator.js'
 import { EventEmitter } from '../lib/index.js'
@@ -994,7 +996,8 @@ export class Application extends Koa {
     addedFiles,
     removedFiles,
     changedFiles,
-    transaction = null
+    transaction = null,
+    { maxSize } = {}
   ) {
     let importedFiles = []
     const AssetModel = this.getModel('Asset')
@@ -1002,7 +1005,8 @@ export class Application extends Koa {
       importedFiles = await this.addForeignAssets(
         storage,
         [...addedFiles, ...changedFiles],
-        transaction
+        transaction,
+        { maxSize }
       )
       if (addedFiles.length > 0 || removedFiles.length > 0) {
         // Files occur once for each reference that they gain or lose:
@@ -1034,10 +1038,11 @@ export class Application extends Koa {
     return importedFiles
   }
 
-  async addForeignAssets(storage, files, transaction = null) {
+  async addForeignAssets(storage, files, transaction = null, { maxSize } = {}) {
     const importedFiles = []
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
+      const maxBytes = maxSize ? parseFileSize(maxSize) : Infinity
       // Find missing assets (copied from another system), and add them.
       const filesByKey = groupBy(files, file => file.key)
       await mapConcurrently(
@@ -1058,6 +1063,13 @@ export class Application extends Koa {
                 }, copying to storage ${
                   pico.green(`'${storage.name}'`)
                 }...`
+              )
+              checkImportSize(
+                `Unable to copy asset '${file.name}' to storage '${
+                  storage.name
+                }'`,
+                asset.file.size,
+                maxBytes
               )
               const data = await this.getStorage(asset.storage).readFile(
                 asset.file
@@ -1090,8 +1102,13 @@ export class Application extends Koa {
                 )
                 if (url.startsWith('file://')) {
                   data = await fs.readFile(new URL(resolveFileUrl(url)))
+                  checkImportSize(
+                    `Unable to import asset from '${url}'`,
+                    data.length,
+                    maxBytes
+                  )
                 } else {
-                  data = await fetchImport(url)
+                  data = await fetchImport(url, maxBytes)
                 }
               }
               importedFile = await storage.addFile(file, data)
@@ -1468,18 +1485,35 @@ function escapeLike(string) {
 
 // Imports follow no redirects, which could leave the allowed sources, store no
 // error pages, and give up on slow sources, which hold the transaction open:
-async function fetchImport(url) {
+async function fetchImport(url, maxBytes) {
   const response = await fetch(url, {
     redirect: 'manual',
     signal: AbortSignal.timeout(30_000)
   })
+  const message = `Unable to import asset from '${url}'`
   if (!response.ok) {
-    throw new AssetError(
-      `Unable to import asset from '${url}': status ${response.status}`
-    )
+    throw new AssetError(`${message}: status ${response.status}`)
   }
-  // `fs.writeFile()` expects a Buffer, not an ArrayBuffer.
-  return Buffer.from(await response.arrayBuffer())
+  const length = response.headers.get('content-length')
+  if (length) {
+    checkImportSize(message, +length, maxBytes)
+  }
+  // Without or with a wrong `Content-Length`, stop reading at the limit:
+  const chunks = []
+  let size = 0
+  for await (const chunk of response.body ?? []) {
+    size += chunk.length
+    checkImportSize(message, size, maxBytes)
+    chunks.push(chunk)
+  }
+  // `fs.writeFile()` expects a Buffer, not a Uint8Array.
+  return Buffer.concat(chunks)
+}
+
+function checkImportSize(message, size, maxBytes) {
+  if (size > maxBytes) {
+    throw new AssetError(`${message}: larger than ${formatFileSize(maxBytes)}`)
+  }
 }
 
 async function getStoredKeys(storage) {

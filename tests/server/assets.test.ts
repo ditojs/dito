@@ -333,6 +333,41 @@ describe('Asset handling', () => {
       }
     })
 
+    it('rejects files from allowed sources larger than `maxSize`', async () => {
+      // Once with `Content-Length`, once chunked without it:
+      const server = http.createServer((req, res) => {
+        const data = 'x'.repeat(2000)
+        if (req.url === '/sized.txt') {
+          res.writeHead(200, { 'content-length': data.length })
+          res.end(data)
+        } else {
+          res.write(data.slice(0, 1000))
+          res.end(data.slice(1000))
+        }
+      })
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+      const { port } = server.address() as { port: number }
+      const source = `http://127.0.0.1:${port}`
+      allowedImports.push(`${source}/**`)
+      const info = vi.spyOn(app.logger, 'info').mockImplementation(() => {})
+      try {
+        for (const name of ['sized.txt', 'streamed.txt']) {
+          const url = `${source}/${name}`
+          const file = createForeignFile(name, url)
+          await expect(
+            app.addForeignAssets(storage, [file], null, { maxSize: '1kB' })
+          ).rejects.toThrow(
+            `Unable to import asset from '${url}': larger than 1 kB`
+          )
+          expect(storage.dataByKey.has(file.key)).toBe(false)
+        }
+      } finally {
+        allowedImports.pop()
+        info.mockRestore()
+        await new Promise(resolve => server.close(resolve))
+      }
+    })
+
     it('rejects files from sources that are not allowed', async () => {
       const file = createForeignFile(
         'secret.txt',
@@ -643,7 +678,7 @@ describe('asset handling across storages', () => {
 
     static override assets = {
       cover: { storage: 'covers' },
-      scan: { storage: 'scans' }
+      scan: { storage: 'scans', maxSize: '1kB' }
     }
   }
   class Asset extends AssetMixin(Model) {}
@@ -705,6 +740,20 @@ describe('asset handling across storages', () => {
       count: 2,
       storage: 'covers'
     })
+  })
+
+  it('rejects copies of files larger than `maxSize`', async () => {
+    const cover = await createCover('x'.repeat(2000))
+    const { size } = scans.dataByKey
+    const info = vi.spyOn(app.logger, 'info').mockImplementation(() => {})
+    try {
+      await expect(Book.query().insert({ scan: cover })).rejects.toThrow(
+        `Unable to copy asset 'cover.txt' to storage 'scans': larger than 1 kB`
+      )
+      expect(scans.dataByKey.size).toBe(size)
+    } finally {
+      info.mockRestore()
+    }
   })
 })
 

@@ -16,7 +16,7 @@ entry point, `@ditojs/utils`, an ES module with TypeScript types.
 | [Arrays](#arrays)                             | `flatten()`, `shuffle()`                                                                                                                                                                                                                                                                                        |
 | [Objects](#objects)                           | `clone()`, `equals()`, `groupBy()`, `mapKeys()`, `mapValues()`, `mergeDeeply()`, `assignDeeply()`, `pick()`, `pickBy()`                                                                                                                                                                                         |
 | [Strings](#strings)                           | `camelize()`, `capitalize()`, `decamelize()`, `hyphenate()`, `underscore()`, `labelize()`, `deindent()`, `escapeRegExp()`, `getCommonPrefix()`, `getCommonOffset()`, `isAbsoluteUrl()`, `isUrl()`, `isDomain()`, `isHostname()`, `isEmail()`, `isCreditCard()`                                                  |
-| [Dates and numbers](#dates-and-numbers)       | `format()`, `formatDate()`, `defaultFormats`, `formatPlainDate()`, `parsePlainDate()`                                                                                                                                                                                                                           |
+| [Dates and numbers](#dates-and-numbers)       | `format()`, `formatDate()`, `defaultFormats`, `formatPlainDate()`, `parsePlainDate()`, `formatFileSize()`, `parseFileSize()`                                                                                                                                                                                    |
 | [Data paths](#data-paths)                     | `parseDataPath()`, `normalizeDataPath()`, `resolveDataPath()`, `getValueAtDataPath()`, `getEntriesAtDataPath()`, `setValueAtDataPath()`, `setEntriesAtDataPath()`                                                                                                                                               |
 | [HTML](#html)                                 | `html`, `isHtml()`, `asHtml()`, `escapeHtml()`, `stripHtml()`                                                                                                                                                                                                                                                   |
 | [Functions](#functions)                       | `deprecate()`, `toAsync()`, `toCallback()`, `toPromiseCallback()`                                                                                                                                                                                                                                               |
@@ -411,7 +411,7 @@ rejects.
 import { format, formatDate, formatPlainDate } from '@ditojs/utils'
 ```
 
-Formatting with the `Intl` API, and conversion of plain dates.
+Formatting with the `Intl` API, and conversion of plain dates and file sizes.
 
 ### format()
 
@@ -513,6 +513,37 @@ dates that don't exist, e.g. `'2026-02-30'`.
 ```js
 parsePlainDate('2026-05-14') // May 14, 2026, 00:00 local time
 parsePlainDate('2026-02-30') // null
+```
+
+### formatFileSize()
+
+```js
+formatFileSize(size, { base = 10 } = {})
+```
+
+Formats `size` in bytes with the largest unit that keeps the amount at 1 or
+more, rounded to two decimals: in units of 1000 bytes (`kB`, `MB`, …), or with
+`base: 2` in IEC units of 1024 bytes (`KiB`, `MiB`, …).
+
+```js
+formatFileSize(1234) // '1.23 kB'
+formatFileSize(1536, { base: 2 }) // '1.5 KiB'
+```
+
+### parseFileSize()
+
+```js
+parseFileSize(input, { base = 10 } = {})
+```
+
+Parses a file size in bytes, or as a string with a unit, into bytes. Byte units
+are case-insensitive, bit units like `'Kb'` aren't. IEC units like `'1 MiB'`
+always use base 2, the others `base`. Throws for anything else.
+
+```js
+parseFileSize('10MB') // 10000000
+parseFileSize('1 MiB') // 1048576
+parseFileSize('1 MB', { base: 2 }) // 1048576
 ```
 
 ## Data paths
