@@ -13,14 +13,10 @@ QueryParameters.register({
 
   filter(query, key, value) {
     try {
-      query.applyFilter(
-        Object.fromEntries(
-          asArray(value).map(filter => {
-            const [, name, json] = filter.match(/^(!?\w+):(.*)$/)
-            return [name, JSON.parse(`[${json}]`)]
-          })
-        )
-      )
+      for (const filter of asArray(value)) {
+        const [, name, json] = filter.match(/^(!?\w+):(.*)$/)
+        query.applyFilter(name, ...JSON.parse(`[${json}]`))
+      }
     } catch (error) {
       throw error instanceof ResponseError
         ? error
