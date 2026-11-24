@@ -3,6 +3,7 @@ import { Controller } from './Controller.js'
 import { deltaProp } from '../graph/records.js'
 import { parseHandlerDefinition } from '../utils/handler.js'
 import { ControllerError, ValidationError } from '../errors/index.js'
+import { checkConfirmedAccess } from '../utils/authentication.js'
 import { addNextVersion, sendRecordVersion } from './version.js'
 
 const recordVersionAction = 'get record-version'
@@ -260,6 +261,12 @@ export class CollectionController extends Controller {
   }
 
   async executeAndFetch(action, ctx, modify, body = ctx.request.body) {
+    await checkUserChanges(
+      ctx,
+      this.modelClass,
+      action,
+      asArray(body).map(model => [this.getModelId(model), model])
+    )
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetch`
     return this.execute(ctx, (query, trx) =>
       query[name](body).modify(getModify(modify, trx))
@@ -267,6 +274,9 @@ export class CollectionController extends Controller {
   }
 
   async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
+    await checkUserChanges(ctx, this.modelClass, action, [
+      [ctx.memberId, body]
+    ])
     // Deltas pass their marker on as an option. Empty deltas change nothing, so
     // they only fetch the record and keep its version:
     const { [deltaProp]: delta, ...rest } = body ?? {}
@@ -283,6 +293,12 @@ export class CollectionController extends Controller {
   }
 
   async relateAndFetch(ctx, modify) {
+    await checkUserChanges(
+      ctx,
+      this.modelClass,
+      'relate',
+      asArray(ctx.request.body).map(model => [this.getModelId(model), model])
+    )
     // Use patchGraphAndFetch() to insert the model and relate the existing
     // models in its graph. RelationController overrides this to relate models
     // through its relation instead.
@@ -384,6 +400,53 @@ export class CollectionController extends Controller {
       return this.executeAndFetchById('patch', ctx, modify)
     }
   })
+}
+
+// Setting passwords and changing usernames of existing users needs confirmed
+// access, the latter as password resets go to them, also in the graphs of other
+// models. `models` are `[id, model]` entries of `modelClass`:
+async function checkUserChanges(ctx, modelClass, action, models) {
+  const users = []
+  const collectUsers = (modelClass, id, model) => {
+    if (id != null && modelClass.definition.options.passwordProperty) {
+      users.push([modelClass, id, model])
+    }
+    for (const { name, relatedModelClass } of Object.values(
+      modelClass.getRelations()
+    )) {
+      for (const related of asArray(model[name]).filter(isObject)) {
+        // Nested models without ids are inserted:
+        const ids = relatedModelClass
+          .getIdPropertyArray()
+          .map(property => related[property])
+        collectUsers(
+          relatedModelClass,
+          ids.some(id => id == null) ? null : ids,
+          related
+        )
+      }
+    }
+  }
+  for (const [id, model] of models.filter(([, model]) => isObject(model))) {
+    // Relating models with ids updates them:
+    collectUsers(modelClass, action !== 'insert' ? id : null, model)
+  }
+  // The access to confirm is that of the logged-in user, who can be of another
+  // model class than the changed users, e.g. admins changing customers:
+  const loginClass = ctx.state.user?.constructor
+  for (const [modelClass, id, user] of users) {
+    const { usernameProperty, passwordProperty } = modelClass.definition.options
+    if (user[passwordProperty] !== undefined) {
+      checkConfirmedAccess(ctx, loginClass)
+    }
+    const username = user[usernameProperty]
+    if (username !== undefined) {
+      const stored = await modelClass.query(ctx.transaction).findById(id)
+      if (stored?.[usernameProperty] !== username) {
+        checkConfirmedAccess(ctx, loginClass)
+      }
+    }
+  }
 }
 
 function lockForUpdate(controller, builder, trx) {

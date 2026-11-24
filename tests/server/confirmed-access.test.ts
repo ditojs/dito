@@ -2,6 +2,8 @@ import { vi } from 'vitest'
 import {
   Controller,
   CredentialModel,
+  Model,
+  ModelController,
   PasskeyService,
   SessionModel,
   TotpService,
@@ -23,6 +25,30 @@ class Credential extends CredentialModel {
 
 class Member extends UserModel {
   declare id: number
+  declare teamId: number | null
+
+  static override properties: any = {
+    teamId: { type: 'integer', nullable: true }
+  }
+}
+
+// Teams whose graphs contain members, also existing ones:
+class Team extends Model {
+  declare id: number
+  declare name: string
+
+  static override properties: any = {
+    name: { type: 'string' }
+  }
+
+  static override relations: any = {
+    members: {
+      relation: 'hasMany',
+      from: 'Team.id',
+      to: 'Member.teamId',
+      owner: true
+    }
+  }
 }
 
 // Users of another model, with their own confirmed access:
@@ -63,6 +89,22 @@ class OpenMembers extends UsersController {
   override collection: any = { authorize: true }
 }
 
+// Members and teams outside of users controllers:
+class Accounts extends ModelController<Member> {
+  override modelClass = Member
+  override member: any = { allow: ['patch'] }
+}
+
+class Teams extends ModelController<Team> {
+  override modelClass = Team
+  override graph = true
+  override member: any = { allow: ['patch'] }
+  // Objection's graph upserts don't work through relations:
+  override relations: any = {
+    members: { graph: false, member: { allow: ['patch'] } }
+  }
+}
+
 // Log in another user without 'post login', as apps do to impersonate users:
 class Impersonations extends Controller {
   override actions: any = {
@@ -96,8 +138,16 @@ describe('Confirmed access', () => {
       }
     },
     services: { passkeys: PasskeyService, totp: TotpService },
-    models: { Session, Credential, Member, Guest },
-    controllers: { Members, Guests, Admins, OpenMembers, Impersonations }
+    models: { Session, Credential, Member, Guest, Team },
+    controllers: {
+      Members,
+      Guests,
+      Admins,
+      OpenMembers,
+      Accounts,
+      Teams,
+      Impersonations
+    }
   })
 
   let url: string
@@ -172,7 +222,7 @@ describe('Confirmed access', () => {
   }
 
   beforeAll(async () => {
-    await createTestDatabase(app, Session, Member, Guest, Credential)
+    await createTestDatabase(app, Session, Member, Guest, Credential, Team)
     for (const name of ['Member', 'Guest']) {
       await app.knex.schema.alterTable(name, table => {
         table.dropColumn('password')
@@ -308,20 +358,17 @@ describe('Confirmed access', () => {
     // The guest's own access is confirmed:
     const options = await request('/guests/passkey-options', { method: 'POST' })
     expect(options.status).toBe(200)
-    const { id } = (await Member.query().findOne('username', 'ada'))!
-    for (const response of [
-      ...(await requestChanges(request)),
-      await request(`/admins/${id}`, {
-        method: 'PATCH',
-        body: { password: 'changed' }
-      }),
-      await request(`/admins/${id}`, {
-        method: 'PUT',
-        body: { username: 'ada', password: 'changed' }
-      })
-    ]) {
+    for (const response of await requestChanges(request)) {
       expect(response.status).toBe(401)
     }
+    // Writes of members, which `authorize` opens to anyone here, take the
+    // confirmed access of the logged-in user, whatever their model:
+    const { id } = (await Member.query().findOne('username', 'ada'))!
+    const patch = await request(`/admins/${id}`, {
+      method: 'PATCH',
+      body: { password: 'secret' }
+    })
+    expect(patch.status).toBe(200)
   })
 
   it('confirms the access with the password', async () => {
@@ -615,6 +662,99 @@ describe('Confirmed access', () => {
       } finally {
         await Member.query().deleteById(other.id)
       }
+    })
+  })
+
+  describe('outside of users controllers', () => {
+    let ada: Member
+    let team: Team
+
+    beforeAll(async () => {
+      team = await Team.query().insert({ name: 'Team' })
+      ada = (await Member.query().findOne('username', 'ada'))!
+      await ada.$query().patch({ teamId: team.id })
+    })
+
+    afterAll(async () => {
+      await Member.query().patch({ teamId: null })
+      await Team.query().delete()
+    })
+
+    const isPassword = async (password: string) =>
+      (await Member.query().findById(ada.id))!.$verifyPassword(password)
+
+    const expectConfirmationRequired = (response: any) => {
+      expect(response.status).toBe(403)
+      expect(response.data.confirmationRequired).toBe(true)
+    }
+
+    it('asks to confirm the access in model controllers', async () => {
+      const { request } = await loginWithPassword()
+      expireAccess()
+      const patch = (body: any) =>
+        request(`/accounts/${ada.id}`, { method: 'PATCH', body })
+      expectConfirmationRequired(await patch({ password: 'changed' }))
+      expectConfirmationRequired(await patch({ username: 'ava' }))
+      expect(await isPassword('secret')).toBe(true)
+      // Resending the username changes nothing:
+      expect((await patch({ username: 'ada' })).status).toBe(200)
+      await post(request, 'confirm-access', { password: 'secret' })
+      expect((await patch({ password: 'secret' })).status).toBe(200)
+    })
+
+    it('asks to confirm the access of users of other models', async () => {
+      // Like admins who change the passwords of customers:
+      const request = createClient(url)
+      await request('/guests/login', {
+        method: 'POST',
+        body: { username: 'gil', password: 'secret' }
+      })
+      expireAccess()
+      const patch = (body: any) =>
+        request(`/accounts/${ada.id}`, { method: 'PATCH', body })
+      expectConfirmationRequired(await patch({ password: 'changed' }))
+      await request('/guests/confirm-access', {
+        method: 'POST',
+        body: { password: 'secret' }
+      })
+      expect((await patch({ password: 'secret' })).status).toBe(200)
+    })
+
+    it('asks to confirm the access in relation controllers', async () => {
+      const { request } = await loginWithPassword()
+      expireAccess()
+      const patch = () =>
+        request(`/teams/${team.id}/members/${ada.id}`, {
+          method: 'PATCH',
+          body: { password: 'changed' }
+        })
+      expectConfirmationRequired(await patch())
+      expect(await isPassword('secret')).toBe(true)
+      await post(request, 'confirm-access', { password: 'secret' })
+      expect((await patch()).status).toBe(200)
+      expect(await isPassword('changed')).toBe(true)
+      await ada.$query().patch({ password: 'secret' } as any)
+    })
+
+    it('asks to confirm the access for existing users in graphs', async () => {
+      const { request } = await loginWithPassword()
+      expireAccess()
+      const patch = (members: any[]) =>
+        request(`/teams/${team.id}`, { method: 'PATCH', body: { members } })
+      expectConfirmationRequired(
+        await patch([{ id: ada.id, password: 'changed' }])
+      )
+      expect(await isPassword('secret')).toBe(true)
+      // Nested usernames are compared with the stored ones too:
+      expectConfirmationRequired(await patch([{ id: ada.id, username: 'ava' }]))
+      expect((await patch([{ id: ada.id, username: 'ada' }])).status).toBe(200)
+      // New users are created with a password without it:
+      const insert = await patch([
+        { id: ada.id },
+        { username: 'cy', password: 'secret' }
+      ])
+      expect(insert.status).toBe(200)
+      await Member.query().delete().where('username', 'cy')
     })
   })
 
