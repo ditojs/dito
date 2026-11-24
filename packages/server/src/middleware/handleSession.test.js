@@ -13,9 +13,14 @@ function createSessionModel() {
           then: (resolve, reject) =>
             Promise.resolve(
               values.has(id) ? { id, value: values.get(id) } : undefined
-            ).then(resolve, reject)
+            ).then(resolve, reject),
+          patch: async ({ value }) => {
+            if (values.has(id)) {
+              values.set(id, value)
+            }
+          }
         }),
-        upsert: async ({ id, value }) => {
+        insert: async ({ id, value }) => {
           values.set(id, value)
         },
         deleteById: async id => {
