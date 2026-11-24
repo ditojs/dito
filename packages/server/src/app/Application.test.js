@@ -347,6 +347,47 @@ describe('Application', () => {
       }
     }
 
+    it('stops the services and rejects when the port is taken', async () => {
+      const taken = http.createServer()
+      await new Promise(resolve => taken.listen(0, '127.0.0.1', resolve))
+      const app = createApp({
+        services: { MailerService },
+        config: {
+          server: { host: '127.0.0.1', port: taken.address().port },
+          services: { mailer: { from: 'desk' } }
+        }
+      })
+      try {
+        await expect(app.start()).rejects.toThrow(/EADDRINUSE/)
+        expect(app.getService('mailer').events).toEqual([
+          'initialize desk',
+          'start',
+          'stop'
+        ])
+        expect(app.isRunning).toBeFalsy()
+      } finally {
+        await new Promise(resolve => taken.close(resolve))
+      }
+    })
+
+    it('stops the started services when another one fails to start', async () => {
+      class BrokenService extends Service {
+        async start() {
+          throw new Error('No ink')
+        }
+      }
+      const app = createApp({
+        services: { MailerService, BrokenService },
+        config: { services: { mailer: { from: 'desk' }, broken: {} } }
+      })
+      await expect(app.start()).rejects.toThrow('No ink')
+      expect(app.getService('mailer').events).toEqual([
+        'initialize desk',
+        'start',
+        'stop'
+      ])
+    })
+
     it('instantiates and names service classes', () => {
       const app = createApp({ services: { MailerService } })
       const mailer = app.getService('mailer')
