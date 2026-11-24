@@ -63,6 +63,7 @@ export interface DataContext {
   clearErrors(match?: Match): void
   showValidationErrors(errors: Errors, dataPath?: string): Promise<void>
   revealErrors(): Promise<string[]>
+  reveal(dataPaths: string[], options: { focus: boolean }): Promise<string[]>
   markEdited(): void
   resetItem(data: any): any
   mergeItem(data: any): any
@@ -133,9 +134,10 @@ export function createDataContext({
       server,
       isMatchingDataPath: match ? getDataPathMatcher(match) : null
     })
-    const displayedDataPaths = await revealErrorDataPaths([
-      ...new Set(Object.values(fieldDataPaths))
-    ])
+    const displayedDataPaths = await revealDataPaths(
+      [...new Set(Object.values(fieldDataPaths))],
+      { focus: true, revealInForm: dataContext => dataContext.revealErrors() }
+    )
     if (!isEmpty(errors)) {
       // The label of the data's schema, also for the errors of its sources:
       const { schema, data } = context
@@ -167,16 +169,24 @@ export function createDataContext({
     }
   }
 
-  // Reveal the errors of the fields at `dataPaths`, and return the data paths
-  // of the ones that mounted components display then. Fields in the forms of
-  // nested routes open the form, which reveals the errors that it takes over
-  // from its item:
-  const revealErrorDataPaths = async (dataPaths: string[]) => {
+  // Reveal the fields at `dataPaths`, and return the data paths of the ones
+  // that mounted components display then. Fields in the forms of nested routes
+  // open the form, where `revealInForm()` reveals them:
+  const revealDataPaths = async (
+    dataPaths: string[],
+    {
+      focus,
+      revealInForm
+    }: {
+      focus: boolean
+      revealInForm: (dataContext: DataContext) => Promise<string[]>
+    }
+  ) => {
     const { adminContext, routeContext } = services
     const { router, routes } = adminContext
     const [firstDataPath] = dataPaths
-    // Collapsed schemas render their content with errors hidden, also the
-    // widgets that lay out the properties of fields:
+    // Let collapsed schemas render their content hidden, also the widgets that
+    // lay out the properties of fields:
     await nextTick()
     // Routed sources display errors in the forms of their items, which their
     // component paths lead to. Dialogs and panels with their own data aren't
@@ -186,7 +196,7 @@ export function createDataContext({
         ? routeContext.getFormRoute(componentPath)
         : null
     // Without a component that displays it, the first source that holds the
-    // value opens the form of its item, which notifies its errors:
+    // value opens the form of its item:
     const getSourceFormRoute = (dataPath: string) => {
       for (const source of context.sources) {
         const path = getRelativeDataPath(dataPath, source.dataPath)
@@ -215,7 +225,7 @@ export function createDataContext({
           }))
       ])
     )
-    // The first component that can display the first error wins:
+    // The first component that can display the first value wins:
     const [firstEntry] = entriesByDataPath.get(firstDataPath) ?? []
     const formRoute = firstEntry
       ? firstEntry.formRoute
@@ -234,11 +244,11 @@ export function createDataContext({
         await nextTick()
         const route = findRoute()
         if (route) {
-          displayedDataPaths.push(...(await route.dataContext.revealErrors()))
+          displayedDataPaths.push(...(await revealInForm(route.dataContext)))
         }
       }
     }
-    // The components of this data, which display the errors once they're
+    // The components of this data, which display the values once they're
     // revealed and mounted:
     const componentPathsByDataPath = new Map(
       [...entriesByDataPath].map(([dataPath, entries]) => [
@@ -251,14 +261,14 @@ export function createDataContext({
     const isMounted = (componentPath: string) =>
       componentTree.getNode(componentPath).isMounted
     if (!formRoute) {
-      // Reveal them, and focus the first one that is mounted then:
+      // Reveal them, and select or focus the first one that is mounted then:
       const componentPaths = [...componentPathsByDataPath.values()].flat()
       for (const componentPath of componentPaths) {
         await componentTree.reveal(componentPath)
       }
       const componentPath = componentPaths.find(isMounted)
       if (componentPath) {
-        await componentTree.reveal(componentPath, { focus: true })
+        await componentTree.reveal(componentPath, { focus, select: true })
       }
     }
     return [
@@ -388,7 +398,17 @@ export function createDataContext({
     // already, e.g. when their parent shows its errors:
     revealErrors() {
       copyErrors?.()
-      return revealErrorDataPaths(getModel().errors.getDataPaths(getDataPath()))
+      return revealDataPaths(getModel().errors.getDataPaths(getDataPath()), {
+        focus: true,
+        revealInForm: dataContext => dataContext.revealErrors()
+      })
+    },
+
+    reveal(dataPaths: string[], { focus }: { focus: boolean }) {
+      return revealDataPaths(dataPaths, {
+        focus,
+        revealInForm: dataContext => dataContext.reveal(dataPaths, { focus })
+      })
     },
 
     markEdited() {

@@ -45,9 +45,9 @@ Data paths are slash-separated paths into the root data, e.g.
 slash.
 
 Paths that are passed _in_ to the context, e.g. to
-[`getValueAt()`](#getvalueat), [`validate()`](#validate),
-[`isValid()`](#isvalid), [`getErrors()`](#geterrors) and
-[`clearErrors()`](#clearerrors), are relative to
+[`getValueAt()`](#getvalueat), [`reveal()`](#reveal),
+[`validate()`](#validate), [`isValid()`](#isvalid), [`getErrors()`](#geterrors)
+and [`clearErrors()`](#clearerrors), are relative to
 [`itemDataPath`](#itemdatapath), the item that the field sits in. A
 leading `/` makes them absolute, `..` goes up one level, and leading above the
 root throws.
@@ -539,6 +539,39 @@ stay instead of discarding unsaved changes.
 async onClick({ navigate, item }) {
   await navigate(`/authors/${item.authorId}`)
 }
+```
+
+### reveal()
+
+```ts
+context.reveal(dataPath, { focus = true }?): Promise<boolean>
+```
+
+Reveals the field that edits the value at `dataPath`, a
+[data path](#data-paths) resolved like in [`getValueAt()`](#getvalueat): opens
+the collapsed sections and list items around it, selects its tab, renders the
+items of long lists up to it, and opens the routed form of the item that shows
+it, as validation errors do. Then scrolls it into view and focuses it. With
+several fields for the value, the first one that can show it is revealed.
+
+#### Parameters
+
+| Name       | Type      | Description                                                    |
+| ---------- | --------- | -------------------------------------------------------------- |
+| `dataPath` | `string`  | The data path of the value, e.g. `'sections/3/text'`.          |
+| `focus`    | `boolean` | Whether to focus the field, or only reveal it. Default `true`. |
+
+#### Return value
+
+`true` if a field shows the value then, `false` if none does, e.g. for unknown
+paths, hidden fields, or when the user chose to stay instead of opening the
+form.
+
+#### Example
+
+```js
+// In the preview of a page, when the block of its fourth section is clicked:
+await context.reveal('sections/3/text')
 ```
 
 ### getRouteUrl()

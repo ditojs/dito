@@ -2376,6 +2376,14 @@ export type SchemaContext<$Item = any> = {
    * unsaved changes.
    */
   navigate(location: Parameters<VueRouter['push']>[0]): Promise<boolean>
+  /**
+   * Reveals the field that edits the value at `dataPath`, resolved like in
+   * {@link SchemaContext.getValueAt}: opens the collapsed sections and items,
+   * the tabs and the routed forms around it, scrolls it into view and focuses
+   * it, unless `focus: false` is passed. Resolves to `true` if a field shows
+   * the value then, `false` if none does, e.g. for hidden fields.
+   */
+  reveal(dataPath: string, options?: { focus?: boolean }): Promise<boolean>
   /** Returns the URL of a route location. */
   getRouteUrl(location: Parameters<VueRouter['resolve']>[0]): string
   /**
