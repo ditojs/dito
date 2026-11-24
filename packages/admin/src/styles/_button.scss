@@ -120,9 +120,10 @@
     padding: $button-round-padding;
   }
 
-  // Buttons in round and small button groups show icons instead of text.
+  // Buttons in round and small button groups show icons instead of text, but
+  // the main buttons of forms keep their words, e.g. 'Add' in nested forms.
   // For now, nothing for create: &--create:empty::before
-  .dito-buttons--round &,
+  .dito-buttons--round:not(.dito-buttons--main) &,
   .dito-buttons--small & {
     &--add:empty::before {
       @extend %icon--add;
