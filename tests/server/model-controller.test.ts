@@ -716,6 +716,20 @@ describe('ModelController', () => {
       expect(both.data.map((book: any) => book.title)).toEqual(['Bestiary'])
     })
 
+    it('applies repeated model filters from the query', async () => {
+      await insertBooks()
+      const repeated = await request(
+        '/books?filter=minPages:600&filter=minPages:400&order=title'
+      )
+      expect(repeated.data.map((book: any) => book.title)).toEqual([
+        'Chronicle'
+      ])
+      const negated = await request(
+        '/books?filter=!minPages:400&filter=!minPages:600&order=title'
+      )
+      expect(negated.data.map((book: any) => book.title)).toEqual(['Atlas'])
+    })
+
     it('rejects invalid filter entries with a 400 error', async () => {
       for (const filter of ['!!minPages:400', '!:400']) {
         const response = await request(`/books?filter=${filter}`)
