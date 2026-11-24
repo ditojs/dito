@@ -66,7 +66,7 @@ function logRequest(ctx) {
       } ${
         pico.bold(ctx.method)
       } ${
-        pico.gray(ctx.originalUrl)
+        pico.gray(ctx.path)
       }`
     )
   }
@@ -99,7 +99,7 @@ function logResponse({ ctx, start, length, err }) {
       `${
         pico.bold(ctx.method)
       } ${
-        pico.gray(ctx.originalUrl)
+        pico.gray(ctx.path)
       } ${
         pico[statusColor](status)
       } ${

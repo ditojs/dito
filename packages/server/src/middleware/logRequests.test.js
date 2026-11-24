@@ -59,13 +59,13 @@ const waitForEntries = async (logger, count) => {
 }
 
 describe('logRequests()', () => {
-  it('logs the method, url, status, time and length of responses', async () => {
+  it('logs the method, path, status, time and length of responses', async () => {
     const logger = createLogger()
     const app = createApp(logger, ctx => {
       ctx.body = { dish: 'soup' }
     })
     await serve(app, async url => {
-      await (await fetch(`${url}/dishes?hot=1`)).text()
+      await (await fetch(`${url}/dishes?token=secret`)).text()
     })
     const [entry] = await waitForEntries(logger, 1)
     expect(entry).toMatchObject({
@@ -74,9 +74,8 @@ describe('logRequests()', () => {
       hasRequest: true,
       hasResponse: true
     })
-    expect(entry.message).toMatch(
-      /^GET \/dishes\?hot=1 200 \d+(\.\d+)?ms 15b$/
-    )
+    // The query string is left out, as it may hold tokens:
+    expect(entry.message).toMatch(/^GET \/dishes 200 \d+(\.\d+)?ms 15b$/)
   })
 
   it('logs incoming requests at the trace level', async () => {
@@ -85,7 +84,7 @@ describe('logRequests()', () => {
       ctx.body = 'ok'
     })
     await serve(app, async url => {
-      await (await fetch(`${url}/dishes`)).text()
+      await (await fetch(`${url}/dishes?token=secret`)).text()
     })
     const entries = await waitForEntries(logger, 2)
     expect(entries[0]).toMatchObject({
