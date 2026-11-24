@@ -73,6 +73,33 @@ describe('useOptions()', () => {
       expect(getErrors('genre')).toEqual([])
     })
 
+    it.each([
+      ['strings', 'The genres are unavailable', 'The genres are unavailable'],
+      ['objects', { status: 503 }, 'Unable to load the options.'],
+      ['errors without a message', new Error(), 'Unable to load the options.']
+    ])(
+      'shows a message for loads that throw %s',
+      async (_, thrown, message) => {
+        vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { getErrors } = await mountSchema({
+          schema: {
+            fields: {
+              genre: {
+                type: 'select',
+                options: {
+                  data: async () => {
+                    throw thrown
+                  }
+                }
+              }
+            }
+          }
+        })
+        expect(getErrors('genre')).toEqual([message])
+        vi.restoreAllMocks()
+      }
+    )
+
     it('supports functions that return the values of options', async () => {
       const { findField } = await mountSchema({
         schema: {

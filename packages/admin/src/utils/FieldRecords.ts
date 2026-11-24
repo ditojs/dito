@@ -9,7 +9,7 @@ import {
   type EffectScope,
   type ShallowRef
 } from 'vue'
-import { isArray, isPlainObject, equals } from '@ditojs/utils'
+import { isArray, isPlainObject, isString, equals } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
 import { toModelData, getParentDataPath, getRelativeDataPath } from './data.js'
@@ -24,6 +24,7 @@ import {
 import { walkData, type DataEntry } from './schema/walk.js'
 import { getOptionsSettings, getReplacedValue } from './schema/options.ts'
 import { EntryMap } from './EntryMap.ts'
+import { getErrorMessage } from './request.js'
 import type { DataModel } from './DataModel.ts'
 import type { Schema } from './types.ts'
 
@@ -238,10 +239,13 @@ export class FieldRecords {
         (error, previousError) => {
           const dataPath = record.dataPath.value
           if (previousError) {
-            this.model.errors.remove(dataPath, getErrorMessage(previousError))
+            this.model.errors.remove(
+              dataPath,
+              getLoadErrorMessage(previousError)
+            )
           }
           if (error) {
-            this.model.errors.add(dataPath, getErrorMessage(error))
+            this.model.errors.add(dataPath, getLoadErrorMessage(error))
           }
         }
       )
@@ -463,6 +467,11 @@ function createFieldRecord(entry: FieldEntry): FieldRecord {
   }
 }
 
-function getErrorMessage(error: any): string {
-  return error.message || error
+// Loaders can throw values that aren't errors:
+function getLoadErrorMessage(error: any): string {
+  return (
+    getErrorMessage(error) ||
+    (isString(error) && error) ||
+    'Unable to load the options.'
+  )
 }
