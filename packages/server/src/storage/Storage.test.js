@@ -641,6 +641,27 @@ describe('Storage: uploads', () => {
     )
   })
 
+  it('stops reading dimensions after the head of the upload', async () => {
+    const storage = createMemoryStorage()
+    storage.storage = createUploadEngine()
+    const stream = new PassThrough()
+    const file = { originalname: 'movie.mp4', mimetype: 'video/mp4', stream }
+    const promise = storage._handleUpload({}, file, { readDimensions: true })
+    const head = Buffer.alloc(9 * 1024 * 1024)
+    stream.write(head)
+    // Give up before the upload ends:
+    await vi.waitFor(() => {
+      expect(storage.app.emit).toHaveBeenCalledWith(
+        'error',
+        'Unable to determine image size'
+      )
+    })
+    stream.end(Buffer.from('rest'))
+    const result = await promise
+    expect(file.width).toBeUndefined()
+    expect(result.data).toEqual(Buffer.concat([head, Buffer.from('rest')]))
+  })
+
   test('handles empty media uploads with `readDimensions`', async () => {
     const storage = createMemoryStorage()
     storage.storage = createUploadEngine()

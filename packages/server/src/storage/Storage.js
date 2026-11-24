@@ -12,6 +12,10 @@ import { resolveFileUrl } from '../utils/asset.js'
 
 const storageClasses = {}
 
+// NOTE: Videos with their index at the end, which isn't optimized for the web,
+// need more than the head, and are stored without dimensions when larger.
+const headLength = 8 * 1024 * 1024
+
 export class Storage {
   isInitialized = false
 
@@ -313,15 +317,21 @@ export class Storage {
 
       const onData = chunk => {
         data = data ? Buffer.concat([data, chunk]) : chunk
+        let size = null
         try {
-          const size = readMediaAttributes(data)
-          // On partial data, sometimes we get results back from leather without
-          // actual dimensions, so check for that.
-          if (size.mime && (size.width > 0 || size.height > 0)) {
-            done(size)
-          }
+          size = readMediaAttributes(data)
         } catch {
           // Ignore errors in `readMediaAttributes()` on partial data.
+        }
+        // On partial data, sometimes we get results back from leather without
+        // actual dimensions, so check for that.
+        if (size?.mime && (size.width > 0 || size.height > 0)) {
+          done(size)
+        } else if (data.length >= headLength) {
+          // Give up on media without dimensions in their head, instead of
+          // buffering and parsing the whole upload:
+          this.app.emit('error', 'Unable to determine image size')
+          done(null)
         }
       }
 
