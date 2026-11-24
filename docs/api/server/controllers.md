@@ -901,10 +901,10 @@ With
 users who forgot their password set a new one through a link that the app
 emails them, with these collection actions, which aren't routed without it:
 
-| Action                          | Response                                                                                                                                                                                                                                                      |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `'post password-reset'`         | Emails a link to the user of the username in the body, under the model's `usernameProperty`, through [`sendPasswordReset()`](#sendpasswordreset): `{ success: true }`, also for unknown usernames, or 400 without a username or with one that isn't a string. |
-| `'post password-reset-confirm'` | Sets the password of the link's user to `{ token, password }`, validated by the user model: `{ success }`, or 400 with `'Invalid or expired token'`. Doesn't log in.                                                                                          |
+| Action                          | Response                                                                                                                                                                                                                                                                                      |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'post password-reset'`         | Emails a link to the user of the username in the body, under the model's `usernameProperty`, through [`sendPasswordReset()`](#sendpasswordreset), at most once a minute per user: `{ success: true }`, also for unknown usernames, or 400 without a username or with one that isn't a string. |
+| `'post password-reset-confirm'` | Sets the password of the link's user to `{ token, password }`, validated by the user model: `{ success }`, or 400 with `'Invalid or expired token'`. Doesn't log in.                                                                                                                          |
 
 `'post password-reset'` answers with the same response and status whether the
 user exists or not, but the time it takes can still differ, as it only signs a

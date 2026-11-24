@@ -216,8 +216,17 @@ export class UsersController extends ModelController {
       const user = await modelClass
         .sessionQuery(ctx.transaction)
         .findOne(usernameProperty, username)
-      if (user) {
-        const token = createPasswordResetToken(this, user, Date.now())
+      const { sentTimesByUserId } = this.passwordReset
+      const time = Date.now()
+      // Forget the emails of past minutes, to keep the map small:
+      for (const [id, sentTime] of sentTimesByUserId) {
+        if (time - sentTime >= 60 * 1000) {
+          sentTimesByUserId.delete(id)
+        }
+      }
+      if (user && !sentTimesByUserId.has(user.$id())) {
+        sentTimesByUserId.set(user.$id(), time)
+        const token = createPasswordResetToken(this, user, time)
         const url = this.passwordReset.confirmUrl.replace('{token}', token)
         // Don't wait for the email: its failures don't change the answer, also
         // when `sendPasswordReset()` throws right away:
@@ -402,7 +411,9 @@ export class UsersController extends ModelController {
           ),
           // Sign the links like Koa signs cookies, with the first of `app.keys`
           // while accepting all of them, to rotate keys:
-          keys: isArray(app.keys) ? new Keygrip(app.keys, 'sha256') : app.keys
+          keys: isArray(app.keys) ? new Keygrip(app.keys, 'sha256') : app.keys,
+          // The times of the last emails, to send one per user and minute:
+          sentTimesByUserId: new Map()
         }
       : null
 

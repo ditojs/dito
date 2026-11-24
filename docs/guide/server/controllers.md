@@ -935,8 +935,11 @@ while the old ones are rotated out.
 A link works until `expiresAfter`, or until one of these values changes, so
 the new hash makes each link work once. The user logs in with the new password
 afterwards.
-Limit the rate of requests per client in the proxy in front of the app, like
-that of [logins](#users-and-sessions): there is no limit of emails per user.
+Each user gets at most one email per minute: further requests within the
+minute answer the same, but send nothing. The times of the last emails are
+kept in memory, per controller and process. Limit the rate of requests per
+client in the proxy in front of the app, like that of
+[logins](#users-and-sessions).
 The admin adds the request to its login dialog, with `confirmUrl` pointing to
 the admin, e.g. `'https://example.com/admin/#password-reset={token}'`, see
 [`DitoAdmin`](../../api/admin/admin.md#globalconfig).

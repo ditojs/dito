@@ -227,6 +227,21 @@ describe('Password reset', () => {
     expect(sentResets).toEqual([])
   })
 
+  it('sends at most one email per user and minute', async () => {
+    await Member.query().insert({ username: 'bob', password: 'secret' } as any)
+    const first = await requestReset()
+    const second = await requestReset()
+    expect(second.status).toBe(first.status)
+    expect(second.data).toEqual(first.data)
+    await requestReset('bob')
+    vi.setSystemTime(Date.now() + 60 * 1000 - 1)
+    await requestReset()
+    expect(sentResets.map(({ user }) => user)).toEqual(['ada', 'bob'])
+    vi.setSystemTime(Date.now() + 1)
+    await requestReset()
+    expect(sentResets.map(({ user }) => user)).toEqual(['ada', 'bob', 'ada'])
+  })
+
   it('rejects requests without a valid username', async () => {
     for (const [body, message] of [
       [{}, `Missing 'username'`],
@@ -281,7 +296,7 @@ describe('Password reset', () => {
 
   it('invalidates the other links of the user with the reset', async () => {
     const first = await getToken()
-    vi.setSystemTime(Date.now() + 1000)
+    vi.setSystemTime(Date.now() + 60 * 1000)
     const second = await getToken()
     expect((await confirmReset(second)).status).toBe(200)
     await expectInvalid(first)
@@ -352,6 +367,7 @@ describe('Password reset', () => {
     await Member.query().patchById(member.id, { email: 'ada@example.com' })
     expect((await confirm(token)).status).toBe(400)
     // Links sent after the change work:
+    vi.setSystemTime(Date.now() + 60 * 1000)
     const other = await getToken('ada', '/email-members')
     expect((await confirm(other)).status).toBe(200)
   })
@@ -405,6 +421,7 @@ describe('Password reset', () => {
     // Rotate the keys, as apps do by adding a new key in front:
     keys.unshift('new-secret')
     try {
+      vi.setSystemTime(Date.now() + 60 * 1000)
       const rotated = await getToken()
       expect(rotated.split('.')[2]).not.toBe(token.split('.')[2])
       keys.pop()
