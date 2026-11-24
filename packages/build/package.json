@@ -28,17 +28,17 @@
   ],
   "dependencies": {
     "@ditojs/utils": "workspace:^",
-    "@vitejs/plugin-vue": "^6.0.10",
-    "autoprefixer": "^10.6.2",
+    "@vitejs/plugin-vue": "^6.0.11",
+    "autoprefixer": "^10.7.0",
     "mime": "^4.1.2",
     "mini-svg-data-uri": "^1.4.4",
     "minimist": "^1.2.8",
-    "postcss": "^8.5.32",
-    "postcss-html": "^2.0.0",
+    "postcss": "^8.5.33",
+    "postcss-html": "^2.0.1",
     "postcss-scss": "^4.0.9",
     "pug": "^3.0.4",
-    "sass": "^1.108.1",
-    "vite": "^8.3.7",
-    "vue": "^3.5.45"
+    "sass": "^1.108.2",
+    "vite": "^8.3.8",
+    "vue": "^3.5.46"
   }
 }
