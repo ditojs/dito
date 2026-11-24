@@ -82,6 +82,12 @@ test.describe('screenshots', () => {
     await expectScreenshot(page, 'form-nested-create.png')
   })
 
+  test('empty tree with forms', async ({ page, url }) => {
+    await page.goto(`${url}/admin/projects/2/planning`)
+    await expect(page.getByText('Phases', { exact: true })).toBeVisible()
+    await expectScreenshot(page, 'tree-empty.png')
+  })
+
   test('validation errors', async ({ page, url }) => {
     await openProject(page, url)
     await page.getByLabel('Name', { exact: true }).fill('')
