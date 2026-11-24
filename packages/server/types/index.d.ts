@@ -821,6 +821,19 @@ export class Application<$Models extends Models = Models> {
   }): Promise<Model[]>
 
   /**
+   * Lists the files of the storages without asset and reference that haven't
+   * changed for `olderThan`, and removes them with `remove`.
+   */
+  findOrphanedFiles(options?: {
+    storages?: string[]
+    olderThan?: string | number
+    remove?: boolean
+    concurrency?: number
+  }): Promise<
+    (ListedFile & { storage: string; error?: unknown })[]
+  >
+
+  /**
    * Creates Asset model records for the given files.
    * Returns the inserted assets, or an empty array if no
    * AssetModel is registered.
@@ -4368,6 +4381,12 @@ export class ControllerError extends ResponseError {
 /* ------------------------------- End Errors ------------------------------ */
 
 /* ----------------------------- Start Storage ----------------------------- */
+/** A file as `Storage#listFiles()` lists it. */
+export interface ListedFile {
+  key: string
+  lastModified: Date
+}
+
 /**
  * Base class for file storage backends. Subclasses handle
  * disk and S3 storage.
@@ -4444,6 +4463,11 @@ export class Storage {
   readFile(file: AssetFile): Promise<Buffer>
   /** Lists all keys in the storage. */
   listKeys(): Promise<string[]>
+  /**
+   * Lists all files in the storage with the time of their last change, or
+   * `undefined` if the storage doesn't implement `_listFiles()`.
+   */
+  listFiles(): Promise<ListedFile[] | undefined>
   /** Returns the file system path for a file, if any. */
   getFilePath(file: AssetFile): string | undefined
   /** Returns the URL of a file in a public storage. */
@@ -4496,6 +4520,8 @@ export class Storage {
   _readFile(file: AssetFile): Promise<Buffer>
   /** @overridable */
   _listKeys(): Promise<string[]>
+  /** @overridable */
+  _listFiles(): Promise<ListedFile[] | undefined>
   /** @overridable */
   _getFilePath(file: AssetFile): string | undefined
   /** @overridable */

@@ -227,6 +227,14 @@ files right away, e.g. from an admin action, call
 `app.releaseUnusedAssets({ olderThan: 0 })`. `pnpm db:recount_assets` sets the
 counts to the references in the data again.
 
+Files that a storage holds without an asset record and without a reference,
+e.g. of uploads from before the asset model, are orphaned.
+`pnpm db:find_orphaned_files` lists the ones older than a day, and removes
+them with `--remove`. It counts every file in the storage's folder or bucket,
+also the ones of other apps that share it, so check the list before removing.
+See
+[`app.findOrphanedFiles()`](../../api/server/application.md#findorphanedfiles).
+
 ## Adding files in code
 
 `AssetFile.create()` creates a file from data, which is stored when the model

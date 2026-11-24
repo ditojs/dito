@@ -21,9 +21,11 @@ import { createTestApp as createServerApp, getAppUrl } from '../utils/app.js'
 // Storage configs are typed per built-in storage type only, so we cast them:
 class MemoryStorage extends Storage {
   dataByKey = new Map<string, Buffer>()
+  lastModifiedByKey = new Map<string, Date>()
 
   async _addFile(file: AssetFile, data: Buffer) {
     this.dataByKey.set(file.key, data)
+    this.lastModifiedByKey.set(file.key, new Date())
   }
 
   async _removeFile(file: AssetFile) {
@@ -40,6 +42,13 @@ class MemoryStorage extends Storage {
 
   async _listKeys() {
     return [...this.dataByKey.keys()]
+  }
+
+  async _listFiles() {
+    return [...this.dataByKey.keys()].map(key => ({
+      key,
+      lastModified: this.lastModifiedByKey.get(key)!
+    }))
   }
 }
 
@@ -1716,5 +1725,121 @@ describe('asset references', () => {
     } finally {
       addForeignAssets.mockRestore()
     }
+  })
+})
+
+describe('Application.findOrphanedFiles()', () => {
+  const Document = createDocumentClass()
+  class Asset extends AssetMixin(Model) {}
+  const app = createApp({ Document, Asset })
+  const storage = app.getStorage('memory') as MemoryStorage
+
+  beforeAll(async () => {
+    await createTestDatabase(app)
+  })
+
+  afterAll(async () => {
+    await destroyTestApp(app)
+  })
+
+  // Stores a file without an asset, modified two days ago unless `isRecent`:
+  async function storeFile(name: string, isRecent = false) {
+    const file = AssetFile.create({ name, data: name })
+    await storage.addFile(file, Buffer.from(name))
+    if (!isRecent) {
+      const day = 24 * 60 * 60 * 1000
+      storage.lastModifiedByKey.set(file.key, new Date(Date.now() - 2 * day))
+    }
+    return file
+  }
+
+  it('finds old files without asset or reference, and removes them', async () => {
+    const orphaned = await storeFile('orphaned.txt')
+    const recent = await storeFile('recent.txt', true)
+    const referenced = await storeFile('referenced.txt')
+    await Document.knex()(Document.tableName).insert({
+      file: JSON.stringify(referenced)
+    })
+    const tracked = await storeFile('tracked.txt')
+    const signed = { ...tracked } as AssetFile
+    storage.signAssetFile(signed)
+    await app.createAssets(storage, [signed])
+    const files = await app.findOrphanedFiles()
+    expect(files).toEqual([
+      {
+        storage: 'memory',
+        key: orphaned.key,
+        lastModified: storage.lastModifiedByKey.get(orphaned.key)
+      }
+    ])
+    expect(storage.dataByKey.has(orphaned.key)).toBe(true)
+    expect(await app.findOrphanedFiles({ remove: true })).toEqual(files)
+    expect(storage.dataByKey.has(orphaned.key)).toBe(false)
+    for (const file of [recent, referenced, tracked]) {
+      expect(storage.dataByKey.has(file.key)).toBe(true)
+    }
+    expect(await app.findOrphanedFiles({ olderThan: 0 })).toEqual([
+      expect.objectContaining({ key: recent.key })
+    ])
+  })
+
+  it('skips keys in other formats and filters by storage', async () => {
+    const other = new MemoryStorage(app, 'other', {} as StorageConfig)
+    app.addStorage(other)
+    const file = await storeFile('filtered.txt')
+    const date = storage.lastModifiedByKey.get(file.key)!
+    for (const key of ['backups/dump.sql', 'fonts/']) {
+      storage.dataByKey.set(key, Buffer.from(''))
+      storage.lastModifiedByKey.set(key, date)
+    }
+    other.dataByKey.set('elsewhere.txt', Buffer.from(''))
+    other.lastModifiedByKey.set('elsewhere.txt', date)
+    const getKeys = async (options?: { storages: string[] }) =>
+      (await app.findOrphanedFiles(options)).map(file => file.key)
+    expect(await getKeys({ storages: ['memory'] })).toEqual([file.key])
+    expect(await getKeys({ storages: ['other'] })).toEqual(['elsewhere.txt'])
+    expect(await getKeys()).toEqual([file.key, 'elsewhere.txt'])
+    await app.findOrphanedFiles({ storages: ['memory'], remove: true })
+    for (const key of ['backups/dump.sql', 'fonts/']) {
+      expect(storage.dataByKey.has(key)).toBe(true)
+    }
+  })
+
+  it('reports files that cannot be removed', async () => {
+    const file = await storeFile('stuck.txt')
+    const error = new Error('Storage is read-only')
+    const removeFile = vi
+      .spyOn(storage, 'removeFile')
+      .mockRejectedValue(error)
+    const onError = vi.fn()
+    app.on('error', onError)
+    try {
+      const files = await app.findOrphanedFiles({
+        storages: ['memory'],
+        remove: true
+      })
+      expect(files.find(({ key }) => key === file.key)?.error).toBe(error)
+      expect(onError).toHaveBeenCalledWith(error)
+    } finally {
+      app.off('error', onError)
+      removeFile.mockRestore()
+    }
+  })
+
+  it('rejects invalid durations', async () => {
+    await expect(app.findOrphanedFiles({ olderThan: 'soon' })).rejects.toThrow(
+      `Invalid duration for 'olderThan': 'soon'. Use a duration.`
+    )
+  })
+
+  it('rejects storages that it cannot check', async () => {
+    class UnlistedStorage extends Storage {}
+    app.addStorage(new UnlistedStorage(app, 'unlisted', {} as StorageConfig))
+    await expect(
+      app.findOrphanedFiles({ storages: ['unlisted'] })
+    ).rejects.toThrow(`Unable to list the files of storage 'unlisted'.`)
+    await expect(
+      app.findOrphanedFiles({ storages: ['unknown'] })
+    ).rejects.toThrow(`Unknown storage: 'unknown'.`)
   })
 })

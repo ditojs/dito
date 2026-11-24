@@ -116,6 +116,26 @@ export class DiskStorage extends Storage {
     return files
   }
 
+  // @override
+  async _listFiles() {
+    const files = await mapConcurrently(
+      await this._listKeys(),
+      async key => {
+        try {
+          const stats = await fs.stat(this._getFilePath({ key }))
+          if (stats.isFile()) {
+            return { key, lastModified: stats.mtime }
+          }
+        } catch (error) {
+          // Skip the files that are removed while listing:
+          if (error.code !== 'ENOENT') throw error
+        }
+      },
+      { concurrency: 16 }
+    )
+    return files.filter(Boolean)
+  }
+
   _getNestedFolder(key, posix = false) {
     // Store files in nested folders created with the first two chars of the
     // key, for faster access & management with large amounts of files.

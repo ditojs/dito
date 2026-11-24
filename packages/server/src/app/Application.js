@@ -39,6 +39,7 @@ import { EventEmitter } from '../lib/index.js'
 import { Controller, AdminController } from '../controllers/index.js'
 import { Service } from '../services/index.js'
 import { Storage } from '../storage/index.js'
+import { generatedKeyRegExp } from '../storage/Storage.js'
 import { drivers } from '../drivers/index.js'
 import { convertSchema } from '../schema/index.js'
 import { isHttpMethod } from '../utils/http.js'
@@ -1408,6 +1409,71 @@ export class Application extends Koa {
       })
     }
     return []
+  }
+
+  async findOrphanedFiles({
+    storages = Object.keys(this.storages),
+    olderThan = '24h',
+    remove = false,
+    concurrency = 8
+  } = {}) {
+    // Fail on invalid durations, as some would count as 0:
+    const duration = checkDuration('olderThan', olderThan, {
+      min: 0,
+      usage: 'Use a duration.'
+    })
+    const orphaned = []
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      const modifiedBefore = subtractDuration(new Date(), duration)
+      // List the files before reading the assets and references, so that the
+      // files of writes that commit in between aren't counted as orphaned:
+      const filesByStorage = {}
+      for (const name of storages) {
+        const storage = this.getStorage(name)
+        if (!storage) {
+          throw new AssetError(`Unknown storage: '${name}'.`)
+        }
+        const files = await storage.listFiles()
+        if (!files) {
+          throw new AssetError(`Unable to list the files of storage '${name}'.`)
+        }
+        filesByStorage[name] = files
+      }
+      const assets = await AssetModel.query().ignoreScope().select('key')
+      const assetKeys = new Set(assets.map(asset => asset.key))
+      const references = await this.getAssetReferences()
+      const referencedKeys = new Set(references.map(reference => reference.key))
+      for (const [storage, files] of Object.entries(filesByStorage)) {
+        for (const { key, lastModified } of files) {
+          // Only count keys in the format that Dito generates, to skip the
+          // other files of folders and buckets, e.g. under S3 prefixes:
+          if (
+            generatedKeyRegExp.test(key) &&
+            !assetKeys.has(key) &&
+            !referencedKeys.has(key) &&
+            lastModified <= modifiedBefore
+          ) {
+            orphaned.push({ storage, key, lastModified })
+          }
+        }
+      }
+      if (remove) {
+        await mapConcurrently(
+          orphaned,
+          async file => {
+            try {
+              await this.getStorage(file.storage).removeFile({ key: file.key })
+            } catch (error) {
+              this.emit('error', error)
+              file.error = error
+            }
+          },
+          { concurrency }
+        )
+      }
+    }
+    return orphaned
   }
 
   get requestLocals() {
