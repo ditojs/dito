@@ -976,15 +976,14 @@ await post('confirm-access', {
 })
 ```
 
-The `patch` and `put` actions of users controllers need it too, to set a
-password, also when admins set the passwords of other users, and to change the
-username, as password resets go to it, while `post` creates users with a
-password without it. The admin asks to confirm the access whenever an action
+The default write actions of all model and relation controllers need it too,
+to set the password of an existing user, also when admins set the passwords of
+other users, and to change the username, as password resets go to it, also for
+users nested in the graphs of other models. The access to confirm is that of
+the logged-in user, of whichever user model, e.g. an admin changing a
+customer: `authorize` decides who may change whom. New users are created with
+a password without it. The admin asks to confirm the access whenever an action
 answers `confirmationRequired`, and then repeats the action.
-
-Only users controllers check this: other controllers, e.g. relation
-controllers of user relations, and graphs of other models that contain users
-set passwords without confirmed access, so don't let them accept passwords.
 
 Protect other changes the same way with
 [`checkConfirmedAccess(ctx)`](../../api/server/controllers.md#checkconfirmedaccess),
@@ -1028,10 +1027,9 @@ export class Users extends UsersController {
 }
 ```
 
-Passwords set through other routes of the app aren't covered: relations and
-graphs that include user models, other controllers, and new users created
-through an authorized collection `post`. Keep such routes to admins. Deleting
-users through the member `delete`, e.g. `DELETE /users/self`, doesn't need
+Passwords set through the app's own actions aren't covered, nor new users
+created through an authorized collection `post`. Keep such routes to admins.
+Deleting users through the member `delete`, e.g. `DELETE /users/self`, doesn't need
 confirmed access either: apps that allow it can protect it in `member`,
 keeping `'$self'`, which the setting replaces, so that users only delete
 themselves:

@@ -1,11 +1,14 @@
 import Keygrip from 'keygrip'
-import { asArray, isArray, isString } from '@ditojs/utils'
+import { isArray, isString } from '@ditojs/utils'
 import { ModelController } from './ModelController.js'
 import { PasskeyService, TotpService } from '../services/index.js'
 import {
   authenticationTimeout,
+  checkConfirmedAccess,
   getCredentialQuery,
   getUserIdentifier,
+  hasConfirmedAccess,
+  isAuthenticated,
   parseUserIdentifier
 } from '../utils/authentication.js'
 import { checkDuration } from '../utils/duration.js'
@@ -509,65 +512,16 @@ export class UsersController extends ModelController {
     }
   }
 
-  // @override
-  async executeAndFetch(action, ctx, modify, body = ctx.request.body) {
-    await checkUserChanges(
-      this,
-      ctx,
-      action,
-      asArray(body).map(user => [this.getModelId(user), user])
-    )
-    return super.executeAndFetch(action, ctx, modify, body)
-  }
-
-  // @override
-  async relateAndFetch(ctx, modify) {
-    await checkUserChanges(
-      this,
-      ctx,
-      'relate',
-      asArray(ctx.request.body).map(user => [this.getModelId(user), user])
-    )
-    return super.relateAndFetch(ctx, modify)
-  }
-
-  // @override
-  async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
-    await checkUserChanges(this, ctx, action, [[ctx.memberId, body]])
-    return super.executeAndFetchById(action, ctx, modify, body)
-  }
-
   isAuthenticated(ctx) {
-    // Make sure the currently logged in user has the exact model class, since
-    // sub-classes have their own tables and ids:
-    return (
-      ctx.isAuthenticated() &&
-      ctx.state.user.constructor === this.modelClass
-    )
+    return isAuthenticated(ctx, this.modelClass)
   }
 
-  // Security changes need a login or a 'post confirm-access' of the user within
-  // `app.authentication.reconfirmAccessAfter`:
   hasConfirmedAccess(ctx) {
-    const { user, expires } = ctx.session.confirmedAccess ?? {}
-    return (
-      this.isAuthenticated(ctx) &&
-      user === getUserIdentifier(ctx.state.user) &&
-      expires > Date.now()
-    )
+    return hasConfirmedAccess(ctx, this.modelClass)
   }
 
-  // Without a login, we answer 401. Without confirmed access, we answer 403
-  // with `confirmationRequired`, for clients to confirm it:
   checkConfirmedAccess(ctx) {
-    checkAuthentication(this, ctx)
-    if (!this.hasConfirmedAccess(ctx)) {
-      throw new AuthorizationError({
-        message: 'Confirmation required',
-        status: 403,
-        confirmationRequired: true
-      })
-    }
+    checkConfirmedAccess(ctx, this.modelClass)
   }
 
   // The admin offers the features whose actions we route, all of them:
@@ -704,29 +658,6 @@ function checkTotpService(controller, ctx, message) {
       ctx
     )
     throw new AuthenticationError(message)
-  }
-}
-
-// Setting passwords and changing usernames needs confirmed access, the latter
-// as password resets go to them. `users` are `[id, user]` entries:
-async function checkUserChanges(controller, ctx, action, users) {
-  const { modelClass } = controller
-  const { usernameProperty, passwordProperty } = modelClass.definition.options
-  for (const [id, user] of users) {
-    // Relating users with ids updates them:
-    const isUpdate = action !== 'insert' && (action !== 'relate' || id != null)
-    if (isUpdate) {
-      if (user?.[passwordProperty] !== undefined) {
-        controller.checkConfirmedAccess(ctx)
-      }
-      const username = user?.[usernameProperty]
-      if (username !== undefined) {
-        const stored = await modelClass.query(ctx.transaction).findById(id)
-        if (stored?.[usernameProperty] !== username) {
-          controller.checkConfirmedAccess(ctx)
-        }
-      }
-    }
   }
 }
 

@@ -501,6 +501,10 @@ created with `POST`. Without `graph`, the body must be an array; with
 `graph`, it may be one model or an array, and only models nested in the
 graphs may be new.
 
+Setting the password of an existing user or changing their username, also of
+users nested in graphs, needs the confirmed access of the logged-in user, see
+[Confirmed access](../../guide/server/controllers.md#confirmed-access).
+
 The default actions are called with `(ctx, modify)`, where `modify` is an
 optional `(query, trx) => void`. Overrides can pass their own:
 
@@ -833,8 +837,8 @@ Logins and `'post confirm-access'` confirm the access of the session for
 [`app.authentication.reconfirmAccessAfter`](./application.md#configappauthentication).
 Without it, `'post password'`, `'post passkey-options'`, `'post passkeys'`,
 `'delete passkeys/:id'`, `'post totp'`, `'post totp-confirm'`, `'delete totp'`
-and the `patch` and `put` actions that change the username or set the password
-answer 403 with
+and the default write actions that change the username or set the password of
+an existing user, also in other controllers and graphs, answer 403 with
 `{ message: 'Confirmation required', confirmationRequired: true }`, see
 [Confirmed access](../../guide/server/controllers.md#confirmed-access). The
 handlers check it, and the login for `'post confirm-access'`, `'get passkeys'`
