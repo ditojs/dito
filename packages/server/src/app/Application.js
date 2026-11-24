@@ -871,18 +871,26 @@ export class Application extends Koa {
     // registers (storages, services, models, controllers) that weren't
     // initialized yet will be initialized.
     await this.setup()
-    await this.emit('before:start')
-    this.server = await new Promise(resolve => {
-      const server = this.listen(this.config.server, () => {
-        const { address, port } = server.address()
-        if (Object.keys(this.config.log).length > 0) {
-          console.info(
-            `Dito.js server started at http://${address}:${port}`
-          )
-        }
-        resolve(server)
+    try {
+      await this.emit('before:start')
+      this.server = await new Promise((resolve, reject) => {
+        const server = this.listen(this.config.server, () => {
+          const { address, port } = server.address()
+          if (Object.keys(this.config.log).length > 0) {
+            console.info(
+              `Dito.js server started at http://${address}:${port}`
+            )
+          }
+          resolve(server)
+        })
+        // Errors like `EADDRINUSE` come as events, not exceptions:
+        server.once('error', reject)
       })
-    })
+    } catch (error) {
+      // Stop the services that started, as `stop()` can't without a server:
+      await this.emit('after:stop')
+      throw error
+    }
     this.isRunning = true
     if (this.#deleteExpiredRecordsEvery !== false) {
       // Nobody awaits the timer, so we emit its errors:
