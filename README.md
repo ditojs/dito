@@ -55,6 +55,7 @@ these aspects separately:
 - [Upgrading to 4.x](docs/upgrading-to-4.x.md)
 - [Upgrading to 5.x](docs/upgrading-to-5.x.md)
 - [Upgrading to 6.x](docs/upgrading-to-6.x.md)
+- [Upgrading to 7.x](docs/upgrading-to-7.x.md)
 
 The [documentation](docs/index.md) covers everything else: guides, recipes
 and the API reference.

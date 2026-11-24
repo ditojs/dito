@@ -7,9 +7,9 @@ export function resolveFileUrl(url) {
     : url
 }
 
-// Reads add the `url` of the file's storage, and responses add a new
-// `signature`, so neither is stored. Values that aren't files, such as raw
-// SQL, stay as they are.
+// Reads add the `url` of the file's storage, so it isn't stored. Signatures are
+// removed when files are converted, and dropped here too, as responses add new
+// ones. Values that aren't files, such as raw SQL, stay as they are.
 export function formatDatabaseFile(file) {
   if (isString(file?.key)) {
     const { url, signature, ...rest } = file
