@@ -45,6 +45,7 @@ describe('parseFileSize()', () => {
     ['1kb', 1000],
     ['1.5 MB', 1.5e6],
     ['1,5M', 1.5e6],
+    [' 1 MB ', 1e6],
     ['1T', 1e12],
     ['1KiB', 1024],
     ['1 Ki', 1024],
@@ -62,6 +63,14 @@ describe('parseFileSize()', () => {
     expect(parseFileSize('1 MB', { base: 2 })).toBe(1024 ** 2)
     expect(parseFileSize('1 MiB', { base: 2 })).toBe(1024 ** 2)
     expect(parseFileSize('1Kb', { base: 2 })).toBe(128)
+  })
+
+  it('throws on thousands separators', () => {
+    for (const input of ['1,000,000', '1.000.000', '1.000,5', '1,000.5 MB']) {
+      expect(() => parseFileSize(input)).toThrow(
+        `Can't interpret file size: ${input}`
+      )
+    }
   })
 
   it('throws on invalid input', () => {
