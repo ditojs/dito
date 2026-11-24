@@ -119,6 +119,19 @@ class Kitchen extends Controller {
 
 describe('Application', () => {
   describe('configuration', () => {
+    it('logs requests without their query string', () => {
+      const { serializers } = createApp().config.logger
+      const request = {
+        method: 'GET',
+        url: '/dishes?token=secret',
+        headers: {}
+      }
+      expect(serializers.req(request)).toMatchObject({
+        method: 'GET',
+        url: '/dishes'
+      })
+    })
+
     it('keeps `config.app.keys` out of the exposed config', () => {
       const app = createApp({
         config: { app: { keys: ['secret'], proxy: true } }

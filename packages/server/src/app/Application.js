@@ -1425,7 +1425,11 @@ const defaultLoggerOptions = {
   level: 'info',
   serializers: {
     err,
-    req,
+    // Leave out the query string, as it may hold tokens:
+    req: request => {
+      const serialized = req(request)
+      return { ...serialized, url: serialized.url?.split('?')[0] }
+    },
     res,
     // Only include `id` from the user, to not inadvertently log PII.
     user: user => ({ id: user.id })
