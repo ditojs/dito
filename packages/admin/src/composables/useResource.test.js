@@ -556,23 +556,34 @@ describe('useResource()', () => {
       }
     }
 
-    async function submitWithErrors(errors) {
+    // `data: null` stands for responses without a body, e.g. of proxies:
+    async function submitWithErrors(
+      errors,
+      data = {
+        type: 'ModelValidation',
+        message: 'The provided data is not valid',
+        errors
+      }
+    ) {
       const result = await mountForm({
         schema: authorSchema,
         data: { name: 'Woolf', books: [{ id: 1, title: 'Orlando' }] },
         request: options => {
           if (options.method !== 'get') {
-            throw createRequestError(400, {
-              type: 'ModelValidation',
-              message: 'The provided data is not valid',
-              errors
-            })
+            throw createRequestError(400, data)
           }
         }
       })
       await result.submit()
       return result
     }
+
+    it('notifies 400 responses without a body like other errors', async () => {
+      await submitWithErrors(undefined, null)
+      expect(getNotifications()).toContainEqual(
+        expect.objectContaining({ title: 'Request Error' })
+      )
+    })
 
     it('shows the errors on the fields at their normalized data paths', async () => {
       const { getErrors } = await submitWithErrors({
