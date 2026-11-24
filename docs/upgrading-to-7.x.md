@@ -63,6 +63,9 @@ Of the schema's events, date and time fields only receive `focus`, `blur`,
 - Picking the selected option of a single select keeps it. Single selects that
   aren't `required` show a clear button instead, unless `clearable: false`.
   Tab no longer picks the highlighted option.
+- The combobox of multiselects is the `<input>` itself, and single selects
+  show the label of their option as its value instead of as text, so tests
+  read it with `toHaveValue()` instead of `toHaveText()`.
 - Tabs select on mouse down, and only a real mouse press selects them:
   synthetic clicks, e.g. `click()` in the tests of apps, don't. Tests click
   tabs with the mouse, or use the keyboard.
