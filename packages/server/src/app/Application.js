@@ -142,6 +142,9 @@ export class Application extends Koa {
     })
     this.keys = keys
     this.proxy = !!app.proxy
+    // Clients can forge the `X-Forwarded-For` entries before the one that the
+    // closest proxy adds, so only trust that one for `ctx.ip`:
+    this.maxIpsCount = 1
     this.validator = validator || new Validator()
     this.router = router || new Router()
     this.validator.app = this
