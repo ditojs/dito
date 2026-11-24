@@ -322,6 +322,18 @@ export default class SchemaContext {
     return location => navigate(getAdminContext(this).router, location)
   }
 
+  // Reveal the fields that edit the value at `dataPath`, resolved like in
+  // `getValueAt()`, and focus the first one:
+  get reveal() {
+    return async (dataPath, { focus = true } = {}) => {
+      const dataPaths = await getDataContextFor(this, 'reveal').reveal(
+        [resolveDataPath(this.itemDataPath, dataPath)],
+        { focus }
+      )
+      return dataPaths.length > 0
+    }
+  }
+
   get getRouteUrl() {
     return location => getAdminContext(this).router.resolve(location).href
   }

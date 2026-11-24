@@ -820,3 +820,156 @@ describe('the contexts of components', () => {
     })
   })
 })
+
+describe('context.reveal()', () => {
+  const section = fields => ({
+    type: 'section',
+    collapsible: true,
+    collapsed: true,
+    fields
+  })
+
+  // Mount `fields` with a title that records its context:
+  const mountFields = (fields, data) =>
+    mountSchema({
+      schema: {
+        fields: {
+          title: { type: 'text', label: recordLabel('title') },
+          ...fields
+        }
+      },
+      data: { title: 'Emma', ...data }
+    })
+
+  const getInput = field => field.find('input').element
+
+  it('opens collapsed sections and focuses the field', async () => {
+    const { findField } = await mountFields(
+      { details: section({ notes: { type: 'text' } }) },
+      { notes: 'Classic' }
+    )
+    expect(findField('notes').exists()).toBe(false)
+    expect(await contexts.title.reveal('notes')).toBe(true)
+    expect(findField('notes').isVisible()).toBe(true)
+    expect(document.activeElement).toBe(getInput(findField('notes')))
+  })
+
+  it('selects tabs, also without focus', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        tabs: {
+          main: {
+            type: 'tab',
+            fields: { title: { type: 'text', label: recordLabel('title') } }
+          },
+          more: { type: 'tab', fields: { notes: { type: 'text' } } }
+        }
+      },
+      data: { title: 'Emma', notes: 'Classic' }
+    })
+    expect(await contexts.title.reveal('notes', { focus: false })).toBe(true)
+    expect(findField('notes').isVisible()).toBe(true)
+    expect(findField('title').isVisible()).toBe(false)
+    expect(document.activeElement).not.toBe(getInput(findField('notes')))
+  })
+
+  it('opens collapsed items of lists', async () => {
+    const { findField } = await mountFields(
+      {
+        chapters: {
+          type: 'list',
+          inlined: true,
+          collapsible: true,
+          collapsed: true,
+          form: {
+            type: 'form',
+            fields: { heading: { type: 'text', label: recordLabel('heading') } }
+          }
+        }
+      },
+      { chapters: [{ heading: 'One' }, { heading: 'Two' }] }
+    )
+    expect(findField('chapters/1/heading').exists()).toBe(false)
+    expect(await contexts.title.reveal('chapters/1/heading')).toBe(true)
+    expect(document.activeElement).toBe(
+      getInput(findField('chapters/1/heading'))
+    )
+    expect(findField('chapters/0/heading').exists()).toBe(false)
+    // Relative to the item of the context:
+    expect(contexts.heading.itemDataPath).toBe('chapters/1')
+    expect(await contexts.heading.reveal('../0/heading')).toBe(true)
+    expect(document.activeElement).toBe(
+      getInput(findField('chapters/0/heading'))
+    )
+  })
+
+  it('renders items of long lists that are not rendered yet', async () => {
+    // Hold the idle callbacks and frames in which long lists render their
+    // items, so that only the first ones are rendered:
+    vi.stubGlobal('requestIdleCallback', () => 1)
+    vi.stubGlobal('requestAnimationFrame', () => 1)
+    const fields = Object.fromEntries(
+      Array.from({ length: 25 }, (_, index) => [
+        `note${index}`,
+        { type: 'text' }
+      ])
+    )
+    const { findField } = await mountFields(
+      {
+        ingredients: {
+          type: 'list',
+          inlined: true,
+          form: { type: 'form', fields: { name: { type: 'text' }, ...fields } }
+        }
+      },
+      {
+        ingredients: Array.from({ length: 12 }, (_, index) => ({
+          name: `${index}`
+        }))
+      }
+    )
+    expect(findField('ingredients/10/name').exists()).toBe(false)
+    expect(await contexts.title.reveal('ingredients/10/name')).toBe(true)
+    expect(document.activeElement).toBe(
+      getInput(findField('ingredients/10/name'))
+    )
+  })
+
+  it('returns false for unknown and hidden fields', async () => {
+    await mountFields(
+      { code: { type: 'text', if: () => false } },
+      { code: 'E' }
+    )
+    expect(await contexts.title.reveal('unknown')).toBe(false)
+    expect(await contexts.title.reveal('code')).toBe(false)
+  })
+
+  it('opens the routed forms of items', async () => {
+    const { admin } = await mountForm({
+      schema: {
+        fields: {
+          title: { type: 'text', label: recordLabel('title') },
+          chapters: {
+            type: 'list',
+            editable: true,
+            form: { type: 'form', fields: { heading: { type: 'text' } } }
+          }
+        }
+      },
+      data: {
+        id: 1,
+        title: 'Emma',
+        chapters: [
+          { id: 5, heading: 'One' },
+          { id: 6, heading: 'Two' }
+        ]
+      }
+    })
+    expect(await contexts.title.reveal('chapters/1/heading')).toBe(true)
+    expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/1')
+    const form = admin.getRouteComponent(isForm)
+    expect(document.activeElement).toBe(
+      form.$el.querySelector('input[id="chapters/1/heading"]')
+    )
+  })
+})
