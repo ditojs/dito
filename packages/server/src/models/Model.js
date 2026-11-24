@@ -1323,7 +1323,8 @@ export class Model extends objection.Model {
               addedFiles,
               removedFiles,
               changedFiles,
-              transaction
+              transaction,
+              { maxSize: assets[dataPath].maxSize }
             ))
           )
           modifiedFiles.push(

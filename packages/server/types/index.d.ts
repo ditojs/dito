@@ -843,7 +843,8 @@ export class Application<$Models extends Models = Models> {
     addedFiles: AssetFile[],
     removedFiles: AssetFile[],
     changedFiles: AssetFile[],
-    transaction?: objection.Transaction | null
+    transaction?: objection.Transaction | null,
+    options?: { maxSize?: string | number }
   ): Promise<AssetFile[]>
 
   /**
@@ -854,7 +855,8 @@ export class Application<$Models extends Models = Models> {
   addForeignAssets(
     storage: Storage,
     files: AssetFile[],
-    transaction?: objection.Transaction | null
+    transaction?: objection.Transaction | null,
+    options?: { maxSize?: string | number }
   ): Promise<AssetFile[]>
 
   /**
@@ -1347,6 +1349,11 @@ export interface ModelAsset {
    * upload.
    */
   readDimensions?: boolean
+  /**
+   * The maximum size of files that writes import from `allowedImports` URLs
+   * or copy from other storages, in bytes or as a string like `'10MB'`.
+   */
+  maxSize?: string | number
 }
 
 /** Map of property names to their asset configurations. */

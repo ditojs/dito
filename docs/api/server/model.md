@@ -269,7 +269,7 @@ static hooks = {
 
 ```js
 static assets = {
-  [dataPath]: { storage, readDimensions? }
+  [dataPath]: { storage, readDimensions?, maxSize? }
 }
 ```
 
@@ -277,9 +277,12 @@ Properties that hold uploaded files (`AssetFile` objects, `type: 'asset'`), by
 data path, `*` and `**` wildcards included. Each names the
 [storage](storage.md) that keeps the files; `readDimensions` reads the width
 and height of images and videos uploaded through
-[controller assets](controllers.md#assets). A place in the data that several
-data paths reach belongs to the first of them, with its storage and options,
-and counts once. With an asset model registered (see
+[controller assets](controllers.md#assets). `maxSize`, in bytes or as a string
+like `'10MB'`, limits the files that writes import from the storage's
+`allowedImports` URLs or copy from other storages, but not uploads: larger
+files fail the write with an [`AssetError`](errors.md). A place in the data
+that several data paths reach belongs to the first of them, with its storage
+and options, and counts once. With an asset model registered (see
 [`AssetMixin`](#assetmixin)), files are imported, reference-counted and
 released automatically, see [Application assets](application.md#assets).
 
