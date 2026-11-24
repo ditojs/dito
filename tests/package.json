@@ -15,18 +15,18 @@
     "@ditojs/admin": "workspace:^",
     "@ditojs/server": "workspace:^",
     "@ditojs/utils": "workspace:^",
-    "@electric-sql/pglite": "^0.5.15",
+    "@electric-sql/pglite": "^0.6.0",
     "typescript": "^6.0.3",
-    "vue": "^3.5.45"
+    "vue": "^3.5.46"
   },
   "devDependencies": {
-    "@playwright/test": "^1.65.0",
+    "@playwright/test": "^1.65.1",
     "@simplewebauthn/server": "^14.1.0",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^13.0.3",
+    "better-sqlite3": "^13.2.0",
     "knex": "^3.3.0",
-    "objection": "^4.4.3",
+    "objection": "^4.4.4",
     "otpauth": "^9.6.0",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }
