@@ -64,8 +64,16 @@ QueryParameters.register({
             `Invalid nulls order: '${nulls}'.`
           )
         }
-        const tableRef = query.tableRefFor(query.modelClass())
-        const columnName = `${tableRef}.${propertyName}`
+        // Only order by the properties that clients see, as the order would
+        // tell the values of hidden ones, e.g. `hash`:
+        const modelClass = query.modelClass()
+        const property = modelClass.getProperty(propertyName)
+        if (!property || property.hidden || property.computed) {
+          throw new QueryBuilderError(
+            `Invalid order property: '${propertyName}'.`
+          )
+        }
+        const columnName = `${query.tableRefFor(modelClass)}.${propertyName}`
         if (nulls) {
           query.orderBy(columnName, direction, nulls)
         } else if (direction) {
