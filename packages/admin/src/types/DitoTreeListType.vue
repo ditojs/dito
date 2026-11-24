@@ -172,6 +172,10 @@ function hasItemForms(schema) {
       border-bottom-right-radius: $border-radius - 1;
       margin: (-$input-padding-ver) (-$input-padding-hor);
       margin-left: $input-padding-hor;
+      // Keep the height of three rows, so that empty trees show their pane:
+      min-height: calc(
+        3 * (#{$focus-ring-height} + 2px) + 2 * #{$input-padding-ver}
+      );
     }
   }
 }
