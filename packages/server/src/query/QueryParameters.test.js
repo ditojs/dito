@@ -13,8 +13,9 @@ function createQueryRecorder() {
     tableRefFor() {
       return 'item'
     },
+    // Only what `order` reads from the model class:
     modelClass() {
-      return null
+      return { getProperty: name => ({ name }) }
     }
   }
 }

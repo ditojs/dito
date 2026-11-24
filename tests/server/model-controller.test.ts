@@ -75,6 +75,11 @@ class Book extends Model {
     authorId: {
       type: 'integer',
       nullable: true
+    },
+    internalNote: {
+      type: 'string',
+      nullable: true,
+      hidden: true
     }
   }
 
@@ -681,6 +686,15 @@ describe('ModelController', () => {
         total: 3,
         results: [{ title: 'Chronicle' }, { title: 'Bestiary' }]
       })
+    })
+
+    it('only orders by the properties that clients see', async () => {
+      await insertBooks()
+      for (const name of ['internalNote', 'unknown']) {
+        const response = await request(`/books?order=${name}`)
+        expect(response.status).toBe(400)
+        expect(response.data.message).toBe(`Invalid order property: '${name}'.`)
+      }
     })
 
     it('applies model filters from the query', async () => {
