@@ -70,6 +70,30 @@ describe('findOrphanedFiles()', () => {
     expect(storage.keys.has('orphaned.txt')).toBe(false)
   })
 
+  it('reports the files that it cannot remove', async () => {
+    storage.keys.add('stuck.txt')
+    const removeFile = vi
+      .spyOn(storage, 'removeFile')
+      .mockRejectedValue(new Error('Storage is read-only'))
+    const onError = vi.fn()
+    app.on('error', onError)
+    const line = (
+      `File 'stuck.txt' of storage 'memory': modified ` +
+      `${lastModified.toISOString()}, unable to remove: Storage is read-only`
+    )
+    try {
+      expect(await findOrphanedFiles(app, '--remove')).toBe(false)
+      expect(output).toEqual([
+        line,
+        'Removed 0 orphaned files, unable to remove 1.'
+      ])
+      expect(removeFile).toHaveBeenCalledOnce()
+    } finally {
+      app.off('error', onError)
+      storage.keys.delete('stuck.txt')
+    }
+  })
+
   it('takes the storages and the minimum age as arguments', async () => {
     storage.keys.add('recent.txt')
     expect(await findOrphanedFiles(app, 'memory', '--older-than=100y')).toBe(
