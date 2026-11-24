@@ -54,6 +54,9 @@ class Member extends UserModel {
       loginEvents.push(`before login ${member.username}`)
     },
     'after:login'(member: Member) {
+      if (member.username === 'unwelcome') {
+        throw new ResponseError({ message: 'Welcome failed', status: 403 })
+      }
       loginEvents.push(`after login ${member.username}`)
     },
     'before:logout'(member: Member) {
@@ -478,6 +481,26 @@ describe('UsersController', () => {
       })
     } finally {
       await Member.query().deleteById(locked.id)
+    }
+  })
+
+  it('logs out users whose login fails after logging them in', async () => {
+    const unwelcome = await Member.query().insert({
+      username: 'unwelcome',
+      password: 'secret'
+    } as any)
+    try {
+      const request = createClient(url)
+      const login = await request('/members/login', {
+        method: 'POST',
+        body: { username: 'unwelcome', password: 'secret' }
+      })
+      expect(login.status).toBe(403)
+      expect(login.data).toMatchObject({ success: false, authenticated: false })
+      expect(await Session.query()).toEqual([])
+      expect((await request('/members/session')).data.authenticated).toBe(false)
+    } finally {
+      await Member.query().deleteById(unwelcome.id)
     }
   })
 
