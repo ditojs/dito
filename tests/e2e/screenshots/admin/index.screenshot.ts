@@ -76,6 +76,12 @@ test.describe('screenshots', () => {
     await expectScreenshot(page, 'form-nested.png')
   })
 
+  test('nested form of a new item', async ({ page, url }) => {
+    await page.goto(`${url}/admin/projects/1/planning/milestones/create`)
+    await expect(page.getByLabel('Title', { exact: true })).toBeVisible()
+    await expectScreenshot(page, 'form-nested-create.png')
+  })
+
   test('validation errors', async ({ page, url }) => {
     await openProject(page, url)
     await page.getByLabel('Name', { exact: true }).fill('')
