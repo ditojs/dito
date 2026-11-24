@@ -38,6 +38,8 @@ $sidebar-min-width: 200px;
 // Form
 $form-spacing: $input-padding-hor;
 $form-spacing-half: calc($form-spacing / 2);
+// The space above the components at the root of a form:
+$form-root-spacing: 1.5 * $form-spacing;
 
 // Header
 $header-font-size: 14px;

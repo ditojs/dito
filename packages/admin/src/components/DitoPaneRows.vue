@@ -181,6 +181,7 @@ export default {
 
   --pane-padding: 0px;
   --container-padding: #{$form-spacing-half};
+  --container-padding-top: initial;
 
   display: flex;
   position: relative;
@@ -208,6 +209,16 @@ export default {
     &#{$self}--single {
       --pane-padding: #{$content-padding};
       --container-padding: 0px;
+    }
+
+    // Set the components at the root further apart than the ones inside
+    // sections, objects and items, but start the first row where it was:
+    &:not(#{$self}--single) {
+      --container-padding-top: #{$form-root-spacing};
+
+      padding-top: calc(
+        var(--pane-padding) - #{$form-root-spacing - $form-spacing-half}
+      );
     }
 
     &:has(> .dito-container--label-vertical:first-of-type) {

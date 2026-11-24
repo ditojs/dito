@@ -17,9 +17,10 @@ async function openCase(page: Page, url: string, entry: CaseEntry) {
 async function setValue(page: Page, entry: CaseEntry) {
   const { value } = entry
   if ((value as { clear?: boolean }).clear) {
-    // The clear button only shows while hovering the component.
+    // The clear button only shows while hovering the component, not the label
+    // of its container.
     const container = getContainer(page, entry)
-    await container.hover()
+    await container.locator(':scope > .dito-component').hover()
     await container.getByRole('button', { name: 'Clear' }).click()
   } else {
     await getDriver(entry.type).setValue(page, entry, value)

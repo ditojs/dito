@@ -99,5 +99,6 @@ export default {
 .dito-buttons {
   // The containers of the buttons don't add padding around them.
   --container-padding: 0px;
+  --container-padding-top: initial;
 }
 </style>
