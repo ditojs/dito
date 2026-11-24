@@ -25,10 +25,15 @@
       :aria-label="labelText || labelize(schema.name)"
       @change="onChange"
     )
+    //- Trees with forms keep their pane, also while no item is edited, so the
+    //- tree keeps its width and its buttons stay next to their labels:
     .dito-tree-list__form-container(
-      v-if="isEditingItem"
+      v-if="hasItemForms"
     )
-      DitoRouterView(:routeLevel="routeContext.level + 1")
+      DitoRouterView(
+        v-if="isEditingItem"
+        :routeLevel="routeContext.level + 1"
+      )
 </template>
 
 <script>
@@ -44,6 +49,7 @@ import {
   assertRemovedSchemaKeys
 } from '../utils/schema/setup.js'
 import { getParentDataPath } from '../utils/data.js'
+import { hasFormSchema } from '../utils/schema/lookup.js'
 
 // @vue/component
 const DitoTreeListType = {
@@ -82,7 +88,9 @@ const DitoTreeListType = {
         isListSource.value
           ? { children: { name: props.schema.name, ...props.schema } }
           : props.schema
-      )
+      ),
+
+      hasItemForms: computed(() => hasItemForms(props.schema))
     }
   }
 }
@@ -121,6 +129,14 @@ defineType({ ...treeTraits, type: 'tree-list', sourceType: 'list' })
 defineType({ ...treeTraits, type: 'tree-object', sourceType: 'object' })
 
 export default DitoTreeListType
+
+// Whether the items of the tree or of its children have forms:
+function hasItemForms(schema) {
+  return (
+    hasFormSchema(schema) ||
+    (!!schema.children && hasItemForms(schema.children))
+  )
+}
 </script>
 
 <style lang="scss">

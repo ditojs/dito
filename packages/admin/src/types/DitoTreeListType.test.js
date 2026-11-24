@@ -428,6 +428,29 @@ describe('DitoTreeListType', () => {
     expect(isExpanded(10)).toBe(true)
   })
 
+  it('keeps the pane of trees with forms while no item is edited', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        fields: {
+          pages: createSiteSchema({ editable: true }).fields.pages,
+          tags: {
+            type: 'tree-list',
+            label: 'Tags',
+            itemLabel: 'name'
+          }
+        }
+      },
+      data: { ...site, tags: [{ name: 'Team' }] }
+    })
+    const pane = findField('pages').find('.dito-tree-list__form-container')
+    expect(pane.exists()).toBe(true)
+    expect(pane.find('input').exists()).toBe(false)
+    // Trees without forms have no pane:
+    expect(
+      findField('tags').find('.dito-tree-list__form-container').exists()
+    ).toBe(false)
+  })
+
   it('ignores the edit paths of trees with similar paths', async () => {
     const pagesSchema = createSiteSchema({ editable: true }).fields.pages
     const { admin, findField } = await mountForm({
@@ -441,7 +464,7 @@ describe('DitoTreeListType', () => {
     })
     await admin.navigate('/items/1/pages-drafts/0')
     const hasForm = name =>
-      findField(name).find('.dito-tree-list__form-container').exists()
+      findField(name).find('.dito-tree-list__form-container input').exists()
     expect(hasForm('drafts')).toBe(true)
     expect(hasForm('pages')).toBe(false)
   })
