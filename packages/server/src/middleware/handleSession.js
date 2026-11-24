@@ -47,6 +47,9 @@ export function handleSession(app, {
 
 const createSessionStore = modelClass =>
   class SessionStore {
+    // The id of the stored session that `get()` loaded or `set()` inserted:
+    #storedId = null
+
     constructor(ctx) {
       this.ctx = ctx
       this.modelClass = isString(modelClass)
@@ -63,17 +66,26 @@ const createSessionStore = modelClass =>
 
     async get(id) {
       const session = await this.query().findById(id)
-      return session?.value || {}
+      this.#storedId = session ? id : null
+      // Missing sessions start new ones, with new ids:
+      return session ? (session.value ?? {}) : null
     }
 
     async set(id, value) {
       // Sessions with `maxAge: 'session'` have no `_expire`:
       const { _expire } = value
-      await this.query().upsert({
-        ...this.modelClass.getReference(id),
-        value,
-        expiresAt: _expire ? new Date(_expire) : null
-      })
+      const data = { value, expiresAt: _expire ? new Date(_expire) : null }
+      if (id === this.#storedId) {
+        // Sessions that ended in the meantime, e.g. through a logout in a
+        // parallel request, stay ended:
+        await this.query().findById(id).patch(data)
+      } else {
+        await this.query().insert({
+          ...this.modelClass.getReference(id),
+          ...data
+        })
+        this.#storedId = id
+      }
     }
 
     async destroy(key) {

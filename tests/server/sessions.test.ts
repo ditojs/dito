@@ -10,8 +10,22 @@ class Session extends SessionModel {
   declare expiresAt: Date | null
 }
 
+// Holds `get slow-visit` until the test releases it:
+let releaseSlowVisit: (() => void) | null = null
+
 class Visits extends Controller {
   override actions: any = {
+    async 'get slow-visit'(ctx: any) {
+      await new Promise<void>(resolve => (releaseSlowVisit = resolve))
+      ctx.session.visits = (ctx.session.visits || 0) + 1
+      return { visits: ctx.session.visits }
+    },
+
+    'get end'(ctx: any) {
+      ctx.session = null
+      return { ended: true }
+    },
+
     'get visit'(ctx: any) {
       const { maxAge } = ctx.query
       if (maxAge) {
@@ -68,6 +82,21 @@ describe('Sessions', () => {
   afterEach(async () => {
     vi.useRealTimers()
     await Session.query().delete()
+  })
+
+  it('keeps sessions ended while a parallel request still runs', async () => {
+    vi.useRealTimers()
+    const request = createClient(getAppUrl(app))
+    await request('/visits/visit')
+    expect(await Session.query()).toHaveLength(1)
+    const slow = request('/visits/slow-visit')
+    await vi.waitFor(() => expect(releaseSlowVisit).not.toBeNull())
+    await request('/visits/end')
+    expect(await Session.query()).toEqual([])
+    releaseSlowVisit!()
+    releaseSlowVisit = null
+    expect((await slow).status).toBe(200)
+    expect(await Session.query()).toEqual([])
   })
 
   it('stores the expiry of sessions in `expiresAt`', async () => {
