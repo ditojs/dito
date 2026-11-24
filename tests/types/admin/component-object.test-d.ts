@@ -5,7 +5,12 @@ import type {
   FormSchema,
   Fields
 } from '@ditojs/admin'
-import type { Address, Entry, ParentWithAddress } from './fixtures.ts'
+import type {
+  Address,
+  Entry,
+  Parent,
+  ParentWithAddress
+} from './fixtures.ts'
 
 describe('ObjectSchema', () => {
   it('accepts typed form', () => {
@@ -64,6 +69,24 @@ describe('TreeListSchema', () => {
           title: { type: 'text' }
         }
       } satisfies FormSchema<Entry>
+    })
+  })
+
+  it('types the children with the items of their array', () => {
+    assertType<TreeListSchema<Parent>>({
+      type: 'tree-list',
+      children: {
+        name: 'entries',
+        itemLabel: ({ item }) => {
+          expectTypeOf(item).toEqualTypeOf<Entry>()
+          return item.title
+        }
+      }
+    })
+    assertType<TreeListSchema<Parent>>({
+      type: 'tree-list',
+      // @ts-expect-error: Children come from arrays of the items.
+      children: { name: 'title' }
     })
   })
 

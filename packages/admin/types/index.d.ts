@@ -2813,11 +2813,9 @@ interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
    * Nested tree schema describing the recursive
    * children of each node. The `name` property
    * identifies which data property holds the
-   * children array, whose items have a type of their own.
+   * children array.
    */
-  children?: Omit<TreeListSchema, 'type'> & {
-    name: string
-  }
+  children?: TreeChildren<$Item>
   /**
    * The values shown for tree nodes, as `label: value` rows under the item,
    * opened with its toggle.
@@ -2836,6 +2834,17 @@ interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
    */
   onToggle?: ToggleEventHandler<$Item>
 }
+
+// The children of tree items, with the items of the array that `name` picks:
+type TreeChildren<$Item> = 0 extends 1 & $Item
+  ? Omit<TreeListSchema, 'type'> & { name: string }
+  : {
+      [K in Extract<keyof $Item, string>]-?: NonNullable<
+        $Item[K]
+      > extends (infer E)[]
+        ? Omit<TreeListSchema<E>, 'type'> & { name: K }
+        : never
+    }[Extract<keyof $Item, string>]
 
 export type TreeListSchema<$Item = any> = TreeSchema<$Item, 'tree-list'>
 export type TreeObjectSchema<$Item = any> = TreeSchema<$Item, 'tree-object'>
