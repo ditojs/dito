@@ -141,6 +141,19 @@ describe('Application', () => {
       expect(app.proxy).toBe(true)
     })
 
+    it('takes the client address behind a proxy from the closest proxy', async () => {
+      const app = createApp({ config: { app: { proxy: true } } })
+      app.use(ctx => {
+        ctx.body = ctx.ip
+      })
+      await withServer(app, async url => {
+        const response = await fetch(url, {
+          headers: { 'X-Forwarded-For': '10.0.0.1, 192.0.2.7' }
+        })
+        expect(await response.text()).toBe('192.0.2.7')
+      })
+    })
+
     it('merges the asset and logger options with the defaults', () => {
       const app = createApp({
         config: { assets: { deleteUnusedAfter: 0 } }
