@@ -537,7 +537,8 @@ describe('S3Storage', () => {
 
     it('lists no keys for empty buckets', async () => {
       const storage = await createS3Storage()
-      pages = { first: { Contents: [], IsTruncated: false } }
+      // S3 leaves out `Contents` for empty buckets:
+      pages = { first: { IsTruncated: false } }
       expect(await storage.listKeys()).toEqual([])
     })
   })

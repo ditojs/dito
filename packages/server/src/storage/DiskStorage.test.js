@@ -207,6 +207,24 @@ describe('DiskStorage', () => {
       expect(await fs.readdir(getStoragePath())).toEqual(['.hidden'])
     })
 
+    it('skips files removed while listing, and rejects on other errors', async () => {
+      const storage = await createDiskStorage({ nestedFolders: false })
+      const file = AssetFile.create({ name: 'a.txt', data: 'a' })
+      await storage.addFile(file, file.data)
+      // A dangling link is listed but can't be read, like a removed file:
+      await fs.symlink(
+        getStoragePath('missing.txt'),
+        getStoragePath('gone.txt')
+      )
+      expect(await storage.listFiles()).toEqual([
+        { key: file.key, lastModified: expect.any(Date) }
+      ])
+      await fs.symlink(getStoragePath('loop.txt'), getStoragePath('loop.txt'))
+      await expect(storage.listFiles()).rejects.toThrow(
+        expect.objectContaining({ code: 'ELOOP' })
+      )
+    })
+
     it('stores uploaded files in the storage folder', async () => {
       const storage = await createDiskStorage({ nestedFolders: false })
       const uploaded = await uploadFile(storage, {
