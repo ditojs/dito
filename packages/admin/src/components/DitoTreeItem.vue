@@ -383,6 +383,11 @@ export default {
       font-weight: inherit;
       line-height: inherit;
     }
+
+    // ...with its suffixes, which only fill the rows of field labels:
+    .dito-affix--ellipsis {
+      width: auto;
+    }
   }
 
   #{$self}__info {

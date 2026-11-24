@@ -1,3 +1,4 @@
+import { html } from '@ditojs/utils'
 import type { Library } from './models/Library.js'
 import { createWidgetView } from '../../utils/views.js'
 
@@ -19,7 +20,11 @@ export const libraries = createWidgetView<Library>('name', 'libraries', {
     },
     children: {
       name: 'books',
-      itemLabel: 'name',
+      // A badge after the title of new books:
+      itemLabel: ({ item: book }) => ({
+        text: book.name,
+        suffix: book.isNew && html`<span class="badge">New</span>`
+      }),
       orderKey: 'order',
       mutate: true,
       editable: true,

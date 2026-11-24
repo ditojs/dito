@@ -51,6 +51,26 @@ test.describe('tree list', () => {
     await expect(getTreeLabels(page)).toHaveText(['Fiction', 'Dune'])
   })
 
+  test('shows the suffixes of item labels', async ({ page, url }) => {
+    await openLibrary(page, url, [
+      {
+        name: 'Fiction',
+        order: 0,
+        books: [{ name: 'Dune', order: 0, isNew: true }]
+      }
+    ])
+    await page.getByRole('button', { name: 'Fiction' }).click()
+    const suffix = getTreeHeader(page, 'Dune').locator('.dito-affix')
+    await expect(suffix).toHaveText('New')
+    // The label makes room for the suffix, which isn't clipped:
+    expect(
+      await suffix.evaluate(element => ({
+        hasWidth: element.clientWidth > 0,
+        isClipped: element.scrollWidth > element.clientWidth
+      }))
+    ).toEqual({ hasWidth: true, isClipped: false })
+  })
+
   test('opens items on a click after their label', async ({ page, url }) => {
     await openLibrary(page, url, [
       { name: 'Fiction', order: 0, books: [{ name: 'Dune', order: 0 }] }
