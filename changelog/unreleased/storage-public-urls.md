@@ -7,8 +7,7 @@
 ### Behaviour changes
 
 - **server:** Files get the `url` of their storage on each read, and are stored
-  without `url` and `signature`, so changing a storage's `url` needs no change
-  of the data.
+  without `url`, so changing a storage's `url` needs no change of the data.
   - Stored urls are ignored. Apps can remove them, but don't need to.
   - Code that reads file JSON straight from the database finds no `url` in
     rows written since.

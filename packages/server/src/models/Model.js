@@ -707,7 +707,7 @@ export class Model extends objection.Model {
     for (const key of constructor.computedAttributes) {
       delete json[key]
     }
-    // Store files without `url` and `signature`:
+    // Store files without `url`, see `formatDatabaseFile()`:
     constructor._mapAssetFiles(json, formatDatabaseFile)
     // NOTE: No need to normalize the identifiers in the JSON in case of
     // normalizeDbNames, as this already happens through

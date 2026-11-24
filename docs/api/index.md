@@ -16,4 +16,5 @@ All packages are ES modules. Their entry points are listed on each package's
 page; anything not documented here is internal. For the changes since 3.x,
 see [Upgrading to 4.x](../upgrading-to-4.x.md), since 4.x
 [Upgrading to 5.x](../upgrading-to-5.x.md), since 5.x
-[Upgrading to 6.x](../upgrading-to-6.x.md).
+[Upgrading to 6.x](../upgrading-to-6.x.md), since 6.x
+[Upgrading to 7.x](../upgrading-to-7.x.md).
