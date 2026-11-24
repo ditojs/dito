@@ -78,6 +78,14 @@ describe('AdminController hosting', () => {
     expect(response.status).toBe(401)
   })
 
+  it('authorizes the views also in other cases and encoded', async () => {
+    // Case-insensitive file systems, e.g. of macOS, serve them to these too:
+    for (const route of ['/admin/Views/books', '/admin/%76iews/books']) {
+      const response = await fetch(`${url}${route}`)
+      expect(response.status).toBe(401)
+    }
+  })
+
   it('serves the built SPA without loading the build tools', async () => {
     // Serve it from a process of its own, as vitest itself loads vite, and
     // record which packages the server's imports resolve:
@@ -155,7 +163,7 @@ describe('AdminController configuration', () => {
   })
 
   it('defines the vite config with the admin url as base', async () => {
-    const root = path.join(os.tmpdir(), 'library-admin')
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'library-admin-'))
     const app = createAdminApp({ mode: 'production', root, dist: os.tmpdir() })
     const config: any = await app.defineAdminViteConfig({ logLevel: 'silent' })
     expect(config).toMatchObject({
@@ -166,6 +174,7 @@ describe('AdminController configuration', () => {
       build: { outDir: os.tmpdir(), assetsDir: '.' }
     })
     await app.knex.destroy()
+    await fs.rm(root, { recursive: true })
   })
 
   it('injects the `dito` object script into the index html', async () => {
@@ -188,11 +197,16 @@ describe('AdminController configuration', () => {
   })
 
   it('splits the production build into chunks', async () => {
-    const root = path.join(os.tmpdir(), 'library-admin')
+    // A symlinked root, as Vite's ids are the real paths of the files:
+    const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'library-admin-'))
+    const real = path.join(await fs.realpath(folder), 'real')
+    const root = path.join(folder, 'linked')
+    await fs.mkdir(real)
+    await fs.symlink(real, root)
     const app = createAdminApp({ mode: 'production', root, dist: os.tmpdir() })
     const config: any = await app.defineAdminViteConfig({})
     const { manualChunks } = config.build.rollupOptions.output
-    expect(manualChunks(path.join(root, 'views', 'books.js'))).toBe('views')
+    expect(manualChunks(path.join(real, 'views', 'books.js'))).toBe('views')
     expect(manualChunks(path.join(app.basePath, 'src', 'common.js'))).toBe(
       'common'
     )
@@ -201,5 +215,6 @@ describe('AdminController configuration', () => {
     expect(manualChunks('/x/node_modules/lodash/index.js')).toBe('vendor')
     expect(manualChunks('\0vite/preload-helper')).toBe('core')
     await app.knex.destroy()
+    await fs.rm(folder, { recursive: true })
   })
 })

@@ -1,3 +1,4 @@
+import fs from 'fs'
 import path from 'path'
 import { createRequire } from 'module'
 import Koa from 'koa'
@@ -94,7 +95,9 @@ export class AdminController extends Controller {
         // Don't call `next()`
         this.sendGlobalConfig(ctx)
       } else {
-        if (/\/views\b/.test(ctx.url)) {
+        // Match the views in any case and encoding, as case-insensitive file
+        // systems, e.g. of macOS and Windows, serve them for these too:
+        if (/\/views\b/i.test(decodePath(ctx.path))) {
           await this.handleAuthorization(authorization, ctx)
         }
         await next()
@@ -187,7 +190,12 @@ export class AdminController extends Controller {
 
     const root = this.resolveConfigPath('root')
     const base = `${this.url}/`
-    const views = path.join(root, 'views')
+    // Vite's ids are real paths with forward slashes, also on Windows, and
+    // with symlinked roots:
+    const views = path
+      .join(fs.realpathSync(root), 'views')
+      .split(path.sep)
+      .join('/')
     const linkedSources = isDevelopment ? getLinkedSources(root) : {}
 
     return defineConfig(
@@ -360,4 +368,13 @@ function getLinkedSources(root) {
         '@ditojs/admin/style.css': emptyModule,
         '@ditojs/ui/style.css': emptyModule
       }
+}
+
+// Malformed encodings can't address files, so match them as they are:
+function decodePath(urlPath) {
+  try {
+    return decodeURIComponent(urlPath)
+  } catch {
+    return urlPath
+  }
 }
