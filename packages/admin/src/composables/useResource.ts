@@ -267,7 +267,7 @@ export function useResource({
           const responseData = response?.data
           if (err) {
             // Dito.js validation errors are shown on the fields:
-            const errors = response?.status === 400 && responseData.errors
+            const errors = response?.status === 400 && responseData?.errors
             if (errors) {
               await showValidationErrors(errors)
             } else {
