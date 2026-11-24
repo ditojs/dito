@@ -2813,9 +2813,9 @@ interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
    * Nested tree schema describing the recursive
    * children of each node. The `name` property
    * identifies which data property holds the
-   * children array.
+   * children array, whose items have a type of their own.
    */
-  children?: Omit<TreeListSchema<$Item>, 'type'> & {
+  children?: Omit<TreeListSchema, 'type'> & {
     name: string
   }
   /**

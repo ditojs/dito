@@ -4,6 +4,7 @@ import { Model } from '@ditojs/server'
 export interface Book {
   name: string
   order?: number
+  isNew?: boolean
 }
 
 export interface Shelf {
