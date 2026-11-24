@@ -615,11 +615,18 @@ const confirmedAccessActionNames = [
 
 // Log in the user of `authenticate()`, unless it requires a code first:
 async function handleLogin(controller, ctx, authenticate) {
+  let user = null
   try {
-    const { user, codeRequired } = await authenticate()
-    if (codeRequired) {
-      return { success: false, codeRequired, authenticated: false, user: null }
+    const result = await authenticate()
+    if (result.codeRequired) {
+      return {
+        success: false,
+        codeRequired: true,
+        authenticated: false,
+        user: null
+      }
     } else {
+      user = result.user
       await ctx.login(user)
       await user.$patch({ lastLogin: new Date() }, ctx.transaction)
       storeConfirmedAccess(controller, ctx, user)
@@ -630,6 +637,11 @@ async function handleLogin(controller, ctx, authenticate) {
       }
     }
   } catch (err) {
+    // Log the user out again when a later step of the login fails, e.g. an
+    // `after:login` hook, so the answer and the session agree:
+    if (user && ctx.state.user === user) {
+      await ctx.logout()
+    }
     // Answer rejected logins, and leave other errors to `handleError()`, which
     // hides their internal messages:
     if (err instanceof ResponseError && err.status < 500) {
