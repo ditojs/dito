@@ -1,4 +1,5 @@
 import fs from 'fs/promises'
+import http from 'http'
 import os from 'os'
 import path from 'path'
 import type { ModelProperties, StorageConfig } from '@ditojs/server'
@@ -284,7 +285,10 @@ describe('Asset handling', () => {
       const file = createForeignFile('novel.txt', url)
       try {
         const imported = await app.addForeignAssets(storage, [file])
-        expect(fetch).toHaveBeenCalledWith(url)
+        expect(fetch).toHaveBeenCalledWith(
+          url,
+          expect.objectContaining({ redirect: 'manual' })
+        )
         expect(imported).toHaveLength(1)
         expect(storage.dataByKey.get(file.key)?.toString()).toBe(
           'Remote cover'
@@ -292,6 +296,40 @@ describe('Asset handling', () => {
       } finally {
         fetch.mockRestore()
         info.mockRestore()
+      }
+    })
+
+    it('rejects redirects and error responses of allowed sources', async () => {
+      // A real server, as only real responses tell what `fetch()` follows:
+      const server = http.createServer((req, res) => {
+        if (req.url === '/moved.txt') {
+          res.writeHead(302, { location: 'https://elsewhere.example.com/' })
+        } else {
+          res.writeHead(404)
+        }
+        res.end('Not here')
+      })
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+      const { port } = server.address() as { port: number }
+      const source = `http://127.0.0.1:${port}`
+      allowedImports.push(`${source}/**`)
+      const info = vi.spyOn(app.logger, 'info').mockImplementation(() => {})
+      try {
+        for (const [name, status] of [
+          ['moved.txt', 302],
+          ['missing.txt', 404]
+        ]) {
+          const url = `${source}/${name}`
+          await expect(
+            app.addForeignAssets(storage, [createForeignFile(`${name}`, url)])
+          ).rejects.toThrow(
+            `Unable to import asset from '${url}': status ${status}`
+          )
+        }
+      } finally {
+        allowedImports.pop()
+        info.mockRestore()
+        await new Promise(resolve => server.close(resolve))
       }
     })
 

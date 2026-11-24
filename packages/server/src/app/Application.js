@@ -1080,10 +1080,7 @@ export class Application extends Koa {
                 if (url.startsWith('file://')) {
                   data = await fs.readFile(new URL(resolveFileUrl(url)))
                 } else {
-                  const response = await fetch(url)
-                  const arrayBuffer = await response.arrayBuffer()
-                  // `fs.writeFile()` expects a Buffer, not an ArrayBuffer.
-                  data = Buffer.from(arrayBuffer)
+                  data = await fetchImport(url)
                 }
               }
               importedFile = await storage.addFile(file, data)
@@ -1452,6 +1449,22 @@ const defaultLoggerOptions = {
 // Escape the wildcards of `like` patterns, with `!` as the escape character:
 function escapeLike(string) {
   return string.replace(/[!%_]/g, '!$&')
+}
+
+// Imports follow no redirects, which could leave the allowed sources, store no
+// error pages, and give up on slow sources, which hold the transaction open:
+async function fetchImport(url) {
+  const response = await fetch(url, {
+    redirect: 'manual',
+    signal: AbortSignal.timeout(30_000)
+  })
+  if (!response.ok) {
+    throw new AssetError(
+      `Unable to import asset from '${url}': status ${response.status}`
+    )
+  }
+  // `fs.writeFile()` expects a Buffer, not an ArrayBuffer.
+  return Buffer.from(await response.arrayBuffer())
 }
 
 async function getStoredKeys(storage) {
