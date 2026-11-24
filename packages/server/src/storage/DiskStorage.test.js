@@ -195,6 +195,14 @@ describe('DiskStorage', () => {
       expect(file.url).toBe(`https://library.example.com/covers/${file.key}`)
       await fs.writeFile(getStoragePath('.hidden'), '')
       expect(await storage.listKeys()).toEqual([file.key])
+      const lastModified = new Date('2026-11-01T10:00:00Z')
+      await fs.utimes(getStoragePath(file.key), lastModified, lastModified)
+      // Folders aren't listed:
+      await fs.mkdir(getStoragePath('folder'))
+      expect(await storage.listFiles()).toEqual([
+        { key: file.key, lastModified }
+      ])
+      await fs.rmdir(getStoragePath('folder'))
       await storage.removeFile(file)
       expect(await fs.readdir(getStoragePath())).toEqual(['.hidden'])
     })

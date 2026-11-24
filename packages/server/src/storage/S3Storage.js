@@ -127,13 +127,21 @@ export class S3Storage extends Storage {
 
   // @override
   async _listKeys() {
+    return (await this._listFiles()).map(file => file.key)
+  }
+
+  // @override
+  async _listFiles() {
     const files = []
     const params = { Bucket: this.bucket }
     let result
     do {
       result = await this.s3.ListObjectsV2(params)
-      for (const { Key: key } of result.Contents ?? []) {
-        files.push(key)
+      for (const object of result.Contents ?? []) {
+        files.push({
+          key: object.Key,
+          lastModified: new Date(object.LastModified)
+        })
       }
       // Continue it if results are truncated.
       params.ContinuationToken = result.NextContinuationToken

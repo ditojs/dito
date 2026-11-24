@@ -827,6 +827,44 @@ each asset whose count differs, with the asset as it was and the counted
 an asset, and `lost` the same for referenced files that their storage doesn't
 have anymore, which it only reports.
 
+### findOrphanedFiles()
+
+```js
+const files = await app.findOrphanedFiles({
+  storages,
+  olderThan,
+  remove,
+  concurrency
+})
+```
+
+Lists the files of the storages that have no asset record and no reference
+in the data, and that haven't changed for `olderThan`. Removes them with
+`remove`. It lists the files with [`storage.listFiles()`](storage.md#listfiles),
+and throws for storages that can't list their files. Only keys in the format
+that Dito.js generates count, so other files in the folder or bucket of a
+storage are skipped, e.g. under S3 prefixes. Files of other apps in the same
+folder or bucket can still count. The [`db:find_orphaned_files`](#commands) command runs it.
+
+Uploads and imports store their file before their asset record commits, so
+`olderThan` needs to be longer than the longest upload or write transaction.
+Only pass `0` when no writes run. Writes that skip the model hooks and
+reference an old file without an asset record while it runs can lose the file.
+
+#### Parameters
+
+| Name          | Type               | Description                                        |
+| ------------- | ------------------ | -------------------------------------------------- |
+| `storages`    | `string[]`         | Names of the storages to check. Default: all.      |
+| `olderThan`   | `string \| number` | Minimum time since the last change. Default `24h`. |
+| `remove`      | `boolean`          | Remove the files.                                  |
+| `concurrency` | `number`           | Concurrent file removals. Default `8`.             |
+
+Returns `Promise<object[]>`: `{ storage, key, lastModified }` for each orphaned
+file. Files that failed to be removed carry the `error`, which is also emitted
+as `'error'`. Errors serialize to `{}` in JSON, so map them to their `message`
+for responses.
+
 ### createAssets()
 
 ```js
@@ -962,6 +1000,7 @@ application. Projects usually wrap them in `package.json` scripts:
     "db:create_migration": "dito db:create_migration ./src/server/app.js",
     "db:list_asset_config": "dito db:list_asset_config ./src/server/app.js",
     "db:recount_assets": "dito db:recount_assets ./src/server/app.js",
+    "db:find_orphaned_files": "dito db:find_orphaned_files ./src/server/app.js",
     "db:delete_expired_records": "dito db:delete_expired_records ./src/server/app.js"
   }
 }
@@ -983,6 +1022,7 @@ when the command succeeds, and `1` with the error printed otherwise.
 | `db:create_migration`       | application   | Creates a migration for the tables of models.                                                                                 |
 | `db:list_asset_config`      | application   | Prints the asset configuration of models.                                                                                     |
 | `db:recount_assets`         | application   | Recounts the references of all assets, see [`recountAssets()`](#recountassets). `--dry-run` only prints what it would change. |
+| `db:find_orphaned_files`    | application   | Lists orphaned files, see [`findOrphanedFiles()`](#findorphanedfiles). Takes storages, `--older-than=`, `--remove`.           |
 | `db:delete_expired_records` | application   | Sets up the application and runs [`deleteExpiredRecords()`](#deleteexpiredrecords) once. Fails when a model's deletion fails. |
 | `console`                   | application   | Starts the application with an interactive console.                                                                           |
 
@@ -1049,6 +1089,16 @@ dito db:list_asset_config ./src/server/app.js Book Author
 
 Prints [`app.getAssetConfig()`](#getassetconfig) for the given
 models, or all models without arguments, with database names.
+
+#### db:find_orphaned_files
+
+```sh
+dito db:find_orphaned_files ./src/server/app.js covers --older-than=7d --remove
+```
+
+Prints [`app.findOrphanedFiles()`](#findorphanedfiles) for the given storages,
+or all storages without arguments. `--older-than` sets the minimum age,
+default `24h`, and `--remove` removes the files. Fails when a removal fails.
 
 #### console
 

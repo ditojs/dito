@@ -117,7 +117,7 @@ export class Storage {
         }
         // Nothing vouches for the keys of unsigned imports, so only accept
         // generated ones:
-        if (!(isString(file.key) && importKeyRegExp.test(file.key))) {
+        if (!(isString(file.key) && generatedKeyRegExp.test(file.key))) {
           throw new AssetError(
             `Invalid asset key for file '${file.name ?? file.key}'`
           )
@@ -181,6 +181,10 @@ export class Storage {
 
   async listKeys() {
     return this._listKeys()
+  }
+
+  async listFiles() {
+    return this._listFiles()
   }
 
   getFilePath(file) {
@@ -266,6 +270,9 @@ export class Storage {
   // @overridable
   async _listKeys() {}
 
+  // @overridable
+  async _listFiles() {}
+
   async _handleUpload(req, file, config) {
     if (
       config.readDimensions &&
@@ -350,4 +357,4 @@ export class Storage {
 
 // The keys of `AssetFile.getUniqueKey()`: a name, and an extension without
 // path or URL delimiters, `%`, whitespace or control characters.
-const importKeyRegExp = /^[\w-]{2,}(\.[^\s\p{Cc}./\\:%?#]*)?$/u
+export const generatedKeyRegExp = /^[\w-]{2,}(\.[^\s\p{Cc}./\\:%?#]*)?$/u

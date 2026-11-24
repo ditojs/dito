@@ -362,6 +362,7 @@ describe('Storage: file operations', () => {
     expect(storage.getFileUrl(file)).toBeUndefined()
     expect(await storage.readFile(file)).toBeUndefined()
     expect(await storage.listKeys()).toBeUndefined()
+    expect(await storage.listFiles()).toBeUndefined()
     await expect(storage.removeFile(file)).resolves.toBeUndefined()
   })
 })
