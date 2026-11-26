@@ -144,8 +144,9 @@ $menu-button-padding: 0.25em;
   overflow: hidden auto;
 }
 
-// Attached menus continue their open button, without a shadow over it:
-.dito-menu-button--attached[data-state='open'] {
+// Attached menus continue their open button, without a shadow over it, also
+// in groups of round buttons:
+.dito-button.dito-menu-button--attached[data-state='open'] {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
