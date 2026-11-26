@@ -50,6 +50,18 @@ describe('DitoDatePicker', () => {
     )
   })
 
+  it('hides the empty parts only behind `placeholder`', () => {
+    // The styles hide the parts that follow the placeholder:
+    const selector =
+      '.dito-date-segments__placeholder ~ .dito-date-segments__part'
+    wrapper = mount(DitoDatePicker)
+    expect(wrapper.find('.dito-date-segments__part').exists()).toBe(true)
+    expect(wrapper.find(selector).exists()).toBe(false)
+    wrapper.unmount()
+    wrapper = mount(DitoDatePicker, { props: { placeholder: 'From' } })
+    expect(wrapper.find(selector).exists()).toBe(true)
+  })
+
   it('marks the parts that are entered and the ones that are empty', async () => {
     wrapper = mount(DitoDatePicker, { attachTo: document.body })
     const segments = wrapper.find('.dito-date-segments')

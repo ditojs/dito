@@ -9,10 +9,11 @@
   // Keep the spaces of the literals, which are flex items of their own:
   white-space: pre;
 
-  // Fields without entered parts hide them until focused, but keep them
-  // focusable. The focus counts also in the popup, next to the field:
+  // The placeholder stands in for the empty parts until the field is focused,
+  // hiding them but keeping them focusable. The focus counts also in the
+  // popup, next to the field:
   :not(:focus-within) > .dito-input > &:not(.dito-date-segments--entered) {
-    .dito-date-segments__part {
+    .dito-date-segments__placeholder ~ .dito-date-segments__part {
       opacity: 0;
     }
   }
