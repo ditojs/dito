@@ -107,7 +107,10 @@ export default {
     disabled: { type: Boolean, required: true },
     compact: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
-    verticalLabels: { type: Boolean, default: false }
+    verticalLabels: { type: Boolean, default: false },
+    // Its position in the rows of its pane, see `DitoPaneRows`:
+    firstRow: { type: Boolean, default: false },
+    lastInRow: { type: Boolean, default: false }
   },
 
   setup(props) {
@@ -300,6 +303,8 @@ export default {
           [`${prefix}--single`]: props.single,
           [`${prefix}--compact`]: props.compact,
           [`${prefix}--label-vertical`]: props.verticalLabels,
+          [`${prefix}--first-row`]: props.firstRow,
+          [`${prefix}--last-in-row`]: props.lastInRow,
           [`${prefix}--below-labels`]: (
             props.verticalLabels &&
             !!typeDescriptor.value?.alignsBelowLabels

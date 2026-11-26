@@ -6,6 +6,7 @@ slot(name="prepend")
     'dito-schema--open': opened,
     'dito-schema--bordered': bordered
   }`
+  :style="inlined ? { '--buttons-width': `${buttonsWidth}px` } : null"
   v-bind="$attrs"
 )
   Teleport(
@@ -118,24 +119,29 @@ slot(name="prepend")
         name="buttons"
       )
   //- Without a header of their own, inlined schemas show their clipboard next
-  //- to their edit buttons:
-  DitoLabelButtons(
-    v-if="clipboard && !isClipboardInHeader"
+  //- to their edit buttons. The buttons measure their width, for the label that
+  //- they lie next to:
+  .dito-schema__buttons(
+    v-if="inlined"
+    v-resize="onResizeButtons"
   )
-    DitoClipboard(
-      :clipboard="clipboard"
-      :name="clipboardName"
-      :label="clipboardLabel"
-      :hasData="hasData"
-      :getData="getClipboardData"
-      :getUploadEntries="getClipboardUploadEntries"
-      :createContext="createContext"
-      @paste="pasteData"
+    DitoLabelButtons(
+      v-if="clipboard && !isClipboardInHeader"
     )
-  slot(
-    v-if="inlined && !hasHeader"
-    name="edit-buttons"
-  )
+      DitoClipboard(
+        :clipboard="clipboard"
+        :name="clipboardName"
+        :label="clipboardLabel"
+        :hasData="hasData"
+        :getData="getClipboardData"
+        :getUploadEntries="getClipboardUploadEntries"
+        :createContext="createContext"
+        @paste="pasteData"
+      )
+    slot(
+      v-if="!hasHeader"
+      name="edit-buttons"
+    )
 slot(name="append")
 </template>
 
@@ -147,6 +153,7 @@ import {
   onMounted,
   onUnmounted,
   provide,
+  ref,
   toRef,
   unref,
   useTemplateRef,
@@ -264,6 +271,7 @@ export default {
     }
 
     const content = useTemplateRef('content')
+    const buttonsWidth = ref(0)
     const isTopLevelSchema = computed(
       () => !isPanel(props.schema) && !props.inlined
     )
@@ -528,6 +536,7 @@ export default {
       ),
 
       layout,
+      buttonsWidth,
 
       // Pages place their component without any fields:
       hasMainPane: computed(() => {
@@ -572,6 +581,10 @@ export default {
           services,
           rootData: context.rootItem
         })
+      },
+
+      onResizeButtons({ borderBoxSize: [{ inlineSize }] }) {
+        buttonsWidth.value = inlineSize
       }
     }
   }
@@ -582,31 +595,69 @@ export default {
 @import '../styles/_imports';
 
 .dito-schema {
+  $self: &;
+
   box-sizing: border-box;
 
   > .dito-schema-header + .dito-schema-content > .dito-pane {
     margin-top: $form-spacing-half;
   }
 
-  &:has(> .dito-schema-content + :is(.dito-label-buttons, .dito-edit-buttons)) {
-    // Display the inlined clipboard and edit buttons to the right of the
-    // schema:
+  &__buttons {
     display: flex;
-    flex-direction: row;
-    align-items: stretch;
+    flex: none;
+    align-items: flex-start;
+    // Padding instead of margin, so that the measured width includes it:
+    padding-left: $form-spacing;
 
-    > .dito-label-buttons {
-      align-self: flex-start;
-      margin: 0 0 0 $form-spacing;
-    }
-
-    > .dito-edit-buttons {
-      flex: 1 0 0%;
-      margin-left: $form-spacing;
+    &:empty {
+      display: none;
     }
 
     > .dito-label-buttons + .dito-edit-buttons {
       margin-left: var(--button-margin);
+    }
+  }
+
+  &:has(> #{$self}__buttons:not(:empty)) {
+    // Display the inlined clipboard and edit buttons to the right of the
+    // content:
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+
+    // The container that ends the first row, with its label on top:
+    $label-end: '.dito-container--label-vertical.dito-container--first-row' +
+      '.dito-container--last-in-row';
+
+    // Or on the line of the labels of the first row, so that the content
+    // keeps its full width. Only the label at the end of the row leaves room
+    // for them:
+    &:has(> .dito-schema-content > .dito-pane > #{$label-end}) {
+      position: relative;
+
+      > #{$self}__buttons {
+        position: absolute;
+        top: 0;
+        right: 0;
+      }
+
+      > .dito-schema-content > .dito-pane > .dito-container--first-row {
+        // Keep the buttons apart from the components, like the buttons in the
+        // labels of fields:
+        > .dito-label {
+          margin-bottom: $form-spacing-half;
+        }
+
+        &.dito-container--below-labels > .dito-component:first-child {
+          margin-top: calc(#{$input-height} + #{$form-spacing-half});
+        }
+
+        &.dito-container--last-in-row > .dito-label {
+          box-sizing: border-box;
+          padding-right: var(--buttons-width);
+        }
+      }
     }
   }
 
