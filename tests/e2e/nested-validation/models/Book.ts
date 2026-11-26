@@ -13,6 +13,7 @@ export interface Chapter {
 
 export interface Volume {
   title?: string | null
+  note?: string | null
   parts?: { title?: string | null }[]
 }
 
@@ -78,6 +79,7 @@ export class Book extends Model {
         type: 'object',
         properties: {
           title,
+          note: { type: 'string', nullable: true },
           parts: {
             type: 'array',
             nullable: true,
