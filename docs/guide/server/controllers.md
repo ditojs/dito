@@ -982,9 +982,9 @@ await post('confirm-access', {
 The default write actions of all model and relation controllers need it too,
 to set the password of an existing user, also when admins set the passwords of
 other users, and to change the username, as password resets go to it, also for
-users nested in the graphs of other models. The access to confirm is that of
-the logged-in user, of whichever user model, e.g. an admin changing a
-customer: `authorize` decides who may change whom. New users are created with
+users nested in the graphs of other models. This applies to the users of the
+logged-in user's own model, e.g. admins changing admins, not to admins
+changing customers: `authorize` decides who may change whom. New users are created with
 a password without it. The admin asks to confirm the access whenever an action
 answers `confirmationRequired`, and then repeats the action.
 

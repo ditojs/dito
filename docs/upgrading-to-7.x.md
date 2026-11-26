@@ -127,9 +127,9 @@ without it, see [Storages](guide/server/storages.md#storages):
   confirmed access in all controllers, not only in users controllers: model
   and relation controllers and graph writes of other models answer 403 with
   `confirmationRequired` without it, which the admin answers by asking for the
-  password. The access is that of the logged-in user, of whichever user model,
-  e.g. an admin changing a customer, and `authorize` decides who may change
-  whom. See [Confirmed access](guide/server/controllers.md#confirmed-access).
+  password. This applies to users of the logged-in user's own model, e.g.
+  admins changing admins, not to admins changing customers, and `authorize`
+  decides who may change whom. See [Confirmed access](guide/server/controllers.md#confirmed-access).
 - The `order` query parameter only takes the visible properties of the model,
   and answers 400 for unknown, `hidden` and `computed` ones.
 - With `app.proxy`, `ctx.ip` is the last `X-Forwarded-For` entry, which the

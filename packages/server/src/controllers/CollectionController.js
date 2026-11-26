@@ -431,10 +431,13 @@ async function checkUserChanges(ctx, modelClass, action, models) {
     // Relating models with ids updates them:
     collectUsers(modelClass, action !== 'insert' ? id : null, model)
   }
-  // The access to confirm is that of the logged-in user, who can be of another
-  // model class than the changed users, e.g. admins changing customers:
+  // Only changes of users of the logged-in user's own model class need the
+  // access confirmed, e.g. admins changing admins, not admins changing
+  // customers. Without a logged-in user, all of them do:
   const loginClass = ctx.state.user?.constructor
-  for (const [modelClass, id, user] of users) {
+  for (const [modelClass, id, user] of users.filter(
+    ([modelClass]) => !loginClass || modelClass === loginClass
+  )) {
     const { usernameProperty, passwordProperty } = modelClass.definition.options
     if (user[passwordProperty] !== undefined) {
       checkConfirmedAccess(ctx, loginClass)
