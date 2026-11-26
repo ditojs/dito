@@ -702,8 +702,17 @@ describe('Confirmed access', () => {
       expect((await patch({ password: 'secret' })).status).toBe(200)
     })
 
-    it('asks to confirm the access of users of other models', async () => {
-      // Like admins who change the passwords of customers:
+    it('denies changes of users without a logged-in user', async () => {
+      const response = await createClient(url)(`/accounts/${ada.id}`, {
+        method: 'PATCH',
+        body: { password: 'changed' }
+      })
+      expect(response.status).toBe(401)
+      expect(await isPassword('secret')).toBe(true)
+    })
+
+    it(`doesn't ask to confirm the access for users of other models`, async () => {
+      // Like admins who change the passwords and emails of customers:
       const request = createClient(url)
       await request('/guests/login', {
         method: 'POST',
@@ -712,12 +721,11 @@ describe('Confirmed access', () => {
       expireAccess()
       const patch = (body: any) =>
         request(`/accounts/${ada.id}`, { method: 'PATCH', body })
-      expectConfirmationRequired(await patch({ password: 'changed' }))
-      await request('/guests/confirm-access', {
-        method: 'POST',
-        body: { password: 'secret' }
-      })
-      expect((await patch({ password: 'secret' })).status).toBe(200)
+      expect((await patch({ password: 'changed' })).status).toBe(200)
+      expect(await isPassword('changed')).toBe(true)
+      expect((await patch({ username: 'ava' })).status).toBe(200)
+      expect((await patch({ username: 'ada', password: 'secret' })).status)
+        .toBe(200)
     })
 
     it('asks to confirm the access in relation controllers', async () => {
