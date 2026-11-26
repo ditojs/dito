@@ -300,16 +300,16 @@ e.g. `CalendarDate`, or `CalendarDateTime` with a `granularity` finer than
 popup shows a [`DitoTimePanel`](#ditotimepanel) instead of the calendar.
 Readonly and disabled fields don't open the popup.
 
-| Prop                   | Type                                      | Default   | Description                                                                                                 |
-| ---------------------- | ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------- |
-| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                                                                       |
-| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                                                                     |
-| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                                                                     |
-| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.                                                         |
-| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                                                                   |
-| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list.                                                |
-| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.                                                   |
-| `placeholder`          | `string`                                  | `null`    | Shown while no part is entered and the field isn't focused. Such fields show their parts only once focused. |
+| Prop                   | Type                                      | Default   | Description                                                                            |
+| ---------------------- | ----------------------------------------- | --------- | -------------------------------------------------------------------------------------- |
+| `modelValue`           | `DateValue`                               | `null`    | The date (`v-model`).                                                                  |
+| `id`                   | `string`                                  | –         | The id that labels point to with `for`.                                                |
+| `granularity`          | `'day' \| 'hour' \| 'minute' \| 'second'` | `'day'`   | The smallest part that the field edits.                                                |
+| `hourCycle`            | `12 \| 24`                                | –         | The hours of the time, or else those of the locale.                                    |
+| `locale`               | `string`                                  | `'en-US'` | The locale of the field and the calendar.                                              |
+| `minValue`, `maxValue` | `DateValue`                               | –         | The range of dates, which also limits the years of the list.                           |
+| `disabled`, `readonly` | `boolean`                                 | `false`   | Disables the field, or keeps its value from being edited.                              |
+| `placeholder`          | `string`                                  | `null`    | Shown instead of the empty parts while no part is entered and the field isn't focused. |
 
 | Slot               | Description                                                    |
 | ------------------ | -------------------------------------------------------------- |
@@ -336,15 +336,15 @@ edits each part of the time on its own. Focusing or clicking a part opens a
 field. The values are `Time`, or dates with a time of
 `@internationalized/date`, whose date it keeps.
 
-| Prop                   | Type                             | Default    | Description                                                                                                 |
-| ---------------------- | -------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------- |
-| `modelValue`           | `TimeValue`                      | `null`     | The time (`v-model`).                                                                                       |
-| `granularity`          | `'hour' \| 'minute' \| 'second'` | `'minute'` | The smallest part that the field edits.                                                                     |
-| `hourCycle`            | `12 \| 24`                       | –          | The hours of the field, or else those of the locale.                                                        |
-| `locale`               | `string`                         | `'en-US'`  | The locale of the field.                                                                                    |
-| `defaultPlaceholder`   | `TimeValue`                      | –          | The value that typing and picking start from without a value.                                               |
-| `placeholder`          | `string`                         | `null`     | Shown while no part is entered and the field isn't focused. Such fields show their parts only once focused. |
-| `disabled`, `readonly` | `boolean`                        | `false`    | Disables the field, or keeps its value from being edited or picked.                                         |
+| Prop                   | Type                             | Default    | Description                                                                            |
+| ---------------------- | -------------------------------- | ---------- | -------------------------------------------------------------------------------------- |
+| `modelValue`           | `TimeValue`                      | `null`     | The time (`v-model`).                                                                  |
+| `granularity`          | `'hour' \| 'minute' \| 'second'` | `'minute'` | The smallest part that the field edits.                                                |
+| `hourCycle`            | `12 \| 24`                       | –          | The hours of the field, or else those of the locale.                                   |
+| `locale`               | `string`                         | `'en-US'`  | The locale of the field.                                                               |
+| `defaultPlaceholder`   | `TimeValue`                      | –          | The value that typing and picking start from without a value.                          |
+| `placeholder`          | `string`                         | `null`     | Shown instead of the empty parts while no part is entered and the field isn't focused. |
+| `disabled`, `readonly` | `boolean`                        | `false`    | Disables the field, or keeps its value from being edited or picked.                    |
 
 All other attributes but `class` go to the field, also the other props of
 `TimeFieldRoot`, and `aria-invalid` shows errors, as in

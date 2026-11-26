@@ -50,6 +50,18 @@ describe('DitoTimeInput', () => {
     expect(segments.classes()).toContain('dito-date-segments--entered')
   })
 
+  it('hides the empty parts only behind `placeholder`', () => {
+    // The styles hide the parts that follow the placeholder:
+    const selector =
+      '.dito-date-segments__placeholder ~ .dito-date-segments__part'
+    mountTimeInput()
+    expect(wrapper.find('.dito-date-segments__part').exists()).toBe(true)
+    expect(wrapper.find(selector).exists()).toBe(false)
+    wrapper.unmount()
+    mountTimeInput({ props: { placeholder: 'From' } })
+    expect(wrapper.find(selector).exists()).toBe(true)
+  })
+
   it('focuses its first part', () => {
     mountTimeInput()
     wrapper.vm.focus()
