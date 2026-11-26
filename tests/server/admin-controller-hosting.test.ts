@@ -196,6 +196,15 @@ describe('AdminController configuration', () => {
     await app.knex.destroy()
   })
 
+  it('defines the config for roots that only exist when building', async () => {
+    // Tools load the config from other directories, e.g. knip:
+    const root = path.join(os.tmpdir(), 'library-admin-missing')
+    const app = createAdminApp({ mode: 'production', root, dist: os.tmpdir() })
+    const config: any = await app.defineAdminViteConfig({})
+    expect(config.root).toBe(root)
+    await app.knex.destroy()
+  })
+
   it('splits the production build into chunks', async () => {
     // A symlinked root, as Vite's ids are the real paths of the files:
     const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'library-admin-'))

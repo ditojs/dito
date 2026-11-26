@@ -191,11 +191,14 @@ export class AdminController extends Controller {
     const root = this.resolveConfigPath('root')
     const base = `${this.url}/`
     // Vite's ids are real paths with forward slashes, also on Windows, and
-    // with symlinked roots:
-    const views = path
-      .join(fs.realpathSync(root), 'views')
-      .split(path.sep)
-      .join('/')
+    // with symlinked roots. Resolve them only when building, as tools also
+    // load the config from other directories, where the root doesn't exist:
+    let views = null
+    const getViews = () =>
+      (views ??= path
+        .join(fs.realpathSync(root), 'views')
+        .split(path.sep)
+        .join('/'))
     const linkedSources = isDevelopment ? getLinkedSources(root) : {}
 
     return defineConfig(
@@ -242,7 +245,7 @@ export class AdminController extends Controller {
                 rollupOptions: {
                   output: {
                     manualChunks: id => {
-                      if (id.startsWith(views)) {
+                      if (id.startsWith(getViews())) {
                         return 'views'
                       } else if (id.startsWith(this.app.basePath)) {
                         return 'common'
