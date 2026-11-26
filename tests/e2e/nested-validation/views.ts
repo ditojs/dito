@@ -208,3 +208,56 @@ export const bookOutlines = createWidgetView<BookItem>(
     }
   }
 )
+
+// Two trees edit the same volumes in two tabs, with different forms: Only the
+// one in the Content tab displays `title`.
+const volumes = {
+  type: 'tree-list',
+  label: 'Volumes',
+  itemLabel: 'title',
+  editable: true,
+  // The forms edit the items in place, without Apply.
+  mutate: true
+} as const
+
+export const bookVolumes = createWidgetView<BookItem>(
+  'Book',
+  'books',
+  {},
+  {
+    columns: { title: { label: 'Title' } },
+    form: {
+      type: 'form',
+      tabs: {
+        outline: {
+          type: 'tab',
+          label: 'Outline',
+          fields: {
+            volumes: {
+              ...volumes,
+              form: {
+                type: 'form',
+                label: 'Volume',
+                fields: { note: { type: 'text', label: 'Volume Note' } }
+              }
+            }
+          }
+        },
+        content: {
+          type: 'tab',
+          label: 'Content',
+          fields: {
+            volumes: {
+              ...volumes,
+              form: {
+                type: 'form',
+                label: 'Volume',
+                fields: { title: { type: 'text', label: 'Volume Title' } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+)

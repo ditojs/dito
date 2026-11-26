@@ -242,6 +242,15 @@ export function createDataContext({
         : await router.push({ path: formRoute.path })
       if (!failure) {
         await nextTick()
+        // Select the tab and open the sections that hold the source of the
+        // form, also when its route was open already, e.g. while another tab
+        // was selected:
+        const claim = routeContext?.childClaim
+        if (claim) {
+          await componentTree.reveal(claim.location.componentPath, {
+            select: true
+          })
+        }
         const route = findRoute()
         if (route) {
           displayedDataPaths.push(...(await revealInForm(route.dataContext)))

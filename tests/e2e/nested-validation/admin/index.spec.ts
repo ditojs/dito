@@ -375,4 +375,75 @@ test.describe('nested validation', () => {
         .toContainText(/required/)
     })
   })
+
+  test.describe('two trees of the same data in two tabs', () => {
+    // See `bookVolumes` in `views.ts`: The trees edit the same volumes with
+    // different forms, and only the one in the Content tab displays `title`.
+
+    function getTab(page: Page, label: string) {
+      return page.getByRole('tab', { name: label, exact: true })
+    }
+
+    function getTabPanel(page: Page, label: string) {
+      return page.getByRole('tabpanel', { name: label, exact: true })
+    }
+
+    test('shows server errors in the tab of the open form that displays them', async ({
+      page,
+      url
+    }) => {
+      const book = await seedBook({ volumes: [{ title: 'Valid' }] })
+      await page.goto(`${url}/admin/book-volumes/${book.id}`)
+      await getTab(page, 'Content').click()
+      const content = getTabPanel(page, 'Content')
+      // The buttons of tree items only show while hovering them.
+      const header = content
+        .locator('.dito-tree-item__header')
+        .filter({ hasText: 'Valid' })
+      await header.hover()
+      await header.getByRole('link', { name: 'Edit' }).click()
+      await expect(page).toHaveURL(/\/content\/volumes\/0$/)
+      await content.getByLabel('Volume Title', { exact: true }).fill('lower')
+      // Select another tab while the form of the item is still open.
+      await getTab(page, 'Outline').click()
+      await saveInvalid(page)
+      // The Content tab is selected again to display the error in the form.
+      await expect(getTab(page, 'Content')).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+      await expect(getErrors(content, 'Volume Title')).toContainText(message)
+      await expect(getErrors(content, 'Volume Title')).toBeVisible()
+    })
+
+    test('shows server errors in the tab of the closed form that displays them', async ({
+      page,
+      url
+    }) => {
+      const book = await seedBook({ volumes: [{ title: 'Valid' }] })
+      await page.goto(`${url}/admin/book-volumes/${book.id}`)
+      await getTab(page, 'Content').click()
+      const content = getTabPanel(page, 'Content')
+      const header = content
+        .locator('.dito-tree-item__header')
+        .filter({ hasText: 'Valid' })
+      await header.hover()
+      await header.getByRole('link', { name: 'Edit' }).click()
+      await content.getByLabel('Volume Title', { exact: true }).fill('lower')
+      // Close the form of the item through the breadcrumb of the book's form.
+      await page
+        .locator('.dito-trail')
+        .getByRole('link', { name: 'Edit', exact: true })
+        .click()
+      await expect(page).toHaveURL(/\/content$/)
+      await getTab(page, 'Outline').click()
+      await saveInvalid(page)
+      await expect(page).toHaveURL(/\/content\/volumes\/0$/)
+      await expect(getTab(page, 'Content')).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+      await expect(getErrors(content, 'Volume Title')).toBeVisible()
+    })
+  })
 })
