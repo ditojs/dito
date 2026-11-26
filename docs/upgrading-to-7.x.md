@@ -77,6 +77,16 @@ Of the schema's events, date and time fields only receive `focus`, `blur`,
   labelled `Info: ` and the text of its label.
 - Tree lists whose items have forms always show the form pane, also while no
   item is edited, so the tree keeps its width.
+- The components at the root of a form are set further apart than the ones
+  inside sections, objects and list items.
+- Object fields with a label use its row as their header: it holds their
+  clipboard and their remove or create button, and toggles collapsible objects,
+  which no longer repeat their label inside their frame. Collapsed and empty
+  objects draw no frame, and pasting into an empty object creates it.
+- Inlined list items and objects without a header of their own show their
+  buttons on the line of the labels of their first row, so that their fields
+  keep the full width. Without labels on top, the buttons stay beside the
+  fields.
 
 ## UI
 
