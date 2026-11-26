@@ -5,15 +5,16 @@ import DitoSchemaPane from './DitoSchemaPane.vue'
 import DitoPaneRows from './DitoPaneRows.vue'
 
 describe('DitoSchemaPane', () => {
-  // happy-dom doesn't lay out elements, so place all containers next to each
-  // other in one row, each three lines high without padding, at a font size of
-  // 16px, and move the ones of `offsets` down by their offset:
-  function stubLayout(offsets = {}) {
+  // happy-dom doesn't lay out elements, so place the containers next to each
+  // other in rows of `columns` containers, each three lines high without
+  // padding, at a font size of 16px, and move the ones of `offsets` down by
+  // their offset:
+  function stubLayout({ offsets = {}, columns = Infinity } = {}) {
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
       function () {
         const index = +(this.dataset.index ?? 0)
         return {
-          x: index * 100,
+          x: (index % columns) * 100,
           y: offsets[index] ?? 0,
           width: 100,
           height: 64
@@ -132,7 +133,7 @@ describe('DitoSchemaPane', () => {
   })
 
   it('aligns the components in rows with components aligned vertically', async () => {
-    stubLayout({ 1: 20 })
+    stubLayout({ offsets: { 1: 20 } })
     const { wrapper, findContainer } = await mountSchema({
       schema: {
         fields: {
@@ -183,6 +184,52 @@ describe('DitoSchemaPane', () => {
     expect(findContainer('coach').exists()).toBe(false)
     expect(isLabelVertical('name')).toBe(true)
     expect(isLabelVertical('captain')).toBe(true)
+  })
+
+  it('marks the components of the first row and its end', async () => {
+    stubLayout({ columns: 2 })
+    const { wrapper, findContainer } = await mountSchema({
+      schema: {
+        fields: {
+          name: { type: 'text', label: 'Name', width: '1/2' },
+          email: { type: 'email', label: 'Email', width: '1/2' },
+          notes: { type: 'text', label: 'Notes' }
+        }
+      },
+      data: { name: 'Ada', email: 'ada@example.com', notes: null }
+    })
+    const getMarked = modifier =>
+      ['name', 'email', 'notes'].filter(name =>
+        findContainer(name).classes(`dito-container--${modifier}`)
+      )
+    // The rows are only known once measured:
+    expect(getMarked('first-row')).toEqual([])
+    expect(getMarked('last-in-row')).toEqual([])
+    await measureRows(wrapper)
+    expect(getMarked('first-row')).toEqual(['name', 'email'])
+    expect(getMarked('last-in-row')).toEqual(['email', 'notes'])
+    expect(
+      findContainer('email').classes('dito-container--label-vertical')
+    ).toBe(true)
+  })
+
+  it('marks the end of first rows without labels on top', async () => {
+    stubLayout({ columns: 2 })
+    const { wrapper, findContainer } = await mountSchema({
+      schema: {
+        fields: {
+          name: { type: 'text', label: false, width: '1/2' },
+          email: { type: 'email', label: false, width: '1/2' }
+        }
+      },
+      data: { name: 'Ada', email: 'ada@example.com' }
+    })
+    await measureRows(wrapper)
+    // Inlined schemas keep their buttons next to the content in this case:
+    const classes = findContainer('email').classes()
+    expect(classes).toContain('dito-container--first-row')
+    expect(classes).toContain('dito-container--last-in-row')
+    expect(classes).not.toContain('dito-container--label-vertical')
   })
 
   it('guesses the alignment of its rows before measuring them', async () => {

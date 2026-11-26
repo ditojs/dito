@@ -41,6 +41,8 @@
       :compact="compact"
       :generateLabels="generateLabels"
       :verticalLabels="isInLabeledRow(index)"
+      :firstRow="isInFirstRow(index)"
+      :lastInRow="isLastInRow(index)"
     )
     span.dito-pane__break(
       v-if="['after', 'both'].includes(schema.break)"
@@ -74,49 +76,60 @@ export default {
     const containers = useTemplateRef('containers')
     const positions = ref([])
 
-    const verticalLabelsByIndices = computed(() => {
-      // Measured positions are objects, or null for containers without height:
-      if (positions.value.some(position => position !== undefined)) {
-        // Removed containers don't necessarily resize the pane:
-        const renderedPositions = positions.value.map((position, index) =>
-          props.entries[index]?.shouldRender ? position : null
-        )
-
-        const findNextPosition = index => {
-          for (let i = index + 1; i < renderedPositions.length; i++) {
-            if (renderedPositions[i]) return renderedPositions[i]
-          }
-          return 0
-        }
-
-        // Rows wrap back to the left, also with components aligned vertically:
-        const isLastInRow = index => (
-          renderedPositions[index] && (
-            index === renderedPositions.length - 1 ||
-            findNextPosition(index).left <= renderedPositions[index].left
+    // Measured positions are objects, or null for containers without height.
+    // Removed containers don't necessarily resize the pane:
+    const renderedPositions = computed(() =>
+      positions.value.some(position => position !== undefined)
+        ? positions.value.map((position, index) =>
+            props.entries[index]?.shouldRender ? position : null
           )
+        : null
+    )
+
+    // The indices of the containers in each row, once they are measured:
+    const rows = computed(() => {
+      const positions = renderedPositions.value
+      if (!positions) return null
+
+      const findNextPosition = index => {
+        for (let i = index + 1; i < positions.length; i++) {
+          if (positions[i]) return positions[i]
+        }
+        return 0
+      }
+
+      // Rows wrap back to the left, also with components aligned vertically:
+      const isLastInRow = index => (
+        positions[index] && (
+          index === positions.length - 1 ||
+          findNextPosition(index).left <= positions[index].left
         )
+      )
 
-        const rows = []
-        let row = []
-        for (let index = 0; index < renderedPositions.length; index++) {
-          row.push(index)
-          if (isLastInRow(index)) {
-            rows.push(row)
-            row = []
-          }
-        }
-        if (row.length > 0) {
+      const rows = []
+      let row = []
+      for (let index = 0; index < positions.length; index++) {
+        row.push(index)
+        if (isLastInRow(index)) {
           rows.push(row)
+          row = []
         }
+      }
+      if (row.length > 0) {
+        rows.push(row)
+      }
+      return rows
+    })
 
+    const verticalLabelsByIndices = computed(() => {
+      if (rows.value) {
         const verticalLabelsByIndices = []
-        for (const row of rows) {
+        for (const row of rows.value) {
           // Compact labels display next to their components, so only count the
           // ones of containers higher than one line.
           const hasLabelsInRow = row.some(
             index => (
-              renderedPositions[index]?.height > 2 &&
+              renderedPositions.value[index]?.height > 2 &&
               props.entries[index].isLabelled
             )
           )
@@ -148,6 +161,16 @@ export default {
 
       isInLabeledRow(index) {
         return !!verticalLabelsByIndices.value[index]
+      },
+
+      // Inlined schemas place their buttons on the line of the first row's
+      // labels, at its end:
+      isInFirstRow(index) {
+        return !!rows.value?.[0].includes(index)
+      },
+
+      isLastInRow(index) {
+        return !!rows.value?.some(row => row.at(-1) === index)
       },
 
       onResizePane() {

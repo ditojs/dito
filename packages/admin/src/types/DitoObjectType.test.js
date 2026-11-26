@@ -408,8 +408,8 @@ describe('DitoObjectType', () => {
       expect(
         findField('address')
           .find(
-            '.dito-schema-content + .dito-label-buttons:has(.dito-clipboard)' +
-            ' + .dito-edit-buttons'
+            '.dito-schema-content + .dito-schema__buttons' +
+            ' > .dito-label-buttons:has(.dito-clipboard) + .dito-edit-buttons'
           )
           .exists()
       ).toBe(true)
@@ -463,8 +463,8 @@ describe('DitoObjectType', () => {
       expect(
         field
           .find(
-            '.dito-schema-content + .dito-label-buttons:has(.dito-clipboard)' +
-            ' + .dito-edit-buttons'
+            '.dito-schema-content + .dito-schema__buttons' +
+            ' > .dito-label-buttons:has(.dito-clipboard) + .dito-edit-buttons'
           )
           .exists()
       ).toBe(true)
