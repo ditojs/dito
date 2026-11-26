@@ -18,6 +18,7 @@
       :collapsed="collapsed"
       :collapsible="collapsible"
       :deletable="deletable"
+      :labelId="labelId"
       @delete="deleteItem(objectData)"
     )
       template(
@@ -64,6 +65,7 @@ defineType({
   component: DitoObjectType,
   ...sourceTraits,
   sourceType: 'object',
+  hasLabelButtons: true,
   alignsBelowLabels: false,
 
   async setupSchema({ schema, api, name }) {

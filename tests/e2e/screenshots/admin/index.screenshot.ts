@@ -76,6 +76,30 @@ test.describe('screenshots', () => {
     await expectScreenshot(page, 'form-nested.png')
   })
 
+  // The clipboards of inlined objects, in the row of their label, or next to
+  // their remove button without one:
+  test('inlined objects with clipboards', async ({ page, url }) => {
+    await page.goto(`${url}/admin/projects/1/planning/milestones/0`)
+    const objects = page.locator('.dito-object')
+    await expect(objects).toHaveCount(2)
+    await expect(page.getByLabel('Approver', { exact: true })).toHaveValue(
+      'Ada'
+    )
+    await objects.last().scrollIntoViewIfNeeded()
+    const review = (await page
+      .getByText('Review', { exact: true })
+      .boundingBox())!
+    const approval = (await objects.last().boundingBox())!
+    await expectScreenshot(page, 'objects-clipboard.png', {
+      clip: {
+        x: approval.x - 8,
+        y: review.y - 8,
+        width: approval.width + 16,
+        height: approval.y + approval.height - review.y + 16
+      }
+    })
+  })
+
   test('nested form of a new item', async ({ page, url }) => {
     await page.goto(`${url}/admin/projects/1/planning/milestones/create`)
     await expect(page.getByLabel('Title', { exact: true })).toBeVisible()

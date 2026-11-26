@@ -53,7 +53,7 @@ slot(name="prepend")
           @update:modelValue="selectTab"
         )
       DitoClipboard.dito-schema-header__buttons(
-        v-if="clipboard"
+        v-if="clipboard && isClipboardInHeader"
         :class="{ 'dito-clipboard--header': isTopLevelSchema }"
         :idle="idle"
         :clipboard="clipboard"
@@ -117,6 +117,22 @@ slot(name="prepend")
         v-if="!inlined && dataContext.hasData"
         name="buttons"
       )
+  //- Without a header of their own, inlined schemas show their clipboard in the
+  //- label of their field, as lists do, or else next to their edit buttons:
+  DitoLabelButtons(
+    v-if="clipboard && !isClipboardInHeader"
+    :labelId="labelId"
+  )
+    DitoClipboard(
+      :clipboard="clipboard"
+      :name="clipboardName"
+      :label="clipboardLabel"
+      :hasData="hasData"
+      :getData="getClipboardData"
+      :getUploadEntries="getClipboardUploadEntries"
+      :createContext="createContext"
+      @paste="pasteData"
+    )
   slot(
     v-if="inlined && !hasHeader"
     name="edit-buttons"
@@ -140,6 +156,7 @@ import {
 import { useRouter } from 'vue-router'
 import { isFunction, clone, equals } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui/src'
+import DitoLabelButtons from './DitoLabelButtons.vue'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useSchemaEvents } from '../composables/useSchemaEvents.ts'
@@ -174,7 +191,7 @@ import {
 } from '../utils/keys.ts'
 
 export default {
-  components: { TransitionHeight },
+  components: { TransitionHeight, DitoLabelButtons },
   inheritAttrs: false,
   emits: ['toggle'],
 
@@ -202,7 +219,9 @@ export default {
     // keeps the space of the buttons other than edit and remove:
     idle: { type: Boolean, default: false },
     hasOwnData: { type: Boolean, default: false },
-    generateLabels: { type: Boolean, default: false }
+    generateLabels: { type: Boolean, default: false },
+    // The id of the label of the field of inlined schemas, see `fieldProps`:
+    labelId: { type: String, default: null }
   },
 
   setup(props, { emit, slots }) {
@@ -299,6 +318,7 @@ export default {
     const hasTabs = computed(() => !!tabs.value)
     const hasData = computed(() => !!props.data)
     const hasLabel = computed(() => !!props.label || props.collapsible)
+    const hasHeaderContent = computed(() => hasLabel.value || hasTabs.value)
 
     // Evaluate the tabs' `if` once there is data, as their components do:
     const renderedTabs = computed(() =>
@@ -498,8 +518,16 @@ export default {
         () => isTopLevelSchema.value && context.itemLabel || formLabel.value
       ),
 
+      // Buttons don't make a header on their own, only labels and tabs do:
+      isClipboardInHeader: computed(
+        () => !props.inlined || hasHeaderContent.value && !props.labelId
+      ),
+
       hasHeader: computed(
-        () => hasLabel.value || hasTabs.value || !!props.schema?.clipboard
+        () => (
+          hasHeaderContent.value ||
+          !props.inlined && !!props.schema?.clipboard
+        )
       ),
 
       layout,
@@ -619,15 +647,25 @@ export default {
     margin-top: $form-spacing-half;
   }
 
-  &:has(> .dito-schema-content + .dito-edit-buttons) {
-    // Display the inlined edit buttons to the right of the schema:
+  &:has(> .dito-schema-content + :is(.dito-label-buttons, .dito-edit-buttons)) {
+    // Display the inlined clipboard and edit buttons to the right of the
+    // schema:
     display: flex;
     flex-direction: row;
     align-items: stretch;
 
+    > .dito-label-buttons {
+      align-self: flex-start;
+      margin: 0 0 0 $form-spacing;
+    }
+
     > .dito-edit-buttons {
       flex: 1 0 0%;
       margin-left: $form-spacing;
+    }
+
+    > .dito-label-buttons + .dito-edit-buttons {
+      margin-left: var(--button-margin);
     }
   }
 

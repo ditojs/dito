@@ -197,6 +197,56 @@ describe('DitoObjectType', () => {
     expect(findSchemaLabel('work').text()).toContain('Basel')
   })
 
+  describe('clipboard', () => {
+    const address = {
+      type: 'object',
+      label: 'Address',
+      inlined: true,
+      deletable: true,
+      clipboard: true,
+      form: addressForm
+    }
+    const data = { address: { street: 'Main St', city: 'Bern' } }
+
+    it('shows the clipboard in the row of its label', async () => {
+      const { findField, findContainer } = await mountSchema({
+        schema: { fields: { address } },
+        data
+      })
+      const label = findContainer('address').find(':scope > .dito-label')
+      expect(
+        label.find('.dito-label__buttons .dito-clipboard').exists()
+      ).toBe(true)
+      const field = findField('address')
+      expect(field.find('.dito-schema-header').exists()).toBe(false)
+      expect(field.find('.dito-clipboard').exists()).toBe(false)
+      // The remove button stays next to the content:
+      expect(
+        field.find('.dito-schema-content + .dito-edit-buttons').exists()
+      ).toBe(true)
+    })
+
+    it('shows the clipboard next to its buttons without a label', async () => {
+      const { findField, findContainer } = await mountSchema({
+        schema: { fields: { address: { ...address, label: false } } },
+        data
+      })
+      expect(
+        findContainer('address').find(':scope > .dito-label').exists()
+      ).toBe(false)
+      const field = findField('address')
+      expect(field.find('.dito-schema-header').exists()).toBe(false)
+      expect(
+        field
+          .find(
+            '.dito-schema-content + .dito-label-buttons:has(.dito-clipboard)' +
+            ' + .dito-edit-buttons'
+          )
+          .exists()
+      ).toBe(true)
+    })
+  })
+
   it("doesn't pass a `path` attribute to its buttons", async () => {
     const { findField } = await mountSchema({
       schema: {

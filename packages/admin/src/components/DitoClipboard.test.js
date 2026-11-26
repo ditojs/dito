@@ -474,7 +474,7 @@ describe('DitoClipboard', () => {
 
   it('gives the forms of objects their clipboard, not of lists', async () => {
     const form = { type: 'form', fields: { title: { type: 'text' } } }
-    const { findField, findContainer } = await mountForm({
+    const { findContainer } = await mountForm({
       schema: {
         fields: {
           chapters: {
@@ -493,12 +493,12 @@ describe('DitoClipboard', () => {
         cover: { title: 'Front' }
       }
     })
-    for (const name of ['chapters', 'books']) {
+    // All show it in the row of their label:
+    for (const name of ['chapters', 'books', 'cover']) {
       const container = findContainer(name)
       expect(container.findAll('.dito-clipboard')).toHaveLength(1)
       expect(container.findAll('.dito-label .dito-clipboard')).toHaveLength(1)
     }
-    expect(findField('cover').findAll('.dito-clipboard')).toHaveLength(1)
   })
 
   describe('lists', () => {

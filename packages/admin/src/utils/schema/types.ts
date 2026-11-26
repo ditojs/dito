@@ -15,7 +15,7 @@ export type TypeDescriptor = PublicTypeDescriptor & {
   readonly hasSearch?: boolean
   // Inputs show the info of fields without a label in their suffix:
   readonly hasInputAffixes?: boolean
-  // Lists show their buttons in the row of their label:
+  // Lists and objects show their buttons in the row of their label:
   readonly hasLabelButtons?: boolean
   // Sources hold their items in a list or an object:
   readonly sourceType?: 'list' | 'object'
