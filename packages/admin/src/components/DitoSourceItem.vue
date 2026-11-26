@@ -17,7 +17,7 @@ DitoSchemaInlined(
   :editPath="editPath"
   :createPath="createPath"
   :insertIndex="insertIndex"
-  :labelId="labelId"
+  :headedByLabel="headedByLabel"
   @delete="$emit('delete')"
   @move="delta => $emit('move', delta)"
 )
@@ -64,8 +64,8 @@ export default {
     editPath: { type: String, default: null },
     createPath: { type: String, default: null },
     insertIndex: { type: Number, default: null },
-    // The id of the label of object fields, see `fieldProps`:
-    labelId: { type: String, default: null }
+    // Whether the label of object fields heads their form, see `DitoSchema`:
+    headedByLabel: { type: Boolean, default: false }
   },
 
   setup(props, { slots }) {

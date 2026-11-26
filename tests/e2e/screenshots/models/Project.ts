@@ -12,6 +12,7 @@ export interface Milestone {
   steps?: { text?: string | null }[] | null
   review?: { reviewer?: string | null } | null
   approval?: { approver?: string | null } | null
+  signoff?: { signer?: string | null } | null
 }
 
 export interface Phase {

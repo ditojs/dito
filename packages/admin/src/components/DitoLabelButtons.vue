@@ -51,5 +51,10 @@ export default {
   .dito-label__buttons > & {
     margin-left: $form-spacing;
   }
+
+  // The clipboard and the edit buttons of objects, see `DitoSchema`:
+  > .dito-buttons + .dito-buttons {
+    margin-left: var(--button-margin);
+  }
 }
 </style>

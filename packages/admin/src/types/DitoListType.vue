@@ -317,6 +317,7 @@ const DitoListType = {
       labelToggle.value = hasToggleAll.value
         ? {
             collapsed: hasCollapsedItems.value,
+            togglesAll: true,
             title: toggleAllTitle.value,
             toggle: toggleAll
           }

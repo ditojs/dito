@@ -17,11 +17,12 @@ import type { Data, Schema } from './types.ts'
 import type { SchemaEventsEmitter } from '../composables/useSchemaEvents.ts'
 import type { ComponentPath } from '../composables/useComponentPath.ts'
 
-// Type components register the toggle of all their items, which the label of
-// their container shows:
+// Type components register the toggle of their content, or of all their
+// items, which the label of their container shows:
 export interface LabelToggle {
   readonly collapsed: boolean
-  readonly title: string
+  readonly togglesAll?: boolean
+  readonly title?: string
   toggle(): void
 }
 

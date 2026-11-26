@@ -34,7 +34,8 @@ const project: Partial<Project> = {
       due: '2026-06-01',
       steps: [{ text: 'Sketch' }, { text: 'Review' }],
       review: { reviewer: 'Grace' },
-      approval: { approver: 'Ada' }
+      approval: { approver: 'Ada' },
+      signoff: { signer: 'Alan' }
     },
     { title: 'Launch', due: '2026-09-01' }
   ],

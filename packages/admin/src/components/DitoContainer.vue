@@ -28,7 +28,7 @@
     :hasButtons="!!labelId"
     :collapsible="!!labelToggle"
     :collapsed="labelToggle?.collapsed"
-    :togglesAll="!!labelToggle"
+    :togglesAll="!!labelToggle?.togglesAll"
     :title="labelToggle?.title"
     @toggle="labelToggle.toggle()"
   )
@@ -176,7 +176,7 @@ export default {
         : null
     })
     provide(accumulatedBasisKey, combinedBasis)
-    // The type component registers the toggle of all its items for the label:
+    // The type component registers the toggle of its content for the label:
     const labelToggle = shallowRef(null)
     provide(labelToggleKey, labelToggle)
 
