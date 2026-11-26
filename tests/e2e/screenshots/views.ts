@@ -268,6 +268,23 @@ export const projects = createWidgetView<Project>(
                         approver: { type: 'text', label: 'Approver' }
                       }
                     }
+                  },
+                  // A collapsible object, which its label toggles and which
+                  // its row creates:
+                  signoff: {
+                    type: 'object',
+                    label: 'Sign-off',
+                    inlined: true,
+                    collapsible: true,
+                    creatable: true,
+                    deletable: true,
+                    clipboard: true,
+                    form: {
+                      type: 'form',
+                      fields: {
+                        signer: { type: 'text', label: 'Signer' }
+                      }
+                    }
                   }
                 }
               }

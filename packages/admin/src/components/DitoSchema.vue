@@ -117,11 +117,10 @@ slot(name="prepend")
         v-if="!inlined && dataContext.hasData"
         name="buttons"
       )
-  //- Without a header of their own, inlined schemas show their clipboard in the
-  //- label of their field, as lists do, or else next to their edit buttons:
+  //- Without a header of their own, inlined schemas show their clipboard next
+  //- to their edit buttons:
   DitoLabelButtons(
     v-if="clipboard && !isClipboardInHeader"
-    :labelId="labelId"
   )
     DitoClipboard(
       :clipboard="clipboard"
@@ -154,7 +153,7 @@ import {
   watch
 } from 'vue'
 import { useRouter } from 'vue-router'
-import { isFunction, clone, equals } from '@ditojs/utils'
+import { isFunction } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui/src'
 import DitoLabelButtons from './DitoLabelButtons.vue'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
@@ -165,20 +164,13 @@ import { useStore } from '../composables/useStore.ts'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { isPanel } from '../utils/schema/structure.js'
 import {
-  cloneItem,
-  getSchemaSource,
-  getReferenceSchema,
-  walkData
-} from '../utils/schema/walk.js'
-import {
   getNamedSchemas,
   getPanelEntries,
   getItemFormSchema,
   isEmptySchema
 } from '../utils/schema/lookup.js'
 import { getClipboardName } from '../utils/clipboard.js'
-import { fromClipboard } from '../utils/fromClipboard.ts'
-import { mergeData } from '../utils/mergeData.ts'
+import { pasteData } from '../utils/pasteData.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
 import { getUploadEntries } from '../utils/interchange.ts'
 import {
@@ -220,8 +212,9 @@ export default {
     idle: { type: Boolean, default: false },
     hasOwnData: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
-    // The id of the label of the field of inlined schemas, see `fieldProps`:
-    labelId: { type: String, default: null }
+    // The label of the field heads the schema: it holds its buttons, and
+    // toggles it if it's collapsible, see `DitoObjectType`:
+    headedByLabel: { type: Boolean, default: false }
   },
 
   setup(props, { emit, slots }) {
@@ -240,7 +233,6 @@ export default {
     const { componentPath } = useComponentPath(() => props.dataPath)
     const schemaContext = useSchemaContext(props)
     const { services } = schemaContext
-    const { adminContext } = services
     const getModel = () => services.dataContext.model
 
     const createContext = (values = {}) =>
@@ -317,7 +309,9 @@ export default {
     const tabs = computed(() => getNamedSchemas(props.schema.tabs))
     const hasTabs = computed(() => !!tabs.value)
     const hasData = computed(() => !!props.data)
-    const hasLabel = computed(() => !!props.label || props.collapsible)
+    const hasLabel = computed(
+      () => !props.headedByLabel && (!!props.label || props.collapsible)
+    )
     const hasHeaderContent = computed(() => hasLabel.value || hasTabs.value)
 
     // Evaluate the tabs' `if` once there is data, as their components do:
@@ -507,7 +501,10 @@ export default {
             )
       }),
 
-      clipboard: computed(() => props.schema?.clipboard ?? null),
+      // Objects that the label of their field heads show their clipboard there:
+      clipboard: computed(
+        () => (props.headedByLabel ? null : (props.schema?.clipboard ?? null))
+      ),
 
       clipboardName: computed(() =>
         getClipboardName(props.schema, unref(sourceSchema))
@@ -520,7 +517,7 @@ export default {
 
       // Buttons don't make a header on their own, only labels and tabs do:
       isClipboardInHeader: computed(
-        () => !props.inlined || hasHeaderContent.value && !props.labelId
+        () => !props.inlined || hasHeaderContent.value
       ),
 
       hasHeader: computed(
@@ -550,69 +547,13 @@ export default {
         )
       },
 
-      async pasteData(clipboardData) {
-        const source = unref(sourceSchema)
-        const { data, unresolvedLabels } = await fromClipboard(
-          props.dataSchema,
-          clipboardData,
-          {
-            dataPath: props.dataPath,
-            sourceSchema: source,
-            services,
-            rootData: context.rootItem
-          }
-        )
-        // Replace the data like loaded data, but keep the values of the item's
-        // fields that the pasted data lacks, e.g. hidden ones. Values that
-        // `computeValue()` derives are derived from the pasted ones instead:
-        const item = { ...data }
-        // The id of items that reference a record is their content:
-        let pastedReference = null
-        walkData(props.dataSchema, props.data, {
+      pasteData(clipboardData) {
+        return pasteData(props.dataSchema, props.data, clipboardData, {
           dataPath: props.dataPath,
-          sourceSchema: source,
+          sourceSchema: unref(sourceSchema),
           services,
-          rootData: context.rootItem,
-          shouldWalk: () => false,
-          visit: entry => {
-            const { node, name } = entry
-            if (getReferenceSchema(entry) && data[name] != null) {
-              pastedReference = { [name]: data[name] }
-            } else if (
-              name in props.data &&
-              !(name in item) &&
-              !node.getRecordedSchema(entry)?.schema.computeValue
-            ) {
-              item[name] = props.data[name]
-            }
-          }
+          rootData: context.rootItem
         })
-        // The item keeps what identifies it, also its position in its list,
-        // apart from the pasted record that it references:
-        if (source) {
-          Object.assign(
-            item,
-            cloneItem(getSchemaSource(source), props.data),
-            pastedReference
-          )
-        }
-        // Only changes of the data that is saved are edits:
-        const model = getModel()
-        const previousData = clone(model.serializedData.value)
-        mergeData(props.dataSchema, props.data, item, {
-          services,
-          shouldKeepSourcesWithResource: true
-        })
-        model.fields.writeComputedValues()
-        if (!equals(model.serializedData.value, previousData)) {
-          model.markEdited()
-        }
-        if (unresolvedLabels.length > 0) {
-          adminContext.notify({
-            type: 'warning',
-            text: `Not found when pasting: ${unresolvedLabels.join(', ')}`
-          })
-        }
       },
 
       getClipboardData() {

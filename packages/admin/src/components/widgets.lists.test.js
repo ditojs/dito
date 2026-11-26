@@ -346,7 +346,11 @@ describe('DitoObjectField', () => {
     const { wrapper } = await mountDesignerPage()
     const getObject = () => wrapper.find('.dito-object[id$="publisher"]')
     expect(getObject().find('input').exists()).toBe(false)
-    await getObject().find('.dito-button--add').trigger('click')
+    // Labelled objects show their buttons in the row of their label:
+    await wrapper
+      .find('.dito-container:has(> .dito-object[id$="publisher"])')
+      .find(':scope > .dito-label .dito-button--add')
+      .trigger('click')
     await settle()
     expect(form.item.publisher).toEqual({ name: '' })
     expect(getObject().find('input').exists()).toBe(true)

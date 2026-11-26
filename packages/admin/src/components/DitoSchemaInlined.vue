@@ -15,7 +15,7 @@ DitoSchema.dito-schema-inlined(
   :collapsible="collapsible"
   :generateLabels="!isCompact"
   :idle="isIdle"
-  :labelId="labelId"
+  :headedByLabel="headedByLabel"
   @toggle="collapsed => $emit('toggle', collapsed)"
   @mouseenter="isHovered = true"
   @mouseleave="isHovered = false"
@@ -74,8 +74,8 @@ export default {
     editPath: { type: String, default: null },
     createPath: { type: String, default: null },
     insertIndex: { type: Number, default: null },
-    // The id of the label of the object field, see `fieldProps`:
-    labelId: { type: String, default: null }
+    // Whether the label of the object field heads it, see `DitoSchema`:
+    headedByLabel: { type: Boolean, default: false }
   },
 
   setup(props) {

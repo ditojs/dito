@@ -81,15 +81,15 @@ test.describe('screenshots', () => {
   test('inlined objects with clipboards', async ({ page, url }) => {
     await page.goto(`${url}/admin/projects/1/planning/milestones/0`)
     const objects = page.locator('.dito-object')
-    await expect(objects).toHaveCount(2)
+    await expect(objects).toHaveCount(3)
     await expect(page.getByLabel('Approver', { exact: true })).toHaveValue(
       'Ada'
     )
-    await objects.last().scrollIntoViewIfNeeded()
+    await objects.nth(1).scrollIntoViewIfNeeded()
     const review = (await page
       .getByText('Review', { exact: true })
       .boundingBox())!
-    const approval = (await objects.last().boundingBox())!
+    const approval = (await objects.nth(1).boundingBox())!
     await expectScreenshot(page, 'objects-clipboard.png', {
       clip: {
         x: approval.x - 8,
@@ -97,6 +97,26 @@ test.describe('screenshots', () => {
         width: approval.width + 16,
         height: approval.y + approval.height - review.y + 16
       }
+    })
+  })
+
+  // Collapsible objects toggle on their label, which holds their buttons:
+  test('collapsible inlined object', async ({ page, url }) => {
+    await page.goto(`${url}/admin/projects/1/planning/milestones/0`)
+    const signer = page.getByLabel('Signer', { exact: true })
+    await expect(signer).toHaveValue('Alan')
+    const container = page
+      .locator('.dito-container')
+      .filter({ has: page.locator('.dito-object') })
+      .last()
+    await container.scrollIntoViewIfNeeded()
+    await expectScreenshot(page, 'object-collapsible.png', {
+      clip: (await container.boundingBox())!
+    })
+    await page.getByRole('button', { name: 'Sign-off', exact: true }).click()
+    await expect(signer).toHaveCount(0)
+    await expectScreenshot(page, 'object-collapsed.png', {
+      clip: (await container.boundingBox())!
     })
   })
 

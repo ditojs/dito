@@ -127,8 +127,10 @@ export const list: TypeComponentDriver = {
  * or as steps that create the object in its own form.
  */
 export const object: TypeComponentDriver = {
+  // The container of the object, as the row of its label holds its buttons,
+  // and the frame of empty inlined objects isn't drawn:
   getElement(page, { name }) {
-    return page.locator(`[id="${name}"]`)
+    return page.locator(`.dito-container:has(> [id="${name}"])`)
   },
 
   async setValue(page, component, value) {
@@ -151,7 +153,7 @@ export const object: TypeComponentDriver = {
   },
 
   async getValue(page, component) {
-    return readFields(this.getElement(page, component))
+    return readFields(page.locator(`[id="${component.name}"]`))
   }
 }
 

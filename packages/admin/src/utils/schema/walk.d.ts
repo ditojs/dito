@@ -75,6 +75,9 @@ export function getSchemaSource(schema: Schema): DataSource
 
 export function getReferenceSchema(entry: DataEntry): Schema | null
 
+// Copy what identifies the item, for its serialized values to be added to:
+export function cloneItem(source: DataSource, item: Data): Data
+
 // The forms of the items of a source, and its child sources:
 export interface ItemForms {
   forms: Record<string, Schema>
