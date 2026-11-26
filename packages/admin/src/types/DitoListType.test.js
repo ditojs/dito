@@ -2167,16 +2167,15 @@ describe('DitoListType', () => {
       expect(getLoadQuery()).toEqual({ order: 'title desc' })
     })
 
-    it('lets the scope override filters of the same name', async () => {
+    it('replaces filters of the same name with the scope', async () => {
+      // The server applies all filters, so the scope's replace the panel's,
+      // also negated ones, but leave the others:
       const { buttons, getLoadQuery } = await mountScopedBooksView(
-        '/books?filter=published:false'
+        '/books?filter=published:false&filter=!published:true&filter=title:"Emma"'
       )
       await buttons[1].trigger('click')
       await flushPromises()
-      expect(getLoadQuery().filter).toEqual([
-        'published:false',
-        'published:true'
-      ])
+      expect(getLoadQuery().filter).toEqual(['title:"Emma"', 'published:true'])
     })
 
     it('provides the query of the server as `sourceQuery`', async () => {

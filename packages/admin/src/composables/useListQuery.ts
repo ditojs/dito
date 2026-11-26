@@ -47,8 +47,9 @@ export function useListQuery(
     name ? scopes.value?.[name] : defaultScope.value
 
   // The query that the server reads. Scopes with `filter` send their filters
-  // instead of `scope`, after those of the panel, so that theirs apply.
-  // `filter` can be a callback that returns the filters:
+  // instead of `scope`, in place of the panel's filters of the same names, as
+  // the server applies all filters. `filter` can be a callback that returns
+  // the filters:
   function getServerQuery() {
     const { query } = listQuery
     const scope = getScope(query.scope)
@@ -57,10 +58,15 @@ export function useListQuery(
       const scopeFilter = getSchemaValue('filter', {
         type: Object,
         schema: scope
-      })
+      }) ?? {}
+      // The names of filters without the `!` that negates them:
+      const getName = (name: string) => name.replace(/^!/, '')
+      const scopeNames = Object.keys(scopeFilter).map(getName)
       const filters = [
-        ...asArray(filter),
-        ...Object.entries(scopeFilter ?? {}).map(
+        ...asArray(filter).filter(
+          (entry: string) => !scopeNames.includes(getName(entry.split(':')[0]))
+        ),
+        ...Object.entries(scopeFilter).map(
           ([name, value]) => `${name}:${JSON.stringify(value)}`
         )
       ]
