@@ -34,7 +34,6 @@ The other peers require their latest versions, e.g. `vue` `^3.5.46`, the
 | 6.x                            | 7.x                                            |
 | ------------------------------ | ---------------------------------------------- |
 | The global `$notify()`         | `context.notify()` or `admin.context.notify()` |
-| `placeholder` of `time` fields | Removed                                        |
 | `name` of date and time fields | Removed                                        |
 
 Of the schema's events, date and time fields only receive `focus`, `blur`,

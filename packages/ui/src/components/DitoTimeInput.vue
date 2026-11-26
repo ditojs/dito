@@ -13,7 +13,7 @@
       //- the popup misses Escape:
       TimeFieldRoot.dito-input(
         v-slot="{ segments }"
-        v-bind="{ ...$props, ...attributes }"
+        v-bind="fieldAttributes"
         :class="inputClasses"
         @update:modelValue="value => $emit('update:modelValue', value ?? null)"
         @focusin="onPartFocus"
@@ -22,7 +22,16 @@
         @keydown.esc="open = false"
       )
         slot(name="prefix")
-        .dito-date-segments(ref="segments")
+        .dito-date-segments(
+          ref="segments"
+          :class=`{
+            'dito-date-segments--entered': segments.some(isEnteredSegment)
+          }`
+        )
+          //- Shown instead of the empty parts while the field isn't focused:
+          span.dito-date-segments__placeholder(
+            v-if="placeholder"
+          ) {{ placeholder }}
           TimeFieldInput.dito-date-segments__part(
             v-for="item in segments"
             ref="parts"
@@ -72,7 +81,8 @@ import DitoTimePanel from './DitoTimePanel.vue'
 import {
   findSegment,
   focusSegment,
-  getSegmentClasses
+  getSegmentClasses,
+  isEnteredSegment
 } from './dateSegments.js'
 import { hasErrors } from '../utils/element.js'
 import { usePopupPlacement } from '../utils/vue.js'
@@ -102,7 +112,9 @@ export default {
     // The value that typing and picking start from without a value:
     defaultPlaceholder: { type: Object, default: undefined },
     disabled: { type: Boolean, default: false },
-    readonly: { type: Boolean, default: false }
+    readonly: { type: Boolean, default: false },
+    // Unlike `TimeFieldRoot`'s `placeholder`, the text of empty fields:
+    placeholder: { type: String, default: null }
   },
 
   setup() {
@@ -124,9 +136,10 @@ export default {
       }
     },
 
-    attributes() {
-      const { class: _, ...attributes } = this.$attrs
-      return attributes
+    fieldAttributes() {
+      const { placeholder: _, ...props } = this.$props
+      const { class: __, ...attributes } = this.$attrs
+      return { ...props, ...attributes }
     },
 
     panelValue() {
@@ -136,6 +149,7 @@ export default {
 
   methods: {
     getSegmentClasses,
+    isEnteredSegment,
 
     // Focusing or clicking a part opens the popup, also after it was closed
     // while the part kept the focus:

@@ -336,14 +336,15 @@ edits each part of the time on its own. Focusing or clicking a part opens a
 field. The values are `Time`, or dates with a time of
 `@internationalized/date`, whose date it keeps.
 
-| Prop                   | Type                             | Default    | Description                                                         |
-| ---------------------- | -------------------------------- | ---------- | ------------------------------------------------------------------- |
-| `modelValue`           | `TimeValue`                      | `null`     | The time (`v-model`).                                               |
-| `granularity`          | `'hour' \| 'minute' \| 'second'` | `'minute'` | The smallest part that the field edits.                             |
-| `hourCycle`            | `12 \| 24`                       | –          | The hours of the field, or else those of the locale.                |
-| `locale`               | `string`                         | `'en-US'`  | The locale of the field.                                            |
-| `defaultPlaceholder`   | `TimeValue`                      | –          | The value that typing and picking start from without a value.       |
-| `disabled`, `readonly` | `boolean`                        | `false`    | Disables the field, or keeps its value from being edited or picked. |
+| Prop                   | Type                             | Default    | Description                                                                                                 |
+| ---------------------- | -------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------- |
+| `modelValue`           | `TimeValue`                      | `null`     | The time (`v-model`).                                                                                       |
+| `granularity`          | `'hour' \| 'minute' \| 'second'` | `'minute'` | The smallest part that the field edits.                                                                     |
+| `hourCycle`            | `12 \| 24`                       | –          | The hours of the field, or else those of the locale.                                                        |
+| `locale`               | `string`                         | `'en-US'`  | The locale of the field.                                                                                    |
+| `defaultPlaceholder`   | `TimeValue`                      | –          | The value that typing and picking start from without a value.                                               |
+| `placeholder`          | `string`                         | `null`     | Shown while no part is entered and the field isn't focused. Such fields show their parts only once focused. |
+| `disabled`, `readonly` | `boolean`                        | `false`    | Disables the field, or keeps its value from being edited or picked.                                         |
 
 All other attributes but `class` go to the field, also the other props of
 `TimeFieldRoot`, and `aria-invalid` shows errors, as in

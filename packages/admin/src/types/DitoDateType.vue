@@ -94,8 +94,7 @@ const DitoDateType = {
           'defaultPlaceholder': isTime
             ? toCalendarDateTime(today(getLocalTimeZone()))
             : undefined,
-          // `placeholder` of `TimeFieldRoot` is its starting value instead:
-          'placeholder': isTime ? undefined : attrs.placeholder,
+          'placeholder': attrs.placeholder,
           'disabled': attrs.disabled,
           'readonly': attrs.readonly,
           'aria-label': title,

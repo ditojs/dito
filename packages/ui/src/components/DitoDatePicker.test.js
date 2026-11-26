@@ -44,7 +44,7 @@ describe('DitoDatePicker', () => {
       props: { placeholder: 'From' },
       attachTo: document.body
     })
-    await wrapper.find('.dito-date-picker__placeholder').trigger('mousedown')
+    await wrapper.find('.dito-date-segments__placeholder').trigger('mousedown')
     expect(document.activeElement).toBe(
       wrapper.find('[role="spinbutton"]').element
     )

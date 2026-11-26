@@ -93,7 +93,7 @@ The options of all field types, in addition to `SchemaBase`. Whether a
 type uses an option depends on the type: `autocomplete` applies to text inputs,
 `minLength`, `maxLength` and `pattern` to text values, `minItems` and
 `maxItems` to lists and fields with multiple values, `placeholder` to text
-inputs and selects, `clearable` to inputs that can be cleared.
+inputs, date fields and selects, `clearable` to inputs that can be cleared.
 
 | Option             | Type                                                                | Default                                                                            | Description                                                                                                                                                                                                                                                                                                                                                                                  |
 | ------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

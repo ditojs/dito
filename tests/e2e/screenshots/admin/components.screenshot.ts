@@ -163,6 +163,17 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'time-picker.png')
   })
 
+  test('time field placeholder', async ({ page, url }) => {
+    // The other project has no start time:
+    await page.goto(`${url}/admin/projects/2`)
+    await expect(page.getByLabel('Name', { exact: true })).toHaveValue(
+      'Mobile App'
+    )
+    await page.getByRole('tab', { name: 'Extras', exact: true }).click()
+    await expect(page.getByText('Starts at')).toBeVisible()
+    await expectScreenshot(page, 'time-field-placeholder.png')
+  })
+
   test('datetime picker', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
     // The clear button lies over the button of the calendar, so open it with
