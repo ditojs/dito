@@ -3,6 +3,176 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 7.0.0 (2026-11-26)
+
+### Behaviour changes
+
+- **server:** Request logs show the path without the query string, also in the
+  `req` of JSON logs, so tokens in URLs, e.g. `?token=…`, no longer reach
+  the logs.
+- **server:** The `order` query parameter only takes the properties of the
+  model that clients see, and answers 400 for unknown, `hidden` and `computed`
+  ones, as the order told the values of hidden properties, e.g. `hash`.
+- **server:** With `app.proxy`, `ctx.ip` is the last `X-Forwarded-For`
+  entry, which the closest proxy adds, instead of the first one, which clients
+  can forge, and `ctx.ips` only holds that entry. Behind several proxies in a
+  row, it is the address of the proxy before the last one.
+- **server:** Files get the `url` of their storage on each read, and are stored
+  without `url`, so changing a storage's `url` needs no change of the data.
+  - Stored urls are ignored. Apps can remove them, but don't need to.
+  - Code that reads file JSON straight from the database finds no `url` in
+    rows written since.
+  - Custom storages that build urls without `url` need `public: true`.
+- **server:** The peer dependency `objection` is `^4.4.4`.
+- **server:** Model and relation controllers and graph writes that set the
+  password or change the username of an existing user answer 403 with
+  `confirmationRequired` without confirmed access, like users controllers, for
+  users of the logged-in user's own model, e.g. admins changing admins, not
+  admins changing customers. Users controllers no longer answer 401 to users of
+  other models for these writes, and `authorize` decides who may make them.
+- **admin:** The components at the root of a form are set further apart than the ones inside sections, objects and list items: 12px between their rows instead of 6px. Sidebar panels and views that show a single list keep their spacing.
+- **admin:** Inlined items and objects without a header place their buttons and clipboard on the line of the labels of their first row, so that their fields keep the full width. Rows without labels on top keep the buttons next to the fields.
+- **admin:** The picker of `type: 'color'` is built on `reka-ui`'s `ColorArea`, `ColorSlider`, `ColorField` and `ColorSwatch`, and `vue-color` is no longer a peer dependency; `tinycolor2` is one instead. Remove `vue-color` from the app's dependencies unless the app uses it itself. The stored values keep their `colorFormat`. The picker has no hex input of its own, as the field's input is one.
+- **admin:** Dialogs are built on `reka-ui`'s `Dialog`, which is a new peer dependency, and `focus-trap` no longer is one. Add `reka-ui` to the app's dependencies, and remove `focus-trap` unless the app uses it itself.
+  - `role="dialog"` and `aria-modal` moved from `.dito-dialog` to its new child `.dito-dialog__content`, which replaces `.dito-dialog__focus-trap`. The dialog is labelled by a hidden title with `settings.label`, through `aria-labelledby` instead of `aria-label`.
+  - With `clickToClose`, dialogs close on a mouse press on the overlay instead of on its release.
+- **admin:** Infos open their popup on hover and also on a click, a tap or Enter, built on `reka-ui`'s `Popover`. Hovering leaves the focus where it is. The popup stays within the scroll area of the info, e.g. the sidebar, and wraps its text there. `tippy.js` is no longer a peer dependency; remove it unless the app uses it itself.
+  - `.dito-info` is a button labelled `Info: ` and the text of its label, without `data-info`. In collapsible labels, it follows the toggle button, `.dito-label__content`, instead of sitting in it. Escape or a click outside closes the popup, `.dito-info__popup`, and links in it can be reached with the keyboard.
+  - Inputs without a label still show their info in their suffix. Other fields without a label, e.g. buttons, show it after the component, in containers with `.dito-container--has-info`, as buttons can't hold its button.
+  - The `.tippy-*` styles are removed, and `$z-index-tippy` is renamed to `$z-index-info`.
+- **admin:** Multiselects are built on `reka-ui`'s `Combobox`, with the values of `multiple` ones in its `TagsInput`. `vue-multiselect` is no longer a peer dependency; remove it unless the app uses it itself.
+  - Picking the selected option of a single select keeps it instead of clearing it. Single selects that aren't `required` show a clear button instead, unless `clearable: false`.
+  - Tab no longer picks the highlighted option, and Enter without a highlighted option doesn't submit dialogs.
+  - The combobox is the `<input>` itself, and single selects show the label of their option as its value instead of as text, so tests read it with `toHaveValue()`, not `toHaveText()`.
+  - The `.multiselect__*` styles are removed. The markup uses `.dito-multiselect__*` classes and the `data-state` attributes of `reka-ui`.
+  - Multiselects with `search` reset their search term when the list closes, and single selects show the selected label again.
+  - The remove buttons of tags are no longer tab stops. The arrow keys move between the tags, and Backspace removes them.
+- **admin:** `date`, `datetime` and `time` fields are built on `reka-ui`'s `DatePicker` and `TimeField`. They edit each part of the value on its own, in the order of `api.locale`, e.g. `5/14/2026`, instead of free text in the display format. The calendar opens when a part of the date is focused or clicked, or with the button next to the field, and its header picks the month and year from lists. `time` fields and the time of `datetime` fields show the lists of hours, minutes and seconds in the popup instead, as before, and picking a value there selects its part in the field.
+  - `formats` still formats the display values, e.g. in lists. The fields only take the parts of the time and `hour12` from it, e.g. `{ time: { second: false } }`.
+  - Empty `date` and `datetime` fields show their `placeholder`, or nothing, until focused, and then the parts in the order of the locale.
+  - `time` fields no longer take `placeholder`, and the fields no longer take `name`. Of the schema's events, only `focus`, `blur`, `input` and `change` reach them. `change` fires after edits, once the focus leaves the field or the calendar closes.
+  - `@internationalized/date` is a new peer dependency of `@ditojs/admin` and `@ditojs/ui`, and `reka-ui` one of `@ditojs/ui`.
+- **admin:** The swatch of color fields always shows, also without a value.
+- **admin:** Tabs are built on `reka-ui`'s `Tabs`. They select on mouse down, and the selected tab has `[data-state='active']` instead of `.dito-tabs__link--active`.
+  - Only a real mouse press selects a tab: synthetic clicks, e.g. `click()` in the tests of apps, don't.
+  - The tab list is one tab stop, which passes the focus to the selected tab. The arrow keys move between the tabs.
+- **admin:** Notifications are built on `reka-ui`'s `Toast`, and `@kyvg/vue3-notification` is no longer a peer dependency. Remove it from the app's dependencies unless the app uses it itself.
+  - The global `$notify()` is gone; use `context.notify()` or `admin.context.notify()`.
+  - The types are modifiers, e.g. `.dito-notification--error` instead of `.dito-notification.error`, and the parts are `.dito-notification__title` and `.dito-notification__content`.
+  - New notifications appear below the older ones instead of above them.
+  - Notifications pause while hovered or focused, and while the window is blurred. They close on a click. Swiping is off, so their text stays selectable and pages scroll on touch.
+  - Notifications are tab stops, and F8 focuses their region. The region is a polite live region, so screen readers announce them when idle.
+  - The library's classes, like `.vue-notification-wrapper`, are gone.
+- **admin:** Tree lists whose items have forms always show the form pane, at
+  least three rows high, also while no item is edited or the tree is empty, so
+  the tree keeps its width and its buttons stay next to their labels.
+- **admin:** The peer dependency `tiptap-footnotes` is `^4.0.1`, and the
+  other peers require their latest versions, e.g. `vue` `^3.5.46` and the
+  `@tiptap` packages `^3.35.0`.
+- **ui:** The SCSS variable `$popup-margin` is removed. Popups get their gap from `reka-ui`'s `sideOffset`.
+- **ui:** `DitoMenuButton` is built on `reka-ui`'s `DropdownMenu`. Its menu opens as a panel next to the button, placed with `side` and `align` instead of `placement`. `floating` and `offset` are removed. `cover` is off by default and opens the menu over the button, and `attached` joins the menu to its button, as `cover: false` did, see [`DitoMenuButton`](docs/api/ui.md#ditomenubutton).
+  - Long menus stay in the closest container that scrolls, and scroll in `.dito-menu-button__menu`.
+  - ArrowUp no longer opens the menu, Tab leaves it, and it stays open when the window loses focus. The items are no longer in a `ul` of `li`s, nor buttons.
+  - `.dito-menu-button` is on the button itself. Its classes `.dito-menu-button--open`, `--floating` and `--offset` are removed: style the open button with `[data-state='open']`. `.dito-menu-button__item--disabled` is replaced by `[data-disabled]`.
+- **ui:** The unused transitions `dito-zoom` and `dito-slide` are removed. The animation `dito-slide-enter` stays.
+- **ui:** `DitoTrigger` and the helpers `combineEvents()`, `getKey()` and `getKeyNavigation()` are removed. Use `reka-ui`'s `Popover` or `DropdownMenu` instead.
+- **ui:** `DitoPagination` is built on `reka-ui`'s `Pagination`. The current page's button has `[data-selected]` instead of `.dito-button--active`.
+  - Near the first and last page, five page buttons show in a row.
+  - `.dito-button--prev`, `--next`, `--ellipsis-prev` and `--ellipsis-next` are removed. The previous and next page buttons have `.dito-pagination__prev` and `.dito-pagination__next`, and both ellipses are `button.dito-pagination__ellipsis`, the one before the current page with `--back`.
+- **ui:** `DitoDatePicker` is rebuilt on `reka-ui`'s `DatePicker`, with dates of `@internationalized/date` as values and the props of `reka-ui`, see [`DitoDatePicker`](docs/api/ui.md#ditodatepicker). `DitoTimeInput` replaces `DitoTimePicker`, with a wrapper element around its `.dito-input`, as `DitoDatePicker` has. `DitoTimePanel` takes these values and a `granularity`, no longer has `handleKey()`, and emits `select` with the name of the picked part, not on Enter. `DitoCalendar`, `DitoDateTimePicker` and the helpers `describeDate()`, `alterDate()`, `stepDate()`, `parseDate()`, `getDatePartAtPosition()`, `getSelection()` and `setSelection()` are removed. The new helpers `getScrollContainer()` and `hasErrors()` find the container that scrolls an element and read `aria-invalid`.
+- **ui:** Menus and select lists open at once, while calendars and color pickers animate.
+- **ui:** The animations `dito-slide-enter` and `dito-slide-leave` no longer set a `transform-origin`, so they scale from the centre unless the element sets one, e.g. `transform-origin: top`.
+- **ui:** `DitoSwitch` is built on `reka-ui`'s `Switch`, a button with `role="switch"` instead of a checkbox:
+  - It no longer emits `change`; listen to `update:modelValue` instead.
+  - Enter toggles it as well as Space, so dialogs don't submit on Enter from a switch.
+  - Without `modelValue`, or with `undefined`, it keeps its own state.
+  - Its state is `[data-state='checked']` and `[data-disabled]` on `.dito-switch__control`, instead of `.dito-switch--checked` and `.dito-switch--disabled`.
+  - `.dito-switch__pane` and its `input` are replaced by the `button.dito-switch__control`, and `.dito-switch__button` is now `.dito-switch__thumb`.
+
+### New
+
+- **server:** `maxSize` in the asset settings of models, e.g.
+  `{ storage: 'covers', maxSize: '10MB' }`, limits the size of files that
+  writes import from `allowedImports` URLs or copy from other storages.
+- **server:**
+  [`app.findOrphanedFiles()`](docs/api/server/application.md#findorphanedfiles)
+  and `db:find_orphaned_files` list the files of storages that have no asset
+  record and no reference, older than a day, and remove them with
+  `remove: true` or `--remove`. Storages list their files with the time of
+  their last change through
+  [`storage.listFiles()`](docs/api/server/storage.md#listfiles).
+- **server:** Storages have a `public` option. Storages with `url` are public
+  by default, and `public: false` keeps their files without `url`. See
+  [Storages](docs/guide/server/storages.md#storages).
+- **admin:** Dragging over the days of the calendar of `date` and `datetime` fields moves the selection along, instead of selecting their text, and releasing picks the day.
+- **admin:** `context.reveal(dataPath, { focus })` reveals and focuses the
+  field that edits a value, like validation errors do: it opens collapsed
+  sections and items, tabs and routed forms on the way.
+- **admin:** Elements with a `data-tooltip` attribute in `html` show its text in a tooltip when hovered or focused, e.g. in the results of `render()`, see [Text and HTML](docs/api/admin/schemas.md#text-and-html).
+- **ui:** `usePopupPlacement()` returns the props that place a reka-ui popup next to its trigger, as `DitoMenuButton` and `DitoDatePicker` do: fixed, inside the closest container that scrolls. See [Vue](docs/api/ui.md#usepopupplacement).
+- **ui:** The placeholder `%popup` gives popups, menus and lists their `z-index`, as used by `DitoMenuButton`, `DitoDatePicker` and the color and multiselect types, and `%popup--animated` adds the panel and enter animation of larger popups. See [Placeholders](docs/api/ui.md#placeholders).
+- **utils:** `parseFileSize()` and `formatFileSize()` read and format file
+  sizes with units, e.g. `'10MB'`.
+
+### Fixes
+
+- **server:** Loading the admin's Vite config no longer fails when its `root` doesn't exist, e.g. in tools that load it from other directories.
+- **server:** Sessions that end while a parallel request still runs, e.g.
+  through a logout, stay ended, instead of being written back by the other
+  request. Session cookies with ids that have no stored session start a new
+  session with a new id.
+- **server:** Logins that fail after the user is logged in, e.g. in an
+  `after:login` hook, log the user out again, instead of answering
+  `authenticated: false` while the session stays logged in.
+- **server:** `app.start()` rejects when the server can't listen, e.g. on a
+  port that is taken, instead of never settling. When the start fails, it
+  emits `after:stop`, so the services that started stop again.
+- **server:** `'post password-reset'` sends at most one email per user and
+  minute. Further requests within the minute answer the same, but send nothing.
+- **server:** `readDimensions` stops reading after the first 8 MB of an upload
+  without dimensions, instead of buffering and parsing the whole file. The
+  upload is stored without dimensions.
+- **server:** Repeated `filter` query parameters of one name, as in
+  `?filter=minPages:400&filter=minPages:600`, all apply, instead of only the
+  last one.
+- **server:** Imports of files from `allowedImports` URLs no longer follow
+  redirects, which could leave the allowed sources, reject error responses
+  instead of storing them as the file, and give up after 30 seconds.
+- **server:** The admin's views are authorized also when their path is
+  requested in another case or encoded, which case-insensitive file systems,
+  e.g. of macOS and Windows, served without `authorize`, and builds put the
+  views into their own chunk also for symlinked roots and on Windows.
+- **admin:** Inlined objects with a label show all their buttons in the row of their label: their clipboard, which also pastes into empty objects, and their create and remove buttons. Collapsible ones toggle on that label, instead of repeating it with a chevron inside their frame. Their frame isn't drawn while it's collapsed or empty. Empty objects without a label show their clipboard and create button in their frame.
+- **admin:** File sizes, e.g. `maxSize` of uploads, ignore spaces around them
+  and take one decimal mark, a dot or a comma: thousands separators, as in
+  `'1,000,000'`, throw instead of giving a wrong size.
+- **admin:** The buttons of forms show their words, e.g. 'Add' instead of a
+  '+' icon in the forms of new nested items.
+- **admin:** Tree items show the suffixes of their labels, e.g. a badge from
+  `itemLabel` returning `{ text, suffix }`, which collapsed to no width.
+- **admin:** The types of tree `children` give their callbacks the items of
+  the array that `name` picks, instead of the items of the parent.
+- **admin:** Options loaders that throw values other than errors, or errors
+  without a message, show "Unable to load the options." on their field
+  instead of the value.
+- **admin:** When the views fail to load after a login, e.g. for users without
+  access to the admin, a notification says so before the login dialog
+  returns, instead of showing the dialog again without a reason.
+- **admin:** Sub-menus that pop out of the navigation on hover are as wide as their longest label, instead of cutting labels off at the width of their item.
+- **admin:** The clipboard of inlined objects and list items no longer makes a row of its own inside them: labelled object fields show it in the row of their label, as lists do, the others next to their edit buttons.
+- **admin:** 400 responses without a body, e.g. from a proxy, are notified like
+  other request errors, instead of throwing a `TypeError` that hid them.
+- **admin:** Multiselects with more than 200 options and no groups open at once, rendering only the options in view, with reka-ui's `ComboboxVirtualizer`.
+- **admin:** Enter submits dialogs only from text-like inputs, as in browsers, and no longer from checkboxes, radios and other inputs.
+- **admin:** `clearable` fields only show their clear button when there is something to clear, and no longer for an empty list of values, e.g. of `multiple` multiselects.
+- **admin:** Errors of fields in the forms of tree items select the tab of the tree whose form displays them, also when the form of the item was still open while another tab was selected.
+- **admin:** The filters of list scopes replace the panel's filters of the same name, instead of applying together with them since the server applies every repeated filter.
+
+### Internal
+
+- **admin:** Sidebars recognize open popups by their ARIA roles instead of reka-ui's undocumented `data-dismissable-layer` attribute, when deciding whether Escape closes them.
+- **ui:** The date and time fields mark their empty and entered parts with classes of their own, instead of reading reka-ui's undocumented attributes, and focus their first part through template refs.
+
 ## 6.9.0 (2026-11-17)
 
 ### Behaviour changes
