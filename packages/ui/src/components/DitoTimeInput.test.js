@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { CalendarDateTime, Time } from '@internationalized/date'
+import { TimeFieldRoot } from 'reka-ui'
 import DitoTimeInput from './DitoTimeInput.vue'
 
 describe('DitoTimeInput', () => {
@@ -32,6 +33,21 @@ describe('DitoTimeInput', () => {
       expect.arrayContaining(['dito-input--disabled', 'dito-input--has-errors'])
     )
     expect(findParts()[0].attributes('aria-disabled')).toBe('true')
+  })
+
+  it('shows `placeholder` until a part is entered', async () => {
+    mountTimeInput({ props: { placeholder: 'Opens at' } })
+    const segments = wrapper.find('.dito-date-segments')
+    expect(segments.find('.dito-date-segments__placeholder').text()).toBe(
+      'Opens at'
+    )
+    expect(segments.classes()).not.toContain('dito-date-segments--entered')
+    // The text isn't reka-ui's `placeholder`, its value to start from:
+    expect(wrapper.findComponent(TimeFieldRoot).props('placeholder')).toBe(
+      undefined
+    )
+    await wrapper.setProps({ modelValue: new Time(9, 15) })
+    expect(segments.classes()).toContain('dito-date-segments--entered')
   })
 
   it('focuses its first part', () => {

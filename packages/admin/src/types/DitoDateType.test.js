@@ -250,6 +250,25 @@ describe('DitoDateType', () => {
     })
   })
 
+  it('shows the `placeholder` of dates and times', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        fields: {
+          publishedOn: { type: 'date', placeholder: 'Published on' },
+          opensAt: { type: 'time', placeholder: 'Opens at' }
+        }
+      }
+    })
+    for (const [name, text] of [
+      ['publishedOn', 'Published on'],
+      ['opensAt', 'Opens at']
+    ]) {
+      expect(
+        findField(name).find('.dito-date-segments__placeholder').text()
+      ).toBe(text)
+    }
+  })
+
   it('positions `prefix` and `suffix` over the picker', async () => {
     const { findField } = await mountSchema({
       schema: {

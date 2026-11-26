@@ -34,7 +34,7 @@
           }`
         )
           //- Shown instead of the empty parts while the field isn't focused:
-          span.dito-date-picker__placeholder(
+          span.dito-date-segments__placeholder(
             v-if="placeholder"
           ) {{ placeholder }}
           DatePickerInput.dito-date-segments__part(
@@ -409,27 +409,6 @@ function getToday(granularity) {
   .dito-input {
     display: flex;
     min-width: 8em;
-  }
-
-  // Fields without entered parts hide them until focused, but keep them
-  // focusable:
-  &:not(:focus-within) .dito-date-segments:not(.dito-date-segments--entered) {
-    .dito-date-segments__part {
-      opacity: 0;
-    }
-  }
-
-  &:focus-within,
-  .dito-date-segments--entered {
-    .dito-date-picker__placeholder {
-      display: none;
-    }
-  }
-
-  &__placeholder {
-    position: absolute;
-    color: $color-placeholder;
-    pointer-events: none;
   }
 
   &__toggle {

@@ -324,7 +324,12 @@ export const projects = createWidgetView<Project>(
               label: 'Website',
               width: '1/2'
             },
-            startTime: { type: 'time', label: 'Start Time', width: '1/4' },
+            startTime: {
+              type: 'time',
+              label: 'Start Time',
+              width: '1/4',
+              placeholder: 'Starts at'
+            },
             meetingAt: {
               type: 'datetime',
               label: 'Meeting',
