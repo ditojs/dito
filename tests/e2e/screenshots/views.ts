@@ -241,15 +241,31 @@ export const projects = createWidgetView<Project>(
                       }
                     }
                   },
+                  // Inlined objects with a clipboard, in their label or next
+                  // to their edit buttons:
                   review: {
                     type: 'object',
                     label: 'Review',
                     inlined: true,
                     deletable: true,
+                    clipboard: true,
                     form: {
                       type: 'form',
                       fields: {
                         reviewer: { type: 'text', label: 'Reviewer' }
+                      }
+                    }
+                  },
+                  approval: {
+                    type: 'object',
+                    label: false,
+                    inlined: true,
+                    deletable: true,
+                    clipboard: true,
+                    form: {
+                      type: 'form',
+                      fields: {
+                        approver: { type: 'text', label: 'Approver' }
                       }
                     }
                   }

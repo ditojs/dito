@@ -11,6 +11,7 @@ export interface Milestone {
   due?: string | null
   steps?: { text?: string | null }[] | null
   review?: { reviewer?: string | null } | null
+  approval?: { approver?: string | null } | null
 }
 
 export interface Phase {
