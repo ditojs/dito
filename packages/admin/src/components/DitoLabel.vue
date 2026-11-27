@@ -226,11 +226,6 @@ export default {
       flex: 0 1 auto;
     }
 
-    // Inset toggles of all items like the chevrons of the items:
-    &:has(> .dito-chevron--double) {
-      margin-left: $form-spacing + $border-width - $focus-ring-padding;
-    }
-
     // Suffixes with ellipsis have no width of their own, so the content
     // fills the row for them to clip their text in:
     &:has(> #{$self}__inner > .dito-affixes--ellipsis) {

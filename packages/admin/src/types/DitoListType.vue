@@ -534,7 +534,6 @@ export default DitoListType
     // The toggle and buttons of lists without a label:
     > .dito-chevron {
       align-self: center;
-      margin-left: $form-spacing + $border-width - $focus-ring-padding;
     }
 
     .dito-label-buttons {
